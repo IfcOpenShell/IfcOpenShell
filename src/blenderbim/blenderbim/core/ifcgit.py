@@ -71,3 +71,10 @@ def merge_branch(ifcgit, ifc, operator):
     path_ifc = ifc.get_path()
     ifcgit.config_ifcmerge()
     ifcgit.execute_merge(path_ifc, operator)
+
+
+def entity_log(ifcgit, ifc, step_id, operator):
+    path_ifc = ifc.get_path()
+    log_text = ifcgit.entity_log(path_ifc, step_id)
+    # ERROR is only way to display a multi-line message
+    operator.report({"ERROR"}, log_text)

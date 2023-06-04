@@ -192,7 +192,7 @@ class IfcGit:
         bpy.data.orphans_purge(do_recursive=True)
 
         bpy.ops.bim.load_project(filepath=path_ifc)
-        bpy.ops.object.select_all(action='DESELECT')
+        bpy.ops.object.select_all(action="DESELECT")
 
     @classmethod
     def branches_by_hexsha(cls, repo):
@@ -312,7 +312,7 @@ class IfcGit:
     def colourise(cls, step_ids):
         area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
         area.spaces[0].shading.color_type = "OBJECT"
-        bpy.ops.object.select_all(action='DESELECT')
+        bpy.ops.object.select_all(action="DESELECT")
 
         for obj in bpy.context.visible_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
@@ -421,6 +421,21 @@ class IfcGit:
 
             cls.load_project(path_ifc)
             cls.refresh_revision_list(path_ifc)
+
+    @classmethod
+    def entity_log(cls, path_ifc, step_id):
+        """Raw git log for this entity"""
+        repo = IfcGitRepo.repo
+        if not repo:
+            return "No repository found :("
+        relpath_ifc = os.path.relpath(path_ifc, repo.working_dir)
+        # regex only returns first match
+        query = "/^#" + str(step_id) + "[ =]/,/;/:" + relpath_ifc
+        try:
+            logtext = repo.git.log("-L", query, "-s")
+        except:
+            logtext = "No Git history found :("
+        return logtext
 
 
 class IfcGitRepo:

@@ -202,3 +202,32 @@ class COMMIT_UL_List(bpy.types.UIList):
         else:
             layout.label(text=refs + commit.message, icon="DECORATE_ANIMATE")
         layout.label(text=time.strftime("%c", time.localtime(commit.committed_date)))
+
+
+class IFCGIT_PT_revision_inspector(bpy.types.Panel):
+    """Tool panel to interact with revision history"""
+
+    bl_idname = "IFCGIT_PT_revision_inspector"
+    bl_label = "Git History"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "BlenderBIM"
+
+    def draw(self, context):
+
+        if not IfcGitData.is_loaded:
+            IfcGitData.load()
+
+        layout = self.layout
+
+        if not IfcGitData.data["git_exe"]:
+            row = layout.row()
+            row.label(text="Git is not installed", icon="ERROR")
+            return
+
+        row = layout.row()
+        row.operator(
+            "ifcgit.object_log",
+            icon="TEXT",
+        )
