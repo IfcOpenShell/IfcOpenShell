@@ -409,8 +409,7 @@ endif
 	# Provides express rule validation for ifcopenshell.validate
 	cd dist/working && . env/bin/activate && $(PIP) install pytest --target=./site-packages
 	# Provides Brickschema functionality
-	cd dist/working && . env/bin/activate && $(PIP) install brickschema --target=./site-packages
-	cd dist/working/site-packages/ && rm -r *dist-info*
+	cd dist/working && . env/bin/activate && $(PIP) install brickschema[persistence] --target=./site-packages
 	cp -r dist/working/site-packages/* dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
