@@ -120,6 +120,13 @@ class EnablePsetEditing(bpy.types.Operator):
                 self.load_single_value(pset_template, prop_template, data)
             elif prop_template.TemplateType == "P_ENUMERATEDVALUE":
                 self.load_enumerated_value(prop_template, data)
+            else:
+                # NOTE: currently unsupported types:
+                # - P_BOUNDEDVALUE
+                # - P_LISTVALUE
+                # - P_REFERENCEVALUE
+                # - P_TABLEVALUE
+                pass
 
     def load_single_value(self, pset_template, prop_template, data):
         prop = self.props.properties.add()
