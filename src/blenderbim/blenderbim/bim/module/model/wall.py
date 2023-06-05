@@ -434,7 +434,7 @@ class DumbWallGenerator:
 
         props = bpy.context.scene.BIMModelProperties
         self.collection = bpy.context.view_layer.active_layer_collection.collection
-        self.collection_obj = bpy.data.objects.get(self.collection.name)
+        self.collection_obj = self.collection.BIMCollectionProperties.obj
         self.width = self.layers["thickness"]
         self.height = props.extrusion_depth
         self.length = props.length
@@ -934,7 +934,8 @@ class DumbWallJoiner:
     def duplicate_wall(self, wall1):
         wall2 = wall1.copy()
         wall2.data = wall2.data.copy()
-        wall1.users_collection[0].objects.link(wall2)
+        for collection in wall1.users_collection:
+            collection.objects.link(wall2)
         blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=wall2)
         return wall2
 
