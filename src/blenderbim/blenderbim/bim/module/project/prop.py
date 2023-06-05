@@ -165,6 +165,7 @@ class BIMProjectProperties(PropertyGroup):
     active_link_index: IntProperty(name="Active Link Index")
     export_schema: EnumProperty(items=get_export_schema, name="IFC Schema")
     template_file: EnumProperty(items=get_template_file, name="Template File")
+    use_relative_project_path: BoolProperty(name="Use Relative Project Path", default=False)
 
     def get_library_element_index(self, lib_element):
         return next((i for i in range(len(self.library_elements)) if self.library_elements[i] == lib_element))

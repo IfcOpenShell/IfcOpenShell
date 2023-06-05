@@ -840,13 +840,16 @@ class ExportIFC(bpy.types.Operator):
         return {"RUNNING_MODAL"}
 
     def execute(self, context):
-        if context.scene.BIMProjectProperties.should_disable_undo_on_save:
+        project_props = context.scene.BIMProjectProperties
+        if self.should_save_as:
+            project_props.use_relative_project_path = self.use_relative_path
+        if project_props.should_disable_undo_on_save:
             old_history_size = tool.Ifc.get().history_size
             old_undo_steps = context.preferences.edit.undo_steps
             tool.Ifc.get().history_size = 0
             context.preferences.edit.undo_steps = 0
         IfcStore.execute_ifc_operator(self, context)
-        if context.scene.BIMProjectProperties.should_disable_undo_on_save:
+        if project_props.should_disable_undo_on_save:
             tool.Ifc.get().history_size = old_history_size
             context.preferences.edit.undo_steps = old_undo_steps
         return {"FINISHED"}
@@ -883,7 +886,7 @@ class ExportIFC(bpy.types.Operator):
         if not scene.DocProperties.ifc_files:
             new = scene.DocProperties.ifc_files.add()
             new.name = output_file
-        if self.use_relative_path and bpy.data.is_saved:
+        if context.scene.BIMProjectProperties.use_relative_project_path and bpy.data.is_saved:
             output_file = os.path.relpath(output_file, bpy.path.abspath("//"))
         if scene.BIMProperties.ifc_file != output_file and extension not in ["ifczip", "ifcjson"]:
             scene.BIMProperties.ifc_file = output_file
