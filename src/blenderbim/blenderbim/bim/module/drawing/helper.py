@@ -269,7 +269,7 @@ def get_active_drawing(scene):
     props = scene.DocProperties
     try:
         camera = tool.Ifc.get_object(tool.Ifc.get().by_id(props.active_drawing_id))
-        return camera.users_collection[0], camera
+        return camera.BIMObjectProperties.collection, camera
     except:
         return None, None
 
