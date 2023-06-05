@@ -737,6 +737,7 @@ class OverrideModeSetEdit(bpy.types.Operator):
 
             element = tool.Ifc.get_entity(obj)
             if not element:
+                obj.select_set(False)
                 continue
 
             # We are switching from OBJECT to EDIT mode.
@@ -752,10 +753,13 @@ class OverrideModeSetEdit(bpy.types.Operator):
             if not representation:
                 continue
 
-            if len(context.selected_objects) == 1:
-                if tool.Pset.get_element_pset(element, "BBIM_Railing"):
-                    # Needs to run BEFORE is_meshlike check
-                    bpy.ops.bim.hotkey(hotkey="S_E", description="")
+            if (
+                tool.Pset.get_element_pset(element, "BBIM_Door")
+                or tool.Pset.get_element_pset(element, "BBIM_Window")
+                or tool.Pset.get_element_pset(element, "BBIM_Stair")
+            ):
+                obj.select_set(False)
+                continue
                     obj.data.BIMMeshProperties.mesh_checksum = tool.Geometry.get_mesh_checksum(obj.data)
                     return {"FINISHED"}
                 elif len(context.selected_objects) == 1 and tool.Geometry.is_profile_based(representation):
