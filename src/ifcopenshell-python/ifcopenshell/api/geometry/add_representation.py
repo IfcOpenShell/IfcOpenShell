@@ -369,7 +369,11 @@ class Usecase:
             else:
                 return self.create_curves_from_mesh(should_exclude_faces=should_exclude_faces, is_2d=is_2d)
         elif isinstance(self.settings["geometry"], bpy.types.Curve):
-            return self.create_curves_from_curve(is_2d=is_2d)
+            if self.file.schema == "IFC2X3":
+                return self.create_curves_from_curve_ifc2x3(is_2d=is_2d)
+            else:
+                return self.create_curves_from_curve(is_2d=is_2d)
+            
 
     def create_curves_from_mesh(self, should_exclude_faces=False, is_2d=False):
         curves = []
@@ -433,24 +437,32 @@ class Usecase:
             curves.append(self.file.createIfcPolyline(loop_points))
         return curves
 
-    def create_curves_from_curve(self, is_2d=False):
+    def create_curves_from_curve_ifc2x3(self, is_2d=False):
+        # TODO: support interpolated curves, not just polylines
+        dim = (lambda v: v.xy) if is_2d else (lambda v: v.xyz)
         results = []
         for spline in self.settings["geometry"].splines:
-            # TODO: support interpolated curves, not just polylines
-            points = []
-            for point in spline.bezier_points:
-                if is_2d:
-                    points.append(self.create_cartesian_point(point.co.x, point.co.y))
-                else:
-                    points.append(self.create_cartesian_point(point.co.x, point.co.y, point.co.z))
-            for point in spline.points:
-                if is_2d:
-                    points.append(self.create_cartesian_point(point.co.x, point.co.y))
-                else:
-                    points.append(self.create_cartesian_point(point.co.x, point.co.y, point.co.z))
+            points = spline.bezier_points[:] + spline.points[:]
             if spline.use_cyclic_u:
                 points.append(points[0])
-            results.append(self.file.createIfcPolyline(points))
+            ifc_points = [self.create_cartesian_point(*dim(point.co)) for point in points]
+            results.append(self.file.createIfcPolyline(ifc_points))
+        return results
+
+    def create_curves_from_curve(self, is_2d=False):
+        # TODO: support interpolated curves, not just polylines
+        dim = (lambda v: v.xy) if is_2d else (lambda v: v.xyz)
+        to_units = lambda v: Vector([self.convert_si_to_unit(i) for i in v])
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(self.file)
+        results = []
+
+        for spline in self.settings["geometry"].splines:
+            points = spline.bezier_points[:] + spline.points[:]
+
+            points = [to_units(dim(p.co)) for p in points]
+            closed_polyline = spline.use_cyclic_u and len(points) > 1
+            results.append(builder.polyline(points, closed=closed_polyline))
+
         return results
 
     def create_point_cloud_representation(self, is_2d=False):
