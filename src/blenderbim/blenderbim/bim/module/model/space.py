@@ -247,7 +247,7 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
 
             self.set_obj_origin_to_bboxcenter(obj)
 
-            if z is not 0:
+            if z != 0:
                 obj.location = obj.location + Vector((0,0,z))
 
             context.view_layer.active_layer_collection.collection.objects.link(obj)
