@@ -21,6 +21,7 @@ import ifcopenshell.util.unit
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import blenderbim.core.tool
+from blenderbim.bim.module.model.decorator import ProfileDecorator
 
 
 class Profile(blenderbim.core.tool.Profile):
@@ -52,3 +53,7 @@ class Profile(blenderbim.core.tool.Profile):
 
         for e in grouped_edges:
             draw.line((tuple(grouped_verts[e[0]]), tuple(grouped_verts[e[1]])), fill="white", width=2)
+
+    @classmethod
+    def is_editing_profile(cls):
+        return ProfileDecorator.installed
