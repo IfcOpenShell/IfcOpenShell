@@ -762,11 +762,20 @@ class OverrideModeSetEdit(bpy.types.Operator):
                 continue
                     obj.data.BIMMeshProperties.mesh_checksum = tool.Geometry.get_mesh_checksum(obj.data)
                     return {"FINISHED"}
-                elif len(context.selected_objects) == 1 and tool.Geometry.is_profile_based(representation):
-                    # Only one profile can be edited at a time
-                    bpy.ops.bim.enable_editing_extrusion_profile()
+            if (
+                tool.Geometry.is_profile_based(obj.data)
+                or tool.Geometry.is_swept_profile(representation)
+                or tool.Pset.get_element_pset(element, "BBIM_Roof")
+                or tool.Pset.get_element_pset(element, "BBIM_Railing")
+            ):
+                if len(context.selected_objects) == 1:
+                    bpy.ops.bim.hotkey(hotkey="S_E", description="")
                     obj.data.BIMMeshProperties.mesh_checksum = tool.Geometry.get_mesh_checksum(obj.data)
                     return {"FINISHED"}
+                else:
+                    self.report({"INFO"}, "Only a single profile-based representation can be edited at a time.")
+                    obj.select_set(False)
+                    continue
 
             if tool.Geometry.is_meshlike(representation):
                 if getattr(element, "HasOpenings", None):
@@ -881,7 +890,9 @@ class OverrideModeSetObject(bpy.types.Operator):
 
             if tool.Profile.is_editing_profile():
                 if obj.data.BIMMeshProperties.mesh_checksum != tool.Geometry.get_mesh_checksum(obj.data):
-                    if tool.Pset.get_element_pset(element, "BBIM_Railing"):
+                    if tool.Pset.get_element_pset(element, "BBIM_Railing") or tool.Pset.get_element_pset(
+                        element, "BBIM_Roof"
+                    ):
                         bpy.ops.bim.cad_hotkey(hotkey="S_Q")
                     else:
                         bpy.ops.bim.edit_extrusion_profile()
