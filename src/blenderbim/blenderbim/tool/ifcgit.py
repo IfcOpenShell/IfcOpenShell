@@ -1,5 +1,6 @@
 import os
 import re
+import time
 
 # allows git import even if git executable isn't found
 os.environ["GIT_PYTHON_REFRESH"] = "quiet"
@@ -98,6 +99,11 @@ class IfcGit:
         props.new_tag_message = ""
 
     @classmethod
+    def delete_tag(cls, repo, tag_name):
+        if tag_name in repo.tags:
+            repo.delete_tag(tag_name)
+
+    @classmethod
     def create_new_branch(cls):
         props = bpy.context.scene.IfcGitProperties
         repo = IfcGitRepo.repo
@@ -192,7 +198,7 @@ class IfcGit:
         bpy.data.orphans_purge(do_recursive=True)
 
         bpy.ops.bim.load_project(filepath=path_ifc)
-        bpy.ops.object.select_all(action='DESELECT')
+        bpy.ops.object.select_all(action="DESELECT")
 
     @classmethod
     def branches_by_hexsha(cls, repo):
@@ -312,7 +318,7 @@ class IfcGit:
     def colourise(cls, step_ids):
         area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
         area.spaces[0].shading.color_type = "OBJECT"
-        bpy.ops.object.select_all(action='DESELECT')
+        bpy.ops.object.select_all(action="DESELECT")
 
         for obj in bpy.context.visible_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
@@ -416,11 +422,36 @@ class IfcGit:
                         return False
 
             repo.index.add(path_ifc)
-            props.commit_message = "Merged branch: " + props.display_branch
+
+            message_summary = ""
+            branch_commits = repo.iter_commits(rev=repo.active_branch.name + ".." + props.display_branch)
+            for commit in branch_commits:
+                message_summary += "\n\n" + commit.author.name + " <" + commit.author.email + ">\n"
+                message_summary += time.strftime("%c", time.localtime(commit.committed_date)) + "\n"
+                message_summary += commit.message
+
+            props.commit_message = (
+                "Merge branch '" + props.display_branch + "' into " + repo.active_branch.name + message_summary
+            )
             props.display_branch = repo.active_branch.name
 
             cls.load_project(path_ifc)
             cls.refresh_revision_list(path_ifc)
+
+    @classmethod
+    def entity_log(cls, path_ifc, step_id):
+        """Raw git log for this entity"""
+        repo = IfcGitRepo.repo
+        if not repo:
+            return "No repository found :("
+        relpath_ifc = os.path.relpath(path_ifc, repo.working_dir)
+        # regex only returns first match
+        query = "/^#" + str(step_id) + "[ =]/,/;/:" + relpath_ifc
+        try:
+            logtext = repo.git.log("-L", query, "-s")
+        except:
+            logtext = "No Git history found :("
+        return logtext
 
 
 class IfcGitRepo:

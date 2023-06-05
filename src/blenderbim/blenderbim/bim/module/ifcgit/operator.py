@@ -161,6 +161,23 @@ class AddTag(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class DeleteTag(bpy.types.Operator):
+    """Delete a tag"""
+
+    bl_label = "Delete tag"
+    bl_idname = "ifcgit.delete_tag"
+    bl_options = {"REGISTER"}
+    tag_name: bpy.props.StringProperty()
+
+    def execute(self, context):
+
+        repo = IfcGitData.data["repo"]
+        core.delete_tag(tool.IfcGit, repo, self.tag_name)
+        bpy.ops.ifcgit.refresh()
+        refresh()
+        return {"FINISHED"}
+
+
 class RefreshGit(bpy.types.Operator):
     """Refresh revision list"""
 
@@ -277,4 +294,27 @@ class Fetch(bpy.types.Operator):
         repo = IfcGitData.data["repo"]
         remote = repo.remotes[props.select_remote]
         remote.fetch()
+        return {"FINISHED"}
+
+
+class ObjectLog(bpy.types.Operator):
+    """Displays Git log of selected object"""
+
+    bl_label = "Selected Object History"
+    bl_idname = "ifcgit.object_log"
+    bl_options = {"REGISTER"}
+
+    @classmethod
+    def poll(cls, context):
+        if not context.active_object:
+            cls.poll_message_set("No Active Object")
+        elif not context.active_object.BIMObjectProperties.ifc_definition_id:
+            cls.poll_message_set("Active Object doesn't have an IFC definition")
+        else:
+            return True
+
+    def execute(self, context):
+
+        step_id = context.active_object.BIMObjectProperties.ifc_definition_id
+        core.entity_log(tool.IfcGit, tool.Ifc, step_id, self)
         return {"FINISHED"}

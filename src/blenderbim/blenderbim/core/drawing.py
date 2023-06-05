@@ -318,7 +318,7 @@ def update_drawing_name(ifc, drawing_tool, drawing=None, name=None):
         ifc.run("attribute.edit_attributes", product=group, attributes={"Name": name})
     collection = drawing_tool.get_drawing_collection(drawing)
     if collection:
-        drawing_tool.set_drawing_collection_name(group, collection)
+        drawing_tool.set_drawing_collection_name(drawing, collection)
 
     reference = drawing_tool.get_drawing_document(drawing)
     information = drawing_tool.get_reference_document(reference)

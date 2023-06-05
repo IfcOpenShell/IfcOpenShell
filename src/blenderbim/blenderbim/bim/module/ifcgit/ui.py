@@ -139,8 +139,9 @@ class IFCGIT_PT_panel(bpy.types.Panel):
         row.label(text=item.hexsha)
         row = column.row()
         row.label(text=item.author_name + " <" + item.author_email + ">")
-        row = column.row()
-        row.label(text=item.message)
+        for message_line in item.message.split("\n"):
+            row = column.row()
+            row.label(text=message_line)
 
         for tag in item.tags:
             box = layout.box()
@@ -148,11 +149,11 @@ class IFCGIT_PT_panel(bpy.types.Panel):
             column = item.column(align=True)
             row = column.row()
             row.label(text=tag.name)
+            row.operator("ifcgit.delete_tag", icon="PANEL_CLOSE").tag_name = tag.name
             if tag.message:
-                row = column.row()
-                row.label(text=tag.message)
-            # TODO
-            # item.operator("ifcgit.delete_tag", icon="PANEL_CLOSE")
+                for message_line in tag.message.split("\n"):
+                    row = column.row()
+                    row.label(text=message_line)
 
         box = layout.box()
         row = box.row()
@@ -202,3 +203,32 @@ class COMMIT_UL_List(bpy.types.UIList):
         else:
             layout.label(text=refs + commit.message, icon="DECORATE_ANIMATE")
         layout.label(text=time.strftime("%c", time.localtime(commit.committed_date)))
+
+
+class IFCGIT_PT_revision_inspector(bpy.types.Panel):
+    """Tool panel to interact with revision history"""
+
+    bl_idname = "IFCGIT_PT_revision_inspector"
+    bl_label = "Git History"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "BlenderBIM"
+
+    def draw(self, context):
+
+        if not IfcGitData.is_loaded:
+            IfcGitData.load()
+
+        layout = self.layout
+
+        if not IfcGitData.data["git_exe"]:
+            row = layout.row()
+            row.label(text="Git is not installed", icon="ERROR")
+            return
+
+        row = layout.row()
+        row.operator(
+            "ifcgit.object_log",
+            icon="TEXT",
+        )

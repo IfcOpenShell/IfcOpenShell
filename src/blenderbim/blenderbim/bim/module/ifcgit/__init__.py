@@ -25,11 +25,13 @@ classes = (
     operator.CloneRepo,
     operator.CommitChanges,
     operator.CreateRepo,
+    operator.DeleteTag,
     operator.DiscardUncommitted,
     operator.DisplayRevision,
     operator.DisplayUncommitted,
     operator.Fetch,
     operator.Merge,
+    operator.ObjectLog,
     operator.Push,
     operator.RefreshGit,
     operator.SwitchRevision,
@@ -38,6 +40,7 @@ classes = (
     prop.IfcGitProperties,
     ui.IFCGIT_PT_panel,
     ui.COMMIT_UL_List,
+    ui.IFCGIT_PT_revision_inspector,
 )
 
 

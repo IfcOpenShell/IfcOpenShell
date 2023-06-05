@@ -38,6 +38,10 @@ def add_tag(ifcgit, repo):
     ifcgit.add_tag(repo)
 
 
+def delete_tag(ifcgit, repo, tag_name):
+    ifcgit.delete_tag(repo, tag_name)
+
+
 def refresh_revision_list(ifcgit, repo, ifc):
     ifcgit.refresh_revision_list(ifc.get_path())
 
@@ -71,3 +75,10 @@ def merge_branch(ifcgit, ifc, operator):
     path_ifc = ifc.get_path()
     ifcgit.config_ifcmerge()
     ifcgit.execute_merge(path_ifc, operator)
+
+
+def entity_log(ifcgit, ifc, step_id, operator):
+    path_ifc = ifc.get_path()
+    log_text = ifcgit.entity_log(path_ifc, step_id)
+    # ERROR is only way to display a multi-line message
+    operator.report({"ERROR"}, log_text)

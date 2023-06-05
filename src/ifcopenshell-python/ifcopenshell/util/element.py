@@ -609,14 +609,16 @@ def get_referenced_structures(element):
     return []
 
 
-def get_decomposition(element):
+def get_decomposition(element, is_recursive=True):
     """
     Retrieves all subelements of an element based on the spatial decomposition
     hierarchy. This includes all subspaces and elements contained in subspaces,
     parts of an aggreate, all openings, and all fills of any openings.
 
     :param element: The IFC element
+    :type element: ifcopenshell.entity_instance.entity_instance
     :return: The decomposition of the element
+    :rtype: list[ifcopenshell.entity_instance.entity_instance]
 
     Example:
 
@@ -644,6 +646,8 @@ def get_decomposition(element):
         for rel in getattr(element, "IsNestedBy", []):
             queue.extend(rel.RelatedObjects)
             results.extend(rel.RelatedObjects)
+        if not is_recursive:
+            break
     return results
 
 
@@ -682,7 +686,6 @@ def get_aggregate(element):
     .. code:: python
     element = file.by_type("IfcBeam")[0]
     aggregate = ifcopenshell.util.element.get_aggregate(element)
-
     """
     if hasattr(element, "Decomposes") and element.Decomposes:
         return element.Decomposes[0].RelatingObject
