@@ -352,7 +352,11 @@ class Geometry(blenderbim.core.tool.Geometry):
         return False
 
     @classmethod
-    def is_profile_based(cls, representation):
+    def is_profile_based(cls, data):
+        return data.BIMMeshProperties.subshape_type == "PROFILE"
+
+    @classmethod
+    def is_swept_profile(cls, representation):
         return ifcopenshell.util.representation.resolve_representation(representation).RepresentationType in (
             "SweptSolid",
         )
