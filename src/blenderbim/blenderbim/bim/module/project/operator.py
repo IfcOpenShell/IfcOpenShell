@@ -818,10 +818,22 @@ class ExportIFC(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     json_version: bpy.props.EnumProperty(items=[("4", "4", ""), ("5a", "5a", "")], name="IFC JSON Version")
     json_compact: bpy.props.BoolProperty(name="Export Compact IFCJSON", default=False)
-    should_save_as: bpy.props.BoolProperty(name="Should Save As", default=False)
+    should_save_as: bpy.props.BoolProperty(name="Should Save As", default=False, options={"HIDDEN"})
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
+    save_as_invoked: bpy.props.BoolProperty(name="Save As Dialog Was Invoked", default=False, options={"HIDDEN"})
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, "json_version")
+        layout.prop(self, "json_compact")
+        if bpy.data.is_saved:
+            layout.prop(self, "use_relative_path")
+        else:
+            layout.label(text="Save the .blend file first ")
+            layout.label(text="to use relative paths for .ifc.")
 
     def invoke(self, context, event):
+        self.save_as_invoked = False
         if not IfcStore.get_file():
             self.report({"ERROR"}, "No IFC project is available for export - create or import a project first.")
             return {"FINISHED"}
@@ -835,13 +847,15 @@ class ExportIFC(bpy.types.Operator):
                 self.filepath = Path(bpy.data.filepath).with_suffix(".ifc").__str__()
             else:
                 self.filepath = "untitled.ifc"
+
+        self.save_as_invoked = True
         WindowManager = context.window_manager
         WindowManager.fileselect_add(self)
         return {"RUNNING_MODAL"}
 
     def execute(self, context):
         project_props = context.scene.BIMProjectProperties
-        if self.should_save_as:
+        if self.save_as_invoked:
             project_props.use_relative_project_path = self.use_relative_path
         if project_props.should_disable_undo_on_save:
             old_history_size = tool.Ifc.get().history_size
