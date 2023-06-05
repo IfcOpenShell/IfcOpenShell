@@ -49,7 +49,7 @@ def draw_single_property(prop, layout, copy_operator=None):
     layout.prop(
         prop.metadata,
         value_name,
-        text=prop.metadata.name,
+        text=prop.metadata.display_name,
     )
     if prop.metadata.is_uri:
         op = layout.operator("bim.select_uri_attribute", text="", icon="FILE_FOLDER")

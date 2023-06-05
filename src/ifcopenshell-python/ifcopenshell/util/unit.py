@@ -280,11 +280,20 @@ prefix_symbols = {
 }
 
 unit_symbols = {
+    # si units
     "CUBIC_METRE": "m3",
     "GRAM": "g",
     "SECOND": "s",
     "SQUARE_METRE": "m2",
     "METRE": "m",
+    # non si units
+    "cubic inch": "in3",
+    "cubic foot": "ft3",
+    "cubic yard": "yd3",
+    "square inch": "in2",
+    "square foot": "ft2",
+    "square yard": "yd2",
+    "square mile": "mi2",
 }
 
 
@@ -442,12 +451,11 @@ def get_symbol_quantity_class(symbol):
 
 
 def get_unit_symbol(unit):
+    symbol = ""
     if unit.is_a("IfcSIUnit"):
-        symbol = ""
         symbol += prefix_symbols.get(unit.Prefix, "")
-        symbol += unit_symbols.get(unit.Name.replace("METER", "METRE"), "?")
-        return symbol
-    return "?"
+    symbol += unit_symbols.get(unit.Name.replace("METER", "METRE"), "?")
+    return symbol
 
 
 def convert_unit(value, from_unit, to_unit):
