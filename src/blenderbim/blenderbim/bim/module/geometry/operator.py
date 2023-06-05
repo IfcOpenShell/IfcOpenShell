@@ -742,7 +742,7 @@ class OverrideModeSetEdit(bpy.types.Operator):
 
             # We are switching from OBJECT to EDIT mode.
             usage_type = tool.Model.get_usage_type(element)
-            if usage_type:
+            if usage_type is not None and usage_type != "PROFILE":
                 # Parametric objects shall not be edited as meshes as they
                 # can be modified to be incompatible with the parametric
                 # constraints.
@@ -760,8 +760,15 @@ class OverrideModeSetEdit(bpy.types.Operator):
             ):
                 obj.select_set(False)
                 continue
+            if usage_type == "PROFILE":
+                if len(context.selected_objects) == 1:
+                    bpy.ops.bim.hotkey(hotkey="A_E", description="")
                     obj.data.BIMMeshProperties.mesh_checksum = tool.Geometry.get_mesh_checksum(obj.data)
                     return {"FINISHED"}
+                else:
+                    self.report({"INFO"}, "Only a single profile-based representation can be edited at a time.")
+                    obj.select_set(False)
+                    continue
             if (
                 tool.Geometry.is_profile_based(obj.data)
                 or tool.Geometry.is_swept_profile(representation)
@@ -894,6 +901,8 @@ class OverrideModeSetObject(bpy.types.Operator):
                         element, "BBIM_Roof"
                     ):
                         bpy.ops.bim.cad_hotkey(hotkey="S_Q")
+                    elif tool.Model.get_usage_type(element):
+                        bpy.ops.bim.edit_extrusion_axis()
                     else:
                         bpy.ops.bim.edit_extrusion_profile()
                 return self.execute(context)
