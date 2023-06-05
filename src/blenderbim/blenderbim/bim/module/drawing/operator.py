@@ -288,7 +288,7 @@ class CreateDrawing(bpy.types.Operator):
             bpy.ops.render.render(write_still=True)
         else:
             previous_visibility = {}
-            for obj in self.camera.users_collection[0].objects:
+            for obj in self.camera.BIMObjectProperties.collection.objects:
                 if bpy.context.view_layer.objects.get(obj.name):
                     previous_visibility[obj.name] = obj.hide_get()
                     obj.hide_set(True)
@@ -1350,7 +1350,7 @@ class ResizeText(bpy.types.Operator):
     # TODO: check undo redo
 
     def execute(self, context):
-        for obj in context.scene.camera.users_collection[0].objects:
+        for obj in context.scene.camera.BIMObjectProperties.collection.objects:
             if isinstance(obj.data, bpy.types.TextCurve):
                 annotation.Annotator.resize_text(obj)
         return {"FINISHED"}

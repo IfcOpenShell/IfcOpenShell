@@ -364,7 +364,7 @@ class Drawing(blenderbim.core.tool.Drawing):
     def get_drawing_collection(cls, drawing):
         obj = tool.Ifc.get_object(drawing)
         if obj:
-            return obj.users_collection[0]
+            return obj.BIMObjectProperties.collection
 
     @classmethod
     def get_drawing_group(cls, drawing):
@@ -759,8 +759,8 @@ class Drawing(blenderbim.core.tool.Drawing):
         )
 
     @classmethod
-    def set_drawing_collection_name(cls, group, collection):
-        collection.name = f"IfcGroup/{group.Name}"
+    def set_drawing_collection_name(cls, drawing, collection):
+        collection.name = tool.Loader.get_name(drawing)
 
     @classmethod
     def set_name(cls, element, name):
@@ -1486,8 +1486,8 @@ class Drawing(blenderbim.core.tool.Drawing):
                     project_collection.children["Views"].children[collection.name].hide_viewport = True
                     bpy.data.collections.get(collection.name).hide_render = True
 
-                    project_collection.children["Views"].children[camera.users_collection[0].name].hide_viewport = False
-        bpy.data.collections.get(camera.users_collection[0].name).hide_render = False
+                    project_collection.children["Views"].children[camera.BIMObjectProperties.collection.name].hide_viewport = False
+        camera.BIMObjectProperties.collection.hide_render = False
         tool.Spatial.set_active_object(camera)
 
         # Sync viewport objects visibility with selectors from EPset_Drawing/Include and /Exclude

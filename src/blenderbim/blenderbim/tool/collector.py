@@ -143,11 +143,8 @@ class Collector(blenderbim.core.tool.Collector):
                     return axes_col[0]
                 return bpy.data.collections.new(axes)
 
-        if element.is_a("IfcAnnotation"):
-            for rel in element.HasAssignments or []:
-                if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.ObjectType == "DRAWING":
-                    name = "IfcGroup/" + rel.RelatingGroup.Name
-                    return bpy.data.collections.get(name) or bpy.data.collections.new(name)
+        if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
+            return cls._create_own_collection(obj)
 
         if element.is_a("IfcStructuralMember"):
             return bpy.data.collections.get("Members") or bpy.data.collections.new("Members")
