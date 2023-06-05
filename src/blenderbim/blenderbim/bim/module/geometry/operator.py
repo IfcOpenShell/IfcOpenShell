@@ -738,13 +738,18 @@ class OverrideModeSetEdit(bpy.types.Operator):
             if not obj:
                 continue
 
+            if not obj.data:
+                obj.select_set(False)
+                continue
+
             element = tool.Ifc.get_entity(obj)
             if not element:
+                obj.select_set(False)
                 continue
 
             # We are switching from OBJECT to EDIT mode.
             usage_type = tool.Model.get_usage_type(element)
-            if usage_type:
+            if usage_type is not None and usage_type != "PROFILE":
                 # Parametric objects shall not be edited as meshes as they
                 # can be modified to be incompatible with the parametric
                 # constraints.
@@ -754,6 +759,37 @@ class OverrideModeSetEdit(bpy.types.Operator):
             representation = tool.Geometry.get_active_representation(obj)
             if not representation:
                 continue
+
+            if (
+                tool.Pset.get_element_pset(element, "BBIM_Door")
+                or tool.Pset.get_element_pset(element, "BBIM_Window")
+                or tool.Pset.get_element_pset(element, "BBIM_Stair")
+            ):
+                obj.select_set(False)
+                continue
+            if usage_type == "PROFILE":
+                if len(context.selected_objects) == 1:
+                    bpy.ops.bim.hotkey(hotkey="A_E", description="")
+                    obj.data.BIMMeshProperties.mesh_checksum = tool.Geometry.get_mesh_checksum(obj.data)
+                    return {"FINISHED"}
+                else:
+                    self.report({"INFO"}, "Only a single profile-based representation can be edited at a time.")
+                    obj.select_set(False)
+                    continue
+            if (
+                tool.Geometry.is_profile_based(obj.data)
+                or tool.Geometry.is_swept_profile(representation)
+                or tool.Pset.get_element_pset(element, "BBIM_Roof")
+                or tool.Pset.get_element_pset(element, "BBIM_Railing")
+            ):
+                if len(context.selected_objects) == 1:
+                    bpy.ops.bim.hotkey(hotkey="S_E", description="")
+                    obj.data.BIMMeshProperties.mesh_checksum = tool.Geometry.get_mesh_checksum(obj.data)
+                    return {"FINISHED"}
+                else:
+                    self.report({"INFO"}, "Only a single profile-based representation can be edited at a time.")
+                    obj.select_set(False)
+                    continue
 
             if tool.Geometry.is_meshlike(representation):
                 if getattr(element, "HasOpenings", None):
@@ -866,7 +902,18 @@ class OverrideModeSetObject(bpy.types.Operator):
             if not element:
                 continue
 
-            if obj.data.BIMMeshProperties.ifc_definition_id:
+            if tool.Profile.is_editing_profile():
+                if obj.data.BIMMeshProperties.mesh_checksum != tool.Geometry.get_mesh_checksum(obj.data):
+                    if tool.Pset.get_element_pset(element, "BBIM_Railing") or tool.Pset.get_element_pset(
+                        element, "BBIM_Roof"
+                    ):
+                        bpy.ops.bim.cad_hotkey(hotkey="S_Q")
+                    elif tool.Model.get_usage_type(element):
+                        bpy.ops.bim.edit_extrusion_axis()
+                    else:
+                        bpy.ops.bim.edit_extrusion_profile()
+                return self.execute(context)
+            elif obj.data.BIMMeshProperties.ifc_definition_id:
                 if not tool.Geometry.has_geometric_data(obj):
                     self.is_valid = False
                     self.should_save = False
