@@ -62,11 +62,22 @@ class ShapeBuilder:
             ifc_points = self.file.createIfcCartesianPointList3D(points)
 
         ifc_segments = []
-        for segment in segments:
+        # because IfcLineIndex support 2+ points
+        # we merge neighbor line segments into one
+        current_line_segment = []
+        last_segment = len(segments) - 1
+        for seg_i, segment in enumerate(segments):
             if len(segment) == 2:
-                ifc_segments.append(self.file.createIfcLineIndex(segment))
-            elif len(segment) == 3:
+                current_line_segment += segment
+
+            if current_line_segment and (len(segment) == 3 or seg_i == last_segment):
+                ifc_segments.append(self.file.createIfcLineIndex(current_line_segment))
+                current_line_segment = []
+
+            if len(segment) == 3:
                 ifc_segments.append(self.file.createIfcArcIndex(segment))
+
+        # NOTE: IfcIndexPolyCurve support only consequtive segments
         ifc_curve = self.file.createIfcIndexedPolyCurve(Points=ifc_points, Segments=ifc_segments)
         return ifc_curve
 
