@@ -311,7 +311,7 @@ class Drawing:
     def run_drawing_activate_model(cls): pass
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
     def select_assigned_product(cls, drawing): pass
-    def set_drawing_collection_name(cls, group, collection): pass
+    def set_drawing_collection_name(cls, drawing, collection): pass
     def set_name(cls, element, name): pass
     def setup_annotation_object(cls, obj, object_type): pass
     def setup_shading_styles_path(cls, resource_path): pass

@@ -38,7 +38,7 @@ class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
     @classmethod
     def poll(cls, context):
         collection = context.view_layer.active_layer_collection.collection
-        collection_obj = bpy.data.objects.get(collection.name)
+        collection_obj = collection.BIMCollectionProperties.obj
         return tool.Ifc.get_entity(collection_obj)
 
     def _execute(self, context):
@@ -60,7 +60,7 @@ class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
                 relating_type = None
 
         collection = context.view_layer.active_layer_collection.collection
-        collection_obj = bpy.data.objects.get(collection.name)
+        collection_obj = collection.BIMCollectionProperties.obj
         if not collection_obj:
             bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
             return
@@ -203,29 +203,19 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
         active_obj = bpy.context.active_object
 
         if not active_obj:
-            self.report({'ERROR'}, "No active object. Please select a wall")
+            self.report({"ERROR"}, "No active object. Please select a wall")
             return
 
-        element = None
         element = tool.Ifc.get_entity(active_obj)
-        if element:
-            if not element.is_a("IfcWall"):
-                self.report({'ERROR'}, "The active object is not a wall. Please select a wall.")
-                return
+        if element and not element.is_a("IfcWall"):
+            return self.report({"ERROR"}, "The active object is not a wall. Please select a wall.")
 
-        collection = active_obj.users_collection[0]
-        collection_obj = bpy.data.objects.get(collection.name)
-        if not collection_obj:
-            self.report({'ERROR'}, "No collection found. Please insert one.")
-            return
-
-        spatial_element = tool.Ifc.get_entity(collection_obj)
-        if not spatial_element:
-            self.report({'ERROR'}, "The collection hasn't an ifc space entity. Please provide one.")
-            return
+        container = ifcopenshell.util.element.get_container(element)
+        if not container:
+            self.report({"ERROR"}, "The wall is not contained.")
 
         if not bpy.context.selected_objects:
-            self.report({'ERROR'}, "No selected objects found. Please select walls.")
+            self.report({"ERROR"}, "No selected objects found. Please select walls.")
             return
 
         x, y, z = active_obj.matrix_world.translation.xyz
@@ -237,19 +227,18 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
 
         polys = self.get_polygons(boundary_elements)
 
-        converted_tolerance = self.get_converted_tolerance(tolerance = 0.03)
+        converted_tolerance = self.get_converted_tolerance(tolerance=0.03)
 
-        union = shapely.ops.unary_union(polys).buffer(converted_tolerance, cap_style = 2, join_style = 2)
+        union = shapely.ops.unary_union(polys).buffer(converted_tolerance, cap_style=2, join_style=2)
 
-        i=0
-        for linear_ring in union.interiors:
+        for i, linear_ring in enumerate(union.interiors):
             poly = Polygon(linear_ring)
-            poly = poly.buffer(converted_tolerance, single_sided=True, cap_style = 2, join_style = 2)
+            poly = poly.buffer(converted_tolerance, single_sided=True, cap_style=2, join_style=2)
 
             bm = self.get_bmesh_from_polygon(poly, mat, h)
 
             name = "Space" + str(i)
-            mesh = bpy.data.meshes.new(name = name)
+            mesh = bpy.data.meshes.new(name=name)
             bm.to_mesh(mesh)
             bm.free()
 
@@ -258,13 +247,12 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
 
             self.set_obj_origin_to_bboxcenter(obj)
 
-            collection.objects.link(obj)
-
+            context.view_layer.active_layer_collection.collection.objects.link(obj)
             bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcSpace")
-            i+=1
-
-        return {"FINISHED"}
-
+            container_obj = tool.Ifc.get_object(container)
+            blenderbim.core.spatial.assign_container(
+                tool.Ifc, tool.Collector, tool.Spatial, structure_obj=container_obj, element_obj=obj
+            )
 
     def get_boundary_elements(self, selected_objects):
         boundary_elements = []
@@ -302,15 +290,15 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
     def get_converted_tolerance(self, tolerance):
         model = tool.Ifc.get()
         project_unit = ifcopenshell.util.unit.get_project_unit(model, "LENGTHUNIT")
-        prefix=getattr(project_unit, "Prefix", None)
+        prefix = getattr(project_unit, "Prefix", None)
 
         converted_tolerance = ifcopenshell.util.unit.convert(
-                                                        value = tolerance,
-                                                        from_prefix = None,
-                                                        from_unit = "METRE",
-                                                        to_prefix = prefix,
-                                                        to_unit = project_unit.Name,
-                                                        )
+            value=tolerance,
+            from_prefix=None,
+            from_unit="METRE",
+            to_prefix=prefix,
+            to_unit=project_unit.Name,
+        )
         return tolerance
 
     def get_bmesh_from_polygon(self, poly, mat, h):
@@ -335,7 +323,7 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
         extruded_verts = [g for g in extrusion["geom"] if isinstance(g, bmesh.types.BMVert)]
         bmesh.ops.translate(bm, vec=[0.0, 0.0, h], verts=extruded_verts)
 
-        bmesh.ops.recalc_face_normals(bm, faces = bm.faces)
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
 
         return bm
 

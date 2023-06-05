@@ -371,7 +371,8 @@ class AppendLibraryElement(bpy.types.Operator):
         if not type_collection:
             type_collection = bpy.data.collections.new("Types")
             for collection in bpy.context.view_layer.layer_collection.children:
-                if "IfcProject/" in collection.name:
+                collection_obj = collection.BIMCollectionProperties.obj
+                if collection_obj and tool.Ifc.get_entity(collection_obj).is_a("IfcProject"):
                     collection.collection.children.link(type_collection)
                     collection.children["Types"].hide_viewport = True
                     break
