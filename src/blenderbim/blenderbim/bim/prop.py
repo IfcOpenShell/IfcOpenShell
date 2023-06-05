@@ -233,9 +233,21 @@ def set_lenght_value(self, value):
     self.float_value = value / si_conversion
 
 
+def get_display_name(self):
+    name = self.name
+    if not self.special_type or self.special_type == "LENGTH":
+        return name
+
+    unit_type = f"{self.special_type}UNIT"
+    project_unit = ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), unit_type)
+    unit_symbol = ifcopenshell.util.unit.get_unit_symbol(project_unit)
+    return f"{name}, {unit_symbol}"
+
+
 class Attribute(PropertyGroup):
     tooltip = "`Right Click > IFC Description` to read the attribute description and online documentation"
     name: StringProperty(name="Name")
+    display_name: StringProperty(name="Display Name", get=get_display_name)
     description: StringProperty(name="Description")
     ifc_class: StringProperty(name="Ifc Class")
     data_type: StringProperty(name="Data Type")
