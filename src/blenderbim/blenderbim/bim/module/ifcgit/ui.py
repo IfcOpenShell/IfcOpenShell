@@ -199,9 +199,9 @@ class COMMIT_UL_List(bpy.types.UIList):
                 refs += "{" + tag.name + "} "
 
         if commit == current_revision:
-            layout.label(text="[HEAD] " + refs + commit.message, icon="DECORATE_KEYFRAME")
+            layout.label(text="[HEAD] " + refs + commit.message.split("\n")[0], icon="DECORATE_KEYFRAME")
         else:
-            layout.label(text=refs + commit.message, icon="DECORATE_ANIMATE")
+            layout.label(text=refs + commit.message.split("\n")[0], icon="DECORATE_ANIMATE")
         layout.label(text=time.strftime("%c", time.localtime(commit.committed_date)))
 
 
