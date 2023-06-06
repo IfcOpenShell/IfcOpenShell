@@ -660,6 +660,18 @@ class TestRemoveDeep2IFC4(test.bootstrap.IFC4):
         assert self.file.by_guid("id1")
 
 
+class TestBatchRemoveDeep2IFC4(test.bootstrap.IFC4):
+    def test_run(self):
+        owner = self.file.createIfcOwnerHistory()
+        element = self.file.createIfcWall(GlobalId="id", OwnerHistory=owner)
+        subject.batch_remove_deep2(self.file)
+        subject.remove_deep2(self.file, element)
+        new = subject.unbatch_remove_deep2(self.file)
+        assert self.file.by_id(1)
+        with pytest.raises(RuntimeError):
+            new.by_id(1)
+
+
 class TestCopyIFC4(test.bootstrap.IFC4):
     def test_copying_an_element(self):
         element = self.file.createIfcWall(GlobalId="id", Name="name")
