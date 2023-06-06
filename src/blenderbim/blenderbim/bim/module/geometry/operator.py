@@ -373,6 +373,7 @@ class OverrideDelete(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     use_global: bpy.props.BoolProperty(default=False)
     confirm: bpy.props.BoolProperty(default=True)
+    is_batch: bpy.props.BoolProperty(name="Is Batch", default=False)
 
     @classmethod
     def poll(cls, context):
@@ -380,7 +381,7 @@ class OverrideDelete(bpy.types.Operator):
 
     def execute(self, context):
         # Deep magick from the dawn of time
-        if IfcStore.get_file():
+        if tool.Ifc.get():
             return IfcStore.execute_ifc_operator(self, context)
         for obj in context.selected_objects:
             bpy.data.objects.remove(obj)
@@ -389,20 +390,54 @@ class OverrideDelete(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        if self.confirm:
+        if tool.Ifc.get():
+            total_elements = len(tool.Ifc.get().wrapped_data.entity_names())
+            total_polygons = sum([len(o.data.polygons) for o in context.selected_objects if o.type == "MESH"])
+            # These numbers are a bit arbitrary, but basically batching is only
+            # really necessary on large models and large geometry removals.
+            self.is_batch = total_elements > 500000 and total_polygons > 2000
+            if self.is_batch:
+                return context.window_manager.invoke_props_dialog(self)
+            elif self.confirm:
+                return context.window_manager.invoke_confirm(self, event)
+        elif self.confirm:
             return context.window_manager.invoke_confirm(self, event)
         self.confirm = True
         return self.execute(context)
 
+    def draw(self, context):
+        row = self.layout.row()
+        row.label(text="Warning: Faster deletion will use more memory.", icon="ERROR")
+        row = self.layout.row()
+        row.prop(self, "is_batch", text="Enable Faster Deletion")
+
     def _execute(self, context):
+        if self.is_batch:
+            ifcopenshell.util.element.batch_remove_deep2(tool.Ifc.get())
         for obj in context.selected_objects:
             if tool.Ifc.get_entity(obj):
                 tool.Geometry.delete_ifc_object(obj)
             else:
                 bpy.data.objects.remove(obj)
+        if self.is_batch:
+            old_file = tool.Ifc.get()
+            old_file.end_transaction()
+            new_file = ifcopenshell.util.element.unbatch_remove_deep2(tool.Ifc.get())
+            new_file.begin_transaction()
+            tool.Ifc.set(new_file)
+            self.transaction_data = {"old_file": old_file, "new_file": new_file}
+            IfcStore.add_transaction_operation(self)
         # Required otherwise gizmos are still visible
         context.view_layer.objects.active = None
         return {"FINISHED"}
+
+    def rollback(self, data):
+        tool.Ifc.set(data["old_file"])
+        data["old_file"].undo()
+
+    def commit(self, data):
+        data["old_file"].redo()
+        tool.Ifc.set(data["new_file"])
 
 
 class OverrideOutlinerDelete(bpy.types.Operator):

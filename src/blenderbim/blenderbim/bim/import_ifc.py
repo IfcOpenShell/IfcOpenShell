@@ -187,7 +187,7 @@ class IfcImporter:
         self.settings_native.set(self.settings_native.INCLUDE_CURVES, True)
         self.settings_2d = ifcopenshell.geom.settings()
         self.settings_2d.set(self.settings_2d.INCLUDE_CURVES, True)
-        self.settings_2d.set(self.settings.STRICT_TOLERANCE, True)
+        self.settings_2d.set(self.settings_2d.STRICT_TOLERANCE, True)
         self.project = None
         self.has_existing_project = False
         self.collections = {}
