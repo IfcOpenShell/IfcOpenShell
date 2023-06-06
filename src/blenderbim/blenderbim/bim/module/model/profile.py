@@ -948,6 +948,10 @@ class EditExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
         depth = (end - start).length
         z_axis = (end - start).normalized()
         y_axis = Vector((0, 0, 1))
+        # making sure z_axis != y_axis
+        if z_axis == y_axis:
+            y_axis = Vector((0,1,0))
+
         x_axis = y_axis.cross(z_axis).normalized()
         y_axis = z_axis.cross(x_axis).normalized()
 
