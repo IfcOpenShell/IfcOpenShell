@@ -779,7 +779,6 @@ class OverrideModeSetEdit(bpy.types.Operator):
 
             element = tool.Ifc.get_entity(obj)
             if not element:
-                obj.select_set(False)
                 continue
 
             # We are switching from OBJECT to EDIT mode.
