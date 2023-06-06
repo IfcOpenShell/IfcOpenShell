@@ -26,7 +26,7 @@ import blenderbim.tool as tool
 import blenderbim.core.type
 from math import pi
 from mathutils import Vector, Matrix
-from shapely import Polygon
+from shapely import Polygon, MultiPolygon
 
 
 class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
@@ -231,6 +231,8 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
 
         union = shapely.ops.unary_union(polys).buffer(converted_tolerance, cap_style=2, join_style=2)
 
+        union = self.get_purged_inner_holes_poly(union_geom = union, min_area = self.get_converted_tolerance(tolerance = 3))
+
         for i, linear_ring in enumerate(union.interiors):
             poly = Polygon(linear_ring)
             poly = poly.buffer(converted_tolerance, single_sided=True, cap_style=2, join_style=2)
@@ -261,7 +263,7 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
         boundary_elements = []
         for obj in selected_objects:
             subelement = tool.Ifc.get_entity(obj)
-            if subelement.is_a("IfcWall"):
+            if subelement.is_a("IfcWall") or subelement.is_a("IfcColumn"):
                 boundary_elements.append(subelement)
         return boundary_elements
 
@@ -303,6 +305,29 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
             to_unit=project_unit.Name,
         )
         return tolerance
+
+    def get_purged_inner_holes_poly(self, union_geom, min_area):
+        interiors_list = []
+
+        if union_geom.geom_type == "MultiPolygon":
+            for poly in union_geom.geoms:
+                interiors_list = self.get_poly_valid_interior_list(poly = poly, min_area = min_area, interiors_list = interiors_list)
+
+            new_poly = Polygon(poly.exterior.coords, holes = interiors_list)
+
+        if union_geom.geom_type == "Polygon":
+            interiors_list = self.get_poly_valid_interior_list(poly = union_geom, min_area = min_area, interiors_list = interiors_list)
+            new_poly = Polygon(union_geom.exterior.coords, holes = interiors_list)
+
+        return new_poly
+
+    def get_poly_valid_interior_list(self, poly, min_area, interiors_list):
+        for interior in poly.interiors:
+            p = Polygon(interior)
+            if p.area >= min_area:
+                interiors_list.append(interior)
+        return interiors_list
+
 
     def get_bmesh_from_polygon(self, poly, mat, h):
         bm = bmesh.new()
