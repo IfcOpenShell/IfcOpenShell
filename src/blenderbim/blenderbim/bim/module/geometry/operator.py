@@ -938,10 +938,10 @@ class OverrideModeSetObject(bpy.types.Operator):
                 continue
 
             if tool.Profile.is_editing_profile():
-                if obj.data.BIMMeshProperties.mesh_checksum != tool.Geometry.get_mesh_checksum(obj.data):
-                    if tool.Pset.get_element_pset(element, "BBIM_Railing") or tool.Pset.get_element_pset(
-                        element, "BBIM_Roof"
-                    ):
+                if tool.Pset.get_element_pset(element, "BBIM_Railing"):
+                    bpy.ops.bim.cad_hotkey(hotkey="S_Q")
+                elif obj.data.BIMMeshProperties.mesh_checksum != tool.Geometry.get_mesh_checksum(obj.data):
+                    if tool.Pset.get_element_pset(element, "BBIM_Roof"):
                         bpy.ops.bim.cad_hotkey(hotkey="S_Q")
                     elif tool.Model.get_usage_type(element):
                         bpy.ops.bim.edit_extrusion_axis()
