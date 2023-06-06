@@ -420,15 +420,12 @@ class IfcGit:
                         operator.report({"ERROR"}, "Unknown IFC Merge failure")
                         return False
 
-            repo.index.add(path_ifc)
-
-            message_summary = repo.git.shortlog(repo.active_branch.name + ".." + props.display_branch)
-            props.commit_message = (
-                "Merge branch '" + props.display_branch + "' into " + repo.active_branch.name + "\n\n" + message_summary
-            )
             props.display_branch = repo.active_branch.name
 
-            cls.git_commit(path_ifc)
+            if os.name == "nt":
+                cls.dos2unix(path_ifc)
+            repo.index.add(path_ifc)
+            repo.git.commit("--no-edit")
             cls.load_project(path_ifc)
             cls.refresh_revision_list(path_ifc)
 
