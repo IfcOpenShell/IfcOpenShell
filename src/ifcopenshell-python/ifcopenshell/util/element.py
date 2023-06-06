@@ -739,6 +739,72 @@ def remove_deep(ifc_file, element):
     ifc_file.unbatch()
 
 
+def batch_remove_deep2(ifc_file):
+    """Enable batch removal after running remove_deep2 using serialisation
+
+    See #944 and #3226. Removing elements in an IFC graph is slow as a lot of
+    mappings need to be edited. In larger models (>100MB) and when removing
+    many elements (>10000), it is faster to serialise the IFC, remove elements
+    using string replacement, and then reload the modified serialised IFC.
+
+    The trade-off is that extra memory will be used, and string replacement
+    only works with remove_deep2 where the removed elements have no inverses.
+    In addition, transaction history will be lost, and any scripts using this
+    method will have to refetch elements from the reloaded IFC and cannot rely
+    on existing variables in memory.
+
+    :param ifc_file: The IFC file object
+    :type ifc_file: ifcopenshell.file.file
+    :rtype: None
+
+    Example:
+
+    .. code:: python
+
+        element1 = model.by_id(123)
+        element2 = model.by_id(456)
+
+        ifcopenshell.util.element.batch_remove_deep2(model)
+        ifcopenshell.util.element.remove_deep2(model, element2)
+
+        # Notice how we reload the model.
+        model = ifcopenshell.util.element.unbatch_remove_deep2(model)
+
+        print(element1) # Don't call element1!
+    """
+    ifc_file.to_delete = set()
+
+
+def unbatch_remove_deep2(ifc_file):
+    """Finish removing elements batched from remove_deep2 using string replacement
+
+    See documentation for batch_remove_deep2.
+
+    :param ifc_file: The IFC file object
+    :type ifc_file: ifcopenshell.file.file
+    :return: A newly loaded file with the elements removed.
+    :rtype: ifcopenshell.file.file
+    """
+    ifc_string = ifc_file.to_string()
+    lines = iter(ifc_string.split('\n'))
+    ids_to_delete = iter(sorted([e.id() for e in ifc_file.to_delete]))
+    id_to_delete = next(ids_to_delete, None)
+    result = []
+
+    for line in lines:
+        if id_to_delete is None:
+            result.append(line)
+            continue
+
+        if line.startswith(f"#{id_to_delete}="):
+            id_to_delete = next(ids_to_delete, None)
+        else:
+            result.append(line)
+
+    ifc_file.to_delete = None
+    return ifcopenshell.file.from_string("\n".join(result))
+
+
 def remove_deep2(ifc_file, element, also_consider=[], do_not_delete=[]):
     """Recursively purges a subgraph safely, starting at an element
 
@@ -796,6 +862,11 @@ def remove_deep2(ifc_file, element, also_consider=[], do_not_delete=[]):
             for i, attribute in enumerate(subelement):
                 if isinstance(attribute, tuple) and len(attribute) > 10:
                     subelement[i] = []
+
+    if getattr(ifc_file, "to_delete", None) is not None:
+        ifc_file.to_delete.update(to_delete)
+        return
+
     # We delete elements from subgraph in reverse order to allow batching to work
     for subelement in filter(lambda e: e in to_delete, subgraph[::-1]):
         ifc_file.remove(subelement)
