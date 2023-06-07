@@ -150,14 +150,9 @@ class ExportIfcCsv(bpy.types.Operator):
         selector = ifcopenshell.util.selector.Selector()
         results = selector.parse(ifc_file, props.ifc_selector)
         ifc_csv = ifccsv.IfcCsv()
-        ifc_csv.output = self.filepath
-        ifc_csv.attributes = [a.name for a in props.csv_attributes]
-        ifc_csv.selector = selector
-        if props.csv_delimiter == "CUSTOM":
-            ifc_csv.delimiter = props.csv_custom_delimiter
-        else:
-            ifc_csv.delimiter = props.csv_delimiter
-        ifc_csv.export(ifc_file, results)
+        attributes = [a.name for a in props.csv_attributes]
+        sep = props.csv_custom_delimiter if props.csv_delimiter == "CUSTOM" else props.csv_delimiter
+        ifc_csv.export(ifc_file, results, attributes, output=self.filepath, format=args.format, delimiter=sep)
         return {"FINISHED"}
 
 
@@ -182,12 +177,8 @@ class ImportIfcCsv(bpy.types.Operator):
         else:
             ifc_file = ifcopenshell.open(props.csv_ifc_file)
         ifc_csv = ifccsv.IfcCsv()
-        ifc_csv.output = self.filepath
-        if props.csv_delimiter == "CUSTOM":
-            ifc_csv.delimiter = props.csv_custom_delimiter
-        else:
-            ifc_csv.delimiter = props.csv_delimiter
-        ifc_csv.Import(ifc_file)
+        sep = props.csv_custom_delimiter if props.csv_delimiter == "CUSTOM" else props.csv_delimiter
+        ifc_csv.Import(ifc_file, self.filepath, delimiter=sep)
         if not props.should_load_from_memory:
             ifc_file.write(props.csv_ifc_file)
         purge_module_data()
