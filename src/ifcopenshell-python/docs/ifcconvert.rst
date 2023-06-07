@@ -4,8 +4,8 @@ IfcConvert
 IfcConvert is a command-line application for converting IFC geometry into file
 formats such as OBJ, DAE, GLB, STP, IGS, XML, SVG, H5, and IFC itself.
 
-For other conversions, other software is available as other utilities within
-IfcOpenShell.
+For other formats, you may use other IfcOpenShell utilities as shown in the
+table below.
 
 +-------------------------+-------------------------+----------------------+
 | From Format             | To Format               | Tool                 |
