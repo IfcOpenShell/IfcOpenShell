@@ -935,7 +935,12 @@ class OverrideModeSetObject(bpy.types.Operator):
                 continue
 
             if tool.Profile.is_editing_profile():
-                if tool.Pset.get_element_pset(element, "BBIM_Railing"):
+                profile_id = context.scene.BIMProfileProperties.active_profile_id
+                if profile_id:
+                    profile = tool.Ifc.get().by_id(profile_id)
+                    if tool.Ifc.get_object(profile):  # We are editing an arbitrary profile
+                        bpy.ops.bim.edit_arbitrary_profile()
+                elif tool.Pset.get_element_pset(element, "BBIM_Railing"):
                     bpy.ops.bim.cad_hotkey(hotkey="S_Q")
                 elif tool.Pset.get_element_pset(element, "BBIM_Roof"):
                     bpy.ops.bim.cad_hotkey(hotkey="S_Q")
