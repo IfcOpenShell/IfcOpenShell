@@ -275,9 +275,16 @@ bool OpenCascadeKernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wir
 				V1.Normalize();
 				V2.Normalize();
 
-				auto ang = std::acos(V1.Dot(V2));
+				V2.Reverse();
 
-				Logger::Notice(std::to_string(ang));
+				if (edges.First().Orientation() == TopAbs_REVERSED) {
+					V1.Reverse();
+				}
+				if (edges.Last().Orientation() == TopAbs_REVERSED) {
+					V2.Reverse();
+				}
+
+				auto ang = std::acos(V1.Dot(V2));
 
 				if (ang < 0.0314) {
 					edges_to_tesselate.Add(crv1->DynamicType() == STANDARD_TYPE(Geom_Circle) ? edges.First() : edges.Last());
