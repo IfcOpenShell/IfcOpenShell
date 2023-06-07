@@ -266,11 +266,6 @@ class IFC_PARSE_API IfcFile {
 
     int getTotalInverses(int instance_id);
 
-    template <typename T>
-    typename T::list::ptr getInverse(int instance_id, int attribute_index) {
-        return getInverse(instance_id, &T::Class(), attribute_index)->template as<T>();
-    }
-
     unsigned int FreshId() { return ++MaxId; }
 
     unsigned int getMaxId() const { return MaxId; }

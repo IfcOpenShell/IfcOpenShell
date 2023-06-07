@@ -250,17 +250,25 @@ const IfcUtil::IfcBaseEntity* mapping::get_single_material_association(const Ifc
 	IfcSchema::IfcMaterial* single_material = 0;
 	IfcSchema::IfcRelAssociatesMaterial::list::ptr associated_materials = product->HasAssociations()->as<IfcSchema::IfcRelAssociatesMaterial>();
 	if (associated_materials->size() == 1) {
-		IfcSchema::IfcMaterialSelect* associated_material = (*associated_materials->begin())->RelatingMaterial();
-		single_material = associated_material->as<IfcSchema::IfcMaterial>();
+		IfcSchema::IfcMaterialSelect* associated_material = nullptr;
 
-		// NB: Single-layer layersets are also considered, regardless of --enable-layerset-slicing, this
-		// in accordance with other viewers.
-		if (!single_material && associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()) {
-			IfcSchema::IfcMaterialLayerSet* layerset = associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()->ForLayerSet();
-			if (layerset->MaterialLayers()->size() == 1) {
-				IfcSchema::IfcMaterialLayer* layer = (*layerset->MaterialLayers()->begin());
-				if (layer->Material()) {
-					single_material = layer->Material();
+		try {
+			associated_material = (*associated_materials->begin())->RelatingMaterial();
+		} catch(IfcParse::IfcException& e) {
+			Logger::Error(e.what());
+		}
+
+		if (associated_material) {
+			single_material = associated_material->as<IfcSchema::IfcMaterial>();
+			// NB: Single-layer layersets are also considered, regardless of --enable-layerset-slicing, this
+			// in accordance with other viewers.
+			if (!single_material && associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()) {
+				IfcSchema::IfcMaterialLayerSet* layerset = associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()->ForLayerSet();
+				if (settings_.get<settings::LayersetFirst>().value ? layerset->MaterialLayers()->size() >= 1 : layerset->MaterialLayers()->size() == 1) {
+					IfcSchema::IfcMaterialLayer* layer = (*layerset->MaterialLayers()->begin());
+					if (layer->Material()) {
+						single_material = layer->Material();
+					}
 				}
 			}
 		}
