@@ -10,18 +10,38 @@ IfcOpenShell is a suite of developer libraries and utilities to manipulate OpenB
 .. toctree::
    :hidden:
    :maxdepth: 1
-   :caption: Contents:
+   :caption: Main:
 
    ifcopenshell
    ifcopenshell-python
    ifcconvert
+   blenderbim
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+   :caption: Utilities:
+
+   bimserver-plugin
    bimtester
-   ifcdiff
-   ifcpatch
+   ifc2ca
+   ifc4d
+   ifc5d
+   ifccityjson
    ifcclash
    ifccobie
+   ifccsv
+   ifcdiff
+   ifcpatch
    ifcsverchok
-   bimserver-plugin
+   ifctester
+   other
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+   :caption: API:
+
    C++ API Reference <https://ifcopenshell.github.io/docs/rst_files/library_root.html>
    Python API Reference <autoapi/index>
 
