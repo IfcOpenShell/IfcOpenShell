@@ -28,7 +28,7 @@ Source installation
 
 1. :doc:`Install IfcOpenShell <ifcopenshell-python/installation>`
 2. `Clone the source code <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/ifcdiff>`_.
-3. ``cd /path/to/src/ifcdiff``
+3. ``cd /path/to/IfcOpenShell/src/ifcdiff``
 4. ``pip install -r requirements.txt``
 
 Here is a minimal example of how to use IfcDiff as a Python module or CLI
