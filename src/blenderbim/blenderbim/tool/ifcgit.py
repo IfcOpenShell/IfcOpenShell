@@ -373,6 +373,11 @@ class IfcGit:
             config_writer = IfcGitRepo.repo.config_writer()
             config_writer.set_value(section, "cmd", "ifcmerge $BASE $LOCAL $REMOTE $MERGED")
             config_writer.set_value(section, "trustExitCode", True)
+        section = 'mergetool "ifcmerge-forward"'
+        if not config_reader.has_section(section):
+            config_writer = IfcGitRepo.repo.config_writer()
+            config_writer.set_value(section, "cmd", "ifcmerge $BASE $REMOTE $LOCAL $MERGED")
+            config_writer.set_value(section, "trustExitCode", True)
 
     @classmethod
     def config_info_attributes(cls, repo):
@@ -415,6 +420,11 @@ class IfcGit:
 
                             operator.report({"ERROR"}, "IFC Merge failed:" + message)
                             return False
+                        else:
+                            if os.name == "nt":
+                                cls.dos2unix(path_ifc)
+                            repo.index.add(path_ifc)
+                            repo.git.commit("--no-edit")
                     except:
 
                         operator.report({"ERROR"}, "Unknown IFC Merge failure")
@@ -422,10 +432,6 @@ class IfcGit:
 
             props.display_branch = repo.active_branch.name
 
-            if os.name == "nt":
-                cls.dos2unix(path_ifc)
-            repo.index.add(path_ifc)
-            repo.git.commit("--no-edit")
             cls.load_project(path_ifc)
             cls.refresh_revision_list(path_ifc)
 
