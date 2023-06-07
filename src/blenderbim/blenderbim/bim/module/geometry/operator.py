@@ -804,7 +804,6 @@ class OverrideModeSetEdit(bpy.types.Operator):
             if usage_type == "PROFILE":
                 if len(context.selected_objects) == 1:
                     bpy.ops.bim.hotkey(hotkey="A_E", description="")
-                    obj.data.BIMMeshProperties.mesh_checksum = tool.Geometry.get_mesh_checksum(obj.data)
                     return {"FINISHED"}
                 else:
                     self.report({"INFO"}, "Only a single profile-based representation can be edited at a time.")
@@ -818,7 +817,6 @@ class OverrideModeSetEdit(bpy.types.Operator):
             ):
                 if len(context.selected_objects) == 1:
                     bpy.ops.bim.hotkey(hotkey="S_E", description="")
-                    obj.data.BIMMeshProperties.mesh_checksum = tool.Geometry.get_mesh_checksum(obj.data)
                     return {"FINISHED"}
                 else:
                     self.report({"INFO"}, "Only a single profile-based representation can be edited at a time.")
@@ -939,13 +937,12 @@ class OverrideModeSetObject(bpy.types.Operator):
             if tool.Profile.is_editing_profile():
                 if tool.Pset.get_element_pset(element, "BBIM_Railing"):
                     bpy.ops.bim.cad_hotkey(hotkey="S_Q")
-                elif obj.data.BIMMeshProperties.mesh_checksum != tool.Geometry.get_mesh_checksum(obj.data):
-                    if tool.Pset.get_element_pset(element, "BBIM_Roof"):
-                        bpy.ops.bim.cad_hotkey(hotkey="S_Q")
-                    elif tool.Model.get_usage_type(element):
-                        bpy.ops.bim.edit_extrusion_axis()
-                    else:
-                        bpy.ops.bim.edit_extrusion_profile()
+                elif tool.Pset.get_element_pset(element, "BBIM_Roof"):
+                    bpy.ops.bim.cad_hotkey(hotkey="S_Q")
+                elif tool.Model.get_usage_type(element):
+                    bpy.ops.bim.edit_extrusion_axis()
+                else:
+                    bpy.ops.bim.edit_extrusion_profile()
                 return self.execute(context)
             elif obj.data.BIMMeshProperties.ifc_definition_id:
                 if not tool.Geometry.has_geometric_data(obj):
