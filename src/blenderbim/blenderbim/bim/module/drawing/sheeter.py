@@ -28,9 +28,12 @@ import blenderbim.tool as tool
 import ifcopenshell.util.geolocation
 from xml.dom import minidom
 from mathutils import Vector
+import re
 
 VIEW_TITLE_OFFSET_Y = 5
 DEFAULT_POSITION = Vector((30, 30))
+SVG = "{http://www.w3.org/2000/svg}"
+XLINK = "{http://www.w3.org/1999/xlink}"
 
 
 class SheetBuilder:
@@ -130,7 +133,6 @@ class SheetBuilder:
 
     def update_sheet_drawing_sizes(self, sheet):
         ET.register_namespace("", "http://www.w3.org/2000/svg")
-        SVG = "{http://www.w3.org/2000/svg}"
 
         layout_path = tool.Drawing.get_document_uri(sheet, "LAYOUT")
         layout_tree = ET.parse(layout_path)
@@ -280,8 +282,61 @@ class SheetBuilder:
         titleblock.append(g)
         titleblock.remove(image)
 
+    def ensure_drawing_unique_styles(self, svg, drawing_id):
+        """ensures all drawing's classes and ids will be unique for the whole sheet
+        by adding `drawing_id` based prefix
+        """
+        prefix = f"d{drawing_id}"  # just number doesn't work
+
+        # add .prefix class to all css selectors
+        style = svg.find(f"{SVG}defs/{SVG}style")
+        style_data = style.text
+        text = ""
+        brackets_level = 0
+        for l in style_data:
+            if l == "{":
+                if brackets_level == 0:
+                    cur_line = text.splitlines()[-1]
+                    text = text[: -len(cur_line)]
+                    css_selectors = []
+                    # making sure cases like "text, tspan" will be
+                    # converted to "text.prefix, tspan.prefix"
+                    for css_selector in cur_line.split(","):
+                        css_selector = f"{css_selector.strip()}.{prefix}"
+                        css_selectors.append(css_selector)
+                    text += ", ".join(css_selectors) + " "
+                brackets_level += 1
+            elif l == "}":
+                brackets_level -= 1
+            text += l
+
+        # replace urls url(#marker) with url(#prefix-marker)
+        # since url(#marker.prefix) doesn't seem to work
+        text = re.sub(r"url\(#([^\)]+)\)", rf"url(#{prefix}-\1)", text)
+        style.text = text
+
+        for svg_element in svg.findall(f".//*"):
+            if svg_element.tag in (f"{SVG}style", f"{SVG}svg"):
+                continue
+            attrib = svg_element.attrib
+            # add "prefix-" to all ids
+            if "id" in attrib:
+                attrib["id"] = f"{prefix}-{attrib['id']}"
+            # add class "prefix" to all classes
+            if "class" in attrib:
+                attrib["class"] += f" {prefix}"
+            if svg_element.tag == f"{SVG}use":
+                href_attrib = f"{XLINK}href"
+                if href_attrib in attrib:
+                    href = attrib[href_attrib]
+                    if href.startswith("#"):
+                        attrib[href_attrib] = f"#{prefix}-{href[1:]}"
+
+        return svg
+
     def build_drawings(self, root, sheet):
         for view in root.findall('{http://www.w3.org/2000/svg}g[@data-type="drawing"]'):
+            drawing_id = int(view.attrib["data-id"])
             reference = tool.Ifc.get().by_id(int(view.attrib["data-id"]))
             drawing = tool.Ifc.get().by_id(view.attrib["data-drawing"])
 
@@ -300,7 +355,9 @@ class SheetBuilder:
                     view_title = image
 
             if foreground is not None:
-                view.append(self.parse_embedded_svg(foreground, {}))
+                svg = self.parse_embedded_svg(foreground, {})
+                svg = self.ensure_drawing_unique_styles(svg, drawing_id)
+                view.append(svg)
 
             if background is not None:
                 background_path = os.path.join(self.layout_dir, self.get_href(background))
