@@ -236,9 +236,9 @@ def calculate_cost_item_resource_value(ifc, cost_item):
     ifc.run("cost.calculate_cost_item_resource_value", cost_item=cost_item)
 
 
-def export_cost_schedules(cost, format, cost_schedule=None):
+def export_cost_schedules(cost, filepath, format, cost_schedule=None):
     cost.play_sound()
-    return cost.export_cost_schedules(format, cost_schedule)
+    return cost.export_cost_schedules(filepath, format, cost_schedule)
 
 
 def clear_cost_item_assignments(ifc, cost, cost_item, related_object_type):
