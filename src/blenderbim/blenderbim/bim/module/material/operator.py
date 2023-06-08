@@ -249,7 +249,14 @@ class UnassignMaterial(bpy.types.Operator, tool.Ifc.Operator):
             element = tool.Ifc.get_entity(obj)
             if element:
                 material = ifcopenshell.util.element.get_material(element, should_inherit=False)
-                if "Usage" not in material.is_a():
+                inherited_material = ifcopenshell.util.element.get_material(element, should_inherit=True)
+                if "Usage" in material.is_a():
+                    element_type = ifcopenshell.util.element.get_type(element)
+                    ifcopenshell.api.run("material.unassign_material", tool.Ifc.get(), product=element_type)
+                elif not material and inherited_material:
+                    element_type = ifcopenshell.util.element.get_type(element)
+                    ifcopenshell.api.run("material.unassign_material", tool.Ifc.get(), product=element_type)
+                elif material:
                     ifcopenshell.api.run("material.unassign_material", tool.Ifc.get(), product=element)
 
 
