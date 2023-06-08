@@ -1478,6 +1478,7 @@ class IfcImporter:
         if not blender_material:
             name = style.Name or str(style.id())
             blender_material = bpy.data.materials.new(name)
+            blender_material.use_fake_user = True
 
         self.link_element(style, blender_material)
 
