@@ -505,11 +505,15 @@ class Cost(blenderbim.core.tool.Cost):
         props.is_cost_update_enabled = True
 
     @classmethod
-    def export_cost_schedules(cls, format=None, cost_schedule=None):
+    def export_cost_schedules(cls, filepath, format=None, cost_schedule=None):
         import subprocess
         import os
         import sys
-        path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "cost_schedules")
+        if filepath:
+            path=filepath
+        else:
+            path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "build", "cost_schedules")
+
         if not os.path.exists(path):
             os.makedirs(path)
         if format == "CSV":

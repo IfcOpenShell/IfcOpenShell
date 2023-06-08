@@ -631,17 +631,19 @@ class ExportCostSchedules(bpy.types.Operator):
     bl_description = "Export a cost schedule to a CSV, XSLX OR ODS file"
     cost_schedule: bpy.props.IntProperty()
     format: bpy.props.EnumProperty("Format", items=(("CSV", "CSV", ""), ("XLSX", "XLSX", ""), ("ODS", "ODS", "")))
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
         cost_schedule = tool.Ifc.get().by_id(self.cost_schedule) if self.cost_schedule else None
-        r = core.export_cost_schedules(tool.Cost, format=self.format, cost_schedule=cost_schedule)
+        r = core.export_cost_schedules(tool.Cost, filepath=self.filepath, format=self.format, cost_schedule=cost_schedule)
         if isinstance(r, str):
             self.report({"ERROR"}, r)
         return {"FINISHED"}
 
     def invoke(self, context, event):
         wm = context.window_manager
-        return wm.invoke_props_dialog(self)
+        wm.fileselect_add(self)
+        return {"RUNNING_MODAL"}
 
     def draw(self, context):
         self.layout.label(text="Choose a format")
