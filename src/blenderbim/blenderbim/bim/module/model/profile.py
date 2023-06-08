@@ -927,7 +927,7 @@ class DisableEditingExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
         return context.selected_objects
 
     def _execute(self, context):
-        return disable_editing_extrusion_axis()
+        return disable_editing_extrusion_axis(context)
 
 
 class EditExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
