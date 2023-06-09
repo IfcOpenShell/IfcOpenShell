@@ -1332,7 +1332,8 @@ void SvgSerializer::write(const geometry_data& data) {
 						labels.push_back(ss.str() + "m");
 
 						for (auto lit = labels.begin(); lit != labels.end(); ++lit) {
-							const auto& l = *lit;
+							auto l = *lit;
+							IfcUtil::escape_xml(l);
 							double dy = labels.begin() == lit
 								? 0.35 - (labels.size() - 1.) / 2.
 								: 1.0; // <- dy is relative to the previous text element, so
@@ -1500,7 +1501,8 @@ void SvgSerializer::write(const geometry_data& data) {
 					ycoords.push_back(path.add(anchor_pt->Y()));
 					path.add("\">");
 					for (auto lit = labels.begin(); lit != labels.end(); ++lit) {
-						const auto& l = *lit;
+						auto l = *lit;
+						IfcUtil::escape_xml(l);
 						double dy = labels.begin() == lit
 							? 0.35 - (labels.size() - 1.) / 2.
 							: 1.0; // <- dy is relative to the previous text element, so
@@ -1617,7 +1619,8 @@ void SvgSerializer::write(const geometry_data& data) {
 				}
 				path.add(">");
 				for (auto lit = labels.begin(); lit != labels.end(); ++lit) {
-					const auto& l = *lit;
+					auto l = *lit;
+					IfcUtil::escape_xml(l);
 					double dy = labels.begin() == lit
 						? 0.35 - (labels.size() - 1.) / 2.
 						: 1.0; // <- dy is relative to the previous text element, so
@@ -1943,7 +1946,8 @@ void SvgSerializer::addTextAnnotations(const drawing_key& k) {
 							std::vector<std::string> labels{ desc };
 
 							for (auto lit = labels.begin(); lit != labels.end(); ++lit) {
-								const auto& l = *lit;
+								auto l = *lit;
+								IfcUtil::escape_xml(l);
 								double dy = labels.begin() == lit
 									? 0.0  // align bottom
 									: 1.0; // <- dy is relative to the previous text element, so
