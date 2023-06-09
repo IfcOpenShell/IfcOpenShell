@@ -15,6 +15,7 @@ class CreateRepo(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
+        IfcGitData.make_sure_is_loaded()
         path_ifc = IfcGitData.data["path_ifc"]
         if not os.path.isfile(path_ifc):
             return False
@@ -42,6 +43,7 @@ class AddFileToRepo(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
+        IfcGitData.make_sure_is_loaded()
         path_ifc = IfcGitData.data["path_ifc"]
         if not os.path.isfile(path_ifc):
             return False
@@ -107,6 +109,7 @@ class CommitChanges(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
+        IfcGitData.make_sure_is_loaded()
         props = context.scene.IfcGitProperties
         repo = IfcGitData.data["repo"]
         if props.commit_message == "":
@@ -143,6 +146,7 @@ class AddTag(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
+        IfcGitData.make_sure_is_loaded()
         props = context.scene.IfcGitProperties
         repo = IfcGitData.data["repo"]
         if repo and (
@@ -187,6 +191,7 @@ class RefreshGit(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
+        IfcGitData.make_sure_is_loaded()
         repo = IfcGitData.data["repo"]
         if repo != None and repo.heads:
             return True
@@ -252,6 +257,7 @@ class Merge(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
+        IfcGitData.make_sure_is_loaded()
         if IfcGitData.data["ifcmerge_exe"]:
             return True
         return False
