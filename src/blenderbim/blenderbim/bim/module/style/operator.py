@@ -22,11 +22,15 @@ import blenderbim.tool as tool
 import blenderbim.core.style as core
 import ifcopenshell.util.representation
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.style.data import StylesData, StyleAttributesData
+from pathlib import Path
+import os
 
 
 class UpdateStyleColours(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.update_style_colours"
-    bl_label = "Update Style Colours"
+    bl_label = "Save Current Shading Style"
+    bl_description = "Save current style values to IfcSurfaceStyleShading"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -101,6 +105,200 @@ class EditStyle(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.edit_style(tool.Ifc, tool.Style, obj=context.active_object.active_material)
+
+
+class BrowseExternalStyle(bpy.types.Operator):
+    bl_idname = "bim.browse_external_style"
+    bl_label = "Browse External Style"
+    bl_options = {"REGISTER", "UNDO"}
+
+    filepath: bpy.props.StringProperty(
+        name="File Path", description="Filepath used to import from", maxlen=1024, default="", subtype="FILE_PATH"
+    )
+
+    filter_glob: bpy.props.StringProperty(
+        default="*.blend",
+        options={"HIDDEN"},
+    )
+
+    def get_data_block_types(self, context):
+        return [("materials", "materials", "materials")]
+        # NOTE: the code below can be used later when we'll be adding other data-blocks besides materials
+        l = [("0", "", "")]
+        SUPPORTED_DATA_BLOCKS = ("materials", "textures", "brushes")
+        if os.path.exists(self.filepath) and self.filepath.endswith(".blend"):
+            with bpy.data.libraries.load(self.filepath) as (data_from, data_to):
+                for data_block_type in dir(data_from):
+                    if data_block_type not in SUPPORTED_DATA_BLOCKS:
+                        continue
+                    data = getattr(data_from, data_block_type)
+                    if data:
+                        item = (data_block_type,) * 3
+                        l.append(item)
+        return l
+
+    def get_data_blocks(self, context):
+        l = [("", "", "")]
+        if self.data_block_type != "0" and os.path.exists(self.filepath) and self.filepath.endswith(".blend"):
+            with bpy.data.libraries.load(self.filepath) as (data_from, data_to):
+                objects = getattr(data_from, self.data_block_type)
+                for o in objects:
+                    l.append((o, o, o))
+        return l
+
+    data_block_type: bpy.props.EnumProperty(
+        name="Data Block Type",
+        description="List of data blocks in the .blend file",
+        items=get_data_block_types,
+    )
+
+    data_block: bpy.props.EnumProperty(
+        name="List of objects in the .blend file",
+        description="List of objects in the .blend file",
+        items=get_data_blocks,
+    )
+    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=True)
+    directory: bpy.props.StringProperty(
+        name="Directory",
+        description="Start file browsing directory",
+        default="",
+    )
+
+    def invoke(self, context, event):
+        mat = context.active_object.active_material
+        external_style = tool.Style.get_style_elements(mat).get("IfcExternallyDefinedSurfaceStyle", None)
+        # automatically select previously selected external style in file browser
+        if external_style and self.filepath == "":
+            style_path = Path(tool.Ifc.resolve_uri(external_style.Location))
+            self.directory = str(style_path.parent)
+            self.filepath = str(style_path)
+            self.data_block_type, self.data_block = external_style.Identification.split("/")
+
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text="Data Block Type")
+        layout.prop(self, "data_block_type", text="", icon="GROUP")
+        layout.label(text="Data Block")
+        layout.prop(self, "data_block", text="")
+        if bpy.data.is_saved:
+            layout.prop(self, "use_relative_path")
+        else:
+            self.use_relative_path = False
+            layout.label(text="Save the .blend file first ")
+            layout.label(text="to use relative paths for .ifc.")
+
+    def execute(self, context):
+        if self.data_block_type == "0":
+            self.report({"ERROR"}, "Select a data block type")
+            return {"CANCELLED"}
+
+        if self.data_block == "":
+            self.report({"ERROR"}, "Select a data block")
+            return {"CANCELLED"}
+
+        if not os.path.exists(self.filepath):
+            self.report({"ERROR"}, f"File not found:\n'{self.filepath}'")
+            return {"CANCELLED"}
+
+        db = tool.Blender.append_data_block(self.filepath, self.data_block_type, self.data_block)
+        if not db["data_block"]:
+            self.report({"ERROR"}, db["msg"])
+            return {"CANCELLED"}
+
+        bpy.data.materials.remove(db["data_block"])
+
+        if not StyleAttributesData.is_loaded:
+            StyleAttributesData.load()
+        external_style = StyleAttributesData.data["style_elements"].get("IfcExternallyDefinedSurfaceStyle", None)
+
+        if self.use_relative_path:
+            filepath = os.path.relpath(self.filepath, bpy.path.abspath("//"))
+        else:
+            filepath = self.filepath
+
+        attributes = {
+            "Location": filepath,
+            "Identification": f"{self.data_block_type}/{self.data_block}",
+            "Name": self.data_block,
+        }
+        if not external_style:
+            core.add_external_style(
+                tool.Ifc, tool.Style, obj=context.active_object.active_material, attributes=attributes
+            )
+        else:
+            core.update_external_style(tool.Ifc, tool.Style, external_style=external_style, attributes=attributes)
+
+        StyleAttributesData.is_loaded = False
+        return {"FINISHED"}
+
+
+class EnableEditingExternalStyle(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.enable_editing_external_style"
+    bl_label = "Enable Editing External Style"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.enable_editing_external_style(tool.Style, obj=context.active_object.active_material)
+
+
+class DisableEditingExternalStyle(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.disable_editing_external_style"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_label = "Disable Editing External Style"
+
+    def _execute(self, context):
+        core.disable_editing_external_style(tool.Style, obj=context.active_object.active_material)
+
+
+class EditExternalStyle(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.edit_external_style"
+    bl_label = "Edit External Style"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.edit_external_style(tool.Ifc, tool.Style, obj=context.active_object.active_material)
+
+
+class ActivateExternalStyle(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.activate_external_style"
+    bl_label = "Activate External Style"
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
+
+    def _execute(self, context):
+        material = context.active_object.active_material
+        external_style = tool.Style.get_style_elements(material)["IfcExternallyDefinedSurfaceStyle"]
+        data_block_type, data_block = external_style.Identification.split("/")
+        style_path = Path(tool.Ifc.resolve_uri(external_style.Location))
+
+        if style_path.suffix != ".blend":
+            self.report({"ERROR"}, f"Only Blender external styles are supported")
+            return {"CANCELLED"}
+
+        if not style_path.exists():
+            self.report({"ERROR"}, f"File not found:\n'{style_path}'")
+            return {"CANCELLED"}
+
+        db = tool.Blender.append_data_block(str(style_path), data_block_type, data_block)
+        if not db["data_block"]:
+            self.report({"ERROR"}, db["msg"])
+            return {"CANCELLED"}
+
+        props_to_copy = [
+            "diffuse_color",
+            "metallic",
+            "roughness",
+            "specular_intensity",
+            "use_nodes",
+        ]
+        for prop_name in props_to_copy:
+            setattr(material, prop_name, getattr(db["data_block"], prop_name))
+
+        if material.use_nodes:
+            tool.Blender.copy_node_graph_to_active_object(context, db["data_block"])
+        bpy.data.materials.remove(db["data_block"])
 
 
 class DisableEditingStyles(bpy.types.Operator, tool.Ifc.Operator):

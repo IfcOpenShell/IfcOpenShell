@@ -56,7 +56,12 @@ class StyleAttributesData:
 
     @classmethod
     def load(cls):
-        cls.data = {"ifc_style_id": cls.ifc_style_id(), "attributes": cls.get_attributes()}
+        cls.data = {
+            "ifc_style_id": cls.ifc_style_id(),
+            "attributes": cls.get_attributes(),
+            "style_elements": cls.get_style_elements(),
+        }
+        cls.data["external_style_attributes"] = cls.get_external_style_attributes()
         cls.is_loaded = True
 
     @classmethod
@@ -69,6 +74,22 @@ class StyleAttributesData:
         results = []
         for name, value in style.get_info().items():
             if name in ["id", "type", "Styles"]:
+                continue
+            results.append({"name": name, "value": str(value)})
+        return results
+
+    @classmethod
+    def get_style_elements(cls):
+        return tool.Style.get_style_elements(bpy.context.active_object.active_material)
+
+    @classmethod
+    def get_external_style_attributes(cls):
+        external_style = cls.data["style_elements"].get("IfcExternallyDefinedSurfaceStyle", None)
+        if not external_style:
+            return None
+        results = []
+        for name, value in external_style.get_info().items():
+            if name in ["id", "type"]:
                 continue
             results.append({"name": name, "value": str(value)})
         return results

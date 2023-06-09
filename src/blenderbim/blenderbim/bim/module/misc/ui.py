@@ -30,7 +30,8 @@ class BIM_PT_misc_utilities(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         props = context.scene.BIMMiscProperties
-
+        row = layout.row()
+        row.prop(context.scene.BIMStylesProperties, "active_style_type", icon="SHADING_RENDERED", text="")
         row = layout.split(factor=0.2, align=True)
         row.prop(props, "override_colour", text="")
         row.operator("bim.set_override_colour")

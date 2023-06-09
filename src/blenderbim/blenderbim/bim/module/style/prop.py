@@ -31,6 +31,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+import blenderbim.tool as tool
 
 
 def get_style_types(self, context):
@@ -45,13 +46,74 @@ class Style(PropertyGroup):
     total_elements: IntProperty(name="Total Elements")
 
 
+STYLE_TYPES = [
+    ("Shading", "Shading", ""),
+    ("External", "External", ""),
+]
+
+
+def update_shading_styles(self, context):
+    materials_to_objects = dict()
+
+    for obj in bpy.data.objects:
+        blender_material = obj.active_material
+        if blender_material and blender_material.BIMMaterialProperties.ifc_style_id != 0:
+            materials_to_objects[blender_material] = obj
+
+    for mat, obj in materials_to_objects.items():
+        tool.Style.change_current_style_type(context, obj, mat, self.active_style_type)
+
+
 class BIMStylesProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing")
     style_type: EnumProperty(items=get_style_types, name="Style Type")
     styles: CollectionProperty(name="Styles", type=Style)
     active_style_index: IntProperty(name="Active Style Index")
+    active_style_type: EnumProperty(
+        name="Active Style Type",
+        description="Update current blender material to match style type for all objects in the scene",
+        items=STYLE_TYPES,
+        default="Shading",
+        update=update_shading_styles,
+    )
+
+
+def update_shading_style(self, context):
+    blender_material = context.active_object.active_material
+    style_elements = tool.Style.get_style_elements(blender_material)
+    if self.active_style_type == "External":
+        if "IfcExternallyDefinedSurfaceStyle" in style_elements:
+            bpy.ops.bim.activate_external_style()
+
+    elif self.active_style_type == "Shading":
+        style_elements = tool.Style.get_style_elements(blender_material)
+        rendering_style = None
+        texture_style = None
+
+        for surface_style in style_elements.values():
+            if surface_style.is_a() == "IfcSurfaceStyleShading":
+                tool.Loader.create_surface_style_shading(blender_material, surface_style)
+            elif surface_style.is_a("IfcSurfaceStyleRendering"):
+                rendering_style = surface_style
+                tool.Loader.create_surface_style_rendering(blender_material, surface_style)
+            elif surface_style.is_a("IfcSurfaceStyleWithTextures"):
+                texture_style = surface_style
+
+        if rendering_style and texture_style:
+            tool.Loader.create_surface_style_with_textures(blender_material, rendering_style, texture_style)
 
 
 class BIMStyleProperties(PropertyGroup):
     attributes: CollectionProperty(name="Attributes", type=Attribute)
     is_editing: BoolProperty(name="Is Editing")
+
+    external_style_attributes: CollectionProperty(name="External Style Attributes", type=Attribute)
+    is_editing_external_style: BoolProperty(name="Is Editing External Style")
+
+    active_style_type: EnumProperty(
+        name="Active Style Type",
+        description="Update current blender material to match style type",
+        items=STYLE_TYPES,
+        default="Shading",
+        update=update_shading_style,
+    )

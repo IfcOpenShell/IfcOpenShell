@@ -21,10 +21,15 @@ from . import ui, prop, operator
 
 classes = (
     operator.AddStyle,
-    operator.DisableEditingStyle,
-    operator.DisableEditingStyles,
-    operator.EditStyle,
     operator.EnableEditingStyle,
+    operator.DisableEditingStyle,
+    operator.EditStyle,
+    operator.EnableEditingExternalStyle,
+    operator.DisableEditingExternalStyle,
+    operator.EditExternalStyle,
+    operator.DisableEditingStyles,
+    operator.BrowseExternalStyle,
+    operator.ActivateExternalStyle,
     operator.LoadStyles,
     operator.RemoveStyle,
     operator.SelectByStyle,
@@ -37,6 +42,7 @@ classes = (
     ui.BIM_PT_styles,
     ui.BIM_PT_style,
     ui.BIM_PT_style_attributes,
+    ui.BIM_PT_external_style_attributes,
     ui.BIM_UL_styles,
 )
 
