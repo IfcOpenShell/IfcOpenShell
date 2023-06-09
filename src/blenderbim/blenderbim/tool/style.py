@@ -34,6 +34,10 @@ class Style(blenderbim.core.tool.Style):
         obj.BIMStyleProperties.is_editing = False
 
     @classmethod
+    def disable_editing_external_style(cls, obj):
+        obj.BIMStyleProperties.is_editing_external_style = False
+
+    @classmethod
     def disable_editing_styles(cls):
         bpy.context.scene.BIMStylesProperties.is_editing = False
 
@@ -42,12 +46,20 @@ class Style(blenderbim.core.tool.Style):
         obj.BIMStyleProperties.is_editing = True
 
     @classmethod
+    def enable_editing_external_style(cls, obj):
+        obj.BIMStyleProperties.is_editing_external_style = True
+
+    @classmethod
     def enable_editing_styles(cls):
         bpy.context.scene.BIMStylesProperties.is_editing = True
 
     @classmethod
     def export_surface_attributes(cls, obj):
         return blenderbim.bim.helper.export_attributes(obj.BIMStyleProperties.attributes)
+
+    @classmethod
+    def export_external_style_attributes(cls, obj):
+        return blenderbim.bim.helper.export_attributes(obj.BIMStyleProperties.external_style_attributes)
 
     @classmethod
     def get_active_style_type(cls):
@@ -72,6 +84,14 @@ class Style(blenderbim.core.tool.Style):
                 return tool.Ifc.get().by_id(obj.BIMMaterialProperties.ifc_style_id)
             except:
                 return
+
+    @classmethod
+    def get_style_elements(cls, blender_material):
+        style = tool.Ifc.get().by_id(blender_material.BIMMaterialProperties.ifc_style_id)
+        style_elements = {}
+        for style in style.Styles:
+            style_elements[style.is_a()] = style
+        return style_elements
 
     @classmethod
     def get_surface_rendering_attributes(cls, obj):
@@ -197,8 +217,15 @@ class Style(blenderbim.core.tool.Style):
 
     @classmethod
     def import_surface_attributes(cls, style, obj):
-        obj.BIMStyleProperties.attributes.clear()
-        blenderbim.bim.helper.import_attributes2(style, obj.BIMStyleProperties.attributes)
+        attributes = obj.BIMStyleProperties.attributes
+        attributes.clear()
+        blenderbim.bim.helper.import_attributes2(style, attributes)
+
+    @classmethod
+    def import_external_style_attributes(cls, style, obj):
+        attributes = obj.BIMStyleProperties.external_style_attributes
+        attributes.clear()
+        blenderbim.bim.helper.import_attributes2(style, attributes)
 
     @classmethod
     def is_editing_styles(cls):
@@ -214,3 +241,8 @@ class Style(blenderbim.core.tool.Style):
             obj = tool.Ifc.get_object(element)
             if obj:
                 obj.select_set(True)
+
+    @classmethod
+    def change_current_style_type(cls, context, obj, blender_material, style_type):
+        with context.temp_override(active_object=obj):
+            blender_material.BIMStyleProperties.active_style_type = style_type
