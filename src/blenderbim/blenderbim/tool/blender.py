@@ -108,11 +108,48 @@ class Blender:
         return context_override
 
     @classmethod
-    def update_viewport(cls):
-        # if it stops working in future Blender versions
-        # there is an alternative:
-        # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+    def get_shader_editor_context(cls):
+        for screen in bpy.data.screens:
+            for area in screen.areas:
+                if area.type == "NODE_EDITOR":
+                    for space in area.spaces:
+                        if space.tree_type == "ShaderNodeTree":
+                            context_override = {"area": area, "space": space, "screen": screen}
+                            return context_override
 
+    @classmethod
+    def copy_node_graph_to_active_object(cls, context, material):
+        """make sure to override `context.active_object`
+        to you want change node graph for the object that's not actually active
+        """
+        temp_override = cls.get_shader_editor_context()
+        old_material = context.active_object.active_material
+        new_material = material
+
+        # remove all nodes from the current material
+        for n in old_material.node_tree.nodes[:]:
+            old_material.node_tree.nodes.remove(n)
+
+        # change current material and make other window's shader editor is updated
+        context.active_object.active_material = new_material
+        temp_override["space"].node_tree = new_material.node_tree
+
+        # select all nodes and copy them to clipboard
+        for node in new_material.node_tree.nodes:
+            node.select = True
+        bpy.ops.node.clipboard_copy(temp_override)
+
+        # back to original material
+        context.active_object.active_material = old_material
+        temp_override["space"].node_tree = old_material.node_tree
+        bpy.ops.node.clipboard_paste(temp_override, offset=(0, 0))
+
+    @classmethod
+    def update_screen(cls):
+        bpy.ops.wm.redraw_timer(type="DRAW_WIN_SWAP", iterations=1)
+
+    @classmethod
+    def update_viewport(cls):
         tool.Blender.get_viewport_context()["area"].tag_redraw()
 
     @classmethod
@@ -214,6 +251,14 @@ class Blender:
             obj.select_set(False)
         context.view_layer.objects.active = active_object
         active_object.select_set(True)
+
+    @classmethod
+    def append_data_block(cls, filepath, data_block_type, name, link=False, relative=False):
+        with bpy.data.libraries.load(filepath, link=link, relative=relative) as (data_from, data_to):
+            if name not in getattr(data_from, data_block_type):
+                return {"data_block": None, "msg": f"Data-block {data_block_type}/{name} not found in {filepath}"}
+            getattr(data_to, data_block_type).append(name)
+        return {"data_block": getattr(data_to, data_block_type)[0], "msg": ""}
 
     ## BMESH UTILS ##
     @classmethod
