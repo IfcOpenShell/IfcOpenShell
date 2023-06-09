@@ -16,6 +16,11 @@ class IfcGitData:
     is_loaded = False
 
     @classmethod
+    def make_sure_is_loaded(cls):
+        if not cls.is_loaded:
+            cls.load()
+
+    @classmethod
     def load(cls):
         cls.data = {
             "repo": cls.repo(),
