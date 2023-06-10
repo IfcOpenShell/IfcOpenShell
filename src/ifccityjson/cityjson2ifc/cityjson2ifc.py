@@ -45,7 +45,7 @@ JSON_TO_IFC = {
     "SolitaryVegetationObject": ["IfcGeographicElement", {"PredefinedType": "USERDEFINED",
                                                           "ObjectType": "SolitaryVegetationObject"}],
     "CityFurniture": ["IfcFurnishingElement"],
-    "GenericCityObject": ["IfcCivilElement"],
+    "OtherConstruction": ["IfcCivilElement"],
     "Bridge": ["IfcCivilElement"],  # Update for IFC4.3
     "BridgePart": ["IfcCivilElement"],  # Update for IFC4.3
     "BridgeInstallation": ["IfcCivilElement"],  # Update for IFC4.3
@@ -118,9 +118,9 @@ class Cityjson2ifc:
         # Georeferencing
         self.properties["local_translation"] = None
         self.properties["local_scale"] = None
-        if self.city_model.is_transform():
-            self.properties["local_scale"] = self.city_model.j['transform']['scale']
-            local_translation = self.city_model.j['transform']['translate']
+        if not self.city_model.is_transformed:
+            self.properties["local_scale"] = self.city_model.transform['scale']
+            local_translation = self.city_model.transform['translate']
             self.properties["local_translation"] = {
                 "Eastings": local_translation[0],
                 "Northings": local_translation[1],
@@ -141,7 +141,7 @@ class Cityjson2ifc:
         ifcopenshell.api.run("unit.assign_unit", self.IFC_model, length={"is_metric": True, "raw": "METERS"})
         self.properties["owner_history"] = self.create_owner_history()
         self.IFC_representation_context = ifcopenshell.api.run("context.add_context", self.IFC_model,
-                                                               **{"context": "Model"})
+                                                               **{"context_type": "Model"})
 
         if not self.city_model.has_metadata() or "presentLoDs" not in self.city_model.j["metadata"]:
             self.city_model.update_metadata()
@@ -174,7 +174,7 @@ class Cityjson2ifc:
                                         "ContextIdentifier": "Body",
                                         "TargetView": "USERDEFINED",
                                         "ParentContext": self.IFC_representation_context,
-                                        "UserDefinedTargetView": "LOD" + str(lod)})
+                                        "UserDefinedTargetView": "LOD" + lod})
 
     def create_owner_history(self):
         actor = self.IFC_model.createIfcActorRole("ENGINEER", None, None)
@@ -246,10 +246,10 @@ class Cityjson2ifc:
             IFC_shape_representations = []
             for geometry in obj.geometry:
                 lod = geometry.lod
-                if self.properties["lod"] is not None and str(lod) != self.properties["lod"]:
+                if self.properties["lod"] is not None and lod != self.properties["lod"]:
                     continue
-                if str(lod) not in self.IFC_representation_sub_contexts:
-                    self.IFC_representation_sub_contexts[str(lod)] = self.create_representation_sub_context(lod)
+                if lod not in self.IFC_representation_sub_contexts:
+                    self.IFC_representation_sub_contexts[lod] = self.create_representation_sub_context(lod)
 
                 IFC_geometry, shape_representation_type = None, None
 
@@ -325,7 +325,7 @@ class Cityjson2ifc:
             IFC_geometry = [IFC_geometry]
 
         shape_representation = self.IFC_model.create_entity("IfcShapeRepresentation",
-                                                            self.IFC_representation_sub_contexts[str(lod)], 'Body',
+                                                            self.IFC_representation_sub_contexts[lod], 'Body',
                                                             shape_representation_type,
                                                             IFC_geometry)
         return shape_representation
