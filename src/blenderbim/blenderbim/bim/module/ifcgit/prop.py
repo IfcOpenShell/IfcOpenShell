@@ -113,6 +113,11 @@ class IfcGitProperties(PropertyGroup):
         description="An optional human readable description of this tag",
         default="",
     )
+    remote_name: StringProperty(
+        name="New remote name",
+        description="A local name for a remote Git repository",
+        default="",
+    )
     remote_url: StringProperty(
         name="Git URL",
         description="A URL pointing to a Git repository",

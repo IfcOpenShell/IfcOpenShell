@@ -82,6 +82,7 @@ class CloneRepo(bpy.types.Operator):
 
         props = context.scene.IfcGitProperties
         core.clone_repo(tool.IfcGit, props.remote_url, props.local_folder, self)
+        props.remote_url = ""
         refresh()
         return {"FINISHED"}
 
@@ -303,6 +304,36 @@ class Fetch(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class AddRemote(bpy.types.Operator):
+    """Add a remote repository"""
+
+    bl_label = "Add Remote"
+    bl_idname = "ifcgit.add_remote"
+    bl_options = {"REGISTER"}
+
+    @classmethod
+    def poll(cls, context):
+        IfcGitData.make_sure_is_loaded()
+        props = context.scene.IfcGitProperties
+        repo = IfcGitData.data["repo"]
+        if (
+            not repo
+            or not tool.IfcGit.is_valid_ref_format(props.remote_name)
+            or props.remote_name in [remote.name for remote in repo.remotes]
+            or not props.remote_url
+        ):
+            return False
+        return True
+
+    def execute(self, context):
+
+        repo = IfcGitData.data["repo"]
+        core.add_remote(tool.IfcGit, repo)
+        bpy.ops.ifcgit.refresh()
+        refresh()
+        return {"FINISHED"}
+
+
 class DeleteRemote(bpy.types.Operator):
     """Delete the selected remote"""
 
@@ -312,7 +343,6 @@ class DeleteRemote(bpy.types.Operator):
 
     def execute(self, context):
 
-        props = context.scene.IfcGitProperties
         repo = IfcGitData.data["repo"]
         core.delete_remote(tool.IfcGit, repo)
         bpy.ops.ifcgit.refresh()

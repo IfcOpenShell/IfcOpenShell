@@ -171,6 +171,14 @@ class IFCGIT_PT_panel(bpy.types.Panel):
             row.operator("ifcgit.push", icon="EXPERIMENTAL")
             row.operator("ifcgit.fetch", icon="IMPORT")
 
+        box = layout.box()
+        row = box.row()
+        row.prop(props, "remote_name")
+        row = box.row()
+        row.prop(props, "remote_url")
+        row = box.row()
+        row.operator("ifcgit.add_remote", icon="IMPORT")
+
 
 class COMMIT_UL_List(bpy.types.UIList):
     """List of Git commits"""
