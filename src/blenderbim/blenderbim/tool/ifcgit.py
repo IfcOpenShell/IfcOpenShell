@@ -368,14 +368,13 @@ class IfcGit:
     @classmethod
     def config_ifcmerge(cls):
         config_reader = IfcGitRepo.repo.config_reader()
+        config_writer = IfcGitRepo.repo.config_writer()
         section = 'mergetool "ifcmerge"'
         if not config_reader.has_section(section):
-            config_writer = IfcGitRepo.repo.config_writer()
             config_writer.set_value(section, "cmd", "ifcmerge $BASE $LOCAL $REMOTE $MERGED")
             config_writer.set_value(section, "trustExitCode", True)
         section = 'mergetool "ifcmerge-forward"'
         if not config_reader.has_section(section):
-            config_writer = IfcGitRepo.repo.config_writer()
             config_writer.set_value(section, "cmd", "ifcmerge $BASE $REMOTE $LOCAL $MERGED")
             config_writer.set_value(section, "trustExitCode", True)
 
