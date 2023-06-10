@@ -25,6 +25,7 @@ classes = (
     operator.CloneRepo,
     operator.CommitChanges,
     operator.CreateRepo,
+    operator.DeleteRemote,
     operator.DeleteTag,
     operator.DiscardUncommitted,
     operator.DisplayRevision,

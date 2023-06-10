@@ -103,6 +103,15 @@ class IfcGit:
             repo.delete_tag(tag_name)
 
     @classmethod
+    def delete_remote(cls, repo):
+        props = bpy.context.scene.IfcGitProperties
+        remote_name = props.select_remote
+        if remote_name in repo.remotes:
+            repo.delete_remote(remote_name)
+        if repo.remotes:
+            props.select_remote = repo.remotes[0].name
+
+    @classmethod
     def create_new_branch(cls):
         props = bpy.context.scene.IfcGitProperties
         repo = IfcGitRepo.repo
