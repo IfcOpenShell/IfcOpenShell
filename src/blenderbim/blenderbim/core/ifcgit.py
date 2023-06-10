@@ -42,6 +42,10 @@ def delete_tag(ifcgit, repo, tag_name):
     ifcgit.delete_tag(repo, tag_name)
 
 
+def add_remote(ifcgit, repo):
+    ifcgit.add_remote(repo)
+
+
 def delete_remote(ifcgit, repo):
     ifcgit.delete_remote(repo)
 

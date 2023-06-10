@@ -21,6 +21,7 @@ from . import ui, prop, operator
 
 classes = (
     operator.AddFileToRepo,
+    operator.AddRemote,
     operator.AddTag,
     operator.CloneRepo,
     operator.CommitChanges,
