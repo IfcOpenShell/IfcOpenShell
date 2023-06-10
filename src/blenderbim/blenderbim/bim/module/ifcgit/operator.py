@@ -303,6 +303,23 @@ class Fetch(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class DeleteRemote(bpy.types.Operator):
+    """Delete the selected remote"""
+
+    bl_label = "Delete Remote"
+    bl_idname = "ifcgit.delete_remote"
+    bl_options = {"REGISTER"}
+
+    def execute(self, context):
+
+        props = context.scene.IfcGitProperties
+        repo = IfcGitData.data["repo"]
+        core.delete_remote(tool.IfcGit, repo)
+        bpy.ops.ifcgit.refresh()
+        refresh()
+        return {"FINISHED"}
+
+
 class ObjectLog(bpy.types.Operator):
     """Displays Git log of selected object"""
 
