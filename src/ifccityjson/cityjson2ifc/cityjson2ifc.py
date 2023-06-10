@@ -1,5 +1,6 @@
 # ifccityjson - Python CityJSON to IFC converter
 # Copyright (C) 2021 Laurens J.N. Oostwegel <l.oostwegel@gmail.com>
+# Copyright (C) 2023 Balázs Dukai <balazs.dukai@3dgi.nl>
 #
 # This file is part of ifccityjson.
 #
