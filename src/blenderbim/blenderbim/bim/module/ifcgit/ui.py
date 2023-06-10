@@ -120,8 +120,6 @@ class IFCGIT_PT_panel(bpy.types.Panel):
             row = column.row()
             row.operator("ifcgit.switch_revision", icon="CURRENT_FILE")
 
-            # TODO operator to tag selected
-
             row = column.row()
             row.operator("ifcgit.merge", icon="EXPERIMENTAL", text="")
 
@@ -168,6 +166,7 @@ class IFCGIT_PT_panel(bpy.types.Panel):
             row.prop(props, "select_remote", text="Select remote")
             urls = IfcGitData.data["remote_urls"]
             row.label(text=urls[props.select_remote])
+            row.operator("ifcgit.delete_remote", text="", icon="PANEL_CLOSE")
             row = layout.row()
             row.operator("ifcgit.push", icon="EXPERIMENTAL")
             row.operator("ifcgit.fetch", icon="IMPORT")
