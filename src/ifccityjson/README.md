@@ -3,7 +3,7 @@ Converter for CityJSON files and IFC. Currently only supports one-way conversion
 
 ## Dependencies
 - [IfcOpenShell](https://github.com/IfcOpenShell/IfcOpenShell) (also IfcOpenShell api is needed)
-- [CJIO](https://github.com/cityjson/cjio)
+- [CJIO](https://github.com/cityjson/cjio) (>=0.8, <1.0)
 
 ## Usage of IFCCityJSON
 An extended ifccityjson tutorial can be found on [the OSARCH wiki](https://wiki.osarch.org/index.php?title=Ifccityjson)
