@@ -14,6 +14,7 @@ class Ifc2Sql:
         self.sql_type = "sqlite"
         # self.sql_type = "mysql"
 
+        self.full_schema = False
         self.is_strict = False
         self.should_get_psets = True
         self.should_expand = True
@@ -40,7 +41,12 @@ class Ifc2Sql:
         if self.should_get_psets:
             self.create_pset_table()
 
-        for ifc_class in self.file.wrapped_data.types():
+        if self.full_schema:
+            ifc_classes = [d.name() for d in self.schema.declarations() if str(d).startswith("<entity")]
+        else:
+            ifc_classes = self.file.wrapped_data.types()
+
+        for ifc_class in ifc_classes:
             declaration = self.schema.declaration_by_name(ifc_class)
 
             if self.should_skip_geometry_data:
@@ -89,11 +95,15 @@ class Ifc2Sql:
         statement = f"CREATE TABLE IF NOT EXISTS {ifc_class} ("
 
         if self.should_expand:
-            statement += "ifc_id INTEGER NOT NULL,"
+            statement += "ifc_id INTEGER NOT NULL"
         else:
-            statement += "ifc_id INTEGER PRIMARY KEY NOT NULL UNIQUE,"
+            statement += "ifc_id INTEGER PRIMARY KEY NOT NULL UNIQUE"
 
         total_attributes = declaration.attribute_count()
+
+        if total_attributes:
+            statement += ","
+
         derived = declaration.derived()
         for i in range(0, total_attributes):
             attribute = declaration.attribute_by_index(i)
@@ -116,7 +126,7 @@ class Ifc2Sql:
             else:
                 optional = "" if attribute.optional() else " NOT NULL"
             comma = "" if i == total_attributes - 1 else ","
-            statement += f" {attribute.name()} {data_type}{optional}{comma}"
+            statement += f" `{attribute.name()}` {data_type}{optional}{comma}"
         statement += ");"
         print(statement)
         c = self.db.cursor()
@@ -126,6 +136,7 @@ class Ifc2Sql:
         declaration = self.schema.declaration_by_name(ifc_class)
         statement = f"CREATE TABLE IF NOT EXISTS {ifc_class} ("
         statement += "`ifc_id` int(10) unsigned NOT NULL,"
+
         derived = declaration.derived()
         for attribute in declaration.all_attributes():
             primitive = ifcopenshell.util.attribute.get_primitive_type(attribute)
@@ -155,7 +166,12 @@ class Ifc2Sql:
             else:
                 optional = "DEFAULT NULL" if attribute.optional() else "NOT NULL"
             statement += f" `{attribute.name()}` {data_type} {optional},"
-        statement += " PRIMARY KEY (`ifc_id`)"
+
+        if self.should_expand:
+            statement = statement[0:-1]
+        else:
+            statement += " PRIMARY KEY (`ifc_id`)"
+
         statement += ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;"
         print(statement)
         c = self.db.cursor()
@@ -213,16 +229,17 @@ class Ifc2Sql:
 
         print(rows)
 
-        if self.sql_type == "sqlite":
-            c.executemany(f"INSERT INTO {ifc_class} VALUES ({','.join(['?']*len(rows[0]))});", rows)
-            c.executemany("INSERT INTO id_map VALUES (?, ?);", id_map_rows)
-            if pset_rows:
-                c.executemany("INSERT INTO psets VALUES (?, ?, ?, ?);", pset_rows)
-        elif self.sql_type == "mysql":
-            c.executemany(f"INSERT INTO {ifc_class} VALUES ({','.join(['%s']*len(rows[0]))});", rows)
-            c.executemany("INSERT INTO id_map VALUES (%s, %s);", id_map_rows)
-            if pset_rows:
-                c.executemany("INSERT INTO psets VALUES (%s, %s, %s, %s);", pset_rows)
+        if rows:
+            if self.sql_type == "sqlite":
+                c.executemany(f"INSERT INTO {ifc_class} VALUES ({','.join(['?']*len(rows[0]))});", rows)
+                c.executemany("INSERT INTO id_map VALUES (?, ?);", id_map_rows)
+                if pset_rows:
+                    c.executemany("INSERT INTO psets VALUES (?, ?, ?, ?);", pset_rows)
+            elif self.sql_type == "mysql":
+                c.executemany(f"INSERT INTO {ifc_class} VALUES ({','.join(['%s']*len(rows[0]))});", rows)
+                c.executemany("INSERT INTO id_map VALUES (%s, %s);", id_map_rows)
+                if pset_rows:
+                    c.executemany("INSERT INTO psets VALUES (%s, %s, %s, %s);", pset_rows)
 
         self.db.commit()
 
@@ -251,6 +268,8 @@ class Ifc2Sql:
 
     def is_entity_list(self, primitive):
         if not isinstance(primitive, tuple):
+            return False
+        elif primitive[0] == "select":
             return False
         elif primitive[1] == "entity":
             return True
