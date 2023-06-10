@@ -27,9 +27,14 @@ JSON_TO_IFC = {
     "Building": ["IfcBuilding"],
     "BuildingPart": ["IfcBuilding", {"CompositionType": "PARTIAL"}],
     "BuildingInstallation": ["IfcBuildingElementProxy"],
+    "BuildingConstructiveElement": ["IfcBuildingElementProxy"],
+    "BuildingFurniture": ["IfcFurniture"],
+    "BuildingStorey": ["IfcBuildingStorey",  {"CompositionType": "PARTIAL"}],
+    "BuildingRoom": ["IfcSpace",  {"CompositionType": "ELEMENT"}],
+    "BuildingUnit": ["IfcSpace",  {"CompositionType": "ELEMENT"}],
     "Road": ["IfcCivilElement"],  # Update for IFC4.3
     "Railway": ["IfcCivilElement"],  # Update for IFC4.3
-    "TransportSquare": ["IfcCivilElement"],  # Update for IFC4.3
+    "TransportationSquare": ["IfcCivilElement"],  # Update for IFC4.3
     "TINRelief": ["IfcGeographicElement", {"PredefinedType": "TERRAIN"}],
     "WaterBody": ["IfcGeographicElement", {"PredefinedType": "USERDEFINED",
                                            "ObjectType": "WaterBody"}],  # Update for IFC4.3
@@ -44,10 +49,15 @@ JSON_TO_IFC = {
     "Bridge": ["IfcCivilElement"],  # Update for IFC4.3
     "BridgePart": ["IfcCivilElement"],  # Update for IFC4.3
     "BridgeInstallation": ["IfcCivilElement"],  # Update for IFC4.3
-    "BridgeConstructionElement": ["IfcCivilElement"],  # Update for IFC4.3
+    "BridgeConstructiveElement": ["IfcCivilElement"],  # Update for IFC4.3
+    "BridgeRoom": ["IfcCivilElement"],  # Update for IFC4.3
+    "BridgeFurniture": ["IfcCivilElement"],  # Update for IFC4.3
     "Tunnel": ["IfcCivilElement"],  # Update for IFC4.3
     "TunnelPart": ["IfcCivilElement"],  # Update for IFC4.3
     "TunnelInstallation": ["IfcCivilElement"],  # Update for IFC4.3
+    "TunnelConstructiveElement": ["IfcCivilElement"],  # Update for IFC4.3
+    "TunnelHollowSpace": ["IfcCivilElement"],  # Update for IFC4.3
+    "TunnelFurniture": ["IfcCivilElement"],  # Update for IFC4.3
     "CityObjectGroup": ["IfcBuilding"],  # Update for IFC4.3
     "GroundSurface": ["IfcSlab", {"PredefinedType": "BASESLAB"}],
     "RoofSurface": ["IfcRoof"],
@@ -57,6 +67,9 @@ JSON_TO_IFC = {
     "OuterFloorSurface": ["IfcSlab", {"PredefinedType": "FLOOR"}],
     "Window": ["IfcWindow"],
     "Door": ["IfcDoor"],
+    "InteriorWallSurface": ["IfcWall"],
+    "CeilingSurface": ["IfcCovering", {"PredefinedType": "CEILING"}],
+    "FloorSurface": ["IfcSlab", {"PredefinedType": "FLOOR"}],
     "WaterSurface": ["IfcGeographicElement", {"PredefinedType": "USERDEFINED",
                                               "ObjectType": "WaterSurface"}],  # Update for IFC4.3
     "WaterGroundSurface": ["IfcGeographicElement", {"PredefinedType": "USERDEFINED",
@@ -64,7 +77,9 @@ JSON_TO_IFC = {
     "WaterClosureSurface": ["IfcGeographicElement", {"PredefinedType": "USERDEFINED",
                                                      "ObjectType": "WaterClosureSurface"}],  # Update for IFC4.3
     "TrafficArea": ["IfcCivilElement"],  # Update for IFC4.3
-    "AuxiliaryTrafficArea": ["IfcCivilElement"]  # Update for IFC4.3
+    "AuxiliaryTrafficArea": ["IfcCivilElement"],  # Update for IFC4.3
+    "TransportationMarking": ["IfcCivilElement"],  # Update for IFC4.3
+    "TransportationHole": ["IfcCivilElement"],  # Update for IFC4.3
 }
 
 
