@@ -130,6 +130,12 @@ Docker
 
     Installing IfcOpenShell from Docker will also install IfcConvert.
 
+.. using-container-on-aws-lambda::
+
+   Refer `AWS Lambda
+    Readme
+    <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.7.0/aws/lambda/README.md>`__.
+
 Using the BlenderBIM Add-on
 ---------------------------
 
