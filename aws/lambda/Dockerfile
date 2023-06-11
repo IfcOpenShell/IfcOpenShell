@@ -1,10 +1,10 @@
 # Dockerfile for Running AWS Lambda Function with Python and IfcOpenShell
 
-# Set the location of your Lambda function code
-ARG FUNCTION_DIR="/var/task"
-
 # Base image: Python 3.9 from AWS's public container registry
 FROM public.ecr.aws/docker/library/python:3.9 AS build
+
+# Set the location of your Lambda function code
+ARG FUNCTION_DIR="/var/task"
 
 # Install necessary packages
 RUN apt-get -y update && apt-get -y install unzip curl
@@ -13,7 +13,7 @@ RUN apt-get -y update && apt-get -y install unzip curl
 RUN pip install --target ${FUNCTION_DIR} awslambdaric
 
 # Set the IfcOpenShell build version (check available builds at: https://blenderbim.org/docs-python/ifcopenshell-python/installation.html)
-ARG IFC_OPENSHELL_BUILD="v0.7.0-476ab50"
+ARG IFC_OPENSHELL_BUILD="39-v0.7.0-476ab50"
 
 # Download and extract IfcOpenShell
 RUN curl https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-${IFC_OPENSHELL_BUILD}-linux64.zip -O && \

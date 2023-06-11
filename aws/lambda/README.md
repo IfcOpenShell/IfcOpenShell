@@ -3,8 +3,6 @@ Dockerized AWS Lambda Function with Python and IfcOpenShell
 
 This guide provides a Dockerfile and sample code to help you run an AWS Lambda function written in Python and utilizing IfcOpenShell library. 
 
-> Note: This is a superficial guideline, in order to make this work for your usecase you will need a good understanding of other AWS services like SQS, S3, API Gateway etc.
-
 Prerequisites
 -------------
 
@@ -42,3 +40,9 @@ Getting Started
 7. **Deploy to lambda**
  
     This is beyond the scope of this example. Please refer to AWS documentation. Some tools that could be useful are - AWS CloudFormaton, AWS CDK, pulumi or terraform
+
+
+---------
+> Note: This is a superficial guide, in order to make this work for your usecase you will need a good understanding of other AWS services like SQS, S3, API Gateway etc.
+
+For more information on building lambda containers refer to this [guide](https://docs.aws.amazon.com/lambda/latest/dg/images-create.html).
