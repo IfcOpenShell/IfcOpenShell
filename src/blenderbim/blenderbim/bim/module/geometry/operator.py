@@ -783,7 +783,7 @@ class OverrideModeSetEdit(bpy.types.Operator):
 
             # We are switching from OBJECT to EDIT mode.
             usage_type = tool.Model.get_usage_type(element)
-            if usage_type is not None and usage_type != "PROFILE":
+            if usage_type is not None and usage_type not in ("PROFILE", "LAYER3"):
                 # Parametric objects shall not be edited as meshes as they
                 # can be modified to be incompatible with the parametric
                 # constraints.
@@ -811,6 +811,7 @@ class OverrideModeSetEdit(bpy.types.Operator):
                     continue
             if (
                 tool.Geometry.is_profile_based(obj.data)
+                or usage_type == "LAYER3"
                 or tool.Geometry.is_swept_profile(representation)
                 or tool.Pset.get_element_pset(element, "BBIM_Roof")
                 or tool.Pset.get_element_pset(element, "BBIM_Railing")
@@ -944,7 +945,7 @@ class OverrideModeSetObject(bpy.types.Operator):
                     bpy.ops.bim.cad_hotkey(hotkey="S_Q")
                 elif tool.Pset.get_element_pset(element, "BBIM_Roof"):
                     bpy.ops.bim.cad_hotkey(hotkey="S_Q")
-                elif tool.Model.get_usage_type(element):
+                elif tool.Model.get_usage_type(element) == "PROFILE":
                     bpy.ops.bim.edit_extrusion_axis()
                 else:
                     bpy.ops.bim.edit_extrusion_profile()
