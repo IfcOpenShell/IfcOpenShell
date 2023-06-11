@@ -2,16 +2,16 @@ import ifcopenshell
 import ifcopenshell.util.element
 import boto3
 
-s3 = boto3.resource('s3')
+s3 = boto3.client('s3')
 
-def handler(event, context):
+def extract_wall_psets_handler(event, context):
     print("Hello from lambda")
     print("Event: {}".format(event))
     print("Context: {}".format(context))
 
     filename = event['body']['filename']
     
-    s3.Bucket('my_ifc_files').download_file(filename, f'/tmp/{filename}')
+    s3.download_file('my_ifc_files_bucket', filename, f'/tmp/{filename}')
     ifc_file = ifcopenshell.open(f'/tmp/{filename}')
     walls = ifc_file.by_type('IfcWall')
     

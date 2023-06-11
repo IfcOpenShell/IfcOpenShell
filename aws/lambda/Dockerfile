@@ -37,4 +37,4 @@ ENTRYPOINT [ "/usr/local/bin/python", "-m", "awslambdaric" ]
 # Set the Python import path to the Lambda function handler
 # This path is relative to the root of the Lambda function code (FUNCTION_DIR)
 # Lambda invocation will look for this path
-CMD ["example_handler.extract_wall_psets"]
+CMD ["example_handler.extract_wall_psets_handler"]
