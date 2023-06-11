@@ -22,8 +22,9 @@ def git_branches(self, context):
         IfcGitData.data["branch_names"] = ["main"] + IfcGitData.data["branch_names"]
 
     if IfcGitData.data["remotes"]:
-        props = context.scene.IfcGitProperties
-        IfcGitData.data["branch_names"] += [r.name for r in IfcGitData.data["remotes"][props.select_remote].refs]
+        for remote in IfcGitData.data["remotes"]:
+            for remote_branch in remote.refs:
+                IfcGitData.data["branch_names"].append(remote_branch.name)
 
     return [(myname, myname, myname) for myname in IfcGitData.data["branch_names"]]
 
