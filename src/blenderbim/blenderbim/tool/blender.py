@@ -20,6 +20,7 @@ import bpy
 import ifcopenshell.api
 import blenderbim.tool as tool
 from mathutils import Vector
+from pathlib import Path
 
 
 class Blender:
@@ -253,6 +254,12 @@ class Blender:
 
     @classmethod
     def append_data_block(cls, filepath, data_block_type, name, link=False, relative=False):
+        if Path(filepath) == Path(bpy.data.filepath):
+            data_block = getattr(bpy.data, data_block_type).get(name, None)
+            if not data_block:
+                return {"data_block": None, "msg": f"Data-block {data_block_type}/{name} not found in {filepath}"}
+            return {"data_block": data_block.copy(), "msg": ""}
+
         with bpy.data.libraries.load(filepath, link=link, relative=relative) as (data_from, data_to):
             if name not in getattr(data_from, data_block_type):
                 return {"data_block": None, "msg": f"Data-block {data_block_type}/{name} not found in {filepath}"}
