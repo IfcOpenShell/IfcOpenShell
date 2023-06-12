@@ -447,7 +447,6 @@ class Material:
     def is_editing_materials(cls): pass
     def is_material_used_in_sets(cls, material): pass
     def load_material_attributes(cls, material): pass
-    def select_elements(cls, elements): pass
 
 
 @interface
@@ -816,7 +815,6 @@ class Style:
     def import_surface_attributes(cls, style, obj): pass
     def is_editing_styles(cls): pass
     def record_shading(cls, obj): pass
-    def select_elements(cls, elements): pass
 
 
 @interface
@@ -839,7 +837,6 @@ class System:
     def load_ports(cls, element, ports): pass
     def run_geometry_edit_object_placement(cls, obj=None): pass
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
-    def select_elements(cls, elements): pass
     def select_system_products(cls, system): pass
     def set_active_system(cls, system): pass
 

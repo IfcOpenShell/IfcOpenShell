@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import blenderbim.core.style as subject
-from test.core.bootstrap import ifc, material, style
+from test.core.bootstrap import ifc, material, style, spatial
 
 
 class TestAddStyle:
@@ -212,3 +212,10 @@ class TestDisableEditingStyles:
     def test_run(self, style):
         style.disable_editing_styles().should_be_called()
         subject.disable_editing_styles(style)
+
+
+class TestSelectByStyle:
+    def test_run(self, style, spatial):
+        style.get_elements_by_style("style").should_be_called().will_return("elements")
+        spatial.select_products("elements").should_be_called()
+        subject.select_by_style(style, style="style")
