@@ -104,24 +104,44 @@ class ConnectionsData:
     def connections(cls):
         results = []
         element = tool.Ifc.get_entity(bpy.context.active_object)
-        for rel in getattr(element, "ConnectedTo", []):
+
+        connected_to = getattr(element, "ConnectedTo", [])
+        connected_from = getattr(element, "ConnectedFrom", [])
+
+        for rel in connected_to:
+            if element.is_a("IfcDistributionPort"):
+                related_element = rel.RelatedPort
+                related_element_connection_type = ""
+            else:
+                related_element = rel.RelatedElement
+                related_element_connection_type = rel.RelatedConnectionType
+
             results.append(
                 {
                     "id": rel.id(),
                     "is_relating": True,
-                    "Name": rel.RelatedElement.Name or "Unnamed",
-                    "ConnectionType": rel.RelatingConnectionType,
+                    "Name": related_element.Name or "Unnamed",
+                    "ConnectionType": related_element_connection_type,
                 }
             )
-        for rel in getattr(element, "ConnectedFrom", []):
+
+        for rel in connected_from:
+            if element.is_a("IfcDistributionPort"):
+                relating_element = rel.RelatingPort
+                relating_element_connection_type = ""
+            else:
+                relating_element = rel.RelatingElement
+                relating_element_connection_type = rel.RelatingConnectionType
+
             results.append(
                 {
                     "id": rel.id(),
                     "is_relating": False,
-                    "Name": rel.RelatingElement.Name or "Unnamed",
-                    "ConnectionType": rel.RelatedConnectionType,
+                    "Name": relating_element.Name or "Unnamed",
+                    "ConnectionType": relating_element_connection_type,
                 }
             )
+
         return results
 
 
