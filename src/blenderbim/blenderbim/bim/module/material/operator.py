@@ -56,7 +56,7 @@ class SelectByMaterial(bpy.types.Operator, tool.Ifc.Operator):
     material: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.select_by_material(tool.Material, material=tool.Ifc.get().by_id(self.material))
+        core.select_by_material(tool.Material, tool.Spatial, material=tool.Ifc.get().by_id(self.material))
 
 
 class EnableEditingMaterial(bpy.types.Operator, tool.Ifc.Operator):
