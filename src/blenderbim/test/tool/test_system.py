@@ -196,18 +196,6 @@ class TestRunRootAssignClass(NewFile):
         pass
 
 
-class TestSelectElements(NewFile):
-    def test_run(self):
-        ifc = ifcopenshell.file()
-        tool.Ifc().set(ifc)
-        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcPump")
-        obj = bpy.data.objects.new("Object", None)
-        bpy.context.scene.collection.objects.link(obj)
-        tool.Ifc.link(element, obj)
-        subject.select_elements([element])
-        assert obj in bpy.context.selected_objects
-
-
 class TestSelectSystemProducts(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()

@@ -18,7 +18,7 @@
 
 
 import blenderbim.core.system as subject
-from test.core.bootstrap import ifc, system
+from test.core.bootstrap import ifc, system, spatial
 
 
 class TestLoadSystems:
@@ -91,24 +91,24 @@ class TestSelectSystemProducts:
 
 
 class TestShowPorts:
-    def test_run(self, ifc, system):
+    def test_run(self, ifc, system, spatial):
         ifc.get_object("element").should_be_called().will_return("obj")
         ifc.is_moved("obj").should_be_called().will_return(False)
 
         system.get_ports("element").should_be_called().will_return(["port"])
         system.load_ports("element", ["port"]).should_be_called()
-        system.select_elements(["port"]).should_be_called()
-        subject.show_ports(ifc, system, element="element")
+        spatial.select_products(["port"]).should_be_called()
+        subject.show_ports(ifc, system, spatial, element="element")
 
-    def test_syncing_locations_if_objects_moved_prior_to_showing_ports(self, ifc, system):
+    def test_syncing_locations_if_objects_moved_prior_to_showing_ports(self, ifc, system, spatial):
         ifc.get_object("element").should_be_called().will_return("obj")
         ifc.is_moved("obj").should_be_called().will_return(True)
         system.run_geometry_edit_object_placement(obj="obj").should_be_called()
 
         system.get_ports("element").should_be_called().will_return(["port"])
         system.load_ports("element", ["port"]).should_be_called()
-        system.select_elements(["port"]).should_be_called()
-        subject.show_ports(ifc, system, element="element")
+        spatial.select_products(["port"]).should_be_called()
+        subject.show_ports(ifc, system, spatial, element="element")
 
 
 class TestHidePorts:

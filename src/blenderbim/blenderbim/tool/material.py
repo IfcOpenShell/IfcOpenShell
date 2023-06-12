@@ -102,13 +102,6 @@ class Material(blenderbim.core.tool.Material):
         return False
 
     @classmethod
-    def select_elements(cls, elements):
-        for element in elements:
-            obj = tool.Ifc.get_object(element)
-            if obj:
-                obj.select_set(True)
-
-    @classmethod
     def get_active_material_type(cls):
         return bpy.context.scene.BIMMaterialProperties.material_type
 

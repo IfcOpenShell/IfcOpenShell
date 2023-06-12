@@ -257,3 +257,15 @@ class TestSetRelativeObjectMatrix(NewFile):
         matrix[0][3] = 1
         subject.set_relative_object_matrix(obj, relative_obj, matrix)
         assert obj.matrix_world[0][3] == 2
+
+
+class TestSelectProducts(NewFile):
+    def test_select_products(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        product = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        obj = bpy.data.objects.new("Object", None)
+        bpy.context.scene.collection.objects.link(obj)
+        tool.Ifc.link(product, obj)
+        subject.select_products([product])
+        assert obj in bpy.context.selected_objects

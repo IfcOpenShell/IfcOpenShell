@@ -70,12 +70,14 @@ def disable_editing_materials(material):
     material.disable_editing_materials()
 
 
-def select_by_material(material_tool, material=None):
-    material_tool.select_elements(material_tool.get_elements_by_material(material))
+def select_by_material(material_tool, spatial, material=None):
+    spatial.select_products(material_tool.get_elements_by_material(material))
+
 
 def enable_editing_material(material_tool, material):
     material_tool.load_material_attributes(material)
     material_tool.enable_editing_material(material)
+
 
 def edit_material(ifc, material_tool, material):
     attributes = material_tool.get_material_attributes()
@@ -84,6 +86,7 @@ def edit_material(ifc, material_tool, material):
     material_type = material_tool.get_active_material_type()
     material_tool.import_material_definitions(material_type)
     material_tool.enable_editing_materials()
+
 
 def disable_editing_material(material_tool):
     material_tool.disable_editing_material()
