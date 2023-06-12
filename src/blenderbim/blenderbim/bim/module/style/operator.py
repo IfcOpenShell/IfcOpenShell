@@ -267,8 +267,13 @@ class ActivateExternalStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Activate External Style"
     bl_options = {"REGISTER", "UNDO", "INTERNAL"}
 
+    material_name: bpy.props.StringProperty(name="Material Name", default="")
+
     def _execute(self, context):
-        material = context.active_object.active_material
+        if not self.material_name:
+            material = context.active_object.active_material
+        else:
+            material = bpy.data.materials[self.material_name]
         external_style = tool.Style.get_style_elements(material)["IfcExternallyDefinedSurfaceStyle"]
         data_block_type, data_block = external_style.Identification.split("/")
         style_path = Path(tool.Ifc.resolve_uri(external_style.Location))
@@ -297,7 +302,7 @@ class ActivateExternalStyle(bpy.types.Operator, tool.Ifc.Operator):
             setattr(material, prop_name, getattr(db["data_block"], prop_name))
 
         if material.use_nodes:
-            tool.Blender.copy_node_graph_to_active_object(context, db["data_block"])
+            tool.Blender.copy_node_graph(material, db["data_block"])
         bpy.data.materials.remove(db["data_block"])
 
 

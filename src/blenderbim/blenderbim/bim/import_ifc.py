@@ -1485,22 +1485,11 @@ class IfcImporter:
         blender_material.BIMMaterialProperties.ifc_style_id = style.id()
         self.material_creator.styles[style.id()] = blender_material
 
-        rendering_style = None
-        texture_style = None
-
-        for surface_style in style.Styles:
-            if surface_style.is_a() == "IfcSurfaceStyleShading":
-                tool.Loader.create_surface_style_shading(blender_material, surface_style)
-            elif surface_style.is_a("IfcSurfaceStyleRendering"):
-                rendering_style = surface_style
-                tool.Loader.create_surface_style_rendering(blender_material, surface_style)
-            elif surface_style.is_a("IfcSurfaceStyleWithTextures"):
-                texture_style = surface_style
-
-        if rendering_style and texture_style:
-            tool.Loader.create_surface_style_with_textures(blender_material, rendering_style, texture_style)
-
-        tool.Style.record_shading(blender_material)
+        style_elements = tool.Style.get_style_elements(blender_material)
+        if tool.Style.has_blender_external_style(style_elements):
+            blender_material.BIMStyleProperties.active_style_type = "External"
+        else:
+            blender_material.BIMStyleProperties.active_style_type = "Shading"
 
     def place_objects_in_collections(self):
         for ifc_definition_id, obj in self.added_data.items():

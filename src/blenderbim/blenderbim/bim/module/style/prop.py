@@ -61,7 +61,7 @@ def update_shading_styles(self, context):
             materials_to_objects[blender_material] = obj
 
     for mat, obj in materials_to_objects.items():
-        tool.Style.change_current_style_type(context, obj, mat, self.active_style_type)
+        tool.Style.change_current_style_type(mat, self.active_style_type)
 
 
 class BIMStylesProperties(PropertyGroup):
@@ -79,11 +79,11 @@ class BIMStylesProperties(PropertyGroup):
 
 
 def update_shading_style(self, context):
-    blender_material = context.active_object.active_material
+    blender_material = self.id_data
     style_elements = tool.Style.get_style_elements(blender_material)
     if self.active_style_type == "External":
-        if "IfcExternallyDefinedSurfaceStyle" in style_elements:
-            bpy.ops.bim.activate_external_style()
+        if tool.Style.has_blender_external_style(style_elements):
+            bpy.ops.bim.activate_external_style(material_name=blender_material.name)
 
     elif self.active_style_type == "Shading":
         style_elements = tool.Style.get_style_elements(blender_material)
@@ -101,6 +101,7 @@ def update_shading_style(self, context):
 
         if rendering_style and texture_style:
             tool.Loader.create_surface_style_with_textures(blender_material, rendering_style, texture_style)
+    tool.Style.record_shading(blender_material)
 
 
 class BIMStyleProperties(PropertyGroup):
