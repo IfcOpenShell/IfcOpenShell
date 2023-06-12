@@ -332,4 +332,4 @@ class SelectByStyle(bpy.types.Operator, tool.Ifc.Operator):
     style: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.select_by_style(tool.Style, style=tool.Ifc.get().by_id(self.style))
+        core.select_by_style(tool.Style, tool.Spatial, style=tool.Ifc.get().by_id(self.style))

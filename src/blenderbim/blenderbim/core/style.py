@@ -142,5 +142,5 @@ def disable_editing_styles(style):
     style.disable_editing_styles()
 
 
-def select_by_style(style_tool, style=None):
-    style_tool.select_elements(style_tool.get_elements_by_style(style))
+def select_by_style(style_tool, spatial, style=None):
+    spatial.select_products(style_tool.get_elements_by_style(style))

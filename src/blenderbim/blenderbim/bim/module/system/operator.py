@@ -140,7 +140,7 @@ class ShowPorts(bpy.types.Operator, Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.show_ports(tool.Ifc, tool.System, element=tool.Ifc.get_entity(context.active_object))
+        core.show_ports(tool.Ifc, tool.System, tool.Spatial, element=tool.Ifc.get_entity(context.active_object))
 
 
 class HidePorts(bpy.types.Operator, Operator):
