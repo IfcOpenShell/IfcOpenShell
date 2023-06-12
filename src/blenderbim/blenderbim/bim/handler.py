@@ -259,6 +259,12 @@ def get_application_version():
     )
 
 
+def viewport_shading_changed_callback(area):
+    shading = area.spaces.active.shading.type
+    if shading == "RENDERED":
+        bpy.context.scene.BIMStylesProperties.active_style_type = "External"
+
+
 @persistent
 def setDefaultProperties(scene):
     global global_subscription_owner
@@ -266,6 +272,21 @@ def setDefaultProperties(scene):
     bpy.msgbus.subscribe_rna(
         key=active_object_key, owner=global_subscription_owner, args=(), notify=active_object_callback
     )
+
+    # subscribe to changes in viewport shading mode
+    # NOTE: couldn't find a way to make it work for new areas too
+    # it starts working for them after blender restart though
+    for screen in bpy.data.screens:
+        for area in screen.areas:
+            if area.type != "VIEW_3D":
+                continue
+            shading = area.spaces.active.shading
+            key = shading.path_resolve("type", False)
+
+            bpy.msgbus.subscribe_rna(
+                key=key, owner=global_subscription_owner, args=(area,), notify=viewport_shading_changed_callback
+            )
+
     ifcopenshell.api.owner.settings.get_user = lambda ifc: core_owner.get_user(tool.Owner)
     ifcopenshell.api.owner.settings.get_application = get_application
     AuthoringData.type_thumbnails = {}
