@@ -118,31 +118,30 @@ class Blender:
                             return context_override
 
     @classmethod
-    def copy_node_graph_to_active_object(cls, context, material):
-        """make sure to override `context.active_object`
-        to you want change node graph for the object that's not actually active
-        """
+    def copy_node_graph(cls, material_to, material_from):
         temp_override = cls.get_shader_editor_context()
-        old_material = context.active_object.active_material
-        new_material = material
+        shader_editor = temp_override["space"]
 
         # remove all nodes from the current material
-        for n in old_material.node_tree.nodes[:]:
-            old_material.node_tree.nodes.remove(n)
+        for n in material_to.node_tree.nodes[:]:
+            material_to.node_tree.nodes.remove(n)
 
-        # change current material and make other window's shader editor is updated
-        context.active_object.active_material = new_material
-        temp_override["space"].node_tree = new_material.node_tree
+        previous_pin_setting = shader_editor.pin
+        # required to be able to change material to something else
+        shader_editor.pin = True
+        shader_editor.node_tree = material_from.node_tree
 
         # select all nodes and copy them to clipboard
-        for node in new_material.node_tree.nodes:
+        for node in material_from.node_tree.nodes:
             node.select = True
         bpy.ops.node.clipboard_copy(temp_override)
 
         # back to original material
-        context.active_object.active_material = old_material
-        temp_override["space"].node_tree = old_material.node_tree
+        shader_editor.node_tree = material_to.node_tree
         bpy.ops.node.clipboard_paste(temp_override, offset=(0, 0))
+
+        # restore shader editor settings
+        shader_editor.pin = previous_pin_setting
 
     @classmethod
     def update_screen(cls):

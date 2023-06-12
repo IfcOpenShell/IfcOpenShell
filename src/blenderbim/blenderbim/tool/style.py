@@ -228,6 +228,11 @@ class Style(blenderbim.core.tool.Style):
         blenderbim.bim.helper.import_attributes2(style, attributes)
 
     @classmethod
+    def has_blender_external_style(cls, style_elements):
+        external_style = style_elements.get("IfcExternallyDefinedSurfaceStyle", None)
+        return bool(external_style and external_style.Location.endswith(".blend"))
+
+    @classmethod
     def is_editing_styles(cls):
         return bpy.context.scene.BIMStylesProperties.is_editing
 
@@ -243,6 +248,5 @@ class Style(blenderbim.core.tool.Style):
                 obj.select_set(True)
 
     @classmethod
-    def change_current_style_type(cls, context, obj, blender_material, style_type):
-        with context.temp_override(active_object=obj):
-            blender_material.BIMStyleProperties.active_style_type = style_type
+    def change_current_style_type(cls, blender_material, style_type):
+        blender_material.BIMStyleProperties.active_style_type = style_type
