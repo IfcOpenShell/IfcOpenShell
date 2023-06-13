@@ -37,6 +37,7 @@ classes = (
     operator.ContractContainer,
     operator.ExpandContainer,
     operator.DeleteContainer,
+    operator.SelectDecomposedElements,
     prop.SpatialElement,
     prop.BIMSpatialProperties,
     prop.BIMObjectSpatialProperties,

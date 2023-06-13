@@ -246,3 +246,13 @@ class AddBuildingStorey(bpy.types.Operator, tool.Ifc.Operator):
             part_name="Unnamed",
         )
         core.load_container_manager(tool.Spatial)
+
+
+class SelectDecomposedElements(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.select_decomposed_elements"
+    bl_label = "Select Children"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.select_decomposed_elements(tool.Spatial)
+        return {"FINISHED"}
