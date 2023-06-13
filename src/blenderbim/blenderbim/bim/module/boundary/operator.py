@@ -35,6 +35,7 @@ from mathutils import Vector, Matrix
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.decorator import ProfileDecorator
 from blenderbim.bim.module.boundary.decorator import BoundaryDecorator
+import blenderbim.core
 
 
 def get_boundaries_collection(blender_space):
