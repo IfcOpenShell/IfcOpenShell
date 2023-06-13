@@ -115,3 +115,8 @@ def expand_container(spatial, container=None):
 def delete_container(ifc, spatial, geometry, container=None):
     geometry.delete_ifc_object(ifc.get_object(container))
     spatial.load_container_manager()
+
+def select_decomposed_elements(spatial):
+    container = spatial.get_active_container()
+    if container:
+        spatial.select_products(spatial.get_decomposed_elements(container))
