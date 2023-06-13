@@ -57,3 +57,16 @@ class Profile(blenderbim.core.tool.Profile):
     @classmethod
     def is_editing_profile(cls):
         return ProfileDecorator.installed
+
+    @classmethod
+    def get_profile(cls, element):
+        representations = element.Representation
+        for representation in representations.Representations:
+            if not representation.is_a("IfcShapeRepresentation"):
+                continue
+            for representation_item in representation.Items:
+                if representation_item.is_a("IfcExtrudedAreaSolid"):
+                    profile = representation_item.SweptArea
+                    if profile:
+                        return profile
+        return None

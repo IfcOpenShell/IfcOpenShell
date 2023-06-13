@@ -28,6 +28,7 @@ import blenderbim.bim.handler
 import blenderbim.tool as tool
 import blenderbim.core.type
 import blenderbim.core.geometry
+import blenderbim.core.material
 from math import pi, degrees, inf
 from mathutils import Vector, Matrix, Quaternion
 from blenderbim.bim.module.geometry.helper import Helper
@@ -855,6 +856,25 @@ class Rotate90(bpy.types.Operator, tool.Ifc.Operator):
         DumbProfileRecalculator().recalculate(profile_objs)
         DumbWallRecalculator().recalculate(layer2_objs)
         return {"FINISHED"}
+
+
+class PatchNonParametricMepSegment(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.patch_non_parametric_mep_segment"
+    bl_label = "Set MEP segment Material Profile"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object
+
+    def _execute(self, context):
+        styles = tool.Geometry.get_styles(context.active_object)
+        blenderbim.core.material.patch_non_parametric_mep_segment(
+            tool.Ifc, tool.Material, tool.Profile, obj=context.active_object
+        )
+        bpy.ops.bim.enable_editing_extrusion_axis()
+        bpy.ops.bim.edit_extrusion_axis()
+        styles = tool.Geometry.get_styles(context.active_object)
 
 
 class EnableEditingExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):

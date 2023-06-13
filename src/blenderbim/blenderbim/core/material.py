@@ -119,3 +119,19 @@ def unassign_material(ifc, material_tool, objects):
                 ifc.run("material.unassign_material", product=element_type)
             elif material:
                 ifc.run("material.unassign_material", product=element)
+
+
+def patch_non_parametric_mep_segment(ifc, material_tool, profile_tool, obj):
+    element = ifc.get_entity(obj)
+    if not element:
+        return
+    if not material_tool.is_a_flow_segment(element):
+        return
+    has_material_profile = material_tool.has_material_profile(element)
+    if has_material_profile:
+        return
+    representation_profile = profile_tool.get_profile(element)
+    if not representation_profile:
+        return
+    material_profile = material_tool.replace_material_with_material_profile(element=element)
+    ifc.run("material.assign_profile", material_profile=material_profile, profile=representation_profile)

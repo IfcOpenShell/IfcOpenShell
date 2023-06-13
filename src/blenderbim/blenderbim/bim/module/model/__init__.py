@@ -86,6 +86,7 @@ classes = (
     profile.ExtendProfile,
     profile.RecalculateProfile,
     profile.Rotate90,
+    profile.PatchNonParametricMepSegment,
     roof.GenerateHippedRoof,
     slab.DisableEditingExtrusionProfile,
     slab.DisableEditingSketchExtrusionProfile,

@@ -50,6 +50,8 @@ class BIM_PT_misc_utilities(bpy.types.Panel):
         row.operator("bim.draw_system_arrows")
         row = layout.row()
         row.operator("bim.clean_wireframes")
+        row = layout.row()
+        row.operator("bim.patch_non_parametric_mep_segment")
 
         row = layout.row(align=True)
         row.operator("bim.enable_editing_sketch_extrusion_profile", text="Start Sketching")
