@@ -212,11 +212,14 @@ class Material(blenderbim.core.tool.Material):
     def replace_material_with_material_profile(cls, element):
         old_material = cls.get_material(element, should_inherit=False)
         old_inherited_material = cls.get_material(element, should_inherit=True)
-        blenderbim.core.material.unassign_material(tool.Ifc, tool.Material, objects=[tool.Ifc.get_object(element)])
-        tool.Ifc.run("material.assign_material", product=element, type="IfcMaterialProfileSet")
-        assinged_material = cls.get_material(element)
         material = old_material if old_material and old_material.is_a("IfcMaterial") else None
         if not material and old_inherited_material:
             material = old_inherited_material if old_inherited_material.is_a("IfcMaterial") else None
+        if not material:
+            material = tool.Ifc.get().by_type("IfcMaterial")[0]
+        else:
+            blenderbim.core.material.unassign_material(tool.Ifc, tool.Material, objects=[tool.Ifc.get_object(element)])
+        tool.Ifc.run("material.assign_material", product=element, type="IfcMaterialProfileSet", material=material)
+        assinged_material = cls.get_material(element)
         material_profile = tool.Ifc.run("material.add_profile", profile_set=assinged_material, material=material)
         return material_profile
