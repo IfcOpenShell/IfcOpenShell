@@ -90,3 +90,32 @@ def edit_material(ifc, material_tool, material):
 
 def disable_editing_material(material_tool):
     material_tool.disable_editing_material()
+
+
+def assign_material(ifc, material_tool, material_type, objects):
+    material_type = material_type or material_tool.get_active_object_material()
+    material = material_tool.get_active_material()
+    for obj in objects:
+        element = ifc.get_entity(obj)
+        if not element:
+            continue
+        ifc.run("material.assign_material", product=element, type=material_type, material=material)
+        assigned_material = material_tool.get_material(element)
+        if material_tool.is_a_material_set(assigned_material):
+            material_tool.add_material_to_set(material_set=assigned_material, material=material)
+
+
+def unassign_material(ifc, material_tool, objects):
+    for obj in objects:
+        element = ifc.get_entity(obj)
+        if element:
+            material = material_tool.get_material(element, should_inherit=False)
+            inherited_material = material_tool.get_material(element, should_inherit=True)
+            if material and "Usage" in material.is_a():
+                element_type = material_tool.get_type(element)
+                ifc.run("material.unassign_material", product=element_type)
+            elif not material and inherited_material:
+                element_type = material_tool.get_type(element)
+                ifc.run("material.unassign_material", product=element_type)
+            elif material:
+                ifc.run("material.unassign_material", product=element)
