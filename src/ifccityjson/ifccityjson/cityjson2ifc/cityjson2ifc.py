@@ -47,6 +47,7 @@ JSON_TO_IFC = {
                                                           "ObjectType": "SolitaryVegetationObject"}],
     "CityFurniture": ["IfcFurnishingElement"],
     "OtherConstruction": ["IfcCivilElement"],
+    "+GenericCityObject": ["IfcCivilElement"], # We make an exception here, because GenericCityObject is a remnant from CityJSON v1.0, which was moved to an extension in v1.1 and it is commonly used.
     "Bridge": ["IfcCivilElement"],  # Update for IFC4.3
     "BridgePart": ["IfcCivilElement"],  # Update for IFC4.3
     "BridgeInstallation": ["IfcCivilElement"],  # Update for IFC4.3
@@ -236,7 +237,11 @@ class Cityjson2ifc:
         geometries = {}
         for obj_id, obj in self.city_model.get_cityobjects().items():
             # CityJSON type to class
-            mapping = JSON_TO_IFC[obj.type]
+            try:
+                mapping = JSON_TO_IFC[obj.type]
+            except KeyError:
+                # skip CityObject types that are not supported, eg. from extensions
+                continue
             IFC_class = mapping[0]
             data = {}
             # Add attributes if it is specified in mapping
