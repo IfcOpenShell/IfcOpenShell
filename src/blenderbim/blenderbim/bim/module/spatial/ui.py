@@ -96,13 +96,14 @@ class BIM_UL_containers(UIList):
             )
 
 
-class BIM_PT_Storeys(Panel):
-    bl_label = "Spatial Manager"
-    bl_idname = "BIM_PT_Storeys"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
+class BIM_PT_SpatialManager(Panel):
+    bl_label = "IFC Spatial Manager"
+    bl_idname = "BIM_PT_SpatialManager"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
-    bl_parent_id = "BIM_PT_GridsSpatialManager"
+    bl_parent_id = "BIM_PT_project_setup"
 
     @classmethod
     def poll(cls, context):

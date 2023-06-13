@@ -45,7 +45,7 @@ classes = (
     ui.BIM_PT_spatial,
     ui.BIM_UL_containers,
     ui.BIM_UL_containers_manager,
-    ui.BIM_PT_Storeys,
+    ui.BIM_PT_SpatialManager,
     workspace.Hotkey,
 )
 
