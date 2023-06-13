@@ -193,3 +193,30 @@ class Material(blenderbim.core.tool.Material):
                         material=material,
                         profile=profile,
                     )
+
+    @classmethod
+    def has_material_profile(cls, element):
+        material = cls.get_material(element, should_inherit=False)
+        inherited_material = cls.get_material(element, should_inherit=True)
+        if material and "Profile" in material.is_a():
+            return True
+        if inherited_material and "Profile" in inherited_material.is_a():
+            return True
+        return False
+
+    @classmethod
+    def is_a_flow_segment(cls, element):
+        return element.is_a("IfcFlowSegment")
+
+    @classmethod
+    def replace_material_with_material_profile(cls, element):
+        old_material = cls.get_material(element, should_inherit=False)
+        old_inherited_material = cls.get_material(element, should_inherit=True)
+        blenderbim.core.material.unassign_material(tool.Ifc, tool.Material, objects=[tool.Ifc.get_object(element)])
+        tool.Ifc.run("material.assign_material", product=element, type="IfcMaterialProfileSet")
+        assinged_material = cls.get_material(element)
+        material = old_material if old_material and old_material.is_a("IfcMaterial") else None
+        if not material and old_inherited_material:
+            material = old_inherited_material if old_inherited_material.is_a("IfcMaterial") else None
+        material_profile = tool.Ifc.run("material.add_profile", profile_set=assinged_material, material=material)
+        return material_profile
