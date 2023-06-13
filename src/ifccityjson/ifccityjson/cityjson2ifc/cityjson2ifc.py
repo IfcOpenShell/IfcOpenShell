@@ -92,11 +92,17 @@ class Cityjson2ifc:
         self.geometry = GeometryIO()
         self.configuration()
 
-    def configuration(self, file_destination="output.ifc", name_attribute=None, split=True, lod=None):
+    def configuration(self, file_destination="output.ifc", name_attribute=None,
+                      split=True, lod=None, name_project=None, name_site=None,
+                      name_person_family=None, name_person_given=None):
         self.properties["file_destination"], self.properties["file_extension"] = os.path.splitext(file_destination)
         self.properties["name_attribute"] = name_attribute
         self.properties["split"] = split
         self.properties["lod"] = lod
+        self.properties["name_project"] = name_project
+        self.properties["name_site"] = name_site
+        self.properties["name_person_family"] = name_person_family
+        self.properties["name_person_given"] = name_person_given
 
     def convert(self, city_model):
         self.city_model = city_model
@@ -138,7 +144,7 @@ class Cityjson2ifc:
 
     def create_new_file(self):
         self.IFC_model = ifcopenshell.api.run("project.create_file")
-        self.IFC_project = ifcopenshell.api.run("root.create_entity", self.IFC_model, **{"ifc_class": "IfcProject", "name": "My Project"})
+        self.IFC_project = ifcopenshell.api.run("root.create_entity", self.IFC_model, **{"ifc_class": "IfcProject", "name": self.properties.get("name_project", "My Project")})
         ifcopenshell.api.run("unit.assign_unit", self.IFC_model, length={"is_metric": True, "raw": "METERS"})
         self.properties["owner_history"] = self.create_owner_history()
         self.IFC_representation_context = ifcopenshell.api.run("context.add_context", self.IFC_model,
@@ -152,7 +158,7 @@ class Cityjson2ifc:
 
         self.IFC_site = ifcopenshell.api.run("root.create_entity", self.IFC_model,
                                              **{"ifc_class": "IfcSite",
-                                                "name": "My Site"})
+                                                "name": self.properties.get("name_site", "My Site")})
         self.IFC_model.create_entity("IfcRelAggregates",
                                      **{"GlobalId": ifcopenshell.guid.new(),
                                         "RelatedObjects": [self.IFC_site],
@@ -179,7 +185,10 @@ class Cityjson2ifc:
 
     def create_owner_history(self):
         actor = self.IFC_model.createIfcActorRole("ENGINEER", None, None)
-        person = self.IFC_model.createIfcPerson("Oostwegel", None, "L.J.N.", None, None, None, (actor,))
+        person = self.IFC_model.createIfcPerson(
+            self.properties.get("name_person_family", "FamilyName"),
+            self.properties.get("name_person_given", "GivenName"),
+            None, None, None, None, (actor,))
         organization = self.IFC_model.createIfcOrganization(
             None,
             "IfcOpenShell",
