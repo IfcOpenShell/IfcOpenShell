@@ -447,11 +447,14 @@ class Material:
     def get_material(cls, element, should_inherit): pass
     def get_name(cls, obj): pass
     def get_type(cls, element): pass
+    def has_material_profile(cls, element): pass
     def import_material_definitions(cls, material_type): pass
+    def is_a_flow_segment(cls, element): pass
     def is_a_material_set(cls, material): pass
     def is_editing_materials(cls): pass
     def is_material_used_in_sets(cls, material): pass
     def load_material_attributes(cls, material): pass
+    def replace_material_with_material_profile(cls, element): pass
 
 
 @interface
@@ -551,6 +554,8 @@ class Project:
 @interface
 class Profile:
     def draw_image_for_ifc_profile(cls, draw, profile, size): pass
+    def is_editing_profile(cls): pass
+    def get_profile(cls, element): pass
 
 
 @interface
