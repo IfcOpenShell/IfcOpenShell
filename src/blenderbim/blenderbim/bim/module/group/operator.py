@@ -275,3 +275,19 @@ class UpdateGroup(bpy.types.Operator, tool.Ifc.Operator):
         )
         bpy.ops.bim.load_groups()
         return {"FINISHED"}
+
+
+class SelectGroupElements(bpy.types.Operator):
+    bl_idname = "bim.select_group_elements"
+    bl_label = "Select Group elements"
+    bl_options = {"REGISTER", "UNDO"}
+    group: bpy.props.IntProperty()
+
+    @classmethod
+    def poll(cls, context):
+        return bool(tool.Ifc.get() and context.active_object)
+
+    def execute(self, context):
+        elements = tool.Drawing.get_group_elements(tool.Ifc.get().by_id(self.group))
+        tool.Spatial.select_products(elements)
+        return {"FINISHED"}
