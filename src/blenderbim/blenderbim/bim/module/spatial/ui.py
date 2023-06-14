@@ -107,7 +107,7 @@ class BIM_PT_SpatialManager(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return tool.Ifc.get() and tool.Ifc.schema().name() != "IFC2X3"
 
     def draw(self, context):
         if not SpatialData.is_loaded:
