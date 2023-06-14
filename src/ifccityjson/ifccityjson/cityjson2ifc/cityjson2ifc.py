@@ -18,12 +18,12 @@
 # along with ifccityjson.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-from importlib.metadata import version as pkg_version
 import ifcopenshell
 import ifcopenshell.api
 from datetime import datetime
 
 from .geometry import GeometryIO
+from . import __version__
 
 JSON_TO_IFC = {
     "Building": ["IfcBuilding"],
@@ -197,7 +197,7 @@ class Cityjson2ifc:
             "IfcOpenShell, an open source (LGPL) software library that helps users and software developers to work with the IFC file format.",
         )
         p_o = self.IFC_model.createIfcPersonAndOrganization(person, organization)
-        application = self.IFC_model.createIfcApplication(organization, pkg_version("ifccityjson"), "ifccityjson", "ifccityjson")
+        application = self.IFC_model.createIfcApplication(organization, __version__, "ifccityjson", "ifccityjson")
         timestamp = int(datetime.now().timestamp())
         ownerHistory = self.IFC_model.createIfcOwnerHistory(p_o, application, "READWRITE", None, None, None, None,
                                                             timestamp)
