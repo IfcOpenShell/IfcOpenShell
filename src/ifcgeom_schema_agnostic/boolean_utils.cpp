@@ -845,7 +845,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 	}
 
 	if (fuzziness < 0.) {
-		fuzziness = settings.precision / 10.;
+		fuzziness = settings.precision / 100.;
 	}
 
 	// @todo, it does seem a bit odd, we first triangulate non-planar faces
