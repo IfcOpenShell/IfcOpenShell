@@ -1,4 +1,3 @@
-
 # ifccityjson - Python CityJSON to IFC converter
 # Copyright (C) 2021 Laurens J.N. Oostwegel <l.oostwegel@gmail.com>
 #
@@ -16,5 +15,5 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with ifccityjson.  If not, see <http://www.gnu.org/licenses/>.
-
+__version__ = "0.1.0"
 from .cityjson2ifc import *
