@@ -141,14 +141,10 @@ class SelectType(bpy.types.Operator):
 
     def execute(self, context):
         element = tool.Ifc.get().by_id(self.relating_type)
+        tool.Spatial.select_products([element])
         obj = tool.Ifc.get_object(element)
         if obj:
-            if obj in context.selectable_objects:
-                tool.Blender.select_and_activate_single_object(context, obj)
-            else:
-                self.report({"INFO"}, "Type object can't be selected : It may be hidden or in an excluded collection.")
-        context.scene.BIMModelProperties.ifc_class = element.is_a()
-        context.scene.BIMModelProperties.relating_type_id = str(self.relating_type)
+            context.view_layer.objects.active = obj
         return {"FINISHED"}
 
 
