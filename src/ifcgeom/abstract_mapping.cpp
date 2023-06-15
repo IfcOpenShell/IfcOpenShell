@@ -5,6 +5,10 @@
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/preprocessor/seq/for_each.hpp>
 
+#ifndef SCHEMA_SEQ
+static_assert(false, "A boost preprocessor sequence of schema identifiers is needed for this file to compile.");
+#endif
+
 ifcopenshell::geometry::impl::MappingFactoryImplementation& ifcopenshell::geometry::impl::mapping_implementations() {
 	static MappingFactoryImplementation impl;
 	return impl;
