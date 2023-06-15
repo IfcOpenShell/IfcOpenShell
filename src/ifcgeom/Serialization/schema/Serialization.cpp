@@ -30,6 +30,8 @@
 #define INCLUDE_PARENT_PARENT_DIR(x) STRINGIFY(../../../ifcparse/x-definitions.h)
 #include INCLUDE_PARENT_PARENT_DIR(IfcSchema)
 
+#include <numeric>
+
 template <typename T, typename U>
 int convert_to_ifc(const T& t, U*& u, bool /*advanced*/) {
 	std::vector<double> coords(3);
@@ -230,6 +232,15 @@ int convert_to_ifc(const Handle_Geom_Curve& c, IfcSchema::IfcCurve*& curve, bool
 				rational = true;
 				break;
 			}
+		}
+
+		if (bspline->IsPeriodic() && points->size()) {
+			points->push(*points->begin());
+			weights.push_back(weights[0]);
+			auto sum = std::accumulate(mults.begin(), mults.end(), 0);
+			auto d = sum - (bspline->Degree() + (int)points->size() + 1);
+			(*mults.begin()) -= d / 2;
+			(*mults.rbegin()) -= d / 2;
 		}
 
 		if (rational) {
