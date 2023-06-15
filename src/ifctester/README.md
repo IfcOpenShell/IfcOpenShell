@@ -23,7 +23,7 @@ property = ids.Property(
     uri="https://identifier.buildingsmart.org/uri/.../prop/LoadBearing", 
     instructions="Walls need to be load bearing.",
     minOccurs=1,
-    maxOccurs=1)
+    maxOccurs="unbounded")
 my_spec.requirements.append(property)
 my_ids.specifications.append(my_spec)
 
