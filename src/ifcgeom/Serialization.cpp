@@ -616,7 +616,7 @@ IfcUtil::IfcBaseClass* IfcGeom::MAKE_TYPE_NAME(serialise_)(const TopoDS_Shape& s
 	}
 
 	if (items->size() > 0) {
-		rep = new IfcSchema::IfcShapeRepresentation(0, std::string("Body"), std::string("Brep"), items);
+		rep = new IfcSchema::IfcShapeRepresentation(0, std::string("Body"), advanced ? std::string("AdvancedBrep") : std::string("Brep"), items);
 	} else {
 
 		// If not, see if there is a shell
@@ -631,7 +631,7 @@ IfcUtil::IfcBaseClass* IfcGeom::MAKE_TYPE_NAME(serialise_)(const TopoDS_Shape& s
 
 		if (shells->size() > 0) {
 			items->push(new IfcSchema::IfcShellBasedSurfaceModel(shells->generalize()));
-			rep = new IfcSchema::IfcShapeRepresentation(0, std::string("Body"), std::string("Brep"), items);
+			rep = new IfcSchema::IfcShapeRepresentation(0, std::string("Body"), advanced ? std::string("AdvancedBrep") : std::string("Brep"), items);
 		} else {
 
 			// If not, see if there is are one of more faces. Note that they will be grouped into a shell.
@@ -640,7 +640,7 @@ IfcUtil::IfcBaseClass* IfcGeom::MAKE_TYPE_NAME(serialise_)(const TopoDS_Shape& s
 
 			if (face_count > 0) {
 				items->push(shell);
-				rep = new IfcSchema::IfcShapeRepresentation(0, std::string("Body"), std::string("Brep"), items);
+				rep = new IfcSchema::IfcShapeRepresentation(0, std::string("Body"), advanced ? std::string("AdvancedBrep") : std::string("Brep"), items);
 			} else {
 
 				// If not, see if there are any edges. Note that wires are skipped as
