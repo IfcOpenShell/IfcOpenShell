@@ -32,6 +32,8 @@
 
 #include <numeric>
 
+#include <numeric>
+
 template <typename T, typename U>
 int convert_to_ifc(const T& t, U*& u, bool /*advanced*/) {
 	std::vector<double> coords(3);
