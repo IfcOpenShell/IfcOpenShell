@@ -21,7 +21,9 @@ property = ids.Property(
     propertySet="Pset_WallCommon", 
     measure="IfcBoolean",
     uri="https://identifier.buildingsmart.org/uri/.../prop/LoadBearing", 
-    instructions="Walls need to be load bearing.")
+    instructions="Walls need to be load bearing.",
+    minOccurs=1,
+    maxOccurs=1)
 my_spec.requirements.append(property)
 my_ids.specifications.append(my_spec)
 
