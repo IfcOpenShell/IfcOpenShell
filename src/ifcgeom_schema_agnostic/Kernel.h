@@ -11,6 +11,9 @@
 #include <boost/preprocessor/comparison/greater.hpp> 
 #include <boost/preprocessor/selection/min.hpp>
 
+#ifndef SCHEMA_SEQ
+static_assert(false, "A boost preprocessor sequence of schema identifiers is needed for this file to compile.");
+#endif
 
 // @tfk A macro cannot define an include (I think), so here we can't
 // loop over the sequence of schema identifiers, but rather we have
