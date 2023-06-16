@@ -208,7 +208,8 @@ class Usecase:
             elif prop.is_a("IfcPropertySingleValue"):
                 self.update_existing_prop_single_value(prop)
 
-            raise NotImplementedError(f"Updating '{prop.is_a()}' properties is not supported yet")
+            else:
+                raise NotImplementedError(f"Updating '{prop.is_a()}' properties is not supported yet")
 
     def update_existing_prop_enum(self, prop):
         """
