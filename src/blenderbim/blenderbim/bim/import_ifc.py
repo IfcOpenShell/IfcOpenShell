@@ -410,19 +410,19 @@ class IfcImporter:
             return True
 
     def is_native_swept_disk_solid(self, element, representations):
-        # detect BBIM Railings to represent them with meshes and not curves
-        if tool.Pset.get_element_pset(element, "BBIM_Railing"):
-            return False
-
         for representation in representations:
             items = representation["raw"].Items or []  # Be forgiving of invalid IFCs because Revit :(
             if len(items) == 1 and items[0].is_a("IfcSweptDiskSolid"):
+                if tool.Pset.get_element_pset(element, "BBIM_Railing"):
+                    return False
                 return True
             elif len(items) and (  # See #2508 why we accommodate for invalid IFCs here
                 items[0].is_a("IfcSweptDiskSolid")
                 and len({i.is_a() for i in items}) == 1
                 and len({i.Radius for i in items}) == 1
             ):
+                if tool.Pset.get_element_pset(element, "BBIM_Railing"):
+                    return False
                 return True
         return False
 
