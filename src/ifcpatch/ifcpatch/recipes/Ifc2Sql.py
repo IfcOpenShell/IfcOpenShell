@@ -82,7 +82,7 @@ class Patcher:
     def patch(self):
         self.full_schema = True
         self.is_strict = False
-        self.should_expand = False
+        self.should_expand = True
         self.should_get_psets = True
         self.should_get_geometry = True
         self.should_skip_geometry_data = False
@@ -106,6 +106,7 @@ class Patcher:
             self.file_patched = None
 
         self.create_id_map()
+        self.create_metadata()
 
         if self.should_get_psets:
             self.create_pset_table()
@@ -230,6 +231,32 @@ class Patcher:
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
             """
         self.c.execute(statement)
+
+    def create_metadata(self):
+        # There is no "standard" SQL serialisation, so we propose a convention
+        # of a "metadata" table to hold high level metadata. This includes the
+        # preprocessor field to uniquely identify the "variant" of SQL schema
+        # used. If someone wants their own SQL schema variant, they can
+        # identify it using the preprocessor field.
+        # IfcOpenShell-1.0.0 represents a schema where 1 table = 1 declaration.
+        # IfcOpenShell-2.0.0 represents a schema where tables represent types.
+        metadata = ["IfcOpenShell-1.0.0", self.file.schema, self.file.header.file_description.description[0]]
+        if self.sql_type == "sqlite":
+            statement = (
+                "CREATE TABLE IF NOT EXISTS metadata (preprocessor text, schema text, mvd text);"
+            )
+            self.c.execute(statement)
+            self.c.execute("INSERT INTO metadata VALUES (?, ?, ?);", metadata)
+        elif self.sql_type == "mysql":
+            statement = """
+            CREATE TABLE `metadata` (
+              `preprocessor` varchar(255) NOT NULL,
+              `schema` varchar(255) NOT NULL,
+              `mvd` varchar(255) NOT NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
+            """
+            self.c.execute(statement)
+            self.c.execute("INSERT INTO metadata VALUES (%s, %s, %s);", metadata)
 
     def create_pset_table(self):
         statement = """
