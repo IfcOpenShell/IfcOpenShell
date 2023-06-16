@@ -18,9 +18,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import ifcopenshell
 import logging
-import os
 import typing
 import inspect
 import collections
@@ -95,9 +95,14 @@ def write(output, filepath):
     :return: None
     :rtype: None
     """
-    if isinstance(output, str):
-        with open(filepath, "w") as text_file:
-            text_file.write(output)
+    if output is None:
+        return
+    elif isinstance(output, str):
+        if os.path.exists(output):
+            os.rename(output, filepath)
+        else:
+            with open(filepath, "w") as text_file:
+                text_file.write(output)
     else:
         output.write(filepath)
 
