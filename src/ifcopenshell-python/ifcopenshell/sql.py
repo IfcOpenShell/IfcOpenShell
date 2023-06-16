@@ -2,7 +2,7 @@ try:
     import re
     import json
     import sqlite3
-    import mysql.connector
+    # import mysql.connector
     import numpy as np
     import ifcopenshell.util.schema
     from .file import file
