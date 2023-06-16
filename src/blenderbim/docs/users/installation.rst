@@ -137,13 +137,21 @@ FAQ
    **Unstable installation** section to check that you have installed the
    correct version.
 
-2. **I am on Ubuntu and get an error similar to "ImportError: /lib/x86_64-linux-gnu/libm.so.6: version GLIBC_2.29 not found"**
+2. **I am on Ubuntu and get an error similar to "ImportError:
+   /lib/x86_64-linux-gnu/libm.so.6: version GLIBC_2.29 not found"**
 
    Our latest package which uses IfcOpenShell v0.7.0 is built using Ubuntu 20 LTS.
    If you have an older Ubuntu version, you can either upgrade to 19.10 or above,
    or you'll need to compile IfcOpenShell yourself.
 
-3. **Some other error prevents me from installing or doing basic functions with
+3. **I get an error saying "ModuleNotFoundError: No module named 'numpy'"**"
+
+   If you have installed Blender from another source instead of from
+   `Blender.org <https://www.blender.org/download/>`__, such as from your
+   distro's package repositories, then you may be missing some modules like
+   ``numpy``. Try installing it manually like ``apt install python-numpy``.
+
+4. **Some other error prevents me from installing or doing basic functions with
    the add-on. Is it specific to my environment?**
 
    Sometimes it is helpful to try installing and using the BlenderBIM Add-on on
@@ -157,3 +165,15 @@ FAQ
 
    If this fixes your issue, consider disabling other add-ons one by one until
    you find a conflict as a next step to isolating the issue.
+
+5. **I get an error similar to RuntimeError: Instance #1234 not found**
+
+   Blender saves and loads projects to a ``.blend`` file. However. the
+   BlenderBIM Add-on works with native IFC, and this means instead of saving
+   and loading ``.blend`` files, you should instead save and load the ``.ifc``
+   project.
+
+   If you have opened a ``.blend`` file, there is a risk that the contents of
+   the ``.blend`` session do not correlate to the contents of the ``.ifc``,
+   which can cause this error. Unless you are an advanced user, only save and
+   load ``.ifc`` files.
