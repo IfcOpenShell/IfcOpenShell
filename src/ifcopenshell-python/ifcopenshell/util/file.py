@@ -23,5 +23,7 @@ def guess_format(path: Path) -> "str | None":
     """Try to guess format using file extension"""
     if path.suffix.lower() in (".ifczip", ".zip"):
         return ".ifcZIP"
-    if path.suffix.lower() in (".ifcxml", ".xml"):
+    elif path.suffix.lower() in (".ifcxml", ".xml"):
         return ".ifcXML"
+    elif path.suffix.lower() in (".ifcsqlite", ".sqlite", ".db"):
+        return ".ifcSQLite"
