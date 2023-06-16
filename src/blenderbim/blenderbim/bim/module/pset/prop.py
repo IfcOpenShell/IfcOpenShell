@@ -22,7 +22,7 @@ import ifcopenshell
 import ifcopenshell.util.element
 import blenderbim.tool as tool
 from blenderbim.bim.prop import Attribute, StrProperty
-from blenderbim.bim.module.pset.data import AddEditCustomPropertiesData
+from blenderbim.bim.module.pset.data import AddEditCustomPropertiesData, ObjectPsetsData
 from blenderbim.bim.ifc import IfcStore
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -57,18 +57,10 @@ def blender_formatted_enum_from_psets(psets):
     return enum_items
 
 
-def get_pset_names(self, context):
-    global psetnames
-    obj = context.active_object
-    if not obj.BIMObjectProperties.ifc_definition_id:
-        return []
-    element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
-    ifc_class = element.is_a()
-    if ifc_class not in psetnames:
-        psets = blenderbim.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True)
-        psetnames[ifc_class] = blender_formatted_enum_from_psets(psets)
-    assigned_names = ifcopenshell.util.element.get_psets(element, psets_only=True).keys()
-    return [p for p in psetnames[ifc_class] if p[0] not in assigned_names]
+def get_pset_name(self, context):
+    if not ObjectPsetsData.is_loaded:
+        ObjectPsetsData.load()
+    return ObjectPsetsData.data["pset_name"]
 
 
 def get_material_pset_names(self, context):
@@ -157,15 +149,10 @@ def get_work_schedule_pset_names(self, context):
     return psetnames[ifc_class]
 
 
-def get_qto_names(self, context):
-    global qtonames
-    if "/" in context.active_object.name:
-        ifc_class = context.active_object.name.split("/")[0]
-        if ifc_class not in qtonames:
-            psets = blenderbim.bim.schema.ifc.psetqto.get_applicable(ifc_class, qto_only=True)
-            qtonames[ifc_class] = blender_formatted_enum_from_psets(psets)
-        return qtonames[ifc_class]
-    return []
+def get_qto_name(self, context):
+    if not ObjectPsetsData.is_loaded:
+        ObjectPsetsData.load()
+    return ObjectPsetsData.data["qto_name"]
 
 
 def get_template_type(self, context):
@@ -197,8 +184,8 @@ class PsetProperties(PropertyGroup):
     active_pset_name: StringProperty(name="Pset Name")
     active_pset_type: StringProperty(name="Active Pset Type")
     properties: CollectionProperty(name="Properties", type=IfcProperty)
-    pset_name: EnumProperty(items=get_pset_names, name="Pset Name")
-    qto_name: EnumProperty(items=get_qto_names, name="Qto Name")
+    pset_name: EnumProperty(items=get_pset_name, name="Pset Name")
+    qto_name: EnumProperty(items=get_qto_name, name="Qto Name")
 
 
 class MaterialPsetProperties(PropertyGroup):
