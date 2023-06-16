@@ -71,6 +71,7 @@ except Exception as e:
 from . import guid
 from .file import file
 from .entity_instance import entity_instance, register_schema_attributes
+from .sql import sqlite, sqlite_entity
 
 READ_ERROR = ifcopenshell_wrapper.file_open_status.READ_ERROR
 NO_HEADER = ifcopenshell_wrapper.file_open_status.NO_HEADER
@@ -114,6 +115,8 @@ def open(path: "os.PathLike | str", format: str = None) -> file:
                         return open(zf.extract(name, unzipped_path))
                 else:
                     raise LookupError(f"No .ifc or .ifcXML file found in {path}")
+    if format == ".ifcSQLite":
+        return sqlite(path)
     f = ifcopenshell_wrapper.open(str(path.absolute()))
     if f.good():
         return file(f)
