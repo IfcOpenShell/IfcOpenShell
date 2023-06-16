@@ -40,7 +40,7 @@ related information in ``shape.geometry``:
     # A unique geometry ID, useful to check whether or not two geometries are
     # identical for caching and reuse. The naming scheme is:
     # IfcShapeRepresentation.id{-layerset-LayerSet.id}{-material-Material.id}{-openings-[Opening n.id ...]}{-world-coords}
-    print(shape.geometry.id())
+    print(shape.geometry.id)
 
     # A 4x4 matrix representing the location and rotation of the element, in the form:
     # [ [ x_x, y_x, z_x, x   ]
@@ -58,6 +58,9 @@ related information in ``shape.geometry``:
 
     # For convenience, you might want the matrix as a nested numpy array, so you can do matrix math.
     matrix = ifcopenshell.util.shape.get_shape_matrix(shape)
+
+    # You can also extract the XYZ location of the matrix.
+    location = matrix[:,3][0:3]
 
     # X Y Z of vertices in flattened list e.g. [v1x, v1y, v1z, v2x, v2y, v2z, ...]
     verts = shape.geometry.verts
