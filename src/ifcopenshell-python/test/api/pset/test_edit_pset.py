@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import operator
 import test.bootstrap
 import ifcopenshell.api
 
@@ -165,6 +166,22 @@ class TestEditPset(test.bootstrap.IFC4):
         assert pset.HasProperties[0].Name == "MyCustom"
         assert pset.HasProperties[0].NominalValue.is_a("IfcContextDependentMeasure")
         assert pset.HasProperties[0].NominalValue.wrappedValue == 34
+
+    def test_editing_list_valued_properties(self):
+        cable = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcDistributionPort", predefined_type="CABLE")
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=cable, name="Pset_DistributionPortTypeCable")
+        ifcopenshell.api.run(
+            "pset.edit_pset",
+            self.file,
+            pset=pset,
+            properties={
+                "Protocols": ["One", "Two", "Three"],
+            },
+        )
+        assert pset.HasProperties[0].is_a('IfcPropertyListValue')
+        assert len(pset.HasProperties[0].ListValues) == 3
+        assert set(map(ifcopenshell.entity_instance.is_a, pset.HasProperties[0].ListValues)) == {'IfcIdentifier'}
+        assert list(map(operator.itemgetter(0), pset.HasProperties[0].ListValues)) == ['One', 'Two', 'Three']
 
     def test_editing_properties_with_an_explicit_type(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
