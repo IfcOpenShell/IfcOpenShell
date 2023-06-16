@@ -1,19 +1,20 @@
 try:
     import re
     import json
-    import sqlite3
-    # import mysql.connector
-    import numpy as np
+
     import ifcopenshell.util.schema
     from .file import file
     from . import ifcopenshell_wrapper
     from .entity_instance import entity_instance
-except:
+except ImportError as e:
+    print(f"No SQL support: {e}")
     pass  # No SQL support
 
 
 class sqlite(file):
     def __init__(self, filepath):
+        import sqlite3
+
         self.wrapped_data = None
         self.history_size = 64
         self.history = []
@@ -24,6 +25,7 @@ class sqlite(file):
         self.db = sqlite3.connect(self.filepath)
         self.db.row_factory = sqlite3.Row
 
+        # import mysql.connector
         # self.db = mysql.connector.connect(
         #    host="localhost",
         #    user="root",
@@ -198,6 +200,8 @@ class sqlite(file):
         return False
 
     def get_geometry(self, ids):
+        import numpy as np
+
         ids_csv = ",".join(map(str, ids))
         query = f"SELECT ifc_id, x, y, z, matrix, geometry, verts, edges, faces, material_ids, materials FROM shape LEFT JOIN geometry ON shape.geometry = geometry.id WHERE `ifc_id` IN ({ids_csv})"
         self.cursor.execute(query)
