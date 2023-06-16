@@ -121,7 +121,7 @@ def get_psets(element, psets_only=False, qtos_only=False, should_inherit=True):
                 continue
             psets[definition.Name] = get_property_definition(definition)
     elif element.is_a("IfcMaterialDefinition") or element.is_a("IfcProfileDef"):
-        for definition in element.HasProperties or []:
+        for definition in getattr(element, "HasProperties", None) or []:
             if qtos_only:
                 continue
             psets[definition.Name] = get_property_definition(definition)
