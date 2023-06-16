@@ -421,13 +421,19 @@ class IfcGit:
             for branch in lookup[item.hexsha]:
                 if branch.name == props.display_branch:
                     # this is a branch!
+                    if re.match("^(origin/)?(HEAD|main|master)$", branch.name):
+                        # preserve remote IDs in origin/main or main
+                        mergetool = "ifcmerge"
+                    else:
+                        # rewrite remote IDs
+                        mergetool = "ifcmerge-forward"
                     try:
                         # NOTE this is calling the git binary in a subprocess
                         repo.git.merge(branch)
                     except git.exc.GitCommandError:
                         # merge is expected to fail, run ifcmerge
                         try:
-                            repo.git.mergetool(tool="ifcmerge")
+                            repo.git.mergetool(tool=mergetool)
                         except git.exc.GitCommandError as exc:
                             message = re.sub("(  stderr: '|')", "", exc.stderr)
                             # ifcmerge failed, rollback
