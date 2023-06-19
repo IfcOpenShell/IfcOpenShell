@@ -947,7 +947,7 @@ class Sequence(blenderbim.core.tool.Sequence):
         def set_material(name, r, g, b):
             material = bpy.data.materials.new(name)
             material.use_nodes = True
-            material.node_tree.nodes["Principled BSDF"].inputs[0].default_value = (r, g, b, 1.0)
+            tool.Blender.get_material_node(material, "BSDF_PRINCIPLED").inputs[0].default_value = (r, g, b, 1.0)
             return material
 
         def get_animation_materials():

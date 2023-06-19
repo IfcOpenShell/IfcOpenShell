@@ -261,7 +261,7 @@ def update_color_full(self, context):
     material = bpy.data.materials.get("color_full")
     if material:
         color_full = bpy.context.scene.BIMAnimationProperties.color_full
-        inputs = material.node_tree.nodes["Principled BSDF"].inputs
+        inputs = tool.Blender.get_material_node(material, "BSDF_PRINCIPLED").inputs
         color = inputs["Base Color"].default_value
         color[0] = color_full.r
         color[1] = color_full.g
@@ -272,7 +272,7 @@ def update_color_progress(self, context):
     material = bpy.data.materials.get("color_progress")
     if material:
         color_progress = bpy.context.scene.BIMAnimationProperties.color_progress
-        inputs = material.node_tree.nodes["Principled BSDF"].inputs
+        inputs = tool.Blender.get_material_node(material, "BSDF_PRINCIPLED").inputs
         color = inputs["Base Color"].default_value
         color[0] = color_progress.r
         color[1] = color_progress.g
