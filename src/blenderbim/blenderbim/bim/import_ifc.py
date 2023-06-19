@@ -347,7 +347,8 @@ class IfcImporter:
             self.element_types = set(self.file.by_type("IfcTypeProduct"))
 
         if self.ifc_import_settings.has_filter and self.ifc_import_settings.should_filter_spatial_elements:
-            self.spatial_elements = self.get_spatial_elements_filtered_by_elements(self.elements)
+            filtered_elements = self.elements | set(self.file.by_type("IfcGrid"))
+            self.spatial_elements = self.get_spatial_elements_filtered_by_elements(filtered_elements)
         else:
             if self.file.schema == "IFC2X3":
                 self.spatial_elements = set(self.file.by_type("IfcSpatialStructureElement"))
