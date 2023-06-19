@@ -241,6 +241,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
         edges = property(edges)
         material_ids = property(material_ids)
         materials = property(materials)
+        item_ids = property(item_ids)
 	%}
 };
 
