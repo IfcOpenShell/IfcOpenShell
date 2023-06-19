@@ -24,6 +24,7 @@ classes = (
     operator.EnableEditingStyle,
     operator.DisableEditingStyle,
     operator.EditStyle,
+    operator.UpdateCurrentStyle,
     operator.EnableEditingExternalStyle,
     operator.DisableEditingExternalStyle,
     operator.EditExternalStyle,
