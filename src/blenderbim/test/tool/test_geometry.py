@@ -478,7 +478,7 @@ class TestShouldGenerateUVs(NewFile):
         obj.data.materials.append(material)
         material.use_nodes = True
 
-        bsdf = material.node_tree.nodes["Principled BSDF"]
+        bsdf = tool.Blender.get_material_node(material, "BSDF_PRINCIPLED")
         node = material.node_tree.nodes.new(type="ShaderNodeTexImage")
         material.node_tree.links.new(bsdf.inputs["Base Color"], node.outputs["Color"])
 
@@ -494,7 +494,7 @@ class TestShouldGenerateUVs(NewFile):
         obj.data.materials.append(material)
         material.use_nodes = True
 
-        bsdf = material.node_tree.nodes["Principled BSDF"]
+        bsdf = tool.Blender.get_material_node(material, "BSDF_PRINCIPLED")
         node = material.node_tree.nodes.new(type="ShaderNodeTexImage")
         material.node_tree.links.new(bsdf.inputs["Base Color"], node.outputs["Color"])
 
