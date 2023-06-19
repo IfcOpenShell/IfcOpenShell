@@ -145,6 +145,16 @@ class Blender:
         shader_editor.pin = previous_pin_setting
 
     @classmethod
+    def get_material_node(cls, blender_material, node_type):
+        """returns first node from the `blender_material` shader graph with type `node_type`"""
+        if not blender_material.use_nodes:
+            return
+        nodes = blender_material.node_tree.nodes
+        for node in nodes:
+            if node.type == node_type:
+                return node
+
+    @classmethod
     def update_screen(cls):
         bpy.ops.wm.redraw_timer(type="DRAW_WIN_SWAP", iterations=1)
 
