@@ -481,6 +481,8 @@ class CancelEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
         data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Window", "Data"))
+        data.update(data.pop("lining_properties"))
+        data.update(data.pop("panel_properties"))
         props = obj.BIMWindowProperties
         props.set_props_kwargs_from_ifc_data(data)
 
