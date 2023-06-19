@@ -29,6 +29,9 @@ classes = (
     operator.OverrideDuplicateMoveLinked,
     operator.OverrideDuplicateMoveLinkedMacro,
     operator.OverrideDuplicateMoveMacro,
+    operator.OverrideDuplicateMoveAggregate,
+    operator.OverrideDuplicateMoveAggregateMacro,
+    # operator.RefreshAggregate,
     operator.OverrideJoin,
     operator.OverrideModeSetEdit,
     operator.OverrideModeSetObject,
@@ -58,6 +61,8 @@ def register():
     operator.OverrideDuplicateMoveMacro.define("TRANSFORM_OT_translate")
     operator.OverrideDuplicateMoveLinkedMacro.define("BIM_OT_override_object_duplicate_move_linked")
     operator.OverrideDuplicateMoveLinkedMacro.define("TRANSFORM_OT_translate")
+    operator.OverrideDuplicateMoveAggregateMacro.define("BIM_OT_override_object_duplicate_move_aggregate")
+    operator.OverrideDuplicateMoveAggregateMacro.define("TRANSFORM_OT_translate")
 
     bpy.types.Object.BIMGeometryProperties = bpy.props.PointerProperty(type=prop.BIMObjectGeometryProperties)
     bpy.types.Scene.BIMGeometryProperties = bpy.props.PointerProperty(type=prop.BIMGeometryProperties)
@@ -69,6 +74,7 @@ def register():
         kmi = km.keymap_items.new("bim.override_object_join", "J", "PRESS", ctrl=True)
         kmi = km.keymap_items.new("bim.override_object_duplicate_move_macro", "D", "PRESS", shift=True)
         kmi = km.keymap_items.new("bim.override_object_duplicate_move_linked_macro", "D", "PRESS", alt=True)
+        kmi = km.keymap_items.new("bim.override_object_duplicate_move_aggregate_macro", "F", "PRESS", ctrl=True)
         kmi = km.keymap_items.new("bim.override_paste_buffer", "V", "PRESS", ctrl=True)
         kmi = km.keymap_items.new("bim.override_mode_set_edit", "TAB", "PRESS")
         kmi = km.keymap_items.new("bim.override_object_delete", "X", "PRESS")
