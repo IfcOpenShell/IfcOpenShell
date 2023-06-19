@@ -1,12 +1,14 @@
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.geom
+import ifcopenshell.api.owner.settings
 
-import bootstrap
-
-
-class TestAssignObject(bootstrap.IFC4):
+class TestAssignObject:
     def test_no_welding_on_distinct_items(self):
+        self.file = ifcopenshell.api.run("project.create_file")
+        ifcopenshell.api.owner.settings.get_user = lambda ifc: (ifc.by_type("IfcPersonAndOrganization") or [None])[0]
+        ifcopenshell.api.owner.settings.get_application = lambda ifc: (ifc.by_type("IfcApplication") or [None])[0]
+    
         ifcopenshell.api.run(
             "root.create_entity", self.file, ifc_class="IfcProject", name="Test"
         )
