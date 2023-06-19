@@ -95,6 +95,7 @@ def create_ifc_window(
     frame_thickness,
     glass_thickness,
     position: Vector,
+    frame_position: Vector = None,
 ):
     """`lining_thickness` expected to be defined as a list,
     similarly to `create_ifc_window_frame_simple` `thickness` argument"""
@@ -127,11 +128,12 @@ def create_ifc_window(
     main_lining = create_ifc_window_frame_simple(builder, main_lining_size, lining_thickness)
     lining_items.append(main_lining)
 
-    frame_position = V(
-        lining_to_panel_offset_x,
-        lining_to_panel_offset_y_full,
-        lining_to_panel_offset_x,
-    )
+    if frame_position is None:
+        frame_position = V(
+            lining_to_panel_offset_x,
+            lining_to_panel_offset_y_full,
+            lining_to_panel_offset_x,
+        )
 
     frame_extruded = create_ifc_window_frame_simple(builder, frame_size, frame_thickness, frame_position)
 
@@ -272,19 +274,26 @@ class Usecase:
                 if panel_i in built_panels:
                     continue
 
-                if unique_cols > 1:
-                    if column_i == 0:
+                # detect mullion
+                has_mullion = unique_cols > 1
+                first_column = column_i == 0
+                last_column = column_i == unique_cols - 1
+                left_to_mullion = has_mullion and not last_column
+                right_to_mullion = has_mullion and not first_column
+
+                if has_mullion:
+                    if first_column:
                         panel_width = first_mullion_offset
-                    elif column_i == unique_cols - 1:
+                    elif last_column:
                         panel_width = overall_width - accumulated_width
                     else:
                         panel_width = second_mullion_offset - accumulated_width
 
                     # mullion thickness
-                    if column_i != 0:
+                    if not first_column:
                         window_lining_thickness[0] = mullion_thickness  # left column
                         closed_lining[0] = False
-                    if column_i != unique_cols - 1:
+                    if not last_column:
                         window_lining_thickness[1] = mullion_thickness  # right column
                         closed_lining[1] = False
                 else:
@@ -292,7 +301,9 @@ class Usecase:
 
                 frame_depth = panels[panel_i]["FrameDepth"]
                 frame_thickness = panels[panel_i]["FrameThickness"]
-                lining_to_panel_offset_y_full = overall_depth - frame_depth
+                lining_to_panel_offset_y_full = (lining_depth - frame_depth) + lining_to_panel_offset_y
+                base_frame_clear = lining_to_panel_offset_x + frame_thickness - lining_thickness
+                current_offset_x = base_frame_clear - frame_thickness + mullion_thickness
 
                 # add lining
                 cur_panel_items.append(
@@ -304,20 +315,22 @@ class Usecase:
                     )
                 )
 
-                def get_lining_shape(lining_thickness, closed=True, mirror=False):
+                def get_lining_shape(lining_thickness, closed=True, mirror=False, x_offset=None):
+                    if x_offset is None:
+                        x_offset = lining_to_panel_offset_x
                     l_shape_check = window_l_shape_check(
                         lining_to_panel_offset_y_full,
                         lining_depth,
-                        lining_to_panel_offset_x,
+                        x_offset,
                         [lining_thickness],
                     )
                     if l_shape_check:
                         lining_shape = builder.polyline(
                             [
                                 V(0, lining_depth),
-                                V(lining_to_panel_offset_x, lining_depth),
+                                V(x_offset, lining_depth),
                                 V(
-                                    lining_to_panel_offset_x,
+                                    x_offset,
                                     lining_to_panel_offset_y_full,
                                 ),
                                 V(lining_thickness, lining_to_panel_offset_y_full),
@@ -348,10 +361,15 @@ class Usecase:
 
                 cur_panel_items.extend(
                     [
-                        get_lining_shape(window_lining_thickness[0], closed=closed_lining[0]),
+                        get_lining_shape(
+                            window_lining_thickness[0], 
+                            closed=closed_lining[0], 
+                            x_offset=current_offset_x if right_to_mullion else None,
+                        ),
                         get_lining_shape(
                             window_lining_thickness[1],
                             closed=closed_lining[1],
+                            x_offset=current_offset_x if left_to_mullion else None,
                             mirror=True,
                         ),
                     ]
@@ -359,8 +377,15 @@ class Usecase:
 
                 # add frame
                 frame_items = []
-                frame_position = V(lining_to_panel_offset_x, lining_to_panel_offset_y_full)
-                frame_width = panel_width - lining_to_panel_offset_x * 2
+
+                frame_position = V(
+                    current_offset_x if right_to_mullion  else lining_to_panel_offset_x, 
+                    lining_to_panel_offset_y_full, 
+                )
+
+                frame_width = panel_width
+                frame_width -= current_offset_x if left_to_mullion   else lining_to_panel_offset_x
+                frame_width -= current_offset_x if right_to_mullion  else lining_to_panel_offset_x
 
                 frame_vertical = builder.rectangle(size=V(frame_thickness, frame_depth))
                 frame_items.extend(
@@ -411,39 +436,40 @@ class Usecase:
             unique_cols = len(set(panel_row))
 
             for column_i, panel_i in enumerate(panel_row):
-                # calculate current panel dimensions
-                window_lining_thickness = [lining_thickness] * 4
 
-                if unique_cols > 1:
+                # detect mullion
+                has_mullion = unique_cols > 1
+                first_column = column_i == 0
+                last_column = column_i == unique_cols - 1
+                left_to_mullion = has_mullion and not last_column
+                right_to_mullion = has_mullion and not first_column
+
+                # detect transom
+                has_transom = unique_rows_in_col[column_i] > 1
+                first_row = row_i == 0
+                last_row = row_i == unique_rows_in_col[column_i] - 1 
+                top_to_transom = has_transom and not first_row
+                bottom_to_transom = has_transom and not last_row
+
+                # calculate current panel dimensions
+                if has_mullion:
                     # panel_width
-                    if column_i == 0:
+                    if first_column:
                         panel_width = first_mullion_offset
-                    elif column_i == unique_cols - 1:
+                    elif last_column:
                         panel_width = overall_width - accumulated_width
                     else:
                         panel_width = second_mullion_offset - accumulated_width
-
-                    # mullion thickness
-                    if column_i != 0:
-                        window_lining_thickness[0] = mullion_thickness  # left column
-                    if column_i != unique_cols - 1:
-                        window_lining_thickness[2] = mullion_thickness  # right column
                 else:
                     panel_width = overall_width
 
-                if unique_rows_in_col[column_i] > 1:
-                    if row_i == 0:
+                if has_transom:
+                    if first_row:
                         panel_height = first_transom_offset
-                    elif row_i == unique_rows_in_col[column_i] - 1:
+                    elif last_row:
                         panel_height = overall_height - accumulated_height[column_i]
                     else:
                         panel_height = second_transom_offset - accumulated_height[column_i]
-
-                    # transom thickness
-                    if row_i != 0:
-                        window_lining_thickness[3] = transom_thickness  # bottom row
-                    if row_i != unique_rows_in_col[column_i] - 1:
-                        window_lining_thickness[1] = transom_thickness  # top row
                 else:
                     panel_height = overall_height
 
@@ -455,15 +481,38 @@ class Usecase:
                 cur_panel = panels[panel_i]
                 frame_depth = cur_panel["FrameDepth"]
                 frame_thickness = cur_panel["FrameThickness"]
-                lining_to_panel_offset_y_full = overall_depth - frame_depth
-                current_items = []
+                base_frame_clear = lining_to_panel_offset_x + frame_thickness - lining_thickness
+                current_offset_x = base_frame_clear - frame_thickness + mullion_thickness
+                current_offset_z = base_frame_clear - frame_thickness + transom_thickness
 
-                frame_width = panel_width - lining_to_panel_offset_x * 2
-                frame_height = panel_height - lining_to_panel_offset_x * 2
+                # calculate lining thickness and frame size / offset
+                # taking into account mullions and transoms
+                window_lining_thickness = [
+                    mullion_thickness if right_to_mullion  else lining_thickness,
+                    transom_thickness if bottom_to_transom else lining_thickness,
+                    mullion_thickness if left_to_mullion   else lining_thickness,
+                    transom_thickness if top_to_transom    else lining_thickness,
+                ]
+
+                lining_to_panel_offset_y_full = (lining_depth - frame_depth) + lining_to_panel_offset_y
 
                 window_lining_size = V(panel_width, lining_depth, panel_height)
-                frame_size = V(frame_width, frame_depth, frame_height)
+                frame_size = window_lining_size.copy()
+                frame_size.y = frame_depth
+
+                frame_size.x -= current_offset_x if left_to_mullion   else lining_to_panel_offset_x
+                frame_size.x -= current_offset_x if right_to_mullion  else lining_to_panel_offset_x
+
+                frame_size.z -= current_offset_z if top_to_transom    else lining_to_panel_offset_x
+                frame_size.z -= current_offset_z if bottom_to_transom else lining_to_panel_offset_x
+
                 window_panel_position = V(accumulated_width, 0, accumulated_height[column_i])
+
+                frame_position = V(
+                    current_offset_x if right_to_mullion  else lining_to_panel_offset_x, 
+                    lining_to_panel_offset_y_full, 
+                    current_offset_z if top_to_transom    else lining_to_panel_offset_x
+                )
 
                 # create window panel
                 current_window_items = create_ifc_window(
@@ -476,6 +525,7 @@ class Usecase:
                     frame_thickness,
                     glass_thickness,
                     window_panel_position,
+                    frame_position
                 )
                 built_panels.append(panel_i)
                 window_items.extend(chain(*current_window_items))
