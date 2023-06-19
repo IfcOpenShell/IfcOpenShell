@@ -361,7 +361,7 @@ class IfcImporter:
             while True:
                 results.add(spatial_element)
                 spatial_element = ifcopenshell.util.element.get_aggregate(spatial_element)
-                if not spatial_element or spatial_element.is_a("IfcContext"):
+                if not spatial_element or spatial_element.is_a() in ("IfcContext", "IfcProject"):
                     break
         return results
 
@@ -1342,14 +1342,11 @@ class IfcImporter:
         obj.BIMObjectProperties.collection = self.project["blender"]
 
     def create_collections(self):
-        if self.ifc_import_settings.collection_mode == "DECOMPOSITION":
-            self.create_decomposition_collections()
-        elif self.ifc_import_settings.collection_mode == "SPATIAL_DECOMPOSITION":
-            self.create_spatial_decomposition_collections()
-
-    def create_decomposition_collections(self):
         self.create_spatial_decomposition_collections()
-        self.create_aggregate_collections()
+        if self.ifc_import_settings.collection_mode == "DECOMPOSITION":
+            self.create_aggregate_collections()
+        elif self.ifc_import_settings.collection_mode == "SPATIAL_DECOMPOSITION":
+            pass
 
     def create_spatial_decomposition_collections(self):
         for rel_aggregate in self.project["ifc"].IsDecomposedBy or []:
