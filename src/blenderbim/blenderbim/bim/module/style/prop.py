@@ -53,14 +53,9 @@ STYLE_TYPES = [
 
 
 def update_shading_styles(self, context):
-    materials_to_objects = dict()
-
-    for obj in bpy.data.objects:
-        blender_material = obj.active_material
-        if blender_material and blender_material.BIMMaterialProperties.ifc_style_id != 0:
-            materials_to_objects[blender_material] = obj
-
-    for mat, obj in materials_to_objects.items():
+    for mat in bpy.data.materials:
+        if mat.BIMMaterialProperties.ifc_style_id == 0:
+            continue
         tool.Style.change_current_style_type(mat, self.active_style_type)
 
 

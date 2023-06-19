@@ -90,6 +90,7 @@ class BIM_PT_style(MaterialButtonsPanel, Panel):
             return
 
         row.prop(style_props, "active_style_type", icon="SHADING_RENDERED", text="")
+        row.operator("bim.update_current_style", icon="FILE_REFRESH", text="")
         row = self.layout.row(align=True)
         row.operator("bim.update_style_colours", icon="GREASEPENCIL")
         row.operator("bim.update_style_textures", icon="TEXTURE", text="")
