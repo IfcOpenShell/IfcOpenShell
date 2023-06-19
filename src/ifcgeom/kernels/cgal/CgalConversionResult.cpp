@@ -57,7 +57,7 @@ void ifcopenshell::geometry::CgalShape::to_nef() const {
 }
 #endif
 
-void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int surface_style_id) const {
+void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id) const {
 	// Copy is made because triangulate_faces() obviously does not accept a const argument
 	// ... also becuase of transforming the vertex positions, right?
 	cgal_shape_t s = *this;
@@ -152,6 +152,7 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 			auto it = welds.find(pn);
 			if (it == welds.end()) {
 				vidx = t->addVertex(
+					item_id,
 					surface_style_id,
 					CGAL::to_double(current_halfedge->vertex()->point().cartesian(0)),
 					CGAL::to_double(current_halfedge->vertex()->point().cartesian(1)),
@@ -174,7 +175,7 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 			++current_halfedge;
 		} while (current_halfedge != face->facet_begin());
 
-		t->addFace(surface_style_id, vertexidx[0], vertexidx[1], vertexidx[2]);
+		t->addFace(item_id, surface_style_id, vertexidx[0], vertexidx[1], vertexidx[2]);
 
 		++num_faces;
 	}
@@ -547,7 +548,7 @@ void ifcopenshell::geometry::CgalShape::map(const std::vector<OpaqueCoordinate<4
 
 #ifndef IFOPSH_SIMPLE_KERNEL
 
-void ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int surface_style_id) const {
+void ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id) const {
 	throw std::runtime_error("Not implemented");
 }
 

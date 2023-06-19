@@ -31,7 +31,7 @@ namespace {
 	}
 }
 
-void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int surface_style_id) const {
+void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id) const {
 
 	// @todo remove duplication with OpenCascadeKernel::convert(const taxonomy::matrix4::ptr matrix, gp_GTrsf& trsf);
 	// above can be static?
@@ -84,7 +84,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 				coords.push_back(tri->Node(i).Transformed(loc).XYZ());
 				taxonomy_transform(place.components_, *coords.rbegin());
 				const gp_XYZ& last = *coords.rbegin();
-				dict[i] = t->addVertex(surface_style_id, last.X(), last.Y(), last.Z());
+				dict[i] = t->addVertex(item_id, surface_style_id, last.X(), last.Y(), last.Z());
 
 				if (calculate_normals) {
 					const gp_Pnt2d& uv = tri->UVNode(i);
@@ -140,7 +140,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 				_normals.push_back((float)normal.Z());
 				*/
 
-				t->addFace(surface_style_id, dict[n1], dict[n2], dict[n3]);
+				t->addFace(item_id, surface_style_id, dict[n1], dict[n2], dict[n3]);
 
 				t->addEdge(dict[n1], dict[n2], edgecount, edges_temp);
 				t->addEdge(dict[n2], dict[n3], edgecount, edges_temp);
@@ -208,8 +208,8 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 					taxonomy_transform(place.components_, p3);
 					taxonomy_transform(place.components_, p);
 
-					int left = t->addVertex(surface_style_id, p2.X(), p2.Y(), p2.Z());
-					int right = t->addVertex(surface_style_id, p3.X(), p3.Y(), p3.Z());
+					int left = t->addVertex(item_id, surface_style_id, p2.X(), p2.Y(), p2.Z());
+					int right = t->addVertex(item_id, surface_style_id, p3.X(), p3.Y(), p3.Z());
 
 					segments.push_back(std::make_pair(left, current));
 					segments.push_back(std::make_pair(right, current));

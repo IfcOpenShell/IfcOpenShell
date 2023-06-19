@@ -295,16 +295,9 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
         edges = property(edges)
         material_ids = property(material_ids)
         materials = property(materials)
-	%}
-};
-
-// Specialized accessors follow later, for otherwise property definitions
-// would appear before templated getter functions are defined.
-%extend IfcGeom::Representation::Triangulation {
-	%pythoncode %{
-        # Hide the getters with read-only property implementations
         verts = property(verts)
         normals = property(normals)
+		item_ids = property(item_ids)
 	%}
 };
 

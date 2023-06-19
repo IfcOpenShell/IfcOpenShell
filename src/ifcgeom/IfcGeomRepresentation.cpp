@@ -354,7 +354,7 @@ IfcGeom::Representation::Triangulation::Triangulation(const BRep& shape_model)
 			}
 		}
 
-		iit->Shape()->Triangulate(settings(), *iit->Placement(), this, surface_style_id);
+		iit->Shape()->Triangulate(settings(), *iit->Placement(), this, iit->ItemId(), surface_style_id);
 	}
 }
 
@@ -389,7 +389,7 @@ std::vector<double> IfcGeom::Representation::Triangulation::box_project_uvs(cons
 	return uvs;
 }
 
-int IfcGeom::Representation::Triangulation::addVertex(int material_index, double pX, double pY, double pZ) {
+int IfcGeom::Representation::Triangulation::addVertex(int item_id, int material_index, double pX, double pY, double pZ) {
 	const bool convert = settings().get<ifcopenshell::geometry::settings::ConvertBackUnits>().get();
 	auto unit_magnitude = settings().get<ifcopenshell::geometry::settings::LengthUnit>().get();
 	const double X = convert ? (pX /unit_magnitude) : pX;
@@ -397,7 +397,7 @@ int IfcGeom::Representation::Triangulation::addVertex(int material_index, double
 	const double Z = convert ? (pZ /unit_magnitude) : pZ;
 	int i = (int)_verts.size() / 3;
 	if (settings().get<ifcopenshell::geometry::settings::WeldVertices>().get()) {
-		const VertexKey key = std::make_pair(material_index, std::make_pair(X, std::make_pair(Y, Z)));
+		const VertexKey key = std::make_tuple(item_index, material_index, X, Y, Z);
 		typename VertexKeyMap::const_iterator it = welds.find(key);
 		if (it != welds.end()) return it->second;
 		i = (int)(welds.size() + weld_offset_);

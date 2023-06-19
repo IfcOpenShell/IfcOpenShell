@@ -96,10 +96,8 @@ namespace IfcGeom {
 
 		class Triangulation : public Representation {
 		private:
-			// A nested pair of floats and a material index to be able to store an XYZ coordinate in a map.
-			// TODO: Make this a std::tuple when compilers add support for that.
-			typedef typename std::pair<double, std::pair<double, double> > Coordinate;
-			typedef typename std::pair<int, Coordinate> VertexKey;
+			// A tuple of <item, material, x, y, z> to store as a key in a map.
+			typedef typename std::tuple<int, int, double, double, double> VertexKey;
 			typedef std::map<VertexKey, int> VertexKeyMap;
 			typedef std::pair<int, int> Edge;
 
@@ -111,6 +109,7 @@ namespace IfcGeom {
 			std::vector<double> uvs_;
 			std::vector<int> _material_ids;
 			std::vector<ifcopenshell::geometry::taxonomy::style> _materials;
+			std::vector<int> _item_ids;
 			size_t weld_offset_;
 			VertexKeyMap welds;
 
@@ -129,6 +128,7 @@ namespace IfcGeom {
 			const std::vector<double>& uvs() const { return uvs_; }
 			const std::vector<int>& material_ids() const { return _material_ids; }
 			const std::vector<ifcopenshell::geometry::taxonomy::style>& materials() const { return _materials; }
+			const std::vector<int>& item_ids() const { return _item_ids; }
 
 			Triangulation(const BRep& shape_model);
 
@@ -142,7 +142,8 @@ namespace IfcGeom {
 				const std::vector<double>& normals,
 				const std::vector<double>& uvs,
 				const std::vector<int>& material_ids,
-				const std::vector<ifcopenshell::geometry::taxonomy::style>& materials
+				const std::vector<ifcopenshell::geometry::taxonomy::style>& materials,
+				const std::vector<int>& item_ids
 			)
 				: Representation(settings, entity)
 				, id_(id)
@@ -153,6 +154,7 @@ namespace IfcGeom {
 				, uvs_(uvs)
 				, _material_ids(material_ids)
 				, _materials(materials)
+				, _item_ids(item_ids)
 			{}
 
 			virtual ~Triangulation() {}
@@ -164,7 +166,7 @@ namespace IfcGeom {
 			static Triangulation* empty(const ifcopenshell::geometry::Settings& settings) { return new Triangulation(settings, ""); }
 
 			/// Welds vertices that belong to different faces
-			int addVertex(int material_index, double X, double Y, double Z);
+			int addVertex(int item_index, int material_index, double X, double Y, double Z);
 
 			void addNormal(double X, double Y, double Z) {
 				_normals.push_back(X);
@@ -172,11 +174,12 @@ namespace IfcGeom {
 				_normals.push_back(Z);
 			}
 
-			void addFace(int style, int i0, int i1, int i2) {
+			void addFace(int item_id, int style, int i0, int i1, int i2) {
 				_faces.push_back(i0);
 				_faces.push_back(i1);
 				_faces.push_back(i2);
 
+				_item_ids.push_back(item_id);
 				_material_ids.push_back(style);
 			}
 
