@@ -85,7 +85,7 @@ class Loader(blenderbim.core.tool.Loader):
         if surface_style.ReflectanceMethod in ["PHYSICAL", "NOTDEFINED"]:
             blender_material.use_nodes = True
             cls.restart_material_node_tree(blender_material)
-            bsdf = blender_material.node_tree.nodes["Principled BSDF"]
+            bsdf = tool.Blender.get_material_node(blender_material, "BSDF_PRINCIPLED")
             if surface_style.DiffuseColour:
                 if surface_style.DiffuseColour.is_a("IfcColourRgb"):
                     bsdf.inputs["Base Color"].default_value = (
@@ -114,7 +114,7 @@ class Loader(blenderbim.core.tool.Loader):
             cls.restart_material_node_tree(blender_material)
 
             output = {n.type: n for n in blender_material.node_tree.nodes}.get("OUTPUT_MATERIAL", None)
-            bsdf = blender_material.node_tree.nodes["Principled BSDF"]
+            bsdf = tool.Blender.get_material_node(blender_material, "BSDF_PRINCIPLED")
 
             mix = blender_material.node_tree.nodes.new(type="ShaderNodeMixShader")
             mix.location = bsdf.location
@@ -154,7 +154,7 @@ class Loader(blenderbim.core.tool.Loader):
                     image_url = os.path.join(os.path.dirname(tool.Ifc.get_path()), texture.URLReference)
 
             if rendering_style.ReflectanceMethod in ["PHYSICAL", "NOTDEFINED"]:
-                bsdf = blender_material.node_tree.nodes["Principled BSDF"]
+                bsdf = tool.Blender.get_material_node(blender_material, "BSDF_PRINCIPLED")
                 if mode == "NORMAL":
                     normalmap = blender_material.node_tree.nodes.new(type="ShaderNodeNormalMap")
                     normalmap.location = bsdf.location - mathutils.Vector((200, 0))
@@ -208,7 +208,7 @@ class Loader(blenderbim.core.tool.Loader):
                     blender_material.node_tree.links.new(node.outputs[1], bsdf.inputs["Alpha"])
                     blender_material.blend_method = "BLEND"
             elif rendering_style.ReflectanceMethod == "FLAT":
-                bsdf = blender_material.node_tree.nodes["Mix Shader"]
+                bsdf = tool.Blender.get_material_node(blender_material, "MIX_SHADER")
                 if mode == "EMISSIVE":
                     node = blender_material.node_tree.nodes.new(type="ShaderNodeTexImage")
                     node.location = bsdf.location - mathutils.Vector((200, 0))
