@@ -7,7 +7,7 @@ IfcGeom::Representation::Triangulation * IfcGeom::ConversionResultShape::Triangu
 {
 	auto t = IfcGeom::Representation::Triangulation::empty(settings);
 	static ifcopenshell::geometry::taxonomy::matrix4 iden;
-	Triangulate(settings, iden, t, -1);
+	Triangulate(settings, iden, t, -1, -1);
 	return t;
 }
 
