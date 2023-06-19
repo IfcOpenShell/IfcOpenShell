@@ -107,6 +107,53 @@ class EditStyle(bpy.types.Operator, tool.Ifc.Operator):
         core.edit_style(tool.Ifc, tool.Style, obj=context.active_object.active_material)
 
 
+class UpdateCurrentStyle(bpy.types.Operator):
+    bl_idname = "bim.update_current_style"
+    bl_label = "Update Current Style"
+    bl_description = (
+        "Update style for all selected objects according to current style type\n(Shading/External).\n\n"
+        + "SHIFT+CLICK to update ALL styles in the .ifc file to current style type"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+    update_all: bpy.props.BoolProperty(name="Update All", default=False)
+
+    @classmethod
+    def poll(cls, context):
+        poll = (
+            context.active_object is not None
+            and context.active_object.active_material is not None
+            and context.active_object.active_material.BIMMaterialProperties.ifc_style_id != 0
+        )
+        if not poll:
+            cls.poll_message_set(
+                "Object is not selected or material is not assigned or material doesn't have IFC Style"
+            )
+        return poll
+
+    def invoke(self, context, event):
+        # updating all styles on shift+click
+        if event.type == "LEFTMOUSE" and event.shift:
+            self.update_all = True
+        else:
+            # can't rely on default value since the line above
+            # will set the value to `True` for all future operator calls
+            self.update_all = False
+        return self.execute(context)
+
+    def execute(self, context):
+        current_style_type = context.active_object.active_material.BIMStyleProperties.active_style_type
+        if self.update_all:
+            context.scene.BIMStylesProperties.active_style_type = current_style_type
+            return {"FINISHED"}
+
+        materials = []
+        for obj in context.selected_objects:
+            mat = obj.active_material
+            if mat and mat.BIMMaterialProperties.ifc_style_id != 0:
+                mat.BIMStyleProperties.active_style_type = current_style_type
+        return {"FINISHED"}
+
+
 class BrowseExternalStyle(bpy.types.Operator):
     bl_idname = "bim.browse_external_style"
     bl_label = "Browse External Style"
