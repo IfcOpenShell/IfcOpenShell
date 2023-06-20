@@ -218,4 +218,4 @@ class TestSelectByStyle:
     def test_run(self, style, spatial):
         style.get_elements_by_style("style").should_be_called().will_return("elements")
         spatial.select_products("elements").should_be_called()
-        subject.select_by_style(style, style="style")
+        subject.select_by_style(style, spatial, style="style")
