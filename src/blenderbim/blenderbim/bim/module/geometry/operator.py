@@ -918,20 +918,17 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
         recreate_data_structure(new_root_entity)
 
         old_objs = []
-        new_objs = []
         for old, new in old_to_new.items():
             old_objs.append(tool.Ifc.get_object(old))
-            new_objs.append(tool.Ifc.get_object(new[0]))
 
         relationships = tool.Root.get_decomposition_relationships(old_objs)
 
         tool.Root.recreate_decompositions(relationships, old_to_new)
 
-        new_relationships = tool.Root.get_decomposition_relationships(new_objs)
-
         blenderbim.bim.handler.purge_module_data()
 
         return {"FINISHED"}
+    
 
 class RefreshAggregate(bpy.types.Operator):
     bl_idname = "bim.refresh_aggregate"
@@ -951,11 +948,9 @@ class RefreshAggregate(bpy.types.Operator):
 
         return {"FINISHED"}
 
-
     def _execute(self, context):
         self.new_active_obj = None
         old_to_new = {}
-
 
         def remove_objects(entity, level = -1, parents = []):
             level +=1
@@ -972,7 +967,6 @@ class RefreshAggregate(bpy.types.Operator):
                     if part_obj:
                         tool.Geometry.delete_ifc_object(part_obj)
 
-
             return parents
 
         def duplicate_children(entity):
@@ -982,8 +976,6 @@ class RefreshAggregate(bpy.types.Operator):
             instance_of = pset_data["instance_of"][0]
 
             instance_entity = tool.Ifc.get().by_guid(instance_of)
-
-
 
             if not instance_entity.is_a("IfcElementAssembly"):
                 return
@@ -1002,8 +994,6 @@ class RefreshAggregate(bpy.types.Operator):
                             relating_obj=tool.Ifc.get_object(entity),
                             related_obj=tool.Ifc.get_object(new_part),
                         )
-
-
 
         def duplicate_objects(obj, is_root = False):
             new_obj = obj.copy()
@@ -1036,7 +1026,6 @@ class RefreshAggregate(bpy.types.Operator):
 
                 old_to_new[tool.Ifc.get_entity(obj)] = [new_entity]
 
-
             return new_entity        
 
         if len(context.selected_objects) != 1:
@@ -1053,36 +1042,42 @@ class RefreshAggregate(bpy.types.Operator):
         if not pset:
             return {"FINISHED"}
 
-        parents = remove_objects(selected_root_entity)
-
-
-        pset = ifcopenshell.util.element.get_pset(selected_root_entity, "BBIM_Aggregate_Data")
         pset_data = json.loads(pset["Data"])[0]
         instance_of = pset_data["instance_of"][0]
         original_root_entity = tool.Ifc.get().by_guid(instance_of)
+        if original_root_entity == selected_root_entity:
+            return {"FINISHED"}
+        
+        parents = remove_objects(selected_root_entity)
+
         original_root_object = tool.Ifc.get_object(original_root_entity)
 
         selected_matrix = selected_root_obj.matrix_world
         original_matrix = original_root_object.matrix_world
 
         for parent in parents:
-
             duplicate_children(parent)
 
 
+        old_objs = []
         for old, new in old_to_new.items():
-
+            old_objs.append(tool.Ifc.get_object(old))
 
             new_obj = tool.Ifc.get_object(new[0])
-
 
             matrix_diff = new_obj.matrix_world @ original_matrix
             new_matrix = selected_matrix @ matrix_diff
 
-
             new_obj.matrix_world = new_matrix
+        
+        relationships = tool.Root.get_decomposition_relationships(old_objs)
+
+        tool.Root.recreate_decompositions(relationships, old_to_new)
+
+        blenderbim.bim.handler.purge_module_data()
 
         return {"FINISHED"}
+    
 
 class OverrideJoin(bpy.types.Operator, Operator):
     bl_idname = "bim.override_object_join"
