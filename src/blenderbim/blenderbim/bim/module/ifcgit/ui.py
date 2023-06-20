@@ -168,7 +168,7 @@ class IFCGIT_PT_panel(bpy.types.Panel):
             row.label(text=urls[props.select_remote])
             row.operator("ifcgit.delete_remote", text="", icon="PANEL_CLOSE")
             row = layout.row()
-            row.operator("ifcgit.push", icon="EXPERIMENTAL")
+            row.operator("ifcgit.push", icon="EXPORT")
             row.operator("ifcgit.fetch", icon="IMPORT")
 
         box = layout.box()
@@ -177,7 +177,7 @@ class IFCGIT_PT_panel(bpy.types.Panel):
         row = box.row()
         row.prop(props, "remote_url")
         row = box.row()
-        row.operator("ifcgit.add_remote", icon="IMPORT")
+        row.operator("ifcgit.add_remote", icon="ADD")
 
 
 class COMMIT_UL_List(bpy.types.UIList):

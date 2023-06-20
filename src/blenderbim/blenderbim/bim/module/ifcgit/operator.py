@@ -132,7 +132,7 @@ class CommitChanges(bpy.types.Operator):
     def execute(self, context):
 
         repo = IfcGitData.data["repo"]
-        core.commit_changes(tool.IfcGit, tool.Ifc, repo, context)
+        core.commit_changes(tool.IfcGit, tool.Ifc, repo)
         bpy.ops.ifcgit.refresh()
         refresh()
         return {"FINISHED"}
@@ -215,7 +215,7 @@ class DisplayRevision(bpy.types.Operator):
 
     def execute(self, context):
 
-        core.colourise_revision(tool.IfcGit, context)
+        core.colourise_revision(tool.IfcGit)
         refresh()
         return {"FINISHED"}
 
@@ -283,8 +283,7 @@ class Push(bpy.types.Operator):
 
         props = context.scene.IfcGitProperties
         repo = IfcGitData.data["repo"]
-        remote = repo.remotes[props.select_remote]
-        remote.push(refspec=IfcGitData.data["repo"].active_branch.name)
+        core.push(tool.IfcGit, repo, props.select_remote, self)
         return {"FINISHED"}
 
 

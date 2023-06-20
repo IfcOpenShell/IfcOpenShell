@@ -26,7 +26,7 @@ def discard_uncomitted(ifcgit, ifc):
     ifcgit.load_project(path_ifc)
 
 
-def commit_changes(ifcgit, ifc, repo, context):
+def commit_changes(ifcgit, ifc, repo):
     path_ifc = ifc.get_path()
     ifcgit.git_commit(path_ifc)
 
@@ -50,11 +50,17 @@ def delete_remote(ifcgit, repo):
     ifcgit.delete_remote(repo)
 
 
+def push(ifcgit, repo, remote_name, operator):
+    error_message = ifcgit.push(repo, remote_name, repo.active_branch.name)
+    if error_message:
+        operator.report({"ERROR"}, error_message)
+
+
 def refresh_revision_list(ifcgit, repo, ifc):
     ifcgit.refresh_revision_list(ifc.get_path())
 
 
-def colourise_revision(ifcgit, context):
+def colourise_revision(ifcgit):
 
     step_ids = ifcgit.get_revisions_step_ids()
     if not step_ids:
