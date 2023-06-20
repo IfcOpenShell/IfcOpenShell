@@ -25,13 +25,13 @@ import blenderbim.tool as tool
 
 try:
     import brickschema
+    import brickschema.persistent
     import urllib.parse
     from rdflib import Literal, URIRef, Namespace
     from rdflib.namespace import RDF
 except:
     # See #1860
     print("Warning: brickschema not available.")
-
 
 class Brick(blenderbim.core.tool.Brick):
     @classmethod
@@ -249,27 +249,29 @@ class Brick(blenderbim.core.tool.Brick):
 
     @classmethod
     def load_brick_file(cls, filepath):
-        if not BrickStore.schema:
-            BrickStore.schema = brickschema.Graph()
+        if not BrickStore.schema: # important check for running under test cases
             cwd = os.path.dirname(os.path.realpath(__file__))
-            schema_path = os.path.join(cwd, "..", "bim", "schema", "Brick.ttl")
-            BrickStore.schema.load_file(schema_path)
-        BrickStore.graph = brickschema.Graph().load_file(filepath) + BrickStore.schema
+            BrickStore.schema = os.path.join(cwd, "..", "bim", "schema", "Brick.ttl")
+        BrickStore.VersionedGraphCollection = brickschema.persistent.VersionedGraphCollection("sqlite://")
+        with BrickStore.VersionedGraphCollection.new_changeset("schema") as cs:
+            cs.load_file(BrickStore.schema)
+        with BrickStore.VersionedGraphCollection.new_changeset("project") as cs:
+            cs.load_file(filepath)
+        BrickStore.reload_brick_graph()
         BrickStore.path = filepath
 
     @classmethod
     def new_brick_file(cls):
-        if not BrickStore.schema:
-            BrickStore.schema = brickschema.Graph()
-            #BrickStore.schema = brickschema.persistent.VersionedGraphCollection("sqlite://")
+        if not BrickStore.schema: # important check for running under test cases
             cwd = os.path.dirname(os.path.realpath(__file__))
-            schema_path = os.path.join(cwd, "..", "bim", "schema", "Brick.ttl")
-            BrickStore.schema.load_file(schema_path)
-            #BrickStore.schema.load_graph(schema_path)
-        BrickStore.graph = brickschema.Graph() + BrickStore.schema
-        BrickStore.graph.bind("digitaltwin", Namespace("https://example.org/digitaltwin#"))
-        BrickStore.graph.bind("brick", Namespace("https://brickschema.org/schema/Brick#"))
-        BrickStore.graph.bind("rdfs", Namespace("http://www.w3.org/2000/01/rdf-schema#"))
+            BrickStore.schema = os.path.join(cwd, "..", "bim", "schema", "Brick.ttl")
+        BrickStore.VersionedGraphCollection = brickschema.persistent.VersionedGraphCollection("sqlite://")
+        with BrickStore.VersionedGraphCollection.new_changeset("schema") as cs:
+            cs.load_file(BrickStore.schema)
+        BrickStore.VersionedGraphCollection.bind("digitaltwin", Namespace("https://example.org/digitaltwin#"))
+        BrickStore.VersionedGraphCollection.bind("brick", Namespace("https://brickschema.org/schema/Brick#"))
+        BrickStore.VersionedGraphCollection.bind("rdfs", Namespace("http://www.w3.org/2000/01/rdf-schema#"))
+        BrickStore.reload_brick_graph()
 
     @classmethod
     def pop_brick_breadcrumb(cls):
@@ -308,10 +310,22 @@ class Brick(blenderbim.core.tool.Brick):
     def set_active_brick_class(cls, brick_class):
         bpy.context.scene.BIMBrickProperties.active_brick_class = brick_class
 
+    @classmethod
+    def undo_brick(cls):
+        BrickStore.VersionedGraphCollection.undo()
+        BrickStore.reload_brick_graph()
+
+    @classmethod
+    def redo_brick(cls):
+        BrickStore.VersionedGraphCollection.redo()
+        BrickStore.reload_brick_graph()        
 
 class BrickStore:
-    schema = None
-    graph = None
+    schema = None # this is now a path
+    # I've decided to arbitrarily split th VersionedGraphCollection into two graph names: "schema" and "project"
+    # "schema" holds the Brick.ttl metadata; "project" holds all the authored entities
+    VersionedGraphCollection = None
+    graph = None # this is the graph named "project" from the VersionedGraphCollection
     path = None
 
     @staticmethod
@@ -319,3 +333,7 @@ class BrickStore:
         BrickStore.schema = None
         BrickStore.graph = None
         BrickStore.path = None
+
+    @classmethod
+    def reload_brick_graph(cls):
+        BrickStore.graph = BrickStore.VersionedGraphCollection.graph_at("project")
