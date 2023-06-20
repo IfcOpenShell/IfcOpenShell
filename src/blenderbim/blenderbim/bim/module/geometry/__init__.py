@@ -31,7 +31,7 @@ classes = (
     operator.OverrideDuplicateMoveMacro,
     operator.OverrideDuplicateMoveAggregate,
     operator.OverrideDuplicateMoveAggregateMacro,
-    # operator.RefreshAggregate,
+    operator.RefreshAggregate,
     operator.OverrideJoin,
     operator.OverrideModeSetEdit,
     operator.OverrideModeSetObject,
