@@ -119,6 +119,14 @@ class IfcGit:
             props.select_remote = repo.remotes[0].name
 
     @classmethod
+    def push(cls, repo, remote_name, branch_name):
+        remote = repo.remotes[remote_name]
+        try:
+            remote.push(tags=True, refspec=branch_name).raise_if_error()
+        except git.exc.GitCommandError as exc:
+            return exc.stderr
+
+    @classmethod
     def create_new_branch(cls):
         props = bpy.context.scene.IfcGitProperties
         repo = IfcGitRepo.repo
