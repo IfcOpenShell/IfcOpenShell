@@ -561,6 +561,8 @@ class OverrideDuplicateMove(bpy.types.Operator):
                 collection.objects.link(new_obj)
             obj.select_set(False)
             new_obj.select_set(True)
+            # clear object's collection so it will be able to have it's own
+            new_obj.BIMObjectProperties.collection = None
             # Copy the actual class
             new = blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
             if new:
