@@ -873,6 +873,10 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
             obj.select_set(False)
             new_obj.select_set(True)
 
+            # This is needed to make sure the new object gets unlink from
+            # the old object assembly collection
+            new_obj.BIMObjectProperties.collection = None
+
             # Copy the actual class
             new_entity = blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
 
@@ -884,7 +888,6 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
                     array_pset = tool.Ifc.get().by_id(array_pset["id"])
                     ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=new_entity, pset=array_pset)
 
-                print(obj)
                 blenderbim.core.aggregate.unassign_object(
                     tool.Ifc,
                     tool.Aggregate,
@@ -913,7 +916,6 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
 
         
         pset = ifcopenshell.util.element.get_pset(selected_root_entity, "BBIM_Aggregate_Data")
-        print("PSET", pset)
         
         selected_root_parent = selected_root_entity
 
