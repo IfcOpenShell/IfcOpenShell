@@ -74,7 +74,7 @@ def register():
         kmi = km.keymap_items.new("bim.override_object_join", "J", "PRESS", ctrl=True)
         kmi = km.keymap_items.new("bim.override_object_duplicate_move_macro", "D", "PRESS", shift=True)
         kmi = km.keymap_items.new("bim.override_object_duplicate_move_linked_macro", "D", "PRESS", alt=True)
-        kmi = km.keymap_items.new("bim.override_object_duplicate_move_aggregate_macro", "F", "PRESS", ctrl=True)
+        kmi = km.keymap_items.new("bim.override_object_duplicate_move_aggregate_macro", "D", "PRESS", ctrl=True, shift=True)
         kmi = km.keymap_items.new("bim.override_paste_buffer", "V", "PRESS", ctrl=True)
         kmi = km.keymap_items.new("bim.override_mode_set_edit", "TAB", "PRESS")
         kmi = km.keymap_items.new("bim.override_object_delete", "X", "PRESS")
