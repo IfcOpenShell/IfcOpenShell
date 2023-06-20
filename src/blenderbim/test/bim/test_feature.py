@@ -65,33 +65,32 @@ def an_untestable_scenario():
 
 @given("an empty Blender session")
 @when("an empty Blender session is started")
-def an_empty_ifc_project():
+def an_empty_blender_session():
     IfcStore.purge()
     bpy.ops.wm.read_homefile(app_template="")
     if len(bpy.data.objects) > 0:
         bpy.data.batch_remove(bpy.data.objects)
         bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
+
+
+@given("an empty IFC project settings")
+def an_empty_ifc_project_settings():
+    bpy.context.scene.unit_settings.system = "METRIC"
+    bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
+    bpy.context.scene.BIMProjectProperties.template_file = '0'
 
 
 @given("an empty IFC project")
 def an_empty_ifc_project():
-    IfcStore.purge()
-    bpy.ops.wm.read_homefile(app_template="")
-    if len(bpy.data.objects) > 0:
-        bpy.data.batch_remove(bpy.data.objects)
-        bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
-    bpy.context.scene.unit_settings.system = "METRIC"
-    bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
+    an_empty_blender_session()
+    an_empty_ifc_project_settings()
     bpy.ops.bim.create_project()
 
 
 @given("an empty IFC2X3 project")
-def an_empty_ifc_project():
-    IfcStore.purge()
-    bpy.ops.wm.read_homefile(app_template="")
-    if len(bpy.data.objects) > 0:
-        bpy.data.batch_remove(bpy.data.objects)
-        bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
+def an_empty_ifc_2x3_project():
+    an_empty_blender_session()
+    an_empty_ifc_project_settings()
     bpy.context.scene.BIMProjectProperties.export_schema = "IFC2X3"
     bpy.ops.bim.create_project()
 
@@ -672,7 +671,7 @@ def the_object_name_dimensions_are_dimensions(name, dimensions):
     actual_dimensions = list(the_object_name_exists(name).dimensions)
     expected_dimensions = [float(co) for co in dimensions.split(",")]
     for i, number in enumerate(actual_dimensions):
-        assert is_x(number, expected_dimensions[i]), f"Expected {actual_dimensions[i]} but got {number}"
+        assert is_x(number, expected_dimensions[i]), f"Expected {expected_dimensions[i]} but got {number}"
 
 
 @then(parsers.parse('the object "{name}" top right corner is at "{location}"'))
