@@ -48,6 +48,7 @@ class SpatialTool(WorkSpaceTool):
         ("bim.spatial_hotkey", {"type": "B", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_B")]}),
         ("bim.spatial_hotkey", {"type": "A", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_A")]}),
         ("bim.spatial_hotkey", {"type": "B", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_B")]}),
+        ("bim.spatial_hotkey", {"type": "T", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_T")]}),
     )
 
     def draw_settings(context, layout, ws_tool):
@@ -98,6 +99,10 @@ class SpatialToolUI:
             row.operator("bim.generate_spaces_from_walls")
         else:
             row.operator("bim.generate_space")
+        row = cls.layout.row(align=True)
+        row.label(text="", icon="EVENT_SHIFT")
+        row.label(text="", icon="EVENT_T")
+        row.operator("bim.toggle_space_visibility")
 
     @classmethod
     def draw_selected_object_interface(cls, context):
@@ -159,3 +164,6 @@ class Hotkey(bpy.types.Operator, Operator):
             bpy.ops.bim.hide_boundaries()
         else:
             bpy.ops.bim.show_boundaries()
+
+    def hotkey_S_T(self):
+        bpy.ops.bim.toggle_space_visibility()
