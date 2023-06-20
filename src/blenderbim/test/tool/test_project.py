@@ -44,7 +44,7 @@ class TestCreateEmpty(NewFile):
 
 class TestLoadDefaultThumbnails(NewFile):
     def test_nothing(self):
-        pass # Not possible to test this headlessly
+        pass  # Not possible to test this headlessly
 
 
 class TestRunAggregateAssignObject(NewFile):
@@ -93,6 +93,9 @@ class TestSetActiveSpatialElement(NewFile):
         collection = bpy.data.collections.new("Foo")
         bpy.context.scene.collection.children.link(collection)
         collection.objects.link(obj)
+        obj.BIMObjectProperties.collection = collection
+        collection.BIMCollectionProperties.obj = obj
+
         layer = bpy.context.view_layer.layer_collection.children["Foo"]
         assert bpy.context.view_layer.active_layer_collection != layer
         subject.set_active_spatial_element(obj)
