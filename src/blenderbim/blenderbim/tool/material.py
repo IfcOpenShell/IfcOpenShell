@@ -187,7 +187,7 @@ class Material(blenderbim.core.tool.Material):
                         XDim=size,
                         YDim=size,
                     )
-                    material_profile = ifcopenshell.api.run(
+                    material_profile = tool.Ifc.run(
                         "material.add_profile",
                         profile_set=material_set,
                         material=material,
