@@ -156,26 +156,31 @@ Scenario: Unassign material - material layer set
     When I press "bim.unassign_material"
     Then nothing happens
 
-Scenario: Unassign material - material layer set usages will not be removed
+Scenario: Unassign material - removing inherited material
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
+
     And I add an empty
     And the object "Empty" is selected
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
+
     And I press "bim.add_material(obj='')"
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSet"
     And I press "bim.assign_material"
+
     And the object "IfcWall/Cube" is selected
     When the variable "type" is "{ifc}.by_type('IfcWallType')[0].id()"
     And I press "bim.assign_type(relating_type={type}, related_object='IfcWall/Cube')"
+
     Then the object "IfcWall/Cube" has a "100" thick layered material containing the material "Default"
+    
     When I press "bim.unassign_material"
-    Then the object "IfcWall/Cube" has a "100" thick layered material containing the material "Default"
+    Then the object "IfcWall/Cube" has no IFC materials
 
 Scenario: Enable editing assigned material - material layer set
     Given an empty IFC project
