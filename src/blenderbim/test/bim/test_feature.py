@@ -159,6 +159,21 @@ def i_add_a_plane_of_size_size_at_location(size, location):
     bpy.ops.mesh.primitive_plane_add(size=float(size), location=[float(co) for co in location.split(",")])
 
 
+@then(parsers.parse('I press "{operator}" and expect error "{error_msg}"'))
+def i_press_operator_and_expect_error(operator, error_msg):
+    operator = replace_variables(operator)
+    try:
+        if "(" in operator:
+            exec(f"bpy.ops.{operator}")
+        else:
+            exec(f"bpy.ops.{operator}()")
+        assert False, f"Operator bpy.ops.{operator} ran without exception '{error_msg}'"
+    except Exception as e:     
+        actual_error_msg = str(e).strip()
+        if str(e).strip() != error_msg:
+            traceback.print_exc()
+            assert False, f"Got different exception running bpy.ops.{operator} - '{actual_error_msg}' instead of '{error_msg}'"
+
 @given(parsers.parse('I press "{operator}"'))
 @when(parsers.parse('I press "{operator}"'))
 def i_press_operator(operator):

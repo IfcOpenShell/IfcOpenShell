@@ -435,17 +435,20 @@ Scenario: Remove material set layer
     And the object "Cube" is selected
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
+
     And I add an empty
     And the object "Empty" is selected
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
+
     And I press "bim.add_material(obj='')"
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSet"
     And I press "bim.assign_material"
+
     And I press "bim.enable_editing_assigned_material"
     And the variable "material_set" is "{ifc}.by_type('IfcMaterialLayerSet')[0].id()"
-    And I press "bim.remove_layer(layer={ifc}.by_id({material_set}).MaterialLayers[0].id())"
+
     And I press "bim.add_layer(layer_set={material_set})"
-    When I press "bim.remove_layer(layer={ifc}.by_id({material_set}).MaterialLayers[0].id())"
-    Then nothing happens
+    And I press "bim.remove_layer(layer={ifc}.by_id({material_set}).MaterialLayers[0].id())"
+    Then I press "bim.remove_layer(layer={ifc}.by_id({material_set}).MaterialLayers[0].id())" and expect error "Error: At least one layer must exist"
