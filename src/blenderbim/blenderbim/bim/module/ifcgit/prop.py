@@ -7,7 +7,7 @@ from bpy.props import (
     IntProperty,
     EnumProperty,
 )
-from blenderbim.bim.module.ifcgit.data import IfcGitData, refresh
+from blenderbim.bim.module.ifcgit.data import IfcGitData
 
 
 def git_branches(self, context):
