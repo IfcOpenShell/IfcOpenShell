@@ -1,6 +1,6 @@
 import bpy
 import time
-from blenderbim.bim.module.ifcgit.data import IfcGitData, refresh
+from blenderbim.bim.module.ifcgit.data import IfcGitData
 
 
 class IFCGIT_PT_panel(bpy.types.Panel):
@@ -34,8 +34,8 @@ class IFCGIT_PT_panel(bpy.types.Panel):
         if path_ifc:
             if IfcGitData.data["repo"]:
                 name_ifc = IfcGitData.data["name_ifc"]
-                row.label(text=IfcGitData.data["repo"].working_dir, icon="SYSTEM")
-                if name_ifc in IfcGitData.data["repo"].untracked_files:
+                row.label(text=IfcGitData.data["working_dir"], icon="SYSTEM")
+                if name_ifc in IfcGitData.data["untracked_files"]:
                     row.operator(
                         "ifcgit.addfile",
                         text="Add '" + name_ifc + "' to repository",
@@ -79,7 +79,7 @@ class IFCGIT_PT_panel(bpy.types.Panel):
             row = layout.row()
             row.prop(props, "commit_message")
 
-            if IfcGitData.data["repo"].head.is_detached:
+            if IfcGitData.data["is_detached"]:
                 row = layout.row()
                 row.label(text="HEAD is detached, commit will create a branch", icon="ERROR")
                 row.prop(props, "new_branch_name")
@@ -88,10 +88,10 @@ class IFCGIT_PT_panel(bpy.types.Panel):
             row.operator("ifcgit.commit_changes", icon="GREASEPENCIL")
 
         row = layout.row()
-        if IfcGitData.data["repo"].head.is_detached:
+        if IfcGitData.data["is_detached"]:
             row.label(text="Working branch: Detached HEAD")
         else:
-            row.label(text="Working branch: " + IfcGitData.data["repo"].active_branch.name)
+            row.label(text="Working branch: " + IfcGitData.data["active_branch_name"])
 
         grouped = layout.row()
         column = grouped.column()

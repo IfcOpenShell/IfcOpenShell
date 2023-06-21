@@ -57,7 +57,8 @@ def push(ifcgit, repo, remote_name, operator):
 
 
 def refresh_revision_list(ifcgit, repo, ifc):
-    ifcgit.refresh_revision_list(ifc.get_path())
+    if repo.heads:
+        ifcgit.refresh_revision_list(ifc.get_path())
 
 
 def colourise_revision(ifcgit):

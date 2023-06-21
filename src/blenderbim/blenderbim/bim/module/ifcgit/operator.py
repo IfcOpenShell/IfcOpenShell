@@ -149,6 +149,8 @@ class AddTag(bpy.types.Operator):
     def poll(cls, context):
         IfcGitData.make_sure_is_loaded()
         props = context.scene.IfcGitProperties
+        if props.new_tag_name == "":
+            return False
         repo = IfcGitData.data["repo"]
         if repo and (
             not tool.IfcGit.is_valid_ref_format(props.new_tag_name)
@@ -194,7 +196,7 @@ class RefreshGit(bpy.types.Operator):
     def poll(cls, context):
         IfcGitData.make_sure_is_loaded()
         repo = IfcGitData.data["repo"]
-        if repo != None and repo.heads:
+        if repo:
             return True
         return False
 
@@ -212,6 +214,12 @@ class DisplayRevision(bpy.types.Operator):
     bl_label = ""
     bl_idname = "ifcgit.display_revision"
     bl_options = {"REGISTER"}
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.IfcGitProperties
+        if props.ifcgit_commits:
+            return True
 
     def execute(self, context):
 
@@ -242,6 +250,12 @@ class SwitchRevision(bpy.types.Operator):
     bl_idname = "ifcgit.switch_revision"
     bl_options = {"REGISTER"}
 
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.IfcGitProperties
+        if props.ifcgit_commits:
+            return True
+
     def execute(self, context):
 
         core.switch_revision(tool.IfcGit, tool.Ifc)
@@ -259,7 +273,8 @@ class Merge(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         IfcGitData.make_sure_is_loaded()
-        if IfcGitData.data["ifcmerge_exe"]:
+        props = context.scene.IfcGitProperties
+        if IfcGitData.data["ifcmerge_exe"] and props.ifcgit_commits and not IfcGitData.data["is_detached"]:
             return True
         return False
 
@@ -318,8 +333,8 @@ class AddRemote(bpy.types.Operator):
         if (
             not repo
             or not tool.IfcGit.is_valid_ref_format(props.remote_name)
-            or props.remote_name in [remote.name for remote in repo.remotes]
             or not props.remote_url
+            or props.remote_name in [remote.name for remote in repo.remotes]
         ):
             return False
         return True
