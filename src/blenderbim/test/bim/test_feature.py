@@ -600,6 +600,12 @@ def the_object_name_has_a_thickness_thick_layered_material_containing_the_materi
     assert is_x(total_thickness, float(thickness))
     assert material_name in material_names
 
+@then(parsers.parse('the object "{name}" has no IFC materials'))
+def the_object_has_no_ifc_materials(name):
+    element = tool.Ifc.get_entity(the_object_name_exists(name))
+    material = ifcopenshell.util.element.get_material(element)
+    assert material is None
+
 
 @then(
     parsers.parse(
