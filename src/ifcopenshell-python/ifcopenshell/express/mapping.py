@@ -179,9 +179,13 @@ class Mapping:
             # We do not use pointers in aggregate_of<T>. aggregate_of has member vector<T*>
             ty = ty.replace("*", "")
 
-            if self.schema.is_select(attr_type.type):
-                type_str = templates.untyped_list
-            elif self.schema.is_simpletype(ty) or str(ty) in self.express_to_cpp_typemapping.values():
+            # https://github.com/IfcOpenShell/IfcOpenShell/issues/2805
+            # This is no longer applicable, we do support statically typed select types as aggregates
+            #
+            # if self.schema.is_select(attr_type.type):
+            #     type_str = templates.untyped_list
+
+            if self.schema.is_simpletype(ty) or str(ty) in self.express_to_cpp_typemapping.values():
                 tmpl = templates.nested_array_type if is_nested_list else templates.array_type
                 bounds = (attr_type.bounds.lower, attr_type.bounds.upper) if attr_type.bounds else (-1, -1)
                 type_str = tmpl % {"instance_type": ty, "lower": bounds[0], "upper": bounds[1]}
