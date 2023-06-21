@@ -72,9 +72,7 @@ def an_empty_blender_session():
         bpy.data.batch_remove(bpy.data.objects)
         bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
 
-
-@given("an empty IFC project settings")
-def an_empty_ifc_project_settings():
+    # default project settings
     bpy.context.scene.unit_settings.system = "METRIC"
     bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
     bpy.context.scene.BIMProjectProperties.template_file = '0'
@@ -83,14 +81,12 @@ def an_empty_ifc_project_settings():
 @given("an empty IFC project")
 def an_empty_ifc_project():
     an_empty_blender_session()
-    an_empty_ifc_project_settings()
     bpy.ops.bim.create_project()
 
 
 @given("an empty IFC2X3 project")
 def an_empty_ifc_2x3_project():
     an_empty_blender_session()
-    an_empty_ifc_project_settings()
     bpy.context.scene.BIMProjectProperties.export_schema = "IFC2X3"
     bpy.ops.bim.create_project()
 
@@ -172,9 +168,9 @@ def i_press_operator(operator):
             exec(f"bpy.ops.{operator}")
         else:
             exec(f"bpy.ops.{operator}()")
-    except:
+    except Exception as e:
         traceback.print_exc()
-        assert False, f"Failed to run operator bpy.ops.{operator}"
+        assert False, f"Failed to run operator bpy.ops.{operator} because of {e}"
 
 
 @given(parsers.parse('I evaluate expression "{expression}"'))
