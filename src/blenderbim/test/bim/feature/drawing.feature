@@ -57,9 +57,9 @@ Scenario: Remove drawing
     And the variable "wall1" is "IfcStore.get_file().by_type('IfcWall')[-1].id()"
     And I press "bim.add_drawing"
     And the variable "drawing" is "IfcStore.get_file().by_type('IfcAnnotation')[0].id()"
-    And the collection "IfcGroup/PLAN_VIEW" exists
+    And the collection "IfcAnnotation/PLAN_VIEW" exists
     When I press "bim.remove_drawing(drawing={drawing})"
-    Then the collection "IfcGroup/PLAN_VIEW" does not exist
+    Then the collection "IfcAnnotation/PLAN_VIEW" does not exist
 
 Scenario: Remove drawing - via object deletion
     Given an empty IFC project
@@ -70,9 +70,10 @@ Scenario: Remove drawing - via object deletion
     And the variable "wall1" is "IfcStore.get_file().by_type('IfcWall')[-1].id()"
     And I press "bim.add_drawing"
     And the variable "drawing" is "IfcStore.get_file().by_type('IfcAnnotation')[0].id()"
+    And the collection "IfcAnnotation/PLAN_VIEW" exists
     And the object "IfcAnnotation/PLAN_VIEW" is selected
     When I press "bim.override_object_delete"
-    Then the collection "IfcGroup/PLAN_VIEW" does not exist
+    Then the collection "IfcAnnotation/PLAN_VIEW" does not exist
 
 Scenario: Remove drawing - deleting active drawing
     Given an empty IFC project
@@ -83,9 +84,10 @@ Scenario: Remove drawing - deleting active drawing
     And the variable "wall1" is "IfcStore.get_file().by_type('IfcWall')[-1].id()"
     And I press "bim.add_drawing"
     And the variable "drawing" is "IfcStore.get_file().by_type('IfcAnnotation')[0].id()"
+    And the collection "IfcAnnotation/PLAN_VIEW" exists
     And I set "scene.DocProperties.active_drawing_index" to "0"
     And I press "bim.activate_drawing(drawing={drawing})"
     And the object "IfcAnnotation/PLAN_VIEW" is selected
     When I press "bim.override_object_delete"
-    Then the collection "IfcGroup/PLAN_VIEW" does not exist
+    Then the collection "IfcAnnotation/PLAN_VIEW" does not exist
 
