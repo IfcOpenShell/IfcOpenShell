@@ -94,10 +94,11 @@ class SelectIfcFile(bpy.types.Operator, IFCFileSelector):
     bl_description = "Select a different IFC file"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
+    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
 
     def execute(self, context):
         if self.is_existing_ifc_file():
-            context.scene.BIMProperties.ifc_file = self.filepath
+            context.scene.BIMProperties.ifc_file = self.get_filepath()
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -105,7 +106,7 @@ class SelectIfcFile(bpy.types.Operator, IFCFileSelector):
         return {"RUNNING_MODAL"}
 
 
-class ReloadSelectedIfcFile(bpy.types.Operator, IFCFileSelector):
+class ReloadSelectedIfcFile(bpy.types.Operator):
     bl_idname = "bim.reload_selected_ifc_file"
     bl_label = "Reload selected IFC File"
     bl_options = {"REGISTER", "UNDO"}
@@ -113,9 +114,12 @@ class ReloadSelectedIfcFile(bpy.types.Operator, IFCFileSelector):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        self.filepath = context.scene.BIMProperties.ifc_file
-        if self.is_existing_ifc_file():
-            context.scene.BIMProperties.ifc_file = context.scene.BIMProperties.ifc_file
+        filepath = context.scene.BIMProperties.ifc_file
+        valid_file = os.path.exists(filepath) and "ifc" in os.path.splitext(filepath)[1].lower()
+        if not valid_file:
+            self.report({"ERROR"}, f"Couldn't find .ifc file by the path '{filepath}'")
+            return {"ERROR"}
+        context.scene.BIMProperties.ifc_file = context.scene.BIMProperties.ifc_file
         return {"FINISHED"}
 
 

@@ -39,14 +39,23 @@ class IFCFileSelector:
             filepath = self.filepath
         return os.path.exists(filepath) and "ifc" in os.path.splitext(filepath)[1].lower()
 
+    def get_filepath(self):
+        """get filepath taking into account relative paths"""
+        if self.use_relative_path:
+            filepath = os.path.relpath(self.filepath, bpy.path.abspath("//"))
+        else:
+            filepath = self.filepath
+        return filepath
+
     def draw(self, context):
         # Access filepath & Directory https://blender.stackexchange.com/a/207665
         params = context.space_data.params
         # Decode byte string https://stackoverflow.com/a/47737082/
         directory = Path(params.directory.decode("utf-8"))
         filepath = os.path.join(directory, params.filename)
+        layout = self.layout
         if self.is_existing_ifc_file(filepath):
-            box = self.layout.box()
+            box = layout.box()
             box.label(text="IFC Header Specifications", icon="INFO")
             header_data = IfcHeaderExtractor(filepath).extract()
             for key, value in header_data.items():
@@ -64,6 +73,13 @@ class IFCFileSelector:
                         op.infile = filepath
                         op.outfile = filepath[0:-4] + "-IFC4.ifc"
                         op.schema = "IFC4"
+
+        if bpy.data.is_saved:
+            layout.prop(self, "use_relative_path")
+        else:
+            self.use_relative_path = False
+            layout.label(text="Save the .blend file first ")
+            layout.label(text="to use relative paths for .ifc.")
 
 
 class BIM_PT_section_plane(Panel):
