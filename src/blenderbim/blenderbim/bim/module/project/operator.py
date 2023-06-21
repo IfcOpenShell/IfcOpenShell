@@ -74,19 +74,21 @@ class SelectLibraryFile(bpy.types.Operator, IFCFileSelector):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
     append_all: bpy.props.BoolProperty(default=False)
+    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
 
     def execute(self, context):
         IfcStore.begin_transaction(self)
         old_filepath = IfcStore.library_path
         result = self._execute(context)
-        self.transaction_data = {"old_filepath": old_filepath, "filepath": self.filepath}
+        self.transaction_data = {"old_filepath": old_filepath, "filepath": self.get_filepath()}
         IfcStore.add_transaction_operation(self)
         IfcStore.end_transaction(self)
         return result
 
     def _execute(self, context):
-        IfcStore.library_path = self.filepath
-        IfcStore.library_file = ifcopenshell.open(self.filepath)
+        filepath = self.get_filepath()
+        IfcStore.library_path = filepath
+        IfcStore.library_file = ifcopenshell.open(filepath)
         bpy.ops.bim.refresh_library()
         if context.area:
             context.area.tag_redraw()
@@ -525,11 +527,12 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
     is_advanced: bpy.props.BoolProperty(name="Enable Advanced Mode", default=False)
+    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
 
     def execute(self, context):
         if not self.is_existing_ifc_file():
             return {"FINISHED"}
-        context.scene.BIMProperties.ifc_file = self.filepath
+        context.scene.BIMProperties.ifc_file = self.get_filepath()
         context.scene.BIMProjectProperties.is_loading = True
         context.scene.BIMProjectProperties.total_elements = len(tool.Ifc.get().by_type("IfcElement"))
         if not self.is_advanced:
