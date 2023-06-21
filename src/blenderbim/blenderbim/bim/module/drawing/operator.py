@@ -150,7 +150,7 @@ class CreateDrawing(bpy.types.Operator):
         "Creates/refreshes a .svg drawing based on currently active camera.\n\n"
         + "SHIFT+CLICK to print all selected drawings"
     )
-    print_all: bpy.props.BoolProperty(name="Print All", default=False)
+    print_all: bpy.props.BoolProperty(name="Print All", default=False, options={"SKIP_SAVE"})
 
     @classmethod
     def poll(cls, context):
@@ -158,12 +158,9 @@ class CreateDrawing(bpy.types.Operator):
 
     def invoke(self, context, event):
         # printing all drawings on shift+click
+        # make sure to use SKIP_SAVE on property, otherwise it might get stuck
         if event.type == "LEFTMOUSE" and event.shift:
             self.print_all = True
-        else:
-            # can't rely on default value since the line above
-            # will set the value to `True` for all future operator calls
-            self.print_all = False
         return self.execute(context)
 
     def execute(self, context):
@@ -1191,16 +1188,13 @@ class SelectAllDrawings(bpy.types.Operator):
     bl_label = "Select All Drawings"
     view: bpy.props.StringProperty()
     bl_description = "Select all drawings in the drawing list.\n\n" + "SHIFT+CLICK to deselect all drawings"
-    select_all: bpy.props.BoolProperty(name="Open All", default=False)
+    select_all: bpy.props.BoolProperty(name="Open All", default=False, options={"SKIP_SAVE"})
 
     def invoke(self, context, event):
         # deselect all drawings on shift+click
+        # make sure to use SKIP_SAVE on property, otherwise it might get stuck
         if event.type == "LEFTMOUSE" and event.shift:
             self.select_all = False
-        else:
-            # can't rely on default value since the line above
-            # will set the value to `True` for all future operator calls
-            self.select_all = True
         return self.execute(context)
 
     def execute(self, context):
@@ -1219,16 +1213,13 @@ class OpenDrawing(bpy.types.Operator):
         + 'or using "svg_command" from the BlenderBIM preferences (if provided).\n\n'
         + "SHIFT+CLICK to open all selected drawings"
     )
-    open_all: bpy.props.BoolProperty(name="Open All", default=False)
+    open_all: bpy.props.BoolProperty(name="Open All", default=False, options={"SKIP_SAVE"})
 
     def invoke(self, context, event):
         # opening all drawings on shift+click
+        # make sure to use SKIP_SAVE on property, otherwise it might get stuck
         if event.type == "LEFTMOUSE" and event.shift:
             self.open_all = True
-        else:
-            # can't rely on default value since the line above
-            # will set the value to `True` for all future operator calls
-            self.open_all = False
         return self.execute(context)
 
     def execute(self, context):
@@ -1363,16 +1354,13 @@ class RemoveDrawing(bpy.types.Operator, Operator):
     bl_description = "Remove currently selected drawing.\n\n" + "SHIFT+CLICK to remove all selected drawings"
 
     drawing: bpy.props.IntProperty()
-    remove_all: bpy.props.BoolProperty(name="Remove All", default=False)
+    remove_all: bpy.props.BoolProperty(name="Remove All", default=False, options={"SKIP_SAVE"})
 
     def invoke(self, context, event):
         # removing all selected drawings on shift+click
+        # make sure to use SKIP_SAVE on property, otherwise it might get stuck
         if event.type == "LEFTMOUSE" and event.shift:
             self.remove_all = True
-        else:
-            # can't rely on default value since the line above
-            # will set the value to `True` for all future operator calls
-            self.remove_all = False
         return self.execute(context)
 
     def _execute(self, context):

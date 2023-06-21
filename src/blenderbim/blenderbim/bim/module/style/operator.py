@@ -115,7 +115,7 @@ class UpdateCurrentStyle(bpy.types.Operator):
         + "SHIFT+CLICK to update ALL styles in the .ifc file to current style type"
     )
     bl_options = {"REGISTER", "UNDO"}
-    update_all: bpy.props.BoolProperty(name="Update All", default=False)
+    update_all: bpy.props.BoolProperty(name="Update All", default=False, options={"SKIP_SAVE"})
 
     @classmethod
     def poll(cls, context):
@@ -132,12 +132,9 @@ class UpdateCurrentStyle(bpy.types.Operator):
 
     def invoke(self, context, event):
         # updating all styles on shift+click
+        # make sure to use SKIP_SAVE on property, otherwise it might get stuck
         if event.type == "LEFTMOUSE" and event.shift:
             self.update_all = True
-        else:
-            # can't rely on default value since the line above
-            # will set the value to `True` for all future operator calls
-            self.update_all = False
         return self.execute(context)
 
     def execute(self, context):
