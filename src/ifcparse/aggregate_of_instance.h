@@ -92,7 +92,7 @@ class aggregate_of {
         typename U::list::ptr result(new typename U::list);
         for (it i = begin(); i != end(); ++i) {
             if ((*i)->as<U>()) {
-                result->push(r->push((*i)->as<U>());
+                result->push((*i)->as<U>());
             }
         }
         return result;
@@ -154,7 +154,7 @@ class IFC_PARSE_API aggregate_of_aggregate_of_instance {
             typename std::vector<U*> to;
             for (inner_it inner = from.begin(); inner != from.end(); ++inner) {
                 if ((*inner)->as<U>()) {
-                    to.push_back((*i)->as<U>());
+                    to.push_back((*inner)->as<U>());
                 }
             }
             result->push(to);

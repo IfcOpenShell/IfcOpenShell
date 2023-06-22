@@ -175,7 +175,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 
 				taxonomy_transform(place.components_, p);
 
-				int current = t->addVertex(surface_style_id, p.X(), p.Y(), p.Z());
+				int current = t->addVertex(item_id, surface_style_id, p.X(), p.Y(), p.Z());
 
 				std::vector<std::pair<int, int>> segments;
 				if (i > 1) {
