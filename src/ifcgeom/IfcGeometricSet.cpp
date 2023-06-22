@@ -30,11 +30,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcGeometricSet* l, IfcRepresenta
 	const bool include_curves = getValue(GV_DIMENSIONALITY) != +1;
 	const bool include_solids_and_surfaces = getValue(GV_DIMENSIONALITY) != -1;
 
-	aggregate_of_instance::ptr elements = l->Elements();
-	if ( !elements->size() ) return false;
+	auto elements = l->Elements();
+	if (!elements->size()) return false;
 	bool part_succes = false;
 	auto parent_style = get_style(l);
-	for (aggregate_of_instance::it it = elements->begin(); it != elements->end(); ++it) {
+	for (auto it = elements->begin(); it != elements->end(); ++it) {
 		auto element = *it;
 		TopoDS_Shape s;
 		if (shape_type(element) == ST_SHAPELIST) {

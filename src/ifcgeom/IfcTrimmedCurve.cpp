@@ -72,8 +72,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 	}
 	
 	bool trim_cartesian = l->MasterRepresentation() != IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER;
-	aggregate_of_instance::ptr trims1 = l->Trim1();
-	aggregate_of_instance::ptr trims2 = l->Trim2();
+	auto trims1 = l->Trim1();
+	auto trims2 = l->Trim2();
 	
 	unsigned sense_agreement = l->SenseAgreement() ? 0 : 1;
 	double flts[2];
@@ -83,8 +83,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 	
 	TopoDS_Edge e;
 
-	for ( aggregate_of_instance::it it = trims1->begin(); it != trims1->end(); it ++ ) {
-		IfcUtil::IfcBaseClass* i = *it;
+	for (auto it = trims1->begin(); it != trims1->end(); it ++ ) {
+		auto i = *it;
 		if ( i->declaration().is(IfcSchema::IfcCartesianPoint::Class()) ) {
 			IfcGeom::Kernel::convert((IfcSchema::IfcCartesianPoint*)i, pnts[sense_agreement] );
 			has_pnts[sense_agreement] = true;
@@ -95,8 +95,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 		}
 	}
 
-	for ( aggregate_of_instance::it it = trims2->begin(); it != trims2->end(); it ++ ) {
-		IfcUtil::IfcBaseClass* i = *it;
+	for (auto it = trims2->begin(); it != trims2->end(); it ++ ) {
+		auto i = *it;
 		if ( i->declaration().is(IfcSchema::IfcCartesianPoint::Class()) ) {
 			IfcGeom::Kernel::convert((IfcSchema::IfcCartesianPoint*)i, pnts[1-sense_agreement] );
 			has_pnts[1-sense_agreement] = true;
