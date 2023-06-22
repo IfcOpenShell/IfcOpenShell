@@ -23,6 +23,18 @@ from mathutils import Vector
 from pathlib import Path
 
 
+VIEWPORT_ATTRIBUTES = [
+    "view_matrix",
+    "view_distance",
+    "view_perspective",
+    "use_box_clip",
+    "use_clip_planes",
+    "is_perspective",
+    "show_sync_view",
+    "clip_planes",
+]
+
+
 class Blender:
     @classmethod
     def set_active_object(cls, obj):
@@ -107,6 +119,19 @@ class Blender:
         area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
         context_override = {"area": area}
         return context_override
+
+    @classmethod
+    def get_viewport_position(cls):
+        region_3d = cls.get_viewport_context()["area"].spaces[0].region_3d
+        copy_if_possible = lambda x: x.copy() if hasattr(x, "copy") else x
+        viewport_data = {attr: copy_if_possible(getattr(region_3d, attr)) for attr in VIEWPORT_ATTRIBUTES}
+        return viewport_data
+
+    @classmethod
+    def set_viewport_position(cls, data):
+        region_3d = cls.get_viewport_context()["area"].spaces[0].region_3d
+        for attr in VIEWPORT_ATTRIBUTES:
+            setattr(region_3d, attr, data[attr])
 
     @classmethod
     def get_shader_editor_context(cls):
