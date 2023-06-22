@@ -133,10 +133,10 @@ def update_door_modifier_representation(context):
     # occurences attributes
     occurences = tool.Ifc.get_all_element_occurences(element)
     for occurence in occurences:
-        occurence.OverallWidth = props.overall_width
-        occurence.OverallHeight = props.overall_height
+        occurence.OverallWidth = props.overall_width / si_conversion
+        occurence.OverallHeight = props.overall_height / si_conversion
 
-    update_simple_openings(element, props.overall_width, props.overall_height)
+    update_simple_openings(element, props.overall_width / si_conversion, props.overall_height / si_conversion)
 
 
 # TODO: move it out to tools
