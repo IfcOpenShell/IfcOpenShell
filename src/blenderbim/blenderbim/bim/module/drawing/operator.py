@@ -174,7 +174,7 @@ class CreateDrawing(bpy.types.Operator):
 
         for drawing_id in drawings_to_print:
             if self.print_all:
-                bpy.ops.bim.activate_drawing(drawing=drawing_id)
+                bpy.ops.bim.activate_drawing(drawing=drawing_id, camera_view_point=False)
 
             self.camera = context.scene.camera
             self.camera_element = tool.Ifc.get_entity(self.camera)
@@ -217,7 +217,7 @@ class CreateDrawing(bpy.types.Operator):
             open_with_user_command(context.preferences.addons["blenderbim"].preferences.svg_command, svg_path)
 
         if self.print_all:
-            bpy.ops.bim.activate_drawing(drawing=original_drawing_id)
+            bpy.ops.bim.activate_drawing(drawing=original_drawing_id, camera_view_point=False)
         return {"FINISHED"}
 
     def get_camera_dimensions(self):
@@ -1297,13 +1297,30 @@ class ActivateDrawing(bpy.types.Operator):
     bl_idname = "bim.activate_drawing"
     bl_label = "Activate Drawing"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Activates the selected drawing view"
+    bl_description = "Activates the selected drawing view.\n\n" + "ALT+CLICK to keep the viewport position"
+
     drawing: bpy.props.IntProperty()
+    camera_view_point: bpy.props.BoolProperty(name="Camera View Point", default=True, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        # keep the viewport position on alt+click
+        # make sure to use SKIP_SAVE on property, otherwise it might get stuck
+        if event.type == "LEFTMOUSE" and event.alt:
+            self.camera_view_point = False
+        return self.execute(context)
 
     def execute(self, context):
         drawing = tool.Ifc.get().by_id(self.drawing)
         dprops = bpy.context.scene.DocProperties
+
+        if not self.camera_view_point:
+            viewport_position = tool.Blender.get_viewport_position()
+
         core.activate_drawing_view(tool.Ifc, tool.Drawing, drawing=drawing)
+
+        if not self.camera_view_point:
+            tool.Blender.set_viewport_position(viewport_position)
+
         dprops.active_drawing_id = self.drawing
         # reset DrawingsData to reload_drawing_styles work correctly
         DrawingsData.is_loaded = False
