@@ -67,7 +67,7 @@ public:
 	unsigned int size() const { return (unsigned int)ls.size(); }
 	aggregate_of_instance::ptr generalize() {
 		aggregate_of_instance::ptr r(new aggregate_of_instance());
-		for (it i = begin(); i != end(); ++i) r->push(*i);
+		for (it i = begin(); i != end(); ++i) r->push((*i)->as<IfcUtil::IfcBaseClass>());
 		return r;
 	}
 	bool contains(T* t) const { return std::find(ls.begin(), ls.end(), t) != ls.end(); }
