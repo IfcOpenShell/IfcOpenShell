@@ -516,7 +516,7 @@ Ifc4::IfcStyledItem* create_styled_item(Ifc4::IfcRepresentationItem* item, Ifc4:
 Ifc4x1::IfcStyledItem* create_styled_item(Ifc4x1::IfcRepresentationItem* item, Ifc4x1::IfcPresentationStyleAssignment* style_assignment) {
 	Ifc4x1::IfcStyleAssignmentSelect::list::ptr style_assignments(new Ifc4x1::IfcStyleAssignmentSelect::list);
 	style_assignments->push(style_assignment);
-	return new Ifc4::IfcStyledItem(item, style_assignments, boost::none);
+	return new Ifc4x1::IfcStyledItem(item, style_assignments, boost::none);
 }
 #endif
 
@@ -524,7 +524,7 @@ Ifc4x1::IfcStyledItem* create_styled_item(Ifc4x1::IfcRepresentationItem* item, I
 Ifc4x2::IfcStyledItem* create_styled_item(Ifc4x2::IfcRepresentationItem* item, Ifc4x2::IfcPresentationStyleAssignment* style_assignment) {
 	Ifc4x2::IfcStyleAssignmentSelect::list::ptr style_assignments(new Ifc4x2::IfcStyleAssignmentSelect::list);
 	style_assignments->push(style_assignment);
-	return new Ifc4::IfcStyledItem(item, style_assignments, boost::none);
+	return new Ifc4x2::IfcStyledItem(item, style_assignments, boost::none);
 }
 #endif
 
@@ -532,7 +532,7 @@ Ifc4x2::IfcStyledItem* create_styled_item(Ifc4x2::IfcRepresentationItem* item, I
 Ifc4x3_rc1::IfcStyledItem* create_styled_item(Ifc4x3_rc1::IfcRepresentationItem* item, Ifc4x3_rc1::IfcPresentationStyleAssignment* style_assignment) {
 	Ifc4x3_rc1::IfcStyleAssignmentSelect::list::ptr style_assignments(new Ifc4x3_rc1::IfcStyleAssignmentSelect::list);
 	style_assignments->push(style_assignment);
-	return new Ifc4::IfcStyledItem(item, style_assignments, boost::none);
+	return new Ifc4x3_rc1::IfcStyledItem(item, style_assignments, boost::none);
 }
 #endif
 
@@ -540,7 +540,7 @@ Ifc4x3_rc1::IfcStyledItem* create_styled_item(Ifc4x3_rc1::IfcRepresentationItem*
 Ifc4x3_rc2::IfcStyledItem* create_styled_item(Ifc4x3_rc2::IfcRepresentationItem* item, Ifc4x3_rc2::IfcPresentationStyleAssignment* style_assignment) {
 	Ifc4x3_rc2::IfcStyleAssignmentSelect::list::ptr style_assignments(new Ifc4x3_rc2::IfcStyleAssignmentSelect::list);
 	style_assignments->push(style_assignment);
-	return new Ifc4::IfcStyledItem(item, style_assignments, boost::none);
+	return new Ifc4x3_rc2::IfcStyledItem(item, style_assignments, boost::none);
 }
 #endif
 
