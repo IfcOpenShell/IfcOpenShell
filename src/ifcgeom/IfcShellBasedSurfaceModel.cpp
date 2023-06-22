@@ -28,8 +28,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcShellBasedSurfaceModel* l, Ifc
 	for(auto it = shells->begin(); it != shells->end(); ++ it) {
 		TopoDS_Shape s;
 		decltype(collective_style) shell_style;
-		if ((*it)->declaration().is(IfcSchema::IfcRepresentationItem::Class())) {
-			shell_style = get_style((IfcSchema::IfcRepresentationItem*)*it);
+		if ((*it)->as<IfcSchema::IfcRepresentationItem>()) {
+			shell_style = get_style((*it)->as<IfcSchema::IfcRepresentationItem>());
 		}
 		if (convert_shape(*it,s)) {
 			shapes.push_back(IfcRepresentationShapeItem(l->data().id(), s, shell_style ? shell_style : collective_style));

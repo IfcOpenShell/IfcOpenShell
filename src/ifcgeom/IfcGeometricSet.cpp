@@ -58,14 +58,14 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcGeometricSet* l, IfcRepresenta
 
 		part_succes = true;
 		decltype(parent_style) style = 0;
-		if (element->declaration().is(IfcSchema::IfcPoint::Class())) {
-			style = get_style((IfcSchema::IfcPoint*) element);
+		if (element->as<IfcSchema::IfcPoint>()) {
+			style = get_style(element->as<IfcSchema::IfcPoint>());
 		}
-		else if (element->declaration().is(IfcSchema::IfcCurve::Class())) {
-			style = get_style((IfcSchema::IfcCurve*) element);
+		else if (element->as<IfcSchema::IfcPoint>()) {
+			style = get_style(element->as<IfcSchema::IfcPoint>());
 		}
-		else if (element->declaration().is(IfcSchema::IfcSurface::Class())) {
-			style = get_style((IfcSchema::IfcSurface*) element);
+		else if (element->as<IfcSchema::IfcPoint>()) {
+			style = get_style(element->as<IfcSchema::IfcPoint>());
 		}
 		shapes.push_back(IfcRepresentationShapeItem(l->data().id(), s, style ? style : parent_style));
 	}

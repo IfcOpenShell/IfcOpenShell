@@ -991,7 +991,7 @@ std::pair<std::string, double> IfcGeom::Kernel::initializeUnits(IfcSchema::IfcUn
 		} else {
 			for (auto it = units->begin(); it != units->end(); ++it) {
 				IfcSchema::IfcUnit* base = *it;
-				if (base->declaration().is(IfcSchema::IfcNamedUnit::Class())) {
+				if (base->as<IfcSchema::IfcNamedUnit>()) {
 					IfcSchema::IfcNamedUnit* named_unit = base->as<IfcSchema::IfcNamedUnit>();
 					if (named_unit->UnitType() == IfcSchema::IfcUnitEnum::IfcUnit_LENGTHUNIT ||
 						named_unit->UnitType() == IfcSchema::IfcUnitEnum::IfcUnit_PLANEANGLEUNIT)
@@ -999,10 +999,10 @@ std::pair<std::string, double> IfcGeom::Kernel::initializeUnits(IfcSchema::IfcUn
 						std::string current_unit_name;
 						const double current_unit_magnitude = IfcParse::get_SI_equivalent<IfcSchema>(named_unit);
 						if (current_unit_magnitude != 0.) {
-							if (named_unit->declaration().is(IfcSchema::IfcConversionBasedUnit::Class())) {
-								IfcSchema::IfcConversionBasedUnit* u = (IfcSchema::IfcConversionBasedUnit*)base;
+							if (named_unit->as<IfcSchema::IfcConversionBasedUnit>()) {
+								IfcSchema::IfcConversionBasedUnit* u = named_unit->as<IfcSchema::IfcConversionBasedUnit>();
 								current_unit_name = u->Name();
-							} else if (named_unit->declaration().is(IfcSchema::IfcSIUnit::Class())) {
+							} else if (named_unit->as<IfcSchema::IfcSIUnit>()) {
 								IfcSchema::IfcSIUnit* si_unit = named_unit->as<IfcSchema::IfcSIUnit>();
 								if (si_unit->Prefix()) {
 									current_unit_name = IfcSchema::IfcSIPrefix::ToString(*si_unit->Prefix()) + unit_name;
