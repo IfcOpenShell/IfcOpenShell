@@ -61,8 +61,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIndexedPolyCurve* l, TopoDS_Wi
 		auto segments = *l->Segments();
 		for (auto it = segments->begin(); it != segments->end(); ++it) {
 			auto segment = *it;
-			if (segment->declaration().is(IfcSchema::IfcLineIndex::Class())) {
-				IfcSchema::IfcLineIndex* line = (IfcSchema::IfcLineIndex*) segment;
+			if (segment->as<IfcSchema::IfcLineIndex>()) {
+				IfcSchema::IfcLineIndex* line = segment->as<IfcSchema::IfcLineIndex>();
 				std::vector<int> indices = *line;
 				gp_Pnt previous;
 				for (std::vector<int>::const_iterator jt = indices.begin(); jt != indices.end(); ++jt) {
@@ -80,8 +80,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIndexedPolyCurve* l, TopoDS_Wi
 					}
 					previous = current;
 				}
-			} else if (segment->declaration().is(IfcSchema::IfcArcIndex::Class())) {
-				IfcSchema::IfcArcIndex* arc = (IfcSchema::IfcArcIndex*) segment;
+			} else if (segment->as<IfcSchema::IfcArcIndex>()) {
+				IfcSchema::IfcArcIndex* arc = segment->as<IfcSchema::IfcArcIndex>();
 				std::vector<int> indices = *arc;
 				if (indices.size() != 3) {
 					throw IfcParse::IfcException("Invalid IfcArcIndex encountered");
@@ -103,7 +103,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIndexedPolyCurve* l, TopoDS_Wi
 					Logger::Warning("Ignoring segment on", l);
 				}
 			} else {
-				throw IfcParse::IfcException("Unexpected IfcIndexedPolyCurve segment of type " + segment->declaration().name());
+				throw IfcParse::IfcException("Unexpected IfcIndexedPolyCurve segment of type " + segment->as<IfcUtil::IfcBaseClass>()->declaration().name());
 			}
 		}
 	} else if (points.begin() < points.end()) {
