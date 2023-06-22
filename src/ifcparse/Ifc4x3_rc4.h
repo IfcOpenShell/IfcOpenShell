@@ -65,6 +65,7 @@ class IfcActionRequest; class IfcActor; class IfcActorRole; class IfcActuator; c
 class IFC_PARSE_API IfcActorSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcActorSelect > list;
 };
 /// IfcAppliedValueSelect defines the selection of whether a value (expressed as a ratio) or an amount should be used as the value for an IfcAppliedValue. 
 /// 
@@ -83,6 +84,7 @@ public:
 class IFC_PARSE_API IfcAppliedValueSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcAppliedValueSelect > list;
 };
 /// Definition from ISO/CD 10303-42:1992: This select type collects together both versions of the placement as used in two dimensional or in three dimensional Cartesian space. This enables entities requiring this information to reference them without specifying the space dimensionality.  
 /// 
@@ -92,6 +94,7 @@ public:
 class IFC_PARSE_API IfcAxis2Placement : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcAxis2Placement > list;
 };
 /// Definition from IAI: A select type for selecting between simple measure types for reinforcement bending parameters.
 /// 
@@ -99,6 +102,7 @@ public:
 class IFC_PARSE_API IfcBendingParameterSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcBendingParameterSelect > list;
 };
 /// Definition from ISO/CD 10303-42:1992: This select type identifies
 ///   all those types of entities which may participate in a Boolean operation to
@@ -119,6 +123,7 @@ public:
 class IFC_PARSE_API IfcBooleanOperand : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcBooleanOperand > list;
 };
 /// IfcClassificationReferenceSelect enables selection of whether a classification reference is a subset of another classification reference or is a top level entry of a classification source. 
 /// 
@@ -131,6 +136,7 @@ public:
 class IFC_PARSE_API IfcClassificationReferenceSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcClassificationReferenceSelect > list;
 };
 /// IfcClassificationSelect enables selection of whether a classification reference is to be referenced from an external source, or whether a classification is referenced as such.
 /// 
@@ -148,6 +154,7 @@ public:
 class IFC_PARSE_API IfcClassificationSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcClassificationSelect > list;
 };
 /// Definition from ISO/CD 10303-46:1992: The colour entity defines a basic appearance of elements which shall be visualized in a picture.
 /// 
@@ -157,6 +164,7 @@ public:
 class IFC_PARSE_API IfcColour : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcColour > list;
 };
 /// The IfcColourOrFactor enables the selection of either a RGB colour value or a scalar factor value for the use as values of the reflectance components.
 /// 
@@ -164,6 +172,7 @@ public:
 class IFC_PARSE_API IfcColourOrFactor : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcColourOrFactor > list;
 };
 /// IfcCoordinateReferenceSystemSelect is a select between either the local engineering coordinate system, represented by the IfcGeometricRepresentationContext, or another coordinate reference system, represented by IfcCoordinateReferenceSystem, to be the source of a coordinate operation.
 /// 
@@ -171,6 +180,7 @@ public:
 class IFC_PARSE_API IfcCoordinateReferenceSystemSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcCoordinateReferenceSystemSelect > list;
 };
 /// Definition from ISO/CD 10303-42:1992: This type identifies the types of entity which may be selected as the root of a CSG tree including a single CSG primitive as a special case.
 /// Definition from IAI: The IfcBooleanResult, and subtypes of IfcCsgPrimitive3D are defined as potential root tree expression (at IfcCsgSolid). A subtype of IfcCsgPrimitive3D marks the special case of a CSG solid solely expressed by a single primitive.
@@ -181,6 +191,7 @@ public:
 class IFC_PARSE_API IfcCsgSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcCsgSelect > list;
 };
 /// Definition from ISO/CD 10303-46:1992: The curve font or scaled curve font select is a selection of either a curve font style select (being either a predefined curve font or an explicitly defined curve font) or a curve style font and scaling. 
 /// 
@@ -190,16 +201,19 @@ public:
 class IFC_PARSE_API IfcCurveFontOrScaledCurveFontSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcCurveFontOrScaledCurveFontSelect > list;
 };
 
 class IFC_PARSE_API IfcCurveMeasureSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcCurveMeasureSelect > list;
 };
 
 class IFC_PARSE_API IfcCurveOnSurface : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcCurveOnSurface > list;
 };
 /// IfcCurveOrEdgeCurve provides the option to either select a geometric curve (IfcCurve
 /// and subtypes) within a geometric model, or a curve with associated geometry and coordinates (IfcEdgeCurve) within a topological model.
@@ -212,6 +226,7 @@ public:
 class IFC_PARSE_API IfcCurveOrEdgeCurve : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcCurveOrEdgeCurve > list;
 };
 /// Definition from ISO/CD 10303-46:1992: The curve style font select is a selection of a curve style font or a predefined curve style font. 
 /// 
@@ -221,6 +236,7 @@ public:
 class IFC_PARSE_API IfcCurveStyleFontSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcCurveStyleFontSelect > list;
 };
 /// IfcDefinitionSelectprovides the option to either select an object or type object IfcObjectDefinition, or a property set template or property set, IfcPropertyDefinition.
 /// SELECT
@@ -232,6 +248,7 @@ public:
 class IFC_PARSE_API IfcDefinitionSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcDefinitionSelect > list;
 };
 /// IfcDerivedMeasureValue is a select type for selecting between derived measure types.
 /// 
@@ -310,6 +327,7 @@ public:
 class IFC_PARSE_API IfcDerivedMeasureValue : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcDerivedMeasureValue > list;
 };
 /// IfcDocumentSelect enables selection of whether document information is to be contained within an IFC model or is to be referenced from an external source. 
 /// 
@@ -322,11 +340,13 @@ public:
 class IFC_PARSE_API IfcDocumentSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcDocumentSelect > list;
 };
 
 class IFC_PARSE_API IfcFacilityPartTypeSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcFacilityPartTypeSelect > list;
 };
 /// Definition from ISO/CD 10303-46:1992: The fill style select is a selection between different fill area styles.
 /// 
@@ -337,6 +357,7 @@ public:
 class IFC_PARSE_API IfcFillStyleSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcFillStyleSelect > list;
 };
 /// Definition from ISO/CD 10303-42:1992: This select type identifies the types of entities which can occur in a geometric set. 
 /// 
@@ -346,6 +367,7 @@ public:
 class IFC_PARSE_API IfcGeometricSetSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcGeometricSetSelect > list;
 };
 /// IfcGridPlacementDirectionSelect enables the choice of defining a grid placement be either an explicit direction, or by referencing a second grid intersection to provide the direction.
 /// 
@@ -358,6 +380,7 @@ public:
 class IFC_PARSE_API IfcGridPlacementDirectionSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcGridPlacementDirectionSelect > list;
 };
 /// The IfcHatchLineDistanceSelect is a selection between different ways to determine the distance and potentially start point of hatch lines, either by an offset distance length measure or by a vector.
 /// 
@@ -365,16 +388,19 @@ public:
 class IFC_PARSE_API IfcHatchLineDistanceSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcHatchLineDistanceSelect > list;
 };
 
 class IFC_PARSE_API IfcImpactProtectionDeviceTypeSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcImpactProtectionDeviceTypeSelect > list;
 };
 
 class IFC_PARSE_API IfcInterferenceSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcInterferenceSelect > list;
 };
 /// Definition from ISO/CD 10303-46:1992: The layered things type selects those things, which can be grouped in layers. 
 /// 
@@ -386,6 +412,7 @@ public:
 class IFC_PARSE_API IfcLayeredItem : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcLayeredItem > list;
 };
 /// IfcLibrarySelect enables selection of whether library information is to be contained within an IFC model or is to be referenced from an external source. 
 /// 
@@ -400,6 +427,7 @@ public:
 class IFC_PARSE_API IfcLibrarySelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcLibrarySelect > list;
 };
 /// A goniometric light gets its intensity distribution function (how much light goes in any one direction) from one of two sources: (i) an industry-standard file, (ii) from distribution data passed directly via the IfcLightIntensityDistribution. 
 /// 
@@ -426,6 +454,7 @@ public:
 class IFC_PARSE_API IfcLightDistributionDataSourceSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcLightDistributionDataSourceSelect > list;
 };
 /// IfcMaterialSelect provides selection of either a material
 /// definition or a material usage definition that can be assigned to
@@ -456,6 +485,7 @@ public:
 class IFC_PARSE_API IfcMaterialSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcMaterialSelect > list;
 };
 /// Definition from ISO/CD 10303-41:1992: A measure value is a value as defined in ISO 31-0 (clause 2).
 /// 
@@ -469,6 +499,7 @@ public:
 class IFC_PARSE_API IfcMeasureValue : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcMeasureValue > list;
 };
 /// IfcMetricValueSelect is a select type that enables selection of the data type for the value component of an IfcMetric. 
 /// 
@@ -485,6 +516,7 @@ public:
 class IFC_PARSE_API IfcMetricValueSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcMetricValueSelect > list;
 };
 /// Definition from IAI: A measure for modulus of rotational subgrade reaction which expresses the rotational bedding of a structural curve item per length.  TRUE denotes infinite stiffness (rigidity).  FALSE denotes no stiffness (a release).  A numeric value denotes finite linear-elastic stiffness.
 /// 
@@ -492,6 +524,7 @@ public:
 class IFC_PARSE_API IfcModulusOfRotationalSubgradeReactionSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcModulusOfRotationalSubgradeReactionSelect > list;
 };
 /// Definition from IAI: Bedding measure which expresses the bedding of a structural face item per area.  TRUE denotes infinite stiffness (rigidity).  FALSE denotes no stiffness (a release).  A numeric value denotes finite linear-elastic stiffness.
 /// 
@@ -499,6 +532,7 @@ public:
 class IFC_PARSE_API IfcModulusOfSubgradeReactionSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcModulusOfSubgradeReactionSelect > list;
 };
 /// Definition from IAI: A measure for modulus of translational subgrade reaction which expresses the translational bedding of a structural curve item per length.  TRUE denotes infinite stiffness (rigidity).  FALSE denotes no stiffness (a release).  A numeric value denotes finite linear-elastic stiffness.
 /// 
@@ -506,6 +540,7 @@ public:
 class IFC_PARSE_API IfcModulusOfTranslationalSubgradeReactionSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcModulusOfTranslationalSubgradeReactionSelect > list;
 };
 /// IfcObjectReferenceSelect is a select type, that holds a list of resource level entities that can be used as properties within a property set. 
 /// 
@@ -513,6 +548,7 @@ public:
 class IFC_PARSE_API IfcObjectReferenceSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcObjectReferenceSelect > list;
 };
 /// IfcPointOrVertexPoint provides the option to either select a geometric point (IfcPoint and subtypes) within a geometric model, or a vertex with associated point coordinates (IfcVertexPoint) within a topological model.
 /// SELECT 
@@ -524,6 +560,7 @@ public:
 class IFC_PARSE_API IfcPointOrVertexPoint : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcPointOrVertexPoint > list;
 };
 /// IfcProcessSelectprovides the option to either
 ///   select a process or activity occurrence, IfcProcess,
@@ -538,11 +575,13 @@ public:
 class IFC_PARSE_API IfcProcessSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcProcessSelect > list;
 };
 
 class IFC_PARSE_API IfcProductRepresentationSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcProductRepresentationSelect > list;
 };
 /// IfcProductSelectprovides the option to either select a
 /// product occurrence, IfcProduct, or a product type,
@@ -556,11 +595,13 @@ public:
 class IFC_PARSE_API IfcProductSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcProductSelect > list;
 };
 
 class IFC_PARSE_API IfcPropertySetDefinitionSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcPropertySetDefinitionSelect > list;
 };
 /// IfcResourceObjectSelect enables selection of resource level objects that are to be related to an resource level relationship object. The use of IfcResourceObjectSelect includes the ability to assign an external reference entity (library, classification, or documentation reference) to entities within the resource level.
 /// 
@@ -568,6 +609,7 @@ public:
 class IFC_PARSE_API IfcResourceObjectSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcResourceObjectSelect > list;
 };
 /// IfcResourceSelectprovides the option to either select a
 /// resource occurrence, IfcResource, or a resource type,
@@ -581,6 +623,7 @@ public:
 class IFC_PARSE_API IfcResourceSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcResourceSelect > list;
 };
 /// Definition from IAI: A measure of rotational stiffness.  TRUE denotes infinite stiffness (rigidity).  FALSE denotes no stiffness (a release).  A numeric value denotes finite linear-elastic stiffness.
 /// 
@@ -588,11 +631,13 @@ public:
 class IFC_PARSE_API IfcRotationalStiffnessSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcRotationalStiffnessSelect > list;
 };
 
 class IFC_PARSE_API IfcSegmentIndexSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcSegmentIndexSelect > list;
 };
 /// Definition from ISO/CD 10303-42:1992 This type collects together, for reference when constructing more complex models, the subtypes which have the characteristics of a shell. A shell is a connected object of fixed dimensionality d = 0; 1; or 2, typically used to bound a region. The domain of a shell, if present, includes its bounds and 0 £ X < ¥.  
 /// 
@@ -608,6 +653,7 @@ public:
 class IFC_PARSE_API IfcShell : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcShell > list;
 };
 /// IfcSimpleValue is a select type for selecting between simple value types.
 /// 
@@ -631,6 +677,7 @@ public:
 class IFC_PARSE_API IfcSimpleValue : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcSimpleValue > list;
 };
 /// Definition from ISO/CD 10303-46:1992: The size select is a selection of a specific positive length measure.
 /// 
@@ -647,6 +694,7 @@ public:
 class IFC_PARSE_API IfcSizeSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcSizeSelect > list;
 };
 /// The IfcSolidOrShell provides the option to either select a geometric volume (IfcSolidModel and subtypes) within a geometric model, or a shell (IfcClosedShell) within a topological model.
 /// SELECT
@@ -658,6 +706,7 @@ public:
 class IFC_PARSE_API IfcSolidOrShell : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcSolidOrShell > list;
 };
 /// Definition from IAI: The
 /// IfcSpaceBoundarySelectselects either an internal space
@@ -674,11 +723,13 @@ public:
 class IFC_PARSE_API IfcSpaceBoundarySelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcSpaceBoundarySelect > list;
 };
 
 class IFC_PARSE_API IfcSpatialReferenceSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcSpatialReferenceSelect > list;
 };
 /// The IfcSpecularHighlightSelect defines the selectable types of value for specular highlight sharpness. 
 /// 
@@ -693,6 +744,7 @@ public:
 class IFC_PARSE_API IfcSpecularHighlightSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcSpecularHighlightSelect > list;
 };
 /// Definition from IAI: This type definition shall be used to
 ///   distinguish between a reference to an instance either of
@@ -706,6 +758,7 @@ public:
 class IFC_PARSE_API IfcStructuralActivityAssignmentSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcStructuralActivityAssignmentSelect > list;
 };
 /// IfcSurfaceOrFaceSurface provides the option to either select a geometric surface (IfcSurface
 /// and subtypes) within a geometric model, or a face with associated surface geometry and coordinates (IfcFaceSurface) within a topological model.
@@ -719,6 +772,7 @@ public:
 class IFC_PARSE_API IfcSurfaceOrFaceSurface : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcSurfaceOrFaceSurface > list;
 };
 /// Definition from ISO/CD 10303-46:1992: The surface style element select is a selection of the different surface styles to use in the presentation of the side of a surface. 
 /// 
@@ -732,6 +786,7 @@ public:
 class IFC_PARSE_API IfcSurfaceStyleElementSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcSurfaceStyleElementSelect > list;
 };
 /// IfcTextFontSelect allows for either a predefined text font, a text font model or an externally defined text font to be used to describe the font of a text literal. The definition of the text font model is based on W3C TR Cascading Style Sheet Version 1, whereas the definition of predefined text font is based on ISO 10303.
 /// 
@@ -743,12 +798,14 @@ public:
 class IFC_PARSE_API IfcTextFontSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcTextFontSelect > list;
 };
 /// IfcTimeOrRatioSelect allows a value to be selected as being either a ratio or a time measure.
 /// HISTORY New SELECT in IFC2x4
 class IFC_PARSE_API IfcTimeOrRatioSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcTimeOrRatioSelect > list;
 };
 /// Definition from IAI: A measure of linear stiffness.  TRUE denotes infinite stiffness (rigidity).  FALSE denotes no stiffness (a release).  A numeric value denotes finite linear-elastic stiffness.
 /// 
@@ -756,11 +813,13 @@ public:
 class IFC_PARSE_API IfcTranslationalStiffnessSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcTranslationalStiffnessSelect > list;
 };
 
 class IFC_PARSE_API IfcTransportElementTypeSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcTransportElementTypeSelect > list;
 };
 /// Definition from ISO/CD 10303-42:1992: This select type identifies the two possible ways of trimming a parametric curve; by a Cartesian point on the curve, or by a REAL number defining a parameter value within the parametric range of the curve. 
 /// 
@@ -770,6 +829,7 @@ public:
 class IFC_PARSE_API IfcTrimmingSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcTrimmingSelect > list;
 };
 /// Definition from ISO/CD 10303-41:1992: A unit is a physical quantity, with a value of one, which is used as a standard in terms of which other quantities are expressed.
 /// 
@@ -787,6 +847,7 @@ public:
 class IFC_PARSE_API IfcUnit : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcUnit > list;
 };
 /// IfcValue is a select type for selecting between more specialised select types IfcSimpleValue,
 /// IfcMeasureValue and IfcDerivedMeasureValue.
@@ -801,6 +862,7 @@ public:
 class IFC_PARSE_API IfcValue : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcValue > list;
 };
 /// Definition from ISO/CD 10303-42:1992: This type is used to
 ///   identify the types of entity which can participate in vector computations. 
@@ -813,6 +875,7 @@ public:
 class IFC_PARSE_API IfcVectorOrDirection : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcVectorOrDirection > list;
 };
 /// Definition from IAI: A measure of warping stiffness.  TRUE denotes infinite stiffness (rigidity).  FALSE denotes no stiffness (a release).  A numeric value denotes finite linear-elastic stiffness.
 /// 
@@ -820,6 +883,7 @@ public:
 class IFC_PARSE_API IfcWarpingStiffnessSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcWarpingStiffnessSelect > list;
 };
 class IFC_PARSE_API IfcActionRequestTypeEnum : public IfcUtil::IfcBaseType {
 /// IfcActionRequestTypeEnum defines the types of sources through which a request can be made. 
