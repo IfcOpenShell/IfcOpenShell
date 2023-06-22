@@ -58,9 +58,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIndexedPolyCurve* l, TopoDS_Wi
 	double u, v;
 
 	if(l->Segments()) {
-		aggregate_of_instance::ptr segments = *l->Segments();
-		for (aggregate_of_instance::it it = segments->begin(); it != segments->end(); ++it) {
-			IfcUtil::IfcBaseClass* segment = *it;
+		auto segments = *l->Segments();
+		for (auto it = segments->begin(); it != segments->end(); ++it) {
+			auto segment = *it;
 			if (segment->declaration().is(IfcSchema::IfcLineIndex::Class())) {
 				IfcSchema::IfcLineIndex* line = (IfcSchema::IfcLineIndex*) segment;
 				std::vector<int> indices = *line;

@@ -985,12 +985,12 @@ std::pair<std::string, double> IfcGeom::Kernel::initializeUnits(IfcSchema::IfcUn
 	bool length_unit_encountered = false, angle_unit_encountered = false;
 
 	try {
-		aggregate_of_instance::ptr units = unit_assignment->Units();
+		auto units = unit_assignment->Units();
 		if (!units || !units->size()) {
 			Logger::Warning("No unit information found");
 		} else {
-			for (aggregate_of_instance::it it = units->begin(); it != units->end(); ++it) {
-				IfcUtil::IfcBaseClass* base = *it;
+			for (auto it = units->begin(); it != units->end(); ++it) {
+				IfcSchema::IfcUnit* base = *it;
 				if (base->declaration().is(IfcSchema::IfcNamedUnit::Class())) {
 					IfcSchema::IfcNamedUnit* named_unit = base->as<IfcSchema::IfcNamedUnit>();
 					if (named_unit->UnitType() == IfcSchema::IfcUnitEnum::IfcUnit_LENGTHUNIT ||

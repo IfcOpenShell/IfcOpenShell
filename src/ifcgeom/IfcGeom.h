@@ -299,8 +299,8 @@ public:
 		std::vector<IfcSchema::IfcPresentationStyle*> prs_styles;
 
 #ifdef SCHEMA_HAS_IfcStyleAssignmentSelect
-		aggregate_of_instance::ptr style_assignments = si->Styles();
-		for (aggregate_of_instance::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
+		auto style_assignments = si->Styles();
+		for (auto kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
 			
 			// Using IfcPresentationStyleAssignment is deprecated, use the direct assignment of a subtype of IfcPresentationStyle instead.
 			auto style_k = (*kt)->as<IfcSchema::IfcPresentationStyle>();
@@ -345,8 +345,8 @@ public:
 			if (style->declaration().is(IfcSchema::IfcSurfaceStyle::Class())) {
 				IfcSchema::IfcSurfaceStyle* surface_style = (IfcSchema::IfcSurfaceStyle*) style;
 				if (surface_style->Side() != IfcSchema::IfcSurfaceSide::IfcSurfaceSide_NEGATIVE) {
-					aggregate_of_instance::ptr styles_elements = surface_style->Styles();
-					for (aggregate_of_instance::it mt = styles_elements->begin(); mt != styles_elements->end(); ++mt) {
+					auto styles_elements = surface_style->Styles();
+					for (auto mt = styles_elements->begin(); mt != styles_elements->end(); ++mt) {
 						if ((*mt)->declaration().is(T::Class())) {
 							return std::make_pair(surface_style, (T*) *mt);
 						}

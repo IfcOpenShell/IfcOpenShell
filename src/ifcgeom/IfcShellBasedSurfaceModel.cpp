@@ -23,9 +23,9 @@
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcShellBasedSurfaceModel* l, IfcRepresentationShapeItems& shapes) {
-	aggregate_of_instance::ptr shells = l->SbsmBoundary();
+	auto shells = l->SbsmBoundary();
 	auto collective_style = get_style(l);
-	for( aggregate_of_instance::it it = shells->begin(); it != shells->end(); ++ it ) {
+	for(auto it = shells->begin(); it != shells->end(); ++ it) {
 		TopoDS_Shape s;
 		decltype(collective_style) shell_style;
 		if ((*it)->declaration().is(IfcSchema::IfcRepresentationItem::Class())) {
