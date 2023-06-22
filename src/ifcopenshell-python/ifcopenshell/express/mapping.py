@@ -224,9 +224,9 @@ class Mapping:
                 isinstance(v, nodes.SimpleType) and isinstance(v.type, nodes.StringType)
             ):
                 return "string"
-            if self.schema.is_select(v):
-                return "IfcUtil::IfcBaseClass"
-            elif str(v) in self.schema.types or str(v) in self.schema.entities:
+            # if self.schema.is_select(v):
+            #     return "IfcUtil::IfcBaseClass"
+            if str(v) in self.schema.types or str(v) in self.schema.entities:
                 return "::%s::%s" % (self.schema.name.capitalize(), v)
             else:
                 return str(v)
