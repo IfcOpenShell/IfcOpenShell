@@ -142,6 +142,7 @@ select = """%(documentation)s
 class IFC_PARSE_API %(name)s : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< %(name)s > list;
 };
 """
 
