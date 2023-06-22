@@ -347,7 +347,7 @@ public:
 				if (surface_style->Side() != IfcSchema::IfcSurfaceSide::IfcSurfaceSide_NEGATIVE) {
 					auto styles_elements = surface_style->Styles();
 					for (auto mt = styles_elements->begin(); mt != styles_elements->end(); ++mt) {
-						if ((*mt)->template as<T>())) {
+						if ((*mt)->template as<T>()) {
 							return std::make_pair(surface_style, (*mt)->as<T>());
 						}
 					}
