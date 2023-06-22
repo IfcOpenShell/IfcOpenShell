@@ -50,8 +50,8 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcIndexedPolyCurve* inst) {
 		auto segments = *inst->Segments();
 		for (auto it = segments->begin(); it != segments->end(); ++it) {
 			auto segment = *it;
-			if (segment->declaration().is(IfcSchema::IfcLineIndex::Class())) {
-				IfcSchema::IfcLineIndex* line = (IfcSchema::IfcLineIndex*) segment;
+			if (segment->as<IfcSchema::IfcLineIndex>()) {
+				IfcSchema::IfcLineIndex* line = segment->as<IfcSchema::IfcLineIndex>();
 				std::vector<int> indices = *line;
 				taxonomy::point3::ptr previous;
 				for (std::vector<int>::const_iterator jt = indices.begin(); jt != indices.end(); ++jt) {
@@ -64,8 +64,8 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcIndexedPolyCurve* inst) {
 					}
 					previous = current;
 				}
-			} else if (segment->declaration().is(IfcSchema::IfcArcIndex::Class())) {
-				IfcSchema::IfcArcIndex* arc = (IfcSchema::IfcArcIndex*) segment;
+			} else if (segment->as<IfcSchema::IfcArcIndex>()) {
+				IfcSchema::IfcArcIndex* arc = segment->as<IfcSchema::IfcArcIndex>();
 				std::vector<int> indices = *arc;
 				if (indices.size() != 3) {
 					throw IfcParse::IfcException("Invalid IfcArcIndex encountered");
@@ -89,7 +89,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcIndexedPolyCurve* inst) {
 					Logger::Warning("Ignoring segment on", inst);
 				}
 			} else {
-				throw IfcParse::IfcException("Unexpected IfcIndexedPolyCurve segment of type " + segment->declaration().name());
+				throw IfcParse::IfcException("Unexpected IfcIndexedPolyCurve segment of type " + segment->as<IfcUtil::IfcBaseClass>()->declaration().name());
 			}
 		}
 	} else if (points.begin() < points.end()) {

@@ -90,10 +90,9 @@ class aggregate_of {
     template <class U>
     typename U::list::ptr as() {
         typename U::list::ptr result(new typename U::list);
-        const bool all = !U::Class().as_entity();
         for (it i = begin(); i != end(); ++i) {
-            if (all || (*i)->declaration().is(U::Class())) {
-                result->push((U*)*i);
+            if ((*i)->as<U>()) {
+                result->push(r->push((*i)->as<U>());
             }
         }
         return result;
@@ -150,13 +149,12 @@ class IFC_PARSE_API aggregate_of_aggregate_of_instance {
     template <class U>
     typename aggregate_of_aggregate_of<U>::ptr as() {
         typename aggregate_of_aggregate_of<U>::ptr result(new aggregate_of_aggregate_of<U>);
-        const bool all = !U::Class().as_entity();
         for (outer_it outer = begin(); outer != end(); ++outer) {
             const std::vector<IfcUtil::IfcBaseClass*>& from = *outer;
             typename std::vector<U*> to;
             for (inner_it inner = from.begin(); inner != from.end(); ++inner) {
-                if (all || (*inner)->declaration().is(U::Class())) {
-                    to.push_back((U*)*inner);
+                if ((*inner)->as<U>()) {
+                    to.push_back((*i)->as<U>());
                 }
             }
             result->push(to);

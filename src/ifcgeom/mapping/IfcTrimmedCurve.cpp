@@ -48,11 +48,11 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrimmedCurve* inst) {
 
 	for (auto it = trims1->begin(); it != trims1->end(); it ++) {
 		auto i = *it;
-		if ( i->declaration().is(IfcSchema::IfcCartesianPoint::Class()) ) {
+		if (i->as<IfcSchema::IfcCartesianPoint>()) {
 			pnts[sense_agreement] = taxonomy::cast<taxonomy::point3>(map(i));
 			has_pnts[sense_agreement] = true;
-		} else if ( i->declaration().is(IfcSchema::IfcParameterValue::Class()) ) {
-			const double value = *((IfcSchema::IfcParameterValue*)i);
+		} else if (i->as<IfcSchema::IfcParameterValue>()) {
+			const double value = *i->as<IfcSchema::IfcParameterValue>();
 			flts[sense_agreement] = value * parameterFactor;
 			has_flts[sense_agreement] = true;
 		}
@@ -60,11 +60,11 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrimmedCurve* inst) {
 
 	for (auto it = trims2->begin(); it != trims2->end(); it ++) {
 		auto i = *it;
-		if ( i->declaration().is(IfcSchema::IfcCartesianPoint::Class()) ) {
+		if (i->as<IfcSchema::IfcCartesianPoint>()) {
 			pnts[1 - sense_agreement] = taxonomy::cast<taxonomy::point3>(map(i));
 			has_pnts[1-sense_agreement] = true;
-		} else if ( i->declaration().is(IfcSchema::IfcParameterValue::Class()) ) {
-			const double value = *((IfcSchema::IfcParameterValue*)i);
+		} else if (i->as<IfcSchema::IfcParameterValue>()) {
+			const double value = *i->as<IfcSchema::IfcParameterValue>();
 			flts[1-sense_agreement] = value * parameterFactor;
 			has_flts[1-sense_agreement] = true;
 		}
