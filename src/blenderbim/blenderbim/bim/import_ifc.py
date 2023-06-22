@@ -1719,6 +1719,7 @@ class IfcImporter:
                 mesh.polygons.add(num_loops)
                 mesh.polygons.foreach_set("loop_start", loop_start)
                 mesh.polygons.foreach_set("loop_total", loop_total)
+                mesh.polygons.foreach_set("use_smooth", [0]*total_faces)
                 mesh.update()
             else:
                 e = geometry.edges
