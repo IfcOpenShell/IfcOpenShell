@@ -96,7 +96,39 @@ def update_shading_style(self, context):
 
         if rendering_style and texture_style:
             tool.Loader.create_surface_style_with_textures(blender_material, rendering_style, texture_style)
+    tool.Style.set_surface_style_props(blender_material)
     tool.Style.record_shading(blender_material)
+
+
+# TODO: support more more methods and also textures
+REFLECTANCE_METHODS = [
+    ("PHYSICAL", "PHYSICAL", ""),
+    ("FLAT", "FLAT", ""),
+    # ("METAL", "METAL", ""),
+    # ("MATT", "MATT", ""),
+    # ("GLASS", "GLASS", ""),
+    # ("NOTDEFINED", "NOTDEFINED", ""),
+]
+
+
+def update_shader_graph(self, context):
+    if not self.update_graph:
+        return
+
+    material = self.id_data
+    style_data = tool.Style.get_surface_style_from_props(material)
+    tool.Loader.create_surface_style_rendering(material, style_data)
+
+
+def update_graph_get(self):
+    return self.get("update_graph", True)
+
+
+def update_graph_set(self, value):
+    self["update_graph"] = value
+    if value:
+        material = self.id_data
+        tool.Style.set_surface_style_props(material)
 
 
 class BIMStyleProperties(PropertyGroup):
@@ -113,3 +145,42 @@ class BIMStyleProperties(PropertyGroup):
         default="Shading",
         update=update_shading_style,
     )
+
+    # GLTF style properties
+    update_graph: BoolProperty(
+        name="Update Shade Graph on Prop Change",
+        description="Update shader graph in real time\nas you update style properties",
+        default=True,
+        get=update_graph_get,
+        set=update_graph_set,
+    )
+    reflectance_method: EnumProperty(
+        name="Reflectance Method",
+        description="Reflectance method to use for the material",
+        items=REFLECTANCE_METHODS,
+        default="PHYSICAL",
+        update=update_shader_graph,
+    )
+    surface_color: bpy.props.FloatVectorProperty(
+        name="Surface Color",
+        subtype="COLOR",
+        default=(1, 1, 1, 1),
+        min=0.0,
+        max=1.0,
+        size=4,
+        update=update_shader_graph,
+    )
+    diffuse_color: bpy.props.FloatVectorProperty(
+        name="Diffuse Color",
+        subtype="COLOR",
+        default=(1, 1, 1, 1),
+        min=0.0,
+        max=1.0,
+        size=4,
+        update=update_shader_graph,
+    )
+    transparency: bpy.props.FloatProperty(
+        name="Transparency", default=0.0, min=0.0, max=1.0, update=update_shader_graph
+    )
+    roughness: bpy.props.FloatProperty(name="Roughness", default=0.0, min=0.0, max=1.0, update=update_shader_graph)
+    metallic: bpy.props.FloatProperty(name="Metallic", default=0.0, min=0.0, max=1.0, update=update_shader_graph)

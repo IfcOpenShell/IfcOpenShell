@@ -54,18 +54,28 @@ def remove_style(ifc, material, style_tool, style=None):
         style_tool.import_presentation_styles(style_tool.get_active_style_type())
 
 
-def update_style_colours(ifc, style, obj=None):
+def update_style_colours(ifc, style, obj=None, verbose=False):
     element = style.get_style(obj)
 
     if style.can_support_rendering_style(obj):
-        rendering_style = style.get_surface_rendering_style(obj)
-        attributes = style.get_surface_rendering_attributes(obj)
+        style_elements = style.get_style_elements(obj)
+        rendering_style = style_elements.get("IfcSurfaceStyleRendering", None)
+        texture_style = style_elements.get("IfcSurfaceStyleWithTextures", None)
+        attributes = style.get_surface_rendering_attributes(obj, verbose)
         if rendering_style:
             ifc.run("style.edit_surface_style", style=rendering_style, attributes=attributes)
         else:
             ifc.run(
                 "style.add_surface_style", style=element, ifc_class="IfcSurfaceStyleRendering", attributes=attributes
             )
+
+        # # TODO: uncomment to support saving textures
+        # # TODO: uvs?
+        # textures = ifc.run("style.add_surface_textures", material=obj)
+        # if not texture_style and textures:
+        #     texture_style = ifc.get().createIfcSurfaceStyleWithTextures()
+        # if texture_style:
+        #     texture_style.Textures = textures
     else:
         shading_style = style.get_surface_shading_style(obj)
         attributes = style.get_surface_shading_attributes(obj)

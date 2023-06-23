@@ -30,11 +30,26 @@ import os
 class UpdateStyleColours(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.update_style_colours"
     bl_label = "Save Current Shading Style"
-    bl_description = "Save current style values to IfcSurfaceStyleShading"
+    bl_description = (
+        "Save current style values to IfcSurfaceStyleShading.\n\n" + "ALT+CLICK to see saved values details"
+    )
     bl_options = {"REGISTER", "UNDO"}
 
+    verbose: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        # verobse print to console on alt+click
+        # make sure to use SKIP_SAVE on property, otherwise it might get stuck
+        if event.type == "LEFTMOUSE" and event.alt:
+            self.verbose = True
+        return self.execute(context)
+
     def _execute(self, context):
-        core.update_style_colours(tool.Ifc, tool.Style, obj=context.active_object.active_material)
+        mat = context.active_object.active_material
+        core.update_style_colours(tool.Ifc, tool.Style, obj=mat, verbose=self.verbose)
+        if self.verbose:
+            self.report({"INFO"}, "Check the system console to see saved style properties")
+        tool.Style.set_surface_style_props(mat)
 
 
 class UpdateStyleTextures(bpy.types.Operator, tool.Ifc.Operator):

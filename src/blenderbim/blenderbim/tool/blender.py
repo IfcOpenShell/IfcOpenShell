@@ -108,6 +108,13 @@ class Blender:
         return False
 
     @classmethod
+    def show_error_message(cls, text):
+        """useful for showing error messages outside blender operators"""
+        def error(self, context):
+            self.layout.label(text=text)
+        bpy.context.window_manager.popup_menu(error, title="Error", icon="ERROR")
+
+    @classmethod
     def get_viewport_context(cls):
         """Get viewport area context for context overriding.
 
@@ -170,13 +177,13 @@ class Blender:
         shader_editor.pin = previous_pin_setting
 
     @classmethod
-    def get_material_node(cls, blender_material, node_type):
+    def get_material_node(cls, blender_material, node_type, kwargs={}):
         """returns first node from the `blender_material` shader graph with type `node_type`"""
         if not blender_material.use_nodes:
             return
         nodes = blender_material.node_tree.nodes
         for node in nodes:
-            if node.type == node_type:
+            if node.type == node_type and all(getattr(node, a) == kwargs[a] for a in kwargs):
                 return node
 
     @classmethod

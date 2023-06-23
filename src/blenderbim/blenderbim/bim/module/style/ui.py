@@ -65,6 +65,24 @@ class BIM_PT_styles(Panel):
         self.layout.template_list("BIM_UL_styles", "", self.props, "styles", self.props, "active_style_index")
 
 
+def draw_style_ui(self, context):
+    mat = context.material
+    props = mat.BIMMaterialProperties
+    style_props = mat.BIMStyleProperties
+    row = self.layout.row(align=True)
+    if not props.ifc_style_id:
+        row.operator("bim.add_style", icon="ADD")
+        return
+
+    row.prop(style_props, "active_style_type", icon="SHADING_RENDERED", text="")
+    row.operator("bim.update_current_style", icon="FILE_REFRESH", text="")
+    row = self.layout.row(align=True)
+    row.operator("bim.update_style_colours", icon="GREASEPENCIL")
+    row.operator("bim.update_style_textures", icon="TEXTURE", text="")
+    row.operator("bim.unlink_style", icon="UNLINKED", text="")
+    row.operator("bim.remove_style", icon="X", text="").style = props.ifc_style_id
+
+
 class BIM_PT_style(MaterialButtonsPanel, Panel):
     bl_label = "IFC Style"
     bl_idname = "BIM_PT_style"
@@ -81,22 +99,11 @@ class BIM_PT_style(MaterialButtonsPanel, Panel):
         )
 
     def draw(self, context):
-        props = context.active_object.active_material.BIMMaterialProperties
-        style_props = context.active_object.active_material.BIMStyleProperties
         mat = context.material
-        row = self.layout.row(align=True)
+        props = mat.BIMMaterialProperties
+        draw_style_ui(self, context)
         if not props.ifc_style_id:
-            row.operator("bim.add_style", icon="ADD")
             return
-
-        row.prop(style_props, "active_style_type", icon="SHADING_RENDERED", text="")
-        row.operator("bim.update_current_style", icon="FILE_REFRESH", text="")
-        row = self.layout.row(align=True)
-        row.operator("bim.update_style_colours", icon="GREASEPENCIL")
-        row.operator("bim.update_style_textures", icon="TEXTURE", text="")
-        row.operator("bim.unlink_style", icon="UNLINKED", text="")
-        row.operator("bim.remove_style", icon="X", text="").style = props.ifc_style_id
-
         row = self.layout.row(align=True)
         row.prop(mat, "diffuse_color", text="Viewport Color" if mat.use_nodes else "Render Color")
 
@@ -212,3 +219,38 @@ class BIM_UL_styles(UIList):
             row2 = row.row()
             row2.alignment = "RIGHT"
             row2.label(text=str(item.total_elements))
+
+
+class BIM_PT_STYLE_GRAPH(Panel):
+    bl_idname = "BIM_PT_style_graph"
+    bl_space_type = "NODE_EDITOR"
+    bl_label = "IFC Style Graph Settings"
+    bl_region_type = "UI"
+    bl_category = "BBIM"
+
+    def draw(self, context):
+        layout = self.layout
+        props = context.active_object.active_material.BIMStyleProperties
+
+        draw_style_ui(self, context)
+        layout.separator()
+        box = layout.box()
+        box.label(text="Creating shader from this panel")
+        box.label(text="ensures that shader is")
+        box.label(text="GLTF compatible")
+        box.label(text="and therefore will be ")
+        box.label(text="stored in IFC safely.")
+        layout.separator()
+
+        layout.prop(props, "update_graph", text="Graph Auto Update")
+        layout.label(text="Reflectance Method:")
+        layout.prop(props, "reflectance_method", text="")
+        layout.prop(props, "surface_color")
+        layout.prop(props, "transparency")
+        layout.prop(props, "diffuse_color")
+
+        if props.reflectance_method == "PHYSICAL":
+            layout.prop(props, "metallic")
+
+        if props.reflectance_method not in ("FLAT", "NOTDEFINED"):
+            layout.prop(props, "roughness")
