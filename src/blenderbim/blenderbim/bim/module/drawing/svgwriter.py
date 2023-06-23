@@ -839,6 +839,10 @@ class SvgWriter:
                     text_tag.add(tspan)
                     line_number += 1
 
+                if add_fill_bg:
+                    # return line_number back to the original value
+                    line_number -= len(text_lines)
+
             if "fill-bg" in classes:
                 add_text_tag(True)
             add_text_tag(False)
