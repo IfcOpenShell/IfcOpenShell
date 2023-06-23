@@ -45,6 +45,7 @@ classes = (
     ui.BIM_PT_style_attributes,
     ui.BIM_PT_external_style_attributes,
     ui.BIM_UL_styles,
+    ui.BIM_PT_STYLE_GRAPH,
 )
 
 

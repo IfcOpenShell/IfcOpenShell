@@ -491,7 +491,7 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
                 continue
             material.blend_method = "HASHED"
             material.shadow_method = "HASHED"
-            material_output = self.get_node(material.node_tree.nodes, "OUTPUT_MATERIAL")
+            material_output = tool.Blender.get_material_node(material, "OUTPUT_MATERIAL", {"is_active_output": True})
             if not material_output:
                 continue
             from_socket = material_output.inputs[0].links[0].from_socket
@@ -500,11 +500,6 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
             section_override.node_tree = override
             material.node_tree.links.new(from_socket, section_override.inputs[0])
             material.node_tree.links.new(section_override.outputs[0], material_output.inputs[0])
-
-    def get_node(self, nodes, node_type):
-        for node in nodes:
-            if node.type == node_type:
-                return node
 
 
 class BIM_OT_remove_section_plane(bpy.types.Operator):
