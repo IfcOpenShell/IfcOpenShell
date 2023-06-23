@@ -100,7 +100,7 @@ class Brick(blenderbim.core.tool.Brick):
 
     @classmethod
     def clear_project(cls):
-        BrickStore.graph = None
+        BrickStore.purge()
         bpy.context.scene.BIMBrickProperties.active_brick_class == ""
         bpy.context.scene.BIMBrickProperties.brick_breadcrumbs.clear()
 
@@ -331,8 +331,9 @@ class BrickStore:
     @staticmethod
     def purge():
         BrickStore.schema = None
+        BrickStore.VersionedGraphCollection = None
         BrickStore.graph = None
-        BrickStore.path = None
+        BrickStore.path = None   
 
     @classmethod
     def reload_brick_graph(cls):
