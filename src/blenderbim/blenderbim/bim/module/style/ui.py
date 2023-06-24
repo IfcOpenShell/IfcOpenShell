@@ -228,6 +228,10 @@ class BIM_PT_STYLE_GRAPH(Panel):
     bl_region_type = "UI"
     bl_category = "BBIM"
 
+    @classmethod
+    def poll(cls, context):
+        return getattr(context, "mat", None)
+
     def draw(self, context):
         layout = self.layout
         props = context.active_object.active_material.BIMStyleProperties
