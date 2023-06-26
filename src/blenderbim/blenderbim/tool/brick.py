@@ -253,9 +253,9 @@ class Brick(blenderbim.core.tool.Brick):
             cwd = os.path.dirname(os.path.realpath(__file__))
             BrickStore.schema = os.path.join(cwd, "..", "bim", "schema", "Brick.ttl")
         BrickStore.VersionedGraphCollection = brickschema.persistent.VersionedGraphCollection("sqlite://")
-        with BrickStore.VersionedGraphCollection.new_changeset("schema") as cs:
+        with BrickStore.VersionedGraphCollection.new_changeset("SCHEMA") as cs:
             cs.load_file(BrickStore.schema)
-        with BrickStore.VersionedGraphCollection.new_changeset("project") as cs:
+        with BrickStore.VersionedGraphCollection.new_changeset("PROJECT") as cs:
             cs.load_file(filepath)
         BrickStore.reload_brick_graph()
         BrickStore.path = filepath
@@ -266,7 +266,7 @@ class Brick(blenderbim.core.tool.Brick):
             cwd = os.path.dirname(os.path.realpath(__file__))
             BrickStore.schema = os.path.join(cwd, "..", "bim", "schema", "Brick.ttl")
         BrickStore.VersionedGraphCollection = brickschema.persistent.VersionedGraphCollection("sqlite://")
-        with BrickStore.VersionedGraphCollection.new_changeset("schema") as cs:
+        with BrickStore.VersionedGraphCollection.new_changeset("SCHEMA") as cs:
             cs.load_file(BrickStore.schema)
         BrickStore.VersionedGraphCollection.bind("digitaltwin", Namespace("https://example.org/digitaltwin#"))
         BrickStore.VersionedGraphCollection.bind("brick", Namespace("https://brickschema.org/schema/Brick#"))
@@ -320,6 +320,7 @@ class Brick(blenderbim.core.tool.Brick):
         BrickStore.VersionedGraphCollection.redo()
         BrickStore.reload_brick_graph()        
 
+
 class BrickStore:
     schema = None # this is now a path
     # I've decided to arbitrarily split th VersionedGraphCollection into two graph names: "schema" and "project"
@@ -337,4 +338,4 @@ class BrickStore:
 
     @classmethod
     def reload_brick_graph(cls):
-        BrickStore.graph = BrickStore.VersionedGraphCollection.graph_at("project")
+        BrickStore.graph = BrickStore.VersionedGraphCollection.graph_at("PROJECT")
