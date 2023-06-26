@@ -230,7 +230,7 @@ class BIM_PT_STYLE_GRAPH(Panel):
 
     @classmethod
     def poll(cls, context):
-        return getattr(context, "mat", None)
+        return getattr(context, "material", None)
 
     def draw(self, context):
         layout = self.layout
