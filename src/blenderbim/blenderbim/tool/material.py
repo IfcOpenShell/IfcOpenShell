@@ -147,10 +147,9 @@ class Material(blenderbim.core.tool.Material):
     @classmethod
     def is_a_material_set(cls, material):
         return material.is_a() in [
-            "IfcMaterialProfile",
-            "IfcMaterialLayer",
-            "IfcMaterialConstituent",
-            "IfcMaterialList",
+            "IfcMaterialConstituentSet",
+            "IfcMaterialLayerSet",
+            "IfcMaterialProfileSet",
         ]
 
     @classmethod
