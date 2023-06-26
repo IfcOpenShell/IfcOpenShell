@@ -273,6 +273,9 @@ def convert_property_group_from_si(property_group, skip_props=()):
         setattr(property_group, prop_name, prop_value)
 
 
+# TODO this should move into ifcopenshell.util
+
+
 class IfcHeaderExtractor:
     def __init__(self, filepath: str):
         self.filepath = filepath
@@ -284,6 +287,8 @@ class IfcHeaderExtractor:
                 return self.extract_ifc_spf(ifc_file)
         elif extension.lower() == "ifczip":
             return self.extract_ifc_zip()
+        elif extension.lower() == "ifcsqlite":
+            return {}  # TODO
 
     def extract_ifc_spf(self, ifc_file):
         # https://www.steptools.com/stds/step/IS_final_p21e3.html#clause-8

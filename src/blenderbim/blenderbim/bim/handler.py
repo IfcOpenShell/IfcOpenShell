@@ -168,6 +168,9 @@ def refresh_ui_data():
         except AttributeError:
             pass
 
+    if isinstance(tool.Ifc.get(), ifcopenshell.sqlite):
+        tool.Ifc.get().clear_cache()
+
 
 def purge_module_data():
     from blenderbim.bim import modules

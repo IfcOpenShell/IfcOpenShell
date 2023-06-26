@@ -699,6 +699,9 @@ class IfcImporter:
         self.create_generic_elements(self.elements)
 
     def create_generic_elements(self, elements):
+        if isinstance(self.file, ifcopenshell.sqlite):
+            return self.create_generic_sqlite_elements(elements)
+
         # Based on my experience in viewing BIM models, representations are prioritised as follows:
         # 1. 3D Body, 2. 2D Body, 3. 2D Plans / annotations, 4. Point clouds, 5. No representation
         # If an element has a representation that doesn't follow 1, 2, 3, or 4, it will not show by default.
@@ -718,6 +721,53 @@ class IfcImporter:
             if i % 250 == 0:
                 print("{} / {} elements processed ...".format(i, total))
             self.create_product(element)
+
+    def create_generic_sqlite_elements(self, elements):
+        self.geometry_cache = self.file.get_geometry([e.id() for e in elements])
+        for geometry_id, geometry in self.geometry_cache["geometry"].items():
+            mesh_name = tool.Loader.get_mesh_name(type("Geometry", (), {"id": geometry_id}))
+            mesh = bpy.data.meshes.new(mesh_name)
+
+            verts = geometry["verts"]
+            mesh["has_cartesian_point_offset"] = False
+
+            if geometry["faces"]:
+                num_vertices = len(verts) // 3
+                total_faces = len(geometry["faces"])
+                loop_start = range(0, total_faces, 3)
+                num_loops = total_faces // 3
+                loop_total = [3] * num_loops
+                num_vertex_indices = len(geometry["faces"])
+
+                mesh.vertices.add(num_vertices)
+                mesh.vertices.foreach_set("co", verts)
+                mesh.loops.add(num_vertex_indices)
+                mesh.loops.foreach_set("vertex_index", geometry["faces"])
+                mesh.polygons.add(num_loops)
+                mesh.polygons.foreach_set("loop_start", loop_start)
+                mesh.polygons.foreach_set("loop_total", loop_total)
+                mesh.update()
+            else:
+                e = geometry["edges"]
+                v = verts
+                vertices = [[v[i], v[i + 1], v[i + 2]] for i in range(0, len(v), 3)]
+                edges = [[e[i], e[i + 1]] for i in range(0, len(e), 2)]
+                mesh.from_pydata(vertices, edges, [])
+
+            mesh["ios_materials"] = geometry["materials"]
+            mesh["ios_material_ids"] = geometry["material_ids"]
+            self.meshes[mesh_name] = mesh
+
+        total = len(elements)
+        for i, element in enumerate(elements):
+            if i % 250 == 0:
+                print("{} / {} elements processed ...".format(i, total))
+            mesh = None
+            geometry_id = self.geometry_cache["shapes"][element.id()]["geometry"]
+            if geometry_id:
+                mesh_name = tool.Loader.get_mesh_name(type("Geometry", (), {"id": geometry_id}))
+                mesh = self.meshes.get(mesh_name)
+            self.create_product(element, mesh=mesh)
 
     def create_products(self, products, settings=None):
         if settings is None:
@@ -1574,7 +1624,10 @@ class IfcImporter:
                 return rel.RelatingGroup
 
     def get_element_matrix(self, element):
-        result = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+        if isinstance(element, ifcopenshell.sqlite_entity):
+            result = self.geometry_cache["shapes"][element.id()]["matrix"]
+        else:
+            result = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
         result[0][3] *= self.unit_scale
         result[1][3] *= self.unit_scale
         result[2][3] *= self.unit_scale
@@ -1731,7 +1784,7 @@ class IfcImporter:
                 mesh.polygons.add(num_loops)
                 mesh.polygons.foreach_set("loop_start", loop_start)
                 mesh.polygons.foreach_set("loop_total", loop_total)
-                mesh.polygons.foreach_set("use_smooth", [0]*total_faces)
+                mesh.polygons.foreach_set("use_smooth", [0] * total_faces)
                 mesh.update()
             else:
                 e = geometry.edges
