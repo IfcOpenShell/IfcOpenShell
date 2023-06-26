@@ -367,6 +367,8 @@ class IfcImporter:
         return results
 
     def parse_native_elements(self):
+        if not self.ifc_import_settings.should_load_geometry:
+            return
         for element in self.elements:
             if self.is_native(element):
                 self.native_elements.add(element)
@@ -578,6 +580,8 @@ class IfcImporter:
                     return result
 
     def create_grids(self):
+        if not self.ifc_import_settings.should_load_geometry:
+            return
         grids = self.file.by_type("IfcGrid")
         for grid in grids:
             shape = None
@@ -623,34 +627,37 @@ class IfcImporter:
 
     def create_element_type(self, element):
         self.ifc_import_settings.logger.info("Creating object %s", element)
-        representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        if not representation:
-            representation = ifcopenshell.util.representation.get_representation(element, "Plan", "Annotation")
-        if not representation:
-            representation = ifcopenshell.util.representation.get_representation(element, "Model", "Annotation")
         mesh = None
-        if representation:
-            mesh_name = "{}/{}".format(representation.ContextOfItems.id(), representation.id())
-            mesh = self.meshes.get(mesh_name)
-            if mesh is None:
-                shape = None
-                try:
-                    shape = ifcopenshell.geom.create_shape(self.settings, representation)
-                except:
+        if self.ifc_import_settings.should_load_geometry:
+            representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+            if not representation:
+                representation = ifcopenshell.util.representation.get_representation(element, "Plan", "Annotation")
+            if not representation:
+                representation = ifcopenshell.util.representation.get_representation(element, "Model", "Annotation")
+            if representation:
+                mesh_name = "{}/{}".format(representation.ContextOfItems.id(), representation.id())
+                mesh = self.meshes.get(mesh_name)
+                if mesh is None:
+                    shape = None
                     try:
-                        shape = ifcopenshell.geom.create_shape(self.settings_2d, representation)
+                        shape = ifcopenshell.geom.create_shape(self.settings, representation)
                     except:
-                        self.ifc_import_settings.logger.error("Failed to generate shape for %s", element)
-                if shape:
-                    mesh = self.create_mesh(element, shape)
-                    tool.Loader.link_mesh(shape, mesh)
-                    self.meshes[mesh_name] = mesh
+                        try:
+                            shape = ifcopenshell.geom.create_shape(self.settings_2d, representation)
+                        except:
+                            self.ifc_import_settings.logger.error("Failed to generate shape for %s", element)
+                    if shape:
+                        mesh = self.create_mesh(element, shape)
+                        tool.Loader.link_mesh(shape, mesh)
+                        self.meshes[mesh_name] = mesh
         obj = bpy.data.objects.new(tool.Loader.get_name(element), mesh)
         self.link_element(element, obj)
         self.material_creator.create(element, obj, mesh)
         self.type_products[element.GlobalId] = obj
 
     def create_native_elements(self):
+        if not self.ifc_import_settings.should_load_geometry:
+            return
         progress = 0
         checkpoint = time.time()
         total = len(self.native_elements)
@@ -696,15 +703,20 @@ class IfcImporter:
         # 1. 3D Body, 2. 2D Body, 3. 2D Plans / annotations, 4. Point clouds, 5. No representation
         # If an element has a representation that doesn't follow 1, 2, 3, or 4, it will not show by default.
         # The user can load them later if they want to view them.
-        products = self.create_products(elements)
-        elements -= products
-        products = self.create_products(elements, settings=self.settings_curve)
-        elements -= products
-        products = self.create_products(elements, settings=self.settings_2d)
-        elements -= products
-        products = self.create_pointclouds(elements)
-        elements -= products
-        for element in elements:
+        if self.ifc_import_settings.should_load_geometry:
+            products = self.create_products(elements)
+            elements -= products
+            products = self.create_products(elements, settings=self.settings_curve)
+            elements -= products
+            products = self.create_products(elements, settings=self.settings_2d)
+            elements -= products
+            products = self.create_pointclouds(elements)
+            elements -= products
+
+        total = len(elements)
+        for i, element in enumerate(elements):
+            if i % 250 == 0:
+                print("{} / {} elements processed ...".format(i, total))
             self.create_product(element)
 
     def create_products(self, products, settings=None):
@@ -1796,6 +1808,7 @@ class IfcImportSettings:
         self.should_use_cpu_multiprocessing = True
         self.merge_mode = None
         self.should_merge_materials_by_colour = False
+        self.should_load_geometry = True
         self.should_use_native_meshes = False
         self.should_clean_mesh = True
         self.should_cache = True
@@ -1825,6 +1838,7 @@ class IfcImportSettings:
         settings.should_use_cpu_multiprocessing = props.should_use_cpu_multiprocessing
         settings.merge_mode = props.merge_mode
         settings.should_merge_materials_by_colour = props.should_merge_materials_by_colour
+        settings.should_load_geometry = props.should_load_geometry
         settings.should_use_native_meshes = props.should_use_native_meshes
         settings.should_clean_mesh = props.should_clean_mesh
         settings.should_cache = props.should_cache
