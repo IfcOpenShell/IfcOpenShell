@@ -319,24 +319,21 @@ class Brick(blenderbim.core.tool.Brick):
     @classmethod
     def serialize_brick(cls, file_name):
         #temporary file path, could either be user selected for "save as" or use the BrickStore.path for simply "save"
-        print("Serializing: \"" + file_name + "\" ... ")
         cwd = os.path.dirname(os.path.realpath(__file__))
         dest = os.path.join(cwd, "..", "bim", "schema", file_name)
         BrickStore.get_project().serialize(destination=dest, format="turtle")
-        print("finished!")
 
 class BrickStore:
     schema = None # this is now a os path
-    graph = None # this is the VersionedGraphCollection with 2 arbitrarily named graphs: "schema" and "project"
-                 # "schema" holds the Brick.ttl metadata; "project" holds all the authored entities
-    project = None # this is the graph named "project" from the VersionedGraphCollection
-    path = None
+    path = None   # file path if the project was loaded in
+    graph = None  # this is the VersionedGraphCollection with 2 arbitrarily named graphs: "schema" and "project"
+                  # "SCHEMA" holds the Brick.ttl metadata; "PROJECT" holds all the authored entities
+    
 
     @staticmethod
     def purge():
         BrickStore.schema = None
         BrickStore.graph = None
-        BrickStore.project = None
         BrickStore.path = None   
 
     @classmethod
