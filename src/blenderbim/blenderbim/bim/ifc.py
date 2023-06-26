@@ -120,6 +120,8 @@ class IfcStore:
 
     @staticmethod
     def load_file(path):
+        if not os.path.isfile(path):
+            return
         extension = path.split(".")[-1]
         if extension.lower() == "ifczip":
             with tempfile.TemporaryDirectory() as unzipped_path:
@@ -130,7 +132,7 @@ class IfcStore:
                     return
         elif extension.lower() == "ifcxml":
             IfcStore.file = ifcopenshell.file(ifcopenshell.ifcopenshell_wrapper.parse_ifcxml(path))
-        elif extension.lower() == "ifc":
+        else:
             IfcStore.file = ifcopenshell.open(path)
 
     @staticmethod
