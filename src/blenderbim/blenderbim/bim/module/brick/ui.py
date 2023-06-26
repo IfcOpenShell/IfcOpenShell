@@ -58,6 +58,9 @@ class BIM_PT_brickschema(Panel):
         row.operator("bim.add_brick_feed", text="", icon="PLUGIN")
         row.operator("bim.remove_brick", text="", icon="X")
 
+        row = self.layout.row(align=True)
+        row.operator("bim.serialize_brick")
+
         self.layout.template_list("BIM_UL_bricks", "", self.props, "bricks", self.props, "active_brick_index")
 
         for attribute in BrickschemaData.data["attributes"]:

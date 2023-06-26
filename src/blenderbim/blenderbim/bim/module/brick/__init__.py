@@ -33,6 +33,7 @@ classes = (
     operator.RewindBrickClass,
     operator.ViewBrickClass,
     operator.ViewBrickItem,
+    operator.SerializeBrick,
     prop.Brick,
     prop.BIMBrickProperties,
     ui.BIM_PT_brickschema,

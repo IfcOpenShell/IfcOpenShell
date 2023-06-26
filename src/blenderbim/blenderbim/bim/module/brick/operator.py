@@ -189,3 +189,10 @@ class RemoveBrick(bpy.types.Operator, Operator):
             library=tool.Ifc.get().by_id(int(props.libraries)) if props.libraries else None,
             brick_uri=props.bricks[props.active_brick_index].uri,
         )
+
+class SerializeBrick(bpy.types.Operator, Operator):
+    bl_idname = "bim.serialize_brick"
+    bl_label = "Serialize Brick"
+
+    def _execute(self, context):
+        core.serialize_brick(tool.Brick)
