@@ -80,12 +80,13 @@ class Patcher:
         self.database = database
 
     def patch(self):
-        self.full_schema = True
+        self.full_schema = True  # Set true for ifcopenshell.sqlite
         self.is_strict = False
-        self.should_expand = True
+        self.should_expand = False  # Set false for ifcopenshell.sqlite
+        self.should_get_inverses = True  # Set true for ifcopenshell.sqlite
         self.should_get_psets = True
-        self.should_get_geometry = True
-        self.should_skip_geometry_data = False
+        self.should_get_geometry = True  # Set true for ifcopenshell.sqlite
+        self.should_skip_geometry_data = False  # Set false for ifcopenshell.sqlite
 
         self.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(self.file.schema)
 
@@ -97,10 +98,7 @@ class Patcher:
             self.file_patched = db_file
         elif self.sql_type == "mysql":
             self.db = mysql.connector.connect(
-                host=self.host,
-                user=self.username,
-                password=self.password,
-                database=self.database
+                host=self.host, user=self.username, password=self.password, database=self.database
             )
             self.c = self.db.cursor()
             self.file_patched = None
@@ -242,9 +240,7 @@ class Patcher:
         # IfcOpenShell-2.0.0 represents a schema where tables represent types.
         metadata = ["IfcOpenShell-1.0.0", self.file.schema, self.file.header.file_description.description[0]]
         if self.sql_type == "sqlite":
-            statement = (
-                "CREATE TABLE IF NOT EXISTS metadata (preprocessor text, schema text, mvd text);"
-            )
+            statement = "CREATE TABLE IF NOT EXISTS metadata (preprocessor text, schema text, mvd text);"
             self.c.execute(statement)
             self.c.execute("INSERT INTO metadata VALUES (?, ?, ?);", metadata)
         elif self.sql_type == "mysql":
@@ -334,6 +330,8 @@ class Patcher:
                 optional = "" if attribute.optional() else " NOT NULL"
             comma = "" if i == total_attributes - 1 else ","
             statement += f" `{attribute.name()}` {data_type}{optional}{comma}"
+        if self.should_get_inverses:
+            statement += ", inverses JSON"
         statement += ");"
         print(statement)
         self.c.execute(statement)
@@ -416,6 +414,9 @@ class Patcher:
                     values.append(json.dumps(attribute))
                 else:
                     values.append(attribute)
+
+            if self.should_get_inverses:
+                values.append(json.dumps([e.id() for e in self.file.get_inverse(element)]))
 
             if self.should_expand:
                 rows.extend(self.get_permutations(values, nested_indices))
