@@ -99,6 +99,9 @@ class sqlite(file):
 
             self.ifc_class_references[declaration.name()] = {"entity": entity, "entity_list": entity_list}
 
+    def clear_cache(self):
+        self.entity_cache = {}
+
     def create_entity(self, type, *args, **kawrgs):
         assert False
 
@@ -165,30 +168,12 @@ class sqlite(file):
         return results
 
     def get_inverse(self, inst, allow_duplicate=False, with_attribute_indices=False):
-        results = []
-        print("getting inverse of", inst.sqlite_wrapper.id, inst.sqlite_wrapper.ifc_class)
-        for inverse_class, inverse_attrs in self.ifc_class_inverses.get(inst.sqlite_wrapper.ifc_class, {}).items():
-            where = " OR ".join([f"`{attr}`={inst.sqlite_wrapper.id}" for attr in inverse_attrs])
-            query = f"SELECT DISTINCT ifc_id FROM {inverse_class} WHERE {where}"
-            self.cursor.execute(query)
-            rows = self.cursor.fetchall()
-            for row in rows:
-                results.append(self.by_id(row[0]))
-        # print('we got', results)
-        if allow_duplicate:
-            return results
-        return set(results)
-
-    def is_entity_list_old(self, primitive, is_first_call=True):
-        if not isinstance(primitive, tuple):
-            return False
-        elif is_first_call and primitive[0] == "select":
-            return False
-        elif primitive[1] == "entity":
-            return True
-        elif isinstance(primitive[1], tuple):
-            return self.is_entity_list(primitive[1], is_first_call=False)
-        return False
+        query = f"SELECT inverses FROM {inst.sqlite_wrapper.ifc_class} WHERE `ifc_id` = {inst.sqlite_wrapper.id} LIMIT 1"
+        self.cursor.execute(query)
+        row = self.cursor.fetchone()
+        if not row or not row[0]:
+            return set()
+        return {self.by_id(e) for e in json.loads(row[0])}
 
     def is_entity_list(self, attribute):
         attribute = str(attribute.type_of_attribute())
@@ -258,6 +243,7 @@ class sqlite_entity(entity_instance):
         query = f"UPDATE `{self.sqlite_wrapper.ifc_class}` SET `{key}` = ? WHERE ifc_id = {self.sqlite_wrapper.id}"
         self.sqlite_wrapper.file.cursor.execute(query, (value,))
         self.sqlite_wrapper.file.db.commit()
+        self.sqlite_wrapper.attribute_cache = {}
 
     def __getattr__(self, name):
         # print("*" * 100)
@@ -274,63 +260,28 @@ class sqlite_entity(entity_instance):
             # print('first time for', self.sqlite_wrapper.ifc_class)
 
             # print("IT IS A FORWARD")
-            query = f"SELECT * FROM {self.sqlite_wrapper.ifc_class} WHERE `ifc_id` = {self.sqlite_wrapper.id}"
+            query = f"SELECT * FROM {self.sqlite_wrapper.ifc_class} WHERE `ifc_id` = {self.sqlite_wrapper.id} LIMIT 1"
             self.sqlite_wrapper.file.cursor.execute(query)
-            rows = self.sqlite_wrapper.file.cursor.fetchall()
+            row = self.sqlite_wrapper.file.cursor.fetchone()
 
             for attribute in self.sqlite_wrapper.attributes.values():
                 # attribute = self.sqlite_wrapper.attributes[name]
                 aname = attribute.name()
                 primitive = ifcopenshell.util.attribute.get_primitive_type(attribute)
-                is_entity_list = self.sqlite_wrapper.file.is_entity_list(attribute)
-                # print("IS IT AN ENTITY LIST", is_entity_list, primitive)
 
-                # if is_entity_list:
-                #    query = (
-                #        f"SELECT `{name}` FROM {self.sqlite_wrapper.ifc_class} WHERE `ifc_id` = {self.sqlite_wrapper.id}"
-                #    )
-                # else:
-                #    query = f"SELECT * FROM {self.sqlite_wrapper.ifc_class} WHERE `ifc_id` = {self.sqlite_wrapper.id} LIMIT 1"
-                # print("query is", query)
-                # self.sqlite_wrapper.file.cursor.execute(query)
-                if is_entity_list:
-                    # rows = self.sqlite_wrapper.file.cursor.fetchall()
-                    # print("forward rows are", rows)
-                    # print("returning", tuple((self.sqlite_wrapper.file.by_id(r[0]) for r in rows if r[0])))
-                    result = tuple((self.sqlite_wrapper.file.by_id(r[aname]) for r in rows if r[aname]))
-                    self.sqlite_wrapper.attribute_cache[aname] = result
-                    # return result
-                else:
-                    # row = self.sqlite_wrapper.file.cursor.fetchone()
-                    row = rows[0]
-                    if not row or row[aname] is None:
-                        self.sqlite_wrapper.attribute_cache[aname] = None
-                        # return None
-                    # print("primitive is", primitive)
-                    elif primitive == "entity":
-                        # print("returning entity", row[0])
-                        entity = self.sqlite_wrapper.file.by_id(row[aname])
-                        self.sqlite_wrapper.attribute_cache[aname] = entity
-                        # return entity
-                    elif isinstance(primitive, tuple) and primitive[0] == "select":
-                        result = self.get_select_value(primitive, row[aname])
-                        self.sqlite_wrapper.attribute_cache[aname] = result
-                        # return result
-                    elif isinstance(primitive, tuple) and primitive[0] in ("list", "set"):
-                        if isinstance(row[aname], int):
-                            result = (self.sqlite_wrapper.file.by_id(row[aname]),)
-                            self.sqlite_wrapper.attribute_cache[aname] = result
-                            # return result
-                        else:
-                            result = json.loads(row[aname])
-                            self.sqlite_wrapper.attribute_cache[aname] = result
-                            # return result
+                if not row or row[aname] is None:
+                    self.sqlite_wrapper.attribute_cache[aname] = None
+                elif primitive == "entity":
+                    self.sqlite_wrapper.attribute_cache[aname] = self.sqlite_wrapper.file.by_id(row[aname])
+                elif isinstance(primitive, tuple):
+                    if isinstance(row[aname], int):
+                        self.sqlite_wrapper.attribute_cache[aname] = self.sqlite_wrapper.file.by_id(row[aname])
                     else:
-                        # print("returning", row[0])
-                        result = row[aname]
-                        self.sqlite_wrapper.attribute_cache[aname] = result
-                        # return result
-
+                        self.sqlite_wrapper.attribute_cache[aname] = self.unserialise_value(json.loads(row[aname]))
+                else:
+                    self.sqlite_wrapper.attribute_cache[aname] = row[aname]
+                if isinstance(self.sqlite_wrapper.attribute_cache[aname], list):
+                    self.sqlite_wrapper.attribute_cache[aname] = tuple(self.sqlite_wrapper.attribute_cache[aname])
             return self.sqlite_wrapper.attribute_cache[name]
         elif attr_cat == INVERSE:
             if self.sqlite_wrapper.inverse_attribute_cache:
@@ -338,48 +289,54 @@ class sqlite_entity(entity_instance):
                 if results is not None:
                     return results
 
-            # print("IT IS AN INVERSE")
-            attribute = self.sqlite_wrapper.inverse_attributes[name]
-            inverse_name = attribute.attribute_reference().name()
-            declaration = self.sqlite_wrapper.file.ifc_schema.declaration_by_name(attribute.entity_reference().name())
             results = []
 
-            # Union is slightly faster it seems. Not much though.
-            subtypes = ifcopenshell.util.schema.get_subtypes(declaration)
-            query = " UNION ".join(
-                f"SELECT DISTINCT `ifc_id` FROM {subtype.name()} WHERE `{inverse_name}` = {self.sqlite_wrapper.id}"
-                for subtype in subtypes
-            )
+            query = f"SELECT inverses FROM {self.sqlite_wrapper.ifc_class} WHERE `ifc_id` = {self.sqlite_wrapper.id} LIMIT 1"
             self.sqlite_wrapper.file.cursor.execute(query)
-            rows = self.sqlite_wrapper.file.cursor.fetchall()
-            results.extend([self.sqlite_wrapper.file.by_id(r[0]) for r in rows])
-            results = tuple(results)
+            row = self.sqlite_wrapper.file.cursor.fetchone()
+            if not row or not row[0]:
+                self.sqlite_wrapper.inverse_attribute_cache[name] = tuple()
+                return self.sqlite_wrapper.inverse_attribute_cache[name]
 
-            self.sqlite_wrapper.inverse_attribute_cache[name] = results
+            attribute = self.sqlite_wrapper.inverse_attributes[name]
+            entity_class = attribute.entity_reference().name()
+            declaration = self.sqlite_wrapper.file.ifc_schema.declaration_by_name(entity_class)
+            forward_name = attribute.attribute_reference().name()
 
-            # Loop variant
-            # for subtype in ifcopenshell.util.schema.get_subtypes(declaration):
-            #    query = f"SELECT DISTINCT `ifc_id` FROM {subtype.name()} WHERE `{name}` = {self.sqlite_wrapper.id}"
-            #    self.sqlite_wrapper.file.cursor.execute(query)
-            #    rows = self.sqlite_wrapper.file.cursor.fetchall()
-            #    results.extend([self.sqlite_wrapper.file.by_id(r[0]) for r in rows])
+            subtypes = [st.name() for st in ifcopenshell.util.schema.get_subtypes(declaration)]
+            element_ids = json.loads(row[0])
+            for element_id in element_ids:
+                ifc_class = self.sqlite_wrapper.file.id_map[element_id]
+                if ifc_class in subtypes:
+                    potential_result = self.sqlite_wrapper.file.by_id(element_id)
+                    forward_value = getattr(potential_result, forward_name, None)
+                    if not forward_value:
+                        pass
+                    elif isinstance(forward_value, tuple):
+                        if self.sqlite_wrapper.id in [e.id() for e in forward_value]:
+                            results.append(potential_result)
+                    elif forward_value.id() == self.sqlite_wrapper.id:
+                        results.append(potential_result)
 
-            # print("query is", query)
-            # print("inverse rows are", rows)
-            # print("returning", tuple((self.sqlite_wrapper.file.by_id(r[0]) for r in rows)))
-            return results
+            self.sqlite_wrapper.inverse_attribute_cache[name] = tuple(results)
+            return self.sqlite_wrapper.inverse_attribute_cache[name]
 
         raise AttributeError(
             "entity instance of type '%s' has no attribute '%s'" % (self.wrapped_data.is_a(True), name)
         )
 
-    def get_select_value(self, primitive, value):
-        if "entity" in primitive[1] and isinstance(value, int):
+    def unserialise_value(self, value):
+        if isinstance(value, (tuple, list)):
+            for i, value2 in enumerate(value):
+                value[i] = self.unserialise_value(value2)
+            return value
+        elif isinstance(value, int):
             return self.sqlite_wrapper.file.by_id(value)
-        data = json.loads(value)
-        ifc_primitive = ifcopenshell.create_entity(data["type"])
-        ifc_primitive[0] = data["value"]
-        return ifc_primitive
+        elif isinstance(value, dict):
+            value2 = ifcopenshell.create_entity(value["type"])
+            value2[0] = value["value"]
+            return value2
+        return value
 
     def __eq__(self, other):
         if not isinstance(self, type(other)):
@@ -396,54 +353,9 @@ class sqlite_entity(entity_instance):
 
     def get_info(self, include_identifier=True, recursive=False, return_type=dict, ignore=(), scalar_only=False):
         info = {"id": self.sqlite_wrapper.id, "type": self.sqlite_wrapper.ifc_class}
-        if self.sqlite_wrapper.attribute_cache:
-            info.update(self.sqlite_wrapper.attribute_cache)
-            return info
-
-        query = f"SELECT * FROM {self.sqlite_wrapper.ifc_class} WHERE `ifc_id` = {self.sqlite_wrapper.id}"
-        # print('GET INFO QUERY', query)
-        self.sqlite_wrapper.file.cursor.execute(query)
-        rows = self.sqlite_wrapper.file.cursor.fetchall()
-
-        row = rows[0]
-        entity_list_indices = []
-        entity_list_names = []
-
-        attribute_names = list(self.sqlite_wrapper.attributes.keys())
-
-        for i, value in enumerate(row[1:]):
-            # print('enumerating row', i, value)
-            attribute_name = attribute_names[i]
-            # print('attr name is', attribute_name)
-            attribute = self.sqlite_wrapper.attributes[attribute_name]
-            # print('attribute is', attribute)
-            primitive = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            # print('primitive is', primitive)
-            is_entity_list = self.sqlite_wrapper.file.is_entity_list(attribute)
-            if is_entity_list:
-                entity_list_indices.append(i)
-                entity_list_names.append(attribute_name)
-                info[attribute_name] = []
-            elif value is None:
-                info[attribute_name] = None
-            elif primitive == "entity":
-                info[attribute_name] = self.sqlite_wrapper.file.by_id(value)
-            elif isinstance(primitive, tuple) and primitive[0] == "select":
-                self.get_select_value(primitive, value)
-            elif isinstance(primitive, tuple) and primitive[0] in ("list", "set"):
-                info[attribute_name] = json.loads(value)
-            else:
-                info[attribute_name] = value
-
-        for row in rows:
-            row = row[1:]
-            for i, entity_list_index in enumerate(entity_list_indices):
-                value = row[entity_list_index]
-                info[entity_list_names[i]].append(self.sqlite_wrapper.file.by_id(value))
-
-        for name in entity_list_names:
-            info[name] = tuple(info[name])
-
+        if not self.sqlite_wrapper.attribute_cache:
+            self.__getitem__(0) # This will get all attributes
+        info.update(self.sqlite_wrapper.attribute_cache)
         return info
 
 
