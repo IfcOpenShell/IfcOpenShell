@@ -525,7 +525,7 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Load an existing IFC project"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-    filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
+    filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml;*.ifcsqlite", options={"HIDDEN"})
     is_advanced: bpy.props.BoolProperty(name="Enable Advanced Mode", default=False)
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
 
