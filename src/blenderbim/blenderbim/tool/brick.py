@@ -320,6 +320,12 @@ class Brick(blenderbim.core.tool.Brick):
         BrickStore.VersionedGraphCollection.redo()
         BrickStore.reload_brick_graph()        
 
+    @classmethod
+    def serialize_brick(cls, file_name):
+        BrickStore.reload_brick_graph()
+        print("Serializing: \"" + file_name + "\" ... ")
+        BrickStore.graph.serialize(file_name)
+        print("finished!")
 
 class BrickStore:
     schema = None # this is now a path
