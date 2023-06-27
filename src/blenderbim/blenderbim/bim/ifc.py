@@ -132,6 +132,8 @@ class IfcStore:
                     return
         elif extension.lower() == "ifcxml":
             IfcStore.file = ifcopenshell.file(ifcopenshell.ifcopenshell_wrapper.parse_ifcxml(path))
+        elif bpy.context.scene.BIMProjectProperties.should_stream:
+            IfcStore.file = ifcopenshell.open(path, should_stream=True)
         else:
             IfcStore.file = ifcopenshell.open(path)
 
