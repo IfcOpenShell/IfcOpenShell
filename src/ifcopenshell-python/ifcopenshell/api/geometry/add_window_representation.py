@@ -74,13 +74,13 @@ def create_ifc_window_frame_simple(builder, size: Vector, thickness: list, posit
 def window_l_shape_check(
     lining_to_panel_offset_y_full,
     lining_depth,
-    lining_to_panel_offset_x,
+    lining_to_panel_offset_x: list,
     lining_thickness: list,
 ):
-    """`lining_thickness` expected to be defined as a list,
+    """`lining_thickness` and `lining_to_panel_offset_x` expected to be defined as a list,
     similarly to `create_ifc_window_frame_simple` `thickness` argument"""
     l_shape_check = lining_to_panel_offset_y_full < lining_depth and any(
-        lining_to_panel_offset_x < th for th in lining_thickness
+        x_offset < th for th, x_offset in zip(lining_thickness, lining_to_panel_offset_x, strict=True)
     )
     return l_shape_check
 
@@ -95,19 +95,22 @@ def create_ifc_window(
     frame_thickness,
     glass_thickness,
     position: Vector,
-    frame_position: Vector = None,
+    unit_scale, # different from bmesh `create_bm_window`
+    x_offsets: list = None,
 ):
-    """`lining_thickness` expected to be defined as a list,
+    """`lining_thickness` and `x_offsets` are expected to be defined as a list,
     similarly to `create_ifc_window_frame_simple` `thickness` argument"""
     lining_items = []
     main_lining_size = lining_size
 
+    if x_offsets is None:
+        x_offsets = [lining_to_panel_offset_x] * 4
     # need to check offsets to decide whether lining should be rectangle
     # or L shaped
     l_shape_check = window_l_shape_check(
         lining_to_panel_offset_y_full,
         lining_size.y,
-        lining_to_panel_offset_x,
+        x_offsets,
         lining_thickness,
     )
 
@@ -118,7 +121,12 @@ def create_ifc_window(
         second_lining_size = lining_size.copy()
         second_lining_size.y = lining_size.y - lining_to_panel_offset_y_full
         second_lining_position = V(0, lining_to_panel_offset_y_full, 0)
-        second_lining_thickness = [min(th, lining_to_panel_offset_x) for th in lining_thickness]
+
+        # we're using some safe thickness so thickness won't end = 0
+        # resulting in errors `create_ifc_window_frame_simple`
+        # because it's using inner curves to create lining
+        safe_thickness = 0.00001 / unit_scale
+        second_lining_thickness = [max(min(th, x_offset), safe_thickness) for th, x_offset in zip(lining_thickness, x_offsets, strict=True)]
 
         second_lining = create_ifc_window_frame_simple(
             builder, second_lining_size, second_lining_thickness, second_lining_position
@@ -128,12 +136,11 @@ def create_ifc_window(
     main_lining = create_ifc_window_frame_simple(builder, main_lining_size, lining_thickness)
     lining_items.append(main_lining)
 
-    if frame_position is None:
-        frame_position = V(
-            lining_to_panel_offset_x,
-            lining_to_panel_offset_y_full,
-            lining_to_panel_offset_x,
-        )
+    frame_position = V(
+        x_offsets[0],
+        lining_to_panel_offset_y_full,
+        x_offsets[3],
+    )
 
     frame_extruded = create_ifc_window_frame_simple(builder, frame_size, frame_thickness, frame_position)
 
@@ -321,7 +328,7 @@ class Usecase:
                     l_shape_check = window_l_shape_check(
                         lining_to_panel_offset_y_full,
                         lining_depth,
-                        x_offset,
+                        [x_offset],
                         [lining_thickness],
                     )
                     if l_shape_check:
@@ -481,9 +488,7 @@ class Usecase:
                 cur_panel = panels[panel_i]
                 frame_depth = cur_panel["FrameDepth"]
                 frame_thickness = cur_panel["FrameThickness"]
-                base_frame_clear = lining_to_panel_offset_x + frame_thickness - lining_thickness
-                current_offset_x = base_frame_clear - frame_thickness + mullion_thickness
-                current_offset_z = base_frame_clear - frame_thickness + transom_thickness
+                lining_to_panel_offset_y_full = (lining_depth - frame_depth) + lining_to_panel_offset_y
 
                 # calculate lining thickness and frame size / offset
                 # taking into account mullions and transoms
@@ -494,26 +499,24 @@ class Usecase:
                     transom_thickness if top_to_transom    else lining_thickness,
                 ]
 
-                lining_to_panel_offset_y_full = (lining_depth - frame_depth) + lining_to_panel_offset_y
+                # x offsets can differ if there are mullions or transoms because we're trying to maintain symmetry 
+                base_frame_clear = lining_to_panel_offset_x + frame_thickness - lining_thickness
+                current_offset_x = base_frame_clear - frame_thickness + mullion_thickness
+                current_offset_z = base_frame_clear - frame_thickness + transom_thickness
+                x_offsets = [
+                    current_offset_x if right_to_mullion  else lining_to_panel_offset_x, # LEFT
+                    current_offset_z if bottom_to_transom else lining_to_panel_offset_x, # TOP
+                    current_offset_x if left_to_mullion   else lining_to_panel_offset_x, # RIGHT
+                    current_offset_z if top_to_transom    else lining_to_panel_offset_x, # BOTTOM
+                ]
 
                 window_lining_size = V(panel_width, lining_depth, panel_height)
                 frame_size = window_lining_size.copy()
                 frame_size.y = frame_depth
-
-                frame_size.x -= current_offset_x if left_to_mullion   else lining_to_panel_offset_x
-                frame_size.x -= current_offset_x if right_to_mullion  else lining_to_panel_offset_x
-
-                frame_size.z -= current_offset_z if top_to_transom    else lining_to_panel_offset_x
-                frame_size.z -= current_offset_z if bottom_to_transom else lining_to_panel_offset_x
+                frame_size.x -= (x_offsets[0] + x_offsets[2])
+                frame_size.z -= (x_offsets[1] + x_offsets[3])
 
                 window_panel_position = V(accumulated_width, 0, accumulated_height[column_i])
-
-                frame_position = V(
-                    current_offset_x if right_to_mullion  else lining_to_panel_offset_x, 
-                    lining_to_panel_offset_y_full, 
-                    current_offset_z if top_to_transom    else lining_to_panel_offset_x
-                )
-
                 # create window panel
                 current_window_items = create_ifc_window(
                     builder,
@@ -525,7 +528,8 @@ class Usecase:
                     frame_thickness,
                     glass_thickness,
                     window_panel_position,
-                    frame_position
+                    self.settings["unit_scale"],
+                    x_offsets
                 )
                 built_panels.append(panel_i)
                 window_items.extend(chain(*current_window_items))
