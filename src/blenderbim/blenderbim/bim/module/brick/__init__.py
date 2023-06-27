@@ -33,6 +33,8 @@ classes = (
     operator.RewindBrickClass,
     operator.ViewBrickClass,
     operator.ViewBrickItem,
+    operator.UndoBrick,
+    operator.RedoBrick,
     operator.SerializeBrick,
     prop.Brick,
     prop.BIMBrickProperties,

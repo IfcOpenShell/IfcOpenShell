@@ -59,6 +59,10 @@ class BIM_PT_brickschema(Panel):
         row.operator("bim.remove_brick", text="", icon="X")
 
         row = self.layout.row(align=True)
+        row.operator("bim.undo_brick", icon="LOOP_BACK")
+        row.operator("bim.redo_brick", icon="LOOP_FORWARDS")
+
+        row = self.layout.row(align=True)
         row.operator("bim.serialize_brick")
 
         self.layout.template_list("BIM_UL_bricks", "", self.props, "bricks", self.props, "active_brick_index")

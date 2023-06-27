@@ -282,9 +282,10 @@ class Brick(blenderbim.core.tool.Brick):
 
     @classmethod
     def remove_brick(cls, brick_uri):
-        with BrickStore.graph.new_changeset("PROJECT") as cs:
-            for triple in BrickStore.graph.triples((URIRef(brick_uri), None, None)):
-                cs.remove(triple)
+        if(BrickStore.graph.triples((URIRef(brick_uri), None, None))):
+            with BrickStore.graph.new_changeset("PROJECT") as cs:
+                for triple in BrickStore.graph.triples((URIRef(brick_uri), None, None)):
+                    cs.remove(triple)
 
     @classmethod
     def run_assign_brick_reference(cls, element=None, library=None, brick_uri=None):
@@ -312,11 +313,17 @@ class Brick(blenderbim.core.tool.Brick):
 
     @classmethod
     def undo_brick(cls):
-        BrickStore.graph.undo()
+        if(len(BrickStore.graph.versions()) > 1):
+            BrickStore.graph.undo()
 
     @classmethod
     def redo_brick(cls):
-        BrickStore.graph.redo()        
+        with BrickStore.graph.conn() as conn:
+            redo_record = conn.execute(
+            "SELECT * from redos " "ORDER BY timestamp ASC LIMIT 1"
+            ).fetchone()
+        if redo_record is not None:
+            BrickStore.graph.redo()  
 
     @classmethod
     def serialize_brick(cls, file_name):
