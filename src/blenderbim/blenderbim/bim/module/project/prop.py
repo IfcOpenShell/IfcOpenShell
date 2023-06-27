@@ -148,6 +148,7 @@ class BIMProjectProperties(PropertyGroup):
         default="NONE",
     )
     should_merge_materials_by_colour: BoolProperty(name="Merge Materials by Colour", default=False)
+    should_stream: BoolProperty(name="Stream Data From IFC-SPF (Only for advanced users)", default=True)
     should_load_geometry: BoolProperty(name="Load Geometry", default=True)
     should_use_native_meshes: BoolProperty(name="Native Meshes", default=False)
     should_clean_mesh: BoolProperty(name="Clean Meshes", default=True)
