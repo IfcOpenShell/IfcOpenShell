@@ -110,9 +110,20 @@ class Blender:
     @classmethod
     def show_error_message(cls, text):
         """useful for showing error messages outside blender operators"""
+
         def error(self, context):
             self.layout.label(text=text)
+
         bpy.context.window_manager.popup_menu(error, title="Error", icon="ERROR")
+
+    @classmethod
+    def get_blender_prop_default_value(cls, props, prop_name):
+        prop_bl_rna = props.bl_rna.properties[prop_name]
+        if getattr(prop_bl_rna, "array_length", 0) > 0:
+            prop_value = prop_bl_rna.default_array
+        else:
+            prop_value = prop_bl_rna.default
+        return prop_value
 
     @classmethod
     def get_viewport_context(cls):

@@ -251,10 +251,34 @@ class BIM_PT_STYLE_GRAPH(Panel):
         layout.prop(props, "reflectance_method", text="")
         layout.prop(props, "surface_color")
         layout.prop(props, "transparency")
-        layout.prop(props, "diffuse_color")
 
-        if props.reflectance_method == "PHYSICAL":
+        if not (props.reflectance_method == "PHYSICAL" and props.diffuse_path) and not (
+            props.reflectance_method == "FLAT" and props.emissive_path
+        ):
+            prop_name = "Emissive Color" if props.reflectance_method == "FLAT" else "Diffuse Color"
+            layout.prop(props, "diffuse_color", text=prop_name)
+
+        if props.reflectance_method == "PHYSICAL" and not props.metallic_roughness_path:
             layout.prop(props, "metallic")
 
-        if props.reflectance_method not in ("FLAT", "NOTDEFINED"):
+        if props.reflectance_method not in ("PHYSICAL", "FLAT", "NOTDEFINED") or (
+            props.reflectance_method == "PHYSICAL" and not props.metallic_roughness_path
+        ):
             layout.prop(props, "roughness")
+
+        layout.label(text="Texture Maps:")
+
+        def add_texture_path(path_name):
+            row = layout.row(align=True)
+            row.prop(props, path_name)
+            op = row.operator("bim.clear_texture_map_path", text="", icon="X")
+            op.texture_map_prop = path_name
+
+        if props.reflectance_method == "PHYSICAL":
+            add_texture_path("diffuse_path")
+            add_texture_path("emissive_path")
+            add_texture_path("normal_path")
+            add_texture_path("metallic_roughness_path")
+
+        if props.reflectance_method == "FLAT":
+            add_texture_path("emissive_path")
