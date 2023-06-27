@@ -100,7 +100,7 @@ def update_shading_style(self, context):
     tool.Style.record_shading(blender_material)
 
 
-# TODO: support more more methods and also textures
+# TODO: support more more methods
 REFLECTANCE_METHODS = [
     ("PHYSICAL", "PHYSICAL", ""),
     ("FLAT", "FLAT", ""),
@@ -117,7 +117,9 @@ def update_shader_graph(self, context):
 
     material = self.id_data
     style_data = tool.Style.get_surface_style_from_props(material)
+    textures_data = tool.Style.get_texture_style_from_props(material)
     tool.Loader.create_surface_style_rendering(material, style_data)
+    tool.Loader.create_surface_style_with_textures(material, style_data, textures_data)
 
 
 def update_graph_get(self):
@@ -184,3 +186,32 @@ class BIMStyleProperties(PropertyGroup):
     )
     roughness: bpy.props.FloatProperty(name="Roughness", default=0.0, min=0.0, max=1.0, update=update_shader_graph)
     metallic: bpy.props.FloatProperty(name="Metallic", default=0.0, min=0.0, max=1.0, update=update_shader_graph)
+    normal_path: bpy.props.StringProperty(
+        name="NormalMap",
+        maxlen=1024,
+        default="",
+        subtype="FILE_PATH",
+        update=update_shader_graph,
+    )
+    emissive_path: bpy.props.StringProperty(
+        name="Emissive",
+        maxlen=1024,
+        default="",
+        subtype="FILE_PATH",
+        update=update_shader_graph,
+    )
+    metallic_roughness_path: bpy.props.StringProperty(
+        name="Metallic/Roughness",
+        maxlen=1024,
+        default="",
+        subtype="FILE_PATH",
+        update=update_shader_graph,
+        description="Green Channel = Roughness,\nBlue Channel = Metallic",
+    )
+    diffuse_path: bpy.props.StringProperty(
+        name="Diffuse",
+        maxlen=1024,
+        default="",
+        subtype="FILE_PATH",
+        update=update_shader_graph,
+    )
