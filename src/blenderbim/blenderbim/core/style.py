@@ -58,9 +58,8 @@ def update_style_colours(ifc, style, obj=None, verbose=False):
     element = style.get_style(obj)
 
     if style.can_support_rendering_style(obj):
-        style_elements = style.get_style_elements(obj)
-        rendering_style = style_elements.get("IfcSurfaceStyleRendering", None)
-        texture_style = style_elements.get("IfcSurfaceStyleWithTextures", None)
+        rendering_style = style.get_surface_rendering_style(obj)
+        texture_style = style.get_texture_style(obj)
         attributes = style.get_surface_rendering_attributes(obj, verbose)
         if rendering_style:
             ifc.run("style.edit_surface_style", style=rendering_style, attributes=attributes)
@@ -122,7 +121,7 @@ def enable_editing_style(style, obj=None):
 
 
 def enable_editing_external_style(style, obj=None):
-    external_style = style.get_style_elements(obj)["IfcExternallyDefinedSurfaceStyle"]
+    external_style = style.get_external_style(obj)
     style.enable_editing_external_style(obj)
     style.import_external_style_attributes(external_style, obj)
 

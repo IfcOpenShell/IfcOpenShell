@@ -815,8 +815,11 @@ class Style:
     def get_elements_by_style(cls, style): pass
     def get_name(cls, obj): pass
     def get_style(cls, obj): pass
-    def get_surface_rendering_attributes(cls, obj): pass
+    def get_style_elements(cls, blender_material): pass
+    def get_surface_rendering_attributes(cls, obj, verbose=True): pass
     def get_surface_rendering_style(cls, obj): pass
+    def get_texture_style(cls, obj): pass
+    def get_external_style(cls, obj): pass
     def get_surface_shading_attributes(cls, obj): pass
     def get_surface_shading_style(cls, obj): pass
     def get_surface_texture_style(cls, obj): pass
