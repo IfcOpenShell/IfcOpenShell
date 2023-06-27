@@ -110,7 +110,8 @@ class BrickschemaData:
             return []
         results = []
         for alias, uri in BrickStore.graph.namespaces():
-            results.append((uri, f"{alias}: {uri}", ""))
+            # results.append((uri, f"{alias}: {uri}", ""))
+            results.append((uri, f"{alias}", ""))
         return results
 
     @classmethod
