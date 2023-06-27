@@ -8,7 +8,6 @@ try:
     from .entity_instance import entity_instance
 except ImportError as e:
     print(f"No SQL support: {e}")
-    pass  # No SQL support
 
 
 class sqlite(file):
@@ -49,17 +48,19 @@ class sqlite(file):
         self.cursor.execute("SELECT ifc_id, ifc_class FROM id_map")
         self.id_map = {}
         self.class_map = {}
+        self.entity_cache = {}
         for row in self.cursor.fetchall():
             self.id_map[row[0]] = row[1]
             self.class_map.setdefault(row[1], []).append(row[0])
 
+        self.preprocess_schema()
+
+    def preprocess_schema(self):
         self.ifc_class_subtypes = {}
         self.ifc_class_attributes = {}
         self.ifc_class_inverse_attributes = {}
         self.ifc_class_references = {}
         self.ifc_class_inverses = {}
-
-        self.entity_cache = {}
 
         for declaration in self.ifc_schema.declarations():
             if not str(declaration).startswith("<entity"):
@@ -125,7 +126,8 @@ class sqlite(file):
     def by_type(self, type, include_subtypes=True):
         if self.class_map:
             results = []
-            for subtype in self.ifc_class_subtypes[type]:
+            subtypes = self.ifc_class_subtypes[type] if include_subtypes else self.ifc_class_subtypes[type][0:1]
+            for subtype in subtypes:
                 results.extend([self.by_id(i) for i in self.class_map.get(subtype.name(), [])])
             return results
         if include_subtypes:
@@ -140,15 +142,13 @@ class sqlite(file):
 
     def traverse(self, inst, max_levels=None, breadth_first=False):
         print("traversing", inst)
-        if max_levels is None:
-            max_levels = 1
         results = [inst]
         queue = [inst]
         while queue:
-            max_levels -= 1
+            if max_levels is not None:
+                max_levels -= 1
 
             cur = queue.pop()
-            level_results = set()
             reference_attributes = self.ifc_class_references[cur.sqlite_wrapper.ifc_class]
             attributes = reference_attributes["entity"] + reference_attributes["entity_list"]
             if not attributes:
@@ -156,13 +156,15 @@ class sqlite(file):
 
             for attribute in attributes:
                 result = getattr(cur, attribute, [])
-                if isinstance(result, tuple):
+                if not result:
+                    continue
+                elif isinstance(result, tuple):
                     results.extend(result)
-                    if max_levels:
+                    if max_levels is None or max_levels:
                         queue.extend(result)
                 else:
                     results.append(result)
-                    if max_levels:
+                    if max_levels is None or max_levels:
                         queue.append(result)
         # print('traverse results', results)
         return results
