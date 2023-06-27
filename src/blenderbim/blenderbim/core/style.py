@@ -69,13 +69,18 @@ def update_style_colours(ifc, style, obj=None, verbose=False):
                 "style.add_surface_style", style=element, ifc_class="IfcSurfaceStyleRendering", attributes=attributes
             )
 
-        # # TODO: uncomment to support saving textures
-        # # TODO: uvs?
-        # textures = ifc.run("style.add_surface_textures", material=obj)
-        # if not texture_style and textures:
-        #     texture_style = ifc.get().createIfcSurfaceStyleWithTextures()
-        # if texture_style:
-        #     texture_style.Textures = textures
+        # TODO: uvs?
+        textures = ifc.run("style.add_surface_textures", material=obj)
+        if not texture_style and textures:
+            ifc.run(
+                "style.add_surface_style",
+                style=element,
+                ifc_class="IfcSurfaceStyleWithTextures",
+                attributes={"Textures": textures},
+            )
+        elif texture_style:
+            # TODO: should we remove blender images and IFCIMAGETEXTURE here if they're not used by other objects?
+            ifc.run("style.edit_surface_style", style=texture_style, attributes={"Textures": textures})
     else:
         shading_style = style.get_surface_shading_style(obj)
         attributes = style.get_surface_shading_attributes(obj)

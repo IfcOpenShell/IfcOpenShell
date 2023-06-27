@@ -23,6 +23,7 @@ import blenderbim.core.tool
 import blenderbim.tool as tool
 import os
 from mathutils import Vector
+from pathlib import Path
 
 
 # Progressively we'll refactor loading elements into Blender objects into this
@@ -168,31 +169,43 @@ class Loader(blenderbim.core.tool.Loader):
 
     @classmethod
     def create_surface_style_with_textures(cls, blender_material, rendering_style, texture_style):
-        for texture in texture_style.Textures:
-            mode = getattr(texture, "Mode", None)
+        """supposed to be called after `create_surface_style_rendering`"""
+        if not isinstance(texture_style, list):
+            textures = [t.get_info() for t in texture_style.Textures]
+        else:
+            textures = texture_style
+        rendering_style = cls.surface_style_to_dict(rendering_style)
+
+        reflectance_method = rendering_style["ReflectanceMethod"]
+        if reflectance_method not in ("PHYSICAL", "NOTDEFINED", "FLAT"):
+            print(f'WARNING. Unsupported reflectance method "{reflectance_method}" on style {rendering_style}')
+            return
+
+        for texture in textures:
+            mode = texture.get("Mode", None)
             node = None
 
-            if texture.is_a("IfcImageTexture"):
-                image_url = texture.URLReference
-                if not os.path.abspath(texture.URLReference) and tool.Ifc.get_path():
-                    image_url = os.path.join(os.path.dirname(tool.Ifc.get_path()), texture.URLReference)
+            if texture["type"] == "IfcImageTexture":
+                image_url = texture["URLReference"]
+                ifc_path = tool.Ifc.get_path()
+                if ifc_path:
+                    image_url = bpy.path.abspath(image_url, start=Path(ifc_path).parent)
 
-            reflectance_method = rendering_style.ReflectanceMethod
-            if reflectance_method not in ("PHYSICAL", "NOTDEFINED", "FLAT"):
-                print(f'WARNING. Unsupported reflectance method "{reflectance_method}" on style {rendering_style}')
-                return
+            if not os.path.exists(image_url):
+                print(f"WARNING. Couldn't find texture by path {image_url}, it will be skipped.")
+                continue
 
-            if rendering_style.ReflectanceMethod in ["PHYSICAL", "NOTDEFINED"]:
+            if reflectance_method in ["PHYSICAL", "NOTDEFINED"]:
                 bsdf = tool.Blender.get_material_node(blender_material, "BSDF_PRINCIPLED")
                 if mode == "NORMAL":
                     # add normal map node
                     normalmap = blender_material.node_tree.nodes.new(type="ShaderNodeNormalMap")
-                    normalmap.location = bsdf.location - Vector((200, 0))
+                    normalmap.location = bsdf.location - Vector((200, 600))
                     blender_material.node_tree.links.new(normalmap.outputs[0], bsdf.inputs["Normal"])
 
                     # add normal map sampler
                     node = blender_material.node_tree.nodes.new(type="ShaderNodeTexImage")
-                    node.location = normalmap.location - Vector((200, 0))
+                    node.location = normalmap.location - Vector((300, 0))
                     image = bpy.data.images.load(image_url)
                     image.colorspace_settings.name = "Non-Color"
                     node.image = image
@@ -203,7 +216,7 @@ class Loader(blenderbim.core.tool.Loader):
 
                     # add "Add Shader" node
                     add = blender_material.node_tree.nodes.new(type="ShaderNodeAddShader")
-                    add.location = bsdf.location + Vector((200, 0))
+                    add.location = bsdf.location + Vector((200, 350))
                     blender_material.node_tree.links.new(bsdf.outputs[0], add.inputs[1])
                     blender_material.node_tree.links.new(add.outputs[0], output.inputs[0])
 
@@ -214,19 +227,19 @@ class Loader(blenderbim.core.tool.Loader):
 
                     # add emission texture sampler
                     node = blender_material.node_tree.nodes.new(type="ShaderNodeTexImage")
-                    node.location = emission.location - Vector((200, 0))
+                    node.location = emission.location - Vector((350, 0))
                     image = bpy.data.images.load(image_url)
                     node.image = image
                     blender_material.node_tree.links.new(node.outputs[0], emission.inputs[0])
 
                 elif mode == "METALLICROUGHNESS":
                     separate = blender_material.node_tree.nodes.new(type="ShaderNodeSeparateRGB")
-                    separate.location = bsdf.location - Vector((200, 0))
+                    separate.location = bsdf.location - Vector((200, 300))
                     blender_material.node_tree.links.new(separate.outputs[1], bsdf.inputs["Roughness"])
                     blender_material.node_tree.links.new(separate.outputs[2], bsdf.inputs["Metallic"])
 
                     node = blender_material.node_tree.nodes.new(type="ShaderNodeTexImage")
-                    node.location = separate.location - Vector((200, 0))
+                    node.location = separate.location - Vector((300, 0))
                     image = bpy.data.images.load(image_url)
                     image.colorspace_settings.name = "Non-Color"
                     node.image = image
@@ -246,18 +259,23 @@ class Loader(blenderbim.core.tool.Loader):
                     blender_material.node_tree.links.new(node.outputs[1], bsdf.inputs["Alpha"])
                     blender_material.blend_method = "BLEND"
 
-            elif rendering_style.ReflectanceMethod == "FLAT":
+            elif reflectance_method == "FLAT":
                 bsdf = tool.Blender.get_material_node(blender_material, "MIX_SHADER")
                 if mode != "EMISSIVE":
                     continue
 
+                # remove RGB node from `create_surface_style_rendering`
+                prev_node = bsdf.inputs[2].links[0].from_node
+                blender_material.node_tree.nodes.remove(prev_node)
+
                 node = blender_material.node_tree.nodes.new(type="ShaderNodeTexImage")
-                node.location = bsdf.location - Vector((200, 0))
+                node.location = bsdf.location - Vector((200, 250))
                 image = bpy.data.images.load(image_url)
                 # TODO: orphaned textures after shader recreated?
                 node.image = image
                 blender_material.node_tree.links.new(node.outputs[0], bsdf.inputs[2])
 
+            # TODO: add support for texture data not ifc elements
             if node and getattr(texture, "IsMappedBy", None):
                 coordinates = texture.IsMappedBy[0]
                 coord = blender_material.node_tree.nodes.new(type="ShaderNodeTexCoord")
