@@ -163,8 +163,12 @@ class Style(blenderbim.core.tool.Style):
         props["update_graph"] = False
 
         style_elements = tool.Style.get_style_elements(blender_material)
-        surface_style = style_elements["IfcSurfaceStyleRendering"]
+        surface_style = style_elements.get("IfcSurfaceStyleRendering", None)
         texture_style = style_elements.get("IfcSurfaceStyleWithTextures", None)
+
+        # in case we have just IfcSurfaceStyleShading
+        if not surface_style:
+            return
 
         style_data = tool.Loader.surface_style_to_dict(surface_style)
         if style_data["ReflectanceMethod"] == "NOTDEFINED":
@@ -360,6 +364,16 @@ class Style(blenderbim.core.tool.Style):
     def get_surface_rendering_style(cls, obj):
         style_elements = cls.get_style_elements(obj)
         return style_elements.get("IfcSurfaceStyleRendering", None)
+
+    @classmethod
+    def get_texture_style(cls, obj):
+        style_elements = cls.get_style_elements(obj)
+        return style_elements.get("IfcSurfaceStyleWithTextures", None)
+    
+    @classmethod
+    def get_external_style(cls, obj):
+        style_elements = cls.get_style_elements(obj)
+        return style_elements.get("IfcExternallyDefinedSurfaceStyle", None)
 
     @classmethod
     def get_surface_shading_attributes(cls, obj):

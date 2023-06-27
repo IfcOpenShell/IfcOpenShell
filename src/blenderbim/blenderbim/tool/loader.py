@@ -88,22 +88,22 @@ class Loader(blenderbim.core.tool.Loader):
         if surface_style["SurfaceColour"]:
             surface_style["SurfaceColour"] = color_to_tuple(surface_style["SurfaceColour"])
 
-        if surface_style["DiffuseColour"] and surface_style["DiffuseColour"].is_a("IfcColourRgb"):
+        if surface_style.get("DiffuseColour", None) and surface_style["DiffuseColour"].is_a("IfcColourRgb"):
             surface_style["DiffuseColour"] = ("IfcColourRgb", color_to_tuple(surface_style["DiffuseColour"]))
 
-        elif surface_style["DiffuseColour"] and surface_style["DiffuseColour"].is_a("IfcNormalisedRatioMeasure"):
+        elif surface_style.get("DiffuseColour", None) and surface_style["DiffuseColour"].is_a("IfcNormalisedRatioMeasure"):
             diffuse_color_value = surface_style["DiffuseColour"].wrappedValue
             diffuse_color = [v * diffuse_color_value for v in surface_style["SurfaceColor"][:3]] + [1]
             surface_style["DiffuseColour"] = ("IfcNormalisedRatioMeasure", diffuse_color)
         else:
             surface_style["DiffuseColour"] = None
 
-        if surface_style["SpecularColour"] and surface_style["SpecularColour"].is_a("IfcNormalisedRatioMeasure"):
+        if surface_style.get("SpecularColour", None) and surface_style["SpecularColour"].is_a("IfcNormalisedRatioMeasure"):
             surface_style["SpecularColour"] = surface_style["SpecularColour"].wrappedValue
         else:
             surface_style["SpecularColour"] = None
 
-        if surface_style["SpecularHighlight"] and surface_style["SpecularHighlight"].is_a("IfcSpecularRoughness"):
+        if surface_style.get("SpecularHighlight", None) and surface_style["SpecularHighlight"].is_a("IfcSpecularRoughness"):
             surface_style["SpecularHighlight"] = surface_style["SpecularHighlight"].wrappedValue
         else:
             surface_style["SpecularHighlight"] = None
