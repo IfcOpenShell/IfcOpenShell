@@ -38,8 +38,9 @@ class Brick(blenderbim.core.tool.Brick):
     def add_brick(cls, namespace, brick_class):
         ns = Namespace(namespace)
         brick = ns[ifcopenshell.guid.expand(ifcopenshell.guid.new())]
-        BrickStore.graph.add((brick, RDF.type, URIRef(brick_class)))
-        BrickStore.graph.add((brick, URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal("Unnamed")))
+        with BrickStore.graph.new_changeset("PROJECT") as cs:
+            cs.add((brick, RDF.type, URIRef(brick_class)))
+            cs.add((brick, URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal("Unnamed")))
         return str(brick)
 
     @classmethod
@@ -281,8 +282,9 @@ class Brick(blenderbim.core.tool.Brick):
 
     @classmethod
     def remove_brick(cls, brick_uri):
-        for triple in BrickStore.graph.triples((URIRef(brick_uri), None, None)):
-            BrickStore.graph.remove(triple)
+        with BrickStore.graph.new_changeset("PROJECT") as cs:
+            for triple in BrickStore.graph.triples((URIRef(brick_uri), None, None)):
+                cs.remove(triple)
 
     @classmethod
     def run_assign_brick_reference(cls, element=None, library=None, brick_uri=None):
@@ -329,7 +331,6 @@ class BrickStore:
     graph = None  # this is the VersionedGraphCollection with 2 arbitrarily named graphs: "schema" and "project"
                   # "SCHEMA" holds the Brick.ttl metadata; "PROJECT" holds all the authored entities
     
-
     @staticmethod
     def purge():
         BrickStore.schema = None
