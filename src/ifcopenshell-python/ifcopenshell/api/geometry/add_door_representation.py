@@ -481,6 +481,7 @@ class Usecase:
                 frame_thickness,
                 glass_thickness,
                 window_position,
+                self.settings["unit_scale"],
             )
 
         lining_offset_items = lining_items + door_items + window_lining_items + frame_items + glass_items
