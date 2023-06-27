@@ -392,3 +392,25 @@ class SelectByStyle(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.select_by_style(tool.Style, tool.Spatial, style=tool.Ifc.get().by_id(self.style))
+
+
+class ClearTextureMapPath(bpy.types.Operator):
+    bl_idname = "bim.clear_texture_map_path"
+    bl_label = "Clear Texture Map Path"
+    bl_options = {"REGISTER", "UNDO"}
+    texture_map_prop: bpy.props.StringProperty(default="")
+
+    @classmethod
+    def poll(cls, context):
+        poll = getattr(context, "material", None)
+        if not poll:
+            cls.poll_message_set("Select a material")
+        return poll
+
+    def execute(self, context):
+        if not self.texture_map_prop:
+            self.report({"ERROR"}, "Provide a texture map")
+            return {"CANCELLED"}
+        props = context.material.BIMStyleProperties
+        setattr(props, self.texture_map_prop, "")
+        return {"FINISHED"}

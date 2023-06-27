@@ -37,6 +37,7 @@ classes = (
     operator.UnlinkStyle,
     operator.UpdateStyleColours,
     operator.UpdateStyleTextures,
+    operator.ClearTextureMapPath,
     prop.Style,
     prop.BIMStylesProperties,
     prop.BIMStyleProperties,

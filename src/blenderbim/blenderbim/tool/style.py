@@ -22,7 +22,14 @@ import ifcopenshell
 import blenderbim.core.tool
 import blenderbim.tool as tool
 import blenderbim.bim.helper
+import os.path
 
+# fmt: off
+TEXTURE_MAPS_BY_METHODS = {
+    "PHYSICAL": ("NORMAL", "EMISSIVE", "METALLICROUGHNESS", "DIFFUSE"), 
+    "FLAT": ("EMISSIVE",)
+}
+# fmt: on
 
 STYLE_PROPS_MAP = {
     "reflectance_method": "ReflectanceMethod",
@@ -31,6 +38,13 @@ STYLE_PROPS_MAP = {
     "transparency": "Transparency",
     "roughness": "SpecularHighlight",
     "metallic": "SpecularColour",
+}
+
+STYLE_TEXTURE_PROPS_MAP = {
+    "EMISSIVE": "emissive_path",
+    "NORMAL": "normal_path",
+    "METALLICROUGHNESS": "metallic_roughness_path",
+    "DIFFUSE": "diffuse_path",
 }
 
 
@@ -118,6 +132,29 @@ class Style(blenderbim.core.tool.Style):
         return surface_style_data
 
     @classmethod
+    def get_texture_style_from_props(cls, blender_material):
+        props = blender_material.BIMStyleProperties
+
+        textures = []
+        texture_maps = TEXTURE_MAPS_BY_METHODS[props.reflectance_method]
+        for prop_mode in texture_maps:
+            prop_name = STYLE_TEXTURE_PROPS_MAP[prop_mode]
+            path = getattr(props, prop_name)
+            if not path:
+                continue
+            if not os.path.abspath(path) and tool.Ifc.get_path():
+                path = os.path.join(os.path.dirname(tool.Ifc.get_path()), path)
+
+            texture_data = {
+                "Mode": prop_mode,
+                "type": "IfcImageTexture",
+                "URLReference": path,
+            }
+            textures.append(texture_data)
+
+        return textures
+
+    @classmethod
     def set_surface_style_props(cls, blender_material):
         """set blender style props based on current surface material"""
         props = blender_material.BIMStyleProperties
@@ -127,6 +164,8 @@ class Style(blenderbim.core.tool.Style):
 
         style_elements = tool.Style.get_style_elements(blender_material)
         surface_style = style_elements["IfcSurfaceStyleRendering"]
+        texture_style = style_elements.get("IfcSurfaceStyleWithTextures", None)
+
         style_data = tool.Loader.surface_style_to_dict(surface_style)
         if style_data["ReflectanceMethod"] == "NOTDEFINED":
             style_data["ReflectanceMethod"] = "PHYSICAL"
@@ -134,26 +173,49 @@ class Style(blenderbim.core.tool.Style):
 
         for prop_blender, prop_ifc in STYLE_PROPS_MAP.items():
             prop_value = style_data[prop_ifc]
-            # TODO: set to default?
             if prop_value is None:
-                continue
+                prop_value = tool.Blender.get_blender_prop_default_value(props, prop_blender)
             setattr(props, prop_blender, prop_value)
+
+        texture_maps = TEXTURE_MAPS_BY_METHODS[style_data["ReflectanceMethod"]]
+        unused_texture_maps = list(STYLE_TEXTURE_PROPS_MAP.keys())
+        for texture in texture_style.Textures:
+            if texture.Mode not in texture_maps:
+                print(f"WARNING. Unsupported texture mode: {texture.Mode}. Supported maps: {texture_maps}")
+                continue
+            prop_blender = STYLE_TEXTURE_PROPS_MAP.get(texture.Mode, None)
+            setattr(props, prop_blender, texture.URLReference)
+            unused_texture_maps.remove(texture.Mode)
+
+        # clear empty texture fields
+        for texture_mode in unused_texture_maps:
+            prop_blender = STYLE_TEXTURE_PROPS_MAP[texture_mode]
+            setattr(props, prop_blender, "")
 
         props["update_graph"] = prev_update_graph_value
 
     @classmethod
     def get_surface_rendering_attributes(cls, obj, verbose=True):
-        transparency = 1 - obj.diffuse_color[3]
-        diffuse_color = obj.diffuse_color
-
         report = (lambda *x: print(*x)) if verbose else (lambda *x: None)
 
-        viewport_color = {
-            "Name": None,
-            "Red": obj.diffuse_color[0],
-            "Green": obj.diffuse_color[1],
-            "Blue": obj.diffuse_color[2],
-        }
+        def color_to_ifc_format(color):
+            return {
+                "Name": None,
+                "Red": color[0],
+                "Green": color[1],
+                "Blue": color[2],
+            }
+
+        def get_input_node(node, input_name=None, of_type=None, input_index=None):
+            input_pin = node.inputs[input_name] if input_index is None else node.inputs[input_index]
+            if of_type:
+                return next((l.from_node for l in input_pin.links if l.from_node.type == of_type), None)
+            return next((l.from_node for l in input_pin.links), None)
+
+        props = obj.BIMStyleProperties
+        transparency = 1 - obj.diffuse_color[3]
+        diffuse_color = obj.diffuse_color
+        viewport_color = color_to_ifc_format(obj.diffuse_color)
         attributes = {
             "SurfaceColour": viewport_color,
             "Transparency": transparency,
@@ -161,12 +223,6 @@ class Style(blenderbim.core.tool.Style):
         GREEN = "\033[32m"
         BLUE = "\033[1;34m"
         R = "\033[0m"  # RESET symbol
-
-        def get_input_node(node, input_name=None, of_type=None, input_index=None):
-            input_pin = node.inputs[input_name] if input_index is None else node.inputs[input_index]
-            if of_type:
-                return next((l.from_node for l in input_pin.links if l.from_node.type == of_type), None)
-            return next((l.from_node for l in input_pin.links), None)
 
         report("--------------------")
         report("Verbose method of getting surface rendering attributes enabled.")
@@ -188,20 +244,31 @@ class Style(blenderbim.core.tool.Style):
             if (
                 get_input_node(mix_shader, "Fac", "LIGHT_PATH")
                 and get_input_node(mix_shader, input_index=1, of_type="BSDF_TRANSPARENT")
-                and (rgb := get_input_node(mix_shader, input_index=2, of_type="RGB"))
+                and (second_input_node := get_input_node(mix_shader, input_index=2))
+                and second_input_node.type in ("RGB", "TEX_IMAGE")
             ):
                 report(
-                    f"Because of {BLUE}MIX_SHADER + LIGHT_PATH + BSDF_TRANSPARENT + RGB{R} node setup reflectance method identified as {BLUE}FLAT{R}"
+                    f"Because of {BLUE}MIX_SHADER + LIGHT_PATH + BSDF_TRANSPARENT + RGB/TEX{R} node setup reflectance method identified as {BLUE}FLAT{R}"
                 )
                 attributes["ReflectanceMethod"] = "FLAT"
                 attributes["SpecularHighlight"] = None
-                report(f"RGB {GREEN}Color{R} saved as {GREEN}DiffuseColour{R}")
-                diffuse_color = rgb.outputs[0].default_value
 
-        elif surface_output and surface_output.type == "BSDF_PRINCIPLED":
+                if second_input_node.type == "RGB":
+                    report(f"RGB {GREEN}Color{R} saved as {GREEN}DiffuseColour{R}")
+                    diffuse_color = second_input_node.outputs[0].default_value
+                elif second_input_node.type == "TEX_IMAGE":
+                    report(f"{GREEN}BBIM Panel Diffuse Color{R} saved as {GREEN}DiffuseColour{R}")
+                    diffuse_color = props.diffuse_color
+
+        elif surface_output and (
+            (surface_output.type == "BSDF_PRINCIPLED" and (bsdf := surface_output))
+            or (
+                surface_output.type == "ADD_SHADER"
+                and (bsdf := get_input_node(surface_output, input_index=1, of_type="BSDF_PRINCIPLED"))
+            )
+        ):
             report(f"Because of {BLUE}BSDF_PRINCIPLED{R} node reflectance method identified as {BLUE}PHYSICAL{R}")
             attributes["ReflectanceMethod"] = "NOTDEFINED" if tool.Ifc.get_schema() != "IFC4X3" else "PHYSICAL"
-            bsdf = surface_output
 
             report(f"BSDF {GREEN}Base Color{R} saved as {GREEN}DiffuseColour{R}")
             diffuse_color = bsdf.inputs["Base Color"].default_value
@@ -286,12 +353,7 @@ class Style(blenderbim.core.tool.Style):
             attributes["DiffuseColour"] = viewport_color
             return attributes
 
-        attributes["DiffuseColour"] = {
-            "Name": None,
-            "Red": diffuse_color[0],
-            "Green": diffuse_color[1],
-            "Blue": diffuse_color[2],
-        }
+        attributes["DiffuseColour"] = color_to_ifc_format(diffuse_color)
         return attributes
 
     @classmethod
