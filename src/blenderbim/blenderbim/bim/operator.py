@@ -165,6 +165,7 @@ class FileAssociate(bpy.types.Operator):
     def poll(cls, context):
         if platform.system() == "Linux":
             return True
+        cls.poll_message_set("Option available only on Linux.")
         # TODO Windows and Darwin
         # https://stackoverflow.com/questions/1082889/how-to-change-filetype-association-in-the-registry
         return False
@@ -239,6 +240,7 @@ class FileUnassociate(bpy.types.Operator):
     def poll(cls, context):
         if platform.system() == "Linux":
             return True
+        cls.poll_message_set("Option available only on Linux.")
         return False
 
     def execute(self, context):
