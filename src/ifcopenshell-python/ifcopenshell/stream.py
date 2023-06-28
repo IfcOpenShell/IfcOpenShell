@@ -122,6 +122,18 @@ class stream(file):
         transformer.file = self
         self.parser = Lark(grammar, parser="lalr", transformer=transformer)
 
+        exclude_classes = [
+            "IfcObjectPlacement",
+            "IfcPresentationItem",
+            "IfcPresentationStyle",
+            "IfcProductRepresentation",
+            "IfcRepresentation",
+            "IfcRepresentationItem",
+        ]
+        exclude_classes = []
+
+        exclude = set()
+
         offset = 0
         for line in self.file:
             line = line.strip()
@@ -130,17 +142,24 @@ class stream(file):
                 step_id = int(step_id.strip()[1:])
                 ifc_class = ifc_class.strip()
 
+                if ifc_class in exclude:
+                    offset += len(line) + 1  # +1 for the newline character
+                    continue
+
                 for reference_id in self.reference_pattern.findall(line[1:]):
-                    self.inverses.setdefault(int(reference_id), set()).add(step_id)
+                    self.inverses.setdefault(int(reference_id), []).append(step_id)
 
                 self.id_map[step_id] = ifc_class
                 self.class_map.setdefault(ifc_class, []).append(step_id)
                 self.id_offset[step_id] = offset
             elif line.startswith("FILE_SCHEMA"):
                 self.schema = line.split("'")[1]
+                self.ifc_schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(self.schema)
+                for ifc_class in exclude_classes:
+                    declaration = self.ifc_schema.declaration_by_name(ifc_class)
+                    exclude.update([st.name().upper() for st in ifcopenshell.util.schema.get_subtypes(declaration)])
             offset += len(line) + 1  # +1 for the newline character
 
-        self.ifc_schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(self.schema)
         self.preprocess_schema()
 
     def preprocess_schema(self):
@@ -188,7 +207,6 @@ class stream(file):
                             self.ifc_class_inverses[subtype.name()][declaration.name()].append(attribute.name())
 
             self.ifc_class_references[declaration.name()] = {"entity": entity, "entity_list": entity_list}
-
 
     def clear_cache(self):
         self.entity_cache = {}
@@ -287,9 +305,7 @@ class stream_entity(entity_instance):
             attributes = self.stream_wrapper.file.parser.parse(line.strip())[2]
 
             for i, attribute in enumerate(self.stream_wrapper.attributes.values()):
-                aname = attribute.name()
-                primitive = ifcopenshell.util.attribute.get_primitive_type(attribute)
-                self.stream_wrapper.attribute_cache[aname] = attributes[i]
+                self.stream_wrapper.attribute_cache[attribute.name()] = attributes[i]
             return self.stream_wrapper.attribute_cache[name]
         elif attr_cat == INVERSE:
             if self.stream_wrapper.inverse_attribute_cache:
