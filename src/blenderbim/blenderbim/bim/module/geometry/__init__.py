@@ -63,6 +63,8 @@ def register():
     bpy.types.Scene.BIMGeometryProperties = bpy.props.PointerProperty(type=prop.BIMGeometryProperties)
     bpy.types.OBJECT_PT_transform.append(ui.BIM_PT_transform)
     bpy.types.VIEW3D_MT_object.append(ui.object_menu)
+    bpy.types.OUTLINER_MT_object.append(ui.outliner_menu)
+    bpy.types.VIEW3D_MT_object_context_menu.append(ui.object_menu)
     wm = bpy.context.window_manager
     if wm.keyconfigs.addon:
         km = wm.keyconfigs.addon.keymaps.new(name="Object Mode", space_type="EMPTY")
@@ -90,6 +92,8 @@ def register():
 def unregister():
     bpy.types.VIEW3D_MT_object.remove(ui.object_menu)
     bpy.types.OBJECT_PT_transform.remove(ui.BIM_PT_transform)
+    bpy.types.OUTLINER_MT_object.remove(ui.outliner_menu)
+    bpy.types.VIEW3D_MT_object_context_menu.remove(ui.outliner_menu)
     del bpy.types.Scene.BIMGeometryProperties
     del bpy.types.Object.BIMGeometryProperties
     wm = bpy.context.window_manager
