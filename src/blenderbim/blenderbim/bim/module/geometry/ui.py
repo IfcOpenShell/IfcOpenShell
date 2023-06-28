@@ -24,10 +24,14 @@ from blenderbim.bim.module.geometry.data import RepresentationsData, Connections
 
 
 def object_menu(self, context):
+    self.layout.separator()
     self.layout.operator("bim.override_object_duplicate_move", icon="PLUGIN")
     self.layout.operator("bim.override_object_delete", icon="PLUGIN")
     self.layout.operator("bim.override_paste_buffer", icon="PLUGIN")
 
+def outliner_menu(self, context):
+    self.layout.separator()
+    self.layout.operator("bim.override_outliner_delete", icon='X')
 
 class BIM_PT_representations(Panel):
     bl_label = "IFC Representations"
