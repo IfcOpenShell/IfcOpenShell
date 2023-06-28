@@ -183,13 +183,15 @@ class Style(blenderbim.core.tool.Style):
 
         texture_maps = TEXTURE_MAPS_BY_METHODS[style_data["ReflectanceMethod"]]
         unused_texture_maps = list(STYLE_TEXTURE_PROPS_MAP.keys())
-        for texture in texture_style.Textures:
-            if texture.Mode not in texture_maps:
-                print(f"WARNING. Unsupported texture mode: {texture.Mode}. Supported maps: {texture_maps}")
-                continue
-            prop_blender = STYLE_TEXTURE_PROPS_MAP.get(texture.Mode, None)
-            setattr(props, prop_blender, texture.URLReference)
-            unused_texture_maps.remove(texture.Mode)
+
+        if texture_style:
+            for texture in texture_style.Textures:
+                if texture.Mode not in texture_maps:
+                    print(f"WARNING. Unsupported texture mode: {texture.Mode}. Supported maps: {texture_maps}")
+                    continue
+                prop_blender = STYLE_TEXTURE_PROPS_MAP.get(texture.Mode, None)
+                setattr(props, prop_blender, texture.URLReference)
+                unused_texture_maps.remove(texture.Mode)
 
         # clear empty texture fields
         for texture_mode in unused_texture_maps:
