@@ -141,7 +141,6 @@ class sqlite(file):
         return [self.by_id(r[0]) for r in rows]
 
     def traverse(self, inst, max_levels=None, breadth_first=False):
-        print("traversing", inst)
         results = [inst]
         queue = [inst]
         while queue:
