@@ -60,6 +60,7 @@ def register():
 
 
 def unregister():
+    bpy.utils.unregister_tool(workspace.SpatialTool)
     del bpy.types.Scene.BIMSpatialProperties
     del bpy.types.Object.BIMObjectSpatialProperties
     del bpy.types.Scene.BIMSpatialManagerProperties
