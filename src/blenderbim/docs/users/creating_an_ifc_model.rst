@@ -33,6 +33,12 @@ Any Blender object that you want to be part of IFC project must be converted
 into a IFC object by assigning a category. This category is known as the **IFC
 Class**.
 
+.. seealso::
+
+   Use the `IFC Class search tool
+   <https://blenderbim.org/search-ifc-class.html>`__ to help choose an **IFC
+   Class**!
+
 Select only the default Blender Cube (selected objects are highlighted in
 orange, careful not to select anything else!), switch to the **Object
 Properties** tab, and find the **IFC Class** panel. Let's pretend our Cube is a
