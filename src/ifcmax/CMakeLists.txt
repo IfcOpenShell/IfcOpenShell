@@ -33,7 +33,7 @@ LINK_DIRECTORIES(${LINK_DIRECTORIES} ${IfcOpenShell_BINARY_DIR} ${OCC_LIBRARY_DI
 ADD_LIBRARY(IfcMax_${max_year} SHARED IfcMax.h IfcMax.cpp)
 
 # TODO: find the minimal subset of 3dsmax libraries to reference
-TARGET_LINK_LIBRARIES(IfcMax_${max_year} ${IFCOPENSHELL_LIBRARIES} Comctl32.lib zlibdll.lib bmm.lib core.lib CustDlg.lib edmodel.lib expr.lib
+TARGET_LINK_LIBRARIES(IfcMax_${max_year} ${IFCOPENSHELL_LIBRARIES} Comctl32.lib bmm.lib core.lib CustDlg.lib edmodel.lib expr.lib
     flt.lib geom.lib gfx.lib gup.lib imageViewers.lib ManipSys.lib maxnet.lib Maxscrpt.lib
     maxutil.lib MenuMan.lib menus.lib mesh.lib MNMath.lib Paramblk2.lib particle.lib Poly.lib RenderUtil.lib
     tessint.lib viewfile.lib ${OPENCASCADE_LIBRARIES}
