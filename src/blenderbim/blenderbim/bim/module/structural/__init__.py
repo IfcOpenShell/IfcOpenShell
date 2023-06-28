@@ -100,5 +100,6 @@ def register():
 
 
 def unregister():
+    bpy.utils.unregister_tool(workspace.StructuralTool)
     del bpy.types.Scene.BIMStructuralProperties
     del bpy.types.Object.BIMStructuralProperties
