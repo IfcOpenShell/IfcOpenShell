@@ -262,7 +262,7 @@ def create_bm_window(
     frame_thickness,
     glass_thickness,
     position: Vector,
-    x_offsets: list = None
+    x_offsets: list = None,
 ):
     """`lining_thickness` and `x_offsets` are expected to be defined as a list,
     similarly to `create_bm_window_frame` `thickness` argument"""
@@ -334,7 +334,7 @@ def update_window_modifier_bmesh(context):
             # detect transom
             has_transom = unique_rows_in_col[column_i] > 1
             first_row = row_i == 0
-            last_row = row_i == unique_rows_in_col[column_i] - 1 
+            last_row = row_i == unique_rows_in_col[column_i] - 1
             top_to_transom = has_transom and not first_row
             bottom_to_transom = has_transom and not last_row
 
@@ -366,6 +366,7 @@ def update_window_modifier_bmesh(context):
 
             frame_depth = props.frame_depth[panel_i]
             frame_thickness = props.frame_thickness[panel_i]
+            lining_to_panel_offset_y_full = (lining_depth - frame_depth) + lining_to_panel_offset_y
             # add window
             window_lining_size = V(
                 panel_width,
@@ -375,6 +376,7 @@ def update_window_modifier_bmesh(context):
 
             # calculate lining thickness and frame size / offset
             # taking into account mullions and transoms
+            # fmt: off
             window_lining_thickness = [
                 mullion_thickness if right_to_mullion  else lining_thickness,
                 transom_thickness if bottom_to_transom else lining_thickness,
@@ -382,23 +384,23 @@ def update_window_modifier_bmesh(context):
                 transom_thickness if top_to_transom    else lining_thickness,
             ]
 
-            lining_to_panel_offset_y_full = (lining_depth - frame_depth) + lining_to_panel_offset_y
-
-            # x offsets can differ if there are mullions or transoms because we're trying to maintain symmetry 
+            # x offsets can differ if there are mullions or transoms because we're trying to maintain symmetry
             base_frame_clear = lining_to_panel_offset_x + frame_thickness - lining_thickness
             current_offset_x = base_frame_clear - frame_thickness + mullion_thickness
             current_offset_z = base_frame_clear - frame_thickness + transom_thickness
+            # fmt: off
             x_offsets = [
-                current_offset_x if right_to_mullion  else lining_to_panel_offset_x, # LEFT
-                current_offset_z if bottom_to_transom else lining_to_panel_offset_x, # TOP
-                current_offset_x if left_to_mullion   else lining_to_panel_offset_x, # RIGHT
-                current_offset_z if top_to_transom    else lining_to_panel_offset_x, # BOTTOM
+                current_offset_x if right_to_mullion  else lining_to_panel_offset_x,  # LEFT
+                current_offset_z if bottom_to_transom else lining_to_panel_offset_x,  # TOP
+                current_offset_x if left_to_mullion   else lining_to_panel_offset_x,  # RIGHT
+                current_offset_z if top_to_transom    else lining_to_panel_offset_x,  # BOTTOM
             ]
+            # fmt: on
 
             frame_size = window_lining_size.copy()
             frame_size.y = frame_depth
-            frame_size.x -= (x_offsets[0] + x_offsets[2])
-            frame_size.z -= (x_offsets[1] + x_offsets[3])
+            frame_size.x -= x_offsets[0] + x_offsets[2]
+            frame_size.z -= x_offsets[1] + x_offsets[3]
 
             window_position = V(accumulated_width, 0, accumulated_height[column_i])
             lining_verts, panel_verts, glass_verts = create_bm_window(
@@ -411,7 +413,7 @@ def update_window_modifier_bmesh(context):
                 frame_thickness,
                 glass_thickness,
                 window_position,
-                x_offsets
+                x_offsets,
             )
 
             built_panels.append(panel_i)
