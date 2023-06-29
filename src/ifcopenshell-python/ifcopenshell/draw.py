@@ -59,6 +59,7 @@ class draw_settings:
     cells: bool = True
     merge_cells: bool = False
     include_projection: bool = True
+    prefilter: bool = True
 
 
 def main(settings, files, iterators=None, merge_projection=True, progress_function=DO_NOTHING):
@@ -130,6 +131,8 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
     sr.setNoCSS(not settings.css)
     if settings.subtract_before_hlr:
         sr.setSubtractionSettings(W.ALWAYS)
+
+    sr.setUsePrefiltering(settings.prefilter)
 
     try:
         sh = ["none", "full", "left"].index(settings.storey_heights)
