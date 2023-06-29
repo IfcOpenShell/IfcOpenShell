@@ -636,6 +636,10 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 	}
 %}
 
+%ignore hlr_writer;
+%ignore hlr_calc;
+%ignore occt_join;
+%ignore prefiltered_hlr;
 %ignore svgfill::svg_to_line_segments;
 %ignore svgfill::line_segments_to_polygons;
 
