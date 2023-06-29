@@ -72,7 +72,9 @@ from . import guid
 from .file import file
 from .entity_instance import entity_instance, register_schema_attributes
 from .sql import sqlite, sqlite_entity
-from .stream import stream, stream_entity
+try:
+    from .stream import stream, stream_entity
+except: pass
 
 READ_ERROR = ifcopenshell_wrapper.file_open_status.READ_ERROR
 NO_HEADER = ifcopenshell_wrapper.file_open_status.NO_HEADER
