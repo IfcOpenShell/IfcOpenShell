@@ -72,34 +72,39 @@ restart Blender to see changes).
 
 For Linux or Mac:
 
-::
+:: code-block:: console
 
     $ git clone https://github.com/IfcOpenShell/IfcOpenShell.git
     $ cd IfcOpenShell
 
+    # path to BlenderBIM addon
+    # default path on Mac: "/Users/$USER/Library/Application Support/Blender/X.X/scripts/addons/blenderbim"
+    # default path on Linux: "$HOME/.config/blender/X.X/"
+    $ BLENDER_ADDON_PATH="/path/to/blender/X.XX/scripts/addons/blenderbim"
+
     # Remove the Blender add-on Python code
-    $ rm -r /path/to/blender/X.XX/scripts/addons/blenderbim/core/
-    $ rm -r /path/to/blender/X.XX/scripts/addons/blenderbim/tool/
-    $ rm -r /path/to/blender/X.XX/scripts/addons/blenderbim/bim/
+    $ rm -r $BLENDER_ADDON_PATH/core/
+    $ rm -r $BLENDER_ADDON_PATH/tool/
+    $ rm -r $BLENDER_ADDON_PATH/bim/
 
     # Replace them with links to the Git repository
-    $ ln -s src/blenderbim/blenderbim/core /path/to/blender/X.XX/scripts/addons/blenderbim/core
-    $ ln -s src/blenderbim/blenderbim/tool /path/to/blender/X.XX/scripts/addons/blenderbim/tool
-    $ ln -s src/blenderbim/blenderbim/bim /path/to/blender/X.XX/scripts/addons/blenderbim/bim
+    $ ln -s $PWD/src/blenderbim/blenderbim/core $BLENDER_ADDON_PATH/core
+    $ ln -s $PWD/src/blenderbim/blenderbim/tool $BLENDER_ADDON_PATH/tool
+    $ ln -s $PWD/src/blenderbim/blenderbim/bim $BLENDER_ADDON_PATH/bim
 
     # Remove the IfcOpenShell dependency Python code
-    $ rm -r /path/to/blender/X.XX/scripts/addons/blenderbim/libs/site/packages/ifcopenshell/api
-    $ rm -r /path/to/blender/X.XX/scripts/addons/blenderbim/libs/site/packages/ifcopenshell/util
+    $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifcopenshell/api
+    $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifcopenshell/util
 
     # Replace them with links to the Git repository
-    $ ln -s src/ifcopenshell-python/ifcopenshell/api /path/to/blender/X.XX/scripts/addons/blenderbim/libs/site/packages/ifcopenshell/api
-    $ ln -s src/ifcopenshell-python/ifcopenshell/util /path/to/blender/X.XX/scripts/addons/blenderbim/libs/site/packages/ifcopenshell/util
+    $ ln -s $PWD/src/ifcopenshell-python/ifcopenshell/api $BLENDER_ADDON_PATH/libs/site/packages/ifcopenshell/api
+    $ ln -s $PWD/src/ifcopenshell-python/ifcopenshell/util $BLENDER_ADDON_PATH/libs/site/packages/ifcopenshell/util
 
     # Manually download some third party dependencies
-    $ cd /path/to/blender/X.XX/scripts/addons/blenderbim/bim/data/gantt
+    $ cd $BLENDER_ADDON_PATH/bim/data/gantt
     $ wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js
     $ wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css
-    $ cd /path/to/blender/X.XX/scripts/addons/blenderbim/bim/schema
+    $ cd $BLENDER_ADDON_PATH/bim/schema
     $ wget https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl
 
 Or, if you're on Windows, you can use the batch script below. 
