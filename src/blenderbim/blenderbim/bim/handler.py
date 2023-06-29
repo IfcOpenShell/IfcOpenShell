@@ -98,8 +98,8 @@ def update_bim_tool_props():
     if not obj:
         return
     mode = bpy.context.mode
-    current_tool = bpy.context.workspace.tools.from_space_view3d_mode(mode).idname
-    if current_tool != "bim.bim_tool":
+    current_tool = bpy.context.workspace.tools.from_space_view3d_mode(mode)
+    if not current_tool or current_tool.idname != "bim.bim_tool":
         return
     element = tool.Ifc.get_entity(obj)
     if not element:
