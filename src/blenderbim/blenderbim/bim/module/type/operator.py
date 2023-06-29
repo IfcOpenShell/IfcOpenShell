@@ -329,8 +329,8 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Collector,
                 tool.Root,
                 obj=obj,
-                predefined_type=predefined_type,
-                ifc_class="IfcWindowType",
+                predefined_type=predefined_type if tool.Ifc.get_schema() != "IFC2X3" else None,
+                ifc_class="IfcWindowType" if tool.Ifc.get_schema() != "IFC2X3" else "IfcWindowStyle",
                 should_add_representation=False,
             )
             bpy.ops.object.select_all(action="DESELECT")
@@ -347,8 +347,8 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Collector,
                 tool.Root,
                 obj=obj,
-                predefined_type=predefined_type,
-                ifc_class="IfcDoorType",
+                predefined_type=predefined_type if tool.Ifc.get_schema() != "IFC2X3" else None,
+                ifc_class="IfcDoorType" if tool.Ifc.get_schema() != "IFC2X3" else "IfcDoorStyle",
                 should_add_representation=False,
             )
             bpy.ops.object.select_all(action="DESELECT")
