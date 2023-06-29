@@ -423,6 +423,10 @@ ifeq ($(PLATFORM), macos)
 	cp -r dist/working/lib/$(PYLIBDIR)/site-packages/hppfcl dist/blenderbim/libs/site/packages/
 	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
 endif
+ifeq ($(PLATFORM), macosm1)
+	cp -r dist/working/lib/$(PYLIBDIR)/site-packages/hppfcl dist/blenderbim/libs/site/packages/
+	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
+endif
 ifeq ($(PLATFORM), win)
 	cp -r dist/working/Lib/site-packages/hppfcl dist/blenderbim/libs/site/packages/
 	cp -r dist/working/Library/bin/*.dll dist/blenderbim/libs/site/packages/hppfcl/
@@ -437,6 +441,9 @@ ifeq ($(PLATFORM), linux)
 	cp -r dist/working/lib/*.so* dist/blenderbim/libs/
 endif
 ifeq ($(PLATFORM), macos)
+	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
+endif
+ifeq ($(PLATFORM), macosm1)
 	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
 endif
 ifeq ($(PLATFORM), win)
@@ -454,6 +461,9 @@ endif
 ifeq ($(PLATFORM), macos)
 	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
 endif
+ifeq ($(PLATFORM), macosm1)
+	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
+endif
 ifeq ($(PLATFORM), win)
 	cp -r dist/working/Library/bin/*.dll dist/blenderbim/libs/site/packages/hppfcl/
 endif
@@ -467,6 +477,9 @@ ifeq ($(PLATFORM), linux)
 	cp -r dist/working/lib/*.so* dist/blenderbim/libs/
 endif
 ifeq ($(PLATFORM), macos)
+	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
+endif
+ifeq ($(PLATFORM), macosm1)
 	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
 endif
 ifeq ($(PLATFORM), win)
@@ -484,6 +497,9 @@ endif
 ifeq ($(PLATFORM), macos)
 	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
 endif
+ifeq ($(PLATFORM), macosm1)
+	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
+endif
 ifeq ($(PLATFORM), win)
 	cp -r dist/working/Library/bin/*.dll dist/blenderbim/libs/site/packages/hppfcl/
 endif
@@ -497,6 +513,9 @@ ifeq ($(PLATFORM), linux)
 	cp -r dist/working/lib/*.so* dist/blenderbim/libs/
 endif
 ifeq ($(PLATFORM), macos)
+	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
+endif
+ifeq ($(PLATFORM), macosm1)
 	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
 endif
 ifeq ($(PLATFORM), win)
