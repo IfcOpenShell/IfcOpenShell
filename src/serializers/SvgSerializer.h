@@ -159,11 +159,11 @@ namespace {
 			throw std::runtime_error("");
 		}
 
-		void operator()(Handle(HLRBRep_Algo)& algo) const {
+		void operator()(opencascade::handle<HLRBRep_Algo>& algo) const {
 			algo->Add(shape_);
 		}
 
-		void operator()(Handle(HLRBRep_PolyAlgo)& algo) const {
+		void operator()(opencascade::handle<HLRBRep_PolyAlgo>& algo) const {
 			BRepMesh_IncrementalMesh(shape_, 0.10);
 			algo->Load(shape_);
 		}
@@ -218,7 +218,7 @@ namespace {
 			throw std::runtime_error("");
 		}
 
-		TopoDS_Shape operator()(Handle(HLRBRep_Algo)& algo) {
+		TopoDS_Shape operator()(opencascade::handle<HLRBRep_Algo>& algo) {
 			algo->Projector(projector_);
 			algo->Update();
 			algo->Hide();
@@ -226,7 +226,7 @@ namespace {
 			return occt_join(hlr_shapes.OutLineVCompound(), hlr_shapes.VCompound());
 		}
 
-		TopoDS_Shape operator()(Handle(HLRBRep_PolyAlgo)& algo) {
+		TopoDS_Shape operator()(opencascade::handle<HLRBRep_PolyAlgo>& algo) {
 			algo->Projector(projector_);
 			algo->Update();
 			HLRBRep_PolyHLRToShape hlr_shapes;
