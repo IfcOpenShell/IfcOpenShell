@@ -96,11 +96,11 @@ class Cost(blenderbim.core.tool.Cost):
         props.contracted_cost_items = json.dumps(cls.contracted_cost_items)
 
     @classmethod
-    def contract_cost_item(cls, cost_item):
+    def contract_cost_item(cls, cost_item_id):
         props = bpy.context.scene.BIMCostProperties
         if not hasattr(cls, "contracted_cost_items"):
             cls.contracted_cost_items = json.loads(props.contracted_cost_items)
-        cls.contracted_cost_items.append(cost_item.id())
+        cls.contracted_cost_items.append(cost_item_id)
         props.contracted_cost_items = json.dumps(cls.contracted_cost_items)
 
     @classmethod
@@ -114,11 +114,11 @@ class Cost(blenderbim.core.tool.Cost):
         props.contracted_cost_items = json.dumps(cls.contracted_cost_items)
 
     @classmethod
-    def clean_up_cost_item_tree(cls, cost_item):
+    def clean_up_cost_item_tree(cls, cost_item_id):
         props = bpy.context.scene.BIMCostProperties
         if not hasattr(cls, "contracted_cost_items"):
             cls.contracted_cost_items = json.loads(props.contracted_cost_items)
-        if props.active_cost_item_id == cost_item.id():
+        if props.active_cost_item_id == cost_item_id:
             props.active_cost_item_id = 0
         if props.active_cost_item_index in cls.contracted_cost_items:
             cls.contracted_cost_items.remove(props.active_cost_item_index)
