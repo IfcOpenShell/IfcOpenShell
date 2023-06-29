@@ -167,7 +167,8 @@ def update_window_modifier_representation(context):
         )
 
     # type attributes
-    element.PartitioningType = props.window_type
+    if tool.Ifc.get_schema() != "IFC2X3":
+        element.PartitioningType = props.window_type
 
     # occurences attributes
     occurences = tool.Ifc.get_all_element_occurences(element)
@@ -455,7 +456,8 @@ class BIM_OT_add_window(bpy.types.Operator, tool.Ifc.Operator):
         element = blenderbim.core.root.assign_class(
             tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class="IfcWindow", should_add_representation=False
         )
-        element.PredefinedType = "WINDOW"
+        if tool.Ifc.get_schema() != "IFC2X3":
+            element.PredefinedType = "WINDOW"
 
         bpy.ops.object.select_all(action="DESELECT")
         bpy.context.view_layer.objects.active = None
@@ -476,8 +478,8 @@ class AddWindow(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMWindowProperties
 
-        if element.is_a() not in ("IfcWindow", "IfcWindowType"):
-            self.report({"ERROR"}, "Object has to be IfcWindow/IfcWindowType type to add a window.")
+        if element.is_a() not in ("IfcWindow", "IfcWindowType", "IfcWindowStyle"):
+            self.report({"ERROR"}, "Object has to be IfcWindow/IfcWindowType/IfcWindowStyle type to add a window.")
             return {"CANCELLED"}
 
         window_data = props.get_general_kwargs(convert_to_project_units=True)
