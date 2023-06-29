@@ -163,7 +163,7 @@ class RemoveCostItem(bpy.types.Operator, tool.Ifc.Operator):
     cost_item: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.remove_cost_item(tool.Ifc, tool.Cost, cost_item=tool.Ifc.get().by_id(self.cost_item))
+        core.remove_cost_item(tool.Ifc, tool.Cost, cost_item_id=self.cost_item)
 
 
 class EnableEditingCostItem(bpy.types.Operator, tool.Ifc.Operator):
