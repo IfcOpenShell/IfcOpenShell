@@ -108,7 +108,13 @@ class Usecase:
 
     def detect_occlusion_map(self):
         for node in self.settings["material"].node_tree.nodes:
-            if node.type != "GROUP" or node.name != "glTF Settings" or not node.inputs or not node.inputs[0].links:
+            if (
+                node.type != "GROUP"
+                or not node.node_tree
+                or node.node_tree.name != "glTF Material Output"
+                or not node.inputs
+                or not node.inputs[0].links
+            ):
                 continue
             from_node = node.inputs[0].links[0].from_node
             if from_node.type == "SEPRGB":
