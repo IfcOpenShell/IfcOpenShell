@@ -378,4 +378,5 @@ try:
             return "todo"
 
 except ImportError as e:
-    print(f"No stream support: {e}")
+    import sys
+    print(f"No stream support: {e}", file=sys.stderr)
