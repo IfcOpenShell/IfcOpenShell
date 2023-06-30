@@ -456,6 +456,7 @@ class BIM_OT_add_window(bpy.types.Operator, tool.Ifc.Operator):
         element = blenderbim.core.root.assign_class(
             tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class="IfcWindow", should_add_representation=False
         )
+        blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         if tool.Ifc.get_schema() != "IFC2X3":
             element.PredefinedType = "WINDOW"
 
