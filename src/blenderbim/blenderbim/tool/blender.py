@@ -216,6 +216,21 @@ class Blender:
         return cls.ensure_unique_name(name, objects, iteration + 1)
 
     @classmethod
+    def blender_path_to_posix(cls, blender_path):
+        """Process blender path to be saved as posix.
+
+        If path is relative the method will keep it relative to .ifc file
+        """
+        if blender_path.startswith("//"):  # detect relative blender path
+            ifc_path = Path(tool.Ifc.get_path())
+            abs_path = Path(bpy.path.abspath(blender_path))
+            path = abs_path.relative_to(ifc_path.parent)
+        else:
+            path = Path(blender_path)
+
+        return path.as_posix()
+
+    @classmethod
     def get_default_selection_keypmap(cls):
         """keymap to replicate default blender selection behaviour with click and box selection"""
         # code below comes from blender_default.py which is part of default blender scripts licensed under GPL v2
