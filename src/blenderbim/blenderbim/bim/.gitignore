@@ -1,3 +1,2 @@
 # addon writes tmp stuff directly to its dir
 /data/
-/schema/Brick.ttl
