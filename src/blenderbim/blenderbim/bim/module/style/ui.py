@@ -21,6 +21,7 @@ from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.style.data import StylesData, StyleAttributesData
 from bl_ui.properties_material import MaterialButtonsPanel
+from blenderbim.tool.style import TEXTURE_MAPS_BY_METHODS, STYLE_TEXTURE_PROPS_MAP
 
 
 class BIM_PT_styles(Panel):
@@ -266,19 +267,15 @@ class BIM_PT_STYLE_GRAPH(Panel):
         ):
             layout.prop(props, "roughness")
 
-        layout.label(text="Texture Maps:")
-
         def add_texture_path(path_name):
             row = layout.row(align=True)
             row.prop(props, path_name)
             op = row.operator("bim.clear_texture_map_path", text="", icon="X")
             op.texture_map_prop = path_name
 
-        if props.reflectance_method == "PHYSICAL":
-            add_texture_path("diffuse_path")
-            add_texture_path("emissive_path")
-            add_texture_path("normal_path")
-            add_texture_path("metallic_roughness_path")
-
-        if props.reflectance_method == "FLAT":
-            add_texture_path("emissive_path")
+        texture_maps = TEXTURE_MAPS_BY_METHODS.get(props.reflectance_method, [])
+        if not texture_maps:
+            return
+        layout.label(text="Texture Maps:")
+        for texture_type in texture_maps:
+            add_texture_path(STYLE_TEXTURE_PROPS_MAP[texture_type])
