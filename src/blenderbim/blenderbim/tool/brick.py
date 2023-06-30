@@ -33,6 +33,12 @@ except:
     # See #1860
     print("Warning: brickschema not available.")
 
+# silence known rdflib_sqlalchemy TypeError warning
+# see https://github.com/BrickSchema/Brick/issues/513#issuecomment-1558493675
+import logging
+logger = logging.getLogger("rdflib")
+logger.setLevel(logging.ERROR)
+
 class Brick(blenderbim.core.tool.Brick):
     @classmethod
     def add_brick(cls, namespace, brick_class):
