@@ -562,8 +562,11 @@ class ShapeBuilder:
         if not isinstance(items, collections.abc.Iterable):
             items = [items]
 
+        item_types = set([i.is_a() for i in items])
         if not representation_type:
-            if items[0].is_a() in ("IfcExtrudedAreaSolid", "IfcSweptDiskSolid"):
+            if "IfcSweptDiskSolid" in item_types:
+                representation_type = "AdvancedSweptSolid"
+            elif "IfcExtrudedAreaSolid" in item_types:
                 representation_type = "SweptSolid"
             elif items[0].is_a("IfcCurve") and items[0].Dim == 3:
                 representation_type = "Curve3D"
