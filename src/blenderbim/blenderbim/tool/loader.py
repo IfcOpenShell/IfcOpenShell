@@ -191,15 +191,26 @@ class Loader(blenderbim.core.tool.Loader):
             mode = texture.get("Mode", None)
             node = None
 
-            if texture["type"] == "IfcImageTexture":
-                image_url = texture["URLReference"]
-                ifc_path = tool.Ifc.get_path()
-                if ifc_path:
-                    image_url = bpy.path.abspath(image_url, start=Path(ifc_path).parent)
+            if texture["type"] != "IfcImageTexture":
+                print(f"WARNING. Texture of type {texture['type']} is not currently supported, it will be skipped.")
+                continue
 
-            if not os.path.exists(image_url):
+            original_image_url = texture["URLReference"]
+            is_relative = not os.path.isabs(original_image_url)
+            image_url = Path(original_image_url)
+            if is_relative:
+                ifc_path = Path(tool.Ifc.get_path())
+                image_url = ifc_path.parent / image_url
+
+            # import pdb; pdb.set_trace()
+            if not image_url.exists():
                 print(f"WARNING. Couldn't find texture by path {image_url}, it will be skipped.")
                 continue
+
+            # keep url relative if it was before
+            image_url = str(image_url)
+            if is_relative and bpy.data.filepath:
+                image_url = bpy.path.relpath(image_url)
 
             if reflectance_method in ["PHYSICAL", "NOTDEFINED"]:
                 bsdf = tool.Blender.get_material_node(blender_material, "BSDF_PRINCIPLED")

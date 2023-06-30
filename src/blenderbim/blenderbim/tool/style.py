@@ -143,13 +143,10 @@ class Style(blenderbim.core.tool.Style):
             path = getattr(props, prop_name)
             if not path:
                 continue
-            if not os.path.abspath(path) and tool.Ifc.get_path():
-                path = os.path.join(os.path.dirname(tool.Ifc.get_path()), path)
-
             texture_data = {
                 "Mode": prop_mode,
                 "type": "IfcImageTexture",
-                "URLReference": path,
+                "URLReference": tool.Blender.blender_path_to_posix(path),
             }
             textures.append(texture_data)
 
