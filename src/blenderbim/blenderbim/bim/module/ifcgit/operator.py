@@ -17,7 +17,7 @@ class CreateRepo(bpy.types.Operator):
     def poll(cls, context):
         IfcGitData.make_sure_is_loaded()
         path_ifc = IfcGitData.data["path_ifc"]
-        if not os.path.isfile(path_ifc):
+        if not path_ifc or not os.path.isfile(path_ifc):
             return False
         if IfcGitData.data["repo"]:
             # repo already exists
@@ -45,7 +45,7 @@ class AddFileToRepo(bpy.types.Operator):
     def poll(cls, context):
         IfcGitData.make_sure_is_loaded()
         path_ifc = IfcGitData.data["path_ifc"]
-        if not os.path.isfile(path_ifc):
+        if not path_ifc or not os.path.isfile(path_ifc):
             return False
         if not IfcGitData.data["repo"]:
             # repo doesn't exist
