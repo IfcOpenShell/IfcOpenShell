@@ -460,7 +460,8 @@ ifeq ($(PLATFORM), win)
 endif
 	rm -rf dist/working
 
-	# Required by hpp-fcl only on macosm1 it seems
+	# Required by hpp-fcl except on Windows
+ifneq ($(PLATFORM), win)
 	mkdir dist/working
 	cd dist/working && wget $(QHULL_URL)
 	cd dist/working && tar -xf qhull*
@@ -473,8 +474,8 @@ endif
 ifeq ($(PLATFORM), macosm1)
 	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
 endif
-	# Windows doesn't need qhull?
 	rm -rf dist/working
+endif
 
 	# Required by hpp-fcl
 	mkdir dist/working
