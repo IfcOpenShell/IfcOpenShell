@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 import blenderbim.bim.helper
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
@@ -272,10 +273,14 @@ class BIM_PT_STYLE_GRAPH(Panel):
             row.prop(props, path_name)
             op = row.operator("bim.clear_texture_map_path", text="", icon="X")
             op.texture_map_prop = path_name
-
+        
+        layout.separator()
         texture_maps = TEXTURE_MAPS_BY_METHODS.get(props.reflectance_method, [])
         if not texture_maps:
             return
+        if not bpy.data.filepath:
+            layout.label(text="Save .blend file to keep relative paths", icon="ERROR")
+
         layout.label(text="Texture Maps:")
         for texture_type in texture_maps:
             add_texture_path(STYLE_TEXTURE_PROPS_MAP[texture_type])
