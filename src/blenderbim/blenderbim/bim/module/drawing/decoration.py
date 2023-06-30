@@ -772,19 +772,23 @@ class AngleDecorator(BaseDecorator):
             v0 = Vector(vertices[i0])
             v1 = Vector(vertices[i1])
             v2 = Vector(vertices[i1 + 1])
-            p0 = location_3d_to_region_2d(region, region3d, v0)
-            p1 = location_3d_to_region_2d(region, region3d, v1)
-            p2 = location_3d_to_region_2d(region, region3d, v2)
 
-            edge0 = p0 - p1
-            edge1 = p2 - p1
+            # calculate angle value
+            edge0_ws = v0 - v1
+            edge1_ws = v2 - v1
             try:
-                cos_a = edge0.dot(edge1) / (edge0.length * edge1.length)
+                cos_a = edge0_ws.dot(edge1_ws) / (edge0_ws.length * edge1_ws.length)
             except ZeroDivisionError:
                 continue
             circle_angle_rad = acos(cos_a)
             circle_angle = circle_angle_rad / pi * 180
 
+            # calculate angle position
+            p0 = location_3d_to_region_2d(region, region3d, v0)
+            p1 = location_3d_to_region_2d(region, region3d, v1)
+            p2 = location_3d_to_region_2d(region, region3d, v2)
+            edge0 = p0 - p1
+            edge1 = p2 - p1
             base_edge = edge0 if ccw(p0, p1, p2) else edge1
             text_offset = (Matrix.Rotation(-circle_angle_rad / 2, 2) @ base_edge).normalized() * ANGLE_LABEL_OFFSET
             label_position = p1 + text_offset
