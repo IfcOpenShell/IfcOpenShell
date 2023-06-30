@@ -91,19 +91,25 @@ class Loader(blenderbim.core.tool.Loader):
         if surface_style.get("DiffuseColour", None) and surface_style["DiffuseColour"].is_a("IfcColourRgb"):
             surface_style["DiffuseColour"] = ("IfcColourRgb", color_to_tuple(surface_style["DiffuseColour"]))
 
-        elif surface_style.get("DiffuseColour", None) and surface_style["DiffuseColour"].is_a("IfcNormalisedRatioMeasure"):
+        elif surface_style.get("DiffuseColour", None) and surface_style["DiffuseColour"].is_a(
+            "IfcNormalisedRatioMeasure"
+        ):
             diffuse_color_value = surface_style["DiffuseColour"].wrappedValue
             diffuse_color = [v * diffuse_color_value for v in surface_style["SurfaceColor"][:3]] + [1]
             surface_style["DiffuseColour"] = ("IfcNormalisedRatioMeasure", diffuse_color)
         else:
             surface_style["DiffuseColour"] = None
 
-        if surface_style.get("SpecularColour", None) and surface_style["SpecularColour"].is_a("IfcNormalisedRatioMeasure"):
+        if surface_style.get("SpecularColour", None) and surface_style["SpecularColour"].is_a(
+            "IfcNormalisedRatioMeasure"
+        ):
             surface_style["SpecularColour"] = surface_style["SpecularColour"].wrappedValue
         else:
             surface_style["SpecularColour"] = None
 
-        if surface_style.get("SpecularHighlight", None) and surface_style["SpecularHighlight"].is_a("IfcSpecularRoughness"):
+        if surface_style.get("SpecularHighlight", None) and surface_style["SpecularHighlight"].is_a(
+            "IfcSpecularRoughness"
+        ):
             surface_style["SpecularHighlight"] = surface_style["SpecularHighlight"].wrappedValue
         else:
             surface_style["SpecularHighlight"] = None
@@ -246,9 +252,30 @@ class Loader(blenderbim.core.tool.Loader):
                     blender_material.node_tree.links.new(node.outputs[0], separate.inputs[0])
 
                 elif mode == "OCCLUSION":
-                    # TODO work out how to implement glTF settings here
-                    # https://docs.blender.org/manual/en/dev/addons/import_export/scene_gltf2.html
-                    pass
+
+                    def get_gltf_occlusion_output():
+                        gltf_node_group_name = "glTF Material Output"
+                        if node_group := bpy.data.node_groups.get(gltf_node_group_name, None):
+                            return node_group
+
+                        gltf_node_group = bpy.data.node_groups.new(gltf_node_group_name, "ShaderNodeTree")
+                        gltf_node_group.inputs.new("NodeSocketFloat", "Occlusion")
+                        gltf_node_group.nodes.new("NodeGroupOutput")
+                        gltf_node_group_input = gltf_node_group.nodes.new("NodeGroupInput")
+                        gltf_node_group_input.location = Vector((-200, 0))
+                        return gltf_node_group
+
+                    gltf_output_node_group = get_gltf_occlusion_output()
+                    group = blender_material.node_tree.nodes.new(type="ShaderNodeGroup")
+                    group.node_tree = gltf_output_node_group
+                    group.location = bsdf.location + Vector((800, 0))
+
+                    node = blender_material.node_tree.nodes.new(type="ShaderNodeTexImage")
+                    node.location = group.location - Vector((300, 0))
+                    image = bpy.data.images.load(image_url)
+                    image.colorspace_settings.name = "Non-Color"
+                    node.image = image
+                    blender_material.node_tree.links.new(node.outputs[0], group.inputs["Occlusion"])
 
                 elif mode == "DIFFUSE":
                     node = blender_material.node_tree.nodes.new(type="ShaderNodeTexImage")
@@ -273,6 +300,7 @@ class Loader(blenderbim.core.tool.Loader):
                 image = bpy.data.images.load(image_url)
                 # TODO: orphaned textures after shader recreated?
                 node.image = image
+
                 blender_material.node_tree.links.new(node.outputs[0], bsdf.inputs[2])
 
             # TODO: add support for texture data not ifc elements

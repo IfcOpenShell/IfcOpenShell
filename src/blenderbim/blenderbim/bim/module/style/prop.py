@@ -215,3 +215,11 @@ class BIMStyleProperties(PropertyGroup):
         subtype="FILE_PATH",
         update=update_shader_graph,
     )
+    occlusion_path: bpy.props.StringProperty(
+        name="Occlusion",
+        description="Note that occlusion isn't actually used in Blender shader, we're just storing the data",
+        maxlen=1024,
+        default="",
+        subtype="FILE_PATH",
+        update=update_shader_graph,
+    )

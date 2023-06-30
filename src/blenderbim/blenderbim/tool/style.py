@@ -26,7 +26,7 @@ import os.path
 
 # fmt: off
 TEXTURE_MAPS_BY_METHODS = {
-    "PHYSICAL": ("NORMAL", "EMISSIVE", "METALLICROUGHNESS", "DIFFUSE"), 
+    "PHYSICAL": ("NORMAL", "EMISSIVE", "METALLICROUGHNESS", "DIFFUSE", "OCCLUSION"), 
     "FLAT": ("EMISSIVE",)
 }
 # fmt: on
@@ -45,6 +45,7 @@ STYLE_TEXTURE_PROPS_MAP = {
     "NORMAL": "normal_path",
     "METALLICROUGHNESS": "metallic_roughness_path",
     "DIFFUSE": "diffuse_path",
+    "OCCLUSION": "occlusion_path",
 }
 
 
@@ -371,7 +372,7 @@ class Style(blenderbim.core.tool.Style):
     def get_texture_style(cls, obj):
         style_elements = cls.get_style_elements(obj)
         return style_elements.get("IfcSurfaceStyleWithTextures", None)
-    
+
     @classmethod
     def get_external_style(cls, obj):
         style_elements = cls.get_style_elements(obj)
