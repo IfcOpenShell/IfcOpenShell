@@ -98,3 +98,6 @@ src/ifcopenshell-python/ifcopenshell/ifcopenshell_wrapper.py
 
 # clangd cache
 .cache
+
+# Brickschema
+src/blenderbim/blenderbim/bim/schema/Brick.ttl
