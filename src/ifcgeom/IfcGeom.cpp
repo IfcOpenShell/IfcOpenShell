@@ -554,17 +554,26 @@ const IfcSchema::IfcMaterial* IfcGeom::Kernel::get_single_material_association(c
 	IfcSchema::IfcMaterial* single_material = 0;
 	IfcSchema::IfcRelAssociatesMaterial::list::ptr associated_materials = product->HasAssociations()->as<IfcSchema::IfcRelAssociatesMaterial>();
 	if (associated_materials->size() == 1) {
-		IfcSchema::IfcMaterialSelect* associated_material = (*associated_materials->begin())->RelatingMaterial();
-		single_material = associated_material->as<IfcSchema::IfcMaterial>();
 
-		// NB: IfcMaterialLayerSets are also considered, regardless of --enable-layerset-slicing. Picking
-		// the first material (in accordance with other viewers) when layerset-slicing is disabled.
-		if (!single_material && associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()) {
-			IfcSchema::IfcMaterialLayerSet* layerset = associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()->ForLayerSet();
-			if (getValue(GV_LAYERSET_FIRST) > 0.0 ? layerset->MaterialLayers()->size() >= 1 : layerset->MaterialLayers()->size() == 1) {
-				IfcSchema::IfcMaterialLayer* layer = (*layerset->MaterialLayers()->begin());
-				if (layer->Material()) {
-					single_material = layer->Material();
+		IfcSchema::IfcMaterialSelect* associated_material = nullptr;
+		
+		try {
+			associated_material = (*associated_materials->begin())->RelatingMaterial();
+		} catch(IfcParse::IfcException& e) {
+			Logger::Error(e.what());
+		}
+
+		if (associated_material) {
+			single_material = associated_material->as<IfcSchema::IfcMaterial>();
+			// NB: IfcMaterialLayerSets are also considered, regardless of --enable-layerset-slicing. Picking
+			// the first material (in accordance with other viewers) when layerset-slicing is disabled.
+			if (!single_material && associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()) {
+				IfcSchema::IfcMaterialLayerSet* layerset = associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()->ForLayerSet();
+				if (getValue(GV_LAYERSET_FIRST) > 0.0 ? layerset->MaterialLayers()->size() >= 1 : layerset->MaterialLayers()->size() == 1) {
+					IfcSchema::IfcMaterialLayer* layer = (*layerset->MaterialLayers()->begin());
+					if (layer->Material()) {
+						single_material = layer->Material();
+					}
 				}
 			}
 		}
@@ -976,13 +985,13 @@ std::pair<std::string, double> IfcGeom::Kernel::initializeUnits(IfcSchema::IfcUn
 	bool length_unit_encountered = false, angle_unit_encountered = false;
 
 	try {
-		aggregate_of_instance::ptr units = unit_assignment->Units();
+		auto units = unit_assignment->Units();
 		if (!units || !units->size()) {
 			Logger::Warning("No unit information found");
 		} else {
-			for (aggregate_of_instance::it it = units->begin(); it != units->end(); ++it) {
-				IfcUtil::IfcBaseClass* base = *it;
-				if (base->declaration().is(IfcSchema::IfcNamedUnit::Class())) {
+			for (auto it = units->begin(); it != units->end(); ++it) {
+				IfcSchema::IfcUnit* base = *it;
+				if (base->as<IfcSchema::IfcNamedUnit>()) {
 					IfcSchema::IfcNamedUnit* named_unit = base->as<IfcSchema::IfcNamedUnit>();
 					if (named_unit->UnitType() == IfcSchema::IfcUnitEnum::IfcUnit_LENGTHUNIT ||
 						named_unit->UnitType() == IfcSchema::IfcUnitEnum::IfcUnit_PLANEANGLEUNIT)
@@ -990,10 +999,10 @@ std::pair<std::string, double> IfcGeom::Kernel::initializeUnits(IfcSchema::IfcUn
 						std::string current_unit_name;
 						const double current_unit_magnitude = IfcParse::get_SI_equivalent<IfcSchema>(named_unit);
 						if (current_unit_magnitude != 0.) {
-							if (named_unit->declaration().is(IfcSchema::IfcConversionBasedUnit::Class())) {
-								IfcSchema::IfcConversionBasedUnit* u = (IfcSchema::IfcConversionBasedUnit*)base;
+							if (named_unit->as<IfcSchema::IfcConversionBasedUnit>()) {
+								IfcSchema::IfcConversionBasedUnit* u = named_unit->as<IfcSchema::IfcConversionBasedUnit>();
 								current_unit_name = u->Name();
-							} else if (named_unit->declaration().is(IfcSchema::IfcSIUnit::Class())) {
+							} else if (named_unit->as<IfcSchema::IfcSIUnit>()) {
 								IfcSchema::IfcSIUnit* si_unit = named_unit->as<IfcSchema::IfcSIUnit>();
 								if (si_unit->Prefix()) {
 									current_unit_name = IfcSchema::IfcSIPrefix::ToString(*si_unit->Prefix()) + unit_name;

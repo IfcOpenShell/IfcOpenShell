@@ -46,7 +46,7 @@ namespace {
 				}
 
 				TopoDS_Shape intermediate_result;
-				if (IfcGeom::util::boolean_operation(bst, result, opening_list, BOPAlgo_CUT, intermediate_result)) {
+				if (IfcGeom::util::boolean_operation(bst, result, opening_list, occ_op, intermediate_result)) {
 					result = intermediate_result;
 				} else {
 					return false;

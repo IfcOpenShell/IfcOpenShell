@@ -1,6 +1,6 @@
 import bpy
 import time
-from blenderbim.bim.module.ifcgit.data import IfcGitData, refresh
+from blenderbim.bim.module.ifcgit.data import IfcGitData
 
 
 class IFCGIT_PT_panel(bpy.types.Panel):
@@ -34,8 +34,8 @@ class IFCGIT_PT_panel(bpy.types.Panel):
         if path_ifc:
             if IfcGitData.data["repo"]:
                 name_ifc = IfcGitData.data["name_ifc"]
-                row.label(text=IfcGitData.data["repo"].working_dir, icon="SYSTEM")
-                if name_ifc in IfcGitData.data["repo"].untracked_files:
+                row.label(text=IfcGitData.data["working_dir"], icon="SYSTEM")
+                if name_ifc in IfcGitData.data["untracked_files"]:
                     row.operator(
                         "ifcgit.addfile",
                         text="Add '" + name_ifc + "' to repository",
@@ -79,7 +79,7 @@ class IFCGIT_PT_panel(bpy.types.Panel):
             row = layout.row()
             row.prop(props, "commit_message")
 
-            if IfcGitData.data["repo"].head.is_detached:
+            if IfcGitData.data["is_detached"]:
                 row = layout.row()
                 row.label(text="HEAD is detached, commit will create a branch", icon="ERROR")
                 row.prop(props, "new_branch_name")
@@ -88,10 +88,10 @@ class IFCGIT_PT_panel(bpy.types.Panel):
             row.operator("ifcgit.commit_changes", icon="GREASEPENCIL")
 
         row = layout.row()
-        if IfcGitData.data["repo"].head.is_detached:
+        if IfcGitData.data["is_detached"]:
             row.label(text="Working branch: Detached HEAD")
         else:
-            row.label(text="Working branch: " + IfcGitData.data["repo"].active_branch.name)
+            row.label(text="Working branch: " + IfcGitData.data["active_branch_name"])
 
         grouped = layout.row()
         column = grouped.column()
@@ -119,8 +119,6 @@ class IFCGIT_PT_panel(bpy.types.Panel):
 
             row = column.row()
             row.operator("ifcgit.switch_revision", icon="CURRENT_FILE")
-
-            # TODO operator to tag selected
 
             row = column.row()
             row.operator("ifcgit.merge", icon="EXPERIMENTAL", text="")
@@ -168,9 +166,18 @@ class IFCGIT_PT_panel(bpy.types.Panel):
             row.prop(props, "select_remote", text="Select remote")
             urls = IfcGitData.data["remote_urls"]
             row.label(text=urls[props.select_remote])
+            row.operator("ifcgit.delete_remote", text="", icon="PANEL_CLOSE")
             row = layout.row()
-            row.operator("ifcgit.push", icon="EXPERIMENTAL")
+            row.operator("ifcgit.push", icon="EXPORT")
             row.operator("ifcgit.fetch", icon="IMPORT")
+
+        box = layout.box()
+        row = box.row()
+        row.prop(props, "remote_name")
+        row = box.row()
+        row.prop(props, "remote_url")
+        row = box.row()
+        row.operator("ifcgit.add_remote", icon="ADD")
 
 
 class COMMIT_UL_List(bpy.types.UIList):
@@ -199,9 +206,9 @@ class COMMIT_UL_List(bpy.types.UIList):
                 refs += "{" + tag.name + "} "
 
         if commit == current_revision:
-            layout.label(text="[HEAD] " + refs + commit.message, icon="DECORATE_KEYFRAME")
+            layout.label(text="[HEAD] " + refs + commit.message.split("\n")[0], icon="DECORATE_KEYFRAME")
         else:
-            layout.label(text=refs + commit.message, icon="DECORATE_ANIMATE")
+            layout.label(text=refs + commit.message.split("\n")[0], icon="DECORATE_ANIMATE")
         layout.label(text=time.strftime("%c", time.localtime(commit.committed_date)))
 
 

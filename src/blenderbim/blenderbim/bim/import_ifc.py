@@ -187,7 +187,7 @@ class IfcImporter:
         self.settings_native.set(self.settings_native.INCLUDE_CURVES, True)
         self.settings_2d = ifcopenshell.geom.settings()
         self.settings_2d.set(self.settings_2d.INCLUDE_CURVES, True)
-        self.settings_2d.set(self.settings.STRICT_TOLERANCE, True)
+        self.settings_2d.set(self.settings_2d.STRICT_TOLERANCE, True)
         self.project = None
         self.has_existing_project = False
         self.collections = {}
@@ -347,7 +347,8 @@ class IfcImporter:
             self.element_types = set(self.file.by_type("IfcTypeProduct"))
 
         if self.ifc_import_settings.has_filter and self.ifc_import_settings.should_filter_spatial_elements:
-            self.spatial_elements = self.get_spatial_elements_filtered_by_elements(self.elements)
+            filtered_elements = self.elements | set(self.file.by_type("IfcGrid"))
+            self.spatial_elements = self.get_spatial_elements_filtered_by_elements(filtered_elements)
         else:
             if self.file.schema == "IFC2X3":
                 self.spatial_elements = set(self.file.by_type("IfcSpatialStructureElement"))
@@ -361,11 +362,13 @@ class IfcImporter:
             while True:
                 results.add(spatial_element)
                 spatial_element = ifcopenshell.util.element.get_aggregate(spatial_element)
-                if not spatial_element or spatial_element.is_a("IfcContext"):
+                if not spatial_element or spatial_element.is_a() in ("IfcProject", "IfcProjectLibrary"):
                     break
         return results
 
     def parse_native_elements(self):
+        if not self.ifc_import_settings.should_load_geometry:
+            return
         for element in self.elements:
             if self.is_native(element):
                 self.native_elements.add(element)
@@ -410,19 +413,19 @@ class IfcImporter:
             return True
 
     def is_native_swept_disk_solid(self, element, representations):
-        # detect BBIM Railings to represent them with meshes and not curves
-        if tool.Pset.get_element_pset(element, "BBIM_Railing"):
-            return False
-
         for representation in representations:
             items = representation["raw"].Items or []  # Be forgiving of invalid IFCs because Revit :(
             if len(items) == 1 and items[0].is_a("IfcSweptDiskSolid"):
+                if tool.Pset.get_element_pset(element, "BBIM_Railing"):
+                    return False
                 return True
             elif len(items) and (  # See #2508 why we accommodate for invalid IFCs here
                 items[0].is_a("IfcSweptDiskSolid")
                 and len({i.is_a() for i in items}) == 1
                 and len({i.Radius for i in items}) == 1
             ):
+                if tool.Pset.get_element_pset(element, "BBIM_Railing"):
+                    return False
                 return True
         return False
 
@@ -577,6 +580,8 @@ class IfcImporter:
                     return result
 
     def create_grids(self):
+        if not self.ifc_import_settings.should_load_geometry:
+            return
         grids = self.file.by_type("IfcGrid")
         for grid in grids:
             shape = None
@@ -622,34 +627,37 @@ class IfcImporter:
 
     def create_element_type(self, element):
         self.ifc_import_settings.logger.info("Creating object %s", element)
-        representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        if not representation:
-            representation = ifcopenshell.util.representation.get_representation(element, "Plan", "Annotation")
-        if not representation:
-            representation = ifcopenshell.util.representation.get_representation(element, "Model", "Annotation")
         mesh = None
-        if representation:
-            mesh_name = "{}/{}".format(representation.ContextOfItems.id(), representation.id())
-            mesh = self.meshes.get(mesh_name)
-            if mesh is None:
-                shape = None
-                try:
-                    shape = ifcopenshell.geom.create_shape(self.settings, representation)
-                except:
+        if self.ifc_import_settings.should_load_geometry:
+            representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+            if not representation:
+                representation = ifcopenshell.util.representation.get_representation(element, "Plan", "Annotation")
+            if not representation:
+                representation = ifcopenshell.util.representation.get_representation(element, "Model", "Annotation")
+            if representation:
+                mesh_name = "{}/{}".format(representation.ContextOfItems.id(), representation.id())
+                mesh = self.meshes.get(mesh_name)
+                if mesh is None:
+                    shape = None
                     try:
-                        shape = ifcopenshell.geom.create_shape(self.settings_2d, representation)
+                        shape = ifcopenshell.geom.create_shape(self.settings, representation)
                     except:
-                        self.ifc_import_settings.logger.error("Failed to generate shape for %s", element)
-                if shape:
-                    mesh = self.create_mesh(element, shape)
-                    tool.Loader.link_mesh(shape, mesh)
-                    self.meshes[mesh_name] = mesh
+                        try:
+                            shape = ifcopenshell.geom.create_shape(self.settings_2d, representation)
+                        except:
+                            self.ifc_import_settings.logger.error("Failed to generate shape for %s", element)
+                    if shape:
+                        mesh = self.create_mesh(element, shape)
+                        tool.Loader.link_mesh(shape, mesh)
+                        self.meshes[mesh_name] = mesh
         obj = bpy.data.objects.new(tool.Loader.get_name(element), mesh)
         self.link_element(element, obj)
         self.material_creator.create(element, obj, mesh)
         self.type_products[element.GlobalId] = obj
 
     def create_native_elements(self):
+        if not self.ifc_import_settings.should_load_geometry:
+            return
         progress = 0
         checkpoint = time.time()
         total = len(self.native_elements)
@@ -691,20 +699,75 @@ class IfcImporter:
         self.create_generic_elements(self.elements)
 
     def create_generic_elements(self, elements):
+        if isinstance(self.file, ifcopenshell.sqlite):
+            return self.create_generic_sqlite_elements(elements)
+
         # Based on my experience in viewing BIM models, representations are prioritised as follows:
         # 1. 3D Body, 2. 2D Body, 3. 2D Plans / annotations, 4. Point clouds, 5. No representation
         # If an element has a representation that doesn't follow 1, 2, 3, or 4, it will not show by default.
         # The user can load them later if they want to view them.
-        products = self.create_products(elements)
-        elements -= products
-        products = self.create_products(elements, settings=self.settings_curve)
-        elements -= products
-        products = self.create_products(elements, settings=self.settings_2d)
-        elements -= products
-        products = self.create_pointclouds(elements)
-        elements -= products
-        for element in elements:
+        if self.ifc_import_settings.should_load_geometry:
+            products = self.create_products(elements)
+            elements -= products
+            products = self.create_products(elements, settings=self.settings_curve)
+            elements -= products
+            products = self.create_products(elements, settings=self.settings_2d)
+            elements -= products
+            products = self.create_pointclouds(elements)
+            elements -= products
+
+        total = len(elements)
+        for i, element in enumerate(elements):
+            if i % 250 == 0:
+                print("{} / {} elements processed ...".format(i, total))
             self.create_product(element)
+
+    def create_generic_sqlite_elements(self, elements):
+        self.geometry_cache = self.file.get_geometry([e.id() for e in elements])
+        for geometry_id, geometry in self.geometry_cache["geometry"].items():
+            mesh_name = tool.Loader.get_mesh_name(type("Geometry", (), {"id": geometry_id}))
+            mesh = bpy.data.meshes.new(mesh_name)
+
+            verts = geometry["verts"]
+            mesh["has_cartesian_point_offset"] = False
+
+            if geometry["faces"]:
+                num_vertices = len(verts) // 3
+                total_faces = len(geometry["faces"])
+                loop_start = range(0, total_faces, 3)
+                num_loops = total_faces // 3
+                loop_total = [3] * num_loops
+                num_vertex_indices = len(geometry["faces"])
+
+                mesh.vertices.add(num_vertices)
+                mesh.vertices.foreach_set("co", verts)
+                mesh.loops.add(num_vertex_indices)
+                mesh.loops.foreach_set("vertex_index", geometry["faces"])
+                mesh.polygons.add(num_loops)
+                mesh.polygons.foreach_set("loop_start", loop_start)
+                mesh.polygons.foreach_set("loop_total", loop_total)
+                mesh.update()
+            else:
+                e = geometry["edges"]
+                v = verts
+                vertices = [[v[i], v[i + 1], v[i + 2]] for i in range(0, len(v), 3)]
+                edges = [[e[i], e[i + 1]] for i in range(0, len(e), 2)]
+                mesh.from_pydata(vertices, edges, [])
+
+            mesh["ios_materials"] = geometry["materials"]
+            mesh["ios_material_ids"] = geometry["material_ids"]
+            self.meshes[mesh_name] = mesh
+
+        total = len(elements)
+        for i, element in enumerate(elements):
+            if i % 250 == 0:
+                print("{} / {} elements processed ...".format(i, total))
+            mesh = None
+            geometry_id = self.geometry_cache["shapes"][element.id()]["geometry"]
+            if geometry_id:
+                mesh_name = tool.Loader.get_mesh_name(type("Geometry", (), {"id": geometry_id}))
+                mesh = self.meshes.get(mesh_name)
+            self.create_product(element, mesh=mesh)
 
     def create_products(self, products, settings=None):
         if settings is None:
@@ -1342,14 +1405,11 @@ class IfcImporter:
         obj.BIMObjectProperties.collection = self.project["blender"]
 
     def create_collections(self):
-        if self.ifc_import_settings.collection_mode == "DECOMPOSITION":
-            self.create_decomposition_collections()
-        elif self.ifc_import_settings.collection_mode == "SPATIAL_DECOMPOSITION":
-            self.create_spatial_decomposition_collections()
-
-    def create_decomposition_collections(self):
         self.create_spatial_decomposition_collections()
-        self.create_aggregate_collections()
+        if self.ifc_import_settings.collection_mode == "DECOMPOSITION":
+            self.create_aggregate_collections()
+        elif self.ifc_import_settings.collection_mode == "SPATIAL_DECOMPOSITION":
+            pass
 
     def create_spatial_decomposition_collections(self):
         for rel_aggregate in self.project["ifc"].IsDecomposedBy or []:
@@ -1478,183 +1538,18 @@ class IfcImporter:
         if not blender_material:
             name = style.Name or str(style.id())
             blender_material = bpy.data.materials.new(name)
+            blender_material.use_fake_user = True
 
         self.link_element(style, blender_material)
 
         blender_material.BIMMaterialProperties.ifc_style_id = style.id()
         self.material_creator.styles[style.id()] = blender_material
 
-        rendering_style = None
-        texture_style = None
-
-        for surface_style in style.Styles:
-            if surface_style.is_a() == "IfcSurfaceStyleShading":
-                self.create_surface_style_shading(blender_material, surface_style)
-            elif surface_style.is_a("IfcSurfaceStyleRendering"):
-                rendering_style = surface_style
-                self.create_surface_style_rendering(blender_material, surface_style)
-            elif surface_style.is_a("IfcSurfaceStyleWithTextures"):
-                texture_style = surface_style
-
-        if rendering_style and texture_style:
-            self.create_surface_style_with_textures(blender_material, rendering_style, texture_style)
-
-        tool.Style.record_shading(blender_material)
-
-    def create_surface_style_shading(self, blender_material, surface_style):
-        alpha = 1.0
-        # Transparency was added in IFC4
-        if hasattr(surface_style, "Transparency") and surface_style.Transparency:
-            alpha = 1 - surface_style.Transparency
-        blender_material.diffuse_color = (
-            surface_style.SurfaceColour.Red,
-            surface_style.SurfaceColour.Green,
-            surface_style.SurfaceColour.Blue,
-            alpha,
-        )
-
-    def create_surface_style_rendering(self, blender_material, surface_style):
-        self.create_surface_style_shading(blender_material, surface_style)
-        if surface_style.ReflectanceMethod in ["PHYSICAL", "NOTDEFINED"]:
-            blender_material.use_nodes = True
-            bsdf = blender_material.node_tree.nodes["Principled BSDF"]
-            if surface_style.DiffuseColour:
-                if surface_style.DiffuseColour.is_a("IfcColourRgb"):
-                    bsdf.inputs["Base Color"].default_value = (
-                        surface_style.DiffuseColour.Red,
-                        surface_style.DiffuseColour.Green,
-                        surface_style.DiffuseColour.Blue,
-                        1,
-                    )
-                elif surface_style.DiffuseColour.is_a("IfcNormalisedRatioMeasure"):
-                    bsdf.inputs["Base Color"].default_value = (
-                        surface_style.SurfaceColour.Red * surface_style.DiffuseColour.wrappedValue,
-                        surface_style.SurfaceColour.Green * surface_style.DiffuseColour.wrappedValue,
-                        surface_style.SurfaceColour.Blue * surface_style.DiffuseColour.wrappedValue,
-                        1,
-                    )
-            if surface_style.SpecularColour and surface_style.SpecularColour.is_a("IfcNormalisedRatioMeasure"):
-                bsdf.inputs["Metallic"].default_value = surface_style.SpecularColour.wrappedValue
-            if surface_style.SpecularHighlight and surface_style.SpecularHighlight.is_a("IfcSpecularRoughness"):
-                bsdf.inputs["Roughness"].default_value = surface_style.SpecularHighlight.wrappedValue
-            if hasattr(surface_style, "Transparency") and surface_style.Transparency:
-                bsdf.inputs["Alpha"].default_value = 1 - surface_style.Transparency
-                blender_material.blend_method = "BLEND"
-        elif surface_style.ReflectanceMethod == "FLAT":
-            blender_material.use_nodes = True
-
-            output = {n.type: n for n in blender_material.node_tree.nodes}.get("OUTPUT_MATERIAL", None)
-            bsdf = blender_material.node_tree.nodes["Principled BSDF"]
-
-            mix = blender_material.node_tree.nodes.new(type="ShaderNodeMixShader")
-            mix.location = bsdf.location
-            blender_material.node_tree.links.new(mix.outputs[0], output.inputs["Surface"])
-
-            blender_material.node_tree.nodes.remove(bsdf)
-
-            lightpath = blender_material.node_tree.nodes.new(type="ShaderNodeLightPath")
-            lightpath.location = mix.location - mathutils.Vector((200, -200))
-            blender_material.node_tree.links.new(lightpath.outputs[0], mix.inputs[0])
-
-            bsdf = blender_material.node_tree.nodes.new(type="ShaderNodeBsdfTransparent")
-            bsdf.location = mix.location - mathutils.Vector((200, 0))
-            blender_material.node_tree.links.new(bsdf.outputs[0], mix.inputs[1])
-
-            rgb = blender_material.node_tree.nodes.new(type="ShaderNodeRGB")
-            rgb.location = mix.location - mathutils.Vector((200, 200))
-            blender_material.node_tree.links.new(rgb.outputs[0], mix.inputs[2])
-
-            if surface_style.DiffuseColour and surface_style.DiffuseColour.is_a("IfcColourRgb"):
-                rgb.outputs[0].default_value = (
-                    surface_style.DiffuseColour.Red,
-                    surface_style.DiffuseColour.Green,
-                    surface_style.DiffuseColour.Blue,
-                    1,
-                )
-
-    def create_surface_style_with_textures(self, blender_material, rendering_style, texture_style):
-        for texture in texture_style.Textures:
-            mode = getattr(texture, "Mode", None)
-            node = None
-
-            if texture.is_a("IfcImageTexture"):
-                image_url = texture.URLReference
-                if not os.path.abspath(texture.URLReference) and tool.Ifc.get_path():
-                    image_url = os.path.join(os.path.dirname(tool.Ifc.get_path()), texture.URLReference)
-
-            if rendering_style.ReflectanceMethod in ["PHYSICAL", "NOTDEFINED"]:
-                bsdf = blender_material.node_tree.nodes["Principled BSDF"]
-                if mode == "NORMAL":
-                    normalmap = blender_material.node_tree.nodes.new(type="ShaderNodeNormalMap")
-                    normalmap.location = bsdf.location - mathutils.Vector((200, 0))
-                    blender_material.node_tree.links.new(normalmap.outputs[0], bsdf.inputs["Normal"])
-
-                    node = blender_material.node_tree.nodes.new(type="ShaderNodeTexImage")
-                    node.location = normalmap.location - mathutils.Vector((200, 0))
-                    image = bpy.data.images.load(image_url)
-                    image.colorspace_settings.name = "Non-Color"
-                    node.image = image
-                    blender_material.node_tree.links.new(node.outputs[0], normalmap.inputs["Color"])
-                elif mode == "EMISSIVE":
-                    output = {n.type: n for n in blender_material.node_tree.nodes}.get("OUTPUT_MATERIAL", None)
-
-                    add = blender_material.node_tree.nodes.new(type="ShaderNodeAddShader")
-                    add.location = bsdf.location + mathutils.Vector((200, 0))
-                    blender_material.node_tree.links.new(bsdf.outputs[0], add.inputs[1])
-                    blender_material.node_tree.links.new(add.outputs[0], output.inputs[0])
-
-                    emission = blender_material.node_tree.nodes.new(type="ShaderNodeEmission")
-                    emission.location = add.location - mathutils.Vector((200, 0))
-                    blender_material.node_tree.links.new(emission.outputs[0], add.inputs[0])
-
-                    node = blender_material.node_tree.nodes.new(type="ShaderNodeTexImage")
-                    node.location = emission.location - mathutils.Vector((200, 0))
-                    image = bpy.data.images.load(image_url)
-                    node.image = image
-                    blender_material.node_tree.links.new(node.outputs[0], emission.inputs[0])
-                elif mode == "METALLICROUGHNESS":
-                    separate = blender_material.node_tree.nodes.new(type="ShaderNodeSeparateRGB")
-                    separate.location = bsdf.location - mathutils.Vector((200, 0))
-                    blender_material.node_tree.links.new(separate.outputs[1], bsdf.inputs["Roughness"])
-                    blender_material.node_tree.links.new(separate.outputs[2], bsdf.inputs["Metallic"])
-
-                    node = blender_material.node_tree.nodes.new(type="ShaderNodeTexImage")
-                    node.location = separate.location - mathutils.Vector((200, 0))
-                    image = bpy.data.images.load(image_url)
-                    image.colorspace_settings.name = "Non-Color"
-                    node.image = image
-                    blender_material.node_tree.links.new(node.outputs[0], separate.inputs[0])
-                elif mode == "OCCLUSION":
-                    # TODO work out how to implement glTF settings here
-                    # https://docs.blender.org/manual/en/dev/addons/import_export/scene_gltf2.html
-                    pass
-                elif mode == "DIFFUSE":
-                    node = blender_material.node_tree.nodes.new(type="ShaderNodeTexImage")
-                    node.location = bsdf.location - mathutils.Vector((400, 0))
-                    image = bpy.data.images.load(image_url)
-                    node.image = image
-                    blender_material.node_tree.links.new(node.outputs[0], bsdf.inputs["Base Color"])
-                    blender_material.node_tree.links.new(node.outputs[1], bsdf.inputs["Alpha"])
-                    blender_material.blend_method = "BLEND"
-            elif rendering_style.ReflectanceMethod == "FLAT":
-                bsdf = blender_material.node_tree.nodes["Mix Shader"]
-                if mode == "EMISSIVE":
-                    node = blender_material.node_tree.nodes.new(type="ShaderNodeTexImage")
-                    node.location = bsdf.location - mathutils.Vector((200, 0))
-                    image = bpy.data.images.load(image_url)
-                    node.image = image
-                    blender_material.node_tree.links.new(node.outputs[0], bsdf.inputs[2])
-
-            if node and getattr(texture, "IsMappedBy", None):
-                coordinates = texture.IsMappedBy[0]
-                coord = blender_material.node_tree.nodes.new(type="ShaderNodeTexCoord")
-                coord.location = node.location - mathutils.Vector((200, 0))
-                if coordinates.is_a("IfcTextureCoordinateGenerator") and coordinates.Mode == "COORD":
-                    blender_material.node_tree.links.new(coord.outputs["Generated"], node.inputs["Vector"])
-                elif coordinates.is_a("IfcTextureCoordinateGenerator") and coordinates.Mode == "COORD-EYE":
-                    blender_material.node_tree.links.new(coord.outputs["Camera"], node.inputs["Vector"])
-                else:
-                    blender_material.node_tree.links.new(coord.outputs["UV"], node.inputs["Vector"])
+        style_elements = tool.Style.get_style_elements(blender_material)
+        if tool.Style.has_blender_external_style(style_elements):
+            blender_material.BIMStyleProperties.active_style_type = "External"
+        else:
+            blender_material.BIMStyleProperties.active_style_type = "Shading"
 
     def place_objects_in_collections(self):
         for ifc_definition_id, obj in self.added_data.items():
@@ -1729,7 +1624,10 @@ class IfcImporter:
                 return rel.RelatingGroup
 
     def get_element_matrix(self, element):
-        result = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+        if isinstance(element, ifcopenshell.sqlite_entity):
+            result = self.geometry_cache["shapes"][element.id()]["matrix"]
+        else:
+            result = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
         result[0][3] *= self.unit_scale
         result[1][3] *= self.unit_scale
         result[2][3] *= self.unit_scale
@@ -1886,6 +1784,7 @@ class IfcImporter:
                 mesh.polygons.add(num_loops)
                 mesh.polygons.foreach_set("loop_start", loop_start)
                 mesh.polygons.foreach_set("loop_total", loop_total)
+                mesh.polygons.foreach_set("use_smooth", [0] * total_faces)
                 mesh.update()
             else:
                 e = geometry.edges
@@ -1962,6 +1861,7 @@ class IfcImportSettings:
         self.should_use_cpu_multiprocessing = True
         self.merge_mode = None
         self.should_merge_materials_by_colour = False
+        self.should_load_geometry = True
         self.should_use_native_meshes = False
         self.should_clean_mesh = True
         self.should_cache = True
@@ -1991,6 +1891,7 @@ class IfcImportSettings:
         settings.should_use_cpu_multiprocessing = props.should_use_cpu_multiprocessing
         settings.merge_mode = props.merge_mode
         settings.should_merge_materials_by_colour = props.should_merge_materials_by_colour
+        settings.should_load_geometry = props.should_load_geometry
         settings.should_use_native_meshes = props.should_use_native_meshes
         settings.should_clean_mesh = props.should_clean_mesh
         settings.should_cache = props.should_cache

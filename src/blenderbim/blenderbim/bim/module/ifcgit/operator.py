@@ -15,6 +15,7 @@ class CreateRepo(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
+        IfcGitData.make_sure_is_loaded()
         path_ifc = IfcGitData.data["path_ifc"]
         if not os.path.isfile(path_ifc):
             return False
@@ -42,6 +43,7 @@ class AddFileToRepo(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
+        IfcGitData.make_sure_is_loaded()
         path_ifc = IfcGitData.data["path_ifc"]
         if not os.path.isfile(path_ifc):
             return False
@@ -80,6 +82,7 @@ class CloneRepo(bpy.types.Operator):
 
         props = context.scene.IfcGitProperties
         core.clone_repo(tool.IfcGit, props.remote_url, props.local_folder, self)
+        props.remote_url = ""
         refresh()
         return {"FINISHED"}
 
@@ -107,6 +110,7 @@ class CommitChanges(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
+        IfcGitData.make_sure_is_loaded()
         props = context.scene.IfcGitProperties
         repo = IfcGitData.data["repo"]
         if props.commit_message == "":
@@ -128,7 +132,7 @@ class CommitChanges(bpy.types.Operator):
     def execute(self, context):
 
         repo = IfcGitData.data["repo"]
-        core.commit_changes(tool.IfcGit, tool.Ifc, repo, context)
+        core.commit_changes(tool.IfcGit, tool.Ifc, repo)
         bpy.ops.ifcgit.refresh()
         refresh()
         return {"FINISHED"}
@@ -143,7 +147,10 @@ class AddTag(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
+        IfcGitData.make_sure_is_loaded()
         props = context.scene.IfcGitProperties
+        if props.new_tag_name == "":
+            return False
         repo = IfcGitData.data["repo"]
         if repo and (
             not tool.IfcGit.is_valid_ref_format(props.new_tag_name)
@@ -187,8 +194,9 @@ class RefreshGit(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
+        IfcGitData.make_sure_is_loaded()
         repo = IfcGitData.data["repo"]
-        if repo != None and repo.heads:
+        if repo:
             return True
         return False
 
@@ -207,9 +215,15 @@ class DisplayRevision(bpy.types.Operator):
     bl_idname = "ifcgit.display_revision"
     bl_options = {"REGISTER"}
 
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.IfcGitProperties
+        if props.ifcgit_commits:
+            return True
+
     def execute(self, context):
 
-        core.colourise_revision(tool.IfcGit, context)
+        core.colourise_revision(tool.IfcGit)
         refresh()
         return {"FINISHED"}
 
@@ -236,6 +250,12 @@ class SwitchRevision(bpy.types.Operator):
     bl_idname = "ifcgit.switch_revision"
     bl_options = {"REGISTER"}
 
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.IfcGitProperties
+        if props.ifcgit_commits:
+            return True
+
     def execute(self, context):
 
         core.switch_revision(tool.IfcGit, tool.Ifc)
@@ -252,7 +272,9 @@ class Merge(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        if IfcGitData.data["ifcmerge_exe"]:
+        IfcGitData.make_sure_is_loaded()
+        props = context.scene.IfcGitProperties
+        if IfcGitData.data["ifcmerge_exe"] and props.ifcgit_commits and not IfcGitData.data["is_detached"]:
             return True
         return False
 
@@ -276,8 +298,7 @@ class Push(bpy.types.Operator):
 
         props = context.scene.IfcGitProperties
         repo = IfcGitData.data["repo"]
-        remote = repo.remotes[props.select_remote]
-        remote.push(refspec=IfcGitData.data["repo"].active_branch.name)
+        core.push(tool.IfcGit, repo, props.select_remote, self)
         return {"FINISHED"}
 
 
@@ -294,6 +315,52 @@ class Fetch(bpy.types.Operator):
         repo = IfcGitData.data["repo"]
         remote = repo.remotes[props.select_remote]
         remote.fetch()
+        return {"FINISHED"}
+
+
+class AddRemote(bpy.types.Operator):
+    """Add a remote repository"""
+
+    bl_label = "Add Remote"
+    bl_idname = "ifcgit.add_remote"
+    bl_options = {"REGISTER"}
+
+    @classmethod
+    def poll(cls, context):
+        IfcGitData.make_sure_is_loaded()
+        props = context.scene.IfcGitProperties
+        repo = IfcGitData.data["repo"]
+        if (
+            not repo
+            or not tool.IfcGit.is_valid_ref_format(props.remote_name)
+            or not props.remote_url
+            or props.remote_name in [remote.name for remote in repo.remotes]
+        ):
+            return False
+        return True
+
+    def execute(self, context):
+
+        repo = IfcGitData.data["repo"]
+        core.add_remote(tool.IfcGit, repo)
+        bpy.ops.ifcgit.refresh()
+        refresh()
+        return {"FINISHED"}
+
+
+class DeleteRemote(bpy.types.Operator):
+    """Delete the selected remote"""
+
+    bl_label = "Delete Remote"
+    bl_idname = "ifcgit.delete_remote"
+    bl_options = {"REGISTER"}
+
+    def execute(self, context):
+
+        repo = IfcGitData.data["repo"]
+        core.delete_remote(tool.IfcGit, repo)
+        bpy.ops.ifcgit.refresh()
+        refresh()
         return {"FINISHED"}
 
 

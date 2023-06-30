@@ -21,6 +21,8 @@ import ifcopenshell
 import blenderbim.core.tool
 import blenderbim.tool as tool
 import blenderbim.bim.helper
+import ifcopenshell.util.unit
+import ifcopenshell.util.element
 
 
 class Material(blenderbim.core.tool.Material):
@@ -102,17 +104,6 @@ class Material(blenderbim.core.tool.Material):
         return False
 
     @classmethod
-    def select_elements(cls, elements):
-        for element in elements:
-            obj = tool.Ifc.get_object(element)
-            if obj:
-                obj.select_set(True)
-
-    @classmethod
-    def get_active_material_type(cls):
-        return bpy.context.scene.BIMMaterialProperties.material_type
-
-    @classmethod
     def load_material_attributes(cls, material):
         props = bpy.context.scene.BIMMaterialProperties
         props.material_attributes.clear()
@@ -122,7 +113,7 @@ class Material(blenderbim.core.tool.Material):
     def enable_editing_material(cls, material):
         props = bpy.context.scene.BIMMaterialProperties
         props.active_material_id = material.id()
-        props.editing_material_type = "ATTRIBUTES" 
+        props.editing_material_type = "ATTRIBUTES"
 
     @classmethod
     def get_material_attributes(cls):
@@ -133,3 +124,101 @@ class Material(blenderbim.core.tool.Material):
         props = bpy.context.scene.BIMMaterialProperties
         props.active_material_id = 0
         props.editing_material_type = ""
+
+    @classmethod
+    def get_type(cls, element):
+        return ifcopenshell.util.element.get_type(element)
+
+    @classmethod
+    def get_active_object_material(cls):
+        active_obj = bpy.context.active_object
+        if not active_obj:
+            return
+        return active_obj.BIMObjectMaterialProperties.material_type
+
+    @classmethod
+    def get_active_material(cls):
+        return tool.Ifc.get().by_id(int(bpy.context.active_object.BIMObjectMaterialProperties.material))
+
+    @classmethod
+    def get_material(cls, element, should_inherit=False):
+        return ifcopenshell.util.element.get_material(element, should_inherit=should_inherit)
+
+    @classmethod
+    def is_a_material_set(cls, material):
+        return material.is_a() in [
+            "IfcMaterialConstituentSet",
+            "IfcMaterialLayerSet",
+            "IfcMaterialProfileSet",
+        ]
+
+    @classmethod
+    def add_material_to_set(cls, material_set, material):
+        if material_set.is_a("IfcMaterialConstituentSet"):
+            if not material_set.MaterialConstituents:
+                tool.Ifc.run(
+                    "material.add_constituent",
+                    constituent_set=material_set,
+                    material=material,
+                )
+        elif material_set.is_a() == "IfcMaterialLayerSet":
+            if not material_set.MaterialLayers:
+                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+                layer = tool.Ifc.run(
+                    "material.add_layer",
+                    layer_set=material_set,
+                    material=material,
+                )
+                thickness = 0.1  # Arbitrary metric thickness for now
+                layer.LayerThickness = thickness / unit_scale
+        elif material_set.is_a("IfcMaterialProfileSet"):
+            if not material_set.MaterialProfiles:
+                named_profiles = [p for p in tool.Ifc.get().by_type("IfcProfileDef") if p.ProfileName]
+                if named_profiles:
+                    profile = named_profiles[0]
+                else:
+                    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+                    size = 0.5 / unit_scale
+                    profile = tool.Ifc.get().create_entity(
+                        "IfcRectangleProfileDef",
+                        ProfileName="New Profile",
+                        ProfileType="AREA",
+                        XDim=size,
+                        YDim=size,
+                    )
+                    material_profile = tool.Ifc.run(
+                        "material.add_profile",
+                        profile_set=material_set,
+                        material=material,
+                        profile=profile,
+                    )
+
+    @classmethod
+    def has_material_profile(cls, element):
+        material = cls.get_material(element, should_inherit=False)
+        inherited_material = cls.get_material(element, should_inherit=True)
+        if material and "Profile" in material.is_a():
+            return True
+        if inherited_material and "Profile" in inherited_material.is_a():
+            return True
+        return False
+
+    @classmethod
+    def is_a_flow_segment(cls, element):
+        return element.is_a("IfcFlowSegment")
+
+    @classmethod
+    def replace_material_with_material_profile(cls, element):
+        old_material = cls.get_material(element, should_inherit=False)
+        old_inherited_material = cls.get_material(element, should_inherit=True)
+        material = old_material if old_material and old_material.is_a("IfcMaterial") else None
+        if not material and old_inherited_material:
+            material = old_inherited_material if old_inherited_material.is_a("IfcMaterial") else None
+        if not material:
+            material = tool.Ifc.get().by_type("IfcMaterial")[0]
+        else:
+            blenderbim.core.material.unassign_material(tool.Ifc, tool.Material, objects=[tool.Ifc.get_object(element)])
+        tool.Ifc.run("material.assign_material", product=element, type="IfcMaterialProfileSet", material=material)
+        assinged_material = cls.get_material(element)
+        material_profile = tool.Ifc.run("material.add_profile", profile_set=assinged_material, material=material)
+        return material_profile

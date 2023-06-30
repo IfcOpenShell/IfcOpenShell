@@ -129,16 +129,10 @@ class System(blenderbim.core.tool.System):
             ifc_representation_class=ifc_representation_class,
         )
 
-    @classmethod
-    def select_elements(cls, elements):
-        for element in elements:
-            obj = tool.Ifc.get_object(element)
-            if obj:
-                obj.select_set(True)
 
     @classmethod
     def select_system_products(cls, system):
-        cls.select_elements(ifcopenshell.util.system.get_system_elements(system))
+        tool.Spatial.select_products(ifcopenshell.util.system.get_system_elements(system))
 
     @classmethod
     def set_active_system(cls, system):

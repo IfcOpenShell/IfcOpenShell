@@ -20,6 +20,19 @@ import bpy
 import ifcopenshell.api
 import blenderbim.tool as tool
 from mathutils import Vector
+from pathlib import Path
+
+
+VIEWPORT_ATTRIBUTES = [
+    "view_matrix",
+    "view_distance",
+    "view_perspective",
+    "use_box_clip",
+    "use_clip_planes",
+    "is_perspective",
+    "show_sync_view",
+    "clip_planes",
+]
 
 
 class Blender:
@@ -95,6 +108,24 @@ class Blender:
         return False
 
     @classmethod
+    def show_error_message(cls, text):
+        """useful for showing error messages outside blender operators"""
+
+        def error(self, context):
+            self.layout.label(text=text)
+
+        bpy.context.window_manager.popup_menu(error, title="Error", icon="ERROR")
+
+    @classmethod
+    def get_blender_prop_default_value(cls, props, prop_name):
+        prop_bl_rna = props.bl_rna.properties[prop_name]
+        if getattr(prop_bl_rna, "array_length", 0) > 0:
+            prop_value = prop_bl_rna.default_array
+        else:
+            prop_value = prop_bl_rna.default
+        return prop_value
+
+    @classmethod
     def get_viewport_context(cls):
         """Get viewport area context for context overriding.
 
@@ -108,11 +139,70 @@ class Blender:
         return context_override
 
     @classmethod
-    def update_viewport(cls):
-        # if it stops working in future Blender versions
-        # there is an alternative:
-        # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+    def get_viewport_position(cls):
+        region_3d = cls.get_viewport_context()["area"].spaces[0].region_3d
+        copy_if_possible = lambda x: x.copy() if hasattr(x, "copy") else x
+        viewport_data = {attr: copy_if_possible(getattr(region_3d, attr)) for attr in VIEWPORT_ATTRIBUTES}
+        return viewport_data
 
+    @classmethod
+    def set_viewport_position(cls, data):
+        region_3d = cls.get_viewport_context()["area"].spaces[0].region_3d
+        for attr in VIEWPORT_ATTRIBUTES:
+            setattr(region_3d, attr, data[attr])
+
+    @classmethod
+    def get_shader_editor_context(cls):
+        for screen in bpy.data.screens:
+            for area in screen.areas:
+                if area.type == "NODE_EDITOR":
+                    for space in area.spaces:
+                        if space.tree_type == "ShaderNodeTree":
+                            context_override = {"area": area, "space": space, "screen": screen}
+                            return context_override
+
+    @classmethod
+    def copy_node_graph(cls, material_to, material_from):
+        temp_override = cls.get_shader_editor_context()
+        shader_editor = temp_override["space"]
+
+        # remove all nodes from the current material
+        for n in material_to.node_tree.nodes[:]:
+            material_to.node_tree.nodes.remove(n)
+
+        previous_pin_setting = shader_editor.pin
+        # required to be able to change material to something else
+        shader_editor.pin = True
+        shader_editor.node_tree = material_from.node_tree
+
+        # select all nodes and copy them to clipboard
+        for node in material_from.node_tree.nodes:
+            node.select = True
+        bpy.ops.node.clipboard_copy(temp_override)
+
+        # back to original material
+        shader_editor.node_tree = material_to.node_tree
+        bpy.ops.node.clipboard_paste(temp_override, offset=(0, 0))
+
+        # restore shader editor settings
+        shader_editor.pin = previous_pin_setting
+
+    @classmethod
+    def get_material_node(cls, blender_material, node_type, kwargs={}):
+        """returns first node from the `blender_material` shader graph with type `node_type`"""
+        if not blender_material.use_nodes:
+            return
+        nodes = blender_material.node_tree.nodes
+        for node in nodes:
+            if node.type == node_type and all(getattr(node, a) == kwargs[a] for a in kwargs):
+                return node
+
+    @classmethod
+    def update_screen(cls):
+        bpy.ops.wm.redraw_timer(type="DRAW_WIN_SWAP", iterations=1)
+
+    @classmethod
+    def update_viewport(cls):
         tool.Blender.get_viewport_context()["area"].tag_redraw()
 
     @classmethod
@@ -214,6 +304,20 @@ class Blender:
             obj.select_set(False)
         context.view_layer.objects.active = active_object
         active_object.select_set(True)
+
+    @classmethod
+    def append_data_block(cls, filepath, data_block_type, name, link=False, relative=False):
+        if Path(filepath) == Path(bpy.data.filepath):
+            data_block = getattr(bpy.data, data_block_type).get(name, None)
+            if not data_block:
+                return {"data_block": None, "msg": f"Data-block {data_block_type}/{name} not found in {filepath}"}
+            return {"data_block": data_block.copy(), "msg": ""}
+
+        with bpy.data.libraries.load(filepath, link=link, relative=relative) as (data_from, data_to):
+            if name not in getattr(data_from, data_block_type):
+                return {"data_block": None, "msg": f"Data-block {data_block_type}/{name} not found in {filepath}"}
+            getattr(data_to, data_block_type).append(name)
+        return {"data_block": getattr(data_to, data_block_type)[0], "msg": ""}
 
     ## BMESH UTILS ##
     @classmethod

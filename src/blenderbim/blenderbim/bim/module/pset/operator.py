@@ -120,6 +120,13 @@ class EnablePsetEditing(bpy.types.Operator):
                 self.load_single_value(pset_template, prop_template, data)
             elif prop_template.TemplateType == "P_ENUMERATEDVALUE":
                 self.load_enumerated_value(prop_template, data)
+            else:
+                # NOTE: currently unsupported types:
+                # - P_BOUNDEDVALUE
+                # - P_LISTVALUE
+                # - P_REFERENCEVALUE
+                # - P_TABLEVALUE
+                pass
 
     def load_single_value(self, pset_template, prop_template, data):
         prop = self.props.properties.add()
@@ -137,8 +144,12 @@ class EnablePsetEditing(bpy.types.Operator):
         if prop_template.PrimaryMeasureType in (
             "IfcPositiveLengthMeasure",
             "IfcLengthMeasure",
-        ) or prop_template.TemplateType in ("Q_LENGTH",):
+        ) or prop_template.TemplateType == "Q_LENGTH":
             special_type = "LENGTH"
+        elif prop_template.PrimaryMeasureType == "IfcAreaMeasure" or prop_template.TemplateType == "Q_AREA":
+            special_type = "AREA"
+        elif prop_template.PrimaryMeasureType == "IfcVolumeMeasure" or prop_template.TemplateType == "Q_VOLUME":
+            special_type = "VOLUME"
         metadata.special_type = special_type
 
         if metadata.data_type == "string":

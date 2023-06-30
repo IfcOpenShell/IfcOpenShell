@@ -203,7 +203,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         cls.props.is_container_update_enabled = False
         parent = tool.Ifc.get().by_type("IfcProject")[0]
 
-        for object in ifcopenshell.util.element.get_parts(parent):
+        for object in ifcopenshell.util.element.get_parts(parent) or []:
             if object.is_a("IfcSpatialElement"):
                 cls.create_new_storey_li(object, 0)
         cls.props.is_container_update_enabled = True
@@ -222,7 +222,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         if new.has_decomposition:
             new.has_children = True
             if new.is_expanded:
-                for related_object in ifcopenshell.util.element.get_parts(element):
+                for related_object in ifcopenshell.util.element.get_parts(element) or []:
                     if related_object.is_a("IfcSpatialElement"):
                         cls.create_new_storey_li(related_object, level_index + 1)
 

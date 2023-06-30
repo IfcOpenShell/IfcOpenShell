@@ -21,7 +21,7 @@ cmake_minimum_required(VERSION 3.1.3)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)  # not necessary, but encouraged
 
-project (IfcOpenShell VERSION 0.7.0)
+project(IfcOpenShell VERSION 0.7.0)
 
 cmake_policy(SET CMP0048 NEW)
 cmake_policy(SET CMP0074 NEW)
@@ -54,12 +54,14 @@ OPTION(USE_VLD "Use Visual Leak Detector for debugging memory leaks, MSVC-only."
 OPTION(USE_MMAP "Adds a command line options to parse IFC files from memory mapped files using Boost.Iostreams" OFF)
 OPTION(BUILD_SHARED_LIBS "Build IfcParse and IfcGeom as shared libs (SO/DLL)." OFF)
 OPTION(MSVC_PARALLEL_BUILD "Multi-threaded compilation in Microsoft Visual Studio (/MP)" OFF)
+OPTION(NO_WARN "Disable all warnings" OFF)
 OPTION(WASM_BUILD OFF)
 if (${HAS_MAX})
 OPTION(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
 endif()
 if (${BUILD_CONVERT})
 OPTION(GLTF_SUPPORT "Build IfcConvert with glTF support (requires json.hpp)." OFF)
+OPTION(USD_SUPPORT "Build IfcConvert with USD support (requires pixar's USD library)." OFF)
 endif()
 OPTION(USERSPACE_PYTHON_PREFIX "Installs IfcPython for the current user only instead of system-wide." OFF)
 OPTION(ADD_COMMIT_SHA "Add commit sha and branch in version number, warning results in many rebuilds, requires git" OFF)
@@ -70,6 +72,14 @@ ENDIF()
 
 if(MSVC AND MSVC_PARALLEL_BUILD)
 	add_definitions("/MP")
+endif()
+
+if(NO_WARN)
+    if(MSVC)
+        add_compile_options("/w")
+    else()
+        add_compile_options("-w")
+    endif()
 endif()
 
 # QtViewer requires Qt5
@@ -137,11 +147,6 @@ UNIFY_ENVVARS_AND_CACHE(PYTHON_EXECUTABLE)
 UNIFY_ENVVARS_AND_CACHE(HDF5_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(HDF5_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(HDF5_LIBRARIES)
-endif()
-UNIFY_ENVVARS_AND_CACHE(BOOST_ROOT)
-UNIFY_ENVVARS_AND_CACHE(BOOST_LIBRARYDIR)
-
-if (NOT MINIMAL_BUILD)
 UNIFY_ENVVARS_AND_CACHE(CGAL_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(CGAL_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(GMP_INCLUDE_DIR)
@@ -149,6 +154,8 @@ UNIFY_ENVVARS_AND_CACHE(GMP_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(MPFR_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(MPFR_LIBRARY_DIR)
 endif()
+UNIFY_ENVVARS_AND_CACHE(BOOST_ROOT)
+UNIFY_ENVVARS_AND_CACHE(BOOST_LIBRARYDIR)
 
 if(WASM_BUILD)
     # when using the nix/build-all.py build script we should not
@@ -168,6 +175,54 @@ ELSE()
 ENDIF()
 add_definitions(-DWITH_GLTF)
 set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_GLTF)
+endif()
+
+# Add USD support to serializers 
+if(NOT MINIMAL_BUILD AND USD_SUPPORT)
+    UNIFY_ENVVARS_AND_CACHE(USD_INCLUDE_DIR)
+    UNIFY_ENVVARS_AND_CACHE(USD_LIBRARY_DIR)
+
+    if("${USD_INCLUDE_DIR}" STREQUAL "")
+        find_path(USD_INCLUDE_DIR pxr.h
+            [PATHS
+                /usr/include/pxr
+                /usr/local/include/pxr
+            ]
+            REQUIRED
+        )
+        if(USD_INCLUDE_DIR)
+            message(STATUS "Found USD include files in: ${USD_INCLUDE_DIR}")
+        else()
+            message(FATAL_ERROR "Unable to find USD include directory, specify USD_INCLUDE_DIR manually.")
+        endif()
+    else()
+        set(USD_INCLUDE_DIR ${USD_INCLUDE_DIR} CACHE FILEPATH "USD header files")
+        message(STATUS "Looking for USD include files in: ${USD_INCLUDE_DIR}")
+    endif()
+
+    set(USD_LIBRARIES
+            usd_usd 
+            usd_usdGeom
+            usd_usdShade 
+            usd_usdLux 
+            usd_vt 
+            usd_sdf 
+            usd_tf 
+            usd_gf
+        )
+
+    find_library(USD_LIBRARY
+        NAMES ${USD_LIBRARIES}
+        PATHS ${USD_LIBRARY_DIR})
+    if(USD_LIBRARY)
+        message(STATUS "USD libraries ${USD_LIBRARIES} found in: ${USD_LIBRARY_DIR}")
+        link_directories(${USD_LIBRARY_DIR})
+    else()
+        message(FATAL_ERROR "Unable to find USD libraries in: ${USD_LIBRARY_DIR}")
+    endif()
+
+    add_definitions(-DWITH_USD)
+    set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_USD)
 endif()
 
 # Set INSTALL_RPATH for target
@@ -633,6 +688,7 @@ ENDIF()
 
 INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCLUDE_DIRS}
 	${Boost_INCLUDE_DIRS} ${LIBXML2_INCLUDE_DIR} ${JSON_INCLUDE_DIR} ${HDF5_INCLUDE_DIR}
+    ${USD_INCLUDE_DIR}
 )
 
 function(files_for_ifc_version IFC_VERSION RESULT_NAME)
@@ -841,9 +897,9 @@ endforeach()
 add_library(Serializers ${SERIALIZERS_FILES})
 set_target_properties(Serializers PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS ${CONVERT_PRECISION}" VERSION "0.6.0" SOVERSION "0.6")
 
-TARGET_LINK_LIBRARIES(Serializers ${SERIALIZER_SCHEMA_LIBRARIES} ${OPENCOLLADA_LIBRARIES})
+TARGET_LINK_LIBRARIES(Serializers ${SERIALIZER_SCHEMA_LIBRARIES} ${OPENCOLLADA_LIBRARIES} ${USD_LIBRARIES})
 
-endif(BUILD_CONVERT or BUILD_IFCPYTHON)
+endif(BUILD_CONVERT OR BUILD_IFCPYTHON)
 
 if (BUILD_CONVERT)
 
@@ -854,7 +910,7 @@ set(IFCCONVERT_FILES ${IFCCONVERT_CPP_FILES} ${IFCCONVERT_H_FILES})
 ADD_EXECUTABLE(IfcConvert ${IFCCONVERT_FILES})
 set_target_properties(IfcConvert PROPERTIES COMPILE_FLAGS "${CONVERT_PRECISION}")
 
-TARGET_LINK_LIBRARIES(IfcConvert ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${HDF5_LIBRARIES})
+TARGET_LINK_LIBRARIES(IfcConvert ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ${USD_LIBRARIES})
 
 if ((NOT WIN32) AND BUILD_SHARED_LIBS)
     # Only set RPATHs when building shared libraries (i.e. IfcParse and

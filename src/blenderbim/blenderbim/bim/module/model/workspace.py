@@ -57,7 +57,6 @@ class BimTool(WorkSpaceTool):
         ("bim.hotkey", {"type": "V", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_V")]}),
         ("bim.hotkey", {"type": "X", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_X")]}),
         ("bim.hotkey", {"type": "Y", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_Y")]}),
-        ("bim.hotkey", {"type": "B", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_B")]}),
         ("bim.hotkey", {"type": "D", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_D")]}),
         ("bim.hotkey", {"type": "E", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_E")]}),
         ("bim.hotkey", {"type": "O", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_O")]}),
@@ -271,12 +270,6 @@ class BimToolUI:
             else:
                 row.operator("bim.show_openings", icon="HIDE_OFF", text="")
 
-        row = cls.layout.row(align=True)
-        row.label(text="", icon="EVENT_SHIFT")
-        row.label(text="", icon="EVENT_B")
-        row.prop(cls.props, "boundary_class", text="")
-        row.operator("bim.add_boundary", text="Add Boundary")
-
         cls.layout.row(align=True).label(text="Align")
         add_layout_hotkey_operator(cls.layout, "Align Exterior", "S_X", "")
         add_layout_hotkey_operator(cls.layout, "Align Centerline", "S_C", "")
@@ -286,7 +279,6 @@ class BimToolUI:
         cls.layout.row(align=True).label(text="Mode")
         add_layout_hotkey_operator(cls.layout, "Void", "A_O", "Toggle openings")
         add_layout_hotkey_operator(cls.layout, "Decomposition", "A_D", "Select decomposition")
-        add_layout_hotkey_operator(cls.layout, "Boundaries", "A_B", "Toggle boundaries")
 
     @classmethod
     def draw_header_interface(cls):
@@ -601,14 +593,6 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             self.props.x = self.x
             self.props.y = self.y
             self.props.z = self.z
-
-    def hotkey_A_B(self):
-        if not bpy.context.selected_objects:
-            return
-        if AuthoringData.data["has_visible_boundaries"]:
-            bpy.ops.bim.hide_boundaries()
-        else:
-            bpy.ops.bim.show_boundaries()
 
     def hotkey_A_D(self):
         if not bpy.context.selected_objects:

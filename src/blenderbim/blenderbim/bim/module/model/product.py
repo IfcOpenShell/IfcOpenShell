@@ -128,20 +128,9 @@ class AddConstrTypeInstance(bpy.types.Operator):
 
         obj.location = context.scene.cursor.location
 
-        collection = None
-        if (
-            building_obj
-            and building_element
-            and building_element.is_a() in ["IfcWall", "IfcWallStandardCase", "IfcCovering"]
-            and instance_class in ["IfcWindow", "IfcDoor"]
-        ):
-            # Fills should be a sibling to the building element
-            collection = building_obj.users_collection[0]
-        if not collection:
-            collection = context.view_layer.active_layer_collection.collection
-
+        collection = context.view_layer.active_layer_collection.collection
         collection.objects.link(obj)
-        collection_obj = bpy.data.objects.get(collection.name)
+        collection_obj = collection.BIMCollectionProperties.obj
 
         bpy.ops.bim.assign_class(obj=obj.name, ifc_class=instance_class)
         element = tool.Ifc.get_entity(obj)
@@ -149,6 +138,26 @@ class AddConstrTypeInstance(bpy.types.Operator):
 
         # Update required as core.type.assign_type may change obj.data
         context.view_layer.update()
+
+        if (
+            building_obj
+            and building_element
+            and building_element.is_a() in ["IfcWall", "IfcWallStandardCase", "IfcCovering"]
+            and instance_class in ["IfcWindow", "IfcDoor"]
+        ):
+            # Fills should be a sibling to the building element
+            parent = ifcopenshell.util.element.get_aggregate(building_element)
+            if parent:
+                parent_obj = tool.Ifc.get_object(parent)
+                blenderbim.core.aggregate.assign_object(
+                    tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=parent_obj, related_obj=obj
+                )
+            else:
+                parent = ifcopenshell.util.element.get_container(building_element)
+                parent_obj = tool.Ifc.get_object(parent)
+                blenderbim.core.spatial.assign_container(
+                    tool.Ifc, tool.Collector, tool.Spatial, structure_obj=parent_obj, element_obj=obj
+                )
 
         # set occurences properties for the types defined with modifiers
         if instance_class in ["IfcWindow", "IfcDoor"]:
@@ -462,11 +471,6 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
 
             obj.matrix_world = newmat
 
-    def copy_obj(self, obj):
-        new = obj.copy()
-        new.data = wall2.data.copy()
-        wall1.users_collection[0].objects.link(wall2)
-        blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=wall2)
 
 
 def generate_box(usecase_path, ifc_file, settings):

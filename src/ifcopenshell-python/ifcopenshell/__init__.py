@@ -71,6 +71,10 @@ except Exception as e:
 from . import guid
 from .file import file
 from .entity_instance import entity_instance, register_schema_attributes
+from .sql import sqlite, sqlite_entity
+try:
+    from .stream import stream, stream_entity
+except: pass
 
 READ_ERROR = ifcopenshell_wrapper.file_open_status.READ_ERROR
 NO_HEADER = ifcopenshell_wrapper.file_open_status.NO_HEADER
@@ -87,7 +91,7 @@ class SchemaError(Error):
     pass
 
 
-def open(path: "os.PathLike | str", format: str = None) -> file:
+def open(path: "os.PathLike | str", format: str = None, should_stream: bool = False) -> file:
     """Loads an IFC dataset from a filepath
 
     You can specify a file format. If no format is given, it is guessed from its extension.
@@ -114,6 +118,10 @@ def open(path: "os.PathLike | str", format: str = None) -> file:
                         return open(zf.extract(name, unzipped_path))
                 else:
                     raise LookupError(f"No .ifc or .ifcXML file found in {path}")
+    if format == ".ifcSQLite":
+        return sqlite(path)
+    if should_stream:
+        return stream(path)
     f = ifcopenshell_wrapper.open(str(path.absolute()))
     if f.good():
         return file(f)

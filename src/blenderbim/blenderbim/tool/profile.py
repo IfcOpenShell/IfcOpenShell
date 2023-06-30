@@ -21,6 +21,7 @@ import ifcopenshell.util.unit
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import blenderbim.core.tool
+from blenderbim.bim.module.model.decorator import ProfileDecorator
 
 
 class Profile(blenderbim.core.tool.Profile):
@@ -52,3 +53,20 @@ class Profile(blenderbim.core.tool.Profile):
 
         for e in grouped_edges:
             draw.line((tuple(grouped_verts[e[0]]), tuple(grouped_verts[e[1]])), fill="white", width=2)
+
+    @classmethod
+    def is_editing_profile(cls):
+        return ProfileDecorator.installed
+
+    @classmethod
+    def get_profile(cls, element):
+        representations = element.Representation
+        for representation in representations.Representations:
+            if not representation.is_a("IfcShapeRepresentation"):
+                continue
+            for representation_item in representation.Items:
+                if representation_item.is_a("IfcExtrudedAreaSolid"):
+                    profile = representation_item.SweptArea
+                    if profile:
+                        return profile
+        return None

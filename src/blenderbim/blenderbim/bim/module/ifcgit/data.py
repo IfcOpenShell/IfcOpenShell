@@ -16,6 +16,11 @@ class IfcGitData:
     is_loaded = False
 
     @classmethod
+    def make_sure_is_loaded(cls):
+        if not cls.is_loaded:
+            cls.load()
+
+    @classmethod
     def load(cls):
         cls.data = {
             "repo": cls.repo(),
@@ -29,6 +34,10 @@ class IfcGitData:
             "name_ifc": cls.name_ifc(),
             "dir_name": cls.dir_name(),
             "base_name": cls.base_name(),
+            "working_dir": cls.working_dir(),
+            "untracked_files": cls.untracked_files(),
+            "is_detached": cls.is_detached(),
+            "active_branch_name": cls.active_branch_name(),
             "is_dirty": cls.is_dirty(),
             "commit": cls.commit(),
             "current_revision": cls.current_revision(),
@@ -112,6 +121,27 @@ class IfcGitData:
             if os.path.isfile(path_ifc):
                 return os.path.basename(path_ifc)
         return None
+
+    @classmethod
+    def working_dir(cls):
+        if cls.repo():
+            return cls.repo().working_dir
+
+    @classmethod
+    def untracked_files(cls):
+        if cls.repo():
+            return cls.repo().untracked_files
+        return []
+
+    @classmethod
+    def is_detached(cls):
+        if cls.repo():
+            return cls.repo().head.is_detached
+
+    @classmethod
+    def active_branch_name(cls):
+        if cls.repo() and not cls.is_detached():
+            return cls.repo().active_branch.name
 
     @classmethod
     def is_dirty(cls):

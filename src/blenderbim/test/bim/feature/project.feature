@@ -393,7 +393,7 @@ Scenario: Export IFC - with basic contents and saving as a relative path
     Given an empty Blender session
     And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc')"
     When I press "wm.save_mainfile(filepath='{cwd}/test/files/temp/export.blend')"
-    And I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc', use_relative_path=True)"
+    And I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc', use_relative_path=True, save_as_invoked=True)"
     Then "scene.BIMProperties.ifc_file" is "export.ifc"
 
 Scenario: Export IFC - with deleted objects synchronised
