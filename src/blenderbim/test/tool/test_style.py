@@ -136,7 +136,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
         obj = bpy.data.materials.new("Material")
         obj.diffuse_color = [1, 1, 1, 1]
         obj.use_nodes = True
-        node = obj.node_tree.nodes["Principled BSDF"]
+        node = tool.Blender.get_material_node(obj, "BSDF_PRINCIPLED")
         node.inputs["Alpha"].default_value = 0.8
         node.inputs["Base Color"].default_value = [0.5, 0.5, 0.5, 0.5]
         node.inputs["Roughness"].default_value = 0.2
@@ -163,11 +163,15 @@ class TestGetSurfaceRenderingAttributes(NewFile):
         obj = bpy.data.materials.new("Material")
         obj.diffuse_color = [1, 1, 1, 1]
         obj.use_nodes = True
-        node = obj.node_tree.nodes["Principled BSDF"]
+        output = tool.Blender.get_material_node(obj, "OUTPUT_MATERIAL")
+        node = tool.Blender.get_material_node(obj, "BSDF_PRINCIPLED")
         obj.node_tree.nodes.remove(node)
+    
         node = obj.node_tree.nodes.new(type="ShaderNodeBsdfGlossy")
         node.inputs["Color"].default_value = [0.5, 0.5, 0.5, 0.5]
         node.inputs["Roughness"].default_value = 0.2
+        obj.node_tree.links.new(node.outputs[0], output.inputs[0])
+
         assert subject.get_surface_rendering_attributes(obj) == {
             "SurfaceColour": {
                 "Name": None,
@@ -190,11 +194,15 @@ class TestGetSurfaceRenderingAttributes(NewFile):
         obj = bpy.data.materials.new("Material")
         obj.diffuse_color = [1, 1, 1, 1]
         obj.use_nodes = True
-        node = obj.node_tree.nodes["Principled BSDF"]
+        output = tool.Blender.get_material_node(obj, "OUTPUT_MATERIAL")
+        node = tool.Blender.get_material_node(obj, "BSDF_PRINCIPLED")
         obj.node_tree.nodes.remove(node)
+        
         node = obj.node_tree.nodes.new(type="ShaderNodeBsdfDiffuse")
         node.inputs["Color"].default_value = [0.5, 0.5, 0.5, 0.5]
         node.inputs["Roughness"].default_value = 0.2
+        obj.node_tree.links.new(node.outputs[0], output.inputs[0])
+
         assert subject.get_surface_rendering_attributes(obj) == {
             "SurfaceColour": {
                 "Name": None,
@@ -217,11 +225,15 @@ class TestGetSurfaceRenderingAttributes(NewFile):
         obj = bpy.data.materials.new("Material")
         obj.diffuse_color = [1, 1, 1, 1]
         obj.use_nodes = True
-        node = obj.node_tree.nodes["Principled BSDF"]
+        output = tool.Blender.get_material_node(obj, "OUTPUT_MATERIAL")
+        node = tool.Blender.get_material_node(obj, "BSDF_PRINCIPLED")
         obj.node_tree.nodes.remove(node)
+
         node = obj.node_tree.nodes.new(type="ShaderNodeBsdfGlass")
         node.inputs["Color"].default_value = [0.5, 0.5, 0.5, 0.5]
         node.inputs["Roughness"].default_value = 0.2
+        obj.node_tree.links.new(node.outputs[0], output.inputs[0])
+
         assert subject.get_surface_rendering_attributes(obj) == {
             "SurfaceColour": {
                 "Name": None,
@@ -244,10 +256,14 @@ class TestGetSurfaceRenderingAttributes(NewFile):
         obj = bpy.data.materials.new("Material")
         obj.diffuse_color = [1, 1, 1, 1]
         obj.use_nodes = True
-        node = obj.node_tree.nodes["Principled BSDF"]
+        output = tool.Blender.get_material_node(obj, "OUTPUT_MATERIAL")
+        node = tool.Blender.get_material_node(obj, "BSDF_PRINCIPLED")
         obj.node_tree.nodes.remove(node)
+
         node = obj.node_tree.nodes.new(type="ShaderNodeEmission")
         node.inputs["Color"].default_value = [0.5, 0.5, 0.5, 0.5]
+        obj.node_tree.links.new(node.outputs[0], output.inputs[0])
+
         assert subject.get_surface_rendering_attributes(obj) == {
             "SurfaceColour": {
                 "Name": None,
@@ -270,10 +286,14 @@ class TestGetSurfaceRenderingAttributes(NewFile):
         obj = bpy.data.materials.new("Material")
         obj.diffuse_color = [1, 1, 1, 1]
         obj.use_nodes = True
-        node = obj.node_tree.nodes["Principled BSDF"]
+        output = tool.Blender.get_material_node(obj, "OUTPUT_MATERIAL")
+        node = tool.Blender.get_material_node(obj, "BSDF_PRINCIPLED")
         obj.node_tree.nodes.remove(node)
+
         node = obj.node_tree.nodes.new(type="ShaderNodeVolumePrincipled")
         node.inputs["Color"].default_value = [0.5, 0.5, 0.5, 0.5]
+        obj.node_tree.links.new(node.outputs[0], output.inputs[0])
+
         assert subject.get_surface_rendering_attributes(obj) == {
             "SurfaceColour": {
                 "Name": None,
@@ -440,15 +460,3 @@ class TestIsEditingStyles(NewFile):
         subject.is_editing_styles() is False
         bpy.context.scene.BIMStylesProperties.is_editing = True
         subject.is_editing_styles() is True
-
-
-class TestSelectElements(NewFile):
-    def test_run(self):
-        ifc = ifcopenshell.file()
-        tool.Ifc().set(ifc)
-        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcPump")
-        obj = bpy.data.objects.new("Object", None)
-        bpy.context.scene.collection.objects.link(obj)
-        tool.Ifc.link(element, obj)
-        subject.select_elements([element])
-        assert obj in bpy.context.selected_objects

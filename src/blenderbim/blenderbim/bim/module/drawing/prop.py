@@ -231,7 +231,7 @@ def toggleDecorations(self, context):
     toggle = self.should_draw_decorations
     if toggle:
         # TODO: design a proper text variable templating renderer
-        collection = context.scene.camera.users_collection[0]
+        collection = context.scene.camera.BIMObjectProperties.collection
         for obj in collection.objects:
             element = tool.Ifc.get_entity(obj)
             if not element or not tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"]):

@@ -128,15 +128,16 @@ def update_door_modifier_representation(context):
         )
 
     # type attributes
-    element.OperationType = props.door_type
+    if tool.Ifc.get_schema() != "IFC2X3":
+        element.OperationType = props.door_type
 
     # occurences attributes
     occurences = tool.Ifc.get_all_element_occurences(element)
     for occurence in occurences:
-        occurence.OverallWidth = props.overall_width
-        occurence.OverallHeight = props.overall_height
+        occurence.OverallWidth = props.overall_width / si_conversion
+        occurence.OverallHeight = props.overall_height / si_conversion
 
-    update_simple_openings(element, props.overall_width, props.overall_height)
+    update_simple_openings(element, props.overall_width / si_conversion, props.overall_height / si_conversion)
 
 
 # TODO: move it out to tools
@@ -486,7 +487,8 @@ class BIM_OT_add_door(bpy.types.Operator, tool.Ifc.Operator):
         element = blenderbim.core.root.assign_class(
             tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class="IfcDoor", should_add_representation=False
         )
-        element.PredefinedType = "DOOR"
+        if tool.Ifc.get_schema() != "IFC2X3":
+            element.PredefinedType = "DOOR"
 
         bpy.ops.object.select_all(action="DESELECT")
         bpy.context.view_layer.objects.active = None
@@ -507,8 +509,8 @@ class AddDoor(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMDoorProperties
 
-        if element.is_a() not in ("IfcDoor", "IfcDoorType"):
-            self.report({"ERROR"}, "Object has to be IfcDoor/IfcDoorType type to add a door.")
+        if element.is_a() not in ("IfcDoor", "IfcDoorType", "IfcDoorStyle"):
+            self.report({"ERROR"}, "Object has to be IfcDoor/IfcDoorType/IfcDoorStyle type to add a door.")
             return {"CANCELLED"}
 
         door_data = props.get_general_kwargs(convert_to_project_units=True)

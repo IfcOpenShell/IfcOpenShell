@@ -45,8 +45,11 @@ public:
 	template <class U>
 	typename U::list::ptr as() {
 		typename U::list::ptr r(new typename U::list);
-		const bool all = !U::Class().as_entity();
-		for (it i = begin(); i != end(); ++i) if (all || (*i)->declaration().is(U::Class())) r->push((U*)*i);
+		for (it i = begin(); i != end(); ++i) {
+			if ((*i)->as<U>()) {
+				r->push((*i)->as<U>());
+			}
+		}
 		return r;
 	}
 	void remove(IfcUtil::IfcBaseClass*);
@@ -67,7 +70,7 @@ public:
 	unsigned int size() const { return (unsigned int)ls.size(); }
 	aggregate_of_instance::ptr generalize() {
 		aggregate_of_instance::ptr r(new aggregate_of_instance());
-		for (it i = begin(); i != end(); ++i) r->push(*i);
+		for (it i = begin(); i != end(); ++i) r->push((*i)->template as<IfcUtil::IfcBaseClass>());
 		return r;
 	}
 	bool contains(T* t) const { return std::find(ls.begin(), ls.end(), t) != ls.end(); }

@@ -168,6 +168,7 @@ class UnlinkObject(bpy.types.Operator):
         else:
             objects = context.selected_objects
         for obj in objects:
+            object_name = obj.name
             element = tool.Ifc.get_entity(obj)
             if element:
                 if self.should_delete:
@@ -186,8 +187,8 @@ class UnlinkObject(bpy.types.Operator):
                     material_slot.material = material_slot.material.copy()
                     blenderbim.core.style.unlink_style(tool.Ifc, tool.Style, obj=material_slot.material)
                     blenderbim.core.material.unlink_material(tool.Ifc, obj=material_slot.material)
-            if "Ifc" in obj.name and "/" in obj.name:
-                obj.name = "/".join(obj.name.split("/")[1:])
+            if "Ifc" in object_name and "/" in object_name:
+                obj.name = object_name.split("/", 1)[1]
         return {"FINISHED"}
 
     def draw(self, context):

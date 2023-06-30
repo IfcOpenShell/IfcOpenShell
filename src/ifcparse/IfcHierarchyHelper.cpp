@@ -99,7 +99,7 @@ template <typename Schema>
 typename Schema::IfcProject* IfcHierarchyHelper<Schema>::addProject(typename Schema::IfcOwnerHistory* owner_hist) {
 	typename Schema::IfcRepresentationContext::list::ptr rep_contexts (new typename Schema::IfcRepresentationContext::list);
 
-	aggregate_of_instance::ptr units (new aggregate_of_instance);
+	typename Schema::IfcUnit::list::ptr units (new typename Schema::IfcUnit::list);
 	typename Schema::IfcDimensionalExponents* dimexp = new typename Schema::IfcDimensionalExponents(0, 0, 0, 0, 0, 0, 0);
 	typename Schema::IfcSIUnit* unit1 = new typename Schema::IfcSIUnit(Schema::IfcUnitEnum::IfcUnit_LENGTHUNIT, 
 		Schema::IfcSIPrefix::IfcSIPrefix_MILLI, Schema::IfcSIUnitName::IfcSIUnitName_METRE);
@@ -416,7 +416,7 @@ typename Schema::IfcSurfaceStyle* getSurfaceStyle(IfcHierarchyHelper<Schema>& fi
       : new typename Schema::IfcSurfaceStyleRendering(colour, 1.0 - a, 0, 0, 0, 0,
          0, 0, Schema::IfcReflectanceMethodEnum::IfcReflectanceMethod_FLAT);
 
-   aggregate_of_instance::ptr styles(new aggregate_of_instance());
+   typename Schema::IfcSurfaceStyleElementSelect::list::ptr styles(new typename Schema::IfcSurfaceStyleElementSelect::list);
    styles->push(rendering);
    typename Schema::IfcSurfaceStyle* surface_style = new typename Schema::IfcSurfaceStyle(
       boost::none, Schema::IfcSurfaceSide::IfcSurfaceSide_BOTH, styles);
@@ -432,7 +432,7 @@ template<typename Schema>
 typename Schema::IfcPresentationStyleAssignment* addStyleAssignment_2x3(IfcHierarchyHelper<Schema>& file, double r, double g, double b, double a = 1.0)
 {
    auto surface_style = getSurfaceStyle<Schema>(file, r, g, b, a);
-   aggregate_of_instance::ptr surface_styles(new aggregate_of_instance());
+   typename Schema::IfcPresentationStyleSelect::list::ptr surface_styles(new typename Schema::IfcPresentationStyleSelect::list);
    surface_styles->push(surface_style);
    typename Schema::IfcPresentationStyleAssignment* style_assignment =
       new typename Schema::IfcPresentationStyleAssignment(surface_styles);
@@ -506,7 +506,7 @@ Ifc2x3::IfcStyledItem* create_styled_item(Ifc2x3::IfcRepresentationItem* item, I
 
 #ifdef HAS_SCHEMA_4
 Ifc4::IfcStyledItem* create_styled_item(Ifc4::IfcRepresentationItem* item, Ifc4::IfcPresentationStyleAssignment* style_assignment) {
-	aggregate_of_instance::ptr style_assignments(new aggregate_of_instance);
+	Ifc4::IfcStyleAssignmentSelect::list::ptr style_assignments(new Ifc4::IfcStyleAssignmentSelect::list);
 	style_assignments->push(style_assignment);
 	return new Ifc4::IfcStyledItem(item, style_assignments, boost::none);
 }
@@ -514,7 +514,7 @@ Ifc4::IfcStyledItem* create_styled_item(Ifc4::IfcRepresentationItem* item, Ifc4:
 
 #ifdef HAS_SCHEMA_4x1
 Ifc4x1::IfcStyledItem* create_styled_item(Ifc4x1::IfcRepresentationItem* item, Ifc4x1::IfcPresentationStyleAssignment* style_assignment) {
-	aggregate_of_instance::ptr style_assignments(new aggregate_of_instance);
+	Ifc4x1::IfcStyleAssignmentSelect::list::ptr style_assignments(new Ifc4x1::IfcStyleAssignmentSelect::list);
 	style_assignments->push(style_assignment);
 	return new Ifc4x1::IfcStyledItem(item, style_assignments, boost::none);
 }
@@ -522,7 +522,7 @@ Ifc4x1::IfcStyledItem* create_styled_item(Ifc4x1::IfcRepresentationItem* item, I
 
 #ifdef HAS_SCHEMA_4x2
 Ifc4x2::IfcStyledItem* create_styled_item(Ifc4x2::IfcRepresentationItem* item, Ifc4x2::IfcPresentationStyleAssignment* style_assignment) {
-	aggregate_of_instance::ptr style_assignments(new aggregate_of_instance);
+	Ifc4x2::IfcStyleAssignmentSelect::list::ptr style_assignments(new Ifc4x2::IfcStyleAssignmentSelect::list);
 	style_assignments->push(style_assignment);
 	return new Ifc4x2::IfcStyledItem(item, style_assignments, boost::none);
 }
@@ -530,7 +530,7 @@ Ifc4x2::IfcStyledItem* create_styled_item(Ifc4x2::IfcRepresentationItem* item, I
 
 #ifdef HAS_SCHEMA_4x3_rc1
 Ifc4x3_rc1::IfcStyledItem* create_styled_item(Ifc4x3_rc1::IfcRepresentationItem* item, Ifc4x3_rc1::IfcPresentationStyleAssignment* style_assignment) {
-	aggregate_of_instance::ptr style_assignments(new aggregate_of_instance);
+	Ifc4x3_rc1::IfcStyleAssignmentSelect::list::ptr style_assignments(new Ifc4x3_rc1::IfcStyleAssignmentSelect::list);
 	style_assignments->push(style_assignment);
 	return new Ifc4x3_rc1::IfcStyledItem(item, style_assignments, boost::none);
 }
@@ -538,9 +538,9 @@ Ifc4x3_rc1::IfcStyledItem* create_styled_item(Ifc4x3_rc1::IfcRepresentationItem*
 
 #ifdef HAS_SCHEMA_4x3_rc2
 Ifc4x3_rc2::IfcStyledItem* create_styled_item(Ifc4x3_rc2::IfcRepresentationItem* item, Ifc4x3_rc2::IfcPresentationStyleAssignment* style_assignment) {
-   aggregate_of_instance::ptr style_assignments(new aggregate_of_instance);
-   style_assignments->push(style_assignment);
-   return new Ifc4x3_rc2::IfcStyledItem(item, style_assignments, boost::none);
+	Ifc4x3_rc2::IfcStyleAssignmentSelect::list::ptr style_assignments(new Ifc4x3_rc2::IfcStyleAssignmentSelect::list);
+	style_assignments->push(style_assignment);
+	return new Ifc4x3_rc2::IfcStyledItem(item, style_assignments, boost::none);
 }
 #endif
 

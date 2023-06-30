@@ -167,7 +167,8 @@ def update_window_modifier_representation(context):
         )
 
     # type attributes
-    element.PartitioningType = props.window_type
+    if tool.Ifc.get_schema() != "IFC2X3":
+        element.PartitioningType = props.window_type
 
     # occurences attributes
     occurences = tool.Ifc.get_all_element_occurences(element)
@@ -262,14 +263,19 @@ def create_bm_window(
     frame_thickness,
     glass_thickness,
     position: Vector,
+    x_offsets: list = None,
 ):
-    """`lining_thickness` expected to be defined as a list,
+    """`lining_thickness` and `x_offsets` are expected to be defined as a list,
     similarly to `create_bm_window_frame` `thickness` argument"""
+
+    if x_offsets is None:
+        x_offsets = [lining_to_panel_offset_x] * 4
+
     # window lining
     window_lining_verts = create_bm_window_frame(bm, lining_size, lining_thickness)
 
     # window frame
-    frame_position = V(lining_to_panel_offset_x, lining_to_panel_offset_y_full, lining_to_panel_offset_x)
+    frame_position = V(x_offsets[0], lining_to_panel_offset_y_full, x_offsets[3])
     frame_verts = create_bm_window_frame(bm, frame_size, frame_thickness, frame_position)
 
     # window glass
@@ -319,21 +325,35 @@ def update_window_modifier_bmesh(context):
         unique_cols = len(set(panel_row))
 
         for column_i, panel_i in enumerate(panel_row):
+            # detect mullion
+            has_mullion = unique_cols > 1
+            first_column = column_i == 0
+            last_column = column_i == unique_cols - 1
+            left_to_mullion = has_mullion and not last_column
+            right_to_mullion = has_mullion and not first_column
+
+            # detect transom
+            has_transom = unique_rows_in_col[column_i] > 1
+            first_row = row_i == 0
+            last_row = row_i == unique_rows_in_col[column_i] - 1
+            top_to_transom = has_transom and not first_row
+            bottom_to_transom = has_transom and not last_row
+
             # calculate current panel dimensions
-            if unique_cols > 1:
-                if column_i == 0:
+            if has_mullion:
+                if first_column:
                     panel_width = first_mullion_offset
-                elif column_i == unique_cols - 1:
+                elif last_column:
                     panel_width = overall_width - accumulated_width
                 else:
                     panel_width = second_mullion_offset - accumulated_width
             else:
                 panel_width = overall_width
 
-            if unique_rows_in_col[column_i] > 1:
-                if row_i == 0:
+            if has_transom:
+                if first_row:
                     panel_height = first_transom_offset
-                elif row_i == unique_rows_in_col[column_i] - 1:
+                elif last_row:
                     panel_height = overall_height - accumulated_height[column_i]
                 else:
                     panel_height = second_transom_offset - accumulated_height[column_i]
@@ -347,7 +367,7 @@ def update_window_modifier_bmesh(context):
 
             frame_depth = props.frame_depth[panel_i]
             frame_thickness = props.frame_thickness[panel_i]
-
+            lining_to_panel_offset_y_full = (lining_depth - frame_depth) + lining_to_panel_offset_y
             # add window
             window_lining_size = V(
                 panel_width,
@@ -355,25 +375,33 @@ def update_window_modifier_bmesh(context):
                 panel_height,
             )
 
-            # calculate lining thickness
+            # calculate lining thickness and frame size / offset
             # taking into account mullions and transoms
-            window_lining_thickness = [lining_thickness] * 4
-            # mullion thickness
-            if unique_cols > 1:
-                if column_i != 0:
-                    window_lining_thickness[0] = mullion_thickness  # left column
-                if column_i != unique_cols - 1:
-                    window_lining_thickness[2] = mullion_thickness  # right column
-            # transom thickness
-            if unique_rows_in_col[column_i] > 1:
-                if row_i != 0:
-                    window_lining_thickness[3] = transom_thickness  # bottom row
-                if row_i != unique_rows_in_col[column_i] - 1:
-                    window_lining_thickness[1] = transom_thickness  # top row
+            # fmt: off
+            window_lining_thickness = [
+                mullion_thickness if right_to_mullion  else lining_thickness,
+                transom_thickness if bottom_to_transom else lining_thickness,
+                mullion_thickness if left_to_mullion   else lining_thickness,
+                transom_thickness if top_to_transom    else lining_thickness,
+            ]
+
+            # x offsets can differ if there are mullions or transoms because we're trying to maintain symmetry
+            base_frame_clear = lining_to_panel_offset_x + frame_thickness - lining_thickness
+            current_offset_x = base_frame_clear - frame_thickness + mullion_thickness
+            current_offset_z = base_frame_clear - frame_thickness + transom_thickness
+            # fmt: off
+            x_offsets = [
+                current_offset_x if right_to_mullion  else lining_to_panel_offset_x,  # LEFT
+                current_offset_z if bottom_to_transom else lining_to_panel_offset_x,  # TOP
+                current_offset_x if left_to_mullion   else lining_to_panel_offset_x,  # RIGHT
+                current_offset_z if top_to_transom    else lining_to_panel_offset_x,  # BOTTOM
+            ]
+            # fmt: on
 
             frame_size = window_lining_size.copy()
             frame_size.y = frame_depth
-            frame_size = frame_size - V(lining_to_panel_offset_x * 2, 0, lining_to_panel_offset_x * 2)
+            frame_size.x -= x_offsets[0] + x_offsets[2]
+            frame_size.z -= x_offsets[1] + x_offsets[3]
 
             window_position = V(accumulated_width, 0, accumulated_height[column_i])
             lining_verts, panel_verts, glass_verts = create_bm_window(
@@ -381,11 +409,12 @@ def update_window_modifier_bmesh(context):
                 window_lining_size,
                 window_lining_thickness,
                 lining_to_panel_offset_x,
-                (lining_depth - frame_depth) + lining_to_panel_offset_y,
+                lining_to_panel_offset_y_full,
                 frame_size,
                 frame_thickness,
                 glass_thickness,
                 window_position,
+                x_offsets,
             )
 
             built_panels.append(panel_i)
@@ -427,7 +456,8 @@ class BIM_OT_add_window(bpy.types.Operator, tool.Ifc.Operator):
         element = blenderbim.core.root.assign_class(
             tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class="IfcWindow", should_add_representation=False
         )
-        element.PredefinedType = "WINDOW"
+        if tool.Ifc.get_schema() != "IFC2X3":
+            element.PredefinedType = "WINDOW"
 
         bpy.ops.object.select_all(action="DESELECT")
         bpy.context.view_layer.objects.active = None
@@ -448,8 +478,8 @@ class AddWindow(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMWindowProperties
 
-        if element.is_a() not in ("IfcWindow", "IfcWindowType"):
-            self.report({"ERROR"}, "Object has to be IfcWindow/IfcWindowType type to add a window.")
+        if element.is_a() not in ("IfcWindow", "IfcWindowType", "IfcWindowStyle"):
+            self.report({"ERROR"}, "Object has to be IfcWindow/IfcWindowType/IfcWindowStyle type to add a window.")
             return {"CANCELLED"}
 
         window_data = props.get_general_kwargs(convert_to_project_units=True)
@@ -481,6 +511,8 @@ class CancelEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
         data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Window", "Data"))
+        data.update(data.pop("lining_properties"))
+        data.update(data.pop("panel_properties"))
         props = obj.BIMWindowProperties
         props.set_props_kwargs_from_ifc_data(data)
 

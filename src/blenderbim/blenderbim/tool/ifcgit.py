@@ -1,6 +1,5 @@
 import os
 import re
-import time
 
 # allows git import even if git executable isn't found
 os.environ["GIT_PYTHON_REFRESH"] = "quiet"
@@ -102,6 +101,30 @@ class IfcGit:
     def delete_tag(cls, repo, tag_name):
         if tag_name in repo.tags:
             repo.delete_tag(tag_name)
+
+    @classmethod
+    def add_remote(cls, repo):
+        props = bpy.context.scene.IfcGitProperties
+        repo.create_remote(name=props.remote_name, url=props.remote_url)
+        props.remote_name = ""
+        props.remote_url = ""
+
+    @classmethod
+    def delete_remote(cls, repo):
+        props = bpy.context.scene.IfcGitProperties
+        remote_name = props.select_remote
+        if remote_name in repo.remotes:
+            repo.delete_remote(remote_name)
+        if repo.remotes:
+            props.select_remote = repo.remotes[0].name
+
+    @classmethod
+    def push(cls, repo, remote_name, branch_name):
+        remote = repo.remotes[remote_name]
+        try:
+            remote.push(tags=True, refspec=branch_name).raise_if_error()
+        except git.exc.GitCommandError as exc:
+            return exc.stderr
 
     @classmethod
     def create_new_branch(cls):
@@ -369,10 +392,14 @@ class IfcGit:
     @classmethod
     def config_ifcmerge(cls):
         config_reader = IfcGitRepo.repo.config_reader()
+        config_writer = IfcGitRepo.repo.config_writer()
         section = 'mergetool "ifcmerge"'
         if not config_reader.has_section(section):
-            config_writer = IfcGitRepo.repo.config_writer()
             config_writer.set_value(section, "cmd", "ifcmerge $BASE $LOCAL $REMOTE $MERGED")
+            config_writer.set_value(section, "trustExitCode", True)
+        section = 'mergetool "ifcmerge-forward"'
+        if not config_reader.has_section(section):
+            config_writer.set_value(section, "cmd", "ifcmerge $BASE $REMOTE $LOCAL $MERGED")
             config_writer.set_value(section, "trustExitCode", True)
 
     @classmethod
@@ -402,13 +429,19 @@ class IfcGit:
             for branch in lookup[item.hexsha]:
                 if branch.name == props.display_branch:
                     # this is a branch!
+                    if re.match("^(origin/)?(HEAD|main|master)$", branch.name):
+                        # preserve remote IDs in origin/main or main
+                        mergetool = "ifcmerge"
+                    else:
+                        # rewrite remote IDs
+                        mergetool = "ifcmerge-forward"
                     try:
                         # NOTE this is calling the git binary in a subprocess
                         repo.git.merge(branch)
                     except git.exc.GitCommandError:
                         # merge is expected to fail, run ifcmerge
                         try:
-                            repo.git.mergetool(tool="ifcmerge")
+                            repo.git.mergetool(tool=mergetool)
                         except git.exc.GitCommandError as exc:
                             message = re.sub("(  stderr: '|')", "", exc.stderr)
                             # ifcmerge failed, rollback
@@ -416,23 +449,16 @@ class IfcGit:
 
                             operator.report({"ERROR"}, "IFC Merge failed:" + message)
                             return False
+                        else:
+                            if os.name == "nt":
+                                cls.dos2unix(path_ifc)
+                            repo.index.add(path_ifc)
+                            repo.git.commit("--no-edit")
                     except:
 
                         operator.report({"ERROR"}, "Unknown IFC Merge failure")
                         return False
 
-            repo.index.add(path_ifc)
-
-            message_summary = ""
-            branch_commits = repo.iter_commits(rev=repo.active_branch.name + ".." + props.display_branch)
-            for commit in branch_commits:
-                message_summary += "\n\n" + commit.author.name + " <" + commit.author.email + ">\n"
-                message_summary += time.strftime("%c", time.localtime(commit.committed_date)) + "\n"
-                message_summary += commit.message
-
-            props.commit_message = (
-                "Merge branch '" + props.display_branch + "' into " + repo.active_branch.name + message_summary
-            )
             props.display_branch = repo.active_branch.name
 
             cls.load_project(path_ifc)

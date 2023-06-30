@@ -232,9 +232,16 @@ class FilledOpeningGenerator:
             curve_3d = ifcopenshell.util.representation.resolve_representation(profile).Items[0]
 
             def get_curve_2d_from_3d(curve_3d):
-                ifc_segments = [shape_builder.deep_copy(s) for s in curve_3d.Segments]
-                ifc_points = ifc_file.createIfcCartesianPointList2D([Vector(p).xz for p in curve_3d.Points.CoordList])
-                ifc_curve = ifc_file.createIfcIndexedPolyCurve(Points=ifc_points, Segments=ifc_segments)
+                if tool.Ifc.get_schema() == "IFC2X3":
+                    coords = [Vector(p).xz for p in shape_builder.get_polyline_coords(curve_3d)]
+                    ifc_curve = shape_builder.polyline(coords, closed=True)
+                else:
+                    # using different algorithm to keep arc segments possible in the future
+                    ifc_segments = [shape_builder.deep_copy(s) for s in curve_3d.Segments]
+                    ifc_points = ifc_file.createIfcCartesianPointList2D(
+                        [Vector(p).xz for p in curve_3d.Points.CoordList]
+                    )
+                    ifc_curve = ifc_file.createIfcIndexedPolyCurve(Points=ifc_points, Segments=ifc_segments)
                 return ifc_curve
 
             extrusion = shape_builder.extrude(

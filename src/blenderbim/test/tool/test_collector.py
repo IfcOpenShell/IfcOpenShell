@@ -264,29 +264,32 @@ class TestAssign(NewFile):
 
     def test_in_decomposition_mode_drawings_are_placed_in_a_group_in_a_views_collection(self):
         bpy.ops.bim.create_project()
-        element_obj = bpy.data.objects.new("IfcAnnotation/Name", None)
+        element_obj = bpy.data.objects.new("IfcAnnotation/DRAWING", None)
         element = tool.Ifc.get().createIfcAnnotation(ObjectType="DRAWING")
         tool.Ifc.link(element, element_obj)
+
         group = ifcopenshell.api.run("group.add_group", tool.Ifc.get())
         group.ObjectType = "DRAWING"
         ifcopenshell.api.run("group.assign_group", tool.Ifc.get(), products=[element], group=group)
+
         subject.assign(element_obj)
-        assert element_obj.users_collection[0].name == "IfcGroup/Unnamed"
-        assert bpy.data.collections.get("Views").children.get("IfcGroup/Unnamed")
+        assert element_obj.users_collection[0].name == "IfcAnnotation/DRAWING"
+        assert bpy.data.collections.get("Views").children.get("IfcAnnotation/DRAWING")
         assert bpy.data.collections.get("IfcProject/My Project").children.get("Views")
 
     def test_in_decomposition_mode_annotations_are_placed_in_a_group_in_a_views_collection(self):
-        bpy.ops.bim.create_project()
+        self.test_in_decomposition_mode_drawings_are_placed_in_a_group_in_a_views_collection()
+        ifc_file = tool.Ifc.get()
+
         element_obj = bpy.data.objects.new("IfcAnnotation/Name", None)
-        element = tool.Ifc.get().createIfcAnnotation()
+        element = ifc_file.createIfcAnnotation()
         tool.Ifc.link(element, element_obj)
-        group = ifcopenshell.api.run("group.add_group", tool.Ifc.get())
-        group.ObjectType = "DRAWING"
-        ifcopenshell.api.run("group.assign_group", tool.Ifc.get(), products=[element], group=group)
+
+        group = ifc_file.by_type("IfcGroup")[0]
+        ifcopenshell.api.run("group.assign_group", ifc_file, products=[element], group=group)
+
         subject.assign(element_obj)
-        assert element_obj.users_collection[0].name == "IfcGroup/Unnamed"
-        assert bpy.data.collections.get("Views").children.get("IfcGroup/Unnamed")
-        assert bpy.data.collections.get("IfcProject/My Project").children.get("Views")
+        assert element_obj.users_collection[0].name == "IfcAnnotation/DRAWING"
 
     def test_in_decomposition_mode_structural_members_are_placed_in_a_members_collection(self):
         bpy.ops.bim.create_project()

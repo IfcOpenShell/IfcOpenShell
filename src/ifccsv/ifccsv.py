@@ -42,6 +42,12 @@ except:
     pass  # No XLSX support
 
 
+try:
+    import pandas as pd
+except:
+    pass  # No Pandas support
+
+
 class IfcAttributeSetter:
     @staticmethod
     def set_element_key(ifc_file, element, key, value):
@@ -139,15 +145,14 @@ class IfcAttributeSetter:
 
 
 class IfcCsv:
-    def __init__(self):
+    def __init__(self, output="", delimiter=","):
+        self.headers = []
         self.results = []
-        self.attributes = []
-        self.output = ""
-        self.format = "csv"
-        self.delimiter = ","
+        self.dataframe = None
 
-    def export(self, ifc_file, elements):
+    def export(self, ifc_file, elements, attributes, output=None, format=None, delimiter=","):
         self.ifc_file = ifc_file
+        self.results = []
         for element in elements:
             result = []
             if hasattr(element, "GlobalId"):
@@ -155,33 +160,35 @@ class IfcCsv:
             else:
                 result.append(None)
 
-            for index, attribute in enumerate(self.attributes):
+            for index, attribute in enumerate(attributes or []):
                 if "*" in attribute:
-                    self.attributes.extend(self.get_wildcard_attributes(attribute))
-                    del self.attributes[index]
+                    attributes.extend(self.get_wildcard_attributes(attribute))
+                    del attributes[index]
 
-            for attribute in self.attributes:
+            for attribute in attributes:
                 result.append(ifcopenshell.util.selector.get_element_value(element, attribute))
             self.results.append(result)
 
         self.headers = ["GlobalId"]
-        self.headers.extend(self.attributes)
+        self.headers.extend(attributes or [])
 
-        if self.format == "csv":
-            self.export_csv()
-        elif self.format == "ods":
-            self.export_ods()
-        elif self.format == "xlsx":
-            self.export_xlsx()
+        if format == "csv":
+            self.export_csv(output, delimiter=delimiter)
+        elif format == "ods":
+            self.export_ods(output)
+        elif format == "xlsx":
+            self.export_xlsx(output)
+        elif format == "pd":
+            return self.export_pd()
 
-    def export_csv(self):
-        with open(self.output, "w", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f, delimiter=self.delimiter)
+    def export_csv(self, output, delimiter=None):
+        with open(output, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f, delimiter=delimiter)
             writer.writerow(self.headers)
             for row in self.results:
                 writer.writerow(row)
 
-    def export_ods(self):
+    def export_ods(self, output):
         self.doc = OpenDocumentSpreadsheet()
 
         self.colours = {
@@ -218,12 +225,12 @@ class IfcCsv:
             table.addElement(tr)
         self.doc.spreadsheet.addElement(table)
 
-        if self.output[-4:].lower() == ".ods":
-            self.output = self.output[0:-4]
-        self.doc.save(self.output, True)
+        if output[-4:].lower() == ".ods":
+           output = output[0:-4]
+        self.doc.save(output, True)
 
-    def export_xlsx(self):
-        self.workbook = Workbook(self.output)
+    def export_xlsx(self, output):
+        self.workbook = Workbook(output)
 
         self.colours = {
             "h": "dc8774",  # Header
@@ -254,6 +261,10 @@ class IfcCsv:
 
         self.workbook.close()
 
+    def export_pd(self):
+        self.dataframe = pd.DataFrame(self.results, columns=self.headers)
+        return self.dataframe
+
     def get_wildcard_attributes(self, attribute):
         results = set()
         pset_qto_name = attribute.split(".", 1)[0]
@@ -266,9 +277,10 @@ class IfcCsv:
                 results.update([p.Name for p in element.Quantities])
         return ["{}.{}".format(pset_qto_name, n) for n in results]
 
-    def Import(self, ifc_file):
-        with open(self.output, newline="", encoding="utf-8") as f:
-            reader = csv.reader(f, delimiter=self.delimiter)
+    def Import(self, ifc_file, table, delimiter=","):
+        # Currently only supports CSV.
+        with open(table, newline="", encoding="utf-8") as f:
+            reader = csv.reader(f, delimiter=delimiter)
             headers = []
             for row in reader:
                 if not headers:
@@ -303,18 +315,11 @@ if __name__ == "__main__":
 
     if args.export:
         ifc_file = ifcopenshell.open(args.ifc)
-        selector = ifcopenshell.util.selector.Selector()
-        results = selector.parse(ifc_file, args.query)
+        results = ifcopenshell.util.selector.Selector.parse(ifc_file, args.query)
         ifc_csv = IfcCsv()
-        ifc_csv.output = args.spreadsheet
-        ifc_csv.format = args.format
-        ifc_csv.attributes = args.arguments if args.arguments else []
-        ifc_csv.selector = selector
-        ifc_csv.export(ifc_file, results)
+        ifc_csv.export(ifc_file, results, args.arguments or [], output=args.spreadsheet, format=args.format)
     elif getattr(args, "import"):
         ifc_csv = IfcCsv()
-        ifc_csv.output = args.spreadsheet
-        ifc_csv.format = args.format
         ifc_file = ifcopenshell.open(args.ifc)
-        ifc_csv.Import(ifc_file)
+        ifc_csv.Import(ifc_file, args.spreadsheet)
         ifc_file.write(args.ifc)

@@ -42,7 +42,9 @@ DEFAULT_PANEL_SCHEMAS = {
 }
 
 
-def create_ifc_window_frame_simple(builder, size: Vector, thickness: list, position: Vector = V(0, 0, 0).freeze()):
+def create_ifc_window_frame_simple(
+    builder: ShapeBuilder, size: Vector, thickness: list, position: Vector = V(0, 0, 0).freeze()
+):
     """`thickness` of the profile is defined as list in the following order:
     `(LEFT, TOP, RIGHT, BOTTOM)`
 
@@ -51,36 +53,103 @@ def create_ifc_window_frame_simple(builder, size: Vector, thickness: list, posit
 
     if not isinstance(thickness, collections.abc.Iterable):
         thickness = [thickness] * 4
-
     th_left, th_up, th_right, th_bottom = thickness
 
-    panel_rect = builder.rectangle(size=size.xz)
+    def get_extruded_profile(profile):
+        return builder.extrude(
+            profile,
+            size.y,
+            position_x_axis=V(1, 0, 0),
+            position_z_axis=V(0, -1, 0),
+            extrusion_vector=V(0, 0, -1),
+            position=position,
+        )
 
-    inner_rect_size = size - V(th_left + th_right, 0, th_bottom + th_up)
-    inner_rect = builder.rectangle(size=inner_rect_size.xz, position=V(th_left, th_bottom))
+    # if all lining sides are present then we can just use two rectangles
+    # as inner and outer curves of the profile
+    if thickness.count(0) == 0:
+        panel_rect = builder.rectangle(size=size.xz)
 
-    panel_profile = builder.profile(panel_rect, inner_curves=inner_rect)
-    panel_extruded = builder.extrude(
-        panel_profile,
-        size.y,
-        position_x_axis=V(1, 0, 0),
-        position_z_axis=V(0, -1, 0),
-        extrusion_vector=V(0, 0, -1),
-        position=position,
-    )
-    return panel_extruded
+        inner_rect_size = size - V(th_left + th_right, 0, th_bottom + th_up)
+        inner_rect = builder.rectangle(size=inner_rect_size.xz, position=V(th_left, th_bottom))
+
+        panel_profile = builder.profile(panel_rect, inner_curves=inner_rect)
+        return [get_extruded_profile(panel_profile)]
+
+    # if some side has zero thickness it means we cannot use inner curves
+    # and need to generate L/U shape or just separate rectangles
+    else:
+
+        def get_segments_from_thickness():
+            nonlocal thickness
+            segments = []
+            cur_segment = []
+            for i, thickness in enumerate(thickness):
+                if thickness == 0:
+                    if cur_segment:
+                        segments.append(tuple(cur_segment))
+                    cur_segment = []
+                else:
+                    cur_segment.append(i)
+
+            if cur_segment:
+                if len(segments) > 0 and segments[0][0] == 0:
+                    segments[0] = tuple(cur_segment) + segments[0]
+                else:
+                    segments.append(tuple(cur_segment))
+            return segments
+
+        # prepare coords to build a lining
+        # fmt: off
+        outer_coords = [
+            (V(0, 0),           V(0, size.z)),
+            (V(0, size.z),      V(size.x, size.z)),
+            (V(size.x, size.z), V(size.x, 0)),
+            (V(size.x, 0),      V(0, 0)),
+        ]
+        inner_coords = [
+            (V(th_left, th_bottom),                V(th_left, size.z - th_up)),
+            (V(th_left, size.z - th_up),           V(size.x - th_right, size.z - th_up)),
+            (V(size.x - th_right, size.z - th_up), V(size.x - th_right, th_bottom)),
+            (V(size.x - th_right, th_bottom),      V(th_left, th_bottom)),
+        ]
+        # fmt: on
+
+        def get_points(segment):
+            points = []
+            for side in segment:
+                outer = outer_coords[side]
+                if side == segment[0]:  # first segment
+                    points.append(outer[0])
+                points.append(outer[1])
+
+            for side in reversed(segment):
+                inner = inner_coords[side]
+                if side == segment[-1]:  # last non zero segment
+                    points.append(inner[1])
+                points.append(inner[0])
+            return points
+
+        segments = get_segments_from_thickness()
+        segments_items = []
+        for seg in segments:
+            polyline = builder.polyline(points=get_points(seg), closed=True)
+            panel_profile = builder.profile(polyline)
+            segments_items.append(get_extruded_profile(panel_profile))
+
+        return segments_items
 
 
 def window_l_shape_check(
     lining_to_panel_offset_y_full,
     lining_depth,
-    lining_to_panel_offset_x,
+    lining_to_panel_offset_x: list,
     lining_thickness: list,
 ):
-    """`lining_thickness` expected to be defined as a list,
+    """`lining_thickness` and `lining_to_panel_offset_x` expected to be defined as a list,
     similarly to `create_ifc_window_frame_simple` `thickness` argument"""
     l_shape_check = lining_to_panel_offset_y_full < lining_depth and any(
-        lining_to_panel_offset_x < th for th in lining_thickness
+        x_offset < th for th, x_offset in zip(lining_thickness, lining_to_panel_offset_x, strict=True)
     )
     return l_shape_check
 
@@ -95,18 +164,21 @@ def create_ifc_window(
     frame_thickness,
     glass_thickness,
     position: Vector,
+    x_offsets: list = None,
 ):
-    """`lining_thickness` expected to be defined as a list,
+    """`lining_thickness` and `x_offsets` are expected to be defined as a list,
     similarly to `create_ifc_window_frame_simple` `thickness` argument"""
     lining_items = []
     main_lining_size = lining_size
 
+    if x_offsets is None:
+        x_offsets = [lining_to_panel_offset_x] * 4
     # need to check offsets to decide whether lining should be rectangle
     # or L shaped
     l_shape_check = window_l_shape_check(
         lining_to_panel_offset_y_full,
         lining_size.y,
-        lining_to_panel_offset_x,
+        x_offsets,
         lining_thickness,
     )
 
@@ -117,26 +189,26 @@ def create_ifc_window(
         second_lining_size = lining_size.copy()
         second_lining_size.y = lining_size.y - lining_to_panel_offset_y_full
         second_lining_position = V(0, lining_to_panel_offset_y_full, 0)
-        second_lining_thickness = [min(th, lining_to_panel_offset_x) for th in lining_thickness]
+        second_lining_thickness = [min(th, x_offset) for th, x_offset in zip(lining_thickness, x_offsets, strict=True)]
 
-        second_lining = create_ifc_window_frame_simple(
+        second_lining_items = create_ifc_window_frame_simple(
             builder, second_lining_size, second_lining_thickness, second_lining_position
         )
-        lining_items.append(second_lining)
+        lining_items.extend(second_lining_items)
 
-    main_lining = create_ifc_window_frame_simple(builder, main_lining_size, lining_thickness)
-    lining_items.append(main_lining)
+    main_lining_items = create_ifc_window_frame_simple(builder, main_lining_size, lining_thickness)
+    lining_items.extend(main_lining_items)
 
     frame_position = V(
-        lining_to_panel_offset_x,
+        x_offsets[0],
         lining_to_panel_offset_y_full,
-        lining_to_panel_offset_x,
+        x_offsets[3],
     )
 
-    frame_extruded = create_ifc_window_frame_simple(builder, frame_size, frame_thickness, frame_position)
+    frame_extruded_items = create_ifc_window_frame_simple(builder, frame_size, frame_thickness, frame_position)
 
     glass_position = frame_position + V(0, frame_size.y / 2 - glass_thickness / 2, 0)
-    glass_rect = builder.deep_copy(frame_extruded.SweptArea.InnerCurves[0])
+    glass_rect = builder.deep_copy(frame_extruded_items[0].SweptArea.InnerCurves[0])
     glass = builder.extrude(
         glass_rect,
         glass_thickness,
@@ -146,7 +218,7 @@ def create_ifc_window(
         position=glass_position,
     )
 
-    output_items = [lining_items, [frame_extruded], [glass]]
+    output_items = [lining_items, frame_extruded_items, [glass]]
     builder.translate(chain(*output_items), position)
 
     return output_items
@@ -272,19 +344,26 @@ class Usecase:
                 if panel_i in built_panels:
                     continue
 
-                if unique_cols > 1:
-                    if column_i == 0:
+                # detect mullion
+                has_mullion = unique_cols > 1
+                first_column = column_i == 0
+                last_column = column_i == unique_cols - 1
+                left_to_mullion = has_mullion and not last_column
+                right_to_mullion = has_mullion and not first_column
+
+                if has_mullion:
+                    if first_column:
                         panel_width = first_mullion_offset
-                    elif column_i == unique_cols - 1:
+                    elif last_column:
                         panel_width = overall_width - accumulated_width
                     else:
                         panel_width = second_mullion_offset - accumulated_width
 
                     # mullion thickness
-                    if column_i != 0:
+                    if not first_column:
                         window_lining_thickness[0] = mullion_thickness  # left column
                         closed_lining[0] = False
-                    if column_i != unique_cols - 1:
+                    if not last_column:
                         window_lining_thickness[1] = mullion_thickness  # right column
                         closed_lining[1] = False
                 else:
@@ -292,7 +371,9 @@ class Usecase:
 
                 frame_depth = panels[panel_i]["FrameDepth"]
                 frame_thickness = panels[panel_i]["FrameThickness"]
-                lining_to_panel_offset_y_full = overall_depth - frame_depth
+                lining_to_panel_offset_y_full = (lining_depth - frame_depth) + lining_to_panel_offset_y
+                base_frame_clear = lining_to_panel_offset_x + frame_thickness - lining_thickness
+                current_offset_x = base_frame_clear - frame_thickness + mullion_thickness
 
                 # add lining
                 cur_panel_items.append(
@@ -304,20 +385,22 @@ class Usecase:
                     )
                 )
 
-                def get_lining_shape(lining_thickness, closed=True, mirror=False):
+                def get_lining_shape(lining_thickness, closed=True, mirror=False, x_offset=None):
+                    if x_offset is None:
+                        x_offset = lining_to_panel_offset_x
                     l_shape_check = window_l_shape_check(
                         lining_to_panel_offset_y_full,
                         lining_depth,
-                        lining_to_panel_offset_x,
+                        [x_offset],
                         [lining_thickness],
                     )
                     if l_shape_check:
                         lining_shape = builder.polyline(
                             [
                                 V(0, lining_depth),
-                                V(lining_to_panel_offset_x, lining_depth),
+                                V(x_offset, lining_depth),
                                 V(
-                                    lining_to_panel_offset_x,
+                                    x_offset,
                                     lining_to_panel_offset_y_full,
                                 ),
                                 V(lining_thickness, lining_to_panel_offset_y_full),
@@ -348,10 +431,15 @@ class Usecase:
 
                 cur_panel_items.extend(
                     [
-                        get_lining_shape(window_lining_thickness[0], closed=closed_lining[0]),
+                        get_lining_shape(
+                            window_lining_thickness[0],
+                            closed=closed_lining[0],
+                            x_offset=current_offset_x if right_to_mullion else None,
+                        ),
                         get_lining_shape(
                             window_lining_thickness[1],
                             closed=closed_lining[1],
+                            x_offset=current_offset_x if left_to_mullion else None,
                             mirror=True,
                         ),
                     ]
@@ -359,8 +447,15 @@ class Usecase:
 
                 # add frame
                 frame_items = []
-                frame_position = V(lining_to_panel_offset_x, lining_to_panel_offset_y_full)
-                frame_width = panel_width - lining_to_panel_offset_x * 2
+
+                frame_position = V(
+                    current_offset_x if right_to_mullion else lining_to_panel_offset_x,
+                    lining_to_panel_offset_y_full,
+                )
+
+                frame_width = panel_width
+                frame_width -= current_offset_x if left_to_mullion else lining_to_panel_offset_x
+                frame_width -= current_offset_x if right_to_mullion else lining_to_panel_offset_x
 
                 frame_vertical = builder.rectangle(size=V(frame_thickness, frame_depth))
                 frame_items.extend(
@@ -411,39 +506,39 @@ class Usecase:
             unique_cols = len(set(panel_row))
 
             for column_i, panel_i in enumerate(panel_row):
-                # calculate current panel dimensions
-                window_lining_thickness = [lining_thickness] * 4
+                # detect mullion
+                has_mullion = unique_cols > 1
+                first_column = column_i == 0
+                last_column = column_i == unique_cols - 1
+                left_to_mullion = has_mullion and not last_column
+                right_to_mullion = has_mullion and not first_column
 
-                if unique_cols > 1:
+                # detect transom
+                has_transom = unique_rows_in_col[column_i] > 1
+                first_row = row_i == 0
+                last_row = row_i == unique_rows_in_col[column_i] - 1
+                top_to_transom = has_transom and not first_row
+                bottom_to_transom = has_transom and not last_row
+
+                # calculate current panel dimensions
+                if has_mullion:
                     # panel_width
-                    if column_i == 0:
+                    if first_column:
                         panel_width = first_mullion_offset
-                    elif column_i == unique_cols - 1:
+                    elif last_column:
                         panel_width = overall_width - accumulated_width
                     else:
                         panel_width = second_mullion_offset - accumulated_width
-
-                    # mullion thickness
-                    if column_i != 0:
-                        window_lining_thickness[0] = mullion_thickness  # left column
-                    if column_i != unique_cols - 1:
-                        window_lining_thickness[2] = mullion_thickness  # right column
                 else:
                     panel_width = overall_width
 
-                if unique_rows_in_col[column_i] > 1:
-                    if row_i == 0:
+                if has_transom:
+                    if first_row:
                         panel_height = first_transom_offset
-                    elif row_i == unique_rows_in_col[column_i] - 1:
+                    elif last_row:
                         panel_height = overall_height - accumulated_height[column_i]
                     else:
                         panel_height = second_transom_offset - accumulated_height[column_i]
-
-                    # transom thickness
-                    if row_i != 0:
-                        window_lining_thickness[3] = transom_thickness  # bottom row
-                    if row_i != unique_rows_in_col[column_i] - 1:
-                        window_lining_thickness[1] = transom_thickness  # top row
                 else:
                     panel_height = overall_height
 
@@ -455,16 +550,37 @@ class Usecase:
                 cur_panel = panels[panel_i]
                 frame_depth = cur_panel["FrameDepth"]
                 frame_thickness = cur_panel["FrameThickness"]
-                lining_to_panel_offset_y_full = overall_depth - frame_depth
-                current_items = []
+                lining_to_panel_offset_y_full = (lining_depth - frame_depth) + lining_to_panel_offset_y
 
-                frame_width = panel_width - lining_to_panel_offset_x * 2
-                frame_height = panel_height - lining_to_panel_offset_x * 2
+                # fmt: off
+                # calculate lining thickness and frame size / offset
+                # taking into account mullions and transoms
+                window_lining_thickness = [
+                    mullion_thickness if right_to_mullion  else lining_thickness,
+                    transom_thickness if bottom_to_transom else lining_thickness,
+                    mullion_thickness if left_to_mullion   else lining_thickness,
+                    transom_thickness if top_to_transom    else lining_thickness,
+                ]
+
+                # x offsets can differ if there are mullions or transoms because we're trying to maintain symmetry
+                base_frame_clear = lining_to_panel_offset_x + frame_thickness - lining_thickness
+                current_offset_x = base_frame_clear - frame_thickness + mullion_thickness
+                current_offset_z = base_frame_clear - frame_thickness + transom_thickness
+                x_offsets = [
+                    current_offset_x if right_to_mullion  else lining_to_panel_offset_x,  # LEFT
+                    current_offset_z if bottom_to_transom else lining_to_panel_offset_x,  # TOP
+                    current_offset_x if left_to_mullion   else lining_to_panel_offset_x,  # RIGHT
+                    current_offset_z if top_to_transom    else lining_to_panel_offset_x,  # BOTTOM
+                ]
+                # fmt: on
 
                 window_lining_size = V(panel_width, lining_depth, panel_height)
-                frame_size = V(frame_width, frame_depth, frame_height)
-                window_panel_position = V(accumulated_width, 0, accumulated_height[column_i])
+                frame_size = window_lining_size.copy()
+                frame_size.y = frame_depth
+                frame_size.x -= x_offsets[0] + x_offsets[2]
+                frame_size.z -= x_offsets[1] + x_offsets[3]
 
+                window_panel_position = V(accumulated_width, 0, accumulated_height[column_i])
                 # create window panel
                 current_window_items = create_ifc_window(
                     builder,
@@ -476,6 +592,7 @@ class Usecase:
                     frame_thickness,
                     glass_thickness,
                     window_panel_position,
+                    x_offsets,
                 )
                 built_panels.append(panel_i)
                 window_items.extend(chain(*current_window_items))

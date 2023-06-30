@@ -250,7 +250,8 @@ def update_ifc_stair_props(obj):
     props = obj.BIMStairProperties
     ifc_file = tool.Ifc.get()
 
-    element.PredefinedType = "STRAIGHT"
+    if tool.Ifc.get_schema() != "IFC2X3":
+        element.PredefinedType = "STRAIGHT"
     number_of_risers = props.number_of_treads + 1
     # update IfcStairFlight properties (seems already deprecated but keep it for now)
     # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcStairFlight.htm
@@ -260,7 +261,11 @@ def update_ifc_stair_props(obj):
     tread_length = props.tread_depth / si_conversion
 
     if element.is_a("IfcStairFlight"):
-        element.NumberOfRisers = number_of_risers
+        if tool.Ifc.get_schema() == "IFC2X3":
+            element.NumberOfRiser = number_of_risers
+        else:
+            element.NumberOfRisers = number_of_risers
+
         element.NumberOfTreads = props.number_of_treads
         element.RiserHeight = riser_height
         element.TreadLength = tread_length
@@ -330,7 +335,8 @@ class BIM_OT_add_clever_stair(bpy.types.Operator, tool.Ifc.Operator):
             should_add_representation=True,
             context=body_context,
         )
-        element.PredefinedType = "STRAIGHT"
+        if tool.Ifc.get_schema() != "IFC2X3":
+            element.PredefinedType = "STRAIGHT"
 
         bpy.ops.object.select_all(action="DESELECT")
         bpy.context.view_layer.objects.active = None

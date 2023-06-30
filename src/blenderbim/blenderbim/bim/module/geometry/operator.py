@@ -373,6 +373,7 @@ class OverrideDelete(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     use_global: bpy.props.BoolProperty(default=False)
     confirm: bpy.props.BoolProperty(default=True)
+    is_batch: bpy.props.BoolProperty(name="Is Batch", default=False)
 
     @classmethod
     def poll(cls, context):
@@ -380,7 +381,7 @@ class OverrideDelete(bpy.types.Operator):
 
     def execute(self, context):
         # Deep magick from the dawn of time
-        if IfcStore.get_file():
+        if tool.Ifc.get():
             return IfcStore.execute_ifc_operator(self, context)
         for obj in context.selected_objects:
             bpy.data.objects.remove(obj)
@@ -389,20 +390,54 @@ class OverrideDelete(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        if self.confirm:
+        if tool.Ifc.get():
+            total_elements = len(tool.Ifc.get().wrapped_data.entity_names())
+            total_polygons = sum([len(o.data.polygons) for o in context.selected_objects if o.type == "MESH"])
+            # These numbers are a bit arbitrary, but basically batching is only
+            # really necessary on large models and large geometry removals.
+            self.is_batch = total_elements > 500000 and total_polygons > 2000
+            if self.is_batch:
+                return context.window_manager.invoke_props_dialog(self)
+            elif self.confirm:
+                return context.window_manager.invoke_confirm(self, event)
+        elif self.confirm:
             return context.window_manager.invoke_confirm(self, event)
         self.confirm = True
         return self.execute(context)
 
+    def draw(self, context):
+        row = self.layout.row()
+        row.label(text="Warning: Faster deletion will use more memory.", icon="ERROR")
+        row = self.layout.row()
+        row.prop(self, "is_batch", text="Enable Faster Deletion")
+
     def _execute(self, context):
+        if self.is_batch:
+            ifcopenshell.util.element.batch_remove_deep2(tool.Ifc.get())
         for obj in context.selected_objects:
             if tool.Ifc.get_entity(obj):
                 tool.Geometry.delete_ifc_object(obj)
             else:
                 bpy.data.objects.remove(obj)
+        if self.is_batch:
+            old_file = tool.Ifc.get()
+            old_file.end_transaction()
+            new_file = ifcopenshell.util.element.unbatch_remove_deep2(tool.Ifc.get())
+            new_file.begin_transaction()
+            tool.Ifc.set(new_file)
+            self.transaction_data = {"old_file": old_file, "new_file": new_file}
+            IfcStore.add_transaction_operation(self)
         # Required otherwise gizmos are still visible
         context.view_layer.objects.active = None
         return {"FINISHED"}
+
+    def rollback(self, data):
+        tool.Ifc.set(data["old_file"])
+        data["old_file"].undo()
+
+    def commit(self, data):
+        data["old_file"].redo()
+        tool.Ifc.set(data["new_file"])
 
 
 class OverrideOutlinerDelete(bpy.types.Operator):
@@ -526,6 +561,8 @@ class OverrideDuplicateMove(bpy.types.Operator):
                 collection.objects.link(new_obj)
             obj.select_set(False)
             new_obj.select_set(True)
+            # clear object's collection so it will be able to have it's own
+            new_obj.BIMObjectProperties.collection = None
             # Copy the actual class
             new = blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
             if new:
@@ -738,13 +775,17 @@ class OverrideModeSetEdit(bpy.types.Operator):
             if not obj:
                 continue
 
+            if not obj.data:
+                obj.select_set(False)
+                continue
+
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
 
             # We are switching from OBJECT to EDIT mode.
             usage_type = tool.Model.get_usage_type(element)
-            if usage_type:
+            if usage_type is not None and usage_type not in ("PROFILE", "LAYER3"):
                 # Parametric objects shall not be edited as meshes as they
                 # can be modified to be incompatible with the parametric
                 # constraints.
@@ -754,6 +795,36 @@ class OverrideModeSetEdit(bpy.types.Operator):
             representation = tool.Geometry.get_active_representation(obj)
             if not representation:
                 continue
+
+            if (
+                tool.Pset.get_element_pset(element, "BBIM_Door")
+                or tool.Pset.get_element_pset(element, "BBIM_Window")
+                or tool.Pset.get_element_pset(element, "BBIM_Stair")
+            ):
+                obj.select_set(False)
+                continue
+            if usage_type == "PROFILE":
+                if len(context.selected_objects) == 1:
+                    bpy.ops.bim.hotkey(hotkey="A_E", description="")
+                    return {"FINISHED"}
+                else:
+                    self.report({"INFO"}, "Only a single profile-based representation can be edited at a time.")
+                    obj.select_set(False)
+                    continue
+            if (
+                tool.Geometry.is_profile_based(obj.data)
+                or usage_type == "LAYER3"
+                or tool.Geometry.is_swept_profile(representation)
+                or tool.Pset.get_element_pset(element, "BBIM_Roof")
+                or tool.Pset.get_element_pset(element, "BBIM_Railing")
+            ):
+                if len(context.selected_objects) == 1:
+                    bpy.ops.bim.hotkey(hotkey="S_E", description="")
+                    return {"FINISHED"}
+                else:
+                    self.report({"INFO"}, "Only a single profile-based representation can be edited at a time.")
+                    obj.select_set(False)
+                    continue
 
             if tool.Geometry.is_meshlike(representation):
                 if getattr(element, "HasOpenings", None):
@@ -866,7 +937,22 @@ class OverrideModeSetObject(bpy.types.Operator):
             if not element:
                 continue
 
-            if obj.data.BIMMeshProperties.ifc_definition_id:
+            if tool.Profile.is_editing_profile():
+                profile_id = context.scene.BIMProfileProperties.active_profile_id
+                if profile_id:
+                    profile = tool.Ifc.get().by_id(profile_id)
+                    if tool.Ifc.get_object(profile):  # We are editing an arbitrary profile
+                        bpy.ops.bim.edit_arbitrary_profile()
+                elif tool.Pset.get_element_pset(element, "BBIM_Railing"):
+                    bpy.ops.bim.cad_hotkey(hotkey="S_Q")
+                elif tool.Pset.get_element_pset(element, "BBIM_Roof"):
+                    bpy.ops.bim.cad_hotkey(hotkey="S_Q")
+                elif tool.Model.get_usage_type(element) == "PROFILE":
+                    bpy.ops.bim.edit_extrusion_axis()
+                else:
+                    bpy.ops.bim.edit_extrusion_profile()
+                return self.execute(context)
+            elif obj.data.BIMMeshProperties.ifc_definition_id:
                 if not tool.Geometry.has_geometric_data(obj):
                     self.is_valid = False
                     self.should_save = False

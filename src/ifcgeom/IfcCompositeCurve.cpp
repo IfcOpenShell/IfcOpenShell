@@ -215,10 +215,16 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire
 
 				V1.Normalize();
 				V2.Normalize();
+				V2.Reverse();
+
+				if (edges.First().Orientation() == TopAbs_REVERSED) {
+					V1.Reverse();
+				}
+				if (edges.Last().Orientation() == TopAbs_REVERSED) {
+					V2.Reverse();
+				}
 
 				auto ang = std::acos(V1.Dot(V2));
-
-				Logger::Notice(std::to_string(ang));
 
 				if (ang < 0.0314) {
 					edges_to_tesselate.Add(crv1->DynamicType() == STANDARD_TYPE(Geom_Circle) ? edges.First() : edges.Last());

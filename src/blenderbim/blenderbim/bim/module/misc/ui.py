@@ -30,7 +30,6 @@ class BIM_PT_misc_utilities(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         props = context.scene.BIMMiscProperties
-
         row = layout.split(factor=0.2, align=True)
         row.prop(props, "override_colour", text="")
         row.operator("bim.set_override_colour")
@@ -49,6 +48,8 @@ class BIM_PT_misc_utilities(bpy.types.Panel):
         row.operator("bim.draw_system_arrows")
         row = layout.row()
         row.operator("bim.clean_wireframes")
+        row = layout.row()
+        row.operator("bim.patch_non_parametric_mep_segment")
 
         row = layout.row(align=True)
         row.operator("bim.enable_editing_sketch_extrusion_profile", text="Start Sketching")

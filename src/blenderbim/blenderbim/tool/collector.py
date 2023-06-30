@@ -143,11 +143,8 @@ class Collector(blenderbim.core.tool.Collector):
                     return axes_col[0]
                 return bpy.data.collections.new(axes)
 
-        if element.is_a("IfcAnnotation"):
-            for rel in element.HasAssignments or []:
-                if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.ObjectType == "DRAWING":
-                    name = "IfcGroup/" + rel.RelatingGroup.Name
-                    return bpy.data.collections.get(name) or bpy.data.collections.new(name)
+        if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
+            return cls._create_own_collection(obj)
 
         if element.is_a("IfcStructuralMember"):
             return bpy.data.collections.get("Members") or bpy.data.collections.new("Members")
@@ -178,12 +175,18 @@ class Collector(blenderbim.core.tool.Collector):
                 axes = "WAxes"
             grid_obj = tool.Ifc.get_object(grid)
             if grid_obj:
-                return bpy.data.collections.get(grid_obj.name)
+                return grid_obj.BIMObjectProperties.collection
 
         if element.is_a("IfcAnnotation"):
+            if element.ObjectType == "DRAWING":
+                return cls._create_project_child_collection("Views")
             for rel in element.HasAssignments or []:
                 if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.ObjectType == "DRAWING":
-                    return cls._create_project_child_collection("Views")
+                    for related_object in rel.RelatedObjects:
+                        if related_object.is_a("IfcAnnotation") and related_object.ObjectType == "DRAWING":
+                            drawing_obj = tool.Ifc.get_object(related_object)
+                            if drawing_obj:
+                                return drawing_obj.BIMObjectProperties.collection
 
         if element.is_a("IfcStructuralItem"):
             return cls._create_project_child_collection("StructuralItems")

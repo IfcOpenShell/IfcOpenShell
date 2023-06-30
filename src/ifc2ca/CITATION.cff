@@ -1,0 +1,21 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: ifc2ca
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - name: "IfcOpenShell contributors"
+repository-code: >-
+  https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/ifc2ca
+abstract: >-
+  Utility to convert IFC structural analysis models to
+  Code_Aster
+keywords:
+  - Code_Aster
+  - IFC
+  - Structural analysis
+license: LGPL-3.0-or-later

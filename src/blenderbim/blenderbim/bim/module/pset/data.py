@@ -18,7 +18,9 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.util.doc
 import blenderbim.tool as tool
+import blenderbim.bim.schema
 
 
 # TODO: Should this cache belong here? Dunno. Maybe.
@@ -67,6 +69,8 @@ class ObjectPsetsData(Data):
         cls.data = {
             "psets": cls.psetqtos(tool.Ifc.get_entity(bpy.context.active_object), psets_only=True),
             "inherited_psets": cls.inherited_psets(),
+            "pset_name": cls.pset_name(),
+            "qto_name": cls.qto_name(),
         }
         cls.is_loaded = True
 
@@ -78,6 +82,35 @@ class ObjectPsetsData(Data):
         element_type = ifcopenshell.util.element.get_type(element)
         if element_type:
             return cls.psetqtos(element_type)
+
+    @classmethod
+    def pset_name(cls):
+        obj = bpy.context.active_object
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return []
+        psets = blenderbim.bim.schema.ifc.psetqto.get_applicable(element.is_a(), pset_only=True)
+        psetnames = cls.format_pset_enum(psets)
+        assigned_names = ifcopenshell.util.element.get_psets(element, psets_only=True).keys()
+        return [p for p in psetnames if p[0] not in assigned_names]
+
+    @classmethod
+    def qto_name(cls):
+        obj = bpy.context.active_object
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return []
+        qtos = blenderbim.bim.schema.ifc.psetqto.get_applicable(element.is_a(), qto_only=True)
+        return cls.format_pset_enum(qtos)
+
+    @classmethod
+    def format_pset_enum(cls, psets):
+        enum_items = []
+        version = tool.Ifc.get_schema()
+        for pset in psets:
+            doc = ifcopenshell.util.doc.get_property_set_doc(version, pset.Name) or {}
+            enum_items.append((pset.Name, pset.Name, doc.get("description", "")))
+        return enum_items
 
 
 class ObjectQtosData(Data):

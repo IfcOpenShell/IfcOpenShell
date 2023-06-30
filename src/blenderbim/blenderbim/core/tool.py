@@ -165,7 +165,7 @@ class Cost:
     def expand_cost_item_rate(cls, cost_item): pass
     def expand_cost_item(cls, cost_item): pass
     def expand_cost_items(cls): pass
-    def export_cost_schedules(cls, format, cost_schedule): pass
+    def export_cost_schedules(cls, filepath, format, cost_schedule): pass
     def format_unit(cls, unit): pass
     def get_active_cost_item(cls): pass
     def get_active_cost_schedule(cls): pass
@@ -311,7 +311,7 @@ class Drawing:
     def run_drawing_activate_model(cls): pass
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
     def select_assigned_product(cls, drawing): pass
-    def set_drawing_collection_name(cls, group, collection): pass
+    def set_drawing_collection_name(cls, drawing, collection): pass
     def set_name(cls, element, name): pass
     def setup_annotation_object(cls, obj, object_type): pass
     def setup_shading_styles_path(cls, resource_path): pass
@@ -433,21 +433,28 @@ class Loader:
 @interface
 class Material:
     def add_default_material_object(cls): pass
+    def add_material_to_set(cls, material_set, material): pass
     def delete_object(cls, obj): pass
     def disable_editing_material(cls): pass
     def disable_editing_materials(cls): pass
     def enable_editing_material(cls, material): pass
     def enable_editing_materials(cls): pass
     def get_active_material_type(cls): pass
-    def get_active_material_type(cls): pass
+    def get_active_material(cls): pass
+    def get_active_object_material(cls, obj): pass
     def get_elements_by_material(cls, material): pass
     def get_material_attributes(cls): pass
+    def get_material(cls, element, should_inherit): pass
     def get_name(cls, obj): pass
+    def get_type(cls, element): pass
+    def has_material_profile(cls, element): pass
     def import_material_definitions(cls, material_type): pass
+    def is_a_flow_segment(cls, element): pass
+    def is_a_material_set(cls, material): pass
     def is_editing_materials(cls): pass
     def is_material_used_in_sets(cls, material): pass
     def load_material_attributes(cls, material): pass
-    def select_elements(cls, elements): pass
+    def replace_material_with_material_profile(cls, element): pass
 
 
 @interface
@@ -547,6 +554,8 @@ class Project:
 @interface
 class Profile:
     def draw_image_for_ifc_profile(cls, draw, profile, size): pass
+    def is_editing_profile(cls): pass
+    def get_profile(cls, element): pass
 
 
 @interface
@@ -806,8 +815,11 @@ class Style:
     def get_elements_by_style(cls, style): pass
     def get_name(cls, obj): pass
     def get_style(cls, obj): pass
-    def get_surface_rendering_attributes(cls, obj): pass
+    def get_style_elements(cls, blender_material): pass
+    def get_surface_rendering_attributes(cls, obj, verbose=True): pass
     def get_surface_rendering_style(cls, obj): pass
+    def get_texture_style(cls, obj): pass
+    def get_external_style(cls, obj): pass
     def get_surface_shading_attributes(cls, obj): pass
     def get_surface_shading_style(cls, obj): pass
     def get_surface_texture_style(cls, obj): pass
@@ -816,7 +828,6 @@ class Style:
     def import_surface_attributes(cls, style, obj): pass
     def is_editing_styles(cls): pass
     def record_shading(cls, obj): pass
-    def select_elements(cls, elements): pass
 
 
 @interface
@@ -839,7 +850,6 @@ class System:
     def load_ports(cls, element, ports): pass
     def run_geometry_edit_object_placement(cls, obj=None): pass
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
-    def select_elements(cls, elements): pass
     def select_system_products(cls, system): pass
     def set_active_system(cls, system): pass
 

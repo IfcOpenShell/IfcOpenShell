@@ -96,17 +96,18 @@ class BIM_UL_containers(UIList):
             )
 
 
-class BIM_PT_Storeys(Panel):
-    bl_label = "Spatial Manager"
-    bl_idname = "BIM_PT_Storeys"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
+class BIM_PT_SpatialManager(Panel):
+    bl_label = "IFC Spatial Manager"
+    bl_idname = "BIM_PT_SpatialManager"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
-    bl_parent_id = "BIM_PT_GridsSpatialManager"
+    bl_parent_id = "BIM_PT_project_setup"
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return tool.Ifc.get() and tool.Ifc.schema().name() != "IFC2X3"
 
     def draw(self, context):
         if not SpatialData.is_loaded:
@@ -118,6 +119,7 @@ class BIM_PT_Storeys(Panel):
             ifc_definition_id = self.props.containers[self.props.active_container_index].ifc_definition_id
             row = self.layout.row()
             row.alignment = "RIGHT"
+            row.operator("bim.select_decomposed_elements", icon="RESTRICT_SELECT_OFF", text="Select Children")
             if SpatialData.data["containers"][ifc_definition_id]["type"] in ["IfcBuildingStorey", "IfcBuilding"]:
                 row.operator("bim.add_building_storey", icon="ADD", text="Add storey").part_class = "IfcBuildingStorey"
             row.operator("bim.delete_container", icon="X", text="Delete").container = ifc_definition_id

@@ -68,7 +68,7 @@ class PieUpdateContainer(bpy.types.Operator):
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
             for collection in obj.users_collection:
-                spatial_obj = bpy.data.objects.get(collection.name)
+                spatial_obj = collection.BIMCollectionProperties.obj
                 if spatial_obj and spatial_obj.BIMObjectProperties.ifc_definition_id:
                     blenderbim.core.spatial.assign_container(
                         tool.Ifc, tool.Collector, tool.Spatial, structure_obj=spatial_obj, element_obj=obj

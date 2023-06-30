@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import blenderbim.core.style as subject
-from test.core.bootstrap import ifc, material, style
+from test.core.bootstrap import ifc, material, style, spatial
 
 
 class TestAddStyle:
@@ -85,22 +85,39 @@ class TestUpdateStyleColours:
     def test_updating_rendering_style_if_available(self, ifc, style):
         style.get_style("obj").should_be_called().will_return("element")
         style.can_support_rendering_style("obj").should_be_called().will_return(True)
-        style.get_surface_rendering_style("obj").should_be_called().will_return("style")
-        style.get_surface_rendering_attributes("obj").should_be_called().will_return("attributes")
-        ifc.run("style.edit_surface_style", style="style", attributes="attributes").should_be_called()
+
+        style.get_surface_rendering_style("obj").should_be_called().will_return("rendering_style")
+        style.get_texture_style("obj").should_be_called().will_return("texture_style")
+        style.get_surface_rendering_attributes("obj", "verbose").should_be_called().will_return("attributes")
+        ifc.run("style.edit_surface_style", style="rendering_style", attributes="attributes").should_be_called()
+
+        ifc.run("style.add_surface_textures", material="obj").should_be_called().will_return("textures")
+        ifc.run("style.edit_surface_style", style="texture_style", attributes={"Textures": "textures"}).should_be_called().will_return("textures")
+
         style.record_shading("obj").should_be_called()
-        subject.update_style_colours(ifc, style, obj="obj")
+        subject.update_style_colours(ifc, style, obj="obj", verbose="verbose")
 
     def test_adding_a_rendering_style_if_not_available(self, ifc, style):
         style.get_style("obj").should_be_called().will_return("element")
         style.can_support_rendering_style("obj").should_be_called().will_return(True)
+
         style.get_surface_rendering_style("obj").should_be_called().will_return(None)
-        style.get_surface_rendering_attributes("obj").should_be_called().will_return("attributes")
+        style.get_texture_style("obj").should_be_called().will_return(None)
+        style.get_surface_rendering_attributes("obj", "verbose").should_be_called().will_return("attributes")
         ifc.run(
             "style.add_surface_style", style="element", ifc_class="IfcSurfaceStyleRendering", attributes="attributes"
         ).should_be_called()
+
+        ifc.run("style.add_surface_textures", material="obj").should_be_called().will_return("textures")
+        ifc.run(
+            "style.add_surface_style",
+            style="element",
+            ifc_class="IfcSurfaceStyleWithTextures",
+            attributes={"Textures": "textures"},
+        ).should_be_called()
+
         style.record_shading("obj").should_be_called()
-        subject.update_style_colours(ifc, style, obj="obj")
+        subject.update_style_colours(ifc, style, obj="obj", verbose="verbose")
 
     def test_updating_shading_style_as_a_fallback_if_available(self, ifc, style):
         style.get_style("obj").should_be_called().will_return("element")
@@ -212,3 +229,10 @@ class TestDisableEditingStyles:
     def test_run(self, style):
         style.disable_editing_styles().should_be_called()
         subject.disable_editing_styles(style)
+
+
+class TestSelectByStyle:
+    def test_run(self, style, spatial):
+        style.get_elements_by_style("style").should_be_called().will_return("elements")
+        spatial.select_products("elements").should_be_called()
+        subject.select_by_style(style, spatial, style="style")

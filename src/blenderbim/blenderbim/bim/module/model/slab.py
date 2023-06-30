@@ -133,7 +133,7 @@ class DumbSlabGenerator:
 
         props = bpy.context.scene.BIMModelProperties
         self.collection = bpy.context.view_layer.active_layer_collection.collection
-        self.collection_obj = bpy.data.objects.get(self.collection.name)
+        self.collection_obj = self.collection.BIMCollectionProperties.obj
         self.depth = sum(thicknesses) * unit_scale
         self.width = 3
         self.length = 3

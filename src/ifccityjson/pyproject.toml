@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ifccityjson"
+version = "0.1.0"
+authors = [
+    { name = "Laurens J.N. Oostwegel", email = "l.oostwegel@gmail.com" },
+    { name = "Balázs Dukai", email = "balazs.dukai@3dgi.nl" },
+]
+description = "Converter for CityJSON files and IFC"
+readme = "README.md"
+keywords = ["IFC", "CityJSON"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
+]
+dependencies = [
+    "ifcopenshell>=0.7",
+    "cjio>=0.8"
+]
+[project.urls]
+"Homepage" = "http://ifcopenshell.org"
+"Bug Tracker" = "https://github.com/ifcopenshell/ifcopenshell/issues"

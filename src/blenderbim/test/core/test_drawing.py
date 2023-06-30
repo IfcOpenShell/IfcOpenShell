@@ -442,7 +442,7 @@ class TestUpdateDrawingName:
         drawing.get_drawing_group("drawing").should_be_called().will_return("group")
         drawing.get_name("group").should_be_called().will_return("name")
         drawing.get_drawing_collection("drawing").should_be_called().will_return("collection")
-        drawing.set_drawing_collection_name("group", "collection").should_be_called()
+        drawing.set_drawing_collection_name("drawing", "collection").should_be_called()
 
         drawing.get_drawing_document("drawing").should_be_called().will_return("reference")
         drawing.get_reference_document("reference").should_be_called().will_return("information")
@@ -459,7 +459,7 @@ class TestUpdateDrawingName:
         drawing.get_name("group").should_be_called().will_return("oldname")
         ifc.run("attribute.edit_attributes", product="group", attributes={"Name": "name"}).should_be_called()
         drawing.get_drawing_collection("drawing").should_be_called().will_return("collection")
-        drawing.set_drawing_collection_name("group", "collection").should_be_called()
+        drawing.set_drawing_collection_name("drawing", "collection").should_be_called()
 
         drawing.get_drawing_document("drawing").should_be_called().will_return("reference")
         drawing.get_reference_document("reference").should_be_called().will_return("information")

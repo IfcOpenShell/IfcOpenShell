@@ -34,8 +34,8 @@ def assign_type(ifc, type_tool, element=None, type=None):
 def purge_unused_types(ifc, type):
     for element_type in type.get_model_types():
         if not type.get_type_occurrences(element_type):
-            ifc.run("root.remove_product", product=element_type)
             obj = ifc.get_object(element_type)
+            ifc.run("root.remove_product", product=element_type)
             if obj:
                 ifc.unlink(obj=obj)
                 type.remove_object(obj)

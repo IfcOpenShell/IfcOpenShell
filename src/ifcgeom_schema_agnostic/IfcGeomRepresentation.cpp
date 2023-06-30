@@ -332,7 +332,7 @@ IfcGeom::Representation::Triangulation::Triangulation(const BRep& shape_model)
 				for (int i = 1; i <= tri->NbNodes(); ++i) {
 					coords.push_back(tri->Node(i).Transformed(loc).XYZ());
 					trsf.Transforms(*coords.rbegin());
-					dict[i] = addVertex(surface_style_id, *coords.rbegin());
+					dict[i] = addVertex(iit->ItemId(), surface_style_id, *coords.rbegin());
 
 					if (calculate_normals) {
 						const gp_Pnt2d& uv = tri->UVNode(i);
@@ -387,6 +387,7 @@ IfcGeom::Representation::Triangulation::Triangulation(const BRep& shape_model)
 					_faces.push_back(dict[n3]);
 
 					_material_ids.push_back(surface_style_id);
+					_item_ids.push_back(iit->ItemId());
 
 					addEdge(dict[n1], dict[n2], edgecount, edges_temp);
 					addEdge(dict[n2], dict[n3], edgecount, edges_temp);
@@ -420,7 +421,7 @@ IfcGeom::Representation::Triangulation::Triangulation(const BRep& shape_model)
 				for (int i = 1; i <= n; ++i) {
 					gp_XYZ p = tessellater.Value(i).XYZ();
 
-					int current = addVertex(surface_style_id, p);
+					int current = addVertex(iit->ItemId(), surface_style_id, p);
 
 					std::vector<std::pair<int, int>> segments;
 					if (i > 1) {
@@ -452,8 +453,8 @@ IfcGeom::Representation::Triangulation::Triangulation(const BRep& shape_model)
 						trsf.Transforms(p3);
 						trsf.Transforms(p);
 
-						int left = addVertex(surface_style_id, p2);
-						int right = addVertex(surface_style_id, p3);
+						int left = addVertex(iit->ItemId(), surface_style_id, p2);
+						int right = addVertex(iit->ItemId(), surface_style_id, p3);
 
 						segments.push_back(std::make_pair(left, current));
 						segments.push_back(std::make_pair(right, current));
@@ -463,6 +464,7 @@ IfcGeom::Representation::Triangulation::Triangulation(const BRep& shape_model)
 						_edges.push_back(sgmt.first);
 						_edges.push_back(sgmt.second);
 						_material_ids.push_back(surface_style_id);
+						_item_ids.push_back(iit->ItemId());
 					}
 
 					previous = current;
@@ -505,14 +507,14 @@ std::vector<double> IfcGeom::Representation::Triangulation::box_project_uvs(cons
 	return uvs;
 }
 
-int IfcGeom::Representation::Triangulation::addVertex(int material_index, const gp_XYZ & p) {
+int IfcGeom::Representation::Triangulation::addVertex(int item_index, int material_index, const gp_XYZ & p) {
 	const bool convert = settings().get(IteratorSettings::CONVERT_BACK_UNITS);
 	const double X = convert ? (p.X() / settings().unit_magnitude()) : p.X();
 	const double Y = convert ? (p.Y() / settings().unit_magnitude()) : p.Y();
 	const double Z = convert ? (p.Z() / settings().unit_magnitude()) : p.Z();
 	int i = (int)_verts.size() / 3;
 	if (settings().get(IteratorSettings::WELD_VERTICES)) {
-		const VertexKey key = std::make_pair(material_index, std::make_pair(X, std::make_pair(Y, Z)));
+		const VertexKey key = std::make_tuple(item_index, material_index, X, Y, Z);
 		typename VertexKeyMap::const_iterator it = welds.find(key);
 		if (it != welds.end()) return it->second;
 		i = (int)(welds.size() + weld_offset_);

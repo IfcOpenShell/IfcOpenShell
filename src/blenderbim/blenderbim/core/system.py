@@ -66,14 +66,14 @@ def select_system_products(system_tool, system=None):
     system_tool.select_system_products(system)
 
 
-def show_ports(ifc, system, element=None):
+def show_ports(ifc, system, spatial, element=None):
     obj = ifc.get_object(element)
     if obj and ifc.is_moved(obj):
         system.run_geometry_edit_object_placement(obj=obj)
 
     ports = system.get_ports(element)
     system.load_ports(element, ports)
-    system.select_elements(ports)
+    spatial.select_products(ports)
 
 
 def hide_ports(ifc, system, element=None):

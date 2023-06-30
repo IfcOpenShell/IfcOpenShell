@@ -29,6 +29,14 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_opening"
     bl_label = "Add Opening"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Adds an opening to an element.\n" \
+        "Need to select two elements, order of selection is not important"
+
+    @classmethod
+    def poll(cls, context):
+        if len(context.selected_objects) != 2:
+            cls.poll_message_set("Select two elements to add an opening")
+        return True
 
     def _execute(self, context):
         props = context.scene.BIMModelProperties

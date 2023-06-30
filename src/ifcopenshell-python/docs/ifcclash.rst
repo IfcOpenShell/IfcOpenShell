@@ -12,7 +12,7 @@ Source installation
 2. `Install hppfcl <https://github.com/humanoid-path-planner/hpp-fcl>`_
 3. Optionally `install bcf <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/bcf>`_ (needed for BCF reports of results)
 4. `Clone the source code <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/ifcclash>`_.
-5. ``cd /path/to/src/ifcclash``
+5. ``cd /path/to/IfcOpenShell/src/ifcclash``
 
 Here is a minimal example of how to use IfcPatch as a Python module or CLI
 utility:
@@ -90,7 +90,6 @@ Here is a minimal example of how to use IfcClash as a library:
     import json
     import logging
     import ifcclash
-
 
     settings = ClashSettings()
     settings.output = "output.json"

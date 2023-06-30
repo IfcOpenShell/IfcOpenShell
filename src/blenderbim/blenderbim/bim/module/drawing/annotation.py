@@ -45,7 +45,7 @@ class Annotator:
             font.name = "OpenGost Type B TT"
         obj.data.font = font
         obj.data.BIMTextProperties.font_size = "2.5"
-        collection = bpy.context.scene.camera.users_collection[0]
+        collection = bpy.context.scene.camera.BIMObjectProperties.collection
         collection.objects.link(obj)
         Annotator.resize_text(obj)
         return obj
@@ -53,9 +53,10 @@ class Annotator:
     @staticmethod
     def resize_text(text_obj):
         camera = None
-        for obj in text_obj.users_collection[0].objects:
-            if isinstance(obj.data, bpy.types.Camera):
-                camera = obj
+        group = tool.Drawing.get_drawing_group(tool.Ifc.get_entity(text_obj))
+        for element in tool.Drawing.get_drawing_elements(group):
+            if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
+                camera = tool.Ifc.get_object(element)
                 break
         if not camera:
             return
@@ -112,7 +113,7 @@ class Annotator:
         co1, _, _, _ = Annotator.get_placeholder_coords(camera)
         matrix_world = camera.matrix_world.copy()
         matrix_world.translation = co1
-        collection = camera.users_collection[0]
+        collection = camera.BIMObjectProperties.collection
 
         if object_type == "TEXT":
             obj = bpy.data.objects.new(object_type, None)

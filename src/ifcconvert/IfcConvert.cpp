@@ -34,6 +34,7 @@
 #include "../serializers/WavefrontObjSerializer.h"
 #include "../serializers/XmlSerializer.h"
 #include "../serializers/SvgSerializer.h"
+#include "../serializers/USDSerializer.h"
 
 #include "../ifcgeom_schema_agnostic/IfcGeomFilter.h"
 #include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
@@ -101,6 +102,9 @@ void print_usage(bool suggest_help = true)
 #endif
 #ifdef WITH_GLTF
 		<< "  .glb   glTF           Binary glTF v2.0\n"
+#endif
+#ifdef WITH_USD
+		<< "  .usd   USD            Universal Scene Description\n"
 #endif
         << "  .stp   STEP           Standard for the Exchange of Product Data\n"
         << "  .igs   IGES           Initial Graphics Exchange Specification\n"
@@ -410,6 +414,8 @@ int main(int argc, char** argv) {
 			"Stores name and guid in a separate namespace as opposed to data-name, data-guid")
 		("svg-poly",
 			"Uses the polygonal algorithm for hidden line rendering")
+		("svg-prefilter",
+			"Prefilter faces and shapes before feeding to HLR algorithm")
 		("svg-write-poly",
 			"Approximate every curve as polygonal in SVG output")
 		("svg-project",
@@ -707,7 +713,10 @@ int main(int argc, char** argv) {
 		CACHE = IfcUtil::path::from_utf8(".cache"),
 		HDF = IfcUtil::path::from_utf8(".h5"),
 		XML = IfcUtil::path::from_utf8(".xml"),
-		IFC = IfcUtil::path::from_utf8(".ifc");
+		IFC = IfcUtil::path::from_utf8(".ifc"),
+		USD = IfcUtil::path::from_utf8(".usd"),
+		USDA = IfcUtil::path::from_utf8(".usda"),
+		USDC = IfcUtil::path::from_utf8(".usdc");
 
 	// @todo clean up serializer selection
 	// @todo detect program options that conflict with the chosen serializer
@@ -850,6 +859,10 @@ int main(int argc, char** argv) {
 #ifdef WITH_GLTF
 	} else if (output_extension == GLB) {
 		serializer = boost::make_shared<GltfSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
+#endif
+#ifdef WITH_USD
+	} else if (output_extension == USD || output_extension == USDA || output_extension == USDC) {
+		serializer = boost::make_shared<USDSerializer>(IfcUtil::path::to_utf8(output_filename), settings);
 #endif
 	} else if (output_extension == STP) {
 		serializer = boost::make_shared<StepSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
@@ -1071,6 +1084,7 @@ int main(int argc, char** argv) {
 		}
 		static_cast<SvgSerializer*>(serializer.get())->setUseNamespace(vmap.count("svg-xmlns") > 0);
 		static_cast<SvgSerializer*>(serializer.get())->setUseHlrPoly(vmap.count("svg-poly") > 0);
+		static_cast<SvgSerializer*>(serializer.get())->setUsePrefiltering(vmap.count("svg-prefilter") > 0);
 		static_cast<SvgSerializer*>(serializer.get())->setPolygonal(vmap.count("svg-write-poly") > 0);
 		static_cast<SvgSerializer*>(serializer.get())->setAlwaysProject(vmap.count("svg-project") > 0);
 		static_cast<SvgSerializer*>(serializer.get())->setWithoutStoreys(vmap.count("svg-without-storeys") > 0);
@@ -1173,9 +1187,17 @@ int main(int argc, char** argv) {
 
 	Logger::Message(Logger::LOG_PERF, "done file geometry conversion");
 
-    // Renaming might fail (e.g. maybe the existing file was open in a viewer application)
-    // Do not remove the temp file as user can salvage the conversion result from it.
-    bool successful = IfcUtil::path::rename_file(IfcUtil::path::to_utf8(output_temp_filename), IfcUtil::path::to_utf8(output_filename));
+	bool successful;
+	if(output_extension == USD || output_extension == USDC || output_extension == USDA) {
+		// No need to rename the file
+		successful = true;
+	}
+	else {
+		// Renaming might fail (e.g. maybe the existing file was open in a viewer application)
+    	// Do not remove the temp file as user can salvage the conversion result from it.
+		successful = IfcUtil::path::rename_file(IfcUtil::path::to_utf8(output_temp_filename), IfcUtil::path::to_utf8(output_filename));
+	}
+
     if (!successful) {
         cerr_ << "Unable to write output file '" << output_filename << "', see '" <<
             output_temp_filename << "' for the conversion result.";

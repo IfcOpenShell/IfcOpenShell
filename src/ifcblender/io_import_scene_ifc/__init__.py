@@ -176,7 +176,8 @@ def import_ifc(filename, use_names, process_relations, blender_booleans):
                             mat.use_screen_refraction = True
                             mat.refraction_depth = 0.1
                             mat.use_nodes = True
-                            mat.node_tree.nodes["Principled BSDF"].inputs[15].default_value = v
+                            bsdf = next(n for n in mat.node_tree.nodes if n.type == "BSDF_PRINCIPLED")
+                            bsdf.inputs[15].default_value = v
                         else:
                             setattr(mat, k, v)
                 me.materials.append(mat)

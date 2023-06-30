@@ -18,6 +18,8 @@
 
 #include "IfcGeom.h"
 
+#include <numeric>
+
 template <typename T, typename U>
 int convert_to_ifc(const T& t, U*& u, bool /*advanced*/) {
 	std::vector<double> coords(3);
@@ -220,6 +222,15 @@ int convert_to_ifc(const Handle_Geom_Curve& c, IfcSchema::IfcCurve*& curve, bool
 			}
 		}
 
+		if (bspline->IsPeriodic() && points->size()) {
+			points->push(*points->begin());
+			weights.push_back(weights[0]);
+			auto sum = std::accumulate(mults.begin(), mults.end(), 0);
+			auto d = sum - (bspline->Degree() + (int)points->size() + 1);
+			(*mults.begin()) -= d / 2;
+			(*mults.rbegin()) -= d / 2;
+		}
+
 		if (rational) {
 			curve = new IfcSchema::IfcRationalBSplineCurveWithKnots(
 				bspline->Degree(),
@@ -384,8 +395,8 @@ int convert_to_ifc(const TopoDS_Edge& e, IfcSchema::IfcCurve*& c, bool advanced)
 		return 0;
 	}
 
-	aggregate_of_instance::ptr trim1(new aggregate_of_instance);
-	aggregate_of_instance::ptr trim2(new aggregate_of_instance);
+	IfcSchema::IfcTrimmingSelect::list::ptr trim1(new IfcSchema::IfcTrimmingSelect::list);
+	IfcSchema::IfcTrimmingSelect::list::ptr trim2(new IfcSchema::IfcTrimmingSelect::list);
 	trim1->push(new IfcSchema::IfcParameterValue(a));
 	trim2->push(new IfcSchema::IfcParameterValue(b));
 
@@ -616,11 +627,11 @@ IfcUtil::IfcBaseClass* IfcGeom::MAKE_TYPE_NAME(serialise_)(const TopoDS_Shape& s
 	}
 
 	if (items->size() > 0) {
-		rep = new IfcSchema::IfcShapeRepresentation(0, std::string("Body"), std::string("Brep"), items);
+		rep = new IfcSchema::IfcShapeRepresentation(0, std::string("Body"), advanced ? std::string("AdvancedBrep") : std::string("Brep"), items);
 	} else {
 
 		// If not, see if there is a shell
-		IfcSchema::IfcOpenShell::list::ptr shells(new IfcSchema::IfcOpenShell::list);
+		IfcSchema::IfcShell::list::ptr shells(new IfcSchema::IfcShell::list);
 		for (TopExp_Explorer exp(shape, TopAbs_SHELL); exp.More(); exp.Next()) {
 			IfcSchema::IfcOpenShell* shell;
 			if (!convert_to_ifc(exp.Current(), shell, advanced)) {
@@ -630,8 +641,8 @@ IfcUtil::IfcBaseClass* IfcGeom::MAKE_TYPE_NAME(serialise_)(const TopoDS_Shape& s
 		}
 
 		if (shells->size() > 0) {
-			items->push(new IfcSchema::IfcShellBasedSurfaceModel(shells->generalize()));
-			rep = new IfcSchema::IfcShapeRepresentation(0, std::string("Body"), std::string("Brep"), items);
+			items->push(new IfcSchema::IfcShellBasedSurfaceModel(shells));
+			rep = new IfcSchema::IfcShapeRepresentation(0, std::string("Body"), advanced ? std::string("AdvancedBrep") : std::string("Brep"), items);
 		} else {
 
 			// If not, see if there is are one of more faces. Note that they will be grouped into a shell.
@@ -640,7 +651,7 @@ IfcUtil::IfcBaseClass* IfcGeom::MAKE_TYPE_NAME(serialise_)(const TopoDS_Shape& s
 
 			if (face_count > 0) {
 				items->push(shell);
-				rep = new IfcSchema::IfcShapeRepresentation(0, std::string("Body"), std::string("Brep"), items);
+				rep = new IfcSchema::IfcShapeRepresentation(0, std::string("Body"), advanced ? std::string("AdvancedBrep") : std::string("Brep"), items);
 			} else {
 
 				// If not, see if there are any edges. Note that wires are skipped as
@@ -663,7 +674,7 @@ IfcUtil::IfcBaseClass* IfcGeom::MAKE_TYPE_NAME(serialise_)(const TopoDS_Shape& s
 					rep = new IfcSchema::IfcShapeRepresentation(0, std::string("Axis"), std::string("Curve2D"), edges->as<IfcSchema::IfcRepresentationItem>());
 				} else {
 					// A geometric set is created as that probably (?) makes more sense in IFC
-					IfcSchema::IfcGeometricCurveSet* curves = new IfcSchema::IfcGeometricCurveSet(edges);
+					IfcSchema::IfcGeometricCurveSet* curves = new IfcSchema::IfcGeometricCurveSet(edges->as<IfcSchema::IfcGeometricSetSelect>());
 					items->push(curves);
 					rep = new IfcSchema::IfcShapeRepresentation(0, std::string("Axis"), std::string("GeometricCurveSet"), items->as<IfcSchema::IfcRepresentationItem>());
 				}

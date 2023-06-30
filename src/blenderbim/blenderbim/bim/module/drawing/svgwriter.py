@@ -100,6 +100,9 @@ class SvgWriter:
             if not os.path.exists(resource_path):
                 resource_basename = os.path.basename(resource_path)
                 ootb_resource = os.path.join(bpy.context.scene.BIMProperties.data_dir, "assets", resource_basename)
+                print(
+                    f"WARNING. Couldn't find {resource} for the drawing by the path: {resource_path}. Default BBIM resource will be copied from {ootb_resource}"
+                )
                 if os.path.exists(ootb_resource):
                     shutil.copy(ootb_resource, resource_path)
             self.resource_paths[resource] = resource_path
@@ -121,23 +124,35 @@ class SvgWriter:
         self.height = self.raw_height * self.svg_scale
 
     def add_stylesheet(self):
-        if not self.resource_paths["Stylesheet"] or not os.path.exists(self.resource_paths["Stylesheet"]):
+        path = self.resource_paths["Stylesheet"]
+        if not path:
             return
-        with open(self.resource_paths["Stylesheet"], "r") as stylesheet:
+        if not os.path.exists(path):
+            print(f"WARNING. Couldn't find stylesheet for the drawing by the path: {path}")
+            return
+        with open(path, "r") as stylesheet:
             self.svg.defs.add(self.svg.style(stylesheet.read()))
 
     def add_markers(self):
-        if not self.resource_paths["Markers"] or not os.path.exists(self.resource_paths["Markers"]):
+        path = self.resource_paths["Markers"]
+        if not path:
             return
-        tree = ET.parse(self.resource_paths["Markers"])
+        if not os.path.exists(path):
+            print(f"WARNING. Couldn't find markers for the drawing by the path: {path}")
+            return
+        tree = ET.parse(path)
         root = tree.getroot()
         for child in root:
             self.svg.defs.add(External(child))
 
     def add_symbols(self):
-        if not self.resource_paths["Symbols"] or not os.path.exists(self.resource_paths["Symbols"]):
+        path = self.resource_paths["Symbols"]
+        if not path:
             return
-        tree = ET.parse(self.resource_paths["Symbols"])
+        if not os.path.exists(path):
+            print(f"WARNING. Couldn't find symbols for the drawing by the path: {path}")
+            return
+        tree = ET.parse(path)
         root = tree.getroot()
         for child in root:
             self.svg.defs.add(External(child))
@@ -148,9 +163,15 @@ class SvgWriter:
         return External(xml_symbol) if xml_symbol else None
 
     def add_patterns(self):
-        if not self.resource_paths["Patterns"] or not os.path.exists(self.resource_paths["Patterns"]):
+        path = self.resource_paths["Patterns"]
+        if not path:
             return
-        tree = ET.parse(self.resource_paths["Patterns"])
+        if not os.path.exists(path):
+            print(f"WARNING. Couldn't find patterns for the drawing by the path: {path}")
+            return
+        if not path or not os.path.exists(path):
+            return
+        tree = ET.parse(path)
         root = tree.getroot()
         for child in root:
             self.svg.defs.add(External(child))
@@ -838,6 +859,10 @@ class SvgWriter:
                     tspan.update({"dy": f"{line_number}em"})
                     text_tag.add(tspan)
                     line_number += 1
+
+                if add_fill_bg:
+                    # return line_number back to the original value
+                    line_number -= len(text_lines)
 
             if "fill-bg" in classes:
                 add_text_tag(True)

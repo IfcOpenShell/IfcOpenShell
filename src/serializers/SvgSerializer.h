@@ -23,6 +23,7 @@
 #define SVGSERIALIZER_H
 
 #include "../ifcgeom_schema_agnostic/GeometrySerializer.h"
+#include "../ifcgeom_schema_agnostic/base_utils.h"
 #include "../serializers/serializers_api.h"
 #include "../serializers/util.h"
 
@@ -35,6 +36,11 @@
 #include <gp_Pln.hxx>
 #include <Bnd_Box.hxx>
 #include <Standard_Version.hxx>
+#include <BRep_Builder.hxx>
+#include <HLRBRep_PolyHLRToShape.hxx>
+#include <BRepTopAdaptor_FClass2d.hxx>
+#include <Geom_Plane.hxx>
+#include <BRepBndLib.hxx>
 
 #if OCC_VERSION_HEX >= 0x70300
 #include <Bnd_OBB.hxx>
@@ -43,6 +49,7 @@
 #include <sstream>
 #include <string>
 #include <limits>
+#include <array>
 
 typedef std::pair<IfcUtil::IfcBaseEntity*, std::string> drawing_key;
 
@@ -134,7 +141,349 @@ typedef boost::variant<
 	boost::blank,
 	Handle(HLRBRep_Algo),
 	Handle(HLRBRep_PolyAlgo)
-> hlr_t;
+> hlr_brep_or_poly_t;
+
+namespace {
+	class hlr_writer {
+		const TopoDS_Shape& shape_;
+
+	public:
+		typedef void result_type;
+
+		hlr_writer(const TopoDS_Shape& shape) : shape_(shape)
+		{}
+
+		void operator()(boost::blank&) const {
+			throw std::runtime_error("");
+		}
+
+		void operator()(opencascade::handle<HLRBRep_Algo>& algo) const {
+			algo->Add(shape_);
+		}
+
+		void operator()(opencascade::handle<HLRBRep_PolyAlgo>& algo) const {
+			BRepMesh_IncrementalMesh(shape_, 0.10);
+			algo->Load(shape_);
+		}
+	};
+
+	template <typename T>
+	TopoDS_Compound occt_join(T t) {
+		BRep_Builder B;
+		TopoDS_Compound C;
+		B.MakeCompound(C);
+		if (!t.IsNull()) {
+			TopoDS_Iterator it(t);
+			for (; it.More(); it.Next()) {
+				B.Add(C, it.Value());
+			}
+		}
+		return C;
+	}
+
+	template <typename T, typename... Ts>
+	TopoDS_Compound occt_join(T t, Ts... tss) {
+		BRep_Builder B;
+		TopoDS_Compound C;
+		B.MakeCompound(C);
+		if (!t.IsNull()) {
+			TopoDS_Iterator it(t);
+			for (; it.More(); it.Next()) {
+				B.Add(C, it.Value());
+			}
+		}
+		auto rest = occt_join(tss...);
+		if (!rest.IsNull()) {
+			TopoDS_Iterator it(rest);
+			for (; it.More(); it.Next()) {
+				B.Add(C, it.Value());
+			}
+		}
+		return C;
+	}
+
+	class hlr_calc {
+	private:
+		const HLRAlgo_Projector& projector_;
+
+	public:
+		typedef TopoDS_Shape result_type;
+
+		hlr_calc(const HLRAlgo_Projector& projector) : projector_(projector)
+		{}
+
+		TopoDS_Shape operator()(boost::blank&) const {
+			throw std::runtime_error("");
+		}
+
+		TopoDS_Shape operator()(opencascade::handle<HLRBRep_Algo>& algo) {
+			algo->Projector(projector_);
+			algo->Update();
+			algo->Hide();
+			HLRBRep_HLRToShape hlr_shapes(algo);
+			return occt_join(hlr_shapes.OutLineVCompound(), hlr_shapes.VCompound());
+		}
+
+		TopoDS_Shape operator()(opencascade::handle<HLRBRep_PolyAlgo>& algo) {
+			algo->Projector(projector_);
+			algo->Update();
+			HLRBRep_PolyHLRToShape hlr_shapes;
+			hlr_shapes.Update(algo);
+			return occt_join(hlr_shapes.OutLineVCompound(), hlr_shapes.VCompound());
+		}
+	};
+
+	class prefiltered_hlr {
+
+		class face_info {
+		private:
+			gp_XYZ dxyz, xdir, ydir;
+
+		public:
+			std::list<TopoDS_Shape>::const_iterator item;
+			TopoDS_Face face;
+			bool is_convex;
+			// @note copying the BRepTopAdaptor_FClass2d didn't work so it's a pointer
+			BRepTopAdaptor_FClass2d* fclass;
+
+			face_info(std::list<TopoDS_Shape>::const_iterator it, const TopoDS_Face& fa)
+				: item(it)
+				, face(fa)
+				, fclass(nullptr)
+			{
+				TopExp_Explorer exp(face, TopAbs_WIRE);
+				is_convex = exp.More() && IfcGeom::util::is_convex(TopoDS::Wire(exp.Current()), 1.e-5) && ([&exp]() {exp.Next(); return true; })() && !exp.More();
+
+				auto surf = BRep_Tool::Surface(fa);
+				if (surf->DynamicType() != STANDARD_TYPE(Geom_Plane)) {
+					throw std::runtime_error("Not implemented");
+				}
+
+				auto pln = Handle(Geom_Plane)::DownCast(surf);
+
+				dxyz = pln->Position().Location().XYZ();
+				xdir = pln->Position().XDirection().XYZ();
+				ydir = pln->Position().YDirection().XYZ();
+			}
+
+			~face_info() {
+				delete fclass;
+			}
+
+			void project(const gp_Pnt& xyz, gp_Pnt2d& uv) {
+				const gp_Vec d = xyz.XYZ() - dxyz;
+				uv.SetX(d.Dot(xdir));
+				uv.SetY(d.Dot(ydir));
+			}
+
+			void interp(const gp_Pnt2d& a, const gp_Pnt2d& b, double d, gp_Pnt2d& out) {
+				out.SetCoord(a.X() + (b.X() - a.X()) * d, a.Y() + (b.Y() - a.Y()) * d);
+			}
+
+			bool contains(const gp_Pnt& bottomleft, const gp_Pnt& topright) {
+				gp_Pnt2d a, b;
+				project(bottomleft, a);
+				project(topright, b);
+				return contains(a, b);
+			}
+
+			bool contains(const gp_Pnt2d& bottomleft, const gp_Pnt2d& topright) {
+				if (!fclass) {
+					fclass = new BRepTopAdaptor_FClass2d(face, 1.e-5);
+				}
+				// @todo unify with the 2d boolean algo 
+				gp_Pnt2d bottomright(topright.X(), bottomleft.Y());
+				gp_Pnt2d topleft(bottomleft.X(), topright.Y());
+				std::array<gp_Pnt2d const*, 4> loop{ {
+					&bottomleft,
+					&bottomright,
+					&topright,
+					&topleft
+				} };
+
+				if (is_convex) {
+					for (int i = 0; i < 4; ++i) {
+						if (fclass->Perform(*loop[i]) == TopAbs_OUT) {
+							return false;
+						}
+					}
+				} else {
+					gp_Pnt2d tmp;
+					for (int i = 0; i < 4; ++i) {
+						// @todo proper edge intersection
+						for (int j = 0; j < 16; ++j) {
+							const gp_Pnt2d& a = *loop[i];
+							const gp_Pnt2d& b = *loop[(i + 1) % 4];
+							interp(a, b, j / 16.0, tmp);
+							if (fclass->Perform(tmp) == TopAbs_OUT) {
+								return false;
+							}
+						}
+					}
+				}
+
+				return true;
+			}
+		};
+
+		hlr_brep_or_poly_t engine_;
+		bool use_prefiltering_;
+		bool use_hlr_poly_;
+		gp_Ax1 view_direction_;
+		HLRAlgo_Projector projector_;
+
+		std::multimap<double, face_info> large_ortho_faces_;
+		std::list<TopoDS_Shape> items_;
+
+	public:
+
+		prefiltered_hlr(bool use_prefiltering, bool use_hlr_poly, const gp_Pln& view_direction)
+			: use_prefiltering_(use_prefiltering)
+			, use_hlr_poly_(use_hlr_poly)
+			// @nb negative z in accordance with occt projector convention (and opengl)
+			, view_direction_(view_direction.Axis())
+		{
+			if (use_hlr_poly_) {
+				engine_ = new HLRBRep_PolyAlgo;
+			} else {
+				engine_ = new HLRBRep_Algo;
+			}
+
+			gp_Trsf trsf;
+			trsf.SetTransformation(view_direction.Position());
+			projector_ = HLRAlgo_Projector(trsf, false, 1.);
+		}
+
+		bool is_obscured_(std::list<TopoDS_Shape>::const_iterator sit) {
+			const TopoDS_Shape& s = *sit;
+
+			double min_d = std::numeric_limits<double>::infinity();
+
+			TopExp_Explorer exp(s, TopAbs_VERTEX);
+			for (; exp.More(); exp.Next()) {
+				const auto& v = TopoDS::Vertex(exp.Current());
+				auto pnt = BRep_Tool::Pnt(v);
+				auto d = -(pnt.XYZ() - view_direction_.Location().XYZ()).Dot(view_direction_.Direction().XYZ());
+				if (d < min_d) {
+					min_d = d;
+				}
+			}
+
+			Bnd_Box box;
+			BRepBndLib::AddClose(s, box);
+
+			auto lower = large_ortho_faces_.lower_bound(0.);
+			auto upper = large_ortho_faces_.upper_bound(min_d);
+
+			for (auto it = lower; it != upper; ++it) {
+				if (it->second.item == sit) {
+					continue;
+				}
+
+				if (it->second.contains(box.CornerMin(), box.CornerMax())) {
+					return true;
+				}
+			}
+
+			return false;
+		}
+		
+		void add(const TopoDS_Shape& s) {
+			if (!use_prefiltering_) {
+				items_.insert(items_.end(), s);
+			}
+
+			TopoDS_Compound C;
+			BRep_Builder BB;
+			BB.MakeCompound(C);
+
+			gp_Pnt P;
+			gp_Vec V;
+			gp_Dir D;
+
+			if (IfcGeom::util::is_manifold(s)) {
+				size_t n_faces_included = 0, n_total = 0;
+				{
+					TopExp_Explorer exp(s, TopAbs_FACE);
+					for (; exp.More(); exp.Next(), n_total++) {
+						const auto& face = TopoDS::Face(exp.Current());
+						if (BRep_Tool::Surface(face)->DynamicType() == STANDARD_TYPE(Geom_Plane)) {
+							BRepGProp_Face prop(face);
+
+							prop.Normal(0., 0., P, V);
+							if (V.SquareMagnitude() > 1.e-9) {
+								D = V;
+								// keep only front-facing
+								if (D.Dot(view_direction_.Direction()) > 1.e-3) {
+									BB.Add(C, face);
+									n_faces_included++;
+								}
+							}
+						} else {
+							BB.Add(C, face);
+							n_faces_included++;
+						}
+					}
+				}
+
+				Logger::Notice("Included " + std::to_string(n_faces_included) + " faces out of " + std::to_string(n_total) + " after prefiltering");
+
+				auto it = items_.insert(items_.end(), C);
+
+				{
+					TopExp_Explorer exp(C, TopAbs_FACE);
+					for (; exp.More(); exp.Next()) {
+						const auto& face = TopoDS::Face(exp.Current());
+						if (BRep_Tool::Surface(face)->DynamicType() == STANDARD_TYPE(Geom_Plane)) {
+							
+							// find large faces orthogonal to view dir
+							BRepGProp_Face prop(face);
+							prop.Normal(0., 0., P, V);
+							D = V;
+
+							if (D.Dot(view_direction_.Direction()) > (1. - 1.e-3)) {
+								if (IfcGeom::util::face_area(face) > 2.) {
+									// arbitrary vertex, is ok because orthogonal to view dir
+									TopExp_Explorer expv(face, TopAbs_VERTEX);
+									if (expv.More()) {
+										const auto& v = TopoDS::Vertex(expv.Current());
+										auto pnt = BRep_Tool::Pnt(v);
+
+										auto d = -(pnt.XYZ() - view_direction_.Location().XYZ()).Dot(view_direction_.Direction().XYZ());
+
+										if (d > 1.e-5) {
+											large_ortho_faces_.insert({ d, face_info(it, face) });
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			} else {
+				items_.insert(items_.end(), s);
+			}
+		}
+
+		TopoDS_Shape build() {
+			size_t n_included = 0;
+			for (auto it = items_.begin(); it != items_.end(); ++it) {
+				if (!use_prefiltering_ || !is_obscured_(it)) {
+					hlr_writer vis(*it);
+					boost::apply_visitor(vis, engine_);
+					n_included++;
+				}
+			}
+			if (use_prefiltering_) {
+				Logger::Notice("Included " + std::to_string(n_included) + " elements out of " + std::to_string(items_.size()) + " after prefiltering");
+			}
+			hlr_calc vis(projector_);
+			return boost::apply_visitor(vis, engine_);
+		}
+	};
+}
+
+typedef prefiltered_hlr hlr_t;
 
 class SERIALIZERS_API SvgSerializer : public WriteOnlyGeometrySerializer {
 public:
@@ -162,7 +511,7 @@ protected:
 	storey_height_display_types storey_height_display_;
 	bool draw_door_arcs_, is_floor_plan_;
 	bool auto_section_, auto_elevation_;
-	bool use_namespace_, use_hlr_poly_, always_project_, polygonal_;
+	bool use_namespace_, use_hlr_poly_, use_prefiltering_, always_project_, polygonal_;
 	bool emit_building_storeys_;
 	bool no_css_;
 
@@ -181,7 +530,7 @@ protected:
 	
 	std::list<geometry_data> element_buffer_;
 
-	hlr_t hlr;
+	hlr_t* hlr;
 
 	std::string namespace_prefix_;
 
@@ -211,6 +560,7 @@ public:
 		, auto_elevation_(false)
 		, use_namespace_(false)
 		, use_hlr_poly_(false)
+		, use_prefiltering_(false)
 		, always_project_(false)
 		, polygonal_(false)
 		, emit_building_storeys_(true)
@@ -221,6 +571,7 @@ public:
 		, xcoords_begin(0)
 		, ycoords_begin(0)
 		, radii_begin(0)
+		, hlr(nullptr)
 		, namespace_prefix_("data-")
 		, subtraction_settings_(ON_SLABS_AT_FLOORPLANS)
 	{}
@@ -284,6 +635,14 @@ public:
 
 	void setUseHlrPoly(bool b) {
 		use_hlr_poly_ = b;
+	}
+
+	void setUsePrefiltering(bool b) {
+		use_prefiltering_ = b;
+	}
+
+	bool getUsePrefiltering() const {
+		return use_prefiltering_;
 	}
 
 	void setPolygonal(bool b) {
