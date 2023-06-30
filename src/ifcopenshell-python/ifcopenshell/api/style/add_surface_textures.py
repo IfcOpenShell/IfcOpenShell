@@ -130,12 +130,14 @@ class Usecase:
             return self.create_surface_texture(links[0].from_node, "DIFFUSE")
 
     def create_surface_texture(self, node, mode):
+        import blenderbim.tool as tool
+
         texture = self.file.create_entity(
             "IfcImageTexture",
             RepeatS=node.extension == "REPEAT",
             RepeatT=node.extension == "REPEAT",
             Mode=mode,
-            URLReference=node.image.filepath,
+            URLReference=tool.Blender.blender_path_to_posix(node.image.filepath),
         )
         self.textures.append(texture)
         self.process_texture_coordinates(node, texture)
