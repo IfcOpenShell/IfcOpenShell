@@ -75,7 +75,8 @@ class ShapeBuilder:
             last_segment = len(segments) - 1
             for seg_i, segment in enumerate(segments):
                 if len(segment) == 2:
-                    current_line_segment += segment
+                    # check if `current_line_segment` is empty to avoid duplicated indices like `IfcLineIndex((1,2,2,3,3,4,4,1))`
+                    current_line_segment += segment if not current_line_segment else segment[1:]
 
                 if current_line_segment and (len(segment) == 3 or seg_i == last_segment):
                     ifc_segments.append(self.file.createIfcLineIndex(current_line_segment))
