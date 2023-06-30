@@ -56,6 +56,7 @@ ifeq ($(PYVERSION), py37)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/linux-64/hpp-fcl-1.7.5-py37h5f1835d_0.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.5/download/linux-64/eigenpy-2.6.5-py37h95e2c48_0.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/linux-64/boost-1.74.0-py37h0379df6_3.tar.bz2
+QHULL_URL:=https://anaconda.org/conda-forge/qhull/2020.2/download/linux-64/qhull-2020.2-h4bd325d_2.tar.bz2
 LXML_URL:=https://files.pythonhosted.org/packages/30/c0/d0526314971fc661b083ab135747dc68446a3022686da8c16d25fcf6ef07/lxml-4.6.3-cp37-cp37m-manylinux2014_x86_64.whl
 SHAPELY_URL:=https://files.pythonhosted.org/packages/1d/a4/931d0780f31f3ea8c4f9ef6464a2825137c5241e6707a5fb03bef760a7eb/shapely-2.0.1-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
 PILLOW_URL:=https://files.pythonhosted.org/packages/ed/d5/c2e84e1e36ab8ebea033921d5886a056c77e18bab5ab1051fcc22de2e8a2/Pillow-9.2.0-cp37-cp37m-manylinux_2_28_x86_64.whl
@@ -64,6 +65,7 @@ ifeq ($(PYVERSION), py39)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/linux-64/hpp-fcl-1.7.5-py39hbcdfc36_0.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.5/download/linux-64/eigenpy-2.6.5-py39h5aed9d1_0.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/linux-64/boost-1.74.0-py39h5472131_3.tar.bz2
+QHULL_URL:=https://anaconda.org/conda-forge/qhull/2020.2/download/linux-64/qhull-2020.2-h4bd325d_2.tar.bz2
 LXML_URL:=https://files.pythonhosted.org/packages/19/d9/a69c6aff5673554df48120565a14a50eaa41d29ae03b02faa0b023666318/lxml-4.6.3-cp39-cp39-manylinux2014_x86_64.whl
 SHAPELY_URL:=https://files.pythonhosted.org/packages/2d/f2/8ec281d357e8bb7d08dc8d727f0e4c8ef3dae7d3fa75c69c8e452bb82d50/shapely-2.0.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
 PILLOW_URL:=https://files.pythonhosted.org/packages/01/61/3ff85fb4bb596ce3d223c8fcf93c8df5c12bc8899dfb4fb3cb1c5b20dd5f/Pillow-9.2.0-cp39-cp39-manylinux_2_28_x86_64.whl
@@ -72,6 +74,7 @@ ifeq ($(PYVERSION), py310)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.8.0/download/linux-64/hpp-fcl-1.8.0-py310hdaf7e41_1.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.11/download/linux-64/eigenpy-2.6.11-py310hf3e5c9c_0.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/linux-64/boost-1.74.0-py310h7c3ba0c_5.tar.bz2
+QHULL_URL:=https://anaconda.org/conda-forge/qhull/2020.2/download/linux-64/qhull-2020.2-h4bd325d_2.tar.bz2
 LXML_URL:=https://files.pythonhosted.org/packages/25/1e/19b46d8e8881fe0df2e20945d51919eeb1817836d62a90efa8506530e45c/lxml-4.8.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux_2_24_x86_64.whl
 SHAPELY_URL:=https://files.pythonhosted.org/packages/a8/a5/403728b5614b28083f6424dfdefec5fcf58068495fb03bb08532671c642f/shapely-2.0.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
 PILLOW_URL:=https://files.pythonhosted.org/packages/f6/51/320986ebd6d46a0e95c2240468ced73153b691ce07617078bcdf30c609ec/Pillow-9.2.0-cp310-cp310-manylinux_2_28_x86_64.whl
@@ -86,6 +89,7 @@ ifeq ($(PYVERSION), py37)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/osx-64/hpp-fcl-1.7.5-py37h2d7f23a_0.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.5/download/osx-64/eigenpy-2.6.5-py37h0695097_0.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/osx-64/boost-1.74.0-py37hd79e0ac_3.tar.bz2
+QHULL_URL:=https://anaconda.org/conda-forge/qhull/2020.2/download/osx-64/qhull-2020.2-h940c156_2.tar.bz2
 LXML_URL:=https://files.pythonhosted.org/packages/1e/3e/f0abc15d5dac50939bccc589aae336d5ead4c72e7ad1039a2e0f3630ea92/lxml-4.6.3-cp37-cp37m-macosx_10_9_x86_64.whl
 SHAPELY_URL:=https://files.pythonhosted.org/packages/e6/7d/4923f27c340339e1c896c77cafc8ed672c8d381a025bbab6c6ddcba27e8f/shapely-2.0.1-cp37-cp37m-macosx_10_9_x86_64.whl
 PILLOW_URL:=https://files.pythonhosted.org/packages/88/49/c26fc3b5b0e82bdc9d8751d6b939da29327b0d98f7c3b95a575cbfed2743/Pillow-9.2.0-cp37-cp37m-macosx_10_10_x86_64.whl
@@ -94,6 +98,7 @@ ifeq ($(PYVERSION), py39)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/osx-64/hpp-fcl-1.7.5-py39h1e32b98_0.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.5/download/osx-64/eigenpy-2.6.5-py39h5405915_0.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/osx-64/boost-1.74.0-py39ha641261_3.tar.bz2
+QHULL_URL:=https://anaconda.org/conda-forge/qhull/2020.2/download/osx-64/qhull-2020.2-h940c156_2.tar.bz2
 LXML_URL:=https://files.pythonhosted.org/packages/b8/74/a71f7ad72e8db54ce899efab84507b801660750cbbfa6a39e6717557d36a/lxml-4.6.3-cp39-cp39-macosx_10_9_x86_64.whl
 SHAPELY_URL:=https://files.pythonhosted.org/packages/36/a4/7e542a209f862f967d7cb8e939eff155f4294a27d17e16441fb8bdd51a2c/shapely-2.0.1-cp39-cp39-macosx_10_9_x86_64.whl
 PILLOW_URL:=https://files.pythonhosted.org/packages/88/7a/ddfe28b485b623361457d4783007c1f9ba83a87f93e7fec32f64793efb6c/Pillow-9.2.0-cp39-cp39-macosx_10_10_x86_64.whl
@@ -102,6 +107,7 @@ ifeq ($(PYVERSION), py310)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.8.0/download/osx-64/hpp-fcl-1.8.0-py310h651ac30_1.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.11/download/osx-64/eigenpy-2.6.11-py310hc03097c_0.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/osx-64/boost-1.74.0-py310h509978a_5.tar.bz2
+QHULL_URL:=https://anaconda.org/conda-forge/qhull/2020.2/download/osx-64/qhull-2020.2-h940c156_2.tar.bz2
 LXML_URL:=https://files.pythonhosted.org/packages/a1/44/17b7dac7a18807d30e2fe10c3328c152808f5464565e230bfd0e77f178c6/lxml-4.8.0-cp310-cp310-macosx_10_15_x86_64.whl
 SHAPELY_URL:=https://files.pythonhosted.org/packages/1f/2a/dc3353c2431cf53e8d04bb8fba27e584410ca3435c9c85f76d71bf0c0e80/shapely-2.0.1-cp310-cp310-macosx_10_9_x86_64.whl
 PILLOW_URL:=https://files.pythonhosted.org/packages/d8/60/b13c00d403f34110e96c1b5c0afa73ce461efe3fe960c3a7e3e7fe190d82/Pillow-9.2.0-cp310-cp310-macosx_10_10_x86_64.whl
@@ -455,13 +461,20 @@ endif
 	rm -rf dist/working
 
 	# Required by hpp-fcl only on macosm1 it seems
-ifeq ($(PLATFORM), macosm1)
 	mkdir dist/working
 	cd dist/working && wget $(QHULL_URL)
 	cd dist/working && tar -xf qhull*
-	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
-	rm -rf dist/working
+ifeq ($(PLATFORM), linux)
+	cp -r dist/working/lib/*.so* dist/blenderbim/libs/
 endif
+ifeq ($(PLATFORM), macos)
+	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
+endif
+ifeq ($(PLATFORM), macosm1)
+	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
+endif
+	# Windows doesn't need qhull?
+	rm -rf dist/working
 
 	# Required by hpp-fcl
 	mkdir dist/working
