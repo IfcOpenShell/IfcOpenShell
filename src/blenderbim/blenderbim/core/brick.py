@@ -118,5 +118,5 @@ def redo_brick(brick):
     brick.redo_brick()
     brick.run_refresh_brick_viewer()
 
-def serialize_brick(brick, file_name="BlenderBIMSerializeTest.ttl"):
-    brick.serialize_brick(file_name)
+def serialize_brick(brick):
+    brick.serialize_brick()
