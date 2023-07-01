@@ -415,6 +415,10 @@ class OverrideDelete(bpy.types.Operator):
         if self.is_batch:
             ifcopenshell.util.element.batch_remove_deep2(tool.Ifc.get())
         for obj in context.selected_objects:
+            pset = ifcopenshell.util.element.get_pset(tool.Ifc.get_entity(obj), "BBIM_Array")
+            if pset:
+                self.report({"INFO"}, "This element is part of an IFC array, can't be deleted individually. Remove the array if you want to proceed.")
+                return {"FINISHED"}
             if tool.Ifc.get_entity(obj):
                 tool.Geometry.delete_ifc_object(obj)
             else:
