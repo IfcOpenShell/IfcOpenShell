@@ -122,8 +122,8 @@ revision you are interested-in and switch as before.
 .. Tip::
 
     Conceptually a local branch is equivalent to a remote fork in somebody
-    else's copy of your repository, and indeed with an external Git tool you
-    can import their work into a branch in your local repository.
+    else's copy of your repository, and indeed by adding a remote you
+    can fetch their work into a *remote branch* in your local repository.
 
 Merging
 -------
@@ -137,8 +137,7 @@ Merging
 
 You can merge changes that exist in a selected revision into the current
 model, even if changes have been made in both revisions - as long as these
-changes don't directly conflict. After the merge you are able to view the
-combined changes before discarding or committing them.
+changes don't directly conflict.
 
 .. Note::
 
