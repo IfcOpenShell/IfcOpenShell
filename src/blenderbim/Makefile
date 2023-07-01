@@ -36,12 +36,8 @@ endif
 endif
 
 VERSION:=`date '+%y%m%d'`
-PYVERSION:=py37
+PYVERSION:=py310
 
-ifeq ($(PYVERSION), py37)
-PYLIBDIR:=python3.7
-PYNUMBER:=37
-endif
 ifeq ($(PYVERSION), py39)
 PYLIBDIR:=python3.9
 PYNUMBER:=39
@@ -52,132 +48,100 @@ PYNUMBER:=310
 endif
 
 ifeq ($(PLATFORM), linux)
-ifeq ($(PYVERSION), py37)
-HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/linux-64/hpp-fcl-1.7.5-py37h5f1835d_0.tar.bz2
-EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.5/download/linux-64/eigenpy-2.6.5-py37h95e2c48_0.tar.bz2
-BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/linux-64/boost-1.74.0-py37h0379df6_3.tar.bz2
-QHULL_URL:=https://anaconda.org/conda-forge/qhull/2020.2/download/linux-64/qhull-2020.2-h4bd325d_2.tar.bz2
-LXML_URL:=https://files.pythonhosted.org/packages/30/c0/d0526314971fc661b083ab135747dc68446a3022686da8c16d25fcf6ef07/lxml-4.6.3-cp37-cp37m-manylinux2014_x86_64.whl
-SHAPELY_URL:=https://files.pythonhosted.org/packages/1d/a4/931d0780f31f3ea8c4f9ef6464a2825137c5241e6707a5fb03bef760a7eb/shapely-2.0.1-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
-PILLOW_URL:=https://files.pythonhosted.org/packages/ed/d5/c2e84e1e36ab8ebea033921d5886a056c77e18bab5ab1051fcc22de2e8a2/Pillow-9.2.0-cp37-cp37m-manylinux_2_28_x86_64.whl
-endif
 ifeq ($(PYVERSION), py39)
-HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/linux-64/hpp-fcl-1.7.5-py39hbcdfc36_0.tar.bz2
-EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.5/download/linux-64/eigenpy-2.6.5-py39h5aed9d1_0.tar.bz2
-BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/linux-64/boost-1.74.0-py39h5472131_3.tar.bz2
+HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.3.4/download/linux-64/hpp-fcl-2.3.4-py39h40a70d0_0.conda
+EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.1.0/download/linux-64/eigenpy-3.1.0-py39hdfdd6bb_0.conda
+BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/linux-64/boost-1.78.0-py39h7c9e3ff_4.tar.bz2
 QHULL_URL:=https://anaconda.org/conda-forge/qhull/2020.2/download/linux-64/qhull-2020.2-h4bd325d_2.tar.bz2
 LXML_URL:=https://files.pythonhosted.org/packages/19/d9/a69c6aff5673554df48120565a14a50eaa41d29ae03b02faa0b023666318/lxml-4.6.3-cp39-cp39-manylinux2014_x86_64.whl
 SHAPELY_URL:=https://files.pythonhosted.org/packages/2d/f2/8ec281d357e8bb7d08dc8d727f0e4c8ef3dae7d3fa75c69c8e452bb82d50/shapely-2.0.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
 PILLOW_URL:=https://files.pythonhosted.org/packages/01/61/3ff85fb4bb596ce3d223c8fcf93c8df5c12bc8899dfb4fb3cb1c5b20dd5f/Pillow-9.2.0-cp39-cp39-manylinux_2_28_x86_64.whl
 endif
 ifeq ($(PYVERSION), py310)
-HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.8.0/download/linux-64/hpp-fcl-1.8.0-py310hdaf7e41_1.tar.bz2
-EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.11/download/linux-64/eigenpy-2.6.11-py310hf3e5c9c_0.tar.bz2
-BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/linux-64/boost-1.74.0-py310h7c3ba0c_5.tar.bz2
+HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.3.4/download/linux-64/hpp-fcl-2.3.4-py310h995690b_0.conda
+EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.1.0/download/linux-64/eigenpy-3.1.0-py310hf02b7e0_0.conda
+BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/linux-64/boost-1.78.0-py310hc4a4660_4.tar.bz2
 QHULL_URL:=https://anaconda.org/conda-forge/qhull/2020.2/download/linux-64/qhull-2020.2-h4bd325d_2.tar.bz2
 LXML_URL:=https://files.pythonhosted.org/packages/25/1e/19b46d8e8881fe0df2e20945d51919eeb1817836d62a90efa8506530e45c/lxml-4.8.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux_2_24_x86_64.whl
 SHAPELY_URL:=https://files.pythonhosted.org/packages/a8/a5/403728b5614b28083f6424dfdefec5fcf58068495fb03bb08532671c642f/shapely-2.0.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
 PILLOW_URL:=https://files.pythonhosted.org/packages/f6/51/320986ebd6d46a0e95c2240468ced73153b691ce07617078bcdf30c609ec/Pillow-9.2.0-cp310-cp310-manylinux_2_28_x86_64.whl
 endif
 ASSIMP_URL:=https://anaconda.org/conda-forge/assimp/5.0.1/download/linux-64/assimp-5.0.1-hedfc422_6.tar.bz2
-OCTOMAP_URL:=https://anaconda.org/conda-forge/octomap/1.9.7/download/linux-64/octomap-1.9.7-h4bd325d_0.tar.bz2
+OCTOMAP_URL:=https://anaconda.org/conda-forge/octomap/1.9.8/download/linux-64/octomap-1.9.8-h924138e_0.tar.bz2
+BOOSTCPP_URL:=https://anaconda.org/conda-forge/boost-cpp/1.78.0/download/linux-64/boost-cpp-1.78.0-h6582d0a_3.conda
 ZLIB_URL:=https://anaconda.org/conda-forge/zlib/1.2.11/download/linux-64/zlib-1.2.11-h516909a_1010.tar.bz2
 endif
 
 ifeq ($(PLATFORM), macos)
-ifeq ($(PYVERSION), py37)
-HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/osx-64/hpp-fcl-1.7.5-py37h2d7f23a_0.tar.bz2
-EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.5/download/osx-64/eigenpy-2.6.5-py37h0695097_0.tar.bz2
-BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/osx-64/boost-1.74.0-py37hd79e0ac_3.tar.bz2
-QHULL_URL:=https://anaconda.org/conda-forge/qhull/2020.2/download/osx-64/qhull-2020.2-h940c156_2.tar.bz2
-LXML_URL:=https://files.pythonhosted.org/packages/1e/3e/f0abc15d5dac50939bccc589aae336d5ead4c72e7ad1039a2e0f3630ea92/lxml-4.6.3-cp37-cp37m-macosx_10_9_x86_64.whl
-SHAPELY_URL:=https://files.pythonhosted.org/packages/e6/7d/4923f27c340339e1c896c77cafc8ed672c8d381a025bbab6c6ddcba27e8f/shapely-2.0.1-cp37-cp37m-macosx_10_9_x86_64.whl
-PILLOW_URL:=https://files.pythonhosted.org/packages/88/49/c26fc3b5b0e82bdc9d8751d6b939da29327b0d98f7c3b95a575cbfed2743/Pillow-9.2.0-cp37-cp37m-macosx_10_10_x86_64.whl
-endif
 ifeq ($(PYVERSION), py39)
-HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/osx-64/hpp-fcl-1.7.5-py39h1e32b98_0.tar.bz2
-EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.5/download/osx-64/eigenpy-2.6.5-py39h5405915_0.tar.bz2
-BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/osx-64/boost-1.74.0-py39ha641261_3.tar.bz2
+HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.3.4/download/osx-64/hpp-fcl-2.3.4-py39hd85b194_0.conda
+EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.1.0/download/osx-64/eigenpy-3.1.0-py39hc4d6e28_0.conda
+BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/osx-64/boost-1.78.0-py39h953a6b8_4.tar.bz2
 QHULL_URL:=https://anaconda.org/conda-forge/qhull/2020.2/download/osx-64/qhull-2020.2-h940c156_2.tar.bz2
 LXML_URL:=https://files.pythonhosted.org/packages/b8/74/a71f7ad72e8db54ce899efab84507b801660750cbbfa6a39e6717557d36a/lxml-4.6.3-cp39-cp39-macosx_10_9_x86_64.whl
 SHAPELY_URL:=https://files.pythonhosted.org/packages/36/a4/7e542a209f862f967d7cb8e939eff155f4294a27d17e16441fb8bdd51a2c/shapely-2.0.1-cp39-cp39-macosx_10_9_x86_64.whl
 PILLOW_URL:=https://files.pythonhosted.org/packages/88/7a/ddfe28b485b623361457d4783007c1f9ba83a87f93e7fec32f64793efb6c/Pillow-9.2.0-cp39-cp39-macosx_10_10_x86_64.whl
 endif
 ifeq ($(PYVERSION), py310)
-HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.8.0/download/osx-64/hpp-fcl-1.8.0-py310h651ac30_1.tar.bz2
-EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.11/download/osx-64/eigenpy-2.6.11-py310hc03097c_0.tar.bz2
-BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/osx-64/boost-1.74.0-py310h509978a_5.tar.bz2
+HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.3.4/download/osx-64/hpp-fcl-2.3.4-py310h1db6f5f_0.conda
+EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.1.0/download/osx-64/eigenpy-3.1.0-py310h43da829_0.conda
+BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/osx-64/boost-1.78.0-py310h3e792ce_4.tar.bz2
 QHULL_URL:=https://anaconda.org/conda-forge/qhull/2020.2/download/osx-64/qhull-2020.2-h940c156_2.tar.bz2
 LXML_URL:=https://files.pythonhosted.org/packages/a1/44/17b7dac7a18807d30e2fe10c3328c152808f5464565e230bfd0e77f178c6/lxml-4.8.0-cp310-cp310-macosx_10_15_x86_64.whl
 SHAPELY_URL:=https://files.pythonhosted.org/packages/1f/2a/dc3353c2431cf53e8d04bb8fba27e584410ca3435c9c85f76d71bf0c0e80/shapely-2.0.1-cp310-cp310-macosx_10_9_x86_64.whl
 PILLOW_URL:=https://files.pythonhosted.org/packages/d8/60/b13c00d403f34110e96c1b5c0afa73ce461efe3fe960c3a7e3e7fe190d82/Pillow-9.2.0-cp310-cp310-macosx_10_10_x86_64.whl
 endif
 ASSIMP_URL:=https://anaconda.org/conda-forge/assimp/5.0.1/download/osx-64/assimp-5.0.1-h1224e73_6.tar.bz2
-OCTOMAP_URL:=https://anaconda.org/conda-forge/octomap/1.9.7/download/osx-64/octomap-1.9.7-h940c156_0.tar.bz2
+OCTOMAP_URL:=https://anaconda.org/conda-forge/octomap/1.9.8/download/osx-64/octomap-1.9.8-hb8565cd_0.tar.bz2
+BOOSTCPP_URL:=https://anaconda.org/conda-forge/boost-cpp/1.78.0/download/osx-64/boost-cpp-1.78.0-hf5ba120_3.conda
 ZLIB_URL:=https://anaconda.org/conda-forge/zlib/1.2.11/download/osx-64/zlib-1.2.11-h7795811_1010.tar.bz2
 endif
 
 ifeq ($(PLATFORM), macosm1)
-ifeq ($(PYVERSION), py37)
-# Warning: py37 not supported on Apple M1
-HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/osx-64/hpp-fcl-1.7.5-py37h2d7f23a_0.tar.bz2
-EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.5/download/osx-64/eigenpy-2.6.5-py37h0695097_0.tar.bz2
-BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/osx-64/boost-1.74.0-py37hd79e0ac_3.tar.bz2
-QHULL_URL:=https://anaconda.org/conda-forge/qhull/2020.2/download/osx-arm64/qhull-2020.2-hc021e02_2.tar.bz2
-LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/osx-64/lxml-4.9.1-py37h994c40b_0.tar.bz2
-SHAPELY_URL:=https://files.pythonhosted.org/packages/e6/7d/4923f27c340339e1c896c77cafc8ed672c8d381a025bbab6c6ddcba27e8f/shapely-2.0.1-cp37-cp37m-macosx_10_9_x86_64.whl
-PILLOW_URL:=https://files.pythonhosted.org/packages/aa/bc/21097cd891dd2fa02f2b3d767e02e883e026482e59d29975d1bc30024aa3/Pillow-9.2.0-cp39-cp39-macosx_11_0_arm64.whl
-endif
 ifeq ($(PYVERSION), py39)
-HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/osx-arm64/hpp-fcl-1.7.5-py39ha69f3c1_2.tar.bz2
-EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.7/download/osx-arm64/eigenpy-2.6.7-py39ha69f3c1_0.tar.bz2
-BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/osx-arm64/boost-1.78.0-py39h2550fe3_0.tar.bz2
+HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.3.4/download/osx-arm64/hpp-fcl-2.3.4-py39hc34188a_0.conda
+EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.1.0/download/osx-arm64/eigenpy-3.1.0-py39h13cfc01_0.conda
+BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/osx-arm64/boost-1.78.0-py39h99de9ae_4.tar.bz2
 QHULL_URL:=https://anaconda.org/conda-forge/qhull/2020.2/download/osx-arm64/qhull-2020.2-hc021e02_2.tar.bz2
 LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/osx-arm64/lxml-4.9.1-py39h9eb174b_0.tar.bz2
 SHAPELY_URL:=https://files.pythonhosted.org/packages/ea/aa/45fbd031edf3149cb767d8b9f9db45d5faf0324d743c6b8fb0298cc022d0/shapely-2.0.1-cp39-cp39-macosx_11_0_arm64.whl
 PILLOW_URL:=https://files.pythonhosted.org/packages/aa/bc/21097cd891dd2fa02f2b3d767e02e883e026482e59d29975d1bc30024aa3/Pillow-9.2.0-cp39-cp39-macosx_11_0_arm64.whl
 endif
 ifeq ($(PYVERSION), py310)
-HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.8.0/download/osx-arm64/hpp-fcl-1.8.0-py310h5699539_2.tar.bz2
-EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.9/download/osx-arm64/eigenpy-2.6.9-py310habfc766_1.tar.bz2
-BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/osx-arm64/boost-1.78.0-py310h4566fd1_0.tar.bz2
+HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.3.4/download/osx-arm64/hpp-fcl-2.3.4-py310h46fc4cd_0.conda
+EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.1.0/download/osx-arm64/eigenpy-3.1.0-py310ha2643af_0.conda
+BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/osx-arm64/boost-1.78.0-py310h629746b_4.tar.bz2
 QHULL_URL:=https://anaconda.org/conda-forge/qhull/2020.2/download/osx-arm64/qhull-2020.2-hc021e02_2.tar.bz2
 LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/osx-arm64/lxml-4.9.1-py310h02f21da_0.tar.bz2
 SHAPELY_URL:=https://files.pythonhosted.org/packages/ec/41/d59208743e737184e1b403e95a937aebb022b8459e99efbcd5208fc8be46/shapely-2.0.1-cp310-cp310-macosx_11_0_arm64.whl
 PILLOW_URL:=https://files.pythonhosted.org/packages/0c/5f/117b653cad585f3aedfe0de996c292e67d4b020ed77f652e5a6c8c24f908/Pillow-9.2.0-cp310-cp310-macosx_11_0_arm64.whl
 endif
 ASSIMP_URL:=https://anaconda.org/conda-forge/assimp/5.0.1/download/osx-arm64/assimp-5.0.1-h0f81e16_7.tar.bz2
-OCTOMAP_URL:=https://anaconda.org/conda-forge/octomap/1.9.7/download/osx-arm64/octomap-1.9.7-hc021e02_0.tar.bz2
+OCTOMAP_URL:=https://anaconda.org/conda-forge/octomap/1.9.8/download/osx-arm64/octomap-1.9.8-hffc8910_0.tar.bz2
+BOOSTCPP_URL:=https://anaconda.org/conda-forge/boost-cpp/1.78.0/download/osx-arm64/boost-cpp-1.78.0-h9ed8d21_3.conda
 ZLIB_URL:=https://anaconda.org/conda-forge/zlib/1.2.11/download/osx-arm64/zlib-1.2.11-h90dfc92_1014.tar.bz2
 endif
 
 ifeq ($(PLATFORM), win)
-ifeq ($(PYVERSION), py37)
-HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/win-64/hpp-fcl-1.7.5-py37h839d6b1_0.tar.bz2
-EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.5/download/win-64/eigenpy-2.6.5-py37h2c32e34_0.tar.bz2
-BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/win-64/boost-1.74.0-py37h3b38789_3.tar.bz2
-LXML_URL:=https://files.pythonhosted.org/packages/9e/5e/171ee9d40a600f565fe691ec5bf7596247ec62cfb2edc00c91afe8ea837b/lxml-4.6.3-cp37-cp37m-win_amd64.whl
-SHAPELY_URL:=https://files.pythonhosted.org/packages/e2/87/b8b8d8d57b429b01aa56b7d723075c09f33c988b8091bb6f790c83436909/shapely-2.0.1-cp37-cp37m-win_amd64.whl
-PILLOW_URL:=https://files.pythonhosted.org/packages/69/f5/9e802159d78b2eaf26bf1f8b94648605993f5ca7247ac8870f065063fc40/Pillow-9.2.0-cp37-cp37m-win_amd64.whl
-endif
 ifeq ($(PYVERSION), py39)
-HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/win-64/hpp-fcl-1.7.5-py39h2e7c763_0.tar.bz2
-EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.5/download/win-64/eigenpy-2.6.5-py39h3ce40e6_0.tar.bz2
-BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/win-64/boost-1.74.0-py39hefe7e4c_3.tar.bz2
+HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.3.4/download/win-64/hpp-fcl-2.3.4-py39h39b25cb_0.conda
+EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.1.0/download/win-64/eigenpy-3.1.0-py39hb6c915b_0.conda
+BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/win-64/boost-1.78.0-py39hea4d8d1_4.tar.bz2
 LXML_URL:=https://files.pythonhosted.org/packages/72/d4/426ecb8849c47c3e370c87aa0ac05d85768df917ffea27fcd6686a5e6495/lxml-4.6.3-cp39-cp39-win_amd64.whl
 SHAPELY_URL:=https://files.pythonhosted.org/packages/a7/ae/eab645c4075093584b7a65ab71cb8ff4563a015bd935c9b55dba14b2c1eb/shapely-2.0.1-cp39-cp39-win_amd64.whl
 PILLOW_URL:=https://files.pythonhosted.org/packages/19/3f/b4d4bcf05dbcbe07f2e9613a8f4180c297395e73a91d8ad22c32c6624f8c/Pillow-9.2.0-cp39-cp39-win_amd64.whl
 endif
 ifeq ($(PYVERSION), py310)
-HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.8.0/download/win-64/hpp-fcl-1.8.0-py310hc5a3c62_1.tar.bz2
-EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.11/download/win-64/eigenpy-2.6.11-py310hbd43d28_0.tar.bz2
-BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/win-64/boost-1.74.0-py310hc781a3c_5.tar.bz2
+HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.3.4/download/win-64/hpp-fcl-2.3.4-py310heb59267_0.conda
+EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.1.0/download/win-64/eigenpy-3.1.0-py310hd146abe_0.conda
+BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/win-64/boost-1.78.0-py310h220cb41_4.tar.bz2
 LXML_URL:=https://files.pythonhosted.org/packages/f6/71/65c80a4caa1617a4c6e8fe1500cebb179db96232e2f623bfe6a1f4294e39/lxml-4.8.0-cp310-cp310-win_amd64.whl
 SHAPELY_URL:=https://files.pythonhosted.org/packages/81/8a/7ac076a86b2632f1872284c5e60ed5f2fc26094875a85b35d9fa17b52504/shapely-2.0.1-cp310-cp310-win_amd64.whl
 PILLOW_URL:=https://files.pythonhosted.org/packages/02/55/67a3c17b9e7d972ed8c246f104da99ca4f3ea42fba566697e479011b84b6/Pillow-9.2.0-cp310-cp310-win_amd64.whl
 endif
 ASSIMP_URL:=https://anaconda.org/conda-forge/assimp/5.0.1/download/win-64/assimp-5.0.1-hc2aa0de_6.tar.bz2
-OCTOMAP_URL:=https://anaconda.org/conda-forge/octomap/1.9.7/download/win-64/octomap-1.9.7-h5362a0b_0.tar.bz2
+OCTOMAP_URL:=https://anaconda.org/conda-forge/octomap/1.9.8/download/win-64/octomap-1.9.8-h91493d7_0.tar.bz2
+BOOSTCPP_URL:=https://anaconda.org/conda-forge/boost-cpp/1.78.0/download/win-64/boost-cpp-1.78.0-h9f4b32c_3.conda
 ZLIB_URL:=https://anaconda.org/conda-forge/zlib/1.2.11/download/win-64/zlib-1.2.11-h62dcd97_1010.tar.bz2
 endif
 
@@ -423,7 +387,8 @@ endif
 	# Required by IFCClash
 	mkdir dist/working
 	cd dist/working && wget $(HPPFCL_URL)
-	cd dist/working && tar -xf hpp-fcl*
+	cd dist/working && unzip hpp-fcl*
+	cd dist/working && tar -I zstd -xvf pkg*
 ifeq ($(PLATFORM), linux)
 	cp -r dist/working/lib/$(PYLIBDIR)/site-packages/hppfcl dist/blenderbim/libs/site/packages/
 	cp -r dist/working/lib/*.so* dist/blenderbim/libs/
@@ -480,7 +445,8 @@ endif
 	# Required by hpp-fcl
 	mkdir dist/working
 	cd dist/working && wget $(EIGENPY_URL)
-	cd dist/working && tar -xf eigenpy*
+	cd dist/working && unzip eigenpy*
+	cd dist/working && tar -I zstd -xvf pkg*
 ifeq ($(PLATFORM), linux)
 	cp -r dist/working/lib/*.so* dist/blenderbim/libs/
 endif
@@ -528,6 +494,25 @@ ifeq ($(PLATFORM), macosm1)
 endif
 ifeq ($(PLATFORM), win)
 	cp -r dist/working/Library/bin/*.dll dist/blenderbim/libs/site/packages/hppfcl/
+endif
+	rm -rf dist/working
+
+	# Required by hpp-fcl
+	mkdir dist/working
+	cd dist/working && wget $(BOOSTCPP_URL)
+	cd dist/working && unzip boost-cpp*
+	cd dist/working && tar -I zstd -xvf pkg*
+ifeq ($(PLATFORM), linux)
+	cp -r dist/working/lib/libboost_serialization.so* dist/blenderbim/libs/
+endif
+ifeq ($(PLATFORM), macos)
+	cp -r dist/working/lib/libboost_serialization.dylib dist/blenderbim/libs/
+endif
+ifeq ($(PLATFORM), macosm1)
+	cp -r dist/working/lib/libboost_serialization.dylib dist/blenderbim/libs/
+endif
+ifeq ($(PLATFORM), win)
+	cp -r dist/working/Library/bin/boost_serialization.dll dist/blenderbim/libs/site/packages/hppfcl/
 endif
 	rm -rf dist/working
 
