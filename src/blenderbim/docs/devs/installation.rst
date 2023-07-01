@@ -21,7 +21,6 @@ You will need to choose which build to download.
 
 - If you are on Blender >=3.1, choose py310
 - If you are on Blender >=2.93 and <3.1, choose py39
-- If you are on Blender <2.93, choose py37
 - Choose ``linux``, ``macos``, ``macosm1`` (for Apple M1 devices), or ``win``
   depending on your operating system
 
@@ -43,7 +42,7 @@ compile IfcOpenShell is out of scope of this document.
 
 You can create your own package by using the Makefile as shown below. You can
 choose between a ``PLATFORM`` of ``linux``, ``macos``, ``macosm1``, and ``win``.
-You can choose between a ``PYVERSION`` of ``py39``, ``py37``, or ``py310``.
+You can choose between a ``PYVERSION`` of ``py39``, or ``py310``.
 ::
 
     $ cd src/blenderbim
