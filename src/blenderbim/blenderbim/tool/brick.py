@@ -332,12 +332,10 @@ class Brick(blenderbim.core.tool.Brick):
             BrickStore.graph.redo()  
 
     @classmethod
-    def serialize_brick(cls, file_name):
-        #temporary file path, could either be user selected for "save as" or use the BrickStore.path for simply "save"
-        cwd = os.path.dirname(os.path.realpath(__file__))
-        dest = os.path.join(cwd, "..", "bim", "schema", file_name)
-        BrickStore.get_project().serialize(destination=dest, format="turtle")
-
+    def serialize_brick(cls):
+        print(BrickStore.path)
+        BrickStore.get_project().serialize(destination=BrickStore.path, format="turtle")
+        
 class BrickStore:
     schema = None # this is now a os path
     path = None   # file path if the project was loaded in
