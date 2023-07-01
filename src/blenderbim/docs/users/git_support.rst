@@ -145,6 +145,17 @@ combined changes before discarding or committing them.
     Merging requires the *ifcmerge* tool installed in your `PATH`, if it is
     not installed the merge operator will not be enabled.
 
+When two branches have diverged, merging an IFC model requires *conflict
+resolution* (because added entities may inadvertently reuse the same Step-IDs),
+this means that data on one side or the other may be rewritten by BlenderBIM in
+order to accomodate both sets of changes. ie. the merge process is
+*asymmetrical*.  BlenderBIM privileges data in the remote `origin/main` branch
+over the local working branch, similarly it privileges data in the local `main`
+branch over any other local working branch. The practical result of this is
+that branches branched-off the `main` branch can generally be merged back into
+`main`, but any sub-branches of these will need to be merged back into their
+parent-branch *before* merging the parent-branch back into `main`.
+
 Tags
 ----
 
