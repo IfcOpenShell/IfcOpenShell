@@ -60,20 +60,32 @@ class JoinWall(bpy.types.Operator, tool.Ifc.Operator):
             for obj in selected_objs:
                 joiner.unjoin(obj)
             return {"FINISHED"}
-        if not context.active_object:
-            return {"FINISHED"}
+        
+        if not context.active_object or not context.active_object.BIMObjectProperties.ifc_definition_id:
+            self.report({"ERROR"}, f"No active object selected")
+            return {"CANCELLED"}
+        
         for obj in selected_objs:
             tool.Geometry.clear_scale(obj)
+
+        if not selected_objs:
+            self.report({"ERROR"}, f"No IFC objects selected")
+            return {"CANCELLED"}
+
         if len(selected_objs) == 1:
             joiner.join_E(context.active_object, context.scene.cursor.location)
             return {"FINISHED"}
-        if len(selected_objs) == 2:
-            if self.join_type == "L":
-                joiner.join_L([o for o in selected_objs if o != context.active_object][0], context.active_object)
-            elif self.join_type == "V":
-                joiner.join_V([o for o in selected_objs if o != context.active_object][0], context.active_object)
-        if len(selected_objs) < 2:
-            return {"FINISHED"}
+        
+        if self.join_type in ("L", "V"):
+            if len(selected_objs) == 2:
+                another_selected_object = next(o for o in selected_objs if o != context.active_object)
+                if self.join_type == "L":
+                    joiner.join_L(another_selected_object, context.active_object)
+                elif self.join_type == "V":
+                    joiner.join_V(another_selected_object, context.active_object)
+            self.report({"ERROR"}, f"It requires 2 selected objects to do join of type {self.join_type}")
+            return {"CANCELLED"}
+        
         if self.join_type == "T":
             elements = [tool.Ifc.get_entity(o) for o in context.selected_objects]
             layer2_elements = []
