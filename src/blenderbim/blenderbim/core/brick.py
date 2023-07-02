@@ -109,3 +109,14 @@ def remove_brick(ifc, brick, library=None, brick_uri=None):
             ifc.run("library.remove_reference", reference=reference)
     brick.remove_brick(brick_uri)
     brick.run_refresh_brick_viewer()
+
+def undo_brick(brick):
+    brick.undo_brick()
+    brick.run_refresh_brick_viewer()
+
+def redo_brick(brick):
+    brick.redo_brick()
+    brick.run_refresh_brick_viewer()
+
+def serialize_brick(brick, file_name="BlenderBIMSerializeTest.ttl"):
+    brick.serialize_brick(file_name)
