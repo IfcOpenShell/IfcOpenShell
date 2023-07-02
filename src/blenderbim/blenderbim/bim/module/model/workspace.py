@@ -429,6 +429,15 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.enable_editing_railing_path()
             return
 
+        elif (
+            (RoofData.is_loaded or not RoofData.load())
+            and RoofData.data["parameters"]
+            and not bpy.context.active_object.BIMRoofProperties.is_editing_path
+        ):
+            # undo the unselection done above because roof has no usage type
+            bpy.ops.bim.enable_editing_roof_path()
+            return
+
         selected_usages = {}
         for obj in bpy.context.selected_objects:
             element = tool.Ifc.get_entity(obj)
@@ -482,15 +491,6 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             [o.select_set(False) for o in selected_usages.get("LAYER3", [])]
             [o.select_set(False) for o in selected_usages.get("LAYER2", [])]
             bpy.ops.bim.extend_profile(join_type="T")
-
-        elif (
-            (RoofData.is_loaded or not RoofData.load())
-            and RoofData.data["parameters"]
-            and not bpy.context.active_object.BIMRoofProperties.is_editing_path
-        ):
-            # undo the unselection done above because roof has no usage type
-            bpy.context.object.select_set(True)
-            bpy.ops.bim.enable_editing_roof_path()
 
         elif DecoratorData.get_ifc_text_data(bpy.context.object):
             bpy.context.object.select_set(True)
