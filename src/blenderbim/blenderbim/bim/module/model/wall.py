@@ -534,6 +534,7 @@ class DumbWallGenerator:
         return (point1 - point2).length < 0.1
 
     def derive_from_cursor(self):
+        RAYCAST_PRECISION = 0.01
         self.location = bpy.context.scene.cursor.location
         if self.collection:
             for sibling_obj in self.collection.objects:
@@ -541,24 +542,41 @@ class DumbWallGenerator:
                     continue
                 if "IfcWall" not in sibling_obj.name:
                     continue
-                local_location = sibling_obj.matrix_world.inverted() @ self.location
+                inv_obj_matrix = sibling_obj.matrix_world.inverted()
+                local_location = inv_obj_matrix @ self.location
                 try:
-                    raycast = sibling_obj.closest_point_on_mesh(local_location, distance=0.01)
+                    raycast = sibling_obj.closest_point_on_mesh(local_location, distance=RAYCAST_PRECISION)
                 except:
                     # If the mesh has no faces
                     raycast = [None]
                 if not raycast[0]:
                     continue
                 for face in sibling_obj.data.polygons:
-                    if (
-                        abs(face.normal.y) >= 0.75
-                        and abs(mathutils.geometry.distance_point_to_plane(local_location, face.center, face.normal))
-                        < 0.01
-                    ):
-                        # Rotate the wall in the direction of the face normal
-                        normal = (sibling_obj.matrix_world.to_quaternion() @ face.normal).normalized()
-                        self.rotation = math.atan2(normal[1], normal[0])
-                        break
+                    normal = (sibling_obj.matrix_world.to_quaternion() @ face.normal).normalized()
+                    face_center = sibling_obj.matrix_world @ face.center
+                    if normal.z != 0 or abs(mathutils.geometry.distance_point_to_plane(self.location, face_center, normal)) > 0.01:
+                        continue
+
+                    rotation = math.atan2(normal[1], normal[0])
+                    rotated_y_axis = Matrix.Rotation(-rotation, 4, "Z")[1].xyz
+                    
+                    # since wall thickness goes by local Y+ axis
+                    # we find best position for the next wall
+                    # by finding the face of another wall that will be very close to the some test point.
+                    # test point is calculated by applying to cursor position some little offset along the face
+                    #
+                    # a bit different offset to be safe on raycast
+                    test_pos = self.location + rotated_y_axis * RAYCAST_PRECISION * 1.1
+                    test_pos_local = inv_obj_matrix @ test_pos
+                    raycast = sibling_obj.closest_point_on_mesh(test_pos_local, distance=RAYCAST_PRECISION)
+
+                    if not raycast[0]:
+                        continue
+                    self.rotation = rotation
+                    break
+
+                if self.rotation != 0:
+                    break
         return self.create_wall()
 
     def create_wall(self):
