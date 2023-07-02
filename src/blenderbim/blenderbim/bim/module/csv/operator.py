@@ -152,7 +152,7 @@ class ExportIfcCsv(bpy.types.Operator):
         ifc_csv = ifccsv.IfcCsv()
         attributes = [a.name for a in props.csv_attributes]
         sep = props.csv_custom_delimiter if props.csv_delimiter == "CUSTOM" else props.csv_delimiter
-        ifc_csv.export(ifc_file, results, attributes, output=self.filepath, format=args.format, delimiter=sep)
+        ifc_csv.export(ifc_file, results, attributes, output=self.filepath, format="csv", delimiter=sep)
         return {"FINISHED"}
 
 
