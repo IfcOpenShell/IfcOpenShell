@@ -29,6 +29,7 @@ from mathutils import Matrix, Vector
 from blenderbim.bim import import_ifc
 from blenderbim.bim.module.geometry.helper import Helper
 import collections
+from blenderbim.bim.module.model.data import AuthoringData
 
 
 class Model(blenderbim.core.tool.Model):
@@ -630,3 +631,101 @@ class Model(blenderbim.core.tool.Model):
             is_global=True,
             should_sync_changes_first=False,
         )
+
+    @classmethod
+    def update_thumbnail_for_element(cls, element, refresh=False):
+        if bpy.app.background:
+            return
+
+        from PIL import Image, ImageDraw
+
+        obj = tool.Ifc.get_object(element)
+        if not obj:
+            return  # Nothing to process
+
+        if not refresh and element.id() in AuthoringData.type_thumbnails:
+            return  # Already processed
+
+        obj.asset_generate_preview()
+        while not obj.preview:
+            pass
+
+        # if object has .data we can use default blender .asset_generate_preview()
+        if not obj.data:
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            size = 128
+            img = Image.new("RGBA", (size, size))
+            draw = ImageDraw.Draw(img)
+
+            material = ifcopenshell.util.element.get_material(element)
+            if material and material.is_a("IfcMaterialProfileSet"):
+                profile = material.MaterialProfiles[0].Profile
+                tool.Profile.draw_image_for_ifc_profile(draw, profile, size)
+
+            elif material and material.is_a("IfcMaterialLayerSet"):
+                thicknesses = [l.LayerThickness for l in material.MaterialLayers]
+                total_thickness = sum(thicknesses)
+                si_total_thickness = total_thickness * unit_scale
+                if si_total_thickness <= 0.051:
+                    width = 10
+                elif si_total_thickness <= 0.11:
+                    width = 20
+                elif si_total_thickness <= 0.21:
+                    width = 30
+                elif si_total_thickness <= 0.31:
+                    width = 40
+                else:
+                    width = 50
+
+                height = 100
+
+                is_horizontal = False
+                if element.is_a("IfcSlabType"):
+                    is_horizontal = True
+
+                parametric = ifcopenshell.util.element.get_psets(element).get("EPset_Parametric")
+                if parametric:
+                    layer_set_direction = parametric.get("LayerSetDirection", None)
+                    if layer_set_direction == "AXIS2":
+                        is_horizontal = False
+                    elif layer_set_direction == "AXIS3":
+                        is_horizontal = True
+
+                if is_horizontal:
+                    width, height = height, width
+
+                x_offset = (size / 2) - (width / 2)
+                y_offset = (size / 2) - (height / 2)
+                draw.rectangle([x_offset, y_offset, width + x_offset, height + y_offset], outline="white", width=5)
+                current_thickness = 0
+                del thicknesses[-1]
+                for thickness in thicknesses:
+                    current_thickness += thickness
+                    if element.is_a("IfcSlabType"):
+                        y = (current_thickness / total_thickness) * height
+                        line = [x_offset, y_offset + y, x_offset + width, y_offset + y]
+                    else:
+                        x = (current_thickness / total_thickness) * width
+                        line = [x_offset + x, y_offset, x_offset + x, y_offset + height]
+                    draw.line(line, fill="white", width=2)
+            elif False:
+                # TODO: things like parametric duct segments
+                pass
+            elif not element.RepresentationMaps:
+                # Empties are represented by a generic thumbnail
+                width = height = 100
+                x_offset = (size / 2) - (width / 2)
+                y_offset = (size / 2) - (height / 2)
+                draw.line([x_offset, y_offset, width + x_offset, height + y_offset], fill="white", width=2)
+                draw.line([x_offset, y_offset + height, width + x_offset, y_offset], fill="white", width=2)
+                draw.rectangle([x_offset, y_offset, width + x_offset, height + y_offset], outline="white", width=5)
+            else:
+                draw.line([0, 0, size, size], fill="red", width=2)
+                draw.line([0, size, size, 0], fill="red", width=2)
+
+            pixels = [item for sublist in img.getdata() for item in sublist]
+
+            obj.preview.image_size = size, size
+            obj.preview.image_pixels_float = pixels
+
+        AuthoringData.type_thumbnails[element.id()] = obj.preview.icon_id
