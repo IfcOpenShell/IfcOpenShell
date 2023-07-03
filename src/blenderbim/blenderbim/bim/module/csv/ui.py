@@ -60,17 +60,21 @@ class BIM_PT_ifccsv(Panel):
             row = layout.row(align=True)
             row.prop(attribute, "name", text="")
             row.operator("bim.remove_csv_attribute", icon="X", text="").index = index
-
+        
         row = layout.row(align=True)
-        row.prop(props, "csv_delimiter")
+        row.prop(props, "format")
 
-        if props.csv_delimiter == "CUSTOM":
+        if props.format == 'csv':
             row = layout.row(align=True)
-            row.prop(props, "csv_custom_delimiter")
+            row.prop(props, "csv_delimiter")
+
+            if props.csv_delimiter == "CUSTOM":
+                row = layout.row(align=True)
+                row.prop(props, "csv_custom_delimiter")
 
         row = layout.row()
         split = row.split(factor=0.5)
         c = split.column()
-        c.operator("bim.export_ifccsv", icon="EXPORT")
+        c.operator("bim.export_ifccsv", icon="EXPORT", text="Export IFC to " + props.format.upper())
         c = split.column()
         c.operator("bim.import_ifccsv", icon="IMPORT")

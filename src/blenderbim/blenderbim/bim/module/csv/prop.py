@@ -45,5 +45,14 @@ class CsvProperties(PropertyGroup):
         name="IFC CSV Delimiter",
         default=",",
     )
+    format: EnumProperty(
+        items=[
+            ("csv", "csv", ""),
+            ("xlsx", "xlsx", ""),
+            ("ods", "ods", ""),
+        ],
+        name="Output format",
+        default="csv",
+    )
     csv_custom_delimiter: StringProperty(default="", name="Custom Delimiter")
     should_load_from_memory: BoolProperty(default=False, name="Load from Memory")
