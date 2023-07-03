@@ -131,14 +131,15 @@ class EnableEditingArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        for obj in context.selected_objects:
-            obj.select_set(False)
         props = context.scene.BIMProfileProperties
-        profile = tool.Ifc.get().by_id(props.active_profile_id)
+        active_profile = props.profiles[props.active_profile_index]
+        profile_id = active_profile.ifc_definition_id
+        props.active_arbitrary_profile_id = profile_id
+        profile = tool.Ifc.get().by_id(profile_id)
         obj = tool.Model.import_profile(profile)
         tool.Ifc.link(profile, obj)
         bpy.context.scene.collection.objects.link(obj)
-        bpy.context.view_layer.objects.active = obj
+        tool.Blender.select_and_activate_single_object(context, obj)
         bpy.ops.object.mode_set(mode="EDIT")
         ProfileDecorator.install(context, exit_edit_mode_callback=lambda: disable_editing_arbitrary_profile(context))
         bpy.ops.wm.tool_set_by_id(tool.Blender.get_viewport_context(), name="bim.cad_tool")
@@ -153,6 +154,8 @@ def disable_editing_arbitrary_profile(context):
         bpy.data.objects.remove(obj)
         bpy.data.meshes.remove(profile_mesh)
 
+    props = context.scene.BIMProfileProperties
+    props.active_arbitrary_profile_id = 0
     # need to update profile manager ui
     # if this was called from decorator
     refresh()
@@ -174,7 +177,7 @@ class EditArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMProfileProperties
-        old_profile = tool.Ifc.get().by_id(props.active_profile_id)
+        old_profile = tool.Ifc.get().by_id(props.active_arbitrary_profile_id)
 
         obj = context.active_object
 
@@ -194,6 +197,7 @@ class EditArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.object.mode_set(mode="EDIT")
             return
 
+        prev_profile_id = profile.id()
         profile_mesh = obj.data
         bpy.data.objects.remove(obj)
         bpy.data.meshes.remove(profile_mesh)
@@ -204,6 +208,8 @@ class EditArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
             ifcopenshell.util.element.replace_attribute(inverse, old_profile, profile)
         ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_profile)
         bpy.ops.bim.load_profiles()
-        props.active_profile_id = profile.id()
+        if props.active_profile_id == prev_profile_id:
+            props.active_profile_id = profile.id()
+        props.active_arbitrary_profile_id = 0
 
         model_profile.DumbProfileRegenerator().regenerate_from_profile_def(profile)
