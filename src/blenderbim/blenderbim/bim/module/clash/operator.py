@@ -23,7 +23,7 @@ import bmesh
 import logging
 import numpy as np
 import ifcopenshell
-from mathutils import Matrix
+from mathutils import Matrix, Vector
 from math import radians
 from blenderbim.bim.ifc import IfcStore
 
@@ -222,6 +222,7 @@ class ExecuteIfcClash(bpy.types.Operator):
         _, extension = os.path.splitext(self.filepath)
         if extension != ".json":
             self.filepath = bpy.path.ensure_ext(self.filepath, ".bcf")
+
         settings = ifcclash.ClashSettings()
         settings.output = self.filepath
         settings.logger = logging.getLogger("Clash")
@@ -230,12 +231,28 @@ class ExecuteIfcClash(bpy.types.Operator):
 
         if context.scene.BIMClashProperties.should_create_clash_snapshots:
 
-            def get_viewpoint_snapshot(viewpoint, mat):
+            def get_viewpoint_snapshot(viewpoint):
                 camera = bpy.data.objects.get("IFC Clash Camera")
                 if not camera:
                     camera = bpy.data.objects.new("IFC Clash Camera", bpy.data.cameras.new("IFC Clash Camera"))
                     context.scene.collection.objects.link(camera)
-                camera.matrix_world = Matrix(mat)
+
+                bcf_camera = viewpoint.visualization_info.perspective_camera
+                p = bcf_camera.camera_view_point
+                z = bcf_camera.camera_direction
+                z = Vector([z.x, z.y, z.z]) * -1
+                y = bcf_camera.camera_up_vector
+                y = Vector([y.x, y.y, y.z])
+                x = y.cross(z)
+
+                mat = Matrix([
+                    [x[0], y[0], z[0], p.x],
+                    [x[1], y[1], z[1], p.y],
+                    [x[2], y[2], z[2], p.z],
+                    [0, 0, 0, 0],
+                ])
+
+                camera.matrix_world = mat
                 context.scene.camera = camera
                 camera.data.angle = radians(60)
                 area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
@@ -246,7 +263,8 @@ class ExecuteIfcClash(bpy.types.Operator):
                 context.scene.render.image_settings.file_format = "PNG"
                 context.scene.render.filepath = os.path.join(context.scene.BIMProperties.data_dir, "snapshot.png")
                 bpy.ops.render.opengl(write_still=True)
-                return context.scene.render.filepath
+                with open(context.scene.render.filepath, "rb") as f:
+                    return ("snapshot.png", f.read())
 
             clasher.get_viewpoint_snapshot = get_viewpoint_snapshot
 
