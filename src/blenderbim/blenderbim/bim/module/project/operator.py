@@ -687,6 +687,9 @@ class LinkIfc(bpy.types.Operator):
         files = [f.name for f in self.files] if self.files else [self.filepath]
         for filename in files:
             filepath = os.path.join(self.directory, filename)
+            if bpy.data.filepath and Path(filepath).samefile(bpy.data.filepath):
+                self.report({"INFO"}, "Can't link the current .blend file")
+                continue
             new = context.scene.BIMProjectProperties.links.add()
             if self.use_relative_path:
                 filepath = os.path.relpath(filepath, bpy.path.abspath("//"))
