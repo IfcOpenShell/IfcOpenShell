@@ -484,6 +484,9 @@ class BIM_OT_add_door(bpy.types.Operator, tool.Ifc.Operator):
         mesh = bpy.data.meshes.new("IfcDoor")
         obj = bpy.data.objects.new("IfcDoor", mesh)
         obj.location = spawn_location
+        collection = context.view_layer.active_layer_collection.collection
+        collection.objects.link(obj)
+    
         element = blenderbim.core.root.assign_class(
             tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class="IfcDoor", should_add_representation=False
         )
