@@ -42,10 +42,12 @@ class BIM_PT_profiles(Panel):
             ProfileData.load()
         self.props = context.scene.BIMProfileProperties
 
+        active_profile = None
         if self.props.is_editing and self.props.profiles and self.props.active_profile_index < len(self.props.profiles):
             preview_collection = ProfileData.preview_collection
             box = self.layout.box()
-            profile_id = self.props.profiles[self.props.active_profile_index].ifc_definition_id
+            active_profile = self.props.profiles[self.props.active_profile_index]
+            profile_id = active_profile.ifc_definition_id
             profile_id_str = str(profile_id)
             if profile_id_str in preview_collection:
                 preview_image = preview_collection[profile_id_str]
@@ -77,19 +79,19 @@ class BIM_PT_profiles(Panel):
             self.props,
             "active_profile_index",
         )
+        if active_profile and active_profile.ifc_class == "IfcArbitraryClosedProfileDef":
+            if self.props.active_arbitrary_profile_id:
+                row = self.layout.row(align=True)
+                row.operator("bim.edit_arbitrary_profile", text="Save Arbitrary Profile", icon="CHECKMARK")
+                row.operator("bim.disable_editing_arbitrary_profile", text="", icon="CANCEL")
+            else:
+                row = self.layout.row()
+                row.operator("bim.enable_editing_arbitrary_profile", text="Edit Arbitrary Profile", icon="GREASEPENCIL")
 
         if self.props.active_profile_id:
             self.draw_editable_ui(context)
 
     def draw_editable_ui(self, context):
-        if ProfileData.data["is_arbitrary_profile"]:
-            if ProfileData.data["is_editing_arbitrary_profile"]:
-                row = self.layout.row(align=True)
-                row.operator("bim.edit_arbitrary_profile", text="Save Profile", icon="CHECKMARK")
-                row.operator("bim.disable_editing_arbitrary_profile", text="", icon="CANCEL")
-            else:
-                row = self.layout.row()
-                row.operator("bim.enable_editing_arbitrary_profile", text="Edit Profile", icon="GREASEPENCIL")
         blenderbim.bim.helper.draw_attributes(self.props.profile_attributes, self.layout)
 
 
