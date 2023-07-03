@@ -202,7 +202,6 @@ class Loader(blenderbim.core.tool.Loader):
                 ifc_path = Path(tool.Ifc.get_path())
                 image_url = ifc_path.parent / image_url
 
-            # import pdb; pdb.set_trace()
             if not image_url.exists():
                 print(f"WARNING. Couldn't find texture by path {image_url}, it will be skipped.")
                 continue
