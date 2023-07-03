@@ -29,9 +29,10 @@ import multiprocessing
 import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.util.element
+import ifcopenshell.util.selector
 import ifcopenshell.util.placement
 import ifcopenshell.util.classification
-import ifcopenshell.util.selector
+import ifcopenshell.util.representation
 from deepdiff import DeepDiff
 
 
@@ -141,8 +142,9 @@ class IfcDiff:
                     continue
             if should_check_geometry:
                 # Option 1: check everything heuristically using the iterator (seems faster)
-                potential_old_changes.append(old)
-                potential_new_changes.append(new)
+                if ifcopenshell.util.representation.get_representation(new, "Model", "Body", "MODEL_VIEW"):
+                    potential_old_changes.append(old)
+                    potential_new_changes.append(new)
                 # Option 2: check first using Python, then fallback to iterator (twice as slow)
                 # diff = self.diff_element_basic_geometry(old, new)
                 # if diff:
