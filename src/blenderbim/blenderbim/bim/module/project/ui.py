@@ -164,7 +164,7 @@ class BIM_PT_project(Panel):
         op.should_save_as = False
         op = row.operator("export_ifc.bim", icon="FILE_TICK", text="Save As")
         op.should_save_as = True
-        row.operator("bim.unload_project", text="", icon="X")
+        row.operator("bim.unload_project", text="", icon="CANCEL")
 
     def draw_create_project_ui(self, context):
         props = context.scene.BIMProperties

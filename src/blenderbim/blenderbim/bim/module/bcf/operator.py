@@ -58,7 +58,6 @@ class LoadBcfProject(bpy.types.Operator):
     filter_glob: bpy.props.StringProperty(default="*.bcf;*.bcfzip", options={"HIDDEN"})
 
     def execute(self, context):
-        context.scene.BCFProperties.is_loaded = False
         if self.filepath:
             bcfstore.BcfStore.bcfxml = bcf.bcfxml.load(self.filepath)
         bcfxml = bcfstore.BcfStore.get_bcfxml()
@@ -70,6 +69,17 @@ class LoadBcfProject(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
+
+
+class UnloadBcfProject(bpy.types.Operator):
+    bl_idname = "bim.unload_bcf_project"
+    bl_label = "Unload BCF Project"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        bcfstore.BcfStore.set(None)
+        context.scene.BCFProperties.is_loaded = False
+        return {"FINISHED"}
 
 
 class LoadBcfTopics(bpy.types.Operator):
