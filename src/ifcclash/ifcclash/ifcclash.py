@@ -122,14 +122,20 @@ class Clasher:
             for clash in clash_set["clashes"].values():
                 title = f'{clash["a_ifc_class"]}/{clash["a_name"]} and {clash["b_ifc_class"]}/{clash["b_name"]}'
                 topic = bcfxml.add_topic(title, title, "IfcClash")
-                topic.add_viewpoint_from_point_and_guids(
+                viewpoint = topic.add_viewpoint_from_point_and_guids(
                     np.array(clash["position"]), clash["a_global_id"], clash["b_global_id"],
                 )
+                snapshot = self.get_viewpoint_snapshot(viewpoint)
+                if snapshot:
+                    topic.markup.viewpoints[0].snapshot = snapshot[0]
+                    viewpoint.snapshot = snapshot[1]
             suffix = f".{i}" if i else ""
             bcfxml.save_project(f"{self.settings.output}{suffix}")
 
-    def get_viewpoint_snapshot(self, viewpoint, mat):
-        return None  # Possible to overload this function in a GUI application if used as a library
+    def get_viewpoint_snapshot(self, viewpoint):
+        # Possible to overload this function in a GUI application if used as a library.
+        # Should return a tuple of (filename, bytes).
+        return None
 
     def export_json(self):
         clash_sets = self.clash_sets.copy()
