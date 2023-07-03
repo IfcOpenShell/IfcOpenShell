@@ -199,7 +199,7 @@ class Style(blenderbim.core.tool.Style):
         props["update_graph"] = prev_update_graph_value
 
     @classmethod
-    def get_surface_rendering_attributes(cls, obj, verbose=True):
+    def get_surface_rendering_attributes(cls, obj, verbose=False):
         report = (lambda *x: print(*x)) if verbose else (lambda *x: None)
 
         def color_to_ifc_format(color):
