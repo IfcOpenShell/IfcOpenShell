@@ -57,6 +57,7 @@ classes = (
     operator.SelectBcfBimSnippetReference,
     operator.SelectBcfDocumentReference,
     operator.SelectBcfHeaderFile,
+    operator.UnloadBcfProject,
     operator.ViewBcfTopic,
     prop.BcfReferenceLink,
     prop.BcfLabel,
