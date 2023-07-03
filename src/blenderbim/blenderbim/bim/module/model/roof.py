@@ -514,6 +514,9 @@ class BIM_OT_add_roof(bpy.types.Operator, tool.Ifc.Operator):
         mesh = bpy.data.meshes.new("IfcRoof")
         obj = bpy.data.objects.new("IfcRoof", mesh)
         obj.location = spawn_location
+        collection = context.view_layer.active_layer_collection.collection
+        collection.objects.link(obj)
+
         body_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
         blenderbim.core.root.assign_class(
             tool.Ifc,
