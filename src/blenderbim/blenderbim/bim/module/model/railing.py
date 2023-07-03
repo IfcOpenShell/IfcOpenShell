@@ -273,6 +273,9 @@ class BIM_OT_add_railing(bpy.types.Operator, tool.Ifc.Operator):
         mesh = bpy.data.meshes.new("IfcRailing")
         obj = bpy.data.objects.new("IfcRailing", mesh)
         obj.location = spawn_location
+        collection = context.view_layer.active_layer_collection.collection
+        collection.objects.link(obj)
+
         body_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
         blenderbim.core.root.assign_class(
             tool.Ifc,
