@@ -145,11 +145,20 @@ class DumbProfileRegenerator:
         objs = []
         if not profile:
             return
+
+        element_types = set()
         for element in self.get_elements_using_profile(profile):
             obj = tool.Ifc.get_object(element)
             if obj:
                 objs.append(obj)
+                if element.is_a("IfcElementType"):
+                    element_types.add(element)
+
         DumbProfileRecalculator().recalculate(objs)
+
+        # update related thumbnails
+        for element in self.get_element_types_using_profile(profile):
+            tool.Model.update_thumbnail_for_element(element, refresh=True)
 
     def regenerate_from_profile(self, usecase_path, ifc_file, settings):
         self.file = ifc_file
@@ -165,9 +174,10 @@ class DumbProfileRegenerator:
 
     def get_elements_using_profile(self, profile):
         results = []
-        for profile_set in [
+        profile_sets = [
             mp.ToMaterialProfileSet[0] for mp in self.file.get_inverse(profile) if mp.is_a("IfcMaterialProfile")
-        ]:
+        ]
+        for profile_set in profile_sets:
             for inverse in self.file.get_inverse(profile_set):
                 if not inverse.is_a("IfcMaterialProfileSetUsage"):
                     continue
@@ -179,6 +189,18 @@ class DumbProfileRegenerator:
                 else:
                     for rel in inverse.AssociatedTo:
                         results.extend(rel.RelatedObjects)
+        return results
+
+    def get_element_types_using_profile(self, profile):
+        results = []
+        profile_sets = [
+            mp.ToMaterialProfileSet[0] for mp in self.file.get_inverse(profile) if mp.is_a("IfcMaterialProfile")
+        ]
+        for profile_set in profile_sets:
+            for inverse in self.file.get_inverse(profile_set):
+                if not inverse.is_a("IfcRelAssociatesMaterial"):
+                    continue
+                results.extend(inverse.RelatedObjects)
         return results
 
     def regenerate_from_type(self, usecase_path, ifc_file, settings):
