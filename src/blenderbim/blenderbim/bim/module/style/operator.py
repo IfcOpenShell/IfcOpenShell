@@ -274,9 +274,10 @@ class BrowseExternalStyle(bpy.types.Operator):
         external_style = StyleAttributesData.data["style_elements"].get("IfcExternallyDefinedSurfaceStyle", None)
 
         if self.use_relative_path:
-            filepath = os.path.relpath(self.filepath, bpy.path.abspath("//"))
+            filepath = os.path.relpath(self.filepath, tool.Ifc.get_path())
         else:
             filepath = self.filepath
+        filepath = Path(filepath).as_posix()
 
         attributes = {
             "Location": filepath,
