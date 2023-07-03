@@ -111,10 +111,13 @@ class ConnectionsData:
         for rel in connected_to:
             if element.is_a("IfcDistributionPort"):
                 related_element = rel.RelatedPort
-                related_element_connection_type = ""
             else:
                 related_element = rel.RelatedElement
+
+            if element.is_a("IfcRelConnectsPathElements"):
                 related_element_connection_type = rel.RelatedConnectionType
+            else:
+                related_element_connection_type = ""
 
             results.append(
                 {
@@ -128,10 +131,13 @@ class ConnectionsData:
         for rel in connected_from:
             if element.is_a("IfcDistributionPort"):
                 relating_element = rel.RelatingPort
-                relating_element_connection_type = ""
             else:
                 relating_element = rel.RelatingElement
+
+            if element.is_a("IfcRelConnectsPathElements"):
                 relating_element_connection_type = rel.RelatingConnectionType
+            else:
+                relating_element_connection_type = ""
 
             results.append(
                 {

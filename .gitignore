@@ -95,3 +95,6 @@ src/ifcopenshell-python/ifcopenshell/ifcopenshell_wrapper.py
 
 # apple
 .DS_Store
+
+# Brickschema
+src/blenderbim/blenderbim/bim/schema/Brick.ttl

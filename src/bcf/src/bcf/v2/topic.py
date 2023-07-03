@@ -275,6 +275,7 @@ class TopicHandler:
         """
         new_viewpoint = VisualizationInfoHandler.create_new(element, self._xml_handler)
         self.add_visinfo_handler(new_viewpoint)
+        return new_viewpoint
 
     def add_viewpoint_from_point_and_guids(self, position: NDArray[np.float_], *guids: str) -> None:
         """Add a viewpoint pointing at an XYZ point in space
@@ -287,6 +288,7 @@ class TopicHandler:
             position, *guids, xml_handler=self._xml_handler
         )
         self.add_visinfo_handler(vi_handler)
+        return vi_handler
 
     def add_visinfo_handler(self, new_viewpoint: VisualizationInfoHandler) -> None:
         self.viewpoints[new_viewpoint.guid + ".bcfv"] = new_viewpoint
