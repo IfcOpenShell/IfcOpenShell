@@ -7,9 +7,10 @@ There are different methods of installation, depending on your situation.
 2. **PyPI** is recommended for developers using Pip.
 3. **Conda** is recommended for developers using Anaconda.
 4. **Docker** is recommended for developers using Docker.
-5. **Using the BlenderBIM Add-on** is recommended for non-developers wanting a graphical interface.
-6. **From source with precompiled binaries** is recommended for developers actively working with the Python code.
-7. **Compiling from source** is recommended for developers actively working with the C++ core.
+5. **AWS Lambda** is recommended for developers using AWS Lambda functions.
+6. **Using the BlenderBIM Add-on** is recommended for non-developers wanting a graphical interface.
+7. **From source with precompiled binaries** is recommended for developers actively working with the Python code.
+8. **Compiling from source** is recommended for developers actively working with the C++ core.
 
 Pre-built packages
 ------------------
@@ -130,11 +131,56 @@ Docker
 
     Installing IfcOpenShell from Docker will also install IfcConvert.
 
-.. using-container-on-aws-lambda::
+AWS Lambda
+----------
 
-   Refer `AWS Lambda
-    Readme
-    <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.7.0/aws/lambda/README.md>`__.
+This guide provides a Dockerfile and sample code to help you run an AWS Lambda
+function written in Python and using the IfcOpenShell library.
+
+This is only a superficial guide, in order to make this work for your usecase
+you will need a good understanding of other AWS services like SQS, S3, API
+Gateways, etc.
+
+.. seealso::
+
+    For more information on building lambda containers refer to the `AWS guide
+    on working with Lambda container images
+    <https://docs.aws.amazon.com/lambda/latest/dg/images-create.html>`__
+
+1. Clone or download the `IfcOpenShell repository
+   <https://github.com/ifcopenshell/ifcopenshell>`_.
+
+2. Replace the sample Lambda function code in the `example_handler
+   <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.7.0/aws/lambda/example_handler/__init__.py>`__
+   directory with your own code.
+
+3. Update the import path in the Dockerfile's `CMD instruction
+   <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.7.0/aws/lambda/Dockerfile#L40>`__
+   to match your Lambda function's handler function.
+
+4. Edit the `requirements.txt
+   <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.7.0/aws/lambda/requirements.txt>`__
+   file and add any additional dependencies required by your Lambda function.
+
+5. Build the Docker image:
+
+   .. code-block::
+
+      $ docker build -t lambda-ifcopenshell .
+
+6. Run the Docker container:
+
+   .. code-block::
+
+      $ docker run lambda-ifcopenshell
+
+7. Test lambda locally by following the `AWS guide on testing Lambda container
+   images locally
+   <https://docs.aws.amazon.com/lambda/latest/dg/images-test.html>`__.
+
+8. Deploy to lambda. This is beyond the scope of this guide. Please refer to
+   the AWS documentation. Some tools that could be useful are AWS
+   CloudFormaton, AWS CDK, pulumi or terraform.
 
 Using the BlenderBIM Add-on
 ---------------------------
