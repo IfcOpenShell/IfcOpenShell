@@ -22,6 +22,67 @@ import ifcopenshell.api
 import ifcopenshell.util.element as subject
 
 
+class TestGetPsetIFC4(test.bootstrap.IFC4):
+    def test_getting_the_psets_of_a_product_as_a_dictionary(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        assert subject.get_pset(element, "name") == {}
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="name")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"a": "b"})
+        assert subject.get_pset(element, "name") == {"a": "b", "id": pset.id()}
+
+    def test_getting_the_psets_of_a_product_type_as_a_dictionary(self):
+        type_element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        assert subject.get_psets(type_element) == {}
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=type_element, name="name")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"x": "y"})
+        assert subject.get_pset(type_element, "name") == {"x": "y", "id": pset.id()}
+
+    def test_getting_inherited_psets(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        type_element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=type_element)
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=type_element, name="name")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"a": 1, "x": 1})
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="name")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"a": 2, "b": 3})
+        result = subject.get_pset(element, "name")
+        assert result["id"] == pset.id()
+        assert result["a"] == 2
+        assert result["x"] == 1
+        assert result["b"] == 3
+
+    def test_excluding_inherited_psets(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        type_element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=type_element)
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=type_element, name="name")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"a": 1, "x": 1})
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="name")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"a": 2, "b": 3})
+        result = subject.get_pset(element, "name", should_inherit=False)
+        assert result["id"] == pset.id()
+        assert result["a"] == 2
+        assert result["b"] == 3
+        assert "x" not in result
+
+    def test_getting_the_psets_of_a_material_as_a_dictionary(self):
+        material = self.file.createIfcMaterial()
+        assert subject.get_psets(material) == {}
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=material, name="name")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"x": "y"})
+        assert subject.get_pset(material, "name") == {"x": "y", "id": pset.id()}
+
+    def test_getting_the_psets_of_a_profile_as_a_dictionary(self):
+        profile = self.file.createIfcCircleProfileDef()
+        assert subject.get_psets(profile) == {}
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=profile, name="name")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"x": "y"})
+        assert subject.get_pset(profile, "name") == {"x": "y", "id": pset.id()}
+
+    def test_getting_psets_from_an_element_which_cannot_have_psets(self):
+        assert subject.get_pset(self.file.create_entity("IfcPerson"), "name") == {}
+
+
 class TestGetPsetsIFC4(test.bootstrap.IFC4):
     def test_getting_the_psets_of_a_product_as_a_dictionary(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
