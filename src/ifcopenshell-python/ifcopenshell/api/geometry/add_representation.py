@@ -369,11 +369,29 @@ class Usecase:
             else:
                 return self.create_curves_from_mesh(should_exclude_faces=should_exclude_faces, is_2d=is_2d)
         elif isinstance(self.settings["geometry"], bpy.types.Curve):
+            import blenderbim.tool as tool
+
+            selected_objects = bpy.context.selected_objects
+            active_object = bpy.context.active_object
+
+            # create dummy object that will have more detailed curves
+            # since now we do not really support splines curves natively
+            obj = self.settings["blender_object"]
+            dummy = bpy.data.objects.new("Dummy", obj.data.copy())
+            bpy.context.scene.collection.objects.link(dummy)
+            tool.Blender.select_and_activate_single_object(bpy.context, dummy)
+            bpy.ops.object.convert(target="MESH")
+            bpy.ops.object.convert(target="CURVE")
+
             if self.file.schema == "IFC2X3":
-                return self.create_curves_from_curve_ifc2x3(is_2d=is_2d)
+                curves = self.create_curves_from_curve_ifc2x3(is_2d=is_2d, curve_object_data=dummy.data)
             else:
-                return self.create_curves_from_curve(is_2d=is_2d)
-            
+                curves = self.create_curves_from_curve(is_2d=is_2d, curve_object_data=dummy.data)
+
+            # restore objects selection
+            bpy.data.objects.remove(dummy)
+            tool.Blender.set_objects_selection(bpy.context, active_object, selected_objects)
+            return curves
 
     def create_curves_from_mesh(self, should_exclude_faces=False, is_2d=False):
         curves = []
@@ -437,8 +455,10 @@ class Usecase:
             curves.append(self.file.createIfcPolyline(loop_points))
         return curves
 
-    def create_curves_from_curve_ifc2x3(self, is_2d=False):
+    def create_curves_from_curve_ifc2x3(self, is_2d=False, curve_object_data=None):
         # TODO: support interpolated curves, not just polylines
+        if not curve_object_data:
+            curve_object_data = self.settings["geometry"]
         dim = (lambda v: v.xy) if is_2d else (lambda v: v.xyz)
         results = []
         for spline in self.settings["geometry"].splines:
@@ -449,14 +469,16 @@ class Usecase:
             results.append(self.file.createIfcPolyline(ifc_points))
         return results
 
-    def create_curves_from_curve(self, is_2d=False):
+    def create_curves_from_curve(self, is_2d=False, curve_object_data=None):
         # TODO: support interpolated curves, not just polylines
+        if not curve_object_data:
+            curve_object_data = self.settings["geometry"]
         dim = (lambda v: v.xy) if is_2d else (lambda v: v.xyz)
         to_units = lambda v: Vector([self.convert_si_to_unit(i) for i in v])
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(self.file)
         results = []
 
-        for spline in self.settings["geometry"].splines:
+        for spline in curve_object_data.splines:
             points = spline.bezier_points[:] + spline.points[:]
 
             points = [to_units(dim(p.co)) for p in points]
