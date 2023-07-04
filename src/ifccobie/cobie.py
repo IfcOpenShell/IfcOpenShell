@@ -572,15 +572,17 @@ class IfcCobieParser:
         )
         for coordinate in coordinates:
             coordinate_name = "{}/{}".format(coordinate.is_a(), self.get_object_name(coordinate))
+            mat = ifcopenshell.util.placement.get_local_placement(coordinate.ObjectPlacement)
+            x, y, z = mat[:,3][:3]
             self.coordinates[coordinate_name] = {
                 "CreatedBy": self.get_email_from_history(coordinate.OwnerHistory),
                 "CreatedOn": self.get_created_on_from_history(coordinate.OwnerHistory),
                 "Category": "Location",  # I am not sure what this mapping is meant to be
                 "SheetName": "Coordinates",
                 "RowName": "n/a",
-                "CoordinateXAxis": coordinate.ObjectPlacement.RelativePlacement.Location.Coordinates[0],
-                "CoordinateYAxis": coordinate.ObjectPlacement.RelativePlacement.Location.Coordinates[1],
-                "CoordinateZAxis": coordinate.ObjectPlacement.RelativePlacement.Location.Coordinates[2],
+                "CoordinateXAxis": x,
+                "CoordinateYAxis": y,
+                "CoordinateZAxis": z,
                 "ExtSystem": self.get_ext_system_from_history(coordinate.OwnerHistory),
                 "ExtObject": self.get_ext_object(coordinate),
                 "ExtIdentifier": coordinate.GlobalId,
