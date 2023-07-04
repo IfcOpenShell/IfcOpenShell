@@ -27,6 +27,7 @@ import datetime
 import logging
 import ifcopenshell
 import ifcopenshell.util.selector
+import ifcopenshell.util.placement
 
 
 class IfcCobieParser:
