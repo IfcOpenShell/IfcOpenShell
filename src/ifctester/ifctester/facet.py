@@ -186,15 +186,21 @@ class Attribute(Facet):
 
         if isinstance(self.name, str):
             names = [self.name]
-            values = [getattr(inst, self.name, None)]
+            attribute_type = inst.wrapped_data.get_attribute_category(self.name)
+            if attribute_type == 1:  # Forward attribute
+                values = [getattr(inst, self.name, None)]
+            else:
+                values = [None]
         else:
             info = inst.get_info()
             names = []
             values = []
             for k, v in info.items():
                 if k == self.name:
-                    names.append(k)
-                    values.append(v)
+                    attribute_type = inst.wrapped_data.get_attribute_category(k)
+                    if attribute_type == 1:  # Forward attribute
+                        names.append(k)
+                        values.append(v)
 
         is_pass = bool(values)
         reason = None
