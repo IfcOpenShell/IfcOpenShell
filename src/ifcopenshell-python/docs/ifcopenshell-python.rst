@@ -13,4 +13,5 @@ system, as well as high level analysis and authoring functions.
    ifcopenshell-python/hello_world
    ifcopenshell-python/code_examples
    ifcopenshell-python/geometry_processing
+   ifcopenshell-python/geometry_tree
    ifcopenshell-python/developer_guide
