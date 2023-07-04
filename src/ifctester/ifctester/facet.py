@@ -131,6 +131,9 @@ class Entity(Facet):
         super().__init__(name, predefinedType, instructions)
 
     def filter(self, ifc_file, elements):
+        if isinstance(elements, list):
+            return super().filter(ifc_file, elements)
+
         if isinstance(self.name, str):
             try:
                 results = ifc_file.by_type(self.name, include_subtypes=False)
@@ -179,6 +182,21 @@ class Attribute(Facet):
             "The {name} shall be provided",
         ]
         super().__init__(name, value, minOccurs, maxOccurs, instructions)
+
+    def filter(self, ifc_file, elements):
+        if isinstance(elements, list):
+            return super().filter(ifc_file, elements)
+
+        results = []
+        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(ifc_file.schema)
+        for entity in schema.entities():
+            for attribute in entity.attributes():
+                if attribute.name() == self.name:
+                    results.extend(ifc_file.by_type(entity.name(), include_subtypes=False))
+
+        # TODO: perhaps we should consider value in the filter
+
+        return results
 
     def __call__(self, inst, logger=None):
         if self.minOccurs == 0 and self.maxOccurs != 0:
@@ -285,7 +303,9 @@ class Classification(Facet):
         super().__init__(value, system, uri, minOccurs, maxOccurs, instructions)
 
     def filter(self, ifc_file, elements):
-        pass
+        if isinstance(elements, list):
+            return super().filter(ifc_file, elements)
+        return ifc_file.by_type("IfcObjectDefinition")
 
     def __call__(self, inst, logger=None):
         if self.minOccurs == 0 and self.maxOccurs != 0:
@@ -340,6 +360,11 @@ class PartOf(Facet):
             "An element must have an {relation} relationship",
         ]
         super().__init__(entity, predefinedType, relation, minOccurs, maxOccurs, instructions)
+
+    def filter(self, ifc_file, elements):
+        if isinstance(elements, list):
+            return super().filter(ifc_file, elements)
+        return list(ifc_file)  # Lazy
 
     def asdict(self):
         results = super().asdict()
@@ -479,16 +504,26 @@ class Property(Facet):
         ]
         super().__init__(propertySet, name, value, measure, uri, minOccurs, maxOccurs, instructions)
 
+    def filter(self, ifc_file, elements):
+        if isinstance(elements, list):
+            return super().filter(ifc_file, elements)
+        if ifc_file.schema == "IFC2X3":
+            return ifc_file.by_type("IfcObjectDefinition")
+        return (
+            ifc_file.by_type("IfcObjectDefinition")
+            + ifc_file.by_type("IfcMaterialDefinition")
+            + ifc_file.by_type("IfcProfileDef")
+        )
+
     def __call__(self, inst, logger=None):
         if self.minOccurs == 0 and self.maxOccurs != 0:
             return PropertyResult(True)
 
-        all_psets = ifcopenshell.util.element.get_psets(inst)
-
         if isinstance(self.propertySet, str):
-            pset = all_psets.get(self.propertySet, None)
+            pset = ifcopenshell.util.element.get_pset(inst, self.propertySet)
             psets = {self.propertySet: pset} if pset else {}
         else:
+            all_psets = ifcopenshell.util.element.get_psets(inst)
             psets = {k: v for k, v in all_psets.items() if k == self.propertySet}
 
         is_pass = bool(psets)
@@ -729,6 +764,11 @@ class Material(Facet):
             "Shall have a material",
         ]
         super().__init__(value, uri, minOccurs, maxOccurs, instructions)
+
+    def filter(self, ifc_file, elements):
+        if isinstance(elements, list):
+            return super().filter(ifc_file, elements)
+        return ifc_file.by_type("IfcObjectDefinition")
 
     def __call__(self, inst, logger=None):
         if self.minOccurs == 0 and self.maxOccurs != 0:
