@@ -200,18 +200,14 @@ class Specification:
         if filter_version and ifc_file.schema not in self.ifcVersion:
             return
 
-        elements = []
+        elements = None
         
+        # This is a broadphase filter of applicability. We almost never want to
+        # test every single class in an IFC model.
         for i, facet in enumerate(self.applicability):
-            # Usually, we rely on an entity applicability to give us our first
-            # shortlist of elements, as it's the most efficient way to filter
-            # elements. If this does not exist, then we have no choice but to
-            # check everything.
-            if i == 0 and not isinstance(facet, Entity):
-                elements = list(ifc_file)
             elements = facet.filter(ifc_file, elements)
 
-        for element in elements:
+        for element in elements or []:
             is_applicable = True
             for facet in self.applicability:
                 if isinstance(facet, Entity):
