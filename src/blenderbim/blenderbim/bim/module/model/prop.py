@@ -69,6 +69,10 @@ def update_type_class(self, context):
     AuthoringData.data["paginated_relating_types"] = AuthoringData.paginated_relating_types()
     AuthoringData.data["type_predefined_type"] = AuthoringData.type_predefined_type()
 
+    type_class = self.type_class
+    if (type_class, type_class, "") in get_ifc_class(self, context):
+        self.ifc_class = type_class
+
 
 def update_relating_type_id(self, context):
     AuthoringData.data["relating_type_id"] = AuthoringData.relating_type_id()
