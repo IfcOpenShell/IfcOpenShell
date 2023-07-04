@@ -321,6 +321,15 @@ class Blender:
         active_object.select_set(True)
 
     @classmethod
+    def set_objects_selection(cls, context, active_object, selected_objects):
+        for obj in context.selected_objects:
+            obj.select_set(False)
+        for obj in selected_objects:
+            obj.select_set(True)
+        context.view_layer.objects.active = active_object
+        active_object.select_set(True)
+
+    @classmethod
     def append_data_block(cls, filepath, data_block_type, name, link=False, relative=False):
         if Path(filepath) == Path(bpy.data.filepath):
             data_block = getattr(bpy.data, data_block_type).get(name, None)
