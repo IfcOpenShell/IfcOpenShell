@@ -205,6 +205,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
         ifc_file = tool.Ifc.get()
         body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
         if not body:
+            props.type_class = props.type_class
             return {"FINISHED"}
 
         if template == "MESH":
@@ -415,6 +416,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.add_roof()
 
         bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class)
+        props.type_class = props.type_class
         return {"FINISHED"}
 
     def add_default_material(self):
