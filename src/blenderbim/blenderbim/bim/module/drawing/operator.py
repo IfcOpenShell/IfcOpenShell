@@ -793,6 +793,7 @@ class CreateDrawing(bpy.types.Operator):
         self.serialiser.setElevationRefGuid(self.camera_element.GlobalId)
         self.serialiser.setScale(self.scale)
         self.serialiser.setSubtractionSettings(ifcopenshell.ifcopenshell_wrapper.ALWAYS)
+        self.serialiser.setUsePrefiltering(True)  # See #3359
         # tree = ifcopenshell.geom.tree()
         # This instructs the tree to explode BReps into faces and return
         # the style of the face when running tree.select_ray()
