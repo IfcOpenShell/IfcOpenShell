@@ -19,9 +19,12 @@
 import bpy
 import gpu
 import bmesh
+import shapely
 import logging
 import numpy as np
 import ifcopenshell
+import ifcopenshell.util.shape
+import ifcopenshell.util.element
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.representation
 import blenderbim.tool as tool
@@ -215,9 +218,8 @@ class FilledOpeningGenerator:
 
     def generate_opening_from_filling(self, filling, filling_obj, voided_obj):
         thickness = voided_obj.dimensions[1] + 0.1 + 0.1
-        ifc_file = tool.Ifc.get()
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
-        shape_builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        shape_builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
 
         profile = None
         filling_type = ifcopenshell.util.element.get_type(filling)
@@ -226,26 +228,44 @@ class FilledOpeningGenerator:
                 filling_type, "Model", "Profile", "ELEVATION_VIEW"
             )
             filling_obj = tool.Ifc.get_object(filling_type)
-        context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+        context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
 
         if profile:
-            curve_3d = ifcopenshell.util.representation.resolve_representation(profile).Items[0]
+            profile = ifcopenshell.util.representation.resolve_representation(profile)
 
-            def get_curve_2d_from_3d(curve_3d):
-                if tool.Ifc.get_schema() == "IFC2X3":
-                    coords = [Vector(p).xz for p in shape_builder.get_polyline_coords(curve_3d)]
-                    ifc_curve = shape_builder.polyline(coords, closed=True)
-                else:
+            def get_curve_2d_from_3d(profile):
+                if len(profile.Items) == 1:
+                    curve_3d = profile.Items[0]
+                    if tool.Ifc.get_schema() == "IFC2X3":
+                        coords = [Vector(p).xz for p in shape_builder.get_polyline_coords(curve_3d)]
+                        return shape_builder.polyline(coords, closed=True)
                     # using different algorithm to keep arc segments possible in the future
                     ifc_segments = [shape_builder.deep_copy(s) for s in curve_3d.Segments]
-                    ifc_points = ifc_file.createIfcCartesianPointList2D(
+                    ifc_points = tool.Ifc.get().createIfcCartesianPointList2D(
                         [Vector(p).xz for p in curve_3d.Points.CoordList]
                     )
-                    ifc_curve = ifc_file.createIfcIndexedPolyCurve(Points=ifc_points, Segments=ifc_segments)
-                return ifc_curve
+                    return tool.Ifc.get().createIfcIndexedPolyCurve(Points=ifc_points, Segments=ifc_segments)
+
+                settings = ifcopenshell.geom.settings()
+                settings.set(settings.INCLUDE_CURVES, True)
+                geometry = ifcopenshell.geom.create_shape(settings, profile)
+                verts = ifcopenshell.util.shape.get_vertices(geometry)
+                # [0, 2] represents X and Z ordinates
+                verts = [(np.around(v[[0, 2]], decimals=3) / unit_scale).tolist() for v in verts]
+                edges = ifcopenshell.util.shape.get_edges(geometry)
+
+                boundary_lines = [shapely.LineString([verts[v] for v in e]) for e in edges]
+                unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
+                closed_polygons = shapely.polygonize(boundary_lines)
+                polygon = max(closed_polygons.geoms, key=lambda polygon: polygon.area)
+
+                if tool.Ifc.get_schema() == "IFC2X3":
+                    return shape_builder.polyline(list(polygon.exterior.coords))
+                points = tool.Ifc.get().createIfcCartesianPointList2D(list(polygon.exterior.coords))
+                return tool.Ifc.get().createIfcIndexedPolyCurve(points)
 
             extrusion = shape_builder.extrude(
-                get_curve_2d_from_3d(curve_3d),
+                get_curve_2d_from_3d(profile),
                 magnitude=thickness / unit_scale,
                 position=Vector([0.0, -0.1 / unit_scale, 0.0]),
                 position_x_axis=Vector((1, 0, 0)),
