@@ -25,14 +25,16 @@ import ifcopenshell.util.element as subject
 class TestGetPsetIFC4(test.bootstrap.IFC4):
     def test_getting_the_psets_of_a_product_as_a_dictionary(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        assert subject.get_pset(element, "name") == {}
+        assert subject.get_pset(element, "name") is None
+        assert subject.get_pset(element, "name", "a") is None
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="name")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"a": "b"})
         assert subject.get_pset(element, "name") == {"a": "b", "id": pset.id()}
+        assert subject.get_pset(element, "name", "a") == "b"
 
     def test_getting_the_psets_of_a_product_type_as_a_dictionary(self):
         type_element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        assert subject.get_psets(type_element) == {}
+        foo = subject.get_pset(type_element, "name") is None
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=type_element, name="name")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"x": "y"})
         assert subject.get_pset(type_element, "name") == {"x": "y", "id": pset.id()}
@@ -50,6 +52,9 @@ class TestGetPsetIFC4(test.bootstrap.IFC4):
         assert result["a"] == 2
         assert result["x"] == 1
         assert result["b"] == 3
+        assert subject.get_pset(element, "name", "a") == 2
+        assert subject.get_pset(element, "name", "x") == 1
+        assert subject.get_pset(element, "name", "b") == 3
 
     def test_excluding_inherited_psets(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
@@ -64,23 +69,30 @@ class TestGetPsetIFC4(test.bootstrap.IFC4):
         assert result["a"] == 2
         assert result["b"] == 3
         assert "x" not in result
+        assert subject.get_pset(element, "name", "a") == 2
+        assert subject.get_pset(element, "name", "b") == 3
 
     def test_getting_the_psets_of_a_material_as_a_dictionary(self):
         material = self.file.createIfcMaterial()
-        assert subject.get_psets(material) == {}
+        assert subject.get_pset(material, "name") is None
+        assert subject.get_pset(material, "name", "x") is None
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=material, name="name")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"x": "y"})
         assert subject.get_pset(material, "name") == {"x": "y", "id": pset.id()}
+        assert subject.get_pset(material, "name", "x") == "y"
 
     def test_getting_the_psets_of_a_profile_as_a_dictionary(self):
         profile = self.file.createIfcCircleProfileDef()
-        assert subject.get_psets(profile) == {}
+        assert subject.get_pset(profile, "name") is None
+        assert subject.get_pset(profile, "name", "x") is None
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=profile, name="name")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"x": "y"})
         assert subject.get_pset(profile, "name") == {"x": "y", "id": pset.id()}
+        assert subject.get_pset(profile, "name", "x") == "y"
 
     def test_getting_psets_from_an_element_which_cannot_have_psets(self):
-        assert subject.get_pset(self.file.create_entity("IfcPerson"), "name") == {}
+        assert subject.get_pset(self.file.create_entity("IfcPerson"), "name") is None
+        assert subject.get_pset(self.file.create_entity("IfcPerson"), "name", "a") is None
 
 
 class TestGetPsetsIFC4(test.bootstrap.IFC4):
