@@ -212,7 +212,9 @@ class BimToolUI:
         ):
             # NOTE: should be above "active_representation_type" = "SweptSolid" check
             # because it could be a SweptSolid too
-            add_layout_hotkey_operator(cls.layout, "Edit Railing Path", "S_E", "")
+            row = cls.layout.row(align=True)
+            row.label(text="", icon=f"EVENT_TAB")
+            row.operator("bim.enable_editing_railing_path", text="Edit Railing Path")
 
         elif AuthoringData.data["active_representation_type"] == "SweptSolid":
             add_layout_hotkey_operator(cls.layout, "Edit Profile", "S_E", "")
@@ -249,7 +251,9 @@ class BimToolUI:
             and RoofData.data["parameters"]
             and not context.active_object.BIMRoofProperties.is_editing_path
         ):
-            add_layout_hotkey_operator(cls.layout, "Edit Roof Path", "S_E", "")
+            row = cls.layout.row(align=True)
+            row.label(text="", icon=f"EVENT_TAB")
+            row.operator("bim.enable_editing_roof_path", text="Edit Roof Path")
 
         elif DecoratorData.get_ifc_text_data(bpy.context.object):
             add_layout_hotkey_operator(cls.layout, "Edit Text", "S_E", "")
