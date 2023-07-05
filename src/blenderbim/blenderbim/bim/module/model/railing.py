@@ -196,9 +196,10 @@ def update_railing_modifier_bmesh(context):
                     verts_to_dissolve.append(other_vert)
         bmesh.ops.dissolve_edges(bm, edges=edges_to_dissolve)
         bmesh.ops.dissolve_verts(bm, verts=verts_to_dissolve)
-
         # to remove unnecessary verts in 0 spacing case
         bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
+        
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
 
         tool.Blender.apply_bmesh(obj.data, bm)
 
