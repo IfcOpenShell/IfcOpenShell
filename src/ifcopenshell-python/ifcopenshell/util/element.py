@@ -73,7 +73,7 @@ def get_pset(element, name, prop=None, should_inherit=True):
                     break
 
     if not pset and not type_pset:
-        return {}
+        return
 
     if not prop:
         if type_pset:
@@ -84,10 +84,8 @@ def get_pset(element, name, prop=None, should_inherit=True):
         return get_property_definition(pset)
 
     value = get_property_definition(pset, prop)
-    if type_pset:
-        type_value = get_property_definition(type_pset, prop)
-        if value is None and type_value is not None:
-            return type_value
+    if value is None and type_pset is not None:
+        return type_pset
     return value
 
 def get_psets(element, psets_only=False, qtos_only=False, should_inherit=True):
