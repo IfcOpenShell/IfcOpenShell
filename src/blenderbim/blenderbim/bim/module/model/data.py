@@ -48,15 +48,18 @@ class AuthoringData:
         cls.is_loaded = True
         cls.props = bpy.context.scene.BIMModelProperties
         cls.data["ifc_classes"] = cls.ifc_classes()
-        cls.data["relating_type_id"] = cls.relating_type_id()
+        cls.data["relating_type_id"] = cls.relating_type_id()  # only after .ifc_classes()
         cls.data["type_class"] = cls.type_class()
+
+        # only after .type_class()
         cls.data["type_predefined_type"] = cls.type_predefined_type()
         cls.data["total_types"] = cls.total_types()
         cls.data["total_pages"] = cls.total_pages()
         cls.data["next_page"] = cls.next_page()
         cls.data["prev_page"] = cls.prev_page()
         cls.data["paginated_relating_types"] = cls.paginated_relating_types()
-        cls.data["type_thumbnail"] = cls.type_thumbnail()
+
+        cls.data["type_thumbnail"] = cls.type_thumbnail()  # only after .relating_type_id()
         cls.data["is_voidable_element"] = cls.is_voidable_element()
         cls.data["has_visible_openings"] = cls.has_visible_openings()
         cls.data["has_visible_boundaries"] = cls.has_visible_boundaries()
@@ -111,6 +114,8 @@ class AuthoringData:
     @classmethod
     def type_thumbnail(cls):
         if not cls.data["relating_type_id"]:
+            return 0
+        if not tool.Blender.enum_property_has_valid_index(cls.props, "relating_type_id", cls.data["relating_type_id"]):
             return 0
         element = tool.Ifc.get().by_id(int(cls.props.relating_type_id))
         return cls.type_thumbnails.get(element.id(), None) or 0

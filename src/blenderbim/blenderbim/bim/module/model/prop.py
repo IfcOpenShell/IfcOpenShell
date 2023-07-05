@@ -59,6 +59,8 @@ def update_ifc_class(self, context):
     bpy.ops.bim.load_type_thumbnails(ifc_class=self.ifc_class)
     AuthoringData.data["relating_type_id"] = AuthoringData.relating_type_id()
     AuthoringData.data["type_thumbnail"] = AuthoringData.type_thumbnail()
+    if not tool.Blender.enum_property_has_valid_index(self, "relating_type_id", AuthoringData.data["relating_type_id"]):
+        self["relating_type_id"] = 0
 
 
 def update_type_class(self, context):
