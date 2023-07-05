@@ -72,6 +72,9 @@ def name_callback(obj, data):
     if not obj.BIMObjectProperties.ifc_definition_id or "/" not in obj.name:
         return
     element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+    if element.is_a("IfcGridAxis"):
+        element.AxisTag = obj.name.split("/")[1]
+        refresh_ui_data()
     if not element.is_a("IfcRoot"):
         return
     if obj.BIMObjectProperties.collection:
