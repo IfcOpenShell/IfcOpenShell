@@ -803,6 +803,7 @@ class OverrideModeSetEdit(bpy.types.Operator):
             ):
                 obj.select_set(False)
                 continue
+
             if usage_type == "PROFILE":
                 if len(context.selected_objects) == 1:
                     bpy.ops.bim.hotkey(hotkey="A_E", description="")
@@ -811,12 +812,30 @@ class OverrideModeSetEdit(bpy.types.Operator):
                     self.report({"INFO"}, "Only a single profile-based representation can be edited at a time.")
                     obj.select_set(False)
                     continue
+
+            # TODO: refactor repetitive code
+            if tool.Pset.get_element_pset(element, "BBIM_Roof"):
+                if len(context.selected_objects) == 1:
+                    bpy.ops.bim.enable_editing_roof_path()
+                    return {"FINISHED"}
+                else:
+                    self.report({"INFO"}, "Only a single profile-based representation can be edited at a time.")
+                    obj.select_set(False)
+                    continue
+
+            if tool.Pset.get_element_pset(element, "BBIM_Railing"):
+                if len(context.selected_objects) == 1:
+                    bpy.ops.bim.enable_editing_railing_path()
+                    return {"FINISHED"}
+                else:
+                    self.report({"INFO"}, "Only a single profile-based representation can be edited at a time.")
+                    obj.select_set(False)
+                    continue
+
             if (
                 tool.Geometry.is_profile_based(obj.data)
                 or usage_type == "LAYER3"
                 or tool.Geometry.is_swept_profile(representation)
-                or tool.Pset.get_element_pset(element, "BBIM_Roof")
-                or tool.Pset.get_element_pset(element, "BBIM_Railing")
             ):
                 if len(context.selected_objects) == 1:
                     bpy.ops.bim.hotkey(hotkey="S_E", description="")
@@ -944,9 +963,9 @@ class OverrideModeSetObject(bpy.types.Operator):
                     if tool.Ifc.get_object(profile):  # We are editing an arbitrary profile
                         bpy.ops.bim.edit_arbitrary_profile()
                 elif tool.Pset.get_element_pset(element, "BBIM_Railing"):
-                    bpy.ops.bim.cad_hotkey(hotkey="S_Q")
+                    bpy.ops.bim.finish_editing_railing_path()
                 elif tool.Pset.get_element_pset(element, "BBIM_Roof"):
-                    bpy.ops.bim.cad_hotkey(hotkey="S_Q")
+                    bpy.ops.bim.finish_editing_roof_path()
                 elif tool.Model.get_usage_type(element) == "PROFILE":
                     bpy.ops.bim.edit_extrusion_axis()
                 else:
