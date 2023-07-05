@@ -49,6 +49,9 @@ class BIM_PT_debug(Panel):
         row.operator("bim.print_ifc_file")
 
         row = layout.row()
+        row.operator("bim.copy_debug_information")
+
+        row = layout.row()
         row.operator("bim.purge_hdf5_cache")
 
         row = layout.row()
