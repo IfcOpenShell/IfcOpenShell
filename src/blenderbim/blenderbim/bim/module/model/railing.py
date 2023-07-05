@@ -242,9 +242,15 @@ def get_path_data(obj):
     other_edge = lambda edges, edge: next(e for e in edges if e != edge)
 
     while len(link_edges := v.link_edges) != 1:
+        prev_v = v
         link_edges = v.link_edges
         edge = other_edge(link_edges, edge)
-        v = edge.other_vert(v)
+        v = edge.other_vert(prev_v)
+
+        # skip path verts if they just go vertical to avoid errors
+        if (v.co.xy - prev_v.co.xy).length <= 0.0001:
+            continue
+
         points.append(v.co)
         segments.append((i - 1, i))
         i += 1
