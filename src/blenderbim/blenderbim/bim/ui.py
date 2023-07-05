@@ -17,8 +17,9 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-from pathlib import Path
 import bpy
+import addon_utils
+from pathlib import Path
 from bpy.types import Panel
 from bpy.props import StringProperty, IntProperty, BoolProperty
 from ifcopenshell.util.doc import (
@@ -484,6 +485,35 @@ class BIM_PT_misc_object(Panel):
 
     def draw(self, context):
         pass
+
+
+class UIData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = { "version": cls.version() }
+        cls.is_loaded = True
+
+    @classmethod
+    def version(cls):
+        return ".".join(
+            [
+                str(x)
+                for x in [
+                    addon.bl_info.get("version", (-1, -1, -1))
+                    for addon in addon_utils.modules()
+                    if addon.bl_info["name"] == "BlenderBIM"
+                ][0]
+            ]
+        )
+
+
+def draw_statusbar(self, context):
+    if not UIData.is_loaded:
+        UIData.load()
+    self.layout.label(text=f"BlenderBIM Add-on v{UIData.data['version']}")
 
 
 def draw_custom_context_menu(self, context):

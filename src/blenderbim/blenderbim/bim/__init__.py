@@ -170,6 +170,7 @@ def register():
     bpy.types.SCENE_PT_unit.append(ui.ifc_units)
     if hasattr(bpy.types, "UI_MT_button_context_menu"):
         bpy.types.UI_MT_button_context_menu.append(ui.draw_custom_context_menu)
+    bpy.types.STATUSBAR_HT_header.append(ui.draw_statusbar)
 
     for mod in modules.values():
         mod.register()
@@ -197,6 +198,7 @@ def unregister():
     bpy.types.SCENE_PT_unit.remove(ui.ifc_units)
     if hasattr(bpy.types, "UI_MT_button_context_menu"):
         bpy.types.UI_MT_button_context_menu.remove(ui.draw_custom_context_menu)
+    bpy.types.STATUSBAR_HT_header.remove(ui.draw_statusbar)
 
     for mod in reversed(list(modules.values())):
         mod.unregister()
