@@ -330,6 +330,17 @@ class Blender:
         active_object.select_set(True)
 
     @classmethod
+    def enum_property_has_valid_index(cls, props, prop_name, enum_items):
+        """method created for readibility and to avoid console warnings like
+        `pyrna_enum_to_py: current value '17' matches no enum in 'BIMModelProperties', '', 'relating_type_id'`
+        """
+        current_value_index = props.get(prop_name, None)
+        # assuming the default value is fine
+        if current_value_index is None:
+            return True
+        return current_value_index < len(enum_items)
+
+    @classmethod
     def append_data_block(cls, filepath, data_block_type, name, link=False, relative=False):
         if Path(filepath) == Path(bpy.data.filepath):
             data_block = getattr(bpy.data, data_block_type).get(name, None)
