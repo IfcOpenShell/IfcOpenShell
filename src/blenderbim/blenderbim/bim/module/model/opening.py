@@ -258,11 +258,7 @@ class FilledOpeningGenerator:
                 unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
                 closed_polygons = shapely.polygonize(boundary_lines)
                 polygon = max(closed_polygons.geoms, key=lambda polygon: polygon.area)
-
-                if tool.Ifc.get_schema() == "IFC2X3":
-                    return shape_builder.polyline(list(polygon.exterior.coords))
-                points = tool.Ifc.get().createIfcCartesianPointList2D(list(polygon.exterior.coords))
-                return tool.Ifc.get().createIfcIndexedPolyCurve(points)
+                return shape_builder.polyline(list(polygon.exterior.coords))
 
             extrusion = shape_builder.extrude(
                 get_curve_2d_from_3d(profile),
