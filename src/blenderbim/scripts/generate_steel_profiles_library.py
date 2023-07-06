@@ -135,6 +135,7 @@ def create_z_profile_lips_curve(ifc_file, FirstFlangeWidth, SecondFlangeWidth, D
 
     return ifc_curve
 
+
 class LibraryGenerator:
     def generate(self, parse_profiles_type="EU", output_filename="IFC4 EU Steel.ifc"):
         ifcopenshell.api.pre_listeners = {}
@@ -171,10 +172,13 @@ class LibraryGenerator:
             "profile_z_lips": ("IfcArbitraryClosedProfileDef", {"t": "WallThickness", "c1": "FirstFlangeWidth", "c2": "SecondFlangeWidth", "h": "Depth", "r": "FilletRadius", "ll": "Girth"}),
         }
 
+        US_profiles = ("ibeam_w_imp", )
         if parse_profiles_type == "AU":
             bolt_class_filter = lambda x: "bluescope" in x.id
         elif parse_profiles_type == "EU":
-            bolt_class_filter = lambda x: "bluescope" not in x.id
+            bolt_class_filter = lambda x: "bluescope" not in x.id and x.id not in US_profiles
+        elif parse_profiles_type == "US":
+            bolt_class_filter = lambda x: x.id in US_profiles
         else:
             bolt_class_filter = lambda x: True
 
@@ -195,12 +199,27 @@ class LibraryGenerator:
                     # like hollow_generic_square
                     continue
 
-                bolts_cols = bolt_class.parameters.tables[0].columns
-                bolts_cols = [ifc_params_translation.get(c, "unused") for c in bolts_cols]
+                bolts_cols_original = bolt_class.parameters.tables[0].columns
+                bolts_cols = [ifc_params_translation.get(c, "unused") for c in bolts_cols_original]
+                
+                inch_to_mm = lambda x: x * 0.0254 * 1000
+                def assure_data_units_is_mm(data, units):
+                    data = data.copy()
+                    for i in range(len(units)):
+                        unit = units[i]
+                        assert unit in ("Length (in)", "Length (mm)")
+                        if unit != "Length (in)":
+                            continue
+                        for profile in data:
+                            data[profile][i] = inch_to_mm(data[profile][i])
+                    return data
+                
                 bolts_data = bolt_class.parameters.tables[0].data
+                data_units = [bolt_class.parameters.types[col] for col in bolts_cols_original]
+                bolts_data = assure_data_units_is_mm(bolts_data, data_units)
 
                 for prof_name in bolts_data.keys():
-                    ifc_params = dict(zip(bolts_cols, bolts_data[prof_name]))
+                    ifc_params = dict(zip(bolts_cols, bolts_data[prof_name], strict=True))
                     if "unused" in ifc_params:
                         del ifc_params["unused"]
 
@@ -240,3 +259,4 @@ if __name__ == "__main__":
     path = Path(__file__).parents[1] / "blenderbim/bim/data/libraries"
     LibraryGenerator().generate(parse_profiles_type="EU", output_filename=str(path / "IFC4 EU Steel.ifc"))
     LibraryGenerator().generate(parse_profiles_type="AU", output_filename=str(path / "IFC4 AU Steel.ifc"))
+    LibraryGenerator().generate(parse_profiles_type="US", output_filename=str(path / "IFC4 US Steel.ifc"))
