@@ -30,6 +30,7 @@ classes = (
     operator.CalculateQuantity,
     operator.RemovePset,
     operator.TogglePsetExpansion,
+    operator.SelectSimilarPsetValue,
     operator.BIM_OT_add_property_to_edit,
     operator.BIM_OT_remove_property_to_edit,
     operator.BIM_OT_clear_list,
