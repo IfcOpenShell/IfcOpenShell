@@ -49,11 +49,31 @@ class BIM_PT_brickschema(Panel):
         if len(self.props.brick_breadcrumbs):
             row.operator("bim.rewind_brick_class", text="", icon="FRAME_PREV")
         row.label(text=self.props.active_brick_class)
+        row.prop(data=self.props, property="brick_settings_toggled", text="", icon="PREFERENCES")
         row.operator("bim.refresh_brick_viewer", text="", icon="FILE_REFRESH")
         row.operator("bim.close_brick_project", text="", icon="CANCEL")
 
+        if self.props.brick_settings_toggled:
+            box = self.layout.box()
+            row = box.row(align=True)
+            row.label(text="Active Namespace:")
+            row = box.row(align=True)
+            prop_with_search(row, self.props, "namespace", text="")
+            row = box.row(align=True)
+            row.label(text="Bind New Namespace:")
+            row = box.row(align=True)
+            row.prop(data=self.props, property="new_brick_namespace_alias", text="")
+            col = row.column()
+            col.alignment = "CENTER"
+            col.scale_x = 1.1 
+            col.label(text=":")
+            row.prop(data=self.props, property="new_brick_namespace_uri", text="")
+            row.operator("bim.add_brick_namespace", text="", icon="ADD")
+
         row = self.layout.row(align=True)
-        prop_with_search(row, self.props, "namespace", text="")
+        row.label(text="Create Entity:")
+        row = self.layout.row(align=True)
+        row.prop(data=self.props, property="new_brick_label", text="")
         prop_with_search(row, self.props, "brick_equipment_class", text="")
         row.operator("bim.add_brick", text="", icon="ADD")
 

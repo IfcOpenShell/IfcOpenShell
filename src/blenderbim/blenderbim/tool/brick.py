@@ -41,12 +41,12 @@ logger.setLevel(logging.ERROR)
 
 class Brick(blenderbim.core.tool.Brick):
     @classmethod
-    def add_brick(cls, namespace, brick_class):
+    def add_brick(cls, namespace, brick_class, label):
         ns = Namespace(namespace)
         brick = ns[ifcopenshell.guid.expand(ifcopenshell.guid.new())]
         with BrickStore.graph.new_changeset("PROJECT") as cs:
             cs.add((brick, RDF.type, URIRef(brick_class)))
-            cs.add((brick, URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal("Unnamed")))
+            cs.add((brick, URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal(label)))
         return str(brick)
 
     @classmethod
@@ -333,8 +333,12 @@ class Brick(blenderbim.core.tool.Brick):
 
     @classmethod
     def serialize_brick(cls):
-        print(BrickStore.path)
         BrickStore.get_project().serialize(destination=BrickStore.path, format="turtle")
+    
+    @classmethod
+    def add_namespace(cls, alias, uri):
+        BrickStore.graph.bind(alias, Namespace(uri))
+        # need some way to reload namespace enum view
         
 class BrickStore:
     schema = None # this is now a os path
