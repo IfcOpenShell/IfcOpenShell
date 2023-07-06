@@ -142,8 +142,13 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Remove Array"
     bl_options = {"REGISTER", "UNDO"}
     item: bpy.props.IntProperty()
+    total_items: bpy.props.IntProperty()
+    keep_objs: bpy.props.BoolProperty(name="Keep Objects", default=False)
 
     def _execute(self, context):
+        if (self.keep_objs) & (self.item < (self.total_items - 1)):
+            self.report({"INFO"}, "Keeping the objects is only allowed when you are removing the last Array of the object")
+            return {"FINISHED"}
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMArrayProperties
@@ -159,7 +164,7 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
         except:
             return {"FINISHED"}
 
-        tool.Model.regenerate_array(parent, data)
+        tool.Model.regenerate_array(parent, data, self.keep_objs)
 
         pset = tool.Ifc.get().by_id(pset["id"])
         if len(data) == 1:
@@ -170,6 +175,13 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
             ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
 
         return {"FINISHED"}
+
+    def draw(self, context):
+        row = self.layout.row()
+        row.prop(self, "keep_objs")
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
 
 
 class SelectArrayParent(bpy.types.Operator):

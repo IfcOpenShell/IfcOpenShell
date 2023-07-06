@@ -531,7 +531,7 @@ class Model(blenderbim.core.tool.Model):
         return axes
 
     @classmethod
-    def regenerate_array(cls, parent, data):
+    def regenerate_array(cls, parent, data, keep_objs=False):
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         obj_stack = [parent]
 
@@ -601,7 +601,12 @@ class Model(blenderbim.core.tool.Model):
                 element = tool.Ifc.get().by_guid(removed_child)
                 obj = tool.Ifc.get_object(element)
                 if obj:
-                    tool.Geometry.delete_ifc_object(obj)
+                    if keep_objs:
+                        pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+                        pset = tool.Ifc.get().by_id(pset["id"])
+                        ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
+                    else:
+                        tool.Geometry.delete_ifc_object(obj)
 
             bpy.context.view_layer.update()
 
