@@ -300,9 +300,14 @@ class DecoratorData:
             return None
 
         dimension_style = "arrow"
+        fill_bg = False
         classes = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Classes")
-        if classes and "oblique" in classes.lower().split():
-            dimension_style = "oblique"
+        if classes:
+            classes_split = classes.lower().split()
+            if "oblique" in classes_split:
+                dimension_style = "oblique"
+            elif "fill-bg" in classes_split:
+                fill_bg = True
 
         pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Dimension") or {}
         show_description_only = pset_data.get("ShowDescriptionOnly", False)
@@ -316,6 +321,7 @@ class DecoratorData:
             "suppress_zero_inches": suppress_zero_inches,
             "text_prefix": text_prefix,
             "text_suffix": text_suffix,
+            "fill_bg": fill_bg,
         }
         cls.data[obj.name] = dimension_data
         return dimension_data
