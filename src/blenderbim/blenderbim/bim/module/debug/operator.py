@@ -190,6 +190,8 @@ class CreateAllShapes(bpy.types.Operator):
 
         total = len(elements)
         settings = ifcopenshell.geom.settings()
+        settings_2d = ifcopenshell.geom.settings()
+        settings_2d.set(settings_2d.INCLUDE_CURVES, True)
         failures = []
         excludes = ()  # For the developer to debug with
         for i, element in enumerate(elements):
@@ -197,8 +199,16 @@ class CreateAllShapes(bpy.types.Operator):
                 continue
             print(f"{i}/{total}:", element)
             start = time.time()
+            shape = None
             try:
                 shape = ifcopenshell.geom.create_shape(settings, element)
+            except:
+                try:
+                    shape = ifcopenshell.geom.create_shape(settings_2d, element)
+                except:
+                    failures.append(element)
+                    print("***** FAILURE *****")
+            if shape:
                 print(
                     "Success",
                     time.time() - start,
@@ -206,9 +216,6 @@ class CreateAllShapes(bpy.types.Operator):
                     len(shape.geometry.edges),
                     len(shape.geometry.faces),
                 )
-            except:
-                failures.append(element)
-                print("***** FAILURE *****")
         print(f"Failures: {len(failures)}")
         for failure in failures:
             print(failure)
