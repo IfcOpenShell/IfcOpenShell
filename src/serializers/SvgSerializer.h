@@ -393,6 +393,7 @@ namespace {
 		void add(const TopoDS_Shape& s) {
 			if (!use_prefiltering_) {
 				items_.insert(items_.end(), s);
+				return;
 			}
 
 			TopoDS_Compound C;
