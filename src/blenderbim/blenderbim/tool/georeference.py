@@ -272,3 +272,27 @@ class Georeference(blenderbim.core.tool.Georeference):
             float(props.map_conversion.get("XAxisOrdinate").string_value),
         )
         bpy.context.scene.sun_pos_properties.north_offset = -radians(angle)
+
+    @classmethod
+    def angle2coords(cls, angle, type):
+        if type == "rel_x":
+            return ifcopenshell.util.geolocation.angle2xaxis(angle)
+        elif type == "rel_y":
+            return ifcopenshell.util.geolocation.angle2yaxis(angle)
+
+    @classmethod
+    def get_angle(cls, type):
+        if type == "rel_x":
+            return bpy.context.scene.BIMGeoreferenceProperties.angle_degree_input_x
+        elif type == "rel_y":
+            return bpy.context.scene.BIMGeoreferenceProperties.angle_degree_input_y
+
+    @classmethod
+    def set_vector_coordinates(cls, vector_coordinates, type):
+        x, y = vector_coordinates
+        if type == "rel_x":
+            bpy.context.scene.BIMGeoreferenceProperties.x_axis_abscissa_output = str(x)
+            bpy.context.scene.BIMGeoreferenceProperties.x_axis_ordinate_output = str(y)
+        elif type == "rel_y":
+            bpy.context.scene.BIMGeoreferenceProperties.y_axis_abscissa_output = str(x)
+            bpy.context.scene.BIMGeoreferenceProperties.y_axis_ordinate_output = str(y)
