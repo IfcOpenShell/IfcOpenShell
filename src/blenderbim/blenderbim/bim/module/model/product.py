@@ -154,10 +154,11 @@ class AddConstrTypeInstance(bpy.types.Operator):
                 )
             else:
                 parent = ifcopenshell.util.element.get_container(building_element)
-                parent_obj = tool.Ifc.get_object(parent)
-                blenderbim.core.spatial.assign_container(
-                    tool.Ifc, tool.Collector, tool.Spatial, structure_obj=parent_obj, element_obj=obj
-                )
+                if parent:
+                    parent_obj = tool.Ifc.get_object(parent)
+                    blenderbim.core.spatial.assign_container(
+                        tool.Ifc, tool.Collector, tool.Spatial, structure_obj=parent_obj, element_obj=obj
+                    )
 
         # set occurences properties for the types defined with modifiers
         if instance_class in ["IfcWindow", "IfcDoor"]:
