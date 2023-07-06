@@ -275,8 +275,6 @@ class Brick(blenderbim.core.tool.Brick):
         with BrickStore.graph.new_changeset("SCHEMA") as cs:
             cs.load_file(BrickStore.schema)
         BrickStore.graph.bind("digitaltwin", Namespace("https://example.org/digitaltwin#"))
-        BrickStore.graph.bind("brick", Namespace("https://brickschema.org/schema/Brick#"))
-        BrickStore.graph.bind("rdfs", Namespace("http://www.w3.org/2000/01/rdf-schema#"))
 
     @classmethod
     def pop_brick_breadcrumb(cls):
