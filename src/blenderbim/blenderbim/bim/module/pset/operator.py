@@ -320,6 +320,41 @@ class EditPset(bpy.types.Operator, Operator):
         tool.Blender.update_viewport()
 
 
+
+class SelectSimilarPsetValue(bpy.types.Operator):
+    bl_idname = "bim.select_similar_pset_value"
+    bl_label = "Select Similar Pset Value"
+    bl_options = {"REGISTER", "UNDO"}
+    pset_name: bpy.props.StringProperty()
+    prop_name: bpy.props.StringProperty()
+    value: bpy.props.StringProperty()
+    
+    def execute(self, context):
+        
+        for element in tool.Ifc.get().by_type("IfcElement"):
+            obj = tool.Ifc.get_object(element)
+            try:
+                psets = ifcopenshell.util.element.get_psets(element)
+            except:
+                continue
+
+            if self.pset_name.endswith("Common"):
+                for key in psets.keys():
+                    if key.endswith("Common"):
+                        pset = psets[key]
+            else:
+                pset = psets[self.pset_name]
+                
+            try: 
+                pset[self.prop_name]
+            except:
+                continue
+
+            if str(pset[self.prop_name]) == self.value:
+                obj.select_set(True)
+                
+        return {"FINISHED"}
+
 class RemovePset(bpy.types.Operator, Operator):
     bl_idname = "bim.remove_pset"
     bl_label = "Remove Pset"
