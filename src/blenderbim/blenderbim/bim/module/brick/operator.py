@@ -126,6 +126,7 @@ class AddBrick(bpy.types.Operator, Operator):
             namespace=props.namespace,
             brick_class=props.brick_equipment_class,
             library=library,
+            label=props.new_brick_label
         )
 
 
@@ -230,3 +231,13 @@ class SerializeBrick(bpy.types.Operator, Operator):
         if properties.should_save_as:
             return "Save Brick project to a selected file"
         return "Save the Brick project"
+    
+class AddBrickNamespace(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_brick_namespace"
+    bl_label = "Add Brick Namespace"
+
+    def _execute(self, context):
+        props = context.scene.BIMBrickProperties
+        alias = props.new_brick_namespace_alias
+        uri = props.new_brick_namespace_uri
+        core.add_namespace(tool.Brick, alias=alias, uri=uri)
