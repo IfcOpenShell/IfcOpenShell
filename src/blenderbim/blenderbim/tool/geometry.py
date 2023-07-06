@@ -275,14 +275,23 @@ class Geometry(blenderbim.core.tool.Geometry):
         settings.set(settings.WELD_VERTICES, True)
 
         context = representation.ContextOfItems
-        if context.ContextIdentifier == "Body" and context.TargetView == "MODEL_VIEW":
-            if element.is_a("IfcTypeProduct") or not apply_openings:
-                shape = ifcopenshell.geom.create_shape(settings, representation)
+        try:
+            if context.ContextIdentifier == "Body" and context.TargetView == "MODEL_VIEW":
+                if element.is_a("IfcTypeProduct") or not apply_openings:
+                    shape = ifcopenshell.geom.create_shape(settings, representation)
+                else:
+                    shape = ifcopenshell.geom.create_shape(settings, element)
             else:
-                shape = ifcopenshell.geom.create_shape(settings, element)
-        else:
-            settings.set(settings.INCLUDE_CURVES, True)
-            shape = ifcopenshell.geom.create_shape(settings, representation)
+                settings.set(settings.INCLUDE_CURVES, True)
+                shape = ifcopenshell.geom.create_shape(settings, representation)
+        except RuntimeError as e:
+            error_msg = (
+                f"\nfor object {obj.name}"
+                f"\n{element}"
+                f"\n{representation}."
+                "\nTry to investigate geometry problems with the object representation or just delete it."
+            )
+            raise RuntimeError(e.args[0] + error_msg) from e
 
         ifc_importer = blenderbim.bim.import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = tool.Ifc.get()
