@@ -188,4 +188,28 @@ def register_schema(schema):
     register_schema_attributes(schema.schema)
 
 
+def schema_by_name(schema=None, schema_version=None):
+    """Returns an object allowing you to query the IFC schema itself
+
+    :param schema: Which IFC schema to use, chosen from "IFC2X3", "IFC4",
+        or "IFC4X3". These refer to the ISO approved versions of IFC.
+    :type schema: string
+    :param schema_version: If you want to specify an exact version of IFC
+        that may not be an ISO approved version, use this argument instead
+        of ``schema``. IFC versions on technical.buildingsmart.org are
+        described using 4 integers representing the major, minor, addendum,
+        and corrigendum number. For example, (4, 0, 2, 1) refers to IFC4
+        ADD2 TC1, which is the official version approved by ISO when people
+        refer to "IFC4". Generally you should not use this argument unless
+        you are testing non-ISO IFC releases.
+    :type schema_version: tuple[int]
+    """
+    if schema_version:
+        prefixes = ("IFC", "X", "_ADD", "_TC")
+        schema = "".join("".join(map(str, t)) if t[1] else "" for t in zip(prefixes, schema_version))
+    else:
+        schema = {"IFC4X3": "IFC4X3_ADD1"}.get(schema, schema)
+    return ifcopenshell_wrapper.schema_by_name(schema)
+
+
 from .main import *
