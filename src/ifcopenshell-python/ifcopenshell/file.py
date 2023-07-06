@@ -193,10 +193,49 @@ class file(object):
     """
 
     def __init__(self, f=None, schema=None, schema_version=None):
-        """Create a new file object"""
+        """Create a new blank IFC model
+
+        This IFC model does not have any entities in it yet. See the
+        ``create_entity`` function for how to create new entities. All data is
+        stored in memory. If you wish to write the IFC model to disk, see the
+        ``write`` function.
+
+        :param f: The underlying IfcOpenShell file object to be wrapped. This
+            is an internal implementation detail and should generally be left
+            as None by users.
+        :param schema: Which IFC schema to use, chosen from "IFC2X3", "IFC4",
+            or "IFC4X3". These refer to the ISO approved versions of IFC.
+            Defaults to "IFC4" if not specified, which is currently recommended
+            for all new projects.
+        :type schema: string
+        :param schema_version: If you want to specify an exact version of IFC
+            that may not be an ISO approved version, use this argument instead
+            of ``schema``. IFC versions on technical.buildingsmart.org are
+            described using 4 integers representing the major, minor, addendum,
+            and corrigendum number. For example, (4, 0, 2, 1) refers to IFC4
+            ADD2 TC1, which is the official version approved by ISO when people
+            refer to "IFC4". Generally you should not use this argument unless
+            you are testing non-ISO IFC releases.
+        :type schema_version: tuple[int]
+
+        Example:
+
+        .. code:: python
+
+            # Create a new IFC4 model, create a wall, then save it to an IFC-SPF file.
+            model = ifcopenshell.file()
+            model.create_entity("IfcWall")
+            model.write("/path/to/model.ifc")
+
+            # Create a new IFC4X3 model
+            model = ifcopenshell.file(schema="IFC4X3")
+
+            # A poweruser testing out a particular version of IFC4X3
+            model = ifcopenshell.file(schema_version=(4, 3, 0, 1))
+        """
         if schema_version:
-            prefixes = ('IFC', 'X', '_ADD', '_TC')
-            schema = ''.join(''.join(map(str, t)) if t[1] else '' for t in zip(prefixes, schema_version))
+            prefixes = ("IFC", "X", "_ADD", "_TC")
+            schema = "".join("".join(map(str, t)) if t[1] else "" for t in zip(prefixes, schema_version))
         else:
             schema = {"IFC4X3": "IFC4X3_ADD1"}.get(schema, schema)
         if f is not None:
@@ -319,7 +358,7 @@ class file(object):
         elif attr == "schema_version":
             schema = self.wrapped_data.schema
             version = []
-            for prefix in ('IFC', 'X', '_ADD', '_TC'):
+            for prefix in ("IFC", "X", "_ADD", "_TC"):
                 number = re.search(prefix + r"(\d)", schema)
                 version.append(int(number.group(1)) if number else 0)
             return tuple(version)
