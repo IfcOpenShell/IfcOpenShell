@@ -22,10 +22,11 @@ from __future__ import division
 from __future__ import print_function
 
 import os
-from pathlib import Path
+import re
 import numbers
-import functools
 import zipfile
+import functools
+from pathlib import Path
 
 import ifcopenshell.util.element
 import ifcopenshell.util.file
@@ -191,8 +192,13 @@ class file(object):
         print(products[0] == ifc_file[122] == ifc_file["2XQ$n5SLP5MBLyL442paFx"]) # True
     """
 
-    def __init__(self, f=None, schema=None):
+    def __init__(self, f=None, schema=None, schema_version=None):
         """Create a new file object"""
+        if schema_version:
+            prefixes = ('IFC', 'X', '_ADD', '_TC')
+            schema = ''.join(''.join(map(str, t)) if t[1] else '' for t in zip(prefixes, schema_version))
+        else:
+            schema = {"IFC4X3": "IFC4X3_ADD1"}.get(schema, schema)
         if f is not None:
             self.wrapped_data = f
         else:
@@ -306,6 +312,17 @@ class file(object):
     def __getattr__(self, attr):
         if attr[0:6] == "create":
             return functools.partial(self.create_entity, attr[6:])
+        elif attr == "schema":
+            return {"IFC4X3_ADD1": "IFC4X3"}.get(self.wrapped_data.schema, self.wrapped_data.schema)
+        elif attr == "schema_identifier":
+            return self.wrapped_data.schema
+        elif attr == "schema_version":
+            schema = self.wrapped_data.schema
+            version = []
+            for prefix in ('IFC', 'X', '_ADD', '_TC'):
+                number = re.search(prefix + r"(\d)", schema)
+                version.append(int(number.group(1)) if number else 0)
+            return tuple(version)
         else:
             return getattr(self.wrapped_data, attr)
 
