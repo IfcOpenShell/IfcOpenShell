@@ -30,7 +30,6 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-from blenderbim.tool.brick import BrickStore
 
 
 def update_active_brick_index(self, context):
