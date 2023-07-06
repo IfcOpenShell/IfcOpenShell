@@ -103,7 +103,7 @@ def run(f, logger):
     cd = compile(a, f"{f.schema}.py", "exec")
     scope = {}
     exec(cd, scope)
-    S = ifcopenshell.ifcopenshell_wrapper.schema_by_name(f.schema)
+    S = ifcopenshell.ifcopenshell_wrapper.schema_by_name(f.schema_identifier)
 
     rules = list(filter(lambda x: hasattr(x, "SCOPE"), scope.values()))
 
