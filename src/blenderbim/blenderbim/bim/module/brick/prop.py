@@ -30,6 +30,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from blenderbim.tool.brick import BrickStore
 
 
 def update_active_brick_index(self, context):
@@ -69,3 +70,7 @@ class BIMBrickProperties(PropertyGroup):
     libraries: EnumProperty(name="Libraries", items=get_libraries)
     namespace: EnumProperty(name="Namespace", items=get_namespaces)
     brick_equipment_class: EnumProperty(name="Brick Equipment Class", items=get_brick_equipment_classes)
+    brick_settings_toggled: BoolProperty(name="Brick Settings Toggled", default=False)
+    new_brick_label: StringProperty(name="New Brick Label")
+    new_brick_namespace_alias: StringProperty(name="New Brick Namespace Alias")
+    new_brick_namespace_uri: StringProperty(name="New Brick Namespace URI")
