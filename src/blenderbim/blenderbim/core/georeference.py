@@ -80,3 +80,7 @@ def convert_global_to_local(georeference):
     coordinates = georeference.enh2xyz(georeference.get_coordinates("input"), georeference.get_map_conversion())
     georeference.set_coordinates("output", coordinates)
     georeference.set_cursor_location(coordinates)
+
+def convert_angle_to_coord(georeference, type):
+    vector_coordinates = georeference.angle2coords(georeference.get_angle(type), type)
+    georeference.set_vector_coordinates(vector_coordinates,type)

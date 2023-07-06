@@ -167,3 +167,21 @@ class BIM_PT_gis_utilities(Panel):
         row = self.layout.row(align=True)
         row.operator("bim.convert_local_to_global", text="Local to Global")
         row.operator("bim.convert_global_to_local", text="Global to Local")
+
+        row = self.layout.row(align=True)
+        row.label(text="Orientation Calculator", icon="TRACKING_REFINE_FORWARDS")
+        row = self.layout.row(align=True)
+        row.prop(props, "angle_degree_input_x", text="Angle (°) rel to Easting")
+        row.operator("bim.convert_angle_to_coord", text="", icon="FILE_REFRESH").type = "rel_x"
+        row = self.layout.row(align=True)
+        row.prop(props, "x_axis_abscissa_output", text="XAxis Abscissa")
+        row = self.layout.row(align=True)
+        row.prop(props, "x_axis_ordinate_output", text="XAxis Ordinate")
+
+        row = self.layout.row(align=True)
+        row.prop(props, "angle_degree_input_y", text="Angle (°) rel to to +Y")
+        row.operator("bim.convert_angle_to_coord", text="", icon="FILE_REFRESH").type = "rel_y"
+        row = self.layout.row(align=True)
+        row.prop(props, "y_axis_abscissa_output", text="North Abscissa")
+        row = self.layout.row(align=True)
+        row.prop(props, "y_axis_ordinate_output", text="North Ordinate")
