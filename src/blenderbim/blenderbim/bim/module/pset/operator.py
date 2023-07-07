@@ -328,11 +328,11 @@ class SelectSimilarPsetValue(bpy.types.Operator):
     bl_idname = "bim.select_similar_pset_value"
     bl_label = "Select Similar Pset Value"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Selects objects with the same property value.\n\n" + "ALT+CLICK to select from all pset commons"
+    bl_description = "Selects objects with the same property value.\n\n" + "ALT+CLICK to select from all pset common"
     pset_name: bpy.props.StringProperty()
     prop_name: bpy.props.StringProperty()
     value: bpy.props.StringProperty()
-    all_pset_common: bpy.props.BoolProperty(name = "All Classes", default=False, options={"SKIP_SAVE"})
+    all_pset_common: bpy.props.BoolProperty(name = "All Pset Common", default=False, options={"SKIP_SAVE"})
 
     def invoke(self, context, event):
         # make sure to use SKIP_SAVE on property, otherwise it might get stuck
