@@ -62,7 +62,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCurveBoundedPlane* l, TopoDS_S
 	ShapeFix_Shape sfs(mf.Face());
 	sfs.Perform();
 
-	// `trsf` consitutes the placement of the plane and therefore has unit scale factor
+	// `trsf` constitutes the placement of the plane and therefore has unit scale factor
 	face = TopoDS::Face(sfs.Shape()).Moved(trsf);
 	
 	return true;
