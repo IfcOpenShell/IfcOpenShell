@@ -54,13 +54,13 @@ class Patcher:
             specified, it is treated as the angle to rotate in plan view (i.e.
             around the Z axis). If all angle parameters are specified, then it
             is treated as the angle to rotate around the X axis. Angles are in
-            decimal degrees.
+            decimal degrees and positive is anticlockwise.
         :type ax: float,optional
         :param ay: An optional angle to rotate by for 3D rotations along the Y
-            axis. Angles are in decimal degrees.
+            axis. Angles are in decimal degrees and positive is anticlockwise.
         :type ay: float,optional
         :param az: An optional angle to rotate by for 3D rotations along the Z
-            axis. Angles are in decimal degrees.
+            axis. Angles are in decimal degrees and positive is anticlockwise.
         :type az: float,optional
 
         Example:
