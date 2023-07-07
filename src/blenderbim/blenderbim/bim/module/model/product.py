@@ -37,6 +37,24 @@ from . import prop
 import json
 
 
+class EnableAddType(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.enable_add_type"
+    bl_label = "Enable Add Type"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        bpy.context.scene.BIMModelProperties.is_adding_type = True
+
+
+class DisableAddType(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.disable_add_type"
+    bl_label = "Disable Add Type"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        bpy.context.scene.BIMModelProperties.is_adding_type = False
+
+
 class AddEmptyType(bpy.types.Operator, AddObjectHelper):
     bl_idname = "bim.add_empty_type"
     bl_label = "Add Empty Type"
