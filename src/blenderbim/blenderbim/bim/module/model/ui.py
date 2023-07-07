@@ -70,10 +70,7 @@ class LaunchTypeManager(bpy.types.Operator):
 
         row = columns.row(align=True)
         row.alignment = "CENTER"
-        row.prop(props, "type_predefined_type", text="")
-        row.prop(props, "type_template", text="")
-        row.prop(props, "type_name", text="")
-        row.operator("bim.add_type", icon="ADD", text="")
+        # In case you want something here in the future
 
         row = columns.row(align=True)
         row.alignment = "RIGHT"
@@ -85,6 +82,22 @@ class LaunchTypeManager(bpy.types.Operator):
         if AuthoringData.data["next_page"]:
             op = row.operator("bim.change_type_page", icon="TRIA_RIGHT", text="")
             op.page = AuthoringData.data["next_page"]
+
+        if props.is_adding_type:
+            row = self.layout.row()
+            box = row.box()
+            row = box.row()
+            row.prop(props, "type_predefined_type")
+            row = box.row()
+            row.prop(props, "type_template")
+            row = box.row()
+            row.prop(props, "type_name")
+            row = box.row(align=True)
+            row.operator("bim.add_type", icon="CHECKMARK", text="Save New Type")
+            row.operator("bim.disable_add_type", icon="CANCEL", text="")
+        else:
+            row = self.layout.row()
+            row.operator("bim.enable_add_type", icon="ADD", text="Create New Type")
 
         flow = self.layout.grid_flow(row_major=True, columns=3, even_columns=True, even_rows=True, align=True)
 
