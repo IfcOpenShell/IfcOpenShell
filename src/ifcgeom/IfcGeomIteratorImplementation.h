@@ -700,7 +700,7 @@ namespace IfcGeom {
 						}
 					}
 
-					// Check if this represenation has (or will be) processed as part its mapped representation
+					// Check if this representation has (or will be) processed as part its mapped representation
 					bool representation_processed_as_mapped_item = false;
 					IfcSchema::IfcRepresentation* representation_mapped_to = kernel.representation_mapped_to(representation);
 					if (representation_mapped_to) {

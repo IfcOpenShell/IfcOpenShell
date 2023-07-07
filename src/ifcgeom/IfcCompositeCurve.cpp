@@ -169,7 +169,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire
 	}
 
 	if (converted_segments.Extent() == 0) {
-		Logger::Message(Logger::LOG_ERROR, "No segment succesfully converted:", l);
+		Logger::Message(Logger::LOG_ERROR, "No segment successfully converted:", l);
 		return false;
 	}
 
