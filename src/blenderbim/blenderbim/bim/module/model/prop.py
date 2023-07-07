@@ -92,6 +92,7 @@ class BIMModelProperties(PropertyGroup):
     )
     icon_id: bpy.props.IntProperty()
     updating: bpy.props.BoolProperty(default=False)
+    is_adding_type: bpy.props.BoolProperty(default=False)
     occurrence_name_style: bpy.props.EnumProperty(
         items=[("CLASS", "By Class", ""), ("TYPE", "By Type", ""), ("CUSTOM", "Custom", "")],
         name="Occurrence Name Style",
