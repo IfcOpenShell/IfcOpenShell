@@ -176,7 +176,7 @@ struct remove_thickness {
 		CGAL::Polygon_mesh_processing::triangulate_faces(polyhedron);
 		CGAL::Polygon_mesh_processing::triangulate_faces(polyhedron2);
 
-		std::list<cgal_shape_t::Facet_handle> non_degenerate, degenerate, longitudonal;
+		std::list<cgal_shape_t::Facet_handle> non_degenerate, degenerate, longitudinal;
 		std::set<cgal_shape_t::Facet_iterator> thin_sides;
 
 		std::wcout << "ALL FACES:" << std::endl;
@@ -243,20 +243,20 @@ struct remove_thickness {
 
 		for (auto& f : non_degenerate) {
 			if (thin_sides.find(f) == thin_sides.end()) {
-				longitudonal.push_back(f);
+				longitudinal.push_back(f);
 			}
 		}
 
 		std::wcout << "LONGITUDONAL:" << std::endl;
-		for (auto& f : longitudonal) {
+		for (auto& f : longitudinal) {
 			dump_facet(f);
 		}
 
-		std::wcout << "faces " << faces(polyhedron).size() << "long " << longitudonal.size() << "thin " << thin_sides.size() << "non-degen " << non_degenerate.size() << std::endl;
+		std::wcout << "faces " << faces(polyhedron).size() << "long " << longitudinal.size() << "thin " << thin_sides.size() << "non-degen " << non_degenerate.size() << std::endl;
 
 		cgal_shape_t enlarged_indiv_triangles;
 		Build_Offset<cgal_shape_t::HDS> bo2;
-		bo2.input = longitudonal;
+		bo2.input = longitudinal;
 		enlarged_indiv_triangles.delegate(bo2);
 
 		{
@@ -381,19 +381,19 @@ struct remove_thickness {
 
 		// @todo choose connected / connected_opposing based on largest combined area of facets?
 
-		if (longitudonal.size() == 0) {
-			std::wcout << "no longitudonal faces detected :(" << std::endl;
+		if (longitudinal.size() == 0) {
+			std::wcout << "no longitudinal faces detected :(" << std::endl;
 			return;
 		}
 
-		auto connected = connected_faces(*longitudonal.begin(), thin_sides_degenerate);
+		auto connected = connected_faces(*longitudinal.begin(), thin_sides_degenerate);
 		decltype(connected) connected_opposing;
 
-		for (auto& f : longitudonal) {
+		for (auto& f : longitudinal) {
 			if (std::find(connected.begin(), connected.end(), f) == connected.end()) {
 				connected_opposing = connected_faces(f, thin_sides_degenerate);
 
-				std::set<cgal_shape_t::Facet_handle> longi(longitudonal.begin(), longitudonal.end());
+				std::set<cgal_shape_t::Facet_handle> longi(longitudinal.begin(), longitudinal.end());
 				std::set<cgal_shape_t::Facet_handle> both_sides(connected.begin(), connected.end());
 				both_sides.insert(connected_opposing.begin(), connected_opposing.end());
 
@@ -429,7 +429,7 @@ struct intersection_validator {
 	double total_minkowsky_time = 0.;
 	double total_box_time = 0.;
 
-	std::set<const IfcUtil::IfcBaseEntity*> succesfully_processed;
+	std::set<const IfcUtil::IfcBaseEntity*> successfully_processed;
 
 	intersection_validator(IfcParse::IfcFile& f, std::initializer_list<std::string> entities, double eps, bool no_progress, bool quiet, bool stderr_progress) {
 
@@ -504,7 +504,7 @@ struct intersection_validator {
 					continue;
 				}
 
-				succesfully_processed.insert(geom_object->product());
+				successfully_processed.insert(geom_object->product());
 
 				nef = CGAL::minkowski_sum_3(nef, cube);
 				std::clock_t minkowski_end = std::clock();

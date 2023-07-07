@@ -609,7 +609,7 @@ bool IfcGeom::util::create_solid_from_faces(const TopTools_ListOfShape& face_lis
 	bool has_shared_edges = false;
 	TopTools_MapOfShape edge_set;
 
-	// In case there are wire interesections or failures in non-planar wire triangulations
+	// In case there are wire intersections or failures in non-planar wire triangulations
 	// the idea is to let occt do an exhaustive search of edge partners. But we have not
 	// found a case where this actually improves boolean ops later on.
 	// if (!faceset_helper_ || !faceset_helper_->non_manifold()) {

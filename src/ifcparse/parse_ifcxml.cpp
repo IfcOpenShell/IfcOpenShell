@@ -230,7 +230,7 @@ Argument* parse_attribute_value(const IfcParse::parameter_type* ty, const std::s
     }
 
     if (v->isNull()) {
-        Logger::Error("Attribute '" + value + "' not succesfully parsed");
+        Logger::Error("Attribute '" + value + "' not successfully parsed");
         delete v;
         v = nullptr;
     }

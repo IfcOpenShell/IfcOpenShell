@@ -224,7 +224,7 @@ bool OpenCascadeKernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wir
 	}
 
 	if (converted_segments.Extent() == 0) {
-		Logger::Message(Logger::LOG_ERROR, "No segment succesfully converted:", loop->instance);
+		Logger::Message(Logger::LOG_ERROR, "No segment successfully converted:", loop->instance);
 		return false;
 	}
 

@@ -900,7 +900,7 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* 
 // 	typedef std::vector< std::vector<Handle_Geom_Surface> > result_t;
 // 	endpoint_connections_t endpoint_connections;
 // 
-// 	// Find the semantic connections ot other wall elements when they are not connected 'AT_PATH' because
+// 	// Find the semantic connections to other wall elements when they are not connected 'AT_PATH' because
 // 	// in that latter case no folds need to be made.
 // 	for (IfcSchema::IfcRelConnectsPathElements::list::it it = connections->begin(); it != connections->end(); ++it) {
 // 		IfcSchema::IfcRelConnectsPathElements* connection = *it;
@@ -1020,7 +1020,7 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* 
 // 	// range. It's only a safeguard though, so can probably be approximated.
 // 	const double axis_length = own_axis_start.Distance(own_axis_end);
 // 	if (length_required > axis_length) {
-// 		Logger::Warning("The wall axis is not long enough to accomodate the fold points");
+// 		Logger::Warning("The wall axis is not long enough to accommodate the fold points");
 // 		return false;
 // 	}
 // 
@@ -1115,7 +1115,7 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* 
 // 		result_t::iterator result_vector = result.begin() + 1;
 // 
 // 		// nb The first layer is never folded, because it corresponds
-// 		// to one of the longitudonal faces of the wall. Hence the +1
+// 		// to one of the longitudinal faces of the wall. Hence the +1
 // 		for (surfaces_t::const_iterator jt = surfaces.begin() + 1; jt != surfaces.end() - 1; ++jt, ++result_vector) {
 // 			layer_offset += *thickness++;
 // 

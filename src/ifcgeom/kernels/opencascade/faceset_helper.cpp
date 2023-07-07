@@ -66,7 +66,7 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 	// double bdiff = std::sqrt(box.SquareExtent());
 
 	// @todo the bounding box diagonal is not used (see above)
-	// because we're explicitly interested in the miminal
+	// because we're explicitly interested in the minimal
 	// dimension of the element to limit the tolerance (for sheet-
 	// like elements for example). But the way below is very
 	// dependent on orientation due to the usage of the
