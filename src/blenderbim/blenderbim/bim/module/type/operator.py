@@ -383,7 +383,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
 
         elif template == "RAILING":
             mesh = bpy.data.meshes.new("IfcRailing")
-            obj = bpy.data.objects.new("TYPEX", mesh)
+            obj = bpy.data.objects.new(name, mesh)
             element = blenderbim.core.root.assign_class(
                 tool.Ifc,
                 tool.Collector,
@@ -402,7 +402,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
 
         elif template == "ROOF":
             mesh = bpy.data.meshes.new("IfcRoof")
-            obj = bpy.data.objects.new("TYPEX", mesh)
+            obj = bpy.data.objects.new(name, mesh)
             element = blenderbim.core.root.assign_class(
                 tool.Ifc,
                 tool.Collector,
