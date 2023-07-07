@@ -142,13 +142,9 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Remove Array"
     bl_options = {"REGISTER", "UNDO"}
     item: bpy.props.IntProperty()
-    total_items: bpy.props.IntProperty()
     keep_objs: bpy.props.BoolProperty(name="Keep Objects", default=False)
 
     def _execute(self, context):
-        if (self.keep_objs) & (self.item < (self.total_items - 1)):
-            self.report({"INFO"}, "Keeping the objects is only allowed when you are removing the last Array of the object")
-            return {"FINISHED"}
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMArrayProperties
@@ -156,6 +152,10 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
         pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
         data = json.loads(pset["Data"])
         data[self.item]["count"] = 1
+        
+        if (self.keep_objs) & (self.item < (len(data) - 1)):
+            self.report({"INFO"}, "Keeping the objects is only allowed when you are removing the last Array of the object")
+            return {"FINISHED"}
 
         props.is_editing = -1
 
