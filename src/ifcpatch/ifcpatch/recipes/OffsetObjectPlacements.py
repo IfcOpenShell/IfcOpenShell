@@ -23,7 +23,7 @@ import ifcopenshell.util.placement
 
 
 class Patcher:
-    def __init__(self, src, file, logger, x=None, y=None, z=None, ax=None, ay=None, az=None):
+    def __init__(self, src, file, logger, x=None, y=None, z=None, should_rotate_first=True, ax=None, ay=None, az=None):
         """Offset and rotate all object placements in a model
 
         Every physical object in an IFC model has an object placement, a
@@ -46,6 +46,10 @@ class Patcher:
         :type y: float
         :param z: The Z coordinate to offset by in project length units.
         :type z: float
+        :param should_rotate_first: Whether or not to rotate first and then
+            translate, or to first translate and rotate afterwards. Defaults to
+            rotate first then translate.
+        :type should_rotate_first: bool
         :param ax: An optional angle to rotate by. If only this angle is
             specified, it is treated as the angle to rotate in plan view (i.e.
             around the Z axis). If all angle parameters are specified, then it
@@ -67,10 +71,10 @@ class Patcher:
             ifcpatch.execute({"input": model, "recipe": "OffsetObjectPlacements", "arguments": [100,100,0]})
 
             # Rotate by 90 degrees, but don't do any offset
-            ifcpatch.execute({"input": model, "recipe": "OffsetObjectPlacements", "arguments": [0,0,0,90]})
+            ifcpatch.execute({"input": model, "recipe": "OffsetObjectPlacements", "arguments": [0,0,0,True,90]})
 
             # Some crazy 3D rotation and offset
-            ifcpatch.execute({"input": model, "recipe": "OffsetObjectPlacements", "arguments": [12.5,5,2,90,90,45]})
+            ifcpatch.execute({"input": model, "recipe": "OffsetObjectPlacements", "arguments": [12.5,5,2,False,90,90,45]})
         """
         self.src = src
         self.file = file
@@ -78,6 +82,7 @@ class Patcher:
         self.x = x
         self.y = y
         self.z = z
+        self.should_rotate_first = should_rotate_first
         self.ax = ax
         self.ay = ay
         self.az = az
@@ -99,18 +104,26 @@ class Patcher:
                 absolute_placements.append(absolute_placement)
         absolute_placements = set(absolute_placements)
 
-        transformation = self.identity_matrix()
+        translate = self.identity_matrix()
+        rotate = self.identity_matrix()
+
         if self.angle_type == "2D":
             angle = float(self.ax)
             if angle:
-                transformation = self.z_rotation_matrix(math.radians(angle), transformation)
+                rotate = self.z_rotation_matrix(math.radians(angle), rotate)
         elif self.angle_type == "3D":
             for arg in (("x", float(self.ax)), ("y", float(self.ay)), ("z", float(self.az))):
                 if arg[1]:
-                    transformation = getattr(self, f"{arg[0]}_rotation_matrix")(math.radians(arg[1]), transformation)
-        transformation[0][3] += float(self.x)
-        transformation[1][3] += float(self.y)
-        transformation[2][3] += float(self.z)
+                    rotate = getattr(self, f"{arg[0]}_rotation_matrix")(math.radians(arg[1]), rotate)
+
+        translate[0][3] += float(self.x)
+        translate[1][3] += float(self.y)
+        translate[2][3] += float(self.z)
+
+        if self.should_rotate_first:
+            transformation = translate @ rotate
+        else:
+            transformation = rotate @ translate
 
         for placement in absolute_placements:
             placement.RelativePlacement = self.get_relative_placement(
