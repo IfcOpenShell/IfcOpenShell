@@ -167,10 +167,7 @@ try:
             self.ifc_class_references = {}
             self.ifc_class_inverses = {}
     
-            for declaration in self.ifc_schema.declarations():
-                if not str(declaration).startswith("<entity"):
-                    continue
-    
+            for declaration in self.ifc_schema.entities():
                 self.ifc_class_names[declaration.name().upper()] = declaration.name()
     
                 self.ifc_class_subtypes[declaration.name()] = ifcopenshell.util.schema.get_subtypes(declaration)
