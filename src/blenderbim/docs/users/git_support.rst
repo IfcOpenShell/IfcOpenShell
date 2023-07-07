@@ -147,7 +147,7 @@ changes don't directly conflict.
 When two branches have diverged, merging an IFC model requires *conflict
 resolution* (because added entities may inadvertently reuse the same Step-IDs),
 this means that data on one side or the other may be rewritten by BlenderBIM in
-order to accomodate both sets of changes. ie. the merge process is
+order to accommodate both sets of changes. ie. the merge process is
 *asymmetrical*.  BlenderBIM privileges data in the remote `origin/main` branch
 over the local working branch, similarly it privileges data in the local `main`
 branch over any other local working branch. The practical result of this is

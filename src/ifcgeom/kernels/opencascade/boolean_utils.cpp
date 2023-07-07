@@ -1202,9 +1202,9 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 				}
 
 				if (!success) {
-					PERF("boolean operation: manifoldness check excemption");
+					PERF("boolean operation: manifoldness check exemption");
 
-					// An excemption for the requirement to be manifold: When the cut operands have overlapping edge belonging to faces that do not overlap.
+					// An exemption for the requirement to be manifold: When the cut operands have overlapping edge belonging to faces that do not overlap.
 					bool operands_nonmanifold = false;
 					if (op == BOPAlgo_CUT) {
 						TopTools_IndexedMapOfShape edges;
@@ -1267,7 +1267,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 					bool has_open_shells = false;
 
 					if (op == BOPAlgo_CUT) {
-						PERF("boolean operation: open shell face adition check");
+						PERF("boolean operation: open shell face addition check");
 
 						for (TopExp_Explorer exp(a, TopAbs_SHELL); exp.More(); exp.Next()) {
 							if (!exp.Current().Closed()) {

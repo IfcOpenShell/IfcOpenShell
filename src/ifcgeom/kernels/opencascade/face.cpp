@@ -61,7 +61,7 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 		TopoDS_Shape surface_shape;
 		if (!convert_shape(fs->FaceSurface(), surface_shape)) return false;
 
-		// FIXME: Assert this obtaines the only face
+		// FIXME: Assert this obtains the only face
 		TopExp_Explorer exp(surface_shape, TopAbs_FACE);
 		if (!exp.More()) return false;
 

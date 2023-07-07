@@ -132,7 +132,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 					double d;
 					TopoDS_Shape result;
 					util::fit_halfspace(a, S, result, d, tol * 1e3);
-					// #2665 we also set a precision-independent treshold, because in the boolean op routine
+					// #2665 we also set a precision-independent threshold, because in the boolean op routine
 					// the working fuzziness might still be increased.
 					if (d < tol * 20. || d < 0.00002) {
 						Logger::Message(Logger::LOG_WARNING, "Halfspace subtraction yields unchanged volume:", c->instance);

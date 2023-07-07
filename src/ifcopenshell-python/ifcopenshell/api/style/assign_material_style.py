@@ -37,7 +37,7 @@ class Usecase:
             style should be used. Typically this is the Model BODY context.
         :type context: ifcopenshell.entity_instance.entity_instance
         :param should_use_presentation_style_assignment: This is a technical
-            detail to accomodate a bug in Revit. This should always be left as
+            detail to accommodate a bug in Revit. This should always be left as
             the default of False, unless you are finding that colours aren't
             showing up in Revit. In that case, set it to True, but keep in mind
             that this is no longer a valid IFC. Blame Autodesk.

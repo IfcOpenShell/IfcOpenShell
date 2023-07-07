@@ -182,7 +182,7 @@ void fix_wallconnectivity(IfcParse::IfcFile& f, bool no_progress, bool quiet, bo
 		if (rels_encounted.find(rel) == rels_encounted.end()) {
 			auto x = (IfcUtil::IfcBaseEntity*)((IfcUtil::IfcBaseEntity*)rel)->get_value<IfcUtil::IfcBaseClass*>("RelatingElement");
 			auto y = (IfcUtil::IfcBaseEntity*)((IfcUtil::IfcBaseEntity*)rel)->get_value<IfcUtil::IfcBaseClass*>("RelatedElement");
-			if (v.succesfully_processed.find(x) != v.succesfully_processed.end() && v.succesfully_processed.find(y) != v.succesfully_processed.end()) {
+			if (v.successfully_processed.find(x) != v.successfully_processed.end() && v.successfully_processed.find(y) != v.successfully_processed.end()) {
 				Logger::Error("Connection for non-adjacent walls", rel);
 			}
 		}

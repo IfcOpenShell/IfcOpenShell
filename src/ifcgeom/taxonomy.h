@@ -635,7 +635,7 @@ typedef item const* ptr;
 				// @todo somehow account for the fact that curve in IFC can be trimmed curve, polyline and composite curve as well.
 				item::ptr basis;
 
-				// @todo does this make sense? this is to accomodate for the fact that orientation is defined on both TrimmedCurve as well CompCurveSegment
+				// @todo does this make sense? this is to accommodate for the fact that orientation is defined on both TrimmedCurve as well CompCurveSegment
 				boost::optional<bool> orientation_2;
 
 				trimmed_curve() : basis(nullptr), orientation_2(true) {}
