@@ -38,6 +38,53 @@ from blenderbim.bim import export_ifc
 from pathlib import Path
 
 
+class NewProject(bpy.types.Operator):
+    bl_idname = "bim.new_project"
+    bl_label = "New Project"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Start a new IFC project in a fresh session"
+    preset: bpy.props.StringProperty()
+
+    def execute(self, context):
+        bpy.ops.wm.read_homefile()
+
+        for obj in bpy.data.objects:
+            bpy.data.objects.remove(obj)
+
+        if self.preset == "metric_m":
+            bpy.context.scene.BIMProjectProperties.export_schema = "IFC4"
+            bpy.context.scene.unit_settings.system = "METRIC"
+            bpy.context.scene.unit_settings.length_unit = "METERS"
+            bpy.context.scene.BIMProperties.area_unit = "SQUARE_METRE"
+            bpy.context.scene.BIMProperties.volume_unit = "CUBIC_METRE"
+            bpy.context.scene.BIMProjectProperties.template_file = "0"
+        elif self.preset == "metric_mm":
+            bpy.context.scene.BIMProjectProperties.export_schema = "IFC4"
+            bpy.context.scene.unit_settings.system = "METRIC"
+            bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
+            bpy.context.scene.BIMProperties.area_unit = "SQUARE_METRE"
+            bpy.context.scene.BIMProperties.volume_unit = "CUBIC_METRE"
+            bpy.context.scene.BIMProjectProperties.template_file = "0"
+        elif self.preset == "imperial_ft":
+            bpy.context.scene.BIMProjectProperties.export_schema = "IFC4"
+            bpy.context.scene.unit_settings.system = "IMPERIAL"
+            bpy.context.scene.unit_settings.length_unit = "FEET"
+            bpy.context.scene.BIMProperties.area_unit = "square foot"
+            bpy.context.scene.BIMProperties.volume_unit = "cubic foot"
+            bpy.context.scene.BIMProjectProperties.template_file = "0"
+        elif self.preset == "demo":
+            bpy.context.scene.BIMProjectProperties.export_schema = "IFC4"
+            bpy.context.scene.unit_settings.system = "METRIC"
+            bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
+            bpy.context.scene.BIMProperties.area_unit = "SQUARE_METRE"
+            bpy.context.scene.BIMProperties.volume_unit = "CUBIC_METRE"
+            bpy.context.scene.BIMProjectProperties.template_file = "IFC4 Demo Library.ifc"
+
+        if self.preset != "wizard":
+            bpy.ops.bim.create_project()
+        return {"FINISHED"}
+
+
 class CreateProject(bpy.types.Operator):
     bl_idname = "bim.create_project"
     bl_label = "Create Project"
@@ -528,6 +575,7 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml;*.ifcsqlite", options={"HIDDEN"})
     is_advanced: bpy.props.BoolProperty(name="Enable Advanced Mode", default=False)
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
+    should_start_fresh_session: bpy.props.BoolProperty(name="Should Start Fresh Session", default=True)
 
     def execute(self, context):
         if not self.is_existing_ifc_file():
@@ -540,6 +588,12 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
         return {"FINISHED"}
 
     def invoke(self, context, event):
+        if self.should_start_fresh_session:
+            bpy.ops.wm.read_homefile()
+
+            for obj in bpy.data.objects:
+                bpy.data.objects.remove(obj)
+
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
 
@@ -827,6 +881,10 @@ class ExportIFC(bpy.types.Operator):
     should_save_as: bpy.props.BoolProperty(name="Should Save As", default=False, options={"HIDDEN"})
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
     save_as_invoked: bpy.props.BoolProperty(name="Save As Dialog Was Invoked", default=False, options={"HIDDEN"})
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Ifc.get()
 
     def draw(self, context):
         layout = self.layout
