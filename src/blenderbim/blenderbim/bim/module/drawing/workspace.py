@@ -187,6 +187,9 @@ class AnnotationToolUI:
         selected_icon = "CHECKBOX_HLT" if cls.props.create_representation_for_type else "CHECKBOX_DEHLT"
         row.prop(cls.props, "create_representation_for_type", text="", icon=selected_icon)
 
+        row = cls.layout.row(align=True)
+        row.prop(bpy.context.scene.DocProperties, "should_draw_decorations", text="Viewport Annotations")
+
     @classmethod
     def draw_edit_object_interface(cls, context):
         if DecoratorData.get_ifc_text_data(bpy.context.object):
