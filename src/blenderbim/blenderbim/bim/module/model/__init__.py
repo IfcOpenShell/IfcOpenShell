@@ -54,6 +54,8 @@ classes = (
     product.AddEmptyType,
     product.AlignProduct,
     product.ChangeTypePage,
+    product.DisableAddType,
+    product.EnableAddType,
     product.LoadTypeThumbnails,
     product.MirrorElements,
     workspace.Hotkey,

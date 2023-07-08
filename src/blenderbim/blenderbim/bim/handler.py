@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import bpy
 import json
 import addon_utils
@@ -30,6 +31,7 @@ from mathutils import Vector
 from math import cos, degrees
 
 
+cwd = os.path.dirname(os.path.realpath(__file__))
 global_subscription_owner = object()
 
 
@@ -72,6 +74,9 @@ def name_callback(obj, data):
     if not obj.BIMObjectProperties.ifc_definition_id or "/" not in obj.name:
         return
     element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+    if element.is_a("IfcGridAxis"):
+        element.AxisTag = obj.name.split("/")[1]
+        refresh_ui_data()
     if not element.is_a("IfcRoot"):
         return
     if obj.BIMObjectProperties.collection:
@@ -293,3 +298,33 @@ def setDefaultProperties(scene):
     ifcopenshell.api.owner.settings.get_user = lambda ifc: core_owner.get_user(tool.Owner)
     ifcopenshell.api.owner.settings.get_application = get_application
     AuthoringData.type_thumbnails = {}
+
+    if bpy.context.preferences.addons["blenderbim"].preferences.should_setup_workspace:
+        if "BIM" in bpy.data.workspaces:
+            bpy.context.window.workspace = bpy.data.workspaces["BIM"]
+        else:
+            bpy.ops.workspace.append_activate(idname="BIM", filepath=os.path.join(cwd, "data", "workspace.blend"))
+
+        for obj in [bpy.data.objects.get("Camera"), bpy.data.objects.get("Light")]:
+            if obj:
+                bpy.data.objects.remove(obj)
+
+        for panel in [
+            "SCENE_PT_scene",
+            "SCENE_PT_unit",
+            "SCENE_PT_physics",
+            "SCENE_PT_rigid_body_world",
+            "SCENE_PT_audio",
+            "SCENE_PT_keying_sets",
+            "SCENE_PT_custom_props",
+        ]:
+            try:
+                bpy.utils.unregister_class(getattr(bpy.types, panel))
+            except:
+                pass
+
+    # https://blender.stackexchange.com/questions/140644/how-can-make-the-state-of-a-boolean-property-relative-to-the-3d-view-area
+    for screen in bpy.data.screens:
+        screen.BIMAreaProperties.clear()
+        for i in range(20):  # 20 is an arbitrary value of split areas
+            screen.BIMAreaProperties.add()

@@ -133,6 +133,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     spreadsheet_command: StringProperty(name="Spreadsheet Command", description="E.g. [['libreoffice', path]]")
     openlca_port: IntProperty(name="OpenLCA IPC Port", default=8080)
     should_hide_empty_props: BoolProperty(name="Should Hide Empty Properties", default=True)
+    should_setup_workspace: BoolProperty(name="Should Setup Workspace Layout for BIM", default=True)
     should_play_chaching_sound: BoolProperty(
         name="Should Make A Cha-Ching Sound When Project Costs Updates", default=False
     )
@@ -209,6 +210,8 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row = layout.row()
         row.prop(self, "should_hide_empty_props")
         row = layout.row()
+        row.prop(self, "should_setup_workspace")
+        row = layout.row()
         row.prop(self, "should_play_chaching_sound")
         row = layout.row()
         row.prop(self, "lock_grids_on_import")
@@ -278,11 +281,29 @@ def ifc_units(self, context):
 
 
 # Scene panel groups
+class BIM_PT_root(Panel):
+    bl_label = "BlenderBIM Add-on"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_order = 0
+    bl_options = {"HIDE_HEADER"}
+
+    def draw(self, context):
+        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+        self.layout.prop(aprops, "tab", text="")
+
+
 class BIM_PT_project_info(Panel):
     bl_label = "IFC Project Info"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+        return aprops.tab == "PROJECT"
 
     def draw(self, context):
         pass
@@ -295,6 +316,11 @@ class BIM_PT_project_setup(Panel):
     bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
 
+    @classmethod
+    def poll(cls, context):
+        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+        return aprops.tab == "PROJECT"
+
     def draw(self, context):
         pass
 
@@ -305,6 +331,11 @@ class BIM_PT_collaboration(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, context):
+        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+        return aprops.tab == "OTHER"
 
     def draw(self, context):
         pass
@@ -319,7 +350,8 @@ class BIM_PT_selection(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+        return aprops.tab == "PROJECT" and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -334,7 +366,8 @@ class BIM_PT_geometry(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+        return aprops.tab == "PROJECT" and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -349,7 +382,8 @@ class BIM_PT_4D5D(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+        return aprops.tab == "SCHEDULING" and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -364,7 +398,8 @@ class BIM_PT_structural(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+        return aprops.tab == "STRUCTURE" and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -379,7 +414,8 @@ class BIM_PT_services(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+        return aprops.tab == "SERVICES" and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -392,6 +428,11 @@ class BIM_PT_quality_control(Panel):
     bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
 
+    @classmethod
+    def poll(cls, context):
+        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+        return aprops.tab == "OTHER"
+
     def draw(self, context):
         pass
 
@@ -402,6 +443,11 @@ class BIM_PT_integrations(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, context):
+        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+        return aprops.tab == "OTHER"
 
     def draw(self, context):
         pass
@@ -493,7 +539,7 @@ class UIData:
 
     @classmethod
     def load(cls):
-        cls.data = { "version": cls.version() }
+        cls.data = {"version": cls.version()}
         cls.is_loaded = True
 
     @classmethod

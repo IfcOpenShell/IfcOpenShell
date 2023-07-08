@@ -370,13 +370,15 @@ class Geometry:
 
 @interface
 class Georeference:
+    def angle2coords(cls, angle, type): pass
     def disable_editing(cls): pass
     def enable_editing(cls): pass
     def enh2xyz(cls, map_conversion, coordinates): pass
+    def get_angle(cls, type): pass
     def get_coordinates(cls, io): pass
     def get_cursor_location(cls): pass
-    def get_map_conversion(cls): pass
     def get_map_conversion_attributes(cls): pass
+    def get_map_conversion(cls): pass
     def get_projected_crs_attributes(cls): pass
     def get_true_north_attributes(cls): pass
     def import_map_conversion(cls): pass
@@ -388,6 +390,7 @@ class Georeference:
     def set_cursor_location(cls, coordinates): pass
     def set_ifc_grid_north(cls): pass
     def set_ifc_true_north(cls): pass
+    def set_vector_coordinates(cls, vector_coordinates, type): pass
     def xyz2enh(cls, map_conversion, coordinates): pass
 
 

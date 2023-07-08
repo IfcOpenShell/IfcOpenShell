@@ -77,14 +77,15 @@ class JoinWall(bpy.types.Operator, tool.Ifc.Operator):
             return {"FINISHED"}
         
         if self.join_type in ("L", "V"):
-            if len(selected_objs) == 2:
-                another_selected_object = next(o for o in selected_objs if o != context.active_object)
-                if self.join_type == "L":
-                    joiner.join_L(another_selected_object, context.active_object)
-                elif self.join_type == "V":
-                    joiner.join_V(another_selected_object, context.active_object)
-            self.report({"ERROR"}, f"It requires 2 selected objects to do join of type {self.join_type}")
-            return {"CANCELLED"}
+            if len(selected_objs) != 2:
+                self.report({"ERROR"}, f"It requires 2 selected objects to do join of type {self.join_type}")
+                return {"CANCELLED"}
+            another_selected_object = next(o for o in selected_objs if o != context.active_object)
+            if self.join_type == "L":
+                joiner.join_L(another_selected_object, context.active_object)
+            elif self.join_type == "V":
+                joiner.join_V(another_selected_object, context.active_object)
+            return {"FINISHED"}
         
         if self.join_type == "T":
             elements = [tool.Ifc.get_entity(o) for o in context.selected_objects]

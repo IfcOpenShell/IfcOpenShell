@@ -33,6 +33,7 @@ classes = (
     operator.ConvertGlobalToLocal,
     operator.GetCursorLocation,
     operator.SetCursorLocation,
+    operator.ConvertAngleToCoordinates,
     prop.BIMGeoreferenceProperties,
     ui.BIM_PT_gis,
     ui.BIM_PT_gis_utilities,

@@ -41,12 +41,12 @@ logger.setLevel(logging.ERROR)
 
 class Brick(blenderbim.core.tool.Brick):
     @classmethod
-    def add_brick(cls, namespace, brick_class):
+    def add_brick(cls, namespace, brick_class, label):
         ns = Namespace(namespace)
         brick = ns[ifcopenshell.guid.expand(ifcopenshell.guid.new())]
         with BrickStore.graph.new_changeset("PROJECT") as cs:
             cs.add((brick, RDF.type, URIRef(brick_class)))
-            cs.add((brick, URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal("Unnamed")))
+            cs.add((brick, URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal(label)))
         return str(brick)
 
     @classmethod
@@ -275,8 +275,6 @@ class Brick(blenderbim.core.tool.Brick):
         with BrickStore.graph.new_changeset("SCHEMA") as cs:
             cs.load_file(BrickStore.schema)
         BrickStore.graph.bind("digitaltwin", Namespace("https://example.org/digitaltwin#"))
-        BrickStore.graph.bind("brick", Namespace("https://brickschema.org/schema/Brick#"))
-        BrickStore.graph.bind("rdfs", Namespace("http://www.w3.org/2000/01/rdf-schema#"))
 
     @classmethod
     def pop_brick_breadcrumb(cls):
@@ -332,12 +330,14 @@ class Brick(blenderbim.core.tool.Brick):
             BrickStore.graph.redo()  
 
     @classmethod
-    def serialize_brick(cls, file_name):
-        #temporary file path, could either be user selected for "save as" or use the BrickStore.path for simply "save"
-        cwd = os.path.dirname(os.path.realpath(__file__))
-        dest = os.path.join(cwd, "..", "bim", "schema", file_name)
-        BrickStore.get_project().serialize(destination=dest, format="turtle")
-
+    def serialize_brick(cls):
+        BrickStore.get_project().serialize(destination=BrickStore.path, format="turtle")
+    
+    @classmethod
+    def add_namespace(cls, alias, uri):
+        BrickStore.graph.bind(alias, Namespace(uri))
+        # need some way to reload namespace enum view
+        
 class BrickStore:
     schema = None # this is now a os path
     path = None   # file path if the project was loaded in
