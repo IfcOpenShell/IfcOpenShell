@@ -30,6 +30,11 @@ class BIM_PT_brickschema(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
 
+    @classmethod
+    def poll(cls, context):
+        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+        return aprops.tab == "OTHER"
+
     def draw(self, context):
         if not BrickschemaData.is_loaded:
             BrickschemaData.load()
