@@ -335,6 +335,24 @@ class ModuleVisibility(PropertyGroup):
     is_visible: BoolProperty(name="Value", default=True, update=update_is_visible)
 
 
+class BIMAreaProperties(PropertyGroup):
+    tab: EnumProperty(
+        default="PROJECT",
+        items=[
+            ("PROJECT", "Project Overview", "", "VIEW3D", 1),
+            ("OBJECT", "Object Information", "", "FILE_3D", 2),
+            ("MATERIALS", "Materials and Styles", "", "MATERIAL", 3),
+            ("DRAWINGS", "Drawings and Documents", "", "DOCUMENTS", 4),
+            ("SERVICES", "Services and Systems", "", "NETWORK_DRIVE", 5),
+            ("STRUCTURE", "Structural Analysis", "", "EDITMODE_HLT", 6),
+            ("SCHEDULING", "Construction Scheduling", "", "NLA", 7),
+            ("FM", "Facility Management", "", "PACKAGE", 8),
+            ("OTHER", "Other Properties", "", "COLLAPSEMENU", 9),
+        ],
+        name="Tab",
+    )
+
+
 class BIMProperties(PropertyGroup):
     ui_preset: EnumProperty(
         name="UI Preset",
