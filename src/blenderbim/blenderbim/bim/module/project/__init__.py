@@ -22,6 +22,7 @@ from . import ui, prop, operator
 classes = (
     operator.AppendLibraryElement,
     operator.AssignLibraryDeclaration,
+    operator.AppendEntireLibrary,
     operator.ChangeLibraryElement,
     operator.CreateProject,
     operator.DisableEditingHeader,
@@ -33,10 +34,10 @@ classes = (
     operator.LoadLink,
     operator.LoadProject,
     operator.LoadProjectElements,
+    operator.NewProject,
     operator.RefreshLibrary,
     operator.RewindLibrary,
     operator.SaveLibraryFile,
-    operator.AppendEntireLibrary,
     operator.SelectLibraryFile,
     operator.ToggleFilterCategories,
     operator.ToggleLinkVisibility,
@@ -48,6 +49,7 @@ classes = (
     prop.FilterCategory,
     prop.Link,
     prop.BIMProjectProperties,
+    ui.BIM_MT_project,
     ui.BIM_PT_project,
     ui.BIM_PT_project_library,
     ui.BIM_PT_links,
@@ -57,22 +59,11 @@ classes = (
 )
 
 
-def menu_func_export(self, context):
-    op = self.layout.operator(operator.ExportIFC.bl_idname, text="Industry Foundation Classes (.ifc/.ifczip/.ifcjson)")
-    op.should_save_as = True
-
-
-def menu_func_import(self, context):
-    self.layout.operator(operator.ImportIFC.bl_idname, text="Industry Foundation Classes (.ifc/.ifczip/.ifcxml)")
-
-
 def register():
     bpy.types.Scene.BIMProjectProperties = bpy.props.PointerProperty(type=prop.BIMProjectProperties)
-    bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
-    bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
+    bpy.types.TOPBAR_MT_file.prepend(ui.file_menu)
 
 
 def unregister():
-    bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
-    bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
+    bpy.types.TOPBAR_MT_file.remove(ui.file_menu)
     del bpy.types.Scene.BIMProjectProperties
