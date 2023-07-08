@@ -147,8 +147,10 @@ class SelectType(bpy.types.Operator):
                 tool.Blender.select_and_activate_single_object(context, obj)
             else:
                 self.report({"INFO"}, "Type object can't be selected : It may be hidden or in an excluded collection.")
-        context.scene.BIMModelProperties.ifc_class = element.is_a()
-        context.scene.BIMModelProperties.relating_type_id = str(self.relating_type)
+        # IfcTypeProducts are only used for annotations and not part of the model interface.
+        if element.is_a() != "IfcTypeProduct":
+            context.scene.BIMModelProperties.ifc_class = element.is_a()
+            context.scene.BIMModelProperties.relating_type_id = str(self.relating_type)
         return {"FINISHED"}
 
 
