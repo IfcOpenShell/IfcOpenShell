@@ -89,7 +89,6 @@ classes = (
     prop.BIMAnnotationProperties,
     ui.BIM_PT_camera,
     ui.BIM_PT_drawing_underlay,
-    ui.BIM_PT_annotation_utilities,
     ui.BIM_PT_sheets,
     ui.BIM_PT_drawings,
     ui.BIM_PT_schedules,
