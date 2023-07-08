@@ -106,6 +106,7 @@ classes = [
     prop.ObjProperty,
     prop.Attribute,
     prop.ModuleVisibility,
+    prop.BIMAreaProperties,
     prop.BIMProperties,
     prop.IfcParameter,
     prop.PsetQto,
@@ -119,6 +120,7 @@ classes = [
     ui.BIM_UL_topics,
     ui.BIM_ADDON_preferences,
     # Scene panel groups
+    ui.BIM_PT_root,
     ui.BIM_PT_project_info,
     ui.BIM_PT_project_setup,
     ui.BIM_PT_collaboration,
@@ -159,6 +161,7 @@ def register():
     bpy.app.handlers.load_post.append(handler.loadIfcStore)
     bpy.app.handlers.save_post.append(handler.ensureIfcExported)
     bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=prop.BIMProperties)
+    bpy.types.Screen.BIMAreaProperties = bpy.props.CollectionProperty(type=prop.BIMAreaProperties)
     bpy.types.Collection.BIMCollectionProperties = bpy.props.PointerProperty(type=prop.BIMCollectionProperties)
     bpy.types.Object.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties)
     bpy.types.Material.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties)

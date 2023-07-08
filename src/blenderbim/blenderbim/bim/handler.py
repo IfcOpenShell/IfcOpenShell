@@ -316,8 +316,15 @@ def setDefaultProperties(scene):
             "SCENE_PT_rigid_body_world",
             "SCENE_PT_audio",
             "SCENE_PT_keying_sets",
+            "SCENE_PT_custom_props",
         ]:
             try:
                 bpy.utils.unregister_class(getattr(bpy.types, panel))
             except:
                 pass
+
+    # https://blender.stackexchange.com/questions/140644/how-can-make-the-state-of-a-boolean-property-relative-to-the-3d-view-area
+    for screen in bpy.data.screens:
+        screen.BIMAreaProperties.clear()
+        for i in range(20):  # 20 is an arbitrary value of split areas
+            screen.BIMAreaProperties.add()
