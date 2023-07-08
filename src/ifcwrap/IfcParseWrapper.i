@@ -116,6 +116,12 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 %}
 
 %extend IfcParse::IfcFile {
+	// Use to correlate to entity_instance.file_pointer, so that we
+	// can trace file ownership of instances on the python side.
+	size_t file_pointer() const {
+		return reinterpret_cast<size_t>($self);
+	}
+
 	IfcUtil::IfcBaseClass* by_guid(const std::string& guid) {
 		return $self->instance_by_guid(guid);
 	}
