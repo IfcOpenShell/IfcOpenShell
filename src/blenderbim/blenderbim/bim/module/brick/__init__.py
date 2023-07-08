@@ -36,6 +36,7 @@ classes = (
     operator.UndoBrick,
     operator.RedoBrick,
     operator.SerializeBrick,
+    operator.AddBrickNamespace,
     prop.Brick,
     prop.BIMBrickProperties,
     ui.BIM_PT_brickschema,

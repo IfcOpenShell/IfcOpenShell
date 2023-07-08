@@ -828,45 +828,20 @@ class SvgWriter:
 
         line_number = 0
         for text_literal in text_literals:
-            # after pretty indentation some redundant spaces can occur in svg tags
-            # this is why we apply "font-size: 0;" to the text tag to remove those spaces
-            # and add clases to the tspan tags
-            # ref: https://github.com/IfcOpenShell/IfcOpenShell/issues/2833#issuecomment-1471584960
-
             text = tool.Drawing.replace_text_literal_variables(text_literal.Literal, product)
-            attribs = {
-                "transform": text_transform,
-                "style": "font-size: 0;",
-            }
-
-            def add_text_tag(add_fill_bg):
-                nonlocal line_number
-                text_tag = self.svg.text(
-                    "",
-                    **(attribs | {"filter": "url(#fill-background)"}) if add_fill_bg else attribs,
-                    **SvgWriter.get_box_alignment_parameters(text_literal.BoxAlignment),
-                )
-                self.svg.add(text_tag)
-
-                text_lines = text.replace("\\n", "\n").split("\n")
-
-                for text_line in text_lines:
-                    # position has to be inserted at tspan to avoid x offset between tspans
-                    # note that tspan doesn't support using `transform` attribute
-                    # so we use (0,0) position because tspan is already offseted by text transform
-                    tspan = self.svg.tspan(text_line, class_=classes_str, insert=(0, 0))
-                    # doing it here and not in tspan constructor because constructor adds unnecessary spaces
-                    tspan.update({"dy": f"{line_number}em"})
-                    text_tag.add(tspan)
-                    line_number += 1
-
-                if add_fill_bg:
-                    # return line_number back to the original value
-                    line_number -= len(text_lines)
-
-            if "fill-bg" in classes:
-                add_text_tag(True)
-            add_text_tag(False)
+            text_tags = self.create_text_tag(
+                text,
+                text_position_svg,
+                angle,
+                text_literal.BoxAlignment,
+                classes_str,
+                multiline=True,
+                fill_bg="fill-bg" in classes,
+                line_number_start=line_number,
+            )
+            for tag in text_tags:
+                self.svg.add(tag)
+            line_number += len(tag.elements)
 
     def draw_break_annotations(self, obj):
         x_offset = self.raw_width / 2
@@ -1231,6 +1206,7 @@ class SvgWriter:
                     suppress_zero_inches=dimension_data["suppress_zero_inches"],
                     text_prefix=dimension_data["text_prefix"],
                     text_suffix=dimension_data["text_suffix"],
+                    fill_bg=dimension_data["fill_bg"],
                 )
 
     def draw_measureit_arch_dimension_annotations(self):
@@ -1256,6 +1232,7 @@ class SvgWriter:
         suppress_zero_inches=False,
         text_prefix="",
         text_suffix="",
+        fill_bg=False,
     ):
         offset = Vector([self.raw_width, self.raw_height]) / 2
         v0 = self.project_point_onto_camera(v0_global)
@@ -1281,44 +1258,44 @@ class SvgWriter:
         line = self.svg.line(start=start, end=end, class_=" ".join(classes))
         self.svg.add(line)
 
+        text_tags = []
+        text_tag_kwargs = {
+            "angle": angle,
+            "class_str": "DIMENSION",
+            "text_format": text_format,
+            "multiline": True,
+            "fill_bg": fill_bg,
+        }
+
         if not show_description_only:
             text = f"{text_prefix}{str(dimension)}{text_suffix}"
-            text_tag = self.create_text_tag(
+            text_tags += self.create_text_tag(
                 text,
                 text_position + perpendicular,
-                angle,
-                "bottom-middle",
-                "DIMENSION",
-                text_format=text_format,
-                multiline=True,
+                box_alignment="bottom-middle",
                 multiline_to_bottom=False,
+                **text_tag_kwargs,
             )
-            self.svg.add(text_tag)
             if dimension_text:
-                text_tag = self.create_text_tag(
+                text_tags += self.create_text_tag(
                     dimension_text,
                     text_position - perpendicular,
-                    angle,
-                    "top-middle",
-                    "DIMENSION",
-                    text_format=text_format,
-                    multiline=True,
+                    box_alignment="top-middle",
                     multiline_to_bottom=True,
+                    **text_tag_kwargs,
                 )
-                self.svg.add(text_tag)
 
         elif show_description_only and dimension_text:
-            text_tag = self.create_text_tag(
+            text_tags.extend += self.create_text_tag(
                 dimension_text,
                 text_position + perpendicular,
-                angle,
-                "bottom-middle",
-                "DIMENSION",
-                text_format=text_format,
-                multiline=True,
+                box_alignment="bottom-middle",
                 multiline_to_bottom=False,
+                **text_tag_kwargs,
             )
-            self.svg.add(text_tag)
+
+        for tag in text_tags:
+            self.svg.add(tag)
 
     def create_text_tag(
         self,
@@ -1329,33 +1306,58 @@ class SvgWriter:
         class_str,
         text_format=lambda x: x,
         multiline=False,
-        multiline_to_bottom=False,
+        multiline_to_bottom=True,
+        fill_bg=False,
+        line_number_start=0,
+        _draw_fill_bg=False,
     ):
+        """returns list of created text tags"""
+        text_tags = []
+        if fill_bg:
+            method_kwargs = locals() | {"_draw_fill_bg": True, "fill_bg": False}
+            del method_kwargs["self"]
+            del method_kwargs["text_tags"]
+            text_tags += self.create_text_tag(**method_kwargs)
+
+        base_text_attrs = SvgWriter.get_box_alignment_parameters(box_alignment)
+        base_text_attrs = base_text_attrs | ({"filter": "url(#fill-background)"} if _draw_fill_bg else {})
+
         if not multiline:
-            text_kwargs = {"transform": "rotate({} {} {})".format(angle, text_position.x, text_position.y)}
-            return self.svg.text(
+            transform_kwargs = {"transform": "rotate({} {} {})".format(angle, text_position.x, text_position.y)}
+            text_tag = self.svg.text(
                 text_format(text),
                 insert=text_position,
                 class_=class_str,
-                **(text_kwargs | SvgWriter.get_box_alignment_parameters(box_alignment)),
+                **(transform_kwargs | base_text_attrs),
             )
+            text_tags.append(text_tag)
+            return text_tags
 
         text_position_svg_str = ", ".join(map(str, text_position))
         text_transform = f"translate({text_position_svg_str}) rotate({angle})"
+        # after pretty indentation some redundant spaces can occur in svg tags
+        # this is why we apply "font-size: 0;" to the text tag to remove those spaces
+        # and add clases to the tspan tags
+        # ref: https://github.com/IfcOpenShell/IfcOpenShell/issues/2833#issuecomment-1471584960
         text_kwargs = {
             "transform": text_transform,
             "style": "font-size: 0;",
         }
 
-        text_tag = self.svg.text("", **text_kwargs, **SvgWriter.get_box_alignment_parameters(box_alignment))
+        text_tag = self.svg.text("", **text_kwargs, **base_text_attrs)
+        text_tags.append(text_tag)
         text_lines = text.replace("\\n", "\n").split("\n")
         text_lines = text_lines if multiline_to_bottom else text_lines[::-1]
 
-        for line_number, text_line in enumerate(text_lines):
+        for line_number, text_line in enumerate(text_lines, line_number_start):
+            # position has to be inserted at tspan to avoid x offset between tspans
+            # note that tspan doesn't support using `transform` attribute
+            # so we use (0,0) position because tspan is already offseted by text transform
             tspan = self.svg.tspan(text_format(text_line), class_=class_str, insert=(0, 0))
+            # doing it here and not in tspan constructor because constructor adds unnecessary spaces
             tspan.update({"dy": f"{line_number if multiline_to_bottom else -line_number}em"})
             text_tag.add(tspan)
-        return text_tag
+        return text_tags
 
     def project_point_onto_camera(self, point):
         # TODO is this needlessly complex?

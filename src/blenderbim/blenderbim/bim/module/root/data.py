@@ -159,7 +159,7 @@ class IfcClassData:
 
     @classmethod
     def name(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
+        element = tool.Ifc.get_entity(bpy.context.view_layer.objects.active)
         if not element:
             return
         name = element.is_a()
@@ -170,13 +170,13 @@ class IfcClassData:
 
     @classmethod
     def ifc_class(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
+        element = tool.Ifc.get_entity(bpy.context.view_layer.objects.active)
         if element:
             return element.is_a()
 
     @classmethod
     def can_reassign_class(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
+        element = tool.Ifc.get_entity(bpy.context.view_layer.objects.active)
         if element:
             if element.is_a("IfcOpeningElement") or element.is_a("IfcOpeningStandardCase"):
                 return False

@@ -37,6 +37,24 @@ from . import prop
 import json
 
 
+class EnableAddType(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.enable_add_type"
+    bl_label = "Enable Add Type"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        bpy.context.scene.BIMModelProperties.is_adding_type = True
+
+
+class DisableAddType(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.disable_add_type"
+    bl_label = "Disable Add Type"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        bpy.context.scene.BIMModelProperties.is_adding_type = False
+
+
 class AddEmptyType(bpy.types.Operator, AddObjectHelper):
     bl_idname = "bim.add_empty_type"
     bl_label = "Add Empty Type"
@@ -154,10 +172,11 @@ class AddConstrTypeInstance(bpy.types.Operator):
                 )
             else:
                 parent = ifcopenshell.util.element.get_container(building_element)
-                parent_obj = tool.Ifc.get_object(parent)
-                blenderbim.core.spatial.assign_container(
-                    tool.Ifc, tool.Collector, tool.Spatial, structure_obj=parent_obj, element_obj=obj
-                )
+                if parent:
+                    parent_obj = tool.Ifc.get_object(parent)
+                    blenderbim.core.spatial.assign_container(
+                        tool.Ifc, tool.Collector, tool.Spatial, structure_obj=parent_obj, element_obj=obj
+                    )
 
         # set occurences properties for the types defined with modifiers
         if instance_class in ["IfcWindow", "IfcDoor"]:

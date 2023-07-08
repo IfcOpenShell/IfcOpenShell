@@ -20,7 +20,7 @@ import blenderbim.tool as tool
 from bpy.types import Panel, UIList
 from blenderbim.bim.helper import prop_with_search
 from blenderbim.bim.module.brick.data import BrickschemaData, BrickschemaReferencesData
-
+from blenderbim.tool.brick import BrickStore
 
 class BIM_PT_brickschema(Panel):
     bl_label = "Brickschema Project"
@@ -29,6 +29,11 @@ class BIM_PT_brickschema(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+        return aprops.tab == "OTHER"
 
     def draw(self, context):
         if not BrickschemaData.is_loaded:
@@ -41,15 +46,39 @@ class BIM_PT_brickschema(Panel):
             row.operator("bim.load_brick_project", text="Load Project")
             return
 
+        if BrickStore.path:
+            row = self.layout.row(align=True)
+            row.label(text=BrickStore.path, icon='FILEBROWSER')
+
         row = self.layout.row(align=True)
         if len(self.props.brick_breadcrumbs):
             row.operator("bim.rewind_brick_class", text="", icon="FRAME_PREV")
         row.label(text=self.props.active_brick_class)
+        row.prop(data=self.props, property="brick_settings_toggled", text="", icon="PREFERENCES")
         row.operator("bim.refresh_brick_viewer", text="", icon="FILE_REFRESH")
         row.operator("bim.close_brick_project", text="", icon="CANCEL")
 
+        if self.props.brick_settings_toggled:
+            box = self.layout.box()
+            row = box.row(align=True)
+            row.label(text="Active Namespace:")
+            row = box.row(align=True)
+            prop_with_search(row, self.props, "namespace", text="")
+            row = box.row(align=True)
+            row.label(text="Bind New Namespace:")
+            row = box.row(align=True)
+            row.prop(data=self.props, property="new_brick_namespace_alias", text="")
+            col = row.column()
+            col.alignment = "CENTER"
+            col.scale_x = 1.1 
+            col.label(text=":")
+            row.prop(data=self.props, property="new_brick_namespace_uri", text="")
+            row.operator("bim.add_brick_namespace", text="", icon="ADD")
+
         row = self.layout.row(align=True)
-        prop_with_search(row, self.props, "namespace", text="")
+        row.label(text="Create Entity:")
+        row = self.layout.row(align=True)
+        row.prop(data=self.props, property="new_brick_label", text="")
         prop_with_search(row, self.props, "brick_equipment_class", text="")
         row.operator("bim.add_brick", text="", icon="ADD")
 
@@ -63,7 +92,10 @@ class BIM_PT_brickschema(Panel):
         row.operator("bim.redo_brick", icon="LOOP_FORWARDS")
 
         row = self.layout.row(align=True)
-        row.operator("bim.serialize_brick")
+        op = row.operator("bim.serialize_brick", icon="EXPORT", text="Save")
+        op.should_save_as = False
+        op = row.operator("bim.serialize_brick", icon="FILE_TICK", text="Save As")
+        op.should_save_as = True
 
         self.layout.template_list("BIM_UL_bricks", "", self.props, "bricks", self.props, "active_brick_index")
 

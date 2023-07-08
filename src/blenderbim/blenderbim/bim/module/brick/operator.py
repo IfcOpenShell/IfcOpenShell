@@ -22,7 +22,7 @@ import blenderbim.tool as tool
 import blenderbim.core.brick as core
 import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
-
+from blenderbim.tool.brick import BrickStore
 
 class Operator:
     def execute(self, context):
@@ -126,6 +126,7 @@ class AddBrick(bpy.types.Operator, Operator):
             namespace=props.namespace,
             brick_class=props.brick_equipment_class,
             library=library,
+            label=props.new_brick_label
         )
 
 
@@ -207,6 +208,36 @@ class RedoBrick(bpy.types.Operator, Operator):
 class SerializeBrick(bpy.types.Operator, Operator):
     bl_idname = "bim.serialize_brick"
     bl_label = "Serialize Brick"
+    filter_glob: bpy.props.StringProperty(default="*.ttl", options={"HIDDEN"})
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    should_save_as: bpy.props.BoolProperty(name="Should Save As", default=False, options={"HIDDEN"})
+
+    def invoke(self, context, event):
+        if self.should_save_as or not BrickStore.path:
+            WindowManager = context.window_manager
+            WindowManager.fileselect_add(self)
+            return {"RUNNING_MODAL"}
+        else:
+            return self.execute(context)
 
     def _execute(self, context):
+        if self.should_save_as or not BrickStore.path:
+            BrickStore.path = self.filepath
         core.serialize_brick(tool.Brick)
+        return {"FINISHED"}
+    
+    @classmethod
+    def description(cls, context, properties):
+        if properties.should_save_as:
+            return "Save Brick project to a selected file"
+        return "Save the Brick project"
+    
+class AddBrickNamespace(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_brick_namespace"
+    bl_label = "Add Brick Namespace"
+
+    def _execute(self, context):
+        props = context.scene.BIMBrickProperties
+        alias = props.new_brick_namespace_alias
+        uri = props.new_brick_namespace_uri
+        core.add_namespace(tool.Brick, alias=alias, uri=uri)

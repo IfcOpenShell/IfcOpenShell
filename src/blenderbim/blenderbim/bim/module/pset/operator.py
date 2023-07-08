@@ -320,7 +320,6 @@ class EditPset(bpy.types.Operator, Operator):
         tool.Blender.update_viewport()
 
 
-
 class SelectSimilarPsetValue(bpy.types.Operator):
     """
     Selects objects with the same property value.
@@ -364,8 +363,8 @@ class SelectSimilarPsetValue(bpy.types.Operator):
                         obj.select_set(True)
                 except:
                     continue
-
         return {"FINISHED"}
+
 
 class RemovePset(bpy.types.Operator, Operator):
     bl_idname = "bim.remove_pset"

@@ -18,9 +18,34 @@
 
 import os
 from blenderbim.bim.helper import prop_with_search
-from bpy.types import Panel, UIList
+from bpy.types import Panel, Menu, UIList
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.project.data import ProjectData
+
+
+class BIM_MT_project(Menu):
+    bl_idname = "BIM_MT_project"
+    bl_label = "New IFC Project"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.operator("bim.new_project", text="New Metric (m) Project").preset = "metric_m"
+        layout.operator("bim.new_project", text="New Metric (mm) Project").preset = "metric_mm"
+        layout.operator("bim.new_project", text="New Imperial (ft) Project").preset = "imperial_ft"
+        layout.operator("bim.new_project", text="New Demo Project").preset = "demo"
+        layout.operator("bim.new_project", text="New Project Wizard").preset = "wizard"
+
+
+def file_menu(self, context):
+    self.layout.menu("BIM_MT_project", icon="COLLECTION_NEW")
+    op = self.layout.operator("bim.load_project", text="Open IFC Project", icon="FILEBROWSER")
+    op.should_start_fresh_session = True
+    self.layout.separator()
+    op = self.layout.operator("export_ifc.bim", icon="FILE_TICK", text="Save IFC Project")
+    op.should_save_as = False
+    op = self.layout.operator("export_ifc.bim", text="Save IFC Project As...")
+    op.should_save_as = True
+    self.layout.separator()
 
 
 class BIM_PT_project(Panel):
@@ -160,10 +185,8 @@ class BIM_PT_project(Panel):
             row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
 
         row = self.layout.row(align=True)
-        op = row.operator("export_ifc.bim", icon="EXPORT", text="Save Project")
+        op = row.operator("export_ifc.bim", icon="FILE_TICK", text="Save Project")
         op.should_save_as = False
-        op = row.operator("export_ifc.bim", icon="FILE_TICK", text="Save As")
-        op.should_save_as = True
         row.operator("bim.unload_project", text="", icon="CANCEL")
 
     def draw_create_project_ui(self, context):
@@ -182,7 +205,7 @@ class BIM_PT_project(Panel):
 
         row = self.layout.row(align=True)
         row.operator("bim.create_project")
-        row.operator("bim.load_project")
+        row.operator("bim.load_project").should_start_fresh_session = False
 
 
 class BIM_PT_project_library(Panel):

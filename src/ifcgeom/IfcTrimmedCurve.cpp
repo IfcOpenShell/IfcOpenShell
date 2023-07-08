@@ -172,7 +172,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 		// Fix from @sanderboer to compare using model tolerance, see #744
 		// Made dependent on radius, see #928
 
-		// A good critereon for determining whether to take full curve
+		// A good criterion for determining whether to take full curve
 		// or trimmed segment would be whether there are other curve segments or this
 		// is the only one.
 		boost::optional<size_t> num_segments;
@@ -227,7 +227,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 			TopoDS_Vertex v0, v1;
 			TopExp::Vertices(e, v0, v1);
 			e = TopoDS::Edge(BRepBuilderAPI_MakeEdge(v0, v1).Edge().Oriented(e.Orientation()));
-			Logger::Warning("Subsituted edge with linear approximation", l);
+			Logger::Warning("Substituted edge with linear approximation", l);
 		}
 	}
 
