@@ -133,6 +133,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     spreadsheet_command: StringProperty(name="Spreadsheet Command", description="E.g. [['libreoffice', path]]")
     openlca_port: IntProperty(name="OpenLCA IPC Port", default=8080)
     should_hide_empty_props: BoolProperty(name="Should Hide Empty Properties", default=True)
+    should_setup_workspace: BoolProperty(name="Should Setup Workspace Layout for BIM", default=True)
     should_play_chaching_sound: BoolProperty(
         name="Should Make A Cha-Ching Sound When Project Costs Updates", default=False
     )
@@ -208,6 +209,8 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.prop(self, "openlca_port")
         row = layout.row()
         row.prop(self, "should_hide_empty_props")
+        row = layout.row()
+        row.prop(self, "should_setup_workspace")
         row = layout.row()
         row.prop(self, "should_play_chaching_sound")
         row = layout.row()
@@ -493,7 +496,7 @@ class UIData:
 
     @classmethod
     def load(cls):
-        cls.data = { "version": cls.version() }
+        cls.data = {"version": cls.version()}
         cls.is_loaded = True
 
     @classmethod
