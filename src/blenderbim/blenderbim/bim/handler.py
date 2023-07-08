@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import bpy
 import json
 import addon_utils
@@ -30,6 +31,7 @@ from mathutils import Vector
 from math import cos, degrees
 
 
+cwd = os.path.dirname(os.path.realpath(__file__))
 global_subscription_owner = object()
 
 
@@ -296,3 +298,26 @@ def setDefaultProperties(scene):
     ifcopenshell.api.owner.settings.get_user = lambda ifc: core_owner.get_user(tool.Owner)
     ifcopenshell.api.owner.settings.get_application = get_application
     AuthoringData.type_thumbnails = {}
+
+    if bpy.context.preferences.addons["blenderbim"].preferences.should_setup_workspace:
+        if "BIM" in bpy.data.workspaces:
+            bpy.context.window.workspace = bpy.data.workspaces["BIM"]
+        else:
+            bpy.ops.workspace.append_activate(idname="BIM", filepath=os.path.join(cwd, "data", "workspace.blend"))
+
+        for obj in [bpy.data.objects.get("Camera"), bpy.data.objects.get("Light")]:
+            if obj:
+                bpy.data.objects.remove(obj)
+
+        for panel in [
+            "SCENE_PT_scene",
+            "SCENE_PT_unit",
+            "SCENE_PT_physics",
+            "SCENE_PT_rigid_body_world",
+            "SCENE_PT_audio",
+            "SCENE_PT_keying_sets",
+        ]:
+            try:
+                bpy.utils.unregister_class(getattr(bpy.types, panel))
+            except:
+                pass
