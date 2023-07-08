@@ -1499,7 +1499,10 @@ class Drawing(blenderbim.core.tool.Drawing):
 
         filtered_elements = cls.get_drawing_elements(drawing) | cls.get_drawing_spaces(drawing)
         for visible_obj in bpy.context.visible_objects:
-            hide = tool.Ifc.get_entity(visible_obj) not in filtered_elements
+            element = tool.Ifc.get_entity(visible_obj)
+            if not element:
+                continue
+            hide = element not in filtered_elements
             if bpy.context.view_layer.objects.get(visible_obj.name):
                 visible_obj.hide_set(hide)
                 visible_obj.hide_render = hide
