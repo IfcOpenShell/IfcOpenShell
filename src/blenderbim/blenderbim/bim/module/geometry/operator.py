@@ -1323,6 +1323,9 @@ class OverrideModeSetEdit(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context, event):
+        return IfcStore.execute_ifc_operator(self, context, is_invoke=True)
+
+    def _invoke(self, context, event):
         if not tool.Ifc.get():
             return bpy.ops.object.mode_set(mode="EDIT", toggle=True)
         return self.execute(context)
@@ -1372,6 +1375,9 @@ class OverrideModeSetObject(bpy.types.Operator):
             row.label(text="No Geometry Found: Object will revert to previous state.")
 
     def invoke(self, context, event):
+        return IfcStore.execute_ifc_operator(self, context, is_invoke=True)
+
+    def _invoke(self, context, event):
         self.is_valid = True
         self.should_save = True
 

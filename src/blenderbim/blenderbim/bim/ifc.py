@@ -400,7 +400,7 @@ class IfcStore:
             )
 
     @staticmethod
-    def execute_ifc_operator(operator, context):
+    def execute_ifc_operator(operator, context, is_invoke=False):
         is_top_level_operator = not bool(IfcStore.current_transaction)
 
         if is_top_level_operator:
@@ -411,7 +411,10 @@ class IfcStore:
         else:
             operator.transaction_key = IfcStore.current_transaction
 
-        result = getattr(operator, "_execute")(context)
+        if is_invoke:
+            result = getattr(operator, "_invoke")(context, None)
+        else:
+            result = getattr(operator, "_execute")(context)
 
         if is_top_level_operator:
             IfcStore.get_file().end_transaction()
