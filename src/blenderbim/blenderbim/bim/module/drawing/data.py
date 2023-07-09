@@ -335,18 +335,31 @@ class AnnotationData:
     def load(cls):
         cls.is_loaded = True
         cls.props = bpy.context.scene.BIMAnnotationProperties
-        cls.data["relating_types"] = cls.get_relating_types()
+        cls.data["relating_type_id"] = cls.relating_type_id()
+        cls.data["relating_types"] = cls.relating_types()
 
     @classmethod
-    def get_relating_types(cls):
+    def relating_type_id(cls):
         object_type = cls.props.object_type
         relating_types = []
         for relating_type in tool.Ifc.get().by_type("IfcTypeProduct"):
             if tool.Drawing.is_annotation_object_type(relating_type, object_type):
                 relating_types.append(relating_type)
 
-        enum_items = [(str(e.id()), e.Name or "Unnamed", e.Description or "") for e in relating_types]
+        results = [("0", "Untyped", "")]
+        results.extend([(str(e.id()), e.Name or "Unnamed", e.Description or "") for e in relating_types])
+        return results
 
-        # item to create anootations without relating types
-        enum_items.insert(0, ("0", "-", ""))
-        return enum_items
+    @classmethod
+    def relating_types(cls):
+        object_type = cls.props.object_type
+        relating_types = []
+        for relating_type in tool.Ifc.get().by_type("IfcTypeProduct"):
+            if tool.Drawing.is_annotation_object_type(relating_type, object_type):
+                relating_types.append({
+                    "id": relating_type.id(),
+                    "name": relating_type.Name or "Unnamed",
+                    "description": relating_type.Description or "No Description",
+                })
+
+        return sorted(relating_types, key=lambda x: x["name"])
