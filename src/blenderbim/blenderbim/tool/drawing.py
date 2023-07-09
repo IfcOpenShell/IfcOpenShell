@@ -1493,19 +1493,14 @@ class Drawing(blenderbim.core.tool.Drawing):
         # Sync viewport objects visibility with selectors from EPset_Drawing/Include and /Exclude
         drawing = tool.Ifc.get_entity(camera)
 
-        # Running operators is much more efficient in this scenario than looping through each element
-        if not bpy.app.background:
-            bpy.ops.object.hide_view_clear()
-
         filtered_elements = cls.get_drawing_elements(drawing) | cls.get_drawing_spaces(drawing)
-        for visible_obj in bpy.context.visible_objects:
-            element = tool.Ifc.get_entity(visible_obj)
+        for view_layer_object in bpy.context.view_layer.objects:
+            element = tool.Ifc.get_entity(view_layer_object)
             if not element:
                 continue
             hide = element not in filtered_elements
-            if bpy.context.view_layer.objects.get(visible_obj.name):
-                visible_obj.hide_set(hide)
-                visible_obj.hide_render = hide
+            view_layer_object.hide_set(hide)
+            view_layer_object.hide_render = hide
 
         subcontexts = []
         target_view = cls.get_drawing_target_view(drawing)
