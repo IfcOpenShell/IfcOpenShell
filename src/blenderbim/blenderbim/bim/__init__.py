@@ -170,7 +170,6 @@ def register():
     bpy.types.Curve.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
     bpy.types.Camera.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
     bpy.types.PointLight.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
-    bpy.types.SCENE_PT_unit.append(ui.ifc_units)
     if hasattr(bpy.types, "UI_MT_button_context_menu"):
         bpy.types.UI_MT_button_context_menu.append(ui.draw_custom_context_menu)
     bpy.types.STATUSBAR_HT_header.append(ui.draw_statusbar)
@@ -198,7 +197,6 @@ def unregister():
     del bpy.types.Curve.BIMMeshProperties
     del bpy.types.Camera.BIMMeshProperties
     del bpy.types.PointLight.BIMMeshProperties
-    bpy.types.SCENE_PT_unit.remove(ui.ifc_units)
     if hasattr(bpy.types, "UI_MT_button_context_menu"):
         bpy.types.UI_MT_button_context_menu.remove(ui.draw_custom_context_menu)
     bpy.types.STATUSBAR_HT_header.remove(ui.draw_statusbar)

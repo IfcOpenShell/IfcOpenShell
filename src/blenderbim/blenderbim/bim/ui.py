@@ -268,18 +268,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.operator("bim.configure_visibility")
 
 
-def ifc_units(self, context):
-    scene = context.scene
-    props = scene.BIMProperties
-    layout = self.layout
-    layout.use_property_decorate = False
-    layout.use_property_split = True
-    row = layout.row()
-    row.prop(props, "area_unit")
-    row = layout.row()
-    row.prop(props, "volume_unit")
-
-
 # Scene panel groups
 class BIM_PT_root(Panel):
     bl_label = "BlenderBIM Add-on"
