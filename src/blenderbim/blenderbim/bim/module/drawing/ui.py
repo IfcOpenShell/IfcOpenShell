@@ -161,13 +161,14 @@ class BIM_PT_drawing_underlay(Panel):
 class BIM_PT_drawings(Panel):
     bl_label = "Drawings"
     bl_idname = "BIM_PT_drawings"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "BIM Documentation"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+        return aprops.tab == "DRAWINGS" and tool.Ifc.get()
 
     def draw(self, context):
         if not DrawingsData.is_loaded:
@@ -229,13 +230,14 @@ class BIM_PT_drawings(Panel):
 class BIM_PT_schedules(Panel):
     bl_label = "Schedules"
     bl_idname = "BIM_PT_schedules"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "BIM Documentation"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+        return aprops.tab == "DRAWINGS" and tool.Ifc.get()
 
     def draw(self, context):
         if not DocumentsData.is_loaded:
@@ -284,13 +286,14 @@ def draw_project_not_saved_ui(self):
 class BIM_PT_references(Panel):
     bl_label = "References"
     bl_idname = "BIM_PT_references"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "BIM Documentation"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+        return aprops.tab == "DRAWINGS" and tool.Ifc.get()
 
     def draw(self, context):
         if not DocumentsData.is_loaded:
@@ -328,13 +331,14 @@ class BIM_PT_references(Panel):
 class BIM_PT_sheets(Panel):
     bl_label = "Sheets"
     bl_idname = "BIM_PT_sheets"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "BIM Documentation"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+        return aprops.tab == "DRAWINGS" and tool.Ifc.get()
 
     def draw(self, context):
         if not SheetsData.is_loaded:
