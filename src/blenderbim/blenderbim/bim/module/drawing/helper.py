@@ -208,19 +208,19 @@ def format_distance(
         if precision:
             value = precision * round(float(value) / precision)
 
-        if decimal_places:
+        if decimal_places is not None:
             fmt = "%1." + str(decimal_places) + "f"
 
         # Meters
         if unit_length == "METERS":
-            if not decimal_places:
+            if decimal_places is None:
                 fmt = "%1.3f"
             if hide_units is False:
                 fmt += " m"
             tx_dist = fmt % value
         # Centimeters
         elif unit_length == "CENTIMETERS":
-            if not decimal_places:
+            if decimal_places is None:
                 fmt = "%1.1f"
             if hide_units is False:
                 fmt += " cm"
@@ -228,7 +228,7 @@ def format_distance(
             tx_dist = fmt % d_cm
         # Millimeters
         elif unit_length == "MILLIMETERS":
-            if not decimal_places:
+            if decimal_places is None:
                 fmt = "%1.0f"
             if hide_units is False:
                 fmt += " mm"
@@ -237,20 +237,20 @@ def format_distance(
 
         # Otherwise Use Adaptive Units
         else:
-            if round(value, 2) >= 1.0 and not decimal_places:
+            if round(value, 2) >= 1.0 and decimal_places is None:
                 fmt = "%1.3f"
                 if hide_units is False:
                     fmt += " m"
                 tx_dist = fmt % value
             else:
-                if round(value, 2) >= 0.01 and not decimal_places:
+                if round(value, 2) >= 0.01 and decimal_places is None:
                     fmt = "%1.1f"
                     if hide_units is False:
                         fmt += " cm"
                     d_cm = value * (100)
                     tx_dist = fmt % d_cm
                 else:
-                    if not decimal_places:
+                    if decimal_places is None:
                         fmt = "%1.0f"
                     if hide_units is False:
                         fmt += " mm"
