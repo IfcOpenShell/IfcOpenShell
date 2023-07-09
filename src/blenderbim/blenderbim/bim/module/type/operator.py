@@ -200,7 +200,7 @@ class SelectTypeObjects(bpy.types.Operator):
 class AddType(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_type"
     bl_label = "Add Type"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
         props = context.scene.BIMModelProperties

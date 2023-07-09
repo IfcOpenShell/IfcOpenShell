@@ -84,6 +84,52 @@ class Operator:
         return {"FINISHED"}
 
 
+class AddAnnotationType(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_annotation_type"
+    bl_label = "Add Annotation Type"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = context.scene.BIMAnnotationProperties
+        object_type = props.object_type
+        has_representation = props.create_representation_for_type
+        drawing = tool.Ifc.get_entity(bpy.context.scene.camera)
+
+        if props.create_representation_for_type:
+            obj = tool.Drawing.create_annotation_object(drawing, object_type)
+        else:
+            obj = bpy.data.objects.new(object_type, None)
+
+        obj.name = props.type_name
+        element = tool.Drawing.run_root_assign_class(
+            obj=obj,
+            ifc_class="IfcTypeProduct",
+            predefined_type=object_type,
+            should_add_representation=has_representation,
+            context=ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Annotation", "MODEL_VIEW"),
+            ifc_representation_class=tool.Drawing.get_ifc_representation_class(object_type),
+        )
+        element.ApplicableOccurrence = f"IfcAnnotation/{object_type}"
+
+
+class EnableAddAnnotationType(bpy.types.Operator, Operator):
+    bl_idname = "bim.enable_add_annotation_type"
+    bl_label = "Enable Add Annotation Type"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        bpy.context.scene.BIMAnnotationProperties.is_adding_type = True
+
+
+class DisableAddAnnotationType(bpy.types.Operator, Operator):
+    bl_idname = "bim.disable_add_annotation_type"
+    bl_label = "Disable Add Annotation Type"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        bpy.context.scene.BIMAnnotationProperties.is_adding_type = False
+
+
 class AddDrawing(bpy.types.Operator, Operator):
     bl_idname = "bim.add_drawing"
     bl_label = "Add Drawing"
