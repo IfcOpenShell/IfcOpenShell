@@ -1,5 +1,4 @@
 tests/
 
-test/fixtures/UT*
 *.ifc.png
 update_virtualenv.sh

@@ -42,12 +42,32 @@ def rotate_points(coords: tuple, angle: float) -> np.ndarray:
     return np.array([x, y]) @ rot_mat
 
 
+def segment_radius(segment) -> float:
+    """
+    Determine the radius to be used for calculation
+    """
+    if segment.StartRadiusOfCurvature == 0:
+        R = abs(segment.EndRadiusOfCurvature)
+    elif segment.EndRadiusOfCurvature == 0:
+        R = abs(segment.StartRadiusOfCurvature)
+
+    try:
+        R
+    except UnboundLocalError:
+        if segment.EndRadiusOfCurvature < segment.StartRadiusOfCurvature:
+            R = abs(segment.EndRadiusOfCurvature)
+        else:
+            R = abs(segment.StartRadiusOfCurvature)
+
+    return R
+
+
 def point_on_LINE(segment, u: float) -> np.ndarray:
     """
     2D point at distance u along a LINE segment
 
     @param segment: IfcAlignmentHorizontalSegment containing the point
-    @type segment: ifcopenshell.alignment.AlignmentHorizontalSegment
+    @type segment: ifcopenshell.ifcgeom.AlignmentHorizontalSegment
     """
     return np.array(
         [
@@ -56,6 +76,16 @@ def point_on_LINE(segment, u: float) -> np.ndarray:
             np.nan,
         ]
     )
+
+
+def direction_on_LINE(segment, u: float) -> float:
+    """
+    tangent direction at distance u along a LINE segment
+
+    @param segment: IfcAlignmentHorizontalSegment at distance u
+    @type segment: ifcopenshell.ifcgeom.AlignmentHorizontalSegment
+    """
+    return segment.StartDirection
 
 
 def point_on_CIRCULARARC(segment, u: float) -> np.ndarray:
@@ -68,7 +98,7 @@ def point_on_CIRCULARARC(segment, u: float) -> np.ndarray:
     # calc local point on circle with forward tangent of start point
     # on positive x-axis
 
-    R = abs(segment.StartRadiusOfCurvature)
+    R = segment_radius(segment)
     x = R * math.cos(u / R)
     y = R * math.sin(u / R)
 
@@ -84,6 +114,20 @@ def point_on_CIRCULARARC(segment, u: float) -> np.ndarray:
     rotated = rotate_points(coords=(x, y), angle=rot_angle)
 
     return np.array([rotated[0], rotated[1], np.nan])
+
+
+def direction_on_CIRCULARARC(segment, u: float) -> float:
+    """
+    tangent direction at distance u along a CIRCULARARC segment
+
+    @param segment: IfcAlignmentHorizontalSegment at distance u
+    @type segment: ifcopenshell.ifcgeom.AlignmentHorizontalSegment
+    """
+    delta = segment.end_direction - segment.StartDirection
+    slope = delta / segment.SegmentLength
+    direction = slope * u + segment.StartDirection
+
+    return direction
 
 
 def point_on_HELMERTCURVE(segment, u: float) -> np.array:
@@ -115,22 +159,33 @@ def point_on_HELMERTCURVE(segment, u: float) -> np.array:
     return np.array([x, y, np.NaN], dtype="float64")
 
 
+def direction_on_HELMERTCURVE(segment, u: float) -> float:
+    """
+    tangent direction at distance u along a HELMERTCURVE segment
+
+    @param segment: IfcAlignmentHorizontalSegment at distance u
+    @type segment: ifcopenshell.ifcgeom.AlignmentHorizontalSegment
+    """
+
+    #TODO
+    return np.nan
+
+
 def point_on_BLOSSCURVE(segment, u: float) -> np.ndarray:
     """
     2D point at distance u along a BLOSSCURVE segment
+    Ref: https://pwayblog.com/2017/05/15/bloss-rectangular-coordinates/
 
     @param segment: IfcAlignmentHorizontalSegment containing the point
     @type segment: ifcopenshell.alignment.AlignmentHorizontalSegment
     """
-    from scipy import integrate
 
-    ccw = segment.is_CCW
-    R = abs(segment.StartRadiusOfCurvature)
+    R = segment_radius(segment)
     L = abs(segment.SegmentLength)
 
-    def theta(lpt, L, R):
-        term1 = lpt**3 / (R * L**2)
-        term2 = lpt**4 / (2 * R * L**3)
+    def theta(u, L, R):
+        term1 = u**3 / (R * L**2)
+        term2 = u**4 / (2 * R * L**3)
         return term1 - term2
 
     def fx(u):
@@ -139,13 +194,67 @@ def point_on_BLOSSCURVE(segment, u: float) -> np.ndarray:
     def fy(u):
         return math.sin(theta(u, L, R))
 
-    x = integrate.quad(fx, 0, u)[0]
-    y = integrate.quad(fy, 0, u)[0]
+    # from scipy import integrate
+    # x = integrate.quad(fx, 0, u)[0]
+    # y = integrate.quad(fy, 0, u)[0]
 
-    if not ccw:
+    try:
+        x_term1 = u
+        x_term2 = u**7 / ((14 * R**2) * (L**4))
+        x_term3 = u**8 / ((16 * R**2) * (L**5))
+        x_term4 = u**9 / ((72 * R**2) * (L**6))
+        x_term5 = u**13 / ((312 * R**4) * (L**8))
+        x_term6 = u**14 / ((168 * R**4) * (L**9))
+        x_term7 = u**15 / ((240 * R**4) * (L**10))
+        x = x_term1 - x_term2 + x_term3 - x_term4 + x_term5 - x_term6 + x_term7
+    except ZeroDivisionError as e:
+        x = 0
+
+    try:
+        y_term1 = u**4 / ((4 * R) * (L**2))
+        y_term2 = u**5 / ((10 * R) * (L**3))
+        y_term3 = u**10 / ((60 * R**3) * (L**6))
+        y_term4 = u**11 / ((44 * R**3) * (L**7))
+        y_term5 = u**12 / ((96 * R**3) * (L**8))
+        y_term6 = u**13 / ((624 * R**3) * (L**9))
+        y_term7 = u**16 / ((1800 * R**5) * (L**10))
+        y_term8 = u**17 / ((816 * R**5) * (L**11))
+
+        y = (
+            y_term1
+            - y_term2
+            + y_term3
+            - y_term4
+            + y_term5
+            - y_term6
+            + y_term7
+            - y_term8
+        )
+    except ZeroDivisionError as e:
+        y = 0
+
+    # quick check
+    x_check = u
+    try:
+        y_check = (1 / R) * ((u**4 / (4 * L**2)) - (u**5 / (10 * L**3)))
+    except ZeroDivisionError as e:
+        y_check = 0
+
+    if not segment.is_CCW:
         y = -y
 
     return np.array([x, y, np.NaN], dtype="float64")
+
+
+def direction_on_BLOSSCURVE(segment, u: float) -> np.ndarray:
+    """
+    tangent direction at distance u along a BLOSSCURVE segment
+    Ref: https://pwayblog.com/2017/05/15/bloss-rectangular-coordinates/
+
+    @param segment: IfcAlignmentHorizontalSegment containing the point
+    @type segment: ifcopenshell.ifcgeom.AlignmentHorizontalSegment
+    """
+    return np.nan
 
 
 def local_point_on_CLOTHOID(segment, u: float) -> np.ndarray:
@@ -159,19 +268,7 @@ def local_point_on_CLOTHOID(segment, u: float) -> np.ndarray:
     @type segment: ifcopenshell.alignment.AlignmentHorizontalSegment
     """
     L = segment.SegmentLength
-    if segment.StartRadiusOfCurvature == 0:
-        R = abs(segment.EndRadiusOfCurvature)
-    elif segment.EndRadiusOfCurvature == 0:
-        R = abs(segment.StartRadiusOfCurvature)
-
-    try:
-        R
-    except UnboundLocalError:
-        if segment.EndRadiusOfCurvature < segment.StartRadiusOfCurvature:
-            R = abs(segment.EndRadiusOfCurvature)
-        else:
-            R = abs(segment.StartRadiusOfCurvature)
-
+    R = segment_radius(segment)
     RL = R * L
 
     xterm_1 = u
@@ -250,11 +347,22 @@ def point_on_CLOTHOID(segment, u: float) -> np.ndarray:
 
     rotated = rotate_points(coords=(x, y), angle=rot_angle)
 
-    # return np.array([x, y, np.nan])
     return np.array([rotated[0], rotated[1], np.nan])
 
 
-def pt_on_COSINECURVE(segment, u: float) -> np.ndarray:
+def direction_on_CLOTHOID(segment, u: float) -> float:
+    """
+    tangent direction at distance u along a CLOTHOID segment
+
+    @param segment: IfcAlignmentHorizontalSegment at distance u
+    @type segment: ifcopenshell.ifcgeom.AlignmentHorizontalSegment
+    """
+    # TODO
+
+    return np.nan
+
+
+def point_on_COSINECURVE(segment, u: float) -> np.ndarray:
     """
     2D point at distance u along a COSINECURVE segment
 
@@ -263,54 +371,72 @@ def pt_on_COSINECURVE(segment, u: float) -> np.ndarray:
     """
 
     ccw = segment.is_CCW
-    R = abs(segment.StartRadiusOfCurvature)
+    R = segment_radius(segment)
     L = segment.SegmentLength
 
     pi = math.pi
     psi = (pi * u) / L
 
-    xterm_1 = (L**2) / (8.0 * pi**2 * R**2)
-    xterm_2 = L / pi
-    xterm_3 = psi**3 / (3.0)
-    xterm_4 = psi / (2.0)
-    xterm_5 = (math.sin(psi) * math.cos(psi)) / (2.0)
-    xterm_6 = psi * math.cos(psi)
+    try:
+        xterm_1 = (L**2) / (8.0 * pi**2 * R**2)
+        xterm_2 = L / pi
+        xterm_3 = psi**3 / (3.0)
+        xterm_4 = psi / (2.0)
+        xterm_5 = (math.sin(psi) * math.cos(psi)) / (2.0)
+        xterm_6 = psi * math.cos(psi)
 
-    x = u - xterm_1 * xterm_2 * (xterm_3 + xterm_4 - xterm_5 - (2.0 * xterm_6))
+        x = u - xterm_1 * xterm_2 * (xterm_3 + xterm_4 - xterm_5 - (2.0 * xterm_6))
+    except ZeroDivisionError:
+        x = 0
 
-    yfactor_1 = L / (2 * pi**2 * R)
-    yterm_11 = psi**2 / 2
-    yterm_12 = math.cos(psi)
-    ycoeff_1 = yterm_11 + yterm_12 - 1
-    yterm_1 = yfactor_1 * ycoeff_1
+    try:
+        yfactor_1 = L / (2 * pi**2 * R)
+        yterm_11 = psi**2 / 2
+        yterm_12 = math.cos(psi)
+        ycoeff_1 = yterm_11 + yterm_12 - 1
+        yterm_1 = yfactor_1 * ycoeff_1
 
-    yfactor_2 = L**3 / (48 * pi**4 * R**3)
-    yterm_21 = psi**4 / 4
-    yterm_22 = (((math.sin(psi)) ** 2) * (math.cos(psi))) / 3
-    yterm_23 = 16 * math.cos(psi) / 3
-    yterm_24 = (3 * psi**2) * (math.cos(psi))
-    yterm_25 = 6 * psi * math.sin(psi)
-    yterm_26 = 3 * psi**2 / 4
-    yterm_27 = (3 * psi * math.sin(2 * psi)) / 4
-    yterm_28 = (3 * math.cos(2 * psi)) / 8
-    ycoeff_2 = (
-        yterm_21
-        + yterm_22
-        - yterm_23
-        + yterm_24
-        - yterm_25
-        + yterm_26
-        - yterm_27
-        - yterm_28
-        + (137 / 24)
-    )
-    yterm_2 = yfactor_2 * ycoeff_2
-    y = L * (yterm_1 - yterm_2)
+        yfactor_2 = L**3 / (48 * pi**4 * R**3)
+        yterm_21 = psi**4 / 4
+        yterm_22 = (((math.sin(psi)) ** 2) * (math.cos(psi))) / 3
+        yterm_23 = 16 * math.cos(psi) / 3
+        yterm_24 = (3 * psi**2) * (math.cos(psi))
+        yterm_25 = 6 * psi * math.sin(psi)
+        yterm_26 = 3 * psi**2 / 4
+        yterm_27 = (3 * psi * math.sin(2 * psi)) / 4
+        yterm_28 = (3 * math.cos(2 * psi)) / 8
+        ycoeff_2 = (
+            yterm_21
+            + yterm_22
+            - yterm_23
+            + yterm_24
+            - yterm_25
+            + yterm_26
+            - yterm_27
+            - yterm_28
+            + (137 / 24)
+        )
+        yterm_2 = yfactor_2 * ycoeff_2
+        y = L * (yterm_1 - yterm_2)
+    except ZeroDivisionError:
+        y = 0
 
     if not ccw:
         y = -y
 
     return np.array([x, y, np.NaN], dtype="float64")
+
+
+def direction_on_COSINECURVE(segment, u: float) -> float:
+    """
+    tangent direction at distance u along a COSINECURVE segment
+
+    @param segment: IfcAlignmentHorizontalSegment at distance u
+    @type segment: ifcopenshell.ifcgeom.AlignmentHorizontalSegment
+    """
+    # TODO
+
+    return np.nan
 
 
 def point_on_CUBIC(segment, u: float) -> np.ndarray:
@@ -321,7 +447,7 @@ def point_on_CUBIC(segment, u: float) -> np.ndarray:
     @type segment: ifcopenshell.alignment.AlignmentHorizontalSegment
     """
     ccw = segment.is_CCW
-    R = abs(R)
+    R = segment_radius(segment)
     L = segment.SegmentLength
 
     x = u
@@ -330,6 +456,18 @@ def point_on_CUBIC(segment, u: float) -> np.ndarray:
         y = -y
 
     return np.array([x, y, np.NaN], dtype="float64")
+
+
+def direction_on_CUBIC(segment, u: float) -> float:
+    """
+    tangent direction at distance u along a CUBIC segment
+
+    @param segment: IfcAlignmentHorizontalSegment at distance u
+    @type segment: ifcopenshell.ifcgeom.AlignmentHorizontalSegment
+    """
+    # TODO
+
+    return np.nan
 
 
 def point_on_SINECURVE(segment, u: float) -> np.ndarray:
@@ -342,7 +480,7 @@ def point_on_SINECURVE(segment, u: float) -> np.ndarray:
     from scipy import integrate
 
     ccw = segment.is_CCW
-    R = abs(segment.StartRadiusOfCurvature)
+    R = segment_radius(segment)
     L = segment.SegmentLength
 
     # TODO
@@ -382,3 +520,15 @@ def point_on_SINECURVE(segment, u: float) -> np.ndarray:
         y = -y
 
     return np.array([x, y, np.NaN], dtype="float64")
+
+
+def direction_on_SINECURVE(segment, u: float) -> float:
+    """
+    tangent direction at distance u along a SINECURVE segment
+
+    @param segment: IfcAlignmentHorizontalSegment at distance u
+    @type segment: ifcopenshell.ifcgeom.AlignmentHorizontalSegment
+    """
+    # TODO
+
+    return np.nan
