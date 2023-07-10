@@ -32,6 +32,7 @@ import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.util.selector
 import ifcopenshell.util.representation
+import ifcopenshell.util.element
 import blenderbim.bim.schema
 import blenderbim.tool as tool
 import blenderbim.core.drawing as core
@@ -230,7 +231,8 @@ class CreateDrawing(bpy.types.Operator):
             with profile("Drawing generation process"):
                 with profile("Initialize drawing generation process"):
                     self.cprops = self.camera.data.BIMCameraProperties
-                    self.drawing_name = self.file.by_id(drawing_id).Name
+                    self.drawing = self.file.by_id(drawing_id)
+                    self.drawing_name = self.drawing.Name
                     self.metadata = tool.Drawing.get_drawing_metadata(self.camera_element)
                     self.get_scale(context)
                     if self.cprops.update_representation(self.camera):
@@ -321,7 +323,7 @@ class CreateDrawing(bpy.types.Operator):
         return svg_path
 
     def generate_underlay(self, context):
-        if not self.cprops.has_underlay:
+        if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasUnderlay"):
             return
         svg_path = self.get_svg_path(cache_type="underlay")
         context.scene.render.filepath = svg_path[0:-4] + ".png"
@@ -363,7 +365,8 @@ class CreateDrawing(bpy.types.Operator):
         return svg_path
 
     def generate_linework(self, context):
-        if not self.cprops.has_linework:
+        global ifcopenshell
+        if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasLinework"):
             return
         svg_path = self.get_svg_path(cache_type="linework")
         if os.path.isfile(svg_path) and self.props.should_use_linework_cache:
@@ -968,7 +971,7 @@ class CreateDrawing(bpy.types.Operator):
         group.insert(0, projection)
 
     def generate_annotation(self, context):
-        if not self.cprops.has_annotation:
+        if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasAnnotation"):
             return
         svg_path = self.get_svg_path(cache_type="annotation")
         if os.path.isfile(svg_path) and self.props.should_use_annotation_cache:
@@ -1704,7 +1707,7 @@ class ActivateDrawingStyle(bpy.types.Operator, Operator):
                     exec(f"{path} = {value}")
             except:
                 # Differences in Blender versions mean result in failures here
-                print("Failed to set shading style {path} to {value}")
+                print(f"Failed to set shading style {path} to {value}")
 
     def set_query(self, context):
         self.include_global_ids = []

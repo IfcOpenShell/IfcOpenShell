@@ -547,6 +547,9 @@ class Drawing(blenderbim.core.tool.Drawing):
         for obj in ifc_importer.added_data.values():
             tool.Collector.assign(obj)
 
+    # NOTE: EPsetDrawing pset is completely synced with BIMCameraProperties
+    # but BIMCameraProperties are only synced with EPsetDrawing at drawing import
+    # therefore camera props can differ from pset if the user changed them from pset.
     @classmethod
     def import_drawing(cls, drawing):
         settings = ifcopenshell.geom.settings()
