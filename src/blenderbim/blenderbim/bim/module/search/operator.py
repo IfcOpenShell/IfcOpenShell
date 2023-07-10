@@ -143,20 +143,18 @@ class SelectAttribute(Operator):
     bl_label = "Select Attribute"
     bl_options = {"REGISTER", "UNDO"}
 
-    @classmethod
-    def poll(cls, context):
-        props = context.scene.BIMSearchProperties
-        attribute_name = props.search_attribute_name.strip()
-        if attribute_name:
-            return True
-        cls.poll_message_set("Set Attribute Name for search.")
-        return False
+    attribute_name: bpy.props.StringProperty(default="")
+    attribute_value: bpy.props.StringProperty(default="")
 
     def execute(self, context):
+        attribute_name = self.attribute_name or context.scene.BIMSearchProperties.search_attribute_name
+        attribute_value = self.attribute_value
+
+        if not attribute_name:
+            self.report({"ERROR"}, "Set Attribute Name for search.")
+            return {"CANCELLED"}
+
         self.file = IfcStore.get_file()
-        props = context.scene.BIMSearchProperties
-        attribute_value = props.search_attribute_value
-        attribute_name = props.search_attribute_name
         n_objects = 0
         for obj in context.visible_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
@@ -181,25 +179,24 @@ class SelectPset(Operator):
     bl_label = "Select Pset"
     bl_options = {"REGISTER", "UNDO"}
 
-    @classmethod
-    def poll(cls, context):
-        props = context.scene.BIMSearchProperties
-        pset_name = props.search_pset_name.strip()
-        prop_name = props.search_prop_name.strip()
-        if not pset_name:
-            cls.poll_message_set("Set PSet name for search.")
-            return False
-        if not prop_name:
-            cls.poll_message_set("Set Property name for search.")
-            return False
-        return True
+    pset_name: bpy.props.StringProperty(default="")
+    prop_name: bpy.props.StringProperty(default="")
+    pset_value: bpy.props.StringProperty(default="")
 
     def execute(self, context):
+        search_pset_name = self.pset_name or context.scene.BIMSearchProperties.search_pset_name
+        search_prop_name = self.prop_name or context.scene.BIMSearchProperties.search_prop_name
+        pattern = self.pset_value
+
+        if not search_pset_name:
+            self.report({"ERROR"}, "Set PSet name for search.")
+            return {"CANCELLED"}
+        if not search_prop_name:
+            self.report({"ERROR"}, "Set Property name for search.")
+            return {"CANCELLED"}
+
         self.file = IfcStore.get_file()
         props = context.scene.BIMSearchProperties
-        search_pset_name = props.search_pset_name
-        search_prop_name = props.search_prop_name
-        pattern = props.search_pset_value
         n_objects = 0
         for obj in context.visible_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
@@ -231,9 +228,7 @@ class ColourByAttribute(Operator):
     bl_label = "Colour by Attribute"
     bl_options = {"REGISTER", "UNDO"}
 
-    @classmethod
-    def poll(cls, context):
-        return SelectAttribute.poll(context)
+    attribute_name: bpy.props.StringProperty(default="")
 
     def execute(self, context):
         IfcStore.begin_transaction(self)
@@ -244,10 +239,15 @@ class ColourByAttribute(Operator):
         return result
 
     def _execute(self, context):
+        attribute_name = self.attribute_name or context.scene.BIMSearchProperties.search_attribute_name
+
+        if not attribute_name:
+            self.report({"ERROR"}, "Set Attribute Name for search.")
+            return {"CANCELLED"}
+
         self.file = IfcStore.get_file()
         colours = cycle(colour_list)
         values = {}
-        attribute_name = context.scene.BIMSearchProperties.search_attribute_name
         for obj in context.visible_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
@@ -286,9 +286,8 @@ class ColourByPset(Operator):
     bl_label = "Colour by Pset"
     bl_options = {"REGISTER", "UNDO"}
 
-    @classmethod
-    def poll(cls, context):
-        return SelectPset.poll(context)
+    pset_name: bpy.props.StringProperty(default="")
+    prop_name: bpy.props.StringProperty(default="")
 
     def execute(self, context):
         IfcStore.begin_transaction(self)
@@ -299,11 +298,19 @@ class ColourByPset(Operator):
         return result
 
     def _execute(self, context):
+        search_pset_name = self.pset_name or context.scene.BIMSearchProperties.search_pset_name
+        search_prop_name = self.prop_name or context.scene.BIMSearchProperties.search_prop_name
+
+        if not search_pset_name:
+            self.report({"ERROR"}, "Set PSet name for search.")
+            return {"CANCELLED"}
+        if not search_prop_name:
+            self.report({"ERROR"}, "Set Property name for search.")
+            return {"CANCELLED"}
+
         self.file = IfcStore.get_file()
         colours = cycle(colour_list)
         values = {}
-        search_pset_name = context.scene.BIMSearchProperties.search_pset_name
-        search_prop_name = context.scene.BIMSearchProperties.search_prop_name
         for obj in context.visible_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
