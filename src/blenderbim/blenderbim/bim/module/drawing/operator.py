@@ -1705,9 +1705,6 @@ class ActivateDrawingStyle(bpy.types.Operator, Operator):
             except:
                 # Differences in Blender versions mean result in failures here
                 print("Failed to set shading style {path} to {value}")
-        shading_type = style.get("scene.display.shading.type", None)
-        if shading_type:
-            space.shading.type = shading_type
 
     def set_query(self, context):
         self.include_global_ids = []

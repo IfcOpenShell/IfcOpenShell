@@ -297,6 +297,7 @@ class RasterStyleProperty(enum.Enum):
     SHADING = "scene.display.shading"
     DISPLAY = "scene.display"
     OVERLAY = "space.overlay"
+    SPACE_SHADING = "space.shading"
 
 
 RASTER_STYLE_PROPERTIES_EXCLUDE = (
