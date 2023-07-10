@@ -346,7 +346,8 @@ def get_tab(self, context):
         ("STRUCTURE", "Structural Analysis", "", "EDITMODE_HLT", 5),
         ("SCHEDULING", "Construction Scheduling", "", "NLA", 6),
         ("FM", "Facility Management", "", "PACKAGE", 7),
-        ("OTHER", "Other Properties", "", "COLLAPSEMENU", 8),
+        ("OTHER", "Other Utilities", "", "COLLAPSEMENU", 8),
+        ("BLENDER", "Blender Properties", "", "BLENDER", 9),
     ]
 
 

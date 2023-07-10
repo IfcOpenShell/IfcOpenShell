@@ -273,6 +273,83 @@ def viewport_shading_changed_callback(area):
         bpy.context.scene.BIMStylesProperties.active_style_type = "External"
 
 
+if getattr(bpy.types, "SCENE_PT_scene"):
+
+    class Override_SCENE_PT_scene(bpy.types.SCENE_PT_scene):
+        bl_idname = "SCENE_PT_scene_override"
+
+        @classmethod
+        def poll(cls, context):
+            aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+            return aprops.tab == "BLENDER"
+
+
+if getattr(bpy.types, "SCENE_PT_unit"):
+
+    class Override_SCENE_PT_unit(bpy.types.SCENE_PT_unit):
+        bl_idname = "SCENE_PT_unit_override"
+
+        @classmethod
+        def poll(cls, context):
+            aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+            return aprops.tab == "BLENDER"
+
+
+if getattr(bpy.types, "SCENE_PT_physics"):
+
+    class Override_SCENE_PT_physics(bpy.types.SCENE_PT_physics):
+        bl_idname = "SCENE_PT_physics_override"
+
+        @classmethod
+        def poll(cls, context):
+            aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+            return aprops.tab == "BLENDER"
+
+
+if getattr(bpy.types, "SCENE_PT_rigid_body_world"):
+
+    class Override_SCENE_PT_rigid_body_world(bpy.types.SCENE_PT_rigid_body_world):
+        bl_idname = "SCENE_PT_rigid_body_world_override"
+
+        @classmethod
+        def poll(cls, context):
+            aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+            return aprops.tab == "BLENDER"
+
+
+if getattr(bpy.types, "SCENE_PT_audio"):
+
+    class Override_SCENE_PT_audio(bpy.types.SCENE_PT_audio):
+        bl_idname = "SCENE_PT_audio_override"
+
+        @classmethod
+        def poll(cls, context):
+            aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+            return aprops.tab == "BLENDER"
+
+
+if getattr(bpy.types, "SCENE_PT_keying_sets"):
+
+    class Override_SCENE_PT_keying_sets(bpy.types.SCENE_PT_keying_sets):
+        bl_idname = "SCENE_PT_keying_sets_override"
+
+        @classmethod
+        def poll(cls, context):
+            aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+            return aprops.tab == "BLENDER"
+
+
+if getattr(bpy.types, "SCENE_PT_custom_props"):
+
+    class Override_SCENE_PT_custom_props(bpy.types.SCENE_PT_custom_props):
+        bl_idname = "SCENE_PT_custom_props_override"
+
+        @classmethod
+        def poll(cls, context):
+            aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+            return aprops.tab == "BLENDER"
+
+
 @persistent
 def setDefaultProperties(scene):
     global global_subscription_owner
@@ -309,6 +386,9 @@ def setDefaultProperties(scene):
             if obj:
                 bpy.data.objects.remove(obj)
 
+        # To improve usability for new users, we hijack the scene properties
+        # tab. We override default scene properties panels with our own poll
+        # to hide them unless the user has chosen to view Blender properties.
         for panel in [
             "SCENE_PT_scene",
             "SCENE_PT_unit",
@@ -318,10 +398,12 @@ def setDefaultProperties(scene):
             "SCENE_PT_keying_sets",
             "SCENE_PT_custom_props",
         ]:
-            try:
-                bpy.utils.unregister_class(getattr(bpy.types, panel))
-            except:
-                pass
+            if getattr(bpy.types, panel, None):
+                try:
+                    bpy.utils.register_class(globals()[f"Override_{panel}"])
+                    bpy.utils.unregister_class(getattr(bpy.types, panel))
+                except:
+                    pass
 
     # https://blender.stackexchange.com/questions/140644/how-can-make-the-state-of-a-boolean-property-relative-to-the-3d-view-area
     for screen in bpy.data.screens:
