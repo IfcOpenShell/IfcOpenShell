@@ -563,7 +563,10 @@ class BIMRailingProperties(PropertyGroup):
         "If disabled, supports are added automatically based on the support spacing",
     )
     support_spacing: bpy.props.FloatProperty(
-        name="Support Spacing", default=1.0, description="Distance between supports if automatic supports are used"
+        name="Support Spacing", 
+        default=1.0, 
+        min=0.01,
+        description="Distance between supports if automatic supports are used",
     )
     railing_diameter: bpy.props.FloatProperty(name="Railing Diameter", default=0.050)
     clear_width: bpy.props.FloatProperty(

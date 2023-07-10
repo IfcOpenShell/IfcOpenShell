@@ -561,6 +561,11 @@ class BIM_PT_railing(bpy.types.Panel):
 
                 general_props = props.get_general_kwargs()
                 for prop in general_props:
+                    if prop == "support_spacing" and props.use_manual_supports:
+                        row = self.layout.row()
+                        row.prop(props, prop)
+                        row.active = False
+                        continue
                     self.layout.prop(props, prop)
 
                 update_railing_modifier_bmesh(context)
