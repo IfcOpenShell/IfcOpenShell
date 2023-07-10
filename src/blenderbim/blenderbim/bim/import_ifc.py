@@ -892,7 +892,7 @@ class IfcImporter:
             return None
 
         for representation in representations:
-            if representation.RepresentationType == "PointCloud":
+            if representation.RepresentationType in ("PointCloud", "Point"):
                 return representation
 
             elif self.file.schema == "IFC2X3" and representation.RepresentationType == "GeometricSet":
