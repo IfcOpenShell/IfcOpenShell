@@ -30,8 +30,9 @@ from ifcopenshell.util.doc import (
     get_property_doc,
     get_predefined_type_doc,
 )
-import blenderbim.bim.handler
+import blenderbim.bim
 import blenderbim.bim.schema
+import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
 import blenderbim.tool as tool
 from collections import defaultdict
@@ -335,22 +336,22 @@ class ModuleVisibility(PropertyGroup):
     is_visible: BoolProperty(name="Value", default=True, update=update_is_visible)
 
 
+def get_tab(self, context):
+    return [
+        ("PROJECT", "Project Overview", "", blenderbim.bim.icons["IFC"].icon_id, 0),
+        ("OBJECT", "Object Information", "", "FILE_3D", 1),
+        ("MATERIALS", "Materials and Styles", "", "MATERIAL", 2),
+        ("DRAWINGS", "Drawings and Documents", "", "DOCUMENTS", 3),
+        ("SERVICES", "Services and Systems", "", "NETWORK_DRIVE", 4),
+        ("STRUCTURE", "Structural Analysis", "", "EDITMODE_HLT", 5),
+        ("SCHEDULING", "Construction Scheduling", "", "NLA", 6),
+        ("FM", "Facility Management", "", "PACKAGE", 7),
+        ("OTHER", "Other Properties", "", "COLLAPSEMENU", 8),
+    ]
+
+
 class BIMAreaProperties(PropertyGroup):
-    tab: EnumProperty(
-        default="PROJECT",
-        items=[
-            ("PROJECT", "Project Overview", "", "VIEW3D", 1),
-            ("OBJECT", "Object Information", "", "FILE_3D", 2),
-            ("MATERIALS", "Materials and Styles", "", "MATERIAL", 3),
-            ("DRAWINGS", "Drawings and Documents", "", "DOCUMENTS", 4),
-            ("SERVICES", "Services and Systems", "", "NETWORK_DRIVE", 5),
-            ("STRUCTURE", "Structural Analysis", "", "EDITMODE_HLT", 6),
-            ("SCHEDULING", "Construction Scheduling", "", "NLA", 7),
-            ("FM", "Facility Management", "", "PACKAGE", 8),
-            ("OTHER", "Other Properties", "", "COLLAPSEMENU", 9),
-        ],
-        name="Tab",
-    )
+    tab: EnumProperty(default=0, items=get_tab, name="Tab")
 
 
 class BIMProperties(PropertyGroup):

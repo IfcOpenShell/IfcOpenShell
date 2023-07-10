@@ -16,10 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import bpy
+import bpy.utils.previews
 import blenderbim
 import importlib
 from . import handler, ui, prop, operator, helper
+
+cwd = os.path.dirname(os.path.realpath(__file__))
 
 modules = {
     "project": None,
@@ -143,6 +147,9 @@ for mod in modules.values():
     classes.extend(mod.classes)
 
 
+icons = None
+
+
 def on_register(scene):
     handler.setDefaultProperties(scene)
     if not bpy.app.background:
@@ -177,8 +184,24 @@ def register():
     for mod in modules.values():
         mod.register()
 
+    global icons
+
+    icons_dir = os.path.join(cwd, "data", "icons")
+    icon_preview = bpy.utils.previews.new()
+    for filename in os.listdir(icons_dir):
+        if filename.endswith(".png"):
+            icon_name = os.path.splitext(filename)[0]
+            icon_path = os.path.join(icons_dir, filename)
+            icon_preview.load(icon_name, icon_path, "IMAGE")
+
+    icons = icon_preview
+
 
 def unregister():
+    global icons
+
+    bpy.utils.previews.remove(icons)
+
     for cls in reversed(classes):
         if getattr(cls, "is_registered", None) is None:
             bpy.utils.unregister_class(cls)
