@@ -327,13 +327,19 @@ class IfcImporter:
             if isinstance(self.elements, set):
                 self.elements = list(self.elements)
             # TODO: enable filtering for annotations
-            self.annotations = set([a for a in self.file.by_type("IfcAnnotation") if not a.HasAssignments])
         else:
             if self.file.schema in ("IFC2X3", "IFC4"):
                 self.elements = self.file.by_type("IfcElement") + self.file.by_type("IfcProxy")
             else:
                 self.elements = self.file.by_type("IfcElement")
-            self.annotations = set([a for a in self.file.by_type("IfcAnnotation") if not a.HasAssignments])
+
+        drawing_groups = [g for g in self.file.by_type("IfcGroup") if g.ObjectType == "DRAWING"]
+        drawing_annotations = set()
+        for drawing_group in drawing_groups:
+            for rel in drawing_group.IsGroupedBy:
+                drawing_annotations.update(rel.RelatedObjects)
+        self.annotations = set([a for a in self.file.by_type("IfcAnnotation")])
+        self.annotations -= drawing_annotations
 
         self.elements = [e for e in self.elements if not e.is_a("IfcFeatureElement")]
         if self.ifc_import_settings.is_coordinating:
