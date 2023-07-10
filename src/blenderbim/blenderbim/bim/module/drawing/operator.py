@@ -1311,7 +1311,25 @@ class ActivateModel(bpy.types.Operator):
         CutDecorator.uninstall()
 
         if not bpy.app.background:
-            bpy.ops.object.hide_view_clear()
+            view3d_context = dict()
+
+            for window in bpy.context.window_manager.windows:
+                screen = window.screen
+                for area in screen.areas:
+                    if area.type == "VIEW_3D":
+                        view3d_context["window"] = window
+                        view3d_context["screen"] = screen
+                        view3d_context["area"] = area
+                        for region in area.regions:
+                            if region.type == "WINDOW":
+                                view3d_context["region"] = region
+                                break
+                        break
+                if view3d_context:
+                    break
+
+            if view3d_context:
+                bpy.ops.object.hide_view_clear(view3d_context)
 
         subcontext = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
 
