@@ -74,25 +74,38 @@ def register():
     if wm.keyconfigs.addon:
         km = wm.keyconfigs.addon.keymaps.new(name="Object Mode", space_type="EMPTY")
         kmi = km.keymap_items.new("bim.override_object_join", "J", "PRESS", ctrl=True)
+        addon_keymaps.append((km, kmi))
         kmi = km.keymap_items.new("bim.override_object_duplicate_move_macro", "D", "PRESS", shift=True)
+        addon_keymaps.append((km, kmi))
         kmi = km.keymap_items.new("bim.override_object_duplicate_move_linked_macro", "D", "PRESS", alt=True)
+        addon_keymaps.append((km, kmi))
         kmi = km.keymap_items.new("bim.override_object_duplicate_move_aggregate_macro", "D", "PRESS", ctrl=True, shift=True)
+        addon_keymaps.append((km, kmi))
         kmi = km.keymap_items.new("bim.override_paste_buffer", "V", "PRESS", ctrl=True)
+        addon_keymaps.append((km, kmi))
         kmi = km.keymap_items.new("bim.override_mode_set_edit", "TAB", "PRESS")
+        addon_keymaps.append((km, kmi))
         kmi = km.keymap_items.new("bim.override_object_delete", "X", "PRESS")
+        addon_keymaps.append((km, kmi))
         kmi = km.keymap_items.new("bim.override_object_delete", "DEL", "PRESS")
         kmi.properties.confirm = False
+        addon_keymaps.append((km, kmi))
 
         km = wm.keyconfigs.addon.keymaps.new(name="Mesh", space_type="EMPTY")
         kmi = km.keymap_items.new("bim.override_mode_set_object", "TAB", "PRESS")
+        addon_keymaps.append((km, kmi))
 
         km = wm.keyconfigs.addon.keymaps.new(name="Curve", space_type="EMPTY")
         kmi = km.keymap_items.new("bim.override_mode_set_object", "TAB", "PRESS")
+        addon_keymaps.append((km, kmi))
 
         km = wm.keyconfigs.addon.keymaps.new(name="Outliner", space_type="OUTLINER")
         kmi = km.keymap_items.new("bim.override_paste_buffer", "V", "PRESS", ctrl=True)
+        addon_keymaps.append((km, kmi))
         kmi = km.keymap_items.new("bim.override_outliner_delete", "X", "PRESS")
+        addon_keymaps.append((km, kmi))
         kmi = km.keymap_items.new("bim.override_outliner_delete", "DEL", "PRESS")
+        addon_keymaps.append((km, kmi))
 
 
 def unregister():

@@ -49,6 +49,7 @@ classes = (
     prop.FilterCategory,
     prop.Link,
     prop.BIMProjectProperties,
+    ui.BIM_MT_new_project,
     ui.BIM_MT_project,
     ui.BIM_PT_project,
     ui.BIM_PT_project_library,
@@ -59,11 +60,28 @@ classes = (
 )
 
 
+addon_keymaps = []
+
+
 def register():
     bpy.types.Scene.BIMProjectProperties = bpy.props.PointerProperty(type=prop.BIMProjectProperties)
     bpy.types.TOPBAR_MT_file.prepend(ui.file_menu)
+    wm = bpy.context.window_manager
+    if wm.keyconfigs.addon:
+        km = wm.keyconfigs.addon.keymaps.get("Window")
+        if not km:
+            km = wm.keyconfigs.addon.keymaps.new("Window")
+        kmi = km.keymap_items.new("wm.call_menu", "N", "PRESS", ctrl=True)
+        kmi.properties.name = "BIM_MT_new_project"
+        addon_keymaps.append((km, kmi))
 
 
 def unregister():
     bpy.types.TOPBAR_MT_file.remove(ui.file_menu)
     del bpy.types.Scene.BIMProjectProperties
+    wm = bpy.context.window_manager
+    kc = wm.keyconfigs.addon
+    if kc:
+        for km, kmi in addon_keymaps:
+            km.keymap_items.remove(kmi)
+    addon_keymaps.clear()

@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import blenderbim.bim
 from blenderbim.bim.helper import prop_with_search
 from bpy.types import Panel, Menu, UIList
 from blenderbim.bim.ifc import IfcStore
@@ -28,12 +29,32 @@ class BIM_MT_project(Menu):
     bl_label = "New IFC Project"
 
     def draw(self, context):
-        layout = self.layout
-        layout.operator("bim.new_project", text="New Metric (m) Project").preset = "metric_m"
-        layout.operator("bim.new_project", text="New Metric (mm) Project").preset = "metric_mm"
-        layout.operator("bim.new_project", text="New Imperial (ft) Project").preset = "imperial_ft"
-        layout.operator("bim.new_project", text="New Demo Project").preset = "demo"
-        layout.operator("bim.new_project", text="New Project Wizard").preset = "wizard"
+        self.layout.operator("bim.new_project", text="New Metric (m) Project").preset = "metric_m"
+        self.layout.operator("bim.new_project", text="New Metric (mm) Project").preset = "metric_mm"
+        self.layout.operator("bim.new_project", text="New Imperial (ft) Project").preset = "imperial_ft"
+        self.layout.operator("bim.new_project", text="New Demo Project").preset = "demo"
+        self.layout.operator("bim.new_project", text="New Project Wizard").preset = "wizard"
+
+
+class BIM_MT_new_project(Menu):
+    bl_idname = "BIM_MT_new_project"
+    bl_label = "New Project"
+
+    def draw(self, context):
+        self.layout.label(text="New IFC Project", icon_value=blenderbim.bim.icons["IFC"].icon_id)
+        self.layout.operator("bim.new_project", text="Metric (m) Project").preset = "metric_m"
+        self.layout.operator("bim.new_project", text="Metric (mm) Project").preset = "metric_mm"
+        self.layout.operator("bim.new_project", text="Imperial (ft) Project").preset = "imperial_ft"
+        self.layout.operator("bim.new_project", text="Demo Project").preset = "demo"
+        self.layout.operator("bim.new_project", text="Project Wizard").preset = "wizard"
+        self.layout.separator()
+        self.layout.label(text="New Blender Project", icon="BLENDER")
+        # In theory we can dynamically grab the list from list(bpy.utils.app_template_paths())
+        self.layout.operator("wm.read_homefile", text="General Project").app_template = ""
+        self.layout.operator("wm.read_homefile", text="2D Animation Project").app_template = "2D_Animation"
+        self.layout.operator("wm.read_homefile", text="Sculpting Project").app_template = "Sculpting"
+        self.layout.operator("wm.read_homefile", text="VFX Project").app_template = "VFX"
+        self.layout.operator("wm.read_homefile", text="Video Editing Project").app_template = "Video_Editing"
 
 
 def file_menu(self, context):
@@ -205,7 +226,7 @@ class BIM_PT_project(Panel):
 
         row = self.layout.row(align=True)
         row.operator("bim.create_project")
-        row.operator("bim.load_project").should_start_fresh_session = False
+        row.operator("bim.load_project").should_start_fresh_session = True
 
 
 class BIM_PT_project_library(Panel):
