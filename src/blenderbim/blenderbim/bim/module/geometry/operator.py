@@ -1267,6 +1267,9 @@ class OverrideModeSetEdit(bpy.types.Operator):
 
             if tool.Pset.get_element_pset(element, "BBIM_Railing"):
                 if len(context.selected_objects) == 1:
+                    if obj.BIMRailingProperties.is_editing == 1:
+                        self.report({"INFO"}, "Can't edit path while the modifier parameters are being modified")
+                        return {"FINISHED"}
                     bpy.ops.bim.enable_editing_railing_path()
                     return {"FINISHED"}
                 else:
