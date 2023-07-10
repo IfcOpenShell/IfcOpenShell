@@ -1,8 +1,9 @@
 
 IfcOpenShell 
 ============
+
 <p align="center">
-  <img src="https://github.com/IfcOpenShell/IfcOpenShell/assets/79010126/9e540403-c79f-446a-88c6-7c1ebc6ba864">
+<img src="https://github.com/IfcOpenShell/IfcOpenShell/assets/88302/34901387-e2dd-4a0c-8e38-9ffc32a66cde">
 </p>
 
 IfcOpenShell is an open source ([LGPL]) software library for working with Industry Foundation Classes ([IFC]). Complete
