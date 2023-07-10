@@ -161,7 +161,17 @@ class entity_instance(object):
 
         # derived attribute perhaps?
         schema_name = self.wrapped_data.is_a(True).split(".")[0]
-        rules = importlib.import_module(f"ifcopenshell.express.rules.{schema_name}")
+        try:
+            rules = importlib.import_module(f"ifcopenshell.express.rules.{schema_name}")
+        except:
+            import os
+            current_dir_files = {fn.lower(): fn for fn in os.listdir('.')}
+            schema_path = current_dir_files.get(schema_name + '.exp')
+            fn = schema_name + '.py'
+            if not os.path.exists(fn):
+                subprocess.run([sys.executable, "-m", "ifcopenshell.express.rule_compiler", schema_path, fn], check=True)
+                time.sleep(1.)
+            rules = importlib.import_module(schema_name)
 
         def yield_supertypes():
             decl = ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(self.is_a())
