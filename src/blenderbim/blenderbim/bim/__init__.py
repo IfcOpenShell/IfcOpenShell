@@ -93,6 +93,7 @@ classes = [
     operator.ConfigureVisibility,
     operator.OpenUpstream,
     operator.OpenUri,
+    operator.SwitchTab,
     operator.ReloadIfcFile,
     operator.RemoveIfcFile,
     operator.SelectDataDir,
@@ -146,7 +147,7 @@ classes = [
 for mod in modules.values():
     classes.extend(mod.classes)
 
-
+addon_keymaps = []
 icons = None
 
 
@@ -183,6 +184,12 @@ def register():
 
     for mod in modules.values():
         mod.register()
+
+    wm = bpy.context.window_manager
+    if wm.keyconfigs.addon:
+        km = wm.keyconfigs.addon.keymaps.new(name='Window', space_type='EMPTY')
+        kmi = km.keymap_items.new('bim.switch_tab', 'TAB', 'PRESS', ctrl=True)
+        addon_keymaps.append((km, kmi))
 
     global icons
 
@@ -226,3 +233,10 @@ def unregister():
 
     for mod in reversed(list(modules.values())):
         mod.unregister()
+
+    wm = bpy.context.window_manager
+    kc = wm.keyconfigs.addon
+    if kc:
+        for km, kmi in addon_keymaps:
+            km.keymap_items.remove(kmi)
+    addon_keymaps.clear()

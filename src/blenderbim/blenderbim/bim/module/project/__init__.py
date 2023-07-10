@@ -79,6 +79,7 @@ def register():
 def unregister():
     bpy.types.TOPBAR_MT_file.remove(ui.file_menu)
     del bpy.types.Scene.BIMProjectProperties
+
     wm = bpy.context.window_manager
     kc = wm.keyconfigs.addon
     if kc:

@@ -40,6 +40,18 @@ from mathutils import Vector, Matrix, Euler
 from math import radians
 
 
+class SwitchTab(bpy.types.Operator):
+    bl_idname = "bim.switch_tab"
+    bl_label = "Switch Tab"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Switches to the last used tab"
+
+    def execute(self, context):
+        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+        aprops.tab = aprops.alt_tab
+        return {"FINISHED"}
+
+
 class OpenUri(bpy.types.Operator):
     bl_idname = "bim.open_uri"
     bl_label = "Open URI"
