@@ -25,8 +25,6 @@ import math
 
 import numpy as np
 
-from ifcopenshell.alignment import AlignmentHorizontalSegmentTypeEnum
-
 
 def rotate_points(coords: tuple, angle: float) -> np.ndarray:
     """
@@ -44,12 +42,32 @@ def rotate_points(coords: tuple, angle: float) -> np.ndarray:
     return np.array([x, y]) @ rot_mat
 
 
+def segment_radius(segment) -> float:
+    """
+    Determine the radius to be used for calculation
+    """
+    if segment.StartRadiusOfCurvature == 0:
+        R = abs(segment.EndRadiusOfCurvature)
+    elif segment.EndRadiusOfCurvature == 0:
+        R = abs(segment.StartRadiusOfCurvature)
+
+    try:
+        R
+    except UnboundLocalError:
+        if segment.EndRadiusOfCurvature < segment.StartRadiusOfCurvature:
+            R = abs(segment.EndRadiusOfCurvature)
+        else:
+            R = abs(segment.StartRadiusOfCurvature)
+
+    return R
+
+
 def point_on_LINE(segment, u: float) -> np.ndarray:
     """
     2D point at distance u along a LINE segment
 
     @param segment: IfcAlignmentHorizontalSegment containing the point
-    @type segment: ifcopenshell.alignment.AlignmentHorizontalSegment
+    @type segment: ifcopenshell.ifcgeom.AlignmentHorizontalSegment
     """
     return np.array(
         [
@@ -58,6 +76,16 @@ def point_on_LINE(segment, u: float) -> np.ndarray:
             np.nan,
         ]
     )
+
+
+def direction_on_LINE(segment, u: float) -> float:
+    """
+    tangent direction at distance u along a LINE segment
+
+    @param segment: IfcAlignmentHorizontalSegment at distance u
+    @type segment: ifcopenshell.ifcgeom.AlignmentHorizontalSegment
+    """
+    return segment.StartDirection
 
 
 def point_on_CIRCULARARC(segment, u: float) -> np.ndarray:
@@ -70,7 +98,7 @@ def point_on_CIRCULARARC(segment, u: float) -> np.ndarray:
     # calc local point on circle with forward tangent of start point
     # on positive x-axis
 
-    R = abs(segment.StartRadiusOfCurvature)
+    R = segment_radius(segment)
     x = R * math.cos(u / R)
     y = R * math.sin(u / R)
 
@@ -86,6 +114,20 @@ def point_on_CIRCULARARC(segment, u: float) -> np.ndarray:
     rotated = rotate_points(coords=(x, y), angle=rot_angle)
 
     return np.array([rotated[0], rotated[1], np.nan])
+
+
+def direction_on_CIRCULARARC(segment, u: float) -> float:
+    """
+    tangent direction at distance u along a CIRCULARARC segment
+
+    @param segment: IfcAlignmentHorizontalSegment at distance u
+    @type segment: ifcopenshell.ifcgeom.AlignmentHorizontalSegment
+    """
+    delta = segment.end_direction - segment.StartDirection
+    slope = delta / segment.SegmentLength
+    direction = slope * u + segment.StartDirection
+
+    return direction
 
 
 def point_on_HELMERTCURVE(segment, u: float) -> np.array:
@@ -117,6 +159,18 @@ def point_on_HELMERTCURVE(segment, u: float) -> np.array:
     return np.array([x, y, np.NaN], dtype="float64")
 
 
+def direction_on_HELMERTCURVE(segment, u: float) -> float:
+    """
+    tangent direction at distance u along a HELMERTCURVE segment
+
+    @param segment: IfcAlignmentHorizontalSegment at distance u
+    @type segment: ifcopenshell.ifcgeom.AlignmentHorizontalSegment
+    """
+
+    #TODO
+    return np.nan
+
+
 def point_on_BLOSSCURVE(segment, u: float) -> np.ndarray:
     """
     2D point at distance u along a BLOSSCURVE segment
@@ -125,12 +179,8 @@ def point_on_BLOSSCURVE(segment, u: float) -> np.ndarray:
     @param segment: IfcAlignmentHorizontalSegment containing the point
     @type segment: ifcopenshell.alignment.AlignmentHorizontalSegment
     """
-    from scipy import integrate
 
-    if segment.StartRadiusOfCurvature == 0:
-        R = abs(segment.EndRadiusOfCurvature)
-    else:
-        R = abs(segment.StartRadiusOfCurvature)
+    R = segment_radius(segment)
     L = abs(segment.SegmentLength)
 
     def theta(u, L, R):
@@ -144,6 +194,7 @@ def point_on_BLOSSCURVE(segment, u: float) -> np.ndarray:
     def fy(u):
         return math.sin(theta(u, L, R))
 
+    # from scipy import integrate
     # x = integrate.quad(fx, 0, u)[0]
     # y = integrate.quad(fy, 0, u)[0]
 
@@ -195,6 +246,17 @@ def point_on_BLOSSCURVE(segment, u: float) -> np.ndarray:
     return np.array([x, y, np.NaN], dtype="float64")
 
 
+def direction_on_BLOSSCURVE(segment, u: float) -> np.ndarray:
+    """
+    tangent direction at distance u along a BLOSSCURVE segment
+    Ref: https://pwayblog.com/2017/05/15/bloss-rectangular-coordinates/
+
+    @param segment: IfcAlignmentHorizontalSegment containing the point
+    @type segment: ifcopenshell.ifcgeom.AlignmentHorizontalSegment
+    """
+    return np.nan
+
+
 def local_point_on_CLOTHOID(segment, u: float) -> np.ndarray:
     """
     2D point at distance u along a CLOTHOID segment with specific parameters:
@@ -206,19 +268,7 @@ def local_point_on_CLOTHOID(segment, u: float) -> np.ndarray:
     @type segment: ifcopenshell.alignment.AlignmentHorizontalSegment
     """
     L = segment.SegmentLength
-    if segment.StartRadiusOfCurvature == 0:
-        R = abs(segment.EndRadiusOfCurvature)
-    elif segment.EndRadiusOfCurvature == 0:
-        R = abs(segment.StartRadiusOfCurvature)
-
-    try:
-        R
-    except UnboundLocalError:
-        if segment.EndRadiusOfCurvature < segment.StartRadiusOfCurvature:
-            R = abs(segment.EndRadiusOfCurvature)
-        else:
-            R = abs(segment.StartRadiusOfCurvature)
-
+    R = segment_radius(segment)
     RL = R * L
 
     xterm_1 = u
@@ -297,8 +347,19 @@ def point_on_CLOTHOID(segment, u: float) -> np.ndarray:
 
     rotated = rotate_points(coords=(x, y), angle=rot_angle)
 
-    # return np.array([x, y, np.nan])
     return np.array([rotated[0], rotated[1], np.nan])
+
+
+def direction_on_CLOTHOID(segment, u: float) -> float:
+    """
+    tangent direction at distance u along a CLOTHOID segment
+
+    @param segment: IfcAlignmentHorizontalSegment at distance u
+    @type segment: ifcopenshell.ifcgeom.AlignmentHorizontalSegment
+    """
+    # TODO
+
+    return np.nan
 
 
 def point_on_COSINECURVE(segment, u: float) -> np.ndarray:
@@ -310,10 +371,7 @@ def point_on_COSINECURVE(segment, u: float) -> np.ndarray:
     """
 
     ccw = segment.is_CCW
-    if segment.StartRadiusOfCurvature == 0:
-        R = abs(segment.EndRadiusOfCurvature)
-    else:
-        R = abs(segment.StartRadiusOfCurvature)
+    R = segment_radius(segment)
     L = segment.SegmentLength
 
     pi = math.pi
@@ -369,6 +427,18 @@ def point_on_COSINECURVE(segment, u: float) -> np.ndarray:
     return np.array([x, y, np.NaN], dtype="float64")
 
 
+def direction_on_COSINECURVE(segment, u: float) -> float:
+    """
+    tangent direction at distance u along a COSINECURVE segment
+
+    @param segment: IfcAlignmentHorizontalSegment at distance u
+    @type segment: ifcopenshell.ifcgeom.AlignmentHorizontalSegment
+    """
+    # TODO
+
+    return np.nan
+
+
 def point_on_CUBIC(segment, u: float) -> np.ndarray:
     """
     2D point at distance u along a CUBIC segment
@@ -377,7 +447,7 @@ def point_on_CUBIC(segment, u: float) -> np.ndarray:
     @type segment: ifcopenshell.alignment.AlignmentHorizontalSegment
     """
     ccw = segment.is_CCW
-    R = abs(R)
+    R = segment_radius(segment)
     L = segment.SegmentLength
 
     x = u
@@ -386,6 +456,18 @@ def point_on_CUBIC(segment, u: float) -> np.ndarray:
         y = -y
 
     return np.array([x, y, np.NaN], dtype="float64")
+
+
+def direction_on_CUBIC(segment, u: float) -> float:
+    """
+    tangent direction at distance u along a CUBIC segment
+
+    @param segment: IfcAlignmentHorizontalSegment at distance u
+    @type segment: ifcopenshell.ifcgeom.AlignmentHorizontalSegment
+    """
+    # TODO
+
+    return np.nan
 
 
 def point_on_SINECURVE(segment, u: float) -> np.ndarray:
@@ -398,7 +480,7 @@ def point_on_SINECURVE(segment, u: float) -> np.ndarray:
     from scipy import integrate
 
     ccw = segment.is_CCW
-    R = abs(segment.StartRadiusOfCurvature)
+    R = segment_radius(segment)
     L = segment.SegmentLength
 
     # TODO
@@ -438,3 +520,15 @@ def point_on_SINECURVE(segment, u: float) -> np.ndarray:
         y = -y
 
     return np.array([x, y, np.NaN], dtype="float64")
+
+
+def direction_on_SINECURVE(segment, u: float) -> float:
+    """
+    tangent direction at distance u along a SINECURVE segment
+
+    @param segment: IfcAlignmentHorizontalSegment at distance u
+    @type segment: ifcopenshell.ifcgeom.AlignmentHorizontalSegment
+    """
+    # TODO
+
+    return np.nan
