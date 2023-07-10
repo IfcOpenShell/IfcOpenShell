@@ -27,7 +27,7 @@ from pathlib import Path
 def refresh():
     ProductAssignmentsData.is_loaded = False
     SheetsData.is_loaded = False
-    SchedulesData.is_loaded = False
+    DocumentsData.is_loaded = False
     DrawingsData.is_loaded = False
     AnnotationData.is_loaded = False
     DecoratorData.data = {}
@@ -103,6 +103,7 @@ class DrawingsData:
             "has_saved_ifc": cls.has_saved_ifc(),
             "total_drawings": cls.total_drawings(),
             "location_hint": cls.location_hint(),
+            "active_drawing_pset_data": cls.active_drawing_pset_data(),
         }
         cls.is_loaded = True
 
@@ -124,14 +125,28 @@ class DrawingsData:
             return results
         return [(h.upper(), h, "") for h in ["North", "South", "East", "West"]]
 
+    @classmethod
+    def active_drawing_pset_data(cls):
+        ifc_file = tool.Ifc.get()
+        drawing_id = bpy.context.scene.DocProperties.active_drawing_id
+        if drawing_id == 0:
+            return {}
+        drawing = ifc_file.by_id(bpy.context.scene.DocProperties.active_drawing_id)
+        return ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing")
 
-class SchedulesData:
+
+class DocumentsData:
     data = {}
     is_loaded = False
 
     @classmethod
     def load(cls):
-        cls.data = {"has_saved_ifc": cls.has_saved_ifc(), "total_schedules": cls.total_schedules()}
+        documents = cls.count_documents()
+        cls.data = {
+            "has_saved_ifc": cls.has_saved_ifc(),
+            "total_schedules": documents["SCHEDULE"],
+            "total_references": documents["REFERENCE"],
+        }
         cls.is_loaded = True
 
     @classmethod
@@ -139,8 +154,16 @@ class SchedulesData:
         return os.path.isfile(tool.Ifc.get_path())
 
     @classmethod
-    def total_schedules(cls):
-        return len([d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "SCHEDULE"])
+    def count_documents(cls):
+        documents = {
+            "SCHEDULE": 0,
+            "REFERENCE": 0,
+        }
+        for d in tool.Ifc.get().by_type("IfcDocumentInformation"):
+            scope = d.Scope
+            documents[scope] = documents.get(scope, 0) + 1
+
+        return documents
 
 
 FONT_SIZES = {
@@ -232,14 +255,12 @@ class DecoratorData:
         # use `regular` as default
 
         # get font size
-        if classes := pset_data.get("Classes", None):
-            classes_split = classes.split()
-            # prioritize smaller font sizes just like in svg
-            font_size_type = next(
-                (font_size_type for font_size_type in FONT_SIZES if font_size_type in classes_split), "regular"
-            )
-        else:
-            font_size_type = "regular"
+        classes = pset_data.get("Classes", None) or "regular"
+        classes_split = classes.split()
+        # prioritize smaller font sizes just like in svg
+        font_size_type = next(
+            (font_size_type for font_size_type in FONT_SIZES if font_size_type in classes_split), "regular"
+        )
         font_size = FONT_SIZES[font_size_type]
 
         # get symbol
@@ -279,9 +300,14 @@ class DecoratorData:
             return None
 
         dimension_style = "arrow"
+        fill_bg = False
         classes = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Classes")
-        if classes and "oblique" in classes.lower().split():
-            dimension_style = "oblique"
+        if classes:
+            classes_split = classes.lower().split()
+            if "oblique" in classes_split:
+                dimension_style = "oblique"
+            elif "fill-bg" in classes_split:
+                fill_bg = True
 
         pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Dimension") or {}
         show_description_only = pset_data.get("ShowDescriptionOnly", False)
@@ -295,6 +321,7 @@ class DecoratorData:
             "suppress_zero_inches": suppress_zero_inches,
             "text_prefix": text_prefix,
             "text_suffix": text_suffix,
+            "fill_bg": fill_bg,
         }
         cls.data[obj.name] = dimension_data
         return dimension_data
@@ -308,18 +335,31 @@ class AnnotationData:
     def load(cls):
         cls.is_loaded = True
         cls.props = bpy.context.scene.BIMAnnotationProperties
-        cls.data["relating_types"] = cls.get_relating_types()
+        cls.data["relating_type_id"] = cls.relating_type_id()
+        cls.data["relating_types"] = cls.relating_types()
 
     @classmethod
-    def get_relating_types(cls):
+    def relating_type_id(cls):
         object_type = cls.props.object_type
         relating_types = []
         for relating_type in tool.Ifc.get().by_type("IfcTypeProduct"):
             if tool.Drawing.is_annotation_object_type(relating_type, object_type):
                 relating_types.append(relating_type)
 
-        enum_items = [(str(e.id()), e.Name or "Unnamed", e.Description or "") for e in relating_types]
+        results = [("0", "Untyped", "")]
+        results.extend([(str(e.id()), e.Name or "Unnamed", e.Description or "") for e in relating_types])
+        return results
 
-        # item to create anootations without relating types
-        enum_items.insert(0, ("0", "-", ""))
-        return enum_items
+    @classmethod
+    def relating_types(cls):
+        object_type = cls.props.object_type
+        relating_types = []
+        for relating_type in tool.Ifc.get().by_type("IfcTypeProduct"):
+            if tool.Drawing.is_annotation_object_type(relating_type, object_type):
+                relating_types.append({
+                    "id": relating_type.id(),
+                    "name": relating_type.Name or "Unnamed",
+                    "description": relating_type.Description or "No Description",
+                })
+
+        return sorted(relating_types, key=lambda x: x["name"])

@@ -86,9 +86,10 @@ class EnableEditingArray(bpy.types.Operator, tool.Ifc.Operator):
         data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Array", "Data"))[self.item]
         props = obj.BIMArrayProperties
         props.count = data["count"]
-        props.x = data["x"]
-        props.y = data["y"]
-        props.z = data["z"]
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        props.x = data["x"] * si_conversion
+        props.y = data["y"] * si_conversion
+        props.z = data["z"] * si_conversion
         props.use_local_space = data.get("use_local_space", False)
         props.sync_children = data.get("sync_children", False)
         props.method = data.get("method", "OFFSET")
@@ -106,15 +107,16 @@ class EditArray(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMArrayProperties
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
         pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
         data = json.loads(pset["Data"])
         data[self.item] = {
             "children": data[self.item]["children"],
             "count": props.count,
-            "x": props.x,
-            "y": props.y,
-            "z": props.z,
+            "x": props.x / si_conversion,
+            "y": props.y / si_conversion,
+            "z": props.z / si_conversion,
             "use_local_space": props.use_local_space,
             "sync_children": props.sync_children,
             "method": props.method,
@@ -140,6 +142,7 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Remove Array"
     bl_options = {"REGISTER", "UNDO"}
     item: bpy.props.IntProperty()
+    keep_objs: bpy.props.BoolProperty(name="Keep Objects", default=False)
 
     def _execute(self, context):
         obj = context.active_object
@@ -149,6 +152,10 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
         pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
         data = json.loads(pset["Data"])
         data[self.item]["count"] = 1
+        
+        if (self.keep_objs) & (self.item < (len(data) - 1)):
+            self.report({"INFO"}, "Keeping the objects is only allowed when you are removing the last Array of the object")
+            return {"FINISHED"}
 
         props.is_editing = -1
 
@@ -157,7 +164,7 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
         except:
             return {"FINISHED"}
 
-        tool.Model.regenerate_array(parent, data)
+        tool.Model.regenerate_array(parent, data, self.keep_objs)
 
         pset = tool.Ifc.get().by_id(pset["id"])
         if len(data) == 1:
@@ -168,6 +175,13 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
             ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
 
         return {"FINISHED"}
+
+    def draw(self, context):
+        row = self.layout.row()
+        row.prop(self, "keep_objs")
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
 
 
 class SelectArrayParent(bpy.types.Operator):
@@ -187,6 +201,7 @@ class SelectArrayParent(bpy.types.Operator):
             obj.select_set(True)
         return {"FINISHED"}
 
+
 class Input3DCursorXArray(bpy.types.Operator):
     bl_idname = "bim.input_cursor_x_array"
     bl_label = "Get 3d Cursor X Input for Array"
@@ -202,6 +217,7 @@ class Input3DCursorXArray(bpy.types.Operator):
             props.x = cursor.location.x - obj.location.x
         return {"FINISHED"}
 
+
 class Input3DCursorYArray(bpy.types.Operator):
     bl_idname = "bim.input_cursor_y_array"
     bl_label = "Get 3d Cursor Y Input for Array"
@@ -216,6 +232,7 @@ class Input3DCursorYArray(bpy.types.Operator):
         else:
             props.y = cursor.location.y - obj.location.y
         return {"FINISHED"}
+
 
 class Input3DCursorZArray(bpy.types.Operator):
     bl_idname = "bim.input_cursor_z_array"

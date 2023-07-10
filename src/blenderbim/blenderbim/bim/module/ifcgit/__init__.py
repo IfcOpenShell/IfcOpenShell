@@ -21,13 +21,20 @@ from . import ui, prop, operator
 
 classes = (
     operator.AddFileToRepo,
+    operator.AddRemote,
     operator.AddTag,
+    operator.CloneRepo,
     operator.CommitChanges,
     operator.CreateRepo,
+    operator.DeleteRemote,
+    operator.DeleteTag,
     operator.DiscardUncommitted,
     operator.DisplayRevision,
     operator.DisplayUncommitted,
+    operator.Fetch,
     operator.Merge,
+    operator.ObjectLog,
+    operator.Push,
     operator.RefreshGit,
     operator.SwitchRevision,
     prop.IfcGitTag,
@@ -35,6 +42,7 @@ classes = (
     prop.IfcGitProperties,
     ui.IFCGIT_PT_panel,
     ui.COMMIT_UL_List,
+    ui.IFCGIT_PT_revision_inspector,
 )
 
 

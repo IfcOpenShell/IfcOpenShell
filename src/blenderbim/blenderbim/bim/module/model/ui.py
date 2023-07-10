@@ -70,10 +70,7 @@ class LaunchTypeManager(bpy.types.Operator):
 
         row = columns.row(align=True)
         row.alignment = "CENTER"
-        row.prop(props, "type_predefined_type", text="")
-        row.prop(props, "type_template", text="")
-        row.prop(props, "type_name", text="")
-        row.operator("bim.add_type", icon="ADD", text="")
+        # In case you want something here in the future
 
         row = columns.row(align=True)
         row.alignment = "RIGHT"
@@ -85,6 +82,22 @@ class LaunchTypeManager(bpy.types.Operator):
         if AuthoringData.data["next_page"]:
             op = row.operator("bim.change_type_page", icon="TRIA_RIGHT", text="")
             op.page = AuthoringData.data["next_page"]
+
+        if props.is_adding_type:
+            row = self.layout.row()
+            box = row.box()
+            row = box.row()
+            row.prop(props, "type_predefined_type")
+            row = box.row()
+            row.prop(props, "type_template")
+            row = box.row()
+            row.prop(props, "type_name")
+            row = box.row(align=True)
+            row.operator("bim.add_type", icon="CHECKMARK", text="Save New Type")
+            row.operator("bim.disable_add_type", icon="CANCEL", text="")
+        else:
+            row = self.layout.row()
+            row.operator("bim.enable_add_type", icon="ADD", text="Create New Type")
 
         flow = self.layout.grid_flow(row_major=True, columns=3, even_columns=True, even_rows=True, align=True)
 
@@ -117,7 +130,7 @@ class LaunchTypeManager(bpy.types.Operator):
 
             op = row.operator("bim.select_type", icon="OBJECT_DATA", text="")
             op.relating_type = relating_type["id"]
-            op = row.operator("bim.duplicate_type", icon="COPYDOWN", text="")
+            op = row.operator("bim.duplicate_type", icon="DUPLICATE", text="")
             op.element = relating_type["id"]
             op = row.operator("bim.remove_type", icon="X", text="")
             op.element = relating_type["id"]
@@ -135,6 +148,22 @@ class BIM_PT_authoring(Panel):
         row.operator("bim.generate_space")
         row = self.layout.row(align=True)
         row.operator("bim.generate_spaces_from_walls")
+        row = self.layout.row(align=True)
+        row.operator("bim.toggle_space_visibility")
+
+
+class BIM_PT_Grids(Panel):
+    bl_label = "Grids"
+    bl_idname = "BIM_PT_Grids"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_category = "BlenderBIM"
+
+    def draw(self, context):
+        self.animation_props = context.scene.BIMAnimationProperties
+        row = self.layout.row()
+        row.operator("mesh.add_grid", icon="ADD", text="Add Grids")
 
 
 class BIM_PT_array(bpy.types.Panel):
@@ -532,6 +561,11 @@ class BIM_PT_railing(bpy.types.Panel):
 
                 general_props = props.get_general_kwargs()
                 for prop in general_props:
+                    if prop == "support_spacing" and props.use_manual_supports:
+                        row = self.layout.row()
+                        row.prop(props, prop)
+                        row.active = False
+                        continue
                     self.layout.prop(props, prop)
 
                 update_railing_modifier_bmesh(context)
@@ -614,7 +648,7 @@ class BIM_PT_roof(bpy.types.Panel):
                     prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
                     row = box.row(align=True)
                     row.label(text=f"{props.bl_rna.properties[prop].name}")
-                    if prop == "angle":
+                    if prop in ("angle", "rafter_edge_angle"):
                         prop_value = round(degrees(prop_value), 2)
                     row.label(text=str(prop_value))
         else:

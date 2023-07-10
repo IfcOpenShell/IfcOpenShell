@@ -7,7 +7,7 @@ from bpy.props import (
     IntProperty,
     EnumProperty,
 )
-from blenderbim.bim.module.ifcgit.data import IfcGitData, refresh
+from blenderbim.bim.module.ifcgit.data import IfcGitData
 
 
 def git_branches(self, context):
@@ -21,7 +21,24 @@ def git_branches(self, context):
         IfcGitData.data["branch_names"].remove("main")
         IfcGitData.data["branch_names"] = ["main"] + IfcGitData.data["branch_names"]
 
+    if IfcGitData.data["remotes"]:
+        for remote in IfcGitData.data["remotes"]:
+            for remote_branch in remote.refs:
+                IfcGitData.data["branch_names"].append(remote_branch.name)
+
     return [(myname, myname, myname) for myname in IfcGitData.data["branch_names"]]
+
+
+def git_remotes(self, context):
+    """remotes enum"""
+
+    IfcGitData.data["remote_names"] = sorted([remote.name for remote in IfcGitData.data["remotes"]])
+
+    if "origin" in IfcGitData.data["remote_names"]:
+        IfcGitData.data["remote_names"].remove("origin")
+        IfcGitData.data["remote_names"] = ["origin"] + IfcGitData.data["remote_names"]
+
+    return [(myname, myname, myname) for myname in IfcGitData.data["remote_names"]]
 
 
 def update_revlist(self, context):
@@ -97,7 +114,24 @@ class IfcGitProperties(PropertyGroup):
         description="An optional human readable description of this tag",
         default="",
     )
+    remote_name: StringProperty(
+        name="New remote name",
+        description="A local name for a remote Git repository",
+        default="",
+    )
+    remote_url: StringProperty(
+        name="Git URL",
+        description="A URL pointing to a Git repository",
+        default="",
+    )
+    local_folder: StringProperty(
+        name="Local folder",
+        description="A local Git repository path",
+        default="",
+        subtype="DIR_PATH",
+    )
     display_branch: EnumProperty(items=git_branches, update=update_revlist)
+    select_remote: EnumProperty(items=git_remotes)
     ifcgit_filter: EnumProperty(
         items=[
             ("all", "All", "All revisions"),

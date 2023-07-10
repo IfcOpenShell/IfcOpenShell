@@ -30,10 +30,10 @@ import ifcopenshell.util.date
 
 class IfcDataGetter:
     @staticmethod
-    def get_schedules(file):
-        if not file:
-            return None
-        return file.by_type("IfcCostSchedule")
+    def get_schedules(file, filter_by_schedule=None):
+        return [
+            schedule for schedule in file.by_type("IfcCostSchedule") if not filter_by_schedule or schedule == filter_by_schedule
+        ]
 
     @staticmethod
     def canonicalise_time(time):
@@ -195,12 +195,13 @@ class IfcDataGetter:
 
 
 class Ifc5Dwriter:
-    def __init__(self, file=None, output=None):
+    def __init__(self, file=None, output=None, cost_schedule=None):
         self.output = output
         if isinstance(file, str):
             self.file = ifcopenshell.open(file)
         else:
             self.file = file
+        self.cost_schedule = cost_schedule
         self.cost_schedules = []
         self.sheet_data = {}
         self.column_indexes = []
@@ -264,7 +265,7 @@ class Ifc5Dwriter:
             return "{}{}".format(self.column_indexes[attribute], self.row_count)
 
     def write(self):
-        self.cost_schedules = IfcDataGetter.get_schedules(self.file)
+        self.cost_schedules = IfcDataGetter.get_schedules(self.file, self.cost_schedule)
         self.sheet_data = {}
         self.parse()
 
@@ -306,10 +307,14 @@ class Ifc5DOdsWriter(Ifc5Dwriter):
         ns1.addElement(Number(decimalplaces="2", minintegerdigits="1", grouping="true"))
         self.doc.styles.addElement(ns1)
 
+        file_name = ""
         for cost_schedule in self.cost_schedules:
+            if file_name:
+                file_name += "_" + cost_schedule.Name or ""
+            else:
+                file_name += cost_schedule.Name or ""
             self.write_table(cost_schedule)
-
-        self.doc.save(self.output, True)
+        self.doc.save(os.path.join(self.output, file_name), True)
 
     def write_table(self, cost_schedule):
         from odf.table import Table, TableRow, TableCell
@@ -403,8 +408,14 @@ class Ifc5DXlsxWriter(Ifc5Dwriter):
         import xlsxwriter
 
         super().write()
-
-        self.workbook = xlsxwriter.Workbook(self.output + ".xlsx")
+        file_name = ""
+        for cost_schedule in self.cost_schedules:
+            if file_name:
+                file_name += "_" + cost_schedule.Name or ""
+            else:
+                file_name += cost_schedule.Name or ""
+        self.file_path = os.path.join(self.output, "{}.xlsx".format(file_name))
+        self.workbook = xlsxwriter.Workbook(self.file_path)
         self.used_names = []
         for cost_schedule in self.cost_schedules:
             self.write_table(cost_schedule)

@@ -37,10 +37,22 @@ from . import prop
 import json
 
 
-def select_and_activate_single_object(context, obj):
-    bpy.ops.object.select_all(action="DESELECT")
-    context.view_layer.objects.active = obj
-    obj.select_set(True)
+class EnableAddType(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.enable_add_type"
+    bl_label = "Enable Add Type"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        bpy.context.scene.BIMModelProperties.is_adding_type = True
+
+
+class DisableAddType(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.disable_add_type"
+    bl_label = "Disable Add Type"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        bpy.context.scene.BIMModelProperties.is_adding_type = False
 
 
 class AddEmptyType(bpy.types.Operator, AddObjectHelper):
@@ -52,7 +64,7 @@ class AddEmptyType(bpy.types.Operator, AddObjectHelper):
         obj = bpy.data.objects.new("TYPEX", None)
         context.scene.collection.objects.link(obj)
         context.scene.BIMRootProperties.ifc_product = "IfcElementType"
-        select_and_activate_single_object(context, obj)
+        tool.Blender.select_and_activate_single_object(context, obj)
         return {"FINISHED"}
 
 
@@ -97,7 +109,7 @@ class AddConstrTypeInstance(bpy.types.Operator):
                 return {"FINISHED"}
         elif material and material.is_a("IfcMaterialLayerSet"):
             if self.generate_layered_element(ifc_class, relating_type):
-                select_and_activate_single_object(context, context.selected_objects[-1])
+                tool.Blender.select_and_activate_single_object(context, context.selected_objects[-1])
                 return {"FINISHED"}
         if relating_type.is_a("IfcFlowSegmentType") and not relating_type.RepresentationMaps:
             if mep.MepGenerator(relating_type).generate():
@@ -133,9 +145,10 @@ class AddConstrTypeInstance(bpy.types.Operator):
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(relating_type, instance_class), mesh)
 
         obj.location = context.scene.cursor.location
+
         collection = context.view_layer.active_layer_collection.collection
         collection.objects.link(obj)
-        collection_obj = bpy.data.objects.get(collection.name)
+        collection_obj = collection.BIMCollectionProperties.obj
 
         bpy.ops.bim.assign_class(obj=obj.name, ifc_class=instance_class)
         element = tool.Ifc.get_entity(obj)
@@ -143,6 +156,27 @@ class AddConstrTypeInstance(bpy.types.Operator):
 
         # Update required as core.type.assign_type may change obj.data
         context.view_layer.update()
+
+        if (
+            building_obj
+            and building_element
+            and building_element.is_a() in ["IfcWall", "IfcWallStandardCase", "IfcCovering"]
+            and instance_class in ["IfcWindow", "IfcDoor"]
+        ):
+            # Fills should be a sibling to the building element
+            parent = ifcopenshell.util.element.get_aggregate(building_element)
+            if parent:
+                parent_obj = tool.Ifc.get_object(parent)
+                blenderbim.core.aggregate.assign_object(
+                    tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=parent_obj, related_obj=obj
+                )
+            else:
+                parent = ifcopenshell.util.element.get_container(building_element)
+                if parent:
+                    parent_obj = tool.Ifc.get_object(parent)
+                    blenderbim.core.spatial.assign_container(
+                        tool.Ifc, tool.Collector, tool.Spatial, structure_obj=parent_obj, element_obj=obj
+                    )
 
         # set occurences properties for the types defined with modifiers
         if instance_class in ["IfcWindow", "IfcDoor"]:
@@ -179,7 +213,7 @@ class AddConstrTypeInstance(bpy.types.Operator):
         if ifc_class == "IfcDoorType" and len(context.selected_objects) >= 1:
             pass
         else:
-            select_and_activate_single_object(context, obj)
+            tool.Blender.select_and_activate_single_object(context, obj)
         return {"FINISHED"}
 
     @staticmethod
@@ -277,8 +311,6 @@ class LoadTypeThumbnails(bpy.types.Operator, tool.Ifc.Operator):
     offset: bpy.props.IntProperty()
 
     def _execute(self, context):
-        from PIL import Image, ImageDraw
-
         if bpy.app.background:
             return
 
@@ -295,106 +327,11 @@ class LoadTypeThumbnails(bpy.types.Operator, tool.Ifc.Operator):
                 offset = 0
             queue = queue[offset : offset + 9]
 
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-
         while queue:
             # if bpy.app.is_job_running("RENDER_PREVIEW") does not seem to reflect asset preview generation
             element = queue.pop()
-            obj = tool.Ifc.get_object(element)
-
-            if not obj:
-                continue  # Nothing to process
-            elif AuthoringData.type_thumbnails.get(element.id(), None):
-                continue  # Already processed
-            elif obj.preview and obj.preview.icon_id:
-                AuthoringData.type_thumbnails[element.id()] = obj.preview.icon_id
-                continue
-
-            if obj.data:
-                obj.asset_generate_preview()
-                while not obj.preview:
-                    pass
-            else:
-                size = 128
-                img = Image.new("RGBA", (size, size))
-                draw = ImageDraw.Draw(img)
-
-                material = ifcopenshell.util.element.get_material(element)
-                if material and material.is_a("IfcMaterialProfileSet"):
-                    profile = material.MaterialProfiles[0].Profile
-                    tool.Profile.draw_image_for_ifc_profile(draw, profile, size)
-
-                elif material and material.is_a("IfcMaterialLayerSet"):
-                    thicknesses = [l.LayerThickness for l in material.MaterialLayers]
-                    total_thickness = sum(thicknesses)
-                    si_total_thickness = total_thickness * unit_scale
-                    if si_total_thickness <= 0.051:
-                        width = 10
-                    elif si_total_thickness <= 0.11:
-                        width = 20
-                    elif si_total_thickness <= 0.21:
-                        width = 30
-                    elif si_total_thickness <= 0.31:
-                        width = 40
-                    else:
-                        width = 50
-
-                    height = 100
-
-                    is_horizontal = False
-                    if element.is_a("IfcSlabType"):
-                        is_horizontal = True
-
-                    parametric = ifcopenshell.util.element.get_psets(element).get("EPset_Parametric")
-                    if parametric:
-                        layer_set_direction = parametric.get("LayerSetDirection", None)
-                        if layer_set_direction == "AXIS2":
-                            is_horizontal = False
-                        elif layer_set_direction == "AXIS3":
-                            is_horizontal = True
-
-                    if is_horizontal:
-                        width, height = height, width
-
-                    x_offset = (size / 2) - (width / 2)
-                    y_offset = (size / 2) - (height / 2)
-                    draw.rectangle([x_offset, y_offset, width + x_offset, height + y_offset], outline="white", width=5)
-                    current_thickness = 0
-                    del thicknesses[-1]
-                    for thickness in thicknesses:
-                        current_thickness += thickness
-                        if element.is_a("IfcSlabType"):
-                            y = (current_thickness / total_thickness) * height
-                            line = [x_offset, y_offset + y, x_offset + width, y_offset + y]
-                        else:
-                            x = (current_thickness / total_thickness) * width
-                            line = [x_offset + x, y_offset, x_offset + x, y_offset + height]
-                        draw.line(line, fill="white", width=2)
-                elif False:
-                    # TODO: things like parametric duct segments
-                    pass
-                elif not element.RepresentationMaps:
-                    # Empties are represented by a generic thumbnail
-                    width = height = 100
-                    x_offset = (size / 2) - (width / 2)
-                    y_offset = (size / 2) - (height / 2)
-                    draw.line([x_offset, y_offset, width + x_offset, height + y_offset], fill="white", width=2)
-                    draw.line([x_offset, y_offset + height, width + x_offset, y_offset], fill="white", width=2)
-                    draw.rectangle([x_offset, y_offset, width + x_offset, height + y_offset], outline="white", width=5)
-                else:
-                    draw.line([0, 0, size, size], fill="red", width=2)
-                    draw.line([0, size, size, 0], fill="red", width=2)
-
-                pixels = [item for sublist in img.getdata() for item in sublist]
-
-                obj.asset_generate_preview()
-                while not obj.preview:
-                    pass
-
-                obj.preview.image_size = size, size
-                obj.preview.image_pixels_float = pixels
-
-            queue.append(element)
+            if tool.Model.update_thumbnail_for_element(element):
+                queue.append(element)
         return {"FINISHED"}
 
 
@@ -455,12 +392,6 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
             newmat.col[3][0:3] = Vector(newmat.col[3][0:3]) - (newmat.to_quaternion() @ centroid)
 
             obj.matrix_world = newmat
-
-    def copy_obj(self, obj):
-        new = obj.copy()
-        new.data = wall2.data.copy()
-        wall1.users_collection[0].objects.link(wall2)
-        blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=wall2)
 
 
 def generate_box(usecase_path, ifc_file, settings):

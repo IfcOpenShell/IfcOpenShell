@@ -120,6 +120,13 @@ class EnablePsetEditing(bpy.types.Operator):
                 self.load_single_value(pset_template, prop_template, data)
             elif prop_template.TemplateType == "P_ENUMERATEDVALUE":
                 self.load_enumerated_value(prop_template, data)
+            else:
+                # NOTE: currently unsupported types:
+                # - P_BOUNDEDVALUE
+                # - P_LISTVALUE
+                # - P_REFERENCEVALUE
+                # - P_TABLEVALUE
+                pass
 
     def load_single_value(self, pset_template, prop_template, data):
         prop = self.props.properties.add()
@@ -132,6 +139,18 @@ class EnablePsetEditing(bpy.types.Operator):
         metadata.is_uri = prop_template.PrimaryMeasureType == "IfcURIReference"
         metadata.has_calculator = bool(mapper.get(pset_template.Name, {}).get(prop_template.Name, None))
         metadata.data_type = self.get_data_type(prop_template)
+
+        special_type = ""
+        if prop_template.PrimaryMeasureType in (
+            "IfcPositiveLengthMeasure",
+            "IfcLengthMeasure",
+        ) or prop_template.TemplateType == "Q_LENGTH":
+            special_type = "LENGTH"
+        elif prop_template.PrimaryMeasureType == "IfcAreaMeasure" or prop_template.TemplateType == "Q_AREA":
+            special_type = "AREA"
+        elif prop_template.PrimaryMeasureType == "IfcVolumeMeasure" or prop_template.TemplateType == "Q_VOLUME":
+            special_type = "VOLUME"
+        metadata.special_type = special_type
 
         if metadata.data_type == "string":
             metadata.string_value = "" if metadata.is_null else str(data[prop_template.Name])
@@ -196,7 +215,7 @@ class EnablePsetEditing(bpy.types.Operator):
 
                 enum_items = [v.wrappedValue for v in prop.EnumerationReference.EnumerationValues]
                 selected_enum_items = [v.wrappedValue for v in prop.EnumerationValues]
-                data_type = metadata.get_value_name()
+                data_type = metadata.get_value_name(display_only=True)
 
                 for enum in enum_items:
                     new = simple_prop.enumerated_value.enumerated_values.add()
@@ -301,6 +320,52 @@ class EditPset(bpy.types.Operator, Operator):
         tool.Blender.update_viewport()
 
 
+class SelectSimilarPsetValue(bpy.types.Operator):
+    """
+    Selects objects with the same property value.
+    """
+    bl_idname = "bim.select_similar_pset_value"
+    bl_label = "Select Similar Pset Value"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Selects objects with the same property value.\n\n" + "ALT+CLICK to select from all pset common"
+    pset_name: bpy.props.StringProperty()
+    prop_name: bpy.props.StringProperty()
+    value: bpy.props.StringProperty()
+    all_pset_common: bpy.props.BoolProperty(name = "All Pset Common", default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        # make sure to use SKIP_SAVE on property, otherwise it might get stuck
+        if event.type == "LEFTMOUSE" and event.alt:
+            self.all_pset_common = True
+        return self.execute(context)
+    
+    def execute(self, context):
+        for element in tool.Ifc.get().by_type("IfcElement"):
+            try:
+                obj = tool.Ifc.get_object(element)
+                psets = ifcopenshell.util.element.get_psets(element)
+            except:
+                continue
+            
+            if self.all_pset_common & self.pset_name.endswith("Common"):
+                for key in psets.keys():
+                    if key.endswith("Common"):
+                        try:
+                            pset = psets[key]
+                            if str(pset[self.prop_name]) == self.value:
+                                obj.select_set(True)
+                        except:
+                            continue
+            else:
+                try: 
+                    pset = psets[self.pset_name]
+                    if str(pset[self.prop_name]) == self.value:
+                        obj.select_set(True)
+                except:
+                    continue
+        return {"FINISHED"}
+
+
 class RemovePset(bpy.types.Operator, Operator):
     bl_idname = "bim.remove_pset"
     bl_label = "Remove Pset"
@@ -352,7 +417,9 @@ class AddPset(bpy.types.Operator, Operator):
                 continue
             element = tool.Ifc.get().by_id(ifc_definition_id)
             if pset_name in blenderbim.bim.schema.ifc.psetqto.get_applicable_names(element.is_a(), pset_only=True):
-                bpy.ops.bim.enable_pset_editing(pset_id=0, pset_name=pset_name, pset_type="PSET", obj=obj, obj_type=self.obj_type)
+                bpy.ops.bim.enable_pset_editing(
+                    pset_id=0, pset_name=pset_name, pset_type="PSET", obj=obj, obj_type=self.obj_type
+                )
 
 
 class AddQto(bpy.types.Operator, Operator):
@@ -368,7 +435,9 @@ class AddQto(bpy.types.Operator, Operator):
         props = get_pset_props(context, self.obj, self.obj_type)
         ifc_definition_id = blenderbim.bim.helper.get_obj_ifc_definition_id(context, self.obj, self.obj_type)
         element = tool.Ifc.get().by_id(ifc_definition_id)
-        bpy.ops.bim.enable_pset_editing(pset_id=0, pset_name=props.qto_name, pset_type="QTO", obj=self.obj, obj_type=self.obj_type)
+        bpy.ops.bim.enable_pset_editing(
+            pset_id=0, pset_name=props.qto_name, pset_type="QTO", obj=self.obj, obj_type=self.obj_type
+        )
 
 
 class CalculateQuantity(bpy.types.Operator):

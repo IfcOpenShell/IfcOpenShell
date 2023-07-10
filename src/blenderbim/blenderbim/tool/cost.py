@@ -3,6 +3,7 @@ import bpy
 import blenderbim.tool as tool
 import ifcopenshell.util.date
 import ifcopenshell.util.cost
+import ifcopenshell.util.unit
 import blenderbim.bim.helper
 import json
 
@@ -95,11 +96,11 @@ class Cost(blenderbim.core.tool.Cost):
         props.contracted_cost_items = json.dumps(cls.contracted_cost_items)
 
     @classmethod
-    def contract_cost_item(cls, cost_item):
+    def contract_cost_item(cls, cost_item_id):
         props = bpy.context.scene.BIMCostProperties
         if not hasattr(cls, "contracted_cost_items"):
             cls.contracted_cost_items = json.loads(props.contracted_cost_items)
-        cls.contracted_cost_items.append(cost_item.id())
+        cls.contracted_cost_items.append(cost_item_id)
         props.contracted_cost_items = json.dumps(cls.contracted_cost_items)
 
     @classmethod
@@ -113,11 +114,11 @@ class Cost(blenderbim.core.tool.Cost):
         props.contracted_cost_items = json.dumps(cls.contracted_cost_items)
 
     @classmethod
-    def clean_up_cost_item_tree(cls, cost_item):
+    def clean_up_cost_item_tree(cls, cost_item_id):
         props = bpy.context.scene.BIMCostProperties
         if not hasattr(cls, "contracted_cost_items"):
             cls.contracted_cost_items = json.loads(props.contracted_cost_items)
-        if props.active_cost_item_id == cost_item.id():
+        if props.active_cost_item_id == cost_item_id:
             props.active_cost_item_id = 0
         if props.active_cost_item_index in cls.contracted_cost_items:
             cls.contracted_cost_items.remove(props.active_cost_item_index)
@@ -188,8 +189,9 @@ class Cost(blenderbim.core.tool.Cost):
                 new = collection.add()
                 new.ifc_definition_id = product.id()
                 new.name = product.Name or "Unnamed"
-                total_quantity = cls.calculate_parametric_quantity(cost_item, product)
-                new.total_quantity = total_quantity if total_quantity else 1
+                total_quantity, unit = cls.calculate_parametric_quantity(cost_item, product)
+                new.total_quantity = total_quantity or 0
+                new.unit_symbol = unit or ""
             if is_deep:
                 for cost_item in ifcopenshell.util.cost.get_nested_cost_items(cost_item, is_deep):
                     create_list_items(collection, cost_item, is_deep=False)
@@ -210,16 +212,21 @@ class Cost(blenderbim.core.tool.Cost):
 
     @classmethod
     def calculate_parametric_quantity(cls, cost_item=None, product=None):
-        if not cost_item.CostQuantities:
-            return
-        total_quantity = sum(
-            quantity[3]
-            for quantities in ifcopenshell.util.element.get_psets(product, qtos_only=True).values()
-            for qto in (tool.Ifc.get().by_id(quantities["id"]).Quantities or [])
-            for quantity in cost_item.CostQuantities
-            if quantity == qto
-        )
-        return total_quantity
+        quantities, unit = cls.get_assigned_quantities(cost_item, product)
+        return sum(quantity[3] for quantity in quantities), unit
+
+    @classmethod
+    def get_assigned_quantities(cls, cost_item, product):
+        selected_quantitites = []
+        unit = ""
+        for quantities in ifcopenshell.util.element.get_psets(product, qtos_only=True).values():
+            for qto in (tool.Ifc.get().by_id(quantities["id"]).Quantities or []):
+                for quantity in cost_item.CostQuantities:
+                    if quantity == qto:
+                        selected_quantitites.append(quantity)
+                        if not unit:
+                            unit = cls.get_quantity_unit_symbol(quantity)
+        return selected_quantitites, unit
 
     @classmethod
     def get_products(cls, related_object_type=None):
@@ -452,7 +459,7 @@ class Cost(blenderbim.core.tool.Cost):
         contracted_cost_item_rates = json.loads(props.contracted_cost_item_rates)
         contracted_cost_item_rates.remove(cost_item)
         props.contracted_cost_item_rates = json.dumps(contracted_cost_item_rates)
-        cls.load_schedule_of_rates(schedule_of_rates=tool.Ifc.get().by_id(int(props.schedule_of_rates)))
+        cls.load_schedule_of_rates_tree(schedule_of_rates=tool.Ifc.get().by_id(int(props.schedule_of_rates)))
 
     @classmethod
     def contract_cost_item_rate(cls, cost_item):
@@ -460,7 +467,7 @@ class Cost(blenderbim.core.tool.Cost):
         contracted_cost_item_rates = json.loads(props.contracted_cost_item_rates)
         contracted_cost_item_rates.append(cost_item)
         props.contracted_cost_item_rates = json.dumps(contracted_cost_item_rates)
-        cls.load_schedule_of_rates(schedule_of_rates=tool.Ifc.get().by_id(int(props.schedule_of_rates)))
+        cls.load_schedule_of_rates_tree(schedule_of_rates=tool.Ifc.get().by_id(int(props.schedule_of_rates)))
 
     @classmethod
     def create_new_cost_item_li(cls, props_collection, cost_item, level_index, type="cost_rate"):
@@ -498,25 +505,41 @@ class Cost(blenderbim.core.tool.Cost):
         props.is_cost_update_enabled = True
 
     @classmethod
-    def export_cost_schedules(cls, format=None):
-        path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "build", "cost_schedules")
+    def export_cost_schedules(cls, filepath, format=None, cost_schedule=None):
+        import subprocess
+        import os
+        import sys
+        if filepath:
+            path=filepath
+        else:
+            path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "build", "cost_schedules")
+
+        if not os.path.exists(path):
+            os.makedirs(path)
         if format == "CSV":
             from ifc5d.ifc5Dspreadsheet import Ifc5DCsvWriter
-
-            if not os.path.exists(path):
-                os.makedirs(path)
-            writer = Ifc5DCsvWriter(file=tool.Ifc.get(), output=path)
+            writer = Ifc5DCsvWriter(file=tool.Ifc.get(), output=path, cost_schedule=cost_schedule)
             writer.write()
         elif format == "ODS":
             from ifc5d.ifc5Dspreadsheet import Ifc5DOdsWriter
 
-            writer = Ifc5DOdsWriter(file=tool.Ifc.get(), output=path)
+            writer = Ifc5DOdsWriter(file=tool.Ifc.get(), output=path, cost_schedule=cost_schedule)
             writer.write()
         elif format == "XLSX":
             from ifc5d.ifc5Dspreadsheet import Ifc5DXlsxWriter
 
-            writer = Ifc5DXlsxWriter(file=tool.Ifc.get(), output=path)
+            writer = Ifc5DXlsxWriter(file=tool.Ifc.get(), output=path, cost_schedule=cost_schedule )
             writer.write()
+        try:
+            if path:
+                if sys.platform == "win32":
+                    os.startfile(path)
+                elif sys.platform == "darwin":
+                    subprocess.call(["open", path])
+                elif sys.platform == "linux":
+                    subprocess.call(["xdg-open", path])
+        except:
+            return 'Could not open file location'
 
     @classmethod
     def get_units(cls):
@@ -604,6 +627,18 @@ class Cost(blenderbim.core.tool.Cost):
                 new = props.product_cost_items.add()
                 new.name = cost_item.Name or "Unnamed"
                 new.ifc_definition_id = cost_item.id()
+                quantity, unit = cls.calculate_parametric_quantity(cost_item, product)
+                new.total_quantity = quantity or 1
+                new.unit_symbol = unit or ""
+                new.total_cost_quantity = ifcopenshell.util.cost.get_total_quantity(cost_item)
+
+    @classmethod
+    def get_quantity_unit_symbol(cls, quantity):
+        unit = ifcopenshell.util.unit.get_property_unit(quantity, tool.Ifc.get())
+        if unit:
+            return ifcopenshell.util.unit.get_unit_symbol(unit)
+        else:
+            return None
 
     @classmethod
     def is_root_cost_item(cls, cost_item):
@@ -661,3 +696,13 @@ class Cost(blenderbim.core.tool.Cost):
     @classmethod
     def has_schedules(cls):
         return bool(tool.Ifc.get().by_type("IfcCostSchedule"))
+
+    @classmethod
+    def get_currency_attributes(cls):
+        props = bpy.context.scene.BIMCostProperties
+        currency = props.currency
+        if currency == "CUSTOM":
+            currency = props.custom_currency
+        return {
+            "Currency": currency,
+        }

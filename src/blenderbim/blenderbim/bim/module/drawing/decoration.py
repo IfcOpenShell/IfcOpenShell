@@ -32,8 +32,36 @@ from bpy.types import SpaceView3D
 from mathutils import Vector, Matrix
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 from gpu_extras.batch import batch_for_shader
-from blenderbim.bim.module.drawing.data import DecoratorData
-from blenderbim.bim.module.drawing.shaders import BASE_LIB_GLSL, BASE_DEF_GLSL, add_verts_sequence, add_offsets
+from blenderbim.bim.module.drawing.data import DecoratorData, DrawingsData
+from blenderbim.bim.module.drawing.shaders import add_verts_sequence, add_offsets
+from blenderbim.bim.module.drawing.helper import format_distance
+from timeit import default_timer as timer
+from functools import lru_cache
+
+UNSPECIAL_ELEMENT_COLOR = (0.2, 0.2, 0.2, 1)  # GREY
+
+
+class profile_consequential:
+    start_time = None
+    lines = []
+
+    @classmethod
+    def __init__(cls, test_name):
+        cls.log()
+        cls.start_time = timer()
+        cls.test_name = test_name
+
+    @classmethod
+    def log(cls):
+        if cls.start_time is not None:
+            cls.lines.append(f"{cls.test_name}\t{timer() - cls.start_time:.10f}")
+
+    @classmethod
+    def stop(cls):
+        cls.log()
+        cls.start_time = None
+        print("\n".join(cls.lines))
+        cls.lines = []
 
 
 def ccw(A, B, C):
@@ -93,7 +121,7 @@ def get_callout_head(edge_dir, edge_side, callout_size, callout_gap):
     return head
 
 
-def get_circle_head(size, segments=12):
+def get_circle_head(size, segments=20):
     angle_d = 2 * pi / segments
     head = []
     for i in range(segments):
@@ -108,14 +136,12 @@ def get_circle_head_asterisk(size, segments=6):
     return zip(circle_head[:middle], circle_head[middle:])
 
 
-def get_angle_circle(circle_start, circle_angle, counterclockwise, segments=12):
-    angle_d = 2 * pi / segments
-    angle_segs = max(1, ceil(circle_angle / angle_d))
-    angle_d = circle_angle / angle_segs
+def get_angle_circle(circle_start, circle_angle, counterclockwise, segments=20):
+    angle_d = circle_angle / segments
     head = []
     circle_start = circle_start.xy
 
-    for i in range(angle_segs + 1):
+    for i in range(segments + 1):
         angle = angle_d * i
         if counterclockwise:
             rot_matrix_ccw = Matrix.Rotation(angle, 2)
@@ -145,14 +171,6 @@ class BaseDecorator:
         def is_landscape(render):
             return render.resolution_x > render.resolution_y
 
-        def get_scale(camera):
-            if camera.data.BIMCameraProperties.diagram_scale == "CUSTOM":
-                human_scale, fraction = camera.data.BIMCameraProperties.custom_diagram_scale.split("|")
-            else:
-                human_scale, fraction = camera.data.BIMCameraProperties.diagram_scale.split("|")
-            numerator, denominator = fraction.split("/")
-            return float(numerator) / float(denominator)
-
         camera = bpy.context.scene.camera
         render = bpy.context.scene.render
         if is_landscape(render):
@@ -160,61 +178,12 @@ class BaseDecorator:
         else:
             camera_width_model = camera.data.ortho_scale / render.resolution_y * render.resolution_x
 
-        camera_width_mm = get_scale(camera) * camera_width_model
+        scale = tool.Drawing.get_scale_ratio(tool.Drawing.get_diagram_scale(camera)["Scale"])
+        camera_width_mm = scale * camera_width_model
         return camera_width_mm
 
     def camera_zoom_to_factor(self, zoom):
         return math.pow(((zoom / 50) + math.sqrt(2)) / 2, 2)
-
-    def get_objects(self, collection):
-        """find relevant objects
-        using class.objecttype
-
-        returns: iterable of blender objects
-        """
-        results = []
-        # NOTE: if the ObjectType is not on the list
-        # it will be also drawn with MiscDecorator
-        decoration_presets = (
-            "DIMENSION",
-            "TEXT_LEADER",
-            "STAIR_ARROW",
-            "HIDDEN_LINE",
-            "PLAN_LEVEL",
-            "SECTION_LEVEL",
-            "BREAKLINE",
-            "GRID",
-            "ELEVATION",
-            "SECTION",
-            "TEXT",
-            "BATTING",
-        )
-        for obj in collection.all_objects:
-            if obj.hide_get():
-                continue
-
-            element = tool.Ifc.get_entity(obj)
-            if not element:
-                continue
-
-            if element.is_a("IfcAnnotation"):
-                if element.ObjectType == self.objecttype:
-                    results.append(obj)
-
-                elif (
-                    self.objecttype == "MISC"
-                    and element.ObjectType not in decoration_presets
-                    and isinstance(obj.data, bpy.types.Mesh)
-                ):
-                    results.append(obj)
-
-                elif self.objecttype == "FALL" and element.ObjectType in (
-                    "SLOPE_ANGLE",
-                    "SLOPE_FRACTION",
-                    "SLOPE_PERCENT",
-                ):
-                    results.append(obj)
-        return results
 
     def get_splines(self, obj):
         """Iterates through splines
@@ -342,7 +311,7 @@ class BaseDecorator:
         shader.uniform_float("color", color)
         batch.draw(shader)
 
-    def draw_lines(self, context, obj, vertices, indices, color=None):
+    def draw_lines(self, context, obj, vertices, indices, color=None, line_width=1.0):
         """`verts` should be in winspace with `(0,0,0)` in the screen left bottom corner, not in the center"""
         region = context.region
         if not color:
@@ -351,7 +320,7 @@ class BaseDecorator:
         self.line_shader.bind()
         # POLYLINE_UNIFORM_COLOR specific uniforms
         self.line_shader.uniform_float("viewportSize", (region.width, region.height))
-        self.line_shader.uniform_float("lineWidth", 1.0)
+        self.line_shader.uniform_float("lineWidth", line_width)
         gpu.state.blend_set("ALPHA")
         self.draw_batch("LINES", vertices, color, indices)
 
@@ -485,14 +454,15 @@ class BaseDecorator:
         blf.draw(font_id, text)
         blf.disable(font_id, blf.ROTATION)
 
+    @lru_cache(maxsize=None)
     def format_value(self, context, value):
-        return bpy.utils.units.to_string(
-            context.scene.unit_settings.system,
-            "LENGTH",
-            value,
-            precision=4,
-            split_unit=context.scene.unit_settings.system == "IMPERIAL",
-        )
+        drawing_pset_data = DrawingsData.data["active_drawing_pset_data"]
+        precision = drawing_pset_data.get("MetricPrecision", None)
+        if not precision:
+            precision = drawing_pset_data.get("ImperialPrecision", None)
+
+        decimal_places = drawing_pset_data.get("DecimalPlaces", None)
+        return format_distance(value, precision=precision, decimal_places=decimal_places)
 
     def draw_asterisk(self, context, obj):
         # gather geometry data and convert to winspace
@@ -519,6 +489,7 @@ class BaseDecorator:
 
     def draw_text(self, context, obj, text_world_position=None, reverse_lines_order=False):
         """if `text_world_position` is not provided, the object's location will be used"""
+
         if not text_world_position:
             text_world_position = obj.location
 
@@ -535,7 +506,9 @@ class BaseDecorator:
 
         pos = location_3d_to_region_2d(region, region3d, text_world_position)
         props = obj.BIMTextProperties
-        text_data = props.get_text_edited_data() if props.is_editing else DecoratorData.get_ifc_text_data(obj)
+        text_data = DecoratorData.get_ifc_text_data(obj)
+        if props.is_editing:
+            text_data = text_data | props.get_text_edited_data()
         literals_data = text_data["Literals"]
         symbol = text_data["Symbol"]
         text_scale = 1.0
@@ -666,8 +639,6 @@ class DimensionDecorator(BaseDecorator):
 
             if not show_description_only:
                 length = (v1 - v0).length
-                # TODO: same distance format function as in svg?
-                # requires storing drawing precision and decimal_places from pset to data.py
                 text = self.format_value(context, length)
                 text = text_prefix + text + text_suffix
 
@@ -719,21 +690,24 @@ class AngleDecorator(BaseDecorator):
         winspace_verts = worldspace_to_winspace(verts, context)
 
         # setup geometry parameters
-        output_verts = []
-        output_edges = []
-        out_kwargs = {
-            "output_verts": output_verts,
-            "output_edges": output_edges,
+        out_kwargs_edges = {
+            "output_verts": [],
+            "output_edges": [],
+        }
+        out_kwargs_arcs = {
+            "output_verts": [],
+            "output_edges": [],
         }
         last_vert = len(winspace_verts) - 1
 
         # process edges
         for edge in edges_original:
             v0, v1 = winspace_verts[edge[0]], winspace_verts[edge[1]]
-            start_i = len(output_verts)
+            start_i_edges = len(out_kwargs_edges["output_verts"])
+            start_i_arcs = len(out_kwargs_arcs["output_verts"])
 
             # draw edge
-            add_verts_sequence([v0, v1], start_i, **out_kwargs)
+            add_verts_sequence([v0, v1], start_i_edges, **out_kwargs_edges)
 
             # draw angle only on interal verts
             if edge[1] != last_vert:
@@ -756,9 +730,28 @@ class AngleDecorator(BaseDecorator):
                 circle_angle = acos(cos_a)
                 counter_clockwise = ccw(v2, v1, v0)
                 angle_circle = get_angle_circle(circle_start, circle_angle, counter_clockwise)
-                add_verts_sequence([v1 + v for v in angle_circle], start_i + 2, **out_kwargs)
+                add_verts_sequence([v1 + v for v in angle_circle], start_i_arcs, **out_kwargs_arcs)
 
-        self.draw_lines(context, obj, output_verts, output_edges)
+        arcs_color = None
+        edges_color = UNSPECIAL_ELEMENT_COLOR
+        if context.object == obj and obj.data.is_editmode:
+            arcs_color = context.preferences.addons["blenderbim"].preferences.decorator_color_special
+            edges_color = None
+
+        self.draw_lines(
+            context,
+            obj,
+            vertices=out_kwargs_arcs["output_verts"],
+            indices=out_kwargs_arcs["output_edges"],
+            color=arcs_color,
+        )
+        self.draw_lines(
+            context,
+            obj,
+            vertices=out_kwargs_edges["output_verts"],
+            indices=out_kwargs_edges["output_edges"],
+            color=edges_color,
+        )
         self.draw_labels(context, obj, verts, edges_original)
 
     def draw_labels(self, context, obj, vertices, indices):
@@ -766,7 +759,10 @@ class AngleDecorator(BaseDecorator):
         region = context.region
         region3d = context.region_data
 
+        viewportDrawingScale = self.get_viewport_drawing_scale(context)
+        ANGLE_LABEL_OFFSET = 25 * viewportDrawingScale
         last_segment_i = len(indices) - 1
+
         for edge_i, edge_vertices in enumerate(indices):
             if edge_i == last_segment_i:
                 continue
@@ -776,28 +772,28 @@ class AngleDecorator(BaseDecorator):
             v0 = Vector(vertices[i0])
             v1 = Vector(vertices[i1])
             v2 = Vector(vertices[i1 + 1])
+
+            # calculate angle value
+            edge0_ws = v0 - v1
+            edge1_ws = v2 - v1
+            try:
+                cos_a = edge0_ws.dot(edge1_ws) / (edge0_ws.length * edge1_ws.length)
+            except ZeroDivisionError:
+                continue
+            circle_angle_rad = acos(cos_a)
+            circle_angle = circle_angle_rad / pi * 180
+
+            # calculate angle position
             p0 = location_3d_to_region_2d(region, region3d, v0)
             p1 = location_3d_to_region_2d(region, region3d, v1)
             p2 = location_3d_to_region_2d(region, region3d, v2)
-
             edge0 = p0 - p1
             edge1 = p2 - p1
-            try:
-                cos_a = edge0.dot(edge1) / (edge0.length * edge1.length)
-            except ZeroDivisionError:
-                continue
-            circle_angle = acos(cos_a) / pi * 180
+            base_edge = edge0 if ccw(p0, p1, p2) else edge1
+            text_offset = (Matrix.Rotation(-circle_angle_rad / 2, 2) @ base_edge).normalized() * ANGLE_LABEL_OFFSET
+            label_position = p1 + text_offset
 
             text = f"{int(circle_angle)}d"
-
-            # TODO: set label position pased on p1
-            # + y relative to p0p1 if p0p1p2 is clockwise
-            # - y relative to p0p1 if p0p1p2 is counter-clockwise
-            # counter_clockwise = ccw(p0, p1, p2)
-            # label_position = (p1 + Vector( (0, 10) ) * (1 if counter_clockwise else -1)) + edge1 * 0.1
-            label_position = p1 + edge1 * 0.1
-
-            # TODO: set label direction based on the first edge (p0, p1)
             label_dir = Vector((1, 0))
             self.draw_label(context, text, label_position, label_dir)
 
@@ -958,15 +954,13 @@ class StairDecorator(BaseDecorator):
             # circle head on first vert
             if edge[0] == 0:
                 circle_head = get_circle_head(circle_size)
-                add_verts_sequence([v + v0 for v in circle_head], start_i, **out_kwargs, closed=True)
-                start_i += 12
+                start_i = add_verts_sequence([v + v0 for v in circle_head], start_i, **out_kwargs, closed=True)
 
             # arrow head on last vert
             if edge[1] == last_vert:
                 edge_dir = (v1 - v0).normalized()
                 arrow_head = get_arrow_head(edge_dir, arrow_size, rot_matrix_cw, rot_matrix_ccw)
-                add_verts_sequence([v1 - arrow_head[1], v1, v1 - arrow_head[2]], start_i, **out_kwargs)
-                start_i += 3
+                start_i = add_verts_sequence([v1 - arrow_head[1], v1, v1 - arrow_head[2]], start_i, **out_kwargs)
 
             # stem with gaps for arrows
             add_verts_sequence([v0, v1], start_i, **out_kwargs)
@@ -984,6 +978,19 @@ class MiscDecorator(BaseDecorator):
             verts, idxs = self.get_mesh_geom(obj)
         winspace_verts = worldspace_to_winspace(verts, context)
         self.draw_lines(context, obj, winspace_verts, idxs)
+
+
+class RevisionCloudDecorator(BaseDecorator):
+    objecttype = "REVISION_CLOUD"
+
+    def decorate(self, context, obj):
+        if obj.data.is_editmode:
+            verts, idxs = self.get_editmesh_geom(obj)
+        else:
+            verts, idxs = self.get_mesh_geom(obj)
+        winspace_verts = worldspace_to_winspace(verts, context)
+        # TODO: draw revision clouds inside viewport?
+        self.draw_lines(context, obj, winspace_verts, idxs, color=(1, 0, 0, 1), line_width=2)
 
 
 # TODO: custom frag shader to support dashed lines?
@@ -1065,7 +1072,7 @@ class PlanLevelDecorator(BaseDecorator):
                 box_alignment = "bottom-right"
                 dir *= -1
 
-            z = verts[-1].z / unit_scale
+            z = verts[0].z / unit_scale
             z = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), z)
             z *= unit_scale
             text = "RL " + self.format_value(context, z)
@@ -1123,7 +1130,7 @@ class SectionLevelDecorator(BaseDecorator):
         tag = storey.Name if storey else element.Description
 
         for verts in splines:
-            z = verts[-1].z / unit_scale
+            z = verts[0].z / unit_scale
             z = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), z)
             z *= unit_scale
 
@@ -1859,6 +1866,7 @@ class DecorationsHandler:
         PlanLevelDecorator,
         SectionLevelDecorator,
         StairDecorator,
+        RevisionCloudDecorator,
         BreakDecorator,
         SectionDecorator,
         ElevationDecorator,
@@ -1874,7 +1882,7 @@ class DecorationsHandler:
         if cls.installed:
             cls.uninstall()
         handler = cls()
-        # NOTE: that we USE POST_PIXEL here so that we can draw use both 3D_POLYLINE_UNIFORM_COLOR
+        # NOTE: we USE POST_PIXEL here so that we can draw use both 3D_POLYLINE_UNIFORM_COLOR
         # and drawing text in the same handler. BUT this means that we supply coordinates in WINSPACE
         cls.installed = SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_PIXEL")
 
@@ -1887,13 +1895,44 @@ class DecorationsHandler:
         cls.installed = None
 
     def __init__(self):
-        self.decorators = [cls() for cls in self.decorators_classes]
+        self.decorators = {cls.objecttype: cls() for cls in self.decorators_classes}
+        for object_type in ("SLOPE_ANGLE", "SLOPE_FRACTION", "SLOPE_PERCENT"):
+            self.decorators[object_type] = self.decorators["FALL"]
+
+    def get_objects_and_decorators(self, collection):
+        results = []
+
+        for obj in collection.all_objects:
+            if obj.hide_get():
+                continue
+
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+
+            if not element.is_a("IfcAnnotation"):
+                continue
+
+            object_type = element.ObjectType
+            if object_type == "DRAWING":
+                continue
+
+            if dec := self.decorators.get(object_type, None):
+                results.append((obj, dec))
+
+            elif isinstance(obj.data, bpy.types.Mesh):
+                results.append((obj, self.decorators["MISC"]))
+
+        return results
 
     def __call__(self, context):
         collection, _ = helper.get_active_drawing(context.scene)
         if collection is None:
             return
 
-        for decorator in self.decorators:
-            for obj in decorator.get_objects(collection):
-                decorator.decorate(context, obj)
+        if not DrawingsData.is_loaded:
+            DrawingsData.load()
+
+        object_decorators = self.get_objects_and_decorators(collection)
+        for obj, decorator in object_decorators:
+            decorator.decorate(context, obj)

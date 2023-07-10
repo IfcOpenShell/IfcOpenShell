@@ -120,6 +120,8 @@ class IfcStore:
 
     @staticmethod
     def load_file(path):
+        if not os.path.isfile(path):
+            return
         extension = path.split(".")[-1]
         if extension.lower() == "ifczip":
             with tempfile.TemporaryDirectory() as unzipped_path:
@@ -130,7 +132,9 @@ class IfcStore:
                     return
         elif extension.lower() == "ifcxml":
             IfcStore.file = ifcopenshell.file(ifcopenshell.ifcopenshell_wrapper.parse_ifcxml(path))
-        elif extension.lower() == "ifc":
+        elif bpy.context.scene.BIMProjectProperties.should_stream:
+            IfcStore.file = ifcopenshell.open(path, should_stream=True)
+        else:
             IfcStore.file = ifcopenshell.open(path)
 
     @staticmethod
@@ -396,7 +400,7 @@ class IfcStore:
             )
 
     @staticmethod
-    def execute_ifc_operator(operator, context):
+    def execute_ifc_operator(operator, context, is_invoke=False):
         is_top_level_operator = not bool(IfcStore.current_transaction)
 
         if is_top_level_operator:
@@ -407,7 +411,10 @@ class IfcStore:
         else:
             operator.transaction_key = IfcStore.current_transaction
 
-        result = getattr(operator, "_execute")(context)
+        if is_invoke:
+            result = getattr(operator, "_invoke")(context, None)
+        else:
+            result = getattr(operator, "_execute")(context)
 
         if is_top_level_operator:
             IfcStore.get_file().end_transaction()

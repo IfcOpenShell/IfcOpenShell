@@ -38,6 +38,53 @@ from blenderbim.bim import export_ifc
 from pathlib import Path
 
 
+class NewProject(bpy.types.Operator):
+    bl_idname = "bim.new_project"
+    bl_label = "New Project"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Start a new IFC project in a fresh session"
+    preset: bpy.props.StringProperty()
+
+    def execute(self, context):
+        bpy.ops.wm.read_homefile()
+
+        for obj in bpy.data.objects:
+            bpy.data.objects.remove(obj)
+
+        if self.preset == "metric_m":
+            bpy.context.scene.BIMProjectProperties.export_schema = "IFC4"
+            bpy.context.scene.unit_settings.system = "METRIC"
+            bpy.context.scene.unit_settings.length_unit = "METERS"
+            bpy.context.scene.BIMProperties.area_unit = "SQUARE_METRE"
+            bpy.context.scene.BIMProperties.volume_unit = "CUBIC_METRE"
+            bpy.context.scene.BIMProjectProperties.template_file = "0"
+        elif self.preset == "metric_mm":
+            bpy.context.scene.BIMProjectProperties.export_schema = "IFC4"
+            bpy.context.scene.unit_settings.system = "METRIC"
+            bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
+            bpy.context.scene.BIMProperties.area_unit = "SQUARE_METRE"
+            bpy.context.scene.BIMProperties.volume_unit = "CUBIC_METRE"
+            bpy.context.scene.BIMProjectProperties.template_file = "0"
+        elif self.preset == "imperial_ft":
+            bpy.context.scene.BIMProjectProperties.export_schema = "IFC4"
+            bpy.context.scene.unit_settings.system = "IMPERIAL"
+            bpy.context.scene.unit_settings.length_unit = "FEET"
+            bpy.context.scene.BIMProperties.area_unit = "square foot"
+            bpy.context.scene.BIMProperties.volume_unit = "cubic foot"
+            bpy.context.scene.BIMProjectProperties.template_file = "0"
+        elif self.preset == "demo":
+            bpy.context.scene.BIMProjectProperties.export_schema = "IFC4"
+            bpy.context.scene.unit_settings.system = "METRIC"
+            bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
+            bpy.context.scene.BIMProperties.area_unit = "SQUARE_METRE"
+            bpy.context.scene.BIMProperties.volume_unit = "CUBIC_METRE"
+            bpy.context.scene.BIMProjectProperties.template_file = "IFC4 Demo Library.ifc"
+
+        if self.preset != "wizard":
+            bpy.ops.bim.create_project()
+        return {"FINISHED"}
+
+
 class CreateProject(bpy.types.Operator):
     bl_idname = "bim.create_project"
     bl_label = "Create Project"
@@ -74,19 +121,21 @@ class SelectLibraryFile(bpy.types.Operator, IFCFileSelector):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
     append_all: bpy.props.BoolProperty(default=False)
+    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
 
     def execute(self, context):
         IfcStore.begin_transaction(self)
         old_filepath = IfcStore.library_path
         result = self._execute(context)
-        self.transaction_data = {"old_filepath": old_filepath, "filepath": self.filepath}
+        self.transaction_data = {"old_filepath": old_filepath, "filepath": self.get_filepath()}
         IfcStore.add_transaction_operation(self)
         IfcStore.end_transaction(self)
         return result
 
     def _execute(self, context):
-        IfcStore.library_path = self.filepath
-        IfcStore.library_file = ifcopenshell.open(self.filepath)
+        filepath = self.get_filepath()
+        IfcStore.library_path = filepath
+        IfcStore.library_file = ifcopenshell.open(filepath)
         bpy.ops.bim.refresh_library()
         if context.area:
             context.area.tag_redraw()
@@ -371,7 +420,8 @@ class AppendLibraryElement(bpy.types.Operator):
         if not type_collection:
             type_collection = bpy.data.collections.new("Types")
             for collection in bpy.context.view_layer.layer_collection.children:
-                if "IfcProject/" in collection.name:
+                collection_obj = collection.collection.BIMCollectionProperties.obj
+                if collection_obj and tool.Ifc.get_entity(collection_obj).is_a("IfcProject"):
                     collection.collection.children.link(type_collection)
                     collection.children["Types"].hide_viewport = True
                     break
@@ -522,13 +572,15 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Load an existing IFC project"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-    filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
+    filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml;*.ifcsqlite", options={"HIDDEN"})
     is_advanced: bpy.props.BoolProperty(name="Enable Advanced Mode", default=False)
+    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
+    should_start_fresh_session: bpy.props.BoolProperty(name="Should Start Fresh Session", default=True)
 
     def execute(self, context):
         if not self.is_existing_ifc_file():
             return {"FINISHED"}
-        context.scene.BIMProperties.ifc_file = self.filepath
+        context.scene.BIMProperties.ifc_file = self.get_filepath()
         context.scene.BIMProjectProperties.is_loading = True
         context.scene.BIMProjectProperties.total_elements = len(tool.Ifc.get().by_type("IfcElement"))
         if not self.is_advanced:
@@ -536,6 +588,12 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
         return {"FINISHED"}
 
     def invoke(self, context, event):
+        if self.should_start_fresh_session:
+            bpy.ops.wm.read_homefile()
+
+            for obj in bpy.data.objects:
+                bpy.data.objects.remove(obj)
+
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
 
@@ -683,6 +741,9 @@ class LinkIfc(bpy.types.Operator):
         files = [f.name for f in self.files] if self.files else [self.filepath]
         for filename in files:
             filepath = os.path.join(self.directory, filename)
+            if bpy.data.filepath and Path(filepath).samefile(bpy.data.filepath):
+                self.report({"INFO"}, "Can't link the current .blend file")
+                continue
             new = context.scene.BIMProjectProperties.links.add()
             if self.use_relative_path:
                 filepath = os.path.relpath(filepath, bpy.path.abspath("//"))
@@ -817,10 +878,26 @@ class ExportIFC(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     json_version: bpy.props.EnumProperty(items=[("4", "4", ""), ("5a", "5a", "")], name="IFC JSON Version")
     json_compact: bpy.props.BoolProperty(name="Export Compact IFCJSON", default=False)
-    should_save_as: bpy.props.BoolProperty(name="Should Save As", default=False)
+    should_save_as: bpy.props.BoolProperty(name="Should Save As", default=False, options={"HIDDEN"})
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
+    save_as_invoked: bpy.props.BoolProperty(name="Save As Dialog Was Invoked", default=False, options={"HIDDEN"})
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Ifc.get()
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, "json_version")
+        layout.prop(self, "json_compact")
+        if bpy.data.is_saved:
+            layout.prop(self, "use_relative_path")
+        else:
+            layout.label(text="Save the .blend file first ")
+            layout.label(text="to use relative paths for .ifc.")
 
     def invoke(self, context, event):
+        self.save_as_invoked = False
         if not IfcStore.get_file():
             self.report({"ERROR"}, "No IFC project is available for export - create or import a project first.")
             return {"FINISHED"}
@@ -834,18 +911,23 @@ class ExportIFC(bpy.types.Operator):
                 self.filepath = Path(bpy.data.filepath).with_suffix(".ifc").__str__()
             else:
                 self.filepath = "untitled.ifc"
+
+        self.save_as_invoked = True
         WindowManager = context.window_manager
         WindowManager.fileselect_add(self)
         return {"RUNNING_MODAL"}
 
     def execute(self, context):
-        if context.scene.BIMProjectProperties.should_disable_undo_on_save:
+        project_props = context.scene.BIMProjectProperties
+        if self.save_as_invoked:
+            project_props.use_relative_project_path = self.use_relative_path
+        if project_props.should_disable_undo_on_save:
             old_history_size = tool.Ifc.get().history_size
             old_undo_steps = context.preferences.edit.undo_steps
             tool.Ifc.get().history_size = 0
             context.preferences.edit.undo_steps = 0
         IfcStore.execute_ifc_operator(self, context)
-        if context.scene.BIMProjectProperties.should_disable_undo_on_save:
+        if project_props.should_disable_undo_on_save:
             tool.Ifc.get().history_size = old_history_size
             context.preferences.edit.undo_steps = old_undo_steps
         return {"FINISHED"}
@@ -882,7 +964,7 @@ class ExportIFC(bpy.types.Operator):
         if not scene.DocProperties.ifc_files:
             new = scene.DocProperties.ifc_files.add()
             new.name = output_file
-        if self.use_relative_path and bpy.data.is_saved:
+        if context.scene.BIMProjectProperties.use_relative_project_path and bpy.data.is_saved:
             output_file = os.path.relpath(output_file, bpy.path.abspath("//"))
         if scene.BIMProperties.ifc_file != output_file and extension not in ["ifczip", "ifcjson"]:
             scene.BIMProperties.ifc_file = output_file

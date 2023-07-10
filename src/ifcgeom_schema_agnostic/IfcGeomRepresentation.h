@@ -105,10 +105,8 @@ namespace IfcGeom {
 
 		class Triangulation : public Representation {
 		private:
-			// A nested pair of floats and a material index to be able to store an XYZ coordinate in a map.
-			// TODO: Make this a std::tuple when compilers add support for that.
-			typedef typename std::pair<double, std::pair<double, double> > Coordinate;
-			typedef typename std::pair<int, Coordinate> VertexKey;
+			// A tuple of <item, material, x, y, z> to store as a key in a map.
+			typedef typename std::tuple<int, int, double, double, double> VertexKey;
 			typedef std::map<VertexKey, int> VertexKeyMap;
 			typedef std::pair<int, int> Edge;
 
@@ -120,6 +118,7 @@ namespace IfcGeom {
             std::vector<double> uvs_;
 			std::vector<int> _material_ids;
 			std::vector<Material> _materials;
+			std::vector<int> _item_ids;
 			size_t weld_offset_;
 			VertexKeyMap welds;
 
@@ -137,6 +136,7 @@ namespace IfcGeom {
             const std::vector<double>& uvs() const { return uvs_; }
 			const std::vector<int>& material_ids() const { return _material_ids; }
 			const std::vector<Material>& materials() const { return _materials; }
+			const std::vector<int>& item_ids() const { return _item_ids; }
 
 			Triangulation(const BRep& shape_model);
 			
@@ -149,7 +149,8 @@ namespace IfcGeom {
 				const std::vector<double>& normals,
 				const std::vector<double>& uvs,
 				const std::vector<int>& material_ids,
-				const std::vector<std::shared_ptr<IfcGeom::SurfaceStyle>>& styles)
+				const std::vector<std::shared_ptr<IfcGeom::SurfaceStyle>>& styles,
+				const std::vector<int>& item_ids)
 				: Representation(settings)
 				, id_(id)
 				, _verts(verts)
@@ -159,6 +160,7 @@ namespace IfcGeom {
 				, uvs_(uvs)
 				, _material_ids(material_ids)
 				, styles_(styles)
+				, _item_ids(item_ids)
 			{
 				for (auto& s : styles_) {
 					_materials.push_back(IfcGeom::Material(s));
@@ -173,7 +175,7 @@ namespace IfcGeom {
 
 		private:
 			/// Welds vertices that belong to different faces
-			int addVertex(int material_index, const gp_XYZ& p);
+			int addVertex(int item_index, int material_index, const gp_XYZ& p);
 			void addEdge(int n1, int n2, std::map<std::pair<int, int>, int>& edgecount, std::vector<std::pair<int, int> >& edges_temp);
 
 			Triangulation();

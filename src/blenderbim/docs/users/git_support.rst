@@ -73,6 +73,12 @@ are the same as above: green objects are new to the current model, blue
 objects have changed in some way, and (if you have an older revision loaded)
 red objects have been deleted.
 
+Viewing object history
+----------------------
+
+The history of *everything* in the project is tracked in Git, the revision log
+for the currently selected object can be viewed with the BlenderBIM side-bar.
+
 Retrieving Revisions
 --------------------
 
@@ -116,8 +122,8 @@ revision you are interested-in and switch as before.
 .. Tip::
 
     Conceptually a local branch is equivalent to a remote fork in somebody
-    else's copy of your repository, and indeed with an external Git tool you
-    can import their work into a branch in your local repository.
+    else's copy of your repository, and indeed by adding a remote you
+    can fetch their work into a *remote branch* in your local repository.
 
 Merging
 -------
@@ -131,13 +137,23 @@ Merging
 
 You can merge changes that exist in a selected revision into the current
 model, even if changes have been made in both revisions - as long as these
-changes don't directly conflict. After the merge you are able to view the
-combined changes before discarding or committing them.
+changes don't directly conflict.
 
 .. Note::
 
     Merging requires the *ifcmerge* tool installed in your `PATH`, if it is
     not installed the merge operator will not be enabled.
+
+When two branches have diverged, merging an IFC model requires *conflict
+resolution* (because added entities may inadvertently reuse the same Step-IDs),
+this means that data on one side or the other may be rewritten by BlenderBIM in
+order to accomodate both sets of changes. ie. the merge process is
+*asymmetrical*.  BlenderBIM privileges data in the remote `origin/main` branch
+over the local working branch, similarly it privileges data in the local `main`
+branch over any other local working branch. The practical result of this is
+that branches branched-off the `main` branch can generally be merged back into
+`main`, but any sub-branches of these will need to be merged back into their
+parent-branch *before* merging the parent-branch back into `main`.
 
 Tags
 ----
@@ -155,6 +171,45 @@ optional message text.
     BlenderBIM will not allow you to create invalid or duplicate tag names.
     Similar to commit messages, tag messages should be 50 characters or less,
     though there is no practical limit.
+
+.. Warning::
+
+    Tags can be deleted locally, but Git is distributed, so if the tag has
+    migrated to a remote repository it will reappear when you fetch changes
+    from that repository.
+
+Remote operations
+-----------------
+
+Git is a *distributed revision control system*, your local repository can be a
+version of a remote repository and vice-versa. This is conceptually similar to
+local branching except this remote repository could belong to someone else or
+could be hosted by an online Git-forge service.
+
+Your repository can have multiple remote repositories registered, each
+can have potentially multiple branches.
+
+BlenderBIM allows you to make a local *clone* of a remote repository.  You will
+need to provide a URL *origin* to fetch, and an empty local folder to become
+the local repository.
+
+The *Fetch* operator retrieves new data from the remote repository. This isn't
+automatically merged, each branch fetched from the remote repository appears as
+a branch that can be browsed, switched-to or merged just like a local branch.
+These remote branches have prefixed names, eg. `origin/main`.
+
+Once you have committed changes to your local repository, the *Push* operator
+tries to update the remote branch using changes from the selected local branch.
+
+.. Warning::
+
+    Remote repositories can be accessed in multiple ways; ssh, ftp or https
+    protocols, for example, can require authentication. This authentication may
+    expect you to generate and upload ssh keys, store API tokens, save
+    username/password pairs, or use some other form of credential.
+    BlenderBIM can't configure these credentials for you, follow the
+    configuration instructions provided by your online service before trying
+    actions that require authentication.
 
 Using other Git tools
 ---------------------

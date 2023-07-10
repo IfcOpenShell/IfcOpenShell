@@ -65,6 +65,7 @@ class Ifc2DCompositeCurve; class IfcActionRequest; class IfcActor; class IfcActo
 class IFC_PARSE_API IfcActorSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcActorSelect > list;
 };
 /// IfcAppliedValueSelect defines the selection of whether a value (expressed as a ratio) or an amount should be used as the value for an IfcAppliedValue. 
 /// 
@@ -83,6 +84,7 @@ public:
 class IFC_PARSE_API IfcAppliedValueSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcAppliedValueSelect > list;
 };
 /// Definition from ISO/CD 10303-42:1992: This select type collects together both versions of the placement as used in two dimensional or in three dimensional Cartesian space. This enables entities requiring this information to reference them without specifying the space dimensionality.  
 /// 
@@ -92,6 +94,7 @@ public:
 class IFC_PARSE_API IfcAxis2Placement : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcAxis2Placement > list;
 };
 /// Definition from ISO/CD 10303-42:1992: This select type identifies
 ///   all those types of entities which may participate in a Boolean operation to
@@ -112,6 +115,7 @@ public:
 class IFC_PARSE_API IfcBooleanOperand : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcBooleanOperand > list;
 };
 /// The character style select allows for a selection of character styles for text. Currently only text color and background color is selectable.
 /// 
@@ -124,11 +128,13 @@ public:
 class IFC_PARSE_API IfcCharacterStyleSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcCharacterStyleSelect > list;
 };
 
 class IFC_PARSE_API IfcClassificationNotationSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcClassificationNotationSelect > list;
 };
 /// Definition from ISO/CD 10303-46:1992: The colour entity defines a basic appearance of elements which shall be visualized in a picture.
 /// 
@@ -138,6 +144,7 @@ public:
 class IFC_PARSE_API IfcColour : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcColour > list;
 };
 /// The IfcColourOrFactor enables the selection of either a RGB colour value or a scalar factor value for the use as values of the reflectance components.
 /// 
@@ -145,11 +152,13 @@ public:
 class IFC_PARSE_API IfcColourOrFactor : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcColourOrFactor > list;
 };
 
 class IFC_PARSE_API IfcConditionCriterionSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcConditionCriterionSelect > list;
 };
 /// Definition from ISO/CD 10303-42:1992: This type identifies the types of entity which may be selected as the root of a CSG tree including a single CSG primitive as a special case.
 /// Definition from IAI: The IfcBooleanResult, and subtypes of IfcCsgPrimitive3D are defined as potential root tree expression (at IfcCsgSolid). A subtype of IfcCsgPrimitive3D marks the special case of a CSG solid solely expressed by a single primitive.
@@ -160,6 +169,7 @@ public:
 class IFC_PARSE_API IfcCsgSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcCsgSelect > list;
 };
 /// Definition from ISO/CD 10303-46:1992: The curve font or scaled curve font select is a selection of either a curve font style select (being either a predefined curve font or an explicitly defined curve font) or a curve style font and scaling. 
 /// 
@@ -169,6 +179,7 @@ public:
 class IFC_PARSE_API IfcCurveFontOrScaledCurveFontSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcCurveFontOrScaledCurveFontSelect > list;
 };
 /// IfcCurveOrEdgeCurve provides the option to either select a geometric curve (IfcCurve
 /// and subtypes) within a geometric model, or a curve with associated geometry and coordinates (IfcEdgeCurve) within a topological model.
@@ -181,6 +192,7 @@ public:
 class IFC_PARSE_API IfcCurveOrEdgeCurve : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcCurveOrEdgeCurve > list;
 };
 /// Definition from ISO/CD 10303-46:1992: The curve style font select is a selection of a curve style font or a predefined curve style font. 
 /// 
@@ -190,11 +202,13 @@ public:
 class IFC_PARSE_API IfcCurveStyleFontSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcCurveStyleFontSelect > list;
 };
 
 class IFC_PARSE_API IfcDateTimeSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcDateTimeSelect > list;
 };
 /// The defined symbol select is a selection between a predefined symbol and an externally defined symbol. 
 /// 
@@ -204,6 +218,7 @@ public:
 class IFC_PARSE_API IfcDefinedSymbolSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcDefinedSymbolSelect > list;
 };
 /// IfcDerivedMeasureValue is a select type for selecting between derived measure types.
 /// 
@@ -282,6 +297,7 @@ public:
 class IFC_PARSE_API IfcDerivedMeasureValue : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcDerivedMeasureValue > list;
 };
 /// IfcDocumentSelect enables selection of whether document information is to be contained within an IFC model or is to be referenced from an external source. 
 /// 
@@ -294,11 +310,13 @@ public:
 class IFC_PARSE_API IfcDocumentSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcDocumentSelect > list;
 };
 
 class IFC_PARSE_API IfcDraughtingCalloutElement : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcDraughtingCalloutElement > list;
 };
 /// The fill area style tile shape select is used to make a selection for the style of the fill area style tile.
 /// 
@@ -310,6 +328,7 @@ public:
 class IFC_PARSE_API IfcFillAreaStyleTileShapeSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcFillAreaStyleTileShapeSelect > list;
 };
 /// Definition from ISO/CD 10303-46:1992: The fill style select is a selection between different fill area styles.
 /// 
@@ -320,6 +339,7 @@ public:
 class IFC_PARSE_API IfcFillStyleSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcFillStyleSelect > list;
 };
 /// Definition from ISO/CD 10303-42:1992: This select type identifies the types of entities which can occur in a geometric set. 
 /// 
@@ -329,6 +349,7 @@ public:
 class IFC_PARSE_API IfcGeometricSetSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcGeometricSetSelect > list;
 };
 /// The IfcHatchLineDistanceSelect is a selection between different ways to determine the distance and potentially start point of hatch lines, either by an offset distance length measure or by a vector.
 /// 
@@ -336,6 +357,7 @@ public:
 class IFC_PARSE_API IfcHatchLineDistanceSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcHatchLineDistanceSelect > list;
 };
 /// Definition from ISO/CD 10303-46:1992: The layered things type selects those things, which can be grouped in layers. 
 /// 
@@ -347,6 +369,7 @@ public:
 class IFC_PARSE_API IfcLayeredItem : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcLayeredItem > list;
 };
 /// IfcLibrarySelect enables selection of whether library information is to be contained within an IFC model or is to be referenced from an external source. 
 /// 
@@ -361,6 +384,7 @@ public:
 class IFC_PARSE_API IfcLibrarySelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcLibrarySelect > list;
 };
 /// A goniometric light gets its intensity distribution function (how much light goes in any one direction) from one of two sources: (i) an industry-standard file, (ii) from distribution data passed directly via the IfcLightIntensityDistribution. 
 /// 
@@ -387,6 +411,7 @@ public:
 class IFC_PARSE_API IfcLightDistributionDataSourceSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcLightDistributionDataSourceSelect > list;
 };
 /// IfcMaterialSelect provides selection of either a material
 /// definition or a material usage definition that can be assigned to
@@ -417,6 +442,7 @@ public:
 class IFC_PARSE_API IfcMaterialSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcMaterialSelect > list;
 };
 /// Definition from ISO/CD 10303-41:1992: A measure value is a value as defined in ISO 31-0 (clause 2).
 /// 
@@ -430,6 +456,7 @@ public:
 class IFC_PARSE_API IfcMeasureValue : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcMeasureValue > list;
 };
 /// IfcMetricValueSelect is a select type that enables selection of the data type for the value component of an IfcMetric. 
 /// 
@@ -446,6 +473,7 @@ public:
 class IFC_PARSE_API IfcMetricValueSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcMetricValueSelect > list;
 };
 /// IfcObjectReferenceSelect is a select type, that holds a list of resource level entities that can be used as properties within a property set. 
 /// 
@@ -453,11 +481,13 @@ public:
 class IFC_PARSE_API IfcObjectReferenceSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcObjectReferenceSelect > list;
 };
 
 class IFC_PARSE_API IfcOrientationSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcOrientationSelect > list;
 };
 /// IfcPointOrVertexPoint provides the option to either select a geometric point (IfcPoint and subtypes) within a geometric model, or a vertex with associated point coordinates (IfcVertexPoint) within a topological model.
 /// SELECT 
@@ -469,6 +499,7 @@ public:
 class IFC_PARSE_API IfcPointOrVertexPoint : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcPointOrVertexPoint > list;
 };
 /// Definition from ISO/CD 10303-46:1992: The presentation style select is a selection of one of many kinds of styles, a different one for each kind of geometric representation item to be styled.
 /// 
@@ -481,6 +512,7 @@ public:
 class IFC_PARSE_API IfcPresentationStyleSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcPresentationStyleSelect > list;
 };
 /// Definition from ISO/CD 10303-42:1992 This type collects together, for reference when constructing more complex models, the subtypes which have the characteristics of a shell. A shell is a connected object of fixed dimensionality d = 0; 1; or 2, typically used to bound a region. The domain of a shell, if present, includes its bounds and 0 £ X < ¥.  
 /// 
@@ -496,6 +528,7 @@ public:
 class IFC_PARSE_API IfcShell : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcShell > list;
 };
 /// IfcSimpleValue is a select type for selecting between simple value types.
 /// 
@@ -519,6 +552,7 @@ public:
 class IFC_PARSE_API IfcSimpleValue : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcSimpleValue > list;
 };
 /// Definition from ISO/CD 10303-46:1992: The size select is a selection of a specific positive length measure.
 /// 
@@ -535,6 +569,7 @@ public:
 class IFC_PARSE_API IfcSizeSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcSizeSelect > list;
 };
 /// The IfcSpecularHighlightSelect defines the selectable types of value for specular highlight sharpness. 
 /// 
@@ -549,6 +584,7 @@ public:
 class IFC_PARSE_API IfcSpecularHighlightSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcSpecularHighlightSelect > list;
 };
 /// Definition from IAI: This type definition shall be used to
 ///   distinguish between a reference to an instance either of
@@ -562,6 +598,7 @@ public:
 class IFC_PARSE_API IfcStructuralActivityAssignmentSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcStructuralActivityAssignmentSelect > list;
 };
 /// IfcSurfaceOrFaceSurface provides the option to either select a geometric surface (IfcSurface
 /// and subtypes) within a geometric model, or a face with associated surface geometry and coordinates (IfcFaceSurface) within a topological model.
@@ -575,6 +612,7 @@ public:
 class IFC_PARSE_API IfcSurfaceOrFaceSurface : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcSurfaceOrFaceSurface > list;
 };
 /// Definition from ISO/CD 10303-46:1992: The surface style element select is a selection of the different surface styles to use in the presentation of the side of a surface. 
 /// 
@@ -588,6 +626,7 @@ public:
 class IFC_PARSE_API IfcSurfaceStyleElementSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcSurfaceStyleElementSelect > list;
 };
 /// The symbol style select allows for the selection of styles to be assigned to an annotated symbol.
 /// 
@@ -599,6 +638,7 @@ public:
 class IFC_PARSE_API IfcSymbolStyleSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcSymbolStyleSelect > list;
 };
 /// IfcTextFontSelect allows for either a predefined text font, a text font model or an externally defined text font to be used to describe the font of a text literal. The definition of the text font model is based on W3C TR Cascading Style Sheet Version 1, whereas the definition of predefined text font is based on ISO 10303.
 /// 
@@ -610,6 +650,7 @@ public:
 class IFC_PARSE_API IfcTextFontSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcTextFontSelect > list;
 };
 /// The text style select allows for the selection of styles to be assigned to an annotated text. The text style determines the text model that affect the visual presentation of characters, spaces, words, and paragraphs. There are two choices:
 /// 
@@ -623,6 +664,7 @@ public:
 class IFC_PARSE_API IfcTextStyleSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcTextStyleSelect > list;
 };
 /// Definition from ISO/CD 10303-42:1992: This select type identifies the two possible ways of trimming a parametric curve; by a Cartesian point on the curve, or by a REAL number defining a parameter value within the parametric range of the curve. 
 /// 
@@ -632,6 +674,7 @@ public:
 class IFC_PARSE_API IfcTrimmingSelect : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcTrimmingSelect > list;
 };
 /// Definition from ISO/CD 10303-41:1992: A unit is a physical quantity, with a value of one, which is used as a standard in terms of which other quantities are expressed.
 /// 
@@ -649,6 +692,7 @@ public:
 class IFC_PARSE_API IfcUnit : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcUnit > list;
 };
 /// IfcValue is a select type for selecting between more specialised select types IfcSimpleValue,
 /// IfcMeasureValue and IfcDerivedMeasureValue.
@@ -663,6 +707,7 @@ public:
 class IFC_PARSE_API IfcValue : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcValue > list;
 };
 /// Definition from ISO/CD 10303-42:1992: This type is used to
 ///   identify the types of entity which can participate in vector computations. 
@@ -675,6 +720,7 @@ public:
 class IFC_PARSE_API IfcVectorOrDirection : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< IfcVectorOrDirection > list;
 };
 class IFC_PARSE_API IfcActionSourceTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI:This enumeration type contains possible
@@ -8375,12 +8421,12 @@ class IFC_PARSE_API IfcConstraintClassificationRelationship : public  IfcUtil::I
 public:
     ::Ifc2x3::IfcConstraint* ClassifiedConstraint() const;
     void setClassifiedConstraint(::Ifc2x3::IfcConstraint* v);
-    aggregate_of_instance::ptr RelatedClassifications() const;
-    void setRelatedClassifications(aggregate_of_instance::ptr v);
+    aggregate_of< ::Ifc2x3::IfcClassificationNotationSelect >::ptr RelatedClassifications() const;
+    void setRelatedClassifications(aggregate_of< ::Ifc2x3::IfcClassificationNotationSelect >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcConstraintClassificationRelationship (IfcEntityInstanceData* e);
-    IfcConstraintClassificationRelationship (::Ifc2x3::IfcConstraint* v1_ClassifiedConstraint, aggregate_of_instance::ptr v2_RelatedClassifications);
+    IfcConstraintClassificationRelationship (::Ifc2x3::IfcConstraint* v1_ClassifiedConstraint, aggregate_of< ::Ifc2x3::IfcClassificationNotationSelect >::ptr v2_RelatedClassifications);
     typedef aggregate_of< IfcConstraintClassificationRelationship > list;
 };
 /// An IfcConstraintRelationship is an objectified relationship that enables instances of IfcConstraint and its
@@ -8748,8 +8794,8 @@ public:
     ::Ifc2x3::IfcActorSelect* DocumentOwner() const;
     void setDocumentOwner(::Ifc2x3::IfcActorSelect* v);
     /// The persons and/or organizations who have created this document or contributed to it.
-    boost::optional< aggregate_of_instance::ptr > Editors() const;
-    void setEditors(boost::optional< aggregate_of_instance::ptr > v);
+    boost::optional< aggregate_of< ::Ifc2x3::IfcActorSelect >::ptr > Editors() const;
+    void setEditors(boost::optional< aggregate_of< ::Ifc2x3::IfcActorSelect >::ptr > v);
     /// Date and time stamp when the document was originally created.
     /// 
     /// IFC2x4 CHANGE The data type has been changed to IfcDateTime, the date time string according to ISO8601.
@@ -8788,7 +8834,7 @@ public:
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcDocumentInformation (IfcEntityInstanceData* e);
-    IfcDocumentInformation (std::string v1_DocumentId, std::string v2_Name, boost::optional< std::string > v3_Description, boost::optional< aggregate_of< ::Ifc2x3::IfcDocumentReference >::ptr > v4_DocumentReferences, boost::optional< std::string > v5_Purpose, boost::optional< std::string > v6_IntendedUse, boost::optional< std::string > v7_Scope, boost::optional< std::string > v8_Revision, ::Ifc2x3::IfcActorSelect* v9_DocumentOwner, boost::optional< aggregate_of_instance::ptr > v10_Editors, ::Ifc2x3::IfcDateAndTime* v11_CreationTime, ::Ifc2x3::IfcDateAndTime* v12_LastRevisionTime, ::Ifc2x3::IfcDocumentElectronicFormat* v13_ElectronicFormat, ::Ifc2x3::IfcCalendarDate* v14_ValidFrom, ::Ifc2x3::IfcCalendarDate* v15_ValidUntil, boost::optional< ::Ifc2x3::IfcDocumentConfidentialityEnum::Value > v16_Confidentiality, boost::optional< ::Ifc2x3::IfcDocumentStatusEnum::Value > v17_Status);
+    IfcDocumentInformation (std::string v1_DocumentId, std::string v2_Name, boost::optional< std::string > v3_Description, boost::optional< aggregate_of< ::Ifc2x3::IfcDocumentReference >::ptr > v4_DocumentReferences, boost::optional< std::string > v5_Purpose, boost::optional< std::string > v6_IntendedUse, boost::optional< std::string > v7_Scope, boost::optional< std::string > v8_Revision, ::Ifc2x3::IfcActorSelect* v9_DocumentOwner, boost::optional< aggregate_of< ::Ifc2x3::IfcActorSelect >::ptr > v10_Editors, ::Ifc2x3::IfcDateAndTime* v11_CreationTime, ::Ifc2x3::IfcDateAndTime* v12_LastRevisionTime, ::Ifc2x3::IfcDocumentElectronicFormat* v13_ElectronicFormat, ::Ifc2x3::IfcCalendarDate* v14_ValidFrom, ::Ifc2x3::IfcCalendarDate* v15_ValidUntil, boost::optional< ::Ifc2x3::IfcDocumentConfidentialityEnum::Value > v16_Confidentiality, boost::optional< ::Ifc2x3::IfcDocumentStatusEnum::Value > v17_Status);
     typedef aggregate_of< IfcDocumentInformation > list;
 };
 /// An IfcDocumentInformationRelationship is a relationship class that enables a document to have the ability to reference other documents.
@@ -8991,12 +9037,12 @@ public:
     ::Ifc2x3::IfcDateTimeSelect* TimeStamp() const;
     void setTimeStamp(::Ifc2x3::IfcDateTimeSelect* v);
     /// A list of time-series values. At least one value is required.
-    aggregate_of_instance::ptr ListValues() const;
-    void setListValues(aggregate_of_instance::ptr v);
+    aggregate_of< ::Ifc2x3::IfcValue >::ptr ListValues() const;
+    void setListValues(aggregate_of< ::Ifc2x3::IfcValue >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcIrregularTimeSeriesValue (IfcEntityInstanceData* e);
-    IfcIrregularTimeSeriesValue (::Ifc2x3::IfcDateTimeSelect* v1_TimeStamp, aggregate_of_instance::ptr v2_ListValues);
+    IfcIrregularTimeSeriesValue (::Ifc2x3::IfcDateTimeSelect* v1_TimeStamp, aggregate_of< ::Ifc2x3::IfcValue >::ptr v2_ListValues);
     typedef aggregate_of< IfcIrregularTimeSeriesValue > list;
 };
 /// An IfcLibraryInformation describes a library where a library is a structured store of information, normally organized in a manner which allows information lookup through an index or reference value. IfcLibraryInformation provides the library Name and optional Version, VersionDate and Publisher attributes. A Location may be added for electronic access to the library.
@@ -9169,15 +9215,15 @@ public:
 class IFC_PARSE_API IfcMaterialClassificationRelationship : public  IfcUtil::IfcBaseEntity {
 public:
     /// The material classifications identifying the type of material.
-    aggregate_of_instance::ptr MaterialClassifications() const;
-    void setMaterialClassifications(aggregate_of_instance::ptr v);
+    aggregate_of< ::Ifc2x3::IfcClassificationNotationSelect >::ptr MaterialClassifications() const;
+    void setMaterialClassifications(aggregate_of< ::Ifc2x3::IfcClassificationNotationSelect >::ptr v);
     /// Material being classified.
     ::Ifc2x3::IfcMaterial* ClassifiedMaterial() const;
     void setClassifiedMaterial(::Ifc2x3::IfcMaterial* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcMaterialClassificationRelationship (IfcEntityInstanceData* e);
-    IfcMaterialClassificationRelationship (aggregate_of_instance::ptr v1_MaterialClassifications, ::Ifc2x3::IfcMaterial* v2_ClassifiedMaterial);
+    IfcMaterialClassificationRelationship (aggregate_of< ::Ifc2x3::IfcClassificationNotationSelect >::ptr v1_MaterialClassifications, ::Ifc2x3::IfcMaterial* v2_ClassifiedMaterial);
     typedef aggregate_of< IfcMaterialClassificationRelationship > list;
 };
 /// IfcMaterialLayer is a single and identifiable part of an element which is constructed of a number of layers (one or more). Each IfcMaterialLayer has a constant thickness and is located relative to the referencing IfcMaterialLayerSet along the MlsBase.
@@ -10045,15 +10091,15 @@ public:
     boost::optional< std::string > Description() const;
     void setDescription(boost::optional< std::string > v);
     /// The set of layered items, which are assigned to this layer.
-    aggregate_of_instance::ptr AssignedItems() const;
-    void setAssignedItems(aggregate_of_instance::ptr v);
+    aggregate_of< ::Ifc2x3::IfcLayeredItem >::ptr AssignedItems() const;
+    void setAssignedItems(aggregate_of< ::Ifc2x3::IfcLayeredItem >::ptr v);
     /// An (internal) identifier assigned to the layer.
     boost::optional< std::string > Identifier() const;
     void setIdentifier(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcPresentationLayerAssignment (IfcEntityInstanceData* e);
-    IfcPresentationLayerAssignment (std::string v1_Name, boost::optional< std::string > v2_Description, aggregate_of_instance::ptr v3_AssignedItems, boost::optional< std::string > v4_Identifier);
+    IfcPresentationLayerAssignment (std::string v1_Name, boost::optional< std::string > v2_Description, aggregate_of< ::Ifc2x3::IfcLayeredItem >::ptr v3_AssignedItems, boost::optional< std::string > v4_Identifier);
     typedef aggregate_of< IfcPresentationLayerAssignment > list;
 };
 /// An IfcPresentationLayerAssignmentWithStyle extends the presentation layer assignment with capabilities to define visibility control, access control and common style information.
@@ -10085,12 +10131,12 @@ public:
     /// NOTE  In most cases the assignment of styles to a layer is restricted to an IfcCurveStyle representing the layer curve colour, layer curve thickness, and layer curve type.
     /// 
     /// IFC2x4 CHANGE  The data type has been changed from IfcPresentationStyleSelect (now deprecated) to IfcPresentationStyle.
-    aggregate_of_instance::ptr LayerStyles() const;
-    void setLayerStyles(aggregate_of_instance::ptr v);
+    aggregate_of< ::Ifc2x3::IfcPresentationStyleSelect >::ptr LayerStyles() const;
+    void setLayerStyles(aggregate_of< ::Ifc2x3::IfcPresentationStyleSelect >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcPresentationLayerWithStyle (IfcEntityInstanceData* e);
-    IfcPresentationLayerWithStyle (std::string v1_Name, boost::optional< std::string > v2_Description, aggregate_of_instance::ptr v3_AssignedItems, boost::optional< std::string > v4_Identifier, boost::logic::tribool v5_LayerOn, boost::logic::tribool v6_LayerFrozen, boost::logic::tribool v7_LayerBlocked, aggregate_of_instance::ptr v8_LayerStyles);
+    IfcPresentationLayerWithStyle (std::string v1_Name, boost::optional< std::string > v2_Description, aggregate_of< ::Ifc2x3::IfcLayeredItem >::ptr v3_AssignedItems, boost::optional< std::string > v4_Identifier, boost::logic::tribool v5_LayerOn, boost::logic::tribool v6_LayerFrozen, boost::logic::tribool v7_LayerBlocked, aggregate_of< ::Ifc2x3::IfcPresentationStyleSelect >::ptr v8_LayerStyles);
     typedef aggregate_of< IfcPresentationLayerWithStyle > list;
 };
 /// IfcPresentationStyle is an abstract generalization of style table for presentation information assigned to geometric representation items. It includes styles for curves, areas, surfaces, text and symbols. Style information may include colour, hatching, rendering, and text fonts.
@@ -10117,12 +10163,12 @@ public:
 class IFC_PARSE_API IfcPresentationStyleAssignment : public  IfcUtil::IfcBaseEntity {
 public:
     /// A set of presentation styles that are assigned to styled items.
-    aggregate_of_instance::ptr Styles() const;
-    void setStyles(aggregate_of_instance::ptr v);
+    aggregate_of< ::Ifc2x3::IfcPresentationStyleSelect >::ptr Styles() const;
+    void setStyles(aggregate_of< ::Ifc2x3::IfcPresentationStyleSelect >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcPresentationStyleAssignment (IfcEntityInstanceData* e);
-    IfcPresentationStyleAssignment (aggregate_of_instance::ptr v1_Styles);
+    IfcPresentationStyleAssignment (aggregate_of< ::Ifc2x3::IfcPresentationStyleSelect >::ptr v1_Styles);
     typedef aggregate_of< IfcPresentationStyleAssignment > list;
 };
 /// IfcProductRepresentation defines a representation of a
@@ -10502,15 +10548,15 @@ public:
     std::string Name() const;
     void setName(std::string v);
     /// List of values that form the enumeration.
-    aggregate_of_instance::ptr EnumerationValues() const;
-    void setEnumerationValues(aggregate_of_instance::ptr v);
+    aggregate_of< ::Ifc2x3::IfcValue >::ptr EnumerationValues() const;
+    void setEnumerationValues(aggregate_of< ::Ifc2x3::IfcValue >::ptr v);
     /// Unit for the enumerator values, if not given, the default value for the measure type (given by the TYPE of nominal value) is used as defined by the global unit assignment at IfcProject.
     ::Ifc2x3::IfcUnit* Unit() const;
     void setUnit(::Ifc2x3::IfcUnit* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcPropertyEnumeration (IfcEntityInstanceData* e);
-    IfcPropertyEnumeration (std::string v1_Name, aggregate_of_instance::ptr v2_EnumerationValues, ::Ifc2x3::IfcUnit* v3_Unit);
+    IfcPropertyEnumeration (std::string v1_Name, aggregate_of< ::Ifc2x3::IfcValue >::ptr v2_EnumerationValues, ::Ifc2x3::IfcUnit* v3_Unit);
     typedef aggregate_of< IfcPropertyEnumeration > list;
 };
 /// IfcQuantityArea is a physical quantity that defines a derived area measure to provide an element's physical property. It is normally derived from the physical properties of the element under the specific measure rules given by a method of measurement. 
@@ -11360,12 +11406,12 @@ public:
     ::Ifc2x3::IfcSurfaceSide::Value Side() const;
     void setSide(::Ifc2x3::IfcSurfaceSide::Value v);
     /// A collection of different surface styles.
-    aggregate_of_instance::ptr Styles() const;
-    void setStyles(aggregate_of_instance::ptr v);
+    aggregate_of< ::Ifc2x3::IfcSurfaceStyleElementSelect >::ptr Styles() const;
+    void setStyles(aggregate_of< ::Ifc2x3::IfcSurfaceStyleElementSelect >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcSurfaceStyle (IfcEntityInstanceData* e);
-    IfcSurfaceStyle (boost::optional< std::string > v1_Name, ::Ifc2x3::IfcSurfaceSide::Value v2_Side, aggregate_of_instance::ptr v3_Styles);
+    IfcSurfaceStyle (boost::optional< std::string > v1_Name, ::Ifc2x3::IfcSurfaceSide::Value v2_Side, aggregate_of< ::Ifc2x3::IfcSurfaceStyleElementSelect >::ptr v3_Styles);
     typedef aggregate_of< IfcSurfaceStyle > list;
 };
 /// IfcSurfaceStyleLighting is a container class for properties for calculation of physically exact illuminance related to a particular surface style.
@@ -11643,8 +11689,8 @@ public:
 class IFC_PARSE_API IfcTableRow : public  IfcUtil::IfcBaseEntity {
 public:
     /// The data value of the table cell..
-    aggregate_of_instance::ptr RowCells() const;
-    void setRowCells(aggregate_of_instance::ptr v);
+    aggregate_of< ::Ifc2x3::IfcValue >::ptr RowCells() const;
+    void setRowCells(aggregate_of< ::Ifc2x3::IfcValue >::ptr v);
     /// Flag which identifies if the row is a heading row or a row which contains row values. NOTE - If the row is a heading, the flag takes the value = TRUE.
     bool IsHeading() const;
     void setIsHeading(bool v);
@@ -11652,7 +11698,7 @@ public:
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcTableRow (IfcEntityInstanceData* e);
-    IfcTableRow (aggregate_of_instance::ptr v1_RowCells, bool v2_IsHeading);
+    IfcTableRow (aggregate_of< ::Ifc2x3::IfcValue >::ptr v1_RowCells, bool v2_IsHeading);
     typedef aggregate_of< IfcTableRow > list;
 };
 /// Definition: Address to which telephone, electronic mail and other forms of telecommunications should be addressed.
@@ -11999,12 +12045,12 @@ public:
     /// The parameters used as arguments by the function as specified by Mode.
     /// 
     /// IFC2x4 CHANGE  Made optional data type restricted to REAL.
-    aggregate_of_instance::ptr Parameter() const;
-    void setParameter(aggregate_of_instance::ptr v);
+    aggregate_of< ::Ifc2x3::IfcSimpleValue >::ptr Parameter() const;
+    void setParameter(aggregate_of< ::Ifc2x3::IfcSimpleValue >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcTextureCoordinateGenerator (IfcEntityInstanceData* e);
-    IfcTextureCoordinateGenerator (std::string v1_Mode, aggregate_of_instance::ptr v2_Parameter);
+    IfcTextureCoordinateGenerator (std::string v1_Mode, aggregate_of< ::Ifc2x3::IfcSimpleValue >::ptr v2_Parameter);
     typedef aggregate_of< IfcTextureCoordinateGenerator > list;
 };
 /// An IfcTextureMap provides the mapping of the
@@ -12166,12 +12212,12 @@ class IFC_PARSE_API IfcTimeSeriesReferenceRelationship : public  IfcUtil::IfcBas
 public:
     ::Ifc2x3::IfcTimeSeries* ReferencedTimeSeries() const;
     void setReferencedTimeSeries(::Ifc2x3::IfcTimeSeries* v);
-    aggregate_of_instance::ptr TimeSeriesReferences() const;
-    void setTimeSeriesReferences(aggregate_of_instance::ptr v);
+    aggregate_of< ::Ifc2x3::IfcDocumentSelect >::ptr TimeSeriesReferences() const;
+    void setTimeSeriesReferences(aggregate_of< ::Ifc2x3::IfcDocumentSelect >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcTimeSeriesReferenceRelationship (IfcEntityInstanceData* e);
-    IfcTimeSeriesReferenceRelationship (::Ifc2x3::IfcTimeSeries* v1_ReferencedTimeSeries, aggregate_of_instance::ptr v2_TimeSeriesReferences);
+    IfcTimeSeriesReferenceRelationship (::Ifc2x3::IfcTimeSeries* v1_ReferencedTimeSeries, aggregate_of< ::Ifc2x3::IfcDocumentSelect >::ptr v2_TimeSeriesReferences);
     typedef aggregate_of< IfcTimeSeriesReferenceRelationship > list;
 };
 /// A time series value is a list of values that comprise the time series. At least one value must be supplied. Applications are expected to normalize values by applying the following three rules:
@@ -12186,12 +12232,12 @@ public:
 class IFC_PARSE_API IfcTimeSeriesValue : public  IfcUtil::IfcBaseEntity {
 public:
     /// A list of time-series values. At least one value is required.
-    aggregate_of_instance::ptr ListValues() const;
-    void setListValues(aggregate_of_instance::ptr v);
+    aggregate_of< ::Ifc2x3::IfcValue >::ptr ListValues() const;
+    void setListValues(aggregate_of< ::Ifc2x3::IfcValue >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcTimeSeriesValue (IfcEntityInstanceData* e);
-    IfcTimeSeriesValue (aggregate_of_instance::ptr v1_ListValues);
+    IfcTimeSeriesValue (aggregate_of< ::Ifc2x3::IfcValue >::ptr v1_ListValues);
     typedef aggregate_of< IfcTimeSeriesValue > list;
 };
 /// Definition from ISO/CD 10303-42:1992: The topological representation item is the supertype for all the topological representation items in the geometry resource. 
@@ -12257,12 +12303,12 @@ public:
 class IFC_PARSE_API IfcUnitAssignment : public  IfcUtil::IfcBaseEntity {
 public:
     /// Units to be included within a unit assignment.
-    aggregate_of_instance::ptr Units() const;
-    void setUnits(aggregate_of_instance::ptr v);
+    aggregate_of< ::Ifc2x3::IfcUnit >::ptr Units() const;
+    void setUnits(aggregate_of< ::Ifc2x3::IfcUnit >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcUnitAssignment (IfcEntityInstanceData* e);
-    IfcUnitAssignment (aggregate_of_instance::ptr v1_Units);
+    IfcUnitAssignment (aggregate_of< ::Ifc2x3::IfcUnit >::ptr v1_Units);
     typedef aggregate_of< IfcUnitAssignment > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A vertex is the topological construct corresponding to a point. It has dimensionality 0 and extent 0. The domain of a vertex, if present, is a point in m dimensional real space RM; this is represented by the vertex point subtype. 
@@ -13448,12 +13494,12 @@ public:
 class IFC_PARSE_API IfcFillAreaStyle : public  IfcPresentationStyle, public  IfcPresentationStyleSelect {
 public:
     /// The set of fill area styles to use in presenting visible curve segments, annotation fill areas or surfaces.
-    aggregate_of_instance::ptr FillStyles() const;
-    void setFillStyles(aggregate_of_instance::ptr v);
+    aggregate_of< ::Ifc2x3::IfcFillStyleSelect >::ptr FillStyles() const;
+    void setFillStyles(aggregate_of< ::Ifc2x3::IfcFillStyleSelect >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcFillAreaStyle (IfcEntityInstanceData* e);
-    IfcFillAreaStyle (boost::optional< std::string > v1_Name, aggregate_of_instance::ptr v2_FillStyles);
+    IfcFillAreaStyle (boost::optional< std::string > v1_Name, aggregate_of< ::Ifc2x3::IfcFillStyleSelect >::ptr v2_FillStyles);
     typedef aggregate_of< IfcFillAreaStyle > list;
 };
 
@@ -13657,12 +13703,12 @@ public:
 class IFC_PARSE_API IfcGeometricSet : public  IfcGeometricRepresentationItem {
 public:
     /// The geometric elements which make up the geometric set, these may be points, curves or surfaces; but are required to be of the same coordinate space dimensionality.
-    aggregate_of_instance::ptr Elements() const;
-    void setElements(aggregate_of_instance::ptr v);
+    aggregate_of< ::Ifc2x3::IfcGeometricSetSelect >::ptr Elements() const;
+    void setElements(aggregate_of< ::Ifc2x3::IfcGeometricSetSelect >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcGeometricSet (IfcEntityInstanceData* e);
-    IfcGeometricSet (aggregate_of_instance::ptr v1_Elements);
+    IfcGeometricSet (aggregate_of< ::Ifc2x3::IfcGeometricSetSelect >::ptr v1_Elements);
     typedef aggregate_of< IfcGeometricSet > list;
 };
 /// IfcGridPlacement provides a specialization of IfcObjectPlacement in which
@@ -15074,15 +15120,15 @@ public:
     /// Enumeration values, which shall be listed in the referenced IfcPropertyEnumeration, if such a reference is provided.
     /// 
     /// IFC2x4 CHANGE  The attribute has been made optional with upward compatibility for file based exchange.
-    aggregate_of_instance::ptr EnumerationValues() const;
-    void setEnumerationValues(aggregate_of_instance::ptr v);
+    aggregate_of< ::Ifc2x3::IfcValue >::ptr EnumerationValues() const;
+    void setEnumerationValues(aggregate_of< ::Ifc2x3::IfcValue >::ptr v);
     /// Enumeration from which a enumeration value has been selected. The referenced enumeration also establishes the unit of the enumeration value.
     ::Ifc2x3::IfcPropertyEnumeration* EnumerationReference() const;
     void setEnumerationReference(::Ifc2x3::IfcPropertyEnumeration* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcPropertyEnumeratedValue (IfcEntityInstanceData* e);
-    IfcPropertyEnumeratedValue (std::string v1_Name, boost::optional< std::string > v2_Description, aggregate_of_instance::ptr v3_EnumerationValues, ::Ifc2x3::IfcPropertyEnumeration* v4_EnumerationReference);
+    IfcPropertyEnumeratedValue (std::string v1_Name, boost::optional< std::string > v2_Description, aggregate_of< ::Ifc2x3::IfcValue >::ptr v3_EnumerationValues, ::Ifc2x3::IfcPropertyEnumeration* v4_EnumerationReference);
     typedef aggregate_of< IfcPropertyEnumeratedValue > list;
 };
 /// An IfcPropertyListValue
@@ -15155,15 +15201,15 @@ public:
     /// List of property values.
     /// 
     /// IFC2x4 CHANGE  The attribute has been made optional with upward compatibility for file based exchange.
-    aggregate_of_instance::ptr ListValues() const;
-    void setListValues(aggregate_of_instance::ptr v);
+    aggregate_of< ::Ifc2x3::IfcValue >::ptr ListValues() const;
+    void setListValues(aggregate_of< ::Ifc2x3::IfcValue >::ptr v);
     /// Unit for the list values, if not given, the default value for the measure type (given by the TYPE of nominal value) is used as defined by the global unit assignment at IfcProject.
     ::Ifc2x3::IfcUnit* Unit() const;
     void setUnit(::Ifc2x3::IfcUnit* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcPropertyListValue (IfcEntityInstanceData* e);
-    IfcPropertyListValue (std::string v1_Name, boost::optional< std::string > v2_Description, aggregate_of_instance::ptr v3_ListValues, ::Ifc2x3::IfcUnit* v4_Unit);
+    IfcPropertyListValue (std::string v1_Name, boost::optional< std::string > v2_Description, aggregate_of< ::Ifc2x3::IfcValue >::ptr v3_ListValues, ::Ifc2x3::IfcUnit* v4_Unit);
     typedef aggregate_of< IfcPropertyListValue > list;
 };
 /// IfcPropertyReferenceValue allows a property value to
@@ -15432,13 +15478,13 @@ public:
     /// List of defining values, which determine the defined values. This list shall have unique values only.
     /// 
     /// IFC2x4 CHANGE  The attribute has been made optional with upward compatibility for file based exchange.
-    aggregate_of_instance::ptr DefiningValues() const;
-    void setDefiningValues(aggregate_of_instance::ptr v);
+    aggregate_of< ::Ifc2x3::IfcValue >::ptr DefiningValues() const;
+    void setDefiningValues(aggregate_of< ::Ifc2x3::IfcValue >::ptr v);
     /// Defined values which are applicable for the scope as defined by the defining values.
     /// 
     /// IFC2x4 CHANGE  The attribute has been made optional with upward compatibility for file based exchange.
-    aggregate_of_instance::ptr DefinedValues() const;
-    void setDefinedValues(aggregate_of_instance::ptr v);
+    aggregate_of< ::Ifc2x3::IfcValue >::ptr DefinedValues() const;
+    void setDefinedValues(aggregate_of< ::Ifc2x3::IfcValue >::ptr v);
     /// Expression for the derivation of defined values from the defining values, the expression is given for information only, i.e. no automatic processing can be expected from the expression.
     boost::optional< std::string > Expression() const;
     void setExpression(boost::optional< std::string > v);
@@ -15451,7 +15497,7 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcPropertyTableValue (IfcEntityInstanceData* e);
-    IfcPropertyTableValue (std::string v1_Name, boost::optional< std::string > v2_Description, aggregate_of_instance::ptr v3_DefiningValues, aggregate_of_instance::ptr v4_DefinedValues, boost::optional< std::string > v5_Expression, ::Ifc2x3::IfcUnit* v6_DefiningUnit, ::Ifc2x3::IfcUnit* v7_DefinedUnit);
+    IfcPropertyTableValue (std::string v1_Name, boost::optional< std::string > v2_Description, aggregate_of< ::Ifc2x3::IfcValue >::ptr v3_DefiningValues, aggregate_of< ::Ifc2x3::IfcValue >::ptr v4_DefinedValues, boost::optional< std::string > v5_Expression, ::Ifc2x3::IfcUnit* v6_DefiningUnit, ::Ifc2x3::IfcUnit* v7_DefinedUnit);
     typedef aggregate_of< IfcPropertyTableValue > list;
 };
 /// IfcRectangleProfileDef defines a rectangle as the profile definition used by the swept surface geometry or the swept area solid. It is given by its X extent and its Y extent, and placed within the 2D position coordinate system, established by the Position attribute. It is placed centric within the position coordinate system. 
@@ -15726,12 +15772,12 @@ public:
 /// The shells shall not overlap or intersect except at common faces, edges or vertices.
 class IFC_PARSE_API IfcShellBasedSurfaceModel : public  IfcGeometricRepresentationItem {
 public:
-    aggregate_of_instance::ptr SbsmBoundary() const;
-    void setSbsmBoundary(aggregate_of_instance::ptr v);
+    aggregate_of< ::Ifc2x3::IfcShell >::ptr SbsmBoundary() const;
+    void setSbsmBoundary(aggregate_of< ::Ifc2x3::IfcShell >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcShellBasedSurfaceModel (IfcEntityInstanceData* e);
-    IfcShellBasedSurfaceModel (aggregate_of_instance::ptr v1_SbsmBoundary);
+    IfcShellBasedSurfaceModel (aggregate_of< ::Ifc2x3::IfcShell >::ptr v1_SbsmBoundary);
     typedef aggregate_of< IfcShellBasedSurfaceModel > list;
 };
 /// Definition from IAI: Describes slippage in support conditions or connection conditions.  Slippage means that a relative displacement may occur in a support or connection before support or connection reactions are awoken.
@@ -18110,14 +18156,14 @@ public:
 
 class IFC_PARSE_API IfcDraughtingCallout : public  IfcGeometricRepresentationItem {
 public:
-    aggregate_of_instance::ptr Contents() const;
-    void setContents(aggregate_of_instance::ptr v);
+    aggregate_of< ::Ifc2x3::IfcDraughtingCalloutElement >::ptr Contents() const;
+    void setContents(aggregate_of< ::Ifc2x3::IfcDraughtingCalloutElement >::ptr v);
         aggregate_of< IfcDraughtingCalloutRelationship >::ptr IsRelatedFromCallout() const; // INVERSE IfcDraughtingCalloutRelationship::RelatedDraughtingCallout
     aggregate_of< IfcDraughtingCalloutRelationship >::ptr IsRelatedToCallout() const; // INVERSE IfcDraughtingCalloutRelationship::RelatingDraughtingCallout
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcDraughtingCallout (IfcEntityInstanceData* e);
-    IfcDraughtingCallout (aggregate_of_instance::ptr v1_Contents);
+    IfcDraughtingCallout (aggregate_of< ::Ifc2x3::IfcDraughtingCalloutElement >::ptr v1_Contents);
     typedef aggregate_of< IfcDraughtingCallout > list;
 };
 /// The draughting pre defined colour is a pre defined colour for the purpose to identify a colour by name. Allowable names are:
@@ -18645,15 +18691,15 @@ public:
     ::Ifc2x3::IfcOneDirectionRepeatFactor* TilingPattern() const;
     void setTilingPattern(::Ifc2x3::IfcOneDirectionRepeatFactor* v);
     /// A set of constituents of the tile.
-    aggregate_of_instance::ptr Tiles() const;
-    void setTiles(aggregate_of_instance::ptr v);
+    aggregate_of< ::Ifc2x3::IfcFillAreaStyleTileShapeSelect >::ptr Tiles() const;
+    void setTiles(aggregate_of< ::Ifc2x3::IfcFillAreaStyleTileShapeSelect >::ptr v);
     /// The scale factor applied to each tile as it is placed in the annotation fill area.
     double TilingScale() const;
     void setTilingScale(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcFillAreaStyleTiles (IfcEntityInstanceData* e);
-    IfcFillAreaStyleTiles (::Ifc2x3::IfcOneDirectionRepeatFactor* v1_TilingPattern, aggregate_of_instance::ptr v2_Tiles, double v3_TilingScale);
+    IfcFillAreaStyleTiles (::Ifc2x3::IfcOneDirectionRepeatFactor* v1_TilingPattern, aggregate_of< ::Ifc2x3::IfcFillAreaStyleTileShapeSelect >::ptr v2_Tiles, double v3_TilingScale);
     typedef aggregate_of< IfcFillAreaStyleTiles > list;
 };
 
@@ -18791,7 +18837,7 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcGeometricCurveSet (IfcEntityInstanceData* e);
-    IfcGeometricCurveSet (aggregate_of_instance::ptr v1_Elements);
+    IfcGeometricCurveSet (aggregate_of< ::Ifc2x3::IfcGeometricSetSelect >::ptr v1_Elements);
     typedef aggregate_of< IfcGeometricCurveSet > list;
 };
 /// IfcIShapeProfileDef
@@ -22339,7 +22385,7 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcStructuredDimensionCallout (IfcEntityInstanceData* e);
-    IfcStructuredDimensionCallout (aggregate_of_instance::ptr v1_Contents);
+    IfcStructuredDimensionCallout (aggregate_of< ::Ifc2x3::IfcDraughtingCalloutElement >::ptr v1_Contents);
     typedef aggregate_of< IfcStructuredDimensionCallout > list;
 };
 /// The IfcSurfaceCurveSweptAreaSolid is the result of
@@ -24135,8 +24181,8 @@ public:
     ///   STARTED
     boost::optional< std::string > Status() const;
     void setStatus(boost::optional< std::string > v);
-    boost::optional< aggregate_of_instance::ptr > TargetUsers() const;
-    void setTargetUsers(boost::optional< aggregate_of_instance::ptr > v);
+    boost::optional< aggregate_of< ::Ifc2x3::IfcActorSelect >::ptr > TargetUsers() const;
+    void setTargetUsers(boost::optional< aggregate_of< ::Ifc2x3::IfcActorSelect >::ptr > v);
     /// The date and time that this cost schedule is updated; this allows tracking the schedule history.
     /// 
     /// IFC2x4 CHANGE Type changed from IfcDateTimeSelect.
@@ -24152,7 +24198,7 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcCostSchedule (IfcEntityInstanceData* e);
-    IfcCostSchedule (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcActorSelect* v6_SubmittedBy, ::Ifc2x3::IfcActorSelect* v7_PreparedBy, ::Ifc2x3::IfcDateTimeSelect* v8_SubmittedOn, boost::optional< std::string > v9_Status, boost::optional< aggregate_of_instance::ptr > v10_TargetUsers, ::Ifc2x3::IfcDateTimeSelect* v11_UpdateDate, std::string v12_ID, ::Ifc2x3::IfcCostScheduleTypeEnum::Value v13_PredefinedType);
+    IfcCostSchedule (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcActorSelect* v6_SubmittedBy, ::Ifc2x3::IfcActorSelect* v7_PreparedBy, ::Ifc2x3::IfcDateTimeSelect* v8_SubmittedOn, boost::optional< std::string > v9_Status, boost::optional< aggregate_of< ::Ifc2x3::IfcActorSelect >::ptr > v10_TargetUsers, ::Ifc2x3::IfcDateTimeSelect* v11_UpdateDate, std::string v12_ID, ::Ifc2x3::IfcCostScheduleTypeEnum::Value v13_PredefinedType);
     typedef aggregate_of< IfcCostSchedule > list;
 };
 /// Definition from IAI: The element type
@@ -24301,7 +24347,7 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcDimensionCurveDirectedCallout (IfcEntityInstanceData* e);
-    IfcDimensionCurveDirectedCallout (aggregate_of_instance::ptr v1_Contents);
+    IfcDimensionCurveDirectedCallout (aggregate_of< ::Ifc2x3::IfcDraughtingCalloutElement >::ptr v1_Contents);
     typedef aggregate_of< IfcDimensionCurveDirectedCallout > list;
 };
 /// Definition from IAI: The
@@ -26008,7 +26054,7 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcLinearDimension (IfcEntityInstanceData* e);
-    IfcLinearDimension (aggregate_of_instance::ptr v1_Contents);
+    IfcLinearDimension (aggregate_of< ::Ifc2x3::IfcDraughtingCalloutElement >::ptr v1_Contents);
     typedef aggregate_of< IfcLinearDimension > list;
 };
 /// Definition from IAI: Fasteners connecting building elements mechanically.  A single instance of this class may represent one or many of actual mechanical fasteners, for example an array of bolts or a row of nails.
@@ -27272,7 +27318,7 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRadiusDimension (IfcEntityInstanceData* e);
-    IfcRadiusDimension (aggregate_of_instance::ptr v1_Contents);
+    IfcRadiusDimension (aggregate_of< ::Ifc2x3::IfcDraughtingCalloutElement >::ptr v1_Contents);
     typedef aggregate_of< IfcRadiusDimension > list;
 };
 /// Definition from IAI: The element type (IfcRailingType)
@@ -28867,8 +28913,8 @@ public:
 
 class IFC_PARSE_API IfcTimeSeriesSchedule : public  IfcControl {
 public:
-    boost::optional< aggregate_of_instance::ptr > ApplicableDates() const;
-    void setApplicableDates(boost::optional< aggregate_of_instance::ptr > v);
+    boost::optional< aggregate_of< ::Ifc2x3::IfcDateTimeSelect >::ptr > ApplicableDates() const;
+    void setApplicableDates(boost::optional< aggregate_of< ::Ifc2x3::IfcDateTimeSelect >::ptr > v);
     ::Ifc2x3::IfcTimeSeriesScheduleTypeEnum::Value TimeSeriesScheduleType() const;
     void setTimeSeriesScheduleType(::Ifc2x3::IfcTimeSeriesScheduleTypeEnum::Value v);
     ::Ifc2x3::IfcTimeSeries* TimeSeries() const;
@@ -28876,7 +28922,7 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcTimeSeriesSchedule (IfcEntityInstanceData* e);
-    IfcTimeSeriesSchedule (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< aggregate_of_instance::ptr > v6_ApplicableDates, ::Ifc2x3::IfcTimeSeriesScheduleTypeEnum::Value v7_TimeSeriesScheduleType, ::Ifc2x3::IfcTimeSeries* v8_TimeSeries);
+    IfcTimeSeriesSchedule (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< aggregate_of< ::Ifc2x3::IfcDateTimeSelect >::ptr > v6_ApplicableDates, ::Ifc2x3::IfcTimeSeriesScheduleTypeEnum::Value v7_TimeSeriesScheduleType, ::Ifc2x3::IfcTimeSeries* v8_TimeSeries);
     typedef aggregate_of< IfcTimeSeriesSchedule > list;
 };
 /// The energy conversion device type IfcTransformerType defines commonly shared information for occurrences of transformers.  The set of shared information may include: 
@@ -29133,11 +29179,11 @@ public:
     ::Ifc2x3::IfcCurve* BasisCurve() const;
     void setBasisCurve(::Ifc2x3::IfcCurve* v);
     /// The first trimming point which may be specified as a Cartesian point, as a real parameter or both.
-    aggregate_of_instance::ptr Trim1() const;
-    void setTrim1(aggregate_of_instance::ptr v);
+    aggregate_of< ::Ifc2x3::IfcTrimmingSelect >::ptr Trim1() const;
+    void setTrim1(aggregate_of< ::Ifc2x3::IfcTrimmingSelect >::ptr v);
     /// The second trimming point which may be specified as a Cartesian point, as a real parameter or both.
-    aggregate_of_instance::ptr Trim2() const;
-    void setTrim2(aggregate_of_instance::ptr v);
+    aggregate_of< ::Ifc2x3::IfcTrimmingSelect >::ptr Trim2() const;
+    void setTrim2(aggregate_of< ::Ifc2x3::IfcTrimmingSelect >::ptr v);
     /// Flag to indicate whether the direction of the trimmed curve agrees with or is opposed to the direction of the basis curve.
     bool SenseAgreement() const;
     void setSenseAgreement(bool v);
@@ -29147,7 +29193,7 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcTrimmedCurve (IfcEntityInstanceData* e);
-    IfcTrimmedCurve (::Ifc2x3::IfcCurve* v1_BasisCurve, aggregate_of_instance::ptr v2_Trim1, aggregate_of_instance::ptr v3_Trim2, bool v4_SenseAgreement, ::Ifc2x3::IfcTrimmingPreference::Value v5_MasterRepresentation);
+    IfcTrimmedCurve (::Ifc2x3::IfcCurve* v1_BasisCurve, aggregate_of< ::Ifc2x3::IfcTrimmingSelect >::ptr v2_Trim1, aggregate_of< ::Ifc2x3::IfcTrimmingSelect >::ptr v3_Trim2, bool v4_SenseAgreement, ::Ifc2x3::IfcTrimmingPreference::Value v5_MasterRepresentation);
     typedef aggregate_of< IfcTrimmedCurve > list;
 };
 /// The energy conversion device type IfcTubeBundleType defines commonly shared information for occurrences of tube bundles.  The set of shared information may include: 
@@ -29940,7 +29986,7 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcAngularDimension (IfcEntityInstanceData* e);
-    IfcAngularDimension (aggregate_of_instance::ptr v1_Contents);
+    IfcAngularDimension (aggregate_of< ::Ifc2x3::IfcDraughtingCalloutElement >::ptr v1_Contents);
     typedef aggregate_of< IfcAngularDimension > list;
 };
 /// An asset is a uniquely identifiable grouping of elements acting as a single entity that has a financial value or that can be operated on as a single unit. 
@@ -31571,14 +31617,14 @@ public:
 /// Figure 184 — Construction material resource assignment
 class IFC_PARSE_API IfcConstructionMaterialResource : public  IfcConstructionResource {
 public:
-    boost::optional< aggregate_of_instance::ptr > Suppliers() const;
-    void setSuppliers(boost::optional< aggregate_of_instance::ptr > v);
+    boost::optional< aggregate_of< ::Ifc2x3::IfcActorSelect >::ptr > Suppliers() const;
+    void setSuppliers(boost::optional< aggregate_of< ::Ifc2x3::IfcActorSelect >::ptr > v);
     boost::optional< double > UsageRatio() const;
     void setUsageRatio(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcConstructionMaterialResource (IfcEntityInstanceData* e);
-    IfcConstructionMaterialResource (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_ResourceIdentifier, boost::optional< std::string > v7_ResourceGroup, boost::optional< ::Ifc2x3::IfcResourceConsumptionEnum::Value > v8_ResourceConsumption, ::Ifc2x3::IfcMeasureWithUnit* v9_BaseQuantity, boost::optional< aggregate_of_instance::ptr > v10_Suppliers, boost::optional< double > v11_UsageRatio);
+    IfcConstructionMaterialResource (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_ResourceIdentifier, boost::optional< std::string > v7_ResourceGroup, boost::optional< ::Ifc2x3::IfcResourceConsumptionEnum::Value > v8_ResourceConsumption, ::Ifc2x3::IfcMeasureWithUnit* v9_BaseQuantity, boost::optional< aggregate_of< ::Ifc2x3::IfcActorSelect >::ptr > v10_Suppliers, boost::optional< double > v11_UsageRatio);
     typedef aggregate_of< IfcConstructionMaterialResource > list;
 };
 /// IfcConstructionProductResource defines the role of a product that is consumed (wholly or partially), or occupied in the performance of construction. 
@@ -32122,7 +32168,7 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcDiameterDimension (IfcEntityInstanceData* e);
-    IfcDiameterDimension (aggregate_of_instance::ptr v1_Contents);
+    IfcDiameterDimension (aggregate_of< ::Ifc2x3::IfcDraughtingCalloutElement >::ptr v1_Contents);
     typedef aggregate_of< IfcDiameterDimension > list;
 };
 /// Definition from IAI: Representation of different kinds of

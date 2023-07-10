@@ -103,7 +103,7 @@ def run(f, logger):
     cd = compile(a, f"{f.schema}.py", "exec")
     scope = {}
     exec(cd, scope)
-    S = ifcopenshell.ifcopenshell_wrapper.schema_by_name(f.schema)
+    S = ifcopenshell.ifcopenshell_wrapper.schema_by_name(f.schema_identifier)
 
     rules = list(filter(lambda x: hasattr(x, "SCOPE"), scope.values()))
 
@@ -197,10 +197,14 @@ def run(f, logger):
             type = type.declared_type()
 
         if isinstance(value, (list, tuple)):
-            assert isinstance(type, ifcopenshell.ifcopenshell_wrapper.aggregation_type)
-            ty = type.type_of_element()
-            for v in value:
-                check(v, ty, instance=inst)
+            if isinstance(type, ifcopenshell.ifcopenshell_wrapper.aggregation_type):
+                ty = type.type_of_element()
+                for v in value:
+                    check(v, ty, instance=inst)
+            else:
+                # Let's hope a schema validation error was reported for this case
+                pass
+
         elif isinstance(value, ifcopenshell.entity_instance):
             if isinstance(
                 S.declaration_by_name(value.is_a()),

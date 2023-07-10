@@ -380,6 +380,7 @@ class BIM_PT_work_schedules(Panel):
         row.operator("bim.add_summary_task", text="Add Summary Task", icon="ADD").work_schedule = work_schedule_id
         row.operator("bim.expand_all_tasks", text="Expand All")
         row.operator("bim.contract_all_tasks", text="Contract All")
+        row = self.layout.row(align=True)
         self.draw_task_operators()
         self.layout.template_list(
             "BIM_UL_tasks",
@@ -438,6 +439,11 @@ class BIM_PT_work_schedules(Panel):
                 op.lag_time = sequence["TimeLag"]
             op = row.operator("bim.enable_editing_sequence_attributes", text="Edit Sequence", icon="GREASEPENCIL")
             op.sequence = sequence["id"]
+            if process_type == "RelatingProcess":
+                op = row.operator("bim.unassign_predecessor", text="", icon="X")
+            elif process_type == "RelatedProcess":
+                op = row.operator("bim.unassign_successor", text="", icon="X")
+            op.task = task["id"]
 
     def draw_editable_sequence_attributes_ui(self):
         blenderbim.bim.helper.draw_attributes(self.props.sequence_attributes, self.layout)

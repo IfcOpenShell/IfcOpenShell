@@ -28,6 +28,8 @@ import blenderbim.core.geometry as geometry
 from mathutils import Matrix, Vector
 from blenderbim.bim import import_ifc
 from blenderbim.bim.module.geometry.helper import Helper
+import collections
+from blenderbim.bim.module.model.data import AuthoringData
 
 
 class Model(blenderbim.core.tool.Model):
@@ -42,6 +44,32 @@ class Model(blenderbim.core.tool.Model):
         if isinstance(value, (tuple, list)):
             return [v * cls.unit_scale for v in value]
         return value * cls.unit_scale
+
+    @classmethod
+    def convert_data_to_project_units(cls, data, non_si_props=[]):
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        for prop_name in data:
+            if prop_name in non_si_props:
+                continue
+            prop_value = data[prop_name]
+            if isinstance(prop_value, collections.abc.Iterable):
+                data[prop_name] = [v / si_conversion for v in prop_value]
+            else:
+                data[prop_name] = prop_value / si_conversion
+        return data
+
+    @classmethod
+    def convert_data_to_si_units(cls, data, non_si_props=[]):
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        for prop_name in data:
+            if prop_name in non_si_props:
+                continue
+            prop_value = data[prop_name]
+            if isinstance(prop_value, collections.abc.Iterable):
+                data[prop_name] = [v * si_conversion for v in prop_value]
+            else:
+                data[prop_name] = prop_value * si_conversion
+        return data
 
     @classmethod
     def export_curve(cls, position, edge_indices, points=None):
@@ -147,11 +175,13 @@ class Model(blenderbim.core.tool.Model):
         cls.bm.edges.ensure_lookup_table()
 
         surface = tool.Ifc.get().createIfcCurveBoundedPlane()
-        surface.BasisSurface = tool.Ifc.get().createIfcPlane(tool.Ifc.get().createIfcAxis2Placement3D(
-            tool.Ifc.get().createIfcCartesianPoint([o / cls.unit_scale for o in p1]),
-            tool.Ifc.get().createIfcDirection([float(o) for o in z_axis]),
-            tool.Ifc.get().createIfcDirection([float(o) for o in x_axis]),
-        ))
+        surface.BasisSurface = tool.Ifc.get().createIfcPlane(
+            tool.Ifc.get().createIfcAxis2Placement3D(
+                tool.Ifc.get().createIfcCartesianPoint([o / cls.unit_scale for o in p1]),
+                tool.Ifc.get().createIfcDirection([float(o) for o in z_axis]),
+                tool.Ifc.get().createIfcDirection([float(o) for o in x_axis]),
+            )
+        )
 
         if tool.Ifc.get().schema != "IFC2X3":
             cls.points = cls.export_points(position, indices["points"])
@@ -501,7 +531,7 @@ class Model(blenderbim.core.tool.Model):
         return axes
 
     @classmethod
-    def regenerate_array(cls, parent, data):
+    def regenerate_array(cls, parent, data, keep_objs=False):
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         obj_stack = [parent]
 
@@ -571,7 +601,12 @@ class Model(blenderbim.core.tool.Model):
                 element = tool.Ifc.get().by_guid(removed_child)
                 obj = tool.Ifc.get_object(element)
                 if obj:
-                    tool.Geometry.delete_ifc_object(obj)
+                    if keep_objs:
+                        pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+                        pset = tool.Ifc.get().by_id(pset["id"])
+                        ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
+                    else:
+                        tool.Geometry.delete_ifc_object(obj)
 
             bpy.context.view_layer.update()
 
@@ -601,3 +636,101 @@ class Model(blenderbim.core.tool.Model):
             is_global=True,
             should_sync_changes_first=False,
         )
+
+    @classmethod
+    def update_thumbnail_for_element(cls, element, refresh=False):
+        if bpy.app.background:
+            return
+
+        from PIL import Image, ImageDraw
+
+        obj = tool.Ifc.get_object(element)
+        if not obj:
+            return  # Nothing to process
+
+        if not refresh and element.id() in AuthoringData.type_thumbnails:
+            return  # Already processed
+
+        obj.asset_generate_preview()
+        while not obj.preview:
+            pass
+
+        # if object has .data we can use default blender .asset_generate_preview()
+        if not obj.data:
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            size = 128
+            img = Image.new("RGBA", (size, size))
+            draw = ImageDraw.Draw(img)
+
+            material = ifcopenshell.util.element.get_material(element)
+            if material and material.is_a("IfcMaterialProfileSet"):
+                profile = material.MaterialProfiles[0].Profile
+                tool.Profile.draw_image_for_ifc_profile(draw, profile, size)
+
+            elif material and material.is_a("IfcMaterialLayerSet"):
+                thicknesses = [l.LayerThickness for l in material.MaterialLayers]
+                total_thickness = sum(thicknesses)
+                si_total_thickness = total_thickness * unit_scale
+                if si_total_thickness <= 0.051:
+                    width = 10
+                elif si_total_thickness <= 0.11:
+                    width = 20
+                elif si_total_thickness <= 0.21:
+                    width = 30
+                elif si_total_thickness <= 0.31:
+                    width = 40
+                else:
+                    width = 50
+
+                height = 100
+
+                is_horizontal = False
+                if element.is_a("IfcSlabType"):
+                    is_horizontal = True
+
+                parametric = ifcopenshell.util.element.get_psets(element).get("EPset_Parametric")
+                if parametric:
+                    layer_set_direction = parametric.get("LayerSetDirection", None)
+                    if layer_set_direction == "AXIS2":
+                        is_horizontal = False
+                    elif layer_set_direction == "AXIS3":
+                        is_horizontal = True
+
+                if is_horizontal:
+                    width, height = height, width
+
+                x_offset = (size / 2) - (width / 2)
+                y_offset = (size / 2) - (height / 2)
+                draw.rectangle([x_offset, y_offset, width + x_offset, height + y_offset], outline="white", width=5)
+                current_thickness = 0
+                del thicknesses[-1]
+                for thickness in thicknesses:
+                    current_thickness += thickness
+                    if element.is_a("IfcSlabType"):
+                        y = (current_thickness / total_thickness) * height
+                        line = [x_offset, y_offset + y, x_offset + width, y_offset + y]
+                    else:
+                        x = (current_thickness / total_thickness) * width
+                        line = [x_offset + x, y_offset, x_offset + x, y_offset + height]
+                    draw.line(line, fill="white", width=2)
+            elif False:
+                # TODO: things like parametric duct segments
+                pass
+            elif not element.RepresentationMaps:
+                # Empties are represented by a generic thumbnail
+                width = height = 100
+                x_offset = (size / 2) - (width / 2)
+                y_offset = (size / 2) - (height / 2)
+                draw.line([x_offset, y_offset, width + x_offset, height + y_offset], fill="white", width=2)
+                draw.line([x_offset, y_offset + height, width + x_offset, y_offset], fill="white", width=2)
+                draw.rectangle([x_offset, y_offset, width + x_offset, height + y_offset], outline="white", width=5)
+            else:
+                draw.line([0, 0, size, size], fill="red", width=2)
+                draw.line([0, size, size, 0], fill="red", width=2)
+
+            pixels = [item for sublist in img.getdata() for item in sublist]
+
+            obj.preview.image_size = size, size
+            obj.preview.image_pixels_float = pixels
+
+        AuthoringData.type_thumbnails[element.id()] = obj.preview.icon_id

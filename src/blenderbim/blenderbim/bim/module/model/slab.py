@@ -133,7 +133,7 @@ class DumbSlabGenerator:
 
         props = bpy.context.scene.BIMModelProperties
         self.collection = bpy.context.view_layer.active_layer_collection.collection
-        self.collection_obj = bpy.data.objects.get(self.collection.name)
+        self.collection_obj = self.collection.BIMCollectionProperties.obj
         self.depth = sum(thicknesses) * unit_scale
         self.width = 3
         self.length = 3
@@ -252,9 +252,17 @@ class DumbSlabPlaner:
         new_material = ifcopenshell.util.element.get_material(settings["relating_type"])
         if not new_material or not new_material.is_a("IfcMaterialLayerSet"):
             return
+        parametric = ifcopenshell.util.element.get_psets(settings["relating_type"]).get("EPset_Parametric")
+        layer_set_direction = None
+        if parametric:
+            layer_set_direction = parametric.get("LayerSetDirection", layer_set_direction)
         new_thickness = sum([l.LayerThickness for l in new_material.MaterialLayers])
         material = ifcopenshell.util.element.get_material(settings["related_object"])
-        if material and material.is_a("IfcMaterialLayerSetUsage") and material.LayerSetDirection == "AXIS3":
+        if not material or not material.is_a("IfcMaterialLayerSetUsage"):
+            return
+        if layer_set_direction:
+            material.LayerSetDirection = layer_set_direction
+        if material.LayerSetDirection == "AXIS3":
             self.change_thickness(settings["related_object"], new_thickness)
 
     def change_thickness(self, element, thickness):

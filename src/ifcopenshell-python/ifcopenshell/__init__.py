@@ -71,6 +71,10 @@ except Exception as e:
 from . import guid
 from .file import file
 from .entity_instance import entity_instance, register_schema_attributes
+from .sql import sqlite, sqlite_entity
+try:
+    from .stream import stream, stream_entity
+except: pass
 
 READ_ERROR = ifcopenshell_wrapper.file_open_status.READ_ERROR
 NO_HEADER = ifcopenshell_wrapper.file_open_status.NO_HEADER
@@ -87,7 +91,7 @@ class SchemaError(Error):
     pass
 
 
-def open(path: "os.PathLike | str", format: str = None) -> file:
+def open(path: "os.PathLike | str", format: str = None, should_stream: bool = False) -> file:
     """Loads an IFC dataset from a filepath
 
     You can specify a file format. If no format is given, it is guessed from its extension.
@@ -114,6 +118,10 @@ def open(path: "os.PathLike | str", format: str = None) -> file:
                         return open(zf.extract(name, unzipped_path))
                 else:
                     raise LookupError(f"No .ifc or .ifcXML file found in {path}")
+    if format == ".ifcSQLite":
+        return sqlite(path)
+    if should_stream:
+        return stream(path)
     f = ifcopenshell_wrapper.open(str(path.absolute()))
     if f.good():
         return file(f)
@@ -178,6 +186,30 @@ def register_schema(schema):
     schema.disown()
     ifcopenshell_wrapper.register_schema(schema.schema)
     register_schema_attributes(schema.schema)
+
+
+def schema_by_name(schema=None, schema_version=None):
+    """Returns an object allowing you to query the IFC schema itself
+
+    :param schema: Which IFC schema to use, chosen from "IFC2X3", "IFC4",
+        or "IFC4X3". These refer to the ISO approved versions of IFC.
+    :type schema: string
+    :param schema_version: If you want to specify an exact version of IFC
+        that may not be an ISO approved version, use this argument instead
+        of ``schema``. IFC versions on technical.buildingsmart.org are
+        described using 4 integers representing the major, minor, addendum,
+        and corrigendum number. For example, (4, 0, 2, 1) refers to IFC4
+        ADD2 TC1, which is the official version approved by ISO when people
+        refer to "IFC4". Generally you should not use this argument unless
+        you are testing non-ISO IFC releases.
+    :type schema_version: tuple[int]
+    """
+    if schema_version:
+        prefixes = ("IFC", "X", "_ADD", "_TC")
+        schema = "".join("".join(map(str, t)) if t[1] else "" for t in zip(prefixes, schema_version))
+    else:
+        schema = {"IFC4X3": "IFC4X3_ADD1"}.get(schema, schema)
+    return ifcopenshell_wrapper.schema_by_name(schema)
 
 
 from .main import *

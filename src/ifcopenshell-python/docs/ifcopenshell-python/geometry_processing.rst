@@ -20,6 +20,7 @@ related information in ``shape.geometry``:
 
     import ifcopenshell
     import ifcopenshell.geom
+    import ifcopenshell.util.shape
 
     ifc_file = ifcopenshell.open('model.ifc')
     element = ifc_file.by_type('IfcWall')[0]
@@ -39,7 +40,7 @@ related information in ``shape.geometry``:
     # A unique geometry ID, useful to check whether or not two geometries are
     # identical for caching and reuse. The naming scheme is:
     # IfcShapeRepresentation.id{-layerset-LayerSet.id}{-material-Material.id}{-openings-[Opening n.id ...]}{-world-coords}
-    print(shape.geometry.id())
+    print(shape.geometry.id)
 
     # A 4x4 matrix representing the location and rotation of the element, in the form:
     # [ [ x_x, y_x, z_x, x   ]
@@ -55,19 +56,28 @@ related information in ``shape.geometry``:
     # Objects are never scaled, so the scale factor of the matrix is always 1.
     matrix = shape.transformation.matrix.data
 
-    # Indices of vertices per triangle face e.g. [f1v1, f1v2, f1v3, f2v1, f2v2, f2v3, ...]
-    faces = shape.geometry.faces
+    # For convenience, you might want the matrix as a nested numpy array, so you can do matrix math.
+    matrix = ifcopenshell.util.shape.get_shape_matrix(shape)
 
-    # Indices of vertices per edge e.g. [e1v1, e1v2, e2v1, e2v2, ...]
-    edges = shape.geometry.edges
+    # You can also extract the XYZ location of the matrix.
+    location = matrix[:,3][0:3]
 
     # X Y Z of vertices in flattened list e.g. [v1x, v1y, v1z, v2x, v2y, v2z, ...]
     verts = shape.geometry.verts
 
+    # Indices of vertices per edge e.g. [e1v1, e1v2, e2v1, e2v2, ...]
+    edges = shape.geometry.edges
+
+    # Indices of vertices per triangle face e.g. [f1v1, f1v2, f1v3, f2v1, f2v2, f2v3, ...]
+    faces = shape.geometry.faces
+
     # Since the lists are flattened, you may prefer to group them like so depending on your geometry kernel
-    grouped_verts = [[verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)]
-    grouped_edges = [[edges[i], edges[i + 1]] for i in range(0, len(edges), 2)]
-    grouped_faces = [[faces[i], faces[i + 1], faces[i + 2]] for i in range(0, len(faces), 3)]
+    # A nested numpy array e.g. [[v1x, v1y, v1z], [v2x, v2y, v2z], ...]
+    grouped_verts = ifcopenshell.util.shape.get_vertices(shape.geometry)
+    # A nested numpy array e.g. [[e1v1, e1v2], [e2v1, e2v2], ...]
+    grouped_edges = ifcopenshell.util.shape.get_edges(shape.geometry)
+    # A nested numpy array e.g. [[f1v1, f1v2, f1v3], [f2v1, f2v2, f2v3], ...]
+    grouped_faces = ifcopenshell.util.shape.get_faces(shape.geometry)
 
     # A list of styles that are relevant to this shape
     styles = shape.geometry.materials

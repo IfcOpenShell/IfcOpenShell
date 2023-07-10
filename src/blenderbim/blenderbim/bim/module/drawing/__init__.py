@@ -24,10 +24,12 @@ classes = (
     operator.ActivateDrawingStyle,
     operator.ActivateModel,
     operator.AddAnnotation,
+    operator.AddAnnotationType,
     operator.AddDrawing,
     operator.AddDrawingStyle,
     operator.AddDrawingStyleAttribute,
     operator.AddDrawingToSheet,
+    operator.AddReferenceToSheet,
     operator.AddSchedule,
     operator.AddScheduleToSheet,
     operator.AddSheet,
@@ -37,6 +39,7 @@ classes = (
     operator.ContractSheet,
     operator.CreateDrawing,
     operator.CreateSheets,
+    operator.DisableAddAnnotationType,
     operator.DisableEditingAssignedProduct,
     operator.DisableEditingDrawings,
     operator.DisableEditingSchedules,
@@ -46,6 +49,7 @@ classes = (
     operator.EditAssignedProduct,
     operator.EditSheet,
     operator.EditText,
+    operator.EnableAddAnnotationType,
     operator.EditTextPopup,
     operator.EnableEditingAssignedProduct,
     operator.EnableEditingText,
@@ -61,16 +65,23 @@ classes = (
     operator.RemoveDrawingStyle,
     operator.RemoveDrawingStyleAttribute,
     operator.RemoveSchedule,
+    operator.ReloadDrawingStyles,
     operator.RemoveSheet,
     operator.RemoveTextLiteral,
     operator.SelectAllDrawings,
     operator.ResizeText,
     operator.SaveDrawingStyle,
+    operator.SaveDrawingStylesData,
     operator.SelectAssignedProduct,
     operator.SelectDocIfcFile,
+    operator.LoadReferences,
+    operator.DisableEditingReferences,
+    operator.AddReference,
+    operator.RemoveReference,
+    operator.OpenReference,
     prop.Variable,
     prop.Drawing,
-    prop.Schedule,
+    prop.Document,
     prop.DrawingStyle,
     prop.Sheet,
     prop.DocProperties,
@@ -81,10 +92,10 @@ classes = (
     prop.BIMAnnotationProperties,
     ui.BIM_PT_camera,
     ui.BIM_PT_drawing_underlay,
-    ui.BIM_PT_annotation_utilities,
     ui.BIM_PT_sheets,
     ui.BIM_PT_drawings,
     ui.BIM_PT_schedules,
+    ui.BIM_PT_references,
     ui.BIM_PT_product_assignments,
     ui.BIM_PT_text,
     ui.BIM_UL_drawinglist,
@@ -94,13 +105,14 @@ classes = (
     gizmos.DimensionLabelGizmo,
     gizmos.ExtrusionGuidesGizmo,
     gizmos.ExtrusionWidget,
+    workspace.LaunchAnnotationTypeManager,
     workspace.Hotkey,
 )
 
 
 def register():
     if not bpy.app.background:
-        bpy.utils.register_tool(workspace.AnnotationTool, after={"bim.bim_tool"}, separator=True, group=True)
+        bpy.utils.register_tool(workspace.AnnotationTool, after={"bim.bim_tool"}, separator=False, group=True)
     bpy.types.Scene.DocProperties = bpy.props.PointerProperty(type=prop.DocProperties)
     bpy.types.Scene.BIMAnnotationProperties = bpy.props.PointerProperty(type=prop.BIMAnnotationProperties)
     bpy.types.Camera.BIMCameraProperties = bpy.props.PointerProperty(type=prop.BIMCameraProperties)

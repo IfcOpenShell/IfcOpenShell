@@ -56,7 +56,37 @@ class SelectByMaterial(bpy.types.Operator, tool.Ifc.Operator):
     material: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.select_by_material(tool.Material, material=tool.Ifc.get().by_id(self.material))
+        core.select_by_material(tool.Material, tool.Spatial, material=tool.Ifc.get().by_id(self.material))
+
+
+class EnableEditingMaterial(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.enable_editing_material"
+    bl_label = "Enable Editing Material"
+    bl_options = {"REGISTER", "UNDO"}
+    material: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.enable_editing_material(tool.Material, material=tool.Ifc.get().by_id(self.material))
+
+
+class EditMaterial(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.edit_material"
+    bl_label = "Edit Material"
+    bl_options = {"REGISTER", "UNDO"}
+    material: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.edit_material(tool.Ifc, tool.Material, material=tool.Ifc.get().by_id(self.material))
+
+
+class DisableEditingMaterial(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.disable_editing_material"
+    bl_label = "Disable Editing Material"
+    bl_options = {"REGISTER", "UNDO"}
+    material: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.disable_editing_material(tool.Material)
 
 
 class AssignParameterizedProfile(bpy.types.Operator, tool.Ifc.Operator):
@@ -144,59 +174,7 @@ class AssignMaterial(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         objects = [bpy.data.objects.get(self.obj)] if self.obj else tool.Blender.get_selected_objects()
-        active_obj = context.active_object
-        active_object_material_type = self.material_type or active_obj.BIMObjectMaterialProperties.material_type
-        material = tool.Ifc.get().by_id(int(active_obj.BIMObjectMaterialProperties.material))
-        for obj in objects:
-            element = tool.Ifc.get_entity(obj)
-            if not element:
-                continue
-            ifcopenshell.api.run(
-                "material.assign_material",
-                tool.Ifc.get(),
-                product=element,
-                type=active_object_material_type,
-                material=material,
-            )
-            assigned_material = ifcopenshell.util.element.get_material(element)
-            if assigned_material.is_a("IfcMaterialLayerSet"):
-                if not assigned_material.MaterialLayers:
-                    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-                    layer = ifcopenshell.api.run(
-                        "material.add_layer",
-                        tool.Ifc.get(),
-                        layer_set=assigned_material,
-                        material=tool.Ifc.get().by_type("IfcMaterial")[0],
-                    )
-                    thickness = 0.1  # Arbitrary metric thickness for now
-                    layer.LayerThickness = thickness / unit_scale
-            elif assigned_material.is_a("IfcMaterialProfileSet"):
-                if not assigned_material.MaterialProfiles:
-                    named_profiles = [p for p in tool.Ifc.get().by_type("IfcProfileDef") if p.ProfileName]
-                    if named_profiles:
-                        profile = named_profiles[0]
-                    else:
-                        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-                        size = 0.5 / unit_scale
-                        profile = tool.Ifc.get().create_entity(
-                            "IfcRectangleProfileDef",
-                            ProfileName="New Profile",
-                            ProfileType="AREA",
-                            XDim=size,
-                            YDim=size,
-                        )
-                        material_profile = ifcopenshell.api.run(
-                            "material.add_profile",
-                            tool.Ifc.get(),
-                            profile_set=assigned_material,
-                            material=tool.Ifc.get().by_type("IfcMaterial")[0],
-                        )
-                        ifcopenshell.api.run(
-                            "material.assign_profile",
-                            tool.Ifc.get(),
-                            material_profile=material_profile,
-                            profile=profile,
-                        )
+        core.assign_material(tool.Ifc, tool.Material, material_type= self.material_type , objects=objects )
 
 
 class UnassignMaterial(bpy.types.Operator, tool.Ifc.Operator):
@@ -207,12 +185,7 @@ class UnassignMaterial(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         objects = [bpy.data.objects.get(self.obj)] if self.obj else tool.Blender.get_selected_objects()
-        for obj in objects:
-            element = tool.Ifc.get_entity(obj)
-            if element:
-                material = ifcopenshell.util.element.get_material(element, should_inherit=False)
-                if "Usage" not in material.is_a():
-                    ifcopenshell.api.run("material.unassign_material", tool.Ifc.get(), product=element)
+        core.unassign_material(tool.Ifc, tool.Material, objects=objects )
 
 
 class AddConstituent(bpy.types.Operator, tool.Ifc.Operator):
@@ -243,12 +216,12 @@ class RemoveConstituent(bpy.types.Operator, tool.Ifc.Operator):
     constituent: bpy.props.IntProperty()
 
     def _execute(self, context):
-        for inverse in tool.Ifc.get().get_inverse(tool.Ifc.get().by_id(self.constituent)):
-            if inverse.is_a("IfcMaterialConstituentSet") and len(inverse.MaterialConstituents) == 1:
-                return
-        ifcopenshell.api.run(
-            "material.remove_constituent", tool.Ifc.get(), constituent=tool.Ifc.get().by_id(self.constituent)
-        )
+        constituent = tool.Ifc.get().by_id(self.constituent)
+        for material_set in layer.ToMaterialConstituentSet:
+            if len(material_set.MaterialConstituents) == 1:
+                self.report({"ERROR"}, "At least one constituent must exist")
+                return {"ERROR"}
+        ifcopenshell.api.run("material.remove_constituent", tool.Ifc.get(), constituent=constituent)
 
 
 class AddProfile(bpy.types.Operator, tool.Ifc.Operator):
@@ -278,10 +251,12 @@ class RemoveProfile(bpy.types.Operator, tool.Ifc.Operator):
     profile: bpy.props.IntProperty()
 
     def _execute(self, context):
-        for inverse in tool.Ifc.get().get_inverse(tool.Ifc.get().by_id(self.profile)):
-            if inverse.is_a("IfcMaterialProfileSet") and len(inverse.MaterialProfiles) == 1:
-                return
-        ifcopenshell.api.run("material.remove_profile", tool.Ifc.get(), profile=tool.Ifc.get().by_id(self.profile))
+        profile = tool.Ifc.get().by_id(self.profile)
+        for material_set in profile.ToMaterialProfileSet:
+            if len(material_set.MaterialProfiles) == 1:
+                self.report({"ERROR"}, "At least one profile must exist")
+                return {"ERROR"}
+        ifcopenshell.api.run("material.remove_profile", tool.Ifc.get(), profile=profile)
 
 
 class AddLayer(bpy.types.Operator, tool.Ifc.Operator):
@@ -294,7 +269,7 @@ class AddLayer(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
+        layer = ifcopenshell.api.run(
             "material.add_layer",
             self.file,
             **{
@@ -302,6 +277,10 @@ class AddLayer(bpy.types.Operator, tool.Ifc.Operator):
                 "material": self.file.by_id(int(obj.BIMObjectMaterialProperties.material)),
             },
         )
+
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        thickness = 0.1  # Arbitrary metric thickness for now
+        layer.LayerThickness = thickness / unit_scale
 
 
 class ReorderMaterialSetItem(bpy.types.Operator, tool.Ifc.Operator):
@@ -336,10 +315,12 @@ class RemoveLayer(bpy.types.Operator, tool.Ifc.Operator):
     layer: bpy.props.IntProperty()
 
     def _execute(self, context):
-        for inverse in tool.Ifc.get().get_inverse(tool.Ifc.get().by_id(self.layer)):
-            if inverse.is_a("IfcMaterialLayerSet") and len(inverse.MaterialLayers) == 1:
-                return
-        ifcopenshell.api.run("material.remove_layer", tool.Ifc.get(), layer=tool.Ifc.get().by_id(self.layer))
+        layer = tool.Ifc.get().by_id(self.layer)
+        for material_set in layer.ToMaterialLayerSet:
+            if len(material_set.MaterialLayers) == 1:
+                self.report({"ERROR"}, "At least one layer must exist")
+                return {"ERROR"}
+        ifcopenshell.api.run("material.remove_layer", tool.Ifc.get(), layer=layer)
 
 
 class AddListItem(bpy.types.Operator, tool.Ifc.Operator):

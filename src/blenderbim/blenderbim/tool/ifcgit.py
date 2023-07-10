@@ -3,7 +3,10 @@ import re
 
 # allows git import even if git executable isn't found
 os.environ["GIT_PYTHON_REFRESH"] = "quiet"
-import git
+try:
+    import git
+except:
+    print("Warning: GitPython not available.")
 import bpy
 from blenderbim.bim.ifc import IfcStore
 import blenderbim.tool as tool
@@ -13,6 +16,26 @@ class IfcGit:
     @classmethod
     def init_repo(cls, path_dir):
         IfcGitRepo.repo = git.Repo.init(path_dir)
+        cls.config_info_attributes(IfcGitRepo.repo)
+
+    @classmethod
+    def clone_repo(cls, remote_url, local_folder):
+        IfcGitRepo.repo = git.Repo.clone_from(
+            url=remote_url,
+            to_path=local_folder,
+        )
+        cls.config_info_attributes(IfcGitRepo.repo)
+        return IfcGitRepo.repo
+
+    @classmethod
+    def load_anyifc(cls, repo):
+        working_dir = repo.working_dir
+        for item in os.listdir(working_dir):
+            path = os.path.join(working_dir, item)
+            if os.path.isfile(path) and re.match(".*\.ifc$", path, re.IGNORECASE):
+                cls.load_project(path)
+                return True
+        return False
 
     @classmethod
     def get_path_dir(cls, path_ifc):
@@ -39,13 +62,15 @@ class IfcGit:
             if parentdir_path == path_dir:
                 # root folder
                 return None
-            return IfcGit.repo_from_path(parentdir_path)
+            return cls.repo_from_path(parentdir_path)
         if repo:
             IfcGitRepo.repo = repo
         return repo
 
     @classmethod
     def add_file_to_repo(cls, repo, path_file):
+        if os.name == "nt":
+            cls.dos2unix(path_file)
         repo.index.add(path_file)
         repo.index.commit(message="Added " + os.path.relpath(path_file, repo.working_dir))
         bpy.ops.ifcgit.refresh()
@@ -58,6 +83,8 @@ class IfcGit:
     def git_commit(cls, path_file):
         props = bpy.context.scene.IfcGitProperties
         repo = IfcGitRepo.repo
+        if os.name == "nt":
+            cls.dos2unix(path_file)
         repo.index.add(path_file)
         repo.index.commit(message=props.commit_message)
         props.commit_message = ""
@@ -69,6 +96,35 @@ class IfcGit:
         repo.create_tag(props.new_tag_name, ref=item.hexsha, message=props.new_tag_message)
         props.new_tag_name = ""
         props.new_tag_message = ""
+
+    @classmethod
+    def delete_tag(cls, repo, tag_name):
+        if tag_name in repo.tags:
+            repo.delete_tag(tag_name)
+
+    @classmethod
+    def add_remote(cls, repo):
+        props = bpy.context.scene.IfcGitProperties
+        repo.create_remote(name=props.remote_name, url=props.remote_url)
+        props.remote_name = ""
+        props.remote_url = ""
+
+    @classmethod
+    def delete_remote(cls, repo):
+        props = bpy.context.scene.IfcGitProperties
+        remote_name = props.select_remote
+        if remote_name in repo.remotes:
+            repo.delete_remote(remote_name)
+        if repo.remotes:
+            props.select_remote = repo.remotes[0].name
+
+    @classmethod
+    def push(cls, repo, remote_name, branch_name):
+        remote = repo.remotes[remote_name]
+        try:
+            remote.push(tags=True, refspec=branch_name).raise_if_error()
+        except git.exc.GitCommandError as exc:
+            return exc.stderr
 
     @classmethod
     def create_new_branch(cls):
@@ -94,15 +150,16 @@ class IfcGit:
     def get_commits_list(cls, path_ifc, lookup):
 
         props = bpy.context.scene.IfcGitProperties
+        repo = cls.repo_from_path(path_ifc)
         commits = list(
             git.objects.commit.Commit.iter_items(
-                repo=IfcGitRepo.repo,
+                repo=repo,
                 rev=[props.display_branch],
             )
         )
         commits_relevant = list(
             git.objects.commit.Commit.iter_items(
-                repo=IfcGitRepo.repo,
+                repo=repo,
                 rev=[props.display_branch],
                 paths=[path_ifc],
             )
@@ -132,6 +189,13 @@ class IfcGit:
                         list_item.tags[-1].message = tag.tag.message
 
     @classmethod
+    def refresh_revision_list(cls, path_ifc):
+        repo = cls.repo_from_path(path_ifc)
+        cls.clear_commits_list()
+        lookup = cls.tags_by_hexsha(repo)
+        cls.get_commits_list(path_ifc, lookup)
+
+    @classmethod
     def is_valid_ref_format(cls, string):
         """Check a bare branch or tag name is valid"""
 
@@ -148,7 +212,7 @@ class IfcGit:
         # delete any IfcProject/* collections
         for collection in bpy.data.collections:
             if re.match("^IfcProject/", collection.name):
-                IfcGit.delete_collection(collection)
+                cls.delete_collection(collection)
         # delete any Ifc* objects not in IfcProject/ heirarchy
         for obj in bpy.data.objects:
             if re.match("^Ifc", obj.name):
@@ -157,7 +221,7 @@ class IfcGit:
         bpy.data.orphans_purge(do_recursive=True)
 
         bpy.ops.bim.load_project(filepath=path_ifc)
-        bpy.ops.ifcgit.refresh()
+        bpy.ops.object.select_all(action="DESELECT")
 
     @classmethod
     def branches_by_hexsha(cls, repo):
@@ -169,6 +233,13 @@ class IfcGit:
                 result[branch.commit.hexsha].append(branch)
             else:
                 result[branch.commit.hexsha] = [branch]
+        if repo.remotes:
+            for remote in repo.remotes:
+                for ref in remote.refs:
+                    if ref.commit.hexsha in result:
+                        result[ref.commit.hexsha].append(ref)
+                    else:
+                        result[ref.commit.hexsha] = [ref]
         return result
 
     @classmethod
@@ -230,14 +301,14 @@ class IfcGit:
             return
 
         if current_revision.committed_date > selected_revision.committed_date:
-            step_ids = IfcGit.ifc_diff_ids(
+            step_ids = cls.ifc_diff_ids(
                 repo,
                 selected_revision.hexsha,
                 current_revision.hexsha,
                 path_ifc,
             )
         else:
-            step_ids = IfcGit.ifc_diff_ids(
+            step_ids = cls.ifc_diff_ids(
                 repo,
                 current_revision.hexsha,
                 selected_revision.hexsha,
@@ -270,6 +341,7 @@ class IfcGit:
     def colourise(cls, step_ids):
         area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
         area.spaces[0].shading.color_type = "OBJECT"
+        bpy.ops.object.select_all(action="DESELECT")
 
         for obj in bpy.context.visible_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
@@ -277,10 +349,13 @@ class IfcGit:
             step_id = obj.BIMObjectProperties.ifc_definition_id
             if step_id in step_ids["modified"]:
                 obj.color = (0.3, 0.3, 1.0, 1)
+                obj.select_set(True)
             elif step_id in step_ids["added"]:
                 obj.color = (0.2, 0.8, 0.2, 1)
+                obj.select_set(True)
             elif step_id in step_ids["removed"]:
                 obj.color = (1.0, 0.2, 0.2, 1)
+                obj.select_set(True)
             else:
                 obj.color = (1.0, 1.0, 1.0, 0.5)
 
@@ -290,14 +365,14 @@ class IfcGit:
         repo = IfcGitRepo.repo
         item = props.ifcgit_commits[props.commit_index]
 
-        lookup = IfcGit.branches_by_hexsha(repo)
+        lookup = cls.branches_by_hexsha(repo)
         if item.hexsha in lookup:
             for branch in lookup[item.hexsha]:
                 if branch.name == props.display_branch:
                     branch.checkout()
-        else:
-            # NOTE this is calling the git binary in a subprocess
-            repo.git.checkout(item.hexsha)
+                    return
+        # NOTE this is calling the git binary in a subprocess
+        repo.git.checkout(item.hexsha)
 
     @classmethod
     def delete_collection(cls, blender_collection):
@@ -308,7 +383,7 @@ class IfcGit:
     @classmethod
     def is_valid_branch_name(cls, new_branch_name):
         """Check if a branch name is valid and doesn't conflict with existing branches"""
-        if not IfcGit.is_valid_ref_format(new_branch_name):
+        if not cls.is_valid_ref_format(new_branch_name):
             return False
         if new_branch_name in [branch.name for branch in IfcGitRepo.repo.branches]:
             return False
@@ -317,29 +392,56 @@ class IfcGit:
     @classmethod
     def config_ifcmerge(cls):
         config_reader = IfcGitRepo.repo.config_reader()
+        config_writer = IfcGitRepo.repo.config_writer()
         section = 'mergetool "ifcmerge"'
         if not config_reader.has_section(section):
-            config_writer = IfcGitRepo.repo.config_writer()
             config_writer.set_value(section, "cmd", "ifcmerge $BASE $LOCAL $REMOTE $MERGED")
             config_writer.set_value(section, "trustExitCode", True)
+        section = 'mergetool "ifcmerge-forward"'
+        if not config_reader.has_section(section):
+            config_writer.set_value(section, "cmd", "ifcmerge $BASE $REMOTE $LOCAL $MERGED")
+            config_writer.set_value(section, "trustExitCode", True)
+
+    @classmethod
+    def config_info_attributes(cls, repo):
+        """Set IFC files as text in .git/info/attributes"""
+        path_attributes = os.path.join(repo.git_dir, "info", "attributes")
+        if not os.path.exists(path_attributes):
+            with open(path_attributes, "w") as f:
+                # attributes patterns are case-insensitive
+                f.write("*.ifc text")
+
+    @classmethod
+    def dos2unix(cls, path_file):
+        with open(path_file, "rb") as infile:
+            content = infile.read()
+        with open(path_file, "wb") as output:
+            for line in content.splitlines():
+                output.write(line + b"\n")
 
     @classmethod
     def execute_merge(cls, path_ifc, operator):
         props = bpy.context.scene.IfcGitProperties
         repo = IfcGitRepo.repo
         item = props.ifcgit_commits[props.commit_index]
-        lookup = IfcGit.branches_by_hexsha(repo)
+        lookup = cls.branches_by_hexsha(repo)
         if item.hexsha in lookup:
             for branch in lookup[item.hexsha]:
                 if branch.name == props.display_branch:
                     # this is a branch!
+                    if re.match("^(origin/)?(HEAD|main|master)$", branch.name):
+                        # preserve remote IDs in origin/main or main
+                        mergetool = "ifcmerge"
+                    else:
+                        # rewrite remote IDs
+                        mergetool = "ifcmerge-forward"
                     try:
                         # NOTE this is calling the git binary in a subprocess
                         repo.git.merge(branch)
                     except git.exc.GitCommandError:
                         # merge is expected to fail, run ifcmerge
                         try:
-                            repo.git.mergetool(tool="ifcmerge")
+                            repo.git.mergetool(tool=mergetool)
                         except git.exc.GitCommandError as exc:
                             message = re.sub("(  stderr: '|')", "", exc.stderr)
                             # ifcmerge failed, rollback
@@ -347,16 +449,35 @@ class IfcGit:
 
                             operator.report({"ERROR"}, "IFC Merge failed:" + message)
                             return False
+                        else:
+                            if os.name == "nt":
+                                cls.dos2unix(path_ifc)
+                            repo.index.add(path_ifc)
+                            repo.git.commit("--no-edit")
                     except:
 
                         operator.report({"ERROR"}, "Unknown IFC Merge failure")
                         return False
 
-            repo.index.add(path_ifc)
-            props.commit_message = "Merged branch: " + props.display_branch
             props.display_branch = repo.active_branch.name
 
-            IfcGit.load_project(path_ifc)
+            cls.load_project(path_ifc)
+            cls.refresh_revision_list(path_ifc)
+
+    @classmethod
+    def entity_log(cls, path_ifc, step_id):
+        """Raw git log for this entity"""
+        repo = IfcGitRepo.repo
+        if not repo:
+            return "No repository found :("
+        relpath_ifc = os.path.relpath(path_ifc, repo.working_dir)
+        # regex only returns first match
+        query = "/^#" + str(step_id) + "[ =]/,/;/:" + relpath_ifc
+        try:
+            logtext = repo.git.log("-L", query, "-s")
+        except:
+            logtext = "No Git history found :("
+        return logtext
 
 
 class IfcGitRepo:

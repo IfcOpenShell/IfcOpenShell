@@ -79,12 +79,23 @@ class SelectGlobalId(Operator):
 
     def execute(self, context):
         ifc_file = tool.Ifc.get()
-        props = context.scene.BIMSearchProperties
-        global_id = self.global_id or props.global_id
-        entity = ifc_file.by_guid(global_id)
+        global_id = self.global_id.strip()
+
+        if not global_id:
+            self.report({"ERROR"}, "Set Global ID for search.")
+            return {"CANCELLED"}
+
+        try:
+            entity = ifc_file.by_guid(global_id)
+        except RuntimeError:
+            self.report({"ERROR"}, f"No IFC entity found with guid '{global_id}'.")
+            return {"CANCELLED"}
+
         obj = tool.Ifc.get_object(entity)
         if not obj:
-            self.report({"ERROR"}, "No object found")
+            self.report({"ERROR"}, f"No Blender object found with guid '{global_id}'.")
+            return {"CANCELLED"}
+
         obj.select_set(True)
         bpy.context.view_layer.objects.active = obj
         return {"FINISHED"}
@@ -99,13 +110,29 @@ class SelectIfcClass(Operator):
     ifc_class: StringProperty()
 
     def execute(self, context):
+        ifc_class = self.ifc_class
+
+        if not ifc_class:
+            self.report({"ERROR"}, "Set IFC Class for search.")
+            return {"CANCELLED"}
+
+        sch = tool.Ifc.schema()
+        try:
+            sch.declaration_by_name(ifc_class)
+        except RuntimeError:
+            self.report({"ERROR"}, f"IFC Class '{ifc_class}' is not found in schema {sch.name()}.")
+            return {"CANCELLED"}
+
         self.file = IfcStore.get_file()
+        n_objects = 0
         for obj in context.visible_objects:
             if not obj.BIMObjectProperties.ifc_definition_id or obj.is_library_indirect:
                 continue
             element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-            if does_keyword_exist(self.ifc_class, element.is_a(), context):
+            if does_keyword_exist(ifc_class, element.is_a(), context):
                 obj.select_set(True)
+                n_objects += 1
+        self.report({"INFO"}, f"{n_objects} objects selected.")
         return {"FINISHED"}
 
 
@@ -116,11 +143,19 @@ class SelectAttribute(Operator):
     bl_label = "Select Attribute"
     bl_options = {"REGISTER", "UNDO"}
 
+    attribute_name: bpy.props.StringProperty(default="")
+    attribute_value: bpy.props.StringProperty(default="")
+
     def execute(self, context):
+        attribute_name = self.attribute_name or context.scene.BIMSearchProperties.search_attribute_name
+        attribute_value = self.attribute_value
+
+        if not attribute_name:
+            self.report({"ERROR"}, "Set Attribute Name for search.")
+            return {"CANCELLED"}
+
         self.file = IfcStore.get_file()
-        props = context.scene.BIMSearchProperties
-        pattern = props.search_attribute_value
-        attribute_name = props.search_attribute_name
+        n_objects = 0
         for obj in context.visible_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
@@ -130,8 +165,10 @@ class SelectAttribute(Operator):
                 value = next((v for k, v in data.items() if k.lower() == attribute_name.lower()), None)
             else:
                 value = getattr(element, attribute_name, None)
-            if does_keyword_exist(pattern, value, context):
+            if does_keyword_exist(attribute_value, value, context):
                 obj.select_set(True)
+                n_objects += 1
+        self.report({"INFO"}, f"{n_objects} objects selected.")
         return {"FINISHED"}
 
 
@@ -142,12 +179,25 @@ class SelectPset(Operator):
     bl_label = "Select Pset"
     bl_options = {"REGISTER", "UNDO"}
 
+    pset_name: bpy.props.StringProperty(default="")
+    prop_name: bpy.props.StringProperty(default="")
+    pset_value: bpy.props.StringProperty(default="")
+
     def execute(self, context):
+        search_pset_name = self.pset_name or context.scene.BIMSearchProperties.search_pset_name
+        search_prop_name = self.prop_name or context.scene.BIMSearchProperties.search_prop_name
+        pattern = self.pset_value
+
+        if not search_pset_name:
+            self.report({"ERROR"}, "Set PSet name for search.")
+            return {"CANCELLED"}
+        if not search_prop_name:
+            self.report({"ERROR"}, "Set Property name for search.")
+            return {"CANCELLED"}
+
         self.file = IfcStore.get_file()
         props = context.scene.BIMSearchProperties
-        search_pset_name = props.search_pset_name
-        search_prop_name = props.search_prop_name
-        pattern = props.search_pset_value
+        n_objects = 0
         for obj in context.visible_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
@@ -166,6 +216,8 @@ class SelectPset(Operator):
                 value = props.get(search_prop_name, None)
             if does_keyword_exist(pattern, value, context):
                 obj.select_set(True)
+                n_objects += 1
+        self.report({"INFO"}, f"{n_objects} objects selected.")
         return {"FINISHED"}
 
 
@@ -176,6 +228,8 @@ class ColourByAttribute(Operator):
     bl_label = "Colour by Attribute"
     bl_options = {"REGISTER", "UNDO"}
 
+    attribute_name: bpy.props.StringProperty(default="")
+
     def execute(self, context):
         IfcStore.begin_transaction(self)
         self.store_state(context)
@@ -185,10 +239,15 @@ class ColourByAttribute(Operator):
         return result
 
     def _execute(self, context):
+        attribute_name = self.attribute_name or context.scene.BIMSearchProperties.search_attribute_name
+
+        if not attribute_name:
+            self.report({"ERROR"}, "Set Attribute Name for search.")
+            return {"CANCELLED"}
+
         self.file = IfcStore.get_file()
         colours = cycle(colour_list)
         values = {}
-        attribute_name = context.scene.BIMSearchProperties.search_attribute_name
         for obj in context.visible_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
@@ -227,6 +286,9 @@ class ColourByPset(Operator):
     bl_label = "Colour by Pset"
     bl_options = {"REGISTER", "UNDO"}
 
+    pset_name: bpy.props.StringProperty(default="")
+    prop_name: bpy.props.StringProperty(default="")
+
     def execute(self, context):
         IfcStore.begin_transaction(self)
         self.store_state(context)
@@ -236,11 +298,19 @@ class ColourByPset(Operator):
         return result
 
     def _execute(self, context):
+        search_pset_name = self.pset_name or context.scene.BIMSearchProperties.search_pset_name
+        search_prop_name = self.prop_name or context.scene.BIMSearchProperties.search_prop_name
+
+        if not search_pset_name:
+            self.report({"ERROR"}, "Set PSet name for search.")
+            return {"CANCELLED"}
+        if not search_prop_name:
+            self.report({"ERROR"}, "Set Property name for search.")
+            return {"CANCELLED"}
+
         self.file = IfcStore.get_file()
         colours = cycle(colour_list)
         values = {}
-        search_pset_name = context.scene.BIMSearchProperties.search_pset_name
-        search_prop_name = context.scene.BIMSearchProperties.search_prop_name
         for obj in context.visible_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
@@ -364,6 +434,13 @@ class ActivateIfcClassFilter(Operator):
     bl_idname = "bim.activate_ifc_class_filter"
     bl_label = "Filter by Class"
 
+    @classmethod
+    def poll(cls, context):
+        if not context.selected_objects:
+            cls.poll_message_set("Select objects to filter.")
+            return False
+        return True
+
     def invoke(self, context, event):
         props = bpy.context.scene.BIMSearchProperties
         props.filter_classes.clear()
@@ -409,6 +486,13 @@ class ActivateIfcBuildingStoreyFilter(Operator):
 
     bl_idname = "bim.activate_ifc_building_storey_filter"
     bl_label = "Filter by Building Storey"
+
+    @classmethod
+    def poll(cls, context):
+        if not context.selected_objects:
+            cls.poll_message_set("Select objects to filter.")
+            return False
+        return True
 
     def invoke(self, context, event):
         props = bpy.context.scene.BIMSearchProperties
@@ -475,14 +559,18 @@ class FilterModelElements(Operator):
 
     def execute(self, context):
         selection_props = context.scene.IfcSelectorProperties
-        selection = selection_props.selector_query_syntax if selection_props.manual_override else self.add_groups(selection_props)
+        selection = (
+            selection_props.selector_query_syntax
+            if selection_props.manual_override
+            else self.add_groups(selection_props)
+        )
         selection_props.selector_query_syntax = selection
         r = core.search(tool.Search, tool.Spatial, query=selection, action=self.option)
         if isinstance(r, str):
             self.report({"WARNING"}, r)
         return {"FINISHED"}
 
-    def add_groups(self, selector:str) -> str:
+    def add_groups(self, selector: str) -> str:
         selection = ""
         for group_index, group in enumerate(selector.groups):
             if group_index != 0:
@@ -517,7 +605,6 @@ class FilterModelElements(Operator):
 
     def add_filters(self, selection: str, query: str) -> str:
         for f_index, f in enumerate(query.filters):
-
             if f_index != 0:
                 selection += " & " if f.and_or == "and" else " | "
                 selection += f".{query.active_option}"
@@ -535,11 +622,12 @@ class FilterModelElements(Operator):
                 selection += f'{f.active_option.split(": ")[1]}.{f.active_sub_option.split(": ")[1]} {"!" if f.negation else ""}{f.comparison} {value}'
             elif f.selector == "Attribute":
                 # we're using the prop_search functionality in blender which returns the index of the option.  Sometimes the user can override this and enter a value that doesn't exist in the list.  In this case there is no index and we need to handle it. @vulevukusej
-                pattern = re.compile(r'^[0-9]+:')
+                pattern = re.compile(r"^[0-9]+:")
                 match = pattern.search(f.active_option)
                 selection += f'{f.active_option.split(": ")[1] if match else f.active_option} {"!" if f.negation else ""}{f.comparison} {value}'
             selection += "]"
         return selection
+
 
 # This needs to be moved into ui code, I know ;) - vulevukusej
 class IfcSelector(Operator):

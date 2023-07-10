@@ -104,24 +104,50 @@ class ConnectionsData:
     def connections(cls):
         results = []
         element = tool.Ifc.get_entity(bpy.context.active_object)
-        for rel in getattr(element, "ConnectedTo", []):
+
+        connected_to = getattr(element, "ConnectedTo", [])
+        connected_from = getattr(element, "ConnectedFrom", [])
+
+        for rel in connected_to:
+            if element.is_a("IfcDistributionPort"):
+                related_element = rel.RelatedPort
+            else:
+                related_element = rel.RelatedElement
+
+            if element.is_a("IfcRelConnectsPathElements"):
+                related_element_connection_type = rel.RelatedConnectionType
+            else:
+                related_element_connection_type = ""
+
             results.append(
                 {
                     "id": rel.id(),
                     "is_relating": True,
-                    "Name": rel.RelatedElement.Name or "Unnamed",
-                    "ConnectionType": rel.RelatingConnectionType,
+                    "Name": related_element.Name or "Unnamed",
+                    "ConnectionType": related_element_connection_type,
                 }
             )
-        for rel in getattr(element, "ConnectedFrom", []):
+
+        for rel in connected_from:
+            if element.is_a("IfcDistributionPort"):
+                relating_element = rel.RelatingPort
+            else:
+                relating_element = rel.RelatingElement
+
+            if element.is_a("IfcRelConnectsPathElements"):
+                relating_element_connection_type = rel.RelatingConnectionType
+            else:
+                relating_element_connection_type = ""
+
             results.append(
                 {
                     "id": rel.id(),
                     "is_relating": False,
-                    "Name": rel.RelatingElement.Name or "Unnamed",
-                    "ConnectionType": rel.RelatedConnectionType,
+                    "Name": relating_element.Name or "Unnamed",
+                    "ConnectionType": relating_element_connection_type,
                 }
             )
+
         return results
 
 
@@ -152,10 +178,18 @@ class DerivedPlacementsData:
 
     @classmethod
     def load_collection(cls):
-        cls.collection = bpy.data.objects.get(bpy.context.active_object.users_collection[0].name)
+        cls.collection = None
         cls.collection_z = 0
-        if cls.collection:
-            cls.collection_z = cls.collection.matrix_world.translation.z
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if not element:
+            return
+        parent = ifcopenshell.util.element.get_aggregate(element)
+        if not parent:
+            parent = ifcopenshell.util.element.get_container(element)
+        if parent:
+            cls.collection = tool.Ifc.get_object(parent)
+            if cls.collection:
+                cls.collection_z = cls.collection.matrix_world.translation.z
 
     @classmethod
     def has_collection(cls):

@@ -18,6 +18,7 @@
 
 import os
 import bpy
+import traceback
 import webbrowser
 import ifcopenshell
 import blenderbim.tool as tool
@@ -64,33 +65,29 @@ def an_untestable_scenario():
 
 @given("an empty Blender session")
 @when("an empty Blender session is started")
-def an_empty_ifc_project():
+def an_empty_blender_session():
     IfcStore.purge()
     bpy.ops.wm.read_homefile(app_template="")
     if len(bpy.data.objects) > 0:
         bpy.data.batch_remove(bpy.data.objects)
         bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
+
+    # default project settings
+    bpy.context.scene.unit_settings.system = "METRIC"
+    bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
+    bpy.context.scene.BIMProjectProperties.template_file = "0"
+    bpy.context.preferences.addons["blenderbim"].preferences.should_play_chaching_sound = False
 
 
 @given("an empty IFC project")
 def an_empty_ifc_project():
-    IfcStore.purge()
-    bpy.ops.wm.read_homefile(app_template="")
-    if len(bpy.data.objects) > 0:
-        bpy.data.batch_remove(bpy.data.objects)
-        bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
-    bpy.context.scene.unit_settings.system = "METRIC"
-    bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
+    an_empty_blender_session()
     bpy.ops.bim.create_project()
 
 
 @given("an empty IFC2X3 project")
-def an_empty_ifc_project():
-    IfcStore.purge()
-    bpy.ops.wm.read_homefile(app_template="")
-    if len(bpy.data.objects) > 0:
-        bpy.data.batch_remove(bpy.data.objects)
-        bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
+def an_empty_ifc_2x3_project():
+    an_empty_blender_session()
     bpy.context.scene.BIMProjectProperties.export_schema = "IFC2X3"
     bpy.ops.bim.create_project()
 
@@ -163,14 +160,33 @@ def i_add_a_plane_of_size_size_at_location(size, location):
     bpy.ops.mesh.primitive_plane_add(size=float(size), location=[float(co) for co in location.split(",")])
 
 
+@then(parsers.parse('I press "{operator}" and expect error "{error_msg}"'))
+def i_press_operator_and_expect_error(operator, error_msg):
+    operator = replace_variables(operator)
+    try:
+        if "(" in operator:
+            exec(f"bpy.ops.{operator}")
+        else:
+            exec(f"bpy.ops.{operator}()")
+        assert False, f"Operator bpy.ops.{operator} ran without exception '{error_msg}'"
+    except Exception as e:     
+        actual_error_msg = str(e).strip()
+        if str(e).strip() != error_msg:
+            traceback.print_exc()
+            assert False, f"Got different exception running bpy.ops.{operator} - '{actual_error_msg}' instead of '{error_msg}'"
+
 @given(parsers.parse('I press "{operator}"'))
 @when(parsers.parse('I press "{operator}"'))
 def i_press_operator(operator):
     operator = replace_variables(operator)
-    if "(" in operator:
-        exec(f"bpy.ops.{operator}")
-    else:
-        exec(f"bpy.ops.{operator}()")
+    try:
+        if "(" in operator:
+            exec(f"bpy.ops.{operator}")
+        else:
+            exec(f"bpy.ops.{operator}()")
+    except Exception as e:
+        traceback.print_exc()
+        assert False, f"Failed to run operator bpy.ops.{operator} because of {e}"
 
 
 @given(parsers.parse('I evaluate expression "{expression}"'))
@@ -539,6 +555,26 @@ def prop_is_value(prop, value):
         assert False, f"Value is {actual_value}"
 
 
+@then(parsers.parse('"{prop}" is roughly "{value}"'))
+def prop_is_value(prop, value):
+    prop = replace_variables(prop)
+    value = replace_variables(value)
+    is_value = False
+    try:
+        exec(f'assert round(bpy.context.{prop}, 5) == "{value}"')
+        is_value = True
+    except:
+        try:
+            exec(f"assert round(bpy.context.{prop}, 5) == {value}")
+            is_value = True
+        except:
+            pass
+    if not is_value:
+        print(f"bpy.context.{prop}")
+        actual_value = round(eval(f"bpy.context.{prop}"), 5)
+        assert False, f"Value is {actual_value}"
+
+
 @then(parsers.parse('the object "{name}" has the material "{material}"'))
 def the_object_name_has_the_material_material(name, material):
     assert material in [ms.material.name for ms in the_object_name_exists(name).material_slots]
@@ -564,6 +600,12 @@ def the_object_name_has_a_thickness_thick_layered_material_containing_the_materi
         material_names.append(layer.Material.Name)
     assert is_x(total_thickness, float(thickness))
     assert material_name in material_names
+
+@then(parsers.parse('the object "{name}" has no IFC materials'))
+def the_object_has_no_ifc_materials(name):
+    element = tool.Ifc.get_entity(the_object_name_exists(name))
+    material = ifcopenshell.util.element.get_material(element)
+    assert material is None
 
 
 @then(
@@ -647,7 +689,7 @@ def the_object_name_dimensions_are_dimensions(name, dimensions):
     actual_dimensions = list(the_object_name_exists(name).dimensions)
     expected_dimensions = [float(co) for co in dimensions.split(",")]
     for i, number in enumerate(actual_dimensions):
-        assert is_x(number, expected_dimensions[i]), f"Expected {actual_dimensions[i]} but got {number}"
+        assert is_x(number, expected_dimensions[i]), f"Expected {expected_dimensions[i]} but got {number}"
 
 
 @then(parsers.parse('the object "{name}" top right corner is at "{location}"'))

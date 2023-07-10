@@ -25,6 +25,7 @@ import blenderbim.tool as tool
 
 try:
     import brickschema
+    import brickschema.persistent
     import urllib.parse
     from rdflib import Literal, URIRef, Namespace
     from rdflib.namespace import RDF
@@ -32,14 +33,20 @@ except:
     # See #1860
     print("Warning: brickschema not available.")
 
+# silence known rdflib_sqlalchemy TypeError warning
+# see https://github.com/BrickSchema/Brick/issues/513#issuecomment-1558493675
+import logging
+logger = logging.getLogger("rdflib")
+logger.setLevel(logging.ERROR)
 
 class Brick(blenderbim.core.tool.Brick):
     @classmethod
-    def add_brick(cls, namespace, brick_class):
+    def add_brick(cls, namespace, brick_class, label):
         ns = Namespace(namespace)
         brick = ns[ifcopenshell.guid.expand(ifcopenshell.guid.new())]
-        BrickStore.graph.add((brick, RDF.type, URIRef(brick_class)))
-        BrickStore.graph.add((brick, URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal("Unnamed")))
+        with BrickStore.graph.new_changeset("PROJECT") as cs:
+            cs.add((brick, RDF.type, URIRef(brick_class)))
+            cs.add((brick, URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal(label)))
         return str(brick)
 
     @classmethod
@@ -100,7 +107,7 @@ class Brick(blenderbim.core.tool.Brick):
 
     @classmethod
     def clear_project(cls):
-        BrickStore.graph = None
+        BrickStore.purge()
         bpy.context.scene.BIMBrickProperties.active_brick_class == ""
         bpy.context.scene.BIMBrickProperties.brick_breadcrumbs.clear()
 
@@ -249,27 +256,25 @@ class Brick(blenderbim.core.tool.Brick):
 
     @classmethod
     def load_brick_file(cls, filepath):
-        if not BrickStore.schema:
-            BrickStore.schema = brickschema.Graph()
+        if not BrickStore.schema: # important check for running under test cases
             cwd = os.path.dirname(os.path.realpath(__file__))
-            schema_path = os.path.join(cwd, "..", "bim", "schema", "Brick.ttl")
-            BrickStore.schema.load_file(schema_path)
-        BrickStore.graph = brickschema.Graph().load_file(filepath) + BrickStore.schema
+            BrickStore.schema = os.path.join(cwd, "..", "bim", "schema", "Brick.ttl")
+        BrickStore.graph = brickschema.persistent.VersionedGraphCollection("sqlite://")
+        with BrickStore.graph.new_changeset("SCHEMA") as cs:
+            cs.load_file(BrickStore.schema)
+        with BrickStore.graph.new_changeset("PROJECT") as cs:
+            cs.load_file(filepath)
         BrickStore.path = filepath
 
     @classmethod
     def new_brick_file(cls):
-        if not BrickStore.schema:
-            BrickStore.schema = brickschema.Graph()
-            #BrickStore.schema = brickschema.persistent.VersionedGraphCollection("sqlite://")
+        if not BrickStore.schema: # important check for running under test cases
             cwd = os.path.dirname(os.path.realpath(__file__))
-            schema_path = os.path.join(cwd, "..", "bim", "schema", "Brick.ttl")
-            BrickStore.schema.load_file(schema_path)
-            #BrickStore.schema.load_graph(schema_path)
-        BrickStore.graph = brickschema.Graph() + BrickStore.schema
+            BrickStore.schema = os.path.join(cwd, "..", "bim", "schema", "Brick.ttl")
+        BrickStore.graph = brickschema.persistent.VersionedGraphCollection("sqlite://")
+        with BrickStore.graph.new_changeset("SCHEMA") as cs:
+            cs.load_file(BrickStore.schema)
         BrickStore.graph.bind("digitaltwin", Namespace("https://example.org/digitaltwin#"))
-        BrickStore.graph.bind("brick", Namespace("https://brickschema.org/schema/Brick#"))
-        BrickStore.graph.bind("rdfs", Namespace("http://www.w3.org/2000/01/rdf-schema#"))
 
     @classmethod
     def pop_brick_breadcrumb(cls):
@@ -281,8 +286,10 @@ class Brick(blenderbim.core.tool.Brick):
 
     @classmethod
     def remove_brick(cls, brick_uri):
-        for triple in BrickStore.graph.triples((URIRef(brick_uri), None, None)):
-            BrickStore.graph.remove(triple)
+        if(BrickStore.graph.triples((URIRef(brick_uri), None, None))):
+            with BrickStore.graph.new_changeset("PROJECT") as cs:
+                for triple in BrickStore.graph.triples((URIRef(brick_uri), None, None)):
+                    cs.remove(triple)
 
     @classmethod
     def run_assign_brick_reference(cls, element=None, library=None, brick_uri=None):
@@ -308,14 +315,41 @@ class Brick(blenderbim.core.tool.Brick):
     def set_active_brick_class(cls, brick_class):
         bpy.context.scene.BIMBrickProperties.active_brick_class = brick_class
 
+    @classmethod
+    def undo_brick(cls):
+        if(len(BrickStore.graph.versions()) > 1):
+            BrickStore.graph.undo()
 
+    @classmethod
+    def redo_brick(cls):
+        with BrickStore.graph.conn() as conn:
+            redo_record = conn.execute(
+            "SELECT * from redos " "ORDER BY timestamp ASC LIMIT 1"
+            ).fetchone()
+        if redo_record is not None:
+            BrickStore.graph.redo()  
+
+    @classmethod
+    def serialize_brick(cls):
+        BrickStore.get_project().serialize(destination=BrickStore.path, format="turtle")
+    
+    @classmethod
+    def add_namespace(cls, alias, uri):
+        BrickStore.graph.bind(alias, Namespace(uri))
+        # need some way to reload namespace enum view
+        
 class BrickStore:
-    schema = None
-    graph = None
-    path = None
-
+    schema = None # this is now a os path
+    path = None   # file path if the project was loaded in
+    graph = None  # this is the VersionedGraphCollection with 2 arbitrarily named graphs: "schema" and "project"
+                  # "SCHEMA" holds the Brick.ttl metadata; "PROJECT" holds all the authored entities
+    
     @staticmethod
     def purge():
         BrickStore.schema = None
         BrickStore.graph = None
-        BrickStore.path = None
+        BrickStore.path = None   
+
+    @classmethod
+    def get_project(cls):
+        return BrickStore.graph.graph_at(graph="PROJECT")

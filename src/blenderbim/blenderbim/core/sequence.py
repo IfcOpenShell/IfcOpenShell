@@ -443,7 +443,7 @@ def select_work_schedule_products(sequence, spatial, work_schedule=None):
 
 
 def select_unassigned_work_schedule_products(ifc, sequence, spatial):
-    spatial.deselect_all()
+    spatial.deselect_objects()
     products = ifc.get().by_type("IfcElement")
     work_schedule = sequence.get_active_work_schedule()
     schedule_products = sequence.get_work_schedule_products(work_schedule)
@@ -556,7 +556,10 @@ def load_product_related_tasks(sequence, product=None):
     filter_by_schedule = sequence.is_filter_by_active_schedule()
     if filter_by_schedule:
         work_schedule = sequence.get_active_work_schedule()
-        task_inputs, task_ouputs = sequence.get_tasks_for_product(product, work_schedule)
+        if work_schedule:
+            task_inputs, task_ouputs = sequence.get_tasks_for_product(product, work_schedule)
+        else:
+            return "No active work schedule"
     else:
         task_inputs, task_ouputs = sequence.get_tasks_for_product(product)
     sequence.load_product_related_tasks(task_inputs, task_ouputs)

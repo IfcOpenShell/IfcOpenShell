@@ -307,10 +307,8 @@ class TestImportBrickItems(NewFile):
 class TestLoadBrickFile(NewFile):
     def test_run(self):
         # We stub the schema to make tests run faster
-        BrickStore.schema = brickschema.Graph()
         cwd = os.path.dirname(os.path.realpath(__file__))
-        schema_path = os.path.join(cwd, "..", "files", "BrickStub.ttl")
-        BrickStore.schema.load_file(schema_path)
+        BrickStore.schema = os.path.join(cwd, "..", "files", "BrickStub.ttl")
 
         # This is the actual test
         cwd = os.path.dirname(os.path.realpath(__file__))
@@ -322,10 +320,8 @@ class TestLoadBrickFile(NewFile):
 class TestNewBrickFile(NewFile):
     def test_run(self):
         # We stub the schema to make tests run faster
-        BrickStore.schema = brickschema.Graph()
         cwd = os.path.dirname(os.path.realpath(__file__))
-        schema_path = os.path.join(cwd, "..", "files", "BrickStub.ttl")
-        BrickStore.schema.load_file(schema_path)
+        BrickStore.schema = os.path.join(cwd, "..", "files", "BrickStub.ttl")
 
         # This is the actual test
         subject.new_brick_file()

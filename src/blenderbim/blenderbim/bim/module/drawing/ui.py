@@ -23,10 +23,11 @@ from bpy.types import Panel
 from blenderbim.bim.module.drawing.data import (
     ProductAssignmentsData,
     SheetsData,
-    SchedulesData,
+    DocumentsData,
     DrawingsData,
     DecoratorData,
 )
+from blenderbim.bim.module.drawing.prop import ANNOTATION_TYPES_DATA
 
 
 class BIM_PT_camera(Panel):
@@ -71,27 +72,18 @@ class BIM_PT_camera(Panel):
         row.prop(dprops, "should_extract")
 
         row = layout.row()
-        row.prop(props, "is_nts")
-
-        row = layout.row()
-        row.operator("bim.resize_text")
-
-        row = layout.row()
         row.prop(props, "raster_x")
         row = layout.row()
         row.prop(props, "raster_y")
 
-        row = layout.row()
+        row = layout.row(align=True)
         row.prop(props, "diagram_scale")
+        row.prop(props, "is_nts", text="", icon="MOD_EDGESPLIT")
+
         if props.diagram_scale == "CUSTOM":
             row = layout.row(align=True)
-            row.prop(props, "custom_diagram_scale_input1", text="Custom Scale")
-            if context.scene.unit_settings.system == "IMPERIAL":
-                separator = "         ="
-            else:
-                separator = "         :"
-            row.label(text=separator)
-            row.prop(props, "custom_diagram_scale_input2", text="")
+            row.prop(props, "custom_scale_numerator", text="Custom Scale")
+            row.prop(props, "custom_scale_denominator", text="")
 
         row = layout.row(align=True)
         row.operator("bim.create_drawing", text="Create Drawing", icon="OUTPUT")
@@ -117,61 +109,73 @@ class BIM_PT_drawing_underlay(Panel):
         layout.use_property_split = True
         dprops = context.scene.DocProperties
         props = context.active_object.data.BIMCameraProperties
+        drawing_index_is_valid = props.active_drawing_style_index < len(dprops.drawing_styles)
+
+        if not DrawingsData.is_loaded:
+            DrawingsData.load()
+        drawing_pset_data = DrawingsData.data["active_drawing_pset_data"]
 
         row = layout.row(align=True)
-        row.operator("bim.add_drawing_style")
+        current_shading_style = drawing_pset_data.get("CurrentShadingStyle", None)
+        if current_shading_style is None:
+            row.label(text="Current style is not set.")
+        else:
+            row.label(text="Current Shading Style:")
+            row.label(text=current_shading_style)
+        row.operator("bim.add_drawing_style", icon="ADD", text="")
+        if drawing_index_is_valid:
+            row.operator("bim.remove_drawing_style", icon="X", text="").index = props.active_drawing_style_index
+        row.operator("bim.reload_drawing_styles", icon="FILE_REFRESH", text="")
 
-        if dprops.drawing_styles:
-            layout.template_list("BIM_UL_generic", "", dprops, "drawing_styles", props, "active_drawing_style_index")
+        if not dprops.drawing_styles:
+            return
+        layout.template_list("BIM_UL_generic", "", dprops, "drawing_styles", props, "active_drawing_style_index")
 
-            if props.active_drawing_style_index < len(dprops.drawing_styles):
-                drawing_style = dprops.drawing_styles[props.active_drawing_style_index]
+        if not drawing_index_is_valid:
+            return
+        drawing_style = dprops.drawing_styles[props.active_drawing_style_index]
 
-                row = layout.row(align=True)
-                row.prop(drawing_style, "name")
-                row.operator("bim.remove_drawing_style", icon="X", text="").index = props.active_drawing_style_index
+        row = layout.row(align=True)
+        row.prop(drawing_style, "name")
 
-                row = layout.row()
-                row.prop(drawing_style, "render_type")
-                row = layout.row(align=True)
-                row.prop(drawing_style, "include_query")
-                row = layout.row(align=True)
-                row.prop(drawing_style, "exclude_query")
+        row = layout.row()
+        row.prop(drawing_style, "render_type")
+        row = layout.row(align=True)
+        row.prop(drawing_style, "include_query")
+        row = layout.row(align=True)
+        row.prop(drawing_style, "exclude_query")
 
-                row = layout.row()
-                row.operator("bim.add_drawing_style_attribute")
+        row = layout.row()
+        row.operator("bim.add_drawing_style_attribute")
 
-                for index, attribute in enumerate(drawing_style.attributes):
-                    row = layout.row(align=True)
-                    row.prop(attribute, "name", text="")
-                    row.operator("bim.remove_drawing_style_attribute", icon="X", text="").index = index
+        for index, attribute in enumerate(drawing_style.attributes):
+            row = layout.row(align=True)
+            row.prop(attribute, "name", text="")
+            row.operator("bim.remove_drawing_style_attribute", icon="X", text="").index = index
 
-                row = layout.row(align=True)
-                row.operator("bim.save_drawing_style")
-                row.operator("bim.activate_drawing_style")
+        row = layout.row(align=True)
+        row.operator("bim.save_drawing_style")
+        row.operator("bim.activate_drawing_style")
 
 
 class BIM_PT_drawings(Panel):
     bl_label = "Drawings"
     bl_idname = "BIM_PT_drawings"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "BIM Documentation"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+        return aprops.tab == "DRAWINGS" and tool.Ifc.get()
 
     def draw(self, context):
         if not DrawingsData.is_loaded:
             DrawingsData.load()
 
         if not DrawingsData.data["has_saved_ifc"]:
-            row = self.layout.row()
-            row.label(text="Project Not Yet Saved", icon="ERROR")
-            row = self.layout.row()
-            op = row.operator("export_ifc.bim", icon="EXPORT", text="Save Project")
-            op.should_save_as = False
+            draw_project_not_saved_ui(self)
             return
 
         self.props = context.scene.DocProperties
@@ -226,31 +230,28 @@ class BIM_PT_drawings(Panel):
 class BIM_PT_schedules(Panel):
     bl_label = "Schedules"
     bl_idname = "BIM_PT_schedules"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "BIM Documentation"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+        return aprops.tab == "DRAWINGS" and tool.Ifc.get()
 
     def draw(self, context):
-        if not SchedulesData.is_loaded:
-            SchedulesData.load()
+        if not DocumentsData.is_loaded:
+            DocumentsData.load()
 
-        if not SchedulesData.data["has_saved_ifc"]:
-            row = self.layout.row()
-            row.label(text="Project Not Yet Saved", icon="ERROR")
-            row = self.layout.row()
-            op = row.operator("export_ifc.bim", icon="EXPORT", text="Save Project")
-            op.should_save_as = False
+        if not DocumentsData.data["has_saved_ifc"]:
+            draw_project_not_saved_ui(self)
             return
 
         self.props = context.scene.DocProperties
 
         if not self.props.is_editing_schedules:
             row = self.layout.row(align=True)
-            row.label(text=f"{SchedulesData.data['total_schedules']} Schedules Found", icon="LONGDISPLAY")
+            row.label(text=f"{DocumentsData.data['total_schedules']} Schedules Found", icon="LONGDISPLAY")
             row.operator("bim.load_schedules", text="", icon="IMPORT")
             return
 
@@ -274,27 +275,77 @@ class BIM_PT_schedules(Panel):
             )
 
 
-class BIM_PT_sheets(Panel):
-    bl_label = "Sheets"
-    bl_idname = "BIM_PT_sheets"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "BIM Documentation"
+def draw_project_not_saved_ui(self):
+    row = self.layout.row()
+    row.label(text="Project Not Yet Saved", icon="ERROR")
+    row = self.layout.row()
+    op = row.operator("export_ifc.bim", icon="EXPORT", text="Save Project")
+    op.should_save_as = False
+
+
+class BIM_PT_references(Panel):
+    bl_label = "References"
+    bl_idname = "BIM_PT_references"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+        return aprops.tab == "DRAWINGS" and tool.Ifc.get()
+
+    def draw(self, context):
+        if not DocumentsData.is_loaded:
+            DocumentsData.load()
+
+        if not DocumentsData.data["has_saved_ifc"]:
+            draw_project_not_saved_ui(self)
+            return
+
+        self.props = context.scene.DocProperties
+
+        if not self.props.is_editing_references:
+            row = self.layout.row(align=True)
+            row.label(text=f"{DocumentsData.data['total_references']} References Found", icon="LONGDISPLAY")
+            row.operator("bim.load_references", text="", icon="IMPORT")
+            return
+
+        row = self.layout.row(align=True)
+        row.operator("bim.add_reference", icon="ADD")
+        row.operator("bim.disable_editing_references", text="", icon="CANCEL")
+
+        if self.props.references:
+            if self.props.active_reference_index < len(self.props.references):
+                active_reference = self.props.references[self.props.active_reference_index]
+                row = self.layout.row(align=True)
+                row.alignment = "RIGHT"
+                row.operator("bim.open_reference", icon="URL", text="").reference = active_reference.ifc_definition_id
+                row.operator("bim.remove_reference", icon="X", text="").reference = active_reference.ifc_definition_id
+
+            self.layout.template_list(
+                "BIM_UL_generic", "", self.props, "references", self.props, "active_reference_index"
+            )
+
+
+class BIM_PT_sheets(Panel):
+    bl_label = "Sheets"
+    bl_idname = "BIM_PT_sheets"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+        return aprops.tab == "DRAWINGS" and tool.Ifc.get()
 
     def draw(self, context):
         if not SheetsData.is_loaded:
             SheetsData.load()
 
         if not SheetsData.data["has_saved_ifc"]:
-            row = self.layout.row()
-            row.label(text="Project Not Yet Saved", icon="ERROR")
-            row = self.layout.row()
-            op = row.operator("export_ifc.bim", icon="EXPORT", text="Save Project")
-            op.should_save_as = False
+            draw_project_not_saved_ui(self)
             return
 
         self.props = context.scene.DocProperties
@@ -318,6 +369,7 @@ class BIM_PT_sheets(Panel):
             row.operator("bim.open_sheet", icon="URL", text="")
             row.operator("bim.add_drawing_to_sheet", icon="IMAGE_PLANE", text="")
             row.operator("bim.add_schedule_to_sheet", icon="PRESET_NEW", text="")
+            row.operator("bim.add_reference_to_sheet", icon="IMAGE_REFERENCE", text="")
             row.operator("bim.create_sheets", icon="FILE_REFRESH", text="")
             if active_sheet.is_sheet:
                 row.operator("bim.remove_sheet", icon="X", text="").sheet = active_sheet.ifc_definition_id
@@ -441,84 +493,6 @@ class BIM_PT_text(Panel):
                     row.label(text=literal_data[attribute])
 
 
-class BIM_PT_annotation_utilities(Panel):
-    bl_idname = "BIM_PT_annotation_utilities"
-    bl_label = "Annotation"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "BIM Documentation"
-
-    def draw(self, context):
-        layout = self.layout
-
-        self.props = context.scene.DocProperties
-
-        row = layout.row(align=True)
-        op = row.operator("bim.add_annotation", text="Dimension", icon="FIXED_SIZE")
-        op.object_type = "DIMENSION"
-        op.data_type = "curve"
-        op = row.operator("bim.add_annotation", text="Angle", icon="DRIVER_ROTATIONAL_DIFFERENCE")
-        op.object_type = "ANGLE"
-        op.data_type = "curve"
-
-        row = layout.row(align=True)
-        op = row.operator("bim.add_annotation", text="Radius", icon="FORWARD")
-        op.object_type = "RADIUS"
-        op.data_type = "curve"
-        op = row.operator("bim.add_annotation", text="Diameter", icon="ARROW_LEFTRIGHT")
-        op.object_type = "DIAMETER"
-        op.data_type = "curve"
-
-        row = layout.row(align=True)
-        op = row.operator("bim.add_annotation", text="Text", icon="SMALL_CAPS")
-        op.object_type = "TEXT"
-        op.data_type = "empty"
-        op = row.operator("bim.add_annotation", text="Leader", icon="TRACKING_BACKWARDS")
-        op.object_type = "TEXT_LEADER"
-        op.data_type = "curve"
-
-        row = layout.row(align=True)
-        op = row.operator("bim.add_annotation", text="Stair Arrow", icon="SCREEN_BACK")
-        op.object_type = "STAIR_ARROW"
-        op.data_type = "curve"
-        op = row.operator("bim.add_annotation", text="Hidden", icon="CON_TRACKTO")
-        op.object_type = "HIDDEN_LINE"
-        op.data_type = "mesh"
-
-        row = layout.row(align=True)
-        op = row.operator("bim.add_annotation", text="Level (Plan)", icon="SORTBYEXT")
-        op.object_type = "PLAN_LEVEL"
-        op.data_type = "curve"
-        op = row.operator("bim.add_annotation", text="Level (Section)", icon="TRIA_DOWN")
-        op.object_type = "SECTION_LEVEL"
-        op.data_type = "curve"
-
-        row = layout.row(align=True)
-        op = row.operator("bim.add_annotation", text="Breakline", icon="FCURVE")
-        op.object_type = "BREAKLINE"
-        op.data_type = "mesh"
-        op = row.operator("bim.add_annotation", text="Line", icon="MESH_MONKEY")
-        op.object_type = "LINEWORK"
-        op.data_type = "mesh"
-
-        row = layout.row(align=True)
-        op = row.operator("bim.add_annotation", text="Batting", icon="FORCE_FORCE")
-        op.object_type = "BATTING"
-        op.data_type = "mesh"
-        op.description = "Add batting annotation.\nThickness could be changed through Thickness property of BBIM_Batting property set"
-        op = row.operator("bim.add_annotation", text="Fill Area", icon="NODE_TEXTURE")
-        op.object_type = "FILL_AREA"
-
-        row = layout.row(align=True)
-        op = row.operator("bim.add_annotation", text="Fall", icon="SORT_ASC")
-        op.object_type = "FALL"
-        op.data_type = "curve"
-
-        row = layout.row(align=True)
-        row.prop(self.props, "should_draw_decorations", text="Viewport Annotations")
-        row.enabled = context.scene.camera is not None
-
-
 class BIM_UL_drawinglist(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
@@ -567,6 +541,8 @@ class BIM_UL_sheets(bpy.types.UIList):
                 row.label(text="", icon="MENU_PANEL")
             elif item.reference_type == "REVISION":
                 row.label(text="", icon="RECOVER_LAST")
+            elif item.reference_type == "REFERENCE":
+                row.label(text="", icon="IMAGE_REFERENCE")
 
             if item.identification:
                 name = f"{item.identification} - {item.name or 'Unnamed'}"

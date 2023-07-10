@@ -35,10 +35,11 @@ from mathutils import Vector, Matrix
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.decorator import ProfileDecorator
 from blenderbim.bim.module.boundary.decorator import BoundaryDecorator
+import blenderbim.core
 
 
 def get_boundaries_collection(blender_space):
-    space_collection = bpy.data.collections.get(blender_space.name, blender_space.users_collection[0])
+    space_collection = blender_space.BIMObjectProperties.collection
     collection_name = f"Boundaries/{blender_space.BIMObjectProperties.ifc_definition_id}"
     boundaries_collection = space_collection.children.get(collection_name)
     if not boundaries_collection:

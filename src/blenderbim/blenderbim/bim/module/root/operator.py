@@ -156,6 +156,7 @@ class UnlinkObject(bpy.types.Operator):
     bl_label = "Unlink Object"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
+    should_delete: bpy.props.BoolProperty(name="Should Delete", default=True)
 
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
@@ -167,7 +168,15 @@ class UnlinkObject(bpy.types.Operator):
         else:
             objects = context.selected_objects
         for obj in objects:
-            if obj.BIMObjectProperties.ifc_definition_id:
+            object_name = obj.name
+            element = tool.Ifc.get_entity(obj)
+            if element:
+                if self.should_delete:
+                    obj_copy = obj.copy()
+                    for collection in obj.users_collection:
+                        collection.objects.link(obj_copy)
+                    tool.Geometry.delete_ifc_object(obj)
+                    obj = obj_copy
                 if obj in IfcStore.edited_objs:
                     IfcStore.edited_objs.remove(obj)
                 IfcStore.unlink_element(obj=obj)
@@ -178,9 +187,16 @@ class UnlinkObject(bpy.types.Operator):
                     material_slot.material = material_slot.material.copy()
                     blenderbim.core.style.unlink_style(tool.Ifc, tool.Style, obj=material_slot.material)
                     blenderbim.core.material.unlink_material(tool.Ifc, obj=material_slot.material)
-            if "Ifc" in obj.name and "/" in obj.name:
-                obj.name = "/".join(obj.name.split("/")[1:])
+            if "Ifc" in object_name and "/" in object_name:
+                obj.name = object_name.split("/", 1)[1]
         return {"FINISHED"}
+
+    def draw(self, context):
+        row = self.layout.row()
+        row.prop(self, "should_delete")
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
 
 
 class CopyClass(bpy.types.Operator, Operator):

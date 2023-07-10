@@ -30,8 +30,9 @@ from ifcopenshell.util.doc import (
     get_property_doc,
     get_predefined_type_doc,
 )
-import blenderbim.bim.handler
+import blenderbim.bim
 import blenderbim.bim.schema
+import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
 import blenderbim.tool as tool
 from collections import defaultdict
@@ -50,6 +51,11 @@ from bpy.props import (
 cwd = os.path.dirname(os.path.realpath(__file__))
 
 materialpsetnames_enum = []
+
+
+def update_tab(self, context):
+    self.alt_tab = self.previous_tab
+    self.previous_tab = self.tab
 
 
 def update_preset(self, context):
@@ -223,9 +229,31 @@ def set_numerical_value(self, value_name, new_value):
     self[value_name] = new_value
 
 
+def get_length_value(self):
+    si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+    return self.float_value * si_conversion
+
+
+def set_lenght_value(self, value):
+    si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+    self.float_value = value / si_conversion
+
+
+def get_display_name(self):
+    name = self.name
+    if not self.special_type or self.special_type == "LENGTH":
+        return name
+
+    unit_type = f"{self.special_type}UNIT"
+    project_unit = ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), unit_type)
+    unit_symbol = ifcopenshell.util.unit.get_unit_symbol(project_unit)
+    return f"{name}, {unit_symbol}"
+
+
 class Attribute(PropertyGroup):
     tooltip = "`Right Click > IFC Description` to read the attribute description and online documentation"
     name: StringProperty(name="Name")
+    display_name: StringProperty(name="Display Name", get=get_display_name)
     description: StringProperty(name="Description")
     ifc_class: StringProperty(name="Ifc Class")
     data_type: StringProperty(name="Data Type")
@@ -245,6 +273,9 @@ class Attribute(PropertyGroup):
         get=lambda self: float(self.get("float_value", 0.0)),
         set=set_float_value,
     )
+    length_value: FloatProperty(
+        name="Value", description=tooltip, get=get_length_value, set=set_lenght_value, unit="LENGTH"
+    )
     enum_items: StringProperty(name="Value")
     enum_descriptions: CollectionProperty(type=StrProperty)
     enum_value: EnumProperty(items=get_attribute_enum_values, name="Value", update=update_attribute_value)
@@ -257,6 +288,7 @@ class Attribute(PropertyGroup):
     value_min_constraint: BoolProperty(default=False, description="True if the numerical value has a lower bound")
     value_max: FloatProperty(description="This is used to validate int_value and float_value")
     value_max_constraint: BoolProperty(default=False, description="True if the numerical value has an upper bound")
+    special_type: StringProperty(name="Special Value Type", default="")
 
     def get_value(self):
         if self.is_optional and self.is_null:
@@ -275,7 +307,7 @@ class Attribute(PropertyGroup):
         elif self.data_type == "enum":
             return "0"
 
-    def get_value_name(self):
+    def get_value_name(self, display_only=False):
         if self.data_type == "string":
             return "string_value"
         elif self.data_type == "boolean":
@@ -283,6 +315,8 @@ class Attribute(PropertyGroup):
         elif self.data_type == "integer":
             return "int_value"
         elif self.data_type == "float":
+            if display_only and self.special_type == "LENGTH":
+                return "length_value"
             return "float_value"
         elif self.data_type == "enum":
             return "enum_value"
@@ -305,6 +339,27 @@ class Attribute(PropertyGroup):
 class ModuleVisibility(PropertyGroup):
     name: StringProperty(name="Name")
     is_visible: BoolProperty(name="Value", default=True, update=update_is_visible)
+
+
+def get_tab(self, context):
+    return [
+        ("PROJECT", "Project Overview", "", blenderbim.bim.icons["IFC"].icon_id, 0),
+        ("OBJECT", "Object Information", "", "FILE_3D", 1),
+        ("MATERIALS", "Materials and Styles", "", "MATERIAL", 2),
+        ("DRAWINGS", "Drawings and Documents", "", "DOCUMENTS", 3),
+        ("SERVICES", "Services and Systems", "", "NETWORK_DRIVE", 4),
+        ("STRUCTURE", "Structural Analysis", "", "EDITMODE_HLT", 5),
+        ("SCHEDULING", "Construction Scheduling", "", "NLA", 6),
+        ("FM", "Facility Management", "", "PACKAGE", 7),
+        ("OTHER", "Other Utilities", "", "COLLAPSEMENU", 8),
+        ("BLENDER", "Blender Properties", "", "BLENDER", 9),
+    ]
+
+
+class BIMAreaProperties(PropertyGroup):
+    tab: EnumProperty(default=0, items=get_tab, name="Tab", update=update_tab)
+    previous_tab: StringProperty(default="PROJECT", name="Previous Tab")
+    alt_tab: StringProperty(default="PROJECT", name="Alt Tab")
 
 
 class BIMProperties(PropertyGroup):
@@ -393,7 +448,12 @@ class GlobalId(PropertyGroup):
     name: StringProperty(name="Name")
 
 
+class BIMCollectionProperties(PropertyGroup):
+    obj: PointerProperty(type=bpy.types.Object)
+
+
 class BIMObjectProperties(PropertyGroup):
+    collection: PointerProperty(type=bpy.types.Collection)
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     blender_offset_type: EnumProperty(
         items=[(o, o, "") for o in ["NONE", "OBJECT_PLACEMENT", "CARTESIAN_POINT"]],

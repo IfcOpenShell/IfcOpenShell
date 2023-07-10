@@ -97,10 +97,9 @@ class AddSummaryCostItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Add Cost Item"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Add a summary cost item"
-    cost_schedule: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.add_summary_cost_item(tool.Ifc, tool.Cost, cost_schedule=tool.Ifc.get().by_id(self.cost_schedule))
+        core.add_summary_cost_item(tool.Ifc, tool.Cost, cost_schedule=tool.Cost.get_active_cost_schedule())
 
 
 class AddCostItem(bpy.types.Operator, tool.Ifc.Operator):
@@ -112,6 +111,16 @@ class AddCostItem(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.add_cost_item(tool.Ifc, tool.Cost, cost_item=tool.Ifc.get().by_id(self.cost_item))
+
+
+class CopyCostItem(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.copy_cost_item"
+    bl_label = "Copy Cost Item"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Copy a cost item"
+
+    def _execute(self, context):
+        core.copy_cost_item(tool.Ifc, tool.Cost)
 
 
 class ExpandCostItem(bpy.types.Operator, tool.Ifc.Operator):
@@ -154,7 +163,7 @@ class RemoveCostItem(bpy.types.Operator, tool.Ifc.Operator):
     cost_item: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.remove_cost_item(tool.Ifc, tool.Cost, cost_item=tool.Ifc.get().by_id(self.cost_item))
+        core.remove_cost_item(tool.Ifc, tool.Cost, cost_item_id=self.cost_item)
 
 
 class EnableEditingCostItem(bpy.types.Operator, tool.Ifc.Operator):
@@ -214,8 +223,9 @@ class UnassignCostItemType(bpy.types.Operator, tool.Ifc.Operator):
         core.unassign_cost_item_type(
             tool.Ifc,
             tool.Cost,
-            self.cost_item,
-            products=[tool.Ifc.get().by_id(self.related_object)] if self.related_object else [],
+            tool.Spatial,
+            cost_item=tool.Ifc.get().by_id(self.cost_item),
+            product_types=[tool.Ifc.get().by_id(self.related_object)] if self.related_object else [],
         )
         return {"FINISHED"}
 
@@ -491,7 +501,7 @@ class AddCostColumn(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     name: bpy.props.StringProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         core.add_cost_column(tool.Cost, self.name)
         return {"FINISHED"}
 
@@ -619,15 +629,21 @@ class ExportCostSchedules(bpy.types.Operator):
     bl_label = "Export Cost Schedule"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Export a cost schedule to a CSV, XSLX OR ODS file"
+    cost_schedule: bpy.props.IntProperty()
     format: bpy.props.EnumProperty("Format", items=(("CSV", "CSV", ""), ("XLSX", "XLSX", ""), ("ODS", "ODS", "")))
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        core.export_cost_schedules(tool.Cost, format=self.format)
+        cost_schedule = tool.Ifc.get().by_id(self.cost_schedule) if self.cost_schedule else None
+        r = core.export_cost_schedules(tool.Cost, filepath=self.filepath, format=self.format, cost_schedule=cost_schedule)
+        if isinstance(r, str):
+            self.report({"ERROR"}, r)
         return {"FINISHED"}
 
     def invoke(self, context, event):
         wm = context.window_manager
-        return wm.invoke_props_dialog(self)
+        wm.fileselect_add(self)
+        return {"RUNNING_MODAL"}
 
     def draw(self, context):
         self.layout.label(text="Choose a format")
@@ -667,7 +683,9 @@ class LoadProductCostItems(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        core.load_product_cost_items(tool.Cost, product=tool.Ifc.get().by_id(context.active_object.BIMObjectProperties.ifc_definition_id))
+        core.load_product_cost_items(
+            tool.Cost, product=tool.Ifc.get().by_id(context.active_object.BIMObjectProperties.ifc_definition_id)
+        )
         return {"FINISHED"}
 
 
@@ -724,3 +742,12 @@ class ChangeParentCostItem(bpy.types.Operator, tool.Ifc.Operator):
         if isinstance(r, str):
             self.report({"WARNING"}, r)
         return {"FINISHED"}
+
+
+class AddCurrency(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_currency"
+    bl_label = "Add Currency"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.add_currency(tool.Ifc, tool.Cost)

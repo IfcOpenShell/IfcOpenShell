@@ -60,20 +60,33 @@ class JoinWall(bpy.types.Operator, tool.Ifc.Operator):
             for obj in selected_objs:
                 joiner.unjoin(obj)
             return {"FINISHED"}
-        if not context.active_object:
-            return {"FINISHED"}
+        
+        if not context.active_object or not context.active_object.BIMObjectProperties.ifc_definition_id:
+            self.report({"ERROR"}, f"No active object selected")
+            return {"CANCELLED"}
+        
         for obj in selected_objs:
             tool.Geometry.clear_scale(obj)
+
+        if not selected_objs:
+            self.report({"ERROR"}, f"No IFC objects selected")
+            return {"CANCELLED"}
+
         if len(selected_objs) == 1:
             joiner.join_E(context.active_object, context.scene.cursor.location)
             return {"FINISHED"}
-        if len(selected_objs) == 2:
+        
+        if self.join_type in ("L", "V"):
+            if len(selected_objs) != 2:
+                self.report({"ERROR"}, f"It requires 2 selected objects to do join of type {self.join_type}")
+                return {"CANCELLED"}
+            another_selected_object = next(o for o in selected_objs if o != context.active_object)
             if self.join_type == "L":
-                joiner.join_L([o for o in selected_objs if o != context.active_object][0], context.active_object)
+                joiner.join_L(another_selected_object, context.active_object)
             elif self.join_type == "V":
-                joiner.join_V([o for o in selected_objs if o != context.active_object][0], context.active_object)
-        if len(selected_objs) < 2:
+                joiner.join_V(another_selected_object, context.active_object)
             return {"FINISHED"}
+        
         if self.join_type == "T":
             elements = [tool.Ifc.get_entity(o) for o in context.selected_objects]
             layer2_elements = []
@@ -434,7 +447,7 @@ class DumbWallGenerator:
 
         props = bpy.context.scene.BIMModelProperties
         self.collection = bpy.context.view_layer.active_layer_collection.collection
-        self.collection_obj = bpy.data.objects.get(self.collection.name)
+        self.collection_obj = self.collection.BIMCollectionProperties.obj
         self.width = self.layers["thickness"]
         self.height = props.extrusion_depth
         self.length = props.length
@@ -522,6 +535,7 @@ class DumbWallGenerator:
         return (point1 - point2).length < 0.1
 
     def derive_from_cursor(self):
+        RAYCAST_PRECISION = 0.01
         self.location = bpy.context.scene.cursor.location
         if self.collection:
             for sibling_obj in self.collection.objects:
@@ -529,24 +543,41 @@ class DumbWallGenerator:
                     continue
                 if "IfcWall" not in sibling_obj.name:
                     continue
-                local_location = sibling_obj.matrix_world.inverted() @ self.location
+                inv_obj_matrix = sibling_obj.matrix_world.inverted()
+                local_location = inv_obj_matrix @ self.location
                 try:
-                    raycast = sibling_obj.closest_point_on_mesh(local_location, distance=0.01)
+                    raycast = sibling_obj.closest_point_on_mesh(local_location, distance=RAYCAST_PRECISION)
                 except:
                     # If the mesh has no faces
                     raycast = [None]
                 if not raycast[0]:
                     continue
                 for face in sibling_obj.data.polygons:
-                    if (
-                        abs(face.normal.y) >= 0.75
-                        and abs(mathutils.geometry.distance_point_to_plane(local_location, face.center, face.normal))
-                        < 0.01
-                    ):
-                        # Rotate the wall in the direction of the face normal
-                        normal = (sibling_obj.matrix_world.to_quaternion() @ face.normal).normalized()
-                        self.rotation = math.atan2(normal[1], normal[0])
-                        break
+                    normal = (sibling_obj.matrix_world.to_quaternion() @ face.normal).normalized()
+                    face_center = sibling_obj.matrix_world @ face.center
+                    if normal.z != 0 or abs(mathutils.geometry.distance_point_to_plane(self.location, face_center, normal)) > 0.01:
+                        continue
+
+                    rotation = math.atan2(normal[1], normal[0])
+                    rotated_y_axis = Matrix.Rotation(-rotation, 4, "Z")[1].xyz
+                    
+                    # since wall thickness goes by local Y+ axis
+                    # we find best position for the next wall
+                    # by finding the face of another wall that will be very close to the some test point.
+                    # test point is calculated by applying to cursor position some little offset along the face
+                    #
+                    # a bit different offset to be safe on raycast
+                    test_pos = self.location + rotated_y_axis * RAYCAST_PRECISION * 1.1
+                    test_pos_local = inv_obj_matrix @ test_pos
+                    raycast = sibling_obj.closest_point_on_mesh(test_pos_local, distance=RAYCAST_PRECISION)
+
+                    if not raycast[0]:
+                        continue
+                    self.rotation = rotation
+                    break
+
+                if self.rotation != 0:
+                    break
         return self.create_wall()
 
     def create_wall(self):
@@ -699,8 +730,16 @@ class DumbWallPlaner:
         new_material = ifcopenshell.util.element.get_material(settings["relating_type"])
         if not new_material or not new_material.is_a("IfcMaterialLayerSet"):
             return
+        parametric = ifcopenshell.util.element.get_psets(settings["relating_type"]).get("EPset_Parametric")
+        layer_set_direction = None
+        if parametric:
+            layer_set_direction = parametric.get("LayerSetDirection", layer_set_direction)
         material = ifcopenshell.util.element.get_material(settings["related_object"])
-        if material and material.is_a("IfcMaterialLayerSetUsage") and material.LayerSetDirection == "AXIS2":
+        if not material or not material.is_a("IfcMaterialLayerSetUsage"):
+            return
+        if layer_set_direction:
+            material.LayerSetDirection = layer_set_direction
+        if material.LayerSetDirection == "AXIS2":
             DumbWallRecalculator().recalculate([obj])
 
 
@@ -926,7 +965,8 @@ class DumbWallJoiner:
     def duplicate_wall(self, wall1):
         wall2 = wall1.copy()
         wall2.data = wall2.data.copy()
-        wall1.users_collection[0].objects.link(wall2)
+        for collection in wall1.users_collection:
+            collection.objects.link(wall2)
         blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=wall2)
         return wall2
 

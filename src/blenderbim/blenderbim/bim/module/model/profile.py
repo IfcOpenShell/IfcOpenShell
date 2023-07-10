@@ -28,6 +28,7 @@ import blenderbim.bim.handler
 import blenderbim.tool as tool
 import blenderbim.core.type
 import blenderbim.core.geometry
+import blenderbim.core.material
 from math import pi, degrees, inf
 from mathutils import Vector, Matrix, Quaternion
 from blenderbim.bim.module.geometry.helper import Helper
@@ -53,7 +54,7 @@ class DumbProfileGenerator:
         self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Axis", "GRAPH_VIEW")
         props = bpy.context.scene.BIMModelProperties
         self.collection = bpy.context.view_layer.active_layer_collection.collection
-        self.collection_obj = bpy.data.objects.get(self.collection.name)
+        self.collection_obj = self.collection.BIMCollectionProperties.obj
         self.depth = props.extrusion_depth
         self.rotation = 0
         self.location = Vector((0, 0, 0))
@@ -144,11 +145,20 @@ class DumbProfileRegenerator:
         objs = []
         if not profile:
             return
+
+        element_types = set()
         for element in self.get_elements_using_profile(profile):
             obj = tool.Ifc.get_object(element)
             if obj:
                 objs.append(obj)
+                if element.is_a("IfcElementType"):
+                    element_types.add(element)
+
         DumbProfileRecalculator().recalculate(objs)
+
+        # update related thumbnails
+        for element in self.get_element_types_using_profile(profile):
+            tool.Model.update_thumbnail_for_element(element, refresh=True)
 
     def regenerate_from_profile(self, usecase_path, ifc_file, settings):
         self.file = ifc_file
@@ -164,9 +174,10 @@ class DumbProfileRegenerator:
 
     def get_elements_using_profile(self, profile):
         results = []
-        for profile_set in [
+        profile_sets = [
             mp.ToMaterialProfileSet[0] for mp in self.file.get_inverse(profile) if mp.is_a("IfcMaterialProfile")
-        ]:
+        ]
+        for profile_set in profile_sets:
             for inverse in self.file.get_inverse(profile_set):
                 if not inverse.is_a("IfcMaterialProfileSetUsage"):
                     continue
@@ -178,6 +189,18 @@ class DumbProfileRegenerator:
                 else:
                     for rel in inverse.AssociatedTo:
                         results.extend(rel.RelatedObjects)
+        return results
+
+    def get_element_types_using_profile(self, profile):
+        results = []
+        profile_sets = [
+            mp.ToMaterialProfileSet[0] for mp in self.file.get_inverse(profile) if mp.is_a("IfcMaterialProfile")
+        ]
+        for profile_set in profile_sets:
+            for inverse in self.file.get_inverse(profile_set):
+                if not inverse.is_a("IfcRelAssociatesMaterial"):
+                    continue
+                results.extend(inverse.RelatedObjects)
         return results
 
     def regenerate_from_type(self, usecase_path, ifc_file, settings):
@@ -857,6 +880,25 @@ class Rotate90(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
+class PatchNonParametricMepSegment(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.patch_non_parametric_mep_segment"
+    bl_label = "Set MEP segment Material Profile"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object
+
+    def _execute(self, context):
+        styles = tool.Geometry.get_styles(context.active_object)
+        blenderbim.core.material.patch_non_parametric_mep_segment(
+            tool.Ifc, tool.Material, tool.Profile, obj=context.active_object
+        )
+        bpy.ops.bim.enable_editing_extrusion_axis()
+        bpy.ops.bim.edit_extrusion_axis()
+        styles = tool.Geometry.get_styles(context.active_object)
+
+
 class EnableEditingExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_extrusion_axis"
     bl_label = "Enable Editing Extrusion Axis"
@@ -927,7 +969,7 @@ class DisableEditingExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
         return context.selected_objects
 
     def _execute(self, context):
-        return disable_editing_extrusion_axis()
+        return disable_editing_extrusion_axis(context)
 
 
 class EditExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
@@ -948,6 +990,10 @@ class EditExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
         depth = (end - start).length
         z_axis = (end - start).normalized()
         y_axis = Vector((0, 0, 1))
+        # making sure z_axis != y_axis
+        if z_axis == y_axis:
+            y_axis = Vector((0,1,0))
+
         x_axis = y_axis.cross(z_axis).normalized()
         y_axis = z_axis.cross(x_axis).normalized()
 

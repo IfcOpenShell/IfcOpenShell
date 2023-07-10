@@ -115,6 +115,27 @@ def get_schedule_predefined_types(self, context):
     return CostSchedulesData.data["predefined_types"]
 
 
+def get_currencies(self, context):
+    return [
+        ("USD", "USD", "Dollar"),
+        ("EUR", "EUR", "Euro"),
+        ("GBP", "GBP", "Pound"),
+        ("AUD", "AUD", "Australian Dollar"),
+        ("CAD", "CAD", "Canadian Dollar"),
+        ("CHF", "CHF", "Swiss Franc"),
+        ("CNY", "CNY", "Chinese Yuan"),
+        ("HKD", "HKD", "Hong Kong Dollar"),
+        ("JPY", "JPY", "Japanese Yen"),
+        ("NZD", "NZD", "New Zealand Dollar"),
+        ("SEK", "SEK", "Swedish Krona"),
+        ("KRW", "KRW", "South Korean Won"),
+        ("SGD", "SGD", "Singapore Dollar"),
+        ("NOK", "NOK", "Norwegian Krone"),
+        ("MAD", "MAD", "Moroccan Dirham"),
+        ("CUSTOM", "Custom currency", "Custom"),
+    ]
+
+
 class CostItem(PropertyGroup):
     name: StringProperty(name="Name", update=update_cost_item_name)
     identification: StringProperty(name="Identification", update=update_cost_item_identification)
@@ -128,6 +149,8 @@ class CostItemQuantity(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     total_quantity: FloatProperty(name="Total Quantity")
+    unit_symbol: StringProperty(name="Unit Symbol")
+    total_cost_quantity: FloatProperty(name="Total Quantity")
 
 
 class CostItemType(PropertyGroup):
@@ -188,6 +211,7 @@ class BIMCostProperties(PropertyGroup):
     cost_value_formula: StringProperty(name="Cost Value Formula")
     cost_column: StringProperty(name="Cost Column")
     should_show_column_ui: BoolProperty(name="Should Show Column UI", default=False)
+    should_show_currency_ui: BoolProperty(name="Should Show Currency UI", default=False)
     columns: CollectionProperty(name="Columns", type=StrProperty)
     active_column_index: IntProperty(name="Active Column Index")
     cost_item_products: CollectionProperty(name="Cost Item Products", type=CostItemQuantity)
@@ -204,7 +228,7 @@ class BIMCostProperties(PropertyGroup):
     cost_item_rates: CollectionProperty(name="Cost Item Rates", type=CostItem)
     active_cost_item_rate_index: IntProperty(name="Active Cost Rate Index")
     contracted_cost_item_rates: StringProperty(name="Contracted Cost Item Rates", default="[]")
-    product_cost_items: CollectionProperty(name="Product Cost Items", type=CostItem)
+    product_cost_items: CollectionProperty(name="Product Cost Items", type=CostItemQuantity)
     active_product_cost_item_index: IntProperty(name="Active Product Cost Item Index")
     enable_reorder: BoolProperty(name="Enable Reorder", default=False)
     show_nested_elements: BoolProperty(name="Show Nested Tasks", default=False, update=update_active_cost_item_elements)
@@ -213,3 +237,8 @@ class BIMCostProperties(PropertyGroup):
         name="Show Nested Tasks", default=False, update=update_active_cost_item_resources
     )
     change_cost_item_parent: BoolProperty(name="Change Cost Item Parent", default=False, update=update_cost_item_parent)
+    show_cost_item_operators: BoolProperty(name="Show Cost Item Operators", default=False)
+    currency: EnumProperty(items=get_currencies, name="Currencies")
+    custom_currency: StringProperty(
+        name="Custom Currency", default="USD", description="Custom Currency in ISO 4217 format"
+    )

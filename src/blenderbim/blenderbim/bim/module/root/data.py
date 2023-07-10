@@ -44,6 +44,7 @@ class IfcClassData:
         cls.data["name"] = cls.name()
         cls.data["ifc_class"] = cls.ifc_class()
         cls.data["ifc_predefined_types"] = cls.ifc_predefined_types()
+        cls.data["can_reassign_class"] = cls.can_reassign_class()
 
     @classmethod
     def ifc_products(cls):
@@ -158,7 +159,7 @@ class IfcClassData:
 
     @classmethod
     def name(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
+        element = tool.Ifc.get_entity(bpy.context.view_layer.objects.active)
         if not element:
             return
         name = element.is_a()
@@ -169,6 +170,16 @@ class IfcClassData:
 
     @classmethod
     def ifc_class(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
+        element = tool.Ifc.get_entity(bpy.context.view_layer.objects.active)
         if element:
             return element.is_a()
+
+    @classmethod
+    def can_reassign_class(cls):
+        element = tool.Ifc.get_entity(bpy.context.view_layer.objects.active)
+        if element:
+            if element.is_a("IfcOpeningElement") or element.is_a("IfcOpeningStandardCase"):
+                return False
+            for product in cls.ifc_products():
+                if element.is_a(product[0]):
+                    return True

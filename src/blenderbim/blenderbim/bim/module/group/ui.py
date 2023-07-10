@@ -107,6 +107,7 @@ class BIM_PT_object_groups(Panel):
         for group in ObjectGroupsData.data["groups"]:
             row = self.layout.row(align=True)
             row.label(text=group["name"])
+            row.operator("bim.select_group_elements", text="", icon="RESTRICT_SELECT_OFF").group = group["id"]
             op = row.operator("bim.unassign_group", text="", icon="X")
             op.group = group["id"]
 

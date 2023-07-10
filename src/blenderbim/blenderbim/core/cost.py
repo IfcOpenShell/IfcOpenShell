@@ -59,9 +59,10 @@ def contract_cost_items(cost):
     cost.load_cost_schedule_tree()
 
 
-def remove_cost_item(ifc, cost, cost_item):
+def remove_cost_item(ifc, cost, cost_item_id):
+    cost_item = ifc.get().by_id(cost_item_id)
     ifc.run("cost.remove_cost_item", cost_item=cost_item)
-    cost.clean_up_cost_item_tree(cost_item)
+    cost.clean_up_cost_item_tree(cost_item_id)
     cost.load_cost_schedule_tree()
 
 
@@ -130,7 +131,7 @@ def assign_cost_value(ifc, cost_item, cost_rate):
     ifc.run("cost.assign_cost_value", cost_item=cost_item, cost_rate=cost_rate)
 
 def load_schedule_of_rates(cost, schedule_of_rates):
-    cost.load_schedule_of_rates(schedule_of_rates)
+    cost.load_schedule_of_rates_tree(schedule_of_rates)
 
 def unassign_cost_item_quantity(ifc, cost, cost_item, products):
     ifc.run("cost.unassign_cost_item_quantity", cost_item=cost_item, products=products)
@@ -236,8 +237,9 @@ def calculate_cost_item_resource_value(ifc, cost_item):
     ifc.run("cost.calculate_cost_item_resource_value", cost_item=cost_item)
 
 
-def export_cost_schedules(cost, format):
-    cost.export_cost_schedules(format)
+def export_cost_schedules(cost, filepath, format, cost_schedule=None):
+    cost.play_sound()
+    return cost.export_cost_schedules(filepath, format, cost_schedule)
 
 
 def clear_cost_item_assignments(ifc, cost, cost_item, related_object_type):
@@ -249,7 +251,7 @@ def clear_cost_item_assignments(ifc, cost, cost_item, related_object_type):
 
 
 def select_unassigned_products(ifc, cost, spatial):
-    spatial.deselect_all()
+    spatial.deselect_objects()
     products = ifc.get().by_type("IfcElement")
     cost_schedule = cost.get_active_cost_schedule()
     selection = [product for product in products if not cost.has_cost_assignments(product, cost_schedule)]
@@ -277,3 +279,17 @@ def change_parent_cost_item(ifc, cost, new_parent):
         ifc.run("nest.change_nest", item=cost_item, new_parent=new_parent)
         cost.disable_editing_cost_item_parent()
         cost.load_cost_schedule_tree()
+
+def copy_cost_item(ifc, cost):
+    cost_item = cost.get_highlighted_cost_item()
+    if cost_item:
+        cost_item = ifc.run("cost.copy_cost_item", cost_item=cost_item)
+        cost.disable_editing_cost_item_parent()
+        cost.load_cost_schedule_tree()
+
+def add_currency(ifc, cost):
+    unit = ifc.run("unit.add_monetary_unit")
+    attributes = cost.get_currency_attributes()
+    ifc.run("unit.edit_monetary_unit", unit=unit, attributes=attributes)
+    ifc.run("unit.assign_unit", units=[unit])
+    return unit

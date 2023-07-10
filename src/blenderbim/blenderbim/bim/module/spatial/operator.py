@@ -21,6 +21,8 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 import blenderbim.tool as tool
 import blenderbim.core.spatial as core
+import blenderbim.core.geometry
+import blenderbim.core.aggregate
 import blenderbim.core.root
 import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
@@ -170,4 +172,87 @@ class SelectProduct(bpy.types.Operator):
 
     def execute(self, context):
         core.select_product(tool.Spatial, product=tool.Ifc.get().by_id(self.product))
+        return {"FINISHED"}
+
+
+class LoadContainerManager(bpy.types.Operator):
+    bl_idname = "bim.load_container_manager"
+    bl_label = "Load Container Manager"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        core.load_container_manager(tool.Spatial)
+        return {"FINISHED"}
+
+
+class EditContainerAttributes(bpy.types.Operator):
+    bl_idname = "bim.edit_container_attributes"
+    bl_label = "Edit container attributes"
+    bl_options = {"REGISTER", "UNDO"}
+    container: bpy.props.IntProperty()
+
+    def execute(self, context):
+        core.edit_container_attributes(tool.Spatial, entity=tool.Ifc.get().by_id(self.container))
+        return {"FINISHED"}
+
+
+class ContractContainer(bpy.types.Operator):
+    bl_idname = "bim.contract_container"
+    bl_label = "Contract Container"
+    bl_options = {"REGISTER", "UNDO"}
+    container: bpy.props.IntProperty()
+
+    def execute(self, context):
+        core.contract_container(tool.Spatial, container=tool.Ifc.get().by_id(self.container))
+        return {"FINISHED"}
+
+
+class ExpandContainer(bpy.types.Operator):
+    bl_idname = "bim.expand_container"
+    bl_label = "Expand Container"
+    bl_options = {"REGISTER", "UNDO"}
+    container: bpy.props.IntProperty()
+
+    def execute(self, context):
+        core.expand_container(tool.Spatial, container=tool.Ifc.get().by_id(self.container))
+        return {"FINISHED"}
+
+
+class DeleteContainer(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.delete_container"
+    bl_label = "Delete Container"
+    bl_options = {"REGISTER", "UNDO"}
+    container: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.delete_container(tool.Ifc, tool.Spatial, tool.Geometry, container=tool.Ifc.get().by_id(self.container))
+
+class AddBuildingStorey(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_building_storey"
+    bl_label = "Add Storey"
+    bl_options = {"REGISTER", "UNDO"}
+    part_class: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        active_container = tool.Spatial.get_active_container()
+        obj = tool.Ifc.get_object(active_container)
+        blenderbim.core.aggregate.add_part_to_object(
+            tool.Ifc,
+            tool.Aggregate,
+            tool.Collector,
+            tool.Blender,
+            obj=obj,
+            part_class=self.part_class,
+            part_name="Unnamed",
+        )
+        core.load_container_manager(tool.Spatial)
+
+
+class SelectDecomposedElements(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.select_decomposed_elements"
+    bl_label = "Select Children"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.select_decomposed_elements(tool.Spatial)
         return {"FINISHED"}

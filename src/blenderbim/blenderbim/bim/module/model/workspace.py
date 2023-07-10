@@ -38,7 +38,6 @@ class BimTool(WorkSpaceTool):
     bl_description = "Gives you BIM authoring related superpowers"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.bim")
     bl_widget = None
-    # https://docs.blender.org/api/current/bpy.types.KeyMapItems.html
     bl_keymap = tool.Blender.get_default_selection_keypmap() + (
         # ("bim.wall_tool_op", {"type": 'MOUSEMOVE', "value": 'ANY'}, {"properties": []}),
         # ("mesh.add_wall", {"type": 'LEFTMOUSE', "value": 'PRESS'}, {"properties": []}),
@@ -58,10 +57,11 @@ class BimTool(WorkSpaceTool):
         ("bim.hotkey", {"type": "V", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_V")]}),
         ("bim.hotkey", {"type": "X", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_X")]}),
         ("bim.hotkey", {"type": "Y", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_Y")]}),
-        ("bim.hotkey", {"type": "B", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_B")]}),
         ("bim.hotkey", {"type": "D", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_D")]}),
         ("bim.hotkey", {"type": "E", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_E")]}),
         ("bim.hotkey", {"type": "O", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_O")]}),
+        ("bim.hotkey", {"type": "P", "value": "PRESS", "ctrl": True}, {"properties": [("hotkey", "C_P")]}),
+        ("bim.hotkey", {"type": "P", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_P")]}),
     )
 
     def draw_settings(context, layout, ws_tool):
@@ -182,7 +182,7 @@ class BimToolUI:
             row.prop(data=cls.props, property="x_angle", text="X Angle")
             op = row.operator("bim.change_extrusion_x_angle", icon="FILE_REFRESH", text="")
             op.x_angle = cls.props.x_angle
-            
+
         elif AuthoringData.data["active_material_usage"] == "PROFILE":
             row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="cardinal_point", text="Axis")
@@ -212,7 +212,9 @@ class BimToolUI:
         ):
             # NOTE: should be above "active_representation_type" = "SweptSolid" check
             # because it could be a SweptSolid too
-            add_layout_hotkey_operator(cls.layout, "Edit Railing Path", "S_E", "")
+            row = cls.layout.row(align=True)
+            row.label(text="", icon=f"EVENT_TAB")
+            row.operator("bim.enable_editing_railing_path", text="Edit Railing Path")
 
         elif AuthoringData.data["active_representation_type"] == "SweptSolid":
             add_layout_hotkey_operator(cls.layout, "Edit Profile", "S_E", "")
@@ -249,7 +251,9 @@ class BimToolUI:
             and RoofData.data["parameters"]
             and not context.active_object.BIMRoofProperties.is_editing_path
         ):
-            add_layout_hotkey_operator(cls.layout, "Edit Roof Path", "S_E", "")
+            row = cls.layout.row(align=True)
+            row.label(text="", icon=f"EVENT_TAB")
+            row.operator("bim.enable_editing_roof_path", text="Edit Roof Path")
 
         elif DecoratorData.get_ifc_text_data(bpy.context.object):
             add_layout_hotkey_operator(cls.layout, "Edit Text", "S_E", "")
@@ -270,12 +274,6 @@ class BimToolUI:
             else:
                 row.operator("bim.show_openings", icon="HIDE_OFF", text="")
 
-        row = cls.layout.row(align=True)
-        row.label(text="", icon="EVENT_SHIFT")
-        row.label(text="", icon="EVENT_B")
-        row.prop(cls.props, "boundary_class", text="")
-        row.operator("bim.add_boundary", text="Add Boundary")
-
         cls.layout.row(align=True).label(text="Align")
         add_layout_hotkey_operator(cls.layout, "Align Exterior", "S_X", "")
         add_layout_hotkey_operator(cls.layout, "Align Centerline", "S_C", "")
@@ -285,7 +283,6 @@ class BimToolUI:
         cls.layout.row(align=True).label(text="Mode")
         add_layout_hotkey_operator(cls.layout, "Void", "A_O", "Toggle openings")
         add_layout_hotkey_operator(cls.layout, "Decomposition", "A_D", "Select decomposition")
-        add_layout_hotkey_operator(cls.layout, "Boundaries", "A_B", "Toggle boundaries")
 
     @classmethod
     def draw_header_interface(cls):
@@ -323,15 +320,15 @@ class BimToolUI:
     def draw_basic_bim_tool_interface(cls):
         cls.draw_type_selection_interface()
 
-        if cls.props.ifc_class:
-            box = cls.layout.box()
-            if AuthoringData.data["type_thumbnail"]:
-                box.template_icon(icon_value=AuthoringData.data["type_thumbnail"], scale=5)
-            else:
-                op = box.operator("bim.load_type_thumbnails", text="Load Thumbnails", icon="FILE_REFRESH")
-                op.ifc_class = cls.props.ifc_class
-
         if AuthoringData.data["ifc_classes"]:
+            if cls.props.ifc_class:
+                box = cls.layout.box()
+                if AuthoringData.data["type_thumbnail"]:
+                    box.template_icon(icon_value=AuthoringData.data["type_thumbnail"], scale=5)
+                else:
+                    op = box.operator("bim.load_type_thumbnails", text="Load Thumbnails", icon="FILE_REFRESH")
+                    op.ifc_class = cls.props.ifc_class
+
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_A")
@@ -404,6 +401,16 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
 
         bpy.ops.bim.calculate_all_quantities()
 
+    def hotkey_C_P(self):
+        if not bpy.context.selected_objects:
+            return
+        bpy.ops.bim.assign_object()
+
+    def hotkey_A_P(self):
+        if not bpy.context.selected_objects:
+            return
+        bpy.ops.bim.unassign_object()
+
     def hotkey_S_C(self):
         if not bpy.context.selected_objects:
             return
@@ -424,6 +431,15 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             and not bpy.context.active_object.BIMRailingProperties.is_editing_path
         ):
             bpy.ops.bim.enable_editing_railing_path()
+            return
+
+        elif (
+            (RoofData.is_loaded or not RoofData.load())
+            and RoofData.data["parameters"]
+            and not bpy.context.active_object.BIMRoofProperties.is_editing_path
+        ):
+            # undo the unselection done above because roof has no usage type
+            bpy.ops.bim.enable_editing_roof_path()
             return
 
         selected_usages = {}
@@ -479,15 +495,6 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             [o.select_set(False) for o in selected_usages.get("LAYER3", [])]
             [o.select_set(False) for o in selected_usages.get("LAYER2", [])]
             bpy.ops.bim.extend_profile(join_type="T")
-
-        elif (
-            (RoofData.is_loaded or not RoofData.load())
-            and RoofData.data["parameters"]
-            and not bpy.context.active_object.BIMRoofProperties.is_editing_path
-        ):
-            # undo the unselection done above because roof has no usage type
-            bpy.context.object.select_set(True)
-            bpy.ops.bim.enable_editing_roof_path()
 
         elif DecoratorData.get_ifc_text_data(bpy.context.object):
             bpy.context.object.select_set(True)
@@ -590,14 +597,6 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             self.props.x = self.x
             self.props.y = self.y
             self.props.z = self.z
-
-    def hotkey_A_B(self):
-        if not bpy.context.selected_objects:
-            return
-        if AuthoringData.data["has_visible_boundaries"]:
-            bpy.ops.bim.hide_boundaries()
-        else:
-            bpy.ops.bim.show_boundaries()
 
     def hotkey_A_D(self):
         if not bpy.context.selected_objects:

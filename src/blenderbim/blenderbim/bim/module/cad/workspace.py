@@ -33,7 +33,6 @@ class CadTool(WorkSpaceTool):
     bl_description = "Gives you CAD authoring related superpowers"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.cad")
     bl_widget = None
-    # https://docs.blender.org/api/current/bpy.types.KeyMapItems.html
     bl_keymap = tool.Blender.get_default_selection_keypmap() + (
         ("bim.cad_hotkey", {"type": "C", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_C")]}),
         ("bim.cad_hotkey", {"type": "E", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_E")]}),
@@ -142,9 +141,8 @@ class CadTool(WorkSpaceTool):
                 and context.active_object.BIMRailingProperties.is_editing_path
             ):
                 row = layout.row(align=True)
-                row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="", icon="EVENT_Q")
-                row.operator("bim.cad_hotkey", text="Apply Railing Path").hotkey = "S_Q"
+                row.label(text="", icon=f"EVENT_TAB")
+                row.operator("bim.finish_editing_railing_path")
                 row.operator("bim.cancel_editing_railing_path", icon="CANCEL", text="")
 
             elif (
@@ -153,9 +151,8 @@ class CadTool(WorkSpaceTool):
                 and context.active_object.BIMRoofProperties.is_editing_path
             ):
                 row = layout.row(align=True)
-                row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="", icon="EVENT_Q")
-                row.operator("bim.cad_hotkey", text="Apply Roof Path").hotkey = "S_Q"
+                row.label(text="", icon=f"EVENT_TAB")
+                row.operator("bim.finish_editing_roof_path")
                 row.operator("bim.cancel_editing_roof_path", icon="CANCEL", text="")
 
                 row = layout.row(align=True)
@@ -270,20 +267,6 @@ class CadHotkey(bpy.types.Operator):
                 bpy.ops.bim.edit_extrusion_profile()
         elif bpy.context.active_object.data.BIMMeshProperties.subshape_type == "AXIS":
             bpy.ops.bim.edit_extrusion_axis()
-
-        elif (
-            (RailingData.is_loaded or not RailingData.load())
-            and RailingData.data["parameters"]
-            and bpy.context.active_object.BIMRailingProperties.is_editing_path
-        ):
-            bpy.ops.bim.finish_editing_railing_path()
-
-        elif (
-            (RoofData.is_loaded or not RoofData.load())
-            and RoofData.data["parameters"]
-            and bpy.context.active_object.BIMRoofProperties.is_editing_path
-        ):
-            bpy.ops.bim.finish_editing_roof_path()
 
     def hotkey_S_R(self):
         if self.is_profile():

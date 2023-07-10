@@ -32,6 +32,7 @@ import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.util.selector
 import ifcopenshell.util.representation
+import ifcopenshell.util.element
 import blenderbim.bim.schema
 import blenderbim.tool as tool
 import blenderbim.core.drawing as core
@@ -41,12 +42,12 @@ import blenderbim.bim.module.drawing.sheeter as sheeter
 import blenderbim.bim.module.drawing.scheduler as scheduler
 import blenderbim.bim.module.drawing.helper as helper
 from blenderbim.bim.module.drawing.decoration import CutDecorator
-from blenderbim.bim.module.drawing.data import DecoratorData
+from blenderbim.bim.module.drawing.data import DecoratorData, DrawingsData
 import blenderbim.bim.export_ifc
 from lxml import etree
-from mathutils import Vector
+from mathutils import Vector, Color
 from timeit import default_timer as timer
-from blenderbim.bim.module.drawing.prop import RasterStyleProperty, Literal
+from blenderbim.bim.module.drawing.prop import RasterStyleProperty, Literal, RASTER_STYLE_PROPERTIES_EXCLUDE
 from blenderbim.bim.ifc import IfcStore
 from pathlib import Path
 
@@ -82,6 +83,52 @@ class Operator:
         IfcStore.execute_ifc_operator(self, context)
         blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}
+
+
+class AddAnnotationType(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_annotation_type"
+    bl_label = "Add Annotation Type"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = context.scene.BIMAnnotationProperties
+        object_type = props.object_type
+        has_representation = props.create_representation_for_type
+        drawing = tool.Ifc.get_entity(bpy.context.scene.camera)
+
+        if props.create_representation_for_type:
+            obj = tool.Drawing.create_annotation_object(drawing, object_type)
+        else:
+            obj = bpy.data.objects.new(object_type, None)
+
+        obj.name = props.type_name
+        element = tool.Drawing.run_root_assign_class(
+            obj=obj,
+            ifc_class="IfcTypeProduct",
+            predefined_type=object_type,
+            should_add_representation=has_representation,
+            context=ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Annotation", "MODEL_VIEW"),
+            ifc_representation_class=tool.Drawing.get_ifc_representation_class(object_type),
+        )
+        element.ApplicableOccurrence = f"IfcAnnotation/{object_type}"
+
+
+class EnableAddAnnotationType(bpy.types.Operator, Operator):
+    bl_idname = "bim.enable_add_annotation_type"
+    bl_label = "Enable Add Annotation Type"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        bpy.context.scene.BIMAnnotationProperties.is_adding_type = True
+
+
+class DisableAddAnnotationType(bpy.types.Operator, Operator):
+    bl_idname = "bim.disable_add_annotation_type"
+    bl_label = "Disable Add Annotation Type"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        bpy.context.scene.BIMAnnotationProperties.is_adding_type = False
 
 
 class AddDrawing(bpy.types.Operator, Operator):
@@ -150,7 +197,7 @@ class CreateDrawing(bpy.types.Operator):
         "Creates/refreshes a .svg drawing based on currently active camera.\n\n"
         + "SHIFT+CLICK to print all selected drawings"
     )
-    print_all: bpy.props.BoolProperty(name="Print All", default=False)
+    print_all: bpy.props.BoolProperty(name="Print All", default=False, options={"SKIP_SAVE"})
 
     @classmethod
     def poll(cls, context):
@@ -158,12 +205,9 @@ class CreateDrawing(bpy.types.Operator):
 
     def invoke(self, context, event):
         # printing all drawings on shift+click
+        # make sure to use SKIP_SAVE on property, otherwise it might get stuck
         if event.type == "LEFTMOUSE" and event.shift:
             self.print_all = True
-        else:
-            # can't rely on default value since the line above
-            # will set the value to `True` for all future operator calls
-            self.print_all = False
         return self.execute(context)
 
     def execute(self, context):
@@ -177,7 +221,7 @@ class CreateDrawing(bpy.types.Operator):
 
         for drawing_id in drawings_to_print:
             if self.print_all:
-                bpy.ops.bim.activate_drawing(drawing=drawing_id)
+                bpy.ops.bim.activate_drawing(drawing=drawing_id, camera_view_point=False)
 
             self.camera = context.scene.camera
             self.camera_element = tool.Ifc.get_entity(self.camera)
@@ -187,7 +231,8 @@ class CreateDrawing(bpy.types.Operator):
             with profile("Drawing generation process"):
                 with profile("Initialize drawing generation process"):
                     self.cprops = self.camera.data.BIMCameraProperties
-                    self.drawing_name = self.file.by_id(drawing_id).Name
+                    self.drawing = self.file.by_id(drawing_id)
+                    self.drawing_name = self.drawing.Name
                     self.metadata = tool.Drawing.get_drawing_metadata(self.camera_element)
                     self.get_scale(context)
                     if self.cprops.update_representation(self.camera):
@@ -220,7 +265,7 @@ class CreateDrawing(bpy.types.Operator):
             open_with_user_command(context.preferences.addons["blenderbim"].preferences.svg_command, svg_path)
 
         if self.print_all:
-            bpy.ops.bim.activate_drawing(drawing=original_drawing_id)
+            bpy.ops.bim.activate_drawing(drawing=original_drawing_id, camera_view_point=False)
         return {"FINISHED"}
 
     def get_camera_dimensions(self):
@@ -278,7 +323,7 @@ class CreateDrawing(bpy.types.Operator):
         return svg_path
 
     def generate_underlay(self, context):
-        if not self.cprops.has_underlay:
+        if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasUnderlay"):
             return
         svg_path = self.get_svg_path(cache_type="underlay")
         context.scene.render.filepath = svg_path[0:-4] + ".png"
@@ -288,7 +333,7 @@ class CreateDrawing(bpy.types.Operator):
             bpy.ops.render.render(write_still=True)
         else:
             previous_visibility = {}
-            for obj in self.camera.users_collection[0].objects:
+            for obj in self.camera.BIMObjectProperties.collection.objects:
                 if bpy.context.view_layer.objects.get(obj.name):
                     previous_visibility[obj.name] = obj.hide_get()
                     obj.hide_set(True)
@@ -320,7 +365,8 @@ class CreateDrawing(bpy.types.Operator):
         return svg_path
 
     def generate_linework(self, context):
-        if not self.cprops.has_linework:
+        global ifcopenshell
+        if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasLinework"):
             return
         svg_path = self.get_svg_path(cache_type="linework")
         if os.path.isfile(svg_path) and self.props.should_use_linework_cache:
@@ -481,6 +527,14 @@ class CreateDrawing(bpy.types.Operator):
                             tree.add_element(elem)
                         elements -= processed
 
+            if self.camera_element not in drawing_elements:
+                with profile("Camera element"):
+                    # The camera must always be included, regardless of any include/exclude filters.
+                    geom_settings = ifcopenshell.geom.settings(DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True)
+                    it = ifcopenshell.geom.iterator(geom_settings, ifc, include=[self.camera_element])
+                    for elem in self.yield_from_iterator(it):
+                        self.serialiser.write(elem)
+
         with profile("Finalizing"):
             self.serialiser.finalize()
         results = self.svg_buffer.get_value()
@@ -628,7 +682,6 @@ class CreateDrawing(bpy.types.Operator):
 
                     # Loop over the cell paths
                     for pi, p in enumerate(g2.getElementsByTagName("path")):
-
                         d = p.getAttribute("d")
                         coords = [co[1:].split(",") for co in d.split() if co[1:]]
                         polygon = shapely.Polygon(coords)
@@ -789,6 +842,7 @@ class CreateDrawing(bpy.types.Operator):
         self.serialiser.setElevationRefGuid(self.camera_element.GlobalId)
         self.serialiser.setScale(self.scale)
         self.serialiser.setSubtractionSettings(ifcopenshell.ifcopenshell_wrapper.ALWAYS)
+        self.serialiser.setUsePrefiltering(True)  # See #3359
         # tree = ifcopenshell.geom.tree()
         # This instructs the tree to explode BReps into faces and return
         # the style of the face when running tree.select_ray()
@@ -837,14 +891,14 @@ class CreateDrawing(bpy.types.Operator):
         ifc = tool.Ifc.get()
         for el in root.findall(".//{http://www.w3.org/2000/svg}g[@{http://www.ifcopenshell.org/ns}guid]"):
             element = ifc.by_guid(el.get("{http://www.ifcopenshell.org/ns}guid"))
-            # Architectural convention only merges these objects. E.g. pipe segments and fittings shouldn't merge.
-            if not element.is_a("IfcWall") and not element.is_a("IfcSlab"):
-                continue
 
             classes = self.get_svg_classes(element)
             classes.append("cut")
-
             el.set("class", " ".join(classes))
+
+            # Architectural convention only merges these objects. E.g. pipe segments and fittings shouldn't merge.
+            if not element.is_a("IfcWall") and not element.is_a("IfcSlab"):
+                continue
 
             keys = []
             for query in join_criteria:
@@ -917,7 +971,7 @@ class CreateDrawing(bpy.types.Operator):
         group.insert(0, projection)
 
     def generate_annotation(self, context):
-        if not self.cprops.has_annotation:
+        if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasAnnotation"):
             return
         svg_path = self.get_svg_path(cache_type="annotation")
         if os.path.isfile(svg_path) and self.props.should_use_annotation_cache:
@@ -940,46 +994,12 @@ class CreateDrawing(bpy.types.Operator):
         return svg_path
 
     def get_scale(self, context):
-        camera_props = self.camera.data.BIMCameraProperties
-        if camera_props.diagram_scale == "CUSTOM":
-            if context.scene.unit_settings.system == "IMPERIAL":
-                if camera_props.custom_diagram_scale_input1[-1] == "'" or camera_props.custom_diagram_scale_input1[-1] == "\"":
-                    camera_props.custom_diagram_scale_input1 = camera_props.custom_diagram_scale_input1[:-1]
-                if camera_props.custom_diagram_scale_input2[-1] == "'":
-                    camera_props.custom_diagram_scale_input2 = camera_props.custom_diagram_scale_input2[:-1]
-                if camera_props.custom_diagram_scale_input2[1:] == "'-0\"" or camera_props.custom_diagram_scale_input2[1:] == "' 0\"":
-                    camera_props.custom_diagram_scale_input2 = camera_props.custom_diagram_scale_input2[0]
-                if "/" in camera_props.custom_diagram_scale_input1:
-                    if " " in camera_props.custom_diagram_scale_input1:
-                        n1, n2 = camera_props.custom_diagram_scale_input1.split(" ")
-                        n2_1, n2_2 = n2.split("/")
-                        numerator = int(n1) + (int(n2_1) / int(n2_2))
-                    elif "-" in camera_props.custom_diagram_scale_input1:
-                        n1, n2 = camera_props.custom_diagram_scale_input1.split("-")
-                        n2_1, n2_2 = n2.split("/")
-                        numerator = int(n1) + (int(n2_1) / int(n2_2))
-                    else:
-                        n1, n2 = camera_props.custom_diagram_scale_input1.split("/")
-                        numerator = int(n1) / int(n2)
-                else:
-                    numerator = 1
-                denominator = (int(camera_props.custom_diagram_scale_input2) / numerator) * 12
-                scale = "1" + "/" + str(denominator)
-                human_scale = camera_props.custom_diagram_scale_input1 + "=" + camera_props.custom_diagram_scale_input2
-            else:
-                scale = camera_props.custom_diagram_scale_input1 + "/" + camera_props.custom_diagram_scale_input2
-                human_scale = camera_props.custom_diagram_scale_input1 + ":" + camera_props.custom_diagram_scale_input2
+        diagram_scale = tool.Drawing.get_diagram_scale(self.camera)
+        self.human_scale = diagram_scale["HumanScale"]
+        self.scale = tool.Drawing.get_scale_ratio(diagram_scale["Scale"])
 
-            camera_props.custom_diagram_scale = human_scale + "|" + scale
-            self.human_scale, fraction = camera_props.custom_diagram_scale.split("|")
-        else:
-            self.human_scale, fraction = camera_props.diagram_scale.split("|")
-
-        if camera_props.is_nts:
+        if ifcopenshell.util.element.get_pset(self.camera_element, "EPset_Drawing", "IsNTS"):
             self.human_scale = "NTS"
-
-        numerator, denominator = fraction.split("/")
-        self.scale = float(numerator) / float(denominator)
 
     def is_landscape(self, render):
         return render.resolution_x > render.resolution_y
@@ -1050,7 +1070,7 @@ class AddSheet(bpy.types.Operator, Operator):
 
 class OpenSheet(bpy.types.Operator, Operator):
     bl_idname = "bim.open_sheet"
-    bl_label = "Open Sheet"
+    bl_label = "Open Sheet Layout"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -1133,6 +1153,7 @@ class RemoveDrawingFromSheet(bpy.types.Operator, Operator):
 class CreateSheets(bpy.types.Operator, Operator):
     bl_idname = "bim.create_sheets"
     bl_label = "Create Sheets"
+    bl_description = "Build a sheet from the sheet layout"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -1169,7 +1190,7 @@ class CreateSheets(bpy.types.Operator, Operator):
                 has_sheet_reference = True
             elif reference.Description == "RASTER":
                 if reference.Location in raster_references:
-                    del raster_references[reference.Location]
+                    raster_references.remove(reference.Location)
                 else:
                     tool.Ifc.run("document.remove_reference", reference=reference)
 
@@ -1217,16 +1238,13 @@ class SelectAllDrawings(bpy.types.Operator):
     bl_label = "Select All Drawings"
     view: bpy.props.StringProperty()
     bl_description = "Select all drawings in the drawing list.\n\n" + "SHIFT+CLICK to deselect all drawings"
-    select_all: bpy.props.BoolProperty(name="Open All", default=False)
+    select_all: bpy.props.BoolProperty(name="Open All", default=False, options={"SKIP_SAVE"})
 
     def invoke(self, context, event):
         # deselect all drawings on shift+click
+        # make sure to use SKIP_SAVE on property, otherwise it might get stuck
         if event.type == "LEFTMOUSE" and event.shift:
             self.select_all = False
-        else:
-            # can't rely on default value since the line above
-            # will set the value to `True` for all future operator calls
-            self.select_all = True
         return self.execute(context)
 
     def execute(self, context):
@@ -1245,16 +1263,13 @@ class OpenDrawing(bpy.types.Operator):
         + 'or using "svg_command" from the BlenderBIM preferences (if provided).\n\n'
         + "SHIFT+CLICK to open all selected drawings"
     )
-    open_all: bpy.props.BoolProperty(name="Open All", default=False)
+    open_all: bpy.props.BoolProperty(name="Open All", default=False, options={"SKIP_SAVE"})
 
     def invoke(self, context, event):
         # opening all drawings on shift+click
+        # make sure to use SKIP_SAVE on property, otherwise it might get stuck
         if event.type == "LEFTMOUSE" and event.shift:
             self.open_all = True
-        else:
-            # can't rely on default value since the line above
-            # will set the value to `True` for all future operator calls
-            self.open_all = False
         return self.execute(context)
 
     def execute(self, context):
@@ -1293,9 +1308,31 @@ class ActivateModel(bpy.types.Operator):
     bl_description = "Activates the model view"
 
     def execute(self, context):
+        dprops = bpy.context.scene.DocProperties
+        dprops.active_drawing_id = 0
+
         CutDecorator.uninstall()
 
-        bpy.ops.object.hide_view_clear()
+        if not bpy.app.background:
+            view3d_context = dict()
+
+            for window in bpy.context.window_manager.windows:
+                screen = window.screen
+                for area in screen.areas:
+                    if area.type == "VIEW_3D":
+                        view3d_context["window"] = window
+                        view3d_context["screen"] = screen
+                        view3d_context["area"] = area
+                        for region in area.regions:
+                            if region.type == "WINDOW":
+                                view3d_context["region"] = region
+                                break
+                        break
+                if view3d_context:
+                    break
+
+            if view3d_context:
+                bpy.ops.object.hide_view_clear(view3d_context)
 
         subcontext = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
 
@@ -1328,17 +1365,40 @@ class ActivateDrawing(bpy.types.Operator):
     bl_idname = "bim.activate_drawing"
     bl_label = "Activate Drawing"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Activates the selected drawing view"
+    bl_description = "Activates the selected drawing view.\n\n" + "ALT+CLICK to keep the viewport position"
+
     drawing: bpy.props.IntProperty()
+    camera_view_point: bpy.props.BoolProperty(name="Camera View Point", default=True, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        # keep the viewport position on alt+click
+        # make sure to use SKIP_SAVE on property, otherwise it might get stuck
+        if event.type == "LEFTMOUSE" and event.alt:
+            self.camera_view_point = False
+        return self.execute(context)
 
     def execute(self, context):
         drawing = tool.Ifc.get().by_id(self.drawing)
+        dprops = bpy.context.scene.DocProperties
+
+        if not self.camera_view_point:
+            viewport_position = tool.Blender.get_viewport_position()
+
         core.activate_drawing_view(tool.Ifc, tool.Drawing, drawing=drawing)
-        bpy.context.scene.DocProperties.active_drawing_id = self.drawing
+
+        if not self.camera_view_point:
+            tool.Blender.set_viewport_position(viewport_position)
+
+        dprops.active_drawing_id = self.drawing
+        # reset DrawingsData to reload_drawing_styles work correctly
+        DrawingsData.is_loaded = False
+        dprops.drawing_styles.clear()
         if ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing", "HasUnderlay"):
+            bpy.ops.bim.reload_drawing_styles()
             bpy.ops.bim.activate_drawing_style()
         core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=tool.Ifc.get().by_id(self.drawing))
         CutDecorator.install(context)
+        tool.Drawing.show_decorations()
         return {"FINISHED"}
 
 
@@ -1366,7 +1426,7 @@ class ResizeText(bpy.types.Operator):
     # TODO: check undo redo
 
     def execute(self, context):
-        for obj in context.scene.camera.users_collection[0].objects:
+        for obj in context.scene.camera.BIMObjectProperties.collection.objects:
             if isinstance(obj.data, bpy.types.TextCurve):
                 annotation.Annotator.resize_text(obj)
         return {"FINISHED"}
@@ -1379,16 +1439,13 @@ class RemoveDrawing(bpy.types.Operator, Operator):
     bl_description = "Remove currently selected drawing.\n\n" + "SHIFT+CLICK to remove all selected drawings"
 
     drawing: bpy.props.IntProperty()
-    remove_all: bpy.props.BoolProperty(name="Remove All", default=False)
+    remove_all: bpy.props.BoolProperty(name="Remove All", default=False, options={"SKIP_SAVE"})
 
     def invoke(self, context, event):
         # removing all selected drawings on shift+click
+        # make sure to use SKIP_SAVE on property, otherwise it might get stuck
         if event.type == "LEFTMOUSE" and event.shift:
             self.remove_all = True
-        else:
-            # can't rely on default value since the line above
-            # will set the value to `True` for all future operator calls
-            self.remove_all = False
         return self.execute(context)
 
     def _execute(self, context):
@@ -1399,24 +1456,88 @@ class RemoveDrawing(bpy.types.Operator, Operator):
         else:
             drawings = [tool.Ifc.get().by_id(self.drawing)]
 
-        print("Removing drawings: {}".format([d for d in drawings]))
+        removed_drawings = [drawing.id() for drawing in drawings]
 
         for drawing in drawings:
             core.remove_drawing(tool.Ifc, tool.Drawing, drawing=drawing)
 
 
-class AddDrawingStyle(bpy.types.Operator):
+class ReloadDrawingStyles(bpy.types.Operator):
+    bl_idname = "bim.reload_drawing_styles"
+    bl_label = "Reload Drawing Styles"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Reload drawing styles for the active camera"
+
+    def execute(self, context):
+        if not DrawingsData.is_loaded:
+            DrawingsData.load()
+        drawing_pset_data = DrawingsData.data["active_drawing_pset_data"]
+        camera_props = context.active_object.data.BIMCameraProperties
+
+        # added this part as a temporary fallback
+        # TODO: should remove it a bit later when projects get more accommodated
+        # with saving shadingstyles to ifc and separate json file
+        if "ShadingStyles" not in drawing_pset_data:
+            ifc_file = tool.Ifc.get()
+            pset = ifc_file.by_id(drawing_pset_data["id"])
+            edit_properties = {
+                "ShadingStyles": (
+                    shading_styles_path := tool.Drawing.get_default_drawing_resource_path("ShadingStyles")
+                ),
+                "CurrentShadingStyle": tool.Drawing.get_default_shading_style(),
+            }
+            ifcopenshell.api.run("pset.edit_pset", ifc_file, pset=pset, properties=edit_properties)
+            tool.Drawing.setup_shading_styles_path(shading_styles_path)
+
+            DrawingsData.load()
+            drawing_pset_data = DrawingsData.data["active_drawing_pset_data"]
+
+        if "ShadingStyles" not in drawing_pset_data:
+            self.report({"ERROR"}, "Could not find shading styles path in EPset_Drawing.ShadingStyles.")
+            return {"CANCELLED"}
+
+        rel_path = drawing_pset_data["ShadingStyles"]
+        current_style = drawing_pset_data.get("CurrentShadingStyle", None)
+
+        json_path = Path(tool.Ifc.resolve_uri(rel_path))
+        if not json_path.exists():
+            self.report({"ERROR"}, "Shading styles file not found: {}".format(json_path))
+            return {"CANCELLED"}
+
+        with open(json_path, "r") as fi:
+            shading_styles_json = json.load(fi)
+
+        drawing_styles = context.scene.DocProperties.drawing_styles
+        drawing_styles.clear()
+        styles = [style for style in shading_styles_json]
+        for style_name in styles:
+            style_data = shading_styles_json[style_name]
+            drawing_style = drawing_styles.add()
+            drawing_style["name"] = style_name  # setting as attribute to avoid triggering setter
+            drawing_style.render_type = style_data["render_type"]
+            drawing_style.raster_style = json.dumps(style_data["raster_style"])
+
+        if current_style is not None:
+            camera_props.active_drawing_style_index = styles.index(current_style)
+
+        return {"FINISHED"}
+
+
+class AddDrawingStyle(bpy.types.Operator, Operator):
     bl_idname = "bim.add_drawing_style"
     bl_label = "Add Drawing Style"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        new = context.scene.DocProperties.drawing_styles.add()
-        new.name = "New Drawing Style"
+        drawing_styles = context.scene.DocProperties.drawing_styles
+        new = drawing_styles.add()
+        # drawing style is saved to ifc on rename
+        new.name = tool.Blender.ensure_unique_name("New Drawing Style", drawing_styles)
+        context.scene.camera.data.BIMCameraProperties.active_drawing_style_index = len(drawing_styles) - 1
         return {"FINISHED"}
 
 
-class RemoveDrawingStyle(bpy.types.Operator):
+class RemoveDrawingStyle(bpy.types.Operator, Operator):
     bl_idname = "bim.remove_drawing_style"
     bl_label = "Remove Drawing Style"
     bl_options = {"REGISTER", "UNDO"}
@@ -1424,13 +1545,17 @@ class RemoveDrawingStyle(bpy.types.Operator):
 
     def execute(self, context):
         context.scene.DocProperties.drawing_styles.remove(self.index)
+        context.scene.camera.data.BIMCameraProperties.active_drawing_style_index = max(self.index - 1, 0)
+        bpy.ops.bim.save_drawing_styles_data()
         return {"FINISHED"}
 
 
-class SaveDrawingStyle(bpy.types.Operator):
+class SaveDrawingStyle(bpy.types.Operator, Operator):
     bl_idname = "bim.save_drawing_style"
     bl_label = "Save Drawing Style"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Save current render setting to currently selected drawing style. Also resaves styles data to IFC"
+
     index: bpy.props.StringProperty()
     # TODO: check undo redo
 
@@ -1438,19 +1563,46 @@ class SaveDrawingStyle(bpy.types.Operator):
         space = self.get_view_3d(context)  # Do not remove. It is used later in eval
         scene = context.scene
         style = {}
-        for prop in RasterStyleProperty:
-            value = eval(prop.value)
+        eval_namespace = {"context": context, "scene": scene, "space": space}
+
+        def add_prop_to_style(prop_path, context, scene, space):
+            value = eval(prop_path)
             if not isinstance(value, str):
                 try:
                     value = tuple(value)
                 except TypeError:
                     pass
-            style[prop.value] = value
+            style[prop_path] = value
+
+        for prop in RasterStyleProperty:
+            if prop.name.startswith("EVAL_PROP"):
+                prop_path = prop.value
+                add_prop_to_style(prop_path, **eval_namespace)
+            else:
+                props_source_path = prop.value
+                props_source = eval(props_source_path)
+                for prop_name in dir(props_source):
+                    if prop_name.startswith("__"):
+                        continue
+
+                    prop_path = f"{props_source_path}.{prop_name}"
+                    prop_value = eval(prop_path)
+                    if (
+                        not isinstance(prop_value, (int, float, bool, str, Color, Vector))
+                        or props_source.is_property_readonly(prop_name)
+                        or prop_path in RASTER_STYLE_PROPERTIES_EXCLUDE
+                    ):
+                        continue
+
+                    add_prop_to_style(prop_path, **eval_namespace)
+
         if self.index:
             index = int(self.index)
         else:
             index = context.active_object.data.BIMCameraProperties.active_drawing_style_index
         scene.DocProperties.drawing_styles[index].raster_style = json.dumps(style)
+
+        bpy.ops.bim.save_drawing_styles_data()
         return {"FINISHED"}
 
     def get_view_3d(self, context):
@@ -1463,19 +1615,84 @@ class SaveDrawingStyle(bpy.types.Operator):
                 return space
 
 
-class ActivateDrawingStyle(bpy.types.Operator):
+class SaveDrawingStylesData(bpy.types.Operator, Operator):
+    bl_idname = "bim.save_drawing_styles_data"
+    bl_label = "Save Drawing Styles Data"
+    bl_options = {"REGISTER", "UNDO"}
+
+    skip_updating_current_style: bpy.props.BoolProperty(default=False)
+    rename_style: bpy.props.BoolProperty(default=False)
+    rename_style_from: bpy.props.StringProperty(default="")
+    rename_style_to: bpy.props.StringProperty(default="")
+
+    def execute(self, context):
+        if not DrawingsData.is_loaded:
+            DrawingsData.load()
+        drawing_pset_data = DrawingsData.data["active_drawing_pset_data"]
+        drawing_styles = context.scene.DocProperties.drawing_styles
+
+        rel_path = drawing_pset_data["ShadingStyles"]
+        current_style = drawing_pset_data.get("CurrentShadingStyle", None)
+        json_path = Path(tool.Ifc.resolve_uri(rel_path))
+        if not json_path.exists():
+            self.report({"ERROR"}, "Shading styles file not found: {}".format(json_path))
+            return {"CANCELLED"}
+
+        styles_data = {}
+        for style in drawing_styles:
+            style_data = {"render_type": style.render_type, "raster_style": json.loads(style.raster_style)}
+            styles_data[style.name] = style_data
+
+        with open(json_path, "w") as fo:
+            json.dump(styles_data, fo, indent=4)
+
+        # TODO: currently it doesn't update current style for the other drawings
+        # handling case when current style is not present in styles saved in ifc
+        if not self.skip_updating_current_style and current_style not in styles_data and current_style is not None:
+            # style was renamed
+            if self.rename_style and current_style == self.rename_style_from:
+                new_style_name = self.rename_style_to
+
+            # style was removed
+            else:
+                new_style_name = None
+
+            ifc_file = tool.Ifc.get()
+            drawing = ifc_file.by_id(context.scene.DocProperties.active_drawing_id)
+            pset = tool.Pset.get_element_pset(drawing, "EPset_Drawing")
+            ifcopenshell.api.run(
+                "pset.edit_pset", ifc_file, pset=pset, properties={"CurrentShadingStyle": new_style_name}
+            )
+            blenderbim.bim.handler.refresh_ui_data()
+
+        return {"FINISHED"}
+
+
+class ActivateDrawingStyle(bpy.types.Operator, Operator):
     bl_idname = "bim.activate_drawing_style"
     bl_label = "Activate Drawing Style"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         scene = context.scene
-        if scene.camera.data.BIMCameraProperties.active_drawing_style_index < len(scene.DocProperties.drawing_styles):
-            self.drawing_style = scene.DocProperties.drawing_styles[
-                scene.camera.data.BIMCameraProperties.active_drawing_style_index
-            ]
-            self.set_raster_style(context)
-            self.set_query(context)
+        ifc_file = tool.Ifc.get()
+        active_drawing_style_index = scene.camera.data.BIMCameraProperties.active_drawing_style_index
+
+        if active_drawing_style_index >= len(scene.DocProperties.drawing_styles):
+            self.report({"ERROR"}, "Could not find active drawing style")
+            return {"CANCELLED"}
+
+        self.drawing_style = scene.DocProperties.drawing_styles[active_drawing_style_index]
+
+        self.set_raster_style(context)
+        self.set_query(context)
+
+        drawing = ifc_file.by_id(scene.DocProperties.active_drawing_id)
+        pset = tool.Pset.get_element_pset(drawing, "EPset_Drawing")
+        ifcopenshell.api.run(
+            "pset.edit_pset", ifc_file, pset=pset, properties={"CurrentShadingStyle": self.drawing_style.name}
+        )
+        blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
     def set_raster_style(self, context):
@@ -1483,10 +1700,14 @@ class ActivateDrawingStyle(bpy.types.Operator):
         space = self.get_view_3d(context)  # Do not remove. It is used in exec later
         style = json.loads(self.drawing_style.raster_style)
         for path, value in style.items():
-            if isinstance(value, str):
-                exec(f"{path} = '{value}'")
-            else:
-                exec(f"{path} = {value}")
+            try:
+                if isinstance(value, str):
+                    exec(f"{path} = '{value}'")
+                else:
+                    exec(f"{path} = {value}")
+            except:
+                # Differences in Blender versions mean result in failures here
+                print(f"Failed to set shading style {path} to {value}")
 
     def set_query(self, context):
         self.include_global_ids = []
@@ -1564,9 +1785,10 @@ class AddSchedule(bpy.types.Operator, Operator):
             # taking into account different drives on windows
             if Path(filepath).drive == Path(ifc_path).drive:
                 filepath = os.path.relpath(filepath, ifc_path)
-        core.add_schedule(
+        core.add_document(
             tool.Ifc,
             tool.Drawing,
+            "SCHEDULE",
             uri=filepath,
         )
 
@@ -1582,7 +1804,7 @@ class RemoveSchedule(bpy.types.Operator, Operator):
     schedule: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.remove_schedule(tool.Ifc, tool.Drawing, schedule=tool.Ifc.get().by_id(self.schedule))
+        core.remove_document(tool.Ifc, tool.Drawing, "SCHEDULE", schedule=tool.Ifc.get().by_id(self.schedule))
 
 
 class OpenSchedule(bpy.types.Operator, Operator):
@@ -1653,11 +1875,116 @@ class AddScheduleToSheet(bpy.types.Operator, Operator):
 
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = context.scene.BIMProperties.data_dir
-        sheet_builder.add_schedule(reference, schedule, sheet)
+        sheet_builder.add_document(reference, schedule, sheet)
 
         tool.Drawing.import_sheets()
 
 
+class AddReferenceToSheet(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_reference_to_sheet"
+    bl_label = "Add Reference To Sheet"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.DocProperties
+        return props.references and props.sheets and context.scene.BIMProperties.data_dir
+
+    def _execute(self, context):
+        props = context.scene.DocProperties
+        active_reference = props.references[props.active_reference_index]
+        active_sheet = tool.Drawing.get_active_sheet(context)
+        reference = tool.Ifc.get().by_id(active_reference.ifc_definition_id)
+        if tool.Ifc.get_schema() == "IFC2X3":
+            reference_location = tool.Drawing.get_path_with_ext(reference.DocumentReferences[0].Location, "svg")
+        else:
+            reference_location = tool.Drawing.get_path_with_ext(reference.HasDocumentReferences[0].Location, "svg")
+
+        sheet = tool.Ifc.get().by_id(active_sheet.ifc_definition_id)
+        if not sheet.is_a("IfcDocumentInformation"):
+            return
+
+        references = tool.Drawing.get_document_references(sheet)
+
+        has_reference = False
+        for reference in references:
+            if reference.Location == reference_location:
+                has_reference = True
+                break
+        if has_reference:
+            return
+
+        if not tool.Drawing.does_file_exist(tool.Ifc.resolve_uri(reference_location)):
+            self.report({"ERROR"}, f"Cannot find reference svg by path {reference_location}.")
+            return
+
+        reference = tool.Ifc.run("document.add_reference", information=sheet)
+        id_attr = "ItemReference" if tool.Ifc.get_schema() == "IFC2X3" else "Identification"
+        attributes = {
+            id_attr: str(len([r for r in references if r.Description in ("DRAWING", "REFERENCE")]) + 1),
+            "Location": reference_location,
+            "Description": "REFERENCE",
+        }
+        tool.Ifc.run("document.edit_reference", reference=reference, attributes=attributes)
+
+        sheet_builder = sheeter.SheetBuilder()
+        sheet_builder.data_dir = context.scene.BIMProperties.data_dir
+        sheet_builder.add_document(reference, reference, sheet)
+
+        tool.Drawing.import_sheets()
+
+
+class AddReference(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_reference"
+    bl_label = "Add Reference"
+    bl_options = {"REGISTER", "UNDO"}
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.svg", options={"HIDDEN"})
+    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=True)
+
+    def _execute(self, context):
+        filepath = self.filepath
+        if self.use_relative_path:
+            ifc_path = tool.Ifc.get_path()
+            if os.path.isfile(ifc_path):
+                ifc_path = os.path.dirname(ifc_path)
+
+            # taking into account different drives on windows
+            if Path(filepath).drive == Path(ifc_path).drive:
+                filepath = os.path.relpath(filepath, ifc_path)
+        core.add_document(
+            tool.Ifc,
+            tool.Drawing,
+            "REFERENCE",
+            uri=filepath,
+        )
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+
+class RemoveReference(bpy.types.Operator, Operator):
+    bl_idname = "bim.remove_reference"
+    bl_label = "Remove Reference"
+    bl_options = {"REGISTER", "UNDO"}
+    reference: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.remove_document(tool.Ifc, tool.Drawing, "REFERENCE", document=tool.Ifc.get().by_id(self.reference))
+
+
+class OpenReference(bpy.types.Operator, Operator):
+    bl_idname = "bim.open_reference"
+    bl_label = "Open Reference"
+    bl_options = {"REGISTER", "UNDO"}
+    reference: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.open_reference(tool.Drawing, reference=tool.Ifc.get().by_id(self.reference))
+
+
+# TODO: dead code - drawing style attributes are never used?
 class AddDrawingStyleAttribute(bpy.types.Operator):
     bl_idname = "bim.add_drawing_style_attribute"
     bl_label = "Add Drawing Style Attribute"
@@ -1669,6 +1996,7 @@ class AddDrawingStyleAttribute(bpy.types.Operator):
         return {"FINISHED"}
 
 
+# TODO: dead code - drawing style attributes are never used?
 class RemoveDrawingStyleAttribute(bpy.types.Operator):
     bl_idname = "bim.remove_drawing_style_attribute"
     bl_label = "Remove Drawing Style Attribute"
@@ -1979,6 +2307,24 @@ class DisableEditingSchedules(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.disable_editing_schedules(tool.Drawing)
+
+
+class LoadReferences(bpy.types.Operator, Operator):
+    bl_idname = "bim.load_references"
+    bl_label = "Load References"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.load_references(tool.Drawing)
+
+
+class DisableEditingReferences(bpy.types.Operator, Operator):
+    bl_idname = "bim.disable_editing_references"
+    bl_label = "Disable Editing References"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.disable_editing_references(tool.Drawing)
 
 
 class LoadDrawings(bpy.types.Operator, Operator):

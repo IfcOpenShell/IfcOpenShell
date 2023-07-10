@@ -30,32 +30,20 @@ def add_object(self, context):
     obj = bpy.data.objects.new("Grid", None)
     obj.name = "Grid"
 
-    collection = bpy.data.collections.new(obj.name)
-    has_site_collection = False
-    for child in context.view_layer.layer_collection.children:
-        if "IfcProject/" not in child.name:
-            continue
-        for grandchild in child.children:
-            if "IfcSite/" not in grandchild.name:
-                continue
-            has_site_collection = True
-            grandchild.collection.children.link(collection)
-            break
-    if not has_site_collection:
-        context.view_layer.active_layer_collection.collection.children.link(collection)
+    collection = context.view_layer.active_layer_collection.collection
+    site = tool.Ifc.get().by_type("IfcSite")
+    if site:
+        site = site[0]
+        site_obj = tool.Ifc.get_object(site)
+        if site_obj:
+            collection = site_obj.BIMObjectProperties.collection or collection
+
     collection.objects.link(obj)
 
-    self.file = IfcStore.get_file()
-    if self.file:
-        bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcGrid")
-        collection.name = obj.name
-        grid = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-        if has_site_collection:
-            site_obj = bpy.data.objects.get(grandchild.name)
-            if site_obj and site_obj.BIMObjectProperties.ifc_definition_id:
-                blenderbim.core.spatial.assign_container(
-                    tool.Ifc, tool.Collector, tool.Spatial, structure_obj=site_obj, element_obj=obj
-                )
+    bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcGrid")
+    grid = tool.Ifc.get_entity(obj)
+
+    collection = obj.BIMObjectProperties.collection or collection
 
     axes_collection = bpy.data.collections.new("UAxes")
     collection.children.link(axes_collection)
@@ -73,15 +61,14 @@ def add_object(self, context):
 
         axes_collection.objects.link(obj)
 
-        if self.file:
-            result = ifcopenshell.api.run(
-                "grid.create_grid_axis",
-                self.file,
-                **{"axis_tag": tag, "uvw_axes": "UAxes", "grid": grid},
-            )
-            IfcStore.link_element(result, obj)
-            ifcopenshell.api.run("grid.create_axis_curve", self.file, **{"axis_curve": obj, "grid_axis": result})
-            obj.BIMObjectProperties.ifc_definition_id = result.id()
+        result = ifcopenshell.api.run(
+            "grid.create_grid_axis",
+            tool.Ifc.get(),
+            **{"axis_tag": tag, "uvw_axes": "UAxes", "grid": grid},
+        )
+        IfcStore.link_element(result, obj)
+        ifcopenshell.api.run("grid.create_axis_curve", tool.Ifc.get(), **{"axis_curve": obj, "grid_axis": result})
+        obj.BIMObjectProperties.ifc_definition_id = result.id()
 
     axes_collection = bpy.data.collections.new("VAxes")
     collection.children.link(axes_collection)
@@ -99,18 +86,17 @@ def add_object(self, context):
 
         axes_collection.objects.link(obj)
 
-        if self.file:
-            result = ifcopenshell.api.run(
-                "grid.create_grid_axis",
-                self.file,
-                **{"axis_tag": tag, "uvw_axes": "VAxes", "grid": grid},
-            )
-            IfcStore.link_element(result, obj)
-            ifcopenshell.api.run("grid.create_axis_curve", self.file, **{"axis_curve": obj, "grid_axis": result})
-            obj.BIMObjectProperties.ifc_definition_id = result.id()
+        result = ifcopenshell.api.run(
+            "grid.create_grid_axis",
+            tool.Ifc.get(),
+            **{"axis_tag": tag, "uvw_axes": "VAxes", "grid": grid},
+        )
+        IfcStore.link_element(result, obj)
+        ifcopenshell.api.run("grid.create_axis_curve", tool.Ifc.get(), **{"axis_curve": obj, "grid_axis": result})
+        obj.BIMObjectProperties.ifc_definition_id = result.id()
 
 
-class BIM_OT_add_object(Operator):
+class BIM_OT_add_object(Operator, tool.Ifc.Operator):
     bl_idname = "mesh.add_grid"
     bl_label = "IFC Grid"
     bl_options = {"REGISTER", "UNDO"}
@@ -122,10 +108,7 @@ class BIM_OT_add_object(Operator):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
+        return tool.Ifc.get()
 
     def _execute(self, context):
         add_object(self, context)

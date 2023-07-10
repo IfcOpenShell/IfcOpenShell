@@ -261,7 +261,7 @@ def update_color_full(self, context):
     material = bpy.data.materials.get("color_full")
     if material:
         color_full = bpy.context.scene.BIMAnimationProperties.color_full
-        inputs = material.node_tree.nodes["Principled BSDF"].inputs
+        inputs = tool.Blender.get_material_node(material, "BSDF_PRINCIPLED").inputs
         color = inputs["Base Color"].default_value
         color[0] = color_full.r
         color[1] = color_full.g
@@ -272,7 +272,7 @@ def update_color_progress(self, context):
     material = bpy.data.materials.get("color_progress")
     if material:
         color_progress = bpy.context.scene.BIMAnimationProperties.color_progress
-        inputs = material.node_tree.nodes["Principled BSDF"].inputs
+        inputs = tool.Blender.get_material_node(material, "BSDF_PRINCIPLED").inputs
         color = inputs["Base Color"].default_value
         color[0] = color_progress.r
         color[1] = color_progress.g
@@ -286,6 +286,11 @@ def update_sort_reversed(self, context):
             work_schedule=tool.Ifc.get().by_id(context.scene.BIMWorkScheduleProperties.active_work_schedule_id),
         )
 
+def update_filter_by_active_schedule(self, context):
+    if context.active_object:
+        core.load_product_related_tasks(
+            tool.Sequence, product=tool.Ifc.get().by_id(context.active_object.BIMObjectProperties.ifc_definition_id)
+        )
 
 class Task(PropertyGroup):
     name: StringProperty(name="Name", update=updateTaskName)
@@ -420,7 +425,7 @@ class BIMWorkScheduleProperties(PropertyGroup):
     enable_reorder: BoolProperty(name="Enable Reorder", default=False)
     show_task_operators: BoolProperty(name="Show Task Options", default=True)
     should_show_schedule_baseline_ui: BoolProperty(name="Baselines", default=False)
-    filter_by_active_schedule: BoolProperty(name="Filter By Active Schedule", default=False)
+    filter_by_active_schedule: BoolProperty(name="Filter By Active Schedule", default=False, update = update_filter_by_active_schedule)
 
 
 class BIMTaskTreeProperties(PropertyGroup):

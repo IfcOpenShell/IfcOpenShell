@@ -28,8 +28,8 @@ def disable_editing_text(drawing, obj=None):
 
 def edit_text(drawing, obj=None):
     drawing.synchronise_ifc_and_text_attributes(obj)
-    drawing.update_text_value(obj)
     drawing.update_text_size_pset(obj)
+    drawing.update_text_value(obj)
     drawing.disable_editing_text(obj)
 
 
@@ -104,9 +104,7 @@ def remove_sheet(ifc, drawing, sheet=None):
 
 
 def rename_sheet(ifc, drawing, sheet=None, identification=None, name=None):
-    ifc.run(
-        "document.edit_information", information=sheet, attributes={"Identification": identification, "Name": name}
-    )
+    ifc.run("document.edit_information", information=sheet, attributes={"Identification": identification, "Name": name})
     for reference in drawing.get_document_references(sheet):
         description = drawing.get_reference_description(reference)
         if description == "SHEET":
@@ -132,39 +130,52 @@ def rename_reference(ifc, reference=None, identification=None):
 
 
 def load_schedules(drawing):
-    drawing.import_schedules()
+    drawing.import_documents("SCHEDULE")
     drawing.enable_editing_schedules()
+
+
+def load_references(drawing):
+    drawing.import_documents("REFERENCE")
+    drawing.enable_editing_references()
 
 
 def disable_editing_schedules(drawing):
     drawing.disable_editing_schedules()
 
 
-def add_schedule(ifc, drawing, uri=None):
-    schedule = ifc.run("document.add_information")
-    reference = ifc.run("document.add_reference", information=schedule)
+def disable_editing_references(drawing):
+    drawing.disable_editing_references()
+
+
+def add_document(ifc, drawing, document_type, uri=None):
+    document = ifc.run("document.add_information")
+    reference = ifc.run("document.add_reference", information=document)
     name = drawing.get_path_filename(uri)
     if ifc.get_schema() == "IFC2X3":
-        attributes = {"DocumentId": "X", "Name": name, "Scope": "SCHEDULE"}
+        attributes = {"DocumentId": "X", "Name": name, "Scope": document_type}
     else:
-        attributes = {"Identification": "X", "Name": name, "Scope": "SCHEDULE"}
-    ifc.run("document.edit_information", information=schedule, attributes=attributes)
+        attributes = {"Identification": "X", "Name": name, "Scope": document_type}
+    ifc.run("document.edit_information", information=document, attributes=attributes)
     ifc.run("document.edit_reference", reference=reference, attributes={"Location": uri})
-    drawing.import_schedules()
+    drawing.import_documents(document_type)
 
 
-def remove_schedule(ifc, drawing, schedule=None):
-    ifc.run("document.remove_information", information=schedule)
-    drawing.import_schedules()
+def remove_document(ifc, drawing, document_type, document=None):
+    ifc.run("document.remove_information", information=document)
+    drawing.import_documents(document_type)
 
 
 def open_schedule(drawing, schedule=None):
     drawing.open_spreadsheet(drawing.get_document_uri(schedule))
 
 
-def update_schedule_name(ifc, drawing, schedule=None, name=None):
-    if drawing.get_name(schedule) != name:
-        ifc.run("document.edit_information", information=schedule, attributes={"Name": name})
+def open_reference(drawing, reference=None):
+    drawing.open_svg(drawing.get_document_uri(reference))
+
+
+def update_document_name(ifc, drawing, document=None, name=None):
+    if drawing.get_name(document) != name:
+        ifc.run("document.edit_information", information=document, attributes={"Name": name})
 
 
 def load_drawings(drawing):
@@ -198,7 +209,9 @@ def add_drawing(ifc, collector, drawing, target_view=None, location_hint=None):
         human_scale = "1:100"
     else:
         scale = "1/96"
-        human_scale = "1/8\"=1'-0\""
+        human_scale = '1/8"=1\'-0"'
+
+    shading_styles_path = drawing.get_default_drawing_resource_path("ShadingStyles")
     ifc.run(
         "pset.edit_pset",
         pset=pset,
@@ -214,8 +227,11 @@ def add_drawing(ifc, collector, drawing, target_view=None, location_hint=None):
             "Markers": drawing.get_default_drawing_resource_path("Markers"),
             "Symbols": drawing.get_default_drawing_resource_path("Symbols"),
             "Patterns": drawing.get_default_drawing_resource_path("Patterns"),
+            "ShadingStyles": (shading_styles_path := drawing.get_default_drawing_resource_path("ShadingStyles")),
+            "CurrentShadingStyle": drawing.get_default_shading_style(),
         },
     )
+    drawing.setup_shading_styles_path(shading_styles_path)
     information = ifc.run("document.add_information")
     uri = drawing.get_default_drawing_path(drawing_name)
     reference = ifc.run("document.add_reference", information=information)
@@ -267,6 +283,9 @@ def duplicate_drawing(ifc, drawing_tool, drawing=None, should_duplicate_annotati
 
 
 def remove_drawing(ifc, drawing_tool, drawing=None):
+    if drawing_tool.is_active_drawing(drawing):
+        drawing_tool.run_drawing_activate_model()
+
     collection = drawing_tool.get_drawing_collection(drawing)
     if collection:
         drawing_tool.delete_collection(collection)
@@ -299,7 +318,7 @@ def update_drawing_name(ifc, drawing_tool, drawing=None, name=None):
         ifc.run("attribute.edit_attributes", product=group, attributes={"Name": name})
     collection = drawing_tool.get_drawing_collection(drawing)
     if collection:
-        drawing_tool.set_drawing_collection_name(group, collection)
+        drawing_tool.set_drawing_collection_name(drawing, collection)
 
     reference = drawing_tool.get_drawing_document(drawing)
     information = drawing_tool.get_reference_document(reference)
@@ -322,7 +341,9 @@ def update_drawing_name(ifc, drawing_tool, drawing=None, name=None):
 
 
 def add_annotation(ifc, collector, drawing_tool, drawing=None, object_type=None):
-    context = drawing_tool.get_annotation_context(target_view := drawing_tool.get_drawing_target_view(drawing))
+    context = drawing_tool.get_annotation_context(
+        target_view := drawing_tool.get_drawing_target_view(drawing), object_type
+    )
     if not context:
         return f"No annotation context Annotation/{target_view} for drawing"
 

@@ -10,6 +10,15 @@ def add_file(ifcgit, ifc):
     ifcgit.add_file_to_repo(repo, path_ifc)
 
 
+def clone_repo(ifcgit, remote_url, local_folder, operator):
+    repo = ifcgit.clone_repo(remote_url, local_folder)
+    if not repo:
+        operator.report({"ERROR"}, "Clone failed")
+        return
+    operator.report({"INFO"}, "Repository cloned")
+    ifcgit.load_anyifc(repo)
+
+
 def discard_uncomitted(ifcgit, ifc):
     path_ifc = ifc.get_path()
     # NOTE this is calling the git binary in a subprocess
@@ -17,7 +26,7 @@ def discard_uncomitted(ifcgit, ifc):
     ifcgit.load_project(path_ifc)
 
 
-def commit_changes(ifcgit, ifc, repo, context):
+def commit_changes(ifcgit, ifc, repo):
     path_ifc = ifc.get_path()
     ifcgit.git_commit(path_ifc)
 
@@ -29,14 +38,30 @@ def add_tag(ifcgit, repo):
     ifcgit.add_tag(repo)
 
 
+def delete_tag(ifcgit, repo, tag_name):
+    ifcgit.delete_tag(repo, tag_name)
+
+
+def add_remote(ifcgit, repo):
+    ifcgit.add_remote(repo)
+
+
+def delete_remote(ifcgit, repo):
+    ifcgit.delete_remote(repo)
+
+
+def push(ifcgit, repo, remote_name, operator):
+    error_message = ifcgit.push(repo, remote_name, repo.active_branch.name)
+    if error_message:
+        operator.report({"ERROR"}, error_message)
+
+
 def refresh_revision_list(ifcgit, repo, ifc):
-    ifcgit.clear_commits_list()
-    path_ifc = ifc.get_path()
-    lookup = ifcgit.tags_by_hexsha(repo)
-    ifcgit.get_commits_list(path_ifc, lookup)
+    if repo.heads:
+        ifcgit.refresh_revision_list(ifc.get_path())
 
 
-def colourise_revision(ifcgit, context):
+def colourise_revision(ifcgit):
 
     step_ids = ifcgit.get_revisions_step_ids()
     if not step_ids:
@@ -58,9 +83,17 @@ def switch_revision(ifcgit, ifc):
     path_ifc = ifc.get_path()
     ifcgit.switch_to_revision_item()
     ifcgit.load_project(path_ifc)
+    ifcgit.refresh_revision_list(path_ifc)
 
 
 def merge_branch(ifcgit, ifc, operator):
     path_ifc = ifc.get_path()
     ifcgit.config_ifcmerge()
     ifcgit.execute_merge(path_ifc, operator)
+
+
+def entity_log(ifcgit, ifc, step_id, operator):
+    path_ifc = ifc.get_path()
+    log_text = ifcgit.entity_log(path_ifc, step_id)
+    # ERROR is only way to display a multi-line message
+    operator.report({"ERROR"}, log_text)

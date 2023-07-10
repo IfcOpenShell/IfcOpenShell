@@ -65,12 +65,27 @@ def get_location_hint(self, context):
 
 
 def update_diagram_scale(self, context):
-    scale = self.diagram_scale
-    if scale == "CUSTOM":
-        scale = self.custom_diagram_scale
-    if "|" not in scale:
+    try:
+        element = (
+            tool.Ifc.get()
+            .by_id(self.id_data.BIMMeshProperties.ifc_definition_id)
+            .OfProductRepresentation[0]
+            .ShapeOfProduct[0]
+        )
+    except:
         return
-    human_scale, scale = scale.split("|")
+    diagram_scale = tool.Drawing.get_diagram_scale(tool.Ifc.get_object(element))
+    if not diagram_scale:
+        return
+    pset = ifcopenshell.util.element.get_pset(element, "EPset_Drawing")
+    if pset:
+        pset = tool.Ifc.get().by_id(pset["id"])
+    else:
+        pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="EPset_Drawing")
+    ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties=diagram_scale)
+
+
+def update_is_nts(self, context):
     try:
         element = (
             tool.Ifc.get()
@@ -85,9 +100,7 @@ def update_diagram_scale(self, context):
         pset = tool.Ifc.get().by_id(pset["id"])
     else:
         pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="EPset_Drawing")
-    ifcopenshell.api.run(
-        "pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Scale": scale, "HumanScale": human_scale}
-    )
+    ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"IsNTS": self.is_nts})
 
 
 def get_diagram_scales(self, context):
@@ -156,13 +169,32 @@ def update_drawing_name(self, context):
     core.update_drawing_name(tool.Ifc, tool.Drawing, drawing=drawing, name=self.name)
 
 
-def update_schedule_name(self, context):
-    schedule = tool.Ifc.get().by_id(self.ifc_definition_id)
-    core.update_schedule_name(tool.Ifc, tool.Drawing, schedule=schedule, name=self.name)
+def get_drawing_style_name(self):
+    """needed to make `set_drawing_style_name` work"""
+    return self.get("name", "")
+
+
+def set_drawing_style_name(self, new_value):
+    """ensure the name is unique"""
+    scene = bpy.context.scene
+    drawing_styles = [s.name for s in scene.DocProperties.drawing_styles if s.name != self.name]
+    new_value = tool.Blender.ensure_unique_name(new_value, drawing_styles)
+    old_value = self.name
+    self["name"] = new_value
+    bpy.ops.bim.save_drawing_styles_data(rename_style=True, rename_style_from=old_value, rename_style_to=new_value)
+
+
+def update_document_name(self, context):
+    document = tool.Ifc.get().by_id(self.ifc_definition_id)
+    core.update_document_name(tool.Ifc, tool.Drawing, document=document, name=self.name)
 
 
 def update_has_underlay(self, context):
     update_layer(self, context, "HasUnderlay", self.has_underlay)
+    # making sure that camera is active
+    if self.has_underlay and (context.active_object and context.active_object.data == self.id_data):
+        bpy.ops.bim.reload_drawing_styles()
+        bpy.ops.bim.activate_drawing_style()
 
 
 def update_has_linework(self, context):
@@ -199,8 +231,11 @@ def toggleDecorations(self, context):
     toggle = self.should_draw_decorations
     if toggle:
         # TODO: design a proper text variable templating renderer
-        collection = context.scene.camera.users_collection[0]
+        collection = context.scene.camera.BIMObjectProperties.collection
         for obj in collection.objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element or not tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"]):
+                continue
             tool.Drawing.update_text_value(obj)
         refresh_drawing_data()
         decoration.DecorationsHandler.install(context)
@@ -220,9 +255,9 @@ class Drawing(PropertyGroup):
     is_selected: BoolProperty(name="Is Selected", default=True)
 
 
-class Schedule(PropertyGroup):
+class Document(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
-    name: StringProperty(name="Name", update=update_schedule_name)
+    name: StringProperty(name="Name", update=update_document_name)
     identification: StringProperty(name="Identification")
 
 
@@ -236,8 +271,8 @@ class Sheet(PropertyGroup):
 
 
 class DrawingStyle(PropertyGroup):
-    name: StringProperty(name="Name")
-    raster_style: StringProperty(name="Raster Style")
+    name: StringProperty(name="Name", get=get_drawing_style_name, set=set_drawing_style_name)
+    raster_style: StringProperty(name="Raster Style", default="{}")
     render_type: EnumProperty(
         items=[
             ("NONE", "None", ""),
@@ -253,30 +288,21 @@ class DrawingStyle(PropertyGroup):
 
 
 class RasterStyleProperty(enum.Enum):
-    WORLD_COLOR = "bpy.data.worlds[0].color"
-    RENDER_ENGINE = "scene.render.engine"
-    RENDER_TRANSPARENT = "scene.render.film_transparent"
-    VIEW_TRANSFORM = "scene.view_settings.view_transform"
-    SHADING_SHOW_OBJECT_OUTLINE = "scene.display.shading.show_object_outline"
-    SHADING_SHOW_CAVITY = "scene.display.shading.show_cavity"
-    SHADING_CAVITY_TYPE = "scene.display.shading.cavity_type"
-    SHADING_CURVATURE_RIDGE_FACTOR = "scene.display.shading.curvature_ridge_factor"
-    SHADING_CURVATURE_VALLEY_FACTOR = "scene.display.shading.curvature_valley_factor"
-    SHADING_LIGHT = "scene.display.shading.light"
-    SHADING_COLOR_TYPE = "scene.display.shading.color_type"
-    SHADING_SINGLE_COLOR = "scene.display.shading.single_color"
-    SHADING_SHOW_SHADOWS = "scene.display.shading.show_shadows"
-    SHADING_SHADOW_INTENSITY = "scene.display.shading.shadow_intensity"
-    DISPLAY_LIGHT_DIRECTION = "scene.display.light_direction"
-    VIEW_USE_CURVE_MAPPING = "scene.view_settings.use_curve_mapping"
-    OVERLAY_SHOW_WIREFRAMES = "space.overlay.show_wireframes"
-    OVERLAY_WIREFRAME_THRESHOLD = "space.overlay.wireframe_threshold"
-    OVERLAY_SHOW_FLOOR = "space.overlay.show_floor"
-    OVERLAY_SHOW_AXIS_X = "space.overlay.show_axis_x"
-    OVERLAY_SHOW_AXIS_Y = "space.overlay.show_axis_y"
-    OVERLAY_SHOW_AXIS_Z = "space.overlay.show_axis_z"
-    OVERLAY_SHOW_OBJECT_ORIGINS = "space.overlay.show_object_origins"
-    OVERLAY_SHOW_RELATIONSHIP_LINES = "space.overlay.show_relationship_lines"
+    # EVAL_PROP_ props will be evaluated explicitly
+    EVAL_PROP_WORLD_COLOR = "bpy.data.worlds[0].color"
+
+    # those props attributes used as a source for shading style properties
+    RENDER = "scene.render"
+    VIEW_SETTINGS = "scene.view_settings"
+    SHADING = "scene.display.shading"
+    DISPLAY = "scene.display"
+    OVERLAY = "space.overlay"
+    SPACE_SHADING = "space.shading"
+
+
+RASTER_STYLE_PROPERTIES_EXCLUDE = (
+    "scene.render.filepath",
+)
 
 
 class DocProperties(PropertyGroup):
@@ -286,6 +312,7 @@ class DocProperties(PropertyGroup):
     should_extract: BoolProperty(name="Should Extract", default=True)
     is_editing_drawings: BoolProperty(name="Is Editing Drawings", default=False)
     is_editing_schedules: BoolProperty(name="Is Editing Schedules", default=False)
+    is_editing_references: BoolProperty(name="Is Editing References", default=False)
     target_view: EnumProperty(
         items=[
             ("PLAN_VIEW", "Plan", ""),
@@ -303,8 +330,10 @@ class DocProperties(PropertyGroup):
     active_drawing_id: IntProperty(name="Active Drawing Id")
     active_drawing_index: IntProperty(name="Active Drawing Index")
     current_drawing_index: IntProperty(name="Current Drawing Index")
-    schedules: CollectionProperty(name="Schedules", type=Schedule)
+    schedules: CollectionProperty(name="Schedules", type=Document)
     active_schedule_index: IntProperty(name="Active Schedule Index")
+    references: CollectionProperty(name="References", type=Document)
+    active_reference_index: IntProperty(name="Active Reference Index")
     titleblock: EnumProperty(items=get_titleblocks, name="Titleblock", update=update_titleblocks)
     is_editing_sheets: BoolProperty(name="Is Editing Sheets", default=False)
     sheets: CollectionProperty(name="Sheets", type=Sheet)
@@ -324,6 +353,10 @@ class DocProperties(PropertyGroup):
     markers_path: StringProperty(default=os.path.join("drawings", "assets", "markers.svg"), name="Default Markers")
     symbols_path: StringProperty(default=os.path.join("drawings", "assets", "symbols.svg"), name="Default Symbols")
     patterns_path: StringProperty(default=os.path.join("drawings", "assets", "patterns.svg"), name="Default Patterns")
+    shadingstyles_path: StringProperty(
+        default=os.path.join("drawings", "assets", "shading_styles.json"), name="Default Shading Styles"
+    )
+    shadingstyle_default: StringProperty(default="Blender Default", name="Default Shading Style")
 
 
 class BIMCameraProperties(PropertyGroup):
@@ -335,12 +368,11 @@ class BIMCameraProperties(PropertyGroup):
     representation: StringProperty(name="Representation")
     view_name: StringProperty(name="View Name")
     diagram_scale: EnumProperty(items=get_diagram_scales, name="Drawing Scale", update=update_diagram_scale)
-    custom_diagram_scale: StringProperty(name="Custom Scale", update=update_diagram_scale)
-    custom_diagram_scale_input1: StringProperty(name="Custom Scale Input 1", update=update_diagram_scale)
-    custom_diagram_scale_input2: StringProperty(name="Custom Scale Input 2", update=update_diagram_scale)
+    custom_scale_numerator: bpy.props.StringProperty(default="1", update=update_diagram_scale)
+    custom_scale_denominator: bpy.props.StringProperty(default="100", update=update_diagram_scale)
     raster_x: IntProperty(name="Raster X", default=1000)
     raster_y: IntProperty(name="Raster Y", default=1000)
-    is_nts: BoolProperty(name="Is NTS")
+    is_nts: BoolProperty(name="Is NTS", update=update_is_nts)
     active_drawing_style_index: IntProperty(name="Active Drawing Style Index")
 
     # For now, this JSON dump are all the parameters that determine a camera's "Block representation"
@@ -468,8 +500,9 @@ ANNOTATION_TYPES_DATA = {
     "PLAN_LEVEL":    ("Level (Plan)",     "", "SORTBYEXT", "curve"),
     "SECTION_LEVEL": ("Level (Section)",  "", "TRIA_DOWN", "curve"),
     "BREAKLINE":     ("Breakline",        "", "FCURVE", "mesh"),
-    "LINEWORK":      ("Line",             "", "MESH_MONKEY", "mesh"),
+    "LINEWORK":      ("Line",             "", "SNAP_MIDPOINT", "mesh"),
     "BATTING":       ("Batting",          "Add batting annotation.\nThickness could be changed through Thickness property of BBIM_Batting property set", "FORCE_FORCE", "mesh"),
+    "REVISION_CLOUD":("Revision Cloud",   "Add revision cloud", "VOLUME_DATA", "mesh"),
     "FILL_AREA":     ("Fill Area",        "", "NODE_TEXTURE", "mesh"),
     "FALL":          ("Fall",             "", "SORT_ASC", "curve"),
 }
@@ -478,13 +511,10 @@ ANNOTATION_TYPES_DATA = {
 annotation_classes = [(x, *ANNOTATION_TYPES_DATA[x][:3], i) for i, x in enumerate(ANNOTATION_TYPES_DATA)]
 
 
-def get_annotation_data_prop(prop_name):
-    def function(self, context):
-        if not AnnotationData.is_loaded:
-            AnnotationData.load()
-        return AnnotationData.data[prop_name]
-
-    return function
+def get_relating_type_id(self, context):
+    if not AnnotationData.is_loaded:
+        AnnotationData.load()
+    return AnnotationData.data["relating_type_id"]
 
 
 def update_annotation_object_type(self, context):
@@ -493,16 +523,20 @@ def update_annotation_object_type(self, context):
     AnnotationData.is_loaded = False
 
 
+def update_sheet_data(self, context):
+    SheetsData.is_loaded = False
+
+
 class BIMAnnotationProperties(PropertyGroup):
     object_type: bpy.props.EnumProperty(
         name="Annotation Object Type", items=annotation_classes, default="TEXT", update=update_annotation_object_type
     )
-    relating_type_id: bpy.props.EnumProperty(
-        name="Relating Annotation Type", items=get_annotation_data_prop("relating_types")
-    )
+    relating_type_id: bpy.props.EnumProperty(name="Relating Annotation Type", items=get_relating_type_id)
     create_representation_for_type: bpy.props.BoolProperty(
         name="Create Representation For Type",
         default=False,
         description='Whether "Add type" should define a representation for the type \n'
         "or allow occurences to have their own",
     )
+    is_adding_type: bpy.props.BoolProperty(default=False)
+    type_name: bpy.props.StringProperty(name="Name", default="TYPEX")

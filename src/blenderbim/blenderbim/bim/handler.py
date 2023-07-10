@@ -16,13 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import bpy
 import json
 import addon_utils
 import ifcopenshell.api.owner.settings
 import blenderbim.tool as tool
 import blenderbim.core.owner as core_owner
-from blenderbim.bim.module.drawing.prop import RasterStyleProperty
 from bpy.app.handlers import persistent
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.owner.prop import get_user_person, get_user_organisation
@@ -31,12 +31,11 @@ from mathutils import Vector
 from math import cos, degrees
 
 
+cwd = os.path.dirname(os.path.realpath(__file__))
 global_subscription_owner = object()
 
 
 def mode_callback(obj, data):
-    if not bpy.context.scene.BIMProjectProperties.is_authoring:
-        return
     objects = bpy.context.selected_objects
     if bpy.context.active_object:
         objects += [bpy.context.active_object]
@@ -75,21 +74,13 @@ def name_callback(obj, data):
     if not obj.BIMObjectProperties.ifc_definition_id or "/" not in obj.name:
         return
     element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+    if element.is_a("IfcGridAxis"):
+        element.AxisTag = obj.name.split("/")[1]
+        refresh_ui_data()
     if not element.is_a("IfcRoot"):
         return
-    if element.is_a("IfcSpatialStructureElement") or (hasattr(element, "IsDecomposedBy") and element.IsDecomposedBy):
-        collection = obj.users_collection[0]
-        collection.name = obj.name
-    if element.is_a("IfcGrid"):
-        axis_obj = IfcStore.get_element(element.UAxes[0].id())
-        axis_collection = axis_obj.users_collection[0]
-        grid_collection = None
-        for collection in bpy.data.collections:
-            if axis_collection.name in collection.children.keys():
-                grid_collection = collection
-                break
-        if grid_collection:
-            grid_collection.name = obj.name
+    if obj.BIMObjectProperties.collection:
+        obj.BIMObjectProperties.collection.name = obj.name
     element.Name = "/".join(obj.name.split("/")[1:])
     refresh_ui_data()
 
@@ -112,8 +103,8 @@ def update_bim_tool_props():
     if not obj:
         return
     mode = bpy.context.mode
-    current_tool = bpy.context.workspace.tools.from_space_view3d_mode(mode).idname
-    if current_tool != "bim.bim_tool":
+    current_tool = bpy.context.workspace.tools.from_space_view3d_mode(mode)
+    if not current_tool or current_tool.idname != "bim.bim_tool":
         return
     element = tool.Ifc.get_entity(obj)
     if not element:
@@ -181,6 +172,9 @@ def refresh_ui_data():
             getattr(value, "data").refresh()
         except AttributeError:
             pass
+
+    if isinstance(tool.Ifc.get(), ifcopenshell.sqlite):
+        tool.Ifc.get().clear_cache()
 
 
 def purge_module_data():
@@ -273,6 +267,89 @@ def get_application_version():
     )
 
 
+def viewport_shading_changed_callback(area):
+    shading = area.spaces.active.shading.type
+    if shading == "RENDERED":
+        bpy.context.scene.BIMStylesProperties.active_style_type = "External"
+
+
+if getattr(bpy.types, "SCENE_PT_scene"):
+
+    class Override_SCENE_PT_scene(bpy.types.SCENE_PT_scene):
+        bl_idname = "SCENE_PT_scene_override"
+
+        @classmethod
+        def poll(cls, context):
+            aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+            return aprops.tab == "BLENDER"
+
+
+if getattr(bpy.types, "SCENE_PT_unit"):
+
+    class Override_SCENE_PT_unit(bpy.types.SCENE_PT_unit):
+        bl_idname = "SCENE_PT_unit_override"
+
+        @classmethod
+        def poll(cls, context):
+            aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+            return aprops.tab == "BLENDER"
+
+
+if getattr(bpy.types, "SCENE_PT_physics"):
+
+    class Override_SCENE_PT_physics(bpy.types.SCENE_PT_physics):
+        bl_idname = "SCENE_PT_physics_override"
+
+        @classmethod
+        def poll(cls, context):
+            aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+            return aprops.tab == "BLENDER"
+
+
+if getattr(bpy.types, "SCENE_PT_rigid_body_world"):
+
+    class Override_SCENE_PT_rigid_body_world(bpy.types.SCENE_PT_rigid_body_world):
+        bl_idname = "SCENE_PT_rigid_body_world_override"
+
+        @classmethod
+        def poll(cls, context):
+            aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+            return aprops.tab == "BLENDER"
+
+
+if getattr(bpy.types, "SCENE_PT_audio"):
+
+    class Override_SCENE_PT_audio(bpy.types.SCENE_PT_audio):
+        bl_idname = "SCENE_PT_audio_override"
+
+        @classmethod
+        def poll(cls, context):
+            aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+            return aprops.tab == "BLENDER"
+
+
+if getattr(bpy.types, "SCENE_PT_keying_sets"):
+
+    class Override_SCENE_PT_keying_sets(bpy.types.SCENE_PT_keying_sets):
+        bl_idname = "SCENE_PT_keying_sets_override"
+
+        @classmethod
+        def poll(cls, context):
+            aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+            return aprops.tab == "BLENDER"
+
+
+if getattr(bpy.types, "SCENE_PT_custom_props"):
+
+    class Override_SCENE_PT_custom_props(bpy.types.SCENE_PT_custom_props):
+        bl_idname = "SCENE_PT_custom_props_override"
+
+        @classmethod
+        def poll(cls, context):
+            aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+            return aprops.tab == "BLENDER"
+
+
 @persistent
 def setDefaultProperties(scene):
     global global_subscription_owner
@@ -280,75 +357,56 @@ def setDefaultProperties(scene):
     bpy.msgbus.subscribe_rna(
         key=active_object_key, owner=global_subscription_owner, args=(), notify=active_object_callback
     )
+
+    # subscribe to changes in viewport shading mode
+    # NOTE: couldn't find a way to make it work for new areas too
+    # it starts working for them after blender restart though
+    for screen in bpy.data.screens:
+        for area in screen.areas:
+            if area.type != "VIEW_3D":
+                continue
+            shading = area.spaces.active.shading
+            key = shading.path_resolve("type", False)
+
+            bpy.msgbus.subscribe_rna(
+                key=key, owner=global_subscription_owner, args=(area,), notify=viewport_shading_changed_callback
+            )
+
     ifcopenshell.api.owner.settings.get_user = lambda ifc: core_owner.get_user(tool.Owner)
     ifcopenshell.api.owner.settings.get_application = get_application
-    # TODO: Move to drawing module
-    if len(bpy.context.scene.DocProperties.drawing_styles) == 0:
-        drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
-        drawing_style.name = "Blender Default"
-        drawing_style.render_type = "DEFAULT"
-        bpy.ops.bim.save_drawing_style(index="0")
+    AuthoringData.type_thumbnails = {}
 
-        drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
-        drawing_style.name = "Technical"
-        drawing_style.render_type = "VIEWPORT"
-        drawing_style.raster_style = json.dumps(
-            {
-                RasterStyleProperty.WORLD_COLOR.value: (1, 1, 1),
-                RasterStyleProperty.RENDER_ENGINE.value: "BLENDER_WORKBENCH",
-                RasterStyleProperty.RENDER_TRANSPARENT.value: False,
-                RasterStyleProperty.SHADING_SHOW_OBJECT_OUTLINE.value: True,
-                RasterStyleProperty.SHADING_SHOW_CAVITY.value: False,
-                RasterStyleProperty.SHADING_CAVITY_TYPE.value: "BOTH",
-                RasterStyleProperty.SHADING_CURVATURE_RIDGE_FACTOR.value: 1,
-                RasterStyleProperty.SHADING_CURVATURE_VALLEY_FACTOR.value: 1,
-                RasterStyleProperty.VIEW_TRANSFORM.value: "Standard",
-                RasterStyleProperty.SHADING_LIGHT.value: "FLAT",
-                RasterStyleProperty.SHADING_COLOR_TYPE.value: "SINGLE",
-                RasterStyleProperty.SHADING_SINGLE_COLOR.value: (1, 1, 1),
-                RasterStyleProperty.SHADING_SHOW_SHADOWS.value: False,
-                RasterStyleProperty.SHADING_SHADOW_INTENSITY.value: 0.5,
-                RasterStyleProperty.DISPLAY_LIGHT_DIRECTION.value: (0.5, 0.5, 0.5),
-                RasterStyleProperty.VIEW_USE_CURVE_MAPPING.value: False,
-                RasterStyleProperty.OVERLAY_SHOW_WIREFRAMES.value: True,
-                RasterStyleProperty.OVERLAY_WIREFRAME_THRESHOLD.value: 0,
-                RasterStyleProperty.OVERLAY_SHOW_FLOOR.value: False,
-                RasterStyleProperty.OVERLAY_SHOW_AXIS_X.value: False,
-                RasterStyleProperty.OVERLAY_SHOW_AXIS_Y.value: False,
-                RasterStyleProperty.OVERLAY_SHOW_AXIS_Z.value: False,
-                RasterStyleProperty.OVERLAY_SHOW_OBJECT_ORIGINS.value: False,
-                RasterStyleProperty.OVERLAY_SHOW_RELATIONSHIP_LINES.value: False,
-            }
-        )
-        drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
-        drawing_style.name = "Shaded"
-        drawing_style.render_type = "VIEWPORT"
-        drawing_style.raster_style = json.dumps(
-            {
-                RasterStyleProperty.WORLD_COLOR.value: (1, 1, 1),
-                RasterStyleProperty.RENDER_ENGINE.value: "BLENDER_WORKBENCH",
-                RasterStyleProperty.RENDER_TRANSPARENT.value: False,
-                RasterStyleProperty.SHADING_SHOW_OBJECT_OUTLINE.value: True,
-                RasterStyleProperty.SHADING_SHOW_CAVITY.value: True,
-                RasterStyleProperty.SHADING_CAVITY_TYPE.value: "BOTH",
-                RasterStyleProperty.SHADING_CURVATURE_RIDGE_FACTOR.value: 1,
-                RasterStyleProperty.SHADING_CURVATURE_VALLEY_FACTOR.value: 1,
-                RasterStyleProperty.VIEW_TRANSFORM.value: "Standard",
-                RasterStyleProperty.SHADING_LIGHT.value: "STUDIO",
-                RasterStyleProperty.SHADING_COLOR_TYPE.value: "MATERIAL",
-                RasterStyleProperty.SHADING_SINGLE_COLOR.value: (1, 1, 1),
-                RasterStyleProperty.SHADING_SHOW_SHADOWS.value: True,
-                RasterStyleProperty.SHADING_SHADOW_INTENSITY.value: 0.5,
-                RasterStyleProperty.DISPLAY_LIGHT_DIRECTION.value: (0.5, 0.5, 0.5),
-                RasterStyleProperty.VIEW_USE_CURVE_MAPPING.value: False,
-                RasterStyleProperty.OVERLAY_SHOW_WIREFRAMES.value: False,
-                RasterStyleProperty.OVERLAY_WIREFRAME_THRESHOLD.value: 0,
-                RasterStyleProperty.OVERLAY_SHOW_FLOOR.value: False,
-                RasterStyleProperty.OVERLAY_SHOW_AXIS_X.value: False,
-                RasterStyleProperty.OVERLAY_SHOW_AXIS_Y.value: False,
-                RasterStyleProperty.OVERLAY_SHOW_AXIS_Z.value: False,
-                RasterStyleProperty.OVERLAY_SHOW_OBJECT_ORIGINS.value: False,
-                RasterStyleProperty.OVERLAY_SHOW_RELATIONSHIP_LINES.value: False,
-            }
-        )
-        AuthoringData.type_thumbnails = {}
+    if bpy.context.preferences.addons["blenderbim"].preferences.should_setup_workspace:
+        if "BIM" in bpy.data.workspaces:
+            bpy.context.window.workspace = bpy.data.workspaces["BIM"]
+        else:
+            bpy.ops.workspace.append_activate(idname="BIM", filepath=os.path.join(cwd, "data", "workspace.blend"))
+
+        for obj in [bpy.data.objects.get("Camera"), bpy.data.objects.get("Light")]:
+            if obj:
+                bpy.data.objects.remove(obj)
+
+        # To improve usability for new users, we hijack the scene properties
+        # tab. We override default scene properties panels with our own poll
+        # to hide them unless the user has chosen to view Blender properties.
+        for panel in [
+            "SCENE_PT_scene",
+            "SCENE_PT_unit",
+            "SCENE_PT_physics",
+            "SCENE_PT_rigid_body_world",
+            "SCENE_PT_audio",
+            "SCENE_PT_keying_sets",
+            "SCENE_PT_custom_props",
+        ]:
+            if getattr(bpy.types, panel, None):
+                try:
+                    bpy.utils.register_class(globals()[f"Override_{panel}"])
+                    bpy.utils.unregister_class(getattr(bpy.types, panel))
+                except:
+                    pass
+
+    # https://blender.stackexchange.com/questions/140644/how-can-make-the-state-of-a-boolean-property-relative-to-the-3d-view-area
+    for screen in bpy.data.screens:
+        screen.BIMAreaProperties.clear()
+        for i in range(20):  # 20 is an arbitrary value of split areas
+            screen.BIMAreaProperties.add()

@@ -53,15 +53,23 @@ class BIM_PT_search(Panel):
         row = self.layout.row(align=True)
         row.prop(props, "search_attribute_name", text="", icon="PROPERTIES")
         row.prop(props, "search_attribute_value", text="")
-        row.operator("bim.select_attribute", text="", icon="VIEWZOOM")
-        row.operator("bim.colour_by_attribute", text="", icon="BRUSH_DATA")
+        op = row.operator("bim.select_attribute", text="", icon="VIEWZOOM")
+        op.attribute_name = props.search_attribute_name
+        op.attribute_value = props.search_attribute_value
+        op = row.operator("bim.colour_by_attribute", text="", icon="BRUSH_DATA")
+        op.attribute_name = props.search_attribute_name
 
         row = self.layout.row(align=True)
         row.prop(props, "search_pset_name", text="", icon="COPY_ID")
         row.prop(props, "search_prop_name", text="")
         row.prop(props, "search_pset_value", text="")
-        row.operator("bim.select_pset", text="", icon="VIEWZOOM")
-        row.operator("bim.colour_by_pset", text="", icon="BRUSH_DATA")
+        op = row.operator("bim.select_pset", text="", icon="VIEWZOOM")
+        op.pset_name = props.search_pset_name
+        op.prop_name = props.search_prop_name
+        op.pset_value = props.search_pset_value
+        op = row.operator("bim.colour_by_pset", text="", icon="BRUSH_DATA")
+        op.pset_name = props.search_pset_name
+        op.prop_name = props.search_prop_name
 
         row = self.layout.row(align=True)
         row.operator("bim.activate_ifc_class_filter", icon="FILTER")

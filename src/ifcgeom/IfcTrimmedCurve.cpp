@@ -72,8 +72,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 	}
 	
 	bool trim_cartesian = l->MasterRepresentation() != IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER;
-	aggregate_of_instance::ptr trims1 = l->Trim1();
-	aggregate_of_instance::ptr trims2 = l->Trim2();
+	auto trims1 = l->Trim1();
+	auto trims2 = l->Trim2();
 	
 	unsigned sense_agreement = l->SenseAgreement() ? 0 : 1;
 	double flts[2];
@@ -83,25 +83,25 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 	
 	TopoDS_Edge e;
 
-	for ( aggregate_of_instance::it it = trims1->begin(); it != trims1->end(); it ++ ) {
-		IfcUtil::IfcBaseClass* i = *it;
-		if ( i->declaration().is(IfcSchema::IfcCartesianPoint::Class()) ) {
-			IfcGeom::Kernel::convert((IfcSchema::IfcCartesianPoint*)i, pnts[sense_agreement] );
+	for (auto it = trims1->begin(); it != trims1->end(); it ++ ) {
+		auto i = *it;
+		if (i->as<IfcSchema::IfcCartesianPoint>()) {
+			IfcGeom::Kernel::convert(i->as<IfcSchema::IfcCartesianPoint>(), pnts[sense_agreement] );
 			has_pnts[sense_agreement] = true;
-		} else if ( i->declaration().is(IfcSchema::IfcParameterValue::Class()) ) {
-			const double value = *((IfcSchema::IfcParameterValue*)i);
+		} else if (i->as<IfcSchema::IfcParameterValue>()) {
+			const double value = *i->as<IfcSchema::IfcParameterValue>();
 			flts[sense_agreement] = value * parameterFactor;
 			has_flts[sense_agreement] = true;
 		}
 	}
 
-	for ( aggregate_of_instance::it it = trims2->begin(); it != trims2->end(); it ++ ) {
-		IfcUtil::IfcBaseClass* i = *it;
-		if ( i->declaration().is(IfcSchema::IfcCartesianPoint::Class()) ) {
-			IfcGeom::Kernel::convert((IfcSchema::IfcCartesianPoint*)i, pnts[1-sense_agreement] );
+	for (auto it = trims2->begin(); it != trims2->end(); it ++ ) {
+		auto i = *it;
+		if (i->as<IfcSchema::IfcCartesianPoint>()) {
+			IfcGeom::Kernel::convert(i->as<IfcSchema::IfcCartesianPoint>(), pnts[1-sense_agreement] );
 			has_pnts[1-sense_agreement] = true;
-		} else if ( i->declaration().is(IfcSchema::IfcParameterValue::Class()) ) {
-			const double value = *((IfcSchema::IfcParameterValue*)i);
+		} else if (i->as<IfcSchema::IfcParameterValue>()) {
+			const double value = *i->as<IfcSchema::IfcParameterValue>();
 			flts[1-sense_agreement] = value * parameterFactor;
 			has_flts[1-sense_agreement] = true;
 		}
@@ -172,7 +172,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 		// Fix from @sanderboer to compare using model tolerance, see #744
 		// Made dependent on radius, see #928
 
-		// A good critereon for determining whether to take full curve
+		// A good criterion for determining whether to take full curve
 		// or trimmed segment would be whether there are other curve segments or this
 		// is the only one.
 		boost::optional<size_t> num_segments;
@@ -227,7 +227,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 			TopoDS_Vertex v0, v1;
 			TopExp::Vertices(e, v0, v1);
 			e = TopoDS::Edge(BRepBuilderAPI_MakeEdge(v0, v1).Edge().Oriented(e.Orientation()));
-			Logger::Warning("Subsituted edge with linear approximation", l);
+			Logger::Warning("Substituted edge with linear approximation", l);
 		}
 	}
 

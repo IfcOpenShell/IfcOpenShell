@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import ui, prop, operator
+from . import ui, prop, operator, workspace
 
 classes = (
     operator.LoadStructuralAnalysisModels,
@@ -88,14 +88,19 @@ classes = (
     ui.BIM_PT_structural_loads,
     ui.BIM_UL_boundary_conditions,
     ui.BIM_PT_boundary_conditions,
+    workspace.Hotkey,
 )
 
 
 def register():
+    if not bpy.app.background:
+        bpy.utils.register_tool(workspace.StructuralTool, after={"bim.spatial_tool"}, separator=False, group=True)
     bpy.types.Scene.BIMStructuralProperties = bpy.props.PointerProperty(type=prop.BIMStructuralProperties)
     bpy.types.Object.BIMStructuralProperties = bpy.props.PointerProperty(type=prop.BIMObjectStructuralProperties)
 
 
 def unregister():
+    if not bpy.app.background:
+        bpy.utils.unregister_tool(workspace.StructuralTool)
     del bpy.types.Scene.BIMStructuralProperties
     del bpy.types.Object.BIMStructuralProperties

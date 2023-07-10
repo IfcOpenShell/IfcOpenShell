@@ -154,13 +154,14 @@ def format_distance(
         # Separate ft and inches
         # Unless Inches are the specified Length Unit
         if unit_length != "INCHES":
-            feet = math.floor(decInches / inPerFoot)
+            feet = int(decInches / inPerFoot)  # remove decimal
             decInches -= feet * inPerFoot
         else:
             feet = 0
 
         # Separate Fractional Inches
-        inches = math.floor(decInches)
+        decInches = abs(decInches)  # ignore the sign for inches
+        inches = math.floor(decInches)  # remove decimal
         if inches != 0:
             frac = round(base * (decInches - inches))
         else:
@@ -207,19 +208,19 @@ def format_distance(
         if precision:
             value = precision * round(float(value) / precision)
 
-        if decimal_places:
+        if decimal_places is not None:
             fmt = "%1." + str(decimal_places) + "f"
 
         # Meters
         if unit_length == "METERS":
-            if not decimal_places:
+            if decimal_places is None:
                 fmt = "%1.3f"
             if hide_units is False:
                 fmt += " m"
             tx_dist = fmt % value
         # Centimeters
         elif unit_length == "CENTIMETERS":
-            if not decimal_places:
+            if decimal_places is None:
                 fmt = "%1.1f"
             if hide_units is False:
                 fmt += " cm"
@@ -227,7 +228,7 @@ def format_distance(
             tx_dist = fmt % d_cm
         # Millimeters
         elif unit_length == "MILLIMETERS":
-            if not decimal_places:
+            if decimal_places is None:
                 fmt = "%1.0f"
             if hide_units is False:
                 fmt += " mm"
@@ -236,20 +237,20 @@ def format_distance(
 
         # Otherwise Use Adaptive Units
         else:
-            if round(value, 2) >= 1.0 and not decimal_places:
+            if round(value, 2) >= 1.0 and decimal_places is None:
                 fmt = "%1.3f"
                 if hide_units is False:
                     fmt += " m"
                 tx_dist = fmt % value
             else:
-                if round(value, 2) >= 0.01 and not decimal_places:
+                if round(value, 2) >= 0.01 and decimal_places is None:
                     fmt = "%1.1f"
                     if hide_units is False:
                         fmt += " cm"
                     d_cm = value * (100)
                     tx_dist = fmt % d_cm
                 else:
-                    if not decimal_places:
+                    if decimal_places is None:
                         fmt = "%1.0f"
                     if hide_units is False:
                         fmt += " mm"
@@ -268,7 +269,7 @@ def get_active_drawing(scene):
     props = scene.DocProperties
     try:
         camera = tool.Ifc.get_object(tool.Ifc.get().by_id(props.active_drawing_id))
-        return camera.users_collection[0], camera
+        return camera.BIMObjectProperties.collection, camera
     except:
         return None, None
 

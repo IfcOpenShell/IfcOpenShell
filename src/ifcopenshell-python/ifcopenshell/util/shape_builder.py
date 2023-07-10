@@ -38,8 +38,33 @@ class ShapeBuilder:
     def polyline(self, points, closed=False, position_offset=None, arc_points=[]):
         # > points - list of points formatted like ( (x0, y0), (x1, y1) )
         # < IfcIndexedPolyCurve
-        segments = []
 
+        if arc_points and self.file.schema == "IFC2X3":
+            raise Exception("Arcs are not supported for IFC2X3.")
+
+        if position_offset:
+            points = [Vector(p) + position_offset for p in points]
+
+        if self.file.schema == "IFC2X3":
+            points = [self.file.createIfcCartesianPoint(p) for p in points]
+            if closed:
+                points.append(points[0])
+            ifc_curve = self.file.createIfcPolyline(Points=points)
+            return ifc_curve
+
+        dimensions = len(points[0])
+        if dimensions == 2:
+            ifc_points = self.file.createIfcCartesianPointList2D(points)
+        elif dimensions == 3:
+            ifc_points = self.file.createIfcCartesianPointList3D(points)
+
+        if not closed and not arc_points:
+            ifc_curve = self.file.createIfcIndexedPolyCurve(Points=ifc_points)
+            return ifc_curve
+
+        # if curve is closed or we have arc points
+        # then we do need to create segments
+        segments = []
         cur_i = 0
         while cur_i < len(points) - 1:
             cur_i_ifc = cur_i + 1
@@ -52,21 +77,25 @@ class ShapeBuilder:
 
         if closed:
             segments.append((len(points), 1))
-        if position_offset:
-            points = [Vector(p) + position_offset for p in points]
-
-        dimensions = len(points[0])
-        if dimensions == 2:
-            ifc_points = self.file.createIfcCartesianPointList2D(points)
-        elif dimensions == 3:
-            ifc_points = self.file.createIfcCartesianPointList3D(points)
 
         ifc_segments = []
-        for segment in segments:
+        # because IfcLineIndex support 2+ points
+        # we merge neighbor line segments into one
+        current_line_segment = []
+        last_segment = len(segments) - 1
+        for seg_i, segment in enumerate(segments):
             if len(segment) == 2:
-                ifc_segments.append(self.file.createIfcLineIndex(segment))
-            elif len(segment) == 3:
+                # check if `current_line_segment` is empty to avoid duplicated indices like `IfcLineIndex((1,2,2,3,3,4,4,1))`
+                current_line_segment += segment if not current_line_segment else segment[1:]
+
+            if current_line_segment and (len(segment) == 3 or seg_i == last_segment):
+                ifc_segments.append(self.file.createIfcLineIndex(current_line_segment))
+                current_line_segment = []
+
+            if len(segment) == 3:
                 ifc_segments.append(self.file.createIfcArcIndex(segment))
+
+        # NOTE: IfcIndexPolyCurve support only consequtive segments
         ifc_curve = self.file.createIfcIndexedPolyCurve(Points=ifc_points, Segments=ifc_segments)
         return ifc_curve
 
@@ -240,9 +269,10 @@ class ShapeBuilder:
             if create_copy:
                 c = ifcopenshell.util.element.copy_deep(self.file, c)
 
-            if c.is_a("IfcIndexedPolyCurve"):
-                coords = [Vector(co) + translation for co in c.Points.CoordList]
-                c.Points.CoordList = coords
+            if c.is_a() in ("IfcIndexedPolyCurve", "IfcPolyline"):
+                coords = self.get_polyline_coords(c)
+                coords = [Vector(co) + translation for co in coords]
+                self.set_polyline_coords(c, coords)
 
             elif c.is_a("IfcCircle") or c.is_a("IfcExtrudedAreaSolid") or c.is_a("IfcEllipse"):
                 base_position = Vector(c.Position.Location.Coordinates)
@@ -301,11 +331,12 @@ class ShapeBuilder:
             if create_copy:
                 c = ifcopenshell.util.element.copy_deep(self.file, c)
 
-            if c.is_a("IfcIndexedPolyCurve"):
+            if c.is_a() in ("IfcIndexedPolyCurve", "IfcPolyline"):
+                original_coords = self.get_polyline_coords(c)
                 coords = [
-                    self.rotate_2d_point(Vector(co), angle, pivot_point, counter_clockwise) for co in c.Points.CoordList
+                    self.rotate_2d_point(Vector(co), angle, pivot_point, counter_clockwise) for co in original_coords
                 ]
-                c.Points.CoordList = coords
+                self.set_polyline_coords(c, coords)
 
             elif c.is_a("IfcCircle"):
                 base_position = Vector(c.Position.Location.Coordinates)
@@ -397,10 +428,11 @@ class ShapeBuilder:
                     else curve_or_item_el
                 )
 
-                if c.is_a("IfcIndexedPolyCurve"):
+                if c.is_a() in ("IfcIndexedPolyCurve", "IfcPolyline"):
+                    original_coords = self.get_polyline_coords(c)
                     inverted_placement_matrix = placement_matrix.inverted() if placement_matrix else None
                     coords = []
-                    for co in c.Points.CoordList:
+                    for co in original_coords:
                         co_base = Vector(co)
                         if placement_matrix:
                             # TODO: add support for Z-axis too
@@ -413,7 +445,7 @@ class ShapeBuilder:
 
                         coords.append(co)
 
-                    c.Points.CoordList = coords
+                    self.set_polyline_coords(c, coords)
 
                 elif c.is_a("IfcCircle") or c.is_a("IfcEllipse"):
                     base_position = Vector(c.Position.Location.Coordinates)
@@ -540,8 +572,11 @@ class ShapeBuilder:
         if not isinstance(items, collections.abc.Iterable):
             items = [items]
 
+        item_types = set([i.is_a() for i in items])
         if not representation_type:
-            if items[0].is_a() in ("IfcExtrudedAreaSolid", "IfcSweptDiskSolid"):
+            if "IfcSweptDiskSolid" in item_types:
+                representation_type = "AdvancedSweptSolid"
+            elif "IfcExtrudedAreaSolid" in item_types:
                 representation_type = "SweptSolid"
             elif items[0].is_a("IfcCurve") and items[0].Dim == 3:
                 representation_type = "Curve3D"
@@ -583,3 +618,20 @@ class ShapeBuilder:
         kwargs["position_x_axis"].rotate(rot)
         kwargs["position_z_axis"].rotate(rot)
         return kwargs
+
+    def get_polyline_coords(self, polyline):
+        """polyline should be either `IfcIndexedPolyCurve` or `IfcPolyline`"""
+        coords = None
+        if polyline.is_a("IfcIndexedPolyCurve"):
+            coords = polyline.Points.CoordList
+        elif polyline.is_a("IfcPolyline"):
+            coords = [p.Coordinates for p in polyline.Points]
+        return coords
+
+    def set_polyline_coords(self, polyline, coords):
+        """polyline should be either `IfcIndexedPolyCurve` or `IfcPolyline`"""
+        if polyline.is_a("IfcIndexedPolyCurve"):
+            polyline.Points.CoordList = coords
+        elif polyline.is_a("IfcPolyline"):
+            for i, co in enumerate(coords):
+                polyline.Points[i].Coordinates = co

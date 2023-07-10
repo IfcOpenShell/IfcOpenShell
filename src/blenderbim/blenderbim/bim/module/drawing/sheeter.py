@@ -27,6 +27,13 @@ import xml.etree.ElementTree as ET
 import blenderbim.tool as tool
 import ifcopenshell.util.geolocation
 from xml.dom import minidom
+from mathutils import Vector
+import re
+
+VIEW_TITLE_OFFSET_Y = 5
+DEFAULT_POSITION = Vector((30, 30))
+SVG = "{http://www.w3.org/2000/svg}"
+XLINK = "{http://www.w3.org/1999/xlink}"
 
 
 class SheetBuilder:
@@ -104,8 +111,8 @@ class SheetBuilder:
             background = ET.SubElement(view, "image")
             background.attrib["data-type"] = "background"
             background.attrib["xlink:href"] = os.path.relpath(underlay_path, layout_dir)
-            background.attrib["x"] = "30"
-            background.attrib["y"] = "30"
+            background.attrib["x"] = str(DEFAULT_POSITION.x)
+            background.attrib["y"] = str(DEFAULT_POSITION.y)
             background.attrib["width"] = str(view_width)
             background.attrib["height"] = str(view_height)
 
@@ -114,17 +121,18 @@ class SheetBuilder:
             foreground = ET.SubElement(view, "image")
             foreground.attrib["data-type"] = "foreground"
             foreground.attrib["xlink:href"] = os.path.relpath(drawing_path, layout_dir)
-            foreground.attrib["x"] = "30"
-            foreground.attrib["y"] = "30"
+            foreground.attrib["x"] = str(DEFAULT_POSITION.x)
+            foreground.attrib["y"] = str(DEFAULT_POSITION.y)
             foreground.attrib["width"] = str(view_width)
             foreground.attrib["height"] = str(view_height)
 
-        self.add_view_title(30, view_height + 35, view, layout_dir)
+        self.add_view_title(
+            DEFAULT_POSITION.x, view_height + DEFAULT_POSITION.y + VIEW_TITLE_OFFSET_Y, view, layout_dir
+        )
         layout_tree.write(layout_path)
 
     def update_sheet_drawing_sizes(self, sheet):
         ET.register_namespace("", "http://www.w3.org/2000/svg")
-        SVG = "{http://www.w3.org/2000/svg}"
 
         layout_path = tool.Drawing.get_document_uri(sheet, "LAYOUT")
         layout_tree = ET.parse(layout_path)
@@ -143,10 +151,20 @@ class SheetBuilder:
             view_width = self.convert_to_mm(drawing_root.attrib.get("width"))
             view_height = self.convert_to_mm(drawing_root.attrib.get("height"))
 
+            foreground = drawing_view.find(f'.//{SVG}image[@data-type="foreground"]')
+            height = float(foreground.attrib["height"])
+            width = float(foreground.attrib["width"])
+            readjust = Vector((width - view_width, height - view_height)) / 2
+
             for image in drawing_view.findall(f"{SVG}image"):
+                x = float(image.attrib["x"])
+                y = float(image.attrib["y"])
                 if image.attrib["data-type"] == "view-title":
-                    image.attrib["y"] = str(view_height + 35)
+                    image.attrib["x"] = str(x - readjust.x)
+                    image.attrib["y"] = str(y - readjust.y)
                 else:
+                    image.attrib["x"] = str(x + readjust.x)
+                    image.attrib["y"] = str(y + readjust.y)
                     image.attrib["width"] = str(view_width)
                     image.attrib["height"] = str(view_height)
 
@@ -166,7 +184,7 @@ class SheetBuilder:
 
         layout_tree.write(layout_path)
 
-    def add_schedule(self, reference, schedule, sheet):
+    def add_document(self, reference, schedule, sheet):
         view_path = tool.Drawing.get_path_with_ext(tool.Drawing.get_document_uri(schedule), "svg")
         if not os.path.exists(view_path):
             tool.Drawing.create_svg_schedule(schedule)
@@ -193,12 +211,14 @@ class SheetBuilder:
         foreground = ET.SubElement(view, "image")
         foreground.attrib["data-type"] = "table"
         foreground.attrib["xlink:href"] = os.path.relpath(view_path, layout_dir)
-        foreground.attrib["x"] = "30"
-        foreground.attrib["y"] = "30"
+        foreground.attrib["x"] = str(DEFAULT_POSITION.x)
+        foreground.attrib["y"] = str(DEFAULT_POSITION.y)
         foreground.attrib["width"] = str(view_width)
         foreground.attrib["height"] = str(view_height)
 
-        self.add_view_title(30, view_height + 35, view, layout_dir)
+        self.add_view_title(
+            DEFAULT_POSITION.x, view_height + DEFAULT_POSITION.y + VIEW_TITLE_OFFSET_Y, view, layout_dir
+        )
         layout_tree.write(layout_path)
 
     def add_view_title(self, x, y, parent, layout_dir):
@@ -262,8 +282,61 @@ class SheetBuilder:
         titleblock.append(g)
         titleblock.remove(image)
 
+    def ensure_drawing_unique_styles(self, svg, drawing_id):
+        """ensures all drawing's classes and ids will be unique for the whole sheet
+        by adding `drawing_id` based prefix
+        """
+        prefix = f"d{drawing_id}"  # just number doesn't work
+
+        # add .prefix class to all css selectors
+        style = svg.find(f"{SVG}defs/{SVG}style")
+        style_data = style.text
+        text = ""
+        brackets_level = 0
+        for l in style_data:
+            if l == "{":
+                if brackets_level == 0:
+                    cur_line = text.splitlines()[-1]
+                    text = text[: -len(cur_line)]
+                    css_selectors = []
+                    # making sure cases like "text, tspan" will be
+                    # converted to "text.prefix, tspan.prefix"
+                    for css_selector in cur_line.split(","):
+                        css_selector = f"{css_selector.strip()}.{prefix}"
+                        css_selectors.append(css_selector)
+                    text += ", ".join(css_selectors) + " "
+                brackets_level += 1
+            elif l == "}":
+                brackets_level -= 1
+            text += l
+
+        # replace urls url(#marker) with url(#prefix-marker)
+        # since url(#marker.prefix) doesn't seem to work
+        text = re.sub(r"url\(#([^\)]+)\)", rf"url(#{prefix}-\1)", text)
+        style.text = text
+
+        for svg_element in svg.findall(f".//*"):
+            if svg_element.tag in (f"{SVG}style", f"{SVG}svg"):
+                continue
+            attrib = svg_element.attrib
+            # add "prefix-" to all ids
+            if "id" in attrib:
+                attrib["id"] = f"{prefix}-{attrib['id']}"
+            # add class "prefix" to all classes
+            if "class" in attrib:
+                attrib["class"] += f" {prefix}"
+            if svg_element.tag == f"{SVG}use":
+                href_attrib = f"{XLINK}href"
+                if href_attrib in attrib:
+                    href = attrib[href_attrib]
+                    if href.startswith("#"):
+                        attrib[href_attrib] = f"#{prefix}-{href[1:]}"
+
+        return svg
+
     def build_drawings(self, root, sheet):
         for view in root.findall('{http://www.w3.org/2000/svg}g[@data-type="drawing"]'):
+            drawing_id = int(view.attrib["data-id"])
             reference = tool.Ifc.get().by_id(int(view.attrib["data-id"]))
             drawing = tool.Ifc.get().by_id(view.attrib["data-drawing"])
 
@@ -282,7 +355,9 @@ class SheetBuilder:
                     view_title = image
 
             if foreground is not None:
-                view.append(self.parse_embedded_svg(foreground, {}))
+                svg = self.parse_embedded_svg(foreground, {})
+                svg = self.ensure_drawing_unique_styles(svg, drawing_id)
+                view.append(svg)
 
             if background is not None:
                 background_path = os.path.join(self.layout_dir, self.get_href(background))

@@ -40,16 +40,31 @@ class BIM_OT_assign_object(bpy.types.Operator, Operator):
     bl_label = "Assign Object"
     bl_options = {"REGISTER", "UNDO"}
     relating_object: bpy.props.IntProperty()
-    related_object: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.assign_object(
-            tool.Ifc,
-            tool.Aggregate,
-            tool.Collector,
-            relating_obj=tool.Ifc.get_object(tool.Ifc.get().by_id(self.relating_object)),
-            related_obj=tool.Ifc.get_object(tool.Ifc.get().by_id(self.related_object)),
-        )
+        relating_obj = None
+        if self.relating_object:
+            relating_obj = tool.Ifc.get_object(tool.Ifc.get().by_id(self.relating_object))
+        elif context.active_object:
+            relating_obj = context.active_object
+        if not relating_obj:
+            return
+
+        for obj in bpy.context.selected_objects:
+            if obj == relating_obj:
+                continue
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            result = core.assign_object(
+                tool.Ifc,
+                tool.Aggregate,
+                tool.Collector,
+                relating_obj=relating_obj,
+                related_obj=obj,
+            )
+            if not result:
+                self.report({"ERROR"}, f" Cannot aggregate {obj.name} to {relating_obj.name}")
 
 
 class BIM_OT_unassign_object(bpy.types.Operator, Operator):
@@ -148,10 +163,7 @@ class BIM_OT_add_aggregate(bpy.types.Operator, tool.Ifc.Operator):
             core.assign_object(tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=aggregate, related_obj=obj)
 
     def create_aggregate(self, context, ifc_class):
-        aggregate_collection = bpy.data.collections.new(f"{ifc_class}/Assembly")
-        context.scene.collection.children.link(aggregate_collection)
         aggregate = bpy.data.objects.new("Assembly", None)
-        aggregate_collection.objects.link(aggregate)
         bpy.ops.bim.assign_class(obj=aggregate.name, ifc_class=ifc_class)
         return aggregate
 

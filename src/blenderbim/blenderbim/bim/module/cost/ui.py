@@ -43,49 +43,68 @@ class BIM_PT_cost_schedules(Panel):
 
         self.props = context.scene.BIMCostProperties
         row = self.layout.row()
-        if CostSchedulesData.data["total_cost_schedules"]:
-            row.label(text=f"{CostSchedulesData.data['total_cost_schedules']} Cost Schedules Found", icon="TEXT")
-            row.operator("bim.export_cost_schedules", text="Export as spreadsheet", icon="EXPORT")
-        else:
-            row.label(text="No Cost Schedules Found found.", icon="COMMUNITY")
-
-        row = self.layout.row()
-        row.prop(self.props, "cost_schedule_predefined_types")
-        row.operator("bim.add_cost_schedule", icon="ADD", text="Add")
+        if not self.props.active_cost_schedule_id:
+            if CostSchedulesData.data["total_cost_schedules"]:
+                row.label(text=f"{CostSchedulesData.data['total_cost_schedules']} Cost Schedules Found", icon="TEXT")
+                row.operator("bim.export_cost_schedules", text="Export as spreadsheet", icon="EXPORT")
+            else:
+                row.label(text="No Cost Schedules Found found.", icon="COMMUNITY")
+            row = self.layout.row()
+            row.prop(self.props, "cost_schedule_predefined_types")
+            row.operator("bim.add_cost_schedule", icon="ADD", text="Add")
 
         for schedule in CostSchedulesData.data["schedules"]:
             self.draw_cost_schedule_ui(schedule)
 
     def draw_cost_schedule_ui(self, cost_schedule):
         row = self.layout.row(align=True)
-        row.label(text=cost_schedule["name"], icon="LINENUMBERS_ON")
-
         if self.props.active_cost_schedule_id and self.props.active_cost_schedule_id == cost_schedule["id"]:
-            op = row.operator("bim.select_cost_schedule_products", icon="RESTRICT_SELECT_OFF", text="Assigned")
+            row.label(
+                text="Currently editing: {}[{}]".format(cost_schedule["name"], cost_schedule["predefined_type"]),
+                icon="LINENUMBERS_ON",
+            )
+            grid = self.layout.grid_flow(columns=2, even_columns=True)
+            col = grid.column()
+            row1 = col.row(align=True)
+            row1.alignment = "LEFT"
+            row1.label(text="Schedule tools")
+            row1 = col.row(align=True)
+            row1.alignment = "RIGHT"
+            row1.operator("bim.export_cost_schedules", text="Export", icon="EXPORT").cost_schedule = cost_schedule["id"]
+            row2 = col.row(align=True)
+            row2.alignment = "RIGHT"
+            op = row2.operator("bim.select_cost_schedule_products", icon="RESTRICT_SELECT_OFF", text="Assigned")
             op.cost_schedule = cost_schedule["id"]
-            row.operator("bim.select_unassigned_products", icon="RESTRICT_SELECT_OFF", text="Unassigned")
+            row2.operator("bim.select_unassigned_products", icon="RESTRICT_SELECT_OFF", text="Unassigned")
 
-            row.prop(self.props, "should_show_column_ui", text="", icon="SHORTDISPLAY")
+            col = grid.column()
+            row1 = col.row(align=True)
+            row1.alignment = "LEFT"
+            row1.label(text="Settings")
+            row1 = col.row(align=True)
+            row1.alignment = "RIGHT"
+            row1.prop(self.props, "should_show_currency_ui", text="Project Currency", icon="COPY_ID")
+            row1.prop(self.props, "should_show_column_ui", text="Schedule Columns", icon="SHORTDISPLAY")
             if self.props.is_editing == "COST_SCHEDULE_ATTRIBUTES":
                 row.operator("bim.edit_cost_schedule", text="", icon="CHECKMARK")
-            elif self.props.is_editing == "COST_ITEMS":
-                row.operator("bim.add_summary_cost_item", text="", icon="ADD").cost_schedule = cost_schedule["id"]
-            row.operator("bim.disable_editing_cost_schedule", text="", icon="CANCEL")
-        elif self.props.active_cost_schedule_id:
-            row.operator("bim.remove_cost_schedule", text="", icon="X").cost_schedule = cost_schedule["id"]
+            row.operator("bim.disable_editing_cost_schedule", text="Disable Editing", icon="CANCEL")
         else:
+            row.label(
+                text="{}[{}]".format(cost_schedule["name"], cost_schedule["predefined_type"]), icon="LINENUMBERS_ON"
+            )
             row.operator("bim.enable_editing_cost_items", text="", icon="OUTLINER").cost_schedule = cost_schedule["id"]
             row.operator(
                 "bim.enable_editing_cost_schedule_attributes", text="", icon="GREASEPENCIL"
             ).cost_schedule = cost_schedule["id"]
             row.operator("bim.remove_cost_schedule", text="", icon="X").cost_schedule = cost_schedule["id"]
-
         if self.props.active_cost_schedule_id == cost_schedule["id"]:
             if self.props.is_editing == "COST_SCHEDULE_ATTRIBUTES":
                 self.draw_editable_cost_schedule_ui()
             elif self.props.is_editing == "COST_ITEMS":
                 if self.props.should_show_column_ui:
                     self.draw_column_ui()
+                if self.props.should_show_currency_ui:
+                    self.draw_currency_ui()
                 self.draw_editable_cost_item_ui()
 
     def draw_column_ui(self):
@@ -94,6 +113,20 @@ class BIM_PT_cost_schedules(Panel):
         row.operator("bim.add_cost_column", text="", icon="ADD").name = self.props.cost_column
         self.layout.template_list("BIM_UL_cost_columns", "", self.props, "columns", self.props, "active_column_index")
 
+    def draw_currency_ui(self):
+        row = self.layout.row(align=True)
+        if CostSchedulesData.data["currency"]:
+            text = "Currency used: {}".format(CostSchedulesData.data["currency"]["name"])
+            row.label(text=text)
+            row.operator("bim.remove_unit", text="", icon="X").unit = CostSchedulesData.data["currency"]["id"]
+        else:
+            row.label(text="No currency set")
+            row.prop(self.props, "currency", text="")
+            if self.props.currency == "CUSTOM":
+                row.alignment = "RIGHT"
+                row.prop(self.props, "custom_currency", text="")
+            row.operator("bim.add_currency", text="", icon="ADD")
+
     def draw_editable_cost_schedule_ui(self):
         blenderbim.bim.helper.draw_attributes(self.props.cost_schedule_attributes, self.layout)
 
@@ -101,30 +134,39 @@ class BIM_PT_cost_schedules(Panel):
         row = self.layout.row(align=True)
         row.alignment = "RIGHT"
         ifc_definition_id = None
+        row = self.layout.row(align=True)
+        row.label(text="Cost Item Tools")
+        row = self.layout.row(align=True)
+        row.alignment = "RIGHT"
+        row.operator("bim.add_summary_cost_item", text="Add Summary Cost", icon="ADD")
+        row.operator("bim.expand_all_tasks", text="Expand All")
+        row.operator("bim.contract_all_tasks", text="Contract All")
+        row = self.layout.row(align=True)
+        row.alignment = "RIGHT"
         if self.props.cost_items and self.props.active_cost_item_index < len(self.props.cost_items):
             ifc_definition_id = self.props.cost_items[self.props.active_cost_item_index].ifc_definition_id
         if ifc_definition_id:
-            row.prop(self.props, "change_cost_item_parent", text="", icon="LINKED")
-            row.prop(self.props, "enable_reorder", text="", icon="SORTALPHA")
-            if not CostSchedulesData.data["is_editing_rates"]:
-                op = row.operator("bim.enable_editing_cost_item_quantities", text="", icon="PROPERTIES")
+            row.prop(self.props, "show_cost_item_operators", text="Edit", icon="DOWNARROW_HLT")
+            row.operator("bim.add_cost_item", text="Add", icon="ADD").cost_item = ifc_definition_id
+            row.operator("bim.copy_cost_item", text="Copy", icon="ADD")
+            row.operator("bim.remove_cost_item", text="Delete", icon="X").cost_item = ifc_definition_id
+            if self.props.show_cost_item_operators:
+                row = self.layout.row(align=True)
+                row.alignment = "RIGHT"
+                row.prop(self.props, "change_cost_item_parent", text="", icon="LINKED")
+                row.prop(self.props, "enable_reorder", text="", icon="SORTALPHA")
+                if not CostSchedulesData.data["is_editing_rates"]:
+                    op = row.operator("bim.enable_editing_cost_item_quantities", text="", icon="PROPERTIES")
+                    op.cost_item = ifc_definition_id
+                op = row.operator("bim.enable_editing_cost_item_values", text="", icon="DISC")
                 op.cost_item = ifc_definition_id
-
-            op = row.operator("bim.enable_editing_cost_item_values", text="", icon="DISC")
-            op.cost_item = ifc_definition_id
-
-            row.operator("bim.add_cost_item", text="", icon="ADD").cost_item = ifc_definition_id
-
-            if self.props.active_cost_item_id == ifc_definition_id:
-                if self.props.cost_item_editing_type == "ATTRIBUTES":
-                    row.operator("bim.edit_cost_item", text="", icon="CHECKMARK")
-                row.operator("bim.disable_editing_cost_item", text="", icon="CANCEL")
-            else:
-                op = row.operator("bim.enable_editing_cost_item_attributes", text="", icon="GREASEPENCIL")
-                op.cost_item = ifc_definition_id
-
-            row.operator("bim.remove_cost_item", text="", icon="X").cost_item = ifc_definition_id
-
+                if self.props.active_cost_item_id == ifc_definition_id:
+                    if self.props.cost_item_editing_type == "ATTRIBUTES":
+                        row.operator("bim.edit_cost_item", text="", icon="CHECKMARK")
+                    row.operator("bim.disable_editing_cost_item", text="", icon="CANCEL")
+                else:
+                    op = row.operator("bim.enable_editing_cost_item_attributes", text="", icon="GREASEPENCIL")
+                    op.cost_item = ifc_definition_id
         self.layout.template_list(
             "BIM_UL_cost_items",
             "",
@@ -579,7 +621,10 @@ class BIM_UL_cost_items_trait:
             row.label(text="", icon="DOT")
 
     def draw_total_cost_column(self, layout, cost_item):
-        layout.label(text="{0:.2f}".format(cost_item["TotalCost"]))
+        format_numbers = "{0:,.2f}".format(cost_item["TotalCost"]).replace(",", " ")
+        currency = CostSchedulesData.data["currency"]
+        text = "{} {}".format(format_numbers, currency["name"]) if currency else format_numbers
+        layout.label(text=text)
 
     def draw_quantity_column(self, layout, cost_item):
         if CostSchedulesData.data["is_editing_rates"]:
@@ -588,10 +633,15 @@ class BIM_UL_cost_items_trait:
             self.draw_total_quantity_column(layout, cost_item)
 
     def draw_value_column(self, layout, cost_item):
-        text = "{0:.2f}".format(cost_item["TotalAppliedValue"])
-        if cost_item["UnitBasisValueComponent"] not in [None, 1]:
-            text += " / {}".format(round(cost_item["UnitBasisValueComponent"], 2))
-        layout.label(text=text)
+        if cost_item["TotalAppliedValue"]:
+            text = "{0:,.2f}".format(cost_item["TotalAppliedValue"]).replace(",", " ")
+            if cost_item["UnitBasisValueComponent"] not in [None, 1]:
+                text = "{} / {}".format(text, round(cost_item["UnitBasisValueComponent"], 2))
+            currency = CostSchedulesData.data["currency"]
+            text = "{} {}".format(text, currency["name"]) if currency else text
+            layout.label(text=text)
+        else:
+            layout.label(text="-")
 
     def draw_uom_column(self, layout, cost_item):
         layout.label(text=cost_item["UnitBasisUnitSymbol"] or "-" if cost_item["UnitBasisValueComponent"] else "-")
@@ -608,7 +658,11 @@ class BIM_UL_cost_items_trait:
                 op.new_index = cost_item["NestingIndex"] - 1
 
     def draw_total_quantity_column(self, layout, cost_item):
-        layout.label(text="{0:.2f}".format(cost_item["TotalCostQuantity"]) + f" {cost_item['UnitSymbol'] or '-'}")
+        if cost_item["TotalCostQuantity"]:
+            label = "{0:.2f}".format(cost_item["TotalCostQuantity"]) + f" {cost_item['UnitSymbol'] or '-'}"
+            layout.label(text=label)
+        else:
+            layout.label(text="-")
         # if cost_item["DerivedTotalCostQuantity"] not in [None, 0]:
         #     layout.label(text="{0:.2f}".format(cost_item["DerivedTotalCostQuantity"]) + f" {cost_item['DerivedUnitSymbol'] or '-'}")
         # else:
@@ -665,14 +719,14 @@ class BIM_UL_cost_item_quantities(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         props = context.scene.BIMCostProperties
         cost_item = props.cost_items[props.active_cost_item_index]
-
         if item:
             row = layout.row(align=True)
             op = row.operator("bim.select_product", text="", icon="RESTRICT_SELECT_OFF")
             op.product = item.ifc_definition_id
             row.split(factor=0.8)
             row.label(text=item.name)
-            row.label(text="{0:.2f}".format(item.total_quantity))
+            formatted_quantity = "{0:.2f}".format(item.total_quantity)
+            row.label(text="{}{}".format(formatted_quantity, item.unit_symbol))
             op = row.operator("bim.unassign_cost_item_quantity", text="", icon="X")
             op.cost_item = cost_item.ifc_definition_id
             op.related_object = item.ifc_definition_id
@@ -684,8 +738,11 @@ class BIM_UL_product_cost_items(UIList):
             row = layout.row(align=True)
             op = row.operator("bim.highlight_product_cost_item", text="", icon="STYLUS_PRESSURE")
             op.cost_item = item.ifc_definition_id
-            row.split(factor=0.8)
+            row.split(factor=0.5)
             row.label(text=item.name)
+            qty = "{0:.2f}".format(item.total_quantity)
+            formatted_total_quantity = "{0:.2f}".format(item.total_cost_quantity)
+            row.label(text="{}/{} {}".format(qty, formatted_total_quantity, item.unit_symbol))
 
 
 class BIM_PT_Costing_Tools(Panel):
@@ -698,9 +755,7 @@ class BIM_PT_Costing_Tools(Panel):
     def draw(self, context):
         self.props = context.scene.BIMCostProperties
         row = self.layout.row()
-        row.operator(
-            "bim.load_product_cost_items", icon="FILE_REFRESH"
-        )
+        row.operator("bim.load_product_cost_items", icon="FILE_REFRESH")
         row = self.layout.row()
         row.template_list(
             "BIM_UL_product_cost_items",

@@ -25,6 +25,45 @@
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
+namespace {
+	struct opening_sorter {
+		bool operator()(const std::pair<double, TopoDS_Shape>& a, const std::pair<double, TopoDS_Shape>& b) const {
+			return a.first > b.first;
+		}
+	};
+
+	bool apply_in_batches(IfcGeom::util::boolean_settings bst, const TopoDS_Shape& first_operand, std::vector< std::pair<double, TopoDS_Shape> >& opening_vector, BOPAlgo_Operation occ_op, TopoDS_Shape& result) {
+		auto it = opening_vector.begin();
+		auto jt = it;
+
+		result = first_operand;
+		for (;; ++it) {
+			if (it == opening_vector.end() || jt->first / it->first > 10.) {
+
+				TopTools_ListOfShape opening_list;
+				for (auto kt = jt; kt < it; ++kt) {
+					opening_list.Append(kt->second);
+				}
+
+				TopoDS_Shape intermediate_result;
+				if (IfcGeom::util::boolean_operation(bst, result, opening_list, occ_op, intermediate_result)) {
+					result = intermediate_result;
+				} else {
+					return false;
+				}
+
+				jt = it;
+			}
+
+			if (it == opening_vector.end()) {
+				break;
+			}
+		}
+
+		return true;
+	}
+}
+
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape& shape) {
 
 	TopoDS_Shape s1;
@@ -106,7 +145,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 		Logger::Message(Logger::LOG_WARNING, "Empty solid for:", l->FirstOperand());
 	}
 
-	TopTools_ListOfShape second_operand_shapes;
+	std::vector< std::pair<double, TopoDS_Shape> > opening_vector;
 
 	for (auto& op2 : second_operands) {
 		TopoDS_Shape s2;
@@ -135,8 +174,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 		if (is_unbounded_halfspace) {
 			TopoDS_Shape temp;
 			double d;
-			if (util::fit_halfspace(s1, s2, temp, d, getValue(GV_PRECISION))) {
-				// #2665 we also set a precision-independent treshold, because in the boolean op routine
+			if (util::fit_halfspace(s1, s2, temp, d, getValue(GV_PRECISION) * 1000.)) {
+				// #2665 we also set a precision-independent threshold, because in the boolean op routine
 				// the working fuzziness might still be increased.
 				if (d < getValue(GV_PRECISION) * 20. || d < 0.00002) {
 					Logger::Message(Logger::LOG_WARNING, "Halfspace subtraction yields unchanged volume:", l);
@@ -159,22 +198,23 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 			}
 		}
 
-		second_operand_shapes.Append(s2);
+		opening_vector.push_back(std::make_pair(util::min_edge_length(s2), s2));
 	}
 
-	/*
+	std::sort(opening_vector.begin(), opening_vector.end(), opening_sorter());
+
 	// TK: A little debugging trick to output both operands for visual inspection
-	
+	/*
 	BRep_Builder builder;
 	TopoDS_Compound compound;
 	builder.MakeCompound(compound);
 	builder.Add(compound, s1);
-	for (const auto& s2 : second_operand_shapes) {
-		builder.Add(compound, s2);
+	for (auto& p : opening_vector) {
+		builder.Add(compound, p.second);
 	}
 	shape = compound;
 	return true;
-	*/	
+	*/
 
 #if OCC_VERSION_HEX < 0x60900
 	// @todo: this currently does not compile anymore, do we still need this?
@@ -196,7 +236,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 		valid_result = true;
 		for (; it.More(); it.Next()) {
 			TopoDS_Shape part;
-			if (util::boolean_operation(bst, it.Value(), second_operand_shapes, occ_op, part)) {
+			if (apply_in_batches(bst, it.Value(), opening_vector, occ_op, part)) {
 				B.Add(C, part);
 			} else {
 				valid_result = false;
@@ -204,7 +244,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 		}
 		shape = C;
 	} else {
-		valid_result = util::boolean_operation(bst, s1, second_operand_shapes, occ_op, shape);
+		valid_result = apply_in_batches(bst, s1, opening_vector, occ_op, shape);
 	}
 
 #endif
@@ -226,9 +266,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 		TopoDS_Compound C;
 		B.MakeCompound(C);
 		B.Add(C, s1);
-		TopTools_ListIteratorOfListOfShape it(second_operand_shapes);
-		for (; it.More(); it.Next()) {
-			B.Add(C, it.Value());
+		for (auto& p : opening_vector) {
+			B.Add(C, p.second);
 		}
 		Logger::Message(Logger::LOG_ERROR, "Failed to process union, creating compound:", l);
 		shape = C;

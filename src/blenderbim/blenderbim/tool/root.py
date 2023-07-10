@@ -161,17 +161,4 @@ class Root(blenderbim.core.tool.Root):
         if "/" in name and name.split("/")[0][0:3] == "Ifc":
             name = "/".join(name.split("/")[1:])
         name = "{}/{}".format(element.is_a(), name)
-
-        # By default, if another object with the same name exists, the existing
-        # object becomes Foo.001 and the new object becomes Foo. However, if we
-        # also had a collection that was named Foo, it wouldn't change to
-        # Foo.001. This code ensures existing objects and their corresponding
-        # collections stay in sync.
-        existing_obj = bpy.data.objects.get(name)
-        existing_collection = bpy.data.collections.get(name)
-
         obj.name = name
-
-        if existing_obj:
-            if existing_collection:
-                existing_collection.name = existing_obj.name

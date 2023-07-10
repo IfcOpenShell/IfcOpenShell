@@ -31,6 +31,8 @@ class Project(blenderbim.core.tool.Project):
         # TODO refactor
         filepath = os.path.join(bpy.context.scene.BIMProperties.data_dir, "libraries", template)
         bpy.ops.bim.select_library_file(filepath=filepath)
+        if IfcStore.library_file.schema != tool.Ifc.get().schema:
+            return
         for element in IfcStore.library_file.by_type("IfcTypeProduct"):
             bpy.ops.bim.append_library_element(definition=element.id())
 
@@ -104,7 +106,7 @@ class Project(blenderbim.core.tool.Project):
 
     @classmethod
     def set_active_spatial_element(cls, obj):
-        collection = obj.users_collection[0]
+        collection = obj.BIMObjectProperties.collection
         queue = [bpy.context.view_layer.layer_collection]
         layer_collection = None
 

@@ -24,6 +24,7 @@ import numpy as np
 import ifcopenshell
 import blenderbim.core.tool
 import blenderbim.core.style
+import blenderbim.core.spatial
 import blenderbim.tool as tool
 import blenderbim.bim.import_ifc
 from mathutils import Vector
@@ -74,17 +75,18 @@ class Geometry(blenderbim.core.tool.Geometry):
         if element.is_a("IfcRelSpaceBoundary"):
             ifcopenshell.api.run("boundary.remove_boundary", tool.Ifc.get(), boundary=element)
             return bpy.data.objects.remove(obj)
-        if obj.users_collection and obj.users_collection[0].name == obj.name:
+        collection = obj.BIMObjectProperties.collection
+        if collection:
             parent = ifcopenshell.util.element.get_aggregate(element)
             if not parent:
                 parent = ifcopenshell.util.element.get_container(element)
             if parent:
                 parent_obj = tool.Ifc.get_object(parent)
                 if parent_obj:
-                    parent_collection = bpy.data.collections.get(parent_obj.name)
-                    for child in obj.users_collection[0].children:
+                    parent_collection = parent_obj.BIMObjectProperties.collection
+                    for child in collection.children:
                         parent_collection.children.link(child)
-            bpy.data.collections.remove(obj.users_collection[0])
+            bpy.data.collections.remove(collection)
         if getattr(element, "FillsVoids", None):
             bpy.ops.bim.remove_filling(filling=element.id())
 
@@ -96,12 +98,15 @@ class Geometry(blenderbim.core.tool.Geometry):
                 if element.VoidsElements:
                     bpy.ops.bim.remove_opening(opening_id=element.id())
         else:
+            is_spatial = element.is_a("IfcSpatialElement")
             if getattr(element, "HasOpenings", None):
                 for rel in element.HasOpenings:
                     bpy.ops.bim.remove_opening(opening_id=rel.RelatedOpeningElement.id())
             for port in ifcopenshell.util.system.get_ports(element):
                 blenderbim.core.system.remove_port(tool.Ifc, tool.System, port=port)
             ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
+            if is_spatial:
+                blenderbim.core.spatial.load_container_manager(tool.Spatial)
         try:
             obj.name
             bpy.data.objects.remove(obj)
@@ -350,6 +355,16 @@ class Geometry(blenderbim.core.tool.Geometry):
         ):
             return True
         return False
+
+    @classmethod
+    def is_profile_based(cls, data):
+        return data.BIMMeshProperties.subshape_type == "PROFILE"
+
+    @classmethod
+    def is_swept_profile(cls, representation):
+        return ifcopenshell.util.representation.resolve_representation(representation).RepresentationType in (
+            "SweptSolid",
+        )
 
     @classmethod
     def is_type_product(cls, element):

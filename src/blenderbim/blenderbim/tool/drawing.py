@@ -20,6 +20,7 @@ import os
 import re
 import bpy
 import math
+import lark
 import bmesh
 import shutil
 import logging
@@ -35,11 +36,10 @@ import blenderbim.bim.module.drawing.sheeter as sheeter
 import blenderbim.bim.module.drawing.scheduler as scheduler
 import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.helper as helper
-
 from blenderbim.bim.module.drawing.data import FONT_SIZES, DecoratorData
-from blenderbim.bim.module.drawing.prop import get_diagram_scales, BOX_ALIGNMENT_POSITIONS
-
+from blenderbim.bim.module.drawing.prop import get_diagram_scales, BOX_ALIGNMENT_POSITIONS, ANNOTATION_TYPES_DATA
 from mathutils import Vector
+from fractions import Fraction
 import collections
 
 
@@ -56,27 +56,17 @@ class Drawing(blenderbim.core.tool.Drawing):
             )
 
     @classmethod
+    def get_annotation_data_type(cls, object_type):
+        return ANNOTATION_TYPES_DATA[object_type][3]
+
+    @classmethod
     def create_annotation_object(cls, drawing, object_type):
-        data_type = {
-            "ANGLE": "curve",
-            "BATTING": "mesh",
-            "BREAKLINE": "mesh",
-            "DIAMETER": "curve",
-            "DIMENSION": "curve",
-            "FALL": "curve",
-            "FILL_AREA": "mesh",
-            "HIDDEN_LINE": "mesh",
-            "LINEWORK": "mesh",
-            "PLAN_LEVEL": "curve",
-            "RADIUS": "curve",
-            "SECTION_LEVEL": "curve",
-            "STAIR_ARROW": "curve",
-            "TEXT": "empty",
-            "TEXT_LEADER": "curve",
-        }[object_type]
+        data_type = cls.get_annotation_data_type(object_type)
         obj = annotation.Annotator.get_annotation_obj(drawing, object_type, data_type)
         if object_type == "FILL_AREA":
             obj = annotation.Annotator.add_plane_to_annotation(obj)
+        elif object_type == "REVISION_CLOUD":
+            obj = annotation.Annotator.add_plane_to_annotation(obj, remove_face=True)
         elif object_type == "TEXT_LEADER":
             co1, _, co2, _ = annotation.Annotator.get_placeholder_coords()
             obj = annotation.Annotator.add_line_to_annotation(obj, co2, co1)
@@ -217,8 +207,8 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def delete_drawing_elements(cls, elements):
         for element in elements:
-            ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
             obj = tool.Ifc.get_object(element)
+            ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
             if obj:
                 obj_data = obj.data
                 bpy.data.objects.remove(obj)
@@ -248,6 +238,10 @@ class Drawing(blenderbim.core.tool.Drawing):
         bpy.context.scene.DocProperties.is_editing_schedules = False
 
     @classmethod
+    def disable_editing_references(cls):
+        bpy.context.scene.DocProperties.is_editing_references = False
+
+    @classmethod
     def disable_editing_sheets(cls):
         bpy.context.scene.DocProperties.is_editing_sheets = False
 
@@ -274,6 +268,10 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def enable_editing_schedules(cls):
         bpy.context.scene.DocProperties.is_editing_schedules = True
+
+    @classmethod
+    def enable_editing_references(cls):
+        bpy.context.scene.DocProperties.is_editing_references = True
 
     @classmethod
     def enable_editing_sheets(cls):
@@ -315,8 +313,13 @@ class Drawing(blenderbim.core.tool.Drawing):
         return literals
 
     @classmethod
-    def get_annotation_context(cls, target_view):
-        if target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW"):
+    def get_annotation_context(cls, target_view, object_type=None):
+        # checking PLAN target view and annotation type that doesn't require 3d
+        if target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW") and object_type not in (
+            "FALL",
+            "SECTION_LEVEL",
+            "PLAN_LEVEL",
+        ):
             return ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan", "Annotation", target_view)
         return ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Annotation", target_view)
 
@@ -361,7 +364,7 @@ class Drawing(blenderbim.core.tool.Drawing):
     def get_drawing_collection(cls, drawing):
         obj = tool.Ifc.get_object(drawing)
         if obj:
-            return obj.users_collection[0]
+            return obj.BIMObjectProperties.collection
 
     @classmethod
     def get_drawing_group(cls, drawing):
@@ -544,6 +547,9 @@ class Drawing(blenderbim.core.tool.Drawing):
         for obj in ifc_importer.added_data.values():
             tool.Collector.assign(obj)
 
+    # NOTE: EPsetDrawing pset is completely synced with BIMCameraProperties
+    # but BIMCameraProperties are only synced with EPsetDrawing at drawing import
+    # therefore camera props can differ from pset if the user changed them from pset.
     @classmethod
     def import_drawing(cls, drawing):
         settings = ifcopenshell.geom.settings()
@@ -585,13 +591,20 @@ class Drawing(blenderbim.core.tool.Drawing):
                     camera.BIMCameraProperties.diagram_scale = valid_scales[0]
                 else:
                     camera.BIMCameraProperties.diagram_scale = "CUSTOM"
-                    camera.BIMCameraProperties.custom_diagram_scale = pset["HumanScale"] + "|" + pset["Scale"]
+                    if ":" in pset["HumanScale"]:
+                        numerator, denominator = pset["HumanScale"].split(":")
+                    else:
+                        numerator, denominator = pset["HumanScale"].split("=")
+                    camera.BIMCameraProperties.custom_scale_numerator = numerator
+                    camera.BIMCameraProperties.custom_scale_denominator = denominator
             if "HasUnderlay" in pset:
                 camera.BIMCameraProperties.has_underlay = pset["HasUnderlay"]
             if "HasLinework" in pset:
                 camera.BIMCameraProperties.has_linework = pset["HasLinework"]
             if "HasAnnotation" in pset:
                 camera.BIMCameraProperties.has_annotation = pset["HasAnnotation"]
+            if "IsNTS" in pset:
+                camera.BIMCameraProperties.is_nts = pset["IsNTS"]
 
         tool.Loader.link_mesh(shape, camera)
 
@@ -623,11 +636,17 @@ class Drawing(blenderbim.core.tool.Drawing):
             new.is_selected = current_drawings_selection.get(drawing.id(), True)
 
     @classmethod
-    def import_schedules(cls):
-        bpy.context.scene.DocProperties.schedules.clear()
-        schedules = [d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "SCHEDULE"]
+    def import_documents(cls, document_type):
+        dprops = bpy.context.scene.DocProperties
+        if document_type == "SCHEDULE":
+            documents_collection = dprops.schedules
+        elif document_type == "REFERENCE":
+            documents_collection = dprops.references
+
+        documents_collection.clear()
+        schedules = [d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == document_type]
         for schedule in schedules:
-            new = bpy.context.scene.DocProperties.schedules.add()
+            new = documents_collection.add()
             new.ifc_definition_id = schedule.id()
             new.name = schedule.Name or "Unnamed"
             if tool.Ifc.get_schema() == "IFC2X3":
@@ -641,7 +660,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         expanded_sheets = {s.ifc_definition_id for s in props.sheets if s.is_expanded}
         props.sheets.clear()
         sheets = [d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "SHEET"]
-        for sheet in sheets:
+        for sheet in sorted(sheets, key=lambda s: getattr(s, "Identification", getattr(s, "DocumentId", None))):
             new = props.sheets.add()
             new.ifc_definition_id = sheet.id()
             if tool.Ifc.get_schema() == "IFC2X3":
@@ -743,8 +762,8 @@ class Drawing(blenderbim.core.tool.Drawing):
         )
 
     @classmethod
-    def set_drawing_collection_name(cls, group, collection):
-        collection.name = f"IfcGroup/{group.Name}"
+    def set_drawing_collection_name(cls, drawing, collection):
+        collection.name = tool.Loader.get_name(drawing)
 
     @classmethod
     def set_name(cls, element, name):
@@ -759,12 +778,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         props = obj.BIMTextProperties
 
         literals = cls.get_text_literal(obj, return_list=True)
-        if not literals:
-            props.literals.clear()
-            return
-
         cls.import_text_attributes(obj)
-
         for i, literal in enumerate(literals):
             product = cls.get_assigned_product(tool.Ifc.get_entity(obj))
             props.literals[i].value = cls.replace_text_literal_variables(literal.Literal, product)
@@ -876,6 +890,21 @@ class Drawing(blenderbim.core.tool.Drawing):
         )
         if resource_path:
             return resource_path.replace("\\", "/")
+
+    @classmethod
+    def get_default_shading_style(cls):
+        dprops = bpy.context.scene.DocProperties
+        return dprops.shadingstyle_default
+
+    @classmethod
+    def setup_shading_styles_path(cls, resource_path):
+        resource_path = tool.Ifc.resolve_uri(resource_path)
+        os.makedirs(os.path.dirname(resource_path), exist_ok=True)
+        if not os.path.exists(resource_path):
+            resource_basename = os.path.basename(resource_path)
+            ootb_resource = os.path.join(bpy.context.scene.BIMProperties.data_dir, "assets", resource_basename)
+            if os.path.exists(ootb_resource):
+                shutil.copy(ootb_resource, resource_path)
 
     @classmethod
     def get_potential_reference_elements(cls, drawing):
@@ -1325,7 +1354,8 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def get_drawing_human_scale(cls, drawing):
-        return ifcopenshell.util.element.get_psets(drawing)["EPset_Drawing"].get("HumanScale", "NTS")
+        pset = ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing") or {}
+        return "NTS" if pset.get("IsNTS", False) else pset.get("HumanScale", "NTS")
 
     @classmethod
     def get_drawing_metadata(cls, drawing):
@@ -1376,7 +1406,9 @@ class Drawing(blenderbim.core.tool.Drawing):
         ifc_file = tool.Ifc.get()
         pset = ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {})
         include = pset.get("Include", None)
-        elements = cls.get_elements_in_camera_view(tool.Ifc.get_object(drawing), [tool.Ifc.get_object(e) for e in ifc_file.by_type("IfcSpace")])
+        elements = cls.get_elements_in_camera_view(
+            tool.Ifc.get_object(drawing), [tool.Ifc.get_object(e) for e in ifc_file.by_type("IfcSpace")]
+        )
         if include:
             elements = set(ifcopenshell.util.selector.Selector.parse(ifc_file, include, elements=elements))
         exclude = pset.get("Exclude", None)
@@ -1426,6 +1458,14 @@ class Drawing(blenderbim.core.tool.Drawing):
         return True if (camera and camera.data.type == "ORTHO") else False
 
     @classmethod
+    def is_active_drawing(cls, drawing):
+        return drawing.id() == bpy.context.scene.DocProperties.active_drawing_id
+
+    @classmethod
+    def run_drawing_activate_model(cls):
+        bpy.ops.bim.activate_model()
+
+    @classmethod
     def activate_drawing(cls, camera):
         area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
         is_local_view = area.spaces[0].local_view is not None
@@ -1449,24 +1489,21 @@ class Drawing(blenderbim.core.tool.Drawing):
                     project_collection.children["Views"].children[collection.name].hide_viewport = True
                     bpy.data.collections.get(collection.name).hide_render = True
 
-                    project_collection.children["Views"].children[camera.users_collection[0].name].hide_viewport = False
-        bpy.data.collections.get(camera.users_collection[0].name).hide_render = False
+                    project_collection.children["Views"].children[camera.BIMObjectProperties.collection.name].hide_viewport = False
+        camera.BIMObjectProperties.collection.hide_render = False
         tool.Spatial.set_active_object(camera)
 
         # Sync viewport objects visibility with selectors from EPset_Drawing/Include and /Exclude
         drawing = tool.Ifc.get_entity(camera)
 
-        # Running operators is much more efficient in this scenario than looping through each element
-        if not bpy.app.background:
-            bpy.ops.object.hide_view_clear()
-
         filtered_elements = cls.get_drawing_elements(drawing) | cls.get_drawing_spaces(drawing)
-        hidden_objs = [o for o in bpy.context.visible_objects if tool.Ifc.get_entity(o) not in filtered_elements]
-
-        for hidden_obj in hidden_objs:
-            if bpy.context.view_layer.objects.get(hidden_obj.name):
-                hidden_obj.hide_set(True)
-                hidden_obj.hide_render = True
+        for view_layer_object in bpy.context.view_layer.objects:
+            element = tool.Ifc.get_entity(view_layer_object)
+            if not element:
+                continue
+            hide = element not in filtered_elements
+            view_layer_object.hide_set(hide)
+            view_layer_object.hide_render = hide
 
         subcontexts = []
         target_view = cls.get_drawing_target_view(drawing)
@@ -1508,12 +1545,14 @@ class Drawing(blenderbim.core.tool.Drawing):
             x = (camera.data.BIMCameraProperties.raster_x / camera.data.BIMCameraProperties.raster_y) * y
 
         camera_inverse_matrix = camera.matrix_world.inverted()
-        return set([
-            tool.Ifc.get_entity(o)
-            for o in objs
-            if cls.is_in_camera_view(o, camera_inverse_matrix, x, y, camera.data.clip_start, camera.data.clip_end)
-            and tool.Ifc.get_entity(o)
-        ])
+        return set(
+            [
+                tool.Ifc.get_entity(o)
+                for o in objs
+                if cls.is_in_camera_view(o, camera_inverse_matrix, x, y, camera.data.clip_start, camera.data.clip_end)
+                and tool.Ifc.get_entity(o)
+            ]
+        )
 
     @classmethod
     def is_in_camera_view(cls, obj, camera_inverse_matrix, x, y, clip_start, clip_end):
@@ -1568,7 +1607,8 @@ class Drawing(blenderbim.core.tool.Drawing):
         plane_co = camera_matrix.translation
         plane_no = camera_matrix.col[2].xyz
 
-        global_offset = camera.matrix_world.col[2].xyz * -camera.data.clip_start
+        # Bisect verts are offset by the clip (with 5mm tolerance) to ensure it is visible in the viewport.
+        global_offset = camera.matrix_world.col[2].xyz * (-camera.data.clip_start - 0.005)
 
         bm = bmesh.new()
         bm.from_mesh(obj.data)
@@ -1593,3 +1633,65 @@ class Drawing(blenderbim.core.tool.Drawing):
         bm.free()
 
         return verts, edges
+
+    @classmethod
+    def get_scale_ratio(cls, scale):
+        numerator, denominator = scale.split("/")
+        return float(numerator) / float(denominator)
+
+    @classmethod
+    def get_diagram_scale(cls, obj):
+        props = obj.data.BIMCameraProperties
+        scale = props.diagram_scale
+        if scale != "CUSTOM":
+            human_scale, scale = scale.split("|")
+            return {"HumanScale": human_scale, "Scale": scale}
+        numerator_string = props.custom_scale_numerator
+        denominator_string = props.custom_scale_denominator
+        numerator = tool.Drawing.convert_scale_string(numerator_string)
+        denominator = tool.Drawing.convert_scale_string(denominator_string)
+        if not numerator or not denominator:
+            return
+        scale = str(Fraction(numerator / denominator).limit_denominator(1000))  # Any ratio >1000 is stupid.
+        if "'" in scale or '"' in scale:
+            human_separator = "="  # Imperial scales use "=", like 1" = 1' - 0"
+            # If for some crazy reason we mix metric and imperial, assume metric is SI units, like 1m = 1'
+            if "'" not in numerator_string and '"' not in numerator_string:
+                numerator_string += "m"
+            if "'" not in denominator_string and '"' not in denominator_string:
+                denominator_string += "m"
+        else:
+            human_separator = ":"  # Metric scales use ":", like 1:100
+        human_scale = f"{numerator_string}{human_separator}{denominator_string}"
+        return {"HumanScale": human_scale, "Scale": scale}
+
+    @classmethod
+    def convert_scale_string(cls, value):
+        try:
+            return float(value)
+        except:
+            pass  # Perhaps it's imperial?
+        l = lark.Lark(
+            """start: feet? "-"? inches?
+                    feet: NUMBER? "-"? fraction? "'"
+                    inches: NUMBER? "-"? fraction? "\\""
+                    fraction: NUMBER "/" NUMBER
+                    %import common.NUMBER
+                    %import common.WS
+                    %ignore WS // Disregard spaces in text
+                 """
+        )
+
+        try:
+            start = l.parse(value)
+        except:
+            return 0
+        result = 0
+        for dimension in start.children:
+            factor = 12 if dimension.data == "feet" else 1
+            for child in dimension.children:
+                if getattr(child, "data", None) == "fraction":
+                    result += (float(child.children[0]) / float(child.children[1])) * factor
+                else:
+                    result += float(child) * factor
+        return result * 0.0254

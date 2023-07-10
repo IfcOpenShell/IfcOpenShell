@@ -22,6 +22,7 @@ import blenderbim.core.tool
 import blenderbim.core.root
 import blenderbim.core.spatial
 import blenderbim.tool as tool
+import json
 
 
 class Spatial(blenderbim.core.tool.Spatial):
@@ -110,6 +111,7 @@ class Spatial(blenderbim.core.tool.Spatial):
                 new.long_name = element.LongName or ""
                 new.has_decomposition = bool(element.IsDecomposedBy)
                 new.ifc_definition_id = element.id()
+                new.elevation = element[1]
 
     @classmethod
     def run_root_copy_class(cls, obj=None):
@@ -151,7 +153,11 @@ class Spatial(blenderbim.core.tool.Spatial):
             [obj.select_set(True) for obj in objects]
         elif action == "isolate":
             [obj.hide_set(False) for obj in objects if bpy.context.view_layer.objects.get(obj.name)]
-            [obj.hide_set(True) for obj in bpy.context.visible_objects if not obj in objects and bpy.context.view_layer.objects.get(obj.name)]  # this is slow
+            [
+                obj.hide_set(True)
+                for obj in bpy.context.visible_objects
+                if not obj in objects and bpy.context.view_layer.objects.get(obj.name)
+            ]  # this is slow
         elif action == "unhide":
             [obj.hide_set(False) for obj in objects if bpy.context.view_layer.objects.get(obj.name)]
         elif action == "hide":
@@ -164,7 +170,11 @@ class Spatial(blenderbim.core.tool.Spatial):
 
     @classmethod
     def show_scene_objects(cls):
-        [obj.hide_set(False) for obj in bpy.data.scenes["Scene"].objects if bpy.context.view_layer.objects.get(obj.name)]
+        [
+            obj.hide_set(False)
+            for obj in bpy.data.scenes["Scene"].objects
+            if bpy.context.view_layer.objects.get(obj.name)
+        ]
 
     @classmethod
     def get_selected_products(cls):
@@ -185,3 +195,66 @@ class Spatial(blenderbim.core.tool.Spatial):
         z = src_obj.location[2]
         src_obj.location = (destination_obj.location[0], destination_obj.location[1], z)
 
+    @classmethod
+    def load_container_manager(cls):
+        cls.props = bpy.context.scene.BIMSpatialManagerProperties
+        cls.props.containers.clear()
+        cls.contracted_containers = json.loads(cls.props.contracted_containers)
+        cls.props.is_container_update_enabled = False
+        parent = tool.Ifc.get().by_type("IfcProject")[0]
+
+        for object in ifcopenshell.util.element.get_parts(parent) or []:
+            if object.is_a("IfcSpatialElement"):
+                cls.create_new_storey_li(object, 0)
+        cls.props.is_container_update_enabled = True
+
+    @classmethod
+    def create_new_storey_li(cls, element, level_index):
+        new = cls.props.containers.add()
+        new.name = element.Name or "Unnamed"
+        new.long_name = element.LongName or ""
+        new.has_decomposition = bool(element.IsDecomposedBy)
+        new.ifc_definition_id = element.id()
+        new.elevation = ifcopenshell.util.placement.get_storey_elevation(element)
+
+        new.is_expanded = element.id() not in cls.contracted_containers
+        new.level_index = level_index
+        if new.has_decomposition:
+            new.has_children = True
+            if new.is_expanded:
+                for related_object in ifcopenshell.util.element.get_parts(element) or []:
+                    if related_object.is_a("IfcSpatialElement"):
+                        cls.create_new_storey_li(related_object, level_index + 1)
+
+    @classmethod
+    def edit_container_attributes(cls, entity):
+        obj = tool.Ifc.get_object(entity)
+        blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+        name = bpy.context.scene.BIMSpatialManagerProperties.container_name
+        if name != entity.Name:
+            cls.edit_container_name(entity, name)
+
+    @classmethod
+    def edit_container_name(cls, container, name):
+        tool.Ifc.run("attribute.edit_attributes", product=container, attributes={"Name": name})
+
+    @classmethod
+    def get_active_container(cls):
+        props = bpy.context.scene.BIMSpatialManagerProperties
+        if props.active_container_index < len(props.containers):
+            container = tool.Ifc.get().by_id(props.containers[props.active_container_index].ifc_definition_id)
+            return container
+
+    @classmethod
+    def contract_container(cls, container):
+        props = bpy.context.scene.BIMSpatialManagerProperties
+        contracted_containers = json.loads(props.contracted_containers)
+        contracted_containers.append(container.id())
+        props.contracted_containers = json.dumps(contracted_containers)
+
+    @classmethod
+    def expand_container(cls, container):
+        props = bpy.context.scene.BIMSpatialManagerProperties
+        contracted_containers = json.loads(props.contracted_containers)
+        contracted_containers.remove(container.id())
+        props.contracted_containers = json.dumps(contracted_containers)

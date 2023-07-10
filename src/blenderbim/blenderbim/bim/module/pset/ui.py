@@ -42,14 +42,14 @@ def draw_property(prop, layout, copy_operator=None):
 
 
 def draw_single_property(prop, layout, copy_operator=None):
-    value_name = prop.metadata.get_value_name()
+    value_name = prop.metadata.get_value_name(display_only=True)
     if not value_name:
         layout.label(text=prop["Name"])
         return
     layout.prop(
         prop.metadata,
         value_name,
-        text=prop.metadata.name,
+        text=prop.metadata.display_name,
     )
     if prop.metadata.is_uri:
         op = layout.operator("bim.select_uri_attribute", text="", icon="FILE_FOLDER")
@@ -135,6 +135,10 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type):
                 row.scale_y = 0.8
                 row.label(text=prop["Name"])
                 row.label(text=str(prop["NominalValue"]))
+                op = row.operator("bim.select_similar_pset_value", text="", icon="RESTRICT_SELECT_OFF")
+                op.pset_name = pset["Name"]
+                op.prop_name = prop["Name"]
+                op.value = str(prop["NominalValue"])
             if not has_props_displayed:
                 row = box.row()
                 row.scale_y = 0.8

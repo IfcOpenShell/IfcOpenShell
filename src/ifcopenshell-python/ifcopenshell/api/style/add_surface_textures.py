@@ -108,7 +108,13 @@ class Usecase:
 
     def detect_occlusion_map(self):
         for node in self.settings["material"].node_tree.nodes:
-            if node.type != "GROUP" or node.name != "glTF Settings" or not node.inputs or not node.inputs[0].links:
+            if (
+                node.type != "GROUP"
+                or not node.node_tree
+                or node.node_tree.name != "glTF Material Output"
+                or not node.inputs
+                or not node.inputs[0].links
+            ):
                 continue
             from_node = node.inputs[0].links[0].from_node
             if from_node.type == "SEPRGB":
@@ -124,12 +130,14 @@ class Usecase:
             return self.create_surface_texture(links[0].from_node, "DIFFUSE")
 
     def create_surface_texture(self, node, mode):
+        import blenderbim.tool as tool
+
         texture = self.file.create_entity(
             "IfcImageTexture",
             RepeatS=node.extension == "REPEAT",
             RepeatT=node.extension == "REPEAT",
             Mode=mode,
-            URLReference=node.image.filepath,
+            URLReference=tool.Blender.blender_path_to_posix(node.image.filepath),
         )
         self.textures.append(texture)
         self.process_texture_coordinates(node, texture)

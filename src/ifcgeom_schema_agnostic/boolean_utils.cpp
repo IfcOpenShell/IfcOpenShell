@@ -27,6 +27,7 @@
 #include <BRepCheck_ListIteratorOfListOfStatus.hxx>
 #include <BRepCheck.hxx>
 #include <ShapeAnalysis_Edge.hxx>
+#include <Bnd_OBB.hxx>
 
 #include <vector>
 #include <thread>
@@ -404,6 +405,30 @@ bool IfcGeom::util::is_extrusion(const gp_Vec & v, const TopoDS_Shape & s, TopoD
 	interval = { dot0, dot1 };
 
 	return true;
+}
+
+int IfcGeom::util::eliminate_narrow_operands(double prec, const TopTools_ListOfShape& bs, TopTools_ListOfShape & c) {
+	int N = 0;
+	TopTools_ListIteratorOfListOfShape it(bs);
+	for (; it.More(); it.Next()) {
+
+		Bnd_OBB box;
+		BRepBndLib::AddOBB(it.Value(), box, false, false, false);
+
+		auto min_dimension = box.XHSize() < box.YHSize() ? box.XHSize() : box.YHSize();
+		min_dimension = min_dimension < box.ZHSize() ? min_dimension : box.ZHSize();
+
+		bool is_narrow = min_dimension < prec;
+
+		Logger::Notice("Min OBB dimension of operand = " + std::to_string(min_dimension));
+
+		if (!is_narrow) {
+			c.Append(it.Value());
+		} else {
+			++N;
+		}
+	}
+	return N;
 }
 
 int IfcGeom::util::eliminate_touching_operands(double prec, const TopoDS_Shape & a, const TopTools_ListOfShape & bs, TopTools_ListOfShape & c) {
@@ -806,6 +831,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 	const bool do_unify = true;
 	const bool do_subtraction_eliminate_disjoint_bbox = true;
 	const bool do_subtraction_eliminate_touching = true;
+	const bool do_eliminate_narrow_obb = true;
 	const bool do_attempt_2d_boolean = settings.attempt_2d;
 	const bool debug = settings.debug;
 
@@ -819,7 +845,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 	}
 
 	if (fuzziness < 0.) {
-		fuzziness = settings.precision / 10.;
+		fuzziness = settings.precision / 100.;
 	}
 
 	// @todo, it does seem a bit odd, we first triangulate non-planar faces
@@ -858,6 +884,8 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 		b = b_input;
 	}
 
+	bool is_2d = count(a, TopAbs_FACE) > 0 && count(a, TopAbs_SHELL) == 0;
+
 	bool success = false;
 	BRepAlgoAPI_BooleanOperation* builder;
 	TopTools_ListOfShape b_tmp;
@@ -875,13 +903,24 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 			}
 		}
 
-		if (do_subtraction_eliminate_touching) {
+		if (!is_2d && do_subtraction_eliminate_touching) {
 			PERF("boolean subtraction: eliminate touching");
 
 			b_tmp.Clear();
 			auto N = eliminate_touching_operands(fuzziness, a, b, b_tmp);
 			if (N) {
 				Logger::Notice("Eliminated " + std::to_string(N) + " touching operands");
+				std::swap(b, b_tmp);
+			}
+		}
+
+		if (!is_2d && do_eliminate_narrow_obb) {
+			PERF("boolean subtraction: eliminate narrow");
+
+			b_tmp.Clear();
+			auto N = eliminate_narrow_operands(fuzziness, b, b_tmp);
+			if (N) {
+				Logger::Notice("Eliminated " + std::to_string(N) + " narrow operands");
 				std::swap(b, b_tmp);
 			}
 		}
@@ -895,6 +934,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 	}
 
 	if (b.Extent() == 0) {
+		Logger::Warning("No other operands remaining, using first operand");
 		result = a;
 		return true;
 	}
@@ -1143,9 +1183,9 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 				}
 
 				if (!success) {
-					PERF("boolean operation: manifoldness check excemption");
+					PERF("boolean operation: manifoldness check exemption");
 
-					// An excemption for the requirement to be manifold: When the cut operands have overlapping edge belonging to faces that do not overlap.
+					// An exemption for the requirement to be manifold: When the cut operands have overlapping edge belonging to faces that do not overlap.
 					bool operands_nonmanifold = false;
 					if (op == BOPAlgo_CUT) {
 						TopTools_IndexedMapOfShape edges;
@@ -1208,7 +1248,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 					bool has_open_shells = false;
 
 					if (op == BOPAlgo_CUT) {
-						PERF("boolean operation: open shell face adition check");
+						PERF("boolean operation: open shell face addition check");
 
 						for (TopExp_Explorer exp(a, TopAbs_SHELL); exp.More(); exp.Next()) {
 							if (!exp.Current().Closed()) {

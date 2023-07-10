@@ -16,10 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import bpy
+import bpy.utils.previews
 import blenderbim
 import importlib
 from . import handler, ui, prop, operator, helper
+
+cwd = os.path.dirname(os.path.realpath(__file__))
 
 modules = {
     "project": None,
@@ -89,6 +93,7 @@ classes = [
     operator.ConfigureVisibility,
     operator.OpenUpstream,
     operator.OpenUri,
+    operator.SwitchTab,
     operator.ReloadIfcFile,
     operator.RemoveIfcFile,
     operator.SelectDataDir,
@@ -106,11 +111,13 @@ classes = [
     prop.ObjProperty,
     prop.Attribute,
     prop.ModuleVisibility,
+    prop.BIMAreaProperties,
     prop.BIMProperties,
     prop.IfcParameter,
     prop.PsetQto,
     prop.GlobalId,
     prop.BIMObjectProperties,
+    prop.BIMCollectionProperties,
     prop.BIMMaterialProperties,
     prop.BIMMeshProperties,
     ui.BIM_PT_section_plane,
@@ -118,6 +125,7 @@ classes = [
     ui.BIM_UL_topics,
     ui.BIM_ADDON_preferences,
     # Scene panel groups
+    ui.BIM_PT_root,
     ui.BIM_PT_project_info,
     ui.BIM_PT_project_setup,
     ui.BIM_PT_collaboration,
@@ -139,6 +147,9 @@ classes = [
 for mod in modules.values():
     classes.extend(mod.classes)
 
+addon_keymaps = []
+icons = None
+
 
 def on_register(scene):
     handler.setDefaultProperties(scene)
@@ -158,6 +169,8 @@ def register():
     bpy.app.handlers.load_post.append(handler.loadIfcStore)
     bpy.app.handlers.save_post.append(handler.ensureIfcExported)
     bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=prop.BIMProperties)
+    bpy.types.Screen.BIMAreaProperties = bpy.props.CollectionProperty(type=prop.BIMAreaProperties)
+    bpy.types.Collection.BIMCollectionProperties = bpy.props.PointerProperty(type=prop.BIMCollectionProperties)
     bpy.types.Object.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties)
     bpy.types.Material.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties)
     bpy.types.Material.BIMMaterialProperties = bpy.props.PointerProperty(type=prop.BIMMaterialProperties)
@@ -165,15 +178,37 @@ def register():
     bpy.types.Curve.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
     bpy.types.Camera.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
     bpy.types.PointLight.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
-    bpy.types.SCENE_PT_unit.append(ui.ifc_units)
     if hasattr(bpy.types, "UI_MT_button_context_menu"):
         bpy.types.UI_MT_button_context_menu.append(ui.draw_custom_context_menu)
+    bpy.types.STATUSBAR_HT_header.append(ui.draw_statusbar)
 
     for mod in modules.values():
         mod.register()
 
+    wm = bpy.context.window_manager
+    if wm.keyconfigs.addon:
+        km = wm.keyconfigs.addon.keymaps.new(name='Window', space_type='EMPTY')
+        kmi = km.keymap_items.new('bim.switch_tab', 'TAB', 'PRESS', ctrl=True)
+        addon_keymaps.append((km, kmi))
+
+    global icons
+
+    icons_dir = os.path.join(cwd, "data", "icons")
+    icon_preview = bpy.utils.previews.new()
+    for filename in os.listdir(icons_dir):
+        if filename.endswith(".png"):
+            icon_name = os.path.splitext(filename)[0]
+            icon_path = os.path.join(icons_dir, filename)
+            icon_preview.load(icon_name, icon_path, "IMAGE")
+
+    icons = icon_preview
+
 
 def unregister():
+    global icons
+
+    bpy.utils.previews.remove(icons)
+
     for cls in reversed(classes):
         if getattr(cls, "is_registered", None) is None:
             bpy.utils.unregister_class(cls)
@@ -184,6 +219,7 @@ def unregister():
     bpy.app.handlers.load_post.remove(handler.loadIfcStore)
     bpy.app.handlers.save_post.remove(handler.ensureIfcExported)
     del bpy.types.Scene.BIMProperties
+    del bpy.types.Collection.BIMCollectionProperties
     del bpy.types.Object.BIMObjectProperties
     del bpy.types.Material.BIMObjectProperties
     del bpy.types.Material.BIMMaterialProperties
@@ -191,9 +227,16 @@ def unregister():
     del bpy.types.Curve.BIMMeshProperties
     del bpy.types.Camera.BIMMeshProperties
     del bpy.types.PointLight.BIMMeshProperties
-    bpy.types.SCENE_PT_unit.remove(ui.ifc_units)
     if hasattr(bpy.types, "UI_MT_button_context_menu"):
         bpy.types.UI_MT_button_context_menu.remove(ui.draw_custom_context_menu)
+    bpy.types.STATUSBAR_HT_header.remove(ui.draw_statusbar)
 
     for mod in reversed(list(modules.values())):
         mod.unregister()
+
+    wm = bpy.context.window_manager
+    kc = wm.keyconfigs.addon
+    if kc:
+        for km, kmi in addon_keymaps:
+            km.keymap_items.remove(kmi)
+    addon_keymaps.clear()

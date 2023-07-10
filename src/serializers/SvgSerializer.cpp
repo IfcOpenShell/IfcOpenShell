@@ -714,31 +714,6 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 }
 
 namespace {
-	class hlr_writer {
-		const TopoDS_Shape& shape_;
-
-	public:
-		typedef void result_type;
-
-		hlr_writer(const TopoDS_Shape& shape) : shape_(shape)
-		{}
-
-		void operator()(boost::blank&) const {
-			throw std::runtime_error("");
-		}
-
-		void operator()(Handle(HLRBRep_Algo)& algo) const {
-			algo->Add(shape_);
-		}
-
-		void operator()(Handle(HLRBRep_PolyAlgo)& algo) const {
-			BRepMesh_IncrementalMesh(shape_, 0.10);
-			algo->Load(shape_);
-		}
-	};
-}
-
-namespace {
 	int infront_or_behind(const gp_Pln& pln, const gp_Pnt& p) {
 		auto d = (p.XYZ() - pln.Location().XYZ()).Dot(pln.Axis().Direction().XYZ());
 		int state;
@@ -1159,22 +1134,16 @@ void SvgSerializer::write(const geometry_data& data) {
 
 				if (is_floor_plan_) {
 					if (storey) {
-						if (storey_hlr.find(storey) == storey_hlr.end()) {
-							if (use_hlr_poly_) {
-								storey_hlr[storey] = new HLRBRep_PolyAlgo;
-							} else {
-								storey_hlr[storey] = new HLRBRep_Algo;
-							}
+						auto it = storey_hlr.find(storey);
+						if (it == storey_hlr.end()) {
+							it = storey_hlr.insert({ storey, hlr_t(use_prefiltering_, use_hlr_poly_, projection_plane) }).first;
 						}
-						hlr_writer vis(*compound_to_hlr);
-						boost::apply_visitor(vis, storey_hlr[storey]);
+						it->second.add(*compound_to_hlr);
 					} else {
 						Logger::Warning("Unable to invoke HLR due to absence of storey containment", data.product);
 					}
-				}
-				else {
-					hlr_writer vis(*compound_to_hlr);
-					boost::apply_visitor(vis, hlr);
+				} else if (hlr) {
+					hlr->add(*compound_to_hlr);
 				}
 			}
 		}
@@ -1332,7 +1301,8 @@ void SvgSerializer::write(const geometry_data& data) {
 						labels.push_back(ss.str() + "m");
 
 						for (auto lit = labels.begin(); lit != labels.end(); ++lit) {
-							const auto& l = *lit;
+							auto l = *lit;
+							IfcUtil::escape_xml(l);
 							double dy = labels.begin() == lit
 								? 0.35 - (labels.size() - 1.) / 2.
 								: 1.0; // <- dy is relative to the previous text element, so
@@ -1500,7 +1470,8 @@ void SvgSerializer::write(const geometry_data& data) {
 					ycoords.push_back(path.add(anchor_pt->Y()));
 					path.add("\">");
 					for (auto lit = labels.begin(); lit != labels.end(); ++lit) {
-						const auto& l = *lit;
+						auto l = *lit;
+						IfcUtil::escape_xml(l);
 						double dy = labels.begin() == lit
 							? 0.35 - (labels.size() - 1.) / 2.
 							: 1.0; // <- dy is relative to the previous text element, so
@@ -1617,7 +1588,8 @@ void SvgSerializer::write(const geometry_data& data) {
 				}
 				path.add(">");
 				for (auto lit = labels.begin(); lit != labels.end(); ++lit) {
-					const auto& l = *lit;
+					auto l = *lit;
+					IfcUtil::escape_xml(l);
 					double dy = labels.begin() == lit
 						? 0.35 - (labels.size() - 1.) / 2.
 						: 1.0; // <- dy is relative to the previous text element, so
@@ -1706,81 +1678,8 @@ std::array<std::array<double, 3>, 3> SvgSerializer::resize() {
 	return m;
 }
 
-namespace {
-	template <typename T>
-	TopoDS_Compound occt_join(T t) {
-		BRep_Builder B;
-		TopoDS_Compound C;
-		B.MakeCompound(C);
-		if (!t.IsNull()) {
-			TopoDS_Iterator it(t);
-			for (; it.More(); it.Next()) {
-				B.Add(C, it.Value());
-			}
-		}
-		return C;
-	}
-
-	template <typename T, typename... Ts>
-	TopoDS_Compound occt_join(T t, Ts... tss) {
-		BRep_Builder B;
-		TopoDS_Compound C;
-		B.MakeCompound(C);
-		if (!t.IsNull()) {
-			TopoDS_Iterator it(t);
-			for (; it.More(); it.Next()) {
-				B.Add(C, it.Value());
-			}
-		}
-		auto rest = occt_join(tss...);
-		if (!rest.IsNull()) {
-			TopoDS_Iterator it(rest);
-			for (; it.More(); it.Next()) {
-				B.Add(C, it.Value());
-			}
-		}
-		return C;
-	}
-
-	class hlr_calc {
-	private:
-		const HLRAlgo_Projector& projector_;
-
-	public:
-		typedef TopoDS_Shape result_type;
-
-		hlr_calc(const HLRAlgo_Projector& projector) : projector_(projector)
-		{}
-
-		TopoDS_Shape operator()(boost::blank&) const {
-			throw std::runtime_error("");
-		}
-
-		TopoDS_Shape operator()(Handle(HLRBRep_Algo)& algo) {
-			algo->Projector(projector_);
-			algo->Update();
-			algo->Hide();
-			HLRBRep_HLRToShape hlr_shapes(algo);
-			return occt_join(hlr_shapes.OutLineVCompound(), hlr_shapes.VCompound());
-		}
-		
-		TopoDS_Shape operator()(Handle(HLRBRep_PolyAlgo)& algo) {
-			algo->Projector(projector_);
-			algo->Update();
-			HLRBRep_PolyHLRToShape hlr_shapes;
-			hlr_shapes.Update(algo);
-			return occt_join(hlr_shapes.OutLineVCompound(), hlr_shapes.VCompound());
-		}
-	};
-}
-
 void SvgSerializer::draw_hlr(const gp_Pln& pln, const drawing_key& drawing_name) {
-	gp_Trsf trsf;
-	trsf.SetTransformation(pln.Position());
-	HLRAlgo_Projector projector(trsf, false, 1.);
-
-	hlr_calc vis(projector);
-	TopoDS_Shape hlr_compound_unmirrored = boost::apply_visitor(vis, drawing_name.first ? this->storey_hlr[drawing_name.first] : hlr);
+	TopoDS_Shape hlr_compound_unmirrored = (drawing_name.first ? this->storey_hlr.find(drawing_name.first)->second : *hlr).build();
 
 	if (!hlr_compound_unmirrored.IsNull()) {
 		// Compound 3D curves for mirroring to work
@@ -1943,7 +1842,8 @@ void SvgSerializer::addTextAnnotations(const drawing_key& k) {
 							std::vector<std::string> labels{ desc };
 
 							for (auto lit = labels.begin(); lit != labels.end(); ++lit) {
-								const auto& l = *lit;
+								auto l = *lit;
+								IfcUtil::escape_xml(l);
 								double dy = labels.begin() == lit
 									? 0.0  // align bottom
 									: 1.0; // <- dy is relative to the previous text element, so
@@ -2058,12 +1958,9 @@ void SvgSerializer::finalize() {
 				pln = &section.plane;
 			}
 
-			if (use_hlr) {
-				if (use_hlr_poly_) {
-					hlr = new HLRBRep_PolyAlgo;
-				} else {
-					hlr = new HLRBRep_Algo;
-				}
+			// @todo do we have always have pln here?
+			if (use_hlr && pln) {
+				hlr = new hlr_t(use_prefiltering_, use_hlr_poly_, *pln);
 			}
 
 			section_data_ = std::vector<section_data>{ sd };
@@ -2137,8 +2034,7 @@ void SvgSerializer::finalize() {
 
 			resetScale();
 
-			// @todo does this probably call Nullify()
-			hlr = boost::blank();
+			delete hlr;
 		}
 	}
 

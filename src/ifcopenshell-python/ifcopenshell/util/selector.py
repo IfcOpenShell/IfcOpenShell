@@ -62,7 +62,8 @@ class Selector:
                     class_selector: "." WORD filter ?
                     filter: "[" filter_key (comparison filter_value)? "]"
                     filter_key: WORD | ESCAPED_STRING | keys_regex | keys_quoted | keys_simple
-                    filter_value: ESCAPED_STRING | SIGNED_FLOAT | SIGNED_INT | BOOLEAN | NULL
+                    filter_value: filter_regex | ESCAPED_STRING | SIGNED_FLOAT | SIGNED_INT | BOOLEAN | NULL
+                    filter_regex: "r" ESCAPED_STRING
                     keys_regex: "r" ESCAPED_STRING ("." ESCAPED_STRING)*
                     keys_quoted: ESCAPED_STRING ("." ESCAPED_STRING)*
                     keys_simple: /[^\\W][^.=<>!%*\\]]*/ ("." /[^\\W][^.=<>!%*\\]]*/)*
@@ -205,22 +206,30 @@ class Selector:
             comparison = filter_rule.children[1].children[0].data
             if comparison == "not":
                 comparison += filter_rule.children[1].children[1].data
-            token_type = filter_rule.children[2].children[0].type
-            if token_type == "ESCAPED_STRING":
-                value = str(filter_rule.children[2].children[0][1:-1])
+            filter_value = filter_rule.children[2].children[0]
+            if isinstance(filter_value, lark.Tree):
+                is_regex = True
+                token_type = filter_value.data
+            else:
+                is_regex = False
+                token_type = filter_value.type
+            if token_type == "filter_regex":
+                value = str(filter_value.children[0][1:-1])
+            elif token_type == "ESCAPED_STRING":
+                value = str(filter_value[1:-1])
             elif token_type == "SIGNED_INT":
-                value = int(filter_rule.children[2].children[0])
+                value = int(filter_value)
             elif token_type == "SIGNED_FLOAT":
-                value = float(filter_rule.children[2].children[0])
+                value = float(filter_value)
             elif token_type == "BOOLEAN":
-                value = filter_rule.children[2].children[0].lower() == "true"
+                value = filter_value.lower() == "true"
             elif token_type == "NULL":
                 value = None
         for element in elements:
             element_value = cls.get_element_value(element, filter_query["keys"], is_regex=filter_query["is_regex"])
             if element_value is None and value is not None and "not" not in comparison:
                 continue
-            if comparison and cls.filter_element(element, element_value, comparison, value):
+            if comparison and cls.filter_element(element, element_value, comparison, value, is_regex=is_regex):
                 results.append(element)
             elif not comparison and element_value:
                 results.append(element)
@@ -263,11 +272,13 @@ class Selector:
                 value = ifcopenshell.util.element.get_container(value)
             elif key == "class":
                 value = value.is_a()
+            elif key == "id":
+                value = value.id()
             elif isinstance(value, ifcopenshell.entity_instance):
                 if key == "Name" and value.is_a("IfcMaterialLayerSet"):
                     key = "LayerSetName"  # This oddity in the IFC spec is annoying so we account for it.
 
-                attribute = value.get_info().get(key, None)
+                attribute = getattr(value, key, None)
 
                 if attribute is not None:
                     value = attribute
@@ -314,12 +325,19 @@ class Selector:
         return value
 
     @classmethod
-    def filter_element(cls, element, element_value, comparison, value):
+    def filter_element(cls, element, element_value, comparison, value, is_regex=False):
         if comparison.startswith("not"):
-            return not cls.filter_element(element, element_value, comparison[3:], value)
+            return not cls.filter_element(element, element_value, comparison[3:], value, is_regex=is_regex)
         elif comparison == "equal" and isinstance(element_value, list):
+            if is_regex:
+                for element_v in element_value:
+                    if re.match(value, element_v):
+                        return True
+                return False
             return value in element_value
         elif comparison == "equal":
+            if is_regex:
+                return bool(re.match(value, element_value))
             return element_value == value
         elif comparison == "contains" and isinstance(element_value, list):
             return bool([ev for ev in element_value if value in str(ev)])

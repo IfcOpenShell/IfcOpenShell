@@ -165,8 +165,7 @@ class Cost:
     def expand_cost_item_rate(cls, cost_item): pass
     def expand_cost_item(cls, cost_item): pass
     def expand_cost_items(cls): pass
-    def export_cost_schedules(cls, format): pass
-    def export_cost_schedules(cls, format): pass
+    def export_cost_schedules(cls, filepath, format, cost_schedule): pass
     def format_unit(cls, unit): pass
     def get_active_cost_item(cls): pass
     def get_active_cost_schedule(cls): pass
@@ -254,6 +253,7 @@ class Drawing:
     def disable_editing_assigned_product(cls, obj): pass
     def disable_editing_drawings(cls): pass
     def disable_editing_schedules(cls): pass
+    def disable_editing_references(cls): pass
     def disable_editing_sheets(cls): pass
     def disable_editing_text(cls, obj): pass
     def does_file_exist(cls, uri): pass
@@ -261,6 +261,7 @@ class Drawing:
     def enable_editing_assigned_product(cls, obj): pass
     def enable_editing_drawings(cls): pass
     def enable_editing_schedules(cls): pass
+    def enable_editing_references(cls): pass
     def enable_editing_sheets(cls): pass
     def enable_editing_text(cls, obj): pass
     def ensure_unique_drawing_name(cls, name): pass
@@ -269,13 +270,13 @@ class Drawing:
     def generate_drawing_matrix(cls, target_view, location_hint): pass
     def generate_drawing_name(cls, target_view, location_hint): pass
     def generate_sheet_identification(cls): pass
-    def get_annotation_context(cls, target_view): pass
+    def get_annotation_context(cls, target_view, object_type=None): pass
     def get_assigned_product(cls, element): pass
     def get_body_context(cls): pass
     def get_default_drawing_path(cls, name): pass
     def get_default_drawing_resource_path(cls, resource): pass
     def get_default_layout_path(cls, identification, name): pass
-    def get_default_sheet_path(cls, identification, name): pass
+    def get_default_shading_style(cls): pass
     def get_default_sheet_path(cls, identification, name): pass
     def get_default_titleblock_path(cls, name): pass
     def get_document_references(cls, document): pass
@@ -297,20 +298,23 @@ class Drawing:
     def get_unit_system(cls): pass
     def import_assigned_product(cls, obj): pass
     def import_drawings(cls): pass
-    def import_schedules(cls): pass
+    def import_documents(cls, document_type): pass
     def import_sheets(cls): pass
     def import_text_attributes(cls, obj): pass
+    def is_active_drawing(cls, drawing): pass
     def is_camera_orthographic(cls): pass
     def is_drawing_active(cls): pass
     def move_file(cls, src, dest): pass
     def open_spreadsheet(cls, uri): pass
     def open_svg(cls, filepath): pass
     def remove_literal_from_annotation(cls, obj, literal): pass
+    def run_drawing_activate_model(cls): pass
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
     def select_assigned_product(cls, drawing): pass
-    def set_drawing_collection_name(cls, group, collection): pass
+    def set_drawing_collection_name(cls, drawing, collection): pass
     def set_name(cls, element, name): pass
     def setup_annotation_object(cls, obj, object_type): pass
+    def setup_shading_styles_path(cls, resource_path): pass
     def show_decorations(cls): pass
     def sync_object_placement(cls, obj): pass
     def synchronise_ifc_and_text_attributes(cls, obj): pass
@@ -366,13 +370,15 @@ class Geometry:
 
 @interface
 class Georeference:
+    def angle2coords(cls, angle, type): pass
     def disable_editing(cls): pass
     def enable_editing(cls): pass
     def enh2xyz(cls, map_conversion, coordinates): pass
+    def get_angle(cls, type): pass
     def get_coordinates(cls, io): pass
     def get_cursor_location(cls): pass
-    def get_map_conversion(cls): pass
     def get_map_conversion_attributes(cls): pass
+    def get_map_conversion(cls): pass
     def get_projected_crs_attributes(cls): pass
     def get_true_north_attributes(cls): pass
     def import_map_conversion(cls): pass
@@ -384,6 +390,7 @@ class Georeference:
     def set_cursor_location(cls, coordinates): pass
     def set_ifc_grid_north(cls): pass
     def set_ifc_true_north(cls): pass
+    def set_vector_coordinates(cls, vector_coordinates, type): pass
     def xyz2enh(cls, map_conversion, coordinates): pass
 
 
@@ -429,16 +436,28 @@ class Loader:
 @interface
 class Material:
     def add_default_material_object(cls): pass
+    def add_material_to_set(cls, material_set, material): pass
     def delete_object(cls, obj): pass
+    def disable_editing_material(cls): pass
     def disable_editing_materials(cls): pass
+    def enable_editing_material(cls, material): pass
     def enable_editing_materials(cls): pass
     def get_active_material_type(cls): pass
+    def get_active_material(cls): pass
+    def get_active_object_material(cls, obj): pass
     def get_elements_by_material(cls, material): pass
+    def get_material_attributes(cls): pass
+    def get_material(cls, element, should_inherit): pass
     def get_name(cls, obj): pass
+    def get_type(cls, element): pass
+    def has_material_profile(cls, element): pass
     def import_material_definitions(cls, material_type): pass
+    def is_a_flow_segment(cls, element): pass
+    def is_a_material_set(cls, material): pass
     def is_editing_materials(cls): pass
     def is_material_used_in_sets(cls, material): pass
-    def select_elements(cls, elements): pass
+    def load_material_attributes(cls, material): pass
+    def replace_material_with_material_profile(cls, element): pass
 
 
 @interface
@@ -538,6 +557,8 @@ class Project:
 @interface
 class Profile:
     def draw_image_for_ifc_profile(cls, draw, profile, size): pass
+    def is_editing_profile(cls): pass
+    def get_profile(cls, element): pass
 
 
 @interface
@@ -738,12 +759,18 @@ class Sequence:
 class Spatial:
     def can_contain(cls, structure_obj, element_obj): pass
     def can_reference(cls, structure, element): pass
+    def contract_container(cls, container): pass
     def copy_xy(cls, src_obj, destination_obj): pass
+    def create_new_storey_li(cls, element, level_index): pass
     def deselect_objects(cls): pass
     def disable_editing(cls, obj): pass
     def duplicate_object_and_data(cls, obj): pass
+    def edit_container_attributes(cls, entity): pass
+    def edit_container_name(cls, container, name): pass
     def enable_editing(cls, obj): pass
+    def expand_container(cls, container): pass
     def filter_products(cls, products, action): pass
+    def get_active_container(cls): pass
     def get_container(cls, element): pass
     def get_decomposed_elements(cls, container): pass
     def get_object_matrix(cls, obj): pass
@@ -751,6 +778,7 @@ class Spatial:
     def get_selected_product_types(cls): pass
     def get_selected_products(cls): pass
     def import_containers(cls, parent=None): pass
+    def load_container_manager(cls): pass
     def run_root_copy_class(cls, obj=None): pass
     def run_spatial_assign_container(cls, structure_obj=None, element_obj=None): pass
     def select_object(cls, obj): pass
@@ -758,6 +786,7 @@ class Spatial:
     def set_active_object(cls, obj): pass
     def set_relative_object_matrix(cls, target_obj, relative_to_obj, matrix): pass
     def show_scene_objects(cls): pass
+
 
 @interface
 class Structural:
@@ -789,8 +818,11 @@ class Style:
     def get_elements_by_style(cls, style): pass
     def get_name(cls, obj): pass
     def get_style(cls, obj): pass
-    def get_surface_rendering_attributes(cls, obj): pass
+    def get_style_elements(cls, blender_material): pass
+    def get_surface_rendering_attributes(cls, obj, verbose=True): pass
     def get_surface_rendering_style(cls, obj): pass
+    def get_texture_style(cls, obj): pass
+    def get_external_style(cls, obj): pass
     def get_surface_shading_attributes(cls, obj): pass
     def get_surface_shading_style(cls, obj): pass
     def get_surface_texture_style(cls, obj): pass
@@ -799,7 +831,6 @@ class Style:
     def import_surface_attributes(cls, style, obj): pass
     def is_editing_styles(cls): pass
     def record_shading(cls, obj): pass
-    def select_elements(cls, elements): pass
 
 
 @interface
@@ -822,7 +853,6 @@ class System:
     def load_ports(cls, element, ports): pass
     def run_geometry_edit_object_placement(cls, obj=None): pass
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
-    def select_elements(cls, elements): pass
     def select_system_products(cls, system): pass
     def set_active_system(cls, system): pass
 
@@ -858,6 +888,8 @@ class Unit:
     def is_scene_unit_metric(cls): pass
     def is_unit_class(cls, unit, ifc_class): pass
     def set_active_unit(cls, unit): pass
+    def get_project_currency_unit(cls): pass
+    def get_currency_name(cls): pass
 
 
 @interface

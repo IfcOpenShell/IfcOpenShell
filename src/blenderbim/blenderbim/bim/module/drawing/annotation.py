@@ -20,6 +20,7 @@ import bpy
 import os
 import blenderbim.tool as tool
 from mathutils import Vector
+import bmesh
 
 
 class Annotator:
@@ -44,7 +45,7 @@ class Annotator:
             font.name = "OpenGost Type B TT"
         obj.data.font = font
         obj.data.BIMTextProperties.font_size = "2.5"
-        collection = bpy.context.scene.camera.users_collection[0]
+        collection = bpy.context.scene.camera.BIMObjectProperties.collection
         collection.objects.link(obj)
         Annotator.resize_text(obj)
         return obj
@@ -52,9 +53,10 @@ class Annotator:
     @staticmethod
     def resize_text(text_obj):
         camera = None
-        for obj in text_obj.users_collection[0].objects:
-            if isinstance(obj.data, bpy.types.Camera):
-                camera = obj
+        group = tool.Drawing.get_drawing_group(tool.Ifc.get_entity(text_obj))
+        for element in tool.Drawing.get_drawing_elements(group):
+            if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
+                camera = tool.Ifc.get_object(element)
                 break
         if not camera:
             return
@@ -62,12 +64,7 @@ class Annotator:
         font_size = 1.6 / 1000
         font_size *= float(text_obj.data.BIMTextProperties.font_size)
 
-        if camera.data.BIMCameraProperties.diagram_scale == "CUSTOM":
-            human_scale, fraction = camera.data.BIMCameraProperties.custom_diagram_scale.split("|")
-        else:
-            human_scale, fraction = camera.data.BIMCameraProperties.diagram_scale.split("|")
-        numerator, denominator = fraction.split("/")
-        font_size /= float(numerator) / float(denominator)
+        font_size /= tool.Drawing.get_scale_ratio(tool.Drawing.get_diagram_scale(camera)["Scale"])
 
         text_obj.data.size = font_size
 
@@ -94,7 +91,7 @@ class Annotator:
         return obj
 
     @staticmethod
-    def add_plane_to_annotation(obj):
+    def add_plane_to_annotation(obj, remove_face=False):
         # default order = bot left, top left, bot right, top right
         # therefore we redefine the order
         face_verts = [0, 2, 3, 1]
@@ -104,7 +101,9 @@ class Annotator:
         bm = tool.Blender.get_bmesh_for_mesh(obj.data, clean=True)
         new_verts = [bm.verts.new(v) for v in verts_local]
 
-        bm.faces.new([new_verts[i] for i in face_verts])
+        face = bm.faces.new([new_verts[i] for i in face_verts])
+        if remove_face:
+            bmesh.ops.delete(bm, geom=[face], context="FACES_ONLY")
         tool.Blender.apply_bmesh(obj.data, bm, obj)
         return obj
 
@@ -114,7 +113,7 @@ class Annotator:
         co1, _, _, _ = Annotator.get_placeholder_coords(camera)
         matrix_world = camera.matrix_world.copy()
         matrix_world.translation = co1
-        collection = camera.users_collection[0]
+        collection = camera.BIMObjectProperties.collection
 
         if object_type == "TEXT":
             obj = bpy.data.objects.new(object_type, None)
