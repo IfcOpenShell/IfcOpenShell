@@ -913,7 +913,8 @@ class SvgWriter:
     def draw_angle_annotations(self, obj):
         points = obj.data.splines[0].points
         region = bpy.context.region
-        region_3d = bpy.context.area.spaces.active.region_3d
+        area = tool.Blender.get_viewport_context()['area']
+        region_3d = area.spaces.active.region_3d
         points_chunked = [points[i : i + 3] for i in range(len(points) - 2)]
 
         for points_chunk in points_chunked:
