@@ -279,7 +279,9 @@ class BIM_PT_root(Panel):
 
     def draw(self, context):
         aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
-        self.layout.prop(aprops, "tab", text="")
+        row = self.layout.row(align=True)
+        row.prop(aprops, "tab", text="")
+        row.operator("bim.switch_tab", text="", icon="UV_SYNC_SELECT")
 
 
 class BIM_PT_project_info(Panel):
