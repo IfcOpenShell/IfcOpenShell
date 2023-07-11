@@ -102,7 +102,7 @@ def update_railing_modifier_ifc_data(context):
         )
         tool.Model.replace_object_ifc_representation(body, obj, model_representation)
 
-        # hacky way to ensure tha ifc representation won't get tessellated at project save
+        # hacky way to ensure that ifc representation won't get tessellated at project save
         IfcStore.edited_objs.discard(obj)
 
     elif props.railing_type == "FRAMELESS_PANEL":
@@ -118,7 +118,7 @@ def update_bbim_railing_pset(element, railing_data):
 
 
 def update_railing_modifier_bmesh(context):
-    obj = context.object
+    obj = context.active_object
     props = obj.BIMRailingProperties
 
     if not RailingData.is_loaded:
@@ -335,6 +335,36 @@ class AddRailing(bpy.types.Operator, tool.Ifc.Operator):
         refresh()
         update_railing_modifier_bmesh(context)
         update_railing_modifier_ifc_data(context)
+        return {"FINISHED"}
+
+
+class CopyRailingParameters(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.copy_railing_parameters"
+    bl_label = "Copy Railing Parameters from Active to Selected"
+    bl_options = {"REGISTER"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object and len(context.selected_objects) > 1
+
+    def _execute(self, context):
+        source_obj = context.active_object
+        source_props = source_obj.BIMRailingProperties
+        railing_data = source_props.get_general_kwargs(convert_to_project_units=True)
+
+        for target_obj in context.selected_objects:
+            if target_obj == source_obj:
+                continue
+            context.view_layer.objects.active = target_obj
+            RailingData.load()
+            path_data = RailingData.data["parameters"]["data_dict"]["path_data"]
+            railing_data["path_data"] = path_data
+            target_element = tool.Ifc.get_entity(target_obj)
+            target_props = target_obj.BIMRailingProperties
+
+            update_bbim_railing_pset(target_element, railing_data)
+            update_railing_modifier_bmesh(context)
+            update_railing_modifier_ifc_data(context)
         return {"FINISHED"}
 
 
