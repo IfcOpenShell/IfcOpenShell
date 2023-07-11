@@ -27,7 +27,7 @@ import importlib
 
 
 class SvIfcTooltipWIP(bpy.types.Operator):
-    bl_idname = "node.sv_ifc_tooltipWIP"
+    bl_idname = "node.sv_ifc_tooltip_wip"
     bl_label = "IFC Info"
     tooltip: bpy.props.StringProperty()
 
@@ -126,10 +126,10 @@ class SvIfcApiWIP(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfc
 
 
 def register():
-    bpy.utils.register_class(SvIfcTooltip)
+    bpy.utils.register_class(SvIfcTooltipWIP)
     bpy.utils.register_class(SvIfcApiWIP)
 
 
 def unregister():
     bpy.utils.unregister_class(SvIfcApiWIP)
-    bpy.utils.unregister_class(SvIfcTooltip)
+    bpy.utils.unregister_class(SvIfcTooltipWIP)
