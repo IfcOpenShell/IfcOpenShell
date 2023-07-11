@@ -221,30 +221,26 @@ class SvgWriter:
         return self
 
     def draw_section_level_annotation(self, obj):
-        x_offset = self.raw_width / 2
-        y_offset = self.raw_height / 2
+        offset = Vector([self.raw_width, self.raw_height]) / 2
         matrix_world = obj.matrix_world
         classes = self.get_attribute_classes(obj)
         element = tool.Ifc.get_entity(obj)
         storey = tool.Drawing.get_annotation_element(element)
         tag = storey.Name if storey else element.Description
+        dimension_data = DecoratorData.get_dimension_data(obj)
+        prefix = dimension_data["text_prefix"]
+        suffix = dimension_data["text_suffix"]
+        show_description_only = dimension_data["show_description_only"]
+        base_offset_y = 3.5
+
         for spline in obj.data.splines:
             points = self.get_spline_points(spline)
             projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
-            d = " ".join(
-                [
-                    "L {} {}".format((x_offset + p.x) * self.svg_scale, (y_offset - p.y) * self.svg_scale)
-                    for p in projected_points
-                ]
-            )
+            projected_points_svg = [(offset + p.xy * Vector((1, -1))) * self.svg_scale for p in projected_points]
+            d = " ".join(["L {} {}".format(*p) for p in projected_points_svg])
             d = "M{}".format(d[1:])
             path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
-            text_position = Vector(
-                (
-                    (x_offset + projected_points[0].x) * self.svg_scale,
-                    ((y_offset - projected_points[0].y) * self.svg_scale) - 3.5,
-                )
-            )
+            text_position = projected_points_svg[0] - Vector((0, base_offset_y))
             # TODO: allow metric to be configurable
             rl_value = (matrix_world @ points[0].co.xyz).z
             if bpy.context.scene.unit_settings.system == "IMPERIAL":
@@ -255,17 +251,28 @@ class SvgWriter:
                 rl = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), rl)
                 rl *= unit_scale
                 rl = "{:.3f}m".format(rl)
-            text_style = SvgWriter.get_box_alignment_parameters("bottom-left")
-            self.svg.add(
-                self.svg.text(
-                    "RL {}{}".format("" if rl_value < 0 else "+", rl),
-                    insert=tuple(text_position),
-                    class_="SECTIONLEVEL",
-                    **text_style,
-                )
+            text_tags = []
+
+            line_number_start = 0
+            if not show_description_only:
+                text = "RL {}{}".format("" if rl_value < 0 else "+", rl)
+                full_prefix = ((tag + "\\n") if tag else "") + prefix
+                text = full_prefix + text + suffix
+                line_number_start -= full_prefix.count("\\n")
+            else:
+                if not tag:
+                    continue
+                text = tag
+
+            text_tags += self.create_text_tag(
+                text,
+                text_position,
+                class_str="SECTIONLEVEL",
+                line_number_start=line_number_start,
             )
-            if tag:
-                self.svg.add(self.svg.text(tag, insert=(text_position[0], text_position[1] - 5), **text_style))
+
+            for text in text_tags:
+                self.svg.add(text)
 
     def draw_stair_annotation(self, obj):
         x_offset = self.raw_width / 2
@@ -835,7 +842,6 @@ class SvgWriter:
                 angle,
                 text_literal.BoxAlignment,
                 classes_str,
-                multiline=True,
                 fill_bg="fill-bg" in classes,
                 line_number_start=line_number,
             )
@@ -913,7 +919,7 @@ class SvgWriter:
     def draw_angle_annotations(self, obj):
         points = obj.data.splines[0].points
         region = bpy.context.region
-        area = tool.Blender.get_viewport_context()['area']
+        area = tool.Blender.get_viewport_context()["area"]
         region_3d = area.spaces.active.region_3d
         points_chunked = [points[i : i + 3] for i in range(len(points) - 2)]
 
@@ -1243,13 +1249,6 @@ class SvgWriter:
         mid = ((end - start) / 2) + start
         vector = end - start
         perpendicular = Vector((vector.y, -vector.x)).normalized()
-        dimension = (v1_global - v0_global).length
-        dimension = helper.format_distance(
-            dimension,
-            precision=self.precision,
-            decimal_places=self.decimal_places,
-            suppress_zero_inches=suppress_zero_inches,
-        )
         sheet_dimension = (end - start).length
 
         # if annotation can't fit offset text to the right of marker
@@ -1264,34 +1263,37 @@ class SvgWriter:
             "angle": angle,
             "class_str": "DIMENSION",
             "text_format": text_format,
-            "multiline": True,
             "fill_bg": fill_bg,
         }
 
         if not show_description_only:
-            text = f"{text_prefix}{str(dimension)}{text_suffix}"
-            text_tags += self.create_text_tag(
-                text,
-                text_position + perpendicular,
-                box_alignment="bottom-middle",
-                multiline_to_bottom=False,
-                **text_tag_kwargs,
+            dimension = (v1_global - v0_global).length
+            dimension = helper.format_distance(
+                dimension,
+                precision=self.precision,
+                decimal_places=self.decimal_places,
+                suppress_zero_inches=suppress_zero_inches,
             )
-            if dimension_text:
-                text_tags += self.create_text_tag(
-                    dimension_text,
-                    text_position - perpendicular,
-                    box_alignment="top-middle",
-                    multiline_to_bottom=True,
-                    **text_tag_kwargs,
-                )
+            text = text_prefix + str(dimension) + text_suffix
+        else:
+            if not dimension_text:
+                return
+            text = dimension_text
 
-        elif show_description_only and dimension_text:
-            text_tags.extend += self.create_text_tag(
+        text_tags += self.create_text_tag(
+            text,
+            text_position + perpendicular,
+            box_alignment="bottom-middle",
+            multiline_to_bottom=False,
+            **text_tag_kwargs,
+        )
+
+        if not show_description_only and dimension_text:
+            text_tags += self.create_text_tag(
                 dimension_text,
-                text_position + perpendicular,
-                box_alignment="bottom-middle",
-                multiline_to_bottom=False,
+                text_position - perpendicular,
+                box_alignment="top-middle",
+                multiline_to_bottom=True,
                 **text_tag_kwargs,
             )
 
@@ -1302,11 +1304,11 @@ class SvgWriter:
         self,
         text,
         text_position,
-        angle,
-        box_alignment,
-        class_str,
+        angle=0,
+        box_alignment="bottom-left",
+        class_str="",
         text_format=lambda x: x,
-        multiline=False,
+        multiline=True,
         multiline_to_bottom=True,
         fill_bg=False,
         line_number_start=0,

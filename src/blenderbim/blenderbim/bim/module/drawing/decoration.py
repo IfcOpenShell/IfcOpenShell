@@ -363,7 +363,7 @@ class BaseDecorator:
         """
 
         if multiline:
-            line_no = 0
+            line_no = line_no
             lines = text.split("\\n")
             lines = lines if multiline_to_bottom else lines[::-1]
             for line in lines:
@@ -637,39 +637,33 @@ class DimensionDecorator(BaseDecorator):
             perpendicular = Vector((-text_dir.y, text_dir.x)).normalized()
             text_offset = perpendicular * text_offset_value
 
+            common_label_attrs = {
+                "context": context,
+                "multiline": True,
+                "text_dir": text_dir,
+            }
+            base_pos = p0 + text_dir * 0.5
+
             if not show_description_only:
                 length = (v1 - v0).length
                 text = self.format_value(context, length)
                 text = text_prefix + text + text_suffix
+            else:
+                if not description:
+                    continue
+                text = description
 
-                self.draw_label(
-                    context,
-                    text,
-                    p0 + text_dir * 0.5 + text_offset,
-                    text_dir,
-                    box_alignment="bottom-middle",
-                    multiline=True,
-                    multiline_to_bottom=False,
-                )
-                if description:
-                    self.draw_label(
-                        context,
-                        description,
-                        p0 + text_dir * 0.5 - text_offset,
-                        text_dir,
-                        box_alignment="top-middle",
-                        multiline=True,
-                    )
+            self.draw_label(
+                text=text,
+                pos=base_pos + text_offset,
+                box_alignment="bottom-middle",
+                multiline_to_bottom=False,
+                **common_label_attrs,
+            )
 
-            elif show_description_only and description:
+            if not show_description_only and description:
                 self.draw_label(
-                    context,
-                    description,
-                    p0 + text_dir * 0.5 + text_offset,
-                    text_dir,
-                    box_alignment="bottom-middle",
-                    multiline=True,
-                    multiline_to_bottom=False,
+                    text=description, pos=base_pos - text_offset, box_alignment="top-middle", **common_label_attrs
                 )
 
 
@@ -1129,25 +1123,40 @@ class SectionLevelDecorator(BaseDecorator):
         storey = tool.Drawing.get_annotation_element(element)
         tag = storey.Name if storey else element.Description
 
+        dimension_data = DecoratorData.get_dimension_data(obj)
+        show_description_only = dimension_data["show_description_only"]
+        text_prefix = dimension_data["text_prefix"]
+        text_suffix = dimension_data["text_suffix"]
+
         for verts in splines:
             z = verts[0].z / unit_scale
             z = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), z)
             z *= unit_scale
 
-            text_lines = ["RL " + self.format_value(context, z)]
-            if tag:
-                text_lines.append(tag)
+            common_label_attrs = {
+                "context": context,
+                "multiline": True,
+                "text_dir": text_dir,
+            }
+            line_number_start = 0
+            if not show_description_only:
+                text = "RL " + self.format_value(context, z)
+                full_prefix = ((tag + "\\n") if tag else "") + text_prefix
+                text = full_prefix + text + text_suffix
+                line_number_start -= full_prefix.count("\\n")
+            else:
+                if not tag:
+                    break
+                text = tag
 
-            for line_i, line in zip((0, -1), text_lines):
-                self.draw_label(
-                    context,
-                    line,
-                    text_position,
-                    text_dir,
-                    center=False,
-                    vcenter=False,
-                    line_no=line_i,
-                )
+            self.draw_label(
+                text=text,
+                pos=text_position,
+                box_alignment="bottom-left",
+                line_no=line_number_start,
+                **common_label_attrs,
+            )
+
             break  # support only 1 label
 
 
