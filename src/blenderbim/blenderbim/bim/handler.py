@@ -375,10 +375,6 @@ def load_post(scene):
         else:
             bpy.ops.workspace.append_activate(idname="BIM", filepath=os.path.join(cwd, "data", "workspace.blend"))
 
-        for obj in [bpy.data.objects.get("Camera"), bpy.data.objects.get("Light")]:
-            if obj:
-                bpy.data.objects.remove(obj)
-
         # To improve usability for new users, we hijack the scene properties
         # tab. We override default scene properties panels with our own poll
         # to hide them unless the user has chosen to view Blender properties.
