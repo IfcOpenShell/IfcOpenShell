@@ -22,6 +22,7 @@ from blenderbim.bim.helper import prop_with_search
 from blenderbim.bim.module.brick.data import BrickschemaData, BrickschemaReferencesData
 from blenderbim.tool.brick import BrickStore
 
+
 class BIM_PT_brickschema(Panel):
     bl_label = "Brickschema Project"
     bl_idname = "BIM_PT_brickschema"
@@ -32,8 +33,7 @@ class BIM_PT_brickschema(Panel):
 
     @classmethod
     def poll(cls, context):
-        aprops = tool.Blender.get_area_properties(context)
-        return aprops.tab == "OTHER" or context.area.spaces.active.search_filter
+        return tool.Blender.is_tab(context, "OTHER")
 
     def draw(self, context):
         if not BrickschemaData.is_loaded:
@@ -48,7 +48,7 @@ class BIM_PT_brickschema(Panel):
 
         if BrickStore.path:
             row = self.layout.row(align=True)
-            row.label(text=BrickStore.path, icon='FILEBROWSER')
+            row.label(text=BrickStore.path, icon="FILEBROWSER")
 
         row = self.layout.row(align=True)
         if len(self.props.brick_breadcrumbs):
@@ -70,7 +70,7 @@ class BIM_PT_brickschema(Panel):
             row.prop(data=self.props, property="new_brick_namespace_alias", text="")
             col = row.column()
             col.alignment = "CENTER"
-            col.scale_x = 1.1 
+            col.scale_x = 1.1
             col.label(text=":")
             row.prop(data=self.props, property="new_brick_namespace_uri", text="")
             row.operator("bim.add_brick_namespace", text="", icon="ADD")

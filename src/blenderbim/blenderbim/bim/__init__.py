@@ -149,12 +149,19 @@ for mod in modules.values():
 
 addon_keymaps = []
 icons = None
+is_registering = False
 
 
 def on_register(scene):
-    handler.setDefaultProperties(scene)
+    global is_registering
+
+    if is_registering:
+        return
+    is_registering = True
+    handler.load_post(scene)
     if not bpy.app.background:
         bpy.app.handlers.depsgraph_update_post.remove(on_register)
+    is_registering = False
 
 
 def register():
@@ -165,7 +172,7 @@ def register():
     bpy.app.handlers.undo_post.append(handler.undo_post)
     bpy.app.handlers.redo_pre.append(handler.redo_pre)
     bpy.app.handlers.redo_post.append(handler.redo_post)
-    bpy.app.handlers.load_post.append(handler.setDefaultProperties)
+    bpy.app.handlers.load_post.append(handler.load_post)
     bpy.app.handlers.load_post.append(handler.loadIfcStore)
     bpy.app.handlers.save_post.append(handler.ensureIfcExported)
     bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=prop.BIMProperties)
@@ -215,7 +222,7 @@ def unregister():
         elif cls.is_registered:
             bpy.utils.unregister_class(cls)
 
-    bpy.app.handlers.load_post.remove(handler.setDefaultProperties)
+    bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.app.handlers.load_post.remove(handler.loadIfcStore)
     bpy.app.handlers.save_post.remove(handler.ensureIfcExported)
     del bpy.types.Scene.BIMProperties
@@ -240,3 +247,17 @@ def unregister():
         for km, kmi in addon_keymaps:
             km.keymap_items.remove(kmi)
     addon_keymaps.clear()
+
+    for panel in [
+        "SCENE_PT_scene",
+        "SCENE_PT_unit",
+        "SCENE_PT_physics",
+        "SCENE_PT_rigid_body_world",
+        "SCENE_PT_audio",
+        "SCENE_PT_keying_sets",
+        "SCENE_PT_custom_props",
+    ]:
+        try:
+            bpy.utils.unregister_class(getattr(handler, f"Override_{panel}"))
+        except:
+            pass
