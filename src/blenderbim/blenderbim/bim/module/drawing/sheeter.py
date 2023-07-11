@@ -310,10 +310,13 @@ class SheetBuilder:
                 brackets_level -= 1
             text += l
 
-        # replace urls url(#marker) with url(#prefix-marker)
-        # since url(#marker.prefix) doesn't seem to work
-        text = re.sub(r"url\(#([^\)]+)\)", rf"url(#{prefix}-\1)", text)
-        style.text = text
+        def replace_urls(text):
+            """replace urls `url(#marker)` with `url(#prefix-marker)`
+            since `url(#marker.prefix)` doesn't seem to work
+            """
+            return re.sub(r"url\(#([^\)]+)\)", rf"url(#{prefix}-\1)", text)
+
+        style.text = replace_urls(text)
 
         for svg_element in svg.findall(f".//*"):
             if svg_element.tag in (f"{SVG}style", f"{SVG}svg"):
@@ -325,6 +328,9 @@ class SheetBuilder:
             # add class "prefix" to all classes
             if "class" in attrib:
                 attrib["class"] += f" {prefix}"
+            if "filter" in attrib:
+                # example use "#fill-background" filter
+                attrib["filter"] = replace_urls(attrib["filter"])
             if svg_element.tag == f"{SVG}use":
                 href_attrib = f"{XLINK}href"
                 if href_attrib in attrib:
