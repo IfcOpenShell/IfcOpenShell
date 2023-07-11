@@ -58,6 +58,14 @@ class Blender:
         return context.screen.BIMAreaProperties[area_index].tab == tab
 
     @classmethod
+    def is_default_scene(cls):
+        if len(bpy.context.scene.objects) != 3:
+            return False
+        if {obj.type for obj in bpy.context.scene.objects} == {"MESH", "LIGHT", "CAMERA"}:
+            return True
+        return False
+
+    @classmethod
     def get_name(cls, ifc_class, name):
         if not bpy.data.objects.get(f"{ifc_class}/{name}"):
             return name
