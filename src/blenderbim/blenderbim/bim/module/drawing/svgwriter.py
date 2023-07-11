@@ -241,6 +241,7 @@ class SvgWriter:
             d = "M{}".format(d[1:])
             path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
             text_position = projected_points_svg[0] - Vector((0, base_offset_y))
+
             # TODO: allow metric to be configurable
             rl_value = (matrix_world @ points[0].co.xyz).z
             if bpy.context.scene.unit_settings.system == "IMPERIAL":
@@ -873,27 +874,28 @@ class SvgWriter:
             path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
 
     def draw_plan_level_annotation(self, obj):
-        x_offset = self.raw_width / 2
-        y_offset = self.raw_height / 2
+        offset = Vector([self.raw_width, self.raw_height]) / 2
         matrix_world = obj.matrix_world
         classes = self.get_attribute_classes(obj)
+
+        element = tool.Ifc.get_entity(obj)
+        description = element.Description
+
+        dimension_data = DecoratorData.get_dimension_data(obj)
+        prefix = dimension_data["text_prefix"]
+        suffix = dimension_data["text_suffix"]
+        show_description_only = dimension_data["show_description_only"]
+        base_offset_y = 1.0
+
         for spline in obj.data.splines:
             points = self.get_spline_points(spline)
             projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
-            d = " ".join(
-                [
-                    "L {} {}".format((x_offset + p.x) * self.svg_scale, (y_offset - p.y) * self.svg_scale)
-                    for p in projected_points
-                ]
-            )
+            projected_points_svg = [(offset + p.xy * Vector((1, -1))) * self.svg_scale for p in projected_points]
+            d = " ".join(["L {} {}".format(*p) for p in projected_points_svg])
             d = "M{}".format(d[1:])
             path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
-            text_position = Vector(
-                (
-                    (x_offset + projected_points[0].x) * self.svg_scale,
-                    ((y_offset - projected_points[0].y) * self.svg_scale) - 1.0,
-                )
-            )
+            text_position = projected_points_svg[0] - Vector((0, base_offset_y))
+
             # TODO: allow metric to be configurable
             rl_value = (matrix_world @ points[0].co).z
             if bpy.context.scene.unit_settings.system == "IMPERIAL":
@@ -905,16 +907,30 @@ class SvgWriter:
                 rl *= unit_scale
                 rl = "{:.3f}m".format(rl)
 
+            text_tags = []
             box_alignment = "bottom-left" if projected_points[0].x <= projected_points[-1].x else "bottom-right"
-            text_style = SvgWriter.get_box_alignment_parameters(box_alignment)
-            self.svg.add(
-                self.svg.text(
-                    "{}{}".format("" if rl_value < 0 else "+", rl),
-                    insert=tuple(text_position),
-                    class_="PLANLEVEL",
-                    **text_style,
-                )
+            line_number_start = 0
+
+            if not show_description_only:
+                text = "{}{}".format("" if rl_value < 0 else "+", rl)
+                full_prefix = ((description + "\\n") if description else "") + prefix
+                text = full_prefix + text + suffix
+                line_number_start -= full_prefix.count("\\n")
+            else:
+                if not description:
+                    continue
+                text = description
+
+            text_tags += self.create_text_tag(
+                text,
+                text_position,
+                class_str="PLANLEVEL",
+                line_number_start=line_number_start,
+                box_alignment=box_alignment,
             )
+
+            for text in text_tags:
+                self.svg.add(text)
 
     def draw_angle_annotations(self, obj):
         points = obj.data.splines[0].points

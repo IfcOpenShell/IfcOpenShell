@@ -1054,23 +1054,51 @@ class PlanLevelDecorator(BaseDecorator):
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         region = context.region
         region3d = context.region_data
+
+        element = tool.Ifc.get_entity(obj)
+        description = element.Description
+        dimension_data = DecoratorData.get_dimension_data(obj)
+        show_description_only = dimension_data["show_description_only"]
+        text_prefix = dimension_data["text_prefix"]
+        text_suffix = dimension_data["text_suffix"]
+
         for verts in splines:
             p0, p1 = [location_3d_to_region_2d(region, region3d, v) for v in verts[:2]]
-            dir = p1 - p0
-            if dir.length < 1:
+            text_dir = p1 - p0
+            if text_dir.length < 1:
                 continue
 
-            if dir.x > 0:
+            if text_dir.x > 0:
                 box_alignment = "bottom-left"
             else:
                 box_alignment = "bottom-right"
-                dir *= -1
+                text_dir *= -1
 
-            z = verts[0].z / unit_scale
-            z = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), z)
-            z *= unit_scale
-            text = "RL " + self.format_value(context, z)
-            self.draw_label(context, text, p0, dir, gap=8, center=False, box_alignment=box_alignment)
+            line_number_start = 0
+            if not show_description_only:
+                z = verts[0].z / unit_scale
+                z = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), z)
+                z *= unit_scale
+                text = "RL " + self.format_value(context, z)
+                full_prefix = ((description + "\\n") if description else "") + text_prefix
+                text = full_prefix + text + text_suffix
+                line_number_start -= full_prefix.count("\\n")
+            else:
+                if not description:
+                    break
+                text = description
+
+            self.draw_label(
+                context,
+                text=text,
+                pos=p0,
+                text_dir=text_dir,
+                box_alignment=box_alignment,
+                line_no=line_number_start,
+                multiline=True,
+                gap=8,
+                center=False,
+            )
 
 
 class SectionLevelDecorator(BaseDecorator):
@@ -1129,17 +1157,11 @@ class SectionLevelDecorator(BaseDecorator):
         text_suffix = dimension_data["text_suffix"]
 
         for verts in splines:
-            z = verts[0].z / unit_scale
-            z = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), z)
-            z *= unit_scale
-
-            common_label_attrs = {
-                "context": context,
-                "multiline": True,
-                "text_dir": text_dir,
-            }
             line_number_start = 0
             if not show_description_only:
+                z = verts[0].z / unit_scale
+                z = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), z)
+                z *= unit_scale
                 text = "RL " + self.format_value(context, z)
                 full_prefix = ((tag + "\\n") if tag else "") + text_prefix
                 text = full_prefix + text + text_suffix
@@ -1150,11 +1172,13 @@ class SectionLevelDecorator(BaseDecorator):
                 text = tag
 
             self.draw_label(
+                context,
                 text=text,
                 pos=text_position,
+                text_dir=text_dir,
                 box_alignment="bottom-left",
                 line_no=line_number_start,
-                **common_label_attrs,
+                multiline=True,
             )
 
             break  # support only 1 label

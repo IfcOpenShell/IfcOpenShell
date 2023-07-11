@@ -287,15 +287,18 @@ class DecoratorData:
         cls.data[obj.name] = text_data
         return text_data
 
-    # used by Ifc Annotations with ObjectType = "DIMENSION" / "DIAMETER"
     @classmethod
     def get_dimension_data(cls, obj):
+        """used by Ifc Annotations with ObjectType:
+
+        DIMENSION / DIAMETER / SECTION_LEVEL / PLAN_LEVEL
+        """
         result = cls.data.get(obj.name, None)
         if result is not None:
             return result
 
         element = tool.Ifc.get_entity(obj)
-        supported_object_types = ("DIMENSION", "DIAMETER", "SECTION_LEVEL")
+        supported_object_types = ("DIMENSION", "DIAMETER", "SECTION_LEVEL", "PLAN_LEVEL")
         if not element or not element.is_a("IfcAnnotation") or element.ObjectType not in supported_object_types:
             return None
 
