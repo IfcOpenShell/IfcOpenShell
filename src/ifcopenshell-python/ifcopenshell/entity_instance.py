@@ -166,8 +166,8 @@ class entity_instance(object):
         except:
             import os
             current_dir_files = {fn.lower(): fn for fn in os.listdir('.')}
-            schema_path = current_dir_files.get(schema_name + '.exp')
-            fn = schema_name + '.py'
+            schema_path = current_dir_files.get(schema_name.lower() + '.exp')
+            fn = schema_path[:-4] + '.py'
             if not os.path.exists(fn):
                 subprocess.run([sys.executable, "-m", "ifcopenshell.express.rule_compiler", schema_path, fn], check=True)
                 time.sleep(1.)
