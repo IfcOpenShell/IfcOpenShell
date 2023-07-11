@@ -42,6 +42,22 @@ class Blender:
         obj.select_set(True)
 
     @classmethod
+    def is_tab(cls, context, tab):
+        if not len(context.screen.BIMAreaProperties):
+            return None
+        if context.area.spaces.active.search_filter:
+            return True
+        screen_areas = context.screen.areas[:]
+        current_area = context.area
+        # If the user is using the properties panel "Display Filter" search it
+        # will create a new area that's not present in context.screen.areas for
+        # all property tabs except for the active property tab.
+        if current_area not in screen_areas:
+            current_area = next(a for a in context.screen.areas if a.x == current_area.x and a.y == current_area.y)
+        area_index = screen_areas.index(current_area)
+        return context.screen.BIMAreaProperties[area_index].tab == tab
+
+    @classmethod
     def get_name(cls, ifc_class, name):
         if not bpy.data.objects.get(f"{ifc_class}/{name}"):
             return name
@@ -150,18 +166,6 @@ class Blender:
         region_3d = cls.get_viewport_context()["area"].spaces[0].region_3d
         for attr in VIEWPORT_ATTRIBUTES:
             setattr(region_3d, attr, data[attr])
-
-    @classmethod
-    def get_area_properties(cls, context):
-        areas = context.screen.areas[:]
-        current_area = context.area
-        # if user is using search from different properties tab (not SCENE)
-        # it will create new area that's not present in context.screen.areas
-        if current_area not in areas:
-            current_area = next(a for a in context.screen.areas if a.x == current_area.x and a.y == current_area.y)
-        area_i = areas.index(current_area)
-
-        return context.screen.BIMAreaProperties[area_i]
 
     @classmethod
     def get_shader_editor_context(cls):

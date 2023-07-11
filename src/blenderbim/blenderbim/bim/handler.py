@@ -351,7 +351,7 @@ if getattr(bpy.types, "SCENE_PT_custom_props"):
 
 
 @persistent
-def setDefaultProperties(scene):
+def load_post(scene):
     global global_subscription_owner
     active_object_key = bpy.types.LayerObjects, "active"
     bpy.msgbus.subscribe_rna(
