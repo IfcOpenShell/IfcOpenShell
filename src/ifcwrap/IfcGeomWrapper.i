@@ -288,7 +288,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 %}
 
 %extend IfcGeom::Representation::Triangulation {
-	%pythoncode %{
+    %pythoncode %{
         # Hide the getters with read-only property implementations
         id = property(id)
         faces = property(faces)
@@ -297,8 +297,8 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
         materials = property(materials)
         verts = property(verts)
         normals = property(normals)
-		item_ids = property(item_ids)
-	%}
+        item_ids = property(item_ids)
+    %}
 };
 
 %extend IfcGeom::Representation::Serialization {
