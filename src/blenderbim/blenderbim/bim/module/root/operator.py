@@ -168,6 +168,7 @@ class UnlinkObject(bpy.types.Operator):
         else:
             objects = context.selected_objects
         for obj in objects:
+            was_active_object = obj == context.active_object
             object_name = obj.name
             element = tool.Ifc.get_entity(obj)
             if element:
@@ -189,6 +190,8 @@ class UnlinkObject(bpy.types.Operator):
                     blenderbim.core.material.unlink_material(tool.Ifc, obj=material_slot.material)
             if "Ifc" in object_name and "/" in object_name:
                 obj.name = object_name.split("/", 1)[1]
+                if was_active_object:
+                    tool.Blender.set_active_object(obj)
         return {"FINISHED"}
 
     def draw(self, context):
