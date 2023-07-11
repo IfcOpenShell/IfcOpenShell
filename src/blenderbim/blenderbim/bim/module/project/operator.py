@@ -48,9 +48,6 @@ class NewProject(bpy.types.Operator):
     def execute(self, context):
         bpy.ops.wm.read_homefile()
 
-        for obj in bpy.data.objects:
-            bpy.data.objects.remove(obj)
-
         if self.preset == "metric_m":
             bpy.context.scene.BIMProjectProperties.export_schema = "IFC4"
             bpy.context.scene.unit_settings.system = "METRIC"
@@ -104,6 +101,9 @@ class CreateProject(bpy.types.Operator):
         props = context.scene.BIMProjectProperties
         template = None if props.template_file == "0" else props.template_file
         blenderbim.bim.schema.reload(props.export_schema)
+        if tool.Blender.is_default_scene():
+            for obj in bpy.data.objects:
+                bpy.data.objects.remove(obj)
         core.create_project(tool.Ifc, tool.Project, schema=props.export_schema, template=template)
 
     def rollback(self, data):
@@ -591,8 +591,9 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
         if self.should_start_fresh_session:
             bpy.ops.wm.read_homefile()
 
-            for obj in bpy.data.objects:
-                bpy.data.objects.remove(obj)
+            if tool.Blender.is_default_scene():
+                for obj in bpy.data.objects:
+                    bpy.data.objects.remove(obj)
 
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
