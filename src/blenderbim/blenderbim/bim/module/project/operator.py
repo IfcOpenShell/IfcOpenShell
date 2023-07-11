@@ -872,7 +872,7 @@ class ToggleLinkVisibility(bpy.types.Operator):
 
 class ExportIFC(bpy.types.Operator):
     bl_idname = "export_ifc.bim"
-    bl_label = "Export IFC"
+    bl_label = "Save IFC"
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".ifc"
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml;*.ifcjson", options={"HIDDEN"})
@@ -893,15 +893,13 @@ class ExportIFC(bpy.types.Operator):
         layout.prop(self, "json_compact")
         if bpy.data.is_saved:
             layout.prop(self, "use_relative_path")
-        else:
-            layout.label(text="Save the .blend file first ")
-            layout.label(text="to use relative paths for .ifc.")
 
     def invoke(self, context, event):
-        self.save_as_invoked = False
-        if not IfcStore.get_file():
-            self.report({"ERROR"}, "No IFC project is available for export - create or import a project first.")
+        if not tool.Ifc.get():
+            bpy.ops.wm.save_mainfile("INVOKE_DEFAULT")
             return {"FINISHED"}
+
+        self.save_as_invoked = False
         if context.scene.BIMProperties.ifc_file and not self.should_save_as:
             self.filepath = context.scene.BIMProperties.ifc_file
             if not os.path.isabs(self.filepath):
@@ -972,7 +970,10 @@ class ExportIFC(bpy.types.Operator):
         if bpy.data.is_saved and bpy.data.is_dirty and bpy.data.filepath:
             bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
         blenderbim.bim.handler.purge_module_data()
-        return {"FINISHED"}
+        self.report({"INFO"}, f"IFC Project \"{os.path.basename(output_file)}\" Saved")
+
+        if bpy.data.is_saved:
+            bpy.ops.wm.save_mainfile("INVOKE_DEFAULT")
 
     @classmethod
     def description(cls, context, properties):
