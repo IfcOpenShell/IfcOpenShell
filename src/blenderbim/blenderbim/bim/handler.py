@@ -233,12 +233,6 @@ def redo_post(scene):
     IfcStore.reload_undo_redo_stack_objects()
 
 
-@persistent
-def ensureIfcExported(scene):
-    if IfcStore.get_file() and not bpy.context.scene.BIMProperties.ifc_file:
-        bpy.ops.export_ifc.bim("INVOKE_DEFAULT")
-
-
 def get_application(ifc):
     # TODO: cache this for even faster application retrieval. It honestly makes a difference on long scripts.
     version = get_application_version()

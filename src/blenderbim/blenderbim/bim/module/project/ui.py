@@ -204,11 +204,11 @@ class BIM_PT_project(Panel):
             row.prop(props, "ifc_file", text="")
             row.operator("bim.reload_ifc_file", icon="FILE_REFRESH", text="")
             row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
+            row.operator("bim.unload_project", text="", icon="CANCEL")
+        else:
+            row = self.layout.row()
+            row.label(text="File Not Saved", icon="ERROR")
 
-        row = self.layout.row(align=True)
-        op = row.operator("export_ifc.bim", icon="FILE_TICK", text="Save Project")
-        op.should_save_as = False
-        row.operator("bim.unload_project", text="", icon="CANCEL")
 
     def draw_create_project_ui(self, context):
         props = context.scene.BIMProperties

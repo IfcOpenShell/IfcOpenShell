@@ -276,9 +276,6 @@ class BIM_PT_schedules(Panel):
 def draw_project_not_saved_ui(self):
     row = self.layout.row()
     row.label(text="Project Not Yet Saved", icon="ERROR")
-    row = self.layout.row()
-    op = row.operator("export_ifc.bim", icon="EXPORT", text="Save Project")
-    op.should_save_as = False
 
 
 class BIM_PT_references(Panel):

@@ -174,7 +174,6 @@ def register():
     bpy.app.handlers.redo_post.append(handler.redo_post)
     bpy.app.handlers.load_post.append(handler.load_post)
     bpy.app.handlers.load_post.append(handler.loadIfcStore)
-    bpy.app.handlers.save_post.append(handler.ensureIfcExported)
     bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=prop.BIMProperties)
     bpy.types.Screen.BIMAreaProperties = bpy.props.CollectionProperty(type=prop.BIMAreaProperties)
     bpy.types.Collection.BIMCollectionProperties = bpy.props.PointerProperty(type=prop.BIMCollectionProperties)
@@ -235,7 +234,6 @@ def unregister():
 
     bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.app.handlers.load_post.remove(handler.loadIfcStore)
-    bpy.app.handlers.save_post.remove(handler.ensureIfcExported)
     del bpy.types.Scene.BIMProperties
     del bpy.types.Collection.BIMCollectionProperties
     del bpy.types.Object.BIMObjectProperties

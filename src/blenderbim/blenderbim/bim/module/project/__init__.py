@@ -20,9 +20,9 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
+    operator.AppendEntireLibrary,
     operator.AppendLibraryElement,
     operator.AssignLibraryDeclaration,
-    operator.AppendEntireLibrary,
     operator.ChangeLibraryElement,
     operator.CreateProject,
     operator.DisableEditingHeader,
@@ -73,6 +73,11 @@ def register():
             km = wm.keyconfigs.addon.keymaps.new("Window")
         kmi = km.keymap_items.new("wm.call_menu", "N", "PRESS", ctrl=True)
         kmi.properties.name = "BIM_MT_new_project"
+        addon_keymaps.append((km, kmi))
+
+        km = wm.keyconfigs.addon.keymaps.new(name="Window", space_type="EMPTY")
+        kmi = km.keymap_items.new("export_ifc.bim", "S", "PRESS", ctrl=True)
+        kmi.properties.should_save_as = False
         addon_keymaps.append((km, kmi))
 
 
