@@ -390,6 +390,8 @@ def load_post(scene):
 
     # https://blender.stackexchange.com/questions/140644/how-can-make-the-state-of-a-boolean-property-relative-to-the-3d-view-area
     for screen in bpy.data.screens:
+        if len(screen.BIMAreaProperties) == 20:
+            continue
         screen.BIMAreaProperties.clear()
         for i in range(20):  # 20 is an arbitrary value of split areas
             screen.BIMAreaProperties.add()
