@@ -280,8 +280,7 @@ if getattr(bpy.types, "SCENE_PT_scene"):
 
         @classmethod
         def poll(cls, context):
-            aprops = tool.Blender.get_area_properties(context)
-            return aprops.tab == "BLENDER" or context.area.spaces.active.search_filter
+            return tool.Blender.is_tab(context, "BLENDER")
 
 
 if getattr(bpy.types, "SCENE_PT_unit"):
@@ -291,8 +290,7 @@ if getattr(bpy.types, "SCENE_PT_unit"):
 
         @classmethod
         def poll(cls, context):
-            aprops = tool.Blender.get_area_properties(context)
-            return aprops.tab == "BLENDER" or context.area.spaces.active.search_filter
+            return tool.Blender.is_tab(context, "BLENDER")
 
 
 if getattr(bpy.types, "SCENE_PT_physics"):
@@ -302,8 +300,7 @@ if getattr(bpy.types, "SCENE_PT_physics"):
 
         @classmethod
         def poll(cls, context):
-            aprops = tool.Blender.get_area_properties(context)
-            return aprops.tab == "BLENDER" or context.area.spaces.active.search_filter
+            return tool.Blender.is_tab(context, "BLENDER")
 
 
 if getattr(bpy.types, "SCENE_PT_rigid_body_world"):
@@ -313,8 +310,7 @@ if getattr(bpy.types, "SCENE_PT_rigid_body_world"):
 
         @classmethod
         def poll(cls, context):
-            aprops = tool.Blender.get_area_properties(context)
-            return aprops.tab == "BLENDER" or context.area.spaces.active.search_filter
+            return tool.Blender.is_tab(context, "BLENDER")
 
 
 if getattr(bpy.types, "SCENE_PT_audio"):
@@ -324,8 +320,7 @@ if getattr(bpy.types, "SCENE_PT_audio"):
 
         @classmethod
         def poll(cls, context):
-            aprops = tool.Blender.get_area_properties(context)
-            return aprops.tab == "BLENDER" or context.area.spaces.active.search_filter
+            return tool.Blender.is_tab(context, "BLENDER")
 
 
 if getattr(bpy.types, "SCENE_PT_keying_sets"):
@@ -335,8 +330,7 @@ if getattr(bpy.types, "SCENE_PT_keying_sets"):
 
         @classmethod
         def poll(cls, context):
-            aprops = tool.Blender.get_area_properties(context)
-            return aprops.tab == "BLENDER" or context.area.spaces.active.search_filter
+            return tool.Blender.is_tab(context, "BLENDER")
 
 
 if getattr(bpy.types, "SCENE_PT_custom_props"):
@@ -346,8 +340,7 @@ if getattr(bpy.types, "SCENE_PT_custom_props"):
 
         @classmethod
         def poll(cls, context):
-            aprops = tool.Blender.get_area_properties(context)
-            return aprops.tab == "BLENDER" or context.area.spaces.active.search_filter
+            return tool.Blender.is_tab(context, "BLENDER")
 
 
 @persistent
