@@ -295,7 +295,7 @@ class DecoratorData:
             return result
 
         element = tool.Ifc.get_entity(obj)
-        supported_object_types = ("DIMENSION", "DIAMETER")
+        supported_object_types = ("DIMENSION", "DIAMETER", "SECTION_LEVEL")
         if not element or not element.is_a("IfcAnnotation") or element.ObjectType not in supported_object_types:
             return None
 
@@ -312,8 +312,8 @@ class DecoratorData:
         pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Dimension") or {}
         show_description_only = pset_data.get("ShowDescriptionOnly", False)
         suppress_zero_inches = pset_data.get("SuppressZeroInches", False)
-        text_prefix = pset_data.get("TextPrefix", "")
-        text_suffix = pset_data.get("TextSuffix", "")
+        text_prefix = pset_data.get("TextPrefix", None) or ""
+        text_suffix = pset_data.get("TextSuffix", None) or ""
 
         dimension_data = {
             "dimension_style": dimension_style,
