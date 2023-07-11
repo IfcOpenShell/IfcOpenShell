@@ -32,8 +32,8 @@ class BIM_PT_brickschema(Panel):
 
     @classmethod
     def poll(cls, context):
-        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
-        return aprops.tab == "OTHER"
+        aprops = tool.Blender.get_area_properties(context)
+        return aprops.tab == "OTHER" or context.area.spaces.active.search_filter
 
     def draw(self, context):
         if not BrickschemaData.is_loaded:

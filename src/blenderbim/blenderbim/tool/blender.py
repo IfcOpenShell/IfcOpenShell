@@ -152,6 +152,18 @@ class Blender:
             setattr(region_3d, attr, data[attr])
 
     @classmethod
+    def get_area_properties(cls, context):
+        areas = context.screen.areas[:]
+        current_area = context.area
+        # if user is using search from different properties tab (not SCENE)
+        # it will create new area that's not present in context.screen.areas
+        if current_area not in areas:
+            current_area = next(a for a in context.screen.areas if a.x == current_area.x and a.y == current_area.y)
+        area_i = areas.index(current_area)
+
+        return context.screen.BIMAreaProperties[area_i]
+
+    @classmethod
     def get_shader_editor_context(cls):
         for screen in bpy.data.screens:
             for area in screen.areas:

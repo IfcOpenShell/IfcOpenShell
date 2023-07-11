@@ -278,7 +278,7 @@ class BIM_PT_root(Panel):
     bl_options = {"HIDE_HEADER"}
 
     def draw(self, context):
-        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+        aprops = tool.Blender.get_area_properties(context)
         row = self.layout.row(align=True)
         row.prop(aprops, "tab", text="")
         row.operator("bim.switch_tab", text="", icon="UV_SYNC_SELECT")
@@ -292,8 +292,8 @@ class BIM_PT_project_info(Panel):
 
     @classmethod
     def poll(cls, context):
-        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
-        return aprops.tab == "PROJECT"
+        aprops = tool.Blender.get_area_properties(context)
+        return aprops.tab == "PROJECT" or context.area.spaces.active.search_filter
 
     def draw(self, context):
         pass
@@ -308,8 +308,8 @@ class BIM_PT_project_setup(Panel):
 
     @classmethod
     def poll(cls, context):
-        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
-        return aprops.tab == "PROJECT"
+        aprops = tool.Blender.get_area_properties(context)
+        return aprops.tab == "PROJECT" or context.area.spaces.active.search_filter
 
     def draw(self, context):
         pass
@@ -324,8 +324,8 @@ class BIM_PT_collaboration(Panel):
 
     @classmethod
     def poll(cls, context):
-        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
-        return aprops.tab == "OTHER"
+        aprops = tool.Blender.get_area_properties(context)
+        return aprops.tab == "OTHER" or context.area.spaces.active.search_filter
 
     def draw(self, context):
         pass
@@ -340,8 +340,8 @@ class BIM_PT_selection(Panel):
 
     @classmethod
     def poll(cls, context):
-        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
-        return aprops.tab == "PROJECT" and tool.Ifc.get()
+        aprops = tool.Blender.get_area_properties(context)
+        return (aprops.tab == "PROJECT" or context.area.spaces.active.search_filter) and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -356,8 +356,8 @@ class BIM_PT_geometry(Panel):
 
     @classmethod
     def poll(cls, context):
-        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
-        return aprops.tab == "PROJECT" and tool.Ifc.get()
+        aprops = tool.Blender.get_area_properties(context)
+        return (aprops.tab == "PROJECT" or context.area.spaces.active.search_filter) and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -372,8 +372,8 @@ class BIM_PT_4D5D(Panel):
 
     @classmethod
     def poll(cls, context):
-        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
-        return aprops.tab == "SCHEDULING" and tool.Ifc.get()
+        aprops = tool.Blender.get_area_properties(context)
+        return (aprops.tab == "SCHEDULING" or context.area.spaces.active.search_filter) and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -388,8 +388,8 @@ class BIM_PT_structural(Panel):
 
     @classmethod
     def poll(cls, context):
-        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
-        return aprops.tab == "STRUCTURE" and tool.Ifc.get()
+        aprops = tool.Blender.get_area_properties(context)
+        return (aprops.tab == "STRUCTURE" or context.area.spaces.active.search_filter) and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -404,8 +404,8 @@ class BIM_PT_services(Panel):
 
     @classmethod
     def poll(cls, context):
-        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
-        return aprops.tab == "SERVICES" and tool.Ifc.get()
+        aprops = tool.Blender.get_area_properties(context)
+        return (aprops.tab == "SERVICES" or context.area.spaces.active.search_filter) and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -420,8 +420,8 @@ class BIM_PT_quality_control(Panel):
 
     @classmethod
     def poll(cls, context):
-        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
-        return aprops.tab == "OTHER"
+        aprops = tool.Blender.get_area_properties(context)
+        return aprops.tab == "OTHER" or context.area.spaces.active.search_filter
 
     def draw(self, context):
         pass
@@ -436,8 +436,8 @@ class BIM_PT_integrations(Panel):
 
     @classmethod
     def poll(cls, context):
-        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
-        return aprops.tab == "OTHER"
+        aprops = tool.Blender.get_area_properties(context)
+        return aprops.tab == "OTHER" or context.area.spaces.active.search_filter
 
     def draw(self, context):
         pass

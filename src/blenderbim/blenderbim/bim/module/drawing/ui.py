@@ -167,8 +167,8 @@ class BIM_PT_drawings(Panel):
 
     @classmethod
     def poll(cls, context):
-        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
-        return aprops.tab == "DRAWINGS" and tool.Ifc.get()
+        aprops = tool.Blender.get_area_properties(context)
+        return (aprops.tab == "DRAWINGS" or context.area.spaces.active.search_filter) and tool.Ifc.get()
 
     def draw(self, context):
         if not DrawingsData.is_loaded:
@@ -236,8 +236,8 @@ class BIM_PT_schedules(Panel):
 
     @classmethod
     def poll(cls, context):
-        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
-        return aprops.tab == "DRAWINGS" and tool.Ifc.get()
+        aprops = tool.Blender.get_area_properties(context)
+        return (aprops.tab == "DRAWINGS" or context.area.spaces.active.search_filter) and tool.Ifc.get()
 
     def draw(self, context):
         if not DocumentsData.is_loaded:
@@ -292,8 +292,8 @@ class BIM_PT_references(Panel):
 
     @classmethod
     def poll(cls, context):
-        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
-        return aprops.tab == "DRAWINGS" and tool.Ifc.get()
+        aprops = tool.Blender.get_area_properties(context)
+        return (aprops.tab == "DRAWINGS" or context.area.spaces.active.search_filter) and tool.Ifc.get()
 
     def draw(self, context):
         if not DocumentsData.is_loaded:
@@ -337,8 +337,8 @@ class BIM_PT_sheets(Panel):
 
     @classmethod
     def poll(cls, context):
-        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
-        return aprops.tab == "DRAWINGS" and tool.Ifc.get()
+        aprops = tool.Blender.get_area_properties(context)
+        return (aprops.tab == "DRAWINGS" or context.area.spaces.active.search_filter) and tool.Ifc.get()
 
     def draw(self, context):
         if not SheetsData.is_loaded:
