@@ -26,6 +26,7 @@ import ifcopenshell
 import blenderbim.bim.handler
 import blenderbim.tool as tool
 from pathlib import Path
+from blenderbim.tool.brick import BrickStore
 
 
 class IfcStore:
@@ -405,7 +406,10 @@ class IfcStore:
 
         if is_top_level_operator:
             IfcStore.begin_transaction(operator)
-            IfcStore.get_file().begin_transaction()
+            if tool.Ifc.get():
+                tool.Ifc.get().begin_transaction()
+            if BrickStore.graph:
+                BrickStore.begin_transaction()
             # This empty transaction ensures that each operator has at least one transaction
             IfcStore.add_transaction_operation(operator, rollback=lambda data: True, commit=lambda data: True)
         else:
@@ -417,10 +421,13 @@ class IfcStore:
             result = getattr(operator, "_execute")(context)
 
         if is_top_level_operator:
-            IfcStore.get_file().end_transaction()
-            IfcStore.add_transaction_operation(
-                operator, rollback=lambda d: IfcStore.get_file().undo(), commit=lambda d: IfcStore.get_file().redo()
-            )
+            if tool.Ifc.get():
+                tool.Ifc.get().end_transaction()
+                IfcStore.add_transaction_operation(
+                    operator, rollback=lambda d: tool.Ifc.get().undo(), commit=lambda d: tool.Ifc.get().redo()
+                )
+            if BrickStore.graph:
+                BrickStore.end_transaction()
             IfcStore.end_transaction(operator)
             blenderbim.bim.handler.refresh_ui_data()
 
@@ -456,6 +463,7 @@ class IfcStore:
 
     @staticmethod
     def undo():
+        BrickStore.undo()
         if not IfcStore.history:
             return
         event = IfcStore.history.pop()
@@ -465,6 +473,7 @@ class IfcStore:
 
     @staticmethod
     def redo():
+        BrickStore.redo()
         if not IfcStore.future:
             return
         event = IfcStore.future.pop()
