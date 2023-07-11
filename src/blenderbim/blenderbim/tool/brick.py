@@ -22,6 +22,7 @@ import ifcopenshell
 import ifcopenshell.util.brick
 import blenderbim.core.tool
 import blenderbim.tool as tool
+from contextlib import contextmanager
 
 try:
     import brickschema
@@ -36,15 +37,17 @@ except:
 # silence known rdflib_sqlalchemy TypeError warning
 # see https://github.com/BrickSchema/Brick/issues/513#issuecomment-1558493675
 import logging
+
 logger = logging.getLogger("rdflib")
 logger.setLevel(logging.ERROR)
+
 
 class Brick(blenderbim.core.tool.Brick):
     @classmethod
     def add_brick(cls, namespace, brick_class, label):
         ns = Namespace(namespace)
         brick = ns[ifcopenshell.guid.expand(ifcopenshell.guid.new())]
-        with BrickStore.graph.new_changeset("PROJECT") as cs:
+        with BrickStore.new_changeset() as cs:
             cs.add((brick, RDF.type, URIRef(brick_class)))
             cs.add((brick, URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal(label)))
         return str(brick)
@@ -256,7 +259,7 @@ class Brick(blenderbim.core.tool.Brick):
 
     @classmethod
     def load_brick_file(cls, filepath):
-        if not BrickStore.schema: # important check for running under test cases
+        if not BrickStore.schema:  # important check for running under test cases
             cwd = os.path.dirname(os.path.realpath(__file__))
             BrickStore.schema = os.path.join(cwd, "..", "bim", "schema", "Brick.ttl")
         BrickStore.graph = brickschema.persistent.VersionedGraphCollection("sqlite://")
@@ -268,7 +271,7 @@ class Brick(blenderbim.core.tool.Brick):
 
     @classmethod
     def new_brick_file(cls):
-        if not BrickStore.schema: # important check for running under test cases
+        if not BrickStore.schema:  # important check for running under test cases
             cwd = os.path.dirname(os.path.realpath(__file__))
             BrickStore.schema = os.path.join(cwd, "..", "bim", "schema", "Brick.ttl")
         BrickStore.graph = brickschema.persistent.VersionedGraphCollection("sqlite://")
@@ -286,8 +289,8 @@ class Brick(blenderbim.core.tool.Brick):
 
     @classmethod
     def remove_brick(cls, brick_uri):
-        if(BrickStore.graph.triples((URIRef(brick_uri), None, None))):
-            with BrickStore.graph.new_changeset("PROJECT") as cs:
+        if BrickStore.graph.triples((URIRef(brick_uri), None, None)):
+            with BrickStore.new_changeset() as cs:
                 for triple in BrickStore.graph.triples((URIRef(brick_uri), None, None)):
                     cs.remove(triple)
 
@@ -316,40 +319,72 @@ class Brick(blenderbim.core.tool.Brick):
         bpy.context.scene.BIMBrickProperties.active_brick_class = brick_class
 
     @classmethod
-    def undo_brick(cls):
-        if(len(BrickStore.graph.versions()) > 1):
-            BrickStore.graph.undo()
-
-    @classmethod
-    def redo_brick(cls):
-        with BrickStore.graph.conn() as conn:
-            redo_record = conn.execute(
-            "SELECT * from redos " "ORDER BY timestamp ASC LIMIT 1"
-            ).fetchone()
-        if redo_record is not None:
-            BrickStore.graph.redo()  
-
-    @classmethod
     def serialize_brick(cls):
         BrickStore.get_project().serialize(destination=BrickStore.path, format="turtle")
-    
+
     @classmethod
     def add_namespace(cls, alias, uri):
         BrickStore.graph.bind(alias, Namespace(uri))
         # need some way to reload namespace enum view
-        
+
+
 class BrickStore:
-    schema = None # this is now a os path
-    path = None   # file path if the project was loaded in
+    schema = None  # this is now a os path
+    path = None  # file path if the project was loaded in
     graph = None  # this is the VersionedGraphCollection with 2 arbitrarily named graphs: "schema" and "project"
-                  # "SCHEMA" holds the Brick.ttl metadata; "PROJECT" holds all the authored entities
-    
+    # "SCHEMA" holds the Brick.ttl metadata; "PROJECT" holds all the authored entities
+    history = []
+    future = []
+    current_changesets = 0
+    history_size = 64
+
     @staticmethod
     def purge():
         BrickStore.schema = None
         BrickStore.graph = None
-        BrickStore.path = None   
+        BrickStore.path = None
 
     @classmethod
     def get_project(cls):
         return BrickStore.graph.graph_at(graph="PROJECT")
+
+    @classmethod
+    def set_history_size(cls, size):
+        cls.history_size = size
+        while len(cls.history) > cls.history_size:
+            cls.history.pop(0)
+
+    @classmethod
+    def begin_transaction(cls):
+        cls.current_changesets = 0
+
+    @classmethod
+    def end_transaction(cls):
+        cls.history.append(cls.current_changesets)
+        if len(cls.history) > cls.history_size:
+            cls.history.pop(0)
+
+    @classmethod
+    @contextmanager
+    def new_changeset(cls):
+        cls.current_changesets += 1
+        with BrickStore.graph.new_changeset("PROJECT") as cs:
+            yield cs
+
+    @classmethod
+    def undo(cls):
+        if not BrickStore.graph or not BrickStore.history:
+            return
+        total_changesets = BrickStore.history.pop()
+        for i in range(0, total_changesets):
+            BrickStore.graph.undo()
+        BrickStore.future.append(total_changesets)
+
+    @classmethod
+    def redo(cls):
+        if not BrickStore.graph or not BrickStore.future:
+            return
+        total_changesets = BrickStore.future.pop()
+        for i in range(0, total_changesets):
+            BrickStore.graph.redo()
+        BrickStore.history.append(total_changesets)

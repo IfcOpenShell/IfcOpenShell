@@ -112,18 +112,9 @@ def remove_brick(ifc, brick, library=None, brick_uri=None):
     brick.run_refresh_brick_viewer()
 
 
-def undo_brick(brick):
-    brick.undo_brick()
-    brick.run_refresh_brick_viewer()
-
-
-def redo_brick(brick):
-    brick.redo_brick()
-    brick.run_refresh_brick_viewer()
-
-
 def serialize_brick(brick):
     brick.serialize_brick()
+
 
 def add_namespace(brick, alias=None, uri=None):
     brick.add_namespace(alias, uri)

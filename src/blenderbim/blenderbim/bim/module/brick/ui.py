@@ -88,10 +88,6 @@ class BIM_PT_brickschema(Panel):
         row.operator("bim.remove_brick", text="", icon="X")
 
         row = self.layout.row(align=True)
-        row.operator("bim.undo_brick", icon="LOOP_BACK")
-        row.operator("bim.redo_brick", icon="LOOP_FORWARDS")
-
-        row = self.layout.row(align=True)
         op = row.operator("bim.serialize_brick", icon="EXPORT", text="Save")
         op.should_save_as = False
         op = row.operator("bim.serialize_brick", icon="FILE_TICK", text="Save As")
