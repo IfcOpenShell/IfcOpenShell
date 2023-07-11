@@ -47,7 +47,9 @@ class SwitchTab(bpy.types.Operator):
     bl_description = "Switches to the last used tab"
 
     def execute(self, context):
-        aprops = tool.Blender.get_area_properties(context)
+        if context.area.spaces.active.search_filter:
+            return {"FINISHED"}
+        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
         aprops.tab = aprops.alt_tab
         return {"FINISHED"}
 
