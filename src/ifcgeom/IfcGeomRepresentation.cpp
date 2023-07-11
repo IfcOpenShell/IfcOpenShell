@@ -397,7 +397,7 @@ int IfcGeom::Representation::Triangulation::addVertex(int item_id, int material_
 	const double Z = convert ? (pZ /unit_magnitude) : pZ;
 	int i = (int)_verts.size() / 3;
 	if (settings().get<ifcopenshell::geometry::settings::WeldVertices>().get()) {
-		const VertexKey key = std::make_tuple(item_index, material_index, X, Y, Z);
+		const VertexKey key = std::make_tuple(item_id, material_index, X, Y, Z);
 		typename VertexKeyMap::const_iterator it = welds.find(key);
 		if (it != welds.end()) return it->second;
 		i = (int)(welds.size() + weld_offset_);
