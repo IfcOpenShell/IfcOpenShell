@@ -578,6 +578,13 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
     should_start_fresh_session: bpy.props.BoolProperty(name="Should Start Fresh Session", default=True)
 
     def execute(self, context):
+        if self.should_start_fresh_session:
+            bpy.ops.wm.read_homefile()
+
+            if tool.Blender.is_default_scene():
+                for obj in bpy.data.objects:
+                    bpy.data.objects.remove(obj)
+
         if not self.is_existing_ifc_file():
             return {"FINISHED"}
         context.scene.BIMProperties.ifc_file = self.get_filepath()
@@ -588,13 +595,6 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        if self.should_start_fresh_session:
-            bpy.ops.wm.read_homefile()
-
-            if tool.Blender.is_default_scene():
-                for obj in bpy.data.objects:
-                    bpy.data.objects.remove(obj)
-
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
 
