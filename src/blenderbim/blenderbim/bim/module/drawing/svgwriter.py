@@ -228,10 +228,7 @@ class SvgWriter:
         storey = tool.Drawing.get_annotation_element(element)
         tag = storey.Name if storey else element.Description
         dimension_data = DecoratorData.get_dimension_data(obj)
-        prefix = dimension_data["text_prefix"]
-        suffix = dimension_data["text_suffix"]
-        show_description_only = dimension_data["show_description_only"]
-        fill_bg = dimension_data["fill_bg"]
+        suppress_zero_inches = dimension_data["suppress_zero_inches"]
         base_offset_y = 3.5
 
         for spline in obj.data.splines:
@@ -247,41 +244,19 @@ class SvgWriter:
 
             # TODO: allow metric to be configurable
             def get_text():
-                rl_value = (matrix_world @ points[0].co.xyz).z
-                if bpy.context.scene.unit_settings.system == "IMPERIAL":
-                    rl = helper.format_distance(rl_value, precision=self.precision, decimal_places=self.decimal_places)
-                else:
-                    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-                    rl = rl_value / unit_scale
-                    rl = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), rl)
-                    rl *= unit_scale
-                    rl = "{:.3f}m".format(rl)
-                text = "RL {}{}".format("" if rl_value < 0 else "+", rl)
+                z = (matrix_world @ points[0].co.xyz).z
+                rl = helper.format_distance(
+                    z,
+                    precision=self.precision,
+                    decimal_places=self.decimal_places,
+                    suppress_zero_inches=suppress_zero_inches,
+                )
+                text = "RL {}{}".format("" if z < 0 else "+", rl)
                 return text
-            
-            text_tags = []
-            line_number_start = 0
-            if not show_description_only:
-                text = get_text()
-                full_prefix = ((tag + "\\n") if tag else "") + prefix
-                text = full_prefix + text + suffix
-                line_number_start -= full_prefix.count("\\n")
-            else:
-                if not tag:
-                    continue
-                text = tag
 
-            text_tags += self.create_text_tag(
-                text,
-                text_position,
-                angle=angle,
-                class_str="SECTIONLEVEL",
-                line_number_start=line_number_start,
-                fill_bg=fill_bg
+            self.draw_dimension_text(
+                get_text, tag, dimension_data, text_position=text_position, angle=angle, class_str="SECTIONLEVEL"
             )
-
-            for text in text_tags:
-                self.svg.add(text)
 
     def draw_stair_annotation(self, obj):
         x_offset = self.raw_width / 2
@@ -890,10 +865,7 @@ class SvgWriter:
         description = element.Description
 
         dimension_data = DecoratorData.get_dimension_data(obj)
-        prefix = dimension_data["text_prefix"]
-        suffix = dimension_data["text_suffix"]
-        show_description_only = dimension_data["show_description_only"]
-        fill_bg = dimension_data["fill_bg"]
+        suppress_zero_inches = dimension_data["suppress_zero_inches"]
         base_offset_y = 1.0
 
         for spline in obj.data.splines:
@@ -908,42 +880,27 @@ class SvgWriter:
             angle = math.degrees(vector.angle_signed(Vector((1, 0))))
 
             # TODO: allow metric to be configurable
-            rl_value = (matrix_world @ points[0].co).z
-            if bpy.context.scene.unit_settings.system == "IMPERIAL":
-                rl = helper.format_distance(rl_value, precision=self.precision, decimal_places=self.decimal_places)
-            else:
-                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-                rl = rl_value / unit_scale
-                rl = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), rl)
-                rl *= unit_scale
-                rl = "{:.3f}m".format(rl)
+            def get_text():
+                z = (matrix_world @ points[0].co.xyz).z
+                rl = helper.format_distance(
+                    z,
+                    precision=self.precision,
+                    decimal_places=self.decimal_places,
+                    suppress_zero_inches=suppress_zero_inches,
+                )
+                text = "{}{}".format("" if z < 0 else "+", rl)
+                return text
 
-            text_tags = []
             box_alignment = "bottom-left" if projected_points[0].x <= projected_points[-1].x else "bottom-right"
-            line_number_start = 0
-
-            if not show_description_only:
-                text = "{}{}".format("" if rl_value < 0 else "+", rl)
-                full_prefix = ((description + "\\n") if description else "") + prefix
-                text = full_prefix + text + suffix
-                line_number_start -= full_prefix.count("\\n")
-            else:
-                if not description:
-                    continue
-                text = description
-
-            text_tags += self.create_text_tag(
-                text,
-                text_position,
+            self.draw_dimension_text(
+                get_text,
+                description,
+                dimension_data,
+                text_position=text_position,
                 angle=angle,
                 class_str="PLANLEVEL",
-                line_number_start=line_number_start,
                 box_alignment=box_alignment,
-                fill_bg=fill_bg
             )
-
-            for text in text_tags:
-                self.svg.add(text)
 
     def draw_angle_annotations(self, obj):
         points = obj.data.splines[0].points
@@ -1109,9 +1066,10 @@ class SvgWriter:
                 radius = helper.format_distance(radius, precision=self.precision, decimal_places=self.decimal_places)
                 text = f"R{radius}"
                 return text
-            
-            self.draw_dimension_text(get_text, tag, dimension_data, text_position=text_position, class_str="RADIUS", box_alignment="center")
 
+            self.draw_dimension_text(
+                get_text, tag, dimension_data, text_position=text_position, class_str="RADIUS", box_alignment="center"
+            )
 
     def draw_dimension_text(self, get_text, tag, dimension_data, **create_text_kwargs):
         prefix = dimension_data["text_prefix"]
@@ -1132,15 +1090,11 @@ class SvgWriter:
             text = tag
 
         text_tags += self.create_text_tag(
-            text,
-            line_number_start=line_number_start,
-            fill_bg=fill_bg,
-            **create_text_kwargs
+            text, line_number_start=line_number_start, fill_bg=fill_bg, **create_text_kwargs
         )
 
         for text in text_tags:
             self.svg.add(text)
-
 
     def draw_fall_annotations(self, obj):
         x_offset = self.raw_width / 2
