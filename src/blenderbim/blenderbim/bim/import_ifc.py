@@ -52,6 +52,7 @@ class FileCopy(threading.Thread):
 class MaterialCreator:
     def __init__(self, ifc_import_settings, ifc_importer):
         self.mesh = None
+        self.obj = None
         self.materials = {}
         self.styles = {}
         self.parsed_meshes = set()
@@ -60,6 +61,8 @@ class MaterialCreator:
 
     def create(self, element, obj, mesh):
         self.mesh = mesh
+        # as ifcopenshell triangulates the mesh, we need to merge it to quads again
+        self.obj = obj
         if (hasattr(element, "Representation") and not element.Representation) or (
             hasattr(element, "RepresentationMaps") and not element.RepresentationMaps
         ):
@@ -132,9 +135,76 @@ class MaterialCreator:
             return
         for style_id in style_ids:
             material = self.styles[style_id]
+            ifc_coordinate_id = material.BIMMaterialProperties.ifc_coordinate_id
+            if ifc_coordinate_id != 0:
+                self.load_texture_map(tool.Ifc.get().by_id(ifc_coordinate_id))
             if self.mesh.materials.find(material.name) == -1:
                 self.mesh.materials.append(material)
         return True
+
+    def load_texture_map(self, coordinates):
+        if coordinates.is_a("IfcIndexedPolygonalTextureMap"):
+            self.load_ifc_indexed_polygonal_texture_map(coordinates)
+        elif coordinates.is_a("IfcIndexedTriangleTextureMap"):
+            self.load_ifc_indexed_triangle_texture_map(coordinates)
+
+    def load_ifc_indexed_polygonal_texture_map(self, coordinates):
+        # As IfcOpenShell triangulated Polygonal Faceset, we may need merge the triangles first.
+        if len(self.mesh.polygons) != len(coordinates.TexCoordIndices):
+            view_layer = bpy.context.view_layer
+            view_layer.active_layer_collection.collection.objects.link(self.obj)
+            view_layer.objects.active = self.obj
+            bpy.ops.object.mode_set(mode='EDIT')
+            bpy.ops.mesh.tris_convert_to_quads()
+            bpy.ops.mesh.normals_make_consistent()
+            bpy.ops.object.mode_set(mode='OBJECT')
+            view_layer.active_layer_collection.collection.objects.unlink(self.obj)
+
+        # Get a BMesh representation
+        bm = bmesh.new()
+        bm.from_mesh(self.mesh)
+        uv_layer = bm.loops.layers.uv.verify()
+
+        faceset = coordinates.MappedTo
+        coords = [mathutils.Vector(co) for co in faceset.Coordinates.CoordList]
+        # sort the verts to orginal order in ifc file
+        bm.verts.sort(key=lambda v: coords.index(v.co))
+        bm.verts.index_update()
+
+        for id, bface in enumerate(bm.faces):
+            face = [loop.vert.index + 1 for loop in bface.loops]
+            # find the corresponding face and get the tex_coord_indices with the loop order
+            tex_coord_indices = next(
+                [i.TexCoordIndex[i.TexCoordsOf.CoordIndex.index(v)] for v in face]
+                for i in coordinates.TexCoordIndices
+                if all(v in i.TexCoordsOf.CoordIndex for v in face)
+            )
+            for loop, i in zip(bface.loops, tex_coord_indices):
+                loop[uv_layer].uv = coordinates.TexCoords.TexCoordsList[i-1]
+
+        # Finish up, write the bmesh back to the mesh
+        bm.to_mesh(self.mesh)
+        bm.free()
+
+    def load_ifc_indexed_triangle_texture_map(self, coordinates):
+        # Get a BMesh representation
+        bm = bmesh.new()
+        bm.from_mesh(self.mesh)
+        uv_layer = bm.loops.layers.uv.verify()
+
+        faceset = coordinates.MappedTo
+        for id, bface in enumerate(bm.faces):
+            tex_map = coordinates.TexCoordIndex[id]
+            face_coordinates = [mathutils.Vector(faceset.Coordinates.CoordList[i-1]) for i in faceset.CoordIndex[id]]
+            for loop in bface.loops:
+                co = loop.vert.co
+                # there's rearrangement of the face indices, so we need to find the index of the vertex in the face
+                i_tex_map = next(i for i, x in enumerate(face_coordinates) if (x - co).length_squared < 1e-5)
+                loop[uv_layer].uv = coordinates.TexCoords.TexCoordsList[tex_map[i_tex_map]-1]
+
+        # Finish up, write the bmesh back to the mesh
+        bm.to_mesh(self.mesh)
+        bm.free()
 
     def assign_material_slots_to_faces(self):
         if "ios_materials" not in self.mesh or not self.mesh["ios_materials"]:
@@ -1338,16 +1408,14 @@ class IfcImporter:
             if not isinstance(obj, bpy.types.Object):
                 continue
             if obj.type == "MESH":
-                obj.select_set(True)
+                bpy.context.view_layer.objects.active = obj
+                bpy.ops.object.mode_set(mode='EDIT')
+                bpy.ops.mesh.tris_convert_to_quads()
+                bpy.ops.mesh.normals_make_consistent()
+                bpy.ops.object.mode_set(mode='OBJECT')
                 last_obj = obj
         if not last_obj:
             return
-        bpy.context.view_layer.objects.active = last_obj
-        context_override = {}
-        bpy.ops.object.editmode_toggle(context_override)
-        bpy.ops.mesh.tris_convert_to_quads(context_override)
-        bpy.ops.mesh.normals_make_consistent(context_override)
-        bpy.ops.object.editmode_toggle(context_override)
         IfcStore.edited_objs.clear()
 
     def load_file(self):

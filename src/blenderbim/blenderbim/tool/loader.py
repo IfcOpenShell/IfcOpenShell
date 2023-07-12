@@ -293,8 +293,10 @@ class Loader(blenderbim.core.tool.Loader):
                     image = bpy.data.images.load(image_url)
                     node.image = image
                     blender_material.node_tree.links.new(node.outputs[0], bsdf.inputs["Base Color"])
-                    blender_material.node_tree.links.new(node.outputs[1], bsdf.inputs["Alpha"])
-                    blender_material.blend_method = "BLEND"
+                    # leave it to default(OPAQUE) when no Transparency defined
+                    if transparency := rendering_style.get("Transparency", None):
+                        blender_material.node_tree.links.new(node.outputs[1], bsdf.inputs["Alpha"])
+                        blender_material.blend_method = "BLEND"
 
             elif reflectance_method == "FLAT":
                 bsdf = tool.Blender.get_material_node(blender_material, "MIX_SHADER")
@@ -314,6 +316,9 @@ class Loader(blenderbim.core.tool.Loader):
                 blender_material.node_tree.links.new(node.outputs[0], bsdf.inputs[2])
 
             # TODO: add support for texture data not ifc elements
+            # IsMappedBy could only get with the entity_instance for IFC4/IFC4x3
+            if isinstance(texture, dict):
+                texture = tool.Ifc.get().by_id(texture['id'])
             if node and getattr(texture, "IsMappedBy", None):
                 coordinates = texture.IsMappedBy[0]
                 coord = blender_material.node_tree.nodes.new(type="ShaderNodeTexCoord")
@@ -324,3 +329,5 @@ class Loader(blenderbim.core.tool.Loader):
                     blender_material.node_tree.links.new(coord.outputs["Camera"], node.inputs["Vector"])
                 else:
                     blender_material.node_tree.links.new(coord.outputs["UV"], node.inputs["Vector"])
+                    # save the TextureMap id for set uv when set material to mesh
+                    blender_material.BIMMaterialProperties.ifc_coordinate_id = coordinates.id()
