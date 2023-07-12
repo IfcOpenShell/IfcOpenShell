@@ -123,7 +123,7 @@ def update_railing_modifier_bmesh(context):
     # NOTE: using Data since bmesh update will hapen very often
     if not RailingData.is_loaded:
         RailingData.load()
-    path_data = RailingData.data["parameters"]["data_dict"]["path_data"]
+    path_data = RailingData.data["path_data"]
 
     si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
     # need to make sure we support edit mode

@@ -367,6 +367,7 @@ class RailingData:
         cls.data = {}
         cls.data["parameters"] = cls.pset_data()
         cls.data["general_params"] = cls.general_params()
+        cls.data["path_data"] = cls.path_data()
 
     @classmethod
     def pset_data(cls):
@@ -385,7 +386,10 @@ class RailingData:
             prop_readable_name = props.bl_rna.properties[prop_name].name
             general_params[prop_readable_name] = prop_value
         return general_params
-
+    
+    @classmethod
+    def path_data(cls):
+        return cls.data["parameters"]["data_dict"]["path_data"]
 
 class RoofData:
     data = {}
