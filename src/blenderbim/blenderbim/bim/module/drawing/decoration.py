@@ -454,6 +454,30 @@ class BaseDecorator:
         blf.draw(font_id, text)
         blf.disable(font_id, blf.ROTATION)
 
+    def draw_dimension_text(self, context, get_text, description, dimension_data, **draw_label_kwargs):
+        prefix = dimension_data["text_prefix"]
+        suffix = dimension_data["text_suffix"]
+        show_description_only = dimension_data["show_description_only"]
+
+        line_number_start = 0
+        if not show_description_only:
+            text = get_text()
+            full_prefix = ((description + "\\n") if description else "") + prefix
+            text = full_prefix + text + suffix
+            line_number_start -= full_prefix.count("\\n")
+        else:
+            if not description:
+                return
+            text = description
+
+        self.draw_label(
+            context,
+            text=text,
+            line_no=line_number_start,
+            multiline=True,
+            **draw_label_kwargs
+        )
+
     @lru_cache(maxsize=None)
     def format_value(self, context, value):
         drawing_pset_data = DrawingsData.data["active_drawing_pset_data"]
@@ -822,12 +846,15 @@ class RadiusDecorator(BaseDecorator):
 
     objecttype = "RADIUS"
 
-    def get_spline_end(self, obj):
+    def get_spline_points(self, obj):
         spline = obj.data.splines[0]
         spline_points = spline.bezier_points if spline.bezier_points else spline.points
         if not spline_points:
-            return Vector((0, 0, 0))
-        return obj.matrix_world @ spline_points[0].co
+            spline_points = [Vector([0,0,0])] * 2
+        elif len(spline_points) == 1:
+            spline_points = [spline_points[0]] * 2
+
+        return [(obj.matrix_world @ p.co) for p in spline_points[:2]]
 
     def decorate(self, context, obj):
         self.draw_arrow(context, obj)
@@ -836,15 +863,26 @@ class RadiusDecorator(BaseDecorator):
     def draw_labels(self, context, obj):
         region = context.region
         region3d = context.region_data
-        dir = Vector((1, 0))
-        pos = location_3d_to_region_2d(region, region3d, self.get_spline_end(obj))
+        spline_points = self.get_spline_points(obj)
+        
+        p0, p1 = [location_3d_to_region_2d(region, region3d, p) for p in self.get_spline_points(obj)]
+        element = tool.Ifc.get_entity(obj)
+        description = element.Description
+        dimension_data = DecoratorData.get_dimension_data(obj)
+        viewportDrawingScale = self.get_viewport_drawing_scale(context)
+        text_offset = 20 * viewportDrawingScale
 
-        spline = obj.data.splines[0]
-        spline_points = spline.bezier_points if spline.bezier_points else spline.points
-        if spline_points:
-            length = (spline_points[-1].co - spline_points[-2].co).length
-            text = self.format_value(context, length)
-            self.draw_label(context, text, pos, dir, gap=0, center=False, vcenter=False)
+        pos = p0 - (p1-p0).normalized() * text_offset
+        def get_text():
+            length = (spline_points[-1] - spline_points[-2]).length
+            return "R" + self.format_value(context, length)
+
+        self.draw_dimension_text(context, 
+            get_text, description, dimension_data, 
+            pos=pos,
+            text_dir=Vector((1, 0)),    
+            box_alignment="center"
+        )
 
 
 class FallDecorator(BaseDecorator):
@@ -1058,9 +1096,6 @@ class PlanLevelDecorator(BaseDecorator):
         element = tool.Ifc.get_entity(obj)
         description = element.Description
         dimension_data = DecoratorData.get_dimension_data(obj)
-        show_description_only = dimension_data["show_description_only"]
-        text_prefix = dimension_data["text_prefix"]
-        text_suffix = dimension_data["text_suffix"]
 
         for verts in splines:
             p0, p1 = [location_3d_to_region_2d(region, region3d, v) for v in verts[:2]]
@@ -1074,30 +1109,19 @@ class PlanLevelDecorator(BaseDecorator):
                 box_alignment = "bottom-right"
                 text_dir *= -1
 
-            line_number_start = 0
-            if not show_description_only:
+            def get_text():
                 z = verts[0].z / unit_scale
                 z = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), z)
                 z *= unit_scale
                 text = "RL " + self.format_value(context, z)
-                full_prefix = ((description + "\\n") if description else "") + text_prefix
-                text = full_prefix + text + text_suffix
-                line_number_start -= full_prefix.count("\\n")
-            else:
-                if not description:
-                    break
-                text = description
+                return text
 
-            self.draw_label(
-                context,
-                text=text,
+            self.draw_dimension_text(context, get_text, description, dimension_data, 
+                box_alignment=box_alignment, 
                 pos=p0,
-                text_dir=text_dir,
-                box_alignment=box_alignment,
-                line_no=line_number_start,
-                multiline=True,
+                text_dir=text_dir,    
                 gap=8,
-                center=False,
+                center=False
             )
 
 
@@ -1152,35 +1176,21 @@ class SectionLevelDecorator(BaseDecorator):
         tag = storey.Name if storey else element.Description
 
         dimension_data = DecoratorData.get_dimension_data(obj)
-        show_description_only = dimension_data["show_description_only"]
-        text_prefix = dimension_data["text_prefix"]
-        text_suffix = dimension_data["text_suffix"]
 
         for verts in splines:
-            line_number_start = 0
-            if not show_description_only:
+            def get_text():
                 z = verts[0].z / unit_scale
                 z = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), z)
                 z *= unit_scale
                 text = "RL " + self.format_value(context, z)
-                full_prefix = ((tag + "\\n") if tag else "") + text_prefix
-                text = full_prefix + text + text_suffix
-                line_number_start -= full_prefix.count("\\n")
-            else:
-                if not tag:
-                    break
-                text = tag
+                return text
 
-            self.draw_label(
-                context,
-                text=text,
+            self.draw_dimension_text(context, 
+                get_text, tag, dimension_data, 
+                box_alignment="bottom-left", 
                 pos=text_position,
-                text_dir=text_dir,
-                box_alignment="bottom-left",
-                line_no=line_number_start,
-                multiline=True,
+                text_dir=text_dir,    
             )
-
             break  # support only 1 label
 
 

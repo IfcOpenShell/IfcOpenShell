@@ -246,20 +246,23 @@ class SvgWriter:
             angle = math.degrees(vector.angle_signed(Vector((1, 0))))
 
             # TODO: allow metric to be configurable
-            rl_value = (matrix_world @ points[0].co.xyz).z
-            if bpy.context.scene.unit_settings.system == "IMPERIAL":
-                rl = helper.format_distance(rl_value, precision=self.precision, decimal_places=self.decimal_places)
-            else:
-                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-                rl = rl_value / unit_scale
-                rl = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), rl)
-                rl *= unit_scale
-                rl = "{:.3f}m".format(rl)
+            def get_text():
+                rl_value = (matrix_world @ points[0].co.xyz).z
+                if bpy.context.scene.unit_settings.system == "IMPERIAL":
+                    rl = helper.format_distance(rl_value, precision=self.precision, decimal_places=self.decimal_places)
+                else:
+                    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+                    rl = rl_value / unit_scale
+                    rl = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), rl)
+                    rl *= unit_scale
+                    rl = "{:.3f}m".format(rl)
+                text = "RL {}{}".format("" if rl_value < 0 else "+", rl)
+                return text
+            
             text_tags = []
-
             line_number_start = 0
             if not show_description_only:
-                text = "RL {}{}".format("" if rl_value < 0 else "+", rl)
+                text = get_text()
                 full_prefix = ((tag + "\\n") if tag else "") + prefix
                 text = full_prefix + text + suffix
                 line_number_start -= full_prefix.count("\\n")
@@ -1080,48 +1083,64 @@ class SvgWriter:
         path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
 
     def draw_radius_annotations(self, obj):
-        x_offset = self.raw_width / 2
-        y_offset = self.raw_height / 2
+        offset = Vector([self.raw_width, self.raw_height]) / 2
         classes = self.get_attribute_classes(obj)
         element = tool.Ifc.get_entity(obj)
+        tag = element.Description
         matrix_world = obj.matrix_world
+
+        dimension_data = DecoratorData.get_dimension_data(obj)
+
         for spline in obj.data.splines:
             points = self.get_spline_points(spline)
             projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
-            d = " ".join(
-                [
-                    "L {} {}".format((x_offset + p.x) * self.svg_scale, (y_offset - p.y) * self.svg_scale)
-                    for p in projected_points
-                ]
-            )
+            projected_points_svg = [(offset + p.xy * Vector((1, -1))) * self.svg_scale for p in projected_points]
+            d = " ".join(["L {} {}".format(*p) for p in projected_points_svg])
             d = "M{}".format(d[1:])
             path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
+            p0 = projected_points_svg[0]
+            p1 = projected_points_svg[1]
 
-            p0 = Vector(
-                (
-                    (x_offset + projected_points[0].x) * self.svg_scale,
-                    (y_offset - projected_points[0].y) * self.svg_scale,
-                )
-            )
-            p1 = Vector(
-                (
-                    (x_offset + projected_points[1].x) * self.svg_scale,
-                    (y_offset - projected_points[1].y) * self.svg_scale,
-                )
-            )
-            text_offset = (p0 - p1).xy.normalized() * 5
-            text_position = projected_points[0]
-            text_position = Vector(
-                ((x_offset + text_position.x) * self.svg_scale, (y_offset - text_position.y) * self.svg_scale)
-            )
-            text_position += text_offset
+            text_offset = (p0 - p1).normalized() * 5
+            text_position = p0 + text_offset
 
-            text_style = SvgWriter.get_box_alignment_parameters("center")
-            radius = (points[-1].co - points[-2].co).length
-            radius = helper.format_distance(radius, precision=self.precision, decimal_places=self.decimal_places)
-            tag = element.Description or f"R{radius}"
+            def get_text():
+                radius = (points[-1].co - points[-2].co).length
+                radius = helper.format_distance(radius, precision=self.precision, decimal_places=self.decimal_places)
+                text = f"R{radius}"
+                return text
+            
+            self.draw_dimension_text(get_text, tag, dimension_data, text_position=text_position, class_str="RADIUS", box_alignment="center")
 
-            self.svg.add(self.svg.text(tag, insert=tuple(text_position), class_="RADIUS", **text_style))
+
+    def draw_dimension_text(self, get_text, tag, dimension_data, **create_text_kwargs):
+        prefix = dimension_data["text_prefix"]
+        suffix = dimension_data["text_suffix"]
+        show_description_only = dimension_data["show_description_only"]
+        fill_bg = dimension_data["fill_bg"]
+
+        text_tags = []
+        line_number_start = 0
+        if not show_description_only:
+            text = get_text()
+            full_prefix = ((tag + "\\n") if tag else "") + prefix
+            text = full_prefix + text + suffix
+            line_number_start -= full_prefix.count("\\n")
+        else:
+            if not tag:
+                return
+            text = tag
+
+        text_tags += self.create_text_tag(
+            text,
+            line_number_start=line_number_start,
+            fill_bg=fill_bg,
+            **create_text_kwargs
+        )
+
+        for text in text_tags:
+            self.svg.add(text)
+
 
     def draw_fall_annotations(self, obj):
         x_offset = self.raw_width / 2
