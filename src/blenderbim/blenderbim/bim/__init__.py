@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+from pathlib import Path
 import bpy
 import bpy.utils.previews
 import blenderbim
@@ -150,6 +151,7 @@ for mod in modules.values():
 addon_keymaps = []
 icons = None
 is_registering = False
+last_commit_hash = "8888888"
 
 
 def on_register(scene):
@@ -209,6 +211,14 @@ def register():
 
     icons = icon_preview
 
+    global last_commit_hash
+    try:
+        import git
+        path = Path(__file__).resolve().parent
+        repo = git.Repo(str(path), search_parent_directories=True)
+        last_commit_hash = repo.head.object.hexsha
+    except:
+        pass
 
 def unregister():
     global icons
