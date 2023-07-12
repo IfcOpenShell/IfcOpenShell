@@ -717,15 +717,19 @@ class SvgWriter:
         drawing = tool.Drawing.get_annotation_element(element)
         reference = tool.Drawing.get_drawing_reference(drawing)
         if reference:
-            sheet = tool.Drawing.get_reference_document(reference)
-            if sheet:
-                if tool.Ifc.get_schema() == "IFC2X3":
-                    reference_id = reference.ItemReference or "-"
-                    sheet_id = sheet.DocumentId or "-"
-                else:
-                    reference_id = reference.Identification or "-"
-                    sheet_id = sheet.Identification or "-"
-                return (reference_id, sheet_id)
+            for sheet_reference in tool.Ifc.get().by_type("IfcDocumentReference"):
+                if sheet_reference.Description != "DRAWING" or sheet_reference.Location != reference.Location:
+                    continue
+                sheet = tool.Drawing.get_reference_document(sheet_reference)
+                if sheet:
+                    if tool.Ifc.get_schema() == "IFC2X3":
+                        reference_id = sheet_reference.ItemReference or "-"
+                        sheet_id = sheet.DocumentId or "-"
+                    else:
+                        reference_id = sheet_reference.Identification or "-"
+                        sheet_id = sheet.Identification or "-"
+                    return (reference_id, sheet_id)
+                break
         return ("-", "-")
 
     @staticmethod
