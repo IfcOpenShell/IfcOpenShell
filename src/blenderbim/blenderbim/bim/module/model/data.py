@@ -364,17 +364,27 @@ class RailingData:
     @classmethod
     def load(cls):
         cls.is_loaded = True
-        cls.data = {"parameters": cls.parameters()}
+        cls.data = {}
+        cls.data["parameters"] = cls.pset_data()
+        cls.data["general_params"] = cls.general_params()
 
     @classmethod
-    def parameters(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        if element:
-            psets = ifcopenshell.util.element.get_psets(element)
-            parameters = psets.get("BBIM_Railing", None)
-            if parameters:
-                parameters["data_dict"] = json.loads(parameters.get("Data", "[]") or "[]")
-                return parameters
+    def pset_data(cls):
+        return tool.Model.get_railing_pset_data(bpy.context.active_object)
+
+    @classmethod
+    def general_params(cls):
+        props = bpy.context.active_object.BIMRailingProperties
+        railing_data = cls.data["parameters"]["data_dict"]
+        general_params = {}
+        general_props = props.get_general_kwargs(railing_type=railing_data["railing_type"])
+        for prop_name in general_props:
+            prop_value = railing_data[prop_name]
+            prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
+
+            prop_readable_name = props.bl_rna.properties[prop_name].name
+            general_params[prop_readable_name] = prop_value
+        return general_params
 
 
 class RoofData:
