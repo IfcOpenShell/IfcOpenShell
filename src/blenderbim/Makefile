@@ -36,6 +36,7 @@ endif
 endif
 
 VERSION:=`date '+%y%m%d'`
+LAST_COMMIT_HASH:=$(git rev-parse HEAD)
 PYVERSION:=py310
 
 ifeq ($(PYVERSION), py39)
@@ -675,6 +676,7 @@ endif
 	rm -rf dist/blenderbim/libs/site/packages/numpy.libs
 
 	cd dist/blenderbim && $(SED) "s/999999/$(VERSION)/" __init__.py
+	cd dist/blenderbim/bim && $(SED) "s/8888888/$(LAST_COMMIT_HASH)/" __init__.py
 	cd dist && zip -r blenderbim-$(VERSION)-$(PYVERSION)-$(PLATFORM).zip ./*
 	rm -rf dist/blenderbim
 

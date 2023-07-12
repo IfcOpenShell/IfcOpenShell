@@ -30,6 +30,7 @@ from ifcopenshell.util.doc import (
 )
 from . import ifc
 import blenderbim.tool as tool
+import blenderbim.bim
 from blenderbim.bim.helper import IfcHeaderExtractor
 from blenderbim.bim.prop import Attribute
 
@@ -542,7 +543,10 @@ class UIData:
 def draw_statusbar(self, context):
     if not UIData.is_loaded:
         UIData.load()
-    self.layout.label(text=f"BlenderBIM Add-on v{UIData.data['version']}")
+    text = f"BlenderBIM Add-on v{UIData.data['version']}"
+    if blenderbim.bim.last_commit_hash != "8888888":
+        text += f"@{blenderbim.bim.last_commit_hash[:7]}"
+    self.layout.label(text=text)
 
 
 def draw_custom_context_menu(self, context):
