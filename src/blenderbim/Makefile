@@ -36,7 +36,7 @@ endif
 endif
 
 VERSION:=`date '+%y%m%d'`
-LAST_COMMIT_HASH:=$(git rev-parse HEAD)
+LAST_COMMIT_HASH:=$(shell git rev-parse HEAD)
 PYVERSION:=py310
 
 ifeq ($(PYVERSION), py39)
