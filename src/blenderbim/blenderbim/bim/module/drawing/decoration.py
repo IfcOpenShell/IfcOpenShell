@@ -470,13 +470,7 @@ class BaseDecorator:
                 return
             text = description
 
-        self.draw_label(
-            context,
-            text=text,
-            line_no=line_number_start,
-            multiline=True,
-            **draw_label_kwargs
-        )
+        self.draw_label(context, text=text, line_no=line_number_start, multiline=True, **draw_label_kwargs)
 
     @lru_cache(maxsize=None)
     def format_value(self, context, value):
@@ -671,6 +665,8 @@ class DimensionDecorator(BaseDecorator):
             if not show_description_only:
                 length = (v1 - v0).length
                 text = self.format_value(context, length)
+                if isinstance(self, DiameterDecorator):
+                    text = "D" + text
                 text = text_prefix + text + text_suffix
             else:
                 if not description:
@@ -850,7 +846,7 @@ class RadiusDecorator(BaseDecorator):
         spline = obj.data.splines[0]
         spline_points = spline.bezier_points if spline.bezier_points else spline.points
         if not spline_points:
-            spline_points = [Vector([0,0,0])] * 2
+            spline_points = [Vector([0, 0, 0])] * 2
         elif len(spline_points) == 1:
             spline_points = [spline_points[0]] * 2
 
@@ -864,7 +860,7 @@ class RadiusDecorator(BaseDecorator):
         region = context.region
         region3d = context.region_data
         spline_points = self.get_spline_points(obj)
-        
+
         p0, p1 = [location_3d_to_region_2d(region, region3d, p) for p in self.get_spline_points(obj)]
         element = tool.Ifc.get_entity(obj)
         description = element.Description
@@ -872,16 +868,14 @@ class RadiusDecorator(BaseDecorator):
         viewportDrawingScale = self.get_viewport_drawing_scale(context)
         text_offset = 20 * viewportDrawingScale
 
-        pos = p0 - (p1-p0).normalized() * text_offset
+        pos = p0 - (p1 - p0).normalized() * text_offset
+
         def get_text():
             length = (spline_points[-1] - spline_points[-2]).length
             return "R" + self.format_value(context, length)
 
-        self.draw_dimension_text(context, 
-            get_text, description, dimension_data, 
-            pos=pos,
-            text_dir=Vector((1, 0)),    
-            box_alignment="center"
+        self.draw_dimension_text(
+            context, get_text, description, dimension_data, pos=pos, text_dir=Vector((1, 0)), box_alignment="center"
         )
 
 
@@ -1110,18 +1104,21 @@ class PlanLevelDecorator(BaseDecorator):
                 text_dir *= -1
 
             def get_text():
-                z = verts[0].z / unit_scale
-                z = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), z)
-                z *= unit_scale
-                text = "RL " + self.format_value(context, z)
+                z = verts[0].z
+                rl = self.format_value(context, z)
+                text = "{}{}".format("" if z < 0 else "+", rl)
                 return text
 
-            self.draw_dimension_text(context, get_text, description, dimension_data, 
-                box_alignment=box_alignment, 
+            self.draw_dimension_text(
+                context,
+                get_text,
+                description,
+                dimension_data,
+                box_alignment=box_alignment,
                 pos=p0,
-                text_dir=text_dir,    
+                text_dir=text_dir,
                 gap=8,
-                center=False
+                center=False,
             )
 
 
@@ -1169,8 +1166,6 @@ class SectionLevelDecorator(BaseDecorator):
         self.draw_labels(context, obj, self.get_splines(obj), text_position.to_2d(), text_dir.to_2d())
 
     def draw_labels(self, context, obj, splines, text_position, text_dir):
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-
         element = tool.Ifc.get_entity(obj)
         storey = tool.Drawing.get_annotation_element(element)
         tag = storey.Name if storey else element.Description
@@ -1178,18 +1173,21 @@ class SectionLevelDecorator(BaseDecorator):
         dimension_data = DecoratorData.get_dimension_data(obj)
 
         for verts in splines:
+
             def get_text():
-                z = verts[0].z / unit_scale
-                z = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), z)
-                z *= unit_scale
-                text = "RL " + self.format_value(context, z)
+                z = verts[0].z
+                rl = self.format_value(context, z)
+                text = "RL {}{}".format("" if z < 0 else "+", rl)
                 return text
 
-            self.draw_dimension_text(context, 
-                get_text, tag, dimension_data, 
-                box_alignment="bottom-left", 
+            self.draw_dimension_text(
+                context,
+                get_text,
+                tag,
+                dimension_data,
+                box_alignment="bottom-left",
                 pos=text_position,
-                text_dir=text_dir,    
+                text_dir=text_dir,
             )
             break  # support only 1 label
 
