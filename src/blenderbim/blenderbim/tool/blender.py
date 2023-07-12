@@ -36,6 +36,9 @@ VIEWPORT_ATTRIBUTES = [
 
 
 class Blender:
+    OBJECT_TYPES_THAT_SUPPORT_EDIT_MODE = ("MESH", "CURVE", "SURFACE", "META", "FONT", "LATTICE", "ARMATURE")
+    OBJECT_TYPES_THAT_SUPPORT_EDIT_GPENCIL_MODE = ("GPENCIL",)
+
     @classmethod
     def set_active_object(cls, obj):
         bpy.context.view_layer.objects.active = obj
@@ -441,3 +444,15 @@ class Blender:
             callback(bm_a, new_verts, new_edges, new_faces)
 
         return bm_a
+
+    @classmethod
+    def toggle_edit_mode(cls, context):
+        ao = context.active_object
+        if not ao:
+            return {"CANCELLED"}
+        if ao.type in cls.OBJECT_TYPES_THAT_SUPPORT_EDIT_MODE:
+            return bpy.ops.object.mode_set(mode="EDIT", toggle=True)
+        elif ao.type in cls.OBJECT_TYPES_THAT_SUPPORT_EDIT_GPENCIL_MODE:
+            return bpy.ops.object.mode_set(mode="EDIT_GPENCIL", toggle=True)
+        else:
+            return {"CANCELLED"}
