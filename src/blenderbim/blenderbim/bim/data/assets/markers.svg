@@ -75,7 +75,7 @@
     <marker id="stair-marker-end" markerHeight="42" markerWidth="21" orient="auto" refX="21" refY="21">
         <path d="M 0 0 L 21 21 L 0 42" class="annotation stair" style="stroke-width:2; marker-start: none; marker-end: none;" />
     </marker>
-    <marker id="plan-level-marker" markerHeight="30" markerWidth="30" refX="15" refY="15">
+    <marker id="plan-level-marker" markerHeight="30" markerWidth="30" refX="15" refY="15" orient="auto">
         <g>
             <path d="M 15 0 L 15 30" class="annotation" style="stroke-width:1;" />
             <path d="M 0 15 L 30 15" class="annotation" style="stroke-width:1;" />
@@ -84,7 +84,7 @@
             <path d="M 15 15 L 22.5 15 A 7.5 7.5 0 0 1 15 22.5 Z" fill="black"/>
         </g>
     </marker>
-    <marker id="section-level-marker" markerHeight="11" markerWidth="90" refX="20" refY="10">
+    <marker id="section-level-marker" markerHeight="11" markerWidth="90" refX="20" refY="10" orient="auto-start-reverse">
         <g>
             <path d="M 0 1 L 20 1 L 10 11 Z" fill="black" />
             <path d="M 0 1 L 90 1" class="annotation" style="stroke-width:1;" />

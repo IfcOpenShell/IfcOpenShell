@@ -242,6 +242,8 @@ class SvgWriter:
             d = "M{}".format(d[1:])
             path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
             text_position = projected_points_svg[0] - Vector((0, base_offset_y))
+            vector = projected_points_svg[0] - projected_points_svg[1]
+            angle = math.degrees(vector.angle_signed(Vector((1, 0))))
 
             # TODO: allow metric to be configurable
             rl_value = (matrix_world @ points[0].co.xyz).z
@@ -269,6 +271,7 @@ class SvgWriter:
             text_tags += self.create_text_tag(
                 text,
                 text_position,
+                angle=angle,
                 class_str="SECTIONLEVEL",
                 line_number_start=line_number_start,
                 fill_bg=fill_bg
@@ -898,6 +901,8 @@ class SvgWriter:
             d = "M{}".format(d[1:])
             path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
             text_position = projected_points_svg[0] - Vector((0, base_offset_y))
+            vector = projected_points_svg[1] - projected_points_svg[0]
+            angle = math.degrees(vector.angle_signed(Vector((1, 0))))
 
             # TODO: allow metric to be configurable
             rl_value = (matrix_world @ points[0].co).z
@@ -927,6 +932,7 @@ class SvgWriter:
             text_tags += self.create_text_tag(
                 text,
                 text_position,
+                angle=angle,
                 class_str="PLANLEVEL",
                 line_number_start=line_number_start,
                 box_alignment=box_alignment,
@@ -1325,7 +1331,7 @@ class SvgWriter:
         self,
         text,
         text_position,
-        angle=0,
+        angle=0.0,
         box_alignment="bottom-left",
         class_str="",
         text_format=lambda x: x,
