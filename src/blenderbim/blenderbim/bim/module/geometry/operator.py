@@ -648,17 +648,18 @@ class OverrideDuplicateMoveLinked(bpy.types.Operator):
         blenderbim.bim.handler.purge_module_data()
         return {"FINISHED"}
 
+
 class OverrideDuplicateMoveAggregateMacro(bpy.types.Macro):
     bl_idname = "bim.override_object_duplicate_move_aggregate_macro"
     bl_label = "IFC Duplicate Objects Aggregate"
     bl_options = {"REGISTER", "UNDO"}
+
 
 class OverrideDuplicateMoveAggregate(bpy.types.Operator):
     bl_idname = "bim.override_object_duplicate_move_aggregate"
     bl_label = "IFC Duplicate Objects Aggregate"
     bl_options = {"REGISTER", "UNDO"}
     is_interactive: bpy.props.BoolProperty(name="Is Interactive", default=True)
-
 
     @classmethod
     def poll(cls, context):
@@ -714,7 +715,9 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
                     )
 
             else:
-                pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="BBIM_Aggregate_Data")
+                pset = ifcopenshell.api.run(
+                    "pset.add_pset", tool.Ifc.get(), product=element, name="BBIM_Aggregate_Data"
+                )
 
                 ifcopenshell.api.run(
                     "pset.edit_pset",
@@ -728,16 +731,16 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
             parent_element = tool.Ifc.get().by_guid(pset["Parent"])
             parent_pset = ifcopenshell.util.element.get_pset(parent_element, "BBIM_Aggregate_Data")
             data = json.loads(parent_pset["Data"])
-            data[0]['children'].append(new_entity.GlobalId)
+            data[0]["children"].append(new_entity.GlobalId)
 
             ifcopenshell.api.run(
-               "pset.edit_pset",
+                "pset.edit_pset",
                 tool.Ifc.get(),
                 pset=tool.Ifc.get().by_id(parent_pset["id"]),
                 properties={"Data": json.dumps(data)},
             )
 
-        def create_data_structure(entity, level = -1):
+        def create_data_structure(entity, level=-1):
             level += 1
 
             data_children = {
@@ -754,22 +757,22 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
                 return
             else:
                 if level == 0:
-                    add_assembly_data(entity, entity, data_parent) 
+                    add_assembly_data(entity, entity, data_parent)
                 else:
                     add_assembly_data(entity, None, data_parent)
                 parts = ifcopenshell.util.element.get_parts(entity)
                 for part in parts:
                     if part.is_a("IfcElementAssembly"):
-                        add_assembly_data(part, entity, data_children) 
+                        add_assembly_data(part, entity, data_children)
                         add_child_to_assembly_data(part)
                         create_data_structure(part, level)
                         continue
-                    add_assembly_data(part, entity, data_children) 
+                    add_assembly_data(part, entity, data_children)
                     add_child_to_assembly_data(part)
 
-                return 
+                return
 
-        def recreate_data_structure(entity, level = -1):
+        def recreate_data_structure(entity, level=-1):
             level += 1
 
             pset = ifcopenshell.util.element.get_pset(entity, "BBIM_Aggregate_Data")
@@ -791,7 +794,7 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
                 return
             else:
                 if level == 0:
-                    add_assembly_data(entity, entity, data_parent) 
+                    add_assembly_data(entity, entity, data_parent)
                 else:
                     add_assembly_data(entity, None, data_parent)
                 parts = ifcopenshell.util.element.get_parts(entity)
@@ -800,12 +803,12 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
                         add_child_to_assembly_data(part)
                         recreate_data_structure(part, level)
                         continue
-                    add_assembly_data(part, entity, data_children) 
+                    add_assembly_data(part, entity, data_children)
                     add_child_to_assembly_data(part)
 
-                return 
+                return
 
-        def duplicate_all(obj, level = -1, new_parent=None, parents=[]):
+        def duplicate_all(obj, level=-1, new_parent=None, parents=[]):
             level += 1
 
             entity = tool.Ifc.get_entity(obj)
@@ -819,7 +822,6 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
                 new_parent = duplicate_objects(obj)
                 pair.append(new_parent)
                 parents.append(pair)
-
 
             if not entity.is_a("IfcElementAssembly"):
                 return
@@ -846,23 +848,23 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
                     if part.is_a("IfcElementAssembly"):
                         part_obj = tool.Ifc.get_object(part)
 
-                        #Recursion Call
+                        # Recursion Call
                         duplicate_all(part_obj, level, new_parent, parents)
 
             if level == 0:
                 for p in parents[1:]:
-                  blenderbim.core.aggregate.assign_object(
-                      tool.Ifc,
-                      tool.Aggregate,
-                      tool.Collector,
-                      relating_obj=tool.Ifc.get_object(p[0]),
-                      related_obj=tool.Ifc.get_object(p[1]),
-                  )
+                    blenderbim.core.aggregate.assign_object(
+                        tool.Ifc,
+                        tool.Aggregate,
+                        tool.Collector,
+                        relating_obj=tool.Ifc.get_object(p[0]),
+                        related_obj=tool.Ifc.get_object(p[1]),
+                    )
 
                 return new_parent
-            return 
+            return
 
-        def duplicate_objects(obj, is_root = False):
+        def duplicate_objects(obj, is_root=False):
             new_obj = obj.copy()
             if obj.data:
                 new_obj.data = obj.data.copy()
@@ -878,8 +880,9 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
             new_obj.BIMObjectProperties.collection = None
 
             # Copy the actual class
-            new_entity = blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
-
+            new_entity = blenderbim.core.root.copy_class(
+                tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj
+            )
 
             if new_entity:
                 # Checks if the object belongs to an Ifc Array
@@ -914,9 +917,8 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
         if not pset:
             create_data_structure(selected_root_entity)
 
-        
         pset = ifcopenshell.util.element.get_pset(selected_root_entity, "BBIM_Aggregate_Data")
-        
+
         selected_root_parent = selected_root_entity
 
         new_root_entity = duplicate_all(selected_obj)
@@ -934,13 +936,12 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
         blenderbim.bim.handler.purge_module_data()
 
         return {"FINISHED"}
-    
+
 
 class RefreshAggregate(bpy.types.Operator):
     bl_idname = "bim.refresh_aggregate"
     bl_label = "IFC Refresh Aggregate"
     bl_options = {"REGISTER", "UNDO"}
-
 
     @classmethod
     def poll(cls, context):
@@ -958,8 +959,8 @@ class RefreshAggregate(bpy.types.Operator):
         self.new_active_obj = None
         old_to_new = {}
 
-        def remove_objects(entity, level = -1, parents = []):
-            level +=1
+        def remove_objects(entity, level=-1, parents=[]):
+            level += 1
             if level == 0:
                 parents = [entity]
             parts = ifcopenshell.util.element.get_parts(entity)
@@ -1001,7 +1002,7 @@ class RefreshAggregate(bpy.types.Operator):
                             related_obj=tool.Ifc.get_object(new_part),
                         )
 
-        def duplicate_objects(obj, is_root = False):
+        def duplicate_objects(obj, is_root=False):
             new_obj = obj.copy()
             if obj.data:
                 new_obj.data = obj.data.copy()
@@ -1013,7 +1014,9 @@ class RefreshAggregate(bpy.types.Operator):
             new_obj.select_set(True)
 
             # Copy the actual class
-            new_entity = blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
+            new_entity = blenderbim.core.root.copy_class(
+                tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj
+            )
 
             if new_entity:
                 # Checks if the object belongs to an Ifc Array
@@ -1032,14 +1035,13 @@ class RefreshAggregate(bpy.types.Operator):
 
                 old_to_new[tool.Ifc.get_entity(obj)] = [new_entity]
 
-            return new_entity        
+            return new_entity
 
         if len(context.selected_objects) != 1:
             return {"FINISHED"}
 
         selected_root_obj = context.selected_objects[0]
         selected_root_entity = tool.Ifc.get_entity(selected_root_obj)
-
 
         if not selected_root_entity.is_a("IfcElementAssembly"):
             return {"FINISHED"}
@@ -1053,7 +1055,7 @@ class RefreshAggregate(bpy.types.Operator):
         original_root_entity = tool.Ifc.get().by_guid(instance_of)
         if original_root_entity == selected_root_entity:
             return {"FINISHED"}
-        
+
         parents = remove_objects(selected_root_entity)
 
         original_root_object = tool.Ifc.get_object(original_root_entity)
@@ -1063,7 +1065,6 @@ class RefreshAggregate(bpy.types.Operator):
 
         for parent in parents:
             duplicate_children(parent)
-
 
         old_objs = []
         for old, new in old_to_new.items():
@@ -1075,7 +1076,7 @@ class RefreshAggregate(bpy.types.Operator):
             new_matrix = selected_matrix @ matrix_diff
 
             new_obj.matrix_world = new_matrix
-        
+
         relationships = tool.Root.get_decomposition_relationships(old_objs)
 
         tool.Root.recreate_decompositions(relationships, old_to_new)
@@ -1083,7 +1084,7 @@ class RefreshAggregate(bpy.types.Operator):
         blenderbim.bim.handler.purge_module_data()
 
         return {"FINISHED"}
-    
+
 
 class OverrideJoin(bpy.types.Operator, Operator):
     bl_idname = "bim.override_object_join"
@@ -1317,12 +1318,11 @@ class OverrideModeSetEdit(bpy.types.Operator):
             # The active object is non-mesh-like. Set a valid object (or None) as active
             context.view_layer.objects.active = context.selected_objects[0] if context.selected_objects else None
         if context.active_object:
-            bpy.ops.object.mode_set(mode="EDIT", toggle=True)
-        else:
-            # restore the selection if nothing worked
-            for obj in objs:
-                obj.select_set(True)
-            context.view_layer.objects.active = active_obj
+            return tool.Blender.toggle_edit_mode(context)
+        # Restore the selection if nothing worked
+        for obj in objs:
+            obj.select_set(True)
+        context.view_layer.objects.active = active_obj
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -1330,7 +1330,7 @@ class OverrideModeSetEdit(bpy.types.Operator):
 
     def _invoke(self, context, event):
         if not tool.Ifc.get():
-            return bpy.ops.object.mode_set(mode="EDIT", toggle=True)
+            return tool.Blender.toggle_edit_mode(context)
         return self.execute(context)
 
 
