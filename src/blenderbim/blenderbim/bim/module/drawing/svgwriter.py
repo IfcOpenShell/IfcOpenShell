@@ -231,6 +231,7 @@ class SvgWriter:
         prefix = dimension_data["text_prefix"]
         suffix = dimension_data["text_suffix"]
         show_description_only = dimension_data["show_description_only"]
+        fill_bg = dimension_data["fill_bg"]
         base_offset_y = 3.5
 
         for spline in obj.data.splines:
@@ -270,6 +271,7 @@ class SvgWriter:
                 text_position,
                 class_str="SECTIONLEVEL",
                 line_number_start=line_number_start,
+                fill_bg=fill_bg
             )
 
             for text in text_tags:
@@ -885,6 +887,7 @@ class SvgWriter:
         prefix = dimension_data["text_prefix"]
         suffix = dimension_data["text_suffix"]
         show_description_only = dimension_data["show_description_only"]
+        fill_bg = dimension_data["fill_bg"]
         base_offset_y = 1.0
 
         for spline in obj.data.splines:
@@ -927,6 +930,7 @@ class SvgWriter:
                 class_str="PLANLEVEL",
                 line_number_start=line_number_start,
                 box_alignment=box_alignment,
+                fill_bg=fill_bg
             )
 
             for text in text_tags:
@@ -1206,6 +1210,7 @@ class SvgWriter:
                     suppress_zero_inches=dimension_data["suppress_zero_inches"],
                     text_prefix=dimension_data["text_prefix"],
                     text_suffix=dimension_data["text_suffix"],
+                    fill_bg=dimension_data["fill_bg"],
                 )
 
     def draw_dimension_annotations(self, obj):
