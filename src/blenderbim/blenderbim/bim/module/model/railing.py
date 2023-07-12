@@ -23,20 +23,17 @@ import ifcopenshell
 from ifcopenshell.util.shape_builder import V
 import blenderbim
 import blenderbim.tool as tool
-from blenderbim.bim.helper import convert_property_group_from_si
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.door import bm_sort_out_geom
 from blenderbim.bim.module.model.data import RailingData, refresh
 from blenderbim.bim.module.model.decorator import ProfileDecorator
 
-from mathutils import Vector, Matrix
-from pprint import pprint
+from mathutils import Vector
 import json
 
 # reference:
 # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRailing.htm
 # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRailingType.htm
-
 
 
 def bm_split_edge_at_offset(edge, offset):
@@ -83,7 +80,9 @@ def update_railing_modifier_ifc_data(context):
 
     if props.railing_type == "WALL_MOUNTED_HANDRAIL":
         body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
-        railing_path = [Vector(v) for v in RailingData.data["parameters"]["data_dict"]["path_data"]["verts"]]
+        pset_data = tool.Model.get_railing_pset_data(bpy.context.active_object)
+        path_data = pset_data["data_dict"]["path_data"]
+        railing_path = [Vector(v) for v in path_data["verts"]]
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
         representation_data = {
@@ -121,6 +120,7 @@ def update_railing_modifier_bmesh(context):
     obj = context.object
     props = obj.BIMRailingProperties
 
+    # NOTE: using Data since bmesh update will hapen very often
     if not RailingData.is_loaded:
         RailingData.load()
     path_data = RailingData.data["parameters"]["data_dict"]["path_data"]
@@ -198,7 +198,7 @@ def update_railing_modifier_bmesh(context):
         bmesh.ops.dissolve_verts(bm, verts=verts_to_dissolve)
         # to remove unnecessary verts in 0 spacing case
         bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
-        
+
         bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
 
         tool.Blender.apply_bmesh(obj.data, bm)
@@ -317,7 +317,6 @@ class AddRailing(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "Object has to be IfcRailing/IfcRailingType type to add a railing.")
             return {"CANCELLED"}
 
-
         railing_data = props.get_general_kwargs(convert_to_project_units=True)
         path_data = get_path_data(obj)
         if not path_data:
@@ -353,7 +352,7 @@ class EnableEditingRailing(bpy.types.Operator, tool.Ifc.Operator):
         # required since we could load pset from .ifc and BIMRailingProperties won't be set
         props.set_props_kwargs_from_ifc_data(data)
 
-        props.is_editing = 1
+        props.is_editing = True
         return {"FINISHED"}
 
 
@@ -381,7 +380,7 @@ class CancelEditingRailing(bpy.types.Operator, tool.Ifc.Operator):
             should_sync_changes_first=False,
         )
 
-        props.is_editing = -1
+        props.is_editing = False
         return {"FINISHED"}
 
 
@@ -395,13 +394,12 @@ class FinishEditingRailing(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMRailingProperties
 
-        if not RailingData.is_loaded:
-            RailingData.load()
-        path_data = RailingData.data["parameters"]["data_dict"]["path_data"]
+        pset_data = tool.Model.get_railing_pset_data(bpy.context.active_object)
+        path_data = pset_data["data_dict"]["path_data"]
 
         railing_data = props.get_general_kwargs(convert_to_project_units=True)
         railing_data["path_data"] = path_data
-        props.is_editing = -1
+        props.is_editing = False
 
         update_bbim_railing_pset(element, railing_data)
         update_railing_modifier_ifc_data(context)
@@ -419,9 +417,8 @@ class FlipRailingPathOrder(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMRailingProperties
 
-        if not RailingData.is_loaded:
-            RailingData.load()
-        path_data = RailingData.data["parameters"]["data_dict"]["path_data"]
+        pset_data = tool.Model.get_railing_pset_data(bpy.context.active_object)
+        path_data = pset_data["data_dict"]["path_data"]
 
         # flip the vertex order and edges
         path_data["verts"] = path_data["verts"][::-1]
@@ -497,7 +494,9 @@ class FinishEditingRailingPath(bpy.types.Operator, tool.Ifc.Operator):
         props.is_editing_path = False
 
         update_bbim_railing_pset(element, railing_data)
-        refresh()  # RailingData has to be updated before run update_railing_modifier_bmesh
+        # RailingData has to be updated before run update_railing_modifier_bmesh
+        # since we know that BBIM_Railing could have changed
+        refresh()
         update_railing_modifier_bmesh(context)
         if bpy.context.object.mode == "EDIT":
             bpy.ops.object.mode_set(mode="OBJECT")
@@ -512,9 +511,8 @@ class RemoveRailing(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
-        props = obj.BIMRailingProperties
         element = tool.Ifc.get_entity(obj)
-        obj.BIMRailingProperties.is_editing = -1
+        obj.BIMRailingProperties.is_editing = False
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Railing")
         ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)

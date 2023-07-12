@@ -432,13 +432,13 @@ class BIMDoorProperties(PropertyGroup):
         name="Transom Thickness",
         description="Set values > 0 to add a transom.\n" "`0.050 mm` is good as default value",
         default=0.000,
-        subtype="DISTANCE"
+        subtype="DISTANCE",
     )
     transom_offset: bpy.props.FloatProperty(
         name="Transom Offset",
         description="Distance from the bottom door opening to the beginning of the transom (unlike windows)",
         default=1.525,
-        subtype="DISTANCE"
+        subtype="DISTANCE",
     )
 
     casing_thickness: bpy.props.FloatProperty(
@@ -547,7 +547,7 @@ class BIMRailingProperties(PropertyGroup):
         ("NONE", "NONE", ""),
     )
 
-    is_editing: bpy.props.IntProperty(default=-1)
+    is_editing: bpy.props.BoolProperty(default=False)
     is_editing_path: bpy.props.BoolProperty(default=False)
 
     railing_type: bpy.props.EnumProperty(name="Railing Type", items=railing_types, default="FRAMELESS_PANEL")
@@ -563,29 +563,36 @@ class BIMRailingProperties(PropertyGroup):
         "If disabled, supports are added automatically based on the support spacing",
     )
     support_spacing: bpy.props.FloatProperty(
-        name="Support Spacing", 
-        default=1.0, 
+        name="Support Spacing",
+        default=1.0,
         min=0.01,
         description="Distance between supports if automatic supports are used",
+        subtype="DISTANCE",
     )
-    railing_diameter: bpy.props.FloatProperty(name="Railing Diameter", default=0.050)
+    railing_diameter: bpy.props.FloatProperty(name="Railing Diameter", default=0.050, subtype="DISTANCE")
     clear_width: bpy.props.FloatProperty(
-        name="Clear Width", default=0.040, description="Clear width between the railing and the wall"
+        name="Clear Width",
+        default=0.040,
+        description="Clear width between the railing and the wall",
+        subtype="DISTANCE",
     )
     terminal_type: bpy.props.EnumProperty(name="Terminal Type", items=cap_types, default="180")
 
-    def get_general_kwargs(self, convert_to_project_units=False):
+    def get_general_kwargs(self, railing_type=None, convert_to_project_units=False):
+        if railing_type is None:
+            railing_type = self.railing_type
+
         base_kwargs = {
-            "railing_type": self.railing_type,
+            "railing_type": railing_type,
             "height": self.height,
         }
         additional_kwargs = {}
-        if self.railing_type == "FRAMELESS_PANEL":
+        if railing_type == "FRAMELESS_PANEL":
             additional_kwargs = {
                 "thickness": self.thickness,
                 "spacing": self.spacing,
             }
-        elif self.railing_type == "WALL_MOUNTED_HANDRAIL":
+        elif railing_type == "WALL_MOUNTED_HANDRAIL":
             additional_kwargs = {
                 "railing_diameter": self.railing_diameter,
                 "clear_width": self.clear_width,
@@ -605,6 +612,7 @@ class BIMRailingProperties(PropertyGroup):
         kwargs = tool.Model.convert_data_to_si_units(kwargs, self.non_si_units_props)
         for prop_name in kwargs:
             setattr(self, prop_name, kwargs[prop_name])
+
 
 class BIMRoofProperties(PropertyGroup):
     non_si_units_props = (

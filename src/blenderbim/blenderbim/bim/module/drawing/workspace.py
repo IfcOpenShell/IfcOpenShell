@@ -23,7 +23,6 @@ import blenderbim.tool as tool
 from blenderbim.bim.helper import prop_with_search
 from bpy.types import WorkSpaceTool
 
-# from blenderbim.bim.module.model.data import AuthoringData, RailingData, RoofData
 from blenderbim.bim.module.drawing.prop import ANNOTATION_TYPES_DATA
 from blenderbim.bim.module.drawing.data import DecoratorData, AnnotationData
 from blenderbim.bim.ifc import IfcStore
@@ -106,7 +105,6 @@ class LaunchAnnotationTypeManager(bpy.types.Operator):
             op.element = relating_type["id"]
             op = row.operator("bim.remove_type", icon="X", text="")
             op.element = relating_type["id"]
-
 
 
 class AnnotationTool(WorkSpaceTool):

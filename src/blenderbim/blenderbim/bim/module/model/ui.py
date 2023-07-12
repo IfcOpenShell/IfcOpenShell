@@ -552,9 +552,7 @@ class BIM_PT_railing(bpy.types.Panel):
             row = self.layout.row(align=True)
             row.label(text="Railing parameters", icon="OUTLINER_OB_LATTICE")
 
-            railing_data = RailingData.data["parameters"]["data_dict"]
-
-            if props.is_editing != -1:
+            if props.is_editing:
                 row = self.layout.row(align=True)
                 row.operator("bim.finish_editing_railing", icon="CHECKMARK", text="Finish Editing")
                 row.operator("bim.cancel_editing_railing", icon="CANCEL", text="")
@@ -577,18 +575,15 @@ class BIM_PT_railing(bpy.types.Panel):
             else:
                 row.operator("bim.enable_editing_railing", icon="GREASEPENCIL", text="")
                 row.operator("bim.enable_editing_railing_path", icon="ANIM", text="")
-                # TODO: good for preview but probably should move to .is_editing == -1
+                # TODO: good for preview but probably should move to .is_editing == True
                 # since it's writing to ifc
                 row.operator("bim.flip_railing_path_order", icon="ARROW_LEFTRIGHT", text="")
                 row.operator("bim.remove_railing", icon="X", text="")
 
                 box = self.layout.box()
-                general_props = props.get_general_kwargs()
-                for prop in general_props:
-                    prop_value = railing_data[prop]
-                    prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
+                for prop_name, prop_value in RailingData.data["general_params"].items():
                     row = box.row(align=True)
-                    row.label(text=f"{props.bl_rna.properties[prop].name}")
+                    row.label(text=prop_name)
                     row.label(text=str(prop_value))
         else:
             row = self.layout.row()
