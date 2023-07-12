@@ -242,6 +242,10 @@ Create a simple model from scratch
 
     # Let's create a new wall
     wall = run("root.create_entity", model, ifc_class="IfcWall")
+
+    # Give our wall a local origin at (0, 0, 0)
+    run("geometry.edit_object_placement", model, product=wall)
+
     # Add a new wall-like body geometry, 5 meters long, 3 meters high, and 200mm thick
     representation = run("geometry.add_wall_representation", model, context=body, length=5, height=3, thickness=0.2)
     # Assign our new body geometry back to our wall

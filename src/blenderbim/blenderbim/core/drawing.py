@@ -370,7 +370,7 @@ def build_schedule(drawing, schedule=None):
 
 
 def sync_references(ifc, collector, drawing_tool, drawing=None):
-    if not drawing_tool.has_linework(drawing):
+    if not drawing_tool.has_annotation(drawing):
         return
 
     context = drawing_tool.get_annotation_context(drawing_tool.get_drawing_target_view(drawing))
