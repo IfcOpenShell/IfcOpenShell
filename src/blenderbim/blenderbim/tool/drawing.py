@@ -93,7 +93,7 @@ class Drawing(blenderbim.core.tool.Drawing):
             camera = get_camera_from_annotation_object(obj) or bpy.context.scene.camera
 
         current_pos = camera.matrix_world.inverted() @ obj.location
-        current_pos.z = -camera.data.clip_start
+        current_pos.z = -camera.data.clip_start - 0.05
         current_pos = camera.matrix_world @ current_pos
         obj.location = current_pos
 
@@ -1497,6 +1497,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         drawing = tool.Ifc.get_entity(camera)
 
         filtered_elements = cls.get_drawing_elements(drawing) | cls.get_drawing_spaces(drawing)
+        filtered_elements.add(drawing)
         for view_layer_object in bpy.context.view_layer.objects:
             element = tool.Ifc.get_entity(view_layer_object)
             if not element:
