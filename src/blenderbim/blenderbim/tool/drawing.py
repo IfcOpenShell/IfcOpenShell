@@ -93,7 +93,7 @@ class Drawing(blenderbim.core.tool.Drawing):
             camera = get_camera_from_annotation_object(obj) or bpy.context.scene.camera
 
         current_pos = camera.matrix_world.inverted() @ obj.location
-        current_pos.z = -camera.data.clip_start
+        current_pos.z = -camera.data.clip_start - 0.05
         current_pos = camera.matrix_world @ current_pos
         obj.location = current_pos
 
@@ -1057,20 +1057,28 @@ class Drawing(blenderbim.core.tool.Drawing):
             reference_mesh = cls.get_camera_block(reference_obj)
             obj_matrix = to_camera_coords(camera, reference_obj)
 
-            # The reference mesh vertices represent a view cube. To convert this into a section line we:
-            # 1. Select the 4 +Z vertices local to the reference element. This is the cutting plane.
+            # The reference mesh vertices represent a view cube. To convert
+            # this into a section line we:
+            # 1. Select the 4 +Z vertices local to the reference element. This
+            # is the cutting plane.
             verts_local_to_reference = [reference_obj.matrix_world.inverted() @ v for v in reference_mesh["verts"]]
             cutting_plane_verts = sorted(verts_local_to_reference, key=lambda x: x.z)[-4:]
             global_cutting_plane_verts = [reference_obj.matrix_world @ v for v in cutting_plane_verts]
             # 2. Project the cutting plane onto our viewing camera.
             verts_local_to_camera = [camera.matrix_world.inverted() @ v for v in global_cutting_plane_verts]
-            # 3. Collapse verts with the same XY coords, and set Z to be just below the clip_start so it's visible
+            # 3. Collapse verts with the same XY coords, and set Z to be just
+            # below the clip_start so it's visible
             collapsed_verts = []
             for vert in verts_local_to_camera:
                 if not [True for v in collapsed_verts if (vert.xy - v.xy).length < 1e-2]:
                     collapsed_verts.append(mathutils.Vector((vert.x, vert.y, -camera.data.clip_start - 0.05)))
             # 4. The first two vertices is the section line
             section_line = collapsed_verts[0:2]
+            # 5. Sort the vertices in the +X direction so that the vertices are
+            # ordered to "point" in the direction of the section cut.
+            section_line = sorted(
+                section_line, key=lambda co: (reference_obj.matrix_world.inverted() @ camera.matrix_world @ co).x
+            )
             global_section_line = [camera.matrix_world @ v for v in section_line]
             local_section_line = [obj_matrix.inverted() @ v for v in global_section_line]
 
@@ -1378,6 +1386,10 @@ class Drawing(blenderbim.core.tool.Drawing):
         return ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {}).get("HasLinework", False)
 
     @classmethod
+    def has_annotation(cls, drawing):
+        return ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {}).get("HasAnnotation", False)
+
+    @classmethod
     def get_drawing_elements(cls, drawing):
         """returns a set of elements that are included in the drawing"""
         ifc_file = tool.Ifc.get()
@@ -1489,7 +1501,9 @@ class Drawing(blenderbim.core.tool.Drawing):
                     project_collection.children["Views"].children[collection.name].hide_viewport = True
                     bpy.data.collections.get(collection.name).hide_render = True
 
-                    project_collection.children["Views"].children[camera.BIMObjectProperties.collection.name].hide_viewport = False
+                    project_collection.children["Views"].children[
+                        camera.BIMObjectProperties.collection.name
+                    ].hide_viewport = False
         camera.BIMObjectProperties.collection.hide_render = False
         tool.Spatial.set_active_object(camera)
 
@@ -1497,6 +1511,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         drawing = tool.Ifc.get_entity(camera)
 
         filtered_elements = cls.get_drawing_elements(drawing) | cls.get_drawing_spaces(drawing)
+        filtered_elements.add(drawing)
         for view_layer_object in bpy.context.view_layer.objects:
             element = tool.Ifc.get_entity(view_layer_object)
             if not element:

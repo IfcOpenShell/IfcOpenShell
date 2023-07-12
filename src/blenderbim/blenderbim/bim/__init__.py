@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+from pathlib import Path
 import bpy
 import bpy.utils.previews
 import blenderbim
@@ -150,6 +151,7 @@ for mod in modules.values():
 addon_keymaps = []
 icons = None
 is_registering = False
+last_commit_hash = "8888888"
 
 
 def on_register(scene):
@@ -174,7 +176,6 @@ def register():
     bpy.app.handlers.redo_post.append(handler.redo_post)
     bpy.app.handlers.load_post.append(handler.load_post)
     bpy.app.handlers.load_post.append(handler.loadIfcStore)
-    bpy.app.handlers.save_post.append(handler.ensureIfcExported)
     bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=prop.BIMProperties)
     bpy.types.Screen.BIMAreaProperties = bpy.props.CollectionProperty(type=prop.BIMAreaProperties)
     bpy.types.Collection.BIMCollectionProperties = bpy.props.PointerProperty(type=prop.BIMCollectionProperties)
@@ -210,6 +211,14 @@ def register():
 
     icons = icon_preview
 
+    global last_commit_hash
+    try:
+        import git
+        path = Path(__file__).resolve().parent
+        repo = git.Repo(str(path), search_parent_directories=True)
+        last_commit_hash = repo.head.object.hexsha
+    except:
+        pass
 
 def unregister():
     global icons
@@ -224,7 +233,6 @@ def unregister():
 
     bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.app.handlers.load_post.remove(handler.loadIfcStore)
-    bpy.app.handlers.save_post.remove(handler.ensureIfcExported)
     del bpy.types.Scene.BIMProperties
     del bpy.types.Collection.BIMCollectionProperties
     del bpy.types.Object.BIMObjectProperties
