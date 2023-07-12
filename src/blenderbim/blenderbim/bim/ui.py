@@ -545,7 +545,7 @@ def draw_statusbar(self, context):
         UIData.load()
     text = f"BlenderBIM Add-on v{UIData.data['version']}"
     if blenderbim.bim.last_commit_hash != "8888888":
-        text += f"@{blenderbim.bim.last_commit_hash[:7]}"
+        text += f"-{blenderbim.bim.last_commit_hash[:7]}"
     self.layout.label(text=text)
 
 
