@@ -737,12 +737,13 @@ class Model(blenderbim.core.tool.Model):
         AuthoringData.type_thumbnails[element.id()] = obj.preview.icon_id
 
     @classmethod
-    def get_railing_pset_data(cls, object):
+    def get_modeling_bbim_pset_data(cls, object, pset_name):
+        """get modelling BBIM pset data (eg, BBIM_Roof) and loads it's `Data` as json to `data_dict`"""
         element = tool.Ifc.get_entity(object)
         if not element:
             return
         psets = ifcopenshell.util.element.get_psets(element)
-        pset_data = psets.get("BBIM_Railing", None)
+        pset_data = psets.get(pset_name, None)
         if not pset_data:
             return
         pset_data["data_dict"] = json.loads(pset_data.get("Data", "[]") or "[]")

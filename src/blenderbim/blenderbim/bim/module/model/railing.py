@@ -80,7 +80,7 @@ def update_railing_modifier_ifc_data(context):
 
     if props.railing_type == "WALL_MOUNTED_HANDRAIL":
         body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
-        pset_data = tool.Model.get_railing_pset_data(bpy.context.active_object)
+        pset_data = tool.Model.get_modeling_bbim_pset_data(bpy.context.active_object, "BBIM_Railing")
         path_data = pset_data["data_dict"]["path_data"]
         railing_path = [Vector(v) for v in path_data["verts"]]
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
@@ -117,6 +117,9 @@ def update_bbim_railing_pset(element, railing_data):
 
 
 def update_railing_modifier_bmesh(context):
+    """before using should make sure that Data contains up-to-date information.
+    If BBIM Pset just changed should call refresh() before updating bmesh
+    """
     obj = context.object
     props = obj.BIMRailingProperties
 
@@ -394,7 +397,7 @@ class FinishEditingRailing(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMRailingProperties
 
-        pset_data = tool.Model.get_railing_pset_data(bpy.context.active_object)
+        pset_data = tool.Model.get_modeling_bbim_pset_data(bpy.context.active_object, "BBIM_Railing")
         path_data = pset_data["data_dict"]["path_data"]
 
         railing_data = props.get_general_kwargs(convert_to_project_units=True)
@@ -417,7 +420,7 @@ class FlipRailingPathOrder(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMRailingProperties
 
-        pset_data = tool.Model.get_railing_pset_data(bpy.context.active_object)
+        pset_data = tool.Model.get_modeling_bbim_pset_data(bpy.context.active_object, "BBIM_Railing")
         path_data = pset_data["data_dict"]["path_data"]
 
         # flip the vertex order and edges

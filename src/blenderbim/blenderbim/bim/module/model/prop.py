@@ -629,7 +629,7 @@ class BIMRoofProperties(PropertyGroup):
         ("ANGLE", "ANGLE", ""),
     )
 
-    is_editing: bpy.props.IntProperty(default=-1)
+    is_editing: bpy.props.BoolProperty(default=False)
     is_editing_path: bpy.props.BoolProperty(default=False)
 
     roof_type: bpy.props.EnumProperty(name="Roof Type", items=roof_types, default="HIP/GABLE ROOF")
@@ -643,14 +643,16 @@ class BIMRoofProperties(PropertyGroup):
     roof_thickness: bpy.props.FloatProperty(name="Roof Thickness", default=0.1, subtype="DISTANCE")
     rafter_edge_angle: bpy.props.FloatProperty(name="Rafter Edge Angle", min=0, max=pi, default=pi / 2, subtype="ANGLE")
 
-    def get_general_kwargs(self, convert_to_project_units=False):
+    def get_general_kwargs(self, generation_method=None, convert_to_project_units=False):
+        if generation_method is None:
+            generation_method = self.generation_method
         kwargs = {
             "roof_type": self.roof_type,
-            "generation_method": self.generation_method,
+            "generation_method": generation_method,
             "roof_thickness": self.roof_thickness,
             "rafter_edge_angle": self.rafter_edge_angle,
         }
-        if self.generation_method == "HEIGHT":
+        if generation_method == "HEIGHT":
             kwargs["height"] = self.height
         else:
             kwargs["angle"] = self.angle

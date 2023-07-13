@@ -18,7 +18,7 @@
 
 import bpy
 import blenderbim.tool as tool
-from bpy.types import Panel, Operator, Menu
+from bpy.types import Panel, Menu
 from blenderbim.bim.module.model.data import (
     AuthoringData,
     ArrayData,
@@ -36,7 +36,6 @@ from blenderbim.bim.module.model.door import update_door_modifier_bmesh
 from blenderbim.bim.module.model.railing import update_railing_modifier_bmesh
 from blenderbim.bim.module.model.roof import update_roof_modifier_bmesh
 from blenderbim.bim.helper import prop_with_search
-from math import degrees
 
 
 class LaunchTypeManager(bpy.types.Operator):
@@ -191,7 +190,7 @@ class BIM_PT_array(bpy.types.Panel):
             op.parent = ArrayData.data["parameters"]["Parent"]
             op = row.operator("bim.select_all_array_objects", icon="RESTRICT_SELECT_OFF", text="")
             op.parent = ArrayData.data["parameters"]["Parent"]
-            
+
             if ArrayData.data["parameters"]["data_dict"]:
                 row.operator("bim.add_array", icon="ADD", text="")
 
@@ -619,7 +618,7 @@ class BIM_PT_roof(bpy.types.Panel):
 
             roof_data = RoofData.data["parameters"]["data_dict"]
 
-            if props.is_editing != -1:
+            if props.is_editing:
                 row = self.layout.row(align=True)
                 row.operator("bim.finish_editing_roof", icon="CHECKMARK", text="Finish Editing")
                 row.operator("bim.cancel_editing_roof", icon="CANCEL", text="")
@@ -640,14 +639,9 @@ class BIM_PT_roof(bpy.types.Panel):
                 row.operator("bim.remove_roof", icon="X", text="")
 
                 box = self.layout.box()
-                general_props = props.get_general_kwargs()
-                for prop in general_props:
-                    prop_value = roof_data[prop]
-                    prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
+                for prop_name, prop_value in RoofData.data["general_params"].items():
                     row = box.row(align=True)
-                    row.label(text=f"{props.bl_rna.properties[prop].name}")
-                    if prop in ("angle", "rafter_edge_angle"):
-                        prop_value = round(degrees(prop_value), 2)
+                    row.label(text=prop_name)
                     row.label(text=str(prop_value))
         else:
             row = self.layout.row()
