@@ -430,7 +430,7 @@ def update_roof_modifier_bmesh(context):
     # NOTE: using Data since bmesh update will hapen very often
     if not RoofData.is_loaded:
         RoofData.load()
-    path_data = RoofData.data["parameters"]["data_dict"]["path_data"]
+    path_data = RoofData.data["pset_data"]["data_dict"]["path_data"]
     angle_layer_data = path_data.get("gable_roof_angles", None)
     separate_verts_data = path_data.get("gable_roof_separate_verts", None)
 
