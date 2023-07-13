@@ -111,8 +111,12 @@ class Root(blenderbim.core.tool.Root):
         if obj.data and obj.data.BIMMeshProperties.ifc_definition_id:
             return tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         element = tool.Ifc.get_entity(obj)
-        if not obj.data and getattr(element, "ObjectType", None) == "TEXT":
-            return element.Representation.Representations[0]
+        if element.is_a("IfcTypeProduct"):
+            if element.RepresentationMaps:
+                return element.RepresentationMaps[0].MappedRepresentation
+        elif element.is_a("IfcProduct"):
+            if element.Representation:
+                return element.Representation.Representations[0]
 
     @classmethod
     def get_representation_context(cls, representation):
