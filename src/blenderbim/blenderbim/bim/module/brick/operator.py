@@ -22,11 +22,12 @@ import blenderbim.tool as tool
 import blenderbim.core.brick as core
 import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.tool.brick import BrickStore
 
 
 class Operator:
     def execute(self, context):
-        self._execute(context)
+        IfcStore.execute_ifc_operator(self, context)
         blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
@@ -126,6 +127,7 @@ class AddBrick(bpy.types.Operator, Operator):
             namespace=props.namespace,
             brick_class=props.brick_equipment_class,
             library=library,
+            label=props.new_brick_label,
         )
 
 
@@ -158,13 +160,35 @@ class ConvertIfcToBrick(bpy.types.Operator, Operator):
         core.convert_ifc_to_brick(tool.Brick, namespace=props.namespace, library=library)
 
 
-class NewBrickFile(bpy.types.Operator, Operator):
+class NewBrickFile(bpy.types.Operator):
     bl_idname = "bim.new_brick_file"
     bl_label = "New Brick File"
     bl_options = {"REGISTER", "UNDO"}
 
+    def execute(self, context):
+        IfcStore.begin_transaction(self)
+        IfcStore.add_transaction_operation(self, rollback=self.rollback, commit=lambda data: True)
+        self._execute(context)
+        self.transaction_data = {
+            "schema": BrickStore.schema,
+            "path": BrickStore.path,
+            "graph": BrickStore.graph,
+        }
+        IfcStore.add_transaction_operation(self, rollback=lambda data: True, commit=self.commit)
+        IfcStore.end_transaction(self)
+        blenderbim.bim.handler.refresh_ui_data()
+        return {"FINISHED"}
+
     def _execute(self, context):
         core.new_brick_file(tool.Brick)
+
+    def rollback(self, data):
+        BrickStore.purge()
+
+    def commit(self, data):
+        BrickStore.schema = data["schema"]
+        BrickStore.path = data["path"]
+        BrickStore.graph = data["graph"]
 
 
 class RefreshBrickViewer(bpy.types.Operator, Operator):
@@ -190,23 +214,41 @@ class RemoveBrick(bpy.types.Operator, Operator):
             brick_uri=props.bricks[props.active_brick_index].uri,
         )
 
-class UndoBrick(bpy.types.Operator, Operator):
-    bl_idname = "bim.undo_brick"
-    bl_label = "Undo Brick"
 
-    def _execute(self, context):
-        core.undo_brick(tool.Brick)
-
-class RedoBrick(bpy.types.Operator, Operator):
-    bl_idname = "bim.redo_brick"
-    bl_label = "Redo Brick"
-
-    def _execute(self, context):
-        core.redo_brick(tool.Brick)
-
-class SerializeBrick(bpy.types.Operator, Operator):
+class SerializeBrick(bpy.types.Operator):
     bl_idname = "bim.serialize_brick"
     bl_label = "Serialize Brick"
+    filter_glob: bpy.props.StringProperty(default="*.ttl", options={"HIDDEN"})
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    should_save_as: bpy.props.BoolProperty(name="Should Save As", default=False, options={"HIDDEN"})
+
+    def invoke(self, context, event):
+        if self.should_save_as or not BrickStore.path:
+            WindowManager = context.window_manager
+            WindowManager.fileselect_add(self)
+            return {"RUNNING_MODAL"}
+        else:
+            return self.execute(context)
+
+    def execute(self, context):
+        if self.should_save_as or not BrickStore.path:
+            BrickStore.path = self.filepath
+        core.serialize_brick(tool.Brick)
+        return {"FINISHED"}
+
+    @classmethod
+    def description(cls, context, properties):
+        if properties.should_save_as:
+            return "Save Brick project to a selected file"
+        return "Save the Brick project"
+
+
+class AddBrickNamespace(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_brick_namespace"
+    bl_label = "Add Brick Namespace"
 
     def _execute(self, context):
-        core.serialize_brick(tool.Brick)
+        props = context.scene.BIMBrickProperties
+        alias = props.new_brick_namespace_alias
+        uri = props.new_brick_namespace_uri
+        core.add_namespace(tool.Brick, alias=alias, uri=uri)

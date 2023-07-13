@@ -22,10 +22,11 @@ from __future__ import division
 from __future__ import print_function
 
 import os
-from pathlib import Path
+import re
 import numbers
-import functools
 import zipfile
+import functools
+from pathlib import Path
 
 import ifcopenshell.util.element
 import ifcopenshell.util.file
@@ -175,6 +176,9 @@ class Transaction:
                 pass
 
 
+file_dict = {}
+
+
 class file(object):
     """Base class for containing IFC files.
 
@@ -191,8 +195,52 @@ class file(object):
         print(products[0] == ifc_file[122] == ifc_file["2XQ$n5SLP5MBLyL442paFx"]) # True
     """
 
-    def __init__(self, f=None, schema=None):
-        """Create a new file object"""
+    def __init__(self, f=None, schema=None, schema_version=None):
+        """Create a new blank IFC model
+
+        This IFC model does not have any entities in it yet. See the
+        ``create_entity`` function for how to create new entities. All data is
+        stored in memory. If you wish to write the IFC model to disk, see the
+        ``write`` function.
+
+        :param f: The underlying IfcOpenShell file object to be wrapped. This
+            is an internal implementation detail and should generally be left
+            as None by users.
+        :param schema: Which IFC schema to use, chosen from "IFC2X3", "IFC4",
+            or "IFC4X3". These refer to the ISO approved versions of IFC.
+            Defaults to "IFC4" if not specified, which is currently recommended
+            for all new projects.
+        :type schema: string
+        :param schema_version: If you want to specify an exact version of IFC
+            that may not be an ISO approved version, use this argument instead
+            of ``schema``. IFC versions on technical.buildingsmart.org are
+            described using 4 integers representing the major, minor, addendum,
+            and corrigendum number. For example, (4, 0, 2, 1) refers to IFC4
+            ADD2 TC1, which is the official version approved by ISO when people
+            refer to "IFC4". Generally you should not use this argument unless
+            you are testing non-ISO IFC releases.
+        :type schema_version: tuple[int]
+
+        Example:
+
+        .. code:: python
+
+            # Create a new IFC4 model, create a wall, then save it to an IFC-SPF file.
+            model = ifcopenshell.file()
+            model.create_entity("IfcWall")
+            model.write("/path/to/model.ifc")
+
+            # Create a new IFC4X3 model
+            model = ifcopenshell.file(schema="IFC4X3")
+
+            # A poweruser testing out a particular version of IFC4X3
+            model = ifcopenshell.file(schema_version=(4, 3, 0, 1))
+        """
+        if schema_version:
+            prefixes = ("IFC", "X", "_ADD", "_TC")
+            schema = "".join("".join(map(str, t)) if t[1] else "" for t in zip(prefixes, schema_version))
+        else:
+            schema = {"IFC4X3": "IFC4X3_ADD1"}.get(schema, schema)
         if f is not None:
             self.wrapped_data = f
         else:
@@ -203,6 +251,9 @@ class file(object):
         self.history = []
         self.future = []
         self.transaction = None
+
+        # Temporarily commented out until bot builds are available and tested to prevent user bugs.
+        # file_dict[self.file_pointer()] = self
 
     def set_history_size(self, size):
         self.history_size = size
@@ -306,6 +357,17 @@ class file(object):
     def __getattr__(self, attr):
         if attr[0:6] == "create":
             return functools.partial(self.create_entity, attr[6:])
+        elif attr == "schema":
+            return {"IFC4X3_ADD1": "IFC4X3"}.get(self.wrapped_data.schema, self.wrapped_data.schema)
+        elif attr == "schema_identifier":
+            return self.wrapped_data.schema
+        elif attr == "schema_version":
+            schema = self.wrapped_data.schema
+            version = []
+            for prefix in ("IFC", "X", "_ADD", "_TC"):
+                number = re.search(prefix + r"(\d)", schema)
+                version.append(int(number.group(1)) if number else 0)
+            return tuple(version)
         else:
             return getattr(self.wrapped_data, attr)
 
@@ -487,10 +549,18 @@ class file(object):
             unzipped_path = path.with_suffix(format)
             path.rename(unzipped_path)
             with zipfile.ZipFile(path, "w") as zip_file:
-                zip_file.write(unzipped_path, unzipped_path.name, compress_type=zipfile.ZIP_DEFLATED)
+                zip_file.write(
+                    unzipped_path,
+                    unzipped_path.name,
+                    compress_type=zipfile.ZIP_DEFLATED,
+                )
                 unzipped_path.unlink()
         return
 
     @staticmethod
     def from_string(s):
         return file(ifcopenshell_wrapper.read(s))
+
+    @staticmethod
+    def from_pointer(v):
+        return file_dict.get(v)

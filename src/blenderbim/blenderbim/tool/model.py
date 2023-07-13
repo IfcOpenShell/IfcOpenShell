@@ -30,6 +30,7 @@ from blenderbim.bim import import_ifc
 from blenderbim.bim.module.geometry.helper import Helper
 import collections
 from blenderbim.bim.module.model.data import AuthoringData
+import json
 
 
 class Model(blenderbim.core.tool.Model):
@@ -531,7 +532,7 @@ class Model(blenderbim.core.tool.Model):
         return axes
 
     @classmethod
-    def regenerate_array(cls, parent, data):
+    def regenerate_array(cls, parent, data, keep_objs=False):
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         obj_stack = [parent]
 
@@ -601,7 +602,12 @@ class Model(blenderbim.core.tool.Model):
                 element = tool.Ifc.get().by_guid(removed_child)
                 obj = tool.Ifc.get_object(element)
                 if obj:
-                    tool.Geometry.delete_ifc_object(obj)
+                    if keep_objs:
+                        pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+                        pset = tool.Ifc.get().by_id(pset["id"])
+                        ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
+                    else:
+                        tool.Geometry.delete_ifc_object(obj)
 
             bpy.context.view_layer.update()
 
@@ -729,3 +735,16 @@ class Model(blenderbim.core.tool.Model):
             obj.preview.image_pixels_float = pixels
 
         AuthoringData.type_thumbnails[element.id()] = obj.preview.icon_id
+
+    @classmethod
+    def get_modeling_bbim_pset_data(cls, object, pset_name):
+        """get modelling BBIM pset data (eg, BBIM_Roof) and loads it's `Data` as json to `data_dict`"""
+        element = tool.Ifc.get_entity(object)
+        if not element:
+            return
+        psets = ifcopenshell.util.element.get_psets(element)
+        pset_data = psets.get(pset_name, None)
+        if not pset_data:
+            return
+        pset_data["data_dict"] = json.loads(pset_data.get("Data", "[]") or "[]")
+        return pset_data

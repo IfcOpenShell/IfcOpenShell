@@ -36,10 +36,37 @@ VIEWPORT_ATTRIBUTES = [
 
 
 class Blender:
+    OBJECT_TYPES_THAT_SUPPORT_EDIT_MODE = ("MESH", "CURVE", "SURFACE", "META", "FONT", "LATTICE", "ARMATURE")
+    OBJECT_TYPES_THAT_SUPPORT_EDIT_GPENCIL_MODE = ("GPENCIL",)
+
     @classmethod
     def set_active_object(cls, obj):
         bpy.context.view_layer.objects.active = obj
         obj.select_set(True)
+
+    @classmethod
+    def is_tab(cls, context, tab):
+        if not len(context.screen.BIMAreaProperties):
+            return None
+        if context.area.spaces.active.search_filter:
+            return True
+        screen_areas = context.screen.areas[:]
+        current_area = context.area
+        # If the user is using the properties panel "Display Filter" search it
+        # will create a new area that's not present in context.screen.areas for
+        # all property tabs except for the active property tab.
+        if current_area not in screen_areas:
+            current_area = next(a for a in context.screen.areas if a.x == current_area.x and a.y == current_area.y)
+        area_index = screen_areas.index(current_area)
+        return context.screen.BIMAreaProperties[area_index].tab == tab
+
+    @classmethod
+    def is_default_scene(cls):
+        if len(bpy.context.scene.objects) != 3:
+            return False
+        if {obj.type for obj in bpy.context.scene.objects} == {"MESH", "LIGHT", "CAMERA"}:
+            return True
+        return False
 
     @classmethod
     def get_name(cls, ifc_class, name):
@@ -321,6 +348,26 @@ class Blender:
         active_object.select_set(True)
 
     @classmethod
+    def set_objects_selection(cls, context, active_object, selected_objects):
+        for obj in context.selected_objects:
+            obj.select_set(False)
+        for obj in selected_objects:
+            obj.select_set(True)
+        context.view_layer.objects.active = active_object
+        active_object.select_set(True)
+
+    @classmethod
+    def enum_property_has_valid_index(cls, props, prop_name, enum_items):
+        """method created for readibility and to avoid console warnings like
+        `pyrna_enum_to_py: current value '17' matches no enum in 'BIMModelProperties', '', 'relating_type_id'`
+        """
+        current_value_index = props.get(prop_name, None)
+        # assuming the default value is fine
+        if current_value_index is None:
+            return True
+        return current_value_index < len(enum_items)
+
+    @classmethod
     def append_data_block(cls, filepath, data_block_type, name, link=False, relative=False):
         if Path(filepath) == Path(bpy.data.filepath):
             data_block = getattr(bpy.data, data_block_type).get(name, None)
@@ -397,3 +444,15 @@ class Blender:
             callback(bm_a, new_verts, new_edges, new_faces)
 
         return bm_a
+
+    @classmethod
+    def toggle_edit_mode(cls, context):
+        ao = context.active_object
+        if not ao:
+            return {"CANCELLED"}
+        if ao.type in cls.OBJECT_TYPES_THAT_SUPPORT_EDIT_MODE:
+            return bpy.ops.object.mode_set(mode="EDIT", toggle=True)
+        elif ao.type in cls.OBJECT_TYPES_THAT_SUPPORT_EDIT_GPENCIL_MODE:
+            return bpy.ops.object.mode_set(mode="EDIT_GPENCIL", toggle=True)
+        else:
+            return {"CANCELLED"}

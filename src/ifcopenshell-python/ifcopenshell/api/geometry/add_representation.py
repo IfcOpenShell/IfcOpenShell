@@ -362,33 +362,99 @@ class Usecase:
             results.append(self.file.createIfcSweptDiskSolid(curve, radius))
         return results
 
+    def is_mesh_curve_consequtive(self, geom_data):
+        import blenderbim.tool as tool
+        bm = tool.Blender.get_bmesh_for_mesh(geom_data)
+        bm.verts.ensure_lookup_table()
+        start_vert = bm.verts[0]
+        n_verts = len(bm.verts)
+        cur_edges = bm.verts[0].link_edges
+
+        if len(cur_edges) > 2:
+            return False
+        elif cur_edges == 2:
+            edge0, edge1 = cur_edges
+        else:
+            edge0, edge1 = cur_edges[0], None
+
+        processed_verts = set()
+        processed_verts.add(start_vert)
+        def validate_edge(edge, start_vert, processed_verts):
+            cur_vert = edge.other_vert(start_vert)
+            while True:
+                if cur_vert == start_vert:
+                    break
+                if cur_vert in processed_verts:
+                    return
+                processed_verts.add(cur_vert)
+                edges = cur_vert.link_edges
+                if len(edges) > 2:
+                    return
+                elif len(edges) == 1:
+                    return True
+                edge = next(e for e in edges if e != edge)
+                cur_vert = edge.other_vert(cur_vert)
+            return True
+        
+        if not validate_edge(edge0, start_vert, processed_verts):
+            return
+        
+        if edge1 and not validate_edge(edge1, start_vert, processed_verts):
+            return
+        
+        if len(processed_verts) != n_verts:
+            return False
+        return True
+
     def create_curves(self, should_exclude_faces=False, is_2d=False):
-        if isinstance(self.settings["geometry"], bpy.types.Mesh):
-            if self.file.schema == "IFC2X3":
-                return self.create_curves_from_mesh_ifc2x3(should_exclude_faces=should_exclude_faces, is_2d=is_2d)
-            else:
-                return self.create_curves_from_mesh(should_exclude_faces=should_exclude_faces, is_2d=is_2d)
-        elif isinstance(self.settings["geometry"], bpy.types.Curve):
-            if self.file.schema == "IFC2X3":
-                return self.create_curves_from_curve_ifc2x3(is_2d=is_2d)
-            else:
-                return self.create_curves_from_curve(is_2d=is_2d)
-            
+        geom_data = self.settings["geometry"]
+
+        if isinstance(geom_data, bpy.types.Mesh):
+            if self.is_mesh_curve_consequtive(geom_data):
+                if self.file.schema == "IFC2X3":
+                    return self.create_curves_from_mesh_ifc2x3(should_exclude_faces=should_exclude_faces, is_2d=is_2d)
+                else:
+                    return self.create_curves_from_mesh(should_exclude_faces=should_exclude_faces, is_2d=is_2d)
+
+        import blenderbim.tool as tool
+
+        selected_objects = bpy.context.selected_objects
+        active_object = bpy.context.active_object
+
+        # create dummy object that will have more detailed curves
+        # since now we do not really support splines curves natively
+        obj = self.settings["blender_object"]
+        dummy = bpy.data.objects.new("Dummy", obj.data.copy())
+        bpy.context.scene.collection.objects.link(dummy)
+        tool.Blender.select_and_activate_single_object(bpy.context, dummy)
+        if not isinstance(geom_data, bpy.types.Mesh):
+            bpy.ops.object.convert(target="MESH")
+        self.remove_doubles_from_mesh(dummy.data)
+        bpy.ops.object.convert(target="CURVE")
+
+        if self.file.schema == "IFC2X3":
+            curves = self.create_curves_from_curve_ifc2x3(is_2d=is_2d, curve_object_data=dummy.data)
+        else:
+            curves = self.create_curves_from_curve(is_2d=is_2d, curve_object_data=dummy.data)
+
+        # restore objects selection
+        bpy.data.objects.remove(dummy)
+        tool.Blender.set_objects_selection(bpy.context, active_object, selected_objects)
+        return curves
 
     def create_curves_from_mesh(self, should_exclude_faces=False, is_2d=False):
+        geom_data = self.settings["geometry"].copy()
+        self.remove_doubles_from_mesh(geom_data)
         curves = []
-        points = self.create_cartesian_point_list_from_vertices(self.settings["geometry"].vertices, is_2d=is_2d)
+        points = self.create_cartesian_point_list_from_vertices(geom_data.vertices, is_2d=is_2d)
         edge_loops = []
         previous_edge = None
         edge_loop = []
         face_edges = set()
         if should_exclude_faces:
-            [face_edges.union([self.settings["geometry"].edge_keys.index(ek) for ek in p.edge_keys]) for p in self.settings["geometry"].polygons]
-        for i, edge in enumerate(self.settings["geometry"].edges):
+            [face_edges.union([geom_data.edge_keys.index(ek) for ek in p.edge_keys]) for p in geom_data.polygons]
+        for i, edge in enumerate(geom_data.edges):
             if should_exclude_faces and i in face_edges:
-                continue
-            if (Vector(points.CoordList[edge.vertices[0]]) - Vector(points.CoordList[edge.vertices[1]])).length < 0.001:
-                # Maybe we should warn the user to weld vertices in this scenario?
                 continue
             elif previous_edge is None:
                 edge_loop = [self.file.createIfcLineIndex((edge.vertices[0] + 1, edge.vertices[1] + 1))]
@@ -403,11 +469,19 @@ class Usecase:
             curves.append(self.file.createIfcIndexedPolyCurve(points, edge_loop))
         return curves
 
+    def remove_doubles_from_mesh(self, mesh):
+        import blenderbim.tool as tool
+        bm = tool.Blender.get_bmesh_for_mesh(mesh)
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
+        tool.Blender.apply_bmesh(mesh, bm)
+
     def create_curves_from_mesh_ifc2x3(self, should_exclude_faces=False, is_2d=False):
+        geom_data = self.settings["geometry"].copy()
+        self.remove_doubles_from_mesh(geom_data)
         curves = []
         points = [
             self.create_cartesian_point(v.co.x, v.co.y, v.co.z if not is_2d else None)
-            for v in self.settings["geometry"].vertices
+            for v in geom_data.vertices
         ]
         coord_list = [p.Coordinates for p in points]
         edge_loops = []
@@ -415,12 +489,9 @@ class Usecase:
         edge_loop = []
         face_edges = set()
         if should_exclude_faces:
-            [face_edges.union([self.settings["geometry"].edge_keys.index(ek) for ek in p.edge_keys]) for p in self.settings["geometry"].polygons]
-        for i, edge in enumerate(self.settings["geometry"].edges):
+            [face_edges.union([geom_data.edge_keys.index(ek) for ek in p.edge_keys]) for p in geom_data.polygons]
+        for i, edge in enumerate(geom_data.edges):
             if should_exclude_faces and i in face_edges:
-                continue
-            if (Vector(coord_list[edge.vertices[0]]) - Vector(coord_list[edge.vertices[1]])).length < 0.001:
-                # Maybe we should warn the user to weld vertices in this scenario?
                 continue
             elif previous_edge is None:
                 edge_loop = [edge.vertices]
@@ -437,8 +508,10 @@ class Usecase:
             curves.append(self.file.createIfcPolyline(loop_points))
         return curves
 
-    def create_curves_from_curve_ifc2x3(self, is_2d=False):
+    def create_curves_from_curve_ifc2x3(self, is_2d=False, curve_object_data=None):
         # TODO: support interpolated curves, not just polylines
+        if not curve_object_data:
+            curve_object_data = self.settings["geometry"]
         dim = (lambda v: v.xy) if is_2d else (lambda v: v.xyz)
         results = []
         for spline in self.settings["geometry"].splines:
@@ -449,14 +522,16 @@ class Usecase:
             results.append(self.file.createIfcPolyline(ifc_points))
         return results
 
-    def create_curves_from_curve(self, is_2d=False):
+    def create_curves_from_curve(self, is_2d=False, curve_object_data=None):
         # TODO: support interpolated curves, not just polylines
+        if not curve_object_data:
+            curve_object_data = self.settings["geometry"]
         dim = (lambda v: v.xy) if is_2d else (lambda v: v.xyz)
         to_units = lambda v: Vector([self.convert_si_to_unit(i) for i in v])
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(self.file)
         results = []
 
-        for spline in self.settings["geometry"].splines:
+        for spline in curve_object_data.splines:
             points = spline.bezier_points[:] + spline.points[:]
 
             points = [to_units(dim(p.co)) for p in points]

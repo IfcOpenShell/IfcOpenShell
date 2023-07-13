@@ -221,51 +221,42 @@ class SvgWriter:
         return self
 
     def draw_section_level_annotation(self, obj):
-        x_offset = self.raw_width / 2
-        y_offset = self.raw_height / 2
+        offset = Vector([self.raw_width, self.raw_height]) / 2
         matrix_world = obj.matrix_world
         classes = self.get_attribute_classes(obj)
         element = tool.Ifc.get_entity(obj)
         storey = tool.Drawing.get_annotation_element(element)
         tag = storey.Name if storey else element.Description
+        dimension_data = DecoratorData.get_dimension_data(obj)
+        suppress_zero_inches = dimension_data["suppress_zero_inches"]
+        base_offset_y = 3.5
+
         for spline in obj.data.splines:
             points = self.get_spline_points(spline)
             projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
-            d = " ".join(
-                [
-                    "L {} {}".format((x_offset + p.x) * self.svg_scale, (y_offset - p.y) * self.svg_scale)
-                    for p in projected_points
-                ]
-            )
+            projected_points_svg = [(offset + p.xy * Vector((1, -1))) * self.svg_scale for p in projected_points]
+            d = " ".join(["L {} {}".format(*p) for p in projected_points_svg])
             d = "M{}".format(d[1:])
             path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
-            text_position = Vector(
-                (
-                    (x_offset + projected_points[0].x) * self.svg_scale,
-                    ((y_offset - projected_points[0].y) * self.svg_scale) - 3.5,
-                )
-            )
+            text_position = projected_points_svg[0] - Vector((0, base_offset_y))
+            vector = projected_points_svg[0] - projected_points_svg[1]
+            angle = math.degrees(vector.angle_signed(Vector((1, 0))))
+
             # TODO: allow metric to be configurable
-            rl_value = (matrix_world @ points[0].co.xyz).z
-            if bpy.context.scene.unit_settings.system == "IMPERIAL":
-                rl = helper.format_distance(rl_value, precision=self.precision, decimal_places=self.decimal_places)
-            else:
-                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-                rl = rl_value / unit_scale
-                rl = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), rl)
-                rl *= unit_scale
-                rl = "{:.3f}m".format(rl)
-            text_style = SvgWriter.get_box_alignment_parameters("bottom-left")
-            self.svg.add(
-                self.svg.text(
-                    "RL {}{}".format("" if rl_value < 0 else "+", rl),
-                    insert=tuple(text_position),
-                    class_="SECTIONLEVEL",
-                    **text_style,
+            def get_text():
+                z = (matrix_world @ points[0].co.xyz).z
+                rl = helper.format_distance(
+                    z,
+                    precision=self.precision,
+                    decimal_places=self.decimal_places,
+                    suppress_zero_inches=suppress_zero_inches,
                 )
+                text = "RL {}{}".format("" if z < 0 else "+", rl)
+                return text
+
+            self.draw_dimension_text(
+                get_text, tag, dimension_data, text_position=text_position, angle=angle, class_str="SECTIONLEVEL"
             )
-            if tag:
-                self.svg.add(self.svg.text(tag, insert=(text_position[0], text_position[1] - 5), **text_style))
 
     def draw_stair_annotation(self, obj):
         x_offset = self.raw_width / 2
@@ -726,15 +717,19 @@ class SvgWriter:
         drawing = tool.Drawing.get_annotation_element(element)
         reference = tool.Drawing.get_drawing_reference(drawing)
         if reference:
-            sheet = tool.Drawing.get_reference_document(reference)
-            if sheet:
-                if tool.Ifc.get_schema() == "IFC2X3":
-                    reference_id = reference.ItemReference or "-"
-                    sheet_id = sheet.DocumentId or "-"
-                else:
-                    reference_id = reference.Identification or "-"
-                    sheet_id = sheet.Identification or "-"
-                return (reference_id, sheet_id)
+            for sheet_reference in tool.Ifc.get().by_type("IfcDocumentReference"):
+                if sheet_reference.Description != "DRAWING" or sheet_reference.Location != reference.Location:
+                    continue
+                sheet = tool.Drawing.get_reference_document(sheet_reference)
+                if sheet:
+                    if tool.Ifc.get_schema() == "IFC2X3":
+                        reference_id = sheet_reference.ItemReference or "-"
+                        sheet_id = sheet.DocumentId or "-"
+                    else:
+                        reference_id = sheet_reference.Identification or "-"
+                        sheet_id = sheet.Identification or "-"
+                    return (reference_id, sheet_id)
+                break
         return ("-", "-")
 
     @staticmethod
@@ -828,45 +823,19 @@ class SvgWriter:
 
         line_number = 0
         for text_literal in text_literals:
-            # after pretty indentation some redundant spaces can occur in svg tags
-            # this is why we apply "font-size: 0;" to the text tag to remove those spaces
-            # and add clases to the tspan tags
-            # ref: https://github.com/IfcOpenShell/IfcOpenShell/issues/2833#issuecomment-1471584960
-
             text = tool.Drawing.replace_text_literal_variables(text_literal.Literal, product)
-            attribs = {
-                "transform": text_transform,
-                "style": "font-size: 0;",
-            }
-
-            def add_text_tag(add_fill_bg):
-                nonlocal line_number
-                text_tag = self.svg.text(
-                    "",
-                    **(attribs | {"filter": "url(#fill-background)"}) if add_fill_bg else attribs,
-                    **SvgWriter.get_box_alignment_parameters(text_literal.BoxAlignment),
-                )
-                self.svg.add(text_tag)
-
-                text_lines = text.replace("\\n", "\n").split("\n")
-
-                for text_line in text_lines:
-                    # position has to be inserted at tspan to avoid x offset between tspans
-                    # note that tspan doesn't support using `transform` attribute
-                    # so we use (0,0) position because tspan is already offseted by text transform
-                    tspan = self.svg.tspan(text_line, class_=classes_str, insert=(0, 0))
-                    # doing it here and not in tspan constructor because constructor adds unnecessary spaces
-                    tspan.update({"dy": f"{line_number}em"})
-                    text_tag.add(tspan)
-                    line_number += 1
-
-                if add_fill_bg:
-                    # return line_number back to the original value
-                    line_number -= len(text_lines)
-
-            if "fill-bg" in classes:
-                add_text_tag(True)
-            add_text_tag(False)
+            text_tags = self.create_text_tag(
+                text,
+                text_position_svg,
+                angle,
+                text_literal.BoxAlignment,
+                classes_str,
+                fill_bg="fill-bg" in classes,
+                line_number_start=line_number,
+            )
+            for tag in text_tags:
+                self.svg.add(tag)
+            line_number += len(tag.elements)
 
     def draw_break_annotations(self, obj):
         x_offset = self.raw_width / 2
@@ -892,53 +861,56 @@ class SvgWriter:
             path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
 
     def draw_plan_level_annotation(self, obj):
-        x_offset = self.raw_width / 2
-        y_offset = self.raw_height / 2
+        offset = Vector([self.raw_width, self.raw_height]) / 2
         matrix_world = obj.matrix_world
         classes = self.get_attribute_classes(obj)
+
+        element = tool.Ifc.get_entity(obj)
+        description = element.Description
+
+        dimension_data = DecoratorData.get_dimension_data(obj)
+        suppress_zero_inches = dimension_data["suppress_zero_inches"]
+        base_offset_y = 1.0
+
         for spline in obj.data.splines:
             points = self.get_spline_points(spline)
             projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
-            d = " ".join(
-                [
-                    "L {} {}".format((x_offset + p.x) * self.svg_scale, (y_offset - p.y) * self.svg_scale)
-                    for p in projected_points
-                ]
-            )
+            projected_points_svg = [(offset + p.xy * Vector((1, -1))) * self.svg_scale for p in projected_points]
+            d = " ".join(["L {} {}".format(*p) for p in projected_points_svg])
             d = "M{}".format(d[1:])
             path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
-            text_position = Vector(
-                (
-                    (x_offset + projected_points[0].x) * self.svg_scale,
-                    ((y_offset - projected_points[0].y) * self.svg_scale) - 1.0,
-                )
-            )
+            text_position = projected_points_svg[0] - Vector((0, base_offset_y))
+            vector = projected_points_svg[1] - projected_points_svg[0]
+            angle = math.degrees(vector.angle_signed(Vector((1, 0))))
+
             # TODO: allow metric to be configurable
-            rl_value = (matrix_world @ points[0].co).z
-            if bpy.context.scene.unit_settings.system == "IMPERIAL":
-                rl = helper.format_distance(rl_value, precision=self.precision, decimal_places=self.decimal_places)
-            else:
-                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-                rl = rl_value / unit_scale
-                rl = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), rl)
-                rl *= unit_scale
-                rl = "{:.3f}m".format(rl)
+            def get_text():
+                z = (matrix_world @ points[0].co.xyz).z
+                rl = helper.format_distance(
+                    z,
+                    precision=self.precision,
+                    decimal_places=self.decimal_places,
+                    suppress_zero_inches=suppress_zero_inches,
+                )
+                text = "{}{}".format("" if z < 0 else "+", rl)
+                return text
 
             box_alignment = "bottom-left" if projected_points[0].x <= projected_points[-1].x else "bottom-right"
-            text_style = SvgWriter.get_box_alignment_parameters(box_alignment)
-            self.svg.add(
-                self.svg.text(
-                    "{}{}".format("" if rl_value < 0 else "+", rl),
-                    insert=tuple(text_position),
-                    class_="PLANLEVEL",
-                    **text_style,
-                )
+            self.draw_dimension_text(
+                get_text,
+                description,
+                dimension_data,
+                text_position=text_position,
+                angle=angle,
+                class_str="PLANLEVEL",
+                box_alignment=box_alignment,
             )
 
     def draw_angle_annotations(self, obj):
         points = obj.data.splines[0].points
         region = bpy.context.region
-        region_3d = bpy.context.area.spaces.active.region_3d
+        area = tool.Blender.get_viewport_context()["area"]
+        region_3d = area.spaces.active.region_3d
         points_chunked = [points[i : i + 3] for i in range(len(points) - 2)]
 
         for points_chunk in points_chunked:
@@ -1072,48 +1044,61 @@ class SvgWriter:
         path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
 
     def draw_radius_annotations(self, obj):
-        x_offset = self.raw_width / 2
-        y_offset = self.raw_height / 2
+        offset = Vector([self.raw_width, self.raw_height]) / 2
         classes = self.get_attribute_classes(obj)
         element = tool.Ifc.get_entity(obj)
+        tag = element.Description
         matrix_world = obj.matrix_world
+
+        dimension_data = DecoratorData.get_dimension_data(obj)
+
         for spline in obj.data.splines:
             points = self.get_spline_points(spline)
             projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
-            d = " ".join(
-                [
-                    "L {} {}".format((x_offset + p.x) * self.svg_scale, (y_offset - p.y) * self.svg_scale)
-                    for p in projected_points
-                ]
-            )
+            projected_points_svg = [(offset + p.xy * Vector((1, -1))) * self.svg_scale for p in projected_points]
+            d = " ".join(["L {} {}".format(*p) for p in projected_points_svg])
             d = "M{}".format(d[1:])
             path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
+            p0 = projected_points_svg[0]
+            p1 = projected_points_svg[1]
 
-            p0 = Vector(
-                (
-                    (x_offset + projected_points[0].x) * self.svg_scale,
-                    (y_offset - projected_points[0].y) * self.svg_scale,
-                )
-            )
-            p1 = Vector(
-                (
-                    (x_offset + projected_points[1].x) * self.svg_scale,
-                    (y_offset - projected_points[1].y) * self.svg_scale,
-                )
-            )
-            text_offset = (p0 - p1).xy.normalized() * 5
-            text_position = projected_points[0]
-            text_position = Vector(
-                ((x_offset + text_position.x) * self.svg_scale, (y_offset - text_position.y) * self.svg_scale)
-            )
-            text_position += text_offset
+            text_offset = (p0 - p1).normalized() * 5
+            text_position = p0 + text_offset
 
-            text_style = SvgWriter.get_box_alignment_parameters("center")
-            radius = (points[-1].co - points[-2].co).length
-            radius = helper.format_distance(radius, precision=self.precision, decimal_places=self.decimal_places)
-            tag = element.Description or f"R{radius}"
+            def get_text():
+                radius = (points[-1].co - points[-2].co).length
+                radius = helper.format_distance(radius, precision=self.precision, decimal_places=self.decimal_places)
+                text = f"R{radius}"
+                return text
 
-            self.svg.add(self.svg.text(tag, insert=tuple(text_position), class_="RADIUS", **text_style))
+            self.draw_dimension_text(
+                get_text, tag, dimension_data, text_position=text_position, class_str="RADIUS", box_alignment="center"
+            )
+
+    def draw_dimension_text(self, get_text, tag, dimension_data, **create_text_kwargs):
+        prefix = dimension_data["text_prefix"]
+        suffix = dimension_data["text_suffix"]
+        show_description_only = dimension_data["show_description_only"]
+        fill_bg = dimension_data["fill_bg"]
+
+        text_tags = []
+        line_number_start = 0
+        if not show_description_only:
+            text = get_text()
+            full_prefix = ((tag + "\\n") if tag else "") + prefix
+            text = full_prefix + text + suffix
+            line_number_start -= full_prefix.count("\\n")
+        else:
+            if not tag:
+                return
+            text = tag
+
+        text_tags += self.create_text_tag(
+            text, line_number_start=line_number_start, fill_bg=fill_bg, **create_text_kwargs
+        )
+
+        for text in text_tags:
+            self.svg.add(text)
 
     def draw_fall_annotations(self, obj):
         x_offset = self.raw_width / 2
@@ -1208,6 +1193,7 @@ class SvgWriter:
                     suppress_zero_inches=dimension_data["suppress_zero_inches"],
                     text_prefix=dimension_data["text_prefix"],
                     text_suffix=dimension_data["text_suffix"],
+                    fill_bg=dimension_data["fill_bg"],
                 )
 
     def draw_dimension_annotations(self, obj):
@@ -1231,6 +1217,7 @@ class SvgWriter:
                     suppress_zero_inches=dimension_data["suppress_zero_inches"],
                     text_prefix=dimension_data["text_prefix"],
                     text_suffix=dimension_data["text_suffix"],
+                    fill_bg=dimension_data["fill_bg"],
                 )
 
     def draw_measureit_arch_dimension_annotations(self):
@@ -1256,6 +1243,7 @@ class SvgWriter:
         suppress_zero_inches=False,
         text_prefix="",
         text_suffix="",
+        fill_bg=False,
     ):
         offset = Vector([self.raw_width, self.raw_height]) / 2
         v0 = self.project_point_onto_camera(v0_global)
@@ -1265,13 +1253,6 @@ class SvgWriter:
         mid = ((end - start) / 2) + start
         vector = end - start
         perpendicular = Vector((vector.y, -vector.x)).normalized()
-        dimension = (v1_global - v0_global).length
-        dimension = helper.format_distance(
-            dimension,
-            precision=self.precision,
-            decimal_places=self.decimal_places,
-            suppress_zero_inches=suppress_zero_inches,
-        )
         sheet_dimension = (end - start).length
 
         # if annotation can't fit offset text to the right of marker
@@ -1281,81 +1262,109 @@ class SvgWriter:
         line = self.svg.line(start=start, end=end, class_=" ".join(classes))
         self.svg.add(line)
 
-        if not show_description_only:
-            text = f"{text_prefix}{str(dimension)}{text_suffix}"
-            text_tag = self.create_text_tag(
-                text,
-                text_position + perpendicular,
-                angle,
-                "bottom-middle",
-                "DIMENSION",
-                text_format=text_format,
-                multiline=True,
-                multiline_to_bottom=False,
-            )
-            self.svg.add(text_tag)
-            if dimension_text:
-                text_tag = self.create_text_tag(
-                    dimension_text,
-                    text_position - perpendicular,
-                    angle,
-                    "top-middle",
-                    "DIMENSION",
-                    text_format=text_format,
-                    multiline=True,
-                    multiline_to_bottom=True,
-                )
-                self.svg.add(text_tag)
+        text_tags = []
+        text_tag_kwargs = {
+            "angle": angle,
+            "class_str": "DIMENSION",
+            "text_format": text_format,
+            "fill_bg": fill_bg,
+        }
 
-        elif show_description_only and dimension_text:
-            text_tag = self.create_text_tag(
-                dimension_text,
-                text_position + perpendicular,
-                angle,
-                "bottom-middle",
-                "DIMENSION",
-                text_format=text_format,
-                multiline=True,
-                multiline_to_bottom=False,
+        if not show_description_only:
+            dimension = (v1_global - v0_global).length
+            dimension = helper.format_distance(
+                dimension,
+                precision=self.precision,
+                decimal_places=self.decimal_places,
+                suppress_zero_inches=suppress_zero_inches,
             )
-            self.svg.add(text_tag)
+            text = text_prefix + str(dimension) + text_suffix
+        else:
+            if not dimension_text:
+                return
+            text = dimension_text
+
+        text_tags += self.create_text_tag(
+            text,
+            text_position + perpendicular,
+            box_alignment="bottom-middle",
+            multiline_to_bottom=False,
+            **text_tag_kwargs,
+        )
+
+        if not show_description_only and dimension_text:
+            text_tags += self.create_text_tag(
+                dimension_text,
+                text_position - perpendicular,
+                box_alignment="top-middle",
+                multiline_to_bottom=True,
+                **text_tag_kwargs,
+            )
+
+        for tag in text_tags:
+            self.svg.add(tag)
 
     def create_text_tag(
         self,
         text,
         text_position,
-        angle,
-        box_alignment,
-        class_str,
+        angle=0.0,
+        box_alignment="bottom-left",
+        class_str="",
         text_format=lambda x: x,
-        multiline=False,
-        multiline_to_bottom=False,
+        multiline=True,
+        multiline_to_bottom=True,
+        fill_bg=False,
+        line_number_start=0,
+        _draw_fill_bg=False,
     ):
+        """returns list of created text tags"""
+        text_tags = []
+        if fill_bg:
+            method_kwargs = locals() | {"_draw_fill_bg": True, "fill_bg": False}
+            del method_kwargs["self"]
+            del method_kwargs["text_tags"]
+            text_tags += self.create_text_tag(**method_kwargs)
+
+        base_text_attrs = SvgWriter.get_box_alignment_parameters(box_alignment)
+        base_text_attrs = base_text_attrs | ({"filter": "url(#fill-background)"} if _draw_fill_bg else {})
+
         if not multiline:
-            text_kwargs = {"transform": "rotate({} {} {})".format(angle, text_position.x, text_position.y)}
-            return self.svg.text(
+            transform_kwargs = {"transform": "rotate({} {} {})".format(angle, text_position.x, text_position.y)}
+            text_tag = self.svg.text(
                 text_format(text),
                 insert=text_position,
                 class_=class_str,
-                **(text_kwargs | SvgWriter.get_box_alignment_parameters(box_alignment)),
+                **(transform_kwargs | base_text_attrs),
             )
+            text_tags.append(text_tag)
+            return text_tags
 
         text_position_svg_str = ", ".join(map(str, text_position))
         text_transform = f"translate({text_position_svg_str}) rotate({angle})"
+        # after pretty indentation some redundant spaces can occur in svg tags
+        # this is why we apply "font-size: 0;" to the text tag to remove those spaces
+        # and add clases to the tspan tags
+        # ref: https://github.com/IfcOpenShell/IfcOpenShell/issues/2833#issuecomment-1471584960
         text_kwargs = {
             "transform": text_transform,
             "style": "font-size: 0;",
         }
 
-        text_tag = self.svg.text("", **text_kwargs, **SvgWriter.get_box_alignment_parameters(box_alignment))
+        text_tag = self.svg.text("", **text_kwargs, **base_text_attrs)
+        text_tags.append(text_tag)
         text_lines = text.replace("\\n", "\n").split("\n")
         text_lines = text_lines if multiline_to_bottom else text_lines[::-1]
 
-        for line_number, text_line in enumerate(text_lines):
+        for line_number, text_line in enumerate(text_lines, line_number_start):
+            # position has to be inserted at tspan to avoid x offset between tspans
+            # note that tspan doesn't support using `transform` attribute
+            # so we use (0,0) position because tspan is already offseted by text transform
             tspan = self.svg.tspan(text_format(text_line), class_=class_str, insert=(0, 0))
+            # doing it here and not in tspan constructor because constructor adds unnecessary spaces
             tspan.update({"dy": f"{line_number if multiline_to_bottom else -line_number}em"})
             text_tag.add(tspan)
-        return text_tag
+        return text_tags
 
     def project_point_onto_camera(self, point):
         # TODO is this needlessly complex?

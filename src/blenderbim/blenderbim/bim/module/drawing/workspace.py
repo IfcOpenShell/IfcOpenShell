@@ -23,19 +23,88 @@ import blenderbim.tool as tool
 from blenderbim.bim.helper import prop_with_search
 from bpy.types import WorkSpaceTool
 
-# from blenderbim.bim.module.model.data import AuthoringData, RailingData, RoofData
 from blenderbim.bim.module.drawing.prop import ANNOTATION_TYPES_DATA
 from blenderbim.bim.module.drawing.data import DecoratorData, AnnotationData
 from blenderbim.bim.ifc import IfcStore
 import blenderbim.bim.handler
 
 
-# declaring it here to avoid circular import problems
+# TODO: Fix circular import.
+# Declaring it here to avoid circular import problems
 class Operator:
     def execute(self, context):
         IfcStore.execute_ifc_operator(self, context)
         blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}
+
+
+class LaunchAnnotationTypeManager(bpy.types.Operator):
+    bl_idname = "bim.launch_annotation_type_manager"
+    bl_label = "Launch Annotation Type Manager"
+    bl_options = {"REGISTER"}
+    bl_description = "Manage annotation types and templates"
+
+    def execute(self, context):
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_popup(self, width=550)
+
+    def draw(self, context):
+        if not AnnotationData.is_loaded:
+            AnnotationData.load()
+
+        props = context.scene.BIMAnnotationProperties
+
+        columns = self.layout.column_flow(columns=3)
+        row = columns.row()
+        row.alignment = "LEFT"
+        row.label(text=f"{len(AnnotationData.data['relating_types'])} Types", icon="FILE_VOLUME")
+
+        row = columns.row(align=True)
+        row.alignment = "CENTER"
+        # In case you want something here in the future
+
+        row = columns.row(align=True)
+        row.alignment = "RIGHT"
+        # In case you want something here in the future
+
+        if props.is_adding_type:
+            row = self.layout.row()
+            box = row.box()
+            row = box.row()
+            row.prop(props, "type_name")
+            row = box.row()
+            row.prop(props, "create_representation_for_type", text="Geometric Type")
+            row = box.row(align=True)
+            row.operator("bim.add_annotation_type", icon="CHECKMARK", text="Save New Type")
+            row.operator("bim.disable_add_annotation_type", icon="CANCEL", text="")
+        else:
+            row = self.layout.row()
+            row.operator("bim.enable_add_annotation_type", icon="ADD", text="Create New Type")
+
+        flow = self.layout.grid_flow(row_major=True, columns=3, even_columns=True, even_rows=True, align=True)
+
+        for relating_type in AnnotationData.data["relating_types"]:
+            outer_col = flow.column()
+            box = outer_col.box()
+
+            row = box.row()
+            row.alignment = "CENTER"
+            row.label(text=relating_type["name"], icon="FILE_3D")
+
+            row = box.row()
+            row.alignment = "CENTER"
+            row.label(text=relating_type["description"])
+
+            row = box.row(align=True)
+
+            op = row.operator("bim.select_type", icon="OBJECT_DATA")
+            op.relating_type = relating_type["id"]
+            op = row.operator("bim.duplicate_type", icon="DUPLICATE", text="")
+            op.element = relating_type["id"]
+            op = row.operator("bim.remove_type", icon="X", text="")
+            op.element = relating_type["id"]
 
 
 class AnnotationTool(WorkSpaceTool):
@@ -90,41 +159,7 @@ def add_layout_hotkey_operator(layout, text, hotkey, description):
 
 
 # TODO: move to operator
-def create_annotation_type(context):
-    # just empty to store parameters
-    props = context.scene.BIMAnnotationProperties
-    object_type = props.object_type
-    create_representation = props.create_representation_for_type
-    drawing = tool.Ifc.get_entity(bpy.context.scene.camera)
-
-    if props.create_representation_for_type:
-        obj = tool.Drawing.create_annotation_object(drawing, object_type)
-    else:
-        obj = bpy.data.objects.new(object_type, None)
-
-    obj.name = f"{object_type}_TYPE"
-    obj.location = context.scene.cursor.location
-    tool.Drawing.ensure_annotation_in_drawing_plane(obj)
-
-    drawing = tool.Ifc.get_entity(context.scene.camera)
-    ifc_context = tool.Drawing.get_annotation_context(tool.Drawing.get_drawing_target_view(drawing), object_type)
-
-    element = tool.Drawing.run_root_assign_class(
-        obj=obj,
-        ifc_class="IfcTypeProduct",
-        predefined_type=object_type,
-        should_add_representation=create_representation,
-        context=ifc_context,
-        ifc_representation_class=tool.Drawing.get_ifc_representation_class(object_type),
-    )
-    element.ApplicableOccurrence = f"IfcAnnotation/{object_type}"
-
-    tool.Blender.select_and_activate_single_object(context, obj)
-
-
-# TODO: move to operator
 def create_annotation_occurence(context):
-    # object_type = context.scene.BIMAnnotationProperties.object_type
     props = context.scene.BIMAnnotationProperties
     relating_type = tool.Ifc.get().by_id(int(props.relating_type_id))
     object_type = props.object_type
@@ -171,6 +206,11 @@ class AnnotationToolUI:
             row.label(text="No IFC Project", icon="ERROR")
             return
 
+        drawing = tool.Ifc.get_entity(context.scene.camera)
+        if not drawing:
+            row.label(text="No Active Drawing", icon="ERROR")
+            return
+
         if not AnnotationData.is_loaded:
             AnnotationData.load()
 
@@ -183,9 +223,7 @@ class AnnotationToolUI:
     @classmethod
     def draw_create_object_interface(cls):
         row = cls.layout.row(align=True)
-        op, row = add_layout_hotkey_operator(cls.layout, "Add Type", "S_C", "Create a new annotation type")
-        selected_icon = "CHECKBOX_HLT" if cls.props.create_representation_for_type else "CHECKBOX_DEHLT"
-        row.prop(cls.props, "create_representation_for_type", text="", icon=selected_icon)
+        row.prop(bpy.context.scene.DocProperties, "should_draw_decorations", text="Viewport Annotations")
 
     @classmethod
     def draw_edit_object_interface(cls, context):
@@ -204,10 +242,9 @@ class AnnotationToolUI:
         row = cls.layout.row(align=True)
         row.label(text="", icon="FILE_3D")
         prop_with_search(row, cls.props, "relating_type_id", text="")
+        row.operator("bim.launch_annotation_type_manager", icon="LIGHTPROBE_GRID", text="")
 
-        create_type_occurence = cls.props.relating_type_id != "0"
-        label = "Add Type Occurence" if create_type_occurence else "Add Annotation"
-        add_layout_hotkey_operator(cls.layout, label, "S_A", "Create a new annotation")
+        add_layout_hotkey_operator(cls.layout, "Add", "S_A", "Create a new annotation")
 
         if object_type in ("TEXT", "STAIR_ARROW"):
             add_layout_hotkey_operator(
@@ -281,6 +318,3 @@ class Hotkey(bpy.types.Operator, Operator):
             related_object = tool.Ifc.get_object(related_product)
 
             tool.Drawing.setup_annotation_object(obj, element.ObjectType, related_object)
-
-    def hotkey_S_C(self):
-        create_annotation_type(bpy.context)

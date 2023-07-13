@@ -93,7 +93,7 @@ class Drawing(blenderbim.core.tool.Drawing):
             camera = get_camera_from_annotation_object(obj) or bpy.context.scene.camera
 
         current_pos = camera.matrix_world.inverted() @ obj.location
-        current_pos.z = -camera.data.clip_start
+        current_pos.z = -camera.data.clip_start - 0.05
         current_pos = camera.matrix_world @ current_pos
         obj.location = current_pos
 
@@ -151,7 +151,11 @@ class Drawing(blenderbim.core.tool.Drawing):
         if element_type == "IfcAnnotation" and element.ObjectType in object_types:
             return True
 
-        if element_type == "IfcTypeProduct" and element.ApplicableOccurrence.startswith("IfcAnnotation/"):
+        if (
+            element_type == "IfcTypeProduct"
+            and element.ApplicableOccurrence
+            and element.ApplicableOccurrence.startswith("IfcAnnotation/")
+        ):
             applicable_object_type = element.ApplicableOccurrence.split("/")[1]
             if applicable_object_type in object_types:
                 return True
@@ -547,6 +551,9 @@ class Drawing(blenderbim.core.tool.Drawing):
         for obj in ifc_importer.added_data.values():
             tool.Collector.assign(obj)
 
+    # NOTE: EPsetDrawing pset is completely synced with BIMCameraProperties
+    # but BIMCameraProperties are only synced with EPsetDrawing at drawing import
+    # therefore camera props can differ from pset if the user changed them from pset.
     @classmethod
     def import_drawing(cls, drawing):
         settings = ifcopenshell.geom.settings()
@@ -620,17 +627,38 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def import_drawings(cls):
-        current_drawings_selection = {
-            d.ifc_definition_id: d.is_selected for d in bpy.context.scene.DocProperties.drawings
-        }
-        bpy.context.scene.DocProperties.drawings.clear()
+        props = bpy.context.scene.DocProperties
+        expanded_target_views = {d.target_view for d in props.drawings if d.is_expanded}
+        current_drawings_selection = {d.ifc_definition_id: d.is_selected for d in props.drawings}
+        props.drawings.clear()
         drawings = [e for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"]
+        grouped_drawings = {
+            "MODEL_VIEW": [],
+            "PLAN_VIEW": [],
+            "SECTION_VIEW": [],
+            "ELEVATION_VIEW": [],
+            "REFLECTED_PLAN_VIEW": [],
+        }
         for drawing in drawings:
-            new = bpy.context.scene.DocProperties.drawings.add()
-            new.ifc_definition_id = drawing.id()
-            new.name = drawing.Name or "Unnamed"
-            new.target_view = cls.get_drawing_target_view(drawing)
-            new.is_selected = current_drawings_selection.get(drawing.id(), True)
+            target_view = cls.get_drawing_target_view(drawing)
+            grouped_drawings.setdefault(target_view, []).append(drawing)
+
+        for target_view, drawings in grouped_drawings.items():
+            new = props.drawings.add()
+            new.name = target_view.replace("_", " ").title() + f" ({len(drawings)})"
+            new.target_view = target_view
+            new.is_drawing = False
+            new.is_expanded = target_view in expanded_target_views
+
+            if not new.is_expanded:
+                continue
+
+            for drawing in sorted(drawings, key=lambda x: x.Name or "Unnamed"):
+                new = props.drawings.add()
+                new.ifc_definition_id = drawing.id()
+                new.name = drawing.Name or "Unnamed"
+                new.is_selected = current_drawings_selection.get(drawing.id(), True)
+                new.is_drawing = True
 
     @classmethod
     def import_documents(cls, document_type):
@@ -657,7 +685,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         expanded_sheets = {s.ifc_definition_id for s in props.sheets if s.is_expanded}
         props.sheets.clear()
         sheets = [d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "SHEET"]
-        for sheet in sheets:
+        for sheet in sorted(sheets, key=lambda s: getattr(s, "Identification", getattr(s, "DocumentId", None))):
             new = props.sheets.add()
             new.ifc_definition_id = sheet.id()
             if tool.Ifc.get_schema() == "IFC2X3":
@@ -1054,20 +1082,28 @@ class Drawing(blenderbim.core.tool.Drawing):
             reference_mesh = cls.get_camera_block(reference_obj)
             obj_matrix = to_camera_coords(camera, reference_obj)
 
-            # The reference mesh vertices represent a view cube. To convert this into a section line we:
-            # 1. Select the 4 +Z vertices local to the reference element. This is the cutting plane.
+            # The reference mesh vertices represent a view cube. To convert
+            # this into a section line we:
+            # 1. Select the 4 +Z vertices local to the reference element. This
+            # is the cutting plane.
             verts_local_to_reference = [reference_obj.matrix_world.inverted() @ v for v in reference_mesh["verts"]]
             cutting_plane_verts = sorted(verts_local_to_reference, key=lambda x: x.z)[-4:]
             global_cutting_plane_verts = [reference_obj.matrix_world @ v for v in cutting_plane_verts]
             # 2. Project the cutting plane onto our viewing camera.
             verts_local_to_camera = [camera.matrix_world.inverted() @ v for v in global_cutting_plane_verts]
-            # 3. Collapse verts with the same XY coords, and set Z to be just below the clip_start so it's visible
+            # 3. Collapse verts with the same XY coords, and set Z to be just
+            # below the clip_start so it's visible
             collapsed_verts = []
             for vert in verts_local_to_camera:
                 if not [True for v in collapsed_verts if (vert.xy - v.xy).length < 1e-2]:
                     collapsed_verts.append(mathutils.Vector((vert.x, vert.y, -camera.data.clip_start - 0.05)))
             # 4. The first two vertices is the section line
             section_line = collapsed_verts[0:2]
+            # 5. Sort the vertices in the +X direction so that the vertices are
+            # ordered to "point" in the direction of the section cut.
+            section_line = sorted(
+                section_line, key=lambda co: (reference_obj.matrix_world.inverted() @ camera.matrix_world @ co).x
+            )
             global_section_line = [camera.matrix_world @ v for v in section_line]
             local_section_line = [obj_matrix.inverted() @ v for v in global_section_line]
 
@@ -1375,6 +1411,10 @@ class Drawing(blenderbim.core.tool.Drawing):
         return ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {}).get("HasLinework", False)
 
     @classmethod
+    def has_annotation(cls, drawing):
+        return ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {}).get("HasAnnotation", False)
+
+    @classmethod
     def get_drawing_elements(cls, drawing):
         """returns a set of elements that are included in the drawing"""
         ifc_file = tool.Ifc.get()
@@ -1486,23 +1526,24 @@ class Drawing(blenderbim.core.tool.Drawing):
                     project_collection.children["Views"].children[collection.name].hide_viewport = True
                     bpy.data.collections.get(collection.name).hide_render = True
 
-                    project_collection.children["Views"].children[camera.BIMObjectProperties.collection.name].hide_viewport = False
+                    project_collection.children["Views"].children[
+                        camera.BIMObjectProperties.collection.name
+                    ].hide_viewport = False
         camera.BIMObjectProperties.collection.hide_render = False
         tool.Spatial.set_active_object(camera)
 
         # Sync viewport objects visibility with selectors from EPset_Drawing/Include and /Exclude
         drawing = tool.Ifc.get_entity(camera)
 
-        # Running operators is much more efficient in this scenario than looping through each element
-        if not bpy.app.background:
-            bpy.ops.object.hide_view_clear()
-
         filtered_elements = cls.get_drawing_elements(drawing) | cls.get_drawing_spaces(drawing)
-        for visible_obj in bpy.context.visible_objects:
-            hide = tool.Ifc.get_entity(visible_obj) not in filtered_elements
-            if bpy.context.view_layer.objects.get(visible_obj.name):
-                visible_obj.hide_set(hide)
-                visible_obj.hide_render = hide
+        filtered_elements.add(drawing)
+        for view_layer_object in bpy.context.view_layer.objects:
+            element = tool.Ifc.get_entity(view_layer_object)
+            if not element:
+                continue
+            hide = element not in filtered_elements
+            view_layer_object.hide_set(hide)
+            view_layer_object.hide_render = hide
 
         subcontexts = []
         target_view = cls.get_drawing_target_view(drawing)

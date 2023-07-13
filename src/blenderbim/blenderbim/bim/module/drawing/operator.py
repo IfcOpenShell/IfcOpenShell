@@ -32,6 +32,7 @@ import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.util.selector
 import ifcopenshell.util.representation
+import ifcopenshell.util.element
 import blenderbim.bim.schema
 import blenderbim.tool as tool
 import blenderbim.core.drawing as core
@@ -82,6 +83,52 @@ class Operator:
         IfcStore.execute_ifc_operator(self, context)
         blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}
+
+
+class AddAnnotationType(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_annotation_type"
+    bl_label = "Add Annotation Type"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = context.scene.BIMAnnotationProperties
+        object_type = props.object_type
+        has_representation = props.create_representation_for_type
+        drawing = tool.Ifc.get_entity(bpy.context.scene.camera)
+
+        if props.create_representation_for_type:
+            obj = tool.Drawing.create_annotation_object(drawing, object_type)
+        else:
+            obj = bpy.data.objects.new(object_type, None)
+
+        obj.name = props.type_name
+        element = tool.Drawing.run_root_assign_class(
+            obj=obj,
+            ifc_class="IfcTypeProduct",
+            predefined_type=object_type,
+            should_add_representation=has_representation,
+            context=ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Annotation", "MODEL_VIEW"),
+            ifc_representation_class=tool.Drawing.get_ifc_representation_class(object_type),
+        )
+        element.ApplicableOccurrence = f"IfcAnnotation/{object_type}"
+
+
+class EnableAddAnnotationType(bpy.types.Operator, Operator):
+    bl_idname = "bim.enable_add_annotation_type"
+    bl_label = "Enable Add Annotation Type"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        bpy.context.scene.BIMAnnotationProperties.is_adding_type = True
+
+
+class DisableAddAnnotationType(bpy.types.Operator, Operator):
+    bl_idname = "bim.disable_add_annotation_type"
+    bl_label = "Disable Add Annotation Type"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        bpy.context.scene.BIMAnnotationProperties.is_adding_type = False
 
 
 class AddDrawing(bpy.types.Operator, Operator):
@@ -184,7 +231,8 @@ class CreateDrawing(bpy.types.Operator):
             with profile("Drawing generation process"):
                 with profile("Initialize drawing generation process"):
                     self.cprops = self.camera.data.BIMCameraProperties
-                    self.drawing_name = self.file.by_id(drawing_id).Name
+                    self.drawing = self.file.by_id(drawing_id)
+                    self.drawing_name = self.drawing.Name
                     self.metadata = tool.Drawing.get_drawing_metadata(self.camera_element)
                     self.get_scale(context)
                     if self.cprops.update_representation(self.camera):
@@ -275,7 +323,7 @@ class CreateDrawing(bpy.types.Operator):
         return svg_path
 
     def generate_underlay(self, context):
-        if not self.cprops.has_underlay:
+        if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasUnderlay"):
             return
         svg_path = self.get_svg_path(cache_type="underlay")
         context.scene.render.filepath = svg_path[0:-4] + ".png"
@@ -317,7 +365,8 @@ class CreateDrawing(bpy.types.Operator):
         return svg_path
 
     def generate_linework(self, context):
-        if not self.cprops.has_linework:
+        global ifcopenshell
+        if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasLinework"):
             return
         svg_path = self.get_svg_path(cache_type="linework")
         if os.path.isfile(svg_path) and self.props.should_use_linework_cache:
@@ -793,6 +842,7 @@ class CreateDrawing(bpy.types.Operator):
         self.serialiser.setElevationRefGuid(self.camera_element.GlobalId)
         self.serialiser.setScale(self.scale)
         self.serialiser.setSubtractionSettings(ifcopenshell.ifcopenshell_wrapper.ALWAYS)
+        self.serialiser.setUsePrefiltering(True)  # See #3359
         # tree = ifcopenshell.geom.tree()
         # This instructs the tree to explode BReps into faces and return
         # the style of the face when running tree.select_ray()
@@ -921,7 +971,7 @@ class CreateDrawing(bpy.types.Operator):
         group.insert(0, projection)
 
     def generate_annotation(self, context):
-        if not self.cprops.has_annotation:
+        if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasAnnotation"):
             return
         svg_path = self.get_svg_path(cache_type="annotation")
         if os.path.isfile(svg_path) and self.props.should_use_annotation_cache:
@@ -1264,7 +1314,25 @@ class ActivateModel(bpy.types.Operator):
         CutDecorator.uninstall()
 
         if not bpy.app.background:
-            bpy.ops.object.hide_view_clear()
+            view3d_context = dict()
+
+            for window in bpy.context.window_manager.windows:
+                screen = window.screen
+                for area in screen.areas:
+                    if area.type == "VIEW_3D":
+                        view3d_context["window"] = window
+                        view3d_context["screen"] = screen
+                        view3d_context["area"] = area
+                        for region in area.regions:
+                            if region.type == "WINDOW":
+                                view3d_context["region"] = region
+                                break
+                        break
+                if view3d_context:
+                    break
+
+            if view3d_context:
+                bpy.ops.object.hide_view_clear(view3d_context)
 
         subcontext = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
 
@@ -1632,10 +1700,14 @@ class ActivateDrawingStyle(bpy.types.Operator, Operator):
         space = self.get_view_3d(context)  # Do not remove. It is used in exec later
         style = json.loads(self.drawing_style.raster_style)
         for path, value in style.items():
-            if isinstance(value, str):
-                exec(f"{path} = '{value}'")
-            else:
-                exec(f"{path} = {value}")
+            try:
+                if isinstance(value, str):
+                    exec(f"{path} = '{value}'")
+                else:
+                    exec(f"{path} = {value}")
+            except:
+                # Differences in Blender versions mean result in failures here
+                print(f"Failed to set shading style {path} to {value}")
 
     def set_query(self, context):
         self.include_global_ids = []
@@ -2271,6 +2343,34 @@ class DisableEditingDrawings(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.disable_editing_drawings(tool.Drawing)
+
+
+class ExpandTargetView(bpy.types.Operator):
+    bl_idname = "bim.expand_target_view"
+    bl_label = "Expand Target View"
+    bl_options = {"REGISTER", "UNDO"}
+    target_view: bpy.props.StringProperty()
+
+    def execute(self, context):
+        props = context.scene.DocProperties
+        for drawing in [d for d in props.drawings if d.target_view == self.target_view]:
+            drawing.is_expanded = True
+        core.load_drawings(tool.Drawing)
+        return {"FINISHED"}
+
+
+class ContractTargetView(bpy.types.Operator):
+    bl_idname = "bim.contract_target_view"
+    bl_label = "Contract Target View"
+    bl_options = {"REGISTER", "UNDO"}
+    target_view: bpy.props.StringProperty()
+
+    def execute(self, context):
+        props = context.scene.DocProperties
+        for drawing in [d for d in props.drawings if d.target_view == self.target_view]:
+            drawing.is_expanded = False
+        core.load_drawings(tool.Drawing)
+        return {"FINISHED"}
 
 
 class ExpandSheet(bpy.types.Operator):

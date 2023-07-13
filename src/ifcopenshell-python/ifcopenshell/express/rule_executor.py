@@ -92,7 +92,7 @@ def run(f, logger):
         current_dir_files = {fn.lower(): fn for fn in os.listdir('.')}
         schema_name = str(f.schema).split(' ')[-1].lower()
         schema_path = current_dir_files.get(schema_name + '.exp')
-        fn = schema_name + '.py'
+        fn = schema_path[:-4] + '.py'
         if not os.path.exists(fn):
             subprocess.run([sys.executable, "-m", "ifcopenshell.express.rule_compiler", schema_path, fn], check=True)
             time.sleep(1.)
@@ -103,7 +103,7 @@ def run(f, logger):
     cd = compile(a, f"{f.schema}.py", "exec")
     scope = {}
     exec(cd, scope)
-    S = ifcopenshell.ifcopenshell_wrapper.schema_by_name(f.schema)
+    S = ifcopenshell.ifcopenshell_wrapper.schema_by_name(f.schema_identifier)
 
     rules = list(filter(lambda x: hasattr(x, "SCOPE"), scope.values()))
 

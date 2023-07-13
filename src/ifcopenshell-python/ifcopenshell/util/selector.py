@@ -272,11 +272,13 @@ class Selector:
                 value = ifcopenshell.util.element.get_container(value)
             elif key == "class":
                 value = value.is_a()
+            elif key == "id":
+                value = value.id()
             elif isinstance(value, ifcopenshell.entity_instance):
                 if key == "Name" and value.is_a("IfcMaterialLayerSet"):
                     key = "LayerSetName"  # This oddity in the IFC spec is annoying so we account for it.
 
-                attribute = value.get_info().get(key, None)
+                attribute = getattr(value, key, None)
 
                 if attribute is not None:
                     value = attribute

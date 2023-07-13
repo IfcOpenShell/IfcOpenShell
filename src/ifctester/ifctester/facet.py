@@ -131,6 +131,9 @@ class Entity(Facet):
         super().__init__(name, predefinedType, instructions)
 
     def filter(self, ifc_file, elements):
+        if isinstance(elements, list):
+            return super().filter(ifc_file, elements)
+
         if isinstance(self.name, str):
             try:
                 results = ifc_file.by_type(self.name, include_subtypes=False)
@@ -180,21 +183,42 @@ class Attribute(Facet):
         ]
         super().__init__(name, value, minOccurs, maxOccurs, instructions)
 
+    def filter(self, ifc_file, elements):
+        if isinstance(elements, list):
+            return super().filter(ifc_file, elements)
+
+        results = []
+        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(ifc_file.schema)
+        for entity in schema.entities():
+            for attribute in entity.attributes():
+                if attribute.name() == self.name:
+                    results.extend(ifc_file.by_type(entity.name(), include_subtypes=False))
+
+        # TODO: perhaps we should consider value in the filter
+
+        return results
+
     def __call__(self, inst, logger=None):
         if self.minOccurs == 0 and self.maxOccurs != 0:
             return AttributeResult(True)
 
         if isinstance(self.name, str):
             names = [self.name]
-            values = [getattr(inst, self.name, None)]
+            attribute_type = inst.wrapped_data.get_attribute_category(self.name)
+            if attribute_type == 1:  # Forward attribute
+                values = [getattr(inst, self.name, None)]
+            else:
+                values = [None]
         else:
             info = inst.get_info()
             names = []
             values = []
             for k, v in info.items():
                 if k == self.name:
-                    names.append(k)
-                    values.append(v)
+                    attribute_type = inst.wrapped_data.get_attribute_category(k)
+                    if attribute_type == 1:  # Forward attribute
+                        names.append(k)
+                        values.append(v)
 
         is_pass = bool(values)
         reason = None
@@ -279,7 +303,9 @@ class Classification(Facet):
         super().__init__(value, system, uri, minOccurs, maxOccurs, instructions)
 
     def filter(self, ifc_file, elements):
-        pass
+        if isinstance(elements, list):
+            return super().filter(ifc_file, elements)
+        return ifc_file.by_type("IfcObjectDefinition")
 
     def __call__(self, inst, logger=None):
         if self.minOccurs == 0 and self.maxOccurs != 0:
@@ -317,9 +343,9 @@ class Classification(Facet):
 class PartOf(Facet):
     def __init__(
         self,
-        entity=None,
+        entity="IFCWALL",
         predefinedType=None,
-        relation="IfcRelAggregates",
+        relation=None,
         minOccurs=None,
         maxOccurs=None,
         instructions=None,
@@ -334,6 +360,11 @@ class PartOf(Facet):
             "An element must have an {relation} relationship",
         ]
         super().__init__(entity, predefinedType, relation, minOccurs, maxOccurs, instructions)
+
+    def filter(self, ifc_file, elements):
+        if isinstance(elements, list):
+            return super().filter(ifc_file, elements)
+        return list(ifc_file)  # Lazy
 
     def asdict(self):
         results = super().asdict()
@@ -359,7 +390,23 @@ class PartOf(Facet):
             return PartOfResult(True)
 
         reason = None
-        if self.relation == "IfcRelAggregates":
+        if not self.relation:
+            is_pass = False
+            ancestors = []
+            parent = self.get_parent(inst)
+            while parent:
+                ancestors.append(parent.is_a())
+                if parent.is_a().upper() == self.entity:
+                    if self.predefinedType:
+                        if ifcopenshell.util.element.get_predefined_type(parent) == self.predefinedType:
+                            is_pass = True
+                    else:
+                        is_pass = True
+                    break
+                parent = self.get_parent(parent)
+            if not is_pass:
+                reason = {"type": "ENTITY", "actual": ancestors}
+        elif self.relation == "IFCRELAGGREGATES":
             aggregate = ifcopenshell.util.element.get_aggregate(inst)
             is_pass = aggregate is not None
             if not is_pass:
@@ -379,7 +426,7 @@ class PartOf(Facet):
                     aggregate = ifcopenshell.util.element.get_aggregate(aggregate)
                 if not is_pass:
                     reason = {"type": "ENTITY", "actual": ancestors}
-        elif self.relation == "IfcRelAssignsToGroup":
+        elif self.relation == "IFCRELASSIGNSTOGROUP":
             group = None
             for rel in getattr(inst, "HasAssignments", []) or []:
                 if rel.is_a("IfcRelAssignsToGroup"):
@@ -397,7 +444,7 @@ class PartOf(Facet):
                     if predefined_type != self.predefinedType:
                         is_pass = False
                         reason = {"type": "PREDEFINEDTYPE", "actual": predefined_type}
-        elif self.relation == "IfcRelContainedInSpatialStructure":
+        elif self.relation == "IFCRELCONTAINEDINSPATIALSTRUCTURE":
             container = ifcopenshell.util.element.get_container(inst)
             is_pass = container is not None
             if not is_pass:
@@ -411,7 +458,7 @@ class PartOf(Facet):
                     if predefined_type != self.predefinedType:
                         is_pass = False
                         reason = {"type": "PREDEFINEDTYPE", "actual": predefined_type}
-        elif self.relation == "IfcRelNests":
+        elif self.relation == "IFCRELNESTS":
             nest = self.get_nested_whole(inst)
             is_pass = nest is not None
             if not is_pass:
@@ -431,6 +478,36 @@ class PartOf(Facet):
                     nest = self.get_nested_whole(nest)
                 if not is_pass:
                     reason = {"type": "ENTITY", "actual": ancestors}
+        elif self.relation == "IFCRELVOIDSELEMENT":
+            building_element = self.get_voided_element(inst)
+            is_pass = building_element is not None
+            if not is_pass:
+                reason = {"type": "NOVALUE"}
+            if is_pass and self.entity:
+                is_pass = False
+                if building_element.is_a().upper() == self.entity:
+                    if self.predefinedType:
+                        if ifcopenshell.util.element.get_predefined_type(building_element) == self.predefinedType:
+                            is_pass = True
+                    else:
+                        is_pass = True
+                if not is_pass:
+                    reason = {"type": "ENTITY", "actual": building_element}
+        elif self.relation == "IFCRELFILLSELEMENT":
+            opening = self.filled_opening(inst)
+            is_pass = opening is not None
+            if not is_pass:
+                reason = {"type": "NOVALUE"}
+            if is_pass and self.entity:
+                is_pass = False
+                if opening.is_a().upper() == self.entity:
+                    if self.predefinedType:
+                        if ifcopenshell.util.element.get_predefined_type(opening) == self.predefinedType:
+                            is_pass = True
+                    else:
+                        is_pass = True
+                if not is_pass:
+                    reason = {"type": "ENTITY", "actual": opening}
 
         if self.maxOccurs == 0:
             return PartOfResult(not is_pass, {"type": "PROHIBITED"})
@@ -440,6 +517,31 @@ class PartOf(Facet):
         for rel in getattr(element, "Nests", []) or []:
             return rel.RelatingObject
 
+    def get_voided_element(self, element):
+        for rel in getattr(element, "VoidsElements", []) or []:
+            return rel.RelatingBuildingElement
+
+    def get_filled_opening(self, element):
+        for rel in getattr(element, "FillsVoids", []) or []:
+            return rel.RelatingOpeningElement
+
+    def get_parent(self, element):
+        parent = ifcopenshell.util.element.get_aggregate(element)
+        if not parent:
+            parent = ifcopenshell.util.element.get_container(element, should_get_direct=True)
+        if not parent:
+            for rel in getattr(element, "HasAssignments", []) or []:
+                if rel.is_a("IfcRelAssignsToGroup"):
+                    parent = rel.RelatingGroup
+                    break
+        if not parent:
+            self.get_nested_whole(element)
+        if not parent:
+            self.get_voided_element(element)
+        if not parent:
+            self.get_filled_opening(element)
+        return parent
+
 
 class Property(Facet):
     def __init__(
@@ -447,7 +549,7 @@ class Property(Facet):
         propertySet="Property_Set",
         name="PropertyName",
         value=None,
-        measure=None,
+        datatype=None,
         uri=None,
         minOccurs=None,
         maxOccurs=None,
@@ -457,7 +559,7 @@ class Property(Facet):
             "propertySet",
             "name",
             "value",
-            "@measure",
+            "@datatype",
             "@uri",
             "@minOccurs",
             "@maxOccurs",
@@ -471,18 +573,28 @@ class Property(Facet):
             "{name} data shall be {value} and in the dataset {propertySet}",
             "{name} data shall be provided in the dataset {propertySet}",
         ]
-        super().__init__(propertySet, name, value, measure, uri, minOccurs, maxOccurs, instructions)
+        super().__init__(propertySet, name, value, datatype, uri, minOccurs, maxOccurs, instructions)
+
+    def filter(self, ifc_file, elements):
+        if isinstance(elements, list):
+            return super().filter(ifc_file, elements)
+        if ifc_file.schema == "IFC2X3":
+            return ifc_file.by_type("IfcObjectDefinition")
+        return (
+            ifc_file.by_type("IfcObjectDefinition")
+            + ifc_file.by_type("IfcMaterialDefinition")
+            + ifc_file.by_type("IfcProfileDef")
+        )
 
     def __call__(self, inst, logger=None):
         if self.minOccurs == 0 and self.maxOccurs != 0:
             return PropertyResult(True)
 
-        all_psets = ifcopenshell.util.element.get_psets(inst)
-
         if isinstance(self.propertySet, str):
-            pset = all_psets.get(self.propertySet, None)
+            pset = ifcopenshell.util.element.get_pset(inst, self.propertySet)
             psets = {self.propertySet: pset} if pset else {}
         else:
+            all_psets = ifcopenshell.util.element.get_psets(inst)
             psets = {k: v for k, v in all_psets.items() if k == self.propertySet}
 
         is_pass = bool(psets)
@@ -525,9 +637,9 @@ class Property(Facet):
                     elif prop_entity.is_a("IfcPropertySingleValue"):
                         data_type = prop_entity.NominalValue.is_a()
 
-                        if data_type != self.measure:
+                        if data_type != self.datatype:
                             is_pass = False
-                            reason = {"type": "MEASURE", "actual": data_type}
+                            reason = {"type": "DATATYPE", "actual": data_type}
                             break
 
                         unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
@@ -544,9 +656,9 @@ class Property(Facet):
                         prop_schema = prop_entity.wrapped_data.declaration().as_entity()
                         data_type = prop_schema.attribute_by_index(3).type_of_attribute().declared_type().name()
 
-                        if data_type != self.measure:
+                        if data_type != self.datatype:
                             is_pass = False
-                            reason = {"type": "MEASURE", "actual": data_type}
+                            reason = {"type": "DATATYPE", "actual": data_type}
                             break
 
                         unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
@@ -564,9 +676,9 @@ class Property(Facet):
                             reason = {"type": "NOVALUE"}
                             break
                         data_type = prop_entity.EnumerationValues[0].is_a()
-                        if data_type != self.measure:
+                        if data_type != self.datatype:
                             is_pass = False
-                            reason = {"type": "MEASURE", "actual": data_type}
+                            reason = {"type": "DATATYPE", "actual": data_type}
                             break
                     elif prop_entity.is_a("IfcPropertyListValue"):
                         if not prop_entity.ListValues:
@@ -574,9 +686,9 @@ class Property(Facet):
                             reason = {"type": "NOVALUE"}
                             break
                         data_type = prop_entity.ListValues[0].is_a()
-                        if data_type != self.measure:
+                        if data_type != self.datatype:
                             is_pass = False
-                            reason = {"type": "MEASURE", "actual": data_type}
+                            reason = {"type": "DATATYPE", "actual": data_type}
                             break
                         unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
                         if unit:
@@ -597,9 +709,9 @@ class Property(Facet):
                             if value is not None:
                                 data_type = value.is_a()
                                 values.append(value.wrappedValue)
-                        if data_type != self.measure:
+                        if data_type != self.datatype:
                             is_pass = False
-                            reason = {"type": "MEASURE", "actual": data_type}
+                            reason = {"type": "DATATYPE", "actual": data_type}
                             break
                         unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
                         if unit:
@@ -622,7 +734,7 @@ class Property(Facet):
                             if not column_values:
                                 continue
                             data_type = column_values[0].is_a()
-                            if data_type == self.measure:
+                            if data_type == self.datatype:
                                 column_values = [v.wrappedValue for v in column_values]
                                 unit = units[f"{attribute}Unit"]
                                 if unit:
@@ -639,7 +751,7 @@ class Property(Facet):
                                 values.extend(column_values)
                         if not values:
                             is_pass = False
-                            reason = {"type": "MEASURE", "actual": data_type}
+                            reason = {"type": "DATATYPE", "actual": data_type}
                             break
                         props[pset_name][prop_entity.Name] = values
                     else:
@@ -723,6 +835,11 @@ class Material(Facet):
             "Shall have a material",
         ]
         super().__init__(value, uri, minOccurs, maxOccurs, instructions)
+
+    def filter(self, ifc_file, elements):
+        if isinstance(elements, list):
+            return super().filter(ifc_file, elements)
+        return ifc_file.by_type("IfcObjectDefinition")
 
     def __call__(self, inst, logger=None):
         if self.minOccurs == 0 and self.maxOccurs != 0:
@@ -917,7 +1034,7 @@ class PropertyResult(Result):
             return "The required property set does not exist"
         elif self.reason["type"] == "NOVALUE":
             return "The property set does not contain the required property"
-        elif self.reason["type"] == "MEASURE":
+        elif self.reason["type"] == "DATATYPE":
             return f"The data type \"{str(self.reason['actual'])}\" does not match the requirements"
         elif self.reason["type"] == "VALUE":
             if isinstance(self.reason["actual"], list):

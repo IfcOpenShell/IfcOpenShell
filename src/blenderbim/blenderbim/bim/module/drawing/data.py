@@ -287,28 +287,36 @@ class DecoratorData:
         cls.data[obj.name] = text_data
         return text_data
 
-    # used by Ifc Annotations with ObjectType = "DIMENSION" / "DIAMETER"
     @classmethod
     def get_dimension_data(cls, obj):
+        """used by Ifc Annotations with ObjectType:
+
+        DIMENSION / DIAMETER / SECTION_LEVEL / PLAN_LEVEL / RADIUS
+        """
         result = cls.data.get(obj.name, None)
         if result is not None:
             return result
 
         element = tool.Ifc.get_entity(obj)
-        supported_object_types = ("DIMENSION", "DIAMETER")
+        supported_object_types = ("DIMENSION", "DIAMETER", "SECTION_LEVEL", "PLAN_LEVEL", "RADIUS")
         if not element or not element.is_a("IfcAnnotation") or element.ObjectType not in supported_object_types:
             return None
 
         dimension_style = "arrow"
+        fill_bg = False
         classes = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Classes")
-        if classes and "oblique" in classes.lower().split():
-            dimension_style = "oblique"
+        if classes:
+            classes_split = classes.lower().split()
+            if "oblique" in classes_split:
+                dimension_style = "oblique"
+            elif "fill-bg" in classes_split:
+                fill_bg = True
 
         pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Dimension") or {}
         show_description_only = pset_data.get("ShowDescriptionOnly", False)
         suppress_zero_inches = pset_data.get("SuppressZeroInches", False)
-        text_prefix = pset_data.get("TextPrefix", "")
-        text_suffix = pset_data.get("TextSuffix", "")
+        text_prefix = pset_data.get("TextPrefix", None) or ""
+        text_suffix = pset_data.get("TextSuffix", None) or ""
 
         dimension_data = {
             "dimension_style": dimension_style,
@@ -316,6 +324,7 @@ class DecoratorData:
             "suppress_zero_inches": suppress_zero_inches,
             "text_prefix": text_prefix,
             "text_suffix": text_suffix,
+            "fill_bg": fill_bg,
         }
         cls.data[obj.name] = dimension_data
         return dimension_data
@@ -329,18 +338,31 @@ class AnnotationData:
     def load(cls):
         cls.is_loaded = True
         cls.props = bpy.context.scene.BIMAnnotationProperties
-        cls.data["relating_types"] = cls.get_relating_types()
+        cls.data["relating_type_id"] = cls.relating_type_id()
+        cls.data["relating_types"] = cls.relating_types()
 
     @classmethod
-    def get_relating_types(cls):
+    def relating_type_id(cls):
         object_type = cls.props.object_type
         relating_types = []
         for relating_type in tool.Ifc.get().by_type("IfcTypeProduct"):
             if tool.Drawing.is_annotation_object_type(relating_type, object_type):
                 relating_types.append(relating_type)
 
-        enum_items = [(str(e.id()), e.Name or "Unnamed", e.Description or "") for e in relating_types]
+        results = [("0", "Untyped", "")]
+        results.extend([(str(e.id()), e.Name or "Unnamed", e.Description or "") for e in relating_types])
+        return results
 
-        # item to create anootations without relating types
-        enum_items.insert(0, ("0", "-", ""))
-        return enum_items
+    @classmethod
+    def relating_types(cls):
+        object_type = cls.props.object_type
+        relating_types = []
+        for relating_type in tool.Ifc.get().by_type("IfcTypeProduct"):
+            if tool.Drawing.is_annotation_object_type(relating_type, object_type):
+                relating_types.append({
+                    "id": relating_type.id(),
+                    "name": relating_type.Name or "Unnamed",
+                    "description": relating_type.Description or "No Description",
+                })
+
+        return sorted(relating_types, key=lambda x: x["name"])
