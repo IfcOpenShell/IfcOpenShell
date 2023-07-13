@@ -252,11 +252,11 @@ class BIM_PT_stair(bpy.types.Panel):
 
         props = context.active_object.BIMStairProperties
 
-        if StairData.data["parameters"]:
+        if StairData.data["pset_data"]:
             row = self.layout.row(align=True)
             row.label(text="Stair parameters", icon="IPO_CONSTANT")
 
-            stair_data = StairData.data["parameters"]["data_dict"]
+            stair_data = StairData.data["pset_data"]["data_dict"]
             if props.is_editing:
                 row = self.layout.row(align=True)
                 row.operator("bim.finish_editing_stair", icon="CHECKMARK", text="Finish Editing")
@@ -350,7 +350,7 @@ class BIM_PT_window(bpy.types.Panel):
 
         props = context.active_object.BIMWindowProperties
 
-        if WindowData.data["parameters"]:
+        if WindowData.data["pset_data"]:
             row = self.layout.row(align=True)
             row.label(text="Window parameters", icon="OUTLINER_OB_LATTICE")
 
@@ -459,7 +459,7 @@ class BIM_PT_door(bpy.types.Panel):
 
         props = context.active_object.BIMDoorProperties
 
-        if DoorData.data["parameters"]:
+        if DoorData.data["pset_data"]:
             row = self.layout.row(align=True)
             row.label(text="Door parameters", icon="OUTLINER_OB_LATTICE")
 
@@ -532,7 +532,7 @@ class BIM_PT_railing(bpy.types.Panel):
 
         props = context.active_object.BIMRailingProperties
 
-        if RailingData.data["parameters"]:
+        if RailingData.data["pset_data"]:
             row = self.layout.row(align=True)
             row.label(text="Railing parameters", icon="OUTLINER_OB_LATTICE")
 
@@ -594,7 +594,7 @@ class BIM_PT_roof(bpy.types.Panel):
 
         props = context.active_object.BIMRoofProperties
 
-        if RoofData.data["parameters"]:
+        if RoofData.data["pset_data"]:
             row = self.layout.row(align=True)
             row.label(text="Roof parameters", icon="OUTLINER_OB_LATTICE")
 

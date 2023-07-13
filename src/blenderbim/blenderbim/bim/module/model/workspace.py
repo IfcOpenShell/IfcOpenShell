@@ -207,7 +207,7 @@ class BimToolUI:
 
         elif (
             (RailingData.is_loaded or not RailingData.load())
-            and RailingData.data["parameters"]
+            and RailingData.data["pset_data"]
             and not context.active_object.BIMRailingProperties.is_editing_path
         ):
             # NOTE: should be above "active_representation_type" = "SweptSolid" check
@@ -248,7 +248,7 @@ class BimToolUI:
 
         elif (
             (RoofData.is_loaded or not RoofData.load())
-            and RoofData.data["parameters"]
+            and RoofData.data["pset_data"]
             and not context.active_object.BIMRoofProperties.is_editing_path
         ):
             row = cls.layout.row(align=True)
@@ -427,7 +427,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         # and it might conflict with one of the conditions below
         if (
             (RailingData.is_loaded or not RailingData.load())
-            and RailingData.data["parameters"]
+            and RailingData.data["pset_data"]
             and not bpy.context.active_object.BIMRailingProperties.is_editing_path
         ):
             bpy.ops.bim.enable_editing_railing_path()
@@ -435,7 +435,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
 
         elif (
             (RoofData.is_loaded or not RoofData.load())
-            and RoofData.data["parameters"]
+            and RoofData.data["pset_data"]
             and not bpy.context.active_object.BIMRoofProperties.is_editing_path
         ):
             # undo the unselection done above because roof has no usage type
