@@ -326,6 +326,10 @@ class Brick(blenderbim.core.tool.Brick):
     def add_namespace(cls, alias, uri):
         BrickStore.graph.bind(alias, Namespace(uri))
         # need some way to reload namespace enum view
+    
+    @classmethod
+    def clear_breadcrumbs(cls):
+        bpy.context.scene.BIMBrickProperties.brick_breadcrumbs.clear()
 
 
 class BrickStore:
