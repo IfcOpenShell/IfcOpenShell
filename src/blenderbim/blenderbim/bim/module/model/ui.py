@@ -463,8 +463,6 @@ class BIM_PT_door(bpy.types.Panel):
             row = self.layout.row(align=True)
             row.label(text="Door parameters", icon="OUTLINER_OB_LATTICE")
 
-            door_data = DoorData.data["parameters"]["data_dict"]
-
             if props.is_editing:
                 row = self.layout.row(align=True)
                 row.operator("bim.finish_editing_door", icon="CHECKMARK", text="Finish Editing")
@@ -491,32 +489,23 @@ class BIM_PT_door(bpy.types.Panel):
                 row.operator("bim.remove_door", icon="X", text="")
 
                 box = self.layout.box()
-                general_props = props.get_general_kwargs()
-                for prop in general_props:
-                    prop_value = door_data[prop]
-                    prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
+                for prop_name, prop_value in DoorData.data["general_params"].items():
                     row = box.row(align=True)
-                    row.label(text=f"{props.bl_rna.properties[prop].name}")
+                    row.label(text=prop_name)
                     row.label(text=str(prop_value))
 
-                lining_props = props.get_lining_kwargs()
                 self.layout.label(text="Lining properties")
                 lining_box = self.layout.box()
-                for prop in lining_props:
-                    prop_value = door_data["lining_properties"][prop]
-                    prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
+                for prop_name, prop_value in DoorData.data["lining_params"].items():
                     row = lining_box.row(align=True)
-                    row.label(text=f"{props.bl_rna.properties[prop].name}")
+                    row.label(text=prop_name)
                     row.label(text=str(prop_value))
 
-                panel_props = props.get_panel_kwargs()
                 self.layout.label(text="Panel properties")
                 panel_box = self.layout.box()
-                for prop in panel_props:
-                    prop_value = door_data["panel_properties"][prop]
-                    prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
+                for prop_name, prop_value in DoorData.data["panel_params"].items():
                     row = panel_box.row(align=True)
-                    row.label(text=f"{props.bl_rna.properties[prop].name}")
+                    row.label(text=prop_name)
                     row.label(text=str(prop_value))
         else:
             row = self.layout.row()
