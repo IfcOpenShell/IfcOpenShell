@@ -272,17 +272,11 @@ class StairData:
     @classmethod
     def load(cls):
         cls.is_loaded = True
-        cls.data = {"parameters": cls.parameters()}
+        cls.data = {"pset_data": cls.pset_data()}
 
     @classmethod
-    def parameters(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        if element:
-            psets = ifcopenshell.util.element.get_psets(element)
-            parameters = psets.get("BBIM_Stair", None)
-            if parameters:
-                parameters["data_dict"] = json.loads(parameters.get("Data", "[]") or "[]")
-                return parameters
+    def pset_data(cls):
+        return tool.Model.get_modeling_bbim_pset_data(bpy.context.active_object, "BBIM_Stair")
 
 
 class SverchokData:
@@ -292,17 +286,12 @@ class SverchokData:
     @classmethod
     def load(cls):
         cls.is_loaded = True
-        cls.data = {"parameters": cls.parameters(), "has_sverchok": cls.has_sverchok()}
+        cls.data = {"pset_data": cls.pset_data(), "has_sverchok": cls.has_sverchok()}
 
+    # NOTE: never used
     @classmethod
-    def parameters(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        if element:
-            psets = ifcopenshell.util.element.get_psets(element)
-            parameters = psets.get("BBIM_Sverchok", None)
-            if parameters:
-                parameters["data_dict"] = json.loads(parameters.get("Data", "[]") or "[]")
-                return parameters
+    def pset_data(cls):
+        return tool.Model.get_modeling_bbim_pset_data(bpy.context.active_object, "BBIM_Sverchok")
 
     @classmethod
     def has_sverchok(cls):
@@ -329,7 +318,7 @@ class WindowData:
     def load(cls):
         cls.is_loaded = True
         cls.data = {}
-        cls.data["parameters"] = cls.pset_data()
+        cls.data["pset_data"] = cls.pset_data()
         cls.data["general_params"] = cls.general_params()
         cls.data["lining_params"] = cls.lining_params()
         cls.data["panel_params"] = cls.panel_params()
@@ -341,7 +330,7 @@ class WindowData:
     @classmethod
     def general_params(cls):
         props = bpy.context.active_object.BIMWindowProperties
-        data = cls.data["parameters"]["data_dict"]
+        data = cls.data["pset_data"]["data_dict"]
         general_params = {}
         general_props = props.get_general_kwargs()
         for prop_name in general_props:
@@ -352,7 +341,7 @@ class WindowData:
     @classmethod
     def lining_params(cls):
         props = bpy.context.active_object.BIMWindowProperties
-        data = cls.data["parameters"]["data_dict"]
+        data = cls.data["pset_data"]["data_dict"]
         lining_data = data["lining_properties"]
         lining_params = {}
         lining_props = props.get_lining_kwargs(window_type=data["window_type"])
@@ -364,7 +353,7 @@ class WindowData:
     @classmethod
     def panel_params(cls):
         props = bpy.context.active_object.BIMWindowProperties
-        panel_data = cls.data["parameters"]["data_dict"]["panel_properties"]
+        panel_data = cls.data["pset_data"]["data_dict"]["panel_properties"]
         panel_params = {}
         panel_props = props.get_panel_kwargs()
         for prop_name in panel_props:
@@ -381,7 +370,7 @@ class DoorData:
     def load(cls):
         cls.is_loaded = True
         cls.data = {}
-        cls.data["parameters"] = cls.pset_data()
+        cls.data["pset_data"] = cls.pset_data()
         cls.data["general_params"] = cls.general_params()
         cls.data["lining_params"] = cls.lining_params()
         cls.data["panel_params"] = cls.panel_params()
@@ -393,7 +382,7 @@ class DoorData:
     @classmethod
     def general_params(cls):
         props = bpy.context.active_object.BIMDoorProperties
-        data = cls.data["parameters"]["data_dict"]
+        data = cls.data["pset_data"]["data_dict"]
         general_params = {}
         general_props = props.get_general_kwargs()
         for prop_name in general_props:
@@ -404,7 +393,7 @@ class DoorData:
     @classmethod
     def lining_params(cls):
         props = bpy.context.active_object.BIMDoorProperties
-        data = cls.data["parameters"]["data_dict"]
+        data = cls.data["pset_data"]["data_dict"]
         lining_data = data["lining_properties"]
         lining_params = {}
         lining_props = props.get_lining_kwargs(door_type=data["door_type"], lining_data=lining_data)
@@ -416,8 +405,8 @@ class DoorData:
     @classmethod
     def panel_params(cls):
         props = bpy.context.active_object.BIMDoorProperties
-        data = cls.data["parameters"]["data_dict"]
-        panel_data = cls.data["parameters"]["data_dict"]["panel_properties"]
+        data = cls.data["pset_data"]["data_dict"]
+        panel_data = cls.data["pset_data"]["data_dict"]["panel_properties"]
         panel_params = {}
         panel_props = props.get_panel_kwargs(lining_data=data["lining_properties"])
         for prop_name in panel_props:
@@ -434,7 +423,7 @@ class RailingData:
     def load(cls):
         cls.is_loaded = True
         cls.data = {}
-        cls.data["parameters"] = cls.pset_data()
+        cls.data["pset_data"] = cls.pset_data()
         cls.data["general_params"] = cls.general_params()
         cls.data["path_data"] = cls.path_data()
 
@@ -445,7 +434,7 @@ class RailingData:
     @classmethod
     def general_params(cls):
         props = bpy.context.active_object.BIMRailingProperties
-        data = cls.data["parameters"]["data_dict"]
+        data = cls.data["pset_data"]["data_dict"]
         general_params = {}
         general_props = props.get_general_kwargs(railing_type=data["railing_type"])
         for prop_name in general_props:
@@ -455,7 +444,7 @@ class RailingData:
 
     @classmethod
     def path_data(cls):
-        return cls.data["parameters"]["data_dict"]["path_data"]
+        return cls.data["pset_data"]["data_dict"]["path_data"]
 
 
 class RoofData:
@@ -466,7 +455,7 @@ class RoofData:
     def load(cls):
         cls.is_loaded = True
         cls.data = {}
-        cls.data["parameters"] = cls.pset_data()
+        cls.data["pset_data"] = cls.pset_data()
         cls.data["general_params"] = cls.general_params()
 
     @classmethod
@@ -476,7 +465,7 @@ class RoofData:
     @classmethod
     def general_params(cls):
         props = bpy.context.active_object.BIMRoofProperties
-        data = cls.data["parameters"]["data_dict"]
+        data = cls.data["pset_data"]["data_dict"]
         general_params = {}
         general_props = props.get_general_kwargs(generation_method=data["generation_method"])
         for prop_name in general_props:

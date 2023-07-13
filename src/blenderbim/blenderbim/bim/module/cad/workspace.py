@@ -137,7 +137,7 @@ class CadTool(WorkSpaceTool):
         else:
             if (
                 (RailingData.is_loaded or not RailingData.load())
-                and RailingData.data["parameters"]
+                and RailingData.data["pset_data"]
                 and context.active_object.BIMRailingProperties.is_editing_path
             ):
                 row = layout.row(align=True)
@@ -147,7 +147,7 @@ class CadTool(WorkSpaceTool):
 
             elif (
                 (RoofData.is_loaded or not RoofData.load())
-                and RoofData.data["parameters"]
+                and RoofData.data["pset_data"]
                 and context.active_object.BIMRoofProperties.is_editing_path
             ):
                 row = layout.row(align=True)
@@ -227,7 +227,7 @@ class CadHotkey(bpy.types.Operator):
                 row.prop(props, "y")
             elif (
                 (RoofData.is_loaded or not RoofData.load())
-                and RoofData.data["parameters"]
+                and RoofData.data["pset_data"]
                 and bpy.context.active_object.BIMRoofProperties.is_editing_path
             ):
                 self.layout.row().prop(props, "gable_roof_edge_angle")
@@ -273,7 +273,7 @@ class CadHotkey(bpy.types.Operator):
             bpy.ops.bim.add_rectangle(x=self.props.x, y=self.props.y)
         elif (
             (RoofData.is_loaded or not RoofData.load())
-            and RoofData.data["parameters"]
+            and RoofData.data["pset_data"]
             and bpy.context.active_object.BIMRoofProperties.is_editing_path
         ):
             bpy.ops.bim.set_gable_roof_edge_angle(
