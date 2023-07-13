@@ -190,7 +190,7 @@ class BIMStairProperties(PropertyGroup):
         ("GENERIC", "Generic", ""),
     )
 
-    is_editing: bpy.props.IntProperty(default=-1)
+    is_editing: bpy.props.BoolProperty(default=False)
     width: bpy.props.FloatProperty(name="Width", default=1.2, soft_min=0.01, subtype="DISTANCE")
     height: bpy.props.FloatProperty(name="Height", default=1.0, soft_min=0.01, subtype="DISTANCE")
     number_of_treads: bpy.props.IntProperty(name="Number of treads", default=6, soft_min=1)
@@ -280,7 +280,7 @@ class BIMWindowProperties(PropertyGroup):
     }
     # fmt: on
 
-    is_editing: bpy.props.IntProperty(default=-1)
+    is_editing: bpy.props.BoolProperty(default=False)
     window_type: bpy.props.EnumProperty(
         name="Window Type", items=window_types, default="SINGLE_PANEL", update=window_type_prop_update
     )
@@ -409,7 +409,7 @@ class BIMDoorProperties(PropertyGroup):
         ("DOUBLE_DOOR_SLIDING", "DOUBLE_DOOR_SLIDING", ""),
     )
 
-    is_editing: bpy.props.IntProperty(default=-1)
+    is_editing: bpy.props.BoolProperty(default=False)
     door_type: bpy.props.EnumProperty(name="Door Operation Type", items=door_types, default="SINGLE_SWING_LEFT")
     overall_height: bpy.props.FloatProperty(name="Overall Height", default=2.0, subtype="DISTANCE")
     overall_width: bpy.props.FloatProperty(name="Overall Width", default=0.9, subtype="DISTANCE")

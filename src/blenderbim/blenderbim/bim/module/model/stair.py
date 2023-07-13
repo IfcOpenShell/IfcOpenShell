@@ -394,7 +394,7 @@ class CancelEditingStair(bpy.types.Operator, tool.Ifc.Operator):
         props.set_props_kwargs_from_ifc_data(data)
         update_stair_modifier(context)
 
-        props.is_editing = -1
+        props.is_editing = False
 
         return {"FINISHED"}
 
@@ -410,7 +410,7 @@ class FinishEditingStair(bpy.types.Operator, tool.Ifc.Operator):
         props = obj.BIMStairProperties
 
         data = props.get_props_kwargs(convert_to_project_units=True)
-        props.is_editing = -1
+        props.is_editing = False
         update_stair_modifier(context)
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Stair")
@@ -434,7 +434,7 @@ class EnableEditingStair(bpy.types.Operator, tool.Ifc.Operator):
         data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Stair", "Data"))
         # required since we could load pset from .ifc and BIMStairProperties won't be set
         props.set_props_kwargs_from_ifc_data(data)
-        props.is_editing = 1
+        props.is_editing = True
         return {"FINISHED"}
 
 
@@ -447,7 +447,7 @@ class RemoveStair(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         props = obj.BIMStairProperties
         element = tool.Ifc.get_entity(obj)
-        obj.BIMStairProperties.is_editing = -1
+        obj.BIMStairProperties.is_editing = False
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Stair")
         ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
