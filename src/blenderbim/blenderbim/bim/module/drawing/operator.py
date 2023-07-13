@@ -2345,6 +2345,34 @@ class DisableEditingDrawings(bpy.types.Operator, Operator):
         core.disable_editing_drawings(tool.Drawing)
 
 
+class ExpandTargetView(bpy.types.Operator):
+    bl_idname = "bim.expand_target_view"
+    bl_label = "Expand Target View"
+    bl_options = {"REGISTER", "UNDO"}
+    target_view: bpy.props.StringProperty()
+
+    def execute(self, context):
+        props = context.scene.DocProperties
+        for drawing in [d for d in props.drawings if d.target_view == self.target_view]:
+            drawing.is_expanded = True
+        core.load_drawings(tool.Drawing)
+        return {"FINISHED"}
+
+
+class ContractTargetView(bpy.types.Operator):
+    bl_idname = "bim.contract_target_view"
+    bl_label = "Contract Target View"
+    bl_options = {"REGISTER", "UNDO"}
+    target_view: bpy.props.StringProperty()
+
+    def execute(self, context):
+        props = context.scene.DocProperties
+        for drawing in [d for d in props.drawings if d.target_view == self.target_view]:
+            drawing.is_expanded = False
+        core.load_drawings(tool.Drawing)
+        return {"FINISHED"}
+
+
 class ExpandSheet(bpy.types.Operator):
     bl_idname = "bim.expand_sheet"
     bl_label = "Expand Sheet"

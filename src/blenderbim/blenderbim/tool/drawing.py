@@ -627,17 +627,38 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def import_drawings(cls):
-        current_drawings_selection = {
-            d.ifc_definition_id: d.is_selected for d in bpy.context.scene.DocProperties.drawings
-        }
-        bpy.context.scene.DocProperties.drawings.clear()
+        props = bpy.context.scene.DocProperties
+        expanded_target_views = {d.target_view for d in props.drawings if d.is_expanded}
+        current_drawings_selection = {d.ifc_definition_id: d.is_selected for d in props.drawings}
+        props.drawings.clear()
         drawings = [e for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"]
+        grouped_drawings = {
+            "MODEL_VIEW": [],
+            "PLAN_VIEW": [],
+            "SECTION_VIEW": [],
+            "ELEVATION_VIEW": [],
+            "REFLECTED_PLAN_VIEW": [],
+        }
         for drawing in drawings:
-            new = bpy.context.scene.DocProperties.drawings.add()
-            new.ifc_definition_id = drawing.id()
-            new.name = drawing.Name or "Unnamed"
-            new.target_view = cls.get_drawing_target_view(drawing)
-            new.is_selected = current_drawings_selection.get(drawing.id(), True)
+            target_view = cls.get_drawing_target_view(drawing)
+            grouped_drawings.setdefault(target_view, []).append(drawing)
+
+        for target_view, drawings in grouped_drawings.items():
+            new = props.drawings.add()
+            new.name = target_view.replace("_", " ").title() + f" ({len(drawings)})"
+            new.target_view = target_view
+            new.is_drawing = False
+            new.is_expanded = target_view in expanded_target_views
+
+            if not new.is_expanded:
+                continue
+
+            for drawing in sorted(drawings, key=lambda x: x.Name or "Unnamed"):
+                new = props.drawings.add()
+                new.ifc_definition_id = drawing.id()
+                new.name = drawing.Name or "Unnamed"
+                new.is_selected = current_drawings_selection.get(drawing.id(), True)
+                new.is_drawing = True
 
     @classmethod
     def import_documents(cls, document_type):
