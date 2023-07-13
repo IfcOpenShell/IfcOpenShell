@@ -457,7 +457,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
 
         if len(bpy.context.selected_objects) == 1:
             if self.active_material_usage == "LAYER3":
-                # Edit LAYER2 profile
+                # Edit LAYER3 profile
                 if bpy.context.active_object and bpy.context.active_object.mode == "OBJECT":
                     bpy.ops.bim.enable_editing_extrusion_profile()
             elif self.active_material_usage == "LAYER2":
@@ -469,6 +469,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             else:
                 # Edit SWEPTSOLID profile (assuming single profile for now)
                 bpy.ops.bim.enable_editing_extrusion_profile()
+
         elif self.active_material_usage == "LAYER2" and selected_usages.get("PROFILE", []):
             # Extend PROFILEs to LAYER2
             [o.select_set(False) for o in selected_usages.get("LAYER3", [])]
