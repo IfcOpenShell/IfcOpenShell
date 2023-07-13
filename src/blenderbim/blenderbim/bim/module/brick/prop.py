@@ -54,6 +54,14 @@ def get_brick_equipment_classes(self, context):
     return BrickschemaData.data["brick_equipment_classes"]
 
 
+def get_brick_view_types(self, context):
+    return [("System", "System", ""),
+            ("Location", "Location", ""),
+            ("Equipment", "Equipment", ""),
+            ("Point", "Point", "")
+        ]
+            
+
 class Brick(PropertyGroup):
     name: StringProperty(name="Name")
     label: StringProperty(name="Label")
@@ -73,3 +81,4 @@ class BIMBrickProperties(PropertyGroup):
     new_brick_label: StringProperty(name="New Brick Label")
     new_brick_namespace_alias: StringProperty(name="New Brick Namespace Alias")
     new_brick_namespace_uri: StringProperty(name="New Brick Namespace URI")
+    brick_view_type: EnumProperty(name="Brick View Type", items=get_brick_view_types)
