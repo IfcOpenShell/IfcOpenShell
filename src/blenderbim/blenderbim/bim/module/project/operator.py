@@ -36,6 +36,7 @@ from blenderbim.bim.ui import IFCFileSelector
 from blenderbim.bim import import_ifc
 from blenderbim.bim import export_ifc
 from pathlib import Path
+from bpy.app.handlers import persistent
 
 
 class NewProject(bpy.types.Operator):
@@ -578,13 +579,28 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
     should_start_fresh_session: bpy.props.BoolProperty(name="Should Start Fresh Session", default=True)
 
     def execute(self, context):
-        if self.should_start_fresh_session:
-            bpy.ops.wm.read_homefile()
-
+        @persistent
+        def load_handler(*args):
+            bpy.app.handlers.load_post.remove(load_handler)
             if tool.Blender.is_default_scene():
                 for obj in bpy.data.objects:
                     bpy.data.objects.remove(obj)
+            self.finish_loading_project(context)
 
+        if self.should_start_fresh_session:
+            # WARNING: wm.read_homefile clears context
+            # which could lead to some operators to fail:
+            # https://blender.stackexchange.com/a/282558/135166
+            # So we continue using the load_post handler
+            # thats triggered when context is already restored 
+            bpy.app.handlers.load_post.append(load_handler)
+            bpy.ops.wm.read_homefile()
+            return {"FINISHED"}
+        else:
+            return self.finish_loading_project(context)
+        
+
+    def finish_loading_project(self, context):
         if not self.is_existing_ifc_file():
             return {"FINISHED"}
         context.scene.BIMProperties.ifc_file = self.get_filepath()
@@ -592,7 +608,8 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
         context.scene.BIMProjectProperties.total_elements = len(tool.Ifc.get().by_type("IfcElement"))
         if not self.is_advanced:
             bpy.ops.bim.load_project_elements()
-        return {"FINISHED"}
+        return {"FINISHED"}     
+
 
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
