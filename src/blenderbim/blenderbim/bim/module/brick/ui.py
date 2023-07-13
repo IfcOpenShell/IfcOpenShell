@@ -51,21 +51,26 @@ class BIM_PT_brickschema(Panel):
             row.label(text=BrickStore.path, icon="FILEBROWSER")
 
         row = self.layout.row(align=True)
-        if len(self.props.brick_breadcrumbs):
-            row.operator("bim.rewind_brick_class", text="", icon="FRAME_PREV")
-        row.label(text=self.props.active_brick_class)
-        row.prop(data=self.props, property="brick_settings_toggled", text="", icon="PREFERENCES")
-        row.operator("bim.refresh_brick_viewer", text="", icon="FILE_REFRESH")
+        op = row.operator("bim.serialize_brick", icon="EXPORT", text="Save")
+        op.should_save_as = False
+        op = row.operator("bim.serialize_brick", icon="FILE_TICK", text="Save As")
+        op.should_save_as = True
         row.operator("bim.close_brick_project", text="", icon="CANCEL")
 
+        row = self.layout.row(align=True)
+        row.prop(data=self.props, property="brick_settings_toggled", text="", icon="PREFERENCES")
+        
         if self.props.brick_settings_toggled:
             box = self.layout.box()
             row = box.row(align=True)
             row.label(text="Active Namespace:")
+
             row = box.row(align=True)
             prop_with_search(row, self.props, "namespace", text="")
+
             row = box.row(align=True)
             row.label(text="Bind New Namespace:")
+
             row = box.row(align=True)
             row.prop(data=self.props, property="new_brick_namespace_alias", text="")
             col = row.column()
@@ -75,6 +80,9 @@ class BIM_PT_brickschema(Panel):
             row.prop(data=self.props, property="new_brick_namespace_uri", text="")
             row.operator("bim.add_brick_namespace", text="", icon="ADD")
 
+            row = box.row(align=True)
+            row.prop(data=self.props, property="brick_view_type", text="List View")
+
         row = self.layout.row(align=True)
         row.label(text="Create Entity:")
         row = self.layout.row(align=True)
@@ -83,15 +91,18 @@ class BIM_PT_brickschema(Panel):
         row.operator("bim.add_brick", text="", icon="ADD")
 
         row = self.layout.row(align=True)
-        row.alignment = "RIGHT"
-        row.operator("bim.add_brick_feed", text="", icon="PLUGIN")
+        col = row.column()
+        col.alignment = "LEFT"
+        if len(self.props.brick_breadcrumbs):
+            row.operator("bim.rewind_brick_class", text="", icon="FRAME_PREV")
+        col = row.column()
+        col.alignment = "RIGHT"
+        # row.operator("bim.add_brick_feed", text="", icon="PLUGIN")
         row.operator("bim.remove_brick", text="", icon="X")
+        # row.operator("bim.refresh_brick_viewer", text="", icon="FILE_REFRESH")
 
         row = self.layout.row(align=True)
-        op = row.operator("bim.serialize_brick", icon="EXPORT", text="Save")
-        op.should_save_as = False
-        op = row.operator("bim.serialize_brick", icon="FILE_TICK", text="Save As")
-        op.should_save_as = True
+        row.label(text=self.props.active_brick_class)
 
         self.layout.template_list("BIM_UL_bricks", "", self.props, "bricks", self.props, "active_brick_index")
 
