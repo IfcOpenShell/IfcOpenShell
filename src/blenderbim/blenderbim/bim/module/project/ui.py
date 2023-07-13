@@ -209,7 +209,6 @@ class BIM_PT_project(Panel):
             row = self.layout.row()
             row.label(text="File Not Saved", icon="ERROR")
 
-
     def draw_create_project_ui(self, context):
         props = context.scene.BIMProperties
         pprops = context.scene.BIMProjectProperties
@@ -226,7 +225,7 @@ class BIM_PT_project(Panel):
 
         row = self.layout.row(align=True)
         row.operator("bim.create_project")
-        row.operator("bim.load_project").should_start_fresh_session = True
+        row.operator("bim.load_project").should_start_fresh_session = False
 
 
 class BIM_PT_project_library(Panel):
