@@ -340,7 +340,9 @@ class BIMWindowProperties(PropertyGroup):
             return kwargs
         return tool.Model.convert_data_to_project_units(kwargs, ["window_type"])
 
-    def get_lining_kwargs(self, convert_to_project_units=False):
+    def get_lining_kwargs(self, window_type=None, convert_to_project_units=False):
+        if not window_type:
+            window_type = self.window_type
         kwargs = {
             "lining_depth": self.lining_depth,
             "lining_thickness": self.lining_thickness,
@@ -349,7 +351,7 @@ class BIMWindowProperties(PropertyGroup):
             "lining_to_panel_offset_y": self.lining_to_panel_offset_y,
         }
 
-        if self.window_type in (
+        if window_type in (
             "DOUBLE_PANEL_VERTICAL",
             "TRIPLE_PANEL_BOTTOM",
             "TRIPLE_PANEL_TOP",
@@ -360,7 +362,7 @@ class BIMWindowProperties(PropertyGroup):
             kwargs["mullion_thickness"] = self.mullion_thickness
             kwargs["first_mullion_offset"] = self.first_mullion_offset
 
-        if self.window_type in (
+        if window_type in (
             "DOUBLE_PANEL_HORIZONTAL",
             "TRIPLE_PANEL_BOTTOM",
             "TRIPLE_PANEL_TOP",
@@ -371,10 +373,10 @@ class BIMWindowProperties(PropertyGroup):
             kwargs["transom_thickness"] = self.transom_thickness
             kwargs["first_transom_offset"] = self.first_transom_offset
 
-        if self.window_type in ("TRIPLE_PANEL_VERTICAL",):
+        if window_type in ("TRIPLE_PANEL_VERTICAL",):
             kwargs["second_mullion_offset"] = self.second_mullion_offset
 
-        if self.window_type in ("TRIPLE_PANEL_HORIZONTAL",):
+        if window_type in ("TRIPLE_PANEL_HORIZONTAL",):
             kwargs["second_transom_offset"] = self.second_transom_offset
 
         if not convert_to_project_units:
@@ -422,11 +424,15 @@ class BIMDoorProperties(PropertyGroup):
         description="Offset from the outer side of the wall (by Y-axis). "
         "If present then adding casing is not possible.\n"
         "`0.025 mm` is good as default value",
-        default=0.0, 
-        subtype="DISTANCE"
+        default=0.0,
+        subtype="DISTANCE",
     )
-    lining_to_panel_offset_x: bpy.props.FloatProperty(name="Lining to Panel Offset X", default=0.025, subtype="DISTANCE")
-    lining_to_panel_offset_y: bpy.props.FloatProperty(name="Lining to Panel Offset Y", default=0.025, subtype="DISTANCE")
+    lining_to_panel_offset_x: bpy.props.FloatProperty(
+        name="Lining to Panel Offset X", default=0.025, subtype="DISTANCE"
+    )
+    lining_to_panel_offset_y: bpy.props.FloatProperty(
+        name="Lining to Panel Offset Y", default=0.025, subtype="DISTANCE"
+    )
 
     transom_thickness: bpy.props.FloatProperty(
         name="Transom Thickness",
@@ -442,19 +448,19 @@ class BIMDoorProperties(PropertyGroup):
     )
 
     casing_thickness: bpy.props.FloatProperty(
-        name="Casing Thickness", description="Set values > 0 and LiningOffset = 0 to add a casing.", default=0.075,
-        subtype="DISTANCE"
+        name="Casing Thickness",
+        description="Set values > 0 and LiningOffset = 0 to add a casing.",
+        default=0.075,
+        subtype="DISTANCE",
     )
     casing_depth: bpy.props.FloatProperty(name="Casing Depth", default=0.005, subtype="DISTANCE")
 
     threshold_thickness: bpy.props.FloatProperty(
-        name="Threshold Thickness", description="Set values > 0 to add a threshold.", default=0.025,
-        subtype="DISTANCE"
+        name="Threshold Thickness", description="Set values > 0 to add a threshold.", default=0.025, subtype="DISTANCE"
     )
     threshold_depth: bpy.props.FloatProperty(name="Threshold Depth", default=0.1, subtype="DISTANCE")
     threshold_offset: bpy.props.FloatProperty(
-        name="Threshold Offset", description="`0.025 mm` is good as default value", default=0.000,
-        subtype="DISTANCE"
+        name="Threshold Offset", description="`0.025 mm` is good as default value", default=0.000, subtype="DISTANCE"
     )
 
     # panel properties
@@ -517,7 +523,7 @@ class BIMDoorProperties(PropertyGroup):
 
         if not convert_to_project_units:
             return kwargs
-        return tool.Model.convert_data_to_project_units(kwargs, ("panel_width_ratio", ))
+        return tool.Model.convert_data_to_project_units(kwargs, ("panel_width_ratio",))
 
     def set_props_kwargs_from_ifc_data(self, kwargs):
         kwargs = tool.Model.convert_data_to_si_units(kwargs, self.non_si_units_props)
