@@ -19,11 +19,11 @@
 import bpy
 import math
 import json
-import functools
 import ifcopenshell
 import ifcopenshell.util.element
 from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc
 import blenderbim.tool as tool
+from math import degrees
 
 
 def refresh():
@@ -371,25 +371,26 @@ class RailingData:
 
     @classmethod
     def pset_data(cls):
-        return tool.Model.get_railing_pset_data(bpy.context.active_object)
+        return tool.Model.get_modeling_bbim_pset_data(bpy.context.active_object, "BBIM_Railing")
 
     @classmethod
     def general_params(cls):
         props = bpy.context.active_object.BIMRailingProperties
-        railing_data = cls.data["parameters"]["data_dict"]
+        data = cls.data["parameters"]["data_dict"]
         general_params = {}
-        general_props = props.get_general_kwargs(railing_type=railing_data["railing_type"])
+        general_props = props.get_general_kwargs(railing_type=data["railing_type"])
         for prop_name in general_props:
-            prop_value = railing_data[prop_name]
+            prop_value = data[prop_name]
             prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
 
             prop_readable_name = props.bl_rna.properties[prop_name].name
             general_params[prop_readable_name] = prop_value
         return general_params
-    
+
     @classmethod
     def path_data(cls):
         return cls.data["parameters"]["data_dict"]["path_data"]
+
 
 class RoofData:
     data = {}
@@ -398,14 +399,27 @@ class RoofData:
     @classmethod
     def load(cls):
         cls.is_loaded = True
-        cls.data = {"parameters": cls.parameters()}
+        cls.data = {}
+        cls.data["parameters"] = cls.pset_data()
+        cls.data["general_params"] = cls.general_params()
 
     @classmethod
-    def parameters(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        if element:
-            psets = ifcopenshell.util.element.get_psets(element)
-            parameters = psets.get("BBIM_Roof", None)
-            if parameters:
-                parameters["data_dict"] = json.loads(parameters.get("Data", "[]") or "[]")
-                return parameters
+    def pset_data(cls):
+        return tool.Model.get_modeling_bbim_pset_data(bpy.context.active_object, "BBIM_Roof")
+
+    @classmethod
+    def general_params(cls):
+        props = bpy.context.active_object.BIMRoofProperties
+        data = cls.data["parameters"]["data_dict"]
+        general_params = {}
+        general_props = props.get_general_kwargs(generation_method=data["generation_method"])
+        for prop_name in general_props:
+            prop_value = data[prop_name]
+            prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
+
+            if prop_name in ("angle", "rafter_edge_angle"):
+                prop_value = round(degrees(prop_value), 2)
+
+            prop_readable_name = props.bl_rna.properties[prop_name].name
+            general_params[prop_readable_name] = prop_value
+        return general_params
