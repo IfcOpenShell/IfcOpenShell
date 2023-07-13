@@ -255,9 +255,6 @@ class BimToolUI:
             row.label(text="", icon=f"EVENT_TAB")
             row.operator("bim.enable_editing_roof_path", text="Edit Roof Path")
 
-        elif DecoratorData.get_ifc_text_data(bpy.context.object):
-            add_layout_hotkey_operator(cls.layout, "Edit Text", "S_E", "")
-
         row = cls.layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
         row.label(text="", icon="EVENT_O")
@@ -495,10 +492,6 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             [o.select_set(False) for o in selected_usages.get("LAYER3", [])]
             [o.select_set(False) for o in selected_usages.get("LAYER2", [])]
             bpy.ops.bim.extend_profile(join_type="T")
-
-        elif DecoratorData.get_ifc_text_data(bpy.context.object):
-            bpy.context.object.select_set(True)
-            bpy.ops.bim.edit_text_popup()
 
     def hotkey_S_F(self):
         if not bpy.context.selected_objects:
