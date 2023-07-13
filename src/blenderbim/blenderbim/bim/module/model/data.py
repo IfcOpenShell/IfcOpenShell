@@ -380,17 +380,50 @@ class DoorData:
     @classmethod
     def load(cls):
         cls.is_loaded = True
-        cls.data = {"parameters": cls.parameters()}
+        cls.data = {}
+        cls.data["parameters"] = cls.pset_data()
+        cls.data["general_params"] = cls.general_params()
+        cls.data["lining_params"] = cls.lining_params()
+        cls.data["panel_params"] = cls.panel_params()
 
     @classmethod
-    def parameters(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        if element:
-            psets = ifcopenshell.util.element.get_psets(element)
-            parameters = psets.get("BBIM_Door", None)
-            if parameters:
-                parameters["data_dict"] = json.loads(parameters.get("Data", "[]") or "[]")
-                return parameters
+    def pset_data(cls):
+        return tool.Model.get_modeling_bbim_pset_data(bpy.context.active_object, "BBIM_Door")
+
+    @classmethod
+    def general_params(cls):
+        props = bpy.context.active_object.BIMDoorProperties
+        data = cls.data["parameters"]["data_dict"]
+        general_params = {}
+        general_props = props.get_general_kwargs()
+        for prop_name in general_props:
+            prop_readable_name, prop_value = get_prop_from_data(props, data, prop_name)
+            general_params[prop_readable_name] = prop_value
+        return general_params
+
+    @classmethod
+    def lining_params(cls):
+        props = bpy.context.active_object.BIMDoorProperties
+        data = cls.data["parameters"]["data_dict"]
+        lining_data = data["lining_properties"]
+        lining_params = {}
+        lining_props = props.get_lining_kwargs(door_type=data["door_type"], lining_data=lining_data)
+        for prop_name in lining_props:
+            prop_readable_name, prop_value = get_prop_from_data(props, lining_data, prop_name)
+            lining_params[prop_readable_name] = prop_value
+        return lining_params
+
+    @classmethod
+    def panel_params(cls):
+        props = bpy.context.active_object.BIMDoorProperties
+        data = cls.data["parameters"]["data_dict"]
+        panel_data = cls.data["parameters"]["data_dict"]["panel_properties"]
+        panel_params = {}
+        panel_props = props.get_panel_kwargs(lining_data=data["lining_properties"])
+        for prop_name in panel_props:
+            prop_readable_name, prop_value = get_prop_from_data(props, panel_data, prop_name)
+            panel_params[prop_readable_name] = prop_value
+        return panel_params
 
 
 class RailingData:

@@ -485,28 +485,35 @@ class BIMDoorProperties(PropertyGroup):
             return kwargs
         return tool.Model.convert_data_to_project_units(kwargs, ["door_type"])
 
-    def get_lining_kwargs(self, convert_to_project_units=False):
+    def get_lining_kwargs(self, convert_to_project_units=False, door_type=None, lining_data=None):
+        if not door_type:
+            door_type = self.door_type
+
+        transom_thickness = lining_data["transom_thickness"] if lining_data else self.transom_thickness
+        lining_offset = lining_data["lining_offset"] if lining_data else self.lining_offset
+        threshold_thickness = lining_data["threshold_thickness"] if lining_data else self.threshold_thickness
+
         kwargs = {
             "lining_depth": self.lining_depth,
             "lining_thickness": self.lining_thickness,
-            "lining_offset": self.lining_offset,
+            "lining_offset": lining_offset,
         }
 
-        if "SLIDING" not in self.door_type:
+        if "SLIDING" not in door_type:
             kwargs["lining_to_panel_offset_x"] = self.lining_to_panel_offset_x
             kwargs["lining_to_panel_offset_y"] = self.lining_to_panel_offset_y
 
-        kwargs["transom_thickness"] = self.transom_thickness
-        if self.transom_thickness:
+        kwargs["transom_thickness"] = transom_thickness
+        if transom_thickness:
             kwargs["transom_offset"] = self.transom_offset
 
-        if not self.lining_offset:
+        if not lining_offset:
             kwargs["casing_thickness"] = self.casing_thickness
             if self.casing_thickness:
                 kwargs["casing_depth"] = self.casing_depth
 
-        kwargs["threshold_thickness"] = self.threshold_thickness
-        if self.threshold_thickness:
+        kwargs["threshold_thickness"] = threshold_thickness
+        if threshold_thickness:
             kwargs["threshold_depth"] = self.threshold_depth
             kwargs["threshold_offset"] = self.threshold_offset
 
@@ -514,10 +521,11 @@ class BIMDoorProperties(PropertyGroup):
             return kwargs
         return tool.Model.convert_data_to_project_units(kwargs)
 
-    def get_panel_kwargs(self, convert_to_project_units=False):
+    def get_panel_kwargs(self, convert_to_project_units=False, lining_data=None):
+        transom_thickness = lining_data["transom_thickness"] if lining_data else self.transom_thickness
         kwargs = {"panel_depth": self.panel_depth, "panel_width_ratio": self.panel_width_ratio}
 
-        if self.transom_thickness:
+        if transom_thickness:
             kwargs["frame_thickness"] = self.frame_thickness
             kwargs["frame_depth"] = self.frame_depth
 
