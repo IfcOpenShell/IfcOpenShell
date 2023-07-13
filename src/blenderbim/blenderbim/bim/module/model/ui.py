@@ -354,10 +354,8 @@ class BIM_PT_window(bpy.types.Panel):
             row = self.layout.row(align=True)
             row.label(text="Window parameters", icon="OUTLINER_OB_LATTICE")
 
-            window_data = WindowData.data["parameters"]["data_dict"]
-            number_of_panels, panels_data = props.window_types_panels[props.window_type]
-
             if props.is_editing:
+                number_of_panels, panels_data = props.window_types_panels[props.window_type]
                 row = self.layout.row(align=True)
                 row.operator("bim.finish_editing_window", icon="CHECKMARK", text="Finish Editing")
                 row.operator("bim.cancel_editing_window", icon="CANCEL", text="")
@@ -398,25 +396,22 @@ class BIM_PT_window(bpy.types.Panel):
                 row.operator("bim.remove_window", icon="X", text="")
 
                 box = self.layout.box()
-                general_props = props.get_general_kwargs()
-                for prop in general_props:
-                    prop_value = window_data[prop]
-                    prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
+                general_params = WindowData.data["general_params"]
+                window_type_prop = props.bl_rna.properties["window_type"].name
+                number_of_panels, panels_data = props.window_types_panels[general_params[window_type_prop]]
+                for prop_name, prop_value in general_params.items():
                     row = box.row(align=True)
-                    row.label(text=f"{props.bl_rna.properties[prop].name}")
+                    row.label(text=prop_name)
                     row.label(text=str(prop_value))
 
-                lining_props = props.get_lining_kwargs()
                 self.layout.label(text="Lining properties")
-                lining_box = self.layout.box()
-                for prop in lining_props:
-                    prop_value = window_data["lining_properties"][prop]
-                    prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
-                    row = lining_box.row(align=True)
-                    row.label(text=f"{props.bl_rna.properties[prop].name}")
+                box = self.layout.box()
+                for prop_name, prop_value in WindowData.data["lining_params"].items():
+                    row = box.row(align=True)
+                    row.label(text=prop_name)
                     row.label(text=str(prop_value))
 
-                panel_props = props.get_panel_kwargs()
+                panel_props = WindowData.data["panel_params"]
                 self.layout.label(text="Panel properties")
 
                 panel_box = self.layout.box()
@@ -430,14 +425,12 @@ class BIM_PT_window(bpy.types.Panel):
                     r.label(text=f"#{panel_i}")
                     r = cols[panel_i + 1].row()
 
-                # TODO: align property values more evenly
-                for prop in panel_props:
-                    cols[0].row().label(text=f"{props.bl_rna.properties[prop].name}")
+                for prop_name in panel_props:
+                    cols[0].row().label(text=prop_name)
                     for panel_i in range(number_of_panels):
                         r = cols[panel_i + 1].row()
                         r.alignment = "CENTER"
-                        prop_value = window_data["panel_properties"][prop][panel_i]
-                        prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
+                        prop_value = panel_props[prop_name][panel_i]
                         r.label(text=str(prop_value))
                         r = cols[panel_i + 1].row()
 
@@ -615,8 +608,6 @@ class BIM_PT_roof(bpy.types.Panel):
         if RoofData.data["parameters"]:
             row = self.layout.row(align=True)
             row.label(text="Roof parameters", icon="OUTLINER_OB_LATTICE")
-
-            roof_data = RoofData.data["parameters"]["data_dict"]
 
             if props.is_editing:
                 row = self.layout.row(align=True)
