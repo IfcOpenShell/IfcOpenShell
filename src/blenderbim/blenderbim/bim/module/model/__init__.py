@@ -47,6 +47,7 @@ classes = (
     array.EnableEditingArray,
     array.RemoveArray,
     array.SelectArrayParent,
+    array.SelectAllArrayObjects,
     array.Input3DCursorXArray,
     array.Input3DCursorYArray,
     array.Input3DCursorZArray,
