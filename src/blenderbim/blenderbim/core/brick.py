@@ -17,10 +17,10 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 
-def load_brick_project(brick, filepath=None):
+def load_brick_project(brick, filepath=None, brick_root=None):
     brick.load_brick_file(filepath)
-    brick.import_brick_classes("Class")
-    brick.set_active_brick_class("Class")
+    brick.import_brick_classes(brick_root)
+    brick.set_active_brick_class(brick_root)
 
 
 def view_brick_class(brick, brick_class=None):
@@ -92,10 +92,10 @@ def convert_ifc_to_brick(brick, namespace=None, library=None):
     brick.run_refresh_brick_viewer()
 
 
-def new_brick_file(brick):
+def new_brick_file(brick, brick_root=None):
     brick.new_brick_file()
-    brick.import_brick_classes("Class")
-    brick.set_active_brick_class("Class")
+    brick.import_brick_classes(brick_root)
+    brick.set_active_brick_class(brick_root)
 
 
 def refresh_brick_viewer(brick):
@@ -118,3 +118,11 @@ def serialize_brick(brick):
 
 def add_namespace(brick, alias=None, uri=None):
     brick.add_namespace(alias, uri)
+
+
+def set_brick_list_root(brick, brick_root=None):
+    brick.clear_brick_browser()
+    brick.import_brick_classes(brick_root)
+    brick.set_active_brick_class(brick_root)
+    brick.clear_breadcrumbs()
+

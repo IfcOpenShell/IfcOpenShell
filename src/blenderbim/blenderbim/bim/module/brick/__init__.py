@@ -35,6 +35,7 @@ classes = (
     operator.ViewBrickItem,
     operator.SerializeBrick,
     operator.AddBrickNamespace,
+    operator.SetBrickListRoot,
     prop.Brick,
     prop.BIMBrickProperties,
     ui.BIM_PT_brickschema,

@@ -77,7 +77,8 @@ class BIM_PT_brickschema(Panel):
             row.operator("bim.add_brick_namespace", text="", icon="ADD")
 
             row = box.row(align=True)
-            row.prop(data=self.props, property="brick_view_type", text="List View")
+            row.operator("bim.set_brick_list_root", text="Set View")
+            row.prop(data=self.props, property="brick_list_root", text="")
 
         row = self.layout.row(align=True)
         row.label(text="Create Entity:")
