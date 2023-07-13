@@ -151,7 +151,11 @@ class Drawing(blenderbim.core.tool.Drawing):
         if element_type == "IfcAnnotation" and element.ObjectType in object_types:
             return True
 
-        if element_type == "IfcTypeProduct" and element.ApplicableOccurrence.startswith("IfcAnnotation/"):
+        if (
+            element_type == "IfcTypeProduct"
+            and element.ApplicableOccurrence
+            and element.ApplicableOccurrence.startswith("IfcAnnotation/")
+        ):
             applicable_object_type = element.ApplicableOccurrence.split("/")[1]
             if applicable_object_type in object_types:
                 return True
