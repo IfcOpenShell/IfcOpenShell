@@ -60,11 +60,11 @@ class JoinWall(bpy.types.Operator, tool.Ifc.Operator):
             for obj in selected_objs:
                 joiner.unjoin(obj)
             return {"FINISHED"}
-        
+
         if not context.active_object or not context.active_object.BIMObjectProperties.ifc_definition_id:
             self.report({"ERROR"}, f"No active object selected")
             return {"CANCELLED"}
-        
+
         for obj in selected_objs:
             tool.Geometry.clear_scale(obj)
 
@@ -75,7 +75,7 @@ class JoinWall(bpy.types.Operator, tool.Ifc.Operator):
         if len(selected_objs) == 1:
             joiner.join_E(context.active_object, context.scene.cursor.location)
             return {"FINISHED"}
-        
+
         if self.join_type in ("L", "V"):
             if len(selected_objs) != 2:
                 self.report({"ERROR"}, f"It requires 2 selected objects to do join of type {self.join_type}")
@@ -86,7 +86,7 @@ class JoinWall(bpy.types.Operator, tool.Ifc.Operator):
             elif self.join_type == "V":
                 joiner.join_V(another_selected_object, context.active_object)
             return {"FINISHED"}
-        
+
         if self.join_type == "T":
             elements = [tool.Ifc.get_entity(o) for o in context.selected_objects]
             layer2_elements = []
@@ -560,7 +560,7 @@ class DumbWallGenerator:
 
                     rotation = math.atan2(normal[1], normal[0])
                     rotated_y_axis = Matrix.Rotation(-rotation, 4, "Z")[1].xyz
-                    
+
                     # since wall thickness goes by local Y+ axis
                     # we find best position for the next wall
                     # by finding the face of another wall that will be very close to the some test point.
@@ -1137,7 +1137,7 @@ class DumbWallJoiner:
 
         previous_matrix = obj.matrix_world.copy()
         previous_origin = previous_matrix.col[3].to_2d()
-        obj.matrix_world[0][3], obj.matrix_world[1][3] = self.body[0]
+        obj.matrix_world.col[3].xy = self.body[0]
         bpy.context.view_layer.update()
 
         for rel in element.ConnectedFrom:
@@ -1432,6 +1432,7 @@ class DumbWallJoiner:
         return True
 
     def clip(self, wall1, slab2):
+        """returns height of the clipped wall, adds clipping plane to `clippings`"""
         element1 = tool.Ifc.get_entity(wall1)
         element2 = tool.Ifc.get_entity(slab2)
 
@@ -1441,19 +1442,15 @@ class DumbWallJoiner:
         bases = [axis1["base"][0].to_3d(), axis1["base"][1].to_3d(), axis1["side"][0].to_3d(), axis1["side"][1].to_3d()]
 
         extrusion = self.get_extrusion_data(tool.Ifc.get().by_id(wall1.data.BIMMeshProperties.ifc_definition_id))
-        d = wall1.matrix_world.to_quaternion() @ extrusion["direction"]
+        wall_dir = wall1.matrix_world.to_quaternion() @ extrusion["direction"]
 
         slab_pt = slab2.matrix_world @ Vector((0, 0, 0))
         slab_dir = slab2.matrix_world.to_quaternion() @ Vector((0, 0, -1))
 
-        tops = [mathutils.geometry.intersect_line_plane(b, b + d, slab_pt, slab_dir) for b in bases]
-
-        i_bottom = None
-        i_top = None
-        for i, co in enumerate(tops):
-            if i_top is None or co[2] > i_top[2]:
-                i_top = co
-                i_bottom = bases[i]
+        tops = [mathutils.geometry.intersect_line_plane(b, b + wall_dir, slab_pt, slab_dir) for b in bases]
+        top_index = max(range(4), key=lambda i: tops[i].z)
+        i_top = tops[top_index]
+        i_bottom = bases[top_index]
 
         quaternion = slab2.matrix_world.to_quaternion()
         x_axis = quaternion @ Vector((1, 0, 0))
