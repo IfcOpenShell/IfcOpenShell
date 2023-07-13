@@ -369,20 +369,11 @@ class CancelEditingRailing(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Railing", "Data"))
         props = obj.BIMRailingProperties
+
         # restore previous settings since editing was canceled
         props.set_props_kwargs_from_ifc_data(data)
-
-        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        blenderbim.core.geometry.switch_representation(
-            tool.Ifc,
-            tool.Geometry,
-            obj=obj,
-            representation=body,
-            should_reload=True,
-            is_global=True,
-            should_sync_changes_first=False,
-        )
-
+        update_railing_modifier_bmesh(context)
+        
         props.is_editing = False
         return {"FINISHED"}
 
