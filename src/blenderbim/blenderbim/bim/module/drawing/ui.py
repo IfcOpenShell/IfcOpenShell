@@ -488,12 +488,20 @@ class BIM_PT_text(Panel):
 
 class BIM_UL_drawinglist(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        if item:
-            row = layout.row(align=True)
+        if not item:
+            layout.label(text="", translate=False)
+            return
+
+        row = layout.row(align=True)
+        if item.is_drawing:
+            row.label(text="", icon="BLANK1")
             selected_icon = "CHECKBOX_HLT" if item.is_selected else "CHECKBOX_DEHLT"
-            row.prop(item, "is_selected", text="", icon=selected_icon)
-            icon = "UV_FACESEL"
-            if item.target_view == "ELEVATION_VIEW":
+            row.prop(item, "is_selected", text="", icon=selected_icon, emboss=False)
+            row.prop(item, "name", text="", emboss=False)
+        else:
+            if item.target_view == "PLAN_VIEW":
+                icon = "UV_FACESEL"
+            elif item.target_view == "ELEVATION_VIEW":
                 icon = "UV_VERTEXSEL"
             elif item.target_view == "SECTION_VIEW":
                 icon = "UV_EDGESEL"
@@ -501,9 +509,18 @@ class BIM_UL_drawinglist(bpy.types.UIList):
                 icon = "XRAY"
             elif item.target_view == "MODEL_VIEW":
                 icon = "SNAP_VOLUME"
+            else:
+                icon = "CLIPUV_HLT"
+            if item.is_expanded:
+                row.operator(
+                    "bim.contract_target_view", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN"
+                ).target_view = item.target_view
+            else:
+                row.operator(
+                    "bim.expand_target_view", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT"
+                ).target_view = item.target_view
             row.prop(item, "name", text="", icon=icon, emboss=False)
-        else:
-            layout.label(text="", translate=False)
+
 
 
 class BIM_UL_sheets(bpy.types.UIList):

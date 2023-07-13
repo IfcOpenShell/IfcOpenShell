@@ -165,8 +165,9 @@ def get_diagram_scales(self, context):
 
 
 def update_drawing_name(self, context):
-    drawing = tool.Ifc.get().by_id(self.ifc_definition_id)
-    core.update_drawing_name(tool.Ifc, tool.Drawing, drawing=drawing, name=self.name)
+    if self.ifc_definition_id:
+        drawing = tool.Ifc.get().by_id(self.ifc_definition_id)
+        core.update_drawing_name(tool.Ifc, tool.Drawing, drawing=drawing, name=self.name)
 
 
 def get_drawing_style_name(self):
@@ -253,6 +254,8 @@ class Drawing(PropertyGroup):
     name: StringProperty(name="Name", update=update_drawing_name)
     target_view: StringProperty(name="Target View")
     is_selected: BoolProperty(name="Is Selected", default=True)
+    is_drawing: BoolProperty(name="Is Drawing", default=False)
+    is_expanded: BoolProperty(name="Is Expanded", default=True)
 
 
 class Document(PropertyGroup):
