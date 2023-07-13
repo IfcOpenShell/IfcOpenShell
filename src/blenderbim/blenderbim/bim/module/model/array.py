@@ -201,6 +201,32 @@ class SelectArrayParent(bpy.types.Operator):
             obj.select_set(True)
         return {"FINISHED"}
 
+    
+class SelectAllArrayObjects(bpy.types.Operator):
+    bl_idname = "bim.select_all_array_objects"
+    bl_label = "Select All Array Objects"
+    bl_options = {"REGISTER", "UNDO"}
+    parent: bpy.props.StringProperty()
+
+    def execute(self, context):
+        try:
+            element = tool.Ifc.get().by_guid(self.parent)
+        except:
+            return {"FINISHED"}
+        
+        obj = tool.Ifc.get_object(element)
+        obj.select_set(True)
+        
+        pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+        data = json.loads(pset["Data"])
+        for i in range(len(data)):
+            for child in data[i]["children"]:
+                element = tool.Ifc.get().by_guid(child)
+                obj = tool.Ifc.get_object(element)
+                if obj:
+                    context.view_layer.objects.active = obj
+                    obj.select_set(True)
+        return {"FINISHED"}
 
 class Input3DCursorXArray(bpy.types.Operator):
     bl_idname = "bim.input_cursor_x_array"
