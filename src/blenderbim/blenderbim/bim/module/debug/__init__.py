@@ -20,6 +20,7 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
+    operator.CopyDebugInformation,
     operator.CreateAllShapes,
     operator.CreateShapeFromStepId,
     operator.InspectFromObject,

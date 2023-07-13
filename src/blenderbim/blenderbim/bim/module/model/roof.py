@@ -383,20 +383,6 @@ def bm_get_indices(sequence):
     return [i.index for i in sequence]
 
 
-def roof_is_gabled():
-    if not RoofData.is_loaded:
-        RoofData.load()
-
-    path_data = RoofData.parameters()["data_dict"]["path_data"]
-    angle_layer = path_data.get("gable_roof_angles", None)
-    if not angle_layer:
-        return False
-    for edge_angle in angle_layer:
-        if float_is_zero(edge_angle - pi / 2):
-            return True
-    return False
-
-
 def update_roof_modifier_ifc_data(context):
     """should be called after new geometry settled
     since it's going to update ifc representation
@@ -404,6 +390,17 @@ def update_roof_modifier_ifc_data(context):
     obj = context.active_object
     props = obj.BIMRoofProperties
     element = tool.Ifc.get_entity(obj)
+
+    def roof_is_gabled():
+        pset_data = tool.Model.get_modeling_bbim_pset_data(obj, "BBIM_Roof")
+        path_data = pset_data["data_dict"]["path_data"]
+        angle_layer = path_data.get("gable_roof_angles", None)
+        if not angle_layer:
+            return False
+        for edge_angle in angle_layer:
+            if float_is_zero(edge_angle - pi / 2):
+                return True
+        return False
 
     # type attributes
     if props.roof_type == "HIP/GABLE ROOF":
@@ -424,12 +421,16 @@ def update_bbim_roof_pset(element, roof_data):
 
 
 def update_roof_modifier_bmesh(context):
+    """before using should make sure that Data contains up-to-date information.
+    If BBIM Pset just changed should call refresh() before updating bmesh
+    """
     obj = context.object
     props = obj.BIMRoofProperties
 
+    # NOTE: using Data since bmesh update will hapen very often
     if not RoofData.is_loaded:
         RoofData.load()
-    path_data = RoofData.data["parameters"]["data_dict"]["path_data"]
+    path_data = RoofData.data["pset_data"]["data_dict"]["path_data"]
     angle_layer_data = path_data.get("gable_roof_angles", None)
     separate_verts_data = path_data.get("gable_roof_separate_verts", None)
 
@@ -514,6 +515,9 @@ class BIM_OT_add_roof(bpy.types.Operator, tool.Ifc.Operator):
         mesh = bpy.data.meshes.new("IfcRoof")
         obj = bpy.data.objects.new("IfcRoof", mesh)
         obj.location = spawn_location
+        collection = context.view_layer.active_layer_collection.collection
+        collection.objects.link(obj)
+
         body_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
         blenderbim.core.root.assign_class(
             tool.Ifc,
@@ -593,7 +597,7 @@ class EnableEditingRoof(bpy.types.Operator, tool.Ifc.Operator):
         data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Roof", "Data"))
         # required since we could load pset from .ifc and BIMRoofProperties won't be set
         props.set_props_kwargs_from_ifc_data(data)
-        props.is_editing = 1
+        props.is_editing = True
         return {"FINISHED"}
 
 
@@ -607,21 +611,12 @@ class CancelEditingRoof(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Roof", "Data"))
         props = obj.BIMRoofProperties
+
         # restore previous settings since editing was canceled
         props.set_props_kwargs_from_ifc_data(data)
+        update_roof_modifier_bmesh(context)
 
-        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        blenderbim.core.geometry.switch_representation(
-            tool.Ifc,
-            tool.Geometry,
-            obj=obj,
-            representation=body,
-            should_reload=True,
-            is_global=True,
-            should_sync_changes_first=False,
-        )
-
-        props.is_editing = -1
+        props.is_editing = False
         return {"FINISHED"}
 
 
@@ -635,13 +630,12 @@ class FinishEditingRoof(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMRoofProperties
 
-        if not RoofData.is_loaded:
-            RoofData.load()
-        path_data = RoofData.data["parameters"]["data_dict"]["path_data"]
+        pset_data = tool.Model.get_modeling_bbim_pset_data(obj, "BBIM_Roof")
+        path_data = pset_data["data_dict"]["path_data"]
 
         roof_data = props.get_general_kwargs(convert_to_project_units=True)
         roof_data["path_data"] = path_data
-        props.is_editing = -1
+        props.is_editing = False
 
         update_bbim_roof_pset(element, roof_data)
         update_roof_modifier_ifc_data(context)
@@ -766,9 +760,8 @@ class RemoveRoof(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
-        props = obj.BIMRoofProperties
         element = tool.Ifc.get_entity(obj)
-        obj.BIMRoofProperties.is_editing = -1
+        obj.BIMRoofProperties.is_editing = False
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Roof")
         ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)

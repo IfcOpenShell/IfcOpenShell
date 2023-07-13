@@ -137,24 +137,22 @@ class CadTool(WorkSpaceTool):
         else:
             if (
                 (RailingData.is_loaded or not RailingData.load())
-                and RailingData.data["parameters"]
+                and RailingData.data["pset_data"]
                 and context.active_object.BIMRailingProperties.is_editing_path
             ):
                 row = layout.row(align=True)
-                row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="", icon="EVENT_Q")
-                row.operator("bim.cad_hotkey", text="Apply Railing Path").hotkey = "S_Q"
+                row.label(text="", icon=f"EVENT_TAB")
+                row.operator("bim.finish_editing_railing_path")
                 row.operator("bim.cancel_editing_railing_path", icon="CANCEL", text="")
 
             elif (
                 (RoofData.is_loaded or not RoofData.load())
-                and RoofData.data["parameters"]
+                and RoofData.data["pset_data"]
                 and context.active_object.BIMRoofProperties.is_editing_path
             ):
                 row = layout.row(align=True)
-                row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="", icon="EVENT_Q")
-                row.operator("bim.cad_hotkey", text="Apply Roof Path").hotkey = "S_Q"
+                row.label(text="", icon=f"EVENT_TAB")
+                row.operator("bim.finish_editing_roof_path")
                 row.operator("bim.cancel_editing_roof_path", icon="CANCEL", text="")
 
                 row = layout.row(align=True)
@@ -229,7 +227,7 @@ class CadHotkey(bpy.types.Operator):
                 row.prop(props, "y")
             elif (
                 (RoofData.is_loaded or not RoofData.load())
-                and RoofData.data["parameters"]
+                and RoofData.data["pset_data"]
                 and bpy.context.active_object.BIMRoofProperties.is_editing_path
             ):
                 self.layout.row().prop(props, "gable_roof_edge_angle")
@@ -270,26 +268,12 @@ class CadHotkey(bpy.types.Operator):
         elif bpy.context.active_object.data.BIMMeshProperties.subshape_type == "AXIS":
             bpy.ops.bim.edit_extrusion_axis()
 
-        elif (
-            (RailingData.is_loaded or not RailingData.load())
-            and RailingData.data["parameters"]
-            and bpy.context.active_object.BIMRailingProperties.is_editing_path
-        ):
-            bpy.ops.bim.finish_editing_railing_path()
-
-        elif (
-            (RoofData.is_loaded or not RoofData.load())
-            and RoofData.data["parameters"]
-            and bpy.context.active_object.BIMRoofProperties.is_editing_path
-        ):
-            bpy.ops.bim.finish_editing_roof_path()
-
     def hotkey_S_R(self):
         if self.is_profile():
             bpy.ops.bim.add_rectangle(x=self.props.x, y=self.props.y)
         elif (
             (RoofData.is_loaded or not RoofData.load())
-            and RoofData.data["parameters"]
+            and RoofData.data["pset_data"]
             and bpy.context.active_object.BIMRoofProperties.is_editing_path
         ):
             bpy.ops.bim.set_gable_roof_edge_angle(

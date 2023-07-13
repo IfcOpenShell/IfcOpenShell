@@ -18,7 +18,7 @@
 
 import bpy
 import blenderbim.tool as tool
-from bpy.types import Panel, Operator, Menu
+from bpy.types import Panel, Menu
 from blenderbim.bim.module.model.data import (
     AuthoringData,
     ArrayData,
@@ -36,7 +36,6 @@ from blenderbim.bim.module.model.door import update_door_modifier_bmesh
 from blenderbim.bim.module.model.railing import update_railing_modifier_bmesh
 from blenderbim.bim.module.model.roof import update_roof_modifier_bmesh
 from blenderbim.bim.helper import prop_with_search
-from math import degrees
 
 
 class LaunchTypeManager(bpy.types.Operator):
@@ -70,10 +69,7 @@ class LaunchTypeManager(bpy.types.Operator):
 
         row = columns.row(align=True)
         row.alignment = "CENTER"
-        row.prop(props, "type_predefined_type", text="")
-        row.prop(props, "type_template", text="")
-        row.prop(props, "type_name", text="")
-        row.operator("bim.add_type", icon="ADD", text="")
+        # In case you want something here in the future
 
         row = columns.row(align=True)
         row.alignment = "RIGHT"
@@ -85,6 +81,22 @@ class LaunchTypeManager(bpy.types.Operator):
         if AuthoringData.data["next_page"]:
             op = row.operator("bim.change_type_page", icon="TRIA_RIGHT", text="")
             op.page = AuthoringData.data["next_page"]
+
+        if props.is_adding_type:
+            row = self.layout.row()
+            box = row.box()
+            row = box.row()
+            row.prop(props, "type_predefined_type")
+            row = box.row()
+            row.prop(props, "type_template")
+            row = box.row()
+            row.prop(props, "type_name")
+            row = box.row(align=True)
+            row.operator("bim.add_type", icon="CHECKMARK", text="Save New Type")
+            row.operator("bim.disable_add_type", icon="CANCEL", text="")
+        else:
+            row = self.layout.row()
+            row.operator("bim.enable_add_type", icon="ADD", text="Create New Type")
 
         flow = self.layout.grid_flow(row_major=True, columns=3, even_columns=True, even_rows=True, align=True)
 
@@ -176,6 +188,9 @@ class BIM_PT_array(bpy.types.Panel):
             row.label(text=ArrayData.data["parameters"]["parent_name"], icon="CON_CHILDOF")
             op = row.operator("bim.select_array_parent", icon="OBJECT_DATA", text="")
             op.parent = ArrayData.data["parameters"]["Parent"]
+            op = row.operator("bim.select_all_array_objects", icon="RESTRICT_SELECT_OFF", text="")
+            op.parent = ArrayData.data["parameters"]["Parent"]
+
             if ArrayData.data["parameters"]["data_dict"]:
                 row.operator("bim.add_array", icon="ADD", text="")
 
@@ -237,12 +252,12 @@ class BIM_PT_stair(bpy.types.Panel):
 
         props = context.active_object.BIMStairProperties
 
-        if StairData.data["parameters"]:
+        if StairData.data["pset_data"]:
             row = self.layout.row(align=True)
             row.label(text="Stair parameters", icon="IPO_CONSTANT")
 
-            stair_data = StairData.data["parameters"]["data_dict"]
-            if props.is_editing != -1:
+            stair_data = StairData.data["pset_data"]["data_dict"]
+            if props.is_editing:
                 row = self.layout.row(align=True)
                 row.operator("bim.finish_editing_stair", icon="CHECKMARK", text="Finish Editing")
                 row.operator("bim.cancel_editing_stair", icon="CANCEL", text="")
@@ -335,14 +350,12 @@ class BIM_PT_window(bpy.types.Panel):
 
         props = context.active_object.BIMWindowProperties
 
-        if WindowData.data["parameters"]:
+        if WindowData.data["pset_data"]:
             row = self.layout.row(align=True)
             row.label(text="Window parameters", icon="OUTLINER_OB_LATTICE")
 
-            window_data = WindowData.data["parameters"]["data_dict"]
-            number_of_panels, panels_data = props.window_types_panels[props.window_type]
-
-            if props.is_editing != -1:
+            if props.is_editing:
+                number_of_panels, panels_data = props.window_types_panels[props.window_type]
                 row = self.layout.row(align=True)
                 row.operator("bim.finish_editing_window", icon="CHECKMARK", text="Finish Editing")
                 row.operator("bim.cancel_editing_window", icon="CANCEL", text="")
@@ -383,25 +396,22 @@ class BIM_PT_window(bpy.types.Panel):
                 row.operator("bim.remove_window", icon="X", text="")
 
                 box = self.layout.box()
-                general_props = props.get_general_kwargs()
-                for prop in general_props:
-                    prop_value = window_data[prop]
-                    prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
+                general_params = WindowData.data["general_params"]
+                window_type_prop = props.bl_rna.properties["window_type"].name
+                number_of_panels, panels_data = props.window_types_panels[general_params[window_type_prop]]
+                for prop_name, prop_value in general_params.items():
                     row = box.row(align=True)
-                    row.label(text=f"{props.bl_rna.properties[prop].name}")
+                    row.label(text=prop_name)
                     row.label(text=str(prop_value))
 
-                lining_props = props.get_lining_kwargs()
                 self.layout.label(text="Lining properties")
-                lining_box = self.layout.box()
-                for prop in lining_props:
-                    prop_value = window_data["lining_properties"][prop]
-                    prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
-                    row = lining_box.row(align=True)
-                    row.label(text=f"{props.bl_rna.properties[prop].name}")
+                box = self.layout.box()
+                for prop_name, prop_value in WindowData.data["lining_params"].items():
+                    row = box.row(align=True)
+                    row.label(text=prop_name)
                     row.label(text=str(prop_value))
 
-                panel_props = props.get_panel_kwargs()
+                panel_props = WindowData.data["panel_params"]
                 self.layout.label(text="Panel properties")
 
                 panel_box = self.layout.box()
@@ -415,14 +425,12 @@ class BIM_PT_window(bpy.types.Panel):
                     r.label(text=f"#{panel_i}")
                     r = cols[panel_i + 1].row()
 
-                # TODO: align property values more evenly
-                for prop in panel_props:
-                    cols[0].row().label(text=f"{props.bl_rna.properties[prop].name}")
+                for prop_name in panel_props:
+                    cols[0].row().label(text=prop_name)
                     for panel_i in range(number_of_panels):
                         r = cols[panel_i + 1].row()
                         r.alignment = "CENTER"
-                        prop_value = window_data["panel_properties"][prop][panel_i]
-                        prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
+                        prop_value = panel_props[prop_name][panel_i]
                         r.label(text=str(prop_value))
                         r = cols[panel_i + 1].row()
 
@@ -451,13 +459,11 @@ class BIM_PT_door(bpy.types.Panel):
 
         props = context.active_object.BIMDoorProperties
 
-        if DoorData.data["parameters"]:
+        if DoorData.data["pset_data"]:
             row = self.layout.row(align=True)
             row.label(text="Door parameters", icon="OUTLINER_OB_LATTICE")
 
-            door_data = DoorData.data["parameters"]["data_dict"]
-
-            if props.is_editing != -1:
+            if props.is_editing:
                 row = self.layout.row(align=True)
                 row.operator("bim.finish_editing_door", icon="CHECKMARK", text="Finish Editing")
                 row.operator("bim.cancel_editing_door", icon="CANCEL", text="")
@@ -483,32 +489,23 @@ class BIM_PT_door(bpy.types.Panel):
                 row.operator("bim.remove_door", icon="X", text="")
 
                 box = self.layout.box()
-                general_props = props.get_general_kwargs()
-                for prop in general_props:
-                    prop_value = door_data[prop]
-                    prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
+                for prop_name, prop_value in DoorData.data["general_params"].items():
                     row = box.row(align=True)
-                    row.label(text=f"{props.bl_rna.properties[prop].name}")
+                    row.label(text=prop_name)
                     row.label(text=str(prop_value))
 
-                lining_props = props.get_lining_kwargs()
                 self.layout.label(text="Lining properties")
                 lining_box = self.layout.box()
-                for prop in lining_props:
-                    prop_value = door_data["lining_properties"][prop]
-                    prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
+                for prop_name, prop_value in DoorData.data["lining_params"].items():
                     row = lining_box.row(align=True)
-                    row.label(text=f"{props.bl_rna.properties[prop].name}")
+                    row.label(text=prop_name)
                     row.label(text=str(prop_value))
 
-                panel_props = props.get_panel_kwargs()
                 self.layout.label(text="Panel properties")
                 panel_box = self.layout.box()
-                for prop in panel_props:
-                    prop_value = door_data["panel_properties"][prop]
-                    prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
+                for prop_name, prop_value in DoorData.data["panel_params"].items():
                     row = panel_box.row(align=True)
-                    row.label(text=f"{props.bl_rna.properties[prop].name}")
+                    row.label(text=prop_name)
                     row.label(text=str(prop_value))
         else:
             row = self.layout.row()
@@ -535,19 +532,22 @@ class BIM_PT_railing(bpy.types.Panel):
 
         props = context.active_object.BIMRailingProperties
 
-        if RailingData.data["parameters"]:
+        if RailingData.data["pset_data"]:
             row = self.layout.row(align=True)
             row.label(text="Railing parameters", icon="OUTLINER_OB_LATTICE")
 
-            railing_data = RailingData.data["parameters"]["data_dict"]
-
-            if props.is_editing != -1:
+            if props.is_editing:
                 row = self.layout.row(align=True)
                 row.operator("bim.finish_editing_railing", icon="CHECKMARK", text="Finish Editing")
                 row.operator("bim.cancel_editing_railing", icon="CANCEL", text="")
 
                 general_props = props.get_general_kwargs()
                 for prop in general_props:
+                    if prop == "support_spacing" and props.use_manual_supports:
+                        row = self.layout.row()
+                        row.prop(props, prop)
+                        row.active = False
+                        continue
                     self.layout.prop(props, prop)
 
                 update_railing_modifier_bmesh(context)
@@ -559,18 +559,15 @@ class BIM_PT_railing(bpy.types.Panel):
             else:
                 row.operator("bim.enable_editing_railing", icon="GREASEPENCIL", text="")
                 row.operator("bim.enable_editing_railing_path", icon="ANIM", text="")
-                # TODO: good for preview but probably should move to .is_editing == -1
+                # TODO: good for preview but probably should move to .is_editing == True
                 # since it's writing to ifc
                 row.operator("bim.flip_railing_path_order", icon="ARROW_LEFTRIGHT", text="")
                 row.operator("bim.remove_railing", icon="X", text="")
 
                 box = self.layout.box()
-                general_props = props.get_general_kwargs()
-                for prop in general_props:
-                    prop_value = railing_data[prop]
-                    prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
+                for prop_name, prop_value in RailingData.data["general_params"].items():
                     row = box.row(align=True)
-                    row.label(text=f"{props.bl_rna.properties[prop].name}")
+                    row.label(text=prop_name)
                     row.label(text=str(prop_value))
         else:
             row = self.layout.row()
@@ -597,13 +594,11 @@ class BIM_PT_roof(bpy.types.Panel):
 
         props = context.active_object.BIMRoofProperties
 
-        if RoofData.data["parameters"]:
+        if RoofData.data["pset_data"]:
             row = self.layout.row(align=True)
             row.label(text="Roof parameters", icon="OUTLINER_OB_LATTICE")
 
-            roof_data = RoofData.data["parameters"]["data_dict"]
-
-            if props.is_editing != -1:
+            if props.is_editing:
                 row = self.layout.row(align=True)
                 row.operator("bim.finish_editing_roof", icon="CHECKMARK", text="Finish Editing")
                 row.operator("bim.cancel_editing_roof", icon="CANCEL", text="")
@@ -624,14 +619,9 @@ class BIM_PT_roof(bpy.types.Panel):
                 row.operator("bim.remove_roof", icon="X", text="")
 
                 box = self.layout.box()
-                general_props = props.get_general_kwargs()
-                for prop in general_props:
-                    prop_value = roof_data[prop]
-                    prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
+                for prop_name, prop_value in RoofData.data["general_params"].items():
                     row = box.row(align=True)
-                    row.label(text=f"{props.bl_rna.properties[prop].name}")
-                    if prop in ("angle", "rafter_edge_angle"):
-                        prop_value = round(degrees(prop_value), 2)
+                    row.label(text=prop_name)
                     row.label(text=str(prop_value))
         else:
             row = self.layout.row()

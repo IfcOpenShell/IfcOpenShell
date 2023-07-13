@@ -7,9 +7,10 @@ There are different methods of installation, depending on your situation.
 2. **PyPI** is recommended for developers using Pip.
 3. **Conda** is recommended for developers using Anaconda.
 4. **Docker** is recommended for developers using Docker.
-5. **Using the BlenderBIM Add-on** is recommended for non-developers wanting a graphical interface.
-6. **From source with precompiled binaries** is recommended for developers actively working with the Python code.
-7. **Compiling from source** is recommended for developers actively working with the C++ core.
+5. **AWS Lambda** is recommended for developers using AWS Lambda functions.
+6. **Using the BlenderBIM Add-on** is recommended for non-developers wanting a graphical interface.
+7. **From source with precompiled binaries** is recommended for developers actively working with the Python code.
+8. **Compiling from source** is recommended for developers actively working with the C++ core.
 
 Pre-built packages
 ------------------
@@ -36,34 +37,34 @@ changes in the IfcOpenShell C++ core.
    | Python 3.11 | py311-linux64_ | py311-win32_   | py311-win64_   | N/A            | py311-macosm164_ |
    +-------------+----------------+----------------+----------------+----------------+------------------+
 
-.. _py36-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-36-v0.7.0-8f41ae0-linux64.zip
-.. _py37-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-37-v0.7.0-8f41ae0-linux64.zip
-.. _py38-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-38-v0.7.0-8f41ae0-linux64.zip
-.. _py39-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.7.0-8f41ae0-linux64.zip
-.. _py310-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-310-v0.7.0-8f41ae0-linux64.zip
-.. _py311-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-311-v0.7.0-8f41ae0-linux64.zip
-.. _py36-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-36-v0.7.0-8f41ae0-win64.zip
-.. _py37-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-37-v0.7.0-8f41ae0-win64.zip
-.. _py38-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-38-v0.7.0-8f41ae0-win64.zip
-.. _py39-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.7.0-8f41ae0-win64.zip
-.. _py310-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-310-v0.7.0-8f41ae0-win64.zip
-.. _py311-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-311-v0.7.0-8f41ae0-win64.zip
-.. _py36-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-36-v0.7.0-8f41ae0-win64.zip
-.. _py37-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-37-v0.7.0-8f41ae0-win64.zip
-.. _py38-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-38-v0.7.0-8f41ae0-win64.zip
-.. _py39-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.7.0-8f41ae0-win64.zip
-.. _py310-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-310-v0.7.0-8f41ae0-win64.zip
-.. _py311-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-311-v0.7.0-8f41ae0-win64.zip
-.. _py36-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-36-v0.7.0-8f41ae0-macos64.zip
-.. _py37-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-37-v0.7.0-8f41ae0-macos64.zip
-.. _py38-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-38-v0.7.0-8f41ae0-macos64.zip
-.. _py39-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.7.0-8f41ae0-macos64.zip
-.. _py310-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-310-v0.7.0-8f41ae0-macos64.zip
-.. _py37-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-37-v0.7.0-8f41ae0-macosm164.zip
-.. _py38-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-38-v0.7.0-8f41ae0-macosm164.zip
-.. _py39-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.7.0-8f41ae0-macosm164.zip
-.. _py310-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-310-v0.7.0-8f41ae0-macosm164.zip
-.. _py311-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-311-v0.7.0-8f41ae0-macosm164.zip
+.. _py36-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-36-v0.7.0-fc50bdd-linux64.zip
+.. _py37-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-37-v0.7.0-fc50bdd-linux64.zip
+.. _py38-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-38-v0.7.0-fc50bdd-linux64.zip
+.. _py39-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.7.0-fc50bdd-linux64.zip
+.. _py310-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-310-v0.7.0-fc50bdd-linux64.zip
+.. _py311-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-311-v0.7.0-fc50bdd-linux64.zip
+.. _py36-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-36-v0.7.0-fc50bdd-win32.zip
+.. _py37-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-37-v0.7.0-fc50bdd-win32.zip
+.. _py38-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-38-v0.7.0-fc50bdd-win32.zip
+.. _py39-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.7.0-fc50bdd-win32.zip
+.. _py310-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-310-v0.7.0-fc50bdd-win32.zip
+.. _py311-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-311-v0.7.0-fc50bdd-win32.zip
+.. _py36-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-36-v0.7.0-fc50bdd-win64.zip
+.. _py37-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-37-v0.7.0-fc50bdd-win64.zip
+.. _py38-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-38-v0.7.0-fc50bdd-win64.zip
+.. _py39-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.7.0-fc50bdd-win64.zip
+.. _py310-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-310-v0.7.0-fc50bdd-win64.zip
+.. _py311-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-311-v0.7.0-fc50bdd-win64.zip
+.. _py36-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-36-v0.7.0-fc50bdd-macos64.zip
+.. _py37-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-37-v0.7.0-fc50bdd-macos64.zip
+.. _py38-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-38-v0.7.0-fc50bdd-macos64.zip
+.. _py39-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.7.0-fc50bdd-macos64.zip
+.. _py310-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-310-v0.7.0-fc50bdd-macos64.zip
+.. _py37-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-37-v0.7.0-fc50bdd-macosm164.zip
+.. _py38-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-38-v0.7.0-fc50bdd-macosm164.zip
+.. _py39-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.7.0-fc50bdd-macosm164.zip
+.. _py310-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-310-v0.7.0-fc50bdd-macosm164.zip
+.. _py311-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-311-v0.7.0-fc50bdd-macosm164.zip
 
 2. Unzip the downloaded file and copy the ``ifcopenshell`` directory into your
    Python path. If you're not sure where your Python path is, run the following
@@ -130,11 +131,56 @@ Docker
 
     Installing IfcOpenShell from Docker will also install IfcConvert.
 
-.. using-container-on-aws-lambda::
+AWS Lambda
+----------
 
-   Refer `AWS Lambda
-    Readme
-    <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.7.0/aws/lambda/README.md>`__.
+This guide provides a Dockerfile and sample code to help you run an AWS Lambda
+function written in Python and using the IfcOpenShell library.
+
+This is only a superficial guide, in order to make this work for your usecase
+you will need a good understanding of other AWS services like SQS, S3, API
+Gateways, etc.
+
+.. seealso::
+
+    For more information on building lambda containers refer to the `AWS guide
+    on working with Lambda container images
+    <https://docs.aws.amazon.com/lambda/latest/dg/images-create.html>`__
+
+1. Clone or download the `IfcOpenShell repository
+   <https://github.com/ifcopenshell/ifcopenshell>`_.
+
+2. Replace the sample Lambda function code in the `example_handler
+   <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.7.0/aws/lambda/example_handler/__init__.py>`__
+   directory with your own code.
+
+3. Update the import path in the Dockerfile's `CMD instruction
+   <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.7.0/aws/lambda/Dockerfile#L40>`__
+   to match your Lambda function's handler function.
+
+4. Edit the `requirements.txt
+   <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.7.0/aws/lambda/requirements.txt>`__
+   file and add any additional dependencies required by your Lambda function.
+
+5. Build the Docker image:
+
+   .. code-block::
+
+      $ docker build -t lambda-ifcopenshell .
+
+6. Run the Docker container:
+
+   .. code-block::
+
+      $ docker run lambda-ifcopenshell
+
+7. Test lambda locally by following the `AWS guide on testing Lambda container
+   images locally
+   <https://docs.aws.amazon.com/lambda/latest/dg/images-test.html>`__.
+
+8. Deploy to lambda. This is beyond the scope of this guide. Please refer to
+   the AWS documentation. Some tools that could be useful are AWS
+   CloudFormaton, AWS CDK, pulumi or terraform.
 
 Using the BlenderBIM Add-on
 ---------------------------

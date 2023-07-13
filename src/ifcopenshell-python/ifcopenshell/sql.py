@@ -62,9 +62,7 @@ class sqlite(file):
         self.ifc_class_references = {}
         self.ifc_class_inverses = {}
 
-        for declaration in self.ifc_schema.declarations():
-            if not str(declaration).startswith("<entity"):
-                continue
+        for declaration in self.ifc_schema.entities():
             # print('Dealing with declaration', declaration.name())
 
             self.ifc_class_subtypes[declaration.name()] = ifcopenshell.util.schema.get_subtypes(declaration)

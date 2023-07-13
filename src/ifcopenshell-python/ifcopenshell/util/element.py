@@ -25,6 +25,9 @@ def get_pset(element, name, prop=None, should_inherit=True):
     This is more efficient than ifcopenshell.util.element.get_psets if you know
     exactly which property set and property you are after.
 
+    If should_inherit is true, the pset "id" only refers to the ID of the
+    occurrence, not the type's pset.
+
     :param element: The IFC Element entity
     :type element: ifcopenshell.entity_instance.entity_instance
     :param name: The name of the pset
@@ -45,6 +48,8 @@ def get_pset(element, name, prop=None, should_inherit=True):
         psets_and_qtos = ifcopenshell.util.element.get_pset(element, "Pset_WallCommon")
     """
     pset = None
+    type_pset = None
+
     if element.is_a("IfcTypeObject"):
         for definition in element.HasPropertySets or []:
             if definition.Name == name:
@@ -56,11 +61,10 @@ def get_pset(element, name, prop=None, should_inherit=True):
                 pset = definition
                 break
     elif hasattr(element, "IsDefinedBy"):
-        element_type = ifcopenshell.util.element.get_type(element)
-        if element_type and should_inherit:
-            result = get_pset(element_type, name, prop, should_inherit=False)
-            if result:
-                return result
+        if should_inherit:
+            element_type = ifcopenshell.util.element.get_type(element)
+            if element_type:
+                type_pset = get_pset(element_type, name, prop, should_inherit=False)
         for relationship in element.IsDefinedBy:
             if relationship.is_a("IfcRelDefinesByProperties"):
                 definition = relationship.RelatingPropertyDefinition
@@ -68,29 +72,27 @@ def get_pset(element, name, prop=None, should_inherit=True):
                     pset = definition
                     break
 
-    if not pset:
+    if not pset and not type_pset:
         return
 
     if not prop:
+        if type_pset:
+            occurrence_pset = get_property_definition(pset)
+            if occurrence_pset:
+                type_pset.update(occurrence_pset)
+            return type_pset
         return get_property_definition(pset)
 
-    if definition.is_a("IfcElementQuantity"):
-        return get_quantity(definition.Quantities, prop)
-    elif definition.is_a("IfcPropertySet"):
-        return get_property(definition.HasProperties, prop)
-    elif definition.is_a("IfcMaterialProperties") or definition.is_a("IfcProfileProperties"):
-        return get_property(definition.Properties, prop)
-    else:
-        # Entity introduced in IFC4
-        # definition.is_a('IfcPreDefinedPropertySet'):
-        for i in range(4, len(definition)):
-            if definition[i] is not None:
-                if definition.attribute_name(i) == prop:
-                    return definition[i]
-
+    value = get_property_definition(pset, prop)
+    if value is None and type_pset is not None:
+        return type_pset
+    return value
 
 def get_psets(element, psets_only=False, qtos_only=False, should_inherit=True):
     """Retrieve property sets, their related properties' names & values and ids.
+
+    If should_inherit is true, the pset "id" only refers to the ID of the
+    occurrence, not the type's pset.
 
     :param element: The IFC Element entity
     :type element: ifcopenshell.entity_instance.entity_instance
@@ -126,9 +128,10 @@ def get_psets(element, psets_only=False, qtos_only=False, should_inherit=True):
                 continue
             psets[definition.Name] = get_property_definition(definition)
     elif hasattr(element, "IsDefinedBy"):
-        element_type = ifcopenshell.util.element.get_type(element)
-        if element_type and should_inherit:
-            psets = get_psets(element_type, psets_only=psets_only, qtos_only=qtos_only, should_inherit=False)
+        if should_inherit:
+            element_type = ifcopenshell.util.element.get_type(element)
+            if element_type:
+                psets = get_psets(element_type, psets_only=psets_only, qtos_only=qtos_only, should_inherit=False)
         for relationship in element.IsDefinedBy:
             if relationship.is_a("IfcRelDefinesByProperties"):
                 definition = relationship.RelatingPropertyDefinition
@@ -140,23 +143,41 @@ def get_psets(element, psets_only=False, qtos_only=False, should_inherit=True):
     return psets
 
 
-def get_property_definition(definition):
-    if definition is not None:
-        props = {}
+def get_property_definition(definition, prop=None):
+    if not definition:
+        return
+
+    if prop:
         if definition.is_a("IfcElementQuantity"):
-            props.update(get_quantities(definition.Quantities))
+            return get_quantity(definition.Quantities, prop)
         elif definition.is_a("IfcPropertySet"):
-            props.update(get_properties(definition.HasProperties))
+            return get_property(definition.HasProperties, prop)
         elif definition.is_a("IfcMaterialProperties") or definition.is_a("IfcProfileProperties"):
-            props.update(get_properties(definition.Properties))
+            return get_property(definition.Properties, prop)
         else:
             # Entity introduced in IFC4
             # definition.is_a('IfcPreDefinedPropertySet'):
-            for prop in range(4, len(definition)):
-                if definition[prop] is not None:
-                    props[definition.attribute_name(prop)] = definition[prop]
-        props["id"] = definition.id()
-        return props
+            for i in range(4, len(definition)):
+                if definition[i] is not None:
+                    if definition.attribute_name(i) == prop:
+                        return definition[i]
+        return
+
+    props = {}
+    if definition.is_a("IfcElementQuantity"):
+        props.update(get_quantities(definition.Quantities))
+    elif definition.is_a("IfcPropertySet"):
+        props.update(get_properties(definition.HasProperties))
+    elif definition.is_a("IfcMaterialProperties") or definition.is_a("IfcProfileProperties"):
+        props.update(get_properties(definition.Properties))
+    else:
+        # Entity introduced in IFC4
+        # definition.is_a('IfcPreDefinedPropertySet'):
+        for prop in range(4, len(definition)):
+            if definition[prop] is not None:
+                props[definition.attribute_name(prop)] = definition[prop]
+    props["id"] = definition.id()
+    return props
 
 
 def get_quantity(quantities, name):

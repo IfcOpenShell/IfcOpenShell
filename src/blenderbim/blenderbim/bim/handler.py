@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import bpy
 import json
 import addon_utils
@@ -30,6 +31,7 @@ from mathutils import Vector
 from math import cos, degrees
 
 
+cwd = os.path.dirname(os.path.realpath(__file__))
 global_subscription_owner = object()
 
 
@@ -72,6 +74,9 @@ def name_callback(obj, data):
     if not obj.BIMObjectProperties.ifc_definition_id or "/" not in obj.name:
         return
     element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+    if element.is_a("IfcGridAxis"):
+        element.AxisTag = obj.name.split("/")[1]
+        refresh_ui_data()
     if not element.is_a("IfcRoot"):
         return
     if obj.BIMObjectProperties.collection:
@@ -228,12 +233,6 @@ def redo_post(scene):
     IfcStore.reload_undo_redo_stack_objects()
 
 
-@persistent
-def ensureIfcExported(scene):
-    if IfcStore.get_file() and not bpy.context.scene.BIMProperties.ifc_file:
-        bpy.ops.export_ifc.bim("INVOKE_DEFAULT")
-
-
 def get_application(ifc):
     # TODO: cache this for even faster application retrieval. It honestly makes a difference on long scripts.
     version = get_application_version()
@@ -268,8 +267,78 @@ def viewport_shading_changed_callback(area):
         bpy.context.scene.BIMStylesProperties.active_style_type = "External"
 
 
+if getattr(bpy.types, "SCENE_PT_scene"):
+
+    class Override_SCENE_PT_scene(bpy.types.SCENE_PT_scene):
+        bl_idname = "SCENE_PT_scene_override"
+
+        @classmethod
+        def poll(cls, context):
+            return tool.Blender.is_tab(context, "BLENDER")
+
+
+if getattr(bpy.types, "SCENE_PT_unit"):
+
+    class Override_SCENE_PT_unit(bpy.types.SCENE_PT_unit):
+        bl_idname = "SCENE_PT_unit_override"
+
+        @classmethod
+        def poll(cls, context):
+            return tool.Blender.is_tab(context, "BLENDER")
+
+
+if getattr(bpy.types, "SCENE_PT_physics"):
+
+    class Override_SCENE_PT_physics(bpy.types.SCENE_PT_physics):
+        bl_idname = "SCENE_PT_physics_override"
+
+        @classmethod
+        def poll(cls, context):
+            return tool.Blender.is_tab(context, "BLENDER")
+
+
+if getattr(bpy.types, "SCENE_PT_rigid_body_world"):
+
+    class Override_SCENE_PT_rigid_body_world(bpy.types.SCENE_PT_rigid_body_world):
+        bl_idname = "SCENE_PT_rigid_body_world_override"
+
+        @classmethod
+        def poll(cls, context):
+            return tool.Blender.is_tab(context, "BLENDER")
+
+
+if getattr(bpy.types, "SCENE_PT_audio"):
+
+    class Override_SCENE_PT_audio(bpy.types.SCENE_PT_audio):
+        bl_idname = "SCENE_PT_audio_override"
+
+        @classmethod
+        def poll(cls, context):
+            return tool.Blender.is_tab(context, "BLENDER")
+
+
+if getattr(bpy.types, "SCENE_PT_keying_sets"):
+
+    class Override_SCENE_PT_keying_sets(bpy.types.SCENE_PT_keying_sets):
+        bl_idname = "SCENE_PT_keying_sets_override"
+
+        @classmethod
+        def poll(cls, context):
+            return tool.Blender.is_tab(context, "BLENDER")
+
+
+if getattr(bpy.types, "SCENE_PT_custom_props"):
+
+    class Override_SCENE_PT_custom_props(bpy.types.SCENE_PT_custom_props):
+        bl_idname = "SCENE_PT_custom_props_override"
+
+        @classmethod
+        def poll(cls, context):
+            return tool.Blender.is_tab(context, "BLENDER")
+
+
 @persistent
-def setDefaultProperties(scene):
+def load_post(scene):
     global global_subscription_owner
     active_object_key = bpy.types.LayerObjects, "active"
     bpy.msgbus.subscribe_rna(
@@ -293,3 +362,36 @@ def setDefaultProperties(scene):
     ifcopenshell.api.owner.settings.get_user = lambda ifc: core_owner.get_user(tool.Owner)
     ifcopenshell.api.owner.settings.get_application = get_application
     AuthoringData.type_thumbnails = {}
+
+    if bpy.context.preferences.addons["blenderbim"].preferences.should_setup_workspace:
+        if "BIM" in bpy.data.workspaces:
+            bpy.context.window.workspace = bpy.data.workspaces["BIM"]
+        else:
+            bpy.ops.workspace.append_activate(idname="BIM", filepath=os.path.join(cwd, "data", "workspace.blend"))
+
+        # To improve usability for new users, we hijack the scene properties
+        # tab. We override default scene properties panels with our own poll
+        # to hide them unless the user has chosen to view Blender properties.
+        for panel in [
+            "SCENE_PT_scene",
+            "SCENE_PT_unit",
+            "SCENE_PT_physics",
+            "SCENE_PT_rigid_body_world",
+            "SCENE_PT_audio",
+            "SCENE_PT_keying_sets",
+            "SCENE_PT_custom_props",
+        ]:
+            if getattr(bpy.types, panel, None):
+                try:
+                    bpy.utils.register_class(globals()[f"Override_{panel}"])
+                    bpy.utils.unregister_class(getattr(bpy.types, panel))
+                except:
+                    pass
+
+    # https://blender.stackexchange.com/questions/140644/how-can-make-the-state-of-a-boolean-property-relative-to-the-3d-view-area
+    for screen in bpy.data.screens:
+        if len(screen.BIMAreaProperties) == 20:
+            continue
+        screen.BIMAreaProperties.clear()
+        for i in range(20):  # 20 is an arbitrary value of split areas
+            screen.BIMAreaProperties.add()

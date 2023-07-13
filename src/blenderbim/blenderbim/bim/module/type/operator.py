@@ -141,10 +141,16 @@ class SelectType(bpy.types.Operator):
 
     def execute(self, context):
         element = tool.Ifc.get().by_id(self.relating_type)
-        tool.Spatial.select_products([element])
         obj = tool.Ifc.get_object(element)
         if obj:
-            context.view_layer.objects.active = obj
+            if obj in context.selectable_objects:
+                tool.Blender.select_and_activate_single_object(context, obj)
+            else:
+                self.report({"INFO"}, "Type object can't be selected : It may be hidden or in an excluded collection.")
+        # IfcTypeProducts are only used for annotations and not part of the model interface.
+        if element.is_a() != "IfcTypeProduct":
+            context.scene.BIMModelProperties.ifc_class = element.is_a()
+            context.scene.BIMModelProperties.relating_type_id = str(self.relating_type)
         return {"FINISHED"}
 
 
@@ -194,7 +200,7 @@ class SelectTypeObjects(bpy.types.Operator):
 class AddType(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_type"
     bl_label = "Add Type"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
         props = context.scene.BIMModelProperties
@@ -205,6 +211,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
         ifc_file = tool.Ifc.get()
         body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
         if not body:
+            props.type_class = props.type_class
             return {"FINISHED"}
 
         if template == "MESH":
@@ -378,7 +385,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
 
         elif template == "RAILING":
             mesh = bpy.data.meshes.new("IfcRailing")
-            obj = bpy.data.objects.new("TYPEX", mesh)
+            obj = bpy.data.objects.new(name, mesh)
             element = blenderbim.core.root.assign_class(
                 tool.Ifc,
                 tool.Collector,
@@ -397,7 +404,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
 
         elif template == "ROOF":
             mesh = bpy.data.meshes.new("IfcRoof")
-            obj = bpy.data.objects.new("TYPEX", mesh)
+            obj = bpy.data.objects.new(name, mesh)
             element = blenderbim.core.root.assign_class(
                 tool.Ifc,
                 tool.Collector,
@@ -415,6 +422,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.add_roof()
 
         bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class)
+        props.type_class = props.type_class
         return {"FINISHED"}
 
     def add_default_material(self):

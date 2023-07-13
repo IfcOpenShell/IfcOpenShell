@@ -109,9 +109,10 @@ class BrickschemaData:
         if BrickStore.graph is None:
             return []
         results = []
+        filter = ["brick", "owl", "w3", "xml"]
         for alias, uri in BrickStore.graph.namespaces():
-            # results.append((uri, f"{alias}: {uri}", ""))
-            results.append((uri, f"{alias}", ""))
+            if alias not in filter:
+                results.append((uri, f"{alias}: {uri}", ""))
         return results
 
     @classmethod

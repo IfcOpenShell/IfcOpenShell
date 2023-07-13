@@ -17,10 +17,56 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import blenderbim.bim
 from blenderbim.bim.helper import prop_with_search
-from bpy.types import Panel, UIList
+from bpy.types import Panel, Menu, UIList
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.project.data import ProjectData
+
+
+class BIM_MT_project(Menu):
+    bl_idname = "BIM_MT_project"
+    bl_label = "New IFC Project"
+
+    def draw(self, context):
+        self.layout.operator("bim.new_project", text="New Metric (m) Project").preset = "metric_m"
+        self.layout.operator("bim.new_project", text="New Metric (mm) Project").preset = "metric_mm"
+        self.layout.operator("bim.new_project", text="New Imperial (ft) Project").preset = "imperial_ft"
+        self.layout.operator("bim.new_project", text="New Demo Project").preset = "demo"
+        self.layout.operator("bim.new_project", text="New Project Wizard").preset = "wizard"
+
+
+class BIM_MT_new_project(Menu):
+    bl_idname = "BIM_MT_new_project"
+    bl_label = "New Project"
+
+    def draw(self, context):
+        self.layout.label(text="New IFC Project", icon_value=blenderbim.bim.icons["IFC"].icon_id)
+        self.layout.operator("bim.new_project", text="Metric (m) Project").preset = "metric_m"
+        self.layout.operator("bim.new_project", text="Metric (mm) Project").preset = "metric_mm"
+        self.layout.operator("bim.new_project", text="Imperial (ft) Project").preset = "imperial_ft"
+        self.layout.operator("bim.new_project", text="Demo Project").preset = "demo"
+        self.layout.operator("bim.new_project", text="Project Wizard").preset = "wizard"
+        self.layout.separator()
+        self.layout.label(text="New Blender Project", icon="BLENDER")
+        # In theory we can dynamically grab the list from list(bpy.utils.app_template_paths())
+        self.layout.operator("wm.read_homefile", text="General Project").app_template = ""
+        self.layout.operator("wm.read_homefile", text="2D Animation Project").app_template = "2D_Animation"
+        self.layout.operator("wm.read_homefile", text="Sculpting Project").app_template = "Sculpting"
+        self.layout.operator("wm.read_homefile", text="VFX Project").app_template = "VFX"
+        self.layout.operator("wm.read_homefile", text="Video Editing Project").app_template = "Video_Editing"
+
+
+def file_menu(self, context):
+    self.layout.menu("BIM_MT_project", icon="COLLECTION_NEW")
+    op = self.layout.operator("bim.load_project", text="Open IFC Project", icon="FILEBROWSER")
+    op.should_start_fresh_session = True
+    self.layout.separator()
+    op = self.layout.operator("export_ifc.bim", icon="FILE_TICK", text="Save IFC Project")
+    op.should_save_as = False
+    op = self.layout.operator("export_ifc.bim", text="Save IFC Project As...")
+    op.should_save_as = True
+    self.layout.separator()
 
 
 class BIM_PT_project(Panel):
@@ -158,13 +204,11 @@ class BIM_PT_project(Panel):
             row.prop(props, "ifc_file", text="")
             row.operator("bim.reload_ifc_file", icon="FILE_REFRESH", text="")
             row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
+            row.operator("bim.unload_project", text="", icon="CANCEL")
+        else:
+            row = self.layout.row()
+            row.label(text="File Not Saved", icon="ERROR")
 
-        row = self.layout.row(align=True)
-        op = row.operator("export_ifc.bim", icon="EXPORT", text="Save Project")
-        op.should_save_as = False
-        op = row.operator("export_ifc.bim", icon="FILE_TICK", text="Save As")
-        op.should_save_as = True
-        row.operator("bim.unload_project", text="", icon="CANCEL")
 
     def draw_create_project_ui(self, context):
         props = context.scene.BIMProperties
@@ -182,7 +226,7 @@ class BIM_PT_project(Panel):
 
         row = self.layout.row(align=True)
         row.operator("bim.create_project")
-        row.operator("bim.load_project")
+        row.operator("bim.load_project").should_start_fresh_session = True
 
 
 class BIM_PT_project_library(Panel):

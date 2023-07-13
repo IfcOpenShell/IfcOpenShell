@@ -42,6 +42,28 @@ class ShapeBuilder:
         if arc_points and self.file.schema == "IFC2X3":
             raise Exception("Arcs are not supported for IFC2X3.")
 
+        if position_offset:
+            points = [Vector(p) + position_offset for p in points]
+
+        if self.file.schema == "IFC2X3":
+            points = [self.file.createIfcCartesianPoint(p) for p in points]
+            if closed:
+                points.append(points[0])
+            ifc_curve = self.file.createIfcPolyline(Points=points)
+            return ifc_curve
+
+        dimensions = len(points[0])
+        if dimensions == 2:
+            ifc_points = self.file.createIfcCartesianPointList2D(points)
+        elif dimensions == 3:
+            ifc_points = self.file.createIfcCartesianPointList3D(points)
+
+        if not closed and not arc_points:
+            ifc_curve = self.file.createIfcIndexedPolyCurve(Points=ifc_points)
+            return ifc_curve
+
+        # if curve is closed or we have arc points
+        # then we do need to create segments
         segments = []
         cur_i = 0
         while cur_i < len(points) - 1:
@@ -55,38 +77,26 @@ class ShapeBuilder:
 
         if closed:
             segments.append((len(points), 1))
-        if position_offset:
-            points = [Vector(p) + position_offset for p in points]
 
-        if self.file.schema == "IFC2X3":
-            points = [self.file.createIfcCartesianPoint(p) for p in points]
-            ifc_curve = self.file.createIfcPolyline(Points=points)
-        else:
-            dimensions = len(points[0])
-            if dimensions == 2:
-                ifc_points = self.file.createIfcCartesianPointList2D(points)
-            elif dimensions == 3:
-                ifc_points = self.file.createIfcCartesianPointList3D(points)
+        ifc_segments = []
+        # because IfcLineIndex support 2+ points
+        # we merge neighbor line segments into one
+        current_line_segment = []
+        last_segment = len(segments) - 1
+        for seg_i, segment in enumerate(segments):
+            if len(segment) == 2:
+                # check if `current_line_segment` is empty to avoid duplicated indices like `IfcLineIndex((1,2,2,3,3,4,4,1))`
+                current_line_segment += segment if not current_line_segment else segment[1:]
 
-            ifc_segments = []
-            # because IfcLineIndex support 2+ points
-            # we merge neighbor line segments into one
-            current_line_segment = []
-            last_segment = len(segments) - 1
-            for seg_i, segment in enumerate(segments):
-                if len(segment) == 2:
-                    # check if `current_line_segment` is empty to avoid duplicated indices like `IfcLineIndex((1,2,2,3,3,4,4,1))`
-                    current_line_segment += segment if not current_line_segment else segment[1:]
+            if current_line_segment and (len(segment) == 3 or seg_i == last_segment):
+                ifc_segments.append(self.file.createIfcLineIndex(current_line_segment))
+                current_line_segment = []
 
-                if current_line_segment and (len(segment) == 3 or seg_i == last_segment):
-                    ifc_segments.append(self.file.createIfcLineIndex(current_line_segment))
-                    current_line_segment = []
+            if len(segment) == 3:
+                ifc_segments.append(self.file.createIfcArcIndex(segment))
 
-                if len(segment) == 3:
-                    ifc_segments.append(self.file.createIfcArcIndex(segment))
-
-            # NOTE: IfcIndexPolyCurve support only consequtive segments
-            ifc_curve = self.file.createIfcIndexedPolyCurve(Points=ifc_points, Segments=ifc_segments)
+        # NOTE: IfcIndexPolyCurve support only consequtive segments
+        ifc_curve = self.file.createIfcIndexedPolyCurve(Points=ifc_points, Segments=ifc_segments)
         return ifc_curve
 
     def get_rectangle_coords(self, size: Vector = Vector((1.0, 1.0)).freeze(), position: Vector = None):

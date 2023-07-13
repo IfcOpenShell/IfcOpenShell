@@ -165,8 +165,9 @@ def get_diagram_scales(self, context):
 
 
 def update_drawing_name(self, context):
-    drawing = tool.Ifc.get().by_id(self.ifc_definition_id)
-    core.update_drawing_name(tool.Ifc, tool.Drawing, drawing=drawing, name=self.name)
+    if self.ifc_definition_id:
+        drawing = tool.Ifc.get().by_id(self.ifc_definition_id)
+        core.update_drawing_name(tool.Ifc, tool.Drawing, drawing=drawing, name=self.name)
 
 
 def get_drawing_style_name(self):
@@ -253,6 +254,8 @@ class Drawing(PropertyGroup):
     name: StringProperty(name="Name", update=update_drawing_name)
     target_view: StringProperty(name="Target View")
     is_selected: BoolProperty(name="Is Selected", default=True)
+    is_drawing: BoolProperty(name="Is Drawing", default=False)
+    is_expanded: BoolProperty(name="Is Expanded", default=True)
 
 
 class Document(PropertyGroup):
@@ -297,6 +300,7 @@ class RasterStyleProperty(enum.Enum):
     SHADING = "scene.display.shading"
     DISPLAY = "scene.display"
     OVERLAY = "space.overlay"
+    SPACE_SHADING = "space.shading"
 
 
 RASTER_STYLE_PROPERTIES_EXCLUDE = (
@@ -499,7 +503,7 @@ ANNOTATION_TYPES_DATA = {
     "PLAN_LEVEL":    ("Level (Plan)",     "", "SORTBYEXT", "curve"),
     "SECTION_LEVEL": ("Level (Section)",  "", "TRIA_DOWN", "curve"),
     "BREAKLINE":     ("Breakline",        "", "FCURVE", "mesh"),
-    "LINEWORK":      ("Line",             "", "MESH_MONKEY", "mesh"),
+    "LINEWORK":      ("Line",             "", "SNAP_MIDPOINT", "mesh"),
     "BATTING":       ("Batting",          "Add batting annotation.\nThickness could be changed through Thickness property of BBIM_Batting property set", "FORCE_FORCE", "mesh"),
     "REVISION_CLOUD":("Revision Cloud",   "Add revision cloud", "VOLUME_DATA", "mesh"),
     "FILL_AREA":     ("Fill Area",        "", "NODE_TEXTURE", "mesh"),
@@ -510,13 +514,10 @@ ANNOTATION_TYPES_DATA = {
 annotation_classes = [(x, *ANNOTATION_TYPES_DATA[x][:3], i) for i, x in enumerate(ANNOTATION_TYPES_DATA)]
 
 
-def get_annotation_data_prop(prop_name):
-    def function(self, context):
-        if not AnnotationData.is_loaded:
-            AnnotationData.load()
-        return AnnotationData.data[prop_name]
-
-    return function
+def get_relating_type_id(self, context):
+    if not AnnotationData.is_loaded:
+        AnnotationData.load()
+    return AnnotationData.data["relating_type_id"]
 
 
 def update_annotation_object_type(self, context):
@@ -533,12 +534,12 @@ class BIMAnnotationProperties(PropertyGroup):
     object_type: bpy.props.EnumProperty(
         name="Annotation Object Type", items=annotation_classes, default="TEXT", update=update_annotation_object_type
     )
-    relating_type_id: bpy.props.EnumProperty(
-        name="Relating Annotation Type", items=get_annotation_data_prop("relating_types")
-    )
+    relating_type_id: bpy.props.EnumProperty(name="Relating Annotation Type", items=get_relating_type_id)
     create_representation_for_type: bpy.props.BoolProperty(
         name="Create Representation For Type",
         default=False,
         description='Whether "Add type" should define a representation for the type \n'
         "or allow occurences to have their own",
     )
+    is_adding_type: bpy.props.BoolProperty(default=False)
+    type_name: bpy.props.StringProperty(name="Name", default="TYPEX")

@@ -187,3 +187,18 @@ def get_true_north(ifc_file):
     except:
         return 0
     return 0
+
+
+# Used  for converting an angle in degrees to return the X and Y vectors of the X Axis in IFC grid north geolocation:
+def angle2xaxis(angle):
+    angle_rad = math.radians(angle)
+    x = math.cos(angle_rad)
+    y = - math.sin(angle_rad)
+    return x, y
+
+# Used for converting True North angle as seen in CAD (relative to +Y)
+def angle2yaxis(angle):
+    angle_rad = math.radians(angle)
+    x = - math.sin(angle_rad)
+    y = math.cos(angle_rad)
+    return x, y

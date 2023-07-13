@@ -71,7 +71,7 @@ restart Blender to see changes).
 
 For Linux or Mac:
 
-:: code-block:: console
+.. code-block:: console
 
     $ git clone https://github.com/IfcOpenShell/IfcOpenShell.git
     $ cd IfcOpenShell

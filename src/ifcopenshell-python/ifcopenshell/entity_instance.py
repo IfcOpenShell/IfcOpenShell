@@ -131,6 +131,13 @@ class entity_instance(object):
         """
         self.wrapped_data.file = None
 
+    @property
+    def file(self):
+        # ugh circular imports, name collisions
+        from . import file
+
+        return file.file.from_pointer(self.wrapped_data.file_pointer())
+
     def __getattr__(self, name):
         INVALID, FORWARD, INVERSE = range(3)
         attr_cat = self.wrapped_data.get_attribute_category(name)
@@ -154,7 +161,17 @@ class entity_instance(object):
 
         # derived attribute perhaps?
         schema_name = self.wrapped_data.is_a(True).split(".")[0]
-        rules = importlib.import_module(f"ifcopenshell.express.rules.{schema_name}")
+        try:
+            rules = importlib.import_module(f"ifcopenshell.express.rules.{schema_name}")
+        except:
+            import os
+            current_dir_files = {fn.lower(): fn for fn in os.listdir('.')}
+            schema_path = current_dir_files.get(schema_name.lower() + '.exp')
+            fn = schema_path[:-4] + '.py'
+            if not os.path.exists(fn):
+                subprocess.run([sys.executable, "-m", "ifcopenshell.express.rule_compiler", schema_path, fn], check=True)
+                time.sleep(1.)
+            rules = importlib.import_module(schema_name)
 
         def yield_supertypes():
             decl = ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(self.is_a())

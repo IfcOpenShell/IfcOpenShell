@@ -20,6 +20,9 @@ import os
 import bpy
 import time
 import logging
+import platform
+import subprocess
+import addon_utils
 import ifcopenshell
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
@@ -29,6 +32,58 @@ import blenderbim.bim.handler
 import blenderbim.bim.import_ifc as import_ifc
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
+
+
+class CopyDebugInformation(bpy.types.Operator):
+    bl_idname = "bim.copy_debug_information"
+    bl_label = "Copy Debug Information"
+    bl_description = "Copies debugging information to your clipboard for use in bugreports"
+
+    def execute(self, context):
+        version = ".".join(
+            [
+                str(x)
+                for x in [
+                    addon.bl_info.get("version", (-1, -1, -1))
+                    for addon in addon_utils.modules()
+                    if addon.bl_info["name"] == "BlenderBIM"
+                ][0]
+            ]
+        )
+        info = {
+            "os": platform.system(),
+            "os_version": platform.version(),
+            "python_version": platform.python_version(),
+            "architecture": platform.architecture(),
+            "machine": platform.machine(),
+            "processor": platform.processor(),
+            "blender_version": bpy.app.version_string,
+            "blenderbim_version": version,
+            "ifc": False,
+        }
+
+        if tool.Ifc.get():
+            info.update(
+                {
+                    "ifc": os.path.basename(tool.Ifc.get_path()) if os.path.isfile(tool.Ifc.get_path()) else "Unsaved",
+                    "schema": tool.Ifc.get().schema,
+                    "preprocessor_version": tool.Ifc.get().wrapped_data.header.file_name.preprocessor_version,
+                    "originating_system": tool.Ifc.get().wrapped_data.header.file_name.originating_system,
+                }
+            )
+
+        # Format it in a readable way
+        text = "\n".join(f"{k}: {v}" for k, v in info.items())
+        print(text)
+
+        if platform.system() == "Windows":
+            command = "echo | set /p nul=" + text.strip()
+        elif platform.system() == "Darwin":  # for MacOS
+            command = 'printf "' + text.strip().replace("\n", "\\n").replace('"', "") + '" | pbcopy'
+        else:  # Linux
+            command = 'printf "' + text.strip().replace("\n", "\\n").replace('"', "") + '" | xclip -selection clipboard'
+        subprocess.run(command, shell=True, check=True)
+        return {"FINISHED"}
 
 
 class PrintIfcFile(bpy.types.Operator):
@@ -73,7 +128,7 @@ class ConvertToBlender(bpy.types.Operator):
 
     def execute(self, context):
         for o in bpy.data.objects:
-            if o.type in {'MESH', 'EMPTY'}:
+            if o.type in {"MESH", "EMPTY"}:
                 o.BIMObjectProperties.ifc_definition_id = 0
                 if o.data:
                     o.data.BIMMeshProperties.ifc_definition_id = 0
@@ -135,6 +190,8 @@ class CreateAllShapes(bpy.types.Operator):
 
         total = len(elements)
         settings = ifcopenshell.geom.settings()
+        settings_2d = ifcopenshell.geom.settings()
+        settings_2d.set(settings_2d.INCLUDE_CURVES, True)
         failures = []
         excludes = ()  # For the developer to debug with
         for i, element in enumerate(elements):
@@ -142,8 +199,16 @@ class CreateAllShapes(bpy.types.Operator):
                 continue
             print(f"{i}/{total}:", element)
             start = time.time()
+            shape = None
             try:
                 shape = ifcopenshell.geom.create_shape(settings, element)
+            except:
+                try:
+                    shape = ifcopenshell.geom.create_shape(settings_2d, element)
+                except:
+                    failures.append(element)
+                    print("***** FAILURE *****")
+            if shape:
                 print(
                     "Success",
                     time.time() - start,
@@ -151,9 +216,6 @@ class CreateAllShapes(bpy.types.Operator):
                     len(shape.geometry.edges),
                     len(shape.geometry.faces),
                 )
-            except:
-                failures.append(element)
-                print("***** FAILURE *****")
         print(f"Failures: {len(failures)}")
         for failure in failures:
             print(failure)

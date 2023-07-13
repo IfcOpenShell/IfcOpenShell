@@ -453,6 +453,9 @@ class BIM_OT_add_window(bpy.types.Operator, tool.Ifc.Operator):
         mesh = bpy.data.meshes.new("IfcWindow")
         obj = bpy.data.objects.new("IfcWindow", mesh)
         obj.location = spawn_location
+        collection = context.view_layer.active_layer_collection.collection
+        collection.objects.link(obj)
+        
         element = blenderbim.core.root.assign_class(
             tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class="IfcWindow", should_add_representation=False
         )
@@ -528,7 +531,7 @@ class CancelEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
             should_sync_changes_first=False,
         )
 
-        props.is_editing = -1
+        props.is_editing = False
         return {"FINISHED"}
 
 
@@ -549,7 +552,7 @@ class FinishEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
         window_data["lining_properties"] = lining_props
         window_data["panel_properties"] = panel_props
 
-        props.is_editing = -1
+        props.is_editing = False
 
         update_window_modifier_representation(context)
 
@@ -575,7 +578,7 @@ class EnableEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
         # required since we could load pset from .ifc and BIMWindowProperties won't be set
         props.set_props_kwargs_from_ifc_data(data)
 
-        props.is_editing = 1
+        props.is_editing = True
         return {"FINISHED"}
 
 
@@ -588,7 +591,7 @@ class RemoveWindow(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         props = obj.BIMWindowProperties
         element = tool.Ifc.get_entity(obj)
-        obj.BIMWindowProperties.is_editing = -1
+        obj.BIMWindowProperties.is_editing = False
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Window")
         ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)

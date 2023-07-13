@@ -30,8 +30,9 @@ from ifcopenshell.util.doc import (
     get_property_doc,
     get_predefined_type_doc,
 )
-import blenderbim.bim.handler
+import blenderbim.bim
 import blenderbim.bim.schema
+import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
 import blenderbim.tool as tool
 from collections import defaultdict
@@ -50,6 +51,11 @@ from bpy.props import (
 cwd = os.path.dirname(os.path.realpath(__file__))
 
 materialpsetnames_enum = []
+
+
+def update_tab(self, context):
+    self.alt_tab = self.previous_tab
+    self.previous_tab = self.tab
 
 
 def update_preset(self, context):
@@ -333,6 +339,27 @@ class Attribute(PropertyGroup):
 class ModuleVisibility(PropertyGroup):
     name: StringProperty(name="Name")
     is_visible: BoolProperty(name="Value", default=True, update=update_is_visible)
+
+
+def get_tab(self, context):
+    return [
+        ("PROJECT", "Project Overview", "", blenderbim.bim.icons["IFC"].icon_id, 0),
+        ("OBJECT", "Object Information", "", "FILE_3D", 1),
+        ("MATERIALS", "Materials and Styles", "", "MATERIAL", 2),
+        ("DRAWINGS", "Drawings and Documents", "", "DOCUMENTS", 3),
+        ("SERVICES", "Services and Systems", "", "NETWORK_DRIVE", 4),
+        ("STRUCTURE", "Structural Analysis", "", "EDITMODE_HLT", 5),
+        ("SCHEDULING", "Construction Scheduling", "", "NLA", 6),
+        ("FM", "Facility Management", "", "PACKAGE", 7),
+        ("OTHER", "Other Utilities", "", "COLLAPSEMENU", 8),
+        ("BLENDER", "Blender Properties", "", "BLENDER", 9),
+    ]
+
+
+class BIMAreaProperties(PropertyGroup):
+    tab: EnumProperty(default=0, items=get_tab, name="Tab", update=update_tab)
+    previous_tab: StringProperty(default="PROJECT", name="Previous Tab")
+    alt_tab: StringProperty(default="PROJECT", name="Alt Tab")
 
 
 class BIMProperties(PropertyGroup):

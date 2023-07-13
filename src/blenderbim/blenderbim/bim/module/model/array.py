@@ -142,6 +142,7 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Remove Array"
     bl_options = {"REGISTER", "UNDO"}
     item: bpy.props.IntProperty()
+    keep_objs: bpy.props.BoolProperty(name="Keep Objects", default=False)
 
     def _execute(self, context):
         obj = context.active_object
@@ -151,6 +152,10 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
         pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
         data = json.loads(pset["Data"])
         data[self.item]["count"] = 1
+        
+        if (self.keep_objs) & (self.item < (len(data) - 1)):
+            self.report({"INFO"}, "Keeping the objects is only allowed when you are removing the last Array of the object")
+            return {"FINISHED"}
 
         props.is_editing = -1
 
@@ -159,7 +164,7 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
         except:
             return {"FINISHED"}
 
-        tool.Model.regenerate_array(parent, data)
+        tool.Model.regenerate_array(parent, data, self.keep_objs)
 
         pset = tool.Ifc.get().by_id(pset["id"])
         if len(data) == 1:
@@ -170,6 +175,13 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
             ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
 
         return {"FINISHED"}
+
+    def draw(self, context):
+        row = self.layout.row()
+        row.prop(self, "keep_objs")
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
 
 
 class SelectArrayParent(bpy.types.Operator):
@@ -189,6 +201,32 @@ class SelectArrayParent(bpy.types.Operator):
             obj.select_set(True)
         return {"FINISHED"}
 
+    
+class SelectAllArrayObjects(bpy.types.Operator):
+    bl_idname = "bim.select_all_array_objects"
+    bl_label = "Select All Array Objects"
+    bl_options = {"REGISTER", "UNDO"}
+    parent: bpy.props.StringProperty()
+
+    def execute(self, context):
+        try:
+            element = tool.Ifc.get().by_guid(self.parent)
+        except:
+            return {"FINISHED"}
+        
+        obj = tool.Ifc.get_object(element)
+        obj.select_set(True)
+        
+        pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+        data = json.loads(pset["Data"])
+        for i in range(len(data)):
+            for child in data[i]["children"]:
+                element = tool.Ifc.get().by_guid(child)
+                obj = tool.Ifc.get_object(element)
+                if obj:
+                    context.view_layer.objects.active = obj
+                    obj.select_set(True)
+        return {"FINISHED"}
 
 class Input3DCursorXArray(bpy.types.Operator):
     bl_idname = "bim.input_cursor_x_array"

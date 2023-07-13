@@ -207,12 +207,14 @@ class BimToolUI:
 
         elif (
             (RailingData.is_loaded or not RailingData.load())
-            and RailingData.data["parameters"]
+            and RailingData.data["pset_data"]
             and not context.active_object.BIMRailingProperties.is_editing_path
         ):
             # NOTE: should be above "active_representation_type" = "SweptSolid" check
             # because it could be a SweptSolid too
-            add_layout_hotkey_operator(cls.layout, "Edit Railing Path", "S_E", "")
+            row = cls.layout.row(align=True)
+            row.label(text="", icon=f"EVENT_TAB")
+            row.operator("bim.enable_editing_railing_path", text="Edit Railing Path")
 
         elif AuthoringData.data["active_representation_type"] == "SweptSolid":
             add_layout_hotkey_operator(cls.layout, "Edit Profile", "S_E", "")
@@ -246,13 +248,12 @@ class BimToolUI:
 
         elif (
             (RoofData.is_loaded or not RoofData.load())
-            and RoofData.data["parameters"]
+            and RoofData.data["pset_data"]
             and not context.active_object.BIMRoofProperties.is_editing_path
         ):
-            add_layout_hotkey_operator(cls.layout, "Edit Roof Path", "S_E", "")
-
-        elif DecoratorData.get_ifc_text_data(bpy.context.object):
-            add_layout_hotkey_operator(cls.layout, "Edit Text", "S_E", "")
+            row = cls.layout.row(align=True)
+            row.label(text="", icon=f"EVENT_TAB")
+            row.operator("bim.enable_editing_roof_path", text="Edit Roof Path")
 
         row = cls.layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
@@ -423,7 +424,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         # and it might conflict with one of the conditions below
         if (
             (RailingData.is_loaded or not RailingData.load())
-            and RailingData.data["parameters"]
+            and RailingData.data["pset_data"]
             and not bpy.context.active_object.BIMRailingProperties.is_editing_path
         ):
             bpy.ops.bim.enable_editing_railing_path()
@@ -431,7 +432,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
 
         elif (
             (RoofData.is_loaded or not RoofData.load())
-            and RoofData.data["parameters"]
+            and RoofData.data["pset_data"]
             and not bpy.context.active_object.BIMRoofProperties.is_editing_path
         ):
             # undo the unselection done above because roof has no usage type
@@ -491,10 +492,6 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             [o.select_set(False) for o in selected_usages.get("LAYER3", [])]
             [o.select_set(False) for o in selected_usages.get("LAYER2", [])]
             bpy.ops.bim.extend_profile(join_type="T")
-
-        elif DecoratorData.get_ifc_text_data(bpy.context.object):
-            bpy.context.object.select_set(True)
-            bpy.ops.bim.edit_text_popup()
 
     def hotkey_S_F(self):
         if not bpy.context.selected_objects:

@@ -17,8 +17,9 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-from pathlib import Path
 import bpy
+import addon_utils
+from pathlib import Path
 from bpy.types import Panel
 from bpy.props import StringProperty, IntProperty, BoolProperty
 from ifcopenshell.util.doc import (
@@ -29,6 +30,7 @@ from ifcopenshell.util.doc import (
 )
 from . import ifc
 import blenderbim.tool as tool
+import blenderbim.bim
 from blenderbim.bim.helper import IfcHeaderExtractor
 from blenderbim.bim.prop import Attribute
 
@@ -132,6 +134,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     spreadsheet_command: StringProperty(name="Spreadsheet Command", description="E.g. [['libreoffice', path]]")
     openlca_port: IntProperty(name="OpenLCA IPC Port", default=8080)
     should_hide_empty_props: BoolProperty(name="Should Hide Empty Properties", default=True)
+    should_setup_workspace: BoolProperty(name="Should Setup Workspace Layout for BIM", default=True)
     should_play_chaching_sound: BoolProperty(
         name="Should Make A Cha-Ching Sound When Project Costs Updates", default=False
     )
@@ -208,6 +211,8 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row = layout.row()
         row.prop(self, "should_hide_empty_props")
         row = layout.row()
+        row.prop(self, "should_setup_workspace")
+        row = layout.row()
         row.prop(self, "should_play_chaching_sound")
         row = layout.row()
         row.prop(self, "lock_grids_on_import")
@@ -264,24 +269,34 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.operator("bim.configure_visibility")
 
 
-def ifc_units(self, context):
-    scene = context.scene
-    props = scene.BIMProperties
-    layout = self.layout
-    layout.use_property_decorate = False
-    layout.use_property_split = True
-    row = layout.row()
-    row.prop(props, "area_unit")
-    row = layout.row()
-    row.prop(props, "volume_unit")
-
-
 # Scene panel groups
+class BIM_PT_root(Panel):
+    bl_label = "BlenderBIM Add-on"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_order = 0
+    bl_options = {"HIDE_HEADER"}
+
+    def draw(self, context):
+        try:
+            aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+            row = self.layout.row(align=True)
+            row.prop(aprops, "tab", text="")
+            row.operator("bim.switch_tab", text="", icon="UV_SYNC_SELECT")
+        except:
+            pass  # Prior to load_post, we may not have any area properties setup
+
+
 class BIM_PT_project_info(Panel):
     bl_label = "IFC Project Info"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "PROJECT")
 
     def draw(self, context):
         pass
@@ -294,6 +309,10 @@ class BIM_PT_project_setup(Panel):
     bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
 
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "PROJECT")
+
     def draw(self, context):
         pass
 
@@ -304,6 +323,10 @@ class BIM_PT_collaboration(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "OTHER")
 
     def draw(self, context):
         pass
@@ -318,7 +341,7 @@ class BIM_PT_selection(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return tool.Blender.is_tab(context, "PROJECT") and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -333,7 +356,7 @@ class BIM_PT_geometry(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return tool.Blender.is_tab(context, "PROJECT") and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -348,7 +371,7 @@ class BIM_PT_4D5D(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return tool.Blender.is_tab(context, "SCHEDULING") and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -363,7 +386,7 @@ class BIM_PT_structural(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return tool.Blender.is_tab(context, "STRUCTURE") and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -378,7 +401,7 @@ class BIM_PT_services(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return tool.Blender.is_tab(context, "SERVICES") and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -391,6 +414,10 @@ class BIM_PT_quality_control(Panel):
     bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
 
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "OTHER")
+
     def draw(self, context):
         pass
 
@@ -401,6 +428,10 @@ class BIM_PT_integrations(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "OTHER")
 
     def draw(self, context):
         pass
@@ -484,6 +515,38 @@ class BIM_PT_misc_object(Panel):
 
     def draw(self, context):
         pass
+
+
+class UIData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {"version": cls.version()}
+        cls.is_loaded = True
+
+    @classmethod
+    def version(cls):
+        return ".".join(
+            [
+                str(x)
+                for x in [
+                    addon.bl_info.get("version", (-1, -1, -1))
+                    for addon in addon_utils.modules()
+                    if addon.bl_info["name"] == "BlenderBIM"
+                ][0]
+            ]
+        )
+
+
+def draw_statusbar(self, context):
+    if not UIData.is_loaded:
+        UIData.load()
+    text = f"BlenderBIM Add-on v{UIData.data['version']}"
+    if blenderbim.bim.last_commit_hash != "8888888":
+        text += f"-{blenderbim.bim.last_commit_hash[:7]}"
+    self.layout.label(text=text)
 
 
 def draw_custom_context_menu(self, context):
