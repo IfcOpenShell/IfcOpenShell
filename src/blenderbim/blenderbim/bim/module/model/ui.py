@@ -257,7 +257,7 @@ class BIM_PT_stair(bpy.types.Panel):
             row.label(text="Stair parameters", icon="IPO_CONSTANT")
 
             stair_data = StairData.data["parameters"]["data_dict"]
-            if props.is_editing != -1:
+            if props.is_editing:
                 row = self.layout.row(align=True)
                 row.operator("bim.finish_editing_stair", icon="CHECKMARK", text="Finish Editing")
                 row.operator("bim.cancel_editing_stair", icon="CANCEL", text="")
@@ -357,7 +357,7 @@ class BIM_PT_window(bpy.types.Panel):
             window_data = WindowData.data["parameters"]["data_dict"]
             number_of_panels, panels_data = props.window_types_panels[props.window_type]
 
-            if props.is_editing != -1:
+            if props.is_editing:
                 row = self.layout.row(align=True)
                 row.operator("bim.finish_editing_window", icon="CHECKMARK", text="Finish Editing")
                 row.operator("bim.cancel_editing_window", icon="CANCEL", text="")
@@ -472,7 +472,7 @@ class BIM_PT_door(bpy.types.Panel):
 
             door_data = DoorData.data["parameters"]["data_dict"]
 
-            if props.is_editing != -1:
+            if props.is_editing:
                 row = self.layout.row(align=True)
                 row.operator("bim.finish_editing_door", icon="CHECKMARK", text="Finish Editing")
                 row.operator("bim.cancel_editing_door", icon="CANCEL", text="")
