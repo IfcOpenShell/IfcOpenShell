@@ -199,18 +199,31 @@ class BIM_PT_drawings(Panel):
                 col.alignment = "LEFT"
                 row2 = col.row(align=True)
                 row2.operator("bim.remove_drawing", icon="X", text="").drawing = active_drawing.ifc_definition_id
+
                 row2.operator(
                     "bim.duplicate_drawing", icon="COPYDOWN", text=""
                 ).drawing = active_drawing.ifc_definition_id
+
                 col = row.column()
                 col.alignment = "RIGHT"
+
                 op = row.operator("bim.select_all_drawings", icon="SELECT_SUBTRACT", text="")
-                op = row.operator("bim.open_drawing", icon="URL", text="")
+
+                open_drawing_button = row.row(align=True)
+                op = open_drawing_button.operator("bim.open_drawing", icon="URL", text="")
                 op.view = active_drawing.name
+                open_drawing_button.enabled = active_drawing.ifc_definition_id > 0
+
                 row.operator("bim.activate_model", icon="VIEW3D", text="")
-                op = row.operator("bim.activate_drawing", icon="OUTLINER_OB_CAMERA", text="")
+
+                drawing_button = row.row(align=True)
+                op = drawing_button.operator("bim.activate_drawing", icon="OUTLINER_OB_CAMERA", text="")
                 op.drawing = active_drawing.ifc_definition_id
-                row.operator("bim.create_drawing", text="", icon="OUTPUT")
+                drawing_button.enabled = active_drawing.ifc_definition_id > 0
+
+                create_drawing_button = row.row(align=True)
+                create_drawing_button.operator("bim.create_drawing", text="", icon="OUTPUT")
+                create_drawing_button.enabled = active_drawing.ifc_definition_id > 0
             self.layout.template_list(
                 "BIM_UL_drawinglist", "", self.props, "drawings", self.props, "active_drawing_index"
             )
@@ -520,7 +533,6 @@ class BIM_UL_drawinglist(bpy.types.UIList):
                     "bim.expand_target_view", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT"
                 ).target_view = item.target_view
             row.prop(item, "name", text="", icon=icon, emboss=False)
-
 
 
 class BIM_UL_sheets(bpy.types.UIList):
