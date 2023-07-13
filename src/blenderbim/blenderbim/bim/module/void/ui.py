@@ -109,8 +109,10 @@ class BIM_PT_booleans(Panel):
         if context.active_object.data.BIMMeshProperties.ifc_definition_id:
             row = layout.row(align=True)
             row.label(text=f"{BooleansData.data['total_booleans']} Booleans Found")
-            row.operator("bim.add_boolean", text="", icon="ADD")
-            row.operator("bim.show_booleans", text="", icon="HIDE_OFF")
+            row.operator("bim.add_boolean", text="Apply Boolean", icon="ADD")
+            show_boolean_button = row.row(align=True)
+            show_boolean_button.operator("bim.show_booleans", text="", icon="HIDE_OFF")
+            show_boolean_button.enabled = BooleansData.data['total_booleans'] > 0
             row.operator("bim.hide_booleans", text="", icon="HIDE_ON")
         elif context.active_object.data.BIMMeshProperties.ifc_boolean_id:
             row = layout.row()
