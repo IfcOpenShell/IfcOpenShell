@@ -319,6 +319,8 @@ class WindowData:
         cls.is_loaded = True
         cls.data = {}
         cls.data["pset_data"] = cls.pset_data()
+        if not cls.data["pset_data"]:
+            return
         cls.data["general_params"] = cls.general_params()
         cls.data["lining_params"] = cls.lining_params()
         cls.data["panel_params"] = cls.panel_params()
@@ -371,6 +373,8 @@ class DoorData:
         cls.is_loaded = True
         cls.data = {}
         cls.data["pset_data"] = cls.pset_data()
+        if not cls.data["pset_data"]:
+            return
         cls.data["general_params"] = cls.general_params()
         cls.data["lining_params"] = cls.lining_params()
         cls.data["panel_params"] = cls.panel_params()
@@ -424,6 +428,8 @@ class RailingData:
         cls.is_loaded = True
         cls.data = {}
         cls.data["pset_data"] = cls.pset_data()
+        if not cls.data["pset_data"]:
+            return
         cls.data["general_params"] = cls.general_params()
         cls.data["path_data"] = cls.path_data()
 
@@ -456,6 +462,8 @@ class RoofData:
         cls.is_loaded = True
         cls.data = {}
         cls.data["pset_data"] = cls.pset_data()
+        if not cls.data["pset_data"]:
+            return
         cls.data["general_params"] = cls.general_params()
 
     @classmethod
