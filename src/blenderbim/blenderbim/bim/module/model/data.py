@@ -235,10 +235,7 @@ class AuthoringData:
         if ifc_class:
             elements = sorted(tool.Ifc.get().by_type(ifc_class), key=lambda s: s.Name or "Unnamed")
             results.extend(elements)
-            return [
-                (str(e.id()), e.Name or "Unnamed", e.Description or "")
-                for e in results
-            ]
+            return [(str(e.id()), e.Name or "Unnamed", e.Description or "") for e in results]
         return []
 
 
@@ -317,6 +314,13 @@ class SverchokData:
             return False
 
 
+def get_prop_from_data(props, data, prop_name):
+    prop_value = data[prop_name]
+    prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
+    prop_readable_name = props.bl_rna.properties[prop_name].name
+    return prop_readable_name, prop_value
+
+
 class WindowData:
     data = {}
     is_loaded = False
@@ -324,17 +328,49 @@ class WindowData:
     @classmethod
     def load(cls):
         cls.is_loaded = True
-        cls.data = {"parameters": cls.parameters()}
+        cls.data = {}
+        cls.data["parameters"] = cls.pset_data()
+        cls.data["general_params"] = cls.general_params()
+        cls.data["lining_params"] = cls.lining_params()
+        cls.data["panel_params"] = cls.panel_params()
 
     @classmethod
-    def parameters(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        if element:
-            psets = ifcopenshell.util.element.get_psets(element)
-            parameters = psets.get("BBIM_Window", None)
-            if parameters:
-                parameters["data_dict"] = json.loads(parameters.get("Data", "[]") or "[]")
-                return parameters
+    def pset_data(cls):
+        return tool.Model.get_modeling_bbim_pset_data(bpy.context.active_object, "BBIM_Window")
+
+    @classmethod
+    def general_params(cls):
+        props = bpy.context.active_object.BIMWindowProperties
+        data = cls.data["parameters"]["data_dict"]
+        general_params = {}
+        general_props = props.get_general_kwargs()
+        for prop_name in general_props:
+            prop_readable_name, prop_value = get_prop_from_data(props, data, prop_name)
+            general_params[prop_readable_name] = prop_value
+        return general_params
+
+    @classmethod
+    def lining_params(cls):
+        props = bpy.context.active_object.BIMWindowProperties
+        data = cls.data["parameters"]["data_dict"]
+        lining_data = data["lining_properties"]
+        lining_params = {}
+        lining_props = props.get_lining_kwargs(window_type=data["window_type"])
+        for prop_name in lining_props:
+            prop_readable_name, prop_value = get_prop_from_data(props, lining_data, prop_name)
+            lining_params[prop_readable_name] = prop_value
+        return lining_params
+
+    @classmethod
+    def panel_params(cls):
+        props = bpy.context.active_object.BIMWindowProperties
+        panel_data = cls.data["parameters"]["data_dict"]["panel_properties"]
+        panel_params = {}
+        panel_props = props.get_panel_kwargs()
+        for prop_name in panel_props:
+            prop_readable_name, prop_value = get_prop_from_data(props, panel_data, prop_name)
+            panel_params[prop_readable_name] = prop_value
+        return panel_params
 
 
 class DoorData:
@@ -380,10 +416,7 @@ class RailingData:
         general_params = {}
         general_props = props.get_general_kwargs(railing_type=data["railing_type"])
         for prop_name in general_props:
-            prop_value = data[prop_name]
-            prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
-
-            prop_readable_name = props.bl_rna.properties[prop_name].name
+            prop_readable_name, prop_value = get_prop_from_data(props, data, prop_name)
             general_params[prop_readable_name] = prop_value
         return general_params
 
@@ -414,12 +447,10 @@ class RoofData:
         general_params = {}
         general_props = props.get_general_kwargs(generation_method=data["generation_method"])
         for prop_name in general_props:
-            prop_value = data[prop_name]
-            prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
+            prop_readable_name, prop_value = get_prop_from_data(props, data, prop_name)
 
             if prop_name in ("angle", "rafter_edge_angle"):
                 prop_value = round(degrees(prop_value), 2)
 
-            prop_readable_name = props.bl_rna.properties[prop_name].name
             general_params[prop_readable_name] = prop_value
         return general_params
