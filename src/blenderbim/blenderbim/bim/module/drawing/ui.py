@@ -542,3 +542,31 @@ class BIM_UL_sheets(bpy.types.UIList):
             else:
                 name = item.name or "Unnamed"
             row.label(text=name)
+
+    def draw_filter(self, context, layout):
+        # We only need filtering, not reordering for sheets.
+        row = layout.row(align=True)
+        row.prop(self, "filter_name", text="")
+        row.prop(self, "use_filter_invert", text="", icon="ARROW_LEFTRIGHT")
+
+    def filter_items(self, context, data, propname):
+        flt_flags = []
+        flt_neworder = []
+
+        if self.filter_name:
+            filter_name = self.filter_name.lower()
+            active_sheet = None
+            for sheet in data.sheets:
+                if sheet.is_sheet:
+                    active_sheet = sheet
+                    active_sheet_index = len(flt_flags)
+                if filter_name in sheet.name.lower() or filter_name in sheet.identification.lower():
+                    flt_flags.append(self.bitflag_filter_item)
+                    if not sheet.is_sheet:
+                        flt_flags[active_sheet_index] = self.bitflag_filter_item
+                else:
+                    flt_flags.append(0)
+
+        if not flt_flags:
+            return flt_flags, flt_neworder
+        return flt_flags, flt_neworder
