@@ -176,7 +176,11 @@ class BimToolUI:
             row.operator("bim.join_wall", icon="X", text="").join_type = ""
 
         elif AuthoringData.data["active_material_usage"] == "LAYER3":
-            add_layout_hotkey_operator(cls.layout, "Edit Profile", "S_E", "")
+
+            if len(context.selected_objects) == 1:
+                add_layout_hotkey_operator(cls.layout, "Edit Profile", "S_E", "")
+            elif "LAYER2" in AuthoringData.data["selected_material_usages"]:
+                add_layout_hotkey_operator(cls.layout, "Extend Wall To Slab", "S_E", "")
 
             row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="x_angle", text="X Angle")
