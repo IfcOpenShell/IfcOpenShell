@@ -257,7 +257,7 @@ def viewport_shading_changed_callback(area):
         bpy.context.scene.BIMStylesProperties.active_style_type = "External"
 
 
-if getattr(bpy.types, "SCENE_PT_scene"):
+if (bpy.types, "SCENE_PT_scene"):
 
     class Override_SCENE_PT_scene(bpy.types.SCENE_PT_scene):
         bl_idname = "SCENE_PT_scene_override"
