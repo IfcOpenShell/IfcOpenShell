@@ -442,12 +442,12 @@ class BIM_PT_object_metadata(Panel):
     bl_label = "IFC Object Metadata"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "object"
+    bl_context = "scene"
     bl_order = 1
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return tool.Blender.is_tab(context, "OBJECT") and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -457,13 +457,13 @@ class BIM_PT_geometry_object(Panel):
     bl_label = "IFC Geometry"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "object"
+    bl_context = "scene"
     bl_order = 1
     bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return tool.Blender.is_tab(context, "OBJECT") and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -473,13 +473,13 @@ class BIM_PT_services_object(Panel):
     bl_label = "IFC Services"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "object"
+    bl_context = "scene"
     bl_order = 1
     bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return tool.Blender.is_tab(context, "OBJECT") and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -489,13 +489,13 @@ class BIM_PT_utilities_object(Panel):
     bl_label = "IFC Utilities"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "object"
+    bl_context = "scene"
     bl_order = 1
     bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return tool.Blender.is_tab(context, "OBJECT") and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -505,13 +505,13 @@ class BIM_PT_misc_object(Panel):
     bl_label = "IFC Misc."
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "object"
+    bl_context = "scene"
     bl_order = 1
     bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return tool.Blender.is_tab(context, "OBJECT") and tool.Ifc.get()
 
     def draw(self, context):
         pass
