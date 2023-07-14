@@ -892,6 +892,42 @@ class CreateDrawing(bpy.types.Operator):
             classes.append("cut")
             el.set("class", " ".join(classes))
 
+            # An element group will contain a bunch of paths representing the
+            # cut of that element. However IfcOpenShell may not correctly
+            # create closed paths. We post-process all paths with shapely to
+            # ensure things that should be closed (i.e.
+            # shapely.polygonize_full) are, and things which aren't are left
+            # alone (e.g. dangles, cuts, invalids). See #3421.
+            line_strings = []
+            old_paths = []
+            for path in el.findall("{http://www.w3.org/2000/svg}path"):
+                for subpath in path.attrib["d"].split("M")[1:]:
+                    subpath = "M" + subpath.strip()
+                    coords = [[round(float(o), 1) for o in co[1:].split(",")] for co in subpath.split()]
+                    line_strings.append(shapely.LineString(coords))
+                old_paths.append(path)
+            unioned_line_strings = shapely.union_all(shapely.GeometryCollection(line_strings))
+            if hasattr(unioned_line_strings, "geoms"):
+                results = shapely.polygonize_full(unioned_line_strings.geoms)
+            else:
+                results = []
+
+            # If we succeeded in generating new path geometry, remove all the
+            # old paths and add new ones.
+            if results:
+                for path in old_paths:
+                    path.getparent().remove(path)
+            for result in results:
+                for geom in result.geoms:
+                    path = etree.SubElement(el, "path")
+                    if isinstance(geom, shapely.Polygon):
+                        d = "M" + " L".join([",".join([str(o) for o in co]) for co in geom.exterior.coords[0:-1]]) + " Z"
+                        for interior in geom.interiors:
+                            d += " M" + " L".join([",".join([str(o) for o in co]) for co in interior.coords[0:-1]]) + " Z"
+                    elif isinstance(geom, shapely.LineString):
+                        d = "M" + " L".join([",".join([str(o) for o in co]) for co in geom.coords]) + " Z"
+                    path.attrib["d"] = d
+
             # Architectural convention only merges these objects. E.g. pipe segments and fittings shouldn't merge.
             if not element.is_a("IfcWall") and not element.is_a("IfcSlab"):
                 continue
