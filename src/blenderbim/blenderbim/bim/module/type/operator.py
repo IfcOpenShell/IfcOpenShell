@@ -436,7 +436,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
 class RemoveType(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_type"
     bl_label = "Remove Type"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER", "UNDO"}
     element: bpy.props.IntProperty()
 
     def _execute(self, context):
@@ -474,7 +474,7 @@ class RenameType(bpy.types.Operator, tool.Ifc.Operator):
 class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.duplicate_type"
     bl_label = "Duplicate Type"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER", "UNDO"}
     element: bpy.props.IntProperty()
 
     def _execute(self, context):
@@ -500,7 +500,7 @@ class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
 class PurgeUnusedTypes(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.purge_unused_types"
     bl_label = "Purge Unused Types"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
         core.purge_unused_types(tool.Ifc, tool.Type)

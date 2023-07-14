@@ -332,10 +332,12 @@ class IfcStore:
         IfcStore.id_map[data["id"]] = obj
         if "guid" in data:
             IfcStore.guid_map[data["guid"]] = obj
-        blenderbim.bim.handler.subscribe_to(obj, "mode", blenderbim.bim.handler.mode_callback)
         blenderbim.bim.handler.subscribe_to(obj, "name", blenderbim.bim.handler.name_callback)
         if isinstance(obj, bpy.types.Material):
             blenderbim.bim.handler.subscribe_to(obj, "diffuse_color", blenderbim.bim.handler.color_callback)
+        elif isinstance(obj, bpy.types.Object):
+            blenderbim.bim.handler.subscribe_to(obj, "mode", blenderbim.bim.handler.mode_callback)
+            blenderbim.bim.handler.subscribe_to(obj, "active_material_index", blenderbim.bim.handler.active_material_index_callback)
         # TODO Listeners are not re-registered. Does this cause nasty problems to debug later on?
         # TODO We're handling id_map and guid_map, but what about edited_objs? This might cause big problems.
 
