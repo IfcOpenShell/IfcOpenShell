@@ -196,6 +196,40 @@ class TestRemoveProduct(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcColumn")) == 1
         assert len(self.file.by_type("IfcBeam")) == 0
 
+    def test_removing_connection_relationships_of_an_element(self):
+        element1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSlab")
+        ifcopenshell.api.run(
+            "geometry.connect_element",
+            self.file,
+            related_element=element1,
+            relating_element=element2,
+        )
+        total_entities = len(list(self.file))
+        ifcopenshell.api.run("root.remove_product", self.file, product=element1)
+        assert len(list(self.file)) == total_entities - 2
+        assert len(self.file.by_type("IfcRelConnectsElements")) == 0
+        assert len(self.file.by_type("IfcSlab")) == 1
+        assert len(self.file.by_type("IfcWall")) == 0
+
+    def test_removing_connection_relationships_of_an_element_with_additional_realizing_element(self):
+        element1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSlab")
+        element3 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSlab")
+        self.file.createIfcRelConnectsWithRealizingElements(
+            ifcopenshell.guid.new(),
+            OwnerHistory=ifcopenshell.api.run("owner.create_owner_history", self.file),
+            RelatingElement=element1,
+            RelatedElement=element2,
+            RealizingElements=(element1, element2, element3),
+        )
+        total_entities = len(list(self.file))
+        ifcopenshell.api.run("root.remove_product", self.file, product=element1)
+        assert len(list(self.file)) == total_entities - 1
+        assert len(self.file.by_type("IfcRelConnectsElements")) == 1
+        assert len(self.file.by_type("IfcSlab")) == 2
+        assert len(self.file.by_type("IfcWall")) == 0
+
     def test_removing_all_property_relationships_of_an_element(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foo_Bar")
