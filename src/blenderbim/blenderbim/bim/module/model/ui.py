@@ -269,11 +269,9 @@ class BIM_PT_stair(bpy.types.Panel):
                 row.operator("bim.enable_editing_stair", icon="GREASEPENCIL", text="")
                 row.operator("bim.remove_stair", icon="X", text="")
                 row = self.layout.row(align=True)
-                for prop in props.get_props_kwargs():
-                    prop_value = stair_data[prop]
-                    prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
+                for prop_name, prop_value in StairData.data["general_params"].items():
                     row = self.layout.row(align=True)
-                    row.label(text=f"{props.bl_rna.properties[prop].name}")
+                    row.label(text=prop_name)
                     row.label(text=str(prop_value))
 
             # calculated properties
