@@ -235,7 +235,7 @@ class TestCopyClass(test.bootstrap.IFC4):
 
 
 class TestCopyClassIFC2X3(test.bootstrap.IFC2X3):
-    def test_copying_distribution_ports_bug(self):
+    def test_copying_distribution_ports(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcFlowTerminal")
         port = ifcopenshell.api.run("system.add_port", self.file)
         ifcopenshell.api.run("system.assign_port", self.file, element=element, port=port)
