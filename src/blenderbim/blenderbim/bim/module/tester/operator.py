@@ -21,6 +21,7 @@ import bpy
 import time
 import tempfile
 import webbrowser
+import json
 import ifctester
 import ifctester.ids
 import ifctester.reporter
@@ -53,13 +54,30 @@ class ExecuteIfcTester(bpy.types.Operator):
             print("Finished loading:", time.time() - start)
             start = time.time()
             specs.validate(ifc)
+            
             print("Finished validating:", time.time() - start)
             start = time.time()
 
             engine = ifctester.reporter.Html(specs)
-            engine.report()
+            engine.report()            
             engine.to_file(output)
             webbrowser.open("file://" + output)
+
+            report = None
+            report = ifctester.reporter.Json(specs).report()['specifications']
+            if report:
+                props.has_report = True
+            print(report)
+            props.specifications.clear()
+            for spec in report:
+                new = props.specifications.add()
+                new.name = spec['name']
+                new.status = spec['status']
+                new.sucess = spec['total_sucess']
+                new.description = spec['requirements'][0]['description']
+                new.failed_entities = len(spec['requirements'][0]['failed_entities'])                          
+
+
         return {"FINISHED"}
 
 
@@ -95,3 +113,13 @@ class SelectIfcTesterIfcFile(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
+
+class SelectSpecification(bpy.types.Operator):
+    bl_idname = "bim.select_specification"
+    bl_label = "Select Specification"
+    bl_options = {"REGISTER", "UNDO"}
+    spec: bpy.props.IntProperty()   
+
+    def execute(self, context):
+        context.scene.IfcTesterProperties.entities = self.spec
+        return {"FINISHED"}
