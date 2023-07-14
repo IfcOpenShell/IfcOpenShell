@@ -76,11 +76,6 @@ class Geometry(blenderbim.core.tool.Geometry):
             ifcopenshell.api.run("boundary.remove_boundary", tool.Ifc.get(), boundary=element)
             return bpy.data.objects.remove(obj)
 
-        if element.is_a("IfcElement"):
-            connections = element.ConnectedTo + element.ConnectedFrom
-            for connection in connections:
-                tool.Ifc.get().remove(connection)
-
         collection = obj.BIMObjectProperties.collection
         if collection:
             parent = ifcopenshell.util.element.get_aggregate(element)
