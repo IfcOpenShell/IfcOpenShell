@@ -28,13 +28,32 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-
+import bpy.props
 
 def purge():
     pass
 
+def get_failure_entities():
+    return
+
+
+class Specification(PropertyGroup):
+    name: StringProperty(name="Name")
+    failed_entities: IntProperty(name="Failed Entities")
+    description : StringProperty(name="Description")
+    status : BoolProperty(default=False, name="Status")
+    sucess : IntProperty(name="Total sucess")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
 
 class IfcTesterProperties(PropertyGroup):
     specs: StringProperty(default="", name="IDS File")
+    report: StringProperty(default="", name="JSON report")
     ifc_file: StringProperty(default="", name="IFC File")
     should_load_from_memory: BoolProperty(default=False, name="Load from Memory")
+    active_specification_index: IntProperty(name="Active Specification Index")
+    specifications: CollectionProperty(name="Specifications", type=Specification)
+    named_specifications: EnumProperty(items=[("11111", "11111", "11")], name="Named Unit Types")
+    has_report : BoolProperty(default=False, name="")
+    entities : IntProperty(name="Failed Entities")
+
+    

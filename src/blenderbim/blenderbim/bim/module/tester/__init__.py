@@ -23,8 +23,11 @@ classes = (
     operator.ExecuteIfcTester,
     operator.SelectSpecs,
     operator.SelectIfcTesterIfcFile,
+    operator.SelectSpecification,
+    prop.Specification,
     prop.IfcTesterProperties,
     ui.BIM_PT_tester,
+    ui.BIM_UL_tester
 )
 
 

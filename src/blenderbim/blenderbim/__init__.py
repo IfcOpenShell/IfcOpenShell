@@ -44,3 +44,4 @@ if sys.modules.get("bpy", None):
 
     def unregister():
         blenderbim.bim.unregister()
+        
