@@ -86,24 +86,40 @@ class Usecase:
                 inverse.RelatedObjects = [to_element]
                 pset = ifcopenshell.util.element.copy_deep(self.file, inverse.RelatingPropertyDefinition)
                 inverse.RelatingPropertyDefinition = pset
-            elif inverse.is_a("IfcRelNests") and inverse.RelatingObject == from_element:
-                ports = [e for e in inverse.RelatedObjects if e.is_a("IfcDistributionPort")]
-                if ports:
-                    new_ports = [ifcopenshell.api.run("root.copy_class", self.file, product=p) for p in ports]
-                    inverse = ifcopenshell.util.element.copy(self.file, inverse)
+            elif (
+                inverse.is_a("IfcRelNests")
+                and inverse.RelatingObject == from_element
+                or inverse.is_a("IfcRelConnectsPortToElement")
+                and inverse.RelatedElement == from_element
+            ):
+                # IfcRelConnectsPortToElement was used in IFC2X3
+                if inverse.is_a("IfcRelNests"):
+                    ports = [e for e in inverse.RelatedObjects if e.is_a("IfcDistributionPort")]
+                else:  # IfcRelConnectsPortToElement
+                    ports = [inverse.RelatingPort]
+                if not ports:
+                    continue
+                new_ports = [ifcopenshell.api.run("root.copy_class", self.file, product=p) for p in ports]
+                inverse = ifcopenshell.util.element.copy(self.file, inverse)
+
+                if inverse.is_a("IfcRelNests"):
                     inverse.RelatingObject = to_element
                     inverse.RelatedObjects = new_ports
-                    for port in new_ports:
-                        ifcopenshell.api.run("system.unassign_port", self.file, element=from_element, port=port)
-                        matrix = ifcopenshell.util.placement.get_local_placement(port.ObjectPlacement)
-                        ifcopenshell.api.run(
-                            "geometry.edit_object_placement",
-                            self.file,
-                            product=port,
-                            matrix=matrix,
-                            is_si=False,
-                            should_transform_children=False,
-                        )
+                else:
+                    inverse.RelatedElement = to_element
+                    inverse.RelatingPort = new_ports[0]
+
+                for port in new_ports:
+                    ifcopenshell.api.run("system.unassign_port", self.file, element=from_element, port=port)
+                    matrix = ifcopenshell.util.placement.get_local_placement(port.ObjectPlacement)
+                    ifcopenshell.api.run(
+                        "geometry.edit_object_placement",
+                        self.file,
+                        product=port,
+                        matrix=matrix,
+                        is_si=False,
+                        should_transform_children=False,
+                    )
             elif inverse.is_a("IfcRelAggregates") and inverse.RelatingObject == from_element:
                 continue
             elif inverse.is_a("IfcRelContainedInSpatialStructure") and inverse.RelatingStructure == from_element:
