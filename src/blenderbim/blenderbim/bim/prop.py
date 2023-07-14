@@ -359,7 +359,7 @@ def get_tab(self, context):
 class BIMAreaProperties(PropertyGroup):
     tab: EnumProperty(default=0, items=get_tab, name="Tab", update=update_tab)
     previous_tab: StringProperty(default="PROJECT", name="Previous Tab")
-    alt_tab: StringProperty(default="PROJECT", name="Alt Tab")
+    alt_tab: StringProperty(default="OBJECT", name="Alt Tab")
 
 
 class BIMProperties(PropertyGroup):
