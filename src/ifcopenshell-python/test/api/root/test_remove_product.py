@@ -213,22 +213,58 @@ class TestRemoveProduct(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcWall")) == 0
 
     def test_removing_connection_relationships_of_an_element_with_additional_realizing_element(self):
-        element1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSlab")
-        element3 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSlab")
+        wall = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        slab1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSlab")
+        slab2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSlab")
         self.file.createIfcRelConnectsWithRealizingElements(
             ifcopenshell.guid.new(),
             OwnerHistory=ifcopenshell.api.run("owner.create_owner_history", self.file),
-            RelatingElement=element1,
-            RelatedElement=element2,
-            RealizingElements=(element1, element2, element3),
+            RelatingElement=wall,
+            RelatedElement=slab1,
+            RealizingElements=(wall, slab1, slab2),
         )
         total_entities = len(list(self.file))
-        ifcopenshell.api.run("root.remove_product", self.file, product=element1)
-        assert len(list(self.file)) == total_entities - 1
-        assert len(self.file.by_type("IfcRelConnectsElements")) == 1
+        ifcopenshell.api.run("root.remove_product", self.file, product=wall)
+        assert len(list(self.file)) == total_entities - 2
+        assert len(self.file.by_type("IfcRelConnectsElements")) == 0
         assert len(self.file.by_type("IfcSlab")) == 2
         assert len(self.file.by_type("IfcWall")) == 0
+
+    def test_removing_connection_relationships_of_an_element_element_is_realizing_element(self):
+        wall = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        slab1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSlab")
+        slab2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSlab")
+        self.file.createIfcRelConnectsWithRealizingElements(
+            ifcopenshell.guid.new(),
+            OwnerHistory=ifcopenshell.api.run("owner.create_owner_history", self.file),
+            RelatingElement=wall,
+            RelatedElement=slab1,
+            RealizingElements=(wall, slab1, slab2),
+        )
+        total_entities = len(list(self.file))
+        ifcopenshell.api.run("root.remove_product", self.file, product=slab2)
+        assert len(list(self.file)) == total_entities - 1
+        assert len(self.file.by_type("IfcRelConnectsElements")) == 1
+        assert len(self.file.by_type("IfcSlab")) == 1
+        assert len(self.file.by_type("IfcWall")) == 1
+
+    def test_removing_connection_relationships_of_an_element_element_is_only_realizing_element(self):
+        wall = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        slab1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSlab")
+        slab2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSlab")
+        self.file.createIfcRelConnectsWithRealizingElements(
+            ifcopenshell.guid.new(),
+            OwnerHistory=ifcopenshell.api.run("owner.create_owner_history", self.file),
+            RelatingElement=wall,
+            RelatedElement=slab1,
+            RealizingElements=(slab2,),
+        )
+        total_entities = len(list(self.file))
+        ifcopenshell.api.run("root.remove_product", self.file, product=slab2)
+        assert len(list(self.file)) == total_entities - 2
+        assert len(self.file.by_type("IfcRelConnectsElements")) == 0
+        assert len(self.file.by_type("IfcSlab")) == 1
+        assert len(self.file.by_type("IfcWall")) == 1
 
     def test_removing_all_property_relationships_of_an_element(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
