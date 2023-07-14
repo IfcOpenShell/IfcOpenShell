@@ -67,6 +67,7 @@ class AuthoringData:
         cls.data["active_material_usage"] = cls.active_material_usage()
         cls.data["active_representation_type"] = cls.active_representation_type()
         cls.data["boundary_class"] = cls.boundary_class()
+        cls.data["selected_material_usages"] = cls.selected_material_usages()
 
     @classmethod
     def boundary_class(cls):
@@ -237,6 +238,23 @@ class AuthoringData:
             results.extend(elements)
             return [(str(e.id()), e.Name or "Unnamed", e.Description or "") for e in results]
         return []
+
+    @classmethod
+    def selected_material_usages(cls):
+        selected_usages = {}
+        for obj in bpy.context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            usage = tool.Model.get_usage_type(element)
+            if not usage:
+                representation = tool.Geometry.get_active_representation(obj)
+                if representation and representation.RepresentationType == "SweptSolid":
+                    usage = "SWEPTSOLID"
+                else:
+                    continue
+            selected_usages.setdefault(usage, []).append(obj)
+        return selected_usages
 
 
 class ArrayData:
