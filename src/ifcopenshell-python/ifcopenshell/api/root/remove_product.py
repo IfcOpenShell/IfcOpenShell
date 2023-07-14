@@ -125,10 +125,11 @@ class Usecase:
             elif inverse.is_a("IfcRelContainedInSpatialStructure"):
                 if inverse.RelatingStructure == self.settings["product"] or len(inverse.RelatedElements) == 1:
                     self.file.remove(inverse)
-            elif inverse.is_a() in ("IfcRelConnectsElements", "IfcRelConnectsPathElements"):
+            elif inverse.is_a("IfcRelConnectsElements"):
                 if inverse.is_a("IfcRelConnectsWithRealizingElements"):
-                    connected_elements = (inverse.RelatingElement, inverse.RelatedElement)
-                    if any(el not in connected_elements for el in inverse.RealizingElements):
+                    if self.settings["product"] not in (inverse.RelatingElement, inverse.RelatedElement) and any(
+                        el for el in inverse.RealizingElements if el != self.settings["product"]
+                    ):
                         continue
                 self.file.remove(inverse)
             elif inverse.is_a("IfcRelAssignsToGroup"):
