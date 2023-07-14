@@ -44,9 +44,6 @@ class IfcStore:
     classification_file = None
     library_path = ""
     library_file = None
-    element_listeners = set()
-    undo_redo_stack_objects = set()
-    undo_redo_stack_object_names = {}
     current_transaction = ""
     last_transaction = ""
     history = []
@@ -162,96 +159,6 @@ class IfcStore:
         return obj
 
     @staticmethod
-    def add_element_listener(callback):
-        IfcStore.element_listeners.add(callback)
-
-    @staticmethod
-    def track_undo_redo_stack_object_map():
-        """Keeps track of currently mapped object names, typically during undo and redo
-
-        When any Blender object is stored outside a Blender PointerProperty, such as
-        in a regular Python list, there is the likely probability that the object
-        will be invalidated when undo or redo occurs. Object invalidation seems to
-        occur whenever an object is affected during an operation.
-
-        For example, if an operator deletes a modifier on o1, then o1 will be invalidated.
-        """
-        for key, value in IfcStore.id_map.items():
-            try:
-                IfcStore.undo_redo_stack_object_names[key] = value.name
-            except:
-                continue
-
-    @staticmethod
-    def track_undo_redo_stack_selected_objects():
-        """Keeps track of selected object names, typically during undo and redo
-
-        When any Blender object is stored outside a Blender PointerProperty, such as
-        in a regular Python list, there is the likely probability that the object
-        will be invalidated when undo or redo occurs. Object invalidation seems to
-        occur for selected objects either pre/post undo/redo event, including
-        selected objects for consecutive undo/redos, and all children. This is
-        important because selected objects are often deleted from the scene.
-
-        So if I first select o1, then o2, then o3, then press undo, o3 will be
-        invalidated. If instead I press undo twice, o3 and o2 will be invalidated.
-        """
-        if bpy.context.active_object:
-            objects = set([o.name for o in bpy.context.selected_objects + [bpy.context.active_object]])
-            objects.update([o.name for o in bpy.context.active_object.children])
-        else:
-            objects = set([o.name for o in bpy.context.selected_objects])
-        for obj in bpy.context.selected_objects:
-            objects.update([o.name for o in obj.children])
-        IfcStore.undo_redo_stack_objects |= objects
-
-    @staticmethod
-    def reload_undo_redo_stack_objects():
-        """Reloads any invalidated objects after undo or redo
-
-        After an undo or redo operation, objects may have been invalidated in
-        our id_map and guid_map. Invalidated objects are typically those that
-        have been manipulated or deleted. This checks the cache of mapped and
-        selected objects prior to the operation and ensures that if the object
-        is invalidated, they are reloaded based on the object name that was
-        tracked prior to the undo / redo.
-        """
-        file = IfcStore.get_file()
-        if not file:
-            return
-
-        # First, reload objects that were selected or active
-        for name in IfcStore.undo_redo_stack_objects:
-            obj = bpy.data.objects.get(name)
-            if not obj:
-                continue
-            if not obj.BIMObjectProperties.ifc_definition_id:
-                continue
-            element = file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-            data = {"id": element.id(), "obj": obj.name}
-            if hasattr(element, "GlobalId"):
-                data["guid"] = element.GlobalId
-            IfcStore.commit_link_element(data)
-
-        # Scan for any straggling invalidated objects which were indirectly affected and reload them too.
-        for key, value in IfcStore.id_map.items():
-            try:
-                value.name
-            except:
-                # TODO not so sure about this obj_name check
-                obj_name = IfcStore.undo_redo_stack_object_names.get(key, None)
-                if not obj_name:
-                    continue
-                obj = bpy.data.objects.get(obj_name)
-                if not obj or not obj.BIMObjectProperties.ifc_definition_id:
-                    continue
-                element = file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-                data = {"id": element.id(), "obj": obj.name}
-                if hasattr(element, "GlobalId"):
-                    data["guid"] = element.GlobalId
-                IfcStore.commit_link_element(data)
-
-    @staticmethod
     def relink_all_objects():
         if not IfcStore.get_file():
             return
@@ -308,9 +215,6 @@ class IfcStore:
         elif isinstance(obj, bpy.types.Object):
             blenderbim.bim.handler.subscribe_to(obj, "mode", blenderbim.bim.handler.mode_callback)
             blenderbim.bim.handler.subscribe_to(obj, "active_material_index", blenderbim.bim.handler.active_material_index_callback)
-
-        for listener in IfcStore.element_listeners:
-            listener(element, obj)
 
         if IfcStore.history:
             data = {"id": element.id(), "guid": getattr(element, "GlobalId", None), "obj": obj.name}
@@ -437,8 +341,6 @@ class IfcStore:
 
     @staticmethod
     def begin_transaction(operator):
-        IfcStore.undo_redo_stack_objects = set()
-        IfcStore.undo_redo_stack_object_names = {}
         IfcStore.current_transaction = str(uuid.uuid4())
         operator.transaction_key = IfcStore.current_transaction
 
