@@ -170,9 +170,7 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
     bpy.app.handlers.depsgraph_update_post.append(on_register)
-    bpy.app.handlers.undo_pre.append(handler.undo_pre)
     bpy.app.handlers.undo_post.append(handler.undo_post)
-    bpy.app.handlers.redo_pre.append(handler.redo_pre)
     bpy.app.handlers.redo_post.append(handler.redo_post)
     bpy.app.handlers.load_post.append(handler.load_post)
     bpy.app.handlers.load_post.append(handler.loadIfcStore)
