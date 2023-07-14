@@ -161,8 +161,5 @@ class Root(blenderbim.core.tool.Root):
 
     @classmethod
     def set_object_name(cls, obj, element):
-        name = obj.name
-        if "/" in name and name.split("/")[0][0:3] == "Ifc":
-            name = "/".join(name.split("/")[1:])
-        name = "{}/{}".format(element.is_a(), name)
-        obj.name = name
+        name = getattr(element, "Name", getattr(element, "AxisTag", None))
+        obj.name = "{}/{}".format(element.is_a(), name or "Unnamed")

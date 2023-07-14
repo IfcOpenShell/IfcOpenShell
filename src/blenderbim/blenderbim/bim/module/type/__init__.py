@@ -27,6 +27,7 @@ classes = (
     operator.EnableEditingType,
     operator.PurgeUnusedTypes,
     operator.RemoveType,
+    operator.RenameType,
     operator.SelectSimilarType,
     operator.SelectType,
     operator.SelectTypeObjects,
