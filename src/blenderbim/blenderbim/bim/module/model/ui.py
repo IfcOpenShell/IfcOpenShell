@@ -41,7 +41,7 @@ from blenderbim.bim.helper import prop_with_search
 class LaunchTypeManager(bpy.types.Operator):
     bl_idname = "bim.launch_type_manager"
     bl_label = "Launch Type Manager"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER", "UNDO"}
     bl_description = "Display all available Construction Types to add new instances"
 
     def execute(self, context):
@@ -127,6 +127,8 @@ class LaunchTypeManager(bpy.types.Operator):
             op.ifc_class = relating_type["ifc_class"]
             op.relating_type_id = relating_type["id"]
 
+            op = row.operator("bim.rename_type", icon="GREASEPENCIL", text="")
+            op.element = relating_type["id"]
             op = row.operator("bim.select_type", icon="OBJECT_DATA", text="")
             op.relating_type = relating_type["id"]
             op = row.operator("bim.duplicate_type", icon="DUPLICATE", text="")
