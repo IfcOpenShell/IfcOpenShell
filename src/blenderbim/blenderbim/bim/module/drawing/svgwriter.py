@@ -880,8 +880,13 @@ class SvgWriter:
             d = "M{}".format(d[1:])
             path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
             text_position = projected_points_svg[0] - Vector((0, base_offset_y))
-            vector = projected_points_svg[1] - projected_points_svg[0]
-            angle = math.degrees(vector.angle_signed(Vector((1, 0))))
+            text_dir = projected_points_svg[1] - projected_points_svg[0]
+            if text_dir.x < 0:
+                box_alignment = "bottom-right"
+                text_dir *= -1
+            else:
+                box_alignment = "bottom-left"
+            angle = math.degrees(text_dir.angle_signed(Vector((1, 0))))
 
             # TODO: allow metric to be configurable
             def get_text():
@@ -895,7 +900,6 @@ class SvgWriter:
                 text = "{}{}".format("" if z < 0 else "+", rl)
                 return text
 
-            box_alignment = "bottom-left" if projected_points[0].x <= projected_points[-1].x else "bottom-right"
             self.draw_dimension_text(
                 get_text,
                 description,
