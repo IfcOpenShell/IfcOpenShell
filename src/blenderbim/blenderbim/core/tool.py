@@ -252,16 +252,16 @@ class Drawing:
     def delete_object(cls, obj): pass
     def disable_editing_assigned_product(cls, obj): pass
     def disable_editing_drawings(cls): pass
-    def disable_editing_schedules(cls): pass
     def disable_editing_references(cls): pass
+    def disable_editing_schedules(cls): pass
     def disable_editing_sheets(cls): pass
     def disable_editing_text(cls, obj): pass
     def does_file_exist(cls, uri): pass
     def enable_editing(cls, obj): pass
     def enable_editing_assigned_product(cls, obj): pass
     def enable_editing_drawings(cls): pass
-    def enable_editing_schedules(cls): pass
     def enable_editing_references(cls): pass
+    def enable_editing_schedules(cls): pass
     def enable_editing_sheets(cls): pass
     def enable_editing_text(cls, obj): pass
     def ensure_unique_drawing_name(cls, name): pass
@@ -297,13 +297,14 @@ class Drawing:
     def get_text_literal(cls, obj): pass
     def get_unit_system(cls): pass
     def import_assigned_product(cls, obj): pass
-    def import_drawings(cls): pass
     def import_documents(cls, document_type): pass
+    def import_drawings(cls): pass
     def import_sheets(cls): pass
     def import_text_attributes(cls, obj): pass
     def is_active_drawing(cls, drawing): pass
     def is_camera_orthographic(cls): pass
     def is_drawing_active(cls): pass
+    def is_editing_sheets(cls): pass
     def move_file(cls, src, dest): pass
     def open_spreadsheet(cls, uri): pass
     def open_svg(cls, filepath): pass
