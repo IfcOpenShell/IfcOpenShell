@@ -1342,12 +1342,21 @@ class IfcImporter:
                 last_obj = obj
         if not last_obj:
             return
+
+        # temporarily unhide types collection to make sure all objects will be cleaned
+        project_collection = bpy.context.view_layer.layer_collection.children[self.project["blender"].name]
+        types_collection = project_collection.children[self.type_collection.name]
+        types_collection.hide_viewport = False
         bpy.context.view_layer.objects.active = last_obj
+
         context_override = {}
         bpy.ops.object.editmode_toggle(context_override)
         bpy.ops.mesh.tris_convert_to_quads(context_override)
         bpy.ops.mesh.normals_make_consistent(context_override)
         bpy.ops.object.editmode_toggle(context_override)
+
+        types_collection.hide_viewport = True
+        bpy.context.view_layer.objects.active = last_obj
         IfcStore.edited_objs.clear()
 
     def load_file(self):
