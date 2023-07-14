@@ -23,6 +23,7 @@ import json
 import time
 import bmesh
 import shutil
+import hashlib
 import shapely
 import subprocess
 import webbrowser
@@ -365,7 +366,6 @@ class CreateDrawing(bpy.types.Operator):
         return svg_path
 
     def generate_linework(self, context):
-        global ifcopenshell
         if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasLinework"):
             return
         svg_path = self.get_svg_path(cache_type="linework")
@@ -394,10 +394,6 @@ class CreateDrawing(bpy.types.Operator):
                 for el in root.findall(".//{http://www.w3.org/2000/svg}g[@{http://www.ifcopenshell.org/ns}guid]")
             }
         cached_linework -= edited_guids
-
-        # This is a work in progress. See #1153 and #1564.
-        import hashlib
-        import ifcopenshell.draw
 
         files = {context.scene.BIMProperties.ifc_file: tool.Ifc.get()}
 
@@ -569,7 +565,7 @@ class CreateDrawing(bpy.types.Operator):
             for projection in projections:
                 boundary_lines = []
                 for path in projection.findall("./{http://www.w3.org/2000/svg}path"):
-                    start, end = [co[1:].split(",") for co in path.attrib["d"].split()]
+                    start, end = [[round(float(o), 1) for o in co[1:].split(",")] for co in path.attrib["d"].split()]
                     boundary_lines.append(shapely.LineString([start, end]))
                 unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
                 closed_polygons = shapely.polygonize(unioned_boundaries.geoms)
