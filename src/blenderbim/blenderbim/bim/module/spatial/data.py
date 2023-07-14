@@ -43,7 +43,11 @@ class SpatialData:
     @classmethod
     def containers(cls):
         results = {}
-        for container in tool.Ifc.get().by_type("IfcSpatialElement"):
+        if tool.Ifc.get_schema() == "IFC2X3":
+            spatial_elements = tool.Ifc.get().by_type("IfcSpatialStructureElement")
+        else:
+            spatial_elements = tool.Ifc.get().by_type("IfcSpatialElement")
+        for container in spatial_elements:
             results[container.id()] = {
                 "type": container.is_a(),
                 "id": container.id(),
