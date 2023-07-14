@@ -467,6 +467,10 @@ class Drawing(blenderbim.core.tool.Drawing):
         return items[0]
 
     @classmethod
+    def is_editing_sheets(cls):
+        return bpy.context.scene.DocProperties.is_editing_sheets
+
+    @classmethod
     def remove_literal_from_annotation(cls, obj, literal):
         element = tool.Ifc.get_entity(obj)
         if not element:
