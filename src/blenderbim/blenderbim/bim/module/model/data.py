@@ -290,11 +290,26 @@ class StairData:
     @classmethod
     def load(cls):
         cls.is_loaded = True
-        cls.data = {"pset_data": cls.pset_data()}
+        cls.data = {}
+        cls.data["pset_data"] = cls.pset_data()
+        if not cls.data["pset_data"]:
+            return
+        cls.data["general_params"] = cls.general_params()
 
     @classmethod
     def pset_data(cls):
         return tool.Model.get_modeling_bbim_pset_data(bpy.context.active_object, "BBIM_Stair")
+
+    @classmethod
+    def general_params(cls):
+        props = bpy.context.active_object.BIMStairProperties
+        data = cls.data["pset_data"]["data_dict"]
+        general_params = {}
+        general_props = props.get_props_kwargs(stair_type=data["stair_type"])
+        for prop_name in general_props:
+            prop_readable_name, prop_value = get_prop_from_data(props, data, prop_name)
+            general_params[prop_readable_name] = prop_value
+        return general_params
 
 
 class SverchokData:

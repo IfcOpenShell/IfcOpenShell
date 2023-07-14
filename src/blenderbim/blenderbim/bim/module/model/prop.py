@@ -201,16 +201,18 @@ class BIMStairProperties(PropertyGroup):
     has_top_nib: bpy.props.BoolProperty(name="Has top nib", default=True)
     stair_type: bpy.props.EnumProperty(name="Stair type", items=stair_types, default="CONCRETE")
 
-    def get_props_kwargs(self, convert_to_project_units=False):
+    def get_props_kwargs(self, convert_to_project_units=False, stair_type=None):
+        if not stair_type:
+            stair_type = self.stair_type
         stair_kwargs = {
-            "stair_type": self.stair_type,
+            "stair_type": stair_type,
             "width": self.width,
             "height": self.height,
             "number_of_treads": self.number_of_treads,
             "tread_run": self.tread_run,
         }
 
-        if self.stair_type == "CONCRETE":
+        if stair_type == "CONCRETE":
             concrete_props = {
                 "base_slab_depth": self.base_slab_depth,
                 "top_slab_depth": self.top_slab_depth,
@@ -219,13 +221,13 @@ class BIMStairProperties(PropertyGroup):
             }
             stair_kwargs.update(concrete_props)
 
-        elif self.stair_type == "WOOD/STEEL":
+        elif stair_type == "WOOD/STEEL":
             wood_steel_props = {
                 "tread_depth": self.tread_depth,
             }
             stair_kwargs.update(wood_steel_props)
 
-        elif self.stair_type == "GENERIC":
+        elif stair_type == "GENERIC":
             pass
 
         if not convert_to_project_units:
