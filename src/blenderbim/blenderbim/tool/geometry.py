@@ -99,7 +99,7 @@ class Geometry(blenderbim.core.tool.Geometry):
                 if element.VoidsElements:
                     bpy.ops.bim.remove_opening(opening_id=element.id())
         else:
-            is_spatial = element.is_a("IfcSpatialElement")
+            is_spatial = element.is_a() in ("IfcSpatialElement", "IfcSpatialStructureElement")
             if getattr(element, "HasOpenings", None):
                 for rel in element.HasOpenings:
                     bpy.ops.bim.remove_opening(opening_id=rel.RelatedOpeningElement.id())
