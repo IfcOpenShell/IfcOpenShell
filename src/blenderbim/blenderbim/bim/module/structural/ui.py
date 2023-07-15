@@ -86,7 +86,7 @@ def draw_boundary_condition_read_only_ui(layout, boundary_condition):
 
 
 class BIM_PT_structural_boundary_conditions(Panel):
-    bl_label = "IFC Structural Boundary Conditions"
+    bl_label = "Structural Boundary Conditions"
     bl_idname = "BIM_PT_structural_boundary_conditions"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -121,7 +121,7 @@ class BIM_PT_structural_boundary_conditions(Panel):
 
 
 class BIM_PT_connected_structural_members(Panel):
-    bl_label = "IFC Connected Structural Members"
+    bl_label = "Connected Structural Members"
     bl_idname = "BIM_PT_connected_structural_members"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -174,7 +174,7 @@ class BIM_PT_connected_structural_members(Panel):
 
 
 class BIM_PT_structural_member(Panel):
-    bl_label = "IFC Structural Member"
+    bl_label = "Structural Member"
     bl_idname = "BIM_PT_structural_member"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -217,7 +217,7 @@ class BIM_PT_structural_member(Panel):
 
 
 class BIM_PT_structural_connection(Panel):
-    bl_label = "IFC Structural Connection"
+    bl_label = "Structural Connection"
     bl_idname = "BIM_PT_structural_connection"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -277,7 +277,7 @@ class BIM_PT_structural_connection(Panel):
 
 
 class BIM_PT_structural_analysis_models(Panel):
-    bl_label = "IFC Structural Analysis Models"
+    bl_label = "Structural Analysis Models"
     bl_idname = "BIM_PT_structural_analysis_models"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -352,7 +352,7 @@ class BIM_UL_structural_analysis_models(UIList):
 
 
 class BIM_PT_structural_load_cases(Panel):
-    bl_label = "IFC Structural Load Cases"
+    bl_label = "Structural Load Cases"
     bl_idname = "BIM_PT_structural_load_cases"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -448,7 +448,7 @@ class BIM_UL_structural_activities(UIList):
 
 
 class BIM_PT_structural_loads(Panel):
-    bl_label = "IFC Structural Loads"
+    bl_label = "Structural Loads"
     bl_idname = "BIM_PT_structural_loads"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -518,7 +518,7 @@ class BIM_UL_structural_loads(UIList):
 
 
 class BIM_PT_boundary_conditions(Panel):
-    bl_label = "IFC Boundary Conditions"
+    bl_label = "Boundary Conditions"
     bl_idname = "BIM_PT_boundary_conditions"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"

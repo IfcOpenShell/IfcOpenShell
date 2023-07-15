@@ -387,7 +387,7 @@ class BIM_PT_sheets(Panel):
 
 
 class BIM_PT_product_assignments(Panel):
-    bl_label = "IFC Product Assignments"
+    bl_label = "Product Assignments"
     bl_idname = "BIM_PT_product_assignments"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -422,7 +422,7 @@ class BIM_PT_product_assignments(Panel):
 
 
 class BIM_PT_text(Panel):
-    bl_label = "IFC Text"
+    bl_label = "Text"
     bl_idname = "BIM_PT_text"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"

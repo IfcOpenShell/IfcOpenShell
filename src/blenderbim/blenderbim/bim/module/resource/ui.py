@@ -23,7 +23,7 @@ from blenderbim.bim.module.resource.data import ResourceData
 
 
 class BIM_PT_resources(Panel):
-    bl_label = "IFC Resources"
+    bl_label = "Resources"
     bl_idname = "BIM_PT_resources"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"

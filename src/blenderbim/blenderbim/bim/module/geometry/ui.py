@@ -34,7 +34,7 @@ def outliner_menu(self, context):
     self.layout.operator("bim.override_outliner_delete", icon='X')
 
 class BIM_PT_representations(Panel):
-    bl_label = "IFC Representations"
+    bl_label = "Representations"
     bl_idname = "BIM_PT_representations"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -80,7 +80,7 @@ class BIM_PT_representations(Panel):
 
 
 class BIM_PT_connections(Panel):
-    bl_label = "IFC Connections"
+    bl_label = "Connections"
     bl_idname = "BIM_PT_connections"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -118,7 +118,7 @@ class BIM_PT_connections(Panel):
 
 
 class BIM_PT_mesh(Panel):
-    bl_label = "IFC Representation"
+    bl_label = "Representation"
     bl_idname = "BIM_PT_mesh"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -185,7 +185,7 @@ def BIM_PT_transform(self, context):
 
 
 class BIM_PT_derived_placements(Panel):
-    bl_label = "IFC Derived Placements"
+    bl_label = "Derived Placements"
     bl_idname = "BIM_PT_derived_placements"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -220,7 +220,7 @@ class BIM_PT_derived_placements(Panel):
 
 
 class BIM_PT_workarounds(Panel):
-    bl_label = "IFC Vendor Workarounds"
+    bl_label = "Vendor Workarounds"
     bl_idname = "BIM_PT_workarounds"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"

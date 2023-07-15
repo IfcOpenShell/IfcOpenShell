@@ -25,7 +25,7 @@ from blenderbim.bim.module.boundary.data import SpaceBoundariesData
 
 
 class BIM_PT_SceneBoundaries(Panel):
-    bl_label = "IFC Space Boundaries"
+    bl_label = "Space Boundaries"
     bl_id_name = "BIM_PT_scene_boundaries"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -45,7 +45,7 @@ class BIM_PT_SceneBoundaries(Panel):
 
 
 class BIM_PT_Boundary(Panel):
-    bl_label = "IFC Space Boundary"
+    bl_label = "Space Boundary"
     bl_idname = "BIM_PT_Boundary"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -117,7 +117,7 @@ class BIM_PT_Boundary(Panel):
 
 
 class BIM_PT_SpaceBoundaries(Panel):
-    bl_label = "IFC Space Boundaries"
+    bl_label = "Space Boundaries"
     bl_idname = "BIM_PT_SpaceBoundaries"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"

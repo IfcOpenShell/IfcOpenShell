@@ -23,7 +23,7 @@ from blenderbim.bim.module.georeference.data import GeoreferenceData
 
 
 class BIM_PT_gis(Panel):
-    bl_label = "IFC Georeferencing"
+    bl_label = "Georeferencing"
     bl_idname = "BIM_PT_gis"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"

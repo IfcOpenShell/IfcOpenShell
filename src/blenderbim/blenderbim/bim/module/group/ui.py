@@ -22,7 +22,7 @@ from blenderbim.bim.module.group.data import GroupsData, ObjectGroupsData
 
 
 class BIM_PT_groups(Panel):
-    bl_label = "IFC Groups"
+    bl_label = "Groups"
     bl_idname = "BIM_PT_groups"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -69,7 +69,7 @@ class BIM_PT_groups(Panel):
 
 
 class BIM_PT_object_groups(Panel):
-    bl_label = "IFC Groups"
+    bl_label = "Groups"
     bl_idname = "BIM_PT_object_groups"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"

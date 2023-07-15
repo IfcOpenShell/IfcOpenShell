@@ -283,7 +283,7 @@ class BIM_PT_root(Panel):
             aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
 
             row = self.layout.row()
-            row.scale_y = 0.5  # Yes, we actually do this.
+            row.scale_y = 0.75  # Yes, we actually do this.
             row.operator(
                 "bim.set_tab", text="", emboss=False, icon_value=blenderbim.bim.icons["IFC"].icon_id
             ).tab = "PROJECT"
@@ -327,7 +327,7 @@ class BIM_PT_root(Panel):
 
 
 class BIM_PT_project_info(Panel):
-    bl_label = "IFC Project Info"
+    bl_label = "Project Info"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -341,7 +341,7 @@ class BIM_PT_project_info(Panel):
 
 
 class BIM_PT_project_setup(Panel):
-    bl_label = "IFC Project Setup"
+    bl_label = "Project Setup"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -356,7 +356,7 @@ class BIM_PT_project_setup(Panel):
 
 
 class BIM_PT_collaboration(Panel):
-    bl_label = "IFC Collaboration"
+    bl_label = "Collaboration"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -371,7 +371,7 @@ class BIM_PT_collaboration(Panel):
 
 
 class BIM_PT_selection(Panel):
-    bl_label = "IFC Selection"
+    bl_label = "Selection"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -386,7 +386,7 @@ class BIM_PT_selection(Panel):
 
 
 class BIM_PT_geometry(Panel):
-    bl_label = "IFC Geometry"
+    bl_label = "Geometry"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -401,7 +401,7 @@ class BIM_PT_geometry(Panel):
 
 
 class BIM_PT_4D5D(Panel):
-    bl_label = "IFC Costing and Scheduling"
+    bl_label = "Costing and Scheduling"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -416,7 +416,7 @@ class BIM_PT_4D5D(Panel):
 
 
 class BIM_PT_structural(Panel):
-    bl_label = "IFC Structural"
+    bl_label = "Structural"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -431,7 +431,7 @@ class BIM_PT_structural(Panel):
 
 
 class BIM_PT_services(Panel):
-    bl_label = "IFC Services"
+    bl_label = "Services"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -446,7 +446,7 @@ class BIM_PT_services(Panel):
 
 
 class BIM_PT_quality_control(Panel):
-    bl_label = "IFC Quality Control"
+    bl_label = "Quality Control"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -477,7 +477,7 @@ class BIM_PT_integrations(Panel):
 
 # Object panel groups
 class BIM_PT_object_metadata(Panel):
-    bl_label = "IFC Object Metadata"
+    bl_label = "Object Metadata"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -492,7 +492,7 @@ class BIM_PT_object_metadata(Panel):
 
 
 class BIM_PT_geometry_object(Panel):
-    bl_label = "IFC Geometry"
+    bl_label = "Geometry"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -508,7 +508,7 @@ class BIM_PT_geometry_object(Panel):
 
 
 class BIM_PT_services_object(Panel):
-    bl_label = "IFC Services"
+    bl_label = "Services"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -524,7 +524,7 @@ class BIM_PT_services_object(Panel):
 
 
 class BIM_PT_utilities_object(Panel):
-    bl_label = "IFC Utilities"
+    bl_label = "Utilities"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -540,7 +540,7 @@ class BIM_PT_utilities_object(Panel):
 
 
 class BIM_PT_misc_object(Panel):
-    bl_label = "IFC Misc."
+    bl_label = "Misc."
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"

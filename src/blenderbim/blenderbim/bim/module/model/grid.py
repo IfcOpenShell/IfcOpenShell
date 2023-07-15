@@ -98,7 +98,7 @@ def add_object(self, context):
 
 class BIM_OT_add_object(Operator, tool.Ifc.Operator):
     bl_idname = "mesh.add_grid"
-    bl_label = "IFC Grid"
+    bl_label = "Grid"
     bl_options = {"REGISTER", "UNDO"}
 
     u_spacing: FloatProperty(name="U Spacing", default=10)
