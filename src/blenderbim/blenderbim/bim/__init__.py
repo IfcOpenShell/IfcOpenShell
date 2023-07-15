@@ -95,6 +95,7 @@ classes = [
     operator.OpenUpstream,
     operator.OpenUri,
     operator.SwitchTab,
+    operator.SetTab,
     operator.ReloadIfcFile,
     operator.RemoveIfcFile,
     operator.SelectDataDir,
