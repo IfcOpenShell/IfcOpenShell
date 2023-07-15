@@ -22,7 +22,7 @@ from blenderbim.bim.ifc import IfcStore
 
 
 class BIM_PT_aggregate(Panel):
-    bl_label = "IFC Aggregates"
+    bl_label = "Aggregates"
     bl_idname = "BIM_PT_aggregate"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"

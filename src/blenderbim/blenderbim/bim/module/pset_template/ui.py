@@ -23,7 +23,7 @@ from blenderbim.bim.module.pset_template.data import PsetTemplatesData
 
 
 class BIM_PT_pset_template(Panel):
-    bl_label = "IFC Property Set Templates"
+    bl_label = "Property Set Templates"
     bl_idname = "BIM_PT_pset_template"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
