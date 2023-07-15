@@ -24,7 +24,7 @@ from blenderbim.bim.module.system.data import SystemData, ObjectSystemData, Port
 
 
 class BIM_PT_systems(Panel):
-    bl_label = "IFC Systems"
+    bl_label = "Systems"
     bl_idname = "BIM_PT_systems"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -74,7 +74,7 @@ class BIM_PT_systems(Panel):
 
 
 class BIM_PT_object_systems(Panel):
-    bl_label = "IFC Systems"
+    bl_label = "Systems"
     bl_idname = "BIM_PT_object_systems"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -130,7 +130,7 @@ class BIM_PT_object_systems(Panel):
 
 
 class BIM_PT_ports(Panel):
-    bl_label = "IFC Ports"
+    bl_label = "Ports"
     bl_idname = "BIM_PT_ports"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -163,7 +163,7 @@ class BIM_PT_ports(Panel):
 
 
 class BIM_PT_port(Panel):
-    bl_label = "IFC Port"
+    bl_label = "Port"
     bl_idname = "BIM_PT_port"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"

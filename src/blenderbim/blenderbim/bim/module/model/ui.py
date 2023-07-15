@@ -168,7 +168,7 @@ class BIM_PT_Grids(Panel):
 
 
 class BIM_PT_array(bpy.types.Panel):
-    bl_label = "IFC Array"
+    bl_label = "Array"
     bl_idname = "BIM_PT_array"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -236,7 +236,7 @@ class BIM_PT_array(bpy.types.Panel):
 
 
 class BIM_PT_stair(bpy.types.Panel):
-    bl_label = "IFC Stair"
+    bl_label = "Stair"
     bl_idname = "BIM_PT_stair"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -294,7 +294,7 @@ class BIM_PT_stair(bpy.types.Panel):
 
 
 class BIM_PT_sverchok(bpy.types.Panel):
-    bl_label = "IFC Sverchok"
+    bl_label = "Sverchok"
     bl_idname = "BIM_PT_sverchok"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -332,7 +332,7 @@ class BIM_PT_sverchok(bpy.types.Panel):
 
 
 class BIM_PT_window(bpy.types.Panel):
-    bl_label = "IFC Window"
+    bl_label = "Window"
     bl_idname = "BIM_PT_window"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -441,7 +441,7 @@ class BIM_PT_window(bpy.types.Panel):
 
 
 class BIM_PT_door(bpy.types.Panel):
-    bl_label = "IFC Door"
+    bl_label = "Door"
     bl_idname = "BIM_PT_door"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -514,7 +514,7 @@ class BIM_PT_door(bpy.types.Panel):
 
 
 class BIM_PT_railing(bpy.types.Panel):
-    bl_label = "IFC Railing"
+    bl_label = "Railing"
     bl_idname = "BIM_PT_railing"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -576,7 +576,7 @@ class BIM_PT_railing(bpy.types.Panel):
 
 
 class BIM_PT_roof(bpy.types.Panel):
-    bl_label = "IFC Roof"
+    bl_label = "Roof"
     bl_idname = "BIM_PT_roof"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -631,7 +631,7 @@ class BIM_PT_roof(bpy.types.Panel):
 
 class BIM_MT_model(Menu):
     bl_idname = "BIM_MT_model"
-    bl_label = "IFC Objects"
+    bl_label = "Objects"
 
     def draw(self, context):
         layout = self.layout

@@ -23,7 +23,7 @@ import blenderbim.tool as tool
 
 
 class BIM_PT_spatial(Panel):
-    bl_label = "IFC Spatial Container"
+    bl_label = "Spatial Container"
     bl_idname = "BIM_PT_spatial"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -97,7 +97,7 @@ class BIM_UL_containers(UIList):
 
 
 class BIM_PT_SpatialManager(Panel):
-    bl_label = "IFC Spatial Manager"
+    bl_label = "Spatial Manager"
     bl_idname = "BIM_PT_SpatialManager"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
