@@ -268,6 +268,7 @@ class Brick(blenderbim.core.tool.Brick):
         with BrickStore.graph.new_changeset("PROJECT") as cs:
             cs.load_file(filepath)
         BrickStore.path = filepath
+        BrickStore.load_namespaces()
 
     @classmethod
     def new_brick_file(cls):
@@ -278,6 +279,7 @@ class Brick(blenderbim.core.tool.Brick):
         with BrickStore.graph.new_changeset("SCHEMA") as cs:
             cs.load_file(BrickStore.schema)
         BrickStore.graph.bind("digitaltwin", Namespace("https://example.org/digitaltwin#"))
+        BrickStore.load_namespaces()
 
     @classmethod
     def pop_brick_breadcrumb(cls):
@@ -325,12 +327,11 @@ class Brick(blenderbim.core.tool.Brick):
     @classmethod
     def add_namespace(cls, alias, uri):
         BrickStore.graph.bind(alias, Namespace(uri))
-        # need some way to reload namespace enum view
+        BrickStore.load_namespaces()
     
     @classmethod
     def clear_breadcrumbs(cls):
         bpy.context.scene.BIMBrickProperties.brick_breadcrumbs.clear()
-
 
 class BrickStore:
     schema = None  # this is now a os path
@@ -341,16 +342,31 @@ class BrickStore:
     future = []
     current_changesets = 0
     history_size = 64
+    namespaces = []
 
     @staticmethod
     def purge():
         BrickStore.schema = None
         BrickStore.graph = None
         BrickStore.path = None
+        BrickStore.namespaces = []
 
     @classmethod
     def get_project(cls):
         return BrickStore.graph.graph_at(graph="PROJECT")
+    
+    @classmethod
+    def load_namespaces(cls):
+        BrickStore.namespaces = []
+        keyword_filter = ["brickschema.org", "schema.org", "w3.org", "purl.org", "rdfs.org", "qudt.org", "ashrae.org"]
+        for alias, uri in BrickStore.graph.namespaces():
+            ignore_namespace = False
+            for keyword in keyword_filter:
+                if keyword in str(uri):
+                    ignore_namespace = True
+                    break
+            if not ignore_namespace:
+                BrickStore.namespaces.append((uri, f"{alias}: {uri}", ""))
 
     @classmethod
     def set_history_size(cls, size):

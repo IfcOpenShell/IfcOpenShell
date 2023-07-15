@@ -42,7 +42,6 @@ class BrickschemaData:
         cls.data = {
             "is_loaded": cls.get_is_loaded(),
             "attributes": cls.attributes(),
-            "namespaces": cls.namespaces(),
             "brick_equipment_classes": cls.brick_equipment_classes(),
         }
 
@@ -102,17 +101,6 @@ class BrickschemaData:
                             "is_globalid": p.toPython().split("#")[-1] == "globalID",
                         }
                     )
-        return results
-
-    @classmethod
-    def namespaces(cls):
-        if BrickStore.graph is None:
-            return []
-        results = []
-        filter = ["brick", "owl", "w3", "xml"]
-        for alias, uri in BrickStore.graph.namespaces():
-            if alias not in filter:
-                results.append((uri, f"{alias}: {uri}", ""))
         return results
 
     @classmethod
