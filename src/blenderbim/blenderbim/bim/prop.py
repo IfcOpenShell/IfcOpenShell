@@ -345,13 +345,13 @@ def get_tab(self, context):
     return [
         ("PROJECT", "Project Overview", "", blenderbim.bim.icons["IFC"].icon_id, 0),
         ("OBJECT", "Object Information", "", "FILE_3D", 1),
-        ("MATERIALS", "Materials and Styles", "", "MATERIAL", 2),
+        ("GEOMETRY", "Geometry and Materials", "", "MATERIAL", 2),
         ("DRAWINGS", "Drawings and Documents", "", "DOCUMENTS", 3),
         ("SERVICES", "Services and Systems", "", "NETWORK_DRIVE", 4),
         ("STRUCTURE", "Structural Analysis", "", "EDITMODE_HLT", 5),
         ("SCHEDULING", "Construction Scheduling", "", "NLA", 6),
         ("FM", "Facility Management", "", "PACKAGE", 7),
-        ("OTHER", "Other Utilities", "", "COLLAPSEMENU", 8),
+        ("QUALITY", "Quality and Coordination", "", "COMMUNITY", 8),
         ("BLENDER", "Blender Properties", "", "BLENDER", 9),
     ]
 
