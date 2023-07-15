@@ -40,6 +40,21 @@ from mathutils import Vector, Matrix, Euler
 from math import radians
 
 
+class SetTab(bpy.types.Operator):
+    bl_idname = "bim.set_tab"
+    bl_label = "Set Tab"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Sets the current property tab"
+    tab: bpy.props.StringProperty()
+
+    def execute(self, context):
+        if context.area.spaces.active.search_filter:
+            return {"FINISHED"}
+        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+        aprops.tab = self.tab
+        return {"FINISHED"}
+
+
 class SwitchTab(bpy.types.Operator):
     bl_idname = "bim.switch_tab"
     bl_label = "Switch Tab"

@@ -281,9 +281,47 @@ class BIM_PT_root(Panel):
     def draw(self, context):
         try:
             aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+
+            row = self.layout.row()
+            row.scale_y = 0.5  # Yes, we actually do this.
+            row.operator(
+                "bim.set_tab", text="", emboss=False, icon_value=blenderbim.bim.icons["IFC"].icon_id
+            ).tab = "PROJECT"
+            row.operator("bim.set_tab", text="", emboss=False, icon="FILE_3D").tab = "OBJECT"
+            row.operator("bim.set_tab", text="", emboss=False, icon="MATERIAL").tab = "MATERIALS"
+            row.operator("bim.set_tab", text="", emboss=False, icon="DOCUMENTS").tab = "DRAWINGS"
+            row.operator("bim.set_tab", text="", emboss=False, icon="NETWORK_DRIVE").tab = "SERVICES"
+            row.operator("bim.set_tab", text="", emboss=False, icon="EDITMODE_HLT").tab = "STRUCTURE"
+            row.operator("bim.set_tab", text="", emboss=False, icon="NLA").tab = "SCHEDULING"
+            row.operator("bim.set_tab", text="", emboss=False, icon="PACKAGE").tab = "FM"
+            row.operator("bim.set_tab", text="", emboss=False, icon="COLLAPSEMENU").tab = "OTHER"
+            row.operator("bim.set_tab", text="", emboss=False, icon="BLENDER").tab = "BLENDER"
+            row.operator("bim.switch_tab", text="", emboss=False, icon="UV_SYNC_SELECT")
+
+            # Yes, that's right, we're still doing this.
+            row = self.layout.row()
+            row.scale_y = 0.2
+            for tab in [
+                "PROJECT",
+                "OBJECT",
+                "MATERIALS",
+                "DRAWINGS",
+                "SERVICES",
+                "STRUCTURE",
+                "SCHEDULING",
+                "FM",
+                "OTHER",
+                "BLENDER",
+                "SWITCH",
+            ]:
+                if aprops.tab == tab:
+                    row.prop(aprops, "active_tab", text="", icon="BLANK1")
+                else:
+                    row.prop(aprops, "inactive_tab", text="", icon="BLANK1", emboss=False)
+
+            aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
             row = self.layout.row(align=True)
             row.prop(aprops, "tab", text="")
-            row.operator("bim.switch_tab", text="", icon="UV_SYNC_SELECT")
         except:
             pass  # Prior to load_post, we may not have any area properties setup
 
