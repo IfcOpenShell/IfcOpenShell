@@ -30,7 +30,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-
+from blenderbim.tool.brick import BrickStore
 
 def update_active_brick_index(self, context):
     BrickschemaData.is_loaded = False
@@ -43,9 +43,7 @@ def get_libraries(self, context):
 
 
 def get_namespaces(self, context):
-    if not BrickschemaData.is_loaded:
-        BrickschemaData.load()
-    return BrickschemaData.data["namespaces"]
+    return BrickStore.namespaces
 
 
 def get_brick_equipment_classes(self, context):
