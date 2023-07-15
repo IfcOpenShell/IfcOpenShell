@@ -22,7 +22,7 @@ from blenderbim.bim.ifc import IfcStore
 
 
 class BIM_PT_search(Panel):
-    bl_label = "IFC Search"
+    bl_label = "Search"
     bl_idname = "BIM_PT_search"
     # bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -109,7 +109,7 @@ class BIM_UL_ifc_building_storey_filter(bpy.types.UIList):
 
 
 class BIM_PT_IFCSelector(Panel):
-    bl_label = "IFC Selector"
+    bl_label = "Selector"
     bl_idname = "BIM_PT_ifc_selector"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"

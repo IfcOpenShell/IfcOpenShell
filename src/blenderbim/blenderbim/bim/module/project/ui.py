@@ -76,7 +76,7 @@ def file_menu(self, context):
 
 
 class BIM_PT_project(Panel):
-    bl_label = "IFC Project"
+    bl_label = "Current Project"
     bl_idname = "BIM_PT_project"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -235,7 +235,7 @@ class BIM_PT_project(Panel):
 
 
 class BIM_PT_project_library(Panel):
-    bl_label = "IFC Project Library"
+    bl_label = "Project Library"
     bl_idname = "BIM_PT_project_library"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -277,7 +277,7 @@ class BIM_PT_project_library(Panel):
 
 
 class BIM_PT_links(Panel):
-    bl_label = "IFC Links"
+    bl_label = "Links"
     bl_idname = "BIM_PT_links"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"

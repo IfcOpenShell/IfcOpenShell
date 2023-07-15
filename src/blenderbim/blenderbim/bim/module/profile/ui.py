@@ -25,7 +25,7 @@ from blenderbim.bim.module.profile.prop import generate_thumbnail_for_active_pro
 
 
 class BIM_PT_profiles(Panel):
-    bl_label = "IFC Profiles"
+    bl_label = "Profiles"
     bl_idname = "BIM_PT_profiles"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"

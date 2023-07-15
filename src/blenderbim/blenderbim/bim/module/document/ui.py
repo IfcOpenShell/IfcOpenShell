@@ -23,7 +23,7 @@ from blenderbim.bim.module.document.data import DocumentData, ObjectDocumentData
 
 
 class BIM_PT_documents(Panel):
-    bl_label = "IFC Documents"
+    bl_label = "Documents"
     bl_idname = "BIM_PT_documents"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -76,7 +76,7 @@ class BIM_PT_documents(Panel):
 
 
 class BIM_PT_object_documents(Panel):
-    bl_label = "IFC Documents"
+    bl_label = "Documents"
     bl_idname = "BIM_PT_object_documents"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"

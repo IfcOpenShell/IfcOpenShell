@@ -23,7 +23,7 @@ from blenderbim.bim.helper import draw_attributes
 
 
 class BIM_PT_patch(bpy.types.Panel):
-    bl_label = "IFC Patch"
+    bl_label = "Patch"
     bl_idname = "BIM_PT_patch"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"

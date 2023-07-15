@@ -21,7 +21,7 @@ from bpy.types import Panel
 
 
 class BIM_PT_debug(Panel):
-    bl_label = "IFC Debug"
+    bl_label = "Debug"
     bl_idname = "BIM_PT_debug"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"

@@ -24,7 +24,7 @@ from blenderbim.bim.module.cost.data import CostSchedulesData
 
 
 class BIM_PT_cost_schedules(Panel):
-    bl_label = "IFC Cost Schedules"
+    bl_label = "Cost Schedules"
     bl_idname = "BIM_PT_cost_schedules"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -267,7 +267,7 @@ class BIM_PT_cost_schedules(Panel):
 
 
 class BIM_PT_cost_item_types(Panel):
-    bl_label = "IFC Cost Item Types"
+    bl_label = "Cost Item Types"
     bl_idname = "BIM_PT_cost_item_types"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -353,7 +353,7 @@ class BIM_PT_cost_item_types(Panel):
 
 
 class BIM_PT_cost_item_quantities(Panel):
-    bl_label = "IFC Cost Item Quantities"
+    bl_label = "Cost Item Quantities"
     bl_idname = "BIM_PT_cost_item_quantities"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -525,7 +525,7 @@ class BIM_PT_cost_item_quantities(Panel):
 
 
 class BIM_PT_cost_item_rates(Panel):
-    bl_label = "IFC Cost Item Rates"
+    bl_label = "Cost Item Rates"
     bl_idname = "BIM_PT_cost_item_rates"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"

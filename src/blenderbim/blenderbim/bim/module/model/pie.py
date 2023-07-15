@@ -92,7 +92,7 @@ class VIEW3D_MT_PIE_bim(bpy.types.Menu):
 
 
 class VIEW3D_MT_PIE_bim_class(bpy.types.Menu):
-    bl_label = "IFC Class"
+    bl_label = "Class"
 
     def draw(self, context):
         pie = self.layout.menu_pie()

@@ -23,7 +23,7 @@ from blenderbim.bim.module.void.data import BooleansData, VoidsData
 
 
 class BIM_PT_voids(Panel):
-    bl_label = "IFC Voids"
+    bl_label = "Voids"
     bl_idname = "BIM_PT_voids"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -79,7 +79,7 @@ class BIM_PT_voids(Panel):
 
 
 class BIM_PT_booleans(Panel):
-    bl_label = "IFC Booleans"
+    bl_label = "Booleans"
     bl_idname = "BIM_PT_booleans"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"

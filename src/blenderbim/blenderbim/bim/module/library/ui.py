@@ -23,7 +23,7 @@ from blenderbim.bim.module.library.data import LibrariesData, LibraryReferencesD
 
 
 class BIM_PT_libraries(Panel):
-    bl_label = "IFC Libraries"
+    bl_label = "Libraries"
     bl_idname = "BIM_PT_libraries"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -94,7 +94,7 @@ class BIM_PT_libraries(Panel):
 
 
 class BIM_PT_library_references(Panel):
-    bl_label = "IFC Library References"
+    bl_label = "Library References"
     bl_idname = "BIM_PT_library_references"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"

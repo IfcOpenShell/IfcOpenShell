@@ -21,7 +21,7 @@ from blenderbim.bim.ifc import IfcStore
 
 
 class BIM_PT_cobie(Panel):
-    bl_label = "IFC COBie"
+    bl_label = "COBie"
     bl_idname = "BIM_PT_cobie"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"

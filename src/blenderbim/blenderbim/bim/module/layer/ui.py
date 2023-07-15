@@ -22,7 +22,7 @@ from blenderbim.bim.module.layer.data import LayersData
 
 
 class BIM_PT_layers(Panel):
-    bl_label = "IFC Presentation Layers"
+    bl_label = "Presentation Layers"
     bl_idname = "BIM_PT_layers"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"

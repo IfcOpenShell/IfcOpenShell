@@ -23,7 +23,7 @@ from blenderbim.bim.module.constraint.data import ConstraintsData, ObjectConstra
 
 
 class BIM_PT_constraints(Panel):
-    bl_label = "IFC Constraints"
+    bl_label = "Constraints"
     bl_idname = "BIM_PT_constraints"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -68,7 +68,7 @@ class BIM_PT_constraints(Panel):
 
 
 class BIM_PT_object_constraints(Panel):
-    bl_label = "IFC Constraints"
+    bl_label = "Constraints"
     bl_idname = "BIM_PT_object_constraints"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"

@@ -20,7 +20,7 @@ from bpy.types import Panel
 
 
 class BIM_PT_cityjson_converter(Panel):
-    bl_label = "IFC CityJSON"
+    bl_label = "CityJSON"
     bl_idname = "BIM_PT_ifccityjson"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
