@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import blenderbim.tool as tool
 from bpy.types import Panel
 from blenderbim.bim.ifc import IfcStore
 
@@ -23,11 +24,13 @@ from blenderbim.bim.ifc import IfcStore
 class BIM_PT_cobie(Panel):
     bl_label = "COBie"
     bl_idname = "BIM_PT_cobie"
-    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_collaboration"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "FM")
 
     def draw(self, context):
         layout = self.layout
