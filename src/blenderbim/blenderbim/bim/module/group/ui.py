@@ -76,7 +76,7 @@ class BIM_PT_object_groups(Panel):
     bl_region_type = "WINDOW"
     bl_context = "object"
     bl_order = 1
-    bl_parent_id = "BIM_PT_utilities_object"
+    bl_parent_id = "BIM_PT_misc_object"
 
     @classmethod
     def poll(cls, context):

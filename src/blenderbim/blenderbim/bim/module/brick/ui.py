@@ -26,14 +26,13 @@ from blenderbim.tool.brick import BrickStore
 class BIM_PT_brickschema(Panel):
     bl_label = "Brickschema Project"
     bl_idname = "BIM_PT_brickschema"
-    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "OTHER")
+        return tool.Blender.is_tab(context, "FM")
 
     def draw(self, context):
         if not BrickschemaData.is_loaded:

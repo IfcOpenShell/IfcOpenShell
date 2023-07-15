@@ -288,13 +288,13 @@ class BIM_PT_root(Panel):
                 "bim.set_tab", text="", emboss=False, icon_value=blenderbim.bim.icons["IFC"].icon_id
             ).tab = "PROJECT"
             row.operator("bim.set_tab", text="", emboss=False, icon="FILE_3D").tab = "OBJECT"
-            row.operator("bim.set_tab", text="", emboss=False, icon="MATERIAL").tab = "MATERIALS"
+            row.operator("bim.set_tab", text="", emboss=False, icon="MATERIAL").tab = "GEOMETRY"
             row.operator("bim.set_tab", text="", emboss=False, icon="DOCUMENTS").tab = "DRAWINGS"
             row.operator("bim.set_tab", text="", emboss=False, icon="NETWORK_DRIVE").tab = "SERVICES"
             row.operator("bim.set_tab", text="", emboss=False, icon="EDITMODE_HLT").tab = "STRUCTURE"
             row.operator("bim.set_tab", text="", emboss=False, icon="NLA").tab = "SCHEDULING"
             row.operator("bim.set_tab", text="", emboss=False, icon="PACKAGE").tab = "FM"
-            row.operator("bim.set_tab", text="", emboss=False, icon="COLLAPSEMENU").tab = "OTHER"
+            row.operator("bim.set_tab", text="", emboss=False, icon="COMMUNITY").tab = "QUALITY"
             row.operator("bim.set_tab", text="", emboss=False, icon="BLENDER").tab = "BLENDER"
             row.operator("bim.switch_tab", text="", emboss=False, icon="UV_SYNC_SELECT")
 
@@ -304,13 +304,13 @@ class BIM_PT_root(Panel):
             for tab in [
                 "PROJECT",
                 "OBJECT",
-                "MATERIALS",
+                "GEOMETRY",
                 "DRAWINGS",
                 "SERVICES",
                 "STRUCTURE",
                 "SCHEDULING",
                 "FM",
-                "OTHER",
+                "QUALITY",
                 "BLENDER",
                 "SWITCH",
             ]:
@@ -360,11 +360,10 @@ class BIM_PT_collaboration(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "OTHER")
+        return tool.Blender.is_tab(context, "QUALITY")
 
     def draw(self, context):
         pass
@@ -390,7 +389,6 @@ class BIM_PT_geometry(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
     def poll(cls, context):
@@ -405,7 +403,6 @@ class BIM_PT_4D5D(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
     def poll(cls, context):
@@ -420,7 +417,6 @@ class BIM_PT_structural(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
     def poll(cls, context):
@@ -435,7 +431,6 @@ class BIM_PT_services(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
     def poll(cls, context):
@@ -450,11 +445,10 @@ class BIM_PT_quality_control(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "OTHER")
+        return tool.Blender.is_tab(context, "QUALITY")
 
     def draw(self, context):
         pass
@@ -469,7 +463,7 @@ class BIM_PT_integrations(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "OTHER")
+        return tool.Blender.is_tab(context, "QUALITY")
 
     def draw(self, context):
         pass
@@ -497,11 +491,10 @@ class BIM_PT_geometry_object(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 1
-    bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "OBJECT") and tool.Ifc.get()
+        return tool.Blender.is_tab(context, "GEOMETRY") and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -513,27 +506,10 @@ class BIM_PT_services_object(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 1
-    bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "OBJECT") and tool.Ifc.get()
-
-    def draw(self, context):
-        pass
-
-
-class BIM_PT_utilities_object(Panel):
-    bl_label = "Utilities"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-    bl_order = 1
-    bl_options = {"DEFAULT_CLOSED"}
-
-    @classmethod
-    def poll(cls, context):
-        return tool.Blender.is_tab(context, "OBJECT") and tool.Ifc.get()
+        return tool.Blender.is_tab(context, "SERVICES") and tool.Ifc.get()
 
     def draw(self, context):
         pass

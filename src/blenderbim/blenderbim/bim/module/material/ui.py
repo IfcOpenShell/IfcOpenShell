@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import blenderbim.bim.helper
+import blenderbim.tool as tool
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import draw_attributes
@@ -115,11 +116,12 @@ class BIM_PT_object_material(Panel):
     bl_idname = "BIM_PT_object_material"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "object"
-    bl_parent_id = "BIM_PT_object_metadata"
+    bl_context = "scene"
 
     @classmethod
     def poll(cls, context):
+        if not tool.Blender.is_tab(context, "GEOMETRY"):
+            return False
         if not context.active_object:
             return False
         props = context.active_object.BIMObjectProperties

@@ -142,7 +142,6 @@ classes = [
     ui.BIM_PT_object_metadata,
     ui.BIM_PT_geometry_object,
     ui.BIM_PT_services_object,
-    ui.BIM_PT_utilities_object,
     ui.BIM_PT_misc_object,
 ]
 

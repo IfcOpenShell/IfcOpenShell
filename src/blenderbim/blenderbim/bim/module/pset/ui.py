@@ -544,7 +544,7 @@ class BIM_PT_bulk_property_editor(Panel):
     bl_region_type = "WINDOW"
     bl_context = "object"
     bl_options = {"DEFAULT_CLOSED"}
-    bl_parent_id = "BIM_PT_utilities_object"
+    bl_parent_id = "BIM_PT_misc_object"
 
     def draw(self, context):
         pass
