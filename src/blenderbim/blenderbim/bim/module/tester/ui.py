@@ -18,6 +18,7 @@
 
 import blenderbim.tool as tool
 from bpy.types import Panel, UIList
+import json
 
 
 class BIM_PT_tester(Panel):
@@ -52,7 +53,7 @@ class BIM_PT_tester(Panel):
 
         if self.props.has_report:
             self.layout.template_list(
-                "BIM_UL_tester",
+                "BIM_UL_tester_specifications",
                 "",
                 self.props,
                 "specifications",
@@ -64,21 +65,60 @@ class BIM_PT_tester(Panel):
 
     def draw_editable_ui(self, context):
         props = context.scene.IfcTesterProperties
-        row = self.layout.row()
-        row.label(text="Failed entities: " + str(props.entities))
+        i = props.active_specification_index
+        dic_report = json.loads(props.report)
         
+        total_successes = dic_report[i]['total_successes']
+        total = dic_report[i]['total']
+        percentage = dic_report[i]['percentage']        
+        n_requirements = len(dic_report[i]['requirements'])
+
+        row = self.layout.row()
+        row.label(text = f"Passed: {total_successes}/{total} ({percentage}%)")
+        row = self.layout.row()
+        row.label(text = f"Requirements ({n_requirements}):")
+        c=1
+        box = self.layout.box()        
+        for req in dic_report[i]['requirements']:
+            row = box.row(align=True)
+            row.label(text=f" {c}. {req['description']}")
+            if req['status']:
+                row.label(text="PASS")
+            else:
+                row.label(text="FAIL")
+            op = row.operator("bim.select_requirement", text="", icon="RESTRICT_SELECT_OFF")
+            op.spec_index = i
+            op.req_index = c - 1
+            c += 1
+        if props.has_entities:
+            self.layout.template_list(
+                "BIM_UL_tester_failed_entities",
+                "",
+                self.props,
+                "failed_entities",
+                self.props,
+                "active_failed_entity_index",
+            )
 
         
-class BIM_UL_tester(UIList):
+class BIM_UL_tester_specifications(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         props = context.scene.IfcTesterProperties
         if item:
-            icon = "MOD_MESHDEFORM"
+            icon = "WORDWRAP_ON"
             row = layout.row(align=True)
             row.label(text=item.name or "Unnamed", icon=icon)
             if item.status:
                 row.label(text="PASS")
             else:
                 row.label(text="FAIL")
-            op = row.operator("bim.select_specification", text="", icon="VIEWZOOM")
-            op.spec = item.failed_entities
+
+class BIM_UL_tester_failed_entities(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        props = context.scene.IfcTesterProperties
+        if item:
+            icon = "WORDWRAP_ON"
+            row = layout.row(align=True)
+            row.label(text=item.reason)
+            row.label(text=eval(item.element).Name)
+

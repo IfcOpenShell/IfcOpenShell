@@ -28,7 +28,6 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-import bpy.props
 
 def purge():
     pass
@@ -37,23 +36,29 @@ def get_failure_entities():
     return
 
 
+
 class Specification(PropertyGroup):
     name: StringProperty(name="Name")
-    failed_entities: IntProperty(name="Failed Entities")
-    description : StringProperty(name="Description")
     status : BoolProperty(default=False, name="Status")
-    sucess : IntProperty(name="Total sucess")
-    ifc_definition_id: IntProperty(name="IFC Definition ID")
+
+class FailedEntities(PropertyGroup):
+    reason: StringProperty(name="Reason")
+    element: StringProperty(name="Element")
+    
 
 class IfcTesterProperties(PropertyGroup):
-    specs: StringProperty(default="", name="IDS File")
-    report: StringProperty(default="", name="JSON report")
+    specs: StringProperty(default="", name="IDS File")    
     ifc_file: StringProperty(default="", name="IFC File")
     should_load_from_memory: BoolProperty(default=False, name="Load from Memory")
-    active_specification_index: IntProperty(name="Active Specification Index")
+    
+    active_specification_index: IntProperty(name="Active Specification Index")   
+    active_requirement_index: IntProperty(name="Active Requirement Index")
+    active_failed_entity_index: IntProperty(name="Active Failed Entity Index")  
+    report: StringProperty(default="", name="JSON report")
     specifications: CollectionProperty(name="Specifications", type=Specification)
-    named_specifications: EnumProperty(items=[("11111", "11111", "11")], name="Named Unit Types")
+    failed_entities: CollectionProperty(name="FailedEntities", type=FailedEntities)
     has_report : BoolProperty(default=False, name="")
-    entities : IntProperty(name="Failed Entities")
+    has_entities : BoolProperty(default=False, name="")
+
 
     
