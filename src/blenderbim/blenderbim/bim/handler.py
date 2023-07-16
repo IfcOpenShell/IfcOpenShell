@@ -209,7 +209,7 @@ def loadIfcStore(scene):
 def undo_post(scene):
     if IfcStore.last_transaction != bpy.context.scene.BIMProperties.last_transaction:
         IfcStore.last_transaction = bpy.context.scene.BIMProperties.last_transaction
-        IfcStore.undo()
+        IfcStore.undo(until_key=bpy.context.scene.BIMProperties.last_transaction)
         purge_module_data()
     tool.Ifc.rebuild_element_maps()
 
@@ -218,7 +218,7 @@ def undo_post(scene):
 def redo_post(scene):
     if IfcStore.last_transaction != bpy.context.scene.BIMProperties.last_transaction:
         IfcStore.last_transaction = bpy.context.scene.BIMProperties.last_transaction
-        IfcStore.redo()
+        IfcStore.redo(until_key=bpy.context.scene.BIMProperties.last_transaction)
         purge_module_data()
     tool.Ifc.rebuild_element_maps()
 
