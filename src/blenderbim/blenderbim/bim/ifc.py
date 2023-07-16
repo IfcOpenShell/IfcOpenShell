@@ -366,21 +366,35 @@ class IfcStore:
         IfcStore.future = []
 
     @staticmethod
-    def undo():
+    def undo(until_key=None):
         BrickStore.undo()
         if not IfcStore.history:
             return
-        event = IfcStore.history.pop()
-        for transaction in event["operations"][::-1]:
-            transaction["rollback"](transaction["data"])
-        IfcStore.future.append(event)
+
+        while IfcStore.history:
+            if IfcStore.history[-1]["key"] == until_key:
+                return
+
+            event = IfcStore.history.pop()
+            for transaction in event["operations"][::-1]:
+                transaction["rollback"](transaction["data"])
+            IfcStore.future.append(event)
 
     @staticmethod
-    def redo():
+    def redo(until_key=None):
         BrickStore.redo()
+
         if not IfcStore.future:
             return
-        event = IfcStore.future.pop()
-        for transaction in event["operations"]:
-            transaction["commit"](transaction["data"])
-        IfcStore.history.append(event)
+
+        has_encountered_key = False
+        while IfcStore.future:
+            if has_encountered_key and IfcStore.future[-1]["key"] != until_key:
+                return
+            elif IfcStore.future[-1]["key"] == until_key:
+                has_encountered_key = True
+
+            event = IfcStore.future.pop()
+            for transaction in event["operations"]:
+                transaction["commit"](transaction["data"])
+            IfcStore.history.append(event)
