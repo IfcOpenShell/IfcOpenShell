@@ -238,3 +238,121 @@ class BIM_UL_object_systems(UIList):
             row = layout.row(align=True)
             row.label(text=item.name, icon=system_icons[item.ifc_class])
             row.operator("bim.assign_system", text="", icon="ADD").system = item.ifc_definition_id
+
+class BIM_PT_systems_navigator_main_panel(Panel):
+    bl_label = "System Navigator"
+    bl_idname = "BIM_PT_systems_navigator_main_panel"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_services"
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def draw(self, context):
+        layout = layout
+        #row = layout.row()
+
+class BIM_PT_systems_navigator_sub_panel(Panel):
+    bl_parent_id = "BIM_PT_systems_navigator_main_panel"
+    bl_label = "Sub panel name assigned by a for loop"
+    bl_idname = "Id name assigned by a for loop"
+    bl_space_type = BIM_PT_systems_navigator_main_panel.bl_space_type
+    bl_region_type = BIM_PT_systems_navigator_main_panel.bl_region_type
+    bl_options = {"DEFAULT_CLOSED"}
+    ifc_systems = "Assigned by a for loop"
+    
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def draw(self, context):
+        for system in ifc_systems:
+            layout = layout
+            col = layout.column(align=True)
+            row = col.row(align=True)
+            row.label(text=str(system.Name))
+            #info = row.operator(SelectSystemProductsByGuid.bl_idname,icon="INFO")
+            info = row.operator(GetIfcSystemInfoByGuid.bl_idname,icon="INFO")
+            select = row.operator(SelectSystemProductsByGuid.bl_idname,icon="RESTRICT_SELECT_OFF")
+            edit = row.operator(IfcSystemEditingPanel.bl_idname,icon="GREASEPENCIL")
+            #edit.ifcSystemColor = (0.3,0.7,0.2,1.0)
+            for op in [info, select, edit]:
+                op.guid = system.GlobalId
+
+
+def get_ifc_systems_in_current_file():
+    ifcSystemObjectTypeDict = {}
+    for ifcSystem in tool.Ifc.get().by_type("IfcSystem"):
+        ifcSystemObjectType = ifcSystem.ObjectType
+        if ifcSystemObjectType in ifcSystemObjectTypeDict:
+            ifcSystemObjectTypeDict[ifcSystemObjectType].append(ifcSystem)
+        else:
+            ifcSystemObjectTypeDict[ifcSystemObjectType] = [ifcSystem]
+
+    for ifcSystemKey in ifcSystemObjectTypeDict:
+        strNumDict = {}
+        strOnlyList = []
+        for ifcSystemName in ([ifcSystem.Name for ifcSystem in ifcSystemObjectTypeDict[ifcSystemKey]]):
+            index = ifcSystemName.rfind(" ")
+            if index >= 0:
+                num = ifcSystemName[index+1:]
+                if num.isdigit():
+                    name = ifcSystemName[:index]
+                    #print(name, num)
+                    if name in strNumDict:
+                        strNumDict[name].append(num)
+                    else:
+                        strNumDict[name] = [num]
+                else:
+                    strOnlyList.append(ifcSystemName)
+        sortedList = []
+        for key in sorted(strNumDict.keys()):
+            tempNumList = [int(num) for num in sorted(strNumDict[key])]
+            for tempNum in sorted(tempNumList):
+                sortedList.append(f"{str(key)} {str(tempNum)}")
+        sortedIfcSystemName = sortedList+ sorted(strOnlyList)
+
+        tempList = []
+        for sortedName in sortedIfcSystemName:
+            for ifcSystem in ifcSystemObjectTypeDict[ifcSystemKey]:
+                if ifcSystem.Name == sortedName:
+                    tempList.append(ifcSystem)
+        ifcSystemObjectTypeDict[ifcSystemKey] = tempList
+    return (ifcSystemObjectTypeDict)
+
+ifcSystemObjectTypeDict = get_ifc_systems_in_current_file()
+
+def CreatingSubPanels():
+    for key in sorted(BIM_PT_systems_navigator_main_panel.ifcSystemObjectTypeDict):
+        id = f"BIM_PT_systems_navigator_sub_panel_{key}"
+        print(BIM_PT_systems_navigator_main_panel.ifcSystemObjectTypeDict[str(key)])
+        panel = type(id,
+            (BIM_PT_systems_navigator_sub_panel, Panel, ),
+            {"bl_idname" : id,
+            "bl_label" : str(key),
+            "ifc_systems" : BIM_PT_systems_navigator_main_panel.ifcSystemObjectTypeDict[str(key)],
+             "count" : key}
+            )
+        classes.append(panel)
+
+CreatingSubPanels()
+
+def register():
+    from bpy.utils import register_class
+    for cls in classes:
+        register_class(cls)
+
+def unregister():
+    from bpy.utils import unregister_class
+    for cls in reversed(classes):
+        try:
+            unregister_class(cls)
+        except:
+            pass
+
+if __name__ == "__main__":
+    register()

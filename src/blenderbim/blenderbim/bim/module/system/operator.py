@@ -204,3 +204,107 @@ class SetFlowDirection(bpy.types.Operator, Operator):
         core.set_flow_direction(
             tool.Ifc, tool.System, port=tool.Ifc.get_entity(context.active_object), direction=self.direction
         )
+
+
+class SelectSystemProductsByGuid(bpy.types.Operator, Operator):
+    """Select All IFC Products in the IFC System"""
+    bl_idname = "bim.select_system_products_by_guid"
+    bl_label = "Select System Projects By Guid"
+    
+    guid: bpy.props.StringProperty(
+      name = "",
+      default = "")
+    
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        ifcSystem = blenderbim.tool.Ifc.get().by_guid(self.guid)
+        [obj.select_set(False) for obj in bpy.data.objects]
+        blenderbim.tool.System.select_system_products(ifcSystem)
+        return {'FINISHED'}
+
+
+class GetIfcSystemInfoByGuid(bpy.types.Operator, Operator):
+    """View IFC System Info"""
+    bl_idname = "bim.get_ifc_system_info_by_guid"
+    bl_label = "Get Ifc System Info By Guid"
+    
+    guid: bpy.props.StringProperty(
+        name = "",
+        default = "")
+
+    @classmethod
+    def poll(cls, context):
+        return True
+    
+    def execute(self, context):
+        ifcSystem = blenderbim.tool.Ifc.get().by_guid(self.guid)
+        print(ifcSystem.get_info())
+        #self.report({"INFO"}, "This is a test")
+        return {'FINISHED'}
+    
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width = 300)
+    
+    def draw(self, context):
+        ifcSystem = blenderbim.tool.Ifc.get().by_guid(self.guid)
+        ifcSystemInfo = ifcSystem.get_info()
+        self.row = self.layout
+        for info in ifcSystemInfo:
+            self.row = self.layout.split(factor = 0.3)
+            self.row.label(text = info)
+            self.row.label(text = str(ifcSystemInfo[info]))
+            self.row = self.layout.row()
+
+
+class IfcSystemEditingPanel(bpy.types.Operator, Operator):
+    """Edit IFC System Info or Appearence"""
+    bl_idname = "bim.ifc_system_editing_panel"
+    bl_label = "Ifc System Editing Panel"
+    
+    guid: bpy.props.StringProperty(
+        name = "",
+        default = "")
+    
+    ifcSystemColor: bpy.props.FloatVectorProperty(
+        name = "Color Picker",
+        subtype = "COLOR",
+        size = 4,
+        min = 0.0,
+        max = 1.0,
+        default = (0,0,0,0) #Controlled by BIM_PT_systems_navigator_sub_panel
+        )
+
+    def execute(self, context):
+        for relatedObj in self.ifcSystemProductList:
+            entity = self.file.by_guid(relatedObj.GlobalId)
+            obj = tool.Ifc.get_object(entity)
+            if obj is not None:
+                obj.color = self.ifcSystemColor
+        return {'FINISHED'}
+    
+    def invoke(self, context, event):
+        self.file = tool.Ifc.get()
+        self.ifcSystem = self.file.by_guid(self.guid)
+        self.commonColor = []
+        self.ifcSystemProductList = self.ifcSystem.IsGroupedBy[0].RelatedObjects
+        for relatedObj in self.ifcSystemProductList:
+            entity = self.file.by_guid(relatedObj.GlobalId)
+            obj = tool.Ifc.get_object(entity)
+            if obj is not None:
+                self.commonColor.append((obj.color[0],obj.color[1],obj.color[2],obj.color[3]))
+        self.uniqueColor = set(self.commonColor)
+        self.colorCount = 0
+        for unique in self.uniqueColor:
+            count = self.commonColor.count(unique)
+            if count > self.colorCount:
+                colorCount = count
+                self.ifcSystemColor = unique
+        return context.window_manager.invoke_props_dialog(self, width = 250)
+    
+    def draw(self, context):
+        self.col = self.layout.row().split(factor = 0.4)
+        self.col.label(text = "System Color")
+        self.col.prop(self, "ifcSystemColor", text="")

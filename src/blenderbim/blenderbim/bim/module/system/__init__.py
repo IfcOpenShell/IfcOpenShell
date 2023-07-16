@@ -45,6 +45,11 @@ classes = (
     ui.BIM_PT_port,
     ui.BIM_UL_systems,
     ui.BIM_UL_object_systems,
+    operator.SelectSystemProductsByGuid,
+    operator.GetIfcSystemInfoByGuid,
+    operator.IfcSystemEditingPanel,
+    ui.BIM_PT_systems_navigator_main_panel,
+    ui.BIM_PT_systems_navigator_sub_panel
 )
 
 
