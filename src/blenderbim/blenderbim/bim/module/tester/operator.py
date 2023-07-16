@@ -67,16 +67,13 @@ class ExecuteIfcTester(bpy.types.Operator):
             report = ifctester.reporter.Json(specs).report()['specifications']
             if report:
                 props.has_report = True
-            print(report)
+                props.report = json.dumps(report)
             props.specifications.clear()
+            c=0
             for spec in report:
-                new = props.specifications.add()
-                new.name = spec['name']
-                new.status = spec['status']
-                new.sucess = spec['total_sucess']
-                new.description = spec['requirements'][0]['description']
-                new.failed_entities = len(spec['requirements'][0]['failed_entities'])                          
-
+                new_spec = props.specifications.add()
+                new_spec.name = spec['name']
+                new_spec.status = spec['status']
 
         return {"FINISHED"}
 
@@ -114,12 +111,25 @@ class SelectIfcTesterIfcFile(bpy.types.Operator):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
 
-class SelectSpecification(bpy.types.Operator):
-    bl_idname = "bim.select_specification"
+
+class SelectRequirement(bpy.types.Operator):
+    bl_idname = "bim.select_requirement"
     bl_label = "Select Specification"
     bl_options = {"REGISTER", "UNDO"}
-    spec: bpy.props.IntProperty()   
+    spec_index: bpy.props.IntProperty()
+    req_index: bpy.props.IntProperty() 
 
     def execute(self, context):
-        context.scene.IfcTesterProperties.entities = self.spec
+        props = context.scene.IfcTesterProperties
+        props.has_entities = True
+        report = json.loads(props.report)
+        props.failed_entities.clear()
+        failed_entities = report[self.spec_index]['requirements'] [self.req_index]['failed_entities']
+        print(failed_entities)
+        for e in failed_entities:
+            new_entity = props.failed_entities.add()
+            new_entity.reason = e['reason']
+            new_entity.element = e['element']
+
+
         return {"FINISHED"}
