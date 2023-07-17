@@ -72,7 +72,7 @@ class BIM_PT_spatial(Panel):
                 if SpatialData.data["is_directly_contained"]:
                     row.operator("bim.remove_container", icon="X", text="")
             else:
-                row.label(text="This object is not spatially contained")
+                row.label(text="No Spatial Container")
                 row.operator("bim.enable_editing_container", icon="GREASEPENCIL", text="")
             for reference in SpatialData.data["references"]:
                 row = self.layout.row()

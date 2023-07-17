@@ -56,6 +56,8 @@ class TypeData:
             return []
         version = tool.Ifc.get_schema()
         types = ifcopenshell.util.type.get_applicable_types(element.is_a(), schema=version)
+        if element.is_a("IfcAnnotation"):
+            types.append("IfcTypeProduct")
         results.extend((t, t, get_entity_doc(version, t).get("description", "")) for t in types)
         return results
 
