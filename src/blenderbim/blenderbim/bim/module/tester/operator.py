@@ -54,6 +54,7 @@ class ExecuteIfcTester(bpy.types.Operator):
             print("Finished loading:", time.time() - start)
             start = time.time()
             specs.validate(ifc)
+            print(specs)
             
             print("Finished validating:", time.time() - start)
             start = time.time()
@@ -127,9 +128,22 @@ class SelectRequirement(bpy.types.Operator):
         failed_entities = report[self.spec_index]['requirements'] [self.req_index]['failed_entities']
         print(failed_entities)
         for e in failed_entities:
-            new_entity = props.failed_entities.add()
-            new_entity.reason = e['reason']
+            new_entity = props.failed_entities.add()            
             new_entity.element = e['element']
-
-
+            new_entity.reason = e['reason']
         return {"FINISHED"}
+
+class SelectEntity(bpy.types.Operator):
+    bl_idname = "bim.select_entity"
+    bl_label = "Select Entity"
+    bl_options = {"REGISTER", "UNDO"}
+    ifc_id: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bpy.ops.object.select_all(action='DESELECT')
+        for obj in context.scene.objects:
+            if obj.BIMObjectProperties.ifc_definition_id == self.ifc_id:
+                obj.select_set(True)
+                bpy.context.view_layer.objects.active = obj
+        return {"FINISHED"}
+
