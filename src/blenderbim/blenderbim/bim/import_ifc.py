@@ -692,7 +692,7 @@ class IfcImporter:
                     mesh = self.create_native_faceted_brep(element, mesh_name)
                 elif native_data["type"] == "IfcFaceBasedSurfaceModel":
                     mesh = self.create_native_faceted_brep(element, mesh_name)
-                mesh.BIMMeshProperties.ifc_definition_id = representation.id()
+                tool.Ifc.link(representation, mesh)
                 mesh.name = mesh_name
                 self.meshes[mesh_name] = mesh
             self.create_product(element, mesh=mesh)
@@ -921,7 +921,7 @@ class IfcImporter:
         return result
 
     def create_pointcloud(self, product, representation):
-        placement_matrix = ifcopenshell.util.placement.get_local_placement(product.ObjectPlacement)
+        placement_matrix = self.get_element_matrix(product)
         vertex_list = []
         for item in representation.Items:
             if item.is_a("IfcCartesianPointList"):
@@ -937,6 +937,7 @@ class IfcImporter:
         mesh_name = f"{representation.ContextOfItems.id()}/{representation.id()}"
         mesh = bpy.data.meshes.new(mesh_name)
         mesh.from_pydata(vertex_list, [], [])
+        tool.Ifc.link(representation, mesh)
 
         obj = bpy.data.objects.new("{}/{}".format(product.is_a(), product.Name), mesh)
         self.set_matrix_world(obj, self.apply_blender_offset_to_matrix_world(obj, placement_matrix))
