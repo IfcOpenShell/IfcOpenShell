@@ -248,16 +248,16 @@ class AnnotationToolUI:
 
         add_layout_hotkey_operator(cls.layout, "Add", "S_A", "Create a new annotation")
 
-        if object_type in ("TEXT", "STAIR_ARROW"):
+        if object_type in tool.Drawing.ANNOTATION_TYPES_SUPPORT_SETUP:
             add_layout_hotkey_operator(
                 cls.layout,
                 "Bulk Tag",
                 "S_T",
                 "Create new annotations and automatically adjust them to the selected objects",
             )
-        add_layout_hotkey_operator(
-            cls.layout, "Readjust", "S_G", "Readjust tags based on the products they are assigned to"
-        )
+            add_layout_hotkey_operator(
+                cls.layout, "Readjust", "S_G", "Readjust tags based on the products they are assigned to"
+            )
 
 
 class Hotkey(bpy.types.Operator, Operator):
@@ -289,14 +289,18 @@ class Hotkey(bpy.types.Operator, Operator):
 
     def hotkey_S_T(self):
         props = bpy.context.scene.BIMAnnotationProperties
-        object_type = props.object_type
+        annotation_type = props.object_type
+
+        if annotation_type not in tool.Drawing.ANNOTATION_TYPES_SUPPORT_SETUP:
+            self.report({"ERROR"}, f"Annotation type {annotation_type} is not supported for tagging.")
+            return
 
         related_objects = bpy.context.selected_objects
         for related_object in related_objects:
             create_annotation()
             obj = bpy.context.active_object
             bpy.ops.object.mode_set(mode="OBJECT")
-            tool.Drawing.setup_annotation_object(obj, object_type, related_object)
+            tool.Drawing.setup_annotation_object(obj, annotation_type, related_object)
 
     def hotkey_S_A(self):
         create_annotation()
@@ -314,9 +318,15 @@ class Hotkey(bpy.types.Operator, Operator):
             if not element or not element.is_a("IfcAnnotation"):
                 continue
 
+            annotation_type = element.ObjectType
+            if annotation_type not in tool.Drawing.ANNOTATION_TYPES_SUPPORT_SETUP:
+                self.report({"ERROR"}, f"Annotation type {annotation_type} is not supported for readjustment.")
+                continue
+
             related_product = tool.Drawing.get_assigned_product(element)
             if not related_product:
+                self.report({"ERROR"}, "Selected annotation has no product assigned.")
                 continue
             related_object = tool.Ifc.get_object(related_product)
 
-            tool.Drawing.setup_annotation_object(obj, element.ObjectType, related_object)
+            tool.Drawing.setup_annotation_object(obj, annotation_type, related_object)
