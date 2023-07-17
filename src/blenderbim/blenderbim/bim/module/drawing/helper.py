@@ -192,6 +192,8 @@ def format_distance(
                 tx_dist += str(feet) + "'"
             if feet and add_inches:
                 tx_dist += " - "
+            if not feet and value < 0:
+                tx_dist += "-"
             if add_inches:
                 tx_dist += str(inches)
             if add_inches and frac:
