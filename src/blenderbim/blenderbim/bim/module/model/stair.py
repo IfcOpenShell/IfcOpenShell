@@ -215,7 +215,7 @@ def update_stair_modifier(context):
     props_kwargs = obj.BIMStairProperties.get_props_kwargs()
     vertices, edges, faces = generate_stair_2d_profile(**props_kwargs)
 
-    obj = context.object
+    obj = context.active_object
     bm = bmesh.new()
     bm.verts.index_update()
     bm.edges.index_update()
@@ -234,7 +234,7 @@ def update_stair_modifier(context):
     translate_verts = [v for v in extruded["geom"] if isinstance(v, BMVert)]
     bmesh.ops.translate(bm, vec=extrusion_vector, verts=translate_verts)
 
-    if context.object.mode == "EDIT":
+    if context.active_object.mode == "EDIT":
         bmesh.update_edit_mesh(obj.data)
     else:
         bm.to_mesh(obj.data)
@@ -316,9 +316,9 @@ class BIM_OT_add_clever_stair(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "You need to start IFC project first to create a stair.")
             return {"CANCELLED"}
 
-        if context.object is not None:
-            spawn_location = context.object.location.copy()
-            context.object.select_set(False)
+        if context.active_object is not None:
+            spawn_location = context.active_object.location.copy()
+            context.active_object.select_set(False)
         else:
             spawn_location = bpy.context.scene.cursor.location.copy()
 

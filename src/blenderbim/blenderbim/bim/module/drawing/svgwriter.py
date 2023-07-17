@@ -961,7 +961,7 @@ class SvgWriter:
             p0 = points_2d[1] + dir0 * angle_radius
             p2 = points_2d[1] + dir1 * angle_radius
             points_chunk = [view3d_utils.region_2d_to_origin_3d(region, region_3d, p) for p in [p0, p3, p2]]
-            # points = [p.co.xyz for p in bpy.context.object.data.splines[0].points[:3]]
+            # points = [p.co.xyz for p in bpy.context.active_object.data.splines[0].points[:3]]
 
             bm = bmesh.new()
             bm.verts.index_update()
