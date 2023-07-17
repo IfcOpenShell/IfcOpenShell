@@ -190,6 +190,13 @@ class IfcStore:
 
     @staticmethod
     def link_element(element, obj):
+        # Please use tool.Ifc.link() instead of this method. We want to
+        # refactor this class and deprecate usage of IfcStore in favour of
+        # tools.
+        if isinstance(obj, bpy.types.Mesh):
+            obj.BIMMeshProperties.ifc_definition_id = element.id()
+            return
+
         existing_obj = IfcStore.id_map.get(element.id(), None)
         if existing_obj == obj:
             return

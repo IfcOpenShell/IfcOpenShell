@@ -126,23 +126,36 @@ classes = [
     ui.BIM_UL_generic,
     ui.BIM_UL_topics,
     ui.BIM_ADDON_preferences,
-    # Scene panel groups
-    ui.BIM_PT_root,
+    # Project overview
     ui.BIM_PT_project_info,
     ui.BIM_PT_project_setup,
-    ui.BIM_PT_collaboration,
-    ui.BIM_PT_selection,
     ui.BIM_PT_geometry,
-    ui.BIM_PT_services,
-    ui.BIM_PT_structural,
-    ui.BIM_PT_4D5D,
-    ui.BIM_PT_quality_control,
-    ui.BIM_PT_integrations,
-    # Object panel groups
-    ui.BIM_PT_object_metadata,
-    ui.BIM_PT_geometry_object,
-    ui.BIM_PT_services_object,
-    ui.BIM_PT_misc_object,
+    ui.BIM_PT_selection,
+    # Tabs panel
+    ui.BIM_PT_tabs,
+    # Object information
+    ui.BIM_PT_tab_object_metadata,
+    ui.BIM_PT_tab_misc,
+    # Geometry and materials
+    ui.BIM_PT_tab_representations,
+    ui.BIM_PT_tab_geometric_relationships,
+    ui.BIM_PT_tab_materials,
+    ui.BIM_PT_tab_styles,
+    # Drawings and documents
+    # Services and systems
+    ui.BIM_PT_tab_services,
+    ui.BIM_PT_tab_services_object,
+    # Structural analysis
+    ui.BIM_PT_tab_structural,
+    # Construction scheduling
+    ui.BIM_PT_tab_4D5D,
+    # Facility management
+    ui.BIM_PT_tab_handover,
+    ui.BIM_PT_tab_operations,
+    # Quality and coordination
+    ui.BIM_PT_tab_quality_control,
+    ui.BIM_PT_tab_collaboration,
+    ui.BIM_PT_tab_integrations,
 ]
 
 for mod in modules.values():
