@@ -27,10 +27,7 @@ class BIM_PT_cobie(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-
-    @classmethod
-    def poll(cls, context):
-        return tool.Blender.is_tab(context, "FM")
+    bl_parent_id = "BIM_PT_tab_handover"
 
     def draw(self, context):
         layout = self.layout

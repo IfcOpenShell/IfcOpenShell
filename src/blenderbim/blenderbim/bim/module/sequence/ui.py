@@ -31,7 +31,7 @@ class BIM_PT_work_plans(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_4D5D"
+    bl_parent_id = "BIM_PT_tab_4D5D"
 
     @classmethod
     def poll(cls, context):
@@ -103,7 +103,7 @@ class BIM_PT_work_schedules(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_4D5D"
+    bl_parent_id = "BIM_PT_tab_4D5D"
 
     @classmethod
     def poll(cls, context):
@@ -817,7 +817,7 @@ class BIM_PT_work_calendars(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_4D5D"
+    bl_parent_id = "BIM_PT_tab_4D5D"
 
     @classmethod
     def poll(cls, context):
