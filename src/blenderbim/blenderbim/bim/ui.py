@@ -505,6 +505,23 @@ class BIM_PT_tab_geometric_relationships(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 1
+    bl_options = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "GEOMETRY") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_parametric_geometry(Panel):
+    bl_label = "Parametric Geometry"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_order = 1
+    bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
     def poll(cls, context):
