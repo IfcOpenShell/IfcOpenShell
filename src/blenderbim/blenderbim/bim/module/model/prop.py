@@ -99,7 +99,7 @@ class BIMModelProperties(PropertyGroup):
     )
     occurrence_name_function: bpy.props.StringProperty(name="Occurrence Name Function")
     getter_enum = {"ifc_class": get_ifc_class, "relating_type": get_relating_type_id}
-    extrusion_depth: bpy.props.FloatProperty(default=42.0, subtype="DISTANCE")
+    extrusion_depth: bpy.props.FloatProperty(min=0.001, default=42.0, subtype="DISTANCE")
     cardinal_point: bpy.props.EnumProperty(
         items=(
             # TODO: complain to buildingSMART
