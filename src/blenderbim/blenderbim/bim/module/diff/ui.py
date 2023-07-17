@@ -30,7 +30,7 @@ class BIM_PT_diff(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_quality_control"
+    bl_parent_id = "BIM_PT_tab_quality_control"
 
     def draw(self, context):
         if not DiffData.is_loaded:

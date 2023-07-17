@@ -26,7 +26,7 @@ class BIM_PT_cityjson_converter(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_collaboration"
+    bl_parent_id = "BIM_PT_tab_collaboration"
 
     def draw(self, context):
         layout = self.layout

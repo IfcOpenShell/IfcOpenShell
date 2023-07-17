@@ -270,7 +270,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
 
 
 # Scene panel groups
-class BIM_PT_root(Panel):
+class BIM_PT_tabs(Panel):
     bl_label = "BlenderBIM Add-on"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -283,7 +283,6 @@ class BIM_PT_root(Panel):
             aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
 
             row = self.layout.row()
-            row.scale_y = 0.75  # Yes, we actually do this.
             row.operator(
                 "bim.set_tab", text="", emboss=False, icon_value=blenderbim.bim.icons["IFC"].icon_id
             ).tab = "PROJECT"
@@ -298,7 +297,7 @@ class BIM_PT_root(Panel):
             row.operator("bim.set_tab", text="", emboss=False, icon="BLENDER").tab = "BLENDER"
             row.operator("bim.switch_tab", text="", emboss=False, icon="UV_SYNC_SELECT")
 
-            # Yes, that's right, we're still doing this.
+            # Yes, that's right.
             row = self.layout.row()
             row.scale_y = 0.2
             for tab in [
@@ -355,7 +354,7 @@ class BIM_PT_project_setup(Panel):
         pass
 
 
-class BIM_PT_collaboration(Panel):
+class BIM_PT_tab_collaboration(Panel):
     bl_label = "Collaboration"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -398,7 +397,7 @@ class BIM_PT_geometry(Panel):
         pass
 
 
-class BIM_PT_4D5D(Panel):
+class BIM_PT_tab_4D5D(Panel):
     bl_label = "Costing and Scheduling"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -412,7 +411,7 @@ class BIM_PT_4D5D(Panel):
         pass
 
 
-class BIM_PT_structural(Panel):
+class BIM_PT_tab_structural(Panel):
     bl_label = "Structural"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -426,7 +425,7 @@ class BIM_PT_structural(Panel):
         pass
 
 
-class BIM_PT_services(Panel):
+class BIM_PT_tab_services(Panel):
     bl_label = "Services"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -440,7 +439,7 @@ class BIM_PT_services(Panel):
         pass
 
 
-class BIM_PT_quality_control(Panel):
+class BIM_PT_tab_quality_control(Panel):
     bl_label = "Quality Control"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -454,7 +453,7 @@ class BIM_PT_quality_control(Panel):
         pass
 
 
-class BIM_PT_integrations(Panel):
+class BIM_PT_tab_integrations(Panel):
     bl_label = "BIM Integrations"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -470,7 +469,7 @@ class BIM_PT_integrations(Panel):
 
 
 # Object panel groups
-class BIM_PT_object_metadata(Panel):
+class BIM_PT_tab_object_metadata(Panel):
     bl_label = "Object Metadata"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -485,8 +484,8 @@ class BIM_PT_object_metadata(Panel):
         pass
 
 
-class BIM_PT_geometry_object(Panel):
-    bl_label = "Geometry"
+class BIM_PT_tab_representations(Panel):
+    bl_label = "Representations"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -500,7 +499,52 @@ class BIM_PT_geometry_object(Panel):
         pass
 
 
-class BIM_PT_services_object(Panel):
+class BIM_PT_tab_geometric_relationships(Panel):
+    bl_label = "Geometric Relationships"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_order = 1
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "GEOMETRY") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_materials(Panel):
+    bl_label = "Materials"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_order = 1
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "GEOMETRY") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_styles(Panel):
+    bl_label = "Styles"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_order = 1
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "GEOMETRY") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_services_object(Panel):
     bl_label = "Services"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -515,7 +559,7 @@ class BIM_PT_services_object(Panel):
         pass
 
 
-class BIM_PT_misc_object(Panel):
+class BIM_PT_tab_misc(Panel):
     bl_label = "Misc."
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -526,6 +570,36 @@ class BIM_PT_misc_object(Panel):
     @classmethod
     def poll(cls, context):
         return tool.Blender.is_tab(context, "OBJECT") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_handover(Panel):
+    bl_label = "Commissioning and Handover"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_order = 1
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "FM") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_operations(Panel):
+    bl_label = "Operations and Maintenance"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_order = 2
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "FM") and tool.Ifc.get()
 
     def draw(self, context):
         pass

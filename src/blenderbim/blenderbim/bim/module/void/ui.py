@@ -30,7 +30,7 @@ class BIM_PT_voids(Panel):
     bl_region_type = "WINDOW"
     bl_context = "object"
     bl_order = 1
-    bl_parent_id = "BIM_PT_geometry_object"
+    bl_parent_id = "BIM_PT_tab_geometric_relationships"
 
     @classmethod
     def poll(cls, context):
