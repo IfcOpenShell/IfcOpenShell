@@ -46,10 +46,9 @@ def get_namespaces(self, context):
     return BrickStore.namespaces
 
 
-def get_brick_equipment_classes(self, context):
-    if not BrickschemaData.is_loaded:
-        BrickschemaData.load()
-    return BrickschemaData.data["brick_equipment_classes"]
+def get_brick_entity_classes(self, context):
+    entity = context.scene.BIMBrickProperties.brick_entity_create_type
+    return BrickStore.entity_classes[entity]
 
 
 def get_brick_roots(self, context):
@@ -74,9 +73,10 @@ class BIMBrickProperties(PropertyGroup):
     active_brick_index: IntProperty(name="Active Brick Index", update=update_active_brick_index)
     libraries: EnumProperty(name="Libraries", items=get_libraries)
     namespace: EnumProperty(name="Namespace", items=get_namespaces)
-    brick_equipment_class: EnumProperty(name="Brick Equipment Class", items=get_brick_equipment_classes)
+    brick_entity_classes: EnumProperty(name="Brick Equipment Class", items=get_brick_entity_classes)
     brick_settings_toggled: BoolProperty(name="Brick Settings Toggled", default=False)
     new_brick_label: StringProperty(name="New Brick Label")
     new_brick_namespace_alias: StringProperty(name="New Brick Namespace Alias")
     new_brick_namespace_uri: StringProperty(name="New Brick Namespace URI")
     brick_list_root: EnumProperty(name="Brick List Root", items=get_brick_roots)
+    brick_entity_create_type: EnumProperty(name="Brick Entity Types", items=get_brick_roots)

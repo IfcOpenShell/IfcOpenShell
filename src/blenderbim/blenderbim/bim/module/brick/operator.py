@@ -126,7 +126,7 @@ class AddBrick(bpy.types.Operator, Operator):
             tool.Brick,
             element=tool.Ifc.get_entity(context.active_object) if context.selected_objects else None,
             namespace=props.namespace,
-            brick_class=props.brick_equipment_class,
+            brick_class=props.brick_entity_classes,
             library=library,
             label=props.new_brick_label,
         )

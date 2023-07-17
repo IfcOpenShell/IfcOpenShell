@@ -42,7 +42,6 @@ class BrickschemaData:
         cls.data = {
             "is_loaded": cls.get_is_loaded(),
             "attributes": cls.attributes(),
-            "brick_equipment_classes": cls.brick_equipment_classes(),
         }
 
     @classmethod
@@ -101,24 +100,6 @@ class BrickschemaData:
                             "is_globalid": p.toPython().split("#")[-1] == "globalID",
                         }
                     )
-        return results
-
-    @classmethod
-    def brick_equipment_classes(cls):
-        if BrickStore.graph is None:
-            return []
-        results = []
-        query = BrickStore.graph.query(
-            """
-            PREFIX brick: <https://brickschema.org/schema/Brick#>
-            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-            SELECT ?class WHERE {
-                ?class rdfs:subClassOf* brick:Equipment .
-            }
-        """
-        )
-        for uri in sorted([x[0].toPython() for x in query]):
-            results.append((uri, uri.split("#")[-1], ""))
         return results
 
 
