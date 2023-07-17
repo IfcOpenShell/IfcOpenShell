@@ -101,6 +101,8 @@ class LaunchAnnotationTypeManager(bpy.types.Operator):
 
             op = row.operator("bim.select_type", icon="OBJECT_DATA")
             op.relating_type = relating_type["id"]
+            op = row.operator("bim.rename_type", icon="GREASEPENCIL", text="")
+            op.element = relating_type["id"]
             op = row.operator("bim.duplicate_type", icon="DUPLICATE", text="")
             op.element = relating_type["id"]
             op = row.operator("bim.remove_type", icon="X", text="")
