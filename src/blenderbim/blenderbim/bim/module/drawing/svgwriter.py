@@ -502,9 +502,9 @@ class SvgWriter:
                 return pattern
 
             def get_scale(size, direction):
-                vector = direction * size
-                shrinked_vector = size // segment_width * segment_width * direction
-                scale = [1 if vector[i] == 0 else vector[i] / shrinked_vector[i] for i in range(2)]
+                original_edge = direction * size
+                current_svg_segments = ceil(size / segment_width) * segment_width * direction
+                scale = [1 if original_edge[i] == 0 else original_edge[i] / current_svg_segments[i] for i in range(2)]
                 return "scale(%f, %f)" % (scale[0], scale[1])
 
             def poly_to_edges(poly):
@@ -558,11 +558,16 @@ class SvgWriter:
                 pattern_dir = pattern_edge.normalized()
                 pattern_length = pattern_edge.length
 
-                segments = int(pattern_length // segment_width)
+                segments = ceil(pattern_length / segment_width)
                 pattern_dir_step = pattern_dir * segment_width
-                points = [pattern_dir_step * i for i in range(segments)]
+                # it takes atleast 2 points to preserve the edge direction
+                # if there is just 1 segment then we still add second point and then hide the "marker-end"
+                n_points = max(segments, 2)
+                points = [pattern_dir_step * i for i in range(n_points)]
 
-                polyline_style = f"marker: url(#{marker_id}); stroke: none;"
+                polyline_style = f"marker: url(#{marker_id}); stroke: none; "
+                if segments == 1:
+                    polyline_style += "marker-end: none; "
                 polyline_transform = f"translate({start_svg.x}, {start_svg.y}) {get_scale(pattern_length, pattern_dir)}"
                 polyline = self.svg.polyline(
                     points=points, class_=" ".join(classes), style=polyline_style, transform=polyline_transform
