@@ -120,7 +120,7 @@ def update_railing_modifier_bmesh(context):
     """before using should make sure that Data contains up-to-date information.
     If BBIM Pset just changed should call refresh() before updating bmesh
     """
-    obj = context.object
+    obj = context.active_object
     props = obj.BIMRailingProperties
 
     # NOTE: using Data since bmesh update will hapen very often
@@ -274,9 +274,9 @@ class BIM_OT_add_railing(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "You need to start IFC project first to create a railing.")
             return {"CANCELLED"}
 
-        if context.object is not None:
-            spawn_location = context.object.location.copy()
-            context.object.select_set(False)
+        if context.active_object is not None:
+            spawn_location = context.active_object.location.copy()
+            context.active_object.select_set(False)
         else:
             spawn_location = bpy.context.scene.cursor.location.copy()
 
@@ -442,7 +442,7 @@ class EnableEditingRailingPath(bpy.types.Operator, tool.Ifc.Operator):
         props.is_editing_path = True
         update_railing_modifier_bmesh(context)
 
-        if bpy.context.object.mode != "EDIT":
+        if bpy.context.active_object.mode != "EDIT":
             bpy.ops.object.mode_set(mode="EDIT")
         bpy.ops.wm.tool_set_by_id(tool.Blender.get_viewport_context(), name="bim.cad_tool")
         ProfileDecorator.install(context, exit_edit_mode_callback=lambda: cancel_editing_railing_path(context))
@@ -457,7 +457,7 @@ def cancel_editing_railing_path(context):
     props.is_editing_path = False
 
     update_railing_modifier_bmesh(context)
-    if bpy.context.object.mode == "EDIT":
+    if bpy.context.active_object.mode == "EDIT":
         bpy.ops.object.mode_set(mode="OBJECT")
     return {"FINISHED"}
 
@@ -492,7 +492,7 @@ class FinishEditingRailingPath(bpy.types.Operator, tool.Ifc.Operator):
         # since we know that BBIM_Railing could have changed
         refresh()
         update_railing_modifier_bmesh(context)
-        if bpy.context.object.mode == "EDIT":
+        if bpy.context.active_object.mode == "EDIT":
             bpy.ops.object.mode_set(mode="OBJECT")
         update_railing_modifier_ifc_data(context)
         return {"FINISHED"}
