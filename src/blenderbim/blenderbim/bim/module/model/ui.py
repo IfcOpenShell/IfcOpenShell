@@ -172,8 +172,9 @@ class BIM_PT_array(bpy.types.Panel):
     bl_idname = "BIM_PT_array"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "modifier"
+    bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
+    bl_parent_id = "BIM_PT_tab_parametric_geometry"
 
     @classmethod
     def poll(cls, context):
@@ -240,8 +241,9 @@ class BIM_PT_stair(bpy.types.Panel):
     bl_idname = "BIM_PT_stair"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "modifier"
+    bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
+    bl_parent_id = "BIM_PT_tab_parametric_geometry"
 
     @classmethod
     def poll(cls, context):
@@ -298,8 +300,9 @@ class BIM_PT_sverchok(bpy.types.Panel):
     bl_idname = "BIM_PT_sverchok"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "modifier"
+    bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
+    bl_parent_id = "BIM_PT_tab_parametric_geometry"
 
     @classmethod
     def poll(cls, context):
@@ -336,8 +339,9 @@ class BIM_PT_window(bpy.types.Panel):
     bl_idname = "BIM_PT_window"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "modifier"
+    bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
+    bl_parent_id = "BIM_PT_tab_parametric_geometry"
 
     @classmethod
     def poll(cls, context):
@@ -445,8 +449,9 @@ class BIM_PT_door(bpy.types.Panel):
     bl_idname = "BIM_PT_door"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "modifier"
+    bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
+    bl_parent_id = "BIM_PT_tab_parametric_geometry"
 
     @classmethod
     def poll(cls, context):
@@ -518,8 +523,9 @@ class BIM_PT_railing(bpy.types.Panel):
     bl_idname = "BIM_PT_railing"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "modifier"
+    bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
+    bl_parent_id = "BIM_PT_tab_parametric_geometry"
 
     @classmethod
     def poll(cls, context):
@@ -580,8 +586,9 @@ class BIM_PT_roof(bpy.types.Panel):
     bl_idname = "BIM_PT_roof"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "modifier"
+    bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
+    bl_parent_id = "BIM_PT_tab_parametric_geometry"
 
     @classmethod
     def poll(cls, context):
