@@ -29,10 +29,7 @@ class BIM_PT_brickschema(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-
-    @classmethod
-    def poll(cls, context):
-        return tool.Blender.is_tab(context, "FM")
+    bl_parent_id = "BIM_PT_tab_operations"
 
     def draw(self, context):
         if not BrickschemaData.is_loaded:

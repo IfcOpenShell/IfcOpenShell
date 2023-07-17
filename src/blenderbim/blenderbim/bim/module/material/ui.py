@@ -117,6 +117,7 @@ class BIM_PT_object_material(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_materials"
 
     @classmethod
     def poll(cls, context):
