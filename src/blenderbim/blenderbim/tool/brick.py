@@ -269,6 +269,7 @@ class Brick(blenderbim.core.tool.Brick):
             cs.load_file(filepath)
         BrickStore.path = filepath
         BrickStore.load_namespaces()
+        BrickStore.load_entity_classes()
 
     @classmethod
     def new_brick_file(cls):
@@ -280,6 +281,7 @@ class Brick(blenderbim.core.tool.Brick):
             cs.load_file(BrickStore.schema)
         BrickStore.graph.bind("digitaltwin", Namespace("https://example.org/digitaltwin#"))
         BrickStore.load_namespaces()
+        BrickStore.load_entity_classes()
 
     @classmethod
     def pop_brick_breadcrumb(cls):
@@ -343,6 +345,7 @@ class BrickStore:
     current_changesets = 0
     history_size = 64
     namespaces = []
+    entity_classes = {}
 
     @staticmethod
     def purge():
@@ -350,6 +353,7 @@ class BrickStore:
         BrickStore.graph = None
         BrickStore.path = None
         BrickStore.namespaces = []
+        BrickStore.entity_classes = {}
 
     @classmethod
     def get_project(cls):
@@ -367,6 +371,25 @@ class BrickStore:
                     break
             if not ignore_namespace:
                 BrickStore.namespaces.append((uri, f"{alias}: {uri}", ""))
+
+    @classmethod
+    def load_entity_classes(cls):
+        root_classes = ["System", "Location", "Equipment", "Point"]
+        for root_class in root_classes:
+            query = BrickStore.graph.query(
+                """
+                PREFIX brick: <https://brickschema.org/schema/Brick#>
+                PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                SELECT ?class WHERE {
+                    ?class rdfs:subClassOf* brick:{root_class} .
+                }
+            """.replace(
+                    "{root_class}", root_class
+                )
+            )
+            BrickStore.entity_classes[root_class] = []
+            for uri in sorted([x[0].toPython() for x in query]):
+                BrickStore.entity_classes[root_class].append((uri, uri.split("#")[-1], ""))
 
     @classmethod
     def set_history_size(cls, size):
