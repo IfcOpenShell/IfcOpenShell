@@ -332,9 +332,10 @@ class SvgWriter:
             return
 
         classes = self.get_attribute_classes(obj)
-        if len(obj.data.polygons) == 0:
-            self.draw_edge_annotation(obj, classes)
-            return
+        if len(obj.data.vertices) and not len(obj.data.edges):
+            return self.draw_point_annotation(obj, classes)
+        elif len(obj.data.polygons) == 0:
+            return self.draw_edge_annotation(obj, classes)
 
         bm = bmesh.new()
         bm.from_mesh(obj.data)
@@ -836,6 +837,26 @@ class SvgWriter:
             for tag in text_tags:
                 self.svg.add(tag)
             line_number += len(tag.elements)
+
+    def draw_point_annotation(self, obj, classes):
+        x_offset = self.raw_width / 2
+        y_offset = self.raw_height / 2
+
+        matrix_world = obj.matrix_world
+        projected_points = [self.project_point_onto_camera(matrix_world @ v.co) for v in obj.data.vertices]
+
+        element = tool.Ifc.get_entity(obj)
+        svg_id = str(ifcopenshell.util.element.get_predefined_type(element))
+
+        # EPset_AnnotationSurveyArea is not standard! See bSI-4.3 proposal #660.
+        point_type = ifcopenshell.util.element.get_pset(element, "EPset_AnnotationSurveyArea", "PointType")
+        if point_type:
+            svg_id += f"-{point_type}"
+
+        for symbol_position in projected_points:
+            symbol_position = Vector(((x_offset + symbol_position.x), (y_offset - symbol_position.y)))
+            symbol_position_svg = symbol_position * self.svg_scale
+            self.svg.add(self.svg.use(f"#{svg_id}", insert=symbol_position_svg))
 
     def draw_break_annotations(self, obj):
         x_offset = self.raw_width / 2
