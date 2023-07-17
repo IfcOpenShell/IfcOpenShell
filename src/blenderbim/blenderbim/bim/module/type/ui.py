@@ -92,7 +92,7 @@ class BIM_PT_type(Panel):
                 row.operator("bim.enable_editing_type", icon="GREASEPENCIL", text="")
                 row.operator("bim.unassign_type", icon="X", text="")
             else:
-                row.label(text="This object has no type")
+                row.label(text="No Relating Type")
                 row.operator("bim.enable_editing_type", icon="GREASEPENCIL", text="")
 
 
