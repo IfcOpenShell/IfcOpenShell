@@ -51,7 +51,7 @@ def update_sverchok_modifier(context):
     bm.edges.index_update()
     bm.faces.index_update()
 
-    if context.object.mode == "EDIT":
+    if context.active_object.mode == "EDIT":
         bmesh.update_edit_mesh(obj.data)
     else:
         bm.to_mesh(obj.data)

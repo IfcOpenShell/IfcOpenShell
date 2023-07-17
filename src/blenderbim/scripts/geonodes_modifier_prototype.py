@@ -106,7 +106,7 @@ def update_geonodes_modifier():
     bm.edges.index_update()
     bm.faces.index_update()
 
-    if bpy.context.object.mode == "EDIT":
+    if bpy.context.active_object.mode == "EDIT":
         bmesh.update_edit_mesh(obj.data)
     else:
         bm.to_mesh(obj.data)

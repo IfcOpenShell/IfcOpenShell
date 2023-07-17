@@ -276,7 +276,7 @@ def create_bm_door_lining(bm, size: Vector, thickness: list, position: Vector = 
 
 
 def update_door_modifier_bmesh(context):
-    obj = context.object
+    obj = context.active_object
     props = obj.BIMDoorProperties
 
     overall_width = props.overall_width
@@ -456,7 +456,7 @@ def update_door_modifier_bmesh(context):
     bmesh.ops.translate(bm, vec=V(0, lining_offset, 0), verts=lining_offset_verts)
     bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
 
-    if bpy.context.object.mode == "EDIT":
+    if bpy.context.active_object.mode == "EDIT":
         bmesh.update_edit_mesh(obj.data)
     else:
         bm.to_mesh(obj.data)
@@ -475,9 +475,9 @@ class BIM_OT_add_door(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "You need to start IFC project first to create a door.")
             return {"CANCELLED"}
 
-        if context.object is not None:
-            spawn_location = context.object.location.copy()
-            context.object.select_set(False)
+        if context.active_object is not None:
+            spawn_location = context.active_object.location.copy()
+            context.active_object.select_set(False)
         else:
             spawn_location = bpy.context.scene.cursor.location.copy()
 

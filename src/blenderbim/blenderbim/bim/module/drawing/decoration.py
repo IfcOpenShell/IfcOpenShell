@@ -748,7 +748,7 @@ class AngleDecorator(BaseDecorator):
 
         arcs_color = None
         edges_color = UNSPECIAL_ELEMENT_COLOR
-        if context.object == obj and obj.data.is_editmode:
+        if context.active_object == obj and obj.data.is_editmode:
             arcs_color = context.preferences.addons["blenderbim"].preferences.decorator_color_special
             edges_color = None
 
