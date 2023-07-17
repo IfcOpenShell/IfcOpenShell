@@ -598,6 +598,9 @@ class OverrideDuplicateMove(bpy.types.Operator):
         relationships = tool.Root.get_decomposition_relationships(context.selected_objects)
         old_to_new = {}
         for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if element and element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
+                continue  # For now, don't copy drawings until we stabilise a bit more. It's tricky.
             new_obj = obj.copy()
             if obj.data:
                 new_obj.data = obj.data.copy()
