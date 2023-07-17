@@ -83,14 +83,16 @@ class BIM_PT_tester(Panel):
             row = box.row(align=True)
             row.label(text=f" {c}. {req['description']}")
             if req['status']:
-                row.label(text="PASS")
+                row.label(text="PASS", icon="CHECKMARK")
             else:
-                row.label(text="FAIL")
-            op = row.operator("bim.select_requirement", text="", icon="RESTRICT_SELECT_OFF")
-            op.spec_index = i
-            op.req_index = c - 1
+                row.label(text="FAIL", icon="CANCEL")
+                op = row.operator("bim.select_requirement", text="", icon="LONGDISPLAY")
+                op.spec_index = i
+                op.req_index = c - 1
             c += 1
         if props.has_entities:
+            row = self.layout.row()
+            row.label(text = "Failed entities :")
             self.layout.template_list(
                 "BIM_UL_tester_failed_entities",
                 "",
@@ -116,9 +118,15 @@ class BIM_UL_tester_specifications(UIList):
 class BIM_UL_tester_failed_entities(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         props = context.scene.IfcTesterProperties
+        ifc_file = tool.Ifc.get()
         if item:
             icon = "WORDWRAP_ON"
-            row = layout.row(align=True)
+            ifc_id = int(item.element[1:item.element.find('=')])
+            entity = ifc_file.by_id(ifc_id)
+            row = layout.row(align=True)            
+            row.label(text=f'{entity.Name} [{entity.is_a()}]')
             row.label(text=item.reason)
-            row.label(text=eval(item.element).Name)
+            op = row.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF")
+            op.ifc_id = entity.id()
+            
 

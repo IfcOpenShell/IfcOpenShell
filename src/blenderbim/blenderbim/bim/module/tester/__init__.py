@@ -24,6 +24,7 @@ classes = (
     operator.SelectSpecs,
     operator.SelectIfcTesterIfcFile,
     operator.SelectRequirement,
+    operator.SelectEntity,
     prop.FailedEntities,
     prop.Specification,
     prop.IfcTesterProperties,
