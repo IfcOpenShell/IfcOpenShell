@@ -15,7 +15,48 @@ All documentation is written in ReStructured Text and is available in the
 
 The following colours and annotation styles should be used for annotating
 images. All stroke widths are 3px with a corner radius of 3px.  Horizontal
-underlines are 5px with a corner radius of 2px. The dark green is **39b54a** and
-the light green is **d9e021**.
+underlines are 5px with a corner radius of 2px. The dark green is ``39b54a`` and
+the light green is ``d9e021``.
 
 .. image:: documentation-style.png
+
+Special keywords such as **Technical Terminology** that the user should be
+aware of should be bolded, titlecased, and used consistently. You *may*
+use italics to emphasize words or phrases. Inline code must be ``quoted`` and
+longer code snippets may use code blocks.
+
+.. code-block:: console
+
+    $ cd /path/to/blenderbim
+    $ ls
+
+Be sure to specify the language to enable syntax highlighting.
+
+.. code-block:: python
+
+   print("Hello, world!")
+
+A button may be used to point users to a critical sample file or
+download.
+
+.. container:: blockbutton
+
+    `Visit critical link <https://blenderbim.org>`__
+
+.. note::
+
+   Instead of writing "Note that XYZ ..." you should use notes sparingly to
+   highlight "gotchas".
+
+.. tip::
+
+   Tips may be used to add a useful but optional suggestion.
+
+.. warning::
+
+   Warnings may be used to highlight common mistakes.
+
+.. seealso::
+
+    See also blocks should be used to reference `further reading
+    <https://blenderbim.org>`__ links.
