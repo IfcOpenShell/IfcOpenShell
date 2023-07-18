@@ -593,8 +593,7 @@ class EnableEditingRoof(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = context.active_object
         props = obj.BIMRoofProperties
-        element = tool.Ifc.get_entity(obj)
-        data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Roof", "Data"))
+        data = tool.Model.get_modeling_bbim_pset_data(obj, "BBIM_Roof")["data_dict"]
         # required since we could load pset from .ifc and BIMRoofProperties won't be set
         props.set_props_kwargs_from_ifc_data(data)
         props.is_editing = True
@@ -608,8 +607,7 @@ class CancelEditingRoof(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
-        element = tool.Ifc.get_entity(obj)
-        data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Roof", "Data"))
+        data = tool.Model.get_modeling_bbim_pset_data(obj, "BBIM_Roof")["data_dict"]
         props = obj.BIMRoofProperties
 
         # restore previous settings since editing was canceled
@@ -650,6 +648,9 @@ class EnableEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = context.active_object
         props = obj.BIMRoofProperties
+        data = tool.Model.get_modeling_bbim_pset_data(obj, "BBIM_Roof")["data_dict"]
+        # required since we could load pset from .ifc and BIMRoofProperties won't be set
+        props.set_props_kwargs_from_ifc_data(data)
 
         props.is_editing_path = True
         update_roof_modifier_bmesh(context)
