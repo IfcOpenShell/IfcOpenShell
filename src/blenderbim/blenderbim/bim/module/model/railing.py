@@ -348,8 +348,7 @@ class EnableEditingRailing(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = context.active_object
         props = obj.BIMRailingProperties
-        element = tool.Ifc.get_entity(obj)
-        data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Railing", "Data"))
+        data = tool.Model.get_modeling_bbim_pset_data(obj, "BBIM_Railing")["data_dict"]
         data["path_data"] = json.dumps(data["path_data"])
 
         # required since we could load pset from .ifc and BIMRailingProperties won't be set
@@ -366,14 +365,13 @@ class CancelEditingRailing(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
-        element = tool.Ifc.get_entity(obj)
-        data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Railing", "Data"))
+        data = tool.Model.get_modeling_bbim_pset_data(obj, "BBIM_Railing")["data_dict"]
         props = obj.BIMRailingProperties
 
         # restore previous settings since editing was canceled
         props.set_props_kwargs_from_ifc_data(data)
         update_railing_modifier_bmesh(context)
-        
+
         props.is_editing = False
         return {"FINISHED"}
 
@@ -438,6 +436,9 @@ class EnableEditingRailingPath(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = context.active_object
         props = obj.BIMRailingProperties
+        data = tool.Model.get_modeling_bbim_pset_data(obj, "BBIM_Railing")["data_dict"]
+        # required since we could load pset from .ifc and BIMRoofProperties won't be set
+        props.set_props_kwargs_from_ifc_data(data)
 
         props.is_editing_path = True
         update_railing_modifier_bmesh(context)
@@ -456,9 +457,24 @@ def cancel_editing_railing_path(context):
     ProfileDecorator.uninstall()
     props.is_editing_path = False
 
-    update_railing_modifier_bmesh(context)
     if bpy.context.active_object.mode == "EDIT":
         bpy.ops.object.mode_set(mode="OBJECT")
+
+    if props.railing_type == "FRAMELESS_PANEL":
+        update_railing_modifier_bmesh(context)
+    else:
+        element = tool.Ifc.get_entity(obj)
+        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=body,
+            should_reload=True,
+            is_global=True,
+            should_sync_changes_first=False,
+        )
+
     return {"FINISHED"}
 
 
