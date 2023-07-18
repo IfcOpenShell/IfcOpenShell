@@ -498,10 +498,12 @@ class AddBoolean(Operator, tool.Ifc.Operator):
     bl_label = "Add Boolean"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        return len(context.selected_objects) == 2
+
     def _execute(self, context):
         props = context.scene.BIMModelProperties
-        if len(context.selected_objects) != 2:
-            return {"FINISHED"}
         obj1, obj2 = context.selected_objects
         element1 = tool.Ifc.get_entity(obj1)
         element2 = tool.Ifc.get_entity(obj2)
@@ -546,14 +548,19 @@ class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
     bl_label = "Show Booleans"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        return (
+            obj is not None
+            and obj.data
+            and hasattr(obj.data, "BIMMeshProperties")
+            and obj.data.BIMMeshProperties.ifc_definition_id
+        )
+
+
     def _execute(self, context):
         obj = context.active_object
-        if (
-            not obj.data
-            or not hasattr(obj.data, "BIMMeshProperties")
-            or not obj.data.BIMMeshProperties.ifc_definition_id
-        ):
-            return {"FINISHED"}
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         booleans = []

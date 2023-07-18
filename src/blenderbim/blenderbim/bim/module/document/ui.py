@@ -23,7 +23,7 @@ from blenderbim.bim.module.document.data import DocumentData, ObjectDocumentData
 
 
 class BIM_PT_documents(Panel):
-    bl_label = "IFC Documents"
+    bl_label = "Documents"
     bl_idname = "BIM_PT_documents"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -76,14 +76,14 @@ class BIM_PT_documents(Panel):
 
 
 class BIM_PT_object_documents(Panel):
-    bl_label = "IFC Documents"
+    bl_label = "Documents"
     bl_idname = "BIM_PT_object_documents"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
     bl_order = 1
-    bl_parent_id = "BIM_PT_misc_object"
+    bl_parent_id = "BIM_PT_tab_misc"
 
     @classmethod
     def poll(cls, context):

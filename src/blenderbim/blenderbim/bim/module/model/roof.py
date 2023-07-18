@@ -424,7 +424,7 @@ def update_roof_modifier_bmesh(context):
     """before using should make sure that Data contains up-to-date information.
     If BBIM Pset just changed should call refresh() before updating bmesh
     """
-    obj = context.object
+    obj = context.active_object
     props = obj.BIMRoofProperties
 
     # NOTE: using Data since bmesh update will hapen very often
@@ -506,9 +506,9 @@ class BIM_OT_add_roof(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "You need to start IFC project first to create a roof.")
             return {"CANCELLED"}
 
-        if context.object is not None:
-            spawn_location = context.object.location.copy()
-            context.object.select_set(False)
+        if context.active_object is not None:
+            spawn_location = context.active_object.location.copy()
+            context.active_object.select_set(False)
         else:
             spawn_location = bpy.context.scene.cursor.location.copy()
 
@@ -593,8 +593,7 @@ class EnableEditingRoof(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = context.active_object
         props = obj.BIMRoofProperties
-        element = tool.Ifc.get_entity(obj)
-        data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Roof", "Data"))
+        data = tool.Model.get_modeling_bbim_pset_data(obj, "BBIM_Roof")["data_dict"]
         # required since we could load pset from .ifc and BIMRoofProperties won't be set
         props.set_props_kwargs_from_ifc_data(data)
         props.is_editing = True
@@ -608,8 +607,7 @@ class CancelEditingRoof(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
-        element = tool.Ifc.get_entity(obj)
-        data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Roof", "Data"))
+        data = tool.Model.get_modeling_bbim_pset_data(obj, "BBIM_Roof")["data_dict"]
         props = obj.BIMRoofProperties
 
         # restore previous settings since editing was canceled
@@ -650,11 +648,14 @@ class EnableEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = context.active_object
         props = obj.BIMRoofProperties
+        data = tool.Model.get_modeling_bbim_pset_data(obj, "BBIM_Roof")["data_dict"]
+        # required since we could load pset from .ifc and BIMRoofProperties won't be set
+        props.set_props_kwargs_from_ifc_data(data)
 
         props.is_editing_path = True
         update_roof_modifier_bmesh(context)
 
-        if bpy.context.object.mode != "EDIT":
+        if bpy.context.active_object.mode != "EDIT":
             bpy.ops.object.mode_set(mode="EDIT")
         bpy.ops.wm.tool_set_by_id(tool.Blender.get_viewport_context(), name="bim.cad_tool")
 
@@ -706,7 +707,7 @@ def cancel_editing_roof_path(context):
     props.is_editing_path = False
 
     update_roof_modifier_bmesh(context)
-    if bpy.context.object.mode == "EDIT":
+    if bpy.context.active_object.mode == "EDIT":
         bpy.ops.object.mode_set(mode="OBJECT")
     return {"FINISHED"}
 
@@ -747,7 +748,7 @@ class FinishEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
         update_roof_modifier_bmesh(context)
 
         update_roof_modifier_ifc_data(context)
-        if bpy.context.object.mode == "EDIT":
+        if bpy.context.active_object.mode == "EDIT":
             bpy.ops.object.mode_set(mode="OBJECT")
         update_roof_modifier_ifc_data(context)
         return {"FINISHED"}
@@ -789,7 +790,7 @@ class SetGableRoofEdgeAngle(bpy.types.Operator):
         # tried to avoid bmesh with foreach_get and foreach_set
         # but in EDIT mode it's only possible to change attributes by working with bmesh
 
-        me = context.object.data
+        me = context.active_object.data
         bm = tool.Blender.get_bmesh_for_mesh(me)
 
         # check if attribute exists or create one

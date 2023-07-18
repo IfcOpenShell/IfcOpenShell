@@ -41,7 +41,7 @@ from blenderbim.bim.helper import prop_with_search
 class LaunchTypeManager(bpy.types.Operator):
     bl_idname = "bim.launch_type_manager"
     bl_label = "Launch Type Manager"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER", "UNDO"}
     bl_description = "Display all available Construction Types to add new instances"
 
     def execute(self, context):
@@ -127,6 +127,8 @@ class LaunchTypeManager(bpy.types.Operator):
             op.ifc_class = relating_type["ifc_class"]
             op.relating_type_id = relating_type["id"]
 
+            op = row.operator("bim.rename_type", icon="GREASEPENCIL", text="")
+            op.element = relating_type["id"]
             op = row.operator("bim.select_type", icon="OBJECT_DATA", text="")
             op.relating_type = relating_type["id"]
             op = row.operator("bim.duplicate_type", icon="DUPLICATE", text="")
@@ -166,12 +168,13 @@ class BIM_PT_Grids(Panel):
 
 
 class BIM_PT_array(bpy.types.Panel):
-    bl_label = "IFC Array"
+    bl_label = "Array"
     bl_idname = "BIM_PT_array"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "modifier"
+    bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
+    bl_parent_id = "BIM_PT_tab_parametric_geometry"
 
     @classmethod
     def poll(cls, context):
@@ -234,12 +237,13 @@ class BIM_PT_array(bpy.types.Panel):
 
 
 class BIM_PT_stair(bpy.types.Panel):
-    bl_label = "IFC Stair"
+    bl_label = "Stair"
     bl_idname = "BIM_PT_stair"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "modifier"
+    bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
+    bl_parent_id = "BIM_PT_tab_parametric_geometry"
 
     @classmethod
     def poll(cls, context):
@@ -269,11 +273,9 @@ class BIM_PT_stair(bpy.types.Panel):
                 row.operator("bim.enable_editing_stair", icon="GREASEPENCIL", text="")
                 row.operator("bim.remove_stair", icon="X", text="")
                 row = self.layout.row(align=True)
-                for prop in props.get_props_kwargs():
-                    prop_value = stair_data[prop]
-                    prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
+                for prop_name, prop_value in StairData.data["general_params"].items():
                     row = self.layout.row(align=True)
-                    row.label(text=f"{props.bl_rna.properties[prop].name}")
+                    row.label(text=prop_name)
                     row.label(text=str(prop_value))
 
             # calculated properties
@@ -294,12 +296,13 @@ class BIM_PT_stair(bpy.types.Panel):
 
 
 class BIM_PT_sverchok(bpy.types.Panel):
-    bl_label = "IFC Sverchok"
+    bl_label = "Sverchok"
     bl_idname = "BIM_PT_sverchok"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "modifier"
+    bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
+    bl_parent_id = "BIM_PT_tab_parametric_geometry"
 
     @classmethod
     def poll(cls, context):
@@ -332,12 +335,13 @@ class BIM_PT_sverchok(bpy.types.Panel):
 
 
 class BIM_PT_window(bpy.types.Panel):
-    bl_label = "IFC Window"
+    bl_label = "Window"
     bl_idname = "BIM_PT_window"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "modifier"
+    bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
+    bl_parent_id = "BIM_PT_tab_parametric_geometry"
 
     @classmethod
     def poll(cls, context):
@@ -441,12 +445,13 @@ class BIM_PT_window(bpy.types.Panel):
 
 
 class BIM_PT_door(bpy.types.Panel):
-    bl_label = "IFC Door"
+    bl_label = "Door"
     bl_idname = "BIM_PT_door"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "modifier"
+    bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
+    bl_parent_id = "BIM_PT_tab_parametric_geometry"
 
     @classmethod
     def poll(cls, context):
@@ -514,12 +519,13 @@ class BIM_PT_door(bpy.types.Panel):
 
 
 class BIM_PT_railing(bpy.types.Panel):
-    bl_label = "IFC Railing"
+    bl_label = "Railing"
     bl_idname = "BIM_PT_railing"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "modifier"
+    bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
+    bl_parent_id = "BIM_PT_tab_parametric_geometry"
 
     @classmethod
     def poll(cls, context):
@@ -576,12 +582,13 @@ class BIM_PT_railing(bpy.types.Panel):
 
 
 class BIM_PT_roof(bpy.types.Panel):
-    bl_label = "IFC Roof"
+    bl_label = "Roof"
     bl_idname = "BIM_PT_roof"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "modifier"
+    bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
+    bl_parent_id = "BIM_PT_tab_parametric_geometry"
 
     @classmethod
     def poll(cls, context):
@@ -631,7 +638,7 @@ class BIM_PT_roof(bpy.types.Panel):
 
 class BIM_MT_model(Menu):
     bl_idname = "BIM_MT_model"
-    bl_label = "IFC Objects"
+    bl_label = "Objects"
 
     def draw(self, context):
         layout = self.layout

@@ -26,14 +26,10 @@ from blenderbim.tool.brick import BrickStore
 class BIM_PT_brickschema(Panel):
     bl_label = "Brickschema Project"
     bl_idname = "BIM_PT_brickschema"
-    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-
-    @classmethod
-    def poll(cls, context):
-        return tool.Blender.is_tab(context, "OTHER")
+    bl_parent_id = "BIM_PT_tab_operations"
 
     def draw(self, context):
         if not BrickschemaData.is_loaded:
@@ -108,7 +104,7 @@ class BIM_PT_brickschema(Panel):
 
 
 class BIM_PT_ifc_brickschema_references(Panel):
-    bl_label = "IFC Brickschema References"
+    bl_label = "Brickschema References"
     bl_idname = "BIM_PT_ifc_brickschema_references"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
