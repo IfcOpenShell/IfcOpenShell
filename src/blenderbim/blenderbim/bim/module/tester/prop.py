@@ -53,12 +53,14 @@ class IfcTesterProperties(PropertyGroup):
     
     active_specification_index: IntProperty(name="Active Specification Index")   
     active_requirement_index: IntProperty(name="Active Requirement Index")
+    old_index: IntProperty(name="", default=0)
     active_failed_entity_index: IntProperty(name="Active Failed Entity Index")  
     report: StringProperty(default="", name="JSON report")
     specifications: CollectionProperty(name="Specifications", type=Specification)
     failed_entities: CollectionProperty(name="FailedEntities", type=FailedEntities)
     has_report : BoolProperty(default=False, name="")
     has_entities : BoolProperty(default=False, name="")
+    n_entities : IntProperty(name="", default=0)
 
 
     

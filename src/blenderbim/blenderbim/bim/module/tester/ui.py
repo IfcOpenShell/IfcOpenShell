@@ -49,9 +49,9 @@ class BIM_PT_tester(Panel):
         row.operator("bim.select_specs", icon="FILE_FOLDER", text="")
 
         row = self.layout.row()
-        result = row.operator("bim.execute_ifc_tester")
+        row.operator("bim.execute_ifc_tester")
 
-        if self.props.has_report:
+        if self.props.has_report and self.props.should_load_from_memory:
             self.layout.template_list(
                 "BIM_UL_tester_specifications",
                 "",
@@ -64,7 +64,7 @@ class BIM_PT_tester(Panel):
             self.draw_editable_ui(context)
 
     def draw_editable_ui(self, context):
-        props = context.scene.IfcTesterProperties
+        props = context.scene.IfcTesterProperties        
         i = props.active_specification_index
         dic_report = json.loads(props.report)
         
@@ -77,22 +77,23 @@ class BIM_PT_tester(Panel):
         row.label(text = f"Passed: {total_successes}/{total} ({percentage}%)")
         row = self.layout.row()
         row.label(text = f"Requirements ({n_requirements}):")
-        c=1
+        c=0
         box = self.layout.box()        
         for req in dic_report[i]['requirements']:
             row = box.row(align=True)
-            row.label(text=f" {c}. {req['description']}")
+            row.label(text=f" {c+1}. {req['description']}")
             if req['status']:
                 row.label(text="PASS", icon="CHECKMARK")
             else:
                 row.label(text="FAIL", icon="CANCEL")
                 op = row.operator("bim.select_requirement", text="", icon="LONGDISPLAY")
                 op.spec_index = i
-                op.req_index = c - 1
+                op.req_index = c
             c += 1
-        if props.has_entities:
+        
+        if props.old_index == i  and props.n_entities > 0:
             row = self.layout.row()
-            row.label(text = "Failed entities :")
+            row.label(text = f"Failed entities [{props.n_entities}]:")
             self.layout.template_list(
                 "BIM_UL_tester_failed_entities",
                 "",
@@ -101,15 +102,14 @@ class BIM_PT_tester(Panel):
                 self.props,
                 "active_failed_entity_index",
             )
+        
 
         
 class BIM_UL_tester_specifications(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        props = context.scene.IfcTesterProperties
         if item:
-            icon = "WORDWRAP_ON"
             row = layout.row(align=True)
-            row.label(text=item.name or "Unnamed", icon=icon)
+            row.label(text=item.name, icon="WORDWRAP_ON")
             if item.status:
                 row.label(text="PASS")
             else:
@@ -117,10 +117,8 @@ class BIM_UL_tester_specifications(UIList):
 
 class BIM_UL_tester_failed_entities(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        props = context.scene.IfcTesterProperties
         ifc_file = tool.Ifc.get()
         if item:
-            icon = "WORDWRAP_ON"
             ifc_id = int(item.element[1:item.element.find('=')])
             entity = ifc_file.by_id(ifc_id)
             row = layout.row(align=True)            
