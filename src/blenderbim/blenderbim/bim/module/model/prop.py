@@ -138,8 +138,8 @@ class BIMModelProperties(PropertyGroup):
     type_template: bpy.props.EnumProperty(
         items=(
             ("MESH", "Custom Mesh", ""),
-            ("LAYERSET_AXIS2", "Vertical Layers", ""),
-            ("LAYERSET_AXIS3", "Horizontal Layers", ""),
+            ("LAYERSET_AXIS2", "Vertical Layers", "For objects similar to walls"),
+            ("LAYERSET_AXIS3", "Horizontal Layers", "For objects similar to slabs"),
             ("PROFILESET", "Extruded Profile", ""),
             ("EMPTY", "Non-Geometric Type", ""),
             ("WINDOW", "Window", ""),
