@@ -122,15 +122,17 @@ class SelectRequirement(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.IfcTesterProperties
-        props.has_entities = True
         report = json.loads(props.report)
-        props.failed_entities.clear()
+        props.old_index = self.spec_index
         failed_entities = report[self.spec_index]['requirements'] [self.req_index]['failed_entities']
-        print(failed_entities)
+        props.n_entities = len(failed_entities)
+        props.has_entities = True if props.n_entities > 0 else False
+        props.failed_entities.clear()
         for e in failed_entities:
             new_entity = props.failed_entities.add()            
             new_entity.element = e['element']
             new_entity.reason = e['reason']
+
         return {"FINISHED"}
 
 class SelectEntity(bpy.types.Operator):
