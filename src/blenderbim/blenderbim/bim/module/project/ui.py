@@ -41,6 +41,12 @@ class BIM_MT_new_project(Menu):
     bl_label = "New Project"
 
     def draw(self, context):
+        self.layout.operator_context = "INVOKE_DEFAULT"
+        op = self.layout.operator("bim.load_project", text="Open IFC Project", icon="FILEBROWSER")
+        op.should_start_fresh_session = True
+        # Do we need to set it back to exec default?
+        # self.layout.operator_context = "EXEC_DEFAULT"
+        self.layout.separator()
         self.layout.label(text="New IFC Project", icon_value=blenderbim.bim.icons["IFC"].icon_id)
         self.layout.operator("bim.new_project", text="Metric (m) Project").preset = "metric_m"
         self.layout.operator("bim.new_project", text="Metric (mm) Project").preset = "metric_mm"
@@ -70,7 +76,7 @@ def file_menu(self, context):
 
 
 class BIM_PT_project(Panel):
-    bl_label = "IFC Project"
+    bl_label = "Current Project"
     bl_idname = "BIM_PT_project"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -209,7 +215,6 @@ class BIM_PT_project(Panel):
             row = self.layout.row()
             row.label(text="File Not Saved", icon="ERROR")
 
-
     def draw_create_project_ui(self, context):
         props = context.scene.BIMProperties
         pprops = context.scene.BIMProjectProperties
@@ -226,11 +231,11 @@ class BIM_PT_project(Panel):
 
         row = self.layout.row(align=True)
         row.operator("bim.create_project")
-        row.operator("bim.load_project").should_start_fresh_session = True
+        row.operator("bim.load_project").should_start_fresh_session = False
 
 
 class BIM_PT_project_library(Panel):
-    bl_label = "IFC Project Library"
+    bl_label = "Project Library"
     bl_idname = "BIM_PT_project_library"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -272,7 +277,7 @@ class BIM_PT_project_library(Panel):
 
 
 class BIM_PT_links(Panel):
-    bl_label = "IFC Links"
+    bl_label = "Links"
     bl_idname = "BIM_PT_links"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"

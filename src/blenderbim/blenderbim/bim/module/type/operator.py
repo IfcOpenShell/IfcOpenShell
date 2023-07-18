@@ -436,7 +436,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
 class RemoveType(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_type"
     bl_label = "Remove Type"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER", "UNDO"}
     element: bpy.props.IntProperty()
 
     def _execute(self, context):
@@ -446,13 +446,35 @@ class RemoveType(bpy.types.Operator, tool.Ifc.Operator):
         if obj:
             tool.Ifc.unlink(obj=obj)
             bpy.data.objects.remove(obj)
-        return {"FINISHED"}
+
+
+class RenameType(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.rename_type"
+    bl_label = "Rename Type"
+    bl_options = {"REGISTER", "UNDO"}
+    element: bpy.props.IntProperty()
+    name: bpy.props.StringProperty(name="Name")
+
+    def _execute(self, context):
+        element = tool.Ifc.get().by_id(self.element)
+        obj = tool.Ifc.get_object(element)
+        element.Name = self.name
+        if obj:
+            tool.Root.set_object_name(obj, element)
+
+    def invoke(self, context, event):
+        element = tool.Ifc.get().by_id(self.element)
+        self.name = element.Name or "Unnamed"
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        self.layout.prop(self, "name")
 
 
 class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.duplicate_type"
     bl_label = "Duplicate Type"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER", "UNDO"}
     element: bpy.props.IntProperty()
 
     def _execute(self, context):
@@ -478,7 +500,7 @@ class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
 class PurgeUnusedTypes(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.purge_unused_types"
     bl_label = "Purge Unused Types"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
         core.purge_unused_types(tool.Ifc, tool.Type)

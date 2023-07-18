@@ -21,13 +21,13 @@ from blenderbim.bim.ifc import IfcStore
 
 
 class BIM_PT_ifccsv(Panel):
-    bl_label = "IFC CSV Import/Export"
+    bl_label = "CSV Import/Export"
     bl_idname = "BIM_PT_ifccsv"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_collaboration"
+    bl_parent_id = "BIM_PT_tab_collaboration"
 
     def draw(self, context):
         layout = self.layout

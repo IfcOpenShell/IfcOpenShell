@@ -25,13 +25,13 @@ from blenderbim.bim.module.sequence.data import WorkPlansData, WorkScheduleData,
 
 
 class BIM_PT_work_plans(Panel):
-    bl_label = "IFC Work Plans"
+    bl_label = "Work Plans"
     bl_idname = "BIM_PT_work_plans"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_4D5D"
+    bl_parent_id = "BIM_PT_tab_4D5D"
 
     @classmethod
     def poll(cls, context):
@@ -97,13 +97,13 @@ class BIM_PT_work_plans(Panel):
 
 
 class BIM_PT_work_schedules(Panel):
-    bl_label = "IFC Work Schedules"
+    bl_label = "Work Schedules"
     bl_idname = "BIM_PT_work_schedules"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_4D5D"
+    bl_parent_id = "BIM_PT_tab_4D5D"
 
     @classmethod
     def poll(cls, context):
@@ -526,7 +526,7 @@ class BIM_PT_work_schedules(Panel):
 
 
 class BIM_PT_task_icom(Panel):
-    bl_label = "IFC Task ICOM"
+    bl_label = "Task ICOM"
     bl_idname = "BIM_PT_task_icom"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -811,13 +811,13 @@ class BIM_UL_tasks(UIList):
 
 
 class BIM_PT_work_calendars(Panel):
-    bl_label = "IFC Work Calendars"
+    bl_label = "Work Calendars"
     bl_idname = "BIM_PT_work_calendars"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_4D5D"
+    bl_parent_id = "BIM_PT_tab_4D5D"
 
     @classmethod
     def poll(cls, context):

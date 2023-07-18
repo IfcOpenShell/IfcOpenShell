@@ -70,7 +70,7 @@ elif sys.argv[1] == "--pyver?":
     found = re.findall(re_blender_version_min_maj_pat, html_txt)
     if found:
         latest_blender_version_tag = f"v{found[0]}"
-        re_blender_python_version_maj_min = r"SET\(PYTHON_VERSION (\d+.\d+) "
+        re_blender_python_version_maj_min = r"^SET\(_PYTHON_VERSION_SUPPORTED (\d+\.\d+)\)$"
         url = f"https://raw.githubusercontent.com/blender/blender/{latest_blender_version_tag}/build_files/cmake/Modules/FindPythonLibsUnix.cmake"
         resp = request_repo_info(url)
         html_txt = str(resp.read())

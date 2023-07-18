@@ -21,6 +21,8 @@ import bpy
 import numpy as np
 import ifcopenshell.api
 import blenderbim.core.tool
+import blenderbim.bim.handler
+import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -87,6 +89,54 @@ class Ifc(blenderbim.core.tool.Ifc):
     @classmethod
     def get_object(cls, element):
         return IfcStore.get_element(element.id())
+
+    @classmethod
+    def rebuild_element_maps(cls):
+        """Rebuilds the id_map and guid_map
+
+        When any Blender object is stored outside a Blender PointerProperty,
+        such as in a regular Python list, there is the likely probability that
+        the object will be invalidated when undo or redo occurs. Object
+        invalidation seems to occur whenever an object is affected during an
+        operation, or selected, or has a related modifier, and so on ... to
+        cover all bases, this completely rebuilds the element maps.
+        """
+
+        IfcStore.id_map = {}
+        IfcStore.guid_map = {}
+
+        if not cls.get():
+            return
+
+        for obj in bpy.data.objects:
+            bpy.msgbus.clear_by_owner(obj)
+
+            element = cls.get_entity(obj)
+            if not element:
+                continue
+            IfcStore.id_map[element.id()] = obj
+            global_id = getattr(element, "GlobalId", None)
+            if global_id:
+                IfcStore.guid_map[global_id] = obj
+
+            blenderbim.bim.handler.subscribe_to(obj, "name", blenderbim.bim.handler.name_callback)
+            blenderbim.bim.handler.subscribe_to(obj, "mode", blenderbim.bim.handler.mode_callback)
+            blenderbim.bim.handler.subscribe_to(
+                obj, "active_material_index", blenderbim.bim.handler.active_material_index_callback
+            )
+
+        for obj in bpy.data.materials:
+            bpy.msgbus.clear_by_owner(obj)
+
+            material = cls.get_entity(obj)
+            style = tool.Style.get_style(obj)
+            if material:
+                IfcStore.id_map[material.id()] = obj
+            if style:
+                IfcStore.id_map[style.id()] = obj
+
+            blenderbim.bim.handler.subscribe_to(obj, "name", blenderbim.bim.handler.name_callback)
+            blenderbim.bim.handler.subscribe_to(obj, "diffuse_color", blenderbim.bim.handler.color_callback)
 
     @classmethod
     def link(cls, element, obj):

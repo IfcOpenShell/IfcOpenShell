@@ -35,6 +35,8 @@ class Geometry(blenderbim.core.tool.Geometry):
     @classmethod
     def change_object_data(cls, obj, data, is_global=False):
         if is_global:
+            if obj.mode == "EDIT":
+                raise Exception("user_remap is not supported in EDIT mode")
             obj.data.user_remap(data)
         else:
             obj.data = data
@@ -75,6 +77,7 @@ class Geometry(blenderbim.core.tool.Geometry):
         if element.is_a("IfcRelSpaceBoundary"):
             ifcopenshell.api.run("boundary.remove_boundary", tool.Ifc.get(), boundary=element)
             return bpy.data.objects.remove(obj)
+
         collection = obj.BIMObjectProperties.collection
         if collection:
             parent = ifcopenshell.util.element.get_aggregate(element)
@@ -98,7 +101,7 @@ class Geometry(blenderbim.core.tool.Geometry):
                 if element.VoidsElements:
                     bpy.ops.bim.remove_opening(opening_id=element.id())
         else:
-            is_spatial = element.is_a("IfcSpatialElement")
+            is_spatial = element.is_a() in ("IfcSpatialElement", "IfcSpatialStructureElement")
             if getattr(element, "HasOpenings", None):
                 for rel in element.HasOpenings:
                     bpy.ops.bim.remove_opening(opening_id=rel.RelatedOpeningElement.id())

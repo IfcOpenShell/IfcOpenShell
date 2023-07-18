@@ -23,12 +23,12 @@ import blenderbim.tool as tool
 
 
 class BIM_PT_spatial(Panel):
-    bl_label = "IFC Spatial Container"
+    bl_label = "Spatial Container"
     bl_idname = "BIM_PT_spatial"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
-    bl_parent_id = "BIM_PT_object_metadata"
+    bl_parent_id = "BIM_PT_tab_object_metadata"
 
     @classmethod
     def poll(cls, context):
@@ -72,7 +72,7 @@ class BIM_PT_spatial(Panel):
                 if SpatialData.data["is_directly_contained"]:
                     row.operator("bim.remove_container", icon="X", text="")
             else:
-                row.label(text="This object is not spatially contained")
+                row.label(text="No Spatial Container")
                 row.operator("bim.enable_editing_container", icon="GREASEPENCIL", text="")
             for reference in SpatialData.data["references"]:
                 row = self.layout.row()
@@ -97,7 +97,7 @@ class BIM_UL_containers(UIList):
 
 
 class BIM_PT_SpatialManager(Panel):
-    bl_label = "IFC Spatial Manager"
+    bl_label = "Spatial Manager"
     bl_idname = "BIM_PT_SpatialManager"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"

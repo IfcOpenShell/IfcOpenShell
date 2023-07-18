@@ -21,13 +21,13 @@ from bpy.types import Panel
 
 
 class BIM_PT_ifcclash(Panel):
-    bl_label = "IFC Clash Sets"
+    bl_label = "Clash Sets"
     bl_idname = "BIM_PT_ifcclash"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_quality_control"
+    bl_parent_id = "BIM_PT_tab_quality_control"
 
     def draw(self, context):
         layout = self.layout

@@ -20,13 +20,13 @@ from bpy.types import Panel
 
 
 class BIM_PT_cityjson_converter(Panel):
-    bl_label = "IFC CityJSON"
+    bl_label = "CityJSON"
     bl_idname = "BIM_PT_ifccityjson"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_collaboration"
+    bl_parent_id = "BIM_PT_tab_collaboration"
 
     def draw(self, context):
         layout = self.layout

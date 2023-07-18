@@ -25,12 +25,12 @@ from blenderbim.bim.module.type.data import TypeData
 
 
 class BIM_PT_type(Panel):
-    bl_label = "IFC Type"
+    bl_label = "Type"
     bl_idname = "BIM_PT_type"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
-    bl_parent_id = "BIM_PT_object_metadata"
+    bl_parent_id = "BIM_PT_tab_object_metadata"
 
     @classmethod
     def poll(cls, context):
@@ -92,7 +92,7 @@ class BIM_PT_type(Panel):
                 row.operator("bim.enable_editing_type", icon="GREASEPENCIL", text="")
                 row.operator("bim.unassign_type", icon="X", text="")
             else:
-                row.label(text="This object has no type")
+                row.label(text="No Relating Type")
                 row.operator("bim.enable_editing_type", icon="GREASEPENCIL", text="")
 
 

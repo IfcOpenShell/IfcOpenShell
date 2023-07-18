@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import blenderbim.tool as tool
 from bpy.types import Panel
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import prop_with_search
@@ -29,19 +30,21 @@ def object_menu(self, context):
     self.layout.operator("bim.override_object_delete", icon="PLUGIN")
     self.layout.operator("bim.override_paste_buffer", icon="PLUGIN")
 
+
 def outliner_menu(self, context):
     self.layout.separator()
-    self.layout.operator("bim.override_outliner_delete", icon='X')
+    self.layout.operator("bim.override_outliner_delete", icon="X")
+
 
 class BIM_PT_representations(Panel):
-    bl_label = "IFC Representations"
+    bl_label = "Representations"
     bl_idname = "BIM_PT_representations"
-    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "object"
+    bl_context = "scene"
     bl_order = 1
-    bl_parent_id = "BIM_PT_geometry_object"
+    bl_parent_id = "BIM_PT_tab_representations"
+    bl_options = {"HIDE_HEADER"}
 
     @classmethod
     def poll(cls, context):
@@ -58,12 +61,12 @@ class BIM_PT_representations(Panel):
         layout = self.layout
         props = context.active_object.BIMObjectProperties
 
-        if not RepresentationsData.data["representations"]:
-            layout.label(text="No representations found")
-
         row = layout.row(align=True)
         prop_with_search(row, context.active_object.BIMGeometryProperties, "contexts", text="")
         row.operator("bim.add_representation", icon="ADD", text="")
+
+        if not RepresentationsData.data["representations"]:
+            layout.label(text="No Representations Found")
 
         for representation in RepresentationsData.data["representations"]:
             row = self.layout.row(align=True)
@@ -71,7 +74,11 @@ class BIM_PT_representations(Panel):
             row.label(text=representation["ContextIdentifier"])
             row.label(text=representation["TargetView"])
             row.label(text=representation["RepresentationType"])
-            op = row.operator("bim.switch_representation", icon="FILE_REFRESH" if representation["is_active"] else "OUTLINER_DATA_MESH", text="")
+            op = row.operator(
+                "bim.switch_representation",
+                icon="FILE_REFRESH" if representation["is_active"] else "OUTLINER_DATA_MESH",
+                text="",
+            )
             op.should_switch_all_meshes = True
             op.should_reload = True
             op.ifc_definition_id = representation["id"]
@@ -80,14 +87,14 @@ class BIM_PT_representations(Panel):
 
 
 class BIM_PT_connections(Panel):
-    bl_label = "IFC Connections"
+    bl_label = "Connections"
     bl_idname = "BIM_PT_connections"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
     bl_order = 1
-    bl_parent_id = "BIM_PT_geometry_object"
+    bl_parent_id = "BIM_PT_tab_geometric_relationships"
 
     @classmethod
     def poll(cls, context):
@@ -118,7 +125,7 @@ class BIM_PT_connections(Panel):
 
 
 class BIM_PT_mesh(Panel):
-    bl_label = "IFC Representation"
+    bl_label = "Representation"
     bl_idname = "BIM_PT_mesh"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -185,7 +192,7 @@ def BIM_PT_transform(self, context):
 
 
 class BIM_PT_derived_placements(Panel):
-    bl_label = "IFC Derived Placements"
+    bl_label = "Derived Placements"
     bl_idname = "BIM_PT_derived_placements"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -220,7 +227,7 @@ class BIM_PT_derived_placements(Panel):
 
 
 class BIM_PT_workarounds(Panel):
-    bl_label = "IFC Vendor Workarounds"
+    bl_label = "Vendor Workarounds"
     bl_idname = "BIM_PT_workarounds"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"

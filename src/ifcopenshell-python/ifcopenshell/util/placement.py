@@ -101,3 +101,30 @@ def get_storey_elevation(storey):
         matrix = get_local_placement(storey.ObjectPlacement)
         return matrix[2][3]
     return getattr(storey, "Elevation", 0.0) or 0.0
+
+
+def rotation(angle, axis, is_degrees=True):
+    theta = np.radians(angle) if is_degrees else angle
+    cos, sin = np.cos(theta), np.sin(theta)
+
+    if axis == "X":
+        return np.array([
+            [1, 0, 0, 0],
+            [0, cos, -sin, 0],
+            [0, sin, cos, 0],
+            [0, 0, 0, 1]
+        ])
+    elif axis == "Y":
+        return np.array([
+            [cos, 0, sin, 0],
+            [0, 1, 0, 0],
+            [-sin, 0, cos, 0],
+            [0, 0, 0, 1]
+        ])
+    elif axis == "Z":
+        return np.array([
+            [cos, -sin, 0, 0],
+            [sin, cos, 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1]
+        ])

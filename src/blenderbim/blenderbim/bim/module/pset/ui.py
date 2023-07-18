@@ -170,12 +170,12 @@ def draw_psetqto_editable_ui(box, props, prop):
 
 
 class BIM_PT_object_psets(Panel):
-    bl_label = "IFC Object Property Sets"
+    bl_label = "Object Property Sets"
     bl_idname = "BIM_PT_object_psets"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
-    bl_parent_id = "BIM_PT_object_metadata"
+    bl_parent_id = "BIM_PT_tab_object_metadata"
 
     @classmethod
     def poll(cls, context):
@@ -212,12 +212,12 @@ class BIM_PT_object_psets(Panel):
 
 
 class BIM_PT_object_qtos(Panel):
-    bl_label = "IFC Object Quantity Sets"
+    bl_label = "Object Quantity Sets"
     bl_idname = "BIM_PT_object_qtos"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
-    bl_parent_id = "BIM_PT_object_metadata"
+    bl_parent_id = "BIM_PT_tab_object_metadata"
 
     @classmethod
     def poll(cls, context):
@@ -249,7 +249,7 @@ class BIM_PT_object_qtos(Panel):
 
 
 class BIM_PT_material_psets(Panel):
-    bl_label = "IFC Material Property Sets"
+    bl_label = "Material Property Sets"
     bl_idname = "BIM_PT_material_psets"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -293,7 +293,7 @@ class BIM_PT_material_psets(Panel):
 
 
 class BIM_PT_material_set_psets(Panel):
-    bl_label = "IFC Material Set Property Sets"
+    bl_label = "Material Set Property Sets"
     bl_idname = "BIM_PT_material_set_psets"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -330,7 +330,7 @@ class BIM_PT_material_set_psets(Panel):
 
 
 class BIM_PT_material_set_item_psets(Panel):
-    bl_label = "IFC Material Set Item Property Sets"
+    bl_label = "Material Set Item Property Sets"
     bl_idname = "BIM_PT_material_set_item_psets"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -367,7 +367,7 @@ class BIM_PT_material_set_item_psets(Panel):
 
 
 class BIM_PT_task_qtos(Panel):
-    bl_label = "IFC Task Quantity Sets"
+    bl_label = "Task Quantity Sets"
     bl_idname = "BIM_PT_task_qtos"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -403,7 +403,7 @@ class BIM_PT_task_qtos(Panel):
 
 
 class BIM_PT_resource_qtos(Panel):
-    bl_label = "IFC Resource Quantity Sets"
+    bl_label = "Resource Quantity Sets"
     bl_idname = "BIM_PT_resource_qtos"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -437,7 +437,7 @@ class BIM_PT_resource_qtos(Panel):
 
 
 class BIM_PT_resource_psets(Panel):
-    bl_label = "IFC Resource Property Sets"
+    bl_label = "Resource Property Sets"
     bl_idname = "BIM_PT_resource_psets"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -471,7 +471,7 @@ class BIM_PT_resource_psets(Panel):
 
 
 class BIM_PT_profile_psets(Panel):
-    bl_label = "IFC Profile Property Sets"
+    bl_label = "Profile Property Sets"
     bl_idname = "BIM_PT_profile_psets"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -507,7 +507,7 @@ class BIM_PT_profile_psets(Panel):
 
 
 class BIM_PT_work_schedule_psets(Panel):
-    bl_label = "IFC Work Schedule Property Sets"
+    bl_label = "Work Schedule Property Sets"
     bl_idname = "BIM_PT_work_schedule_psets"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -539,12 +539,12 @@ class BIM_PT_work_schedule_psets(Panel):
 
 
 class BIM_PT_bulk_property_editor(Panel):
-    bl_label = "IFC Bulk Property Editor"
+    bl_label = "Bulk Property Editor"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
     bl_options = {"DEFAULT_CLOSED"}
-    bl_parent_id = "BIM_PT_utilities_object"
+    bl_parent_id = "BIM_PT_tab_misc"
 
     def draw(self, context):
         pass

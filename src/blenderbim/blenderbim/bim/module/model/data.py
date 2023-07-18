@@ -67,6 +67,7 @@ class AuthoringData:
         cls.data["active_material_usage"] = cls.active_material_usage()
         cls.data["active_representation_type"] = cls.active_representation_type()
         cls.data["boundary_class"] = cls.boundary_class()
+        cls.data["selected_material_usages"] = cls.selected_material_usages()
 
     @classmethod
     def boundary_class(cls):
@@ -238,6 +239,23 @@ class AuthoringData:
             return [(str(e.id()), e.Name or "Unnamed", e.Description or "") for e in results]
         return []
 
+    @classmethod
+    def selected_material_usages(cls):
+        selected_usages = {}
+        for obj in bpy.context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            usage = tool.Model.get_usage_type(element)
+            if not usage:
+                representation = tool.Geometry.get_active_representation(obj)
+                if representation and representation.RepresentationType == "SweptSolid":
+                    usage = "SWEPTSOLID"
+                else:
+                    continue
+            selected_usages.setdefault(usage, []).append(obj)
+        return selected_usages
+
 
 class ArrayData:
     data = {}
@@ -272,11 +290,26 @@ class StairData:
     @classmethod
     def load(cls):
         cls.is_loaded = True
-        cls.data = {"pset_data": cls.pset_data()}
+        cls.data = {}
+        cls.data["pset_data"] = cls.pset_data()
+        if not cls.data["pset_data"]:
+            return
+        cls.data["general_params"] = cls.general_params()
 
     @classmethod
     def pset_data(cls):
         return tool.Model.get_modeling_bbim_pset_data(bpy.context.active_object, "BBIM_Stair")
+
+    @classmethod
+    def general_params(cls):
+        props = bpy.context.active_object.BIMStairProperties
+        data = cls.data["pset_data"]["data_dict"]
+        general_params = {}
+        general_props = props.get_props_kwargs(stair_type=data["stair_type"])
+        for prop_name in general_props:
+            prop_readable_name, prop_value = get_prop_from_data(props, data, prop_name)
+            general_params[prop_readable_name] = prop_value
+        return general_params
 
 
 class SverchokData:

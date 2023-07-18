@@ -30,7 +30,7 @@ from blenderbim.bim.module.classification.data import (
 
 
 class BIM_PT_classifications(Panel):
-    bl_label = "IFC Classifications"
+    bl_label = "Classifications"
     bl_idname = "BIM_PT_classifications"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -156,13 +156,13 @@ class ReferenceUI:
 
 
 class BIM_PT_classification_references(Panel, ReferenceUI):
-    bl_label = "IFC Classification References"
+    bl_label = "Classification References"
     bl_idname = "BIM_PT_classification_references"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
-    bl_parent_id = "BIM_PT_object_metadata"
+    bl_parent_id = "BIM_PT_tab_object_metadata"
 
     @classmethod
     def poll(cls, context):
@@ -180,7 +180,7 @@ class BIM_PT_classification_references(Panel, ReferenceUI):
 
 
 class BIM_PT_material_classifications(Panel, ReferenceUI):
-    bl_label = "IFC Material Classifications"
+    bl_label = "Material Classifications"
     bl_idname = "BIM_PT_material_classifications"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -206,7 +206,7 @@ class BIM_PT_material_classifications(Panel, ReferenceUI):
 
 
 class BIM_PT_cost_classifications(Panel, ReferenceUI):
-    bl_label = "IFC Cost Classifications"
+    bl_label = "Cost Classifications"
     bl_idname = "BIM_PT_cost_classifications"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"

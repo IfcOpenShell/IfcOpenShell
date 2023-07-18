@@ -24,7 +24,7 @@ from blenderbim.bim.module.unit.data import UnitsData
 
 
 class BIM_PT_units(Panel):
-    bl_label = "IFC Units"
+    bl_label = "Units"
     bl_idname = "BIM_PT_units"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"

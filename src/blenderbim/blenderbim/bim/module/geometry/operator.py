@@ -598,6 +598,9 @@ class OverrideDuplicateMove(bpy.types.Operator):
         relationships = tool.Root.get_decomposition_relationships(context.selected_objects)
         old_to_new = {}
         for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if element and element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
+                continue  # For now, don't copy drawings until we stabilise a bit more. It's tricky.
             new_obj = obj.copy()
             if obj.data:
                 new_obj.data = obj.data.copy()
@@ -1017,7 +1020,6 @@ class RefreshAggregate(bpy.types.Operator):
             return parents
 
         def duplicate_children(entity):
-
             pset = ifcopenshell.util.element.get_pset(entity, "BBIM_Aggregate_Data")
             pset_data = json.loads(pset["Data"])[0]
             instance_of = pset_data["instance_of"][0]
@@ -1236,6 +1238,7 @@ class OverridePasteBuffer(bpy.types.Operator):
 
 
 class OverrideModeSetEdit(bpy.types.Operator):
+    bl_description = "Switch from Object mode to Edit mode"
     bl_idname = "bim.override_mode_set_edit"
     bl_label = "IFC Mode Set Edit"
     bl_options = {"REGISTER", "UNDO"}
@@ -1244,7 +1247,7 @@ class OverrideModeSetEdit(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        objs = context.selected_objects or ([context.active_object] if context.active_object else [])
+        selected_objs = context.selected_objects or ([context.active_object] if context.active_object else [])
         active_obj = context.active_object
 
         if context.active_object:
@@ -1254,19 +1257,15 @@ class OverrideModeSetEdit(bpy.types.Operator):
             if element and element.is_a("IfcRelSpaceBoundary"):
                 return bpy.ops.bim.enable_editing_boundary_geometry()
 
-        for obj in objs:
+        for obj in selected_objs:
             if not obj:
                 continue
-
             if not obj.data:
                 obj.select_set(False)
                 continue
-
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
-
-            # We are switching from OBJECT to EDIT mode.
             usage_type = tool.Model.get_usage_type(element)
             if usage_type is not None and usage_type not in ("PROFILE", "LAYER3"):
                 # Parametric objects shall not be edited as meshes as they
@@ -1274,57 +1273,37 @@ class OverrideModeSetEdit(bpy.types.Operator):
                 # constraints.
                 obj.select_set(False)
                 continue
-
             representation = tool.Geometry.get_active_representation(obj)
             if not representation:
                 continue
-
-            if (
-                tool.Pset.get_element_pset(element, "BBIM_Door")
-                or tool.Pset.get_element_pset(element, "BBIM_Window")
-                or tool.Pset.get_element_pset(element, "BBIM_Stair")
-            ):
+            if tool.Blender.Modifier.is_modifier_with_non_editable_path(element):
                 obj.select_set(False)
                 continue
 
+            is_profile = True
             if usage_type == "PROFILE":
-                if len(context.selected_objects) == 1:
-                    bpy.ops.bim.hotkey(hotkey="A_E", description="")
-                    return {"FINISHED"}
-                else:
-                    self.report({"INFO"}, "Only a single profile-based representation can be edited at a time.")
-                    obj.select_set(False)
-                    continue
-
-            # TODO: refactor repetitive code
-            if tool.Pset.get_element_pset(element, "BBIM_Roof"):
-                if len(context.selected_objects) == 1:
-                    bpy.ops.bim.enable_editing_roof_path()
-                    return {"FINISHED"}
-                else:
-                    self.report({"INFO"}, "Only a single profile-based representation can be edited at a time.")
-                    obj.select_set(False)
-                    continue
-
-            if tool.Pset.get_element_pset(element, "BBIM_Railing"):
-                if len(context.selected_objects) == 1:
-                    if obj.BIMRailingProperties.is_editing == 1:
-                        self.report({"INFO"}, "Can't edit path while the modifier parameters are being modified")
-                        return {"FINISHED"}
-                    bpy.ops.bim.enable_editing_railing_path()
-                    return {"FINISHED"}
-                else:
-                    self.report({"INFO"}, "Only a single profile-based representation can be edited at a time.")
-                    obj.select_set(False)
-                    continue
-
-            if (
+                operator = lambda: bpy.ops.bim.hotkey(hotkey="A_E")
+            elif (
                 tool.Geometry.is_profile_based(obj.data)
                 or usage_type == "LAYER3"
                 or tool.Geometry.is_swept_profile(representation)
             ):
-                if len(context.selected_objects) == 1:
-                    bpy.ops.bim.hotkey(hotkey="S_E", description="")
+                operator = lambda: bpy.ops.bim.hotkey(hotkey="S_E")
+            elif tool.Blender.Modifier.is_editing_parameters(obj):
+                # This should go BEFORE the modifiers
+                self.report({"INFO"}, "Can't edit path while the modifier parameters are being modified")
+                obj.select_set(False)
+                continue
+            elif tool.Blender.Modifier.is_roof(element):
+                operator = lambda: bpy.ops.bim.enable_editing_roof_path()
+            elif tool.Blender.Modifier.is_railing(element):
+                operator = lambda: bpy.ops.bim.enable_editing_railing_path()
+            else:
+                is_profile = False
+            if is_profile:
+                if len(context.selected_objects) == 1 and context.active_object == context.selected_objects[0]:
+                    tool.Blender.select_and_activate_single_object(context, obj)
+                    operator()
                     return {"FINISHED"}
                 else:
                     self.report({"INFO"}, "Only a single profile-based representation can be edited at a time.")
@@ -1350,17 +1329,18 @@ class OverrideModeSetEdit(bpy.types.Operator):
                 obj.select_set(False)
                 continue
 
-        if not context.selected_objects or len(context.selected_objects) != len(objs):
+        if not context.selected_objects or len(context.selected_objects) != len(selected_objs):
             # We are trying to edit at least one non-mesh-like object : Display a hint to the user
-            self.report({"INFO"}, "Only mesh-compatible representations may be edited in edit mode.")
+            self.report({"INFO"}, "Only mesh-compatible representations may be edited concurrently in edit mode.")
 
         if context.active_object not in context.selected_objects:
             # The active object is non-mesh-like. Set a valid object (or None) as active
             context.view_layer.objects.active = context.selected_objects[0] if context.selected_objects else None
         if context.active_object:
             return tool.Blender.toggle_edit_mode(context)
+
         # Restore the selection if nothing worked
-        for obj in objs:
+        for obj in selected_objs:
             obj.select_set(True)
         context.view_layer.objects.active = active_obj
         return {"FINISHED"}

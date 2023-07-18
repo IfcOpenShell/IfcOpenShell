@@ -332,9 +332,10 @@ class SvgWriter:
             return
 
         classes = self.get_attribute_classes(obj)
-        if len(obj.data.polygons) == 0:
-            self.draw_edge_annotation(obj, classes)
-            return
+        if len(obj.data.vertices) and not len(obj.data.edges):
+            return self.draw_point_annotation(obj, classes)
+        elif len(obj.data.polygons) == 0:
+            return self.draw_edge_annotation(obj, classes)
 
         bm = bmesh.new()
         bm.from_mesh(obj.data)
@@ -501,9 +502,9 @@ class SvgWriter:
                 return pattern
 
             def get_scale(size, direction):
-                vector = direction * size
-                shrinked_vector = size // segment_width * segment_width * direction
-                scale = [1 if vector[i] == 0 else vector[i] / shrinked_vector[i] for i in range(2)]
+                original_edge = direction * size
+                current_svg_segments = ceil(size / segment_width) * segment_width * direction
+                scale = [1 if original_edge[i] == 0 else original_edge[i] / current_svg_segments[i] for i in range(2)]
                 return "scale(%f, %f)" % (scale[0], scale[1])
 
             def poly_to_edges(poly):
@@ -557,11 +558,16 @@ class SvgWriter:
                 pattern_dir = pattern_edge.normalized()
                 pattern_length = pattern_edge.length
 
-                segments = int(pattern_length // segment_width)
+                segments = ceil(pattern_length / segment_width)
                 pattern_dir_step = pattern_dir * segment_width
-                points = [pattern_dir_step * i for i in range(segments)]
+                # it takes atleast 2 points to preserve the edge direction
+                # if there is just 1 segment then we still add second point and then hide the "marker-end"
+                n_points = max(segments, 2)
+                points = [pattern_dir_step * i for i in range(n_points)]
 
-                polyline_style = f"marker: url(#{marker_id}); stroke: none;"
+                polyline_style = f"marker: url(#{marker_id}); stroke: none; "
+                if segments == 1:
+                    polyline_style += "marker-end: none; "
                 polyline_transform = f"translate({start_svg.x}, {start_svg.y}) {get_scale(pattern_length, pattern_dir)}"
                 polyline = self.svg.polyline(
                     points=points, class_=" ".join(classes), style=polyline_style, transform=polyline_transform
@@ -837,6 +843,26 @@ class SvgWriter:
                 self.svg.add(tag)
             line_number += len(tag.elements)
 
+    def draw_point_annotation(self, obj, classes):
+        x_offset = self.raw_width / 2
+        y_offset = self.raw_height / 2
+
+        matrix_world = obj.matrix_world
+        projected_points = [self.project_point_onto_camera(matrix_world @ v.co) for v in obj.data.vertices]
+
+        element = tool.Ifc.get_entity(obj)
+        svg_id = str(ifcopenshell.util.element.get_predefined_type(element))
+
+        # EPset_AnnotationSurveyArea is not standard! See bSI-4.3 proposal #660.
+        point_type = ifcopenshell.util.element.get_pset(element, "EPset_AnnotationSurveyArea", "PointType")
+        if point_type:
+            svg_id += f"-{point_type}"
+
+        for symbol_position in projected_points:
+            symbol_position = Vector(((x_offset + symbol_position.x), (y_offset - symbol_position.y)))
+            symbol_position_svg = symbol_position * self.svg_scale
+            self.svg.add(self.svg.use(f"#{svg_id}", insert=symbol_position_svg))
+
     def draw_break_annotations(self, obj):
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
@@ -880,8 +906,13 @@ class SvgWriter:
             d = "M{}".format(d[1:])
             path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
             text_position = projected_points_svg[0] - Vector((0, base_offset_y))
-            vector = projected_points_svg[1] - projected_points_svg[0]
-            angle = math.degrees(vector.angle_signed(Vector((1, 0))))
+            text_dir = projected_points_svg[1] - projected_points_svg[0]
+            if text_dir.x < 0:
+                box_alignment = "bottom-right"
+                text_dir *= -1
+            else:
+                box_alignment = "bottom-left"
+            angle = math.degrees(text_dir.angle_signed(Vector((1, 0))))
 
             # TODO: allow metric to be configurable
             def get_text():
@@ -895,7 +926,6 @@ class SvgWriter:
                 text = "{}{}".format("" if z < 0 else "+", rl)
                 return text
 
-            box_alignment = "bottom-left" if projected_points[0].x <= projected_points[-1].x else "bottom-right"
             self.draw_dimension_text(
                 get_text,
                 description,
@@ -931,7 +961,7 @@ class SvgWriter:
             p0 = points_2d[1] + dir0 * angle_radius
             p2 = points_2d[1] + dir1 * angle_radius
             points_chunk = [view3d_utils.region_2d_to_origin_3d(region, region_3d, p) for p in [p0, p3, p2]]
-            # points = [p.co.xyz for p in bpy.context.object.data.splines[0].points[:3]]
+            # points = [p.co.xyz for p in bpy.context.active_object.data.splines[0].points[:3]]
 
             bm = bmesh.new()
             bm.verts.index_update()

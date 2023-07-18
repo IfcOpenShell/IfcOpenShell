@@ -64,6 +64,7 @@ X = 1.0, 0.0, 0.0
 Y = 0.0, 1.0, 0.0
 Z = 0.0, 0.0, 1.0
 
+
 # Creates an IfcAxis2Placement3D from Location, Axis and RefDirection specified as Python tuples
 def create_ifcaxis2placement(f, point=O, dir1=Z, dir2=X):
     point = f.createIfcCartesianPoint(point)
@@ -100,7 +101,6 @@ def create_ifcextrudedareasolid(f, point_list, ifcaxis2placement, extrude_dir, e
 
 
 def create_case(fn, openings):
-
     f = ifcopenshell.template.create()
 
     owner_history = f.by_type("IfcOwnerHistory")[0]
@@ -127,7 +127,6 @@ def create_case(fn, openings):
     )
 
     for opening in openings:
-
         opening_placement = create_ifclocalplacement(
             f, (opening.x, 0.0, opening.z), (0.0, 1.0, 0.0), (1.0, 0.0, 0.0), wall_placement
         )
@@ -147,7 +146,6 @@ def create_case(fn, openings):
 class TestWallOpenings:
     @pytest.mark.skipif(shutil.which("IfcConvert") is None, reason="Requires IfcConvert in path")
     def test_all(self):
-
         cases = [
             (
                 "wall-openings-non-intersecting-rect-circle.ifc",
@@ -205,7 +203,6 @@ class TestWallOpenings:
 
             result.append([fn])
             for i in range(2 if PERF else 1):
-
                 args = [
                     shutil.which("IfcConvert") or "IfcConvert",
                     "-qyvvv",
@@ -236,12 +233,16 @@ class TestWallOpenings:
 
                 # breakpoint()
 
+                temp_files = [fn, f"{fn}.obj", f"{fn}.log.json", f"{fn}.mtl"]
+                for temp_fn in temp_files:
+                    os.unlink(temp_fn)
+
         try:
             import tabulate
         except:
             return
 
-        print(tabulate.tabulate(result, headers=["file", "", "--no-2d-boolean"], tablefmt="github"))
+        print("\n" + tabulate.tabulate(result, headers=["file", "", "--no-2d-boolean"], tablefmt="github"))
 
 
 if __name__ == "__main__":

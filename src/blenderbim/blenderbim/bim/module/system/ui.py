@@ -24,13 +24,13 @@ from blenderbim.bim.module.system.data import SystemData, ObjectSystemData, Port
 
 
 class BIM_PT_systems(Panel):
-    bl_label = "IFC Systems"
+    bl_label = "Systems"
     bl_idname = "BIM_PT_systems"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_services"
+    bl_parent_id = "BIM_PT_tab_services"
 
     @classmethod
     def poll(cls, context):
@@ -74,14 +74,14 @@ class BIM_PT_systems(Panel):
 
 
 class BIM_PT_object_systems(Panel):
-    bl_label = "IFC Systems"
+    bl_label = "Systems"
     bl_idname = "BIM_PT_object_systems"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
     bl_order = 1
-    bl_parent_id = "BIM_PT_services_object"
+    bl_parent_id = "BIM_PT_tab_services_object"
 
     @classmethod
     def poll(cls, context):
@@ -130,14 +130,14 @@ class BIM_PT_object_systems(Panel):
 
 
 class BIM_PT_ports(Panel):
-    bl_label = "IFC Ports"
+    bl_label = "Ports"
     bl_idname = "BIM_PT_ports"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
     bl_order = 1
-    bl_parent_id = "BIM_PT_services_object"
+    bl_parent_id = "BIM_PT_tab_services_object"
 
     @classmethod
     def poll(cls, context):
@@ -163,14 +163,14 @@ class BIM_PT_ports(Panel):
 
 
 class BIM_PT_port(Panel):
-    bl_label = "IFC Port"
+    bl_label = "Port"
     bl_idname = "BIM_PT_port"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
     bl_order = 1
-    bl_parent_id = "BIM_PT_services_object"
+    bl_parent_id = "BIM_PT_tab_services_object"
 
     @classmethod
     def poll(cls, context):

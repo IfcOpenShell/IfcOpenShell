@@ -22,13 +22,13 @@ from blenderbim.bim.module.layer.data import LayersData
 
 
 class BIM_PT_layers(Panel):
-    bl_label = "IFC Presentation Layers"
+    bl_label = "Presentation Layers"
     bl_idname = "BIM_PT_layers"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_geometry_object"
+    bl_parent_id = "BIM_PT_tab_geometric_relationships"
 
     @classmethod
     def poll(cls, context):
