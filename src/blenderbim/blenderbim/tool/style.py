@@ -171,9 +171,8 @@ class Style(blenderbim.core.tool.Style):
         style_data = tool.Loader.surface_style_to_dict(surface_style)
         if style_data["ReflectanceMethod"] == "NOTDEFINED":
             style_data["ReflectanceMethod"] = "PHYSICAL"
-        # DiffuseColour may not set when using SurfaceColour or SurfaceWithTexture
-        if style_data.get("DiffuseColour", None):
-            style_data["DiffuseColour"] = style_data["DiffuseColour"][1]
+        diffuse_color = style_data["DiffuseColour"]
+        style_data["DiffuseColour"] = diffuse_color[1] if diffuse_color else None
 
         for prop_blender, prop_ifc in STYLE_PROPS_MAP.items():
             prop_value = style_data[prop_ifc]

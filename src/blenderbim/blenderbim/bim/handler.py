@@ -54,10 +54,12 @@ def mode_callback(obj, data):
 
 
 def name_callback(obj, data):
-    # TODO Do we still need this, now that we are monitoring the undo redo objects?
     try:
         obj.name
     except:
+        # The object is invalid but somehow still has a callback. Clear all
+        # msgbus subscriptions to prevent useless further triggers.
+        bpy.msgbus.clear_by_owner(obj)
         return  # In case the object RNA is gone during an undo / redo operation
     # Blender names are up to 63 UTF-8 bytes
     if len(bytes(obj.name, "utf-8")) >= 63:
@@ -204,33 +206,21 @@ def loadIfcStore(scene):
 
 
 @persistent
-def undo_pre(scene):
-    IfcStore.track_undo_redo_stack_object_map()
-
-
-@persistent
 def undo_post(scene):
     if IfcStore.last_transaction != bpy.context.scene.BIMProperties.last_transaction:
         IfcStore.last_transaction = bpy.context.scene.BIMProperties.last_transaction
-        IfcStore.undo()
+        IfcStore.undo(until_key=bpy.context.scene.BIMProperties.last_transaction)
         purge_module_data()
-    IfcStore.track_undo_redo_stack_selected_objects()
-    IfcStore.reload_undo_redo_stack_objects()
-
-
-@persistent
-def redo_pre(scene):
-    IfcStore.track_undo_redo_stack_object_map()
+    tool.Ifc.rebuild_element_maps()
 
 
 @persistent
 def redo_post(scene):
     if IfcStore.last_transaction != bpy.context.scene.BIMProperties.last_transaction:
         IfcStore.last_transaction = bpy.context.scene.BIMProperties.last_transaction
-        IfcStore.redo()
+        IfcStore.redo(until_key=bpy.context.scene.BIMProperties.last_transaction)
         purge_module_data()
-    IfcStore.track_undo_redo_stack_selected_objects()
-    IfcStore.reload_undo_redo_stack_objects()
+    tool.Ifc.rebuild_element_maps()
 
 
 def get_application(ifc):

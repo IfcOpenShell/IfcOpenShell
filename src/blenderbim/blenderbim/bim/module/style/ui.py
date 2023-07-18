@@ -26,7 +26,7 @@ from blenderbim.tool.style import TEXTURE_MAPS_BY_METHODS, STYLE_TEXTURE_PROPS_M
 
 
 class BIM_PT_styles(Panel):
-    bl_label = "IFC Styles"
+    bl_label = "Styles"
     bl_idname = "BIM_PT_styles"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -86,7 +86,7 @@ def draw_style_ui(self, context):
 
 
 class BIM_PT_style(MaterialButtonsPanel, Panel):
-    bl_label = "IFC Style"
+    bl_label = "Style"
     bl_idname = "BIM_PT_style"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -111,7 +111,7 @@ class BIM_PT_style(MaterialButtonsPanel, Panel):
 
 
 class BIM_PT_style_attributes(Panel):
-    bl_label = "IFC Style Attributes"
+    bl_label = "Style Attributes"
     bl_idname = "BIM_PT_style_attributes"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -159,7 +159,7 @@ class BIM_PT_style_attributes(Panel):
 
 
 class BIM_PT_external_style_attributes(Panel):
-    bl_label = "IFC External Surface Style"
+    bl_label = "External Surface Style"
     bl_idname = "BIM_PT_external_style_attributes"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -226,7 +226,7 @@ class BIM_UL_styles(UIList):
 class BIM_PT_STYLE_GRAPH(Panel):
     bl_idname = "BIM_PT_style_graph"
     bl_space_type = "NODE_EDITOR"
-    bl_label = "IFC Style Graph Settings"
+    bl_label = "Style Graph Settings"
     bl_region_type = "UI"
     bl_category = "BBIM"
 

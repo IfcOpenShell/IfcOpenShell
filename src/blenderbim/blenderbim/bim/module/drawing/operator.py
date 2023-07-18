@@ -23,6 +23,7 @@ import json
 import time
 import bmesh
 import shutil
+import hashlib
 import shapely
 import subprocess
 import webbrowser
@@ -365,7 +366,6 @@ class CreateDrawing(bpy.types.Operator):
         return svg_path
 
     def generate_linework(self, context):
-        global ifcopenshell
         if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasLinework"):
             return
         svg_path = self.get_svg_path(cache_type="linework")
@@ -394,10 +394,6 @@ class CreateDrawing(bpy.types.Operator):
                 for el in root.findall(".//{http://www.w3.org/2000/svg}g[@{http://www.ifcopenshell.org/ns}guid]")
             }
         cached_linework -= edited_guids
-
-        # This is a work in progress. See #1153 and #1564.
-        import hashlib
-        import ifcopenshell.draw
 
         files = {context.scene.BIMProperties.ifc_file: tool.Ifc.get()}
 
@@ -569,7 +565,7 @@ class CreateDrawing(bpy.types.Operator):
             for projection in projections:
                 boundary_lines = []
                 for path in projection.findall("./{http://www.w3.org/2000/svg}path"):
-                    start, end = [co[1:].split(",") for co in path.attrib["d"].split()]
+                    start, end = [[round(float(o), 1) for o in co[1:].split(",")] for co in path.attrib["d"].split()]
                     boundary_lines.append(shapely.LineString([start, end]))
                 unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
                 closed_polygons = shapely.polygonize(unioned_boundaries.geoms)
@@ -895,6 +891,42 @@ class CreateDrawing(bpy.types.Operator):
             classes = self.get_svg_classes(element)
             classes.append("cut")
             el.set("class", " ".join(classes))
+
+            # An element group will contain a bunch of paths representing the
+            # cut of that element. However IfcOpenShell may not correctly
+            # create closed paths. We post-process all paths with shapely to
+            # ensure things that should be closed (i.e.
+            # shapely.polygonize_full) are, and things which aren't are left
+            # alone (e.g. dangles, cuts, invalids). See #3421.
+            line_strings = []
+            old_paths = []
+            for path in el.findall("{http://www.w3.org/2000/svg}path"):
+                for subpath in path.attrib["d"].split("M")[1:]:
+                    subpath = "M" + subpath.strip()
+                    coords = [[round(float(o), 1) for o in co[1:].split(",")] for co in subpath.split()]
+                    line_strings.append(shapely.LineString(coords))
+                old_paths.append(path)
+            unioned_line_strings = shapely.union_all(shapely.GeometryCollection(line_strings))
+            if hasattr(unioned_line_strings, "geoms"):
+                results = shapely.polygonize_full(unioned_line_strings.geoms)
+            else:
+                results = []
+
+            # If we succeeded in generating new path geometry, remove all the
+            # old paths and add new ones.
+            if results:
+                for path in old_paths:
+                    path.getparent().remove(path)
+            for result in results:
+                for geom in result.geoms:
+                    path = etree.SubElement(el, "path")
+                    if isinstance(geom, shapely.Polygon):
+                        d = "M" + " L".join([",".join([str(o) for o in co]) for co in geom.exterior.coords[0:-1]]) + " Z"
+                        for interior in geom.interiors:
+                            d += " M" + " L".join([",".join([str(o) for o in co]) for co in interior.coords[0:-1]]) + " Z"
+                    elif isinstance(geom, shapely.LineString):
+                        d = "M" + " L".join([",".join([str(o) for o in co]) for co in geom.coords]) + " Z"
+                    path.attrib["d"] = d
 
             # Architectural convention only merges these objects. E.g. pipe segments and fittings shouldn't merge.
             if not element.is_a("IfcWall") and not element.is_a("IfcSlab"):
@@ -2343,6 +2375,34 @@ class DisableEditingDrawings(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.disable_editing_drawings(tool.Drawing)
+
+
+class ExpandTargetView(bpy.types.Operator):
+    bl_idname = "bim.expand_target_view"
+    bl_label = "Expand Target View"
+    bl_options = {"REGISTER", "UNDO"}
+    target_view: bpy.props.StringProperty()
+
+    def execute(self, context):
+        props = context.scene.DocProperties
+        for drawing in [d for d in props.drawings if d.target_view == self.target_view]:
+            drawing.is_expanded = True
+        core.load_drawings(tool.Drawing)
+        return {"FINISHED"}
+
+
+class ContractTargetView(bpy.types.Operator):
+    bl_idname = "bim.contract_target_view"
+    bl_label = "Contract Target View"
+    bl_options = {"REGISTER", "UNDO"}
+    target_view: bpy.props.StringProperty()
+
+    def execute(self, context):
+        props = context.scene.DocProperties
+        for drawing in [d for d in props.drawings if d.target_view == self.target_view]:
+            drawing.is_expanded = False
+        core.load_drawings(tool.Drawing)
+        return {"FINISHED"}
 
 
 class ExpandSheet(bpy.types.Operator):

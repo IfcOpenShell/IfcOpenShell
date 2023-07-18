@@ -99,7 +99,7 @@ class BIMModelProperties(PropertyGroup):
     )
     occurrence_name_function: bpy.props.StringProperty(name="Occurrence Name Function")
     getter_enum = {"ifc_class": get_ifc_class, "relating_type": get_relating_type_id}
-    extrusion_depth: bpy.props.FloatProperty(default=42.0, subtype="DISTANCE")
+    extrusion_depth: bpy.props.FloatProperty(min=0.001, default=42.0, subtype="DISTANCE")
     cardinal_point: bpy.props.EnumProperty(
         items=(
             # TODO: complain to buildingSMART
@@ -138,8 +138,8 @@ class BIMModelProperties(PropertyGroup):
     type_template: bpy.props.EnumProperty(
         items=(
             ("MESH", "Custom Mesh", ""),
-            ("LAYERSET_AXIS2", "Vertical Layers", ""),
-            ("LAYERSET_AXIS3", "Horizontal Layers", ""),
+            ("LAYERSET_AXIS2", "Vertical Layers", "For objects similar to walls"),
+            ("LAYERSET_AXIS3", "Horizontal Layers", "For objects similar to slabs"),
             ("PROFILESET", "Extruded Profile", ""),
             ("EMPTY", "Non-Geometric Type", ""),
             ("WINDOW", "Window", ""),
@@ -190,7 +190,7 @@ class BIMStairProperties(PropertyGroup):
         ("GENERIC", "Generic", ""),
     )
 
-    is_editing: bpy.props.IntProperty(default=-1)
+    is_editing: bpy.props.BoolProperty(default=False)
     width: bpy.props.FloatProperty(name="Width", default=1.2, soft_min=0.01, subtype="DISTANCE")
     height: bpy.props.FloatProperty(name="Height", default=1.0, soft_min=0.01, subtype="DISTANCE")
     number_of_treads: bpy.props.IntProperty(name="Number of treads", default=6, soft_min=1)
@@ -201,16 +201,18 @@ class BIMStairProperties(PropertyGroup):
     has_top_nib: bpy.props.BoolProperty(name="Has top nib", default=True)
     stair_type: bpy.props.EnumProperty(name="Stair type", items=stair_types, default="CONCRETE")
 
-    def get_props_kwargs(self, convert_to_project_units=False):
+    def get_props_kwargs(self, convert_to_project_units=False, stair_type=None):
+        if not stair_type:
+            stair_type = self.stair_type
         stair_kwargs = {
-            "stair_type": self.stair_type,
+            "stair_type": stair_type,
             "width": self.width,
             "height": self.height,
             "number_of_treads": self.number_of_treads,
             "tread_run": self.tread_run,
         }
 
-        if self.stair_type == "CONCRETE":
+        if stair_type == "CONCRETE":
             concrete_props = {
                 "base_slab_depth": self.base_slab_depth,
                 "top_slab_depth": self.top_slab_depth,
@@ -219,13 +221,13 @@ class BIMStairProperties(PropertyGroup):
             }
             stair_kwargs.update(concrete_props)
 
-        elif self.stair_type == "WOOD/STEEL":
+        elif stair_type == "WOOD/STEEL":
             wood_steel_props = {
                 "tread_depth": self.tread_depth,
             }
             stair_kwargs.update(wood_steel_props)
 
-        elif self.stair_type == "GENERIC":
+        elif stair_type == "GENERIC":
             pass
 
         if not convert_to_project_units:
@@ -280,7 +282,7 @@ class BIMWindowProperties(PropertyGroup):
     }
     # fmt: on
 
-    is_editing: bpy.props.IntProperty(default=-1)
+    is_editing: bpy.props.BoolProperty(default=False)
     window_type: bpy.props.EnumProperty(
         name="Window Type", items=window_types, default="SINGLE_PANEL", update=window_type_prop_update
     )
@@ -340,7 +342,9 @@ class BIMWindowProperties(PropertyGroup):
             return kwargs
         return tool.Model.convert_data_to_project_units(kwargs, ["window_type"])
 
-    def get_lining_kwargs(self, convert_to_project_units=False):
+    def get_lining_kwargs(self, window_type=None, convert_to_project_units=False):
+        if not window_type:
+            window_type = self.window_type
         kwargs = {
             "lining_depth": self.lining_depth,
             "lining_thickness": self.lining_thickness,
@@ -349,7 +353,7 @@ class BIMWindowProperties(PropertyGroup):
             "lining_to_panel_offset_y": self.lining_to_panel_offset_y,
         }
 
-        if self.window_type in (
+        if window_type in (
             "DOUBLE_PANEL_VERTICAL",
             "TRIPLE_PANEL_BOTTOM",
             "TRIPLE_PANEL_TOP",
@@ -360,7 +364,7 @@ class BIMWindowProperties(PropertyGroup):
             kwargs["mullion_thickness"] = self.mullion_thickness
             kwargs["first_mullion_offset"] = self.first_mullion_offset
 
-        if self.window_type in (
+        if window_type in (
             "DOUBLE_PANEL_HORIZONTAL",
             "TRIPLE_PANEL_BOTTOM",
             "TRIPLE_PANEL_TOP",
@@ -371,10 +375,10 @@ class BIMWindowProperties(PropertyGroup):
             kwargs["transom_thickness"] = self.transom_thickness
             kwargs["first_transom_offset"] = self.first_transom_offset
 
-        if self.window_type in ("TRIPLE_PANEL_VERTICAL",):
+        if window_type in ("TRIPLE_PANEL_VERTICAL",):
             kwargs["second_mullion_offset"] = self.second_mullion_offset
 
-        if self.window_type in ("TRIPLE_PANEL_HORIZONTAL",):
+        if window_type in ("TRIPLE_PANEL_HORIZONTAL",):
             kwargs["second_transom_offset"] = self.second_transom_offset
 
         if not convert_to_project_units:
@@ -409,7 +413,7 @@ class BIMDoorProperties(PropertyGroup):
         ("DOUBLE_DOOR_SLIDING", "DOUBLE_DOOR_SLIDING", ""),
     )
 
-    is_editing: bpy.props.IntProperty(default=-1)
+    is_editing: bpy.props.BoolProperty(default=False)
     door_type: bpy.props.EnumProperty(name="Door Operation Type", items=door_types, default="SINGLE_SWING_LEFT")
     overall_height: bpy.props.FloatProperty(name="Overall Height", default=2.0, subtype="DISTANCE")
     overall_width: bpy.props.FloatProperty(name="Overall Width", default=0.9, subtype="DISTANCE")
@@ -422,39 +426,43 @@ class BIMDoorProperties(PropertyGroup):
         description="Offset from the outer side of the wall (by Y-axis). "
         "If present then adding casing is not possible.\n"
         "`0.025 mm` is good as default value",
-        default=0.0, 
-        subtype="DISTANCE"
+        default=0.0,
+        subtype="DISTANCE",
     )
-    lining_to_panel_offset_x: bpy.props.FloatProperty(name="Lining to Panel Offset X", default=0.025, subtype="DISTANCE")
-    lining_to_panel_offset_y: bpy.props.FloatProperty(name="Lining to Panel Offset Y", default=0.025, subtype="DISTANCE")
+    lining_to_panel_offset_x: bpy.props.FloatProperty(
+        name="Lining to Panel Offset X", default=0.025, subtype="DISTANCE"
+    )
+    lining_to_panel_offset_y: bpy.props.FloatProperty(
+        name="Lining to Panel Offset Y", default=0.025, subtype="DISTANCE"
+    )
 
     transom_thickness: bpy.props.FloatProperty(
         name="Transom Thickness",
         description="Set values > 0 to add a transom.\n" "`0.050 mm` is good as default value",
         default=0.000,
-        subtype="DISTANCE"
+        subtype="DISTANCE",
     )
     transom_offset: bpy.props.FloatProperty(
         name="Transom Offset",
         description="Distance from the bottom door opening to the beginning of the transom (unlike windows)",
         default=1.525,
-        subtype="DISTANCE"
+        subtype="DISTANCE",
     )
 
     casing_thickness: bpy.props.FloatProperty(
-        name="Casing Thickness", description="Set values > 0 and LiningOffset = 0 to add a casing.", default=0.075,
-        subtype="DISTANCE"
+        name="Casing Thickness",
+        description="Set values > 0 and LiningOffset = 0 to add a casing.",
+        default=0.075,
+        subtype="DISTANCE",
     )
     casing_depth: bpy.props.FloatProperty(name="Casing Depth", default=0.005, subtype="DISTANCE")
 
     threshold_thickness: bpy.props.FloatProperty(
-        name="Threshold Thickness", description="Set values > 0 to add a threshold.", default=0.025,
-        subtype="DISTANCE"
+        name="Threshold Thickness", description="Set values > 0 to add a threshold.", default=0.025, subtype="DISTANCE"
     )
     threshold_depth: bpy.props.FloatProperty(name="Threshold Depth", default=0.1, subtype="DISTANCE")
     threshold_offset: bpy.props.FloatProperty(
-        name="Threshold Offset", description="`0.025 mm` is good as default value", default=0.000,
-        subtype="DISTANCE"
+        name="Threshold Offset", description="`0.025 mm` is good as default value", default=0.000, subtype="DISTANCE"
     )
 
     # panel properties
@@ -479,28 +487,35 @@ class BIMDoorProperties(PropertyGroup):
             return kwargs
         return tool.Model.convert_data_to_project_units(kwargs, ["door_type"])
 
-    def get_lining_kwargs(self, convert_to_project_units=False):
+    def get_lining_kwargs(self, convert_to_project_units=False, door_type=None, lining_data=None):
+        if not door_type:
+            door_type = self.door_type
+
+        transom_thickness = lining_data["transom_thickness"] if lining_data else self.transom_thickness
+        lining_offset = lining_data["lining_offset"] if lining_data else self.lining_offset
+        threshold_thickness = lining_data["threshold_thickness"] if lining_data else self.threshold_thickness
+
         kwargs = {
             "lining_depth": self.lining_depth,
             "lining_thickness": self.lining_thickness,
-            "lining_offset": self.lining_offset,
+            "lining_offset": lining_offset,
         }
 
-        if "SLIDING" not in self.door_type:
+        if "SLIDING" not in door_type:
             kwargs["lining_to_panel_offset_x"] = self.lining_to_panel_offset_x
             kwargs["lining_to_panel_offset_y"] = self.lining_to_panel_offset_y
 
-        kwargs["transom_thickness"] = self.transom_thickness
-        if self.transom_thickness:
+        kwargs["transom_thickness"] = transom_thickness
+        if transom_thickness:
             kwargs["transom_offset"] = self.transom_offset
 
-        if not self.lining_offset:
+        if not lining_offset:
             kwargs["casing_thickness"] = self.casing_thickness
             if self.casing_thickness:
                 kwargs["casing_depth"] = self.casing_depth
 
-        kwargs["threshold_thickness"] = self.threshold_thickness
-        if self.threshold_thickness:
+        kwargs["threshold_thickness"] = threshold_thickness
+        if threshold_thickness:
             kwargs["threshold_depth"] = self.threshold_depth
             kwargs["threshold_offset"] = self.threshold_offset
 
@@ -508,16 +523,17 @@ class BIMDoorProperties(PropertyGroup):
             return kwargs
         return tool.Model.convert_data_to_project_units(kwargs)
 
-    def get_panel_kwargs(self, convert_to_project_units=False):
+    def get_panel_kwargs(self, convert_to_project_units=False, lining_data=None):
+        transom_thickness = lining_data["transom_thickness"] if lining_data else self.transom_thickness
         kwargs = {"panel_depth": self.panel_depth, "panel_width_ratio": self.panel_width_ratio}
 
-        if self.transom_thickness:
+        if transom_thickness:
             kwargs["frame_thickness"] = self.frame_thickness
             kwargs["frame_depth"] = self.frame_depth
 
         if not convert_to_project_units:
             return kwargs
-        return tool.Model.convert_data_to_project_units(kwargs, ("panel_width_ratio", ))
+        return tool.Model.convert_data_to_project_units(kwargs, ("panel_width_ratio",))
 
     def set_props_kwargs_from_ifc_data(self, kwargs):
         kwargs = tool.Model.convert_data_to_si_units(kwargs, self.non_si_units_props)
@@ -547,7 +563,7 @@ class BIMRailingProperties(PropertyGroup):
         ("NONE", "NONE", ""),
     )
 
-    is_editing: bpy.props.IntProperty(default=-1)
+    is_editing: bpy.props.BoolProperty(default=False)
     is_editing_path: bpy.props.BoolProperty(default=False)
 
     railing_type: bpy.props.EnumProperty(name="Railing Type", items=railing_types, default="FRAMELESS_PANEL")
@@ -563,29 +579,36 @@ class BIMRailingProperties(PropertyGroup):
         "If disabled, supports are added automatically based on the support spacing",
     )
     support_spacing: bpy.props.FloatProperty(
-        name="Support Spacing", 
-        default=1.0, 
+        name="Support Spacing",
+        default=1.0,
         min=0.01,
         description="Distance between supports if automatic supports are used",
+        subtype="DISTANCE",
     )
-    railing_diameter: bpy.props.FloatProperty(name="Railing Diameter", default=0.050)
+    railing_diameter: bpy.props.FloatProperty(name="Railing Diameter", default=0.050, subtype="DISTANCE")
     clear_width: bpy.props.FloatProperty(
-        name="Clear Width", default=0.040, description="Clear width between the railing and the wall"
+        name="Clear Width",
+        default=0.040,
+        description="Clear width between the railing and the wall",
+        subtype="DISTANCE",
     )
     terminal_type: bpy.props.EnumProperty(name="Terminal Type", items=cap_types, default="180")
 
-    def get_general_kwargs(self, convert_to_project_units=False):
+    def get_general_kwargs(self, railing_type=None, convert_to_project_units=False):
+        if railing_type is None:
+            railing_type = self.railing_type
+
         base_kwargs = {
-            "railing_type": self.railing_type,
+            "railing_type": railing_type,
             "height": self.height,
         }
         additional_kwargs = {}
-        if self.railing_type == "FRAMELESS_PANEL":
+        if railing_type == "FRAMELESS_PANEL":
             additional_kwargs = {
                 "thickness": self.thickness,
                 "spacing": self.spacing,
             }
-        elif self.railing_type == "WALL_MOUNTED_HANDRAIL":
+        elif railing_type == "WALL_MOUNTED_HANDRAIL":
             additional_kwargs = {
                 "railing_diameter": self.railing_diameter,
                 "clear_width": self.clear_width,
@@ -606,6 +629,7 @@ class BIMRailingProperties(PropertyGroup):
         for prop_name in kwargs:
             setattr(self, prop_name, kwargs[prop_name])
 
+
 class BIMRoofProperties(PropertyGroup):
     non_si_units_props = (
         "is_editing",
@@ -621,7 +645,7 @@ class BIMRoofProperties(PropertyGroup):
         ("ANGLE", "ANGLE", ""),
     )
 
-    is_editing: bpy.props.IntProperty(default=-1)
+    is_editing: bpy.props.BoolProperty(default=False)
     is_editing_path: bpy.props.BoolProperty(default=False)
 
     roof_type: bpy.props.EnumProperty(name="Roof Type", items=roof_types, default="HIP/GABLE ROOF")
@@ -635,14 +659,16 @@ class BIMRoofProperties(PropertyGroup):
     roof_thickness: bpy.props.FloatProperty(name="Roof Thickness", default=0.1, subtype="DISTANCE")
     rafter_edge_angle: bpy.props.FloatProperty(name="Rafter Edge Angle", min=0, max=pi, default=pi / 2, subtype="ANGLE")
 
-    def get_general_kwargs(self, convert_to_project_units=False):
+    def get_general_kwargs(self, generation_method=None, convert_to_project_units=False):
+        if generation_method is None:
+            generation_method = self.generation_method
         kwargs = {
             "roof_type": self.roof_type,
-            "generation_method": self.generation_method,
+            "generation_method": generation_method,
             "roof_thickness": self.roof_thickness,
             "rafter_edge_angle": self.rafter_edge_angle,
         }
-        if self.generation_method == "HEIGHT":
+        if generation_method == "HEIGHT":
             kwargs["height"] = self.height
         else:
             kwargs["angle"] = self.angle

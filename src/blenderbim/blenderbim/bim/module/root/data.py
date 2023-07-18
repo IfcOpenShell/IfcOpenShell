@@ -21,6 +21,7 @@ import bpy
 import ifcopenshell.util.element
 from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc
 import blenderbim.tool as tool
+import blenderbim.bim.helper
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -70,7 +71,7 @@ class IfcClassData:
                 "IfcAnnotation",
                 "IfcRelSpaceBoundary",
             ]
-        return [(e, e, (get_entity_doc(version, e) or {}).get("description", "")) for e in products]
+        return [(e, blenderbim.bim.helper.uncamel(e), (get_entity_doc(version, e) or {}).get("description", "")) for e in products]
 
     @classmethod
     def ifc_classes(cls):
@@ -86,7 +87,7 @@ class IfcClassData:
                 # Yeah, weird isn't it.
                 names.remove("IfcOpeningStandardCase")
         version = tool.Ifc.get_schema()
-        return [(c, c, (get_entity_doc(version, c) or {}).get("description", "")) for c in sorted(names)]
+        return [(c, blenderbim.bim.helper.uncamel(c), (get_entity_doc(version, c) or {}).get("description", "")) for c in sorted(names)]
 
     @classmethod
     def ifc_predefined_types(cls):
@@ -110,18 +111,18 @@ class IfcClassData:
         suggestions = defaultdict(list)
         suggestions.update(
             {
-                "IfcWall": ["Glazing", "Glass", "Pane"],
-                "IfcWindow": ["Glazing", "Glass", "Pane"],
-                "IfcPlate": ["Glazing", "Glass", "Pane"],
-                "IfcFurniture": ["Signage"],
-                "IfcSlab": ["Hob"],
-                "IfcCovering": ["Flashing", "Capping"],
-                "IfcCableSegment": ["Lighting Rod"],
-                "IfcSensor": ["Card Reader", "Fob Reader"],
-                "IfcSwitchingDevice": ["Reed Switch", "Electric Isolating Switch"],
                 "IfcActuator": ["Electric Strike"],
                 "IfcAirTerminalBox": ["VAV Box"],
+                "IfcCableSegment": ["Lighting Rod"],
+                "IfcCovering": ["Flashing", "Capping"],
+                "IfcFurniture": ["Signage"],
+                "IfcPlate": ["Glazing", "Glass", "Pane"],
+                "IfcSensor": ["Card Reader", "Fob Reader"],
+                "IfcSlab": ["Hob"],
+                "IfcSwitchingDevice": ["Reed Switch", "Electric Isolating Switch"],
                 "IfcUnitaryEquipment": ["Fan Coil Unit"],
+                "IfcWall": ["Glazing", "Glass", "Pane"],
+                "IfcWindow": ["Glazing", "Glass", "Pane"],
             }
         )
         version = tool.Ifc.get_schema()
@@ -163,9 +164,10 @@ class IfcClassData:
         if not element:
             return
         name = element.is_a()
+        name = blenderbim.bim.helper.uncamel(name)
         predefined_type = ifcopenshell.util.element.get_predefined_type(element)
         if predefined_type:
-            name += f"[{predefined_type}]"
+            name += f" [{predefined_type}]"
         return name
 
     @classmethod

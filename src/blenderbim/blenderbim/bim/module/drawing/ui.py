@@ -199,18 +199,31 @@ class BIM_PT_drawings(Panel):
                 col.alignment = "LEFT"
                 row2 = col.row(align=True)
                 row2.operator("bim.remove_drawing", icon="X", text="").drawing = active_drawing.ifc_definition_id
+
                 row2.operator(
                     "bim.duplicate_drawing", icon="COPYDOWN", text=""
                 ).drawing = active_drawing.ifc_definition_id
+
                 col = row.column()
                 col.alignment = "RIGHT"
+
                 op = row.operator("bim.select_all_drawings", icon="SELECT_SUBTRACT", text="")
-                op = row.operator("bim.open_drawing", icon="URL", text="")
+
+                open_drawing_button = row.row(align=True)
+                op = open_drawing_button.operator("bim.open_drawing", icon="URL", text="")
                 op.view = active_drawing.name
+                open_drawing_button.enabled = active_drawing.ifc_definition_id > 0
+
                 row.operator("bim.activate_model", icon="VIEW3D", text="")
-                op = row.operator("bim.activate_drawing", icon="OUTLINER_OB_CAMERA", text="")
+
+                drawing_button = row.row(align=True)
+                op = drawing_button.operator("bim.activate_drawing", icon="OUTLINER_OB_CAMERA", text="")
                 op.drawing = active_drawing.ifc_definition_id
-                row.operator("bim.create_drawing", text="", icon="OUTPUT")
+                drawing_button.enabled = active_drawing.ifc_definition_id > 0
+
+                create_drawing_button = row.row(align=True)
+                create_drawing_button.operator("bim.create_drawing", text="", icon="OUTPUT")
+                create_drawing_button.enabled = active_drawing.ifc_definition_id > 0
             self.layout.template_list(
                 "BIM_UL_drawinglist", "", self.props, "drawings", self.props, "active_drawing_index"
             )
@@ -374,7 +387,7 @@ class BIM_PT_sheets(Panel):
 
 
 class BIM_PT_product_assignments(Panel):
-    bl_label = "IFC Product Assignments"
+    bl_label = "Product Assignments"
     bl_idname = "BIM_PT_product_assignments"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -409,7 +422,7 @@ class BIM_PT_product_assignments(Panel):
 
 
 class BIM_PT_text(Panel):
-    bl_label = "IFC Text"
+    bl_label = "Text"
     bl_idname = "BIM_PT_text"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -488,12 +501,20 @@ class BIM_PT_text(Panel):
 
 class BIM_UL_drawinglist(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        if item:
-            row = layout.row(align=True)
+        if not item:
+            layout.label(text="", translate=False)
+            return
+
+        row = layout.row(align=True)
+        if item.is_drawing:
+            row.label(text="", icon="BLANK1")
             selected_icon = "CHECKBOX_HLT" if item.is_selected else "CHECKBOX_DEHLT"
-            row.prop(item, "is_selected", text="", icon=selected_icon)
-            icon = "UV_FACESEL"
-            if item.target_view == "ELEVATION_VIEW":
+            row.prop(item, "is_selected", text="", icon=selected_icon, emboss=False)
+            row.prop(item, "name", text="", emboss=False)
+        else:
+            if item.target_view == "PLAN_VIEW":
+                icon = "UV_FACESEL"
+            elif item.target_view == "ELEVATION_VIEW":
                 icon = "UV_VERTEXSEL"
             elif item.target_view == "SECTION_VIEW":
                 icon = "UV_EDGESEL"
@@ -501,9 +522,17 @@ class BIM_UL_drawinglist(bpy.types.UIList):
                 icon = "XRAY"
             elif item.target_view == "MODEL_VIEW":
                 icon = "SNAP_VOLUME"
+            else:
+                icon = "CLIPUV_HLT"
+            if item.is_expanded:
+                row.operator(
+                    "bim.contract_target_view", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN"
+                ).target_view = item.target_view
+            else:
+                row.operator(
+                    "bim.expand_target_view", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT"
+                ).target_view = item.target_view
             row.prop(item, "name", text="", icon=icon, emboss=False)
-        else:
-            layout.label(text="", translate=False)
 
 
 class BIM_UL_sheets(bpy.types.UIList):
@@ -542,3 +571,31 @@ class BIM_UL_sheets(bpy.types.UIList):
             else:
                 name = item.name or "Unnamed"
             row.label(text=name)
+
+    def draw_filter(self, context, layout):
+        # We only need filtering, not reordering for sheets.
+        row = layout.row(align=True)
+        row.prop(self, "filter_name", text="")
+        row.prop(self, "use_filter_invert", text="", icon="ARROW_LEFTRIGHT")
+
+    def filter_items(self, context, data, propname):
+        flt_flags = []
+        flt_neworder = []
+
+        if self.filter_name:
+            filter_name = self.filter_name.lower()
+            active_sheet = None
+            for sheet in data.sheets:
+                if sheet.is_sheet:
+                    active_sheet = sheet
+                    active_sheet_index = len(flt_flags)
+                if filter_name in sheet.name.lower() or filter_name in sheet.identification.lower():
+                    flt_flags.append(self.bitflag_filter_item)
+                    if not sheet.is_sheet:
+                        flt_flags[active_sheet_index] = self.bitflag_filter_item
+                else:
+                    flt_flags.append(0)
+
+        if not flt_flags:
+            return flt_flags, flt_neworder
+        return flt_flags, flt_neworder

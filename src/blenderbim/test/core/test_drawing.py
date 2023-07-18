@@ -492,6 +492,9 @@ class TestUpdateDrawingName:
         drawing.does_file_exist("absolute_layout_uri").should_be_called().will_return(True)
         drawing.update_embedded_svg_location("absolute_layout_uri", "old_location", "new_location").should_be_called()
 
+        drawing.is_editing_sheets().should_be_called().will_return(True)
+        drawing.import_sheets().should_be_called()
+
         subject.update_drawing_name(ifc, drawing, drawing="drawing", name="name")
 
 

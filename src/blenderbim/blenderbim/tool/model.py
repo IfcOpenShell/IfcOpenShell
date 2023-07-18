@@ -30,6 +30,7 @@ from blenderbim.bim import import_ifc
 from blenderbim.bim.module.geometry.helper import Helper
 import collections
 from blenderbim.bim.module.model.data import AuthoringData
+import json
 
 
 class Model(blenderbim.core.tool.Model):
@@ -734,3 +735,16 @@ class Model(blenderbim.core.tool.Model):
             obj.preview.image_pixels_float = pixels
 
         AuthoringData.type_thumbnails[element.id()] = obj.preview.icon_id
+
+    @classmethod
+    def get_modeling_bbim_pset_data(cls, object, pset_name):
+        """get modelling BBIM pset data (eg, BBIM_Roof) and loads it's `Data` as json to `data_dict`"""
+        element = tool.Ifc.get_entity(object)
+        if not element:
+            return
+        psets = ifcopenshell.util.element.get_psets(element)
+        pset_data = psets.get(pset_name, None)
+        if not pset_data:
+            return
+        pset_data["data_dict"] = json.loads(pset_data.get("Data", "[]") or "[]")
+        return pset_data

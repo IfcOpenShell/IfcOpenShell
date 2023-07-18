@@ -276,7 +276,7 @@ def create_bm_door_lining(bm, size: Vector, thickness: list, position: Vector = 
 
 
 def update_door_modifier_bmesh(context):
-    obj = context.object
+    obj = context.active_object
     props = obj.BIMDoorProperties
 
     overall_width = props.overall_width
@@ -456,7 +456,7 @@ def update_door_modifier_bmesh(context):
     bmesh.ops.translate(bm, vec=V(0, lining_offset, 0), verts=lining_offset_verts)
     bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
 
-    if bpy.context.object.mode == "EDIT":
+    if bpy.context.active_object.mode == "EDIT":
         bmesh.update_edit_mesh(obj.data)
     else:
         bm.to_mesh(obj.data)
@@ -475,9 +475,9 @@ class BIM_OT_add_door(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "You need to start IFC project first to create a door.")
             return {"CANCELLED"}
 
-        if context.object is not None:
-            spawn_location = context.object.location.copy()
-            context.object.select_set(False)
+        if context.active_object is not None:
+            spawn_location = context.active_object.location.copy()
+            context.active_object.select_set(False)
         else:
             spawn_location = bpy.context.scene.cursor.location.copy()
 
@@ -512,10 +512,6 @@ class AddDoor(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMDoorProperties
-
-        if element.is_a() not in ("IfcDoor", "IfcDoorType", "IfcDoorStyle"):
-            self.report({"ERROR"}, "Object has to be IfcDoor/IfcDoorType/IfcDoorStyle type to add a door.")
-            return {"CANCELLED"}
 
         door_data = props.get_general_kwargs(convert_to_project_units=True)
         lining_props = props.get_lining_kwargs(convert_to_project_units=True)
@@ -565,7 +561,7 @@ class CancelEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
             should_sync_changes_first=False,
         )
 
-        props.is_editing = -1
+        props.is_editing = False
         return {"FINISHED"}
 
 
@@ -586,7 +582,7 @@ class FinishEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
         door_data["lining_properties"] = lining_props
         door_data["panel_properties"] = panel_props
 
-        props.is_editing = -1
+        props.is_editing = False
 
         update_door_modifier_representation(context)
 
@@ -611,7 +607,7 @@ class EnableEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
 
         # required since we could load pset from .ifc and BIMDoorProperties won't be set
         props.set_props_kwargs_from_ifc_data(data)
-        props.is_editing = 1
+        props.is_editing = True
         return {"FINISHED"}
 
 
@@ -624,7 +620,7 @@ class RemoveDoor(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         props = obj.BIMDoorProperties
         element = tool.Ifc.get_entity(obj)
-        obj.BIMDoorProperties.is_editing = -1
+        obj.BIMDoorProperties.is_editing = False
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Door")
         ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)

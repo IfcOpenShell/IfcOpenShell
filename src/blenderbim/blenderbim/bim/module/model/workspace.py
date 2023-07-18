@@ -176,7 +176,11 @@ class BimToolUI:
             row.operator("bim.join_wall", icon="X", text="").join_type = ""
 
         elif AuthoringData.data["active_material_usage"] == "LAYER3":
-            add_layout_hotkey_operator(cls.layout, "Edit Profile", "S_E", "")
+
+            if len(context.selected_objects) == 1:
+                add_layout_hotkey_operator(cls.layout, "Edit Profile", "S_E", "")
+            elif "LAYER2" in AuthoringData.data["selected_material_usages"]:
+                add_layout_hotkey_operator(cls.layout, "Extend Wall To Slab", "S_E", "")
 
             row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="x_angle", text="X Angle")
@@ -207,7 +211,7 @@ class BimToolUI:
 
         elif (
             (RailingData.is_loaded or not RailingData.load())
-            and RailingData.data["parameters"]
+            and RailingData.data["pset_data"]
             and not context.active_object.BIMRailingProperties.is_editing_path
         ):
             # NOTE: should be above "active_representation_type" = "SweptSolid" check
@@ -248,15 +252,12 @@ class BimToolUI:
 
         elif (
             (RoofData.is_loaded or not RoofData.load())
-            and RoofData.data["parameters"]
+            and RoofData.data["pset_data"]
             and not context.active_object.BIMRoofProperties.is_editing_path
         ):
             row = cls.layout.row(align=True)
             row.label(text="", icon=f"EVENT_TAB")
             row.operator("bim.enable_editing_roof_path", text="Edit Roof Path")
-
-        elif DecoratorData.get_ifc_text_data(bpy.context.object):
-            add_layout_hotkey_operator(cls.layout, "Edit Text", "S_E", "")
 
         row = cls.layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
@@ -427,7 +428,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         # and it might conflict with one of the conditions below
         if (
             (RailingData.is_loaded or not RailingData.load())
-            and RailingData.data["parameters"]
+            and RailingData.data["pset_data"]
             and not bpy.context.active_object.BIMRailingProperties.is_editing_path
         ):
             bpy.ops.bim.enable_editing_railing_path()
@@ -435,7 +436,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
 
         elif (
             (RoofData.is_loaded or not RoofData.load())
-            and RoofData.data["parameters"]
+            and RoofData.data["pset_data"]
             and not bpy.context.active_object.BIMRoofProperties.is_editing_path
         ):
             # undo the unselection done above because roof has no usage type
@@ -460,7 +461,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
 
         if len(bpy.context.selected_objects) == 1:
             if self.active_material_usage == "LAYER3":
-                # Edit LAYER2 profile
+                # Edit LAYER3 profile
                 if bpy.context.active_object and bpy.context.active_object.mode == "OBJECT":
                     bpy.ops.bim.enable_editing_extrusion_profile()
             elif self.active_material_usage == "LAYER2":
@@ -472,6 +473,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             else:
                 # Edit SWEPTSOLID profile (assuming single profile for now)
                 bpy.ops.bim.enable_editing_extrusion_profile()
+
         elif self.active_material_usage == "LAYER2" and selected_usages.get("PROFILE", []):
             # Extend PROFILEs to LAYER2
             [o.select_set(False) for o in selected_usages.get("LAYER3", [])]
@@ -495,10 +497,6 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             [o.select_set(False) for o in selected_usages.get("LAYER3", [])]
             [o.select_set(False) for o in selected_usages.get("LAYER2", [])]
             bpy.ops.bim.extend_profile(join_type="T")
-
-        elif DecoratorData.get_ifc_text_data(bpy.context.object):
-            bpy.context.object.select_set(True)
-            bpy.ops.bim.edit_text_popup()
 
     def hotkey_S_F(self):
         if not bpy.context.selected_objects:

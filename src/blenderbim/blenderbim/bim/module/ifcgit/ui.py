@@ -6,7 +6,7 @@ from blenderbim.bim.module.ifcgit.data import IfcGitData
 class IFCGIT_PT_panel(bpy.types.Panel):
     """Scene Properties panel to interact with IFC repository data"""
 
-    bl_label = "IFC Git"
+    bl_label = "Git"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"

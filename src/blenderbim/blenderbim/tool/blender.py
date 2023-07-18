@@ -398,12 +398,12 @@ class Blender:
                 )
             bmesh.update_edit_mesh(mesh)
             if not obj:
-                if not bpy.context.object or bpy.context.object.data != mesh:
+                if not bpy.context.active_object or bpy.context.active_object.data != mesh:
                     raise Exception(
                         "Error applying bmesh in EDIT object - object is "
                         "not provided and can't be acquired from the context. "
                     )
-                obj = bpy.context.object
+                obj = bpy.context.active_object
             obj.update_from_editmode()
         else:
             bm.to_mesh(mesh)
@@ -456,3 +456,59 @@ class Blender:
             return bpy.ops.object.mode_set(mode="EDIT_GPENCIL", toggle=True)
         else:
             return {"CANCELLED"}
+
+    class Modifier:
+        @classmethod
+        def is_object_an_ifc_class(cls, obj, classes):
+            if not tool.Ifc.get():
+                return False
+            element = tool.Ifc.get_entity(obj)
+            return element and element.is_a() in classes
+
+        @classmethod
+        def is_eligible_for_railing_modifier(cls, obj):
+            return cls.is_object_an_ifc_class(obj, ("IfcRailing", "IfcRailingType"))
+
+        @classmethod
+        def is_eligible_for_stair_modifier(cls, obj):
+            return cls.is_object_an_ifc_class(obj, ("IfcStairFlight", "IfcStairFlightType"))
+
+        @classmethod
+        def is_eligible_for_window_modifier(cls, obj):
+            return cls.is_object_an_ifc_class(obj, ("IfcWindow", "IfcWindowType", "IfcWindowStyle"))
+
+        @classmethod
+        def is_eligible_for_door_modifier(cls, obj):
+            return cls.is_object_an_ifc_class(obj, ("IfcDoor", "IfcDoorType", "IfcDoorStyle"))
+
+        @classmethod
+        def is_eligible_for_roof_modifier(cls, obj):
+            return cls.is_object_an_ifc_class(obj, ("IfcRoof", "IfcRoofType"))
+
+        @classmethod
+        def is_railing(cls, element):
+            return tool.Pset.get_element_pset(element, "BBIM_Railing")
+
+        @classmethod
+        def is_roof(cls, element):
+            return tool.Pset.get_element_pset(element, "BBIM_Roof")
+
+        @classmethod
+        def is_window(cls, element):
+            return tool.Pset.get_element_pset(element, "BBIM_Window")
+
+        @classmethod
+        def is_door(cls, element):
+            return tool.Pset.get_element_pset(element, "BBIM_Door")
+
+        @classmethod
+        def is_stair(cls, element):
+            return tool.Pset.get_element_pset(element, "BBIM_Stair")
+
+        @classmethod
+        def is_editing_parameters(cls, obj):
+            return obj.BIMRailingProperties.is_editing or obj.BIMRoofProperties.is_editing
+
+        @classmethod
+        def is_modifier_with_non_editable_path(cls, element):
+            return cls.is_stair(element) or cls.is_door(element) or cls.is_window(element)

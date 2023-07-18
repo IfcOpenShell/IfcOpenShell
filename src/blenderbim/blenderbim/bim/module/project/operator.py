@@ -36,6 +36,7 @@ from blenderbim.bim.ui import IFCFileSelector
 from blenderbim.bim import import_ifc
 from blenderbim.bim import export_ifc
 from pathlib import Path
+from bpy.app.handlers import persistent
 
 
 class NewProject(bpy.types.Operator):
@@ -578,8 +579,31 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
     should_start_fresh_session: bpy.props.BoolProperty(name="Should Start Fresh Session", default=True)
 
     def execute(self, context):
+        @persistent
+        def load_handler(*args):
+            bpy.app.handlers.load_post.remove(load_handler)
+            self.finish_loading_project(context)
+
+        if self.should_start_fresh_session:
+            # WARNING: wm.read_homefile clears context which could lead to some
+            # operators to fail:
+            # https://blender.stackexchange.com/a/282558/135166
+            # So we continue using the load_post handler thats triggered when
+            # context is already restored
+            bpy.app.handlers.load_post.append(load_handler)
+            bpy.ops.wm.read_homefile()
+            return {"FINISHED"}
+        else:
+            return self.finish_loading_project(context)
+
+    def finish_loading_project(self, context):
         if not self.is_existing_ifc_file():
             return {"FINISHED"}
+
+        if tool.Blender.is_default_scene():
+            for obj in bpy.data.objects:
+                bpy.data.objects.remove(obj)
+
         context.scene.BIMProperties.ifc_file = self.get_filepath()
         context.scene.BIMProjectProperties.is_loading = True
         context.scene.BIMProjectProperties.total_elements = len(tool.Ifc.get().by_type("IfcElement"))
@@ -588,13 +612,6 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        if self.should_start_fresh_session:
-            bpy.ops.wm.read_homefile()
-
-            if tool.Blender.is_default_scene():
-                for obj in bpy.data.objects:
-                    bpy.data.objects.remove(obj)
-
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
 
@@ -970,7 +987,7 @@ class ExportIFC(bpy.types.Operator):
         if bpy.data.is_saved and bpy.data.is_dirty and bpy.data.filepath:
             bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
         blenderbim.bim.handler.purge_module_data()
-        self.report({"INFO"}, f"IFC Project \"{os.path.basename(output_file)}\" Saved")
+        self.report({"INFO"}, f'IFC Project "{os.path.basename(output_file)}" Saved')
 
         if bpy.data.is_saved:
             bpy.ops.wm.save_mainfile("INVOKE_DEFAULT")

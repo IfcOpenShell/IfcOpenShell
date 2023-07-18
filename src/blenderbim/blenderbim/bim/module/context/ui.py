@@ -23,7 +23,7 @@ from blenderbim.bim.module.context.data import ContextData
 
 
 class BIM_PT_context(bpy.types.Panel):
-    bl_label = "IFC Geometric Representation Contexts"
+    bl_label = "Geometric Representation Contexts"
     bl_idname = "BIM_PT_context"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"

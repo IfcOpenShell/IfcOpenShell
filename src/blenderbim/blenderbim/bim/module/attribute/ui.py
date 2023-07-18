@@ -54,12 +54,12 @@ def draw_ui(context, layout, obj_type, attributes):
 
 
 class BIM_PT_object_attributes(Panel):
-    bl_label = "IFC Attributes"
+    bl_label = "Attributes"
     bl_idname = "BIM_PT_object_attributes"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
-    bl_parent_id = "BIM_PT_object_metadata"
+    bl_parent_id = "BIM_PT_tab_object_metadata"
 
     @classmethod
     def poll(cls, context):
@@ -76,7 +76,7 @@ class BIM_PT_object_attributes(Panel):
 
 
 class BIM_PT_material_attributes(Panel):
-    bl_label = "IFC Material Attributes"
+    bl_label = "Material Attributes"
     bl_idname = "BIM_PT_material_attributes"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"

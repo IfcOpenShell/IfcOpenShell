@@ -292,7 +292,7 @@ def create_bm_window(
 
 
 def update_window_modifier_bmesh(context):
-    obj = context.object
+    obj = context.active_object
     props = obj.BIMWindowProperties
     panel_schema = DEFAULT_PANEL_SCHEMAS[props.window_type]
     accumulated_height = [0] * len(panel_schema[0])
@@ -425,7 +425,7 @@ def update_window_modifier_bmesh(context):
     bmesh.ops.translate(bm, vec=V(0, lining_offset, 0), verts=bm.verts)
     bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
 
-    if bpy.context.object.mode == "EDIT":
+    if bpy.context.active_object.mode == "EDIT":
         bmesh.update_edit_mesh(obj.data)
     else:
         bm.to_mesh(obj.data)
@@ -444,9 +444,9 @@ class BIM_OT_add_window(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "You need to start IFC project first to create a window.")
             return {"CANCELLED"}
 
-        if context.object is not None:
-            spawn_location = context.object.location.copy()
-            context.object.select_set(False)
+        if context.active_object is not None:
+            spawn_location = context.active_object.location.copy()
+            context.active_object.select_set(False)
         else:
             spawn_location = bpy.context.scene.cursor.location.copy()
 
@@ -481,10 +481,6 @@ class AddWindow(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMWindowProperties
-
-        if element.is_a() not in ("IfcWindow", "IfcWindowType", "IfcWindowStyle"):
-            self.report({"ERROR"}, "Object has to be IfcWindow/IfcWindowType/IfcWindowStyle type to add a window.")
-            return {"CANCELLED"}
 
         window_data = props.get_general_kwargs(convert_to_project_units=True)
         lining_props = props.get_lining_kwargs(convert_to_project_units=True)
@@ -531,7 +527,7 @@ class CancelEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
             should_sync_changes_first=False,
         )
 
-        props.is_editing = -1
+        props.is_editing = False
         return {"FINISHED"}
 
 
@@ -552,7 +548,7 @@ class FinishEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
         window_data["lining_properties"] = lining_props
         window_data["panel_properties"] = panel_props
 
-        props.is_editing = -1
+        props.is_editing = False
 
         update_window_modifier_representation(context)
 
@@ -578,7 +574,7 @@ class EnableEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
         # required since we could load pset from .ifc and BIMWindowProperties won't be set
         props.set_props_kwargs_from_ifc_data(data)
 
-        props.is_editing = 1
+        props.is_editing = True
         return {"FINISHED"}
 
 
@@ -591,7 +587,7 @@ class RemoveWindow(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         props = obj.BIMWindowProperties
         element = tool.Ifc.get_entity(obj)
-        obj.BIMWindowProperties.is_editing = -1
+        obj.BIMWindowProperties.is_editing = False
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Window")
         ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)

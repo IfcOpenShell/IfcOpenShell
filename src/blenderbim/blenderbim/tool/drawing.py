@@ -24,6 +24,8 @@ import lark
 import bmesh
 import shutil
 import logging
+import shapely
+from shapely.ops import unary_union
 import mathutils
 import webbrowser
 import subprocess
@@ -97,6 +99,8 @@ class Drawing(blenderbim.core.tool.Drawing):
         current_pos = camera.matrix_world @ current_pos
         obj.location = current_pos
 
+    ANNOTATION_TYPES_SUPPORT_SETUP = ("STAIR_ARROW", "TEXT", "REVISION_CLOUD", "FILL_AREA")
+
     @classmethod
     def setup_annotation_object(cls, obj, object_type, related_object=None):
         """Finish object's adjustments after both object and entity are created"""
@@ -135,6 +139,30 @@ class Drawing(blenderbim.core.tool.Drawing):
             cls.ensure_annotation_in_drawing_plane(obj)
             assign_product = True
 
+        elif object_type == "REVISION_CLOUD":
+            revised_object, cloud = related_object, obj
+
+            verts = [np.array(revised_object.matrix_world @ v.co) for v in revised_object.data.vertices]
+            verts = [(np.around(v[[0, 1]], decimals=3)).tolist() for v in verts]
+            edges = [e.vertices for e in revised_object.data.edges]
+
+            # shapely magic
+            boundary_lines = [shapely.LineString([verts[v] for v in e]) for e in edges]
+            unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
+            all_polygons = shapely.polygonize(unioned_boundaries.geoms).geoms
+            outer_shell = unary_union(all_polygons)
+
+            bm = tool.Blender.get_bmesh_for_mesh(obj.data, clean=True)
+            new_verts = list(outer_shell.exterior.coords)
+            bm_verts = [bm.verts.new(v + (0,)) for v in new_verts]
+            bm_edges = [bm.edges.new([bm_verts[i], bm_verts[i + 1]]) for i in range(len(new_verts) - 1)]
+            bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
+
+            tool.Blender.apply_bmesh(obj.data, bm, obj)
+            cloud.location = Vector((0, 0, 0))
+            cls.ensure_annotation_in_drawing_plane(cloud)
+            assign_product = True
+
         if assign_product and not cls.get_assigned_product(obj_entity):
             tool.Ifc.run("drawing.assign_product", relating_product=related_entity, related_object=obj_entity)
 
@@ -151,7 +179,11 @@ class Drawing(blenderbim.core.tool.Drawing):
         if element_type == "IfcAnnotation" and element.ObjectType in object_types:
             return True
 
-        if element_type == "IfcTypeProduct" and element.ApplicableOccurrence.startswith("IfcAnnotation/"):
+        if (
+            element_type == "IfcTypeProduct"
+            and element.ApplicableOccurrence
+            and element.ApplicableOccurrence.startswith("IfcAnnotation/")
+        ):
             applicable_object_type = element.ApplicableOccurrence.split("/")[1]
             if applicable_object_type in object_types:
                 return True
@@ -463,6 +495,10 @@ class Drawing(blenderbim.core.tool.Drawing):
         return items[0]
 
     @classmethod
+    def is_editing_sheets(cls):
+        return bpy.context.scene.DocProperties.is_editing_sheets
+
+    @classmethod
     def remove_literal_from_annotation(cls, obj, literal):
         element = tool.Ifc.get_entity(obj)
         if not element:
@@ -623,17 +659,38 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def import_drawings(cls):
-        current_drawings_selection = {
-            d.ifc_definition_id: d.is_selected for d in bpy.context.scene.DocProperties.drawings
-        }
-        bpy.context.scene.DocProperties.drawings.clear()
+        props = bpy.context.scene.DocProperties
+        expanded_target_views = {d.target_view for d in props.drawings if d.is_expanded}
+        current_drawings_selection = {d.ifc_definition_id: d.is_selected for d in props.drawings}
+        props.drawings.clear()
         drawings = [e for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"]
+        grouped_drawings = {
+            "MODEL_VIEW": [],
+            "PLAN_VIEW": [],
+            "SECTION_VIEW": [],
+            "ELEVATION_VIEW": [],
+            "REFLECTED_PLAN_VIEW": [],
+        }
         for drawing in drawings:
-            new = bpy.context.scene.DocProperties.drawings.add()
-            new.ifc_definition_id = drawing.id()
-            new.name = drawing.Name or "Unnamed"
-            new.target_view = cls.get_drawing_target_view(drawing)
-            new.is_selected = current_drawings_selection.get(drawing.id(), True)
+            target_view = cls.get_drawing_target_view(drawing)
+            grouped_drawings.setdefault(target_view, []).append(drawing)
+
+        for target_view, drawings in grouped_drawings.items():
+            new = props.drawings.add()
+            new.name = target_view.replace("_", " ").title() + f" ({len(drawings)})"
+            new.target_view = target_view
+            new.is_drawing = False
+            new.is_expanded = target_view in expanded_target_views
+
+            if not new.is_expanded:
+                continue
+
+            for drawing in sorted(drawings, key=lambda x: x.Name or "Unnamed"):
+                new = props.drawings.add()
+                new.ifc_definition_id = drawing.id()
+                new.name = drawing.Name or "Unnamed"
+                new.is_selected = current_drawings_selection.get(drawing.id(), True)
+                new.is_drawing = True
 
     @classmethod
     def import_documents(cls, document_type):
