@@ -456,3 +456,32 @@ class Blender:
             return bpy.ops.object.mode_set(mode="EDIT_GPENCIL", toggle=True)
         else:
             return {"CANCELLED"}
+
+    class Modifier:
+        @classmethod
+        def is_railing(cls, element):
+            return tool.Pset.get_element_pset(element, "BBIM_Railing")
+
+        @classmethod
+        def is_roof(cls, element):
+            return tool.Pset.get_element_pset(element, "BBIM_Roof")
+
+        @classmethod
+        def is_window(cls, element):
+            return tool.Pset.get_element_pset(element, "BBIM_Window")
+
+        @classmethod
+        def is_door(cls, element):
+            return tool.Pset.get_element_pset(element, "BBIM_Door")
+
+        @classmethod
+        def is_stair(cls, element):
+            return tool.Pset.get_element_pset(element, "BBIM_Stair")
+
+        @classmethod
+        def is_editing_parameters(cls, obj):
+            return obj.BIMRailingProperties.is_editing or obj.BIMRoofProperties.is_editing
+
+        @classmethod
+        def is_modifier_with_non_editable_path(cls, element):
+            return cls.is_stair(element) or cls.is_door(element) or cls.is_window(element)
