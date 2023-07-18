@@ -109,14 +109,14 @@ class BIM_PT_brickschema(Panel):
 
         for attribute in BrickschemaData.data["attributes"]:
             row = self.layout.row(align=True)
-            row.label(text=attribute["name"])
-            row.label(text=attribute["value"])
+            row.label(text=attribute["predicate"])
+            row.label(text=attribute["object"])
             if attribute["is_uri"]:
                 op = row.operator("bim.view_brick_item", text="", icon="DISCLOSURE_TRI_RIGHT")
-                op.item = attribute["value_uri"]
+                op.item = attribute["object_uri"]
             if attribute["is_globalid"]:
                 op = row.operator("bim.select_global_id", icon="RESTRICT_SELECT_OFF", text="")
-                op.global_id = attribute["value"]
+                op.global_id = attribute["object"]
 
 
 class BIM_PT_ifc_brickschema_references(Panel):
