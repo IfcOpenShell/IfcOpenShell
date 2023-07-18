@@ -552,7 +552,8 @@ class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
     def poll(cls, context):
         obj = context.active_object
         return (
-            obj.data
+            obj is not None
+            and obj.data
             and hasattr(obj.data, "BIMMeshProperties")
             and obj.data.BIMMeshProperties.ifc_definition_id
         )
