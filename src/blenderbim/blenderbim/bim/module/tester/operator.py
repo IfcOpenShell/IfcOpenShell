@@ -54,7 +54,6 @@ class ExecuteIfcTester(bpy.types.Operator):
             print("Finished loading:", time.time() - start)
             start = time.time()
             specs.validate(ifc)
-            print(specs)
             
             print("Finished validating:", time.time() - start)
             start = time.time()
@@ -63,7 +62,7 @@ class ExecuteIfcTester(bpy.types.Operator):
             engine.report()            
             engine.to_file(output)
             webbrowser.open("file://" + output)
-
+            
             report = None
             report = ifctester.reporter.Json(specs).report()['specifications']
             if report:
@@ -147,5 +146,27 @@ class SelectEntity(bpy.types.Operator):
             if obj.BIMObjectProperties.ifc_definition_id == self.ifc_id:
                 obj.select_set(True)
                 bpy.context.view_layer.objects.active = obj
+        return {"FINISHED"}
+    
+class ExportBcf(bpy.types.Operator):
+    bl_idname = "bim.export_bcf"
+    bl_label = "Export BCF"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        props = context.scene.IfcTesterProperties
+        with tempfile.TemporaryDirectory() as dirpath:
+            output = os.path.join(dirpath, "{}.bcf".format(props.specs))
+            if props.should_load_from_memory and tool.Ifc.get():
+                ifc = tool.Ifc.get()
+            else:
+                ifc = ifcopenshell.open(props.ifc_file)
+            specs = ifctester.ids.open(props.specs)
+            specs.validate(ifc)
+            bcf_reporter = ifctester.reporter.Bcf(specs)
+            bcf_reporter.report()
+            bcf_reporter.to_file(output)
+            print("Finished exporting:")
+
         return {"FINISHED"}
 
