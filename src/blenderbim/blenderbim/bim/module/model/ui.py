@@ -247,8 +247,7 @@ class BIM_PT_stair(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        # always display modifier if it's IFC object
-        return tool.Ifc.get() and tool.Ifc.get_entity(context.active_object)
+        return tool.Blender.Modifier.is_eligible_for_stair_modifier(context.active_object)
 
     def draw(self, context):
         if not StairData.is_loaded:
@@ -345,8 +344,7 @@ class BIM_PT_window(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        # always display modifier if it's IFC object
-        return tool.Ifc.get() and tool.Ifc.get_entity(context.active_object)
+        return tool.Blender.Modifier.is_eligible_for_window_modifier(context.active_object)
 
     def draw(self, context):
         if not WindowData.is_loaded:
@@ -455,8 +453,7 @@ class BIM_PT_door(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        # always display modifier if it's IFC object
-        return tool.Ifc.get() and tool.Ifc.get_entity(context.active_object)
+        return tool.Blender.Modifier.is_eligible_for_door_modifier(context.active_object)
 
     def draw(self, context):
         if not DoorData.is_loaded:
@@ -529,8 +526,7 @@ class BIM_PT_railing(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        # always display modifier if it's IFC object
-        return tool.Ifc.get() and tool.Ifc.get_entity(context.active_object)
+        return tool.Blender.Modifier.is_eligible_for_railing_modifier(context.active_object)
 
     def draw(self, context):
         if not RailingData.is_loaded:
@@ -592,8 +588,7 @@ class BIM_PT_roof(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        # always display modifier if it's IFC object
-        return tool.Ifc.get() and tool.Ifc.get_entity(context.active_object)
+        return tool.Blender.Modifier.is_eligible_for_roof_modifier(context.active_object)
 
     def draw(self, context):
         if not RoofData.is_loaded:

@@ -361,10 +361,6 @@ class AddStair(bpy.types.Operator, tool.Ifc.Operator):
         props = obj.BIMStairProperties
         ifc_file = tool.Ifc.get()
 
-        if element.is_a() not in ("IfcStairFlight", "IfcStairFlightType"):
-            self.report({"ERROR"}, "Object has to be IfcStairFlight/IfcStairFlightType to add a stair.")
-            return {"CANCELLED"}
-
         stair_data = props.get_props_kwargs(convert_to_project_units=True)
         pset = tool.Pset.get_element_pset(element, "BBIM_Stair")
         if not pset:
