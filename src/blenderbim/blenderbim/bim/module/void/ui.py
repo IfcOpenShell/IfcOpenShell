@@ -28,7 +28,7 @@ class BIM_PT_voids(Panel):
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "object"
+    bl_context = "scene"
     bl_order = 1
     bl_parent_id = "BIM_PT_tab_geometric_relationships"
 
@@ -81,9 +81,12 @@ class BIM_PT_voids(Panel):
 class BIM_PT_booleans(Panel):
     bl_label = "Booleans"
     bl_idname = "BIM_PT_booleans"
+    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "data"
+    bl_context = "scene"
+    bl_order = 1
+    bl_parent_id = "BIM_PT_tab_geometric_relationships"
 
     @classmethod
     def poll(cls, context):
