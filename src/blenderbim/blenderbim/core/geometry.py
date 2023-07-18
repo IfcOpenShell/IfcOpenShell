@@ -88,7 +88,15 @@ def switch_representation(
     should_sync_changes_first=False,
     apply_openings=True,
 ):
-    """Function can switch to representation that wasn't yet assigned to that object. See #2766."""
+    """Function can switch to representation that wasn't yet assigned to that object. See #2766.
+
+    `should_sync_changes_first` - sync ifc representation with current state of `obj.data`;
+
+    `should_reload` - reload `obj.data` from ifc representation;
+
+    `is_global` - replace mesh data for all users of `obj.data`, not just `obj`;
+
+    """
     if should_sync_changes_first and geometry.is_edited(obj) and not geometry.is_box_representation(representation):
         representation_id = geometry.get_representation_id(representation)
         geometry.run_geometry_update_representation(obj=obj)
