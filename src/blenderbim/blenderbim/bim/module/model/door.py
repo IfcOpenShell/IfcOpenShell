@@ -513,10 +513,6 @@ class AddDoor(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMDoorProperties
 
-        if element.is_a() not in ("IfcDoor", "IfcDoorType", "IfcDoorStyle"):
-            self.report({"ERROR"}, "Object has to be IfcDoor/IfcDoorType/IfcDoorStyle type to add a door.")
-            return {"CANCELLED"}
-
         door_data = props.get_general_kwargs(convert_to_project_units=True)
         lining_props = props.get_lining_kwargs(convert_to_project_units=True)
         panel_props = props.get_panel_kwargs(convert_to_project_units=True)

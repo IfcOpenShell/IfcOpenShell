@@ -459,6 +459,33 @@ class Blender:
 
     class Modifier:
         @classmethod
+        def is_object_an_ifc_class(cls, obj, classes):
+            if not tool.Ifc.get():
+                return False
+            element = tool.Ifc.get_entity(obj)
+            return element and element.is_a() in classes
+
+        @classmethod
+        def is_eligible_for_railing_modifier(cls, obj):
+            return cls.is_object_an_ifc_class(obj, ("IfcRailing", "IfcRailingType"))
+
+        @classmethod
+        def is_eligible_for_stair_modifier(cls, obj):
+            return cls.is_object_an_ifc_class(obj, ("IfcStairFlight", "IfcStairFlightType"))
+
+        @classmethod
+        def is_eligible_for_window_modifier(cls, obj):
+            return cls.is_object_an_ifc_class(obj, ("IfcWindow", "IfcWindowType", "IfcWindowStyle"))
+
+        @classmethod
+        def is_eligible_for_door_modifier(cls, obj):
+            return cls.is_object_an_ifc_class(obj, ("IfcDoor", "IfcDoorType", "IfcDoorStyle"))
+
+        @classmethod
+        def is_eligible_for_roof_modifier(cls, obj):
+            return cls.is_object_an_ifc_class(obj, ("IfcRoof", "IfcRoofType"))
+
+        @classmethod
         def is_railing(cls, element):
             return tool.Pset.get_element_pset(element, "BBIM_Railing")
 

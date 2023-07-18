@@ -548,10 +548,6 @@ class AddRoof(bpy.types.Operator, tool.Ifc.Operator):
         props = obj.BIMRoofProperties
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
-        if element.is_a() not in ("IfcRoof", "IfcRoofType"):
-            self.report({"ERROR"}, "Object has to be IfcRoof/IfcRoofType type to add a roof.")
-            return {"CANCELLED"}
-
         # rejecting original roof shape to be safe
         # taking into account only it's bounding box dimensions
         if obj.dimensions.x == 0 or obj.dimensions.y == 0:
