@@ -316,10 +316,6 @@ class AddRailing(bpy.types.Operator, tool.Ifc.Operator):
         props = obj.BIMRailingProperties
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
-        if element.is_a() not in ("IfcRailing", "IfcRailingType"):
-            self.report({"ERROR"}, "Object has to be IfcRailing/IfcRailingType type to add a railing.")
-            return {"CANCELLED"}
-
         railing_data = props.get_general_kwargs(convert_to_project_units=True)
         path_data = get_path_data(obj)
         if not path_data:
