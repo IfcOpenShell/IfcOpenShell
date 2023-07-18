@@ -62,6 +62,10 @@ class BIM_PT_tester(Panel):
             )
 
             self.draw_editable_ui(context)
+        
+        if self.props.has_report:
+            row = self.layout.row()
+            row.operator("bim.export_bcf", text="Export BCF", icon="EXPORT")
 
     def draw_editable_ui(self, context):
         props = context.scene.IfcTesterProperties        
