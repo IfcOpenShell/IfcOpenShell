@@ -111,18 +111,18 @@ class IfcClassData:
         suggestions = defaultdict(list)
         suggestions.update(
             {
-                "IfcWall": ["Glazing", "Glass", "Pane"],
-                "IfcWindow": ["Glazing", "Glass", "Pane"],
-                "IfcPlate": ["Glazing", "Glass", "Pane"],
-                "IfcFurniture": ["Signage"],
-                "IfcSlab": ["Hob"],
-                "IfcCovering": ["Flashing", "Capping"],
-                "IfcCableSegment": ["Lighting Rod"],
-                "IfcSensor": ["Card Reader", "Fob Reader"],
-                "IfcSwitchingDevice": ["Reed Switch", "Electric Isolating Switch"],
                 "IfcActuator": ["Electric Strike"],
                 "IfcAirTerminalBox": ["VAV Box"],
+                "IfcCableSegment": ["Lighting Rod"],
+                "IfcCovering": ["Flashing", "Capping"],
+                "IfcFurniture": ["Signage"],
+                "IfcPlate": ["Glazing", "Glass", "Pane"],
+                "IfcSensor": ["Card Reader", "Fob Reader"],
+                "IfcSlab": ["Hob"],
+                "IfcSwitchingDevice": ["Reed Switch", "Electric Isolating Switch"],
                 "IfcUnitaryEquipment": ["Fan Coil Unit"],
+                "IfcWall": ["Glazing", "Glass", "Pane"],
+                "IfcWindow": ["Glazing", "Glass", "Pane"],
             }
         )
         version = tool.Ifc.get_schema()
