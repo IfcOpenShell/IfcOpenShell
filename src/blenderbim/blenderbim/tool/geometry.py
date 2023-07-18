@@ -35,6 +35,8 @@ class Geometry(blenderbim.core.tool.Geometry):
     @classmethod
     def change_object_data(cls, obj, data, is_global=False):
         if is_global:
+            if obj.mode == "EDIT":
+                raise Exception("user_remap is not supported in EDIT mode")
             obj.data.user_remap(data)
         else:
             obj.data = data
