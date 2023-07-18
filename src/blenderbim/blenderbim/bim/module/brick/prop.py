@@ -52,11 +52,7 @@ def get_brick_entity_classes(self, context):
 
 
 def get_brick_roots(self, context):
-    return [("System", "System", ""),
-            ("Location", "Location", ""),
-            ("Equipment", "Equipment", ""),
-            ("Point", "Point", "")
-        ]
+    return BrickStore.root_classes
             
 
 class Brick(PropertyGroup):
