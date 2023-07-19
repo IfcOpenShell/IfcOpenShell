@@ -193,7 +193,7 @@ class IfcStore:
         # Please use tool.Ifc.link() instead of this method. We want to
         # refactor this class and deprecate usage of IfcStore in favour of
         # tools.
-        if isinstance(obj, bpy.types.Mesh):
+        if not isinstance(obj, (bpy.types.Object, bpy.types.Material)):
             obj.BIMMeshProperties.ifc_definition_id = element.id()
             return
 
