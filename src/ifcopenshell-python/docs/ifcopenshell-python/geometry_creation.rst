@@ -45,6 +45,22 @@ is intended to be viewed. For example, a "2D Plan View" might be a
 **Representation Context**. This allows the user to choose to see the
 appropriate **Representation**.
 
+Objects may also have the concept of **Types** and **Material Sets** that
+inform their shape. For example, if a light fixture **Type** has a
+**Representation**, all occurrences of that light fixture must have the exact
+same **Representation**. This is called a **Mapped Representation**. Similarly,
+if a wall **Type** has a **Material Set** defining layers and their
+thicknesses, all wall occurrences of that wall **Type** must have the same
+thickness (although the length of the wall may vary).  Alternatively, if a
+column **Type** has a **Material Set** defining a cross sectional profile, then
+all occurrences of that column type must have the same cross section (although
+the height of the column may vary).
+
+The vast majority of objects in the built environment use **Types** and
+**Material Sets**, such as slabs, walls, columns, beams, doors, windows,
+and furniture. For this reason, it is highly recommended to not just create
+**Representations** for individual objects, but first consider creating a
+**Type**.
 
 Project units
 -------------
@@ -334,8 +350,7 @@ rotation as appropriate. This can be done using the API:
 .. code-block:: python
 
     # A wall-like representation starting and ending at a particular 2D point
-    # It is not necessary to assign the representation after using this function.
-    run("geometry.create_2pt_wall", model,
+    representation = run("geometry.create_2pt_wall", model,
         element=element, context=body, p1=(1., 1.), p2=(3., 2.), elevation=0, height=3, thickness=0.2)
 
 .. image:: images/wall-2pt-representation.png
@@ -343,8 +358,115 @@ rotation as appropriate. This can be done using the API:
 Profile representations
 -----------------------
 
+Profile-based **Representations** are defined by a 2D profile in the XY plane
+which is then extruded in the +Z direction. They are most appropriately used
+for slabs, columns, beams, and other structural members.
+
+The 2D profile may be defined as an arbitrary curve, or as a parameterised
+shape (e.g. a circle defined by a center and a radius). Arbitrary curves are
+typically used for objects like slabs, cornices, or country-specific
+cold-rolled steel, whereas parameterised shapes (circles, rectangles, I-shapes,
+C-shapes, Z-shapes) are typically used for objects like columns and beams and
+hot-rolled steel.
+
+Where possible, it is recommended to use parameterised profiles that are named
+after the structural cross section naming standard (e.g. structural steel
+standard names) in your country.
+
+.. code-block:: python
+
+    # Rectangles (or squares) are typically used for concrete columns and beams
+    profile = model.create_entity("IfcRectangleProfileDef", ProfileName="600x300", ProfileType="AREA",
+        XDim=600, YDim=300)
+
+    # Rectangle profiles may be rounded
+    profile = model.create_entity("IfcRoundedRectangleProfileDef", ProfileName="600x300r100", ProfileType="AREA",
+        XDim=600, YDim=300, RoundingRadius=100)
+
+    # Rectangle profiles may be hollow and optionally rounded as well. The radius parameters are optional.
+    # These are typically used for rectangular or square hollow steel sections.
+    profile = model.create_entity("IfcRectangleHollowProfileDef", ProfileName="200x100RHS", ProfileType="AREA",
+        XDim=200, YDim=100, WallThickness=5, InnerFilletRadius=5, OuterFilletRadius=10)
+
+    # Circles are typically used for concrete columns
+    profile = model.create_entity("IfcCircleProfileDef", ProfileName="300C", ProfileType="AREA",
+        Radius=300)
+
+    # Hollow circular profiles are typically used for steel members
+    profile = model.create_entity("IfcCircleHollowProfileDef", ProfileName="300CHS", ProfileType="AREA",
+        Radius=150, WallThickness=5)
+
+    # Ellipses aren't common but may be used.
+    profile = model.create_entity("IfcEllipseProfileDef", ProfileName="300E", ProfileType="AREA",
+        SemiAxis1=300, SemiAxis2=200)
+
+    # I-shapes are typically used in hot-rolled or welded steel. FilletRadius onwards is optional.
+    profile = model.create_entity("IfcIShapeProfileDef", ProfileName="I-EXAMPLE", ProfileType="AREA",
+        OverallWidth=100, OverallDepth=200, WebThickness=10, FlangeThickness=15, FilletRadius=10)
+
+    # L-shapes are typically used in hot rolled steel. FilletRadius onwards is optional.
+    profile = model.create_entity("IfcLShapeProfileDef", ProfileName="L-EXAMPLE", ProfileType="AREA",
+        Depth=75, Width=75, Thickness=10, FilletRadius=10, EdgeRadius=5, LegSlope=0)
+
+    # T-shapes are typically used in hot rolled steel. FilletRadius onwards is optional.
+    profile = model.create_entity("IfcTShapeProfileDef", ProfileName="T-EXAMPLE", ProfileType="AREA",
+        Depth=150, FlangeWidth=100, WebThickness=10, FlangeThickness=15, FilletRadius=10,
+        FlangeEdgeRadius=5, WebEdgeRadius=5, WebSlope=0, FlangeSlope=0)
+
+    # U-shapes are typically used in hot rolled steel. FilletRadius onwards is optional.
+    profile = model.create_entity("IfcUShapeProfileDef", ProfileName="U-EXAMPLE", ProfileType="AREA",
+        Depth=200, FlangeWidth=100, WebThickness=5, FlangeThickness=10,
+        FilletRadius=5, EdgeRadius=5, FlangeSlope=0)
+
+    # Z-shapes are typically used in hot rolled steel. FilletRadius onwards is optional.
+    profile = model.create_entity("IfcZShapeProfileDef", ProfileName="Z-EXAMPLE", ProfileType="AREA",
+        Depth=100, FlangeWidth=50, WebThickness=5, FlangeThickness=10, FilletRadius=5, EdgeRadius=5)
+
+    # C-shapes are typically used in cold rolled steel
+    profile = model.create_entity("IfcCShapeProfileDef", ProfileName="C-EXAMPLE", ProfileType="AREA",
+        Depth=150, Width=75, WallThickness=1.5, Girth=30, InternalFilletRadius=5)
+
+.. image:: images/parameterised-profiles.png
+
+Alternatively, you may specify a custom arbitrary profile. Arbitrary profile
+curves are most easily defined using a polyline. The polyline may have straight
+segments and arc segments. Arcs are defined as 3-point arcs (start, mid, and
+end). The arc points define the starting index (counting from 1) of any
+optional arcs. Profiles may also have inner curves to represent voids.
+
+.. code-block:: python
+
+    builder = ifcopenshell.util.shape_builder.ShapeBuilder(model)
+    outer_curve = builder.polyline([(0.,0.), (100.,0.), (100.,50.), (51.2,98.7), (18.5,105.3), (0.,77.5)],
+        arc_points=[4], closed=True)
+    inner_curve = builder.circle((50.,50.), radius=10.)
+    profile = builder.profile(outer_curve, inner_curves=[inner_curve], name="Arbitrary")
+
+.. image:: images/arbitrary-profile.png
+
+Once you have created your profile, you can add a representation which uses
+that profile as its cross section. Profiles are always extruded in the +Z
+direction. So if you want to have a beam, you will need to rotate the **Object
+Placement** to place the element on its side.
+
+.. code-block:: python
+
+    # A profile-based representation, 1 meter long
+    representation = run("geometry.add_profile_representation", model, context=body, profile=profile, depth=1)
+
+.. image:: images/profile-representation.png
+
 Custom representations
 ----------------------
 
 Manual representations
 ----------------------
+
+Types and mapped representations
+--------------------------------
+
+Material layer sets
+-------------------
+
+Material profile sets
+---------------------
