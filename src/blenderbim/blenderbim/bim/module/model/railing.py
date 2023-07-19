@@ -83,6 +83,7 @@ def update_railing_modifier_ifc_data(context):
         pset_data = tool.Model.get_modeling_bbim_pset_data(bpy.context.active_object, "BBIM_Railing")
         path_data = pset_data["data_dict"]["path_data"]
         railing_path = [Vector(v) for v in path_data["verts"]]
+        looped_path = path_data["edges"][-1][-1] == path_data["edges"][0][0]
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
         representation_data = {
@@ -95,6 +96,7 @@ def update_railing_modifier_ifc_data(context):
             "clear_width": props.clear_width / si_conversion,
             "terminal_type": props.terminal_type,
             "height": props.height / si_conversion,
+            "looped_path": looped_path,
         }
         model_representation = ifcopenshell.api.run(
             "geometry.add_railing_representation", ifc_file, **representation_data
@@ -213,10 +215,14 @@ def get_path_data(obj):
     si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
     bm = tool.Blender.get_bmesh_for_mesh(obj.data)
-    end_points = [v for v in bm.verts if len(v.link_edges) == 1]
-    if not end_points:
-        return None
 
+    if not bm.verts or not bm.edges:
+        return
+
+    end_points = [v for v in bm.verts if len(v.link_edges) == 1]
+    looped = not end_points
+
+    # TODO: check with previous data
     # if we have some previous data then we try to match
     # start or end of the path with the previous path
     previous_data = False
@@ -231,11 +237,13 @@ def get_path_data(obj):
             start_point = potential_start[0]
         else:
             start_point = next(v for v in end_points if v != potential_start[0])
-    else:
+    elif not looped:
         start_point = min(end_points, key=lambda v: v.index)
+    elif looped:
+        start_point = bm.verts[:][0]
 
     # walking through the path
-    # to make sure all verts and in consequent order
+    # to make sure all verts are in consequent order
     edge = start_point.link_edges[0]
     v = edge.other_vert(start_point)
     points = [start_point.co, v.co]
@@ -246,9 +254,13 @@ def get_path_data(obj):
 
     while len(link_edges := v.link_edges) != 1:
         prev_v = v
-        link_edges = v.link_edges
+
         edge = other_edge(link_edges, edge)
         v = edge.other_vert(prev_v)
+
+        if looped and v == start_point:
+            segments.append((i - 1, 0))
+            break
 
         # skip path verts if they just go vertical to avoid errors
         if (v.co.xy - prev_v.co.xy).length <= 0.0001:
@@ -318,6 +330,8 @@ class AddRailing(bpy.types.Operator, tool.Ifc.Operator):
 
         railing_data = props.get_general_kwargs(convert_to_project_units=True)
         path_data = get_path_data(obj)
+
+        # NOTE: will occur only on meshes without edges or verts
         if not path_data:
             path_data = {
                 "edges": [[0, 1], [1, 2]],

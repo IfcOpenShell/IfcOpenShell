@@ -54,6 +54,7 @@ class Usecase:
                 "clear_width": self.convert_si_to_unit(mm(40)),
                 "terminal_type": "180",
                 "height": self.convert_si_to_unit(mm(1000)),
+                "looped_path": False,
             }
         )
 
@@ -80,6 +81,7 @@ class Usecase:
         cap_type = self.settings["terminal_type"]
         ifc_context = self.settings["context"]
         railing_coords = self.settings["railing_path"]
+        looped_path = self.settings["looped_path"]
         railing_coords = [p - z_down * railing_radius for p in railing_coords]
 
         # constant
@@ -157,7 +159,10 @@ class Usecase:
                 prev_dir = cur_dir
                 i = i + 1
 
-            output_points.append(base_points[-1])
+            if looped_path:
+                output_points[0] = output_points[-1]
+            else:
+                output_points.append(base_points[-1])
             return output_points
 
         def create_supports_items(railing_coords, manual_supports=False):
@@ -215,37 +220,45 @@ class Usecase:
                 ortho_dir = -ortho_dir
 
             arc_middle_point_cos = sin(radians(45))
-            
-            if cap_type in ('180', 'TO_END_POST'):
+
+            if cap_type in ("180", "TO_END_POST"):
                 arc_point = start_point + cap_dir * terminal_radius + terminal_radius * z_down
                 arc_points.append(arc_point)
                 cap_coords = [arc_point, start_point + terminal_radius * 2 * z_down]
 
-                if cap_type == 'TO_END_POST':
+                if cap_type == "TO_END_POST":
                     end_point = railing_coords_for_cap[-2].copy()
                     end_point.z -= terminal_radius * 2
                     cap_coords.append(end_point)
-            
-            elif cap_type == 'TO_WALL':
-                arc_point = start_point + cap_dir * clear_width * arc_middle_point_cos + ortho_dir * clear_width * (1-arc_middle_point_cos)
+
+            elif cap_type == "TO_WALL":
+                arc_point = (
+                    start_point
+                    + cap_dir * clear_width * arc_middle_point_cos
+                    + ortho_dir * clear_width * (1 - arc_middle_point_cos)
+                )
                 arc_points.append(arc_point)
                 cap_coords = [arc_point, start_point + ortho_dir * clear_width + cap_dir * clear_width]
 
-            elif cap_type == 'TO_FLOOR':
-                arc_point = start_point + cap_dir * terminal_radius * arc_middle_point_cos + z_down * terminal_radius * (1-arc_middle_point_cos)
+            elif cap_type == "TO_FLOOR":
+                arc_point = (
+                    start_point
+                    + cap_dir * terminal_radius * arc_middle_point_cos
+                    + z_down * terminal_radius * (1 - arc_middle_point_cos)
+                )
                 arc_points.append(arc_point)
                 arc_end = start_point + cap_dir * terminal_radius + terminal_radius * z_down
                 cap_coords = [
-                    arc_point, 
+                    arc_point,
                     arc_end,
-                    arc_end+z_down*(height-terminal_radius),
+                    arc_end + z_down * (height - terminal_radius),
                 ]
 
-            elif cap_type == 'TO_END_POST_AND_FLOOR':
+            elif cap_type == "TO_END_POST_AND_FLOOR":
                 first_arc_end = start_point + cap_dir * terminal_radius + terminal_radius * z_down
                 first_arc_coords = get_fillet_points(
-                    start_point, start_point + cap_dir * terminal_radius, 
-                    first_arc_end, terminal_radius)
+                    start_point, start_point + cap_dir * terminal_radius, first_arc_end, terminal_radius
+                )
                 arc_points.append(first_arc_coords[1])
 
                 end_point = railing_coords_for_cap[-2].copy()
@@ -255,17 +268,22 @@ class Usecase:
                 )
                 arc_points.append(second_arc_coords[1])
                 cap_coords = [start_point] + first_arc_coords + second_arc_coords + [end_point]
-                
+
             railing_coords = railing_coords_for_cap + cap_coords
 
             if start:
                 railing_coords = railing_coords[::-1]
             return railing_coords, arc_points
 
+        # need to add first two points to the path
+        # to create the turning arcs and supports on the last segment of the loop
+        if looped_path:
+            railing_coords += railing_coords[:2]
+
         items_3d.extend(create_supports_items(railing_coords, manual_supports=use_manual_supports))
         railing_coords = add_arcs_on_turnings_points(railing_coords)
 
-        if cap_type != 'NONE':
+        if not looped_path and cap_type != "NONE":
             railing_coords, arc_points = add_cap(railing_coords, arc_points, start=True)
             railing_coords, arc_points = add_cap(railing_coords, arc_points, start=False)
 
