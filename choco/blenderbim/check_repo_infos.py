@@ -38,7 +38,7 @@ elif sys.argv[1] == "--latest_blender_release_maj_min_pat?":
     if latest_blender_version:
         print(latest_blender_version[0], end="")
     else:
-        print("[ERROR] could not contact determine blender_version_min_maj_pat")
+        print("[ERROR] could not determine blender_version_min_maj_pat")
         quit(1)
 
 
@@ -48,7 +48,7 @@ elif sys.argv[1] == "--latest_blender_release_maj_min?":
     if blender_version_min_maj:
         print(blender_version_min_maj[0], end="")
     else:
-        print("[ERROR] could not contact determine blender_version_min_maj")
+        print("[ERROR] could not determine blender_version_min_maj")
         quit(1)
 
 
@@ -62,7 +62,7 @@ elif sys.argv[1] == "--latest_blender_python_version_maj_min?":
         if found:
             print(found[0], end="")
         else:
-            print("[ERROR] could not contact determine blender_python_version_maj_min")
+            print("[ERROR] could not determine blender_python_version_maj_min")
             quit(1)
 
 
@@ -76,7 +76,7 @@ elif sys.argv[1] == "--pyver?":
         if found:
             print(f"py{found[0].replace('.', '')}", end="")
         else:
-            print("[ERROR] could not contact determine pyver")
+            print("[ERROR] could not determine pyver")
             quit(1)
 
 
@@ -86,4 +86,3 @@ URL_BLENDER_CMAKE  = f"https://raw.githubusercontent.com/blender/blender/{latest
 RE_BLENDER_VERSION_MIN_MAJ        = r"Latest Version.+<span>Blender (\d+\.\d+)\..+</span>"
 RE_BLENDER_VERSION_MIN_MAJ_PAT    = r"Latest Version.+<span>Blender (\d+\.\d+\.\d+)</span>"
 RE_BLENDER_PYTHON_VERSION_MAJ_MIN = r"SET\(_PYTHON_VERSION_SUPPORTED (\d+\.\d+)\)"
-
