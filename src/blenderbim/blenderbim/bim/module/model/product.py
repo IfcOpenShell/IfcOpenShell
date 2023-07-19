@@ -19,7 +19,6 @@
 import bpy
 import mathutils
 from functools import reduce
-import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.system
 import ifcopenshell.util.element
@@ -101,6 +100,11 @@ class AddConstrTypeInstance(bpy.types.Operator):
 
         self.file = IfcStore.get_file()
         instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, self.file.schema)[0]
+        applicable_entities = ifcopenshell.util.type.get_applicable_entities(ifc_class, self.file.schema)
+        if applicable_entities:
+            instance_class = applicable_entities[0]
+        else:
+            raise ValueError(f"No applicable entities found for IFC class {ifc_class} in schema {self.file.schema}")
         relating_type = self.file.by_id(int(relating_type_id))
         material = ifcopenshell.util.element.get_material(relating_type)
 
