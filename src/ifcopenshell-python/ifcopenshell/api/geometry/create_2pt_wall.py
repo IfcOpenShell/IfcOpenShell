@@ -62,9 +62,6 @@ class Usecase:
         ifcopenshell.api.run(
             "geometry.edit_object_placement", self.file, product=self.settings["element"], matrix=matrix
         )
-        ifcopenshell.api.run(
-            "geometry.assign_representation", self.file, product=self.settings["element"], representation=representation
-        )
         return representation
 
     def convert_si_to_unit(self, co):
