@@ -79,8 +79,10 @@ class IfcClassData:
         declaration = tool.Ifc.schema().declaration_by_name(ifc_product)
         declarations = ifcopenshell.util.schema.get_subtypes(declaration)
         names = [d.name() for d in declarations]
-        if ifc_product == "IfcElementType" and tool.Ifc.get_schema() in ("IFC2X3", "IFC4"):
-            names.extend(("IfcDoorStyle", "IfcWindowStyle"))
+        if ifc_product == "IfcElementType":
+            names.append("IfcTypeProduct")
+            if tool.Ifc.get_schema() in ("IFC2X3", "IFC4"):
+                names.extend(("IfcDoorStyle", "IfcWindowStyle"))
         if ifc_product == "IfcElement":
             names.remove("IfcOpeningElement")
             if tool.Ifc.get_schema() == "IFC4":
