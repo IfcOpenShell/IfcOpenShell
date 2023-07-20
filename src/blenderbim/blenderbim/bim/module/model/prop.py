@@ -147,7 +147,9 @@ class BIMModelProperties(PropertyGroup):
             ("STAIR", "Stair", "Parametric stair"),
             ("RAILING", "Railing", "Parametric railing"),
             ("ROOF", "Roof", "Parametric roof"),
-
+            ("DISTRIBUTION_SEGMENT_RECTANGULAR", "Rectangular Distribution Segment", "Works similarly to Profile, has distribution ports"),
+            ("DISTRIBUTION_SEGMENT_CIRCULAR", "Circular Distribution Segment", "Works similarly to Profile, has distribution ports"),
+            ("DISTRIBUTION_SEGMENT_CIRCULAR_HOLLOW", "Circular Hollow Distribution Segment", "Works similarly to Profile, has distribution ports"),
         ),
         name="Type Template",
         default="MESH",

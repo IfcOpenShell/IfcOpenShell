@@ -278,7 +278,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 axis = "AXIS3"
             ifcopenshell.api.run("pset.edit_pset", ifc_file, pset=pset, properties={"LayerSetDirection": axis})
 
-        elif template == "PROFILESET":
+        elif template == "PROFILESET" or template.startswith("DISTRIBUTION_SEGMENT_"):
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
             obj = bpy.data.objects.new(name, None)
             element = blenderbim.core.root.assign_class(
@@ -298,13 +298,45 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
             else:
                 material = self.add_default_material()
             named_profiles = [p for p in ifc_file.by_type("IfcProfileDef") if p.ProfileName]
-            if named_profiles:
-                profile = named_profiles[0]
+            if template == "PROFILESET":
+                if named_profiles:
+                    profile = named_profiles[0]
+                else:
+                    size = 0.5 / unit_scale
+                    profile = ifc_file.create_entity(
+                        "IfcRectangleProfileDef", ProfileName="New Profile", ProfileType="AREA", XDim=size, YDim=size
+                    )
             else:
-                size = 0.5 / unit_scale
-                profile = ifc_file.create_entity(
-                    "IfcRectangleProfileDef", ProfileName="New Profile", ProfileType="AREA", XDim=size, YDim=size
-                )
+                # NOTE: defaults dims are in meters / mm
+                if template == "DISTRIBUTION_SEGMENT_RECTANGULAR":
+                    default_x_dim = 0.4 / unit_scale
+                    default_y_dim = 0.2 / unit_scale
+                    profile_name = f"{ifc_class}-{default_x_dim*1000}x{default_x_dim*1000}"
+                    profile = ifc_file.create_entity(
+                        "IfcRectangleProfileDef",
+                        ProfileName=profile_name,
+                        ProfileType="AREA",
+                        XDim=default_x_dim,
+                        YDim=default_y_dim,
+                    )
+                elif template == "DISTRIBUTION_SEGMENT_CIRCULAR":
+                    default_diameter = 0.1 / unit_scale
+                    profile_name = f"{ifc_class}-{default_diameter*1000}"
+                    profile = ifc_file.create_entity(
+                        "IfcCircleProfileDef", ProfileName=profile_name, ProfileType="AREA", Radius=default_diameter / 2
+                    )
+                elif template == "DISTRIBUTION_SEGMENT_CIRCULAR_HOLLOW":
+                    default_diameter = 0.15 / unit_scale
+                    default_thickness = 0.005 / unit_scale  # TODO: double check
+                    profile_name = f"{ifc_class}-{default_diameter*1000}x{default_thickness*1000}"
+                    profile = ifc_file.create_entity(
+                        "IfcCircleHollowProfileDef",
+                        ProfileName=profile_name,
+                        ProfileType="AREA",
+                        Radius=default_diameter / 2,
+                        WallThickness=default_thickness,
+                    )
+
             rel = ifcopenshell.api.run(
                 "material.assign_material", ifc_file, product=element, type="IfcMaterialProfileSet"
             )
