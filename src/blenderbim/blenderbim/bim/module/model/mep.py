@@ -35,93 +35,31 @@ from mathutils import Vector, Matrix
 
 
 class MepGenerator:
-    def __init__(self, relating_type):
+    def __init__(self, relating_type=None):
         self.relating_type = relating_type
 
-    def generate(self):
+    def setup_ports(self, obj):
         self.file = tool.Ifc.get()
         self.collection = bpy.context.view_layer.active_layer_collection.collection
 
-        if self.relating_type.is_a("IfcCableCarrierSegmentType"):
-            pass
-        elif self.relating_type.is_a("IfcCableSegmentType"):
-            pass
-        elif self.relating_type.is_a("IfcDuctSegmentType"):
-            dimensions = ifcopenshell.util.element.get_psets(self.relating_type).get("Pset_DuctSegmentTypeCommon") or {}
-            shape = dimensions.get("Shape") or dimensions.get("CrossSectionShape")
-
-            if shape == "RECTANGULAR":
-                self.width = dimensions.get("NominalDiameterOrWidth")
-                self.height = dimensions.get("NominalHeight")
-                self.length = 1
-
-                return self.derive_from_cursor()
-        elif self.relating_type.is_a("IfcPipeSegmentType"):
-            pass
-
-    def derive_from_cursor(self):
-        self.location = bpy.context.scene.cursor.location
-        return self.create_rectangle_segment()
-
-    def create_rectangle_segment(self):
-        verts = [
-            Vector((-self.width / 2, self.height / 2, 0)),
-            Vector((-self.width / 2, -self.height / 2, 0)),
-            Vector((-self.width / 2, self.height / 2, self.length)),
-            Vector((-self.width / 2, -self.height / 2, self.length)),
-            Vector((self.width / 2, self.height / 2, 0)),
-            Vector((self.width / 2, -self.height / 2, 0)),
-            Vector((self.width / 2, self.height / 2, self.length)),
-            Vector((self.width / 2, -self.height / 2, self.length)),
-        ]
-        faces = [
-            [1, 3, 2, 0],
-            [4, 6, 7, 5],
-            [1, 0, 4, 5],
-            [3, 7, 6, 2],
-            [0, 2, 6, 4],
-            [1, 5, 7, 3],
-        ]
-        mesh = bpy.data.meshes.new(name="Segment")
-        mesh.from_pydata(verts, [], faces)
-
-        ifc_classes = ifcopenshell.util.type.get_applicable_entities(self.relating_type.is_a(), self.file.schema)
-        ifc_class = ifc_classes[0]
-
-        obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
-
-        obj.location = self.location
-        obj.rotation_euler[0] = math.pi / 2
-        obj.rotation_euler[2] = math.pi / 2
-        self.collection.objects.link(obj)
-
-        bpy.ops.bim.assign_class(
-            obj=obj.name,
-            ifc_class=ifc_class,
-            ifc_representation_class="IfcExtrudedAreaSolid/IfcRectangleProfileDef",
-        )
-
         element = tool.Ifc.get_entity(obj)
+        representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        extrusion = tool.Model.get_extrusion(representation)
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        length = extrusion.Depth * si_conversion
+        end_port_matrix = Matrix.Translation((0, 0, length))
 
-        blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=self.relating_type)
-        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
-        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.Mep"})
+        ports = tool.System.get_ports(element)
+        if not ports:
+            start_port_matrix = Matrix()
+            for mat, flow_direction in zip([start_port_matrix, end_port_matrix], ("SINK", "SOURCE")):
+                port = tool.Ifc.run("system.add_port", element=element)
+                port.FlowDirection = flow_direction
+                tool.Ifc.run("geometry.edit_object_placement", product=port, matrix=obj.matrix_world @ mat, is_si=True)
+            return
 
-        start_port_matrix = Matrix()
-        end_port_matrix = Matrix.Translation((0, 0, self.length))
-
-        for mat in [start_port_matrix, end_port_matrix]:
-            port = tool.Ifc.run("root.create_entity", ifc_class="IfcDistributionPort")
-            tool.Ifc.run("system.assign_port", element=element, port=port)
-            tool.Ifc.run("geometry.edit_object_placement", product=port, matrix=obj.matrix_world @ mat, is_si=True)
-
-        try:
-            obj.select_set(True)
-        except RuntimeError:
-            def msg(self, context):
-                txt = "The created object could not be assigned to a collection. "
-                txt += "Has any IfcSpatialElement been deleted?"
-                self.layout.label(text=txt)
-
-            bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
-        return obj
+        # TODO: better way to find the port to be moved
+        end_port = next((p for p in ports if p.FlowDirection == "SOURCE"), None)
+        if not end_port:
+            return
+        tool.Model.edit_element_placement(end_port, obj.matrix_world @ end_port_matrix)

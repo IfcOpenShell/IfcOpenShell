@@ -748,3 +748,13 @@ class Model(blenderbim.core.tool.Model):
             return
         pset_data["data_dict"] = json.loads(pset_data.get("Data", "[]") or "[]")
         return pset_data
+
+    @classmethod
+    def edit_element_placement(cls, element, matrix):
+        """Useful for moving objects like ports or openings -
+        the method will ensure it will be moved in blender scene too if it exists"""
+        obj = tool.Ifc.get_object(element)
+        if obj:
+            obj.matrix_world = matrix
+            return
+        tool.Ifc.run("geometry.edit_object_placement", product=element, matrix=matrix, is_si=True)
