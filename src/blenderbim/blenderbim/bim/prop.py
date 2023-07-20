@@ -234,7 +234,7 @@ def get_length_value(self):
     return self.float_value * si_conversion
 
 
-def set_lenght_value(self, value):
+def set_length_value(self, value):
     si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
     self.float_value = value / si_conversion
 
@@ -274,7 +274,7 @@ class Attribute(PropertyGroup):
         set=set_float_value,
     )
     length_value: FloatProperty(
-        name="Value", description=tooltip, get=get_length_value, set=set_lenght_value, unit="LENGTH"
+        name="Value", description=tooltip, get=get_length_value, set=set_length_value, unit="LENGTH"
     )
     enum_items: StringProperty(name="Value")
     enum_descriptions: CollectionProperty(type=StrProperty)

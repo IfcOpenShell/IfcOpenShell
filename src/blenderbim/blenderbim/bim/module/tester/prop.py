@@ -29,12 +29,38 @@ from bpy.props import (
     CollectionProperty,
 )
 
-
 def purge():
     pass
 
+def get_failure_entities():
+    return
+
+
+
+class Specification(PropertyGroup):
+    name: StringProperty(name="Name")
+    status : BoolProperty(default=False, name="Status")
+
+class FailedEntities(PropertyGroup):
+    reason: StringProperty(name="Reason")
+    element: StringProperty(name="Element")
+    
 
 class IfcTesterProperties(PropertyGroup):
-    specs: StringProperty(default="", name="IDS File")
+    specs: StringProperty(default="", name="IDS File")    
     ifc_file: StringProperty(default="", name="IFC File")
     should_load_from_memory: BoolProperty(default=False, name="Load from Memory")
+    
+    active_specification_index: IntProperty(name="Active Specification Index")   
+    active_requirement_index: IntProperty(name="Active Requirement Index")
+    old_index: IntProperty(name="", default=0)
+    active_failed_entity_index: IntProperty(name="Active Failed Entity Index")  
+    report: StringProperty(default="", name="JSON report")
+    specifications: CollectionProperty(name="Specifications", type=Specification)
+    failed_entities: CollectionProperty(name="FailedEntities", type=FailedEntities)
+    has_report : BoolProperty(default=False, name="")
+    has_entities : BoolProperty(default=False, name="")
+    n_entities : IntProperty(name="", default=0)
+
+
+    
