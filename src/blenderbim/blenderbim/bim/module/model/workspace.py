@@ -176,7 +176,6 @@ class BimToolUI:
             row.operator("bim.join_wall", icon="X", text="").join_type = ""
 
         elif AuthoringData.data["active_material_usage"] == "LAYER3":
-
             if len(context.selected_objects) == 1:
                 add_layout_hotkey_operator(cls.layout, "Edit Profile", "S_E", "")
             elif "LAYER2" in AuthoringData.data["selected_material_usages"]:
@@ -591,7 +590,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.add_opening()
         else:
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-            bpy.ops.bim.add_potential_opening(x=self.x * unit_scale, y=self.y * unit_scale, z=self.z * unit_scale)
+            bpy.ops.bim.add_potential_opening(x=self.x, y=self.y, z=self.z)
             self.props.x = self.x
             self.props.y = self.y
             self.props.z = self.z
