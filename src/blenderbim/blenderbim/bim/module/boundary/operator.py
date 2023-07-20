@@ -103,10 +103,8 @@ class Loader:
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
             matrix = mathutils.Matrix(
                 ifcopenshell.util.placement.get_axis2placement(surface.BasisSurface.Position).tolist()
-            )
-            matrix[0][3] *= unit_scale
-            matrix[1][3] *= unit_scale
-            matrix[2][3] *= unit_scale
+            )            
+            matrix.translation *= unit_scale
             mesh.transform(matrix)
         return mesh
 
@@ -691,7 +689,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
         mat.col[0][:3] = x_axis
         mat.col[1][:3] = y_axis
         mat.col[2][:3] = z_axis
-        mat.col[3][:3] = p1
+        mat.translation = p1
 
         return mat
 
@@ -725,7 +723,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
     def export_surface(self, polygon, target_face_matrix):
         x_axis = target_face_matrix.col[0][:3]
         z_axis = target_face_matrix.col[2][:3]
-        p1 = target_face_matrix.col[3][:3]
+        p1 = target_face_matrix.translation
 
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         tool.Model.unit_scale = self.unit_scale

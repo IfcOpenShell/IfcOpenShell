@@ -441,16 +441,14 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def generate_drawing_matrix(cls, target_view, location_hint):
-        x = 0 if location_hint == 0 else bpy.context.scene.cursor.matrix[0][3]
-        y = 0 if location_hint == 0 else bpy.context.scene.cursor.matrix[1][3]
-        z = 0 if location_hint == 0 else bpy.context.scene.cursor.matrix[2][3]
+        x, y, z = (0, 0, 0) if location_hint == 0 else bpy.context.scene.cursor.matrix.translation
         if target_view == "PLAN_VIEW":
             if location_hint:
-                z = tool.Ifc.get_object(tool.Ifc.get().by_id(location_hint)).matrix_world[2][3]
+                z = tool.Ifc.get_object(tool.Ifc.get().by_id(location_hint)).matrix_world.translation.z
                 return mathutils.Matrix(((1, 0, 0, x), (0, 1, 0, y), (0, 0, 1, z + 1.6), (0, 0, 0, 1)))
         elif target_view == "REFLECTED_PLAN_VIEW":
             if location_hint:
-                z = tool.Ifc.get_object(tool.Ifc.get().by_id(location_hint)).matrix_world[2][3]
+                z = tool.Ifc.get_object(tool.Ifc.get().by_id(location_hint)).matrix_world.translation.z
                 return mathutils.Matrix(((-1, 0, 0, x), (0, 1, 0, y), (0, 0, -1, z + 1.6), (0, 0, 0, 1)))
             return mathutils.Matrix(((-1, 0, 0, 0), (0, 1, 0, 0), (0, 0, -1, 0), (0, 0, 0, 1)))
         elif target_view == "ELEVATION_VIEW":
@@ -1025,14 +1023,10 @@ class Drawing(blenderbim.core.tool.Drawing):
             xyz = camera.matrix_world.inverted() @ reference_obj.matrix_world.translation
             xyz[2] = 0
             xyz = camera.matrix_world @ xyz
-            mat[0][3] = xyz[0]
-            mat[1][3] = xyz[1]
-            mat[2][3] = xyz[2]
+            mat.translation = xyz
             annotation_offset = mathutils.Vector((0, 0, -camera.data.clip_start - 0.05))
             annotation_offset = camera.matrix_world.to_quaternion() @ annotation_offset
-            mat[0][3] += annotation_offset[0]
-            mat[1][3] += annotation_offset[1]
-            mat[2][3] += annotation_offset[2]
+            mat.translation += annotation_offset
             return mat
 
         def project_point_onto_camera(point, camera):
@@ -1090,14 +1084,10 @@ class Drawing(blenderbim.core.tool.Drawing):
             xyz = camera.matrix_world.inverted() @ reference_obj.matrix_world.translation
             xyz[2] = 0
             xyz = camera.matrix_world @ xyz
-            mat[0][3] = xyz[0]
-            mat[1][3] = xyz[1]
-            mat[2][3] = xyz[2]
+            mat.translation = xyz
             annotation_offset = mathutils.Vector((0, 0, -camera.data.clip_start - 0.05))
             annotation_offset = camera.matrix_world.to_quaternion() @ annotation_offset
-            mat[0][3] += annotation_offset[0]
-            mat[1][3] += annotation_offset[1]
-            mat[2][3] += annotation_offset[2]
+            mat.translation += annotation_offset
             return mat
 
         def clip_to_camera_boundary(mesh, bounds):
@@ -1171,14 +1161,10 @@ class Drawing(blenderbim.core.tool.Drawing):
             xyz = camera.matrix_world.inverted() @ reference_obj.matrix_world.translation
             xyz[2] = 0
             xyz = camera.matrix_world @ xyz
-            mat[0][3] = xyz[0]
-            mat[1][3] = xyz[1]
-            mat[2][3] = xyz[2]
+            mat.translation = xyz
             annotation_offset = mathutils.Vector((0, 0, -camera.data.clip_start - 0.05))
             annotation_offset = camera.matrix_world.to_quaternion() @ annotation_offset
-            mat[0][3] += annotation_offset[0]
-            mat[1][3] += annotation_offset[1]
-            mat[2][3] += annotation_offset[2]
+            mat.translation += xyz
             return mat
 
         if cls.is_perpendicular(camera, reference_obj) and cls.is_intersecting(camera, reference_obj):
@@ -1230,9 +1216,7 @@ class Drawing(blenderbim.core.tool.Drawing):
             obj.matrix_world = camera.matrix_world
             annotation_offset = mathutils.Vector((0, 0, -camera.data.clip_start - 0.05))
             annotation_offset = camera.matrix_world.to_quaternion() @ annotation_offset
-            obj.matrix_world[0][3] += annotation_offset[0]
-            obj.matrix_world[1][3] += annotation_offset[1]
-            obj.matrix_world[2][3] += annotation_offset[2]
+            obj.matrix_world.translation += annotation_offset
             return obj, mesh
 
         def clip_to_camera_boundary(mesh):

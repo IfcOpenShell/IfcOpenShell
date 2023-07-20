@@ -79,9 +79,9 @@ class DumbProfileGenerator:
             "IfcFlowSegmentType"
         ):
             matrix_world = Matrix.Rotation(pi / 2, 4, "Z") @ Matrix.Rotation(pi / 2, 4, "X") @ matrix_world
-        matrix_world.col[3] = self.location.to_4d()
+        matrix_world.translation = self.location
         if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
-            matrix_world[2][3] = self.collection_obj.location[2]
+            matrix_world.translation.z = self.collection_obj.location.z
         self.collection.objects.link(obj)
 
         element = blenderbim.core.root.assign_class(
@@ -413,7 +413,7 @@ class DumbProfileJoiner:
                 )
 
         new_matrix = copy.deepcopy(obj.matrix_world)
-        new_matrix.col[3] = self.body[0].to_4d().copy()
+        new_matrix.translation = self.body[0].copy()
         new_matrix.invert()
 
         for clipping in self.clippings:
@@ -563,13 +563,13 @@ class DumbProfileJoiner:
                 if tool.Cad.is_x(abs(xy_angle), (0, 90, 180), tolerance=0.001) and is_orthogonal:
                     plane = self.get_profile_plane(profile2, furthest_plane)
                     intersect = mathutils.geometry.intersect_line_plane(
-                        *axis1, plane.col[3].to_3d(), plane.col[2].to_3d()
+                        *axis1, plane.translation, plane.col[2].to_3d()
                     )
                     self.body[1] = intersect
                 else:
                     plane = self.get_profile_plane(profile2, furthest_plane, z_inwards=False)
                     intersect = mathutils.geometry.intersect_line_plane(
-                        *axis1, plane.col[3].to_3d(), plane.col[2].to_3d()
+                        *axis1, plane.translation, plane.col[2].to_3d()
                     )
                     max_dim = self.get_max_bound_box_dimension(profile1)
                     self.body[1] = intersect + profile1.matrix_world.to_quaternion() @ Vector((0, 0, max_dim))
@@ -579,25 +579,25 @@ class DumbProfileJoiner:
                     plane1 = self.get_profile_plane(profile1, furthest_plane2)
                     plane2 = self.get_profile_plane(profile2, furthest_plane)
                     clip1, direction1 = mathutils.geometry.intersect_plane_plane(
-                        plane1.col[3].to_3d(), plane1.col[2].to_3d(), plane2.col[3].to_3d(), plane2.col[2].to_3d()
+                        plane1.translation, plane1.col[2].to_3d(), plane2.translation, plane2.col[2].to_3d()
                     )
 
                     plane1 = self.get_profile_plane(profile1, closest_plane2)
                     plane2 = self.get_profile_plane(profile2, closest_plane)
                     clip2, direction2 = mathutils.geometry.intersect_plane_plane(
-                        plane1.col[3].to_3d(), plane1.col[2].to_3d(), plane2.col[3].to_3d(), plane2.col[2].to_3d()
+                        plane1.translation, plane1.col[2].to_3d(), plane2.translation, plane2.col[2].to_3d()
                     )
                 else:
                     plane1 = self.get_profile_plane(profile1, furthest_plane2)
                     plane2 = self.get_profile_plane(profile2, furthest_plane)
                     clip1, direction1 = mathutils.geometry.intersect_plane_plane(
-                        plane1.col[3].to_3d(), plane1.col[2].to_3d(), plane2.col[3].to_3d(), plane2.col[2].to_3d()
+                        plane1.translation, plane1.col[2].to_3d(), plane2.translation, plane2.col[2].to_3d()
                     )
 
                     plane1 = self.get_profile_plane(profile1, closest_plane2)
                     plane2 = self.get_profile_plane(profile2, closest_plane)
                     clip2, direction2 = mathutils.geometry.intersect_plane_plane(
-                        plane1.col[3].to_3d(), plane1.col[2].to_3d(), plane2.col[3].to_3d(), plane2.col[2].to_3d()
+                        plane1.translation, plane1.col[2].to_3d(), plane2.translation, plane2.col[2].to_3d()
                     )
 
                 y_axis = direction2
@@ -614,13 +614,13 @@ class DumbProfileJoiner:
                 if tool.Cad.is_x(abs(xy_angle), (0, 90, 180), tolerance=0.001) and is_orthogonal:
                     plane = self.get_profile_plane(profile2, furthest_plane)
                     intersect = mathutils.geometry.intersect_line_plane(
-                        *axis1, plane.col[3].to_3d(), plane.col[2].to_3d()
+                        *axis1, plane.translation, plane.col[2].to_3d()
                     )
                     self.body[0] = intersect
                 else:
                     plane = self.get_profile_plane(profile2, furthest_plane, z_inwards=False)
                     intersect = mathutils.geometry.intersect_line_plane(
-                        *axis1, plane.col[3].to_3d(), plane.col[2].to_3d()
+                        *axis1, plane.translation, plane.col[2].to_3d()
                     )
                     max_dim = self.get_max_bound_box_dimension(profile1)
                     self.body[0] = intersect - profile1.matrix_world.to_quaternion() @ Vector((0, 0, max_dim))
@@ -629,25 +629,25 @@ class DumbProfileJoiner:
                     plane1 = self.get_profile_plane(profile1, furthest_plane2)
                     plane2 = self.get_profile_plane(profile2, furthest_plane)
                     clip1, direction1 = mathutils.geometry.intersect_plane_plane(
-                        plane1.col[3].to_3d(), plane1.col[2].to_3d(), plane2.col[3].to_3d(), plane2.col[2].to_3d()
+                        plane1.translation, plane1.col[2].to_3d(), plane2.translation, plane2.col[2].to_3d()
                     )
 
                     plane1 = self.get_profile_plane(profile1, closest_plane2)
                     plane2 = self.get_profile_plane(profile2, closest_plane)
                     clip2, direction2 = mathutils.geometry.intersect_plane_plane(
-                        plane1.col[3].to_3d(), plane1.col[2].to_3d(), plane2.col[3].to_3d(), plane2.col[2].to_3d()
+                        plane1.translation, plane1.col[2].to_3d(), plane2.translation, plane2.col[2].to_3d()
                     )
                 else:
                     plane1 = self.get_profile_plane(profile1, furthest_plane2)
                     plane2 = self.get_profile_plane(profile2, furthest_plane)
                     clip1, direction1 = mathutils.geometry.intersect_plane_plane(
-                        plane1.col[3].to_3d(), plane1.col[2].to_3d(), plane2.col[3].to_3d(), plane2.col[2].to_3d()
+                        plane1.translation, plane1.col[2].to_3d(), plane2.translation, plane2.col[2].to_3d()
                     )
 
                     plane1 = self.get_profile_plane(profile1, closest_plane2)
                     plane2 = self.get_profile_plane(profile2, closest_plane)
                     clip2, direction2 = mathutils.geometry.intersect_plane_plane(
-                        plane1.col[3].to_3d(), plane1.col[2].to_3d(), plane2.col[3].to_3d(), plane2.col[2].to_3d()
+                        plane1.translation, plane1.col[2].to_3d(), plane2.translation, plane2.col[2].to_3d()
                     )
 
                 y_axis = direction2
@@ -666,7 +666,7 @@ class DumbProfileJoiner:
                 if tool.Cad.is_x(abs(xy_angle), (0, 90, 180), tolerance=0.001) and is_orthogonal:
                     plane = self.get_profile_plane(profile2, furthest_plane if is_relating else closest_plane)
                     intersect = mathutils.geometry.intersect_line_plane(
-                        *axis1, plane.col[3].to_3d(), plane.col[2].to_3d()
+                        *axis1, plane.translation, plane.col[2].to_3d()
                     )
                     self.body[1] = intersect
                 else:
@@ -676,7 +676,7 @@ class DumbProfileJoiner:
                         z_inwards=False if is_relating else True,
                     )
                     intersect = mathutils.geometry.intersect_line_plane(
-                        *axis1, plane.col[3].to_3d(), plane.col[2].to_3d()
+                        *axis1, plane.translation, plane.col[2].to_3d()
                     )
                     max_dim = self.get_max_bound_box_dimension(profile1)
                     self.body[1] = intersect + profile1.matrix_world.to_quaternion() @ Vector((0, 0, max_dim))
@@ -691,7 +691,7 @@ class DumbProfileJoiner:
                 if tool.Cad.is_x(abs(xy_angle), (0, 90, 180), tolerance=0.001) and is_orthogonal:
                     plane = self.get_profile_plane(profile2, furthest_plane if is_relating else closest_plane)
                     intersect = mathutils.geometry.intersect_line_plane(
-                        *axis1, plane.col[3].to_3d(), plane.col[2].to_3d()
+                        *axis1, plane.translation, plane.col[2].to_3d()
                     )
                     self.body[0] = intersect
                 else:
@@ -701,7 +701,7 @@ class DumbProfileJoiner:
                         z_inwards=False if is_relating else True,
                     )
                     intersect = mathutils.geometry.intersect_line_plane(
-                        *axis1, plane.col[3].to_3d(), plane.col[2].to_3d()
+                        *axis1, plane.translation, plane.col[2].to_3d()
                     )
                     max_dim = self.get_max_bound_box_dimension(profile1)
                     self.body[0] = intersect - profile1.matrix_world.to_quaternion() @ Vector((0, 0, max_dim))
@@ -937,9 +937,7 @@ class EnableEditingExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
 
             if extrusion.Position:
                 position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
-                position[0][3] *= self.unit_scale
-                position[1][3] *= self.unit_scale
-                position[2][3] *= self.unit_scale
+                position.translation *= self.unit_scale
             else:
                 position = Matrix()
 
