@@ -183,14 +183,37 @@ class BIM_PT_port(Panel):
 
     def draw(self, context):
         self.props = context.scene.BIMSystemProperties
-        row = self.layout.row(align=True)
+
+        element = tool.Ifc.get_entity(context.active_object)
+        port_class = element.is_a()
+        layout = self.layout
+        row = layout.row(align=True)
+        row.label(text=port_class)
         row.operator("bim.connect_port", icon="PLUGIN", text="")
         row.operator("bim.disconnect_port", icon="UNLINKED", text="")
-        row.operator("bim.set_flow_direction", icon="FORWARD", text="").direction = "SOURCE"
-        row.operator("bim.set_flow_direction", icon="BACK", text="").direction = "SINK"
-        row.operator("bim.set_flow_direction", icon="ARROW_LEFTRIGHT", text="").direction = "SOURCEANDSINK"
-        row.operator("bim.set_flow_direction", icon="RESTRICT_INSTANCED_ON", text="").direction = "NOTDEFINED"
         row.operator("bim.remove_port", icon="X", text="")
+
+        if port_class == "IfcDistributionPort":
+            current_flow_direction = str(element.FlowDirection)
+            row = layout.row(align=True)
+            row.label(text="Flow Direction:")
+            row.label(text=current_flow_direction)
+
+            # TODO: replace with enum property?
+            flow_directions = (
+                ("SOURCE", "FORWARD"),
+                ("SINK", "BACK"),
+                ("SOURCEANDSINK", "ARROW_LEFTRIGHT"),
+                ("NOTDEFINED", "RESTRICT_INSTANCED_ON"),
+            )
+
+            row = layout.row(align=True)
+            row.label(text="Change Flow Direction:")
+            for flow_direction, icon in flow_directions:
+                row = layout.row()
+                row.operator("bim.set_flow_direction", icon=icon, text=flow_direction).direction = flow_direction
+                if flow_direction == current_flow_direction:
+                    row.enabled = False
 
 
 class BIM_UL_systems(UIList):
