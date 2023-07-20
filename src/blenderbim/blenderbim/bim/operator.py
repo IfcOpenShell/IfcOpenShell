@@ -870,7 +870,13 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
                     if not isinstance(values, (tuple, list)):
                         values = [values]
                     for value in values:
-                        self.add_item(identifier=key, name=key + " > " + value, predefined_type=value.upper())
+                        predefined_type = value["predefined_type"].upper()
+                        name = value.get("name")
+                        self.add_item(
+                            identifier=key,
+                            name=f"{key} > {name if name else predefined_type }",
+                            predefined_type=predefined_type,
+                        )
 
 
 class EditBlenderCollection(bpy.types.Operator):

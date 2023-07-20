@@ -64,16 +64,19 @@ SCHEMA_FILES = {
         "entities": BASE_MODULE_PATH / "schema/ifc2x3_entities.json",
         "properties": BASE_MODULE_PATH / "schema/ifc2x3_properties.json",
         "types": BASE_MODULE_PATH / "schema/ifc2x3_types.json",
+        "classes_suggestions": BASE_MODULE_PATH / "schema/ifc_classes_suggestions.json",
     },
     "IFC4": {
         "entities": BASE_MODULE_PATH / "schema/ifc4_entities.json",
         "properties": BASE_MODULE_PATH / "schema/ifc4_properties.json",
         "types": BASE_MODULE_PATH / "schema/ifc4_types.json",
+        "classes_suggestions": BASE_MODULE_PATH / "schema/ifc_classes_suggestions.json",
     },
     "IFC4X3": {
         "entities": BASE_MODULE_PATH / "schema/ifc4x3_entities.json",
         "properties": BASE_MODULE_PATH / "schema/ifc4x3_properties.json",
         "types": BASE_MODULE_PATH / "schema/ifc4x3_types.json",
+        "classes_suggestions": BASE_MODULE_PATH / "schema/ifc_classes_suggestions.json",
     },
 }
 
@@ -103,6 +106,14 @@ def get_schema_by_name(version):
     if not schema_by_name[version]:
         schema_by_name[version] = ifcopenshell.ifcopenshell_wrapper.schema_by_name(version)
     return schema_by_name[version]
+
+
+def get_class_suggestions(version, class_name):
+    db = get_db(version)
+    if not db:
+        return
+    class_suggestions = db["classes_suggestions"].get(class_name)
+    return class_suggestions
 
 
 def get_entity_doc(version, entity_name, recursive=True):
