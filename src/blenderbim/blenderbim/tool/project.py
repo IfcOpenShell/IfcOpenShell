@@ -138,7 +138,7 @@ class Project(blenderbim.core.tool.Project):
         props.extrusion_depth = 3
         props.length = 1
         props.rl1 = 0
-        props.rl2 = 1 / unit_scale
-        props.x = 0.5 / unit_scale
-        props.y = 0.5 / unit_scale
-        props.z = 0.5 / unit_scale
+        props.rl2 = 1
+        props.x = 0.5
+        props.y = 0.5
+        props.z = 0.5
