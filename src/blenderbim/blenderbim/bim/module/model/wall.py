@@ -295,7 +295,7 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                 euler = obj.matrix_world.to_euler()
                 euler.x = x_angle
                 new_matrix = euler.to_matrix().to_4x4()
-                new_matrix.col[3] = obj.matrix_world.col[3]
+                new_matrix.translation = obj.matrix_world.translation
                 obj.matrix_world = new_matrix
         if layer2_objs:
             DumbWallRecalculator().recalculate(layer2_objs)
@@ -587,9 +587,9 @@ class DumbWallGenerator:
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
 
         matrix_world = Matrix.Rotation(self.rotation, 4, "Z")
-        matrix_world.col[3] = self.location.to_4d()
+        matrix_world.translation = self.location
         if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
-            matrix_world[2][3] = self.collection_obj.location[2] + (props.rl1 * self.unit_scale)
+            matrix_world.location.z = self.collection_obj.location.z + (props.rl1 * self.unit_scale)
         obj.matrix_world = matrix_world
         bpy.context.view_layer.update()
         self.collection.objects.link(obj)
@@ -786,7 +786,7 @@ class DumbWallJoiner:
             r.RelatedOpeningElement for r in element1.HasOpenings if not r.RelatedOpeningElement.HasFillings
         ]:
             opening_matrix = Matrix(ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement).tolist())
-            opening_location = opening_matrix.col[3].to_3d()
+            opening_location = opening_matrix.translation
             _, opening_position = mathutils.geometry.intersect_point_line(opening_location.to_2d(), *axis1["reference"])
             if opening_position > cut_percentage:
                 # The opening should be removed from element1.
@@ -797,7 +797,7 @@ class DumbWallJoiner:
             r.RelatedOpeningElement for r in element2.HasOpenings if not r.RelatedOpeningElement.HasFillings
         ]:
             opening_matrix = Matrix(ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement).tolist())
-            opening_location = opening_matrix.col[3].to_3d()
+            opening_location = opening_matrix.translation
             _, opening_position = mathutils.geometry.intersect_point_line(opening_location.to_2d(), *axis1["reference"])
             if opening_position < cut_percentage:
                 # The opening should be removed from element2.
@@ -847,34 +847,34 @@ class DumbWallJoiner:
         filling_matrixes = {}
         for opening in [r.RelatedOpeningElement for r in element1.HasOpenings]:
             opening_matrix = Matrix(ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement).tolist())
-            location = opening_matrix.col[3].to_3d()
+            location = opening_matrix.translation
             location_on_base = tool.Cad.point_on_edge(location, axis1["base"])
             location_on_side = tool.Cad.point_on_edge(location, axis1["side"])
             if (location_on_base - location).length < (location_on_side - location).length:
                 axis_offset = location_on_side - location_on_base
                 offset_from_axis = location_on_base - location
-                opening_matrix.col[3] = (location_on_base - axis_offset - offset_from_axis).to_4d()
+                opening_matrix.translation = (location_on_base - axis_offset - offset_from_axis)
             else:
                 axis_offset = location_on_side - location_on_base
                 offset_from_axis = location_on_side - location
-                opening_matrix.col[3] = (location_on_side - axis_offset - offset_from_axis).to_4d()
+                opening_matrix.translation = (location_on_side - axis_offset - offset_from_axis)
             opening_matrixes[opening] = opening_matrix
 
             for filling in [r.RelatedBuildingElement for r in opening.HasFillings]:
                 filling_obj = tool.Ifc.get_object(filling)
                 filling_matrix = filling_obj.matrix_world.copy()
 
-                location = filling_matrix.col[3].to_3d()
+                location = filling_matrix.translation
                 location_on_base = tool.Cad.point_on_edge(location, axis1["base"])
                 location_on_side = tool.Cad.point_on_edge(location, axis1["side"])
                 if (location_on_base - location).length < (location_on_side - location).length:
                     axis_offset = location_on_side - location_on_base
                     offset_from_axis = location_on_base - location
-                    filling_matrix.col[3] = (location_on_base - axis_offset - offset_from_axis).to_4d()
+                    filling_matrix.translation = (location_on_base - axis_offset - offset_from_axis)
                 else:
                     axis_offset = location_on_side - location_on_base
                     offset_from_axis = location_on_side - location
-                    filling_matrix.col[3] = (location_on_side - axis_offset - offset_from_axis).to_4d()
+                    filling_matrix.translation = (location_on_side - axis_offset - offset_from_axis)
                 filling_matrixes[filling] = filling_matrix
 
         self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
@@ -1136,8 +1136,8 @@ class DumbWallJoiner:
                     )
 
         previous_matrix = obj.matrix_world.copy()
-        previous_origin = previous_matrix.col[3].to_2d()
-        obj.matrix_world.col[3].xy = self.body[0]
+        previous_origin = previous_matrix.translation.xy
+        obj.matrix_world.translation.xy = self.body[0]
         bpy.context.view_layer.update()
 
         for rel in element.ConnectedFrom:
