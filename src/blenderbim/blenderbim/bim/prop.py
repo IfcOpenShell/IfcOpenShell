@@ -478,7 +478,7 @@ class BIMMaterialProperties(PropertyGroup):
     # In Blender, a material object can map to an IFC material, IFC surface style, or both
     ifc_style_id: IntProperty(name="IFC Style ID")
     shading_checksum: StringProperty(name="Shading Checksum")
-    ifc_coordinate_id: IntProperty(name="IFC Style ID")
+    ifc_coordinate_id: IntProperty(name="IFC Coordinate ID")
 
 
 class BIMMeshProperties(PropertyGroup):
