@@ -137,16 +137,17 @@ class BIMModelProperties(PropertyGroup):
     type_page: bpy.props.IntProperty(name="Type Page", default=1, update=update_type_page)
     type_template: bpy.props.EnumProperty(
         items=(
-            ("MESH", "Custom Mesh", ""),
-            ("LAYERSET_AXIS2", "Vertical Layers", "For objects similar to walls"),
-            ("LAYERSET_AXIS3", "Horizontal Layers", "For objects similar to slabs"),
-            ("PROFILESET", "Extruded Profile", ""),
-            ("EMPTY", "Non-Geometric Type", ""),
-            ("WINDOW", "Window", ""),
-            ("DOOR", "Door", ""),
-            ("STAIR", "Stair", ""),
-            ("RAILING", "Railing", ""),
-            ("ROOF", "Roof", ""),
+            ("MESH", "Custom Mesh", "Use as a representation currently active object mesh or default cube if no object selected"),
+            ("LAYERSET_AXIS2", "Vertical Layers", "For objects similar to walls, will automatically add IfcMaterialLayerSet"),
+            ("LAYERSET_AXIS3", "Horizontal Layers", "For objects similar to slabs, will automatically add IfcMaterialLayerSet"),
+            ("PROFILESET", "Extruded Profile", "Create profile type object, automatically defines IfcMaterialProfileSet with the first profile from library"),
+            ("EMPTY", "Non-Geometric Type", "Start with an empty object"),
+            ("WINDOW", "Window", "Parametric window"),
+            ("DOOR", "Door", "Parametric door"),
+            ("STAIR", "Stair", "Parametric stair"),
+            ("RAILING", "Railing", "Parametric railing"),
+            ("ROOF", "Roof", "Parametric roof"),
+
         ),
         name="Type Template",
         default="MESH",
