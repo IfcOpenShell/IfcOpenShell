@@ -231,7 +231,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 bm.to_mesh(mesh)
                 bm.free()
                 obj = bpy.data.objects.new(name, mesh)
-            obj.matrix_world.col[3] = location.to_4d()
+            obj.matrix_world.translation = location
             blenderbim.core.root.assign_class(
                 tool.Ifc,
                 tool.Collector,
@@ -327,7 +327,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                     )
                 elif template == "DISTRIBUTION_SEGMENT_CIRCULAR_HOLLOW":
                     default_diameter = 0.15 / unit_scale
-                    default_thickness = 0.005 / unit_scale  # TODO: double check
+                    default_thickness = 0.005 / unit_scale
                     profile_name = f"{ifc_class}-{default_diameter*1000}x{default_thickness*1000}"
                     profile = ifc_file.create_entity(
                         "IfcCircleHollowProfileDef",
