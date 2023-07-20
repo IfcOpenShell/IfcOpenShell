@@ -55,8 +55,10 @@ def filter_elements(ifc_file, query, elements=None):
                 filter_group: facet_list ("+" facet_list)*
                 facet_list: facet ("," facet)*
 
-                facet: entity | attribute | type | material | property | classification | location
+                facet: instance | entity | attribute | type | material | property | classification | location
 
+                instance: not? globalid
+                globalid: /[0-3][a-zA-Z0-9_$]{21}/
                 entity: not? ifc_class
                 attribute: attribute_name comparison value
                 type: "type" comparison value
@@ -127,7 +129,6 @@ class FacetTransformer(lark.Transformer):
         self.elements = elements or set()
         self.container_parents = {}
         self.container_trees = {}
-        print("INIT TRANSFORMER")
 
     def get_results(self):
         results = set()
@@ -139,6 +140,12 @@ class FacetTransformer(lark.Transformer):
         if self.elements:
             self.results.append(self.elements)
             self.elements = set()
+
+    def instance(self, args):
+        if args[0].data == "globalid":
+            self.elements.add(self.file.by_guid(args[0].children[0].value))
+        else:
+            self.elements.remove(self.file.by_guid(args[1].children[0].value))
 
     def entity(self, args):
         if args[0].data == "ifc_class":
