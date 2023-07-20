@@ -589,7 +589,7 @@ class DumbWallGenerator:
         matrix_world = Matrix.Rotation(self.rotation, 4, "Z")
         matrix_world.translation = self.location
         if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
-            matrix_world.location.z = self.collection_obj.location.z + (props.rl1 * self.unit_scale)
+            matrix_world.location.z = self.collection_obj.location.z + props.rl1
         obj.matrix_world = matrix_world
         bpy.context.view_layer.update()
         self.collection.objects.link(obj)

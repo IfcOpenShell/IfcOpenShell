@@ -91,7 +91,7 @@ class FilledOpeningGenerator:
             if filling.is_a("IfcDoor"):
                 new_matrix.translation.z = voided_obj.matrix_world.translation.z
             else:
-                new_matrix.translation.z = voided_obj.matrix_world.translation.z + (props.rl2 * unit_scale)
+                new_matrix.translation.z = voided_obj.matrix_world.translation.z + props.rl2
 
             filling_obj.matrix_world = new_matrix
             bpy.context.view_layer.update()
@@ -556,7 +556,6 @@ class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
             and hasattr(obj.data, "BIMMeshProperties")
             and obj.data.BIMMeshProperties.ifc_definition_id
         )
-
 
     def _execute(self, context):
         obj = context.active_object
