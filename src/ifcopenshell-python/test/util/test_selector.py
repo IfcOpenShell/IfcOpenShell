@@ -75,6 +75,16 @@ class TestGetElementValue(test.bootstrap.IFC4):
 
 
 class TestFilterElements(test.bootstrap.IFC4):
+    def test_selecting_by_globalid(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSlab")
+        guid1 = element.GlobalId
+        guid2 = element2.GlobalId
+        assert subject.filter_elements(self.file, f"{guid1}") == {element}
+        assert subject.filter_elements(self.file, f"{guid1}, {guid2}") == {element, element2}
+        assert subject.filter_elements(self.file, f"{guid1}, {guid2}, ! {guid2}") == {element}
+        assert subject.filter_elements(self.file, f"IfcElement, ! {guid2}") == {element}
+
     def test_selecting_by_class(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         element.Name = "Foo"
