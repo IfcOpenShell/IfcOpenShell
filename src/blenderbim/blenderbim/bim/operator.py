@@ -42,10 +42,13 @@ from math import radians
 
 class SetTab(bpy.types.Operator):
     bl_idname = "bim.set_tab"
-    bl_label = "Set Tab"
+    bl_label = "Set Current Tab"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Sets the current property tab"
     tab: bpy.props.StringProperty()
+
+    @classmethod
+    def description(cls, context, properties):
+        return next((t[1] for t in blenderbim.bim.prop.get_tab(None, context) if t[0] == properties.tab), "")
 
     def execute(self, context):
         if context.area.spaces.active.search_filter:
