@@ -212,6 +212,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
         body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
         if not body:
             props.type_class = props.type_class
+            self.report({"ERROR"}, "No Model/Body/MODEL_VIEW context found.")
             return {"FINISHED"}
 
         if template == "MESH":
@@ -314,6 +315,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
             ifcopenshell.api.run(
                 "material.assign_profile", ifc_file, material_profile=material_profile, profile=profile
             )
+
         elif template == "EMPTY":
             obj = bpy.data.objects.new(name, None)
             blenderbim.core.root.assign_class(
@@ -329,7 +331,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
             )
 
         elif template == "WINDOW":
-            mesh = bpy.data.meshes.new("IfcWindow")
+            mesh = bpy.data.meshes.new(name)
             obj = bpy.data.objects.new(name, mesh)
             element = blenderbim.core.root.assign_class(
                 tool.Ifc,
@@ -340,14 +342,11 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 ifc_class="IfcWindowType" if tool.Ifc.get_schema() != "IFC2X3" else "IfcWindowStyle",
                 should_add_representation=False,
             )
-            bpy.ops.object.select_all(action="DESELECT")
-            bpy.context.view_layer.objects.active = None
-            bpy.context.view_layer.objects.active = obj
-            obj.select_set(True)
+            tool.Blender.select_and_activate_single_object(context, obj)
             bpy.ops.bim.add_window()
 
         elif template == "DOOR":
-            mesh = bpy.data.meshes.new("IfcDoor")
+            mesh = bpy.data.meshes.new(name)
             obj = bpy.data.objects.new(name, mesh)
             element = blenderbim.core.root.assign_class(
                 tool.Ifc,
@@ -358,14 +357,11 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 ifc_class="IfcDoorType" if tool.Ifc.get_schema() != "IFC2X3" else "IfcDoorStyle",
                 should_add_representation=False,
             )
-            bpy.ops.object.select_all(action="DESELECT")
-            bpy.context.view_layer.objects.active = None
-            bpy.context.view_layer.objects.active = obj
-            obj.select_set(True)
+            tool.Blender.select_and_activate_single_object(context, obj)
             bpy.ops.bim.add_door()
 
         elif template == "STAIR":
-            mesh = bpy.data.meshes.new("IfcStairFlight")
+            mesh = bpy.data.meshes.new(name)
             obj = bpy.data.objects.new(name, mesh)
             element = blenderbim.core.root.assign_class(
                 tool.Ifc,
@@ -377,14 +373,11 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 should_add_representation=True,
                 context=body,
             )
-            bpy.ops.object.select_all(action="DESELECT")
-            bpy.context.view_layer.objects.active = None
-            bpy.context.view_layer.objects.active = obj
-            obj.select_set(True)
+            tool.Blender.select_and_activate_single_object(context, obj)
             bpy.ops.bim.add_stair()
 
         elif template == "RAILING":
-            mesh = bpy.data.meshes.new("IfcRailing")
+            mesh = bpy.data.meshes.new(name)
             obj = bpy.data.objects.new(name, mesh)
             element = blenderbim.core.root.assign_class(
                 tool.Ifc,
@@ -396,14 +389,11 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 should_add_representation=True,
                 context=body,
             )
-            bpy.ops.object.select_all(action="DESELECT")
-            bpy.context.view_layer.objects.active = None
-            bpy.context.view_layer.objects.active = obj
-            obj.select_set(True)
+            tool.Blender.select_and_activate_single_object(context, obj)
             bpy.ops.bim.add_railing()
 
         elif template == "ROOF":
-            mesh = bpy.data.meshes.new("IfcRoof")
+            mesh = bpy.data.meshes.new(name)
             obj = bpy.data.objects.new(name, mesh)
             element = blenderbim.core.root.assign_class(
                 tool.Ifc,
@@ -415,10 +405,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 should_add_representation=True,
                 context=body,
             )
-            bpy.ops.object.select_all(action="DESELECT")
-            bpy.context.view_layer.objects.active = None
-            bpy.context.view_layer.objects.active = obj
-            obj.select_set(True)
+            tool.Blender.select_and_activate_single_object(obj)
             bpy.ops.bim.add_roof()
 
         bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class)
