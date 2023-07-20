@@ -19,7 +19,7 @@
 from collections import defaultdict
 import bpy
 import ifcopenshell.util.element
-from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc
+from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc, get_class_suggestions
 import blenderbim.tool as tool
 import blenderbim.bim.helper
 from blenderbim.bim.ifc import IfcStore
@@ -110,28 +110,20 @@ class IfcClassData:
 
     @classmethod
     def ifc_classes_suggestions(cls):
+        # suggestions : dict[class_name: list[dict[predefined_type, name(optional)]]]
         suggestions = defaultdict(list)
-        suggestions.update(
-            {
-                "IfcActuator": ["Electric Strike"],
-                "IfcAirTerminalBox": ["VAV Box"],
-                "IfcCableSegment": ["Lighting Rod"],
-                "IfcCovering": ["Flashing", "Capping"],
-                "IfcFurniture": ["Signage"],
-                "IfcPlate": ["Glazing", "Glass", "Pane"],
-                "IfcSensor": ["Card Reader", "Fob Reader"],
-                "IfcSlab": ["Hob"],
-                "IfcSwitchingDevice": ["Reed Switch", "Electric Isolating Switch"],
-                "IfcUnitaryEquipment": ["Fan Coil Unit"],
-                "IfcWall": ["Glazing", "Glass", "Pane"],
-                "IfcWindow": ["Glazing", "Glass", "Pane"],
-            }
-        )
         version = tool.Ifc.get_schema()
         for ifc_class, _, _ in cls.data["ifc_classes"]:
             class_doc = get_entity_doc(version, ifc_class) or {}
             predefined_types = class_doc.get("predefined_types", {})
-            suggestions[ifc_class].extend(predefined_types.keys())
+            for predefined_type in predefined_types.keys():
+                suggestions[ifc_class].append({"predefined_type": predefined_type})
+
+            class_suggestions = get_class_suggestions(version, ifc_class)
+            if not class_suggestions:
+                continue
+            for suggestion_dict in class_suggestions:
+                suggestions[ifc_class].append(suggestion_dict)
         return suggestions
 
     @classmethod
