@@ -57,8 +57,11 @@ class BrickschemaData:
             brick = props.bricks[props.active_brick_index]
         except:
             return []
-        results = []
         uri = brick.uri
+        namespace = str(uri.split("#")[0])
+        if namespace == "https://brickschema.org/schema/Brick":
+            return []
+        results = []
         query = BrickStore.graph.query(
             """
             PREFIX brick: <https://brickschema.org/schema/Brick#>
