@@ -238,7 +238,7 @@ class Input3DCursorXArray(bpy.types.Operator):
         props = obj.BIMArrayProperties
         cursor = context.scene.cursor
         if props.use_local_space:
-            props.x = (Matrix.inverted(obj.matrix_world) @ cursor.matrix.col[3]).x
+            props.x = (Matrix.inverted(obj.matrix_world) @ cursor.matrix.translation).x
         else:
             props.x = cursor.location.x - obj.location.x
         return {"FINISHED"}
@@ -254,7 +254,7 @@ class Input3DCursorYArray(bpy.types.Operator):
         props = obj.BIMArrayProperties
         cursor = context.scene.cursor
         if props.use_local_space:
-            props.y = (Matrix.inverted(obj.matrix_world) @ cursor.matrix.col[3]).y
+            props.y = (Matrix.inverted(obj.matrix_world) @ cursor.matrix.translation).y
         else:
             props.y = cursor.location.y - obj.location.y
         return {"FINISHED"}
@@ -270,7 +270,7 @@ class Input3DCursorZArray(bpy.types.Operator):
         props = obj.BIMArrayProperties
         cursor = context.scene.cursor
         if props.use_local_space:
-            props.z = (Matrix.inverted(obj.matrix_world) @ cursor.matrix.col[3]).z
+            props.z = (Matrix.inverted(obj.matrix_world) @ cursor.matrix.translation).z
         else:
             props.z = cursor.location.z - obj.location.z
         return {"FINISHED"}

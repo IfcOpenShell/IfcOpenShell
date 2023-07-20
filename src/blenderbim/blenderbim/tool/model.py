@@ -160,7 +160,7 @@ class Model(blenderbim.core.tool.Model):
         position.col[0][:3] = x_axis
         position.col[1][:3] = y_axis
         position.col[2][:3] = z_axis
-        position.col[3][:3] = p1
+        position.translation = p1
 
         cls.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
@@ -310,9 +310,7 @@ class Model(blenderbim.core.tool.Model):
 
         if surface.is_a("IfcCurveBoundedPlane"):
             position = Matrix(ifcopenshell.util.placement.get_axis2placement(surface.BasisSurface.Position).tolist())
-            position[0][3] *= cls.unit_scale
-            position[1][3] *= cls.unit_scale
-            position[2][3] *= cls.unit_scale
+            position.translation *= cls.unit_scale
 
             cls.import_curve(obj, position, surface.OuterBoundary)
             for inner_boundary in surface.InnerBoundaries:
@@ -393,7 +391,7 @@ class Model(blenderbim.core.tool.Model):
                 cls.edges.append([len(cls.vertices) - 1, offset])  # Close the loop
         elif curve.is_a("IfcCircle"):
             center = cls.convert_unit_to_si(
-                Matrix(ifcopenshell.util.placement.get_axis2placement(curve.Position).tolist()).col[3].to_3d()
+                Matrix(ifcopenshell.util.placement.get_axis2placement(curve.Position).tolist()).translation
             )
             radius = cls.convert_unit_to_si(curve.Radius)
             cls.vertices.extend(
@@ -409,9 +407,7 @@ class Model(blenderbim.core.tool.Model):
     def import_rectangle(cls, obj, position, profile):
         if profile.Position:
             p_position = Matrix(ifcopenshell.util.placement.get_axis2placement(profile.Position).tolist())
-            p_position[0][3] *= cls.unit_scale
-            p_position[1][3] *= cls.unit_scale
-            p_position[2][3] *= cls.unit_scale
+            p_position.translation *= cls.unit_scale
         else:
             p_position = Matrix()
 
@@ -588,8 +584,8 @@ class Model(blenderbim.core.tool.Model):
                     if array["use_local_space"]:
                         current_obj_translation = obj.matrix_world @ offset
                     else:
-                        current_obj_translation = obj.matrix_world.col[3].to_3d() + offset
-                    new_matrix.col[3] = current_obj_translation.to_4d()
+                        current_obj_translation = obj.matrix_world.translation + offset
+                    new_matrix.translation = current_obj_translation
                     child_obj.matrix_world = new_matrix
                     children_objs.append(child_obj)
                     children_elements.append(child_element)

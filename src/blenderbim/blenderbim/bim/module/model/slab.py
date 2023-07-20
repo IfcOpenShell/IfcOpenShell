@@ -155,11 +155,11 @@ class DumbSlabGenerator:
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
 
         matrix_world = Matrix()
-        matrix_world.col[3] = self.location.to_4d()
+        matrix_world.translation = self.location
         if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
-            matrix_world[2][3] = self.collection_obj.location[2] - self.depth
+            matrix_world.translation.z = self.collection_obj.location.z - self.depth
         else:
-            matrix_world[2][3] -= self.depth
+            matrix_world.translation.z -= self.depth
         obj.matrix_world = Matrix.Rotation(self.x_angle, 4, "X") @ matrix_world
         bpy.context.view_layer.update()
         self.collection.objects.link(obj)
@@ -359,9 +359,7 @@ class EnableEditingSketchExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator)
         profile = extrusion.SweptArea
         if extrusion.Position:
             position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
-            position[0][3] *= self.unit_scale
-            position[1][3] *= self.unit_scale
-            position[2][3] *= self.unit_scale
+            position.matrix_world.translation *= self.unit_scale
         else:
             position = Matrix()
 
@@ -447,7 +445,7 @@ class EnableEditingSketchExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator)
             self.edges[-1] = (len(self.vertices) - 1, offset)  # Close the loop
         elif curve.is_a("IfcCircle"):
             center = self.convert_unit_to_si(
-                Matrix(ifcopenshell.util.placement.get_axis2placement(curve.Position).tolist()).col[3].to_3d()
+                Matrix(ifcopenshell.util.placement.get_axis2placement(curve.Position).tolist()).translation
             )
             radius = self.convert_unit_to_si(curve.Radius)
             self.vertices.extend(
@@ -617,9 +615,7 @@ class EnableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
 
         if extrusion.Position:
             position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
-            position[0][3] *= self.unit_scale
-            position[1][3] *= self.unit_scale
-            position[2][3] *= self.unit_scale
+            position.translation *= self.unit_scale
         else:
             position = Matrix()
 
@@ -650,9 +646,7 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         extrusion = tool.Model.get_extrusion(body)
         if extrusion.Position:
             position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
-            position[0][3] *= self.unit_scale
-            position[1][3] *= self.unit_scale
-            position[2][3] *= self.unit_scale
+            position.translation *= self.unit_scale
         else:
             position = Matrix()
 

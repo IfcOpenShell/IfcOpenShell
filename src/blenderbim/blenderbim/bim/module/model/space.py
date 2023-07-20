@@ -85,7 +85,7 @@ class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
             x, y = context.scene.cursor.location.xy
             z = collection_obj.matrix_world.translation.z
             mat = Matrix()
-            mat[0][3], mat[1][3], mat[2][3] = x, y, z
+            mat.translation = (x, y, z)
             h = 3
 
         boundary_elements = []

@@ -390,7 +390,7 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
             newc = mirror.matrix_world @ (c @ reflection)
 
             newmat = Matrix((newx.to_4d(), newy.to_4d(), newz.to_4d(), newc.to_4d())).transposed()
-            newmat.col[3][0:3] = Vector(newmat.col[3][0:3]) - (newmat.to_quaternion() @ centroid)
+            newmat.translation = Vector(newmat.translation) - (newmat.to_quaternion() @ centroid)
 
             obj.matrix_world = newmat
 

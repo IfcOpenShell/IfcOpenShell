@@ -354,7 +354,7 @@ class UglyDotGizmo(OffsetHandle, types.Gizmo):
 
     def refresh(self):
         offset = self.target_get_value("offset") / self.scale_value
-        self.matrix_offset.col[3][2] = offset  # z-shift
+        self.matrix_offset.translation.z = offset  # z-shift
 
     def draw(self, ctx):
         self.refresh()
@@ -385,7 +385,7 @@ class DotGizmo(CustomGizmo, OffsetHandle, types.Gizmo):
 
     def refresh(self):
         offset = self.target_get_value("offset") / self.scale_value
-        self.matrix_offset.col[3][2] = offset  # z-shifted
+        self.matrix_offset.translation.z = offset  # z-shifted
 
     def draw(self, ctx):
         self.refresh()
@@ -443,7 +443,7 @@ class DimensionLabelGizmo(types.Gizmo):
 
     def refresh(self, ctx):
         value = self.target_get_value("value")
-        self.matrix_offset.col[3][2] = value * 0.5
+        self.matrix_offset.translation.z = value * 0.5
         unit_system = ctx.scene.unit_settings.system
         self.text_label = bpy.utils.units.to_string(unit_system, "LENGTH", value, 3, split_unit=False)
 
