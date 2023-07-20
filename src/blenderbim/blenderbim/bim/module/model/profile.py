@@ -34,6 +34,7 @@ from mathutils import Vector, Matrix, Quaternion
 from blenderbim.bim.module.geometry.helper import Helper
 from blenderbim.bim.module.model.wall import DumbWallRecalculator
 from blenderbim.bim.module.model.decorator import ProfileDecorator
+from blenderbim.bim.module.model.mep import MepGenerator
 
 
 class DumbProfileGenerator:
@@ -74,7 +75,9 @@ class DumbProfileGenerator:
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
 
         matrix_world = Matrix()
-        if self.relating_type.is_a() in ["IfcBeamType", "IfcMemberType"]:
+        if self.relating_type.is_a() in ["IfcBeamType", "IfcMemberType"] or self.relating_type.is_a(
+            "IfcFlowSegmentType"
+        ):
             matrix_world = Matrix.Rotation(pi / 2, 4, "Z") @ Matrix.Rotation(pi / 2, 4, "X") @ matrix_world
         matrix_world.col[3] = self.location.to_4d()
         if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
@@ -230,9 +233,11 @@ class ExtendProfile(bpy.types.Operator, tool.Ifc.Operator):
             return {"FINISHED"}
         for obj in selected_objs:
             tool.Geometry.clear_scale(obj)
+
         if len(selected_objs) == 1:
             joiner.join_E(context.active_object, context.scene.cursor.location)
             return {"FINISHED"}
+
         if len(selected_objs) == 2:
             if self.join_type == "L":
                 joiner.join_L([o for o in selected_objs if o != context.active_object][0], context.active_object)
@@ -245,6 +250,7 @@ class ExtendProfile(bpy.types.Operator, tool.Ifc.Operator):
                 if obj == context.active_object:
                     continue
                 joiner.join_T(obj, context.active_object)
+
         return {"FINISHED"}
 
 
@@ -486,6 +492,8 @@ class DumbProfileJoiner:
             should_sync_changes_first=False,
         )
         tool.Geometry.record_object_materials(obj)
+        if element.is_a("IfcFlowSegment"):
+            MepGenerator().setup_ports(obj)
 
     def join(self, profile1, profile2, connection1, connection2, is_relating=True, description="BUTT"):
         element1 = tool.Ifc.get_entity(profile1)
@@ -869,9 +877,15 @@ class Rotate90(bpy.types.Operator, tool.Ifc.Operator):
             elif usage == "LAYER2":
                 layer2_objs.append(obj)
             if element.ConnectedTo or element.ConnectedFrom:
-                ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element, connection_type="ATSTART")
-                ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element, connection_type="ATEND")
-                ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element, connection_type="ATPATH")
+                ifcopenshell.api.run(
+                    "geometry.disconnect_path", tool.Ifc.get(), element=element, connection_type="ATSTART"
+                )
+                ifcopenshell.api.run(
+                    "geometry.disconnect_path", tool.Ifc.get(), element=element, connection_type="ATEND"
+                )
+                ifcopenshell.api.run(
+                    "geometry.disconnect_path", tool.Ifc.get(), element=element, connection_type="ATPATH"
+                )
             rotate_matrix = Matrix.Rotation(pi / 2, 4, self.axis)
             obj.matrix_world @= rotate_matrix
         bpy.context.view_layer.update()
@@ -992,7 +1006,7 @@ class EditExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
         y_axis = Vector((0, 0, 1))
         # making sure z_axis != y_axis
         if z_axis == y_axis:
-            y_axis = Vector((0,1,0))
+            y_axis = Vector((0, 1, 0))
 
         x_axis = y_axis.cross(z_axis).normalized()
         y_axis = z_axis.cross(x_axis).normalized()
