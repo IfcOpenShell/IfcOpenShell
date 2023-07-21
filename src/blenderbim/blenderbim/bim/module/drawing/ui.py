@@ -393,6 +393,7 @@ class BIM_PT_product_assignments(Panel):
     bl_region_type = "WINDOW"
     bl_context = "object"
     bl_order = 1
+    bl_parent_id = "BIM_PT_tab_object_metadata"
 
     @classmethod
     def poll(cls, context):
@@ -428,6 +429,7 @@ class BIM_PT_text(Panel):
     bl_region_type = "WINDOW"
     bl_context = "object"
     bl_order = 0
+    bl_parent_id = "BIM_PT_tab_object_metadata"
 
     @classmethod
     def poll(cls, context):
