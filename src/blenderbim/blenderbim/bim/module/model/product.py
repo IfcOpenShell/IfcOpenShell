@@ -72,6 +72,40 @@ def add_empty_type_button(self, context):
     self.layout.operator(AddEmptyType.bl_idname, icon="FILE_3D")
 
 
+class AddDefaultType(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_default_type"
+    bl_label = "Add Default Type"
+    bl_options = {"REGISTER", "UNDO"}
+    ifc_element_type: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        props = context.scene.BIMModelProperties
+        props.type_class = self.ifc_element_type
+        if self.ifc_element_type == "IfcWallType":
+            props.type_predefined_type = "SOLIDWALL"
+            props.type_template = "LAYERSET_AXIS2"
+        elif self.ifc_element_type == "IfcSlabType":
+            props.type_predefined_type = "FLOOR"
+            props.type_template = "LAYERSET_AXIS3"
+        elif self.ifc_element_type == "IfcDoorType":
+            props.type_predefined_type = "DOOR"
+            props.type_template = "DOOR"
+        elif self.ifc_element_type == "IfcWindowType":
+            props.type_predefined_type = "WINDOW"
+            props.type_template = "WINDOW"
+        elif self.ifc_element_type == "IfcColumnType":
+            props.type_predefined_type = "COLUMN"
+            props.type_template = "PROFILESET"
+        elif self.ifc_element_type == "IfcBeamType":
+            props.type_predefined_type = "BEAM"
+            props.type_template = "PROFILESET"
+        elif self.ifc_element_type == "IfcDuctSegmentType":
+            return
+        elif self.ifc_element_type == "IfcPipeSegmentType":
+            return
+        bpy.ops.bim.add_type()
+
+
 class AddConstrTypeInstance(bpy.types.Operator):
     bl_idname = "bim.add_constr_type_instance"
     bl_label = "Add"
