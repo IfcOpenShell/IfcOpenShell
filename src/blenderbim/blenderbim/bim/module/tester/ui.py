@@ -34,12 +34,13 @@ class BIM_PT_tester(Panel):
         self.layout.use_property_split = True
         props = context.scene.IfcTesterProperties
 
-        if tool.Ifc.get():
-            row = self.layout.row()
-            row.prop(props, "should_load_from_memory")
-        
+        row = self.layout.row()
+        row.prop(self.props, "should_load_from_memory")
+        row.enabled = bool(tool.Ifc.get())
+     
         row = self.layout.row()
         row.prop(props, "generate_html_report")
+
 
         if not tool.Ifc.get() or not props.should_load_from_memory:
             row = self.layout.row(align=True)
