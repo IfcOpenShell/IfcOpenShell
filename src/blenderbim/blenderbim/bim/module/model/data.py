@@ -44,9 +44,11 @@ class AuthoringData:
     is_loaded = False
 
     @classmethod
-    def load(cls):
+    def load(cls, ifc_element_type=False):
         cls.is_loaded = True
         cls.props = bpy.context.scene.BIMModelProperties
+        if ifc_element_type is not False:
+            cls.data["ifc_element_type"] = ifc_element_type
         cls.data["ifc_classes"] = cls.ifc_classes()
         cls.data["relating_type_id"] = cls.relating_type_id()  # only after .ifc_classes()
         cls.data["type_class"] = cls.type_class()
@@ -212,6 +214,10 @@ class AuthoringData:
 
     @classmethod
     def ifc_classes(cls):
+        if cls.data["ifc_element_type"]:
+            if tool.Ifc.get().by_type(cls.data["ifc_element_type"]):
+                return [(cls.data["ifc_element_type"], cls.data["ifc_element_type"], "")]
+            return []
         results = []
         classes = {
             e.is_a() for e in (tool.Ifc.get().by_type("IfcElementType") + tool.Ifc.get().by_type("IfcSpaceType"))

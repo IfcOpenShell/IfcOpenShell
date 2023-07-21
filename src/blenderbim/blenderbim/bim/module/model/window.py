@@ -96,8 +96,7 @@ def update_simple_openings(element, opening_width, opening_height):
         )
 
 
-def update_window_modifier_representation(context):
-    obj = context.active_object
+def update_window_modifier_representation(context, obj):
     element = tool.Ifc.get_entity(obj)
     props = obj.BIMWindowProperties
     ifc_file = tool.Ifc.get()
@@ -455,7 +454,7 @@ class BIM_OT_add_window(bpy.types.Operator, tool.Ifc.Operator):
         obj.location = spawn_location
         collection = context.view_layer.active_layer_collection.collection
         collection.objects.link(obj)
-        
+
         element = blenderbim.core.root.assign_class(
             tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class="IfcWindow", should_add_representation=False
         )
@@ -476,9 +475,10 @@ class AddWindow(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_window"
     bl_label = "Add Window"
     bl_options = {"REGISTER"}
+    obj: bpy.props.StringProperty()
 
     def _execute(self, context):
-        obj = context.active_object
+        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMWindowProperties
 
@@ -498,7 +498,7 @@ class AddWindow(bpy.types.Operator, tool.Ifc.Operator):
             pset=pset,
             properties={"Data": json.dumps(window_data, default=list)},
         )
-        update_window_modifier_representation(context)
+        update_window_modifier_representation(context, obj)
         return {"FINISHED"}
 
 
@@ -550,7 +550,7 @@ class FinishEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
 
         props.is_editing = False
 
-        update_window_modifier_representation(context)
+        update_window_modifier_representation(context, obj)
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Window")
         window_data = json.dumps(window_data, default=list)

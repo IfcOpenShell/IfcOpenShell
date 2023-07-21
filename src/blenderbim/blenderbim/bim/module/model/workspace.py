@@ -34,7 +34,7 @@ class BimTool(WorkSpaceTool):
     bl_context_mode = "OBJECT"
 
     bl_idname = "bim.bim_tool"
-    bl_label = "BIM Tool"
+    bl_label = "Create Element"
     bl_description = "Gives you BIM authoring related superpowers"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.bim")
     bl_widget = None
@@ -69,6 +69,110 @@ class BimTool(WorkSpaceTool):
         BimToolUI.draw(context, layout)
 
 
+class WallTool(BimTool):
+    bl_space_type = "VIEW_3D"
+    bl_context_mode = "OBJECT"
+    bl_idname = "bim.wall_tool"
+    bl_label = "Create Wall"
+    bl_description = "Create and edit walls"
+    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.wall")
+    bl_widget = None
+
+    def draw_settings(context, layout, ws_tool):
+        BimToolUI.draw(context, layout, ifc_element_type="IfcWallType")
+
+
+class SlabTool(BimTool):
+    bl_space_type = "VIEW_3D"
+    bl_context_mode = "OBJECT"
+    bl_idname = "bim.slab_tool"
+    bl_label = "Create Slab"
+    bl_description = "Create and edit slabs"
+    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.slab")
+    bl_widget = None
+
+    def draw_settings(context, layout, ws_tool):
+        BimToolUI.draw(context, layout, ifc_element_type="IfcSlabType")
+
+
+class DoorTool(BimTool):
+    bl_space_type = "VIEW_3D"
+    bl_context_mode = "OBJECT"
+    bl_idname = "bim.door_tool"
+    bl_label = "Create Door"
+    bl_description = "Create and edit doors"
+    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.door")
+    bl_widget = None
+
+    def draw_settings(context, layout, ws_tool):
+        BimToolUI.draw(context, layout, ifc_element_type="IfcDoorType")
+
+
+class WindowTool(BimTool):
+    bl_space_type = "VIEW_3D"
+    bl_context_mode = "OBJECT"
+    bl_idname = "bim.window_tool"
+    bl_label = "Create Window"
+    bl_description = "Create and edit windows"
+    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.window")
+    bl_widget = None
+
+    def draw_settings(context, layout, ws_tool):
+        BimToolUI.draw(context, layout, ifc_element_type="IfcWindowType")
+
+
+class ColumnTool(BimTool):
+    bl_space_type = "VIEW_3D"
+    bl_context_mode = "OBJECT"
+    bl_idname = "bim.column_tool"
+    bl_label = "Create Column"
+    bl_description = "Create and edit columns"
+    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.column")
+    bl_widget = None
+
+    def draw_settings(context, layout, ws_tool):
+        BimToolUI.draw(context, layout, ifc_element_type="IfcColumnType")
+
+
+class BeamTool(BimTool):
+    bl_space_type = "VIEW_3D"
+    bl_context_mode = "OBJECT"
+    bl_idname = "bim.beam_tool"
+    bl_label = "Create Beam"
+    bl_description = "Create and edit beams"
+    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.beam")
+    bl_widget = None
+
+    def draw_settings(context, layout, ws_tool):
+        BimToolUI.draw(context, layout, ifc_element_type="IfcBeamType")
+
+
+class DuctTool(BimTool):
+    bl_space_type = "VIEW_3D"
+    bl_context_mode = "OBJECT"
+    bl_idname = "bim.duct_tool"
+    bl_label = "Create Duct"
+    bl_description = "Create and edit ducks"  # No, not a typo.
+    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.duct")
+    bl_widget = None
+
+    def draw_settings(context, layout, ws_tool):
+        BimToolUI.draw(context, layout, ifc_element_type="IfcDuctSegmentType")
+
+
+class PipeTool(BimTool):
+    bl_space_type = "VIEW_3D"
+    bl_context_mode = "OBJECT"
+    bl_idname = "bim.pipe_tool"
+    bl_label = "Create Pipe"
+    bl_description = "Create and edit pipes"
+    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.pipe")
+    bl_widget = None
+
+    def draw_settings(context, layout, ws_tool):
+        BimToolUI.draw(context, layout, ifc_element_type="IfcPipeSegmentType")
+
+
 def add_layout_hotkey_operator(layout, text, hotkey, description):
     modifiers = {
         "A": "EVENT_ALT",
@@ -88,7 +192,7 @@ def add_layout_hotkey_operator(layout, text, hotkey, description):
 
 class BimToolUI:
     @classmethod
-    def draw(cls, context, layout):
+    def draw(cls, context, layout, ifc_element_type=None):
         cls.layout = layout
         cls.props = context.scene.BIMModelProperties
 
@@ -98,7 +202,9 @@ class BimToolUI:
             return
 
         if not AuthoringData.is_loaded:
-            AuthoringData.load()
+            AuthoringData.load(ifc_element_type)
+        elif AuthoringData.data["ifc_element_type"] != ifc_element_type:
+            AuthoringData.load(ifc_element_type)
 
         if context.region.type == "TOOL_HEADER":
             cls.draw_header_interface()
@@ -303,8 +409,9 @@ class BimToolUI:
         # shared by both sidebar and header
         row = cls.layout.row(align=True)
         if AuthoringData.data["ifc_classes"]:
-            row.label(text="", icon="FILE_VOLUME")
-            prop_with_search(row, cls.props, "ifc_class", text="")
+            if not AuthoringData.data["ifc_element_type"]:
+                row.label(text="", icon="FILE_VOLUME")
+                prop_with_search(row, cls.props, "ifc_class", text="")
 
             row = cls.layout.row(align=True)
             if AuthoringData.data["relating_type_id"]:
@@ -312,9 +419,20 @@ class BimToolUI:
                 prop_with_search(row, cls.props, "relating_type_id", text="")
             else:
                 row.label(text="No Construction Type", icon="FILE_3D")
+            row.operator("bim.launch_type_manager", icon="LIGHTPROBE_GRID", text="")
         else:
-            row.label(text="No Construction Class", icon="FILE_VOLUME")
-        row.operator("bim.launch_type_manager", icon="LIGHTPROBE_GRID", text="")
+            if AuthoringData.data["ifc_element_type"]:
+                row.label(text=f"No {AuthoringData.data['ifc_element_type']} Found", icon="ERROR")
+                row = cls.layout.row()
+                row.prop(cls.props, "type_name")
+                row = cls.layout.row()
+                op = row.operator(
+                    "bim.add_default_type", icon="ADD", text=f"Add {AuthoringData.data['ifc_element_type']}"
+                )
+                op.ifc_element_type = AuthoringData.data["ifc_element_type"]
+            else:
+                row.label(text="No Element Types Found", icon="ERROR")
+                row.operator("bim.launch_type_manager", icon="LIGHTPROBE_GRID", text="Launch Type Manager")
 
     @classmethod
     def draw_basic_bim_tool_interface(cls):
