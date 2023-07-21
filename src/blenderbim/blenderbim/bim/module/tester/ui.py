@@ -32,38 +32,38 @@ class BIM_PT_tester(Panel):
 
     def draw(self, context):
         self.layout.use_property_split = True
-
-        self.props = context.scene.IfcTesterProperties
+        props = context.scene.IfcTesterProperties
 
         if tool.Ifc.get():
             row = self.layout.row()
-            row.prop(self.props, "should_load_from_memory")
+            row.prop(props, "should_load_from_memory")
+        
+        row = self.layout.row()
+        row.prop(props, "generate_html_report")
 
-        if not tool.Ifc.get() or not self.props.should_load_from_memory:
+        if not tool.Ifc.get() or not props.should_load_from_memory:
             row = self.layout.row(align=True)
-            row.prop(self.props, "ifc_file")
+            row.prop(props, "ifc_file")
             row.operator("bim.select_ifctester_ifc_file", icon="FILE_FOLDER", text="")
-
+        
         row = self.layout.row(align=True)
-        row.prop(self.props, "specs")
+        row.prop(props, "specs")
         row.operator("bim.select_specs", icon="FILE_FOLDER", text="")
 
         row = self.layout.row()
         row.operator("bim.execute_ifc_tester")
 
-        if self.props.has_report and self.props.should_load_from_memory:
+        if props.has_report:
             self.layout.template_list(
                 "BIM_UL_tester_specifications",
                 "",
-                self.props,
+                props,
                 "specifications",
-                self.props,
+                props,
                 "active_specification_index",
             )
 
             self.draw_editable_ui(context)
-        
-        if self.props.has_report:
             row = self.layout.row()
             row.operator("bim.export_bcf", text="Export BCF", icon="EXPORT")
 
@@ -101,9 +101,9 @@ class BIM_PT_tester(Panel):
             self.layout.template_list(
                 "BIM_UL_tester_failed_entities",
                 "",
-                self.props,
+                props,
                 "failed_entities",
-                self.props,
+                props,
                 "active_failed_entity_index",
             )
         
@@ -121,14 +121,21 @@ class BIM_UL_tester_specifications(UIList):
 
 class BIM_UL_tester_failed_entities(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        ifc_file = tool.Ifc.get()
+        props = context.scene.IfcTesterProperties         
         if item:
-            ifc_id = int(item.element[1:item.element.find('=')])
-            entity = ifc_file.by_id(ifc_id)
+            if props.should_load_from_memory:
+                ifc_file = tool.Ifc.get()
+                ifc_id = int(item.element[1:item.element.find('=')])
+                entity = ifc_file.by_id(ifc_id)
+                report_entity = f'[#{ifc_id}][{entity.is_a()}] {entity.Name}'
+            else:
+                report_entity = item.element
+
             row = layout.row(align=True)            
-            row.label(text=f'{entity.Name} [{entity.is_a()}]')
+            row.label(text=report_entity)
             row.label(text=item.reason)
-            op = row.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF")
-            op.ifc_id = entity.id()
+            if props.should_load_from_memory:
+                op = row.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF")
+                op.ifc_id = entity.id()
             
 
