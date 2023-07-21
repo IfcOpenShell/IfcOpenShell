@@ -35,9 +35,9 @@ class BIM_PT_tester(Panel):
 
         self.props = context.scene.IfcTesterProperties
 
-        if tool.Ifc.get():
-            row = self.layout.row()
-            row.prop(self.props, "should_load_from_memory")
+        row = self.layout.row()
+        row.prop(self.props, "should_load_from_memory")
+        row.enabled = bool(tool.Ifc.get())
 
         if not tool.Ifc.get() or not self.props.should_load_from_memory:
             row = self.layout.row(align=True)

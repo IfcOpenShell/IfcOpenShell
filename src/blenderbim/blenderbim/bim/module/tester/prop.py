@@ -49,7 +49,8 @@ class FailedEntities(PropertyGroup):
 class IfcTesterProperties(PropertyGroup):
     specs: StringProperty(default="", name="IDS File")    
     ifc_file: StringProperty(default="", name="IFC File")
-    should_load_from_memory: BoolProperty(default=False, name="Load from Memory")
+    should_load_from_memory: BoolProperty(default=False, name="Load from Memory", 
+        description="Use the currently opened IFC project. Required for the detailed Tester UI")
     
     active_specification_index: IntProperty(name="Active Specification Index")   
     active_requirement_index: IntProperty(name="Active Requirement Index")
