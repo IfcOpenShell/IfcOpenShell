@@ -24,119 +24,8 @@ import ifcopenshell.api
 import boltspy as bolts
 from math import cos, pi
 from pathlib import Path
-from mathutils import Vector
+from ifcopenshell.util.shape_builder import ShapeBuilder, V
 
-V = lambda *x: Vector([float(i) for i in x])
-
-def create_simple_2dcurve(coords, fillets, fillet_radius, closed=True, ifc_file=None):
-    """
-    Creates simple 2D curve from set of 2d coords and list of points with fillets.
-    Simple curve means that all fillets are based on 90 degree angle.
-
-    > coords:        list of 2d coords. Example: ((x0,y0), (x1,y1), (x2, y2))
-    > fillets:       list of points from `coords` to base fillet on. Example: (1,)
-    > fillet_radius: list of fillet radius for each of corresponding point form `fillets`. Example: (5.,)
-                        Note: filler_radius could be just 1 float value if it's the same for all fillets.
-
-    Optional arguments:
-    > closed:        boolean whether curve should be closed (whether last point connected to first one). Default: True
-    > ifc_file:      ifc file to create IfcIndexedPolyCurve for the function output
-
-    < returns (points, segments, ifc_curve) for the created simple curve
-    if both points in e are equally far from pt, then v1 is returned."""
-    
-    # option to use same fillet radius for all fillets
-    if isinstance(fillet_radius, float):
-        fillet_radius = [fillet_radius] * len(fillets)
-    
-    fillets = dict(zip(fillets, fillet_radius))
-    segments = []
-    points = []
-    for co_i, co in enumerate(coords, 0):
-        current_point = len(points)
-        if co_i in fillets:
-            r = fillets[co_i]
-            rsb = r * cos(pi/4) # radius shift big
-            rss = r - rsb # radius shift small
-            
-            next_co = coords[(co_i+1) % len(coords)]
-            previous_co = coords[co_i-1]
-
-            # identify fillet type (1 of 4 possible types)
-            x_direction = 1 if coords[co_i][0] < previous_co[0] or coords[co_i][0] < next_co[0] else -1
-            y_direction = 1 if coords[co_i][1] < previous_co[1] or coords[co_i][1] < next_co[1] else -1
-
-            xshift_point = (co[0] + r * x_direction, co[1])
-            middle_point = (co[0] + rss * x_direction, co[1] + rss * y_direction)
-            yshift_point = (co[0], co[1] + r * y_direction)
-
-            # identify fillet direction
-            if co[1] == previous_co[1]:
-                points.extend( (xshift_point, middle_point, yshift_point))
-            else:
-                points.extend( (yshift_point, middle_point, xshift_point))
-
-            segments.append(  [current_point-1, current_point] )
-            segments.append( [current_point, current_point+1, current_point+2] )
-        else:
-            points.append( co )
-            if co_i != 0:
-                segments.append( [current_point-1, current_point] )
-
-    if closed:
-        segments.append( [0, len(points)-1] )
-
-    # replace negative index
-    if segments[0][0] == -1:
-        segments[0][0] = len(points) - 1
-
-    ifc_curve = None
-    if ifc_file:
-        ifc_points = ifc_file.createIfcCartesianPointList2D(points)
-        ifc_segments = []
-        for segment in segments:
-            segment = [i+1 for i in segment]
-            if len(segment) == 2:
-                ifc_segments.append( ifc_file.createIfcLineIndex( segment ))
-            elif len(segment) == 3:
-                ifc_segments.append( ifc_file.createIfcArcIndex( segment ))
-
-        ifc_curve = ifc_file.createIfcIndexedPolyCurve(Points=ifc_points, Segments=ifc_segments)
-
-    return (points, segments, ifc_curve)
-
-def create_z_profile_lips_curve(ifc_file, FirstFlangeWidth, SecondFlangeWidth, Depth, Girth, WallThickness, FilletRadius):
-    x1 = FirstFlangeWidth
-    x2 = SecondFlangeWidth
-    y = Depth / 2
-    g = Girth
-    t = WallThickness
-    r = FilletRadius
-
-    coords = (
-        (-t/2,   y),
-        (x2,     y),
-        (x2,     y-g),
-        (x2-t,   y-g),
-        (x2-t,   y-t),
-        (t/2,    y-t),
-        (t/2,   -y),
-        (-x1,   -y),
-        (-x1,   -y+g),
-        (-x1+t, -y+g),
-        (-x1+t, -y+t),
-        (-t/2,  -y+t)
-    )
-
-    # no additional thickness in outer radius option
-    # points, segments, ifc_curve = create_curve_from_coords(coords, fillets = (0, 1, 4, 5, 6, 7, 10, 11), fillet_radius=r, closed=True, ifc_file=ifc_file)
-
-    points, segments, ifc_curve = create_simple_2dcurve(coords, 
-        fillets =     (0,   1,   4, 5, 6,   7,   10, 11), 
-        fillet_radius=(r+t, r+t, r, r, r+t, r+t, r, r), 
-        closed=True, ifc_file=ifc_file)
-
-    return ifc_curve
 
 class LibraryGenerator:
     def generate(self, parse_profiles_type="EU", output_filename="IFC4 EU Steel.ifc"):
@@ -158,6 +47,7 @@ class LibraryGenerator:
         )
         dim_exponents = self.file.createIfcDimensionalExponents(0, 0, 0, 0, 0, 0, 0)
         length_unit = ifcopenshell.api.run("unit.add_si_unit", self.file, unit_type="LENGTHUNIT", prefix="MILLI")
+        builder = ShapeBuilder(self.file)
 
         # define angle unit to use degrees for IfcPlaneAngleMeasure:
         # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcPlaneAngleMeasure.htm
@@ -258,7 +148,7 @@ class LibraryGenerator:
                         # by default bolts provides diameter, so we need to convert it to radius
                         ifc_params["Radius"] /= 2
                     elif prof_type == "profile_z_lips":
-                        ifc_curve = create_z_profile_lips_curve(self.file, **ifc_params)
+                        ifc_curve = builder.create_z_profile_lips_curve(**ifc_params)
                         ifc_params = {"OuterCurve": ifc_curve}
                     elif prof_type == "profile_l*lbeam_2l":
                         profiles_gap = ifc_params["ProfilesGap"]
