@@ -222,6 +222,7 @@ class Collector(blenderbim.core.tool.Collector):
             collection = bpy.data.collections.new(name)
             project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
             project_obj.BIMObjectProperties.collection.children.link(collection)
+            collection.hide_viewport = True
         return collection
 
     @classmethod

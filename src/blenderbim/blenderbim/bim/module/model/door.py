@@ -35,8 +35,7 @@ import json
 import collections
 
 
-def update_door_modifier_representation(context):
-    obj = context.active_object
+def update_door_modifier_representation(context, obj):
     props = obj.BIMDoorProperties
     element = tool.Ifc.get_entity(obj)
     ifc_file = tool.Ifc.get()
@@ -290,9 +289,7 @@ def update_door_modifier_bmesh(context):
     lining_depth = props.lining_depth
     lining_thickness_default = props.lining_thickness
     lining_offset = props.lining_offset
-    lining_to_panel_offset_x = (
-        props.lining_to_panel_offset_x if not sliding_door else lining_thickness_default
-    )
+    lining_to_panel_offset_x = props.lining_to_panel_offset_x if not sliding_door else lining_thickness_default
     panel_depth = props.panel_depth
     lining_to_panel_offset_y = props.lining_to_panel_offset_y if not sliding_door else -panel_depth
 
@@ -486,7 +483,7 @@ class BIM_OT_add_door(bpy.types.Operator, tool.Ifc.Operator):
         obj.location = spawn_location
         collection = context.view_layer.active_layer_collection.collection
         collection.objects.link(obj)
-    
+
         element = blenderbim.core.root.assign_class(
             tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class="IfcDoor", should_add_representation=False
         )
@@ -507,9 +504,10 @@ class AddDoor(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_door"
     bl_label = "Add Door"
     bl_options = {"REGISTER"}
+    obj: bpy.props.StringProperty()
 
     def _execute(self, context):
-        obj = context.active_object
+        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMDoorProperties
 
@@ -530,7 +528,7 @@ class AddDoor(bpy.types.Operator, tool.Ifc.Operator):
             pset=pset,
             properties={"Data": json.dumps(door_data, default=list)},
         )
-        update_door_modifier_representation(context)
+        update_door_modifier_representation(context, obj)
         return {"FINISHED"}
 
 
@@ -584,7 +582,7 @@ class FinishEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
 
         props.is_editing = False
 
-        update_door_modifier_representation(context)
+        update_door_modifier_representation(context, obj)
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Door")
         door_data = json.dumps(door_data, default=list)

@@ -375,7 +375,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 should_add_representation=False,
             )
             tool.Blender.select_and_activate_single_object(context, obj)
-            bpy.ops.bim.add_window()
+            bpy.ops.bim.add_window(obj=obj.name)
 
         elif template == "DOOR":
             mesh = bpy.data.meshes.new(name)
@@ -390,7 +390,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 should_add_representation=False,
             )
             tool.Blender.select_and_activate_single_object(context, obj)
-            bpy.ops.bim.add_door()
+            bpy.ops.bim.add_door(obj=obj.name)
 
         elif template == "STAIR":
             mesh = bpy.data.meshes.new(name)

@@ -114,7 +114,7 @@ classes = (
 
 def register():
     if not bpy.app.background:
-        bpy.utils.register_tool(workspace.AnnotationTool, after={"bim.bim_tool"}, separator=False, group=True)
+        bpy.utils.register_tool(workspace.AnnotationTool, after={"bim.bim_tool"}, separator=True, group=False)
     bpy.types.Scene.DocProperties = bpy.props.PointerProperty(type=prop.DocProperties)
     bpy.types.Scene.BIMAnnotationProperties = bpy.props.PointerProperty(type=prop.BIMAnnotationProperties)
     bpy.types.Camera.BIMCameraProperties = bpy.props.PointerProperty(type=prop.BIMCameraProperties)

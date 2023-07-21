@@ -150,7 +150,7 @@ class SvIfcSverchokToIfcRepr(
             representations_ids_obj = []
             for item in obj:
                 representation = ifcopenshell.api.run(
-                    "geometry.add_sverchok_representation",
+                    "geometry.add_mesh_representation",
                     self.file,
                     should_run_listeners=False,
                     context=self.context,
