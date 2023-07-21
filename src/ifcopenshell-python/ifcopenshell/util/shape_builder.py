@@ -21,6 +21,7 @@ import ifcopenshell
 import ifcopenshell.api
 from math import cos, sin, pi
 from mathutils import Vector, Matrix
+from itertools import chain
 
 V = lambda *x: Vector([float(i) for i in x])
 sign = lambda x: x and (1, -1)[x < 0]
@@ -635,3 +636,182 @@ class ShapeBuilder:
         elif polyline.is_a("IfcPolyline"):
             for i, co in enumerate(coords):
                 polyline.Points[i].Coordinates = co
+
+    def get_simple_2dcurve_data(self, coords, fillets=[], fillet_radius=[], closed=True, create_ifc_curve=None):
+        """
+        Creates simple 2D curve from set of 2d coords and list of points with fillets.
+        Simple curve means that all fillets are based on 90 degree angle.
+
+        > coords:        list of 2d coords. Example: ((x0,y0), (x1,y1), (x2, y2))
+        > fillets:       list of points from `coords` to base fillet on. Example: (1,)
+        > fillet_radius: list of fillet radius for each of corresponding point form `fillets`. Example: (5.,)
+                            Note: filler_radius could be just 1 float value if it's the same for all fillets.
+
+        Optional arguments:
+        > closed:           boolean whether curve should be closed (whether last point connected to first one). Default: True
+        > create_ifc_curve: create IfcIndexedPolyCurve or just return the data. Default: False
+
+        < returns (points, segments, ifc_curve) for the created simple curve
+        if both points in e are equally far from pt, then v1 is returned."""
+
+        def remove_redundant_points(points, segments):
+            # prevent mutating
+            points = [tuple(p) for p in points]
+            segments = segments.copy()
+
+            # find duplicate points, reindex them in segments
+            # and mark them to delete later
+            points_to_remove = []
+            prev_point = 0
+            for i, p in enumerate(points[1:], 1):
+                if p != points[prev_point]:
+                    prev_point = i
+                    continue
+
+                valid_segments = []
+                for s in segments:
+                    s = [ps if ps != i else prev_point for ps in s]
+                    valid_segments.append(s)
+                segments = valid_segments
+                points_to_remove.append(i)
+
+            # remove duplicate segments
+            valid_segments = [segment for segment in segments if len(set(segment)) != 1]
+            points = [point for i, point in enumerate(points) if i not in points_to_remove]
+            # correct the order in segments
+            unique_points = sorted(set(chain(*valid_segments)))
+            unique_points_translation = {prev: i for i, prev in enumerate(unique_points)}
+            valid_segments = [[unique_points_translation[p] for p in s] for s in valid_segments]
+
+            return points, valid_segments
+
+        # option to use same fillet radius for all fillets
+        if isinstance(fillet_radius, float):
+            fillet_radius = [fillet_radius] * len(fillets)
+
+        fillets = dict(zip(fillets, fillet_radius))
+        segments = []
+        points = []
+        for co_i, co in enumerate(coords, 0):
+            current_point = len(points)
+            if co_i in fillets:
+                r = fillets[co_i]
+                rsb = r * cos(pi / 4)  # radius shift big
+                rss = r - rsb  # radius shift small
+
+                next_co = coords[(co_i + 1) % len(coords)]
+                previous_co = coords[co_i - 1]
+
+                # identify fillet type (1 of 4 possible types)
+                x_direction = 1 if coords[co_i][0] < previous_co[0] or coords[co_i][0] < next_co[0] else -1
+                y_direction = 1 if coords[co_i][1] < previous_co[1] or coords[co_i][1] < next_co[1] else -1
+
+                xshift_point = (co[0] + r * x_direction, co[1])
+                middle_point = (co[0] + rss * x_direction, co[1] + rss * y_direction)
+                yshift_point = (co[0], co[1] + r * y_direction)
+
+                # identify fillet direction
+                if co[1] == previous_co[1]:
+                    points.extend((xshift_point, middle_point, yshift_point))
+                else:
+                    points.extend((yshift_point, middle_point, xshift_point))
+
+                segments.append([current_point - 1, current_point])
+                segments.append([current_point, current_point + 1, current_point + 2])
+            else:
+                points.append(co)
+                if co_i != 0:
+                    segments.append([current_point - 1, current_point])
+
+        if closed:
+            segments.append([len(points) - 1, 0])
+
+        # replace negative index
+        if segments[0][0] == -1:
+            segments[0][0] = len(points) - 1
+
+        # sometime fillet points could match previous or next points in line
+        # I remove them at the end to avoid making fillet algorithm even less readable
+        points, segments = remove_redundant_points(points, segments)
+        ifc_curve = None
+        if create_ifc_curve:
+            ifc_points = self.file.createIfcCartesianPointList2D(points)
+            ifc_segments = []
+            for segment in segments:
+                segment = [i + 1 for i in segment]
+                if len(segment) == 2:
+                    ifc_segments.append(self.file.createIfcLineIndex(segment))
+                elif len(segment) == 3:
+                    ifc_segments.append(self.file.createIfcArcIndex(segment))
+
+            ifc_curve = self.file.createIfcIndexedPolyCurve(Points=ifc_points, Segments=ifc_segments)
+        return (points, segments, ifc_curve)
+    
+    def create_z_profile_lips_curve(self, FirstFlangeWidth, SecondFlangeWidth, Depth, Girth, WallThickness, FilletRadius):
+        x1 = FirstFlangeWidth
+        x2 = SecondFlangeWidth
+        y = Depth / 2
+        g = Girth
+        t = WallThickness
+        r = FilletRadius
+
+        # fmt: off
+        coords = (
+            (-t/2,   y),
+            (x2,     y),
+            (x2,     y-g),
+            (x2-t,   y-g),
+            (x2-t,   y-t),
+            (t/2,    y-t),
+            (t/2,   -y),
+            (-x1,   -y),
+            (-x1,   -y+g),
+            (-x1+t, -y+g),
+            (-x1+t, -y+t),
+            (-t/2,  -y+t)
+        )
+        # fmt: on
+
+        # option for no additional thickness in outer radius:
+        # points, segments, ifc_curve = create_curve_from_coords(
+        #   coords, fillets = (0, 1, 4, 5, 6, 7, 10, 11), fillet_radius=r, closed=True, ifc_file=ifc_file
+        # )
+
+        points, segments, ifc_curve = self.get_simple_2dcurve_data(coords, 
+            fillets =     (0,   1,   4, 5, 6,   7,   10, 11), 
+            fillet_radius=(r+t, r+t, r, r, r+t, r+t, r, r), 
+            closed=True, create_ifc_curve=True)
+
+        return ifc_curve
+    
+    def create_transition_arc_ifc(self, width, height, create_ifc_curve=False):
+        # create an arc in the rectangle with specified width and height
+        # if it's not possible to make a complete arc
+        # it will create arc with longest radius possible
+        # and straight segment in the middle
+        fillet_size = (width / 2) / height
+        if fillet_size <= 1:
+            fillet_radius = height * fillet_size
+            curve_coords = [
+                (0.0, 0.0),
+                (0.0, height),
+                (width * 0.5, height),
+                (width, height),
+                (width, 0.0),
+            ]
+            fillets = (1, 3)
+        else:
+            fillet_radius = height
+            curve_coords = [
+                (0.0, 0.0),
+                (0.0, height),
+                (fillet_radius, height),
+                (width - fillet_radius, height),
+                (width, height),
+                (width, 0.0),
+            ]
+            fillets = (1, 4)
+        points, segments, transition_arc = self.get_simple_2dcurve_data(
+            curve_coords, fillets, fillet_radius, closed=False, create_ifc_curve=create_ifc_curve
+        )
+        return points, segments, transition_arc
