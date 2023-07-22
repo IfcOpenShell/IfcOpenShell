@@ -24,6 +24,71 @@ import ifcopenshell.util.element
 import ifcopenshell.util.classification
 
 
+filter_elements_grammar = """start: filter_group
+    filter_group: facet_list ("+" facet_list)*
+    facet_list: facet ("," facet)*
+
+    facet: instance | entity | attribute | type | material | property | classification | location
+
+    instance: not? globalid
+    globalid: /[0-3][a-zA-Z0-9_$]{21}/
+    entity: not? ifc_class
+    attribute: attribute_name comparison value
+    type: "type" comparison value
+    material: "material" comparison value
+    property: pset "." prop comparison value
+    classification: "classification" comparison value
+    location: "location" comparison value
+
+    pset: quoted_string | unquoted_string | regex_string
+    prop: quoted_string | unquoted_string | regex_string
+
+    attribute_name: /[A-Z]\\w+/
+    ifc_class: /Ifc\\w+/
+
+    value: special | quoted_string | unquoted_string | regex_string
+    unquoted_string: /[^.=\\s]+/
+    quoted_string: ESCAPED_STRING
+    regex_string: "/" /[^\\/]+/ "/"
+
+    special: null | true | false
+
+    comparison: not? equals
+    not: "!"
+    equals: "="
+    null: "NULL"
+    true: "TRUE"
+    false: "FALSE"
+
+    // Embed common.lark for packaging
+    DIGIT: "0".."9"
+    HEXDIGIT: "a".."f"|"A".."F"|DIGIT
+    INT: DIGIT+
+    SIGNED_INT: ["+"|"-"] INT
+    DECIMAL: INT "." INT? | "." INT
+    _EXP: ("e"|"E") SIGNED_INT
+    FLOAT: INT _EXP | DECIMAL _EXP?
+    SIGNED_FLOAT: ["+"|"-"] FLOAT
+    NUMBER: FLOAT | INT
+    SIGNED_NUMBER: ["+"|"-"] NUMBER
+    _STRING_INNER: /.*?/
+    _STRING_ESC_INNER: _STRING_INNER /(?<!\\\\)(\\\\\\\\)*?/
+    ESCAPED_STRING : "\\"" _STRING_ESC_INNER "\\""
+    LCASE_LETTER: "a".."z"
+    UCASE_LETTER: "A".."Z"
+    LETTER: UCASE_LETTER | LCASE_LETTER
+    WORD: LETTER+
+    CNAME: ("_"|LETTER) ("_"|LETTER|DIGIT)*
+    WS_INLINE: (" "|/\\t/)+
+    WS: /[ \\t\\f\\r\\n]/+
+    CR : /\\r/
+    LF : /\\n/
+    NEWLINE: (CR? LF)+
+
+    %ignore WS // Disregard spaces in text
+"""
+
+
 def get_element_value(element, query):
     l = lark.Lark(
         """start: WORD | ESCAPED_STRING | keys_regex | keys_quoted | keys_simple
@@ -50,72 +115,7 @@ def get_element_value(element, query):
 
 
 def filter_elements(ifc_file, query, elements=None):
-    l = lark.Lark(
-        """start: filter_group
-                filter_group: facet_list ("+" facet_list)*
-                facet_list: facet ("," facet)*
-
-                facet: instance | entity | attribute | type | material | property | classification | location
-
-                instance: not? globalid
-                globalid: /[0-3][a-zA-Z0-9_$]{21}/
-                entity: not? ifc_class
-                attribute: attribute_name comparison value
-                type: "type" comparison value
-                material: "material" comparison value
-                property: pset "." prop comparison value
-                classification: "classification" comparison value
-                location: "location" comparison value
-
-                pset: quoted_string | unquoted_string | regex_string
-                prop: quoted_string | unquoted_string | regex_string
-
-                attribute_name: /[A-Z]\\w+/
-                ifc_class: /Ifc\\w+/
-
-                value: special | quoted_string | unquoted_string | regex_string
-                unquoted_string: /[^.=\\s]+/
-                quoted_string: ESCAPED_STRING
-                regex_string: "/" /[^\\/]+/ "/"
-
-                special: null | true | false
-
-                comparison: not? equals
-                not: "!"
-                equals: "="
-                null: "NULL"
-                true: "TRUE"
-                false: "FALSE"
-
-                // Embed common.lark for packaging
-                DIGIT: "0".."9"
-                HEXDIGIT: "a".."f"|"A".."F"|DIGIT
-                INT: DIGIT+
-                SIGNED_INT: ["+"|"-"] INT
-                DECIMAL: INT "." INT? | "." INT
-                _EXP: ("e"|"E") SIGNED_INT
-                FLOAT: INT _EXP | DECIMAL _EXP?
-                SIGNED_FLOAT: ["+"|"-"] FLOAT
-                NUMBER: FLOAT | INT
-                SIGNED_NUMBER: ["+"|"-"] NUMBER
-                _STRING_INNER: /.*?/
-                _STRING_ESC_INNER: _STRING_INNER /(?<!\\\\)(\\\\\\\\)*?/
-                ESCAPED_STRING : "\\"" _STRING_ESC_INNER "\\""
-                LCASE_LETTER: "a".."z"
-                UCASE_LETTER: "A".."Z"
-                LETTER: UCASE_LETTER | LCASE_LETTER
-                WORD: LETTER+
-                CNAME: ("_"|LETTER) ("_"|LETTER|DIGIT)*
-                WS_INLINE: (" "|/\\t/)+
-                WS: /[ \\t\\f\\r\\n]/+
-                CR : /\\r/
-                LF : /\\n/
-                NEWLINE: (CR? LF)+
-
-                %ignore WS // Disregard spaces in text
-         """
-    )
-
+    l = lark.Lark(filter_elements_grammar)
     transformer = FacetTransformer(ifc_file, elements)
     transformer.transform(l.parse(query))
     return transformer.get_results()
