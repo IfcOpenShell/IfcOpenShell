@@ -22,6 +22,7 @@ from ifcopenshell.util.selector import Selector
 import blenderbim.tool as tool
 from blenderbim.bim.prop import ObjProperty, StrProperty
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.search.data import SearchData
 from bpy.types import PropertyGroup
 from blenderbim.tool.ifc import Ifc
 from . import ui, prop, operator
@@ -35,6 +36,12 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+
+
+def get_saved_searches(self, context):
+    if not SearchData.is_loaded:
+        SearchData.load()
+    return SearchData.data["saved_searches"]
 
 
 def update_is_class_selected(self, context):
@@ -106,6 +113,7 @@ class BIMSearchProperties(PropertyGroup):
             ("instance", "GlobalId", "", "GRIP", 7),
         ],
     )
+    saved_searches: EnumProperty(items=get_saved_searches, name="Saved Searches")
     should_use_regex: BoolProperty(name="Search With Regex", default=False)
     should_ignorecase: BoolProperty(name="Search Ignoring Case", default=True)
     global_id: StringProperty(name="GlobalId")

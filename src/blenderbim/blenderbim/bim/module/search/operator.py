@@ -18,6 +18,7 @@
 
 import re
 import bpy
+import json
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.selector
@@ -120,48 +121,9 @@ class Search(Operator):
 
     def execute(self, context):
         props = context.scene.BIMSearchProperties
-        query = []
-        for filter_group in props.filter_groups:
-            filter_group_query = []
-            has_instance_or_entity_filter = False
-            for ifc_filter in filter_group.filters:
-                if not ifc_filter.value:
-                    continue
-                if ifc_filter.type == "instance":
-                    has_instance_or_entity_filter = True
-                    filter_group_query.append(ifc_filter.value)
-                elif ifc_filter.type == "entity":
-                    has_instance_or_entity_filter = True
-                    filter_group_query.append(ifc_filter.value)
-                elif ifc_filter.type == "attribute":
-                    if not ifc_filter.name:
-                        continue
-                    comparison, value = self.get_comparison_and_value(ifc_filter)
-                    filter_group_query.append(f"{ifc_filter.name}{comparison}{value}")
-                elif ifc_filter.type == "type":
-                    comparison, value = self.get_comparison_and_value(ifc_filter)
-                    filter_group_query.append(f"type{comparison}{value}")
-                elif ifc_filter.type == "material":
-                    comparison, value = self.get_comparison_and_value(ifc_filter)
-                    filter_group_query.append(f"material{comparison}{value}")
-                elif ifc_filter.type == "property":
-                    if not ifc_filter.pset or not ifc_filter.name:
-                        continue
-                    pset = self.wrap_value(ifc_filter, ifc_filter.pset)
-                    name = self.wrap_value(ifc_filter, ifc_filter.name)
-                    comparison, value = self.get_comparison_and_value(ifc_filter)
-                    filter_group_query.append(f"{pset}.{name}{comparison}{value}")
-                elif ifc_filter.type == "classification":
-                    comparison, value = self.get_comparison_and_value(ifc_filter)
-                    filter_group_query.append(f"classification{comparison}{value}")
-                elif ifc_filter.type == "location":
-                    comparison, value = self.get_comparison_and_value(ifc_filter)
-                    filter_group_query.append(f"location{comparison}{value}")
-            if not has_instance_or_entity_filter:
-                filter_group_query.insert(0, "IfcElement")
-            query.append(", ".join(filter_group_query))
-        query = " + ".join(query)
-        results = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query)
+        results = ifcopenshell.util.selector.filter_elements(
+            tool.Ifc.get(), tool.Search.export_filter_query(props.filter_groups)
+        )
 
         total_selected = 0
         for element in results:
@@ -171,17 +133,47 @@ class Search(Operator):
         self.report({"INFO"}, f"{len(results)} Results")
         return {"FINISHED"}
 
-    def get_comparison_and_value(self, ifc_filter):
-        if ifc_filter.value.startswith("!="):
-            return ("!=", self.wrap_value(ifc_filter, ifc_filter.value[2:].strip()))
-        return ("=", self.wrap_value(ifc_filter, ifc_filter.value.strip()))
 
-    def wrap_value(self, ifc_filter, value):
-        if value.startswith("/") and value.endswith("/"):
-            return value
-        elif value in ("NULL", "TRUE", "FALSE"):
-            return value
-        return '"' + value + '"'
+class SaveSearch(Operator, tool.Ifc.Operator):
+    bl_idname = "bim.save_search"
+    bl_label = "Save Search"
+    bl_description = "Save search filter to an IFC group"
+    bl_options = {"REGISTER", "UNDO"}
+    name: StringProperty(name="Name")
+
+    def _execute(self, context):
+        if not self.name:
+            return
+
+        query = tool.Search.export_filter_query(context.scene.BIMSearchProperties.filter_groups)
+        results = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query)
+
+        description = json.dumps({"type": "BBIM_Search", "query": query})
+        group = ifcopenshell.api.run("group.add_group", tool.Ifc.get(), Name=self.name, Description=description)
+        ifcopenshell.api.run("group.assign_group", tool.Ifc.get(), products=results, group=group)
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+
+class LoadSearch(Operator, tool.Ifc.Operator):
+    bl_idname = "bim.load_search"
+    bl_label = "Load Search"
+    bl_description = "Load search filter from an IFC group"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = context.scene.BIMSearchProperties
+        group = tool.Ifc.get().by_id(int(props.saved_searches))
+        query = tool.Search.import_filter_query(group, context.scene.BIMSearchProperties.filter_groups)
+
+    def draw(self, context):
+        props = context.scene.BIMSearchProperties
+        row = self.layout.row()
+        row.prop(props, "saved_searches", text="")
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
 
 
 class SelectGlobalId(Operator):
