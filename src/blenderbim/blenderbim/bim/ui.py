@@ -90,6 +90,8 @@ class BIM_PT_section_plane(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "output"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_parent_id = "BIM_PT_tab_sandbox"
 
     def draw(self, context):
         layout = self.layout
@@ -374,8 +376,8 @@ class BIM_PT_tab_collaboration(Panel):
         pass
 
 
-class BIM_PT_selection(Panel):
-    bl_label = "Selection"
+class BIM_PT_tab_grouping_and_filtering(Panel):
+    bl_label = "Grouping and Filtering"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -459,8 +461,8 @@ class BIM_PT_tab_quality_control(Panel):
         pass
 
 
-class BIM_PT_tab_integrations(Panel):
-    bl_label = "BIM Integrations"
+class BIM_PT_tab_sandbox(Panel):
+    bl_label = "Sandbox"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -471,7 +473,8 @@ class BIM_PT_tab_integrations(Panel):
         return tool.Blender.is_tab(context, "QUALITY")
 
     def draw(self, context):
-        pass
+        row = self.layout.row()
+        row.label(text="More Experimental Than Usual", icon="ERROR")
 
 
 # Object panel groups
