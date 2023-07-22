@@ -233,6 +233,7 @@ class BIM_PT_workarounds(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "data"
+    bl_parent_id = "BIM_PT_tab_geometric_relationships"
 
     @classmethod
     def poll(cls, context):

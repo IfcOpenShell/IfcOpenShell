@@ -122,7 +122,6 @@ classes = [
     prop.BIMCollectionProperties,
     prop.BIMMaterialProperties,
     prop.BIMMeshProperties,
-    ui.BIM_PT_section_plane,
     ui.BIM_UL_generic,
     ui.BIM_UL_topics,
     ui.BIM_ADDON_preferences,
@@ -130,7 +129,7 @@ classes = [
     ui.BIM_PT_project_info,
     ui.BIM_PT_project_setup,
     ui.BIM_PT_geometry,
-    ui.BIM_PT_selection,
+    ui.BIM_PT_tab_grouping_and_filtering,
     # Tabs panel
     ui.BIM_PT_tabs,
     # Object information
@@ -156,7 +155,9 @@ classes = [
     # Quality and coordination
     ui.BIM_PT_tab_quality_control,
     ui.BIM_PT_tab_collaboration,
-    ui.BIM_PT_tab_integrations,
+    ui.BIM_PT_tab_sandbox,
+    # TODO: move this somewhere else and clean it up
+    ui.BIM_PT_section_plane,
 ]
 
 for mod in modules.values():
