@@ -27,7 +27,7 @@ class BIM_PT_search(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_selection"
+    bl_parent_id = "BIM_PT_tab_grouping_and_filtering"
 
     def draw(self, context):
         if not SearchData.is_loaded:
@@ -177,7 +177,7 @@ class BIM_PT_IFCSelector(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_selection"
+    bl_parent_id = "BIM_PT_tab_sandbox"
 
     def draw(self, context):
         layout = self.layout
