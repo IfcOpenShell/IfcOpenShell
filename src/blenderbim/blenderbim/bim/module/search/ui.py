@@ -18,7 +18,7 @@
 
 import bpy
 from bpy.types import Panel
-from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.search.data import SearchData
 
 
 class BIM_PT_search(Panel):
@@ -30,7 +30,17 @@ class BIM_PT_search(Panel):
     bl_parent_id = "BIM_PT_selection"
 
     def draw(self, context):
+        if not SearchData.is_loaded:
+            SearchData.load()
+
         props = context.scene.BIMSearchProperties
+
+        row = self.layout.row(align=True)
+        row.label(text=f"{len(SearchData.data['saved_searches'])} Saved Searches")
+
+        if SearchData.data["saved_searches"]:
+            row.operator("bim.load_search", text="", icon="IMPORT")
+        row.operator("bim.save_search", text="", icon="EXPORT")
 
         row = self.layout.row(align=True)
         row.operator("bim.add_filter_group", text="Add Search Group", icon="ADD")
