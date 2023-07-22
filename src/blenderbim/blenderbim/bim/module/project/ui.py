@@ -81,6 +81,7 @@ class BIM_PT_project(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bl_options = {"HIDE_HEADER"}
     bl_parent_id = "BIM_PT_project_info"
 
     def draw(self, context):
