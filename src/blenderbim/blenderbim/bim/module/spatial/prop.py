@@ -32,6 +32,7 @@ from bpy.props import (
 )
 import blenderbim.tool as tool
 import blenderbim.core.geometry
+import ifcopenshell
 
 
 def update_elevation(self, context):
@@ -43,9 +44,10 @@ def update_elevation(self, context):
 
 
 def update_active_container_index(self, context):
+    si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
     self.active_container_id = self.containers[self.active_container_index].ifc_definition_id
     self.container_name = self.containers[self.active_container_index].name
-    self.elevation = self.containers[self.active_container_index].elevation
+    self.elevation = self.containers[self.active_container_index].elevation * si_conversion
 
 
 def updateContainerName(self, context):
@@ -90,5 +92,5 @@ class BIMSpatialManagerProperties(PropertyGroup):
     active_container_index: IntProperty(name="Active Container Index", update=update_active_container_index)
     active_container_id: IntProperty(name="Active Container Id")
     container_name: StringProperty(name="Container Name")
-    elevation: FloatProperty(name="Elevation", update=update_elevation)
+    elevation: FloatProperty(name="Elevation", update=update_elevation, subtype="DISTANCE")
     is_container_update_enabled: BoolProperty(name="Is Container Update Enabled", default=True)  # TODO:review
