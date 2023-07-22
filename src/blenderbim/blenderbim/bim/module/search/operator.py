@@ -20,6 +20,7 @@ import re
 import bpy
 import ifcopenshell
 import ifcopenshell.util.element
+import ifcopenshell.util.selector
 from ifcopenshell.util.selector import Selector
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
@@ -67,6 +68,120 @@ def does_keyword_exist(pattern, string, context):
         return True
     elif string == pattern:
         return True
+
+
+class AddFilterGroup(Operator):
+    bl_idname = "bim.add_filter_group"
+    bl_label = "Add Filter Group"
+
+    def execute(self, context):
+        context.scene.BIMSearchProperties.filter_groups.add()
+        return {"FINISHED"}
+
+
+class RemoveFilterGroup(Operator):
+    bl_idname = "bim.remove_filter_group"
+    bl_label = "Remove Filter Group"
+    index: IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMSearchProperties
+        props.filter_groups.remove(self.index)
+        return {"FINISHED"}
+
+
+class RemoveFilter(Operator):
+    bl_idname = "bim.remove_filter"
+    bl_label = "Remove Filter Group"
+    group_index: IntProperty()
+    index: IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMSearchProperties
+        props.filter_groups[self.group_index].filters.remove(self.index)
+        return {"FINISHED"}
+
+
+class AddFilter(Operator):
+    bl_idname = "bim.add_filter"
+    bl_label = "Add Filter"
+    index: IntProperty()
+    type: StringProperty()
+
+    def execute(self, context):
+        new = context.scene.BIMSearchProperties.filter_groups[self.index].filters.add()
+        new.type = self.type
+        return {"FINISHED"}
+
+
+class Search(Operator):
+    bl_idname = "bim.search"
+    bl_label = "Search"
+
+    def execute(self, context):
+        props = context.scene.BIMSearchProperties
+        query = []
+        for filter_group in props.filter_groups:
+            filter_group_query = []
+            has_instance_or_entity_filter = False
+            for ifc_filter in filter_group.filters:
+                if not ifc_filter.value:
+                    continue
+                if ifc_filter.type == "instance":
+                    has_instance_or_entity_filter = True
+                    filter_group_query.append(ifc_filter.value)
+                elif ifc_filter.type == "entity":
+                    has_instance_or_entity_filter = True
+                    filter_group_query.append(ifc_filter.value)
+                elif ifc_filter.type == "attribute":
+                    if not ifc_filter.name:
+                        continue
+                    comparison, value = self.get_comparison_and_value(ifc_filter)
+                    filter_group_query.append(f"{ifc_filter.name}{comparison}{value}")
+                elif ifc_filter.type == "type":
+                    comparison, value = self.get_comparison_and_value(ifc_filter)
+                    filter_group_query.append(f"type{comparison}{value}")
+                elif ifc_filter.type == "material":
+                    comparison, value = self.get_comparison_and_value(ifc_filter)
+                    filter_group_query.append(f"material{comparison}{value}")
+                elif ifc_filter.type == "property":
+                    if not ifc_filter.pset or not ifc_filter.name:
+                        continue
+                    pset = self.wrap_value(ifc_filter, ifc_filter.pset)
+                    name = self.wrap_value(ifc_filter, ifc_filter.name)
+                    comparison, value = self.get_comparison_and_value(ifc_filter)
+                    filter_group_query.append(f"{pset}.{name}{comparison}{value}")
+                elif ifc_filter.type == "classification":
+                    comparison, value = self.get_comparison_and_value(ifc_filter)
+                    filter_group_query.append(f"classification{comparison}{value}")
+                elif ifc_filter.type == "location":
+                    comparison, value = self.get_comparison_and_value(ifc_filter)
+                    filter_group_query.append(f"location{comparison}{value}")
+            if not has_instance_or_entity_filter:
+                filter_group_query.insert(0, "IfcElement")
+            query.append(", ".join(filter_group_query))
+        query = " + ".join(query)
+        results = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query)
+
+        total_selected = 0
+        for element in results:
+            obj = tool.Ifc.get_object(element)
+            if obj:
+                obj.select_set(True)
+        self.report({"INFO"}, f"{len(results)} Results")
+        return {"FINISHED"}
+
+    def get_comparison_and_value(self, ifc_filter):
+        if ifc_filter.value.startswith("!="):
+            return ("!=", self.wrap_value(ifc_filter, ifc_filter.value[2:].strip()))
+        return ("=", self.wrap_value(ifc_filter, ifc_filter.value.strip()))
+
+    def wrap_value(self, ifc_filter, value):
+        if value.startswith("/") and value.endswith("/"):
+            return value
+        elif value in ("NULL", "TRUE", "FALSE"):
+            return value
+        return '"' + value + '"'
 
 
 class SelectGlobalId(Operator):

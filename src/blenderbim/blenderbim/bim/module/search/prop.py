@@ -79,7 +79,33 @@ class BIMFilterBuildingStoreys(PropertyGroup):
     unselected_objects: CollectionProperty(type=ObjProperty, name="Unfiltered Objects")
 
 
+class BIMFacet(PropertyGroup):
+    name: StringProperty(name="Type")
+    pset: StringProperty(name="Type")
+    value: StringProperty(name="Type")
+    type: StringProperty(name="Type")
+    comparison: StringProperty(name="Comparison")
+
+
+class BIMFilterGroup(PropertyGroup):
+    filters: CollectionProperty(type=BIMFacet, name="filters")
+
+
 class BIMSearchProperties(PropertyGroup):
+    filter_query: StringProperty(name="Filter Query")
+    filter_groups: CollectionProperty(type=BIMFilterGroup, name="Filter Groups")
+    facet: EnumProperty(
+        items=[
+            ("entity", "Class", "", "FILE_3D", 0),
+            ("attribute", "Attribute", "", "COPY_ID", 1),
+            ("property", "Property", "", "PROPERTIES", 2),
+            ("material", "Material", "", "MATERIAL", 3),
+            ("classification", "Classification", "", "OUTLINER", 4),
+            ("location", "Location", "", "PACKAGE", 5),
+            ("type", "Type", "", "FILE_VOLUME", 6),
+            ("instance", "GlobalId", "", "GRIP", 7),
+        ],
+    )
     should_use_regex: BoolProperty(name="Search With Regex", default=False)
     should_ignorecase: BoolProperty(name="Search Ignoring Case", default=True)
     global_id: StringProperty(name="GlobalId")
@@ -133,7 +159,7 @@ def load_selection_options(self, context):
         elif self.selector == "Attribute":
             attributes = ["GlobalId", "Name", "Description", "ObjectType", "Tag", "PredefinedType"]
             for a in attributes:
-                options.append((a, a, ""))            
+                options.append((a, a, ""))
 
     elif load_option == "sub_options":
         if self.selector in ["IfcSpatialElement", "IfcElementType"]:

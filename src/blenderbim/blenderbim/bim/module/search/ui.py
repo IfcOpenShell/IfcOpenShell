@@ -24,7 +24,6 @@ from blenderbim.bim.ifc import IfcStore
 class BIM_PT_search(Panel):
     bl_label = "Search"
     bl_idname = "BIM_PT_search"
-    # bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -32,6 +31,59 @@ class BIM_PT_search(Panel):
 
     def draw(self, context):
         props = context.scene.BIMSearchProperties
+
+        row = self.layout.row(align=True)
+        row.operator("bim.add_filter_group", text="Add Search Group", icon="ADD")
+
+        for i, filter_group in enumerate(props.filter_groups):
+            box = self.layout.box()
+
+            row = box.row(align=True)
+            row.prop(props, "facet", text="")
+            op = row.operator("bim.add_filter", text="Add Filter", icon="ADD")
+            op.type = props.facet
+            op.index = i
+
+            for j, ifc_filter in enumerate(filter_group.filters):
+                if ifc_filter.type == "entity":
+                    row = box.row(align=True)
+                    row.prop(ifc_filter, "value", text="", icon="FILE_3D")
+                elif ifc_filter.type == "attribute":
+                    row = box.row(align=True)
+                    row.prop(ifc_filter, "name", text="", icon="COPY_ID")
+                    row.prop(ifc_filter, "value", text="")
+                elif ifc_filter.type == "type":
+                    row = box.row(align=True)
+                    row.prop(ifc_filter, "value", text="", icon="FILE_VOLUME")
+                elif ifc_filter.type == "material":
+                    row = box.row(align=True)
+                    row.prop(ifc_filter, "value", text="", icon="MATERIAL")
+                elif ifc_filter.type == "property":
+                    row = box.row(align=True)
+                    row.prop(ifc_filter, "pset", text="", icon="PROPERTIES")
+                    row.prop(ifc_filter, "name", text="")
+                    row.prop(ifc_filter, "value", text="")
+                elif ifc_filter.type == "classification":
+                    row = box.row(align=True)
+                    row.prop(ifc_filter, "value", text="", icon="OUTLINER")
+                elif ifc_filter.type == "location":
+                    row = box.row(align=True)
+                    row.prop(ifc_filter, "name", text="", icon="PACKAGE")
+                elif ifc_filter.type == "instance":
+                    row = box.row(align=True)
+                    row.prop(ifc_filter, "value", text="", icon="GRIP")
+                op = row.operator("bim.remove_filter", text="", icon="X")
+                op.group_index = i
+                op.index = j
+
+            row = box.row()
+            row.operator("bim.remove_filter_group", icon="X").index = i
+
+        if len(props.filter_groups):
+            row = self.layout.row(align=True)
+            row.operator("bim.search", text="Search", icon="VIEWZOOM")
+
+        return  # Temporary for now whilst searching is being upgraded.
 
         row = self.layout.row()
         row.prop(props, "should_use_regex")
