@@ -135,6 +135,7 @@ class EditArray(bpy.types.Operator, tool.Ifc.Operator):
         data = json.dumps(data)
         ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
 
+        tool.Blender.Modifier.Array.lock_children_transform(element, True)
         tool.Blender.Modifier.Array.constrain_children_to_parent(element)
         return {"FINISHED"}
 
