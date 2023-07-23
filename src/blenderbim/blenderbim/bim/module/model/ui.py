@@ -224,6 +224,9 @@ class BIM_PT_array(bpy.types.Panel):
                     name = f"{array['count']} Items ({array.get('method', 'OFFSET').capitalize()})"
                     row.label(text=name, icon="MOD_ARRAY")
                     row.operator("bim.enable_editing_array", icon="GREASEPENCIL", text="").item = i
+                    apply_button = row.row(align=True)
+                    apply_button.operator("bim.apply_array", text="", icon="CHECKMARK")
+                    apply_button.enabled = i == len(ArrayData.data["parameters"]["data_dict"]) - 1
                     row.operator("bim.remove_array", icon="X", text="").item = i
                     row = box.row(align=True)
                     icon = "EMPTY_ARROWS" if array.get("use_local_space", False) else "EMPTY_AXIS"

@@ -523,30 +523,43 @@ class Blender:
 
         class Array:
             @classmethod
-            def constrain_children_to_parent(cls, parent_element):
-                parent_obj = tool.Ifc.get_object(parent_element)
-                children = cls.get_all_children_objects(parent_element)
+            def bake_children_transform(cls, parent_element, item):
+                modifier_data = list(cls.get_modifiers_data(parent_element))[item]
+                children = cls.get_children_objects(modifier_data)
                 for child in children:
-                    constraint = next(
-                        (c for c in child.constraints if c.type == "CHILD_OF"), None
-                    ) or child.constraints.new("CHILD_OF")
-                    constraint.target = parent_obj
+                    constraint = next((c for c in child.constraints if c.type == "CHILD_OF"), None)
+                    if constraint:
+                        with bpy.context.temp_override(object=child):
+                            bpy.ops.constraint.apply(constraint=constraint.name, owner="OBJECT")
 
             @classmethod
-            def unconstrain_children_from_parent(cls, parent_element):
+            def constrain_children_to_parent(cls, parent_element):
+                parent_obj = tool.Ifc.get_object(parent_element)
                 children = cls.get_all_children_objects(parent_element)
                 for child in children:
                     constraint = next((c for c in child.constraints if c.type == "CHILD_OF"), None)
                     if constraint:
                         child.constraints.remove(constraint)
+                    constraint = child.constraints.new("CHILD_OF")
+                    constraint.target = parent_obj
 
             @classmethod
-            def lock_children_transform(cls, parent_element, lock_state=True):
-                for child_obj in cls.get_all_children_objects(parent_element):
+            def set_children_lock_state(cls, parent_element, item, lock_state=True):
+                modifier_data = list(cls.get_modifiers_data(parent_element))[item]
+                children = cls.get_children_objects(modifier_data)
+                for child_obj in children:
                     for prop in ("lock_location", "lock_rotation", "lock_scale"):
                         attr = getattr(child_obj, prop)
                         for axis_idx in range(3):
                             attr[axis_idx] = lock_state
+
+            @classmethod
+            def remove_constraints(cls, parent_element):
+                children = cls.get_all_children_objects(parent_element)
+                for child in children:
+                    constraint = next((c for c in child.constraints if c.type == "CHILD_OF"), None)
+                    if constraint:
+                        child.constraints.remove(constraint)
 
             @classmethod
             def get_all_objects(cls, parent_element):
