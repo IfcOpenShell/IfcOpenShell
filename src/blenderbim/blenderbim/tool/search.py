@@ -12,9 +12,8 @@ class Search(blenderbim.core.tool.Search):
     def import_filter_query(cls, group, filter_groups):
         query = json.loads(group.Description)["query"]
         filter_groups.clear()
-        l = lark.Lark(ifcopenshell.util.selector.filter_elements_grammar)
         transformer = ImportFilterQueryTransformer(filter_groups)
-        transformer.transform(l.parse(query))
+        transformer.transform(ifcopenshell.util.selector.filter_elements_grammar.parse(query))
 
     @classmethod
     def export_filter_query(cls, filter_groups):

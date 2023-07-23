@@ -18,7 +18,7 @@
 
 import bpy
 from bpy.types import Panel
-from blenderbim.bim.module.search.data import SearchData
+from blenderbim.bim.module.search.data import SearchData, ColourByPropertyData
 
 
 class BIM_PT_search(Panel):
@@ -136,6 +136,49 @@ class BIM_PT_search(Panel):
         row = self.layout.row(align=True)
         row.operator("bim.activate_ifc_class_filter", icon="FILTER")
         row.operator("bim.activate_ifc_building_storey_filter", icon="FILTER")
+
+
+class BIM_PT_colour_by_property(Panel):
+    bl_label = "Colour By Property"
+    bl_idname = "BIM_PT_colour_by_property"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_parent_id = "BIM_PT_tab_grouping_and_filtering"
+
+    def draw(self, context):
+        if not ColourByPropertyData.is_loaded:
+            ColourByPropertyData.load()
+
+        props = context.scene.BIMSearchProperties
+
+        row = self.layout.row(align=True)
+        row.label(text=f"{len(ColourByPropertyData.data['saved_colourschemes'])} Saved Colourschemes")
+
+        if ColourByPropertyData.data["saved_colourschemes"]:
+            row.operator("bim.load_colourscheme", text="", icon="IMPORT")
+        row.operator("bim.save_colourscheme", text="", icon="EXPORT")
+
+        row = self.layout.row()
+        row.prop(props, "colourscheme_query", text="Query")
+
+        row = self.layout.row(align=True)
+        row.operator("bim.colour_by_property", icon="BRUSH_DATA")
+        row.operator("bim.reset_object_colours")
+
+        if len(props.colourscheme):
+            self.layout.template_list("BIM_UL_colourscheme", "", props, "colourscheme", props, "active_colourscheme_index")
+
+
+class BIM_UL_colourscheme(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        props = context.scene.BIMWorkScheduleProperties
+        if not item:
+            return
+        row = layout.row(align=True)
+        row.label(text=item.name)
+        row.prop(item, "colour", text="")
 
 
 class BIM_UL_ifc_class_filter(bpy.types.UIList):

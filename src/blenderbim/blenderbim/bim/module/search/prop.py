@@ -22,7 +22,7 @@ from ifcopenshell.util.selector import Selector
 import blenderbim.tool as tool
 from blenderbim.bim.prop import ObjProperty, StrProperty
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.search.data import SearchData
+from blenderbim.bim.module.search.data import SearchData, ColourByPropertyData
 from bpy.types import PropertyGroup
 from blenderbim.tool.ifc import Ifc
 from . import ui, prop, operator
@@ -42,6 +42,12 @@ def get_saved_searches(self, context):
     if not SearchData.is_loaded:
         SearchData.load()
     return SearchData.data["saved_searches"]
+
+
+def get_saved_colourschemes(self, context):
+    if not ColourByPropertyData.is_loaded:
+        ColourByPropertyData.load()
+    return ColourByPropertyData.data["saved_colourschemes"]
 
 
 def update_is_class_selected(self, context):
@@ -87,15 +93,20 @@ class BIMFilterBuildingStoreys(PropertyGroup):
 
 
 class BIMFacet(PropertyGroup):
-    name: StringProperty(name="Type")
-    pset: StringProperty(name="Type")
-    value: StringProperty(name="Type")
+    name: StringProperty(name="Name")
+    pset: StringProperty(name="Pset")
+    value: StringProperty(name="Value")
     type: StringProperty(name="Type")
     comparison: StringProperty(name="Comparison")
 
 
 class BIMFilterGroup(PropertyGroup):
     filters: CollectionProperty(type=BIMFacet, name="filters")
+
+
+class BIMColour(PropertyGroup):
+    name: StringProperty(name="Name")
+    colour: FloatVectorProperty(name="Colour", subtype="COLOR", default=(1, 0, 0), min=0.0, max=1.0)
 
 
 class BIMSearchProperties(PropertyGroup):
@@ -114,6 +125,10 @@ class BIMSearchProperties(PropertyGroup):
         ],
     )
     saved_searches: EnumProperty(items=get_saved_searches, name="Saved Searches")
+    saved_colourschemes: EnumProperty(items=get_saved_colourschemes, name="Saved Colourschemes")
+    colourscheme_query: StringProperty(name="Colourscheme Query", default="class")
+    colourscheme: CollectionProperty(type=BIMColour)
+    active_colourscheme_index: IntProperty(name="Active Colourscheme Index")
     should_use_regex: BoolProperty(name="Search With Regex", default=False)
     should_ignorecase: BoolProperty(name="Search Ignoring Case", default=True)
     global_id: StringProperty(name="GlobalId")
