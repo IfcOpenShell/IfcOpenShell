@@ -171,6 +171,10 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
 
         tool.Model.regenerate_array(parent, data, self.keep_objs)
 
+        if self.keep_objs:
+            tool.Blender.Modifier.Array.unconstrain_children_from_parent(element)
+            tool.Blender.Modifier.Array.lock_children_transform(element, False)
+
         pset = tool.Ifc.get().by_id(pset["id"])
         if len(data) == 1:
             ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
