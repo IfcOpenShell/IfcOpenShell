@@ -523,6 +523,16 @@ class Blender:
 
         class Array:
             @classmethod
+            def constrain_children_to_parent(cls, parent_element):
+                parent_obj = tool.Ifc.get_object(parent_element)
+                children = cls.get_all_children_objects(parent_element)
+                for child in children:
+                    constraint = next(
+                        (c for c in child.constraints if c.type == "CHILD_OF"), None
+                    ) or child.constraints.new("CHILD_OF")
+                    constraint.target = parent_obj
+
+            @classmethod
             def get_all_objects(cls, parent_element):
                 parent_obj = tool.Ifc.get_object(parent_element)
                 children_objects = list(cls.get_all_children_objects(parent_element))
