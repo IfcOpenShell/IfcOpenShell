@@ -150,7 +150,7 @@ class ReloadSelectedIfcFile(bpy.types.Operator):
         valid_file = os.path.exists(filepath) and "ifc" in os.path.splitext(filepath)[1].lower()
         if not valid_file:
             self.report({"ERROR"}, f"Couldn't find .ifc file by the path '{filepath}'")
-            return {"ERROR"}
+            return {"CANCELLED"}
         context.scene.BIMProperties.ifc_file = context.scene.BIMProperties.ifc_file
         return {"FINISHED"}
 

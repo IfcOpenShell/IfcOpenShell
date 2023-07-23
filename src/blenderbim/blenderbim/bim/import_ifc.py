@@ -422,7 +422,7 @@ class IfcImporter:
         for representation in representations:
             items = representation["raw"].Items or []  # Be forgiving of invalid IFCs because Revit :(
             if len(items) == 1 and items[0].is_a("IfcSweptDiskSolid"):
-                if tool.Pset.get_element_pset(element, "BBIM_Railing"):
+                if tool.Blender.Modifier.is_railing(element):
                     return False
                 return True
             elif len(items) and (  # See #2508 why we accommodate for invalid IFCs here
@@ -430,7 +430,7 @@ class IfcImporter:
                 and len({i.is_a() for i in items}) == 1
                 and len({i.Radius for i in items}) == 1
             ):
-                if tool.Pset.get_element_pset(element, "BBIM_Railing"):
+                if tool.Blender.Modifier.is_railing(element):
                     return False
                 return True
         return False
