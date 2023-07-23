@@ -533,6 +533,14 @@ class Blender:
                     constraint.target = parent_obj
 
             @classmethod
+            def unconstrain_children_from_parent(cls, parent_element):
+                children = cls.get_all_children_objects(parent_element)
+                for child in children:
+                    constraint = next((c for c in child.constraints if c.type == "CHILD_OF"), None)
+                    if constraint:
+                        child.constraints.remove(constraint)
+
+            @classmethod
             def lock_children_transform(cls, parent_element, lock_state=True):
                 for child_obj in cls.get_all_children_objects(parent_element):
                     for prop in ("lock_location", "lock_rotation", "lock_scale"):
