@@ -529,6 +529,28 @@ Here is an example which generates a parametric table.
 
 .. image:: images/custom-representation.png
 
+Another really common case for using the shape builder is when creating
+**Representations** of reinforcement bars, cables, or circular railings. IFC
+has a special type of extrusion specifically for extruding a disk (i.e. circle)
+along a path. This should almost always be used for usecases like reinforcement
+bar.
+
+.. code-block:: python
+
+    builder = ifcopenshell.util.shape_builder.ShapeBuilder(model)
+
+    # Sweep a 10mm radius disk along a polyline with a couple of straight segments and an arc.
+    curve = builder.polyline(
+        [(0., 0., 0.), (100., 0., 0.), (171., 29., 0.), (200., 100., 0.), (200., 200., 0.)],
+        arc_points=[2])
+    swept_curve = builder.create_swept_disk_solid(curve, 10)
+
+    # Create a body representation
+    body = ifcopenshell.util.representation.get_context(model, "Model", "Body", "MODEL_VIEW")
+    representation = builder.get_representation(body, swept_curve)
+
+.. image:: images/swept-disk-representation.png
+
 For more information, consult the :doc:`shape builder documentation
 <autoapi/ifcopenshell/util/shape_builder/index>`.
 
