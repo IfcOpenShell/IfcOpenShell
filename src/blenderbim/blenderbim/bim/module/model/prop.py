@@ -135,7 +135,7 @@ class BIMModelProperties(PropertyGroup):
     rl1: bpy.props.FloatProperty(name="RL", default=1, subtype="DISTANCE", description="Z offset for walls")  
     # Used for things like windows, other hosted furniture
     rl2: bpy.props.FloatProperty(name="RL", default=1, subtype="DISTANCE", description="Z offset for windows")
-    x_angle: bpy.props.FloatProperty(name="X Angle", default=0, subtype="ANGLE", min=0, max=pi / 180 * 89)
+    x_angle: bpy.props.FloatProperty(name="X Angle", default=0, subtype="ANGLE", min=-pi / 180 * 89, max=pi / 180 * 89)
     type_page: bpy.props.IntProperty(name="Type Page", default=1, update=update_type_page)
     type_template: bpy.props.EnumProperty(
         items=(
