@@ -1433,9 +1433,9 @@ class OverrideModeSetObject(bpy.types.Operator):
                     profile = tool.Ifc.get().by_id(profile_id)
                     if tool.Ifc.get_object(profile):  # We are editing an arbitrary profile
                         bpy.ops.bim.edit_arbitrary_profile()
-                elif tool.Pset.get_element_pset(element, "BBIM_Railing"):
+                elif tool.Blender.Modifier.is_railing(element):
                     bpy.ops.bim.finish_editing_railing_path()
-                elif tool.Pset.get_element_pset(element, "BBIM_Roof"):
+                elif tool.Blender.Modifier.is_roof(element):
                     bpy.ops.bim.finish_editing_roof_path()
                 elif tool.Model.get_usage_type(element) == "PROFILE":
                     bpy.ops.bim.edit_extrusion_axis()
