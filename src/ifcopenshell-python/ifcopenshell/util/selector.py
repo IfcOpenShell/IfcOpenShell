@@ -24,7 +24,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.classification
 
 
-filter_elements_grammar = """start: filter_group
+filter_elements_grammar = lark.Lark("""start: filter_group
     filter_group: facet_list ("+" facet_list)*
     facet_list: facet ("," facet)*
 
@@ -86,38 +86,36 @@ filter_elements_grammar = """start: filter_group
     NEWLINE: (CR? LF)+
 
     %ignore WS // Disregard spaces in text
-"""
+""")
+
+get_element_grammar = lark.Lark("""start: WORD | ESCAPED_STRING | keys_regex | keys_quoted | keys_simple
+    keys_regex: "r" ESCAPED_STRING ("." ESCAPED_STRING)*
+    keys_quoted: ESCAPED_STRING ("." ESCAPED_STRING)*
+    keys_simple: /[^\\W][^.=<>!%*\\]]*/ ("." /[^\\W][^.=<>!%*\\]]*/)*
+
+    // Embed common.lark for packaging
+    _STRING_INNER: /.*?/
+    _STRING_ESC_INNER: _STRING_INNER /(?<!\\\\)(\\\\\\\\)*?/
+    ESCAPED_STRING : "\\"" _STRING_ESC_INNER "\\""
+    LCASE_LETTER: "a".."z"
+    UCASE_LETTER: "A".."Z"
+    LETTER: UCASE_LETTER | LCASE_LETTER
+    WORD: LETTER+
+    WS: /[ \\t\\f\\r\\n]/+
+
+    %ignore WS // Disregard spaces in text
+ """)
 
 
 def get_element_value(element, query):
-    l = lark.Lark(
-        """start: WORD | ESCAPED_STRING | keys_regex | keys_quoted | keys_simple
-                keys_regex: "r" ESCAPED_STRING ("." ESCAPED_STRING)*
-                keys_quoted: ESCAPED_STRING ("." ESCAPED_STRING)*
-                keys_simple: /[^\\W][^.=<>!%*\\]]*/ ("." /[^\\W][^.=<>!%*\\]]*/)*
-
-                // Embed common.lark for packaging
-                _STRING_INNER: /.*?/
-                _STRING_ESC_INNER: _STRING_INNER /(?<!\\\\)(\\\\\\\\)*?/
-                ESCAPED_STRING : "\\"" _STRING_ESC_INNER "\\""
-                LCASE_LETTER: "a".."z"
-                UCASE_LETTER: "A".."Z"
-                LETTER: UCASE_LETTER | LCASE_LETTER
-                WORD: LETTER+
-                WS: /[ \\t\\f\\r\\n]/+
-
-                %ignore WS // Disregard spaces in text
-             """
-    )
-    start = l.parse(query)
+    start = get_element_grammar.parse(query)
     filter_query = Selector.parse_filter_query(start.children[0])
     return Selector.get_element_value(element, filter_query["keys"], filter_query["is_regex"])
 
 
 def filter_elements(ifc_file, query, elements=None):
-    l = lark.Lark(filter_elements_grammar)
     transformer = FacetTransformer(ifc_file, elements)
-    transformer.transform(l.parse(query))
+    transformer.transform(filter_elements_grammar.parse(query))
     return transformer.get_results()
     return transformer.elements
 

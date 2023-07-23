@@ -28,7 +28,7 @@ class BIM_PT_groups(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_project_setup"
+    bl_parent_id = "BIM_PT_tab_grouping_and_filtering"
 
     @classmethod
     def poll(cls, context):
