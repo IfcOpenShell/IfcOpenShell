@@ -45,6 +45,7 @@ classes = (
     array.DisableEditingArray,
     array.EditArray,
     array.EnableEditingArray,
+    array.ApplyArray,
     array.RemoveArray,
     array.SelectArrayParent,
     array.SelectAllArrayObjects,

@@ -135,8 +135,23 @@ class EditArray(bpy.types.Operator, tool.Ifc.Operator):
         data = json.dumps(data)
         ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
 
-        tool.Blender.Modifier.Array.lock_children_transform(element, True)
+        tool.Blender.Modifier.Array.set_children_lock_state(element, self.item, True)
         tool.Blender.Modifier.Array.constrain_children_to_parent(element)
+        return {"FINISHED"}
+
+
+class ApplyArray(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.apply_array"
+    bl_label = "Apply Array"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Apply the array and keep children as separate entities. Only available for the last array"
+
+    def _execute(self, context):
+        obj = context.active_object
+        element = tool.Ifc.get_entity(obj)
+        pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+        data = json.loads(pset["Data"])
+        bpy.ops.bim.remove_array(item=len(data) - 1, keep_objs=True)
         return {"FINISHED"}
 
 
@@ -169,11 +184,11 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
         except:
             return {"FINISHED"}
 
-        tool.Model.regenerate_array(parent, data, self.keep_objs)
-
         if self.keep_objs:
-            tool.Blender.Modifier.Array.unconstrain_children_from_parent(element)
-            tool.Blender.Modifier.Array.lock_children_transform(element, False)
+            tool.Blender.Modifier.Array.bake_children_transform(element, self.item)
+            tool.Blender.Modifier.Array.set_children_lock_state(element, self.item, False)
+
+        tool.Model.regenerate_array(parent, data, self.keep_objs)
 
         pset = tool.Ifc.get().by_id(pset["id"])
         if len(data) == 1:
@@ -182,15 +197,9 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
             del data[self.item]
             data = json.dumps(data)
             ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
+            tool.Blender.Modifier.Array.constrain_children_to_parent(element)
 
         return {"FINISHED"}
-
-    def draw(self, context):
-        row = self.layout.row()
-        row.prop(self, "keep_objs")
-
-    def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self)
 
 
 class SelectArrayParent(bpy.types.Operator):

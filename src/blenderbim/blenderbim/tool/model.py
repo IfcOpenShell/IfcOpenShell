@@ -529,6 +529,8 @@ class Model(blenderbim.core.tool.Model):
 
     @classmethod
     def regenerate_array(cls, parent, data, keep_objs=False):
+        tool.Blender.Modifier.Array.remove_constraints(tool.Ifc.get_entity(parent))
+
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         obj_stack = [parent]
 
