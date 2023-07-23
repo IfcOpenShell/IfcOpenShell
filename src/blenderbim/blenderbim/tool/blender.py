@@ -533,6 +533,14 @@ class Blender:
                     constraint.target = parent_obj
 
             @classmethod
+            def lock_children_transform(cls, parent_element, lock_state=True):
+                for child_obj in cls.get_all_children_objects(parent_element):
+                    for prop in ("lock_location", "lock_rotation", "lock_scale"):
+                        attr = getattr(child_obj, prop)
+                        for axis_idx in range(3):
+                            attr[axis_idx] = lock_state
+
+            @classmethod
             def get_all_objects(cls, parent_element):
                 parent_obj = tool.Ifc.get_object(parent_element)
                 children_objects = list(cls.get_all_children_objects(parent_element))
