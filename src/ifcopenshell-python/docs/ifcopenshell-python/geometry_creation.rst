@@ -28,6 +28,7 @@ object's geometry is always relative to the **Object Placement**.
    **Object Placements** are optional if the object has no geometry.  However,
    any object with a geometry must have an **Object Placement**.
 
+.. image:: images/object-placement-bunny.png
 
 IFC products may have multiple geometric representations, positioned relative
 to the **Object Placement**. For example, a door might have a 3D body of a
@@ -44,6 +45,8 @@ Context**. The **Representation Context** determines how the **Representation**
 is intended to be viewed. For example, a "2D Plan View" might be a
 **Representation Context**. This allows the user to choose to see the
 appropriate **Representation**.
+
+.. image:: images/representation-contexts.png
 
 A **Representation** contains one or more **Representation Items**. Each
 **Representation Item** could be an extrusion, a mesh, a surface, a curve, and
