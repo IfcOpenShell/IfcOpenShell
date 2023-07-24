@@ -1628,7 +1628,10 @@ class Drawing(blenderbim.core.tool.Drawing):
         # Based on separating axis theorem
         plane_co = camera.matrix_world.translation
         plane_no = camera.matrix_world.col[2].xyz
+        return cls.is_intersecting_plane(obj, plane_co, plane_no)
 
+    @classmethod
+    def is_intersecting_plane(cls, obj, plane_co, plane_no):
         # Broadphase check using the bounding box
         bounding_box_world_coords = [obj.matrix_world @ Vector(coord) for coord in obj.bound_box]
         bounding_box_signed_distances = [plane_no.dot(v - plane_co) for v in bounding_box_world_coords]
@@ -1665,6 +1668,13 @@ class Drawing(blenderbim.core.tool.Drawing):
 
         # Bisect verts are offset by the clip (with 5mm tolerance) to ensure it is visible in the viewport.
         global_offset = camera.matrix_world.col[2].xyz * (-camera.data.clip_start - 0.005)
+
+        return cls.bisect_mesh_with_plane(obj, plane_co, plane_no, global_offset=global_offset)
+
+    @classmethod
+    def bisect_mesh_with_plane(cls, obj, plane_co, plane_no, global_offset=None):
+        if global_offset is None:
+            global_offset = Vector()
 
         bm = bmesh.new()
         bm.from_mesh(obj.data)
