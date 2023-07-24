@@ -83,6 +83,7 @@ def create_project(ifc, project, schema=None, template=None):
 
     project.set_context(body)
     project.set_active_spatial_element(storey)
+    project.create_project_collections()
 
     if template:
         project.append_all_types_from_template(template)
