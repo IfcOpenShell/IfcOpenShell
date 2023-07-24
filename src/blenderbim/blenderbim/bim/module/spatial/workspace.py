@@ -83,7 +83,7 @@ class SpatialToolUI:
         #     SpatialData.load()
 
         if not AuthoringData.is_loaded:
-            AuthoringData.load()
+            AuthoringData.load(None)
 
         cls.draw_type_selection_interface(context)
         cls.draw_default_interface(context)
@@ -93,6 +93,8 @@ class SpatialToolUI:
 
     @classmethod
     def draw_default_interface(cls, context):
+        row = cls.layout.row(align=True)
+        row.prop(data=cls.model_props, property="rl3", text="RL")
         row = cls.layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
         row.label(text="", icon="EVENT_A")
