@@ -41,6 +41,11 @@ class Project(blenderbim.core.tool.Project):
         return bpy.data.objects.new(name, None)
 
     @classmethod
+    def create_project_collections(cls):
+        tool.Loader.create_project_collection("Views")
+        tool.Loader.create_project_collection("Types")
+
+    @classmethod
     def load_default_thumbnails(cls):
         if tool.Ifc.get().by_type("IfcElementType"):
             ifc_class = sorted(tool.Ifc.get().by_type("IfcElementType"), key=lambda e: e.is_a())[0].is_a()
