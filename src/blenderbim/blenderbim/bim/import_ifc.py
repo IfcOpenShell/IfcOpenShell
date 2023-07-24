@@ -1437,27 +1437,8 @@ class IfcImporter:
             self.create_spatial_decomposition_collection(self.project["blender"], orphaned_spaces)
             orphaned_spaces = [e for e in self.spatial_elements if e.GlobalId not in self.collections]
 
-        self.create_views_collection()
-        self.create_type_collection()
-
-    def create_type_collection(self):
-        for collection in self.project["blender"].children:
-            if collection.name == "Types":
-                self.type_collection = collection
-                break
-        if not self.type_collection:
-            self.type_collection = bpy.data.collections.new("Types")
-            self.project["blender"].children.link(self.type_collection)
-
-    def create_views_collection(self):
-        view_collection = None
-        for collection in self.project["blender"].children:
-            if collection.name == "Views":
-                view_collection = collection
-                break
-        if not view_collection:
-            view_collection = bpy.data.collections.new("Views")
-            self.project["blender"].children.link(view_collection)
+        tool.Loader.create_project_collection("Views")
+        self.type_collection = tool.Loader.create_project_collection("Types")
 
     def create_spatial_decomposition_collection(self, parent, related_objects):
         for element in related_objects:

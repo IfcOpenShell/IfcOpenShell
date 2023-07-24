@@ -540,6 +540,7 @@ class Owner:
 class Project:
     def append_all_types_from_template(cls, template): pass
     def create_empty(cls, name): pass
+    def create_project_collections(cls): pass
     def load_default_thumbnails(cls): pass
     def run_aggregate_assign_object(cls, relating_obj=None, related_obj=None): pass
     def run_context_add_context(cls, context_type=None, context_identifier=None, target_view=None, parent=None): pass
