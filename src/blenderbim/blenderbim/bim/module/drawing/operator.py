@@ -919,7 +919,7 @@ class CreateDrawing(bpy.types.Operator):
                     path.getparent().remove(path)
             for result in results:
                 for geom in result.geoms:
-                    path = etree.SubElement(el, "path")
+                    path = etree.SubElement(el, "{http://www.w3.org/2000/svg}path")
                     if isinstance(geom, shapely.Polygon):
                         d = (
                             "M"
@@ -963,8 +963,10 @@ class CreateDrawing(bpy.types.Operator):
                 is_closed_polygon = False
                 for path in el.findall("{http://www.w3.org/2000/svg}path"):
                     for subpath in path.attrib["d"].split("M")[1:]:
-                        subpath = "M" + subpath.strip()
-                        coords = [[round(float(o), 1) for o in co[1:].split(",")] for co in subpath.split()]
+                        subpath_co = "M" + subpath.strip(" Z")
+                        coords = [[round(float(o), 1) for o in co[1:].split(",")] for co in subpath_co.split()]
+                        if subpath.strip().lower().endswith("z"):
+                            coords.append(coords[0])
                         if len(coords) > 2 and coords[0] == coords[-1]:
                             is_closed_polygon = True
                             polygons.append(shapely.Polygon(coords))
