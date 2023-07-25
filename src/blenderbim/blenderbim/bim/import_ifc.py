@@ -142,11 +142,12 @@ class MaterialCreator:
         if len(self.mesh.materials) == 1:
             return
         material_to_slot = {}
-        for i, material in enumerate(self.mesh["ios_materials"]):
-            slot_index = self.mesh.materials.find(self.styles[material].name)
-            material_to_slot[i] = slot_index
 
         if len(self.mesh.polygons) == len(self.mesh["ios_material_ids"]):
+            for i, material in enumerate(self.mesh["ios_materials"]):
+                slot_index = self.mesh.materials.find(self.styles[material].name)
+                material_to_slot[i] = slot_index
+
             material_index = [
                 (material_to_slot[mat_id] if mat_id != -1 else 0) for mat_id in self.mesh["ios_material_ids"]
             ]
