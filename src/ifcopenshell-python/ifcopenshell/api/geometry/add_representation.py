@@ -58,6 +58,7 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
+        self.is_manifold = None
         if (
             isinstance(self.settings["geometry"], bpy.types.Mesh)
             and self.settings["geometry"] == self.settings["blender_object"].data
@@ -95,6 +96,13 @@ class Usecase:
         mesh = self.settings["blender_object"].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
         bm = bmesh.new()
         bm.from_mesh(mesh)
+
+        self.is_manifold = True
+        for edge in bm.edges:
+            if not edge.is_manifold:
+                self.is_manifold = False
+                break
+
         if self.settings["should_force_triangulation"]:
             faces = bm.faces
         else:
@@ -727,7 +735,7 @@ class Usecase:
         coordinates = self.file.createIfcCartesianPointList3D(
             [self.convert_si_to_unit(v.co) for v in self.settings["geometry"].vertices]
         )
-        items = [self.file.createIfcPolygonalFaceSet(coordinates, None, i) for i in ifc_raw_items if i]
+        items = [self.file.createIfcPolygonalFaceSet(coordinates, self.is_manifold, i) for i in ifc_raw_items if i]
         return self.file.createIfcShapeRepresentation(
             self.settings["context"],
             self.settings["context"].ContextIdentifier,
