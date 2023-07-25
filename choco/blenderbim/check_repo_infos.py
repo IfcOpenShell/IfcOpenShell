@@ -24,6 +24,14 @@ def get_latest_blender_version() -> list:
     return re.findall(RE_BLENDER_VERSION_MIN_MAJ_PAT, html_txt)
 
 
+URL_IFCOS_RELEASES = "https://github.com/IfcOpenShell/IfcOpenShell/releases"
+URL_CHOCO_PACKAGE  = "https://community.chocolatey.org/packages/blender"
+URL_BLENDER_CMAKE  = "https://raw.githubusercontent.com/blender/blender/{}/build_files/cmake/Modules/FindPythonLibsUnix.cmake"
+RE_BLENDER_VERSION_MIN_MAJ        = r"Latest Version.+<span>Blender (\d+\.\d+)\..+</span>"
+RE_BLENDER_VERSION_MIN_MAJ_PAT    = r"Latest Version.+<span>Blender (\d+\.\d+\.\d+)</span>"
+RE_BLENDER_PYTHON_VERSION_MAJ_MIN = r"SET\(_PYTHON_VERSION_SUPPORTED (\d+\.\d+)\)"
+
+
 if sys.argv[1] == "--do_choco_release?":
     now = datetime.datetime.now()
     blenderbim_date = (now - datetime.timedelta(days=1)).strftime("%y%m%d")
@@ -56,7 +64,7 @@ elif sys.argv[1] == "--latest_blender_python_version_maj_min?":
     latest_blender_version = get_latest_blender_version()
     if latest_blender_version:
         latest_blender_version_tag = f"v{latest_blender_version[0]}"
-        resp = request_repo_info(URL_BLENDER_CMAKE)
+        resp = request_repo_info(URL_BLENDER_CMAKE.format(latest_blender_version_tag))
         html_txt = str(resp.read())
         found = re.findall(RE_BLENDER_PYTHON_VERSION_MAJ_MIN, html_txt)
         if found:
@@ -79,10 +87,3 @@ elif sys.argv[1] == "--pyver?":
             print("[ERROR] could not determine pyver")
             quit(1)
 
-
-URL_IFCOS_RELEASES = "https://github.com/IfcOpenShell/IfcOpenShell/releases"
-URL_CHOCO_PACKAGE  = "https://community.chocolatey.org/packages/blender"
-URL_BLENDER_CMAKE  = f"https://raw.githubusercontent.com/blender/blender/{latest_blender_version_tag}/build_files/cmake/Modules/FindPythonLibsUnix.cmake"
-RE_BLENDER_VERSION_MIN_MAJ        = r"Latest Version.+<span>Blender (\d+\.\d+)\..+</span>"
-RE_BLENDER_VERSION_MIN_MAJ_PAT    = r"Latest Version.+<span>Blender (\d+\.\d+\.\d+)</span>"
-RE_BLENDER_PYTHON_VERSION_MAJ_MIN = r"SET\(_PYTHON_VERSION_SUPPORTED (\d+\.\d+)\)"
