@@ -47,13 +47,13 @@ def get_namespaces(self, context):
 
 
 def get_brick_entity_classes(self, context):
-    entity = context.scene.BIMBrickProperties.brick_entity_create_type
+    entity = self.brick_entity_create_type
     return BrickStore.entity_classes[entity]
 
 
-def get_brick_roots(self, context):
-    return BrickStore.root_classes
-            
+def get_brick_roots(self, context): 
+    return [(root, root, "") for root in BrickStore.root_classes]
+
 
 class Brick(PropertyGroup):
     name: StringProperty(name="Name")
