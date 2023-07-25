@@ -345,7 +345,7 @@ class BrickStore:
     current_changesets = 0
     history_size = 64
     namespaces = []
-    root_classes = [("Equipment", "Equipment", ""), ("Location", "Location", ""), ("System", "System", ""), ("Point", "Point", "")]
+    root_classes = ["Equipment", "Location", "System", "Point"]
     entity_classes = {}
 
     @staticmethod
@@ -376,7 +376,7 @@ class BrickStore:
     @classmethod
     def load_entity_classes(cls):
         
-        for root_class, __, __ in BrickStore.root_classes:
+        for root_class in BrickStore.root_classes:
             query = BrickStore.graph.query(
                 """
                 PREFIX brick: <https://brickschema.org/schema/Brick#>
