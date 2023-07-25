@@ -921,9 +921,17 @@ class CreateDrawing(bpy.types.Operator):
                 for geom in result.geoms:
                     path = etree.SubElement(el, "path")
                     if isinstance(geom, shapely.Polygon):
-                        d = "M" + " L".join([",".join([str(o) for o in co]) for co in geom.exterior.coords[0:-1]]) + " Z"
+                        d = (
+                            "M"
+                            + " L".join([",".join([str(o) for o in co]) for co in geom.exterior.coords[0:-1]])
+                            + " Z"
+                        )
                         for interior in geom.interiors:
-                            d += " M" + " L".join([",".join([str(o) for o in co]) for co in interior.coords[0:-1]]) + " Z"
+                            d += (
+                                " M"
+                                + " L".join([",".join([str(o) for o in co]) for co in interior.coords[0:-1]])
+                                + " Z"
+                            )
                     elif isinstance(geom, shapely.LineString):
                         d = "M" + " L".join([",".join([str(o) for o in co]) for co in geom.coords]) + " Z"
                     path.attrib["d"] = d
@@ -1013,7 +1021,9 @@ class CreateDrawing(bpy.types.Operator):
         filtered_drawing_elements = tool.Drawing.get_drawing_elements(self.camera_element)
         elements = [e for e in elements if e in filtered_drawing_elements]
 
-        annotations = sorted(elements, key=lambda a: tool.Drawing.get_annotation_z_index(a))
+        annotations = sorted(
+            elements, key=lambda a: (tool.Drawing.get_annotation_z_index(a), 1 if a.ObjectType == "TEXT" else 0)
+        )
 
         precision = ifcopenshell.util.element.get_pset(self.camera_element, "EPset_Drawing", "MetricPrecision")
         if not precision:
