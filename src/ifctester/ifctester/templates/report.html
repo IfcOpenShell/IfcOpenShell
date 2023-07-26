@@ -44,6 +44,10 @@
         footer { color: #999; font-size: 0.8em; }
         header { text-align: center; }
         hr { margin: 20px; margin-left: 0px; margin-right: 0px;  border: none; border-top: 1px solid #ccc; }
+		details { user-select: none; }
+		details>summary span.icon { width: 24px; height: 24px; transition: all 0.3s; margin-left: auto; }
+		summary { display: flex; cursor: pointer; }
+		summary::-webkit-details-marker { display: none; }
     </style>
 </head>
 <body>
@@ -54,24 +58,28 @@
     {{#specifications}}
     <section>
         <h2>{{name}}</h2>
-        <p>
-            <span class="{{#status}}success{{/status}}{{^status}}failure{{/status}}">{{#status}}Pass{{/status}}{{^status}}Fail{{/status}}</span>
-            Passed: <strong>{{total_successes}} / {{total}}</strong> ({{percentage}}%)
-        </p>
-        <ol>
-            {{#requirements}}
-            <li class="{{#status}}success{{/status}}{{^status}}failure{{/status}}">
-                {{description}}
-                {{^status}}{{#total}}
-                <p class="failure{{#is_unspecified}} unspecified{{/is_unspecified}}{{#is_skipped}} skipped{{/is_skipped}}">
-                    {{#failed_entities}}
-                    {{reason}} <em style="color: #fbb4a8;">{{element}}</em><br />
-                    {{/failed_entities}}
+        <details>
+            <summary>
+                <p>
+                    <span class="{{#status}}success{{/status}}{{^status}}failure{{/status}}">{{#status}}Pass{{/status}}{{^status}}Fail{{/status}}</span>
+                    Passed: <strong>{{total_successes}} / {{total}}</strong> ({{percentage}}%)  - click here to see details
                 </p>
-                {{/total}}{{/status}}
-            </li>
-            {{/requirements}}
-        </ol>
+            </summary>
+            <ol>
+                {{#requirements}}
+                <li class="{{#status}}success{{/status}}{{^status}}failure{{/status}}">
+                    {{description}}
+                    {{^status}}{{#total}}
+                    <p class="failure{{#is_unspecified}} unspecified{{/is_unspecified}}{{#is_skipped}} skipped{{/is_skipped}}">
+                        {{#failed_entities}}
+                        {{reason}} <em style="color: #fbb4a8;">{{element}}</em><br />
+                        {{/failed_entities}}
+                    </p>
+                    {{/total}}{{/status}}
+                </li>
+                {{/requirements}}
+            </ol>
+		</details>
     </section>
     {{/specifications}}
     <hr>
