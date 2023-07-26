@@ -123,19 +123,18 @@ class AddConstrTypeInstance(bpy.types.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMModelProperties
-        ifc_class = self.ifc_class or props.ifc_class
         relating_type_id = self.relating_type_id or props.relating_type_id
 
-        if not ifc_class or not relating_type_id:
+        if not relating_type_id:
             return {"FINISHED"}
 
         if self.from_invoke:
-            props.ifc_class = self.ifc_class
             props.relating_type_id = str(self.relating_type_id)
 
         self.file = IfcStore.get_file()
-        instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, self.file.schema)[0]
         relating_type = self.file.by_id(int(relating_type_id))
+        ifc_class = relating_type.is_a()
+        instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, self.file.schema)[0]
         material = ifcopenshell.util.element.get_material(relating_type)
 
         if material and material.is_a("IfcMaterialProfileSet"):
