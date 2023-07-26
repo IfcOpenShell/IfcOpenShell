@@ -375,7 +375,6 @@ class BrickStore:
 
     @classmethod
     def load_entity_classes(cls):
-        
         for root_class in BrickStore.root_classes:
             query = BrickStore.graph.query(
                 """
