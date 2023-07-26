@@ -83,7 +83,7 @@ class SpatialToolUI:
         #     SpatialData.load()
 
         if not AuthoringData.is_loaded:
-            AuthoringData.load(None)
+            AuthoringData.load()
 
         cls.draw_type_selection_interface(context)
         cls.draw_default_interface(context)
