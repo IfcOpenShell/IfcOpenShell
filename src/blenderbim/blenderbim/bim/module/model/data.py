@@ -41,14 +41,16 @@ class AuthoringData:
     data = {}
     type_thumbnails = {}
     types_per_page = 9
+    ifc_element_type = None
     is_loaded = False
 
     @classmethod
-    def load(cls, ifc_element_type=False):
+    def load(cls, ifc_element_type=None):
         cls.is_loaded = True
         cls.props = bpy.context.scene.BIMModelProperties
-        if ifc_element_type is not False:
-            cls.data["ifc_element_type"] = ifc_element_type
+        if ifc_element_type:
+            cls.ifc_element_type = None if ifc_element_type == "all" else ifc_element_type
+        cls.data["ifc_element_type"] = cls.ifc_element_type
         cls.data["ifc_classes"] = cls.ifc_classes()
         cls.data["relating_type_id"] = cls.relating_type_id()  # only after .ifc_classes()
         cls.data["type_class"] = cls.type_class()

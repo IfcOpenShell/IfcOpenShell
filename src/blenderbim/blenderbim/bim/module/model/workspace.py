@@ -66,7 +66,7 @@ class BimTool(WorkSpaceTool):
 
     def draw_settings(context, layout, ws_tool):
         # Unlike operators, Blender doesn't treat workspace tools as a class, so we'll create our own.
-        BimToolUI.draw(context, layout)
+        BimToolUI.draw(context, layout, ifc_element_type="all")
 
 
 class WallTool(BimTool):
@@ -203,6 +203,8 @@ class BimToolUI:
 
         if not AuthoringData.is_loaded:
             AuthoringData.load(ifc_element_type)
+        elif ifc_element_type == "all" and AuthoringData.data["ifc_element_type"] is not None:
+            AuthoringData.load("all")
         elif AuthoringData.data["ifc_element_type"] != ifc_element_type:
             AuthoringData.load(ifc_element_type)
 
