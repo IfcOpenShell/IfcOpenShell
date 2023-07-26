@@ -107,16 +107,16 @@ class BIM_PT_brickschema(Panel):
 
         self.layout.template_list("BIM_UL_bricks", "", self.props, "bricks", self.props, "active_brick_index")
 
-        for attribute in BrickschemaData.data["attributes"]:
+        for relation in BrickschemaData.data["relations"]:
             row = self.layout.row(align=True)
-            row.label(text=attribute["predicate"])
-            row.label(text=attribute["object"])
-            if attribute["is_uri"]:
+            row.label(text=relation["predicate"])
+            row.label(text=relation["object"])
+            if relation["is_uri"]:
                 op = row.operator("bim.view_brick_item", text="", icon="DISCLOSURE_TRI_RIGHT")
-                op.item = attribute["object_uri"]
-            if attribute["is_globalid"]:
+                op.item = relation["object_uri"]
+            if relation["is_globalid"]:
                 op = row.operator("bim.select_global_id", icon="RESTRICT_SELECT_OFF", text="")
-                op.global_id = attribute["object"]
+                op.global_id = relation["object"]
 
 
 class BIM_PT_ifc_brickschema_references(Panel):
