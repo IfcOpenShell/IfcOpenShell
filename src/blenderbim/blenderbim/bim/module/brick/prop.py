@@ -76,3 +76,5 @@ class BIMBrickProperties(PropertyGroup):
     new_brick_namespace_uri: StringProperty(name="New Brick Namespace URI")
     brick_list_root: EnumProperty(name="Brick List Root", items=get_brick_roots)
     brick_entity_create_type: EnumProperty(name="Brick Entity Types", items=get_brick_roots)
+    brick_create_relations_toggled: BoolProperty(name="Brick Create Relations Toggled", default=False)
+    brick_edit_relations_toggled: BoolProperty(name="Brick Edit Relations Toggled", default=False)

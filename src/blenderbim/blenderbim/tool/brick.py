@@ -105,6 +105,13 @@ class Brick(blenderbim.core.tool.Brick):
         BrickStore.graph.add((URIRef(source), ns_brick["feeds"], URIRef(destination)))
 
     @classmethod
+    def remove_relation(cls, brick_uri, predicate, object):
+        if BrickStore.graph.triples((brick_uri, predicate, object)):
+            with BrickStore.new_changeset() as cs:
+                for triple in BrickStore.graph.triples((brick_uri, predicate, object)):
+                    cs.remove(triple)
+
+    @classmethod
     def clear_brick_browser(cls):
         bpy.context.scene.BIMBrickProperties.bricks.clear()
 

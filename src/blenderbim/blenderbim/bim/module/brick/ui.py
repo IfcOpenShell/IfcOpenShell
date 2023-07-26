@@ -107,16 +107,27 @@ class BIM_PT_brickschema(Panel):
 
         self.layout.template_list("BIM_UL_bricks", "", self.props, "bricks", self.props, "active_brick_index")
 
+        if BrickschemaData.data["relations"]:
+            row = self.layout.row(align=True)
+            col = row.column()
+            col.alignment = "RIGHT"
+            row.prop(data=self.props, property="brick_create_relations_toggled", text="", icon="OUTLINER_DATA_GP_LAYER")
+            row.prop(data=self.props, property="brick_edit_relations_toggled", text="", icon="TOOL_SETTINGS")
+
         for relation in BrickschemaData.data["relations"]:
             row = self.layout.row(align=True)
-            row.label(text=relation["predicate"])
-            row.label(text=relation["object"])
-            if relation["is_uri"]:
+            row.label(text=relation["predicate_name"])
+            row.label(text=relation["object_name"])
+            if self.props.brick_edit_relations_toggled and relation["predicate_name"] != "type":
+                op = row.operator("bim.remove_brick_relation", text="", icon="UNLINKED")
+                op.predicate = relation["predicate"]
+                op.object = relation["object"]
+            if relation["is_uri"] and relation["predicate_name"] != "type":
                 op = row.operator("bim.view_brick_item", text="", icon="DISCLOSURE_TRI_RIGHT")
                 op.item = relation["object_uri"]
             if relation["is_globalid"]:
                 op = row.operator("bim.select_global_id", icon="RESTRICT_SELECT_OFF", text="")
-                op.global_id = relation["object"]
+                op.global_id = relation["object_name"]
 
 
 class BIM_PT_ifc_brickschema_references(Panel):
