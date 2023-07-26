@@ -126,3 +126,7 @@ def set_brick_list_root(brick, brick_root=None):
     brick.set_active_brick_class(brick_root)
     brick.clear_breadcrumbs()
 
+
+def remove_brick_relation(brick, brick_uri=None, predicate=None, object=None):
+    brick.remove_relation(brick_uri, predicate, object)
+    brick.run_refresh_brick_viewer()

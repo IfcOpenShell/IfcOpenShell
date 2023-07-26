@@ -264,3 +264,16 @@ class SetBrickListRoot(bpy.types.Operator, Operator):
     def _execute(self, context):
         root = context.scene.BIMBrickProperties.brick_list_root
         core.set_brick_list_root(tool.Brick, brick_root=root)
+
+
+class RemoveBrickRelation(bpy.types.Operator, Operator):
+    bl_idname = "bim.remove_brick_relation"
+    bl_label = "Remove Relation"
+    bl_options = {"REGISTER", "UNDO"}
+    predicate: bpy.props.StringProperty(name="Relation")
+    object: bpy.props.StringProperty(name="Object")
+
+    def _execute(self, context):
+        props = context.scene.BIMBrickProperties
+        brick = props.bricks[props.active_brick_index]
+        core.remove_brick_relation(tool.Brick, brick_uri=brick.uri, predicate=self.predicate, object=self.object)

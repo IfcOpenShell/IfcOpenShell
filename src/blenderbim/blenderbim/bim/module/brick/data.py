@@ -80,28 +80,32 @@ class BrickschemaData:
             )
         )
         for row in query:
-            predicate = row.get("predicate").toPython().split("#")[-1]
+            predicate = row.get("predicate")
+            predicate_name = predicate.toPython().split("#")[-1]
             object = row.get("object")
+            object_name = object.toPython().split("#")[-1]
             results.append(
                 {
                     "predicate": predicate,
-                    "object": object.toPython().split("#")[-1],
+                    "predicate_name": predicate_name,
+                    "object": object,
+                    "object_name": object_name,
                     "is_uri": isinstance(object, URIRef),
                     "object_uri": object.toPython(),
                     "is_globalid": predicate == "globalID",
                 }
             )
-            if isinstance(row.get("object"), BNode):
-                for s, p, o in BrickStore.graph.triples((object, None, None)):
-                    results.append(
-                        {
-                            "predicate": predicate + ":" + p.toPython().split("#")[-1],
-                            "object": o.toPython().split("#")[-1],
-                            "is_uri": isinstance(o, URIRef),
-                            "object_uri": o.toPython(),
-                            "is_globalid": p.toPython().split("#")[-1] == "globalID",
-                        }
-                    )
+            # if isinstance(row.get("object"), BNode):
+            #     for s, p, o in BrickStore.graph.triples((object, None, None)):
+            #         results.append(
+            #             {
+            #                 "predicate": predicate + ":" + p.toPython().split("#")[-1],
+            #                 "object": o.toPython().split("#")[-1],
+            #                 "is_uri": isinstance(o, URIRef),
+            #                 "object_uri": o.toPython(),
+            #                 "is_globalid": p.toPython().split("#")[-1] == "globalID",
+            #             }
+            #         )
         return results
 
 
