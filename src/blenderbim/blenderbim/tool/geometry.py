@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bmesh
 import struct
 import hashlib
 import logging
@@ -27,6 +28,7 @@ import blenderbim.core.style
 import blenderbim.core.spatial
 import blenderbim.tool as tool
 import blenderbim.bim.import_ifc
+from math import radians
 from mathutils import Vector
 from blenderbim.bim.ifc import IfcStore
 
@@ -128,6 +130,139 @@ class Geometry(blenderbim.core.tool.Geometry):
     def duplicate_object_data(cls, obj):
         if obj.data:
             return obj.data.copy()
+
+    @classmethod
+    def generate_2d_box_mesh(cls, obj, axis="Z"):
+        bm = bmesh.new()
+        verts = [Vector(corner) for corner in obj.bound_box]
+        if axis == "Z":
+            verts = [verts[i] for i in [0, 4, 7, 3]]
+            for v in verts:
+                v.z = 0
+        elif axis == "Y":
+            verts = [verts[i] for i in [0, 4, 5, 1]]
+            for v in verts:
+                v.y = 0
+        elif axis == "X":
+            verts = [verts[i] for i in [4, 7, 6, 5]]
+            for v in verts:
+                v.x = 0
+        bm.faces.new([bm.verts.new(v) for v in verts])
+
+        mesh = bpy.data.meshes.new(name="tmp")
+        bm.to_mesh(mesh)
+        bm.free()
+        return mesh
+
+    @classmethod
+    def generate_3d_box_mesh(cls, obj):
+        bm = bmesh.new()
+        verts = [bm.verts.new(Vector(corner)) for corner in obj.bound_box]
+
+        bm.faces.new([verts[i] for i in [0, 3, 7, 4]])
+        bm.faces.new([verts[i] for i in [0, 1, 2, 3]])
+        bm.faces.new([verts[i] for i in [0, 4, 5, 1]])
+        bm.faces.new([verts[i] for i in [4, 7, 6, 5]])
+        bm.faces.new([verts[i] for i in [7, 3, 2, 6]])
+        bm.faces.new([verts[i] for i in [1, 5, 6, 2]])
+
+        mesh = bpy.data.meshes.new(name="tmp")
+        bm.to_mesh(mesh)
+        bm.free()
+        return mesh
+
+    @classmethod
+    def generate_outline_mesh(cls, obj, axis="+Z"):
+        def get_visible_faces(obj, bm, axis="+Z"):
+            # A visible face is any face with the normal facing the axis and
+            # its centroid not obscured (tested via raycasting) by any other
+            # face.
+            distance = max(obj.dimensions.xyz)
+            if axis == "+Z":
+                max_z = max([co[2] for co in obj.bound_box]) + 0.002
+                direction = Vector((0, 0, -1))
+            elif axis == "-Y":
+                min_y = max([co[2] for co in obj.bound_box]) - 0.002
+                direction = Vector((0, 1, 0))
+            depsgraph = bpy.context.evaluated_depsgraph_get()
+            visible_faces = []
+            face_offset = obj.matrix_world.to_quaternion() @ Vector((0,0,distance))
+            global_direction = obj.matrix_world.to_quaternion() @ direction
+            for face in bm.faces:
+                if direction.dot(face.normal) > 0:
+                    continue
+                if axis == "+Z":
+                    face_centroid_at_max = Vector((*face.calc_center_median().xy, max_z))
+                elif axis == "-Y":
+                    centroid = face.calc_center_median()
+                    face_centroid_at_max = Vector((centroid.x, min_y, centroid.z))
+                face_centroid_at_max = obj.matrix_world @ face_centroid_at_max
+                hit, loc, norm, idx, o, mw = bpy.context.scene.ray_cast(depsgraph, face_centroid_at_max, global_direction, distance=distance)
+                if o != obj or idx == face.index:
+                    visible_faces.append(face)
+            return visible_faces
+
+        def get_contour_edges(visible_faces):
+            # A contour is any edge where one face is visible and the other isn't.
+            contour_edges = []
+            for face in visible_faces:
+                for edge in face.edges:
+                    total_linked_faces = len(edge.link_faces)
+                    if total_linked_faces == 1:
+                        contour_edges.append(edge)
+                    elif total_linked_faces == 2:
+                        other_face = edge.link_faces[0] if edge.link_faces[1] == face else edge.link_faces[1]
+                        if other_face not in visible_faces:
+                            contour_edges.append(edge)
+            return contour_edges
+
+        def get_crease_edges(visible_faces, threshold):
+            # A crease is any edge with a face angle greater than a threshold.
+            crease_edges = []
+            for face in visible_faces:
+                for edge in face.edges:
+                    if len(edge.link_faces) == 2:
+                        angle = edge.link_faces[0].normal.angle(edge.link_faces[1].normal)
+                        if abs(angle) > threshold:
+                            crease_edges.append(edge)
+            return crease_edges
+
+        # Calculate outline edges
+        bm = bmesh.new()
+        bm.from_mesh(obj.data)
+        visible_faces = get_visible_faces(obj, bm, axis=axis)
+        outline_edges = set(get_contour_edges(visible_faces))
+        outline_edges.update(get_crease_edges(visible_faces, radians(60)))
+
+        # Copy outline edges to new bmesh
+        bm.to_mesh(obj.data)
+        bm_new = bmesh.new()
+        vert_map = {}
+
+        for edge in outline_edges:
+            verts = []
+            for vert in edge.verts:
+                if vert not in vert_map:
+                    new_vert = bm_new.verts.new(vert.co)
+                    vert_map[vert] = new_vert
+                verts.append(vert_map[vert])
+            bm_new.edges.new(verts)
+
+        # Flatten along axis in new bmesh
+        for vert in bm_new.verts:
+            if axis == "+Z":
+                vert.co.z = 0
+            elif axis == "-Y":
+                vert.co.y = 0
+
+        # Convert new bmesh to new mesh
+        new_mesh = bpy.data.meshes.new("tmp")
+        bm_new.to_mesh(new_mesh)
+
+        bm_new.free()
+        bm.free()
+
+        return new_mesh
 
     @classmethod
     def get_active_representation(cls, obj):
