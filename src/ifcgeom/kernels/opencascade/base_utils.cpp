@@ -761,7 +761,7 @@ bool IfcGeom::util::flatten_shape_list(const IfcGeom::ConversionResults& shapes,
 		}
 
 		// @todo refactor, also should be GTrsf
-		const auto& m = it->Placement().ccomponents();
+		const auto& m = it->Placement()->ccomponents();
 		gp_Trsf trsf;
 		trsf.SetValues(
 			m(0, 0), m(0, 1), m(0, 2), m(0, 3),

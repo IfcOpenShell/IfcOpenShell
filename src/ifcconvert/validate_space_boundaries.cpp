@@ -63,18 +63,15 @@ void fix_spaceboundaries(IfcParse::IfcFile& f, bool no_progress, bool quiet, boo
 		auto g1 = n.substr(0, 22);
 		auto g2 = n.substr(23);
 		auto item = c.mapping()->map(i);
-		if (((ifcopenshell::geometry::taxonomy::collection*) item)->children[0] == nullptr) {
+		if (taxonomy::cast<taxonomy::collection>(item)->children[0] == nullptr) {
 			continue;
 		}
-		auto shell = (taxonomy::shell*) ((taxonomy::collection*)((taxonomy::collection*) item)->children[0])->children[0];
-		for (auto& f : shell->children) {
-			auto face = (taxonomy::face*) f;
-			for (auto& w : face->children) {
-				auto wire = (taxonomy::loop*) w;
-				for (auto& e : wire->children) {
-					auto edge = (taxonomy::edge*) e;
-					auto p3 = boost::get<taxonomy::point3>(edge->start);
-					auto p4 = ((taxonomy::geom_item*)item)->matrix.ccomponents() * p3.ccomponents().homogeneous();
+		auto shell = taxonomy::cast<taxonomy::shell>(taxonomy::cast<taxonomy::collection>(taxonomy::cast<taxonomy::collection>(item)->children[0])->children[0]);
+		for (auto& face : shell->children) {
+			for (auto& wire : face->children) {
+				for (auto& edge : wire->children) {
+					auto p3 = boost::get<taxonomy::point3::ptr>(edge->start);
+					auto p4 = taxonomy::cast<taxonomy::geom_item>(item)->matrix->ccomponents() * p3->ccomponents().homogeneous();
 					Kernel_::Point_3 P(p4(0), p4(1), p4(2));
 					elem_to_space_boundary_coords[{g1, g2}].emplace_back(P);
 				}

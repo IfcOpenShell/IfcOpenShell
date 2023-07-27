@@ -81,7 +81,7 @@ private:
 		double eps_;
 		bool non_manifold_;
 		
-		void loop_(const taxonomy::loop* ps, const std::function<void(int, int, bool)>& callback);
+		void loop_(const taxonomy::loop::ptr ps, const std::function<void(int, int, bool)>& callback);
 
 		/*
 		bool construct(const IfcSchema::IfcCartesianPoint* cp, gp_Pnt* l);
@@ -99,7 +99,7 @@ private:
 		std::vector<const void*> get_idxs(const std::vector<int>& it);
 		*/
 	public:
-		faceset_helper(OpenCascadeKernel* kernel, const taxonomy::shell* l);
+		faceset_helper(OpenCascadeKernel* kernel, const taxonomy::shell::ptr l);
 		~faceset_helper();
 
 		bool non_manifold() const { return non_manifold_; }
@@ -108,8 +108,8 @@ private:
 		
 		bool edge(int A, int B, TopoDS_Edge& e);
 
-		bool wire(const taxonomy::loop* loop, TopoDS_Wire& wire);
-		bool wires(const taxonomy::loop* loop, TopTools_ListOfShape& wires);
+		bool wire(const taxonomy::loop::ptr loop, TopoDS_Wire& wire);
+		bool wires(const taxonomy::loop::ptr loop, TopTools_ListOfShape& wires);
 	};
 
 	faceset_helper* faceset_helper_;
@@ -130,25 +130,25 @@ public:
 		, precision_(settings.getValue(ConversionSettings::GV_PRECISION))
 	{}
 
-	bool convert(const taxonomy::extrusion*, TopoDS_Shape&);
-	bool convert(const taxonomy::face*, TopoDS_Shape&);
-	bool convert(const taxonomy::loop*, TopoDS_Wire&);
-	bool convert(const taxonomy::matrix4*, gp_GTrsf&);
-	bool convert(const taxonomy::shell*, TopoDS_Shape&);
-	bool convert(const taxonomy::solid*, TopoDS_Shape&);
-	bool convert(const taxonomy::bspline_surface* bs, Handle(Geom_Surface) surf);
+	bool convert(const taxonomy::extrusion::ptr, TopoDS_Shape&);
+	bool convert(const taxonomy::face::ptr, TopoDS_Shape&);
+	bool convert(const taxonomy::loop::ptr, TopoDS_Wire&);
+	bool convert(const taxonomy::matrix4::ptr, gp_GTrsf&);
+	bool convert(const taxonomy::shell::ptr, TopoDS_Shape&);
+	bool convert(const taxonomy::solid::ptr, TopoDS_Shape&);
+	bool convert(const taxonomy::bspline_surface::ptr bs, Handle(Geom_Surface) surf);
 
 	TopoDS_Shape apply_transformation(const TopoDS_Shape& s, const taxonomy::matrix4& t);
 	TopoDS_Shape apply_transformation(const TopoDS_Shape& s, const gp_GTrsf& t);
 	TopoDS_Shape apply_transformation(const TopoDS_Shape& s, const gp_Trsf& t);
 
-	virtual bool convert_impl(const taxonomy::face*, IfcGeom::ConversionResults&);
-	virtual bool convert_impl(const taxonomy::solid*, IfcGeom::ConversionResults&);
-	virtual bool convert_impl(const taxonomy::shell*, IfcGeom::ConversionResults&);
-	virtual bool convert_impl(const taxonomy::extrusion*, IfcGeom::ConversionResults&);
-	virtual bool convert_impl(const taxonomy::boolean_result*, IfcGeom::ConversionResults&);
+	virtual bool convert_impl(const taxonomy::face::ptr, IfcGeom::ConversionResults&);
+	virtual bool convert_impl(const taxonomy::solid::ptr, IfcGeom::ConversionResults&);
+	virtual bool convert_impl(const taxonomy::shell::ptr, IfcGeom::ConversionResults&);
+	virtual bool convert_impl(const taxonomy::extrusion::ptr, IfcGeom::ConversionResults&);
+	virtual bool convert_impl(const taxonomy::boolean_result::ptr, IfcGeom::ConversionResults&);
 
-	virtual bool convert_openings(const IfcUtil::IfcBaseEntity* entity, const std::vector<std::pair<taxonomy::item*, ifcopenshell::geometry::taxonomy::matrix4>>& openings,
+	virtual bool convert_openings(const IfcUtil::IfcBaseEntity* entity, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geometry::taxonomy::matrix4>>& openings,
 		const IfcGeom::ConversionResults& entity_shapes, const ifcopenshell::geometry::taxonomy::matrix4& entity_trsf, IfcGeom::ConversionResults& cut_shapes);
 
 	template <typename T, typename U>

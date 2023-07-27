@@ -21,7 +21,7 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcEdge* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcEdge* inst) {
 	if (!inst->EdgeStart()->declaration().is(IfcSchema::IfcVertexPoint::Class()) || !inst->EdgeEnd()->declaration().is(IfcSchema::IfcVertexPoint::Class())) {
 		Logger::Message(Logger::LOG_ERROR, "Only IfcVertexPoints are supported for EdgeStart and -End", inst);
 		return nullptr;
@@ -34,10 +34,10 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcEdge* inst) {
 		return nullptr;
 	}
 
-	auto e = new taxonomy::edge;
+	auto e = taxonomy::make<taxonomy::edge>();
 
-	e->start = as<taxonomy::point3>(map(pnt1));
-	e->end = as<taxonomy::point3>(map(pnt2));
+	e->start = taxonomy::cast<taxonomy::point3>(map(pnt1));
+	e->end = taxonomy::cast<taxonomy::point3>(map(pnt2));
 
 	if (inst->as<IfcSchema::IfcEdgeCurve>()) {
 		e->basis = map(inst->as<IfcSchema::IfcEdgeCurve>()->EdgeGeometry());

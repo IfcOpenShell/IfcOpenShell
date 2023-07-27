@@ -126,7 +126,7 @@ boost::optional<std::string> format_attribute(ifcopenshell::geometry::abstract_m
 			} else if (e->declaration().is(IfcSchema::IfcLocalPlacement::Class())) {
 				IfcSchema::IfcLocalPlacement* placement = e->as<IfcSchema::IfcLocalPlacement>();
 				auto item = mapping->map(e);
-				auto matrix = (ifcopenshell::geometry::taxonomy::matrix4*) item;
+				auto matrix = ifcopenshell::geometry::taxonomy::cast< ifcopenshell::geometry::taxonomy::matrix4>(item);
 				
 				std::stringstream stream;
 				for (int i = 1; i < 5; ++i) {
@@ -138,7 +138,9 @@ boost::optional<std::string> format_attribute(ifcopenshell::geometry::abstract_m
 				}
 				value = stream.str();
 
+#ifdef TAXONOMY_USE_NAKED_PTR
 				delete item;
+#endif
 			}
 			break; }
         default:

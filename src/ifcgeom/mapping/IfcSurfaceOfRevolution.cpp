@@ -21,7 +21,7 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcSurfaceOfRevolution* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceOfRevolution* inst) {
 	return nullptr;
 
 	/*

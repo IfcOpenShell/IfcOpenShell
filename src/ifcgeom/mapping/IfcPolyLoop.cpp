@@ -23,14 +23,14 @@ using namespace ifcopenshell::geometry;
 
 #include "../profile_helper.h"
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcPolyLoop* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPolyLoop* inst) {
 	IfcSchema::IfcCartesianPoint::list::ptr points = inst->Polygon();
 
 	// Parse and store the points in a sequence
-	std::vector<taxonomy::point3> polygon;
+	std::vector<taxonomy::point3::ptr> polygon;
 	polygon.reserve(points->size());
 	std::transform(points->begin(), points->end(), std::back_inserter(polygon), [this](const IfcSchema::IfcCartesianPoint* p) {
-		return as<taxonomy::point3>(map(p));
+		return taxonomy::cast<taxonomy::point3>(map(p));
 	});
 
 	// A loop should consist of at least three vertices

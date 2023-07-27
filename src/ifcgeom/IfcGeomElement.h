@@ -36,13 +36,13 @@ namespace IfcGeom {
 	class Transformation {
 	private:
 		ElementSettings settings_;
-		ifcopenshell::geometry::taxonomy::matrix4 matrix_;
+		ifcopenshell::geometry::taxonomy::matrix4::ptr matrix_;
 	public:
-		Transformation(const ElementSettings& settings, const ifcopenshell::geometry::taxonomy::matrix4& matrix)
+		Transformation(const ElementSettings& settings, const ifcopenshell::geometry::taxonomy::matrix4::ptr& matrix)
 			: settings_(settings)
 			, matrix_(matrix)
 		{}
-		const ifcopenshell::geometry::taxonomy::matrix4& data() const { return matrix_; }
+		const ifcopenshell::geometry::taxonomy::matrix4::ptr& data() const { return matrix_; }
 	};
 
 	class Element {
@@ -94,7 +94,7 @@ namespace IfcGeom {
 		void SetParents(std::vector<const IfcGeom::Element*> newparents) { _parents = newparents; }
 
 		Element(const ElementSettings& settings, int id, int parent_id, const std::string& name, const std::string& type,
-            const std::string& guid, const std::string& context, const ifcopenshell::geometry::taxonomy::matrix4& trsf, const IfcUtil::IfcBaseEntity* product)
+            const std::string& guid, const std::string& context, const ifcopenshell::geometry::taxonomy::matrix4::ptr& trsf, const IfcUtil::IfcBaseEntity* product)
 			: _id(id), _parent_id(parent_id), _name(name), _type(type), _guid(guid), _context(context), _transformation(settings, trsf)
             , product_(product)
 		{ 
@@ -130,14 +130,14 @@ namespace IfcGeom {
 		const boost::shared_ptr<IfcGeom::Representation::BRep>& geometry_pointer() const { return _geometry; }
 		const IfcGeom::Representation::BRep& geometry() const { return *_geometry; }
 		BRepElement(int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid,
-            const std::string& context, const ifcopenshell::geometry::taxonomy::matrix4& trsf, const boost::shared_ptr<IfcGeom::Representation::BRep>& geometry,
+            const std::string& context, const ifcopenshell::geometry::taxonomy::matrix4::ptr& trsf, const boost::shared_ptr<IfcGeom::Representation::BRep>& geometry,
 			const IfcUtil::IfcBaseEntity* product)
 			: Element(geometry->settings() ,id, parent_id, name, type, guid, context, trsf, product)
 			, _geometry(geometry)
 		{}
 
 		bool calculate_projected_surface_area(double& along_x, double& along_y, double& along_z) const {
-			return geometry().calculate_projected_surface_area(this->transformation().data(), along_x, along_y, along_z);
+			return geometry().calculate_projected_surface_area(*this->transformation().data(), along_x, along_y, along_z);
 		}
 	private:
 		BRepElement(const BRepElement& other);

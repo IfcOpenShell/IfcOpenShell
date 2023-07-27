@@ -110,23 +110,23 @@ void fix_wallconnectivity(IfcParse::IfcFile& f, bool no_progress, bool quiet, bo
 
 		auto get_axis_parameter_min_max = [&c, &x_poly](const IfcUtil::IfcBaseEntity* inst) {
 			auto item = c.mapping()->map(inst);
-			auto shaperep = ((taxonomy::collection*) item)->children[0];
-			auto loop = ((taxonomy::collection*) shaperep)->children[0];
+			auto shaperep = taxonomy::cast<taxonomy::collection>(item)->children[0];
+			auto loop = taxonomy::dcast<taxonomy::loop>(taxonomy::cast<taxonomy::collection>(shaperep)->children[0]);
 
-			if (loop->kind() != taxonomy::LOOP) {
+			if (!loop) {
 				// std::wcout << "no suitable axis" << std::endl;
 			} else {
-				auto first_vertex = ((taxonomy::edge*) ((taxonomy::loop*) loop)->children.front())->start;
-				auto last_vertex = ((taxonomy::edge*) ((taxonomy::loop*) loop)->children.back())->end;
+				auto first_vertex = loop->children.front()->start;
+				auto last_vertex = loop->children.back()->end;
 
 				if (first_vertex.which() != 0 || last_vertex.which() != 0) {
 					// std::wcout << "trims not supported" << std::endl;
 				} else {
-					auto p0 = boost::get<taxonomy::point3>(first_vertex);
-					auto p1 = boost::get<taxonomy::point3>(last_vertex);
+					auto p0 = boost::get<taxonomy::point3::ptr>(first_vertex);
+					auto p1 = boost::get<taxonomy::point3::ptr>(last_vertex);
 					
-					auto v0 = ((taxonomy::geom_item*)item)->matrix.ccomponents() * p0.ccomponents().homogeneous();
-					auto v1 = ((taxonomy::geom_item*)item)->matrix.ccomponents() * p1.ccomponents().homogeneous();
+					auto v0 = taxonomy::cast<taxonomy::geom_item>(item)->matrix->ccomponents() * p0->ccomponents().homogeneous();
+					auto v1 = taxonomy::cast<taxonomy::geom_item>(item)->matrix->ccomponents() * p1->ccomponents().homogeneous();
 
 					auto P0 = Kernel_::Point_3(v0(0), v0(1), v0(2));
 					auto P1 = Kernel_::Point_3(v1(0), v1(1), v1(2));

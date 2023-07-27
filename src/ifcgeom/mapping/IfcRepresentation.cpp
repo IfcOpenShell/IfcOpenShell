@@ -21,7 +21,7 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcRepresentation* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRepresentation* inst) {
 	const bool use_body = !this->settings_.get(IfcGeom::IteratorSettings::INCLUDE_CURVES);
 
 	auto items = map_to_collection(this, inst->Items());
@@ -41,19 +41,19 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcRepresentation* inst) {
 	// @todo
 	// if (s.ShapeType() == TopAbs_COMPOUND && TopoDS_Iterator(s).More() && TopoDS_Iterator(s).Value().ShapeType() == TopAbs_SOLID) {
 
-	return filter_in_place(items, [&use_body](taxonomy::item* i) {
+	return filter_in_place(items, [&use_body](taxonomy::ptr i) {
 		// @todo just filter loops for now.
 		return (i->kind() != taxonomy::LOOP) == use_body;
 	});
 }
 
 /*
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcRepresentation* l, ConversionResults& shapes) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRepresentation* l, ConversionResults& shapes) {
 	IfcSchema::IfcRepresentationItem::list::ptr items = inst->Items();
 	bool part_succes = false;
 	if ( items->size() ) {
 		for ( IfcSchema::IfcRepresentationItem::list::it it = items->begin(); it != items->end(); ++ it ) {
-			IfcSchema::IfcRepresentationItem* representation_item = *it;
+			IfcSchema::IfcRepresentationptr representation_item = *it;
 			if ( shape_type(representation_item) == ST_SHAPELIST ) {
 				part_succes |= convert_shapes(*it, shapes);
 			} else {

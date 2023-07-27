@@ -69,15 +69,15 @@ IfcSchema::IfcProduct::list::ptr mapping::products_represented_by(const IfcSchem
 	IfcSchema::IfcRepresentationMap::list::ptr maps = representation->RepresentationMap();
 	if (maps->size() == 1) {
 		IfcSchema::IfcRepresentationMap* rmap = *maps->begin();
-		taxonomy::matrix4 origin = as<taxonomy::matrix4>(map(rmap->MappingOrigin()));
-		if (origin.is_identity()) {
+		taxonomy::matrix4::ptr origin = taxonomy::cast<taxonomy::matrix4>(map(rmap->MappingOrigin()));
+		if (origin->is_identity()) {
 			IfcSchema::IfcMappedItem::list::ptr items = rmap->MapUsage();
 			for (IfcSchema::IfcMappedItem::list::it it = items->begin(); it != items->end(); ++it) {
 				IfcSchema::IfcMappedItem* item = *it;
 				if (item->StyledByItem()->size() != 0) continue;
 
-				taxonomy::matrix4 target = as<taxonomy::matrix4>(map(item->MappingTarget()));
-				if (!target.is_identity()) {
+				taxonomy::matrix4::ptr target = taxonomy::cast<taxonomy::matrix4>(map(item->MappingTarget()));
+				if (!target->is_identity()) {
 					continue;
 				}
 
@@ -278,11 +278,11 @@ IfcSchema::IfcRepresentation* mapping::representation_mapped_to(const IfcSchema:
 		if (item->declaration().is(IfcSchema::IfcMappedItem::Class())) {
 			if (item->StyledByItem()->size() == 0) {
 				IfcSchema::IfcMappedItem* mapped_item = item->as<IfcSchema::IfcMappedItem>();
-				taxonomy::matrix4 target = as<taxonomy::matrix4>(map(mapped_item->MappingTarget()));
-				if (target.is_identity()) {
+				taxonomy::matrix4::ptr target = taxonomy::cast<taxonomy::matrix4>(map(mapped_item->MappingTarget()));
+				if (target->is_identity()) {
 					IfcSchema::IfcRepresentationMap* rmap = mapped_item->MappingSource();
-					taxonomy::matrix4 origin = as<taxonomy::matrix4>(map(rmap->MappingOrigin()));
-					if (origin.is_identity()) {
+					taxonomy::matrix4::ptr origin = taxonomy::cast<taxonomy::matrix4>(map(rmap->MappingOrigin()));
+					if (origin->is_identity()) {
 						representation_mapped_to = rmap->MappedRepresentation();
 					}
 				}
@@ -406,7 +406,7 @@ namespace {
 	}
 }
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcMaterial* material) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcMaterial* material) {
 	IfcSchema::IfcMaterialDefinitionRepresentation::list::ptr defs = material->HasRepresentation();
 	for (IfcSchema::IfcMaterialDefinitionRepresentation::list::it jt = defs->begin(); jt != defs->end(); ++jt) {
 		IfcSchema::IfcRepresentation::list::ptr reps = (*jt)->Representations();
@@ -419,7 +419,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcMaterial* material) {
 		}
 	}
 
-	taxonomy::style* material_style = new taxonomy::style;
+	taxonomy::style::ptr material_style = taxonomy::make<taxonomy::style>();
 	return material_style;
 
 	// @todo
@@ -427,7 +427,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcMaterial* material) {
 	// return &(style_cache[material->data().id()] = material_style);
 }
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcStyledItem* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcStyledItem* inst) {
 	auto style_pair = get_surface_style<IfcSchema::IfcSurfaceStyleShading>(inst);
 
 	IfcSchema::IfcSurfaceStyle* style = style_pair.first;
@@ -439,7 +439,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcStyledItem* inst) {
 
 	static taxonomy::colour white = taxonomy::colour(1., 1., 1.);
 
-	taxonomy::style* surface_style = new taxonomy::style;
+	taxonomy::style::ptr surface_style = taxonomy::make<taxonomy::style>();
 
 	surface_style->instance = style;
 	if (style->Name()) {
@@ -489,7 +489,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcStyledItem* inst) {
 }
 
 
-taxonomy::item* mapping::map(const IfcBaseInterface* inst) {
+taxonomy::ptr mapping::map(const IfcBaseInterface* inst) {
 	// std::wcout << inst->data().toString().c_str() << std::endl;
 #include "bind_convert_impl.i"
 	Logger::Message(Logger::LOG_ERROR, "No operation defined for:", inst);
@@ -745,29 +745,33 @@ bool mapping::get_layerset_information(const IfcUtil::IfcBaseInterface* p, layer
 			return false;
 		}
 
-		auto* curve = map(axis_representation);
-		auto* product_node = map(product);
+		auto curve = map(axis_representation);
+		auto product_node = taxonomy::cast<taxonomy::geom_item>(map(product));
 
-		auto& m4 = ((taxonomy::geom_item*) product_node)->matrix;
-		auto c2 = flatten((taxonomy::collection*)curve);
+		auto& m4 = product_node->matrix;
+		auto c2 = flatten(taxonomy::cast<taxonomy::collection>(curve));
 		if (c2->children.empty()) {
 			return false;
 		}
 
+#ifdef TAXONOMY_USE_NAKED_PTR
 		delete curve;
 		delete product_node;
+#endif
 
 		auto c = c2->children[0];
 
-		auto ofc = new taxonomy::offset_curve;
+		auto Z = taxonomy::make<taxonomy::direction3>(0, 0, 1);;
+
+		auto ofc = taxonomy::make<taxonomy::offset_curve>();
 		ofc->offset = -offset;
-		ofc->reference = taxonomy::direction3(0, 0, 1);
-		ofc->basis = c2->children[0]->clone();
+		ofc->reference = Z;
+		ofc->basis = c2->children[0];
 		ofc->matrix = m4;
 		info.layers.push_back(ofc);
 
 		for (IfcSchema::IfcMaterialLayer::list::it it = material_layers->begin(); it != material_layers->end(); ++it) {
-			info.styles.push_back(as<taxonomy::style>(map((*it)->Material())));
+			info.styles.push_back(*taxonomy::cast<taxonomy::style>(map((*it)->Material())));
 
 			double thickness = (*it)->LayerThickness() * this->length_unit_;
 
@@ -780,20 +784,22 @@ bool mapping::get_layerset_information(const IfcUtil::IfcBaseInterface* p, layer
 			offset += thickness;
 
 			if (fabs(offset) < 1.e-7) {
-				auto ofc = c->clone();
-				((taxonomy::geom_item*)ofc)->matrix = m4;
+				auto ofc = c;
+				c->matrix = m4;
 				info.layers.push_back(ofc);
 			} else {
-				auto ofc = new taxonomy::offset_curve;
+				auto ofc = taxonomy::make<taxonomy::offset_curve>();
 				ofc->offset = -offset;
-				ofc->reference = taxonomy::direction3(0, 0, 1);
-				ofc->basis = c2->children[0]->clone();
+				ofc->reference = Z;
+				ofc->basis = c2;
 				ofc->matrix = m4;
 				info.layers.push_back(ofc);
 			}
 		}
 
+#ifdef TAXONOMY_USE_NAKED_PTR
 		delete c2;
+#endif
 
 		if (positive) {
 			std::reverse(info.thicknesses.begin(), info.thicknesses.end());
@@ -810,23 +816,23 @@ bool mapping::get_layerset_information(const IfcUtil::IfcBaseInterface* p, layer
 
 		IfcSchema::IfcExtrudedAreaSolid* extrusion = *extrusions->begin();
 
-		taxonomy::matrix4 extrusion_position;
+		taxonomy::matrix4::ptr extrusion_position;
 
 		bool has_position = true;
 #ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
 		has_position = extrusion->Position() != nullptr;
 #endif
 		if (has_position) {
-			auto m4 = (taxonomy::matrix4*) map(extrusion->Position());
+			auto m4 = taxonomy::cast<taxonomy::matrix4>(map(extrusion->Position()));
 			if (!m4) {
 				Logger::Message(Logger::LOG_ERROR, "Failed to convert placement for extrusion of:", product);
 				return false;
 			} else {
-				extrusion_position = *m4;
+				extrusion_position = m4;
 			}
 		}
 
-		taxonomy::direction3* extrusion_direction = (taxonomy::direction3*) map(extrusion->ExtrudedDirection());
+		taxonomy::direction3::ptr extrusion_direction = taxonomy::cast<taxonomy::direction3>(map(extrusion->ExtrudedDirection()));
 
 		if (!extrusion_direction) {
 			Logger::Message(Logger::LOG_ERROR, "Failed to convert direction for extrusion of:", product);
@@ -837,14 +843,14 @@ bool mapping::get_layerset_information(const IfcUtil::IfcBaseInterface* p, layer
 		// reference_surface = new Geom_Plane(extrusion_position.TranslationPart(), extrusion_direction);
 
 		{
-			auto pln = new taxonomy::plane;
+			auto pln = taxonomy::make<taxonomy::plane>();
 			pln->matrix = extrusion_position;
 
 			info.layers.push_back(pln);
 		}
 
 		for (IfcSchema::IfcMaterialLayer::list::it it = material_layers->begin(); it != material_layers->end(); ++it) {
-			info.styles.push_back(as<taxonomy::style>(map((*it)->Material())));
+			info.styles.push_back(*taxonomy::cast<taxonomy::style>(map((*it)->Material())));
 
 			double thickness = (*it)->LayerThickness() * this->length_unit_;
 
@@ -856,12 +862,12 @@ bool mapping::get_layerset_information(const IfcUtil::IfcBaseInterface* p, layer
 
 			offset += thickness;
 
-			taxonomy::matrix4 offset_matrix;
-			offset_matrix.components()(2, 3) = offset;
-			offset_matrix.components()(3, 3) = 1.;
-			offset_matrix.components() *= extrusion_position.components();
+			auto offset_matrix = taxonomy::make<taxonomy::matrix4>();
+			offset_matrix->components()(2, 3) = offset;
+			offset_matrix->components()(3, 3) = 1.;
+			offset_matrix->components() *= extrusion_position->components();
 
-			auto pln = new taxonomy::plane;
+			auto pln = taxonomy::make<taxonomy::plane>();
 			pln->matrix = offset_matrix;
 
 			info.layers.push_back(pln);

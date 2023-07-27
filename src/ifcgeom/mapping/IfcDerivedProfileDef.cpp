@@ -21,9 +21,9 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcDerivedProfileDef* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcDerivedProfileDef* inst) {
 	auto it = map(inst->ParentProfile());
-	taxonomy::matrix4 m = as<taxonomy::matrix4>(map(inst->Operator()));
-	((taxonomy::geom_item*)it)->matrix.components() *= m.ccomponents();
+	taxonomy::matrix4::ptr m = taxonomy::cast<taxonomy::matrix4>(map(inst->Operator()));
+	taxonomy::cast<taxonomy::geom_item>(it)->matrix->components() *= m->ccomponents();
 	return it;
 }

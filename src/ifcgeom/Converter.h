@@ -21,7 +21,7 @@ namespace ifcopenshell { namespace geometry {
 		abstract_mapping* mapping_;
 		kernels::AbstractKernel* kernel_;
 		IfcGeom::IteratorSettings settings_;
-		std::map<ifcopenshell::geometry::taxonomy::item*, brep_ptr, ifcopenshell::geometry::taxonomy::less_functor> cache_;
+		std::map<ifcopenshell::geometry::taxonomy::ptr, brep_ptr, ifcopenshell::geometry::taxonomy::less_functor> cache_;
 
 	public:
 		kernels::AbstractKernel* kernel() { return kernel_; }
@@ -59,8 +59,8 @@ namespace ifcopenshell { namespace geometry {
 		IfcGeom::BRepElement* create_brep_for_representation_and_product(const IfcUtil::IfcBaseEntity* representation, const IfcUtil::IfcBaseEntity* product);
 		// IfcGeom::BRepElement* create_brep_for_processed_representation(const IfcUtil::IfcBaseEntity* representation, const IfcUtil::IfcBaseEntity* product, IfcGeom::BRepElement* brep);
 
-		IfcGeom::BRepElement* create_brep_for_representation_and_product(taxonomy::item*, const IfcUtil::IfcBaseEntity* product, const taxonomy::matrix4& place);
-		IfcGeom::BRepElement* create_brep_for_processed_representation(const IfcUtil::IfcBaseEntity* product, const taxonomy::matrix4& place, IfcGeom::BRepElement*);
+		IfcGeom::BRepElement* create_brep_for_representation_and_product(taxonomy::ptr, const IfcUtil::IfcBaseEntity* product, const taxonomy::matrix4::ptr& place);
+		IfcGeom::BRepElement* create_brep_for_processed_representation(const IfcUtil::IfcBaseEntity* product, const taxonomy::matrix4::ptr& place, IfcGeom::BRepElement*);
 	};
 }}
 

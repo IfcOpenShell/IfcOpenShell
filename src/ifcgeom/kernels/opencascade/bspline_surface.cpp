@@ -6,7 +6,7 @@ using namespace ifcopenshell::geometry;
 using namespace ifcopenshell::geometry::kernels;
 using namespace IfcGeom;
 
-bool OpenCascadeKernel::convert(const taxonomy::bspline_surface* bs, Handle(Geom_Surface) surf) {
+bool OpenCascadeKernel::convert(const taxonomy::bspline_surface::ptr bs, Handle(Geom_Surface) surf) {
 	const bool is_rational = !!bs->weights;
 
 	TColgp_Array2OfPnt Poles(0, (int)bs->control_points.size() - 1, 0, (int)(*bs->control_points.begin()).size() - 1);
@@ -22,7 +22,7 @@ bool OpenCascadeKernel::convert(const taxonomy::bspline_surface* bs, Handle(Geom
 	for (auto it = bs->control_points.begin(); it != bs->control_points.end(); ++it, ++i) {
 		j = 0;
 		for (auto jt = (*it).begin(); jt != (*it).end(); ++jt, ++j) {
-			Poles(i, j) = convert_xyz<gp_Pnt>(*jt);
+			Poles(i, j) = convert_xyz<gp_Pnt>(**jt);
 		}
 	}
 

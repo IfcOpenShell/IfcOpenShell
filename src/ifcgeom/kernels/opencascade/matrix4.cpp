@@ -5,7 +5,7 @@ using namespace ifcopenshell::geometry::kernels;
 using namespace IfcGeom;
 using namespace IfcGeom::util;
 
-bool OpenCascadeKernel::convert(const taxonomy::matrix4* matrix, gp_GTrsf& trsf) {
+bool OpenCascadeKernel::convert(const taxonomy::matrix4::ptr matrix, gp_GTrsf& trsf) {
 	// @todo check
 	const auto& m = matrix->ccomponents();
 	gp_Mat mat(

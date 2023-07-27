@@ -21,11 +21,11 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcLine* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcLine* inst) {
 	// @todo test with trimmed curve on non-normalized direction
-	auto l = new taxonomy::line;
-	taxonomy::point3 pnt = as<taxonomy::point3>(map(inst->Pnt()));
-	taxonomy::direction3 dir = as<taxonomy::direction3>(map(inst->Dir()));
-	l->matrix = taxonomy::matrix4(pnt.ccomponents(), dir.ccomponents());
+	auto l = taxonomy::make<taxonomy::line>();
+	auto pnt = taxonomy::cast<taxonomy::point3>(map(inst->Pnt()));
+	auto dir = taxonomy::cast<taxonomy::direction3>(map(inst->Dir()));
+	l->matrix = taxonomy::make<taxonomy::matrix4>(pnt->ccomponents(), dir->ccomponents());
 	return l;
 }

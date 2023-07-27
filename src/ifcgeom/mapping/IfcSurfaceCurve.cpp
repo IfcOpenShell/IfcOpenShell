@@ -22,7 +22,7 @@
 using namespace ifcopenshell::geometry;
 
 #ifdef SCHEMA_HAS_IfcSurfaceCurve
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcSurfaceCurve* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceCurve* inst) {
 	// @todo take into account PCurves.
 	return map(inst->Curve3D());
 }

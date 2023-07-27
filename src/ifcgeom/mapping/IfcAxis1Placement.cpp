@@ -22,16 +22,16 @@
 
 using namespace ifcopenshell::geometry;
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcAxis1Placement* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcAxis1Placement* inst) {
 	Eigen::Vector3d P, axis(0, 0, 1), ref;
 	{
-		taxonomy::point3 v = as<taxonomy::point3>(map(inst->Location()));
-		P = *v.components_;
+		taxonomy::point3::ptr v = taxonomy::cast<taxonomy::point3>(map(inst->Location()));
+		P = *v->components_;
 	}
 	const bool hasAxis = inst->Axis();
 	if (hasAxis) {
-		taxonomy::direction3 v = as<taxonomy::direction3>(map(inst->Axis()));
-		axis = *v.components_;
+		taxonomy::direction3::ptr v = taxonomy::cast<taxonomy::direction3>(map(inst->Axis()));
+		axis = *v->components_;
 	}
 	
 	// @todo not sure what to do with ref, we're probably never reading it,
@@ -43,5 +43,5 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcAxis1Placement* inst) {
 		ref = Eigen::Vector3d(1, 0, 0).cross(axis).normalized();
 	}
 
-	return new taxonomy::matrix4(P, axis, ref);
+	return taxonomy::make<taxonomy::matrix4>(P, axis, ref);
 }

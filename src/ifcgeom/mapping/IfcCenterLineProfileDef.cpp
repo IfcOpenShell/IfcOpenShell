@@ -21,16 +21,21 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcCenterLineProfileDef* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCenterLineProfileDef* inst) {
+	return nullptr;
+
+	/*
 	const double d = inst->Thickness() * length_unit_ / 2.;
-	auto f = new taxonomy::face;
-	auto ofc = new taxonomy::offset_curve;
+	auto f = taxonomy::make<taxonomy::face>();
+	auto ofc = taxonomy::make<taxonomy::offset_curve>();
 	ofc->basis = map(inst->Curve());
 	ofc->offset = d;
-	f->children.push_back(ofc);
+	// @todo
+	// f->children.push_back(ofc);
 	return f;
+	*/
 
-	// @todo we still need to handle this in the l
+	// @todo we still need to handle this in the geometry libraries
 
 	/*
 	TopoDS_Wire wire;

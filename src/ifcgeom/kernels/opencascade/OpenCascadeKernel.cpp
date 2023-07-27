@@ -201,7 +201,7 @@ namespace {
 	};
 }
 
-bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* entity, const std::vector<std::pair<taxonomy::item*, ifcopenshell::geometry::taxonomy::matrix4>>& openings,
+bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* entity, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geometry::taxonomy::matrix4>>& openings,
 	const IfcGeom::ConversionResults& entity_shapes, const ifcopenshell::geometry::taxonomy::matrix4& entity_trsf, IfcGeom::ConversionResults& cut_shapes) {
 
 	util::boolean_settings bst;
@@ -252,7 +252,7 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* 
 
 			auto gtrsf = opening_shapes[i].Placement();
 			// @todo check
-			Eigen::Matrix4d m = relative * gtrsf.ccomponents();
+			Eigen::Matrix4d m = relative * gtrsf->ccomponents();
 			gp_Trsf trsf;
 			trsf.SetValues(
 				m(0, 0), m(0, 1), m(0, 2), m(0, 3),
@@ -308,7 +308,7 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* 
 				} else {
 					entity_shape_unlocated = util::ensure_fit_for_subtraction(entity_part, entity_shape_solid, conv_settings_.getValue(ConversionSettings::GV_PRECISION));
 				}
-				const auto& m = it3->Placement().ccomponents();
+				const auto& m = it3->Placement()->ccomponents();
 				// @todo
 				// if (entity_shape_gtrsf.Form() == gp_Other) {
 				// 	Logger::Message(Logger::LOG_WARNING, "Applying non uniform transformation to:", entity);
@@ -383,7 +383,7 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* 
 			combined_result = C;
 		}
 
-		cut_shapes.push_back(IfcGeom::ConversionResult(it3->ItemId(), new OpenCascadeShape(combined_result), &it3->Style()));
+		cut_shapes.push_back(IfcGeom::ConversionResult(it3->ItemId(), new OpenCascadeShape(combined_result), it3->StylePtr()));
 	}
 	return true;
 }
@@ -713,10 +713,10 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* 
 // 	try {
 // 		IfcSchema::IfcRepresentationItem::list::ptr items = representation->Items();
 // 		if (items->size() == 1) {
-// 			IfcSchema::IfcRepresentationItem* item = *items->begin();
+// 			IfcSchema::IfcRepresentationptr item = *items->begin();
 // 			if (item->declaration().is(IfcSchema::IfcMappedItem::Class())) {
 // 				if (item->StyledByItem()->size() == 0) {
-// 					IfcSchema::IfcMappedItem* mapped_item = item->as<IfcSchema::IfcMappedItem>();
+// 					IfcSchema::IfcMappedptr mapped_item = item->as<IfcSchema::IfcMappedItem>();
 // 					if (is_identity_transform(mapped_item->MappingTarget())) {
 // 						IfcSchema::IfcRepresentationMap* map = mapped_item->MappingSource();
 // 						if (is_identity_transform(map->MappingOrigin())) {
@@ -767,7 +767,7 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* 
 // 		if (is_identity_transform(map->MappingOrigin())) {
 // 			IfcSchema::IfcMappedItem::list::ptr items = map->MapUsage();
 // 			for (IfcSchema::IfcMappedItem::list::it it = items->begin(); it != items->end(); ++it) {
-// 				IfcSchema::IfcMappedItem* item = *it;
+// 				IfcSchema::IfcMappedptr item = *it;
 // 				if (item->StyledByItem()->size() != 0) continue;
 // 
 // 				if (!is_identity_transform(item->MappingTarget())) {
@@ -1265,7 +1265,7 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* 
 // 	return 0;
 // }
 // 
-// const IfcSchema::IfcRepresentationItem* IfcGeom::Kernel::find_item_carrying_style(const IfcSchema::IfcRepresentationItem* item) {
+// const IfcSchema::IfcRepresentationptr IfcGeom::Kernel::find_item_carrying_style(const IfcSchema::IfcRepresentationptr item) {
 // 	if (item->StyledByItem()->size()) {
 // 		return item;
 // 	}
@@ -1435,7 +1435,7 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* 
 // 	return style_cache[surface_style_id] = surface_style_ptr_const;
 // }
 // 
-// std::shared_ptr<const IfcGeom::SurfaceStyle> IfcGeom::Kernel::get_style(const IfcSchema::IfcRepresentationItem* item) {
+// std::shared_ptr<const IfcGeom::SurfaceStyle> IfcGeom::Kernel::get_style(const IfcSchema::IfcRepresentationptr item) {
 // 	return internalize_surface_style(get_surface_style<IfcSchema::IfcSurfaceStyleShading>(item));
 // }
 // 

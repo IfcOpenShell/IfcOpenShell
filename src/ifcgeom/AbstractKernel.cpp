@@ -18,7 +18,7 @@
 
 using namespace ifcopenshell::geometry;
 
-bool ifcopenshell::geometry::kernels::AbstractKernel::convert(const taxonomy::item* item, IfcGeom::ConversionResults& results) {
+bool ifcopenshell::geometry::kernels::AbstractKernel::convert(const taxonomy::ptr item, IfcGeom::ConversionResults& results) {
 	// std::stringstream ss;
 	// item->print(ss);
 	// auto sss = ss.str();
@@ -59,15 +59,17 @@ ifcopenshell::geometry::kernels::AbstractKernel* ifcopenshell::geometry::kernels
 	throw IfcParse::IfcException("No geometry kernel registered for " + geometry_library);
 }
 
-bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::collection* collection, IfcGeom::ConversionResults& r) {
+bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::collection::ptr collection, IfcGeom::ConversionResults& r) {
 	auto s = r.size();
 	for (auto& c : collection->children) {
 		convert(c, r);
 	}
 	for (auto i = s; i < r.size(); ++i) {
-		r[i].prepend(collection->matrix);
+		if (collection->matrix) {
+			r[i].prepend(collection->matrix);
+		}
 		if (!r[i].hasStyle() && collection->surface_style) {
-			r[i].setStyle(*collection->surface_style);
+			r[i].setStyle(collection->surface_style);
 		}
 	}
 	return r.size() > s;

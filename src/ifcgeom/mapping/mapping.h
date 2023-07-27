@@ -33,7 +33,7 @@ namespace geometry {
 			initialize_units_();
 			apply_settings();
 		}
-		virtual ifcopenshell::geometry::taxonomy::item* map(const IfcUtil::IfcBaseInterface*);
+		virtual ifcopenshell::geometry::taxonomy::ptr map(const IfcUtil::IfcBaseInterface*);
 		virtual void get_representations(std::vector<geometry_conversion_task>& tasks, std::vector<filter_t>& filters);
 		virtual std::map<std::string, IfcUtil::IfcBaseEntity*> get_layers(IfcUtil::IfcBaseEntity*);
 		virtual void initialize_settings();
@@ -56,103 +56,45 @@ namespace geometry {
 #include "bind_convert_decl.i"
     };
 
-
-	// Hacks around not wanting to use if constexpr
-	template <typename T>
-	class loop_to_face_upgrade {
-	public:
-		loop_to_face_upgrade(taxonomy::item*) {}
-
-		operator bool() const {
-			return false;
-		}
-
-		operator taxonomy::face() const {
-			throw taxonomy::topology_error();
-		}
-
-		operator T() const {
-			throw taxonomy::topology_error();
-		}
+	template <typename U>
+	struct element_type {
+		typedef taxonomy::item type;
 	};
-
 	template <>
-	class loop_to_face_upgrade<taxonomy::face> {
-	private:
-		boost::optional<taxonomy::face> face_;
-	public:
-		loop_to_face_upgrade(taxonomy::item* item) {
-			taxonomy::loop* loop = dynamic_cast<taxonomy::loop*>(item);
-			if (loop) {
-				loop->external = true;
-
-				face_.emplace();
-				face_->instance = loop->instance;
-				face_->matrix = loop->matrix;
-				face_->children = { loop->clone() };
-			}
-		}
-
-		operator bool() const {
-			return face_.is_initialized();
-		}
-
-		operator taxonomy::face() const {
-			return *face_;
-		}
+	struct element_type<taxonomy::boolean_result> {
+		typedef taxonomy::geom_item type;
 	};
-
-	// A RAII-based mechanism to cast the conversion results
-	// from map() into the right type expected by the higher
-	// level typology items. An exception is thrown if the
-	// types do not match or the result was nullptr. A copy
-	// will be assigned to the higher level topology member
-	// and the original pointer will be deleted.
-
-	// This class is also able to uplift some topology items
-	// to higher level types, such as a loop to a face, which
-	// is why the cast operator does not return a reference.
-	template <typename T>
-	class as {
-	private:
-		taxonomy::item* item_;
-
-	public:
-		as(taxonomy::item* item) : item_(item) {}
-		operator T() const {
-			if (!item_) {
-				throw taxonomy::topology_error("item was nullptr");
-			}
-			T* t = dynamic_cast<T*>(item_);
-			if (t) {
-				return T(*t);
-			} else {
-				{
-					loop_to_face_upgrade<T> upgrade(item_);
-					if (upgrade) {
-						return upgrade;
-					}
-				}
-				throw taxonomy::topology_error("item does not match type");
-			}
-		}
-		~as() {
-			delete item_;
-		}
+	template <>
+	struct element_type<taxonomy::collection> {
+		typedef taxonomy::geom_item type;
 	};
+	template <>
+	struct element_type<taxonomy::shell> {
+		typedef taxonomy::face type;
+	};
+	template <>
+	struct element_type<taxonomy::loop> {
+		typedef taxonomy::edge type;
+	};
+	template <>
+	struct element_type<taxonomy::solid> {
+		typedef taxonomy::shell type;
+	};	
 
 	template <typename U = taxonomy::collection, typename T>
-	U* map_to_collection(POSTFIX_SCHEMA(mapping)* m, const T& ts) {
-		auto c = new U;
+	typename U::ptr map_to_collection(POSTFIX_SCHEMA(mapping)* m, const T& ts) {
+		auto c = taxonomy::make<U>();
 		if (ts->size()) {
 			for (auto it = ts->begin(); it != ts->end(); ++it) {
 				if (auto r = m->map(*it)) {
-					c->children.push_back(r);
+					c->children.push_back(taxonomy::cast<typename element_type<U>::type>(r));
 				}
 			}
 		}
 		if (c->children.empty()) {
+#ifdef TAXONOMY_USE_NAKED_PTR
 			delete c;
+#endif
 			return nullptr;
 		}
 		return c;

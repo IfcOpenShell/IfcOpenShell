@@ -23,7 +23,7 @@ using namespace ifcopenshell::geometry;
 
 #define ALMOST_ZERO 1.e-7;
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcCircle* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCircle* inst) {
 	const double r = inst->Radius() * length_unit_;
 	if (r < conv_settings_.getValue(ConversionSettings::GV_PRECISION)) { 
 		Logger::Message(Logger::LOG_ERROR, "Radius not greater than zero for:", inst);
@@ -31,8 +31,8 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcCircle* inst) {
 	}
 
 	IfcSchema::IfcAxis2Placement* placement = inst->Position();
-	auto c = new taxonomy::circle;
+	auto c = taxonomy::make<taxonomy::circle>();
 	c->radius = r;
-	c->matrix = as<taxonomy::matrix4>(map(placement));
+	c->matrix = taxonomy::cast<taxonomy::matrix4>(map(placement));
 	return c;
 }

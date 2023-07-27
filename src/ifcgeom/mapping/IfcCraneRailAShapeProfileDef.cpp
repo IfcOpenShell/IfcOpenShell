@@ -25,7 +25,7 @@ using namespace ifcopenshell::geometry;
 
 #ifdef SCHEMA_HAS_IfcCraneRailAShapeProfileDef
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcCraneRailAShapeProfileDef* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCraneRailAShapeProfileDef* inst) {
 	double oh = inst->OverallHeight() * length_unit_;
 	double bw2 = inst->BaseWidth2() * length_unit_;
 	double hw = inst->HeadWidth() * length_unit_;
@@ -37,13 +37,13 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcCraneRailAShapeProfileDef*
 	double bd2 = inst->BaseDepth2() * length_unit_;
 	double bd3 = inst->BaseDepth3() * length_unit_;
 
-	taxonomy::matrix4 m4;
+	taxonomy::matrix4::ptr m4;
 	bool has_position = true;
 #ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
 	has_position = !!inst->Position();
 #endif
 	if (has_position) {
-		m4 = as<taxonomy::matrix4>(map(inst->Position()));
+		m4 = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
 	}
 
 	return profile_helper(m4, {

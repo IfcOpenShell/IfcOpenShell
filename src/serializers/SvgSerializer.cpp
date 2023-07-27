@@ -584,7 +584,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 
 	gp_Trsf trsf;
 	// @todo
-	const auto& m = brep_obj->transformation().data().ccomponents();
+	const auto& m = brep_obj->transformation().data()->ccomponents();
 	trsf.SetValues(
 		m(0, 0), m(0, 1), m(0, 2), m(0, 3),
 		m(1, 0), m(1, 1), m(1, 2), m(1, 3),
@@ -1885,7 +1885,7 @@ void SvgSerializer::addTextAnnotations(const drawing_key& k) {
 				if (object_type == "Text") {
 					auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(file, settings_);
 					auto item = mapping->map(*pl);
-					auto matrix = (ifcopenshell::geometry::taxonomy::matrix4*) item;
+					auto matrix = ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::matrix4>(item);
 					delete mapping;
 					if (item) {
 						gp_Trsf trsf;
@@ -1895,7 +1895,9 @@ void SvgSerializer::addTextAnnotations(const drawing_key& k) {
 							m(1, 0), m(1, 1), m(1, 2), m(1, 3),
 							m(2, 0), m(2, 1), m(2, 2), m(2, 3)
 						);
+#ifdef TAXONOMY_USE_NAKED_PTR
 						delete matrix;
+#endif
 
 						auto v = gp_Pnt(trsf.TranslationPart());
 
@@ -2350,12 +2352,14 @@ void SvgSerializer::setFile(IfcParse::IfcFile* f) {
 					IfcUtil::IfcBaseEntity* product = (IfcUtil::IfcBaseEntity*) *jt;
 					if (!product->get("ObjectPlacement")->isNull()) {
 						auto item = mapping->map(*product->get("ObjectPlacement"));
-						auto matrix = (ifcopenshell::geometry::taxonomy::matrix4*) item;
+						auto matrix = ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::matrix4>(item);
 						gp_Trsf trsf;
 						if (matrix) {
 							// @todo shouldn't this take into account configurable section height?
 							setSectionHeight(matrix->translation_part()(3) + 1.);
+#ifdef TAXONOMY_USE_NAKED_PTR
 							delete matrix;
+#endif
 							Logger::Warning("No building storeys encountered, used for reference:", product);
 							return;
 						}

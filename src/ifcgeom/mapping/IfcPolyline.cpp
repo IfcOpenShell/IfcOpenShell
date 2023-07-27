@@ -23,17 +23,17 @@ using namespace ifcopenshell::geometry;
 
 #include "../profile_helper.h"
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcPolyline* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPolyline* inst) {
 	IfcSchema::IfcCartesianPoint::list::ptr points = inst->Points();
 
 	// Parse and store the points in a sequence
-	std::vector<taxonomy::point3> polygon;
+	std::vector<taxonomy::point3::ptr> polygon;
 	polygon.reserve(points->size());
 	std::transform(points->begin(), points->end(), std::back_inserter(polygon), [this](const IfcSchema::IfcCartesianPoint* p) {
-		return as<taxonomy::point3>(map(p));
+		return taxonomy::cast<taxonomy::point3>(map(p));
 	});
 
-	const bool closed_by_proximity = polygon.size() >= 3 && (*polygon.front().components_ - *polygon.back().components_).norm() < conv_settings_.getValue(ConversionSettings::GV_PRECISION);
+	const bool closed_by_proximity = polygon.size() >= 3 && (*polygon.front()->components_ - *polygon.back()->components_).norm() < conv_settings_.getValue(ConversionSettings::GV_PRECISION);
 	if (closed_by_proximity) {
 		polygon.resize(polygon.size() - 1);
 		polygon.push_back(polygon.front());

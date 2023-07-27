@@ -164,7 +164,7 @@ void GltfSerializer::write(const IfcGeom::TriangulationElement* o) {
 
 	node_array_.push_back(json_["nodes"].size());
 
-	const auto& m = o->transformation().data().ccomponents();
+	const auto& m = o->transformation().data()->ccomponents();
 	// nb: note that this contains the Y-UP transform as well.
 	// @todo check
 	const std::array<double, 16> matrix_flat = {

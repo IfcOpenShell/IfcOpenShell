@@ -21,8 +21,8 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcPlane* inst) {
-	auto p = new taxonomy::plane;
-	p->matrix = as<taxonomy::matrix4>(map(inst->Position()));
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPlane* inst) {
+	auto p = taxonomy::make<taxonomy::plane>();
+	p->matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
 	return p;	
 }

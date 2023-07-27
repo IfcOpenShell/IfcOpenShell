@@ -23,10 +23,10 @@ using namespace ifcopenshell::geometry;
 
 #ifdef SCHEMA_HAS_IfcCylindricalSurface
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcCylindricalSurface* inst) {
-	auto c = new taxonomy::cylinder;
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCylindricalSurface* inst) {
+	auto c = taxonomy::make<taxonomy::cylinder>();
 	c->radius = inst->Radius() * length_unit_;
-	c->matrix = as<taxonomy::matrix4>(map(inst->Position()));
+	c->matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
 	return c;
 }
 

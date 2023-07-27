@@ -6,7 +6,7 @@ using namespace ifcopenshell::geometry;
 using namespace ifcopenshell::geometry::kernels;
 using namespace IfcGeom;
 
-bool OpenCascadeKernel::convert(const taxonomy::extrusion* extrusion, TopoDS_Shape& shape) {
+bool OpenCascadeKernel::convert(const taxonomy::extrusion::ptr extrusion, TopoDS_Shape& shape) {
 	const double& height = extrusion->depth;
 
 	if (height < conv_settings_.getValue(ConversionSettings::GV_PRECISION)) {
@@ -15,7 +15,7 @@ bool OpenCascadeKernel::convert(const taxonomy::extrusion* extrusion, TopoDS_Sha
 	}
 
 	TopoDS_Shape face;
-	if (!convert(&extrusion->basis, face)) {
+	if (!convert(extrusion->basis, face)) {
 		return false;
 	}
 
@@ -29,7 +29,7 @@ bool OpenCascadeKernel::convert(const taxonomy::extrusion* extrusion, TopoDS_Sha
 	auto trsf = gtrsf.Trsf();
 	*/
 
-	const auto& fs = extrusion->direction.ccomponents();
+	const auto& fs = extrusion->direction->ccomponents();
 	gp_Dir dir(fs(0), fs(1), fs(2));
 
 	shape.Nullify();
@@ -71,7 +71,7 @@ bool OpenCascadeKernel::convert(const taxonomy::extrusion* extrusion, TopoDS_Sha
 	return !shape.IsNull();
 }
 
-bool OpenCascadeKernel::convert_impl(const taxonomy::extrusion* extrusion, IfcGeom::ConversionResults& results) {
+bool OpenCascadeKernel::convert_impl(const taxonomy::extrusion::ptr extrusion, IfcGeom::ConversionResults& results) {
 	TopoDS_Shape shape;
 	if (!convert(extrusion, shape)) {
 		return false;

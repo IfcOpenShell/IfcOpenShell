@@ -30,7 +30,7 @@ namespace {
 	}
 }
 
-IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_representation_and_product(taxonomy::item* representation_node, const IfcUtil::IfcBaseEntity* product, const taxonomy::matrix4& place_) {
+IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_representation_and_product(taxonomy::ptr representation_node, const IfcUtil::IfcBaseEntity* product, const taxonomy::matrix4::ptr& place_) {
 	std::stringstream representation_id_builder;
 
 	auto place = place_;
@@ -108,10 +108,10 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 
 	auto single_material = mapping_->get_single_material_association(product);
 	if (single_material) {
-		auto s = (taxonomy::style*) mapping_->map(single_material);
+		auto s = taxonomy::cast<taxonomy::style>(mapping_->map(single_material));
 		for (auto it = shapes.begin(); it != shapes.end(); ++it) {
 			if (!it->hasStyle() && s) {
-				it->setStyle(*s);
+				it->setStyle(s);
 				material_style_applied = true;
 			}
 		}
@@ -137,7 +137,7 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 		for (auto& s : shapes) {
 			if (s.hasStyle()) {
 				// @todo the uglyness
-				const_cast<taxonomy::style*>(&s.Style())->transparency = settings_.force_space_transparency();
+				const_cast<taxonomy::style*>(&*s.StylePtr())->transparency = settings_.force_space_transparency();
 			}
 		}
 	}
@@ -172,14 +172,14 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 		IfcGeom::ConversionResults opened_shapes;
 		bool caught_error = false;
 		try {
-			std::vector<std::pair<taxonomy::item*, taxonomy::matrix4>> opening_items;
+			std::vector<std::pair<taxonomy::ptr, taxonomy::matrix4>> opening_items;
 
 			std::transform(openings->begin(), openings->end(), std::back_inserter(opening_items), [this](IfcUtil::IfcBaseClass* opening) {
 				auto prod_item = mapping()->map(opening);
-				return std::make_pair(mapping()->map(mapping()->representation_of(opening->as<IfcUtil::IfcBaseEntity>())), ((taxonomy::geom_item*)prod_item)->matrix);
+				return std::make_pair(mapping()->map(mapping()->representation_of(opening->as<IfcUtil::IfcBaseEntity>())), *taxonomy::cast<taxonomy::geom_item>(prod_item)->matrix);
 			});
 
-			kernel_->convert_openings(product, opening_items, shapes, place, opened_shapes);
+			kernel_->convert_openings(product, opening_items, shapes, *place, opened_shapes);
 		} catch (const std::exception& e) {
 			Logger::Message(Logger::LOG_ERROR, std::string("Error processing openings for: ") + e.what() + ":", product);
 			caught_error = true;
@@ -195,7 +195,7 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 			for (auto it = opened_shapes.begin(); it != opened_shapes.end(); ++it) {
 				it->prepend(place);
 			}
-			place = ifcopenshell::geometry::taxonomy::matrix4();
+			place = ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::matrix4>();
 			representation_id_builder << "-world-coords";
 		}
 		shape = new IfcGeom::Representation::BRep(element_settings, representation_id_builder.str(), opened_shapes);
@@ -203,7 +203,7 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 		for (auto it = shapes.begin(); it != shapes.end(); ++it) {
 			it->prepend(place);
 		}
-		place = ifcopenshell::geometry::taxonomy::matrix4();
+		place = ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::matrix4>();
 		representation_id_builder << "-world-coords";
 		shape = new IfcGeom::Representation::BRep(element_settings, representation_id_builder.str(), shapes);
 	} else {
@@ -308,7 +308,7 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 	return elem;
 }
 
-IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_processed_representation(const IfcUtil::IfcBaseEntity* product, const taxonomy::matrix4& place, IfcGeom::BRepElement* brep) {
+IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_processed_representation(const IfcUtil::IfcBaseEntity* product, const taxonomy::matrix4::ptr& place, IfcGeom::BRepElement* brep) {
 
 	int parent_id = -1;
 	try {
@@ -352,7 +352,7 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 	return create_brep_for_representation_and_product(
 		mapping_->map(representation),
 		product,
-		((taxonomy::geom_item*)mapping_->map(product))->matrix
+		taxonomy::cast<taxonomy::geom_item>(mapping_->map(product))->matrix
 	);
 }
 

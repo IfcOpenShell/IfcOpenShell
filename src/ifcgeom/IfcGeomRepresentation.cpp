@@ -194,9 +194,9 @@ IfcGeom::ConversionResultShape* IfcGeom::Representation::BRep::as_compound(bool 
 
 		// @todo, check
 		gp_GTrsf trsf;
-		if (it->Placement().components_) {
+		if (it->Placement()->components_) {
 			gp_Trsf tr;
-			const auto& m = it->Placement().ccomponents();
+			const auto& m = it->Placement()->ccomponents();
 			tr.SetValues(
 				m(0, 0), m(0, 1), m(0, 2), m(0, 3),
 				m(1, 0), m(1, 1), m(1, 2), m(1, 3),
@@ -346,7 +346,7 @@ IfcGeom::Representation::Triangulation::Triangulation(const BRep& shape_model)
 			}
 		}
 
-		iit->Shape()->Triangulate(settings(), iit->Placement(), this, surface_style_id);
+		iit->Shape()->Triangulate(settings(), *iit->Placement(), this, surface_style_id);
 	}
 }
 

@@ -21,7 +21,7 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcManifoldSolidBrep* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcManifoldSolidBrep* inst) {
 	IfcSchema::IfcClosedShell::list::ptr voids(new IfcSchema::IfcClosedShell::list);
 	if (inst->declaration().is(IfcSchema::IfcFacetedBrepWithVoids::Class())) {
 		voids = inst->as<IfcSchema::IfcFacetedBrepWithVoids>()->Voids();
@@ -32,13 +32,13 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcManifoldSolidBrep* inst) {
 	}
 #endif
 
-	taxonomy::solid* solid;
+	taxonomy::solid::ptr solid;
 	if (voids->size()) {
 		solid = map_to_collection<taxonomy::solid>(this, voids);
 	} else {
-		solid = new taxonomy::solid;
+		solid = taxonomy::make<taxonomy::solid>();
 	}
-	solid->children.insert(solid->children.begin(), map(inst->Outer()));
+	solid->children.insert(solid->children.begin(), taxonomy::cast<taxonomy::shell>(map(inst->Outer())));
 
 	return solid;
 }

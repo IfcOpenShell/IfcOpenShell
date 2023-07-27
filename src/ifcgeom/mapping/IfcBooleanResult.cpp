@@ -37,7 +37,7 @@ namespace {
 	}
 }
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcBooleanResult* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcBooleanResult* inst) {
 	IfcSchema::IfcBooleanOperand* operand1 = inst->FirstOperand();
 	IfcSchema::IfcBooleanOperand* operand2 = inst->SecondOperand();
 	bool has_halfspace_operand = false;
