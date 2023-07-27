@@ -22,13 +22,13 @@
 
 using namespace ifcopenshell::geometry;
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcBlock* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcBlock* inst) {
 	const double dx = inst->XLength() * length_unit_;
 	const double dy = inst->YLength() * length_unit_;
 	const double dz = inst->ZLength() * length_unit_;
 
 	auto solid = create_box(dx, dy, dz);
-	solid->matrix = as<taxonomy::matrix4>(map(inst->Position()));
+	solid->matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
 
 	return solid;
 }

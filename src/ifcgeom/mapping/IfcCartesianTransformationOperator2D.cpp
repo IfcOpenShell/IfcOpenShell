@@ -21,21 +21,21 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcCartesianTransformationOperator2D* inst) {
-	auto m = new taxonomy::matrix4;
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCartesianTransformationOperator2D* inst) {
+	auto m = taxonomy::make<taxonomy::matrix4>();
 
 	Eigen::Vector4d origin, axis1(1.0, 0.0, 0.0, 0.0), axis2(0.0, 1.0, 0.0, 0.0), axis3(0.0, 0.0, 1.0, 0.0);
 
-	taxonomy::point3 O = as<taxonomy::point3>(map(inst->LocalOrigin()));
-	origin << *O.components_, 1.0;
+	taxonomy::point3::ptr O = taxonomy::cast<taxonomy::point3>(map(inst->LocalOrigin()));
+	origin << *O->components_, 1.0;
 
 	if (inst->Axis1()) {
-		taxonomy::direction3 ax1 = as<taxonomy::direction3>(map(inst->Axis1()));
-		axis1 << *ax1.components_, 0.0;
+		taxonomy::direction3::ptr ax1 = taxonomy::cast<taxonomy::direction3>(map(inst->Axis1()));
+		axis1 << *ax1->components_, 0.0;
 	}
 	if (inst->Axis2()) {
-		taxonomy::direction3 ax2 = as<taxonomy::direction3>(map(inst->Axis1()));
-		axis2 << *ax2.components_, 0.0;
+		taxonomy::direction3::ptr ax2 = taxonomy::cast<taxonomy::direction3>(map(inst->Axis1()));
+		axis2 << *ax2->components_, 0.0;
 	}
 
 	double scale1, scale2;

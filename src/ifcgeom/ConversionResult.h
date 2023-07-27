@@ -50,42 +50,36 @@ namespace IfcGeom {
 	class IFC_GEOM_API ConversionResult {
 	private:
 		int id;
-		ifcopenshell::geometry::taxonomy::matrix4 placement;
-		ConversionResultShape* shape;
-		ifcopenshell::geometry::taxonomy::style style_;
+		ifcopenshell::geometry::taxonomy::matrix4::ptr placement_;
+		ConversionResultShape* shape_;
+		ifcopenshell::geometry::taxonomy::style::ptr style_;
 	public:
-		ConversionResult(int id, const ifcopenshell::geometry::taxonomy::matrix4& placement, const ConversionResultShape* shape, const ifcopenshell::geometry::taxonomy::style* style)
-			: id(id), placement(placement), shape(shape->clone())
-		{
-			if (style) {
-				style_ = *style;
-			}
-		}
-		ConversionResult(int id, const ifcopenshell::geometry::taxonomy::matrix4& placement, const ConversionResultShape* shape)
-			: id(id), placement(placement), shape(shape->clone()) {}
-		ConversionResult(int id, const ConversionResultShape* shape, const ifcopenshell::geometry::taxonomy::style* style)
-			: id(id), shape(shape->clone())
-		{
-			if (style) {
-				style_ = *style;
-			}
-		}
-		ConversionResult(int id, const ConversionResultShape* shape)
-			: id(id), shape(shape->clone()) {}
-		void append(const ifcopenshell::geometry::taxonomy::matrix4& trsf) {
+		ConversionResult(int id, ifcopenshell::geometry::taxonomy::matrix4::ptr placement, ConversionResultShape* shape, ifcopenshell::geometry::taxonomy::style::ptr style)
+			: id(id), placement_(placement ? placement : ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::matrix4>()), shape_(shape), style_(style)
+		{}
+		ConversionResult(int id, ifcopenshell::geometry::taxonomy::matrix4::ptr placement, ConversionResultShape* shape)
+			: id(id), placement_(placement ? placement : ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::matrix4>()), shape_(shape)
+		{}
+		ConversionResult(int id, ConversionResultShape* shape, ifcopenshell::geometry::taxonomy::style::ptr style)
+			: id(id), placement_(ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::matrix4>()), shape_(shape), style_(style)
+		{}
+		ConversionResult(int id, ConversionResultShape* shape)
+			: id(id), placement_(ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::matrix4>()), shape_(shape)
+		{}
+		void append(ifcopenshell::geometry::taxonomy::matrix4::ptr trsf) {
 			// @todo verify order
-			placement.components() = placement.ccomponents() * trsf.ccomponents();
+			placement_->components() = placement_->ccomponents() * trsf->ccomponents();
 		}
-		void prepend(const ifcopenshell::geometry::taxonomy::matrix4& trsf) {
+		void prepend(ifcopenshell::geometry::taxonomy::matrix4::ptr trsf) {
 			// @todo verify order
-			placement.components() = trsf.ccomponents() * placement.ccomponents();
+			placement_->components() = trsf->ccomponents() * placement_->ccomponents();
 		}
-		const ConversionResultShape* Shape() const { return shape; }
-		ConversionResultShape* Shape() { return shape; }
-		const ifcopenshell::geometry::taxonomy::matrix4& Placement() const { return placement; }
-		bool hasStyle() const { return !!style_.diffuse; }
-		const ifcopenshell::geometry::taxonomy::style& Style() const { return style_; }
-		void setStyle(const ifcopenshell::geometry::taxonomy::style& newStyle) { style_ = newStyle; }
+		ConversionResultShape* Shape() const { return shape_; }
+		ifcopenshell::geometry::taxonomy::matrix4::ptr Placement() const { return placement_; }
+		bool hasStyle() const { return !!style_; }
+		const ifcopenshell::geometry::taxonomy::style& Style() const { return *style_; }
+		ifcopenshell::geometry::taxonomy::style::ptr StylePtr() const { return style_; }
+		void setStyle(ifcopenshell::geometry::taxonomy::style::ptr newStyle) { style_ = newStyle; }
 		int ItemId() const { return id; }
 	};
 

@@ -21,107 +21,107 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcRectangularPyramid* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRectangularPyramid* inst) {
 	const double dx = inst->XLength() * length_unit_;
 	const double dy = inst->YLength() * length_unit_;
 	const double dz = inst->Height() * length_unit_;
 
-	auto solid = new taxonomy::solid;
-	auto shell = new taxonomy::shell;
+	auto solid = taxonomy::make<taxonomy::solid>();
+	auto shell = taxonomy::make<taxonomy::shell>();
 	solid->children.push_back(shell);
 
 	// Base
 	{
-		auto face = new taxonomy::face;
-		auto loop = new taxonomy::loop;
+		auto face = taxonomy::make<taxonomy::face>();
+		auto loop = taxonomy::make<taxonomy::loop>();
 		face->children.push_back(loop);
 		loop->external = true;
 		shell->children.push_back(face);
 
-		std::array<taxonomy::point3, 4> points{
-			taxonomy::point3(0, 0, 0),
-			taxonomy::point3(dx, 0, 0),
-			taxonomy::point3(dx, dy, 0),
-			taxonomy::point3(0, dy, 0)
+		std::array<taxonomy::point3::ptr, 4> points{
+			taxonomy::make<taxonomy::point3>(0, 0, 0),
+			taxonomy::make<taxonomy::point3>(dx, 0, 0),
+			taxonomy::make<taxonomy::point3>(dx, dy, 0),
+			taxonomy::make<taxonomy::point3>(0, dy, 0)
 		};
 
-		loop->children.push_back(new taxonomy::edge(points[0], points[1]));
-		loop->children.push_back(new taxonomy::edge(points[1], points[2]));
-		loop->children.push_back(new taxonomy::edge(points[2], points[3]));
-		loop->children.push_back(new taxonomy::edge(points[3], points[0]));
+		loop->children.push_back(taxonomy::make<taxonomy::edge>(points[0], points[1]));
+		loop->children.push_back(taxonomy::make<taxonomy::edge>(points[1], points[2]));
+		loop->children.push_back(taxonomy::make<taxonomy::edge>(points[2], points[3]));
+		loop->children.push_back(taxonomy::make<taxonomy::edge>(points[3], points[0]));
 	}
 
 	// Lateral faces
 	{
-		auto face = new taxonomy::face;
-		auto loop = new taxonomy::loop;
+		auto face = taxonomy::make<taxonomy::face>();
+		auto loop = taxonomy::make<taxonomy::loop>();
 		face->children.push_back(loop);
 		loop->external = true;
 		shell->children.push_back(face);
 
-		std::array<taxonomy::point3, 3> points{
-			taxonomy::point3(0, 0, 0),
-			taxonomy::point3(0, dy, 0),
-			taxonomy::point3(0.5*dx, 0.5*dy, dz)
+		std::array<taxonomy::point3::ptr, 3> points{
+			taxonomy::make<taxonomy::point3>(0, 0, 0),
+			taxonomy::make<taxonomy::point3>(0, dy, 0),
+			taxonomy::make<taxonomy::point3>(0.5*dx, 0.5*dy, dz)
 		};
 
-		loop->children.push_back(new taxonomy::edge(points[0], points[1]));
-		loop->children.push_back(new taxonomy::edge(points[1], points[2]));
-		loop->children.push_back(new taxonomy::edge(points[2], points[0]));
+		loop->children.push_back(taxonomy::make<taxonomy::edge>(points[0], points[1]));
+		loop->children.push_back(taxonomy::make<taxonomy::edge>(points[1], points[2]));
+		loop->children.push_back(taxonomy::make<taxonomy::edge>(points[2], points[0]));
 	}
 
 	{
-		auto face = new taxonomy::face;
-		auto loop = new taxonomy::loop;
+		auto face = taxonomy::make<taxonomy::face>();
+		auto loop = taxonomy::make<taxonomy::loop>();
 		face->children.push_back(loop);
 		loop->external = true;
 		shell->children.push_back(face);
 
-		std::array<taxonomy::point3, 3> points{
-			taxonomy::point3(0, dy, 0),
-			taxonomy::point3(dx, dy, 0),
-			taxonomy::point3(0.5*dx, 0.5*dy, dz)
+		std::array<taxonomy::point3::ptr, 3> points{
+			taxonomy::make<taxonomy::point3>(0, dy, 0),
+			taxonomy::make<taxonomy::point3>(dx, dy, 0),
+			taxonomy::make<taxonomy::point3>(0.5*dx, 0.5*dy, dz)
 		};
 
-		loop->children.push_back(new taxonomy::edge(points[0], points[1]));
-		loop->children.push_back(new taxonomy::edge(points[1], points[2]));
-		loop->children.push_back(new taxonomy::edge(points[2], points[0]));
+		loop->children.push_back(taxonomy::make<taxonomy::edge>(points[0], points[1]));
+		loop->children.push_back(taxonomy::make<taxonomy::edge>(points[1], points[2]));
+		loop->children.push_back(taxonomy::make<taxonomy::edge>(points[2], points[0]));
 	}
 
 	{
-		auto face = new taxonomy::face;
-		auto loop = new taxonomy::loop;
+		auto face = taxonomy::make<taxonomy::face>();
+		auto loop = taxonomy::make<taxonomy::loop>();
 		face->children.push_back(loop);
 		loop->external = true;
 		shell->children.push_back(face);
 
-		std::array<taxonomy::point3, 3> points{
-			taxonomy::point3(dx, dy, 0),
-			taxonomy::point3(dx, 0, 0),
-			taxonomy::point3(0.5*dx, 0.5*dy, dz)
+		std::array<taxonomy::point3::ptr, 3> points{
+			taxonomy::make<taxonomy::point3>(dx, dy, 0),
+			taxonomy::make<taxonomy::point3>(dx, 0, 0),
+			taxonomy::make<taxonomy::point3>(0.5*dx, 0.5*dy, dz)
 		};
 
-		loop->children.push_back(new taxonomy::edge(points[0], points[1]));
-		loop->children.push_back(new taxonomy::edge(points[1], points[2]));
-		loop->children.push_back(new taxonomy::edge(points[2], points[0]));
+		loop->children.push_back(taxonomy::make<taxonomy::edge>(points[0], points[1]));
+		loop->children.push_back(taxonomy::make<taxonomy::edge>(points[1], points[2]));
+		loop->children.push_back(taxonomy::make<taxonomy::edge>(points[2], points[0]));
 	}
 
 	{
-		auto face = new taxonomy::face;
-		auto loop = new taxonomy::loop;
+		auto face = taxonomy::make<taxonomy::face>();
+		auto loop = taxonomy::make<taxonomy::loop>();
 		face->children.push_back(loop);
 		loop->external = true;
 		shell->children.push_back(face);
 
-		std::array<taxonomy::point3, 3> points{
-			taxonomy::point3(dx, 0, 0),
-			taxonomy::point3(0, 0, 0),
-			taxonomy::point3(0.5*dx, 0.5*dy, dz)
+		std::array<taxonomy::point3::ptr, 3> points{
+			taxonomy::make<taxonomy::point3>(dx, 0, 0),
+			taxonomy::make<taxonomy::point3>(0, 0, 0),
+			taxonomy::make<taxonomy::point3>(0.5*dx, 0.5*dy, dz)
 		};
 
-		loop->children.push_back(new taxonomy::edge(points[0], points[1]));
-		loop->children.push_back(new taxonomy::edge(points[1], points[2]));
-		loop->children.push_back(new taxonomy::edge(points[2], points[0]));
+		loop->children.push_back(taxonomy::make<taxonomy::edge>(points[0], points[1]));
+		loop->children.push_back(taxonomy::make<taxonomy::edge>(points[1], points[2]));
+		loop->children.push_back(taxonomy::make<taxonomy::edge>(points[2], points[0]));
 	}
 
 	return solid;

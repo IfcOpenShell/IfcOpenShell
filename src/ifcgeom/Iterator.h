@@ -91,8 +91,8 @@ using namespace ifcopenshell::geometry;
 namespace {
 	struct geometry_conversion_result {
 		int index;
-		ifcopenshell::geometry::taxonomy::item* item;
-		std::vector<std::pair<const IfcUtil::IfcBaseEntity*, taxonomy::matrix4>> products;
+		ifcopenshell::geometry::taxonomy::ptr item;
+		std::vector<std::pair<const IfcUtil::IfcBaseEntity*, taxonomy::matrix4::ptr>> products;
 		std::vector<IfcGeom::BRepElement*> breps;
 		std::vector<IfcGeom::Element*> elements;
 	};
@@ -180,7 +180,7 @@ namespace IfcGeom {
 				res.item = converter_->mapping()->map(task.representation);
 				std::transform(task.products->begin(), task.products->end(), std::back_inserter(res.products), [this, &res](IfcUtil::IfcBaseClass* prod) {
 					auto prod_item = converter_->mapping()->map(prod);
-					return std::make_pair(prod->as<IfcUtil::IfcBaseEntity>(), ((taxonomy::geom_item*)prod_item)->matrix);
+					return std::make_pair(prod->as<IfcUtil::IfcBaseEntity>(), taxonomy::cast<taxonomy::geom_item>(prod_item)->matrix);
 				});
 				tasks_.push_back(res);
 			}
@@ -195,13 +195,13 @@ namespace IfcGeom {
 			// There needs to be two options, mapped item respecting (does that still work?), and optimized based on topology sorting.
 			// Or is the sorting not necessary if we just cache?
 
-			std::vector<taxonomy::item*> items;
-			std::map<taxonomy::item*, taxonomy::matrix4> placements;
+			std::vector<taxonomy::ptr> items;
+			std::map<taxonomy::ptr, taxonomy::matrix4> placements;
 			std::transform(products.begin(), products.end(), std::back_inserter(items), [this, &placements](IfcUtil::IfcBaseClass* p) {
 				auto item = converter_->mapping()->map(p);
 				// Product placements do not affect item reuse and should temporarily be swapped to identity
 				if (item) {
-					std::swap(placements[item], ((taxonomy::geom_item*)item)->matrix);
+					std::swap(placements[item], ((taxonomy::geom_ptr)item)->matrix);
 				}
 				return item;
 			});
@@ -212,7 +212,7 @@ namespace IfcGeom {
 				auto jt = std::upper_bound(it, items.end(), *it, taxonomy::less);
 				geometry_conversion_result r;
 				r.item = *it;
-				std::transform(it, jt, std::back_inserter(r.products), [&r, &placements](taxonomy::item* product_node) {
+				std::transform(it, jt, std::back_inserter(r.products), [&r, &placements](taxonomy::ptr product_node) {
 					return std::make_pair((IfcUtil::IfcBaseEntity*) product_node->instance, placements[product_node]);
 				});
 				tasks_.push_back(r);
@@ -344,7 +344,7 @@ namespace IfcGeom {
 					IfcGeom::Element* geom_object = get();
 					const IfcGeom::TriangulationElement* o = static_cast<const IfcGeom::TriangulationElement*>(geom_object);
 					const IfcGeom::Representation::Triangulation& mesh = o->geometry();
-					auto mat = o->transformation().data().ccomponents();
+					auto mat = o->transformation().data()->ccomponents();
 					Eigen::Vector4d vec, transformed;
 
 					for (typename std::vector<double>::const_iterator it = mesh.verts().begin(); it != mesh.verts().end();) {
@@ -371,7 +371,7 @@ namespace IfcGeom {
 
 				for (auto& product : products) {
 					auto prod_item = converter_->mapping()->map(product);
-					auto vec = ((taxonomy::geom_item*)prod_item)->matrix.translation_part();
+					auto vec = taxonomy::cast<taxonomy::geom_item>(prod_item)->matrix->translation_part();
 
 					for (int i = 0; i < 3; ++i) {
 						bounds_min_.components()(i) = std::min(bounds_min_.components()(i), vec(i));
@@ -660,7 +660,7 @@ namespace IfcGeom {
 		}
 
 		const Element* get_object(int id) {
-			taxonomy::matrix4 m4;
+			taxonomy::matrix4::ptr m4;
 			int parent_id = -1;
 			std::string instance_type, product_name, product_guid;
             IfcUtil::IfcBaseEntity* ifc_product = 0;
@@ -679,7 +679,7 @@ namespace IfcGeom {
 					parent_id = parent_object->data().id();
 				}
 
-				m4 = ((taxonomy::geom_item*) converter_->mapping()->map(ifc_product))->matrix;
+				m4 = taxonomy::cast<taxonomy::geom_item>(converter_->mapping()->map(ifc_product))->matrix;
 			} catch (const std::exception& e) {
 				Logger::Error(e);
 			}

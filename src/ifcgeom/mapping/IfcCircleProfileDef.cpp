@@ -23,7 +23,7 @@ using namespace ifcopenshell::geometry;
 
 #include <boost/math/constants/constants.hpp>
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcCircleProfileDef* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCircleProfileDef* inst) {
 	std::vector<double> radii = { inst->Radius() * length_unit_ };
 
 	if (inst->as<IfcSchema::IfcCircleHollowProfileDef>()) {
@@ -31,13 +31,13 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcCircleProfileDef* inst) {
 		radii.push_back(radii.front() - t);
 	}
 
-	auto f = new taxonomy::face;
+	auto f = taxonomy::make<taxonomy::face>();
 
 	for (auto it = radii.begin(); it != radii.end(); ++it) {
 		const double r = *it;
 		const bool exterior = it == radii.begin();
 
-		auto c = new taxonomy::circle;
+		auto c = taxonomy::make<taxonomy::circle>();
 		c->radius = r;
 
 		bool has_position = true;
@@ -45,18 +45,15 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcCircleProfileDef* inst) {
 		has_position = !!inst->Position();
 #endif
 		if (has_position) {
-			taxonomy::matrix4 m = as<taxonomy::matrix4>(map(inst->Position()));
-			if (m.components_) {
-				c->matrix = *m.components_;
-			}
+			c->matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
 		}
 
-		auto e = new taxonomy::edge;
+		auto e = taxonomy::make<taxonomy::edge>();
 		e->basis = c;
 		e->start = 0.;
 		e->end = 2 * boost::math::constants::pi<double>();
 
-		auto l = new taxonomy::loop;
+		auto l = taxonomy::make<taxonomy::loop>();
 		l->children = { e };
 		l->external = exterior;
 

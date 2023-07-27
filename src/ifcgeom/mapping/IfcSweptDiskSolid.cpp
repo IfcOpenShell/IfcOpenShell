@@ -49,8 +49,8 @@ namespace {
 }
 */
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcSweptDiskSolid* inst) {
-	auto loop = map(inst->Directrix());
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSweptDiskSolid* inst) {
+	auto loop = taxonomy::cast<taxonomy::loop>(map(inst->Directrix()));
 
 	// Start- EndParam became optional in IFC4
 #ifdef SCHEMA_IfcSweptDiskSolid_StartParam_IS_OPTIONAL
@@ -68,7 +68,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcSweptDiskSolid* inst) {
 	if (inst->as<IfcSchema::IfcSweptDiskSolidPolygonal>()) {
 		auto fr = inst->as<IfcSchema::IfcSweptDiskSolidPolygonal>()->FilletRadius();
 		if (fr && *fr > tol) {
-			fillet_loop((taxonomy::loop*)loop, *fr);
+			fillet_loop(loop, *fr);
 		}
 	}
 #endif
@@ -80,30 +80,30 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcSweptDiskSolid* inst) {
 		radii.push_back(*inst->InnerRadius() * length_unit_);
 	}
 
-	taxonomy::face f;
+	auto f = taxonomy::make<taxonomy::face>();
 
 	{
 		for (auto it = radii.begin(); it != radii.end(); ++it) {
 			const double r = *it;
 			const bool exterior = it == radii.begin();
 
-			auto c = new taxonomy::circle;
+			auto c = taxonomy::make<taxonomy::circle>();
 			c->radius = r;
 
-			auto e = new taxonomy::edge;
+			auto e = taxonomy::make<taxonomy::edge>();
 			e->basis = c;
 			e->start = 0.;
 			e->end = 2 * boost::math::constants::pi<double>();
 
-			auto l = new taxonomy::loop;
+			auto l = taxonomy::make<taxonomy::loop>();
 			l->children = { e };
 			l->external = exterior;
 
-			f.children.push_back(l);
+			f->children.push_back(l);
 		}
 	}
 
-	return new taxonomy::surface_curve_sweep(taxonomy::matrix4(), f, nullptr, loop);
+	return taxonomy::make<taxonomy::surface_curve_sweep>(taxonomy::make<taxonomy::matrix4>(), f, nullptr, loop);
 
 
 	

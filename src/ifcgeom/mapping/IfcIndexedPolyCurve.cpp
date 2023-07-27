@@ -23,7 +23,7 @@ using namespace ifcopenshell::geometry;
 
 #ifdef SCHEMA_HAS_IfcIndexedPolyCurve
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcIndexedPolyCurve* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcIndexedPolyCurve* inst) {
 	
 	IfcSchema::IfcCartesianPointList* point_list = inst->Points();
 	std::vector< std::vector<double> > coordinates;
@@ -33,10 +33,10 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcIndexedPolyCurve* inst) {
 		coordinates = point_list->as<IfcSchema::IfcCartesianPointList3D>()->CoordList();
 	}
 
-	std::vector<taxonomy::point3> points;
+	std::vector<taxonomy::point3::ptr> points;
 	points.reserve(coordinates.size());
 	for (auto& coords : coordinates) {
-		points.push_back(taxonomy::point3(
+		points.push_back(taxonomy::make<taxonomy::point3>(
 			coords.size() < 1 ? 0. : coords[0] * length_unit_,
 			coords.size() < 2 ? 0. : coords[1] * length_unit_,
 			coords.size() < 3 ? 0. : coords[2] * length_unit_));
@@ -44,7 +44,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcIndexedPolyCurve* inst) {
 
 	int max_index = (int) points.size();
 
-	auto loop = new taxonomy::loop;
+	auto loop = taxonomy::make<taxonomy::loop>();
 
 	if(inst->Segments()) {
 		aggregate_of_instance::ptr segments = *inst->Segments();
@@ -53,14 +53,14 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcIndexedPolyCurve* inst) {
 			if (segment->declaration().is(IfcSchema::IfcLineIndex::Class())) {
 				IfcSchema::IfcLineIndex* line = (IfcSchema::IfcLineIndex*) segment;
 				std::vector<int> indices = *line;
-				taxonomy::point3 previous;
+				taxonomy::point3::ptr previous;
 				for (std::vector<int>::const_iterator jt = indices.begin(); jt != indices.end(); ++jt) {
 					if (*jt < 1 || *jt > max_index) {
 						throw IfcParse::IfcException("IfcIndexedPolyCurve index out of bounds for index " + boost::lexical_cast<std::string>(*jt));
 					}
-					const taxonomy::point3& current = points[*jt - 1];
+					auto current = points[*jt - 1];
 					if (jt != indices.begin()) {
-						loop->children.push_back(new taxonomy::edge(previous, current));
+						loop->children.push_back(taxonomy::make<taxonomy::edge>(previous, current));
 					}
 					previous = current;
 				}
@@ -80,9 +80,9 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcIndexedPolyCurve* inst) {
 				const auto& b = points[indices[1] - 1];
 				const auto& c = points[indices[2] - 1];
 
-				auto circ = taxonomy::circle::from_3_points(a.ccomponents(), b.ccomponents(), c.ccomponents());
+				auto circ = taxonomy::circle::from_3_points(a->ccomponents(), b->ccomponents(), c->ccomponents());
 				if (circ) {
-					auto e = new taxonomy::edge(a, c);
+					auto e = taxonomy::make<taxonomy::edge>(a, c);
 					e->basis = circ;
 					loop->children.push_back(e);
 				} else {
@@ -95,7 +95,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcIndexedPolyCurve* inst) {
 	} else if (points.begin() < points.end()) {
         auto previous = points.begin();
         for (auto current = previous+1; current < points.end(); ++current){
-			loop->children.push_back(new taxonomy::edge(*previous, *current));
+			loop->children.push_back(taxonomy::make<taxonomy::edge>(*previous, *current));
 			previous = current;
         }
     }

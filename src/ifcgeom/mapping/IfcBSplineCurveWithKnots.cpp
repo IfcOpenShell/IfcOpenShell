@@ -25,12 +25,12 @@
 using namespace ifcopenshell::geometry;
 
 #ifdef SCHEMA_HAS_IfcBSplineCurveWithKnots
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcBSplineCurveWithKnots* inst) {
-	auto bc = new taxonomy::bspline_curve;
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcBSplineCurveWithKnots* inst) {
+	auto bc = taxonomy::make<taxonomy::bspline_curve>();
 	
 	const IfcSchema::IfcCartesianPoint::list::ptr cps = inst->ControlPointsList();
-	std::vector<taxonomy::point3> points;
-	std::transform(cps->begin(), cps->end(), std::back_inserter(points), [this](IfcSchema::IfcCartesianPoint* cp) { return as<taxonomy::point3>(map(cp)); });
+	std::vector<taxonomy::point3::ptr> points;
+	std::transform(cps->begin(), cps->end(), std::back_inserter(points), [this](IfcSchema::IfcCartesianPoint* cp) { return taxonomy::cast<taxonomy::point3>(map(cp)); });
 	bc->control_points = points;
 		
 	bc->multiplicities = inst->KnotMultiplicities();

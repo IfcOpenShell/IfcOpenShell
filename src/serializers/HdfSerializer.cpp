@@ -274,12 +274,12 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 	std::string context = read_scalar_attribute<std::string>(element_group, "context");
 	std::string unique_id = read_scalar_attribute<std::string>(element_group, "unique_id");
 
-	ifcopenshell::geometry::taxonomy::matrix4 trsf;
+	auto trsf = ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::matrix4>();
 	auto placeds = element_group.openDataSet(DATASET_NAME_PLACEMENT);
 	double m44[4][4];
 	placeds.read(m44, H5::PredType::NATIVE_DOUBLE);
 	// @todo check
-	trsf.components() << Eigen::Map<Eigen::Matrix4d>(&m44[0][0]);
+	trsf->components() << Eigen::Map<Eigen::Matrix4d>(&m44[0][0]);
 
 	auto representation_group = element_group.openGroup(representation_id_str);
 	std::string geom_id = read_scalar_attribute<std::string>(representation_group, "geom_id");
@@ -348,10 +348,10 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 			TopoDS_Shape shp = read_shape(part.shape_serialization);
 
 			// @todo check
-			ifcopenshell::geometry::taxonomy::matrix4 matrix;
-			matrix.components() << Eigen::Map<Eigen::Matrix4d>(&part.matrix[0][0]);
+			auto matrix = ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::matrix4>();
+			matrix->components() << Eigen::Map<Eigen::Matrix4d>(&part.matrix[0][0]);
 
-			auto style_ptr = new ifcopenshell::geometry::taxonomy::style;
+			auto style_ptr = ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::style>();
 			read_surface_style(part.surface_style, *style_ptr);
 			
 			shapes.push_back(IfcGeom::ConversionResult(part.id, matrix, new ifcopenshell::geometry::OpenCascadeShape(shp), style_ptr));
@@ -362,7 +362,7 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 			for (IfcGeom::ConversionResults::iterator it = shapes.begin(); it != shapes.end(); ++it) {
 				it->prepend(trsf);
 			}
-			trsf = ifcopenshell::geometry::taxonomy::matrix4();
+			trsf = ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::matrix4>();
 		}
 
 		brep_geometry = boost::shared_ptr<IfcGeom::Representation::BRep>(new IfcGeom::Representation::BRep(element_settings, geom_id, shapes));
@@ -487,7 +487,7 @@ H5::Group HdfSerializer::write(const IfcGeom::Element* o) {
 	H5::DataSpace dataspace_4x4(2, dims_4x4);
 
 	auto placement_dataset = element_group.createDataSet(DATASET_NAME_PLACEMENT, H5::PredType::NATIVE_DOUBLE, dataspace_4x4);
-	const auto& m = o->transformation().data().ccomponents();
+	const auto& m = o->transformation().data()->ccomponents();
 	// @todo check, is this needed, can we use the storage of Eigen?
 	double m44[4][4] = {
 		{ m(0,0), m(1,0), m(2,0), m(3,0) },
@@ -580,7 +580,7 @@ void HdfSerializer::write(const IfcGeom::BRepElement* o) {
 	size_t i = 0;
 	for (auto it = o->geometry().begin(); it != o->geometry().end(); ++it, ++i) {
 		parts[i].id = it->ItemId();
-		const auto& m = o->transformation().data().ccomponents();
+		const auto& m = o->transformation().data()->ccomponents();
 		// @todo check, is this needed, can we use the storage of Eigen?
 		std::array<std::array<double, 4>, 4> arr = { {
 			{ { m(0,0), m(1,0), m(2,0), m(3,0) } },

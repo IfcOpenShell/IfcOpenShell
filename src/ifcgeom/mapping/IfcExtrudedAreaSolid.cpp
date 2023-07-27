@@ -24,7 +24,7 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcExtrudedAreaSolid* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcExtrudedAreaSolid* inst) {
 	const double height = inst->Depth() * length_unit_;
 	if (height < conv_settings_.getValue(ConversionSettings::GV_PRECISION)) {
 		Logger::Message(Logger::LOG_ERROR, "Non-positive extrusion height encountered for:", inst);
@@ -33,13 +33,13 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcExtrudedAreaSolid* inst) {
 #endif
 	}
 
-	taxonomy::matrix4 matrix;
+	taxonomy::matrix4::ptr matrix;
 	bool has_position = true;
 #ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
 	has_position = inst->Position() != nullptr;
 #endif
 	if (has_position) {
-		matrix = as<taxonomy::matrix4>(map(inst->Position()));
+		matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
 	}
 
 #ifdef PERMISSIVE_EXTRUSION
@@ -49,10 +49,10 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcExtrudedAreaSolid* inst) {
 	}
 #endif
 
-	return new taxonomy::extrusion(
+	return taxonomy::make<taxonomy::extrusion>(
 		matrix,
-		as<taxonomy::face>(map(inst->SweptArea())),
-		as<taxonomy::direction3>(map(inst->ExtrudedDirection())),
+		taxonomy::cast<taxonomy::face>(map(inst->SweptArea())),
+		taxonomy::cast<taxonomy::direction3>(map(inst->ExtrudedDirection())),
 		height
 	);
 }

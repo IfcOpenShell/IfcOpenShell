@@ -14,20 +14,20 @@ namespace ifcopenshell {
 		struct profile_point_with_edges {
 			Eigen::Vector2d xy;
 			boost::optional<double> radius;
-			taxonomy::edge *previous, *next;
+			taxonomy::edge::ptr previous, next;
 		};
 
 		struct profile_point_with_edges_3d {
 			Eigen::Vector3d xy;
 			boost::optional<double> radius;
-			taxonomy::edge *previous, *next;
+			taxonomy::edge::ptr previous, next;
 		};
 
-		taxonomy::loop* polygon_from_points(const std::vector<taxonomy::point3>& ps, bool external = true);
+		taxonomy::loop::ptr polygon_from_points(const std::vector<taxonomy::point3::ptr>& ps, bool external = true);
 
-		taxonomy::loop* profile_helper(const taxonomy::matrix4& m4, const std::vector<profile_point>& points);
+		taxonomy::loop::ptr profile_helper(const taxonomy::matrix4::ptr& m4, const std::vector<profile_point>& points);
 
-		taxonomy::loop* fillet_loop(taxonomy::loop* lp, double radius);
+		taxonomy::loop::ptr fillet_loop(taxonomy::loop::ptr lp, double radius);
 	}
 
 }

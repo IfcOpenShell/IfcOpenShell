@@ -23,6 +23,6 @@
 
 using namespace ifcopenshell::geometry;
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcArbitraryOpenProfileDef* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcArbitraryOpenProfileDef* inst) {
 	return map(inst->Curve());
 }

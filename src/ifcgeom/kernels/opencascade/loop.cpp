@@ -26,21 +26,21 @@ using namespace IfcGeom::util;
 
 namespace {
 	typedef boost::variant<Handle(Geom_Curve), TopoDS_Wire> curve_creation_visitor_result_type;
-	curve_creation_visitor_result_type convert_curve(OpenCascadeKernel* kernel, const taxonomy::item* curve);
+	curve_creation_visitor_result_type convert_curve(OpenCascadeKernel* kernel, const taxonomy::ptr curve);
 
 	struct curve_creation_visitor {
 		OpenCascadeKernel* kernel;
 		curve_creation_visitor_result_type result;
 
-		curve_creation_visitor_result_type operator()(const taxonomy::bspline_curve& bc) {
+		curve_creation_visitor_result_type operator()(const taxonomy::bspline_curve::ptr& bc) {
 
-			const bool is_rational = !!bc.weights;
+			const bool is_rational = !!bc->weights;
 
-			TColgp_Array1OfPnt      Poles(0, bc.control_points.size() - 1);
-			TColStd_Array1OfReal    Weights(0, bc.control_points.size() - 1);
-			TColStd_Array1OfReal    Knots(0, (int)bc.knots.size() - 1);
-			TColStd_Array1OfInteger Mults(0, (int)bc.knots.size() - 1);
-			Standard_Integer        Degree = bc.degree;
+			TColgp_Array1OfPnt      Poles(0, bc->control_points.size() - 1);
+			TColStd_Array1OfReal    Weights(0, bc->control_points.size() - 1);
+			TColStd_Array1OfReal    Knots(0, (int)bc->knots.size() - 1);
+			TColStd_Array1OfInteger Mults(0, (int)bc->knots.size() - 1);
+			Standard_Integer        Degree = bc->degree;
 			Standard_Boolean        Periodic = false;
 			// @tfk: it appears to be wrong to expect a period curve when the curve is closed, see #586
 			// Standard_Boolean     Periodic = l->ClosedCurve();
@@ -49,23 +49,23 @@ namespace {
 
 			if (is_rational) {
 				i = 0;
-				for (auto it = bc.weights->begin(); it != bc.weights->end(); ++it, ++i) {
+				for (auto it = bc->weights->begin(); it != bc->weights->end(); ++it, ++i) {
 					Weights(i) = *it;
 				}
 			}
 
 			i = 0;
-			for (auto it = bc.control_points.begin(); it != bc.control_points.end(); ++it, ++i) {
-				Poles(i) = OpenCascadeKernel::convert_xyz<gp_Pnt>(*it);
+			for (auto it = bc->control_points.begin(); it != bc->control_points.end(); ++it, ++i) {
+				Poles(i) = OpenCascadeKernel::convert_xyz<gp_Pnt>(**it);
 			}
 
 			i = 0;
-			for (auto it = bc.multiplicities.begin(); it != bc.multiplicities.end(); ++it, ++i) {
+			for (auto it = bc->multiplicities.begin(); it != bc->multiplicities.end(); ++it, ++i) {
 				Mults(i) = *it;
 			}
 
 			i = 0;
-			for (auto it = bc.knots.begin(); it != bc.knots.end(); ++it, ++i) {
+			for (auto it = bc->knots.begin(); it != bc->knots.end(); ++it, ++i) {
 				Knots(i) = *it;
 			}
 
@@ -76,44 +76,44 @@ namespace {
 			}
 		}
 
-		curve_creation_visitor_result_type operator()(const taxonomy::line& l) {
-			const auto& m = l.matrix.ccomponents();
+		curve_creation_visitor_result_type operator()(const taxonomy::line::ptr& l) {
+			const auto& m = l->matrix->ccomponents();
 			return result = Handle(Geom_Curve)(new Geom_Line(OpenCascadeKernel::convert_xyz2<gp_Pnt>(m.col(3)), OpenCascadeKernel::convert_xyz2<gp_Dir>(m.col(0))));
 		}
 
-		curve_creation_visitor_result_type operator()(const taxonomy::circle& c) {
-			const auto& m = c.matrix.ccomponents();
-			return result = Handle(Geom_Curve)(new Geom_Circle(gp_Ax2(OpenCascadeKernel::convert_xyz2<gp_Pnt>(m.col(3)), OpenCascadeKernel::convert_xyz2<gp_Dir>(m.col(2)), OpenCascadeKernel::convert_xyz2<gp_Dir>(m.col(0))), c.radius));
+		curve_creation_visitor_result_type operator()(const taxonomy::circle::ptr& c) {
+			const auto& m = c->matrix->ccomponents();
+			return result = Handle(Geom_Curve)(new Geom_Circle(gp_Ax2(OpenCascadeKernel::convert_xyz2<gp_Pnt>(m.col(3)), OpenCascadeKernel::convert_xyz2<gp_Dir>(m.col(2)), OpenCascadeKernel::convert_xyz2<gp_Dir>(m.col(0))), c->radius));
 		}
 
-		curve_creation_visitor_result_type operator()(const taxonomy::ellipse& e) {
-			const auto& m = e.matrix.ccomponents();
-			return result = Handle(Geom_Curve)(new Geom_Ellipse(gp_Ax2(OpenCascadeKernel::convert_xyz2<gp_Pnt>(m.col(3)), OpenCascadeKernel::convert_xyz2<gp_Dir>(m.col(2)), OpenCascadeKernel::convert_xyz2<gp_Dir>(m.col(0))), e.radius, e.radius2));
+		curve_creation_visitor_result_type operator()(const taxonomy::ellipse::ptr& e) {
+			const auto& m = e->matrix->ccomponents();
+			return result = Handle(Geom_Curve)(new Geom_Ellipse(gp_Ax2(OpenCascadeKernel::convert_xyz2<gp_Pnt>(m.col(3)), OpenCascadeKernel::convert_xyz2<gp_Dir>(m.col(2)), OpenCascadeKernel::convert_xyz2<gp_Dir>(m.col(0))), e->radius, e->radius2));
 		}
 
-		curve_creation_visitor_result_type operator()(const taxonomy::loop& l) {
+		curve_creation_visitor_result_type operator()(const taxonomy::loop::ptr& l) {
 			TopoDS_Wire wire;
-			kernel->convert(&l, wire);
+			kernel->convert(l, wire);
 			return result = wire;
 		}
 
-		curve_creation_visitor_result_type operator()(const taxonomy::edge& e) {
+		curve_creation_visitor_result_type operator()(const taxonomy::edge::ptr& e) {
 			// @todo for polyloops/-lines we should probably construct edges based on correct oriented TopoDS_Vertex instead.
 
-			if (e.start.which() != e.end.which()) {
+			if (e->start.which() != e->end.which()) {
 				throw std::runtime_error("Different trim types not supported");
 			}
 
 			TopoDS_Edge E;
-			if (e.basis) {
-				auto crv_or_wire = convert_curve(kernel, e.basis);
+			if (e->basis) {
+				auto crv_or_wire = convert_curve(kernel, e->basis);
 				Handle(Geom_Curve) curve;
 				if (crv_or_wire.which() == 0) {
 					curve = boost::get<Handle(Geom_Curve)>(crv_or_wire);
 				} else {
 					// @todo
 					const double precision_ = 1.e-5;
-					Logger::Warning("Approximating BasisCurve due to possible discontinuities", e.instance);
+					Logger::Warning("Approximating BasisCurve due to possible discontinuities", e->instance);
 					const auto& w = boost::get<TopoDS_Wire>(crv_or_wire);
 #if OCC_VERSION_HEX < 0x70600
 					BRepAdaptor_CompCurve cc(w, true);
@@ -126,13 +126,13 @@ namespace {
 					curve = approx.Curve();
 				}
 
-				const bool reversed = !((taxonomy::geom_item*)e.basis)->orientation.get_value_or(true);
-				const bool is_conic = e.basis->kind() == taxonomy::ELLIPSE || e.basis->kind() == taxonomy::CIRCLE;
+				const bool reversed = !taxonomy::cast<taxonomy::geom_item>(e->basis)->orientation.get_value_or(true);
+				const bool is_conic = e->basis->kind() == taxonomy::ELLIPSE || e->basis->kind() == taxonomy::CIRCLE;
 
 				// @todo, copy over logic from previous IfcTrimmedCurve handling
-				if (e.start.which() == 0) {
-					auto p1 = OpenCascadeKernel::convert_xyz<gp_Pnt>(boost::get<taxonomy::point3>(e.start));
-					auto p2 = OpenCascadeKernel::convert_xyz<gp_Pnt>(boost::get<taxonomy::point3>(e.end));
+				if (e->start.which() == 0) {
+					auto p1 = OpenCascadeKernel::convert_xyz<gp_Pnt>(*boost::get<taxonomy::point3::ptr>(e->start));
+					auto p2 = OpenCascadeKernel::convert_xyz<gp_Pnt>(*boost::get<taxonomy::point3::ptr>(e->end));
 
 					if (reversed) {
 						std::swap(p1, p2);
@@ -140,8 +140,8 @@ namespace {
 
 					E = BRepBuilderAPI_MakeEdge(curve, p1, p2).Edge();
 				} else {
-					auto v1 = boost::get<double>(e.start);
-					auto v2 = boost::get<double>(e.end);
+					auto v1 = boost::get<double>(e->start);
+					auto v2 = boost::get<double>(e->end);
 
 					if (reversed) {
 						std::swap(v1, v2);
@@ -158,11 +158,11 @@ namespace {
 					E.Reverse();
 				}
 			} else {
-				if (e.start.which() != 0) {
+				if (e->start.which() != 0) {
 					throw std::runtime_error("Non-cartesian trim on edge without curve");
 				}
-				auto p1 = OpenCascadeKernel::convert_xyz<gp_Pnt>(boost::get<taxonomy::point3>(e.start));
-				auto p2 = OpenCascadeKernel::convert_xyz<gp_Pnt>(boost::get<taxonomy::point3>(e.end));
+				auto p1 = OpenCascadeKernel::convert_xyz<gp_Pnt>(*boost::get<taxonomy::point3::ptr>(e->start));
+				auto p2 = OpenCascadeKernel::convert_xyz<gp_Pnt>(*boost::get<taxonomy::point3::ptr>(e->end));
 
 				E = BRepBuilderAPI_MakeEdge(p1, p2).Edge();
 			}
@@ -173,13 +173,13 @@ namespace {
 			return result = W;
 		}
 
-		curve_creation_visitor_result_type operator()(const taxonomy::offset_curve& l) {
+		curve_creation_visitor_result_type operator()(const taxonomy::offset_curve::ptr&) {
 			// @todo
 			throw std::runtime_error("Offset curves not supported as part of loop");
 		}
 	};
 
-	curve_creation_visitor_result_type convert_curve(OpenCascadeKernel* kernel, const taxonomy::item* curve) {
+	curve_creation_visitor_result_type convert_curve(OpenCascadeKernel* kernel, const taxonomy::ptr curve) {
 		curve_creation_visitor v{ kernel };
 		if (dispatch_curve_creation<curve_creation_visitor, 0>::dispatch(curve, v)) {
 			return v.result;
@@ -189,12 +189,10 @@ namespace {
 	}
 }
 
-bool OpenCascadeKernel::convert(const taxonomy::loop* loop, TopoDS_Wire& wire) {
-	auto segments = loop->children_as<taxonomy::edge>();
-
+bool OpenCascadeKernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wire) {
 	TopTools_ListOfShape converted_segments;
 
-	for (auto& segment : segments) {
+	for (auto& segment : loop->children) {
 		auto segment_wire = boost::get<TopoDS_Wire>(convert_curve(this, segment));
 
 #ifdef IFOPSH_DEBUG

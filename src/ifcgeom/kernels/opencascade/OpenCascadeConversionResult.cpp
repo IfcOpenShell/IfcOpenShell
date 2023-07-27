@@ -23,7 +23,7 @@ namespace {
 
 void ifcopenshell::geometry::OpenCascadeShape::Triangulate(const IfcGeom::IteratorSettings& settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int surface_style_id) const {
 
-	// @todo remove duplication with OpenCascadeKernel::convert(const taxonomy::matrix4* matrix, gp_GTrsf& trsf);
+	// @todo remove duplication with OpenCascadeKernel::convert(const taxonomy::matrix4::ptr matrix, gp_GTrsf& trsf);
 	// above can be static?
 
 	// A 3x3 matrix to rotate the vertex normals

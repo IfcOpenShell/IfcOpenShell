@@ -43,7 +43,7 @@ namespace {
 	}
 }
 
-bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result* br, ConversionResults& results) {
+bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, ConversionResults& results) {
 	bool valid_result = false;
 	bool first = true;
 	const double tol = conv_settings_.getValue(ConversionSettings::GV_PRECISION);
@@ -51,7 +51,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result* br, Convers
 	TopoDS_Shape a;
 	TopTools_ListOfShape b;
 
-	taxonomy::style* first_item_style = nullptr;
+	taxonomy::style::ptr first_item_style;
 
 	for (auto& c : br->children) {
 		IfcGeom::ConversionResults cr;
@@ -59,10 +59,10 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result* br, Convers
 		if (first && br->operation == taxonomy::boolean_result::SUBTRACTION) {
 			// @todo A will be null on union/intersection, intended?
 			IfcGeom::util::flatten_shape_list(cr, a, false, conv_settings_.getValue(ifcopenshell::geometry::ConversionSettings::GV_PRECISION));
-			first_item_style = ((taxonomy::geom_item*)c)->surface_style;
+			first_item_style = c->surface_style;
 			if (!first_item_style && c->kind() == taxonomy::COLLECTION) {
 				// @todo recursively right?
-				first_item_style = ((taxonomy::geom_item*) ((taxonomy::collection*)c)->children[0])->surface_style;
+				first_item_style = taxonomy::cast<taxonomy::geom_item>(taxonomy::cast<taxonomy::collection>(c)->children[0])->surface_style;
 			}
 
 			if (conv_settings_.getValue(ConversionSettings::GV_DISABLE_BOOLEAN_RESULT) > 0.0) {
@@ -84,7 +84,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result* br, Convers
 			for (auto& r : cr) {
 				auto S = ((OpenCascadeShape*)r.Shape())->shape();
 				gp_GTrsf trsf;
-				convert(&r.Placement(), trsf);
+				convert(r.Placement(), trsf);
 				// @todo it really confuses me why I cannot use Moved() here instead
 				S.Location(S.Location() * trsf.Trsf());
 

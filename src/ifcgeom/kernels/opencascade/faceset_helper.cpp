@@ -27,21 +27,21 @@ namespace {
 
 IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 	OpenCascadeKernel* kernel,
-	const taxonomy::shell* shell
+	const taxonomy::shell::ptr shell
 )
 	: kernel_(kernel)
 	, non_manifold_(false)
 {
 	// @todo use pointers?
-	std::vector<taxonomy::point3> points;
-	std::vector<taxonomy::loop*> loops;
+	std::vector<taxonomy::point3::ptr> points;
+	std::vector<taxonomy::loop::ptr> loops;
 
-	for (auto& f : shell->children_as<taxonomy::face>()) {
-		for (auto& l : f->children_as<taxonomy::loop>()) {
+	for (auto& f : shell->children) {
+		for (auto& l : f->children) {
 			loops.push_back(l);
-			for (auto& e : l->children_as<taxonomy::edge>()) {
+			for (auto& e : l->children) {
 				// @todo make sure only cartesian points are provided here
-				points.push_back(boost::get<taxonomy::point3>(e->start));
+				points.push_back(boost::get<taxonomy::point3::ptr>(e->start));
 			}
 		}
 	}
@@ -55,7 +55,7 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 
 	Bnd_Box box;
 	for (size_t i = 0; i < points.size(); ++i) {
-		gp_Pnt* p = new gp_Pnt(convert_xyz<gp_Pnt>(points[i]));
+		gp_Pnt* p = new gp_Pnt(convert_xyz<gp_Pnt>(*points[i]));
 		pnts[i].reset(p);
 		B.MakeVertex(vertices[i], *p, Precision::Confusion());
 		tree.add(i, vertices[i]);
@@ -116,7 +116,7 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 				find_neighbours(tree, pnts, vs, pnt_i, eps_);
 
 				for (int v : vs) {
-					auto& pt = points[v];
+					auto& pt = *points[v];
 					// NB: insert() ignores duplicate keys
 					// v-1?
 					// @todo this reliable also in case of tesselations?
@@ -192,15 +192,15 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 	}
 }
 
-void IfcGeom::OpenCascadeKernel::faceset_helper::loop_(const taxonomy::loop* ps, const std::function<void(int, int, bool)>& callback) {
+void IfcGeom::OpenCascadeKernel::faceset_helper::loop_(const taxonomy::loop::ptr ps, const std::function<void(int, int, bool)>& callback) {
 	if (ps->children.size() < 3) {
 		return;
 	}
 
-	auto a = boost::get<taxonomy::point3>(((taxonomy::edge*) ps->children.back())->start);
-	auto A = a.identity();
+	auto a = boost::get<taxonomy::point3::ptr>(ps->children.back()->start);
+	auto A = a->identity();
 	for (auto& b : ps->children) {
-		auto B = boost::get<taxonomy::point3>(((taxonomy::edge*) b)->start).identity();
+		auto B = boost::get<taxonomy::point3::ptr>(b->start)->identity();
 		auto C = vertex_mapping_[A], D = vertex_mapping_[B];
 		bool fwd = C < D;
 		if (!fwd) {
@@ -222,7 +222,7 @@ bool IfcGeom::OpenCascadeKernel::faceset_helper::edge(int A, int B, TopoDS_Edge&
 	return true;
 }
 
-bool IfcGeom::OpenCascadeKernel::faceset_helper::wire(const taxonomy::loop* loop, TopoDS_Wire& w) {
+bool IfcGeom::OpenCascadeKernel::faceset_helper::wire(const taxonomy::loop::ptr loop, TopoDS_Wire& w) {
 	TopTools_ListOfShape ws;
 	if (!wires(loop, ws)) {
 		return false;
@@ -231,7 +231,7 @@ bool IfcGeom::OpenCascadeKernel::faceset_helper::wire(const taxonomy::loop* loop
 	return true;
 }
 
-bool IfcGeom::OpenCascadeKernel::faceset_helper::wires(const taxonomy::loop* loop, TopTools_ListOfShape& wires) {
+bool IfcGeom::OpenCascadeKernel::faceset_helper::wires(const taxonomy::loop::ptr loop, TopTools_ListOfShape& wires) {
 	if (duplicates_.find(loop->identity()) != duplicates_.end()) {
 		return false;
 	}

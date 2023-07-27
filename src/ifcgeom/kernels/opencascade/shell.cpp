@@ -7,13 +7,12 @@ using namespace ifcopenshell::geometry::kernels;
 using namespace IfcGeom;
 using namespace IfcGeom::util;
 
-bool OpenCascadeKernel::convert(const taxonomy::shell* l, TopoDS_Shape& shape) {
+bool OpenCascadeKernel::convert(const taxonomy::shell::ptr l, TopoDS_Shape& shape) {
 	std::unique_ptr<faceset_helper> helper_scope;
 	helper_scope.reset(new faceset_helper(this, l));
 
 	faceset_helper_ = helper_scope.get();
 
-	auto faces = l->children_as<taxonomy::face>();
 	double minimal_face_area = precision_ * precision_ * 0.5;
 
 	double min_face_area = faceset_helper_
@@ -21,7 +20,7 @@ bool OpenCascadeKernel::convert(const taxonomy::shell* l, TopoDS_Shape& shape) {
 		: minimal_face_area;
 
 	TopTools_ListOfShape face_list;
-	for (auto& face : faces) {
+	for (auto& face : l->children) {
 		bool success = false;
 		TopoDS_Face occ_face;
 
@@ -88,7 +87,7 @@ bool OpenCascadeKernel::convert(const taxonomy::shell* l, TopoDS_Shape& shape) {
 	return true;
 }
 
-bool OpenCascadeKernel::convert_impl(const taxonomy::shell *shell, IfcGeom::ConversionResults& results) {
+bool OpenCascadeKernel::convert_impl(const taxonomy::shell::ptr shell, IfcGeom::ConversionResults& results) {
 	TopoDS_Shape shape;
 	if (!convert(shell, shape)) {
 		return false;

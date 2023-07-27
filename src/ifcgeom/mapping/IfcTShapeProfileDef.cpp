@@ -23,7 +23,7 @@ using namespace ifcopenshell::geometry;
 
 #include "../profile_helper.h"
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcTShapeProfileDef* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTShapeProfileDef* inst) {
 	const bool doFlangeEdgeFillet = !!inst->FlangeEdgeRadius();
 	const bool doWebEdgeFillet = !!inst->WebEdgeRadius();
 	const bool doFillet = !!inst->FilletRadius();
@@ -99,13 +99,13 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcTShapeProfileDef* inst) {
 		xy = y - d2;
 	}
 
-	taxonomy::matrix4 m4;
+	taxonomy::matrix4::ptr m4;
 	bool has_position = true;
 #ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
 	has_position = !!inst->Position();
 #endif
 	if (has_position) {
-		m4 = as<taxonomy::matrix4>(map(inst->Position()));
+		m4 = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
 	}
 
 	return profile_helper(m4, {

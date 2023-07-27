@@ -194,7 +194,7 @@ void ColladaSerializer::ColladaExporter::ColladaScene::add(
 	// The matrix attribute of an entity is basically a 4x3 representation of its ObjectPlacement.
 	// Note that this placement is absolute, ie it is multiplied with all parent placements.
 
-	auto transformation_towrite = transformation.data().ccomponents();
+	auto transformation_towrite = transformation.data()->ccomponents();
 	
 	// If this is not the first parent, get the relative placement
 	if (parentNodes.size() > 0)
@@ -238,7 +238,7 @@ void ColladaSerializer::ColladaExporter::ColladaScene::addParent(const IfcGeom::
 
 	const IfcGeom::Transformation& parent_trsf = parent.transformation();
 
-	auto transformation_towrite = parent_trsf.data().ccomponents();
+	auto transformation_towrite = parent_trsf.data()->ccomponents();
 
 	// If this is not the first parent, get the relative placement
 	if (parentNodes.size() > 0) {
@@ -268,7 +268,7 @@ void ColladaSerializer::ColladaExporter::ColladaScene::addParent(const IfcGeom::
 	current_node->addMatrix(matrix_array);
 
 	// Add the node to the parent stack
-	matrixStack.push(ifcopenshell::geometry::taxonomy::matrix4(parent_trsf.data().ccomponents().inverse()));
+	matrixStack.push(ifcopenshell::geometry::taxonomy::matrix4(parent_trsf.data()->ccomponents().inverse()));
 	parentNodes.push(current_node);
 	serializer->parentStackId.push(parent.id());
 }

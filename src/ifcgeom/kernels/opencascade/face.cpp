@@ -47,9 +47,7 @@ using namespace ifcopenshell::geometry::kernels;
 using namespace IfcGeom;
 using namespace IfcGeom::util;
 
-bool OpenCascadeKernel::convert(const taxonomy::face* face, TopoDS_Shape& result) {
-	auto bounds = face->children_as<taxonomy::loop>();
-
+bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& result) {
 	face_definition fd;
 
 	const bool is_face_surface = false; /* todo */
@@ -71,10 +69,10 @@ bool OpenCascadeKernel::convert(const taxonomy::face* face, TopoDS_Shape& result
 	}
 	*/
 
-	const int num_bounds = bounds.size();
+	const int num_bounds = face->children.size();
 	int num_outer_bounds = 0;
 
-	for (auto& bound : bounds) {
+	for (auto& bound : face->children) {
 		if (bound->external.get_value_or(false)) {
 			num_outer_bounds++;
 		}
@@ -97,7 +95,7 @@ bool OpenCascadeKernel::convert(const taxonomy::face* face, TopoDS_Shape& result
 	TopTools_DataMapOfShapeInteger wire_senses;
 
 	for (int process_interior = 0; process_interior <= 1; ++process_interior) {
-		for (auto& bound : bounds) {
+		for (auto& bound : face->children) {
 			bool same_sense = true; /* todo bound->Orientation(); */
 
 			const bool is_interior =
@@ -302,7 +300,7 @@ bool OpenCascadeKernel::convert(const taxonomy::face* face, TopoDS_Shape& result
 	return true;
 }
 
-bool OpenCascadeKernel::convert_impl(const taxonomy::face* face, IfcGeom::ConversionResults& results) {
+bool OpenCascadeKernel::convert_impl(const taxonomy::face::ptr face, IfcGeom::ConversionResults& results) {
 	throw std::runtime_error("Root-level face not expected");
 	/*
 
@@ -320,7 +318,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::face* face, IfcGeom::Conver
 	}
 
 	// @todo boundary
-	const auto& m = ((taxonomy::geom_item*)face->basis)->matrix.ccomponents();
+	const auto& m = ((taxonomy::geom_ptr)face->basis)->matrix.ccomponents();
 	gp_Pln pln(convert_xyz2<gp_Pnt>(m.col(3)), convert_xyz2<gp_Dir>(m.col(2)));
 	const gp_Pnt pnt = pln.Location().Translated(face->orientation.get_value_or(false) ? -pln.Axis().Direction() : pln.Axis().Direction());
 	TopoDS_Shape shape = BRepPrimAPI_MakeHalfSpace(BRepBuilderAPI_MakeFace(pln), pnt).Solid();

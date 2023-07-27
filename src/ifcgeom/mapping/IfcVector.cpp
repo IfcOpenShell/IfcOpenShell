@@ -21,8 +21,8 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcVector* inst) {
-	auto d = (taxonomy::direction3*) map(inst->Orientation());
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcVector* inst) {
+	auto d = taxonomy::cast<taxonomy::direction3>(map(inst->Orientation()));
 	d->components() *= inst->Magnitude() * length_unit_;
 	return d;
 }

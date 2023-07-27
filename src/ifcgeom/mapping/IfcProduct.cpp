@@ -4,11 +4,11 @@ using namespace ifcopenshell::geometry;
 
 using namespace IfcGeom;
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcProduct* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcProduct* inst) {
 	// @todo decide on this, what happens in the product mapping?
 	// currently things like openings, layers and materials are processed in the converter
-	auto c = new taxonomy::collection;
-	c->matrix = as<taxonomy::matrix4>(map(inst->ObjectPlacement()));
+	auto c = taxonomy::make<taxonomy::collection>();
+	c->matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->ObjectPlacement()));
 	return c;
 
 	/*
@@ -30,7 +30,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcProduct* inst) {
 	}
 
 	auto c = new taxonomy::collection;
-	c->matrix = as<taxonomy::matrix4>(map(inst->ObjectPlacement()));
+	c->matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->ObjectPlacement()));
 
 	const auto single_material = get_single_material_association(inst);
 	if (single_material) {
@@ -53,8 +53,8 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcProduct* inst) {
 		operands->push(body);
 		operands->push(openings);
 		auto n = map_to_collection<taxonomy::boolean_result>(this, operands);
-		std::for_each(n->children.begin() + 1, n->children.end(), [&ci](taxonomy::item* i) {
-			((taxonomy::geom_item*)i)->matrix.components() = ci * ((taxonomy::geom_item*)i)->matrix.ccomponents();
+		std::for_each(n->children.begin() + 1, n->children.end(), [&ci](taxonomy::ptr i) {
+			((taxonomy::geom_ptr)i)->matrix.components() = ci * ((taxonomy::geom_ptr)i)->matrix.ccomponents();
 		});
 		n->operation = taxonomy::boolean_result::SUBTRACTION;
 		// @todo one indirection too many

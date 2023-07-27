@@ -23,14 +23,14 @@ using namespace ifcopenshell::geometry;
 
 #include <boost/math/constants/constants.hpp>
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcTrimmedCurve* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrimmedCurve* inst) {
 	static const double pi = boost::math::constants::pi<double>();
 
 	IfcSchema::IfcCurve* basis_curve = inst->BasisCurve();
 	bool isConic = basis_curve->declaration().is(IfcSchema::IfcConic::Class());
 	double parameterFactor = isConic ? angle_unit_ : length_unit_;
 	
-	auto tc = new taxonomy::edge;
+	auto tc = taxonomy::make<taxonomy::edge>();
 	tc->basis = map(inst->BasisCurve());
 	
 	bool trim_cartesian = inst->MasterRepresentation() != IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER;
@@ -40,7 +40,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcTrimmedCurve* inst) {
 	// reversed orientation handling happens in geometry kernel
 	unsigned sense_agreement = 0;
 	double flts[2];
-	taxonomy::point3 pnts[2];
+	taxonomy::point3::ptr pnts[2];
 	bool has_flts[2] = {false,false};
 	bool has_pnts[2] = {false,false};
 	
@@ -49,7 +49,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcTrimmedCurve* inst) {
 	for ( aggregate_of_instance::it it = trims1->begin(); it != trims1->end(); it ++ ) {
 		IfcUtil::IfcBaseClass* i = *it;
 		if ( i->declaration().is(IfcSchema::IfcCartesianPoint::Class()) ) {
-			pnts[sense_agreement] = as<taxonomy::point3>(map(i));
+			pnts[sense_agreement] = taxonomy::cast<taxonomy::point3>(map(i));
 			has_pnts[sense_agreement] = true;
 		} else if ( i->declaration().is(IfcSchema::IfcParameterValue::Class()) ) {
 			const double value = *((IfcSchema::IfcParameterValue*)i);
@@ -61,7 +61,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcTrimmedCurve* inst) {
 	for ( aggregate_of_instance::it it = trims2->begin(); it != trims2->end(); it ++ ) {
 		IfcUtil::IfcBaseClass* i = *it;
 		if ( i->declaration().is(IfcSchema::IfcCartesianPoint::Class()) ) {
-			pnts[1 - sense_agreement] = as<taxonomy::point3>(map(i));
+			pnts[1 - sense_agreement] = taxonomy::cast<taxonomy::point3>(map(i));
 			has_pnts[1-sense_agreement] = true;
 		} else if ( i->declaration().is(IfcSchema::IfcParameterValue::Class()) ) {
 			const double value = *((IfcSchema::IfcParameterValue*)i);
@@ -75,7 +75,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcTrimmedCurve* inst) {
 	trim_cartesian &= has_pnts[0] && has_pnts[1];
 	bool trim_cartesian_failed = !trim_cartesian;
 	if (trim_cartesian) {
-		if ((pnts[0].ccomponents() - pnts[1].ccomponents()).norm() < (2 * tol)) {
+		if ((pnts[0]->ccomponents() - pnts[1]->ccomponents()).norm() < (2 * tol)) {
 			Logger::Message(Logger::LOG_WARNING, "Skipping segment with length below tolerance level:", inst);
 			return nullptr;
 		}
@@ -104,12 +104,10 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcTrimmedCurve* inst) {
 		}
 
 		double radius = 1.0;
-		if (tc->basis->kind() == taxonomy::CIRCLE) {
-			auto typed_curve = (taxonomy::circle*) tc->basis;
-			radius = typed_curve->radius;
-		} else if (tc->basis->kind() == taxonomy::ELLIPSE) {
-			auto typed_curve = (taxonomy::ellipse*) tc->basis;
-			radius = (typed_curve->radius + typed_curve->radius2) / 2.;
+		if (auto typed_circle = taxonomy::dcast<taxonomy::circle>(tc->basis)) {
+			radius = typed_circle->radius;
+		} else if (auto typed_ellipse = taxonomy::dcast<taxonomy::ellipse>(tc->basis)) {
+			radius = (typed_ellipse->radius + typed_ellipse->radius2) / 2.;
 		}
 
 		// Fix from @sanderboer to compare using model tolerance, see #744

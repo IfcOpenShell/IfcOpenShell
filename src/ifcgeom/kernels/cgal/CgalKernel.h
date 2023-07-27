@@ -91,22 +91,22 @@ namespace ifcopenshell {
 
 				void remove_duplicate_points_from_loop(cgal_wire_t& polygon);
 
-				bool convert(const taxonomy::extrusion*, cgal_shape_t&);
-				bool convert(const taxonomy::face*, cgal_face_t&);
-				bool convert(const taxonomy::loop*, cgal_wire_t&);
-				// bool convert(const taxonomy::matrix4*, cgal_placement_t&);
-				bool convert(const taxonomy::shell*, cgal_shape_t&);
+				bool convert(const taxonomy::extrusion::ptr, cgal_shape_t&);
+				bool convert(const taxonomy::face::ptr, cgal_face_t&);
+				bool convert(const taxonomy::loop::ptr, cgal_wire_t&);
+				// bool convert(const taxonomy::matrix4::ptr, cgal_placement_t&);
+				bool convert(const taxonomy::shell::ptr, cgal_shape_t&);
 
-				bool process_extrusion(const cgal_face_t& bottom_face, const taxonomy::direction3& direction, double height, cgal_shape_t& shape);
-				bool process_as_2d_polygon(const taxonomy::boolean_result* br, std::list<CGAL::Polygon_2<Kernel_>>& loops, double& z0, double& z1);
+				bool process_extrusion(const cgal_face_t& bottom_face, taxonomy::direction3::ptr direction, double height, cgal_shape_t& shape);
+				bool process_as_2d_polygon(const taxonomy::boolean_result::ptr br, std::list<CGAL::Polygon_2<Kernel_>>& loops, double& z0, double& z1);
 				bool process_as_2d_polygon(const std::list<std::list<std::pair<const IfcUtil::IfcBaseClass*, cgal_shape_t>>>& operands, std::list<CGAL::Polygon_2<Kernel_>>& loops, double& z0, double& z1);
 
-				virtual bool convert_impl(const taxonomy::shell*, IfcGeom::ConversionResults&);
-				virtual bool convert_impl(const taxonomy::extrusion*, IfcGeom::ConversionResults&);
-				virtual bool convert_impl(const taxonomy::boolean_result*, IfcGeom::ConversionResults&);
-				virtual bool convert_impl(const taxonomy::solid*, IfcGeom::ConversionResults&);
+				virtual bool convert_impl(const taxonomy::shell::ptr, IfcGeom::ConversionResults&);
+				virtual bool convert_impl(const taxonomy::extrusion::ptr, IfcGeom::ConversionResults&);
+				virtual bool convert_impl(const taxonomy::boolean_result::ptr, IfcGeom::ConversionResults&);
+				virtual bool convert_impl(const taxonomy::solid::ptr, IfcGeom::ConversionResults&);
 
-				virtual bool convert_openings(const IfcUtil::IfcBaseEntity* entity, const std::vector<std::pair<taxonomy::item*, ifcopenshell::geometry::taxonomy::matrix4>>& openings,
+				virtual bool convert_openings(const IfcUtil::IfcBaseEntity* entity, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geometry::taxonomy::matrix4>>& openings,
 					const IfcGeom::ConversionResults& entity_shapes, const ifcopenshell::geometry::taxonomy::matrix4& entity_trsf, IfcGeom::ConversionResults& cut_shapes);
 
 #ifndef IFOPSH_SIMPLE_KERNEL

@@ -406,7 +406,7 @@ namespace IfcGeom {
 			auto compound_generic = elem->geometry().as_compound();
 			auto compound = ((ifcopenshell::geometry::OpenCascadeShape*)compound_generic)->shape();
 			
-			const auto& m = elem->transformation().data().ccomponents();
+			const auto& m = elem->transformation().data()->ccomponents();
 			gp_Trsf tr;
 			tr.SetValues(
 				m(0, 0), m(0, 1), m(0, 2), m(0, 3),

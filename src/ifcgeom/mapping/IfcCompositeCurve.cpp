@@ -21,8 +21,8 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
-	auto loop = new taxonomy::loop;
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
+	auto loop = taxonomy::make<taxonomy::loop>();
 
 #ifdef SCHEMA_HAS_IfcSegment
 	// 4x3
@@ -49,7 +49,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 				Logger::Warning("Segment length below tolerance", segment);
 			}
 
-			auto e = new taxonomy::edge;
+			auto e = taxonomy::make<taxonomy::edge>();
 			e->basis = map(curve);
 			e->start = u0;
 			e->end = u1;
@@ -60,14 +60,14 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 			auto crv = map(segment->ParentCurve());
 			if (crv) {
 				if (crv->kind() == taxonomy::EDGE) {
-					((taxonomy::edge*)crv)->orientation_2.reset(segment->SameSense());
-					loop->children.push_back(crv);
+					auto ecrv = taxonomy::cast<taxonomy::edge>(crv);
+					ecrv->orientation_2.reset(segment->SameSense());
+					loop->children.push_back(ecrv);
 				} else if (crv->kind() == taxonomy::LOOP) {
 					if (!segment->SameSense()) {
 						crv->reverse();
 					}
-					auto curve_segments = ((taxonomy::loop*)crv)->children_as<taxonomy::edge>();
-					for (auto& s : curve_segments) {
+					for (auto& s : taxonomy::cast<taxonomy::loop>(crv)->children) {
 						loop->children.push_back(s);
 					}
 					// @todo delete crv without children
@@ -95,7 +95,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 #define _USE_MATH_DEFINES
 #define mapping POSTFIX_SCHEMA(mapping)
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire& wire) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire& wire) {
 
 
 	TopTools_ListOfShape converted_segments;

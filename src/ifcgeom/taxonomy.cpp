@@ -7,6 +7,18 @@ namespace {
 
 	bool compare(const collection& a, const collection& b);
 
+	bool compare(const loop& a, const loop& b);
+
+	bool compare(const face& a, const face& b);
+
+	bool compare(const shell& a, const shell& b);
+
+	bool compare(const solid& a, const solid& b);
+
+	bool compare(const loft& a, const loft& b);
+
+	bool compare(const boolean_result& a, const boolean_result& b);
+
 	template <typename T>
 	bool compare(const eigen_base<T>& t, const eigen_base<T>& u) {
 		if (t.components_ == nullptr && u.components_ == nullptr) {
@@ -27,23 +39,23 @@ namespace {
 	}
 
 	bool compare(const line& a, const line& b) {
-		return compare(a.matrix, b.matrix);
+		return compare(*a.matrix, *b.matrix);
 	}
 
 	bool compare(const plane& a, const plane& b) {
-		return compare(a.matrix, b.matrix);
+		return compare(*a.matrix, *b.matrix);
 	}
 
 	bool compare(const circle& a, const circle& b) {
 		if (a.radius == b.radius) {
-			return compare(a.matrix, b.matrix);
+			return compare(*a.matrix, *b.matrix);
 		}
 		return a.radius < b.radius;
 	}
 
 	bool compare(const ellipse& a, const ellipse& b) {
 		if (a.radius == b.radius && a.radius2 == b.radius2) {
-			return compare(a.matrix, b.matrix);
+			return compare(*a.matrix, *b.matrix);
 		}
 		return
 			std::tie(a.radius, a.radius2) <
@@ -83,11 +95,11 @@ namespace {
 		}
 	}
 
-	int compare(const boost::variant<point3, double>& a, const boost::variant<point3, double>& b) {
+	int compare(const boost::variant<point3::ptr, double>& a, const boost::variant<point3::ptr, double>& b) {
 		bool a_lt_b, b_lt_a;
 		if (a.which() == 0) {
-			a_lt_b = compare(boost::get<point3>(a), boost::get<point3>(b));
-			b_lt_a = compare(boost::get<point3>(b), boost::get<point3>(a));
+			a_lt_b = compare(*boost::get<point3::ptr>(a), *boost::get<point3::ptr>(b));
+			b_lt_a = compare(*boost::get<point3::ptr>(b), *boost::get<point3::ptr>(a));
 		} else {
 			a_lt_b = std::less<double>()(boost::get<double>(a), boost::get<double>(b));
 			b_lt_a = std::less<double>()(boost::get<double>(b), boost::get<double>(a));
@@ -132,7 +144,7 @@ namespace {
 	bool compare(const surface_curve_sweep&, const surface_curve_sweep&) {
 		throw std::runtime_error("not implemented");
 	}
-
+	
 	bool compare(const style& a, const style& b) {
 		const int order[5] = {
 			less_to_order(a.name, b.name),
@@ -168,7 +180,7 @@ namespace {
 	};
 }
 
-bool ifcopenshell::geometry::taxonomy::less(const item* a, const item* b) {
+bool ifcopenshell::geometry::taxonomy::less(item::const_ptr a, item::const_ptr b) {
 	if (a == b) {
 		return false;
 	}
@@ -180,7 +192,9 @@ bool ifcopenshell::geometry::taxonomy::less(const item* a, const item* b) {
 		return a_kind < b_kind;
 	}
 
-	return dispatch_comparison<0>::dispatch(a, b);
+#ifdef TAXONOMY_USE_SHARED_PTR
+	return dispatch_comparison<0>::dispatch(a.get(), b.get());
+#endif
 }
 
 
@@ -232,7 +246,8 @@ namespace {
 		}
 	}
 
-	bool compare(const collection& a, const collection& b) {
+	template <typename T>
+	bool compare_collection(const collection_base<T>& a, const collection_base<T>& b) {
 		if (a.children.size() == b.children.size()) {
 			auto at = a.children.begin();
 			auto bt = b.children.begin();
@@ -246,155 +261,183 @@ namespace {
 				return a_lt_b;
 			}
 			// Vectors equal, compare matrix (in case of mapped items).
-			return compare(a.matrix, b.matrix);
+			return compare(*a.matrix, *b.matrix);
 		} else {
 			return a.children.size() < b.children.size();
 		}
 	}
+
+	bool compare(const loop& a, const loop& b) {
+		return compare_collection<edge>(a, b);
+	}
+
+	bool compare(const face& a, const face& b) {
+		return compare_collection<loop>(a, b);
+	}
+
+	bool compare(const shell& a, const shell& b) {
+		return compare_collection<face>(a, b);
+	}
+
+	bool compare(const solid& a, const solid& b) {
+		return compare_collection<shell>(a, b);
+	}
+
+	bool compare(const loft& a, const loft& b) {
+		return compare_collection<face>(a, b);
+	}
+
+	bool compare(const collection& a, const collection& b) {
+		return compare_collection<geom_item>(a, b);
+	}
+
+	bool compare(const boolean_result& a, const boolean_result& b) {
+		return compare_collection<geom_item>(a, b);
+	}
 }
 
-ifcopenshell::geometry::taxonomy::solid* ifcopenshell::geometry::create_box(double dx, double dy, double dz) {
+ifcopenshell::geometry::taxonomy::solid::ptr ifcopenshell::geometry::create_box(double dx, double dy, double dz) {
 	return create_box(0., 0., 0., dx, dy, dz);
 }
 
-ifcopenshell::geometry::taxonomy::solid* ifcopenshell::geometry::create_box(double x, double y, double z, double dx, double dy, double dz) {
-	auto solid = new taxonomy::solid;
-	auto shell = new taxonomy::shell;
+ifcopenshell::geometry::taxonomy::solid::ptr ifcopenshell::geometry::create_box(double x, double y, double z, double dx, double dy, double dz) {
+	auto solid = make<taxonomy::solid>();
+	auto shell = make<taxonomy::shell>();
 	solid->children.push_back(shell);
 
 	// x = 0
 	{
-		auto face = new taxonomy::face;
-		auto loop = new taxonomy::loop;
+		auto face = make<taxonomy::face>();
+		auto loop = make<taxonomy::loop>();
 		face->children.push_back(loop);
 		loop->external = true;
 		shell->children.push_back(face);
 
-		std::array<taxonomy::point3, 4> points{
-			taxonomy::point3(x+0, y+0,  z+ 0),
-			taxonomy::point3(x+0, y+dy, z+ 0),
-			taxonomy::point3(x+0, y+dy, z+dz),
-			taxonomy::point3(x+0, y+0,  z+dz)
+		std::array<taxonomy::point3::ptr, 4> points{
+			taxonomy::make<taxonomy::point3>(x+0, y+0,  z+ 0),
+			taxonomy::make<taxonomy::point3>(x+0, y+dy, z+ 0),
+			taxonomy::make<taxonomy::point3>(x+0, y+dy, z+dz),
+			taxonomy::make<taxonomy::point3>(x+0, y+0,  z+dz)
 		};
 
-		loop->children.push_back(new taxonomy::edge(points[0], points[1]));
-		loop->children.push_back(new taxonomy::edge(points[1], points[2]));
-		loop->children.push_back(new taxonomy::edge(points[2], points[3]));
-		loop->children.push_back(new taxonomy::edge(points[3], points[0]));
+		loop->children.push_back(make<taxonomy::edge>(points[0], points[1]));
+		loop->children.push_back(make<taxonomy::edge>(points[1], points[2]));
+		loop->children.push_back(make<taxonomy::edge>(points[2], points[3]));
+		loop->children.push_back(make<taxonomy::edge>(points[3], points[0]));
 	}
 
 	// x = dx
 	{
-		auto face = new taxonomy::face;
-		auto loop = new taxonomy::loop;
+		auto face = make<taxonomy::face>();
+		auto loop = make<taxonomy::loop>();
 		face->children.push_back(loop);
 		loop->external = true;
 		shell->children.push_back(face);
 
-		std::array<taxonomy::point3, 4> points{
-			taxonomy::point3(x+dx, y+0,  z+ 0),
-			taxonomy::point3(x+dx, y+0,  z+dz),
-			taxonomy::point3(x+dx, y+dy, z+dz),
-			taxonomy::point3(x+dx, y+dy, z+ 0)
+		std::array<taxonomy::point3::ptr, 4> points{
+			taxonomy::make<taxonomy::point3>(x+dx, y+0,  z+ 0),
+			taxonomy::make<taxonomy::point3>(x+dx, y+0,  z+dz),
+			taxonomy::make<taxonomy::point3>(x+dx, y+dy, z+dz),
+			taxonomy::make<taxonomy::point3>(x+dx, y+dy, z+ 0)
 		};
 
-		loop->children.push_back(new taxonomy::edge(points[0], points[1]));
-		loop->children.push_back(new taxonomy::edge(points[1], points[2]));
-		loop->children.push_back(new taxonomy::edge(points[2], points[3]));
-		loop->children.push_back(new taxonomy::edge(points[3], points[0]));
+		loop->children.push_back(make<taxonomy::edge>(points[0], points[1]));
+		loop->children.push_back(make<taxonomy::edge>(points[1], points[2]));
+		loop->children.push_back(make<taxonomy::edge>(points[2], points[3]));
+		loop->children.push_back(make<taxonomy::edge>(points[3], points[0]));
 	}
 
 	// y = 0
 	{
-		auto face = new taxonomy::face;
-		auto loop = new taxonomy::loop;
+		auto face = make<taxonomy::face>();
+		auto loop = make<taxonomy::loop>();
 		face->children.push_back(loop);
 		loop->external = true;
 		shell->children.push_back(face);
 
-		std::array<taxonomy::point3, 4> points{
-			taxonomy::point3(x+0,  y+0, z+ 0),
-			taxonomy::point3(x+0,  y+0, z+dz),
-			taxonomy::point3(x+dx, y+0, z+dz),
-			taxonomy::point3(x+dx, y+0, z+ 0)
+		std::array<taxonomy::point3::ptr, 4> points{
+			taxonomy::make<taxonomy::point3>(x+0,  y+0, z+ 0),
+			taxonomy::make<taxonomy::point3>(x+0,  y+0, z+dz),
+			taxonomy::make<taxonomy::point3>(x+dx, y+0, z+dz),
+			taxonomy::make<taxonomy::point3>(x+dx, y+0, z+ 0)
 		};
 
-		loop->children.push_back(new taxonomy::edge(points[0], points[1]));
-		loop->children.push_back(new taxonomy::edge(points[1], points[2]));
-		loop->children.push_back(new taxonomy::edge(points[2], points[3]));
-		loop->children.push_back(new taxonomy::edge(points[3], points[0]));
+		loop->children.push_back(make<taxonomy::edge>(points[0], points[1]));
+		loop->children.push_back(make<taxonomy::edge>(points[1], points[2]));
+		loop->children.push_back(make<taxonomy::edge>(points[2], points[3]));
+		loop->children.push_back(make<taxonomy::edge>(points[3], points[0]));
 	}
 
 	// y = dy
 	{
-		auto face = new taxonomy::face;
-		auto loop = new taxonomy::loop;
+		auto face = make<taxonomy::face>();
+		auto loop = make<taxonomy::loop>();
 		face->children.push_back(loop);
 		loop->external = true;
 		shell->children.push_back(face);
 
-		std::array<taxonomy::point3, 4> points{
-			taxonomy::point3(x+ 0, y+dy, z+ 0),
-			taxonomy::point3(x+dx, y+dy, z+ 0),
-			taxonomy::point3(x+dx, y+dy, z+dz),
-			taxonomy::point3(x+ 0, y+dy, z+dz)
+		std::array<taxonomy::point3::ptr, 4> points{
+			taxonomy::make<taxonomy::point3>(x+ 0, y+dy, z+ 0),
+			taxonomy::make<taxonomy::point3>(x+dx, y+dy, z+ 0),
+			taxonomy::make<taxonomy::point3>(x+dx, y+dy, z+dz),
+			taxonomy::make<taxonomy::point3>(x+ 0, y+dy, z+dz)
 		};
 
-		loop->children.push_back(new taxonomy::edge(points[0], points[1]));
-		loop->children.push_back(new taxonomy::edge(points[1], points[2]));
-		loop->children.push_back(new taxonomy::edge(points[2], points[3]));
-		loop->children.push_back(new taxonomy::edge(points[3], points[0]));
+		loop->children.push_back(make<taxonomy::edge>(points[0], points[1]));
+		loop->children.push_back(make<taxonomy::edge>(points[1], points[2]));
+		loop->children.push_back(make<taxonomy::edge>(points[2], points[3]));
+		loop->children.push_back(make<taxonomy::edge>(points[3], points[0]));
 	}
 
 	// z = 0
 	{
-		auto face = new taxonomy::face;
-		auto loop = new taxonomy::loop;
+		auto face = make<taxonomy::face>();
+		auto loop = make<taxonomy::loop>();
 		face->children.push_back(loop);
 		loop->external = true;
 		shell->children.push_back(face);
 
-		std::array<taxonomy::point3, 4> points{
-			taxonomy::point3(x+ 0, y+ 0, z+0),
-			taxonomy::point3(x+dx, y+ 0, z+0),
-			taxonomy::point3(x+dx, y+dy, z+0),
-			taxonomy::point3(x+ 0, y+dy, z+0)
+		std::array<taxonomy::point3::ptr, 4> points{
+			taxonomy::make<taxonomy::point3>(x+ 0, y+ 0, z+0),
+			taxonomy::make<taxonomy::point3>(x+dx, y+ 0, z+0),
+			taxonomy::make<taxonomy::point3>(x+dx, y+dy, z+0),
+			taxonomy::make<taxonomy::point3>(x+ 0, y+dy, z+0)
 		};
 
-		loop->children.push_back(new taxonomy::edge(points[0], points[1]));
-		loop->children.push_back(new taxonomy::edge(points[1], points[2]));
-		loop->children.push_back(new taxonomy::edge(points[2], points[3]));
-		loop->children.push_back(new taxonomy::edge(points[3], points[0]));
+		loop->children.push_back(make<taxonomy::edge>(points[0], points[1]));
+		loop->children.push_back(make<taxonomy::edge>(points[1], points[2]));
+		loop->children.push_back(make<taxonomy::edge>(points[2], points[3]));
+		loop->children.push_back(make<taxonomy::edge>(points[3], points[0]));
 	}
 
 	// z = dz
 	{
-		auto face = new taxonomy::face;
-		auto loop = new taxonomy::loop;
+		auto face = make<taxonomy::face>();
+		auto loop = make<taxonomy::loop>();
 		face->children.push_back(loop);
 		loop->external = true;
 		shell->children.push_back(face);
 
-		std::array<taxonomy::point3, 4> points{
-			taxonomy::point3(x+ 0, y+ 0, z+dz),
-			taxonomy::point3(x+ 0, y+dy, z+dz),
-			taxonomy::point3(x+dx, y+dy, z+dz),
-			taxonomy::point3(x+dx, y+ 0, z+dz)
+		std::array<taxonomy::point3::ptr, 4> points{
+			taxonomy::make<taxonomy::point3>(x+ 0, y+ 0, z+dz),
+			taxonomy::make<taxonomy::point3>(x+ 0, y+dy, z+dz),
+			taxonomy::make<taxonomy::point3>(x+dx, y+dy, z+dz),
+			taxonomy::make<taxonomy::point3>(x+dx, y+ 0, z+dz)
 		};
 
-		loop->children.push_back(new taxonomy::edge(points[0], points[1]));
-		loop->children.push_back(new taxonomy::edge(points[1], points[2]));
-		loop->children.push_back(new taxonomy::edge(points[2], points[3]));
-		loop->children.push_back(new taxonomy::edge(points[3], points[0]));
+		loop->children.push_back(make<taxonomy::edge>(points[0], points[1]));
+		loop->children.push_back(make<taxonomy::edge>(points[1], points[2]));
+		loop->children.push_back(make<taxonomy::edge>(points[2], points[3]));
+		loop->children.push_back(make<taxonomy::edge>(points[3], points[0]));
 	}
 
 	return solid;
 }
 
-ifcopenshell::geometry::taxonomy::collection * ifcopenshell::geometry::flatten(const taxonomy::collection * deep) {
-	auto flat = new taxonomy::collection;
-	visit(deep, [&flat](taxonomy::item* i) {
-		flat->children.push_back(i);
+ifcopenshell::geometry::taxonomy::collection::ptr ifcopenshell::geometry::flatten(taxonomy::collection::ptr deep) {
+	auto flat = make<taxonomy::collection>();
+	ifcopenshell::geometry::visit<taxonomy::collection>(deep, [&flat](taxonomy::ptr i) {
+		flat->children.push_back(taxonomy::cast<taxonomy::geom_item>(clone(i)));
 	});
 	return flat;
 }

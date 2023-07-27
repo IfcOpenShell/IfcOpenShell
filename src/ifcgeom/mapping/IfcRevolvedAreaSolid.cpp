@@ -23,31 +23,31 @@ using namespace ifcopenshell::geometry;
 
 #include <boost/math/constants/constants.hpp>
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcRevolvedAreaSolid* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRevolvedAreaSolid* inst) {
 	const double ang = inst->Angle() * angle_unit_;
 
-	as<taxonomy::face>(map(inst->SweptArea()));
+	taxonomy::cast<taxonomy::face>(map(inst->SweptArea()));
 	
 	boost::optional<double> angle;
 
-	taxonomy::matrix4 matrix;
+	taxonomy::matrix4::ptr matrix;
 	bool has_position = true;
 #ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
 	has_position = inst->Position() != nullptr;
 #endif
 	if (has_position) {
-		matrix = as<taxonomy::matrix4>(map(inst->Position()));
+		matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
 	}
 
 	if (ang < boost::math::constants::pi<double>() * 2. - 1.e-5) {
 		angle = ang;
 	}
 
-	return new taxonomy::revolve(
+	return taxonomy::make<taxonomy::revolve>(
 		matrix,
-		as<taxonomy::face>(map(inst->SweptArea())),
-		as<taxonomy::point3>(map(inst->Axis()->Location())),
-		as<taxonomy::direction3>(map(inst->Axis()->Axis())),
+		taxonomy::cast<taxonomy::face>(map(inst->SweptArea())),
+		taxonomy::cast<taxonomy::point3>(map(inst->Axis()->Location())),
+		taxonomy::cast<taxonomy::direction3>(map(inst->Axis()->Axis())),
 		angle
 	);
 

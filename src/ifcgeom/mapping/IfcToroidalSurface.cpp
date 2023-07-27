@@ -23,7 +23,7 @@ using namespace ifcopenshell::geometry;
 
 #ifdef SCHEMA_HAS_IfcToroidalSurface
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcToroidalSurface* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcToroidalSurface* inst) {
 	return nullptr;
 
 	/*

@@ -5,7 +5,7 @@
 #define BIND(T) \
 	if (inst->as<IfcSchema::T>()) { \
 		try { \
-			taxonomy::item* item = map_impl(inst->as<IfcSchema::T>()); \
+			taxonomy::ptr item = map_impl(inst->as<IfcSchema::T>()); \
 			if (item != nullptr) { \
 				item->instance = inst; \
 				try { \
@@ -15,7 +15,7 @@
 					) { \
 						auto style = find_style(inst->as<IfcSchema::IfcRepresentationItem>()); \
 						if (style) { \
-							((taxonomy::geom_item*)item)->surface_style = (taxonomy::style*) map(style); \
+							taxonomy::cast<taxonomy::geom_item>(item)->surface_style = taxonomy::cast<taxonomy::style>(map(style)); \
 						} \
 					} \
 				} catch (const std::exception& e) { \

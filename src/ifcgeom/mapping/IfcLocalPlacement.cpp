@@ -21,16 +21,15 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcLocalPlacement* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcLocalPlacement* inst) {
 	IfcSchema::IfcLocalPlacement* current = (IfcSchema::IfcLocalPlacement*)inst;
-	auto m4 = new taxonomy::matrix4;
+	auto m4 = taxonomy::make<taxonomy::matrix4>();
 	for (;;) {
 		IfcSchema::IfcAxis2Placement* relplacement = current->RelativePlacement();
 		// @todo this type check is wrong and unnecessary?
 		if (relplacement->as<IfcSchema::IfcAxis2Placement3D>()) {
-			taxonomy::matrix4 trsf2 = as<taxonomy::matrix4>(map(relplacement));
 			// @todo check
-			m4->components() = trsf2.ccomponents() * m4->ccomponents();
+			m4->components() = taxonomy::cast<taxonomy::matrix4>(map(relplacement))->ccomponents() * m4->ccomponents();
 		}
 		if (current->PlacementRelTo()) {
 			IfcSchema::IfcObjectPlacement* parent = current->PlacementRelTo();

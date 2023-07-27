@@ -23,15 +23,15 @@ using namespace ifcopenshell::geometry;
 
 #ifdef SCHEMA_HAS_IfcPolygonalFaceSet
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcPolygonalFaceSet* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPolygonalFaceSet* inst) {
 	IfcSchema::IfcCartesianPointList3D* point_list = inst->Coordinates();
 	auto coordinates = point_list->CoordList();
 	auto polygonal_faces = inst->Faces();
 
-	std::vector<taxonomy::point3> points;
+	std::vector<taxonomy::point3::ptr> points;
 	points.reserve(coordinates.size());
 	for (auto& coords : coordinates) {
-		points.push_back(taxonomy::point3(
+		points.push_back(taxonomy::make<taxonomy::point3>(
 			coords.size() < 1 ? 0. : coords[0] * length_unit_,
 			coords.size() < 2 ? 0. : coords[1] * length_unit_,
 			coords.size() < 3 ? 0. : coords[2] * length_unit_));
@@ -39,57 +39,59 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcPolygonalFaceSet* inst) {
 
 	int max_index = (int)points.size();
 
-	auto shell = new taxonomy::shell;
+	auto shell = taxonomy::make<taxonomy::shell>();
 	
 	for (auto& f : *polygonal_faces) {
-		auto fa = new taxonomy::face;
+		auto fa = taxonomy::make<taxonomy::face>();
 		shell->children.push_back(fa);
 		
 		{
-			auto loop = new taxonomy::loop;
+			auto loop = taxonomy::make<taxonomy::loop>();
 			fa->children = { loop };
 			loop->external = true;
 			auto indices = f->CoordIndex();
-			taxonomy::point3 previous;
+			taxonomy::point3::ptr previous;
 			for (std::vector<int>::const_iterator jt = indices.begin(); jt != indices.end(); ++jt) {
 				if (*jt < 1 || *jt > max_index) {
 					throw IfcParse::IfcException("IfcPolygonalFaceSet index out of bounds for index " + boost::lexical_cast<std::string>(*jt));
 				}
-				const taxonomy::point3& current = points[(*jt) - 1];
+				auto current = points[(*jt) - 1];
 				if (jt != indices.begin()) {
-					loop->children.push_back(new taxonomy::edge(previous, current));
+					loop->children.push_back(taxonomy::make<taxonomy::edge>(previous, current));
 				}
 				previous = current;
 			}
 			if (!indices.empty()) {
-				const taxonomy::point3& current = points[indices.front() - 1];
-				loop->children.push_back(new taxonomy::edge(previous, current));
+				auto current = points[indices.front() - 1];
+				loop->children.push_back(taxonomy::make<taxonomy::edge>(previous, current));
 			}
 		}
 
 		if (f->as<IfcSchema::IfcIndexedPolygonalFaceWithVoids>()) {
 			auto indices = f->as<IfcSchema::IfcIndexedPolygonalFaceWithVoids>()->InnerCoordIndices();
-
 			{
-				auto loop = new taxonomy::loop;
-				fa->children.push_back(loop);
-				loop->external = false;
-				auto indices = f->CoordIndex();
-				taxonomy::point3 previous;
-				for (std::vector<int>::const_iterator jt = indices.begin(); jt != indices.end(); ++jt) {
-					if (*jt < 1 || *jt > max_index) {
-						throw IfcParse::IfcException("IfcPolygonalFaceSet index out of bounds for index " + boost::lexical_cast<std::string>(*jt));
+				taxonomy::point3::ptr previous;
+				for (auto& li : indices) {
+					auto loop = taxonomy::make<taxonomy::loop>();
+					fa->children.push_back(loop);
+					loop->external = false;
+
+					for (std::vector<int>::const_iterator jt = li.begin(); jt != li.end(); ++jt) {
+						if (*jt < 1 || *jt > max_index) {
+							throw IfcParse::IfcException("IfcPolygonalFaceSet index out of bounds for index " + boost::lexical_cast<std::string>(*jt));
+						}
+						auto current = points[(*jt) - 1];
+						if (jt != li.begin()) {
+							loop->children.push_back(taxonomy::make<taxonomy::edge>(previous, current));
+						}
+						previous = current;
 					}
-					const taxonomy::point3& current = points[(*jt) - 1];
-					if (jt != indices.begin()) {
-						loop->children.push_back(new taxonomy::edge(previous, current));
+					if (!li.empty()) {
+						auto current = points[li.front() - 1];
+						loop->children.push_back(taxonomy::make<taxonomy::edge>(previous, current));
 					}
-					previous = current;
 				}
-				if (!indices.empty()) {
-					const taxonomy::point3& current = points[indices.front() - 1];
-					loop->children.push_back(new taxonomy::edge(previous, current));
-				}
+
 			}
 		}
 	}
