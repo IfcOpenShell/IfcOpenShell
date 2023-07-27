@@ -1555,7 +1555,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         filtered_elements.add(drawing)
         for view_layer_object in bpy.context.view_layer.objects:
             element = tool.Ifc.get_entity(view_layer_object)
-            if not element:
+            if not element or element.is_a("IfcTypeProduct"):
                 continue
             hide = element not in filtered_elements
             view_layer_object.hide_set(hide)
