@@ -27,7 +27,41 @@
             "predefined_type": "NOTDEFINED"
         }
     ],
+    "IfcDistributionElement": [
+        {
+            "name": "Furnace",
+            "predefined_type": "NOTDEFINED"
+        }
+    ],
+    "IfcDistributionElementType": [
+        {
+            "name": "Furnace",
+            "predefined_type": "NOTDEFINED"
+        }
+    ],
     "IfcFurniture": [
+        {
+            "name": "Casework",
+            "predefined_type": "NOTDEFINED"
+        },
+        {
+            "name": "Millwork",
+            "predefined_type": "NOTDEFINED"
+        },
+        {
+            "name": "Signage",
+            "predefined_type": "NOTDEFINED"
+        }
+    ],
+    "IfcFurnitureType": [
+        {
+            "name": "Casework",
+            "predefined_type": "NOTDEFINED"
+        },
+        {
+            "name": "Millwork",
+            "predefined_type": "NOTDEFINED"
+        },
         {
             "name": "Signage",
             "predefined_type": "NOTDEFINED"
