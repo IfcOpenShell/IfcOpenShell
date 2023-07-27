@@ -257,7 +257,7 @@ class ProfileDecorator:
             circle_centroids.append(tuple(centroid))
             segments = self.create_circle_segments(360, 20, radius)
             matrix = obj.matrix_world.copy()
-            matrix.col[3] = centroid.to_4d()
+            matrix.translation = centroid
             segments = [[list(matrix @ Vector(v)) for v in segments[0]], segments[1]]
             circle_segments.append(segments)
 

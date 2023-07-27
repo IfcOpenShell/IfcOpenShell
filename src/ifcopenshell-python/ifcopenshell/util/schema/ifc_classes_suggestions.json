@@ -1,0 +1,110 @@
+{
+    "IfcActuator": [
+        {
+            "name": "Electric Strike",
+            "predefined_type": "NOTDEFINED"
+        }
+    ],
+    "IfcAirTerminalBox": [
+        {
+            "name": "VAV Box",
+            "predefined_type": "NOTDEFINED"
+        }
+    ],
+    "IfcCableSegment": [
+        {
+            "name": "Lighting Rod",
+            "predefined_type": "NOTDEFINED"
+        }
+    ],
+    "IfcCovering": [
+        {
+            "name": "Flashing",
+            "predefined_type": "NOTDEFINED"
+        },
+        {
+            "name": "Capping",
+            "predefined_type": "NOTDEFINED"
+        }
+    ],
+    "IfcFurniture": [
+        {
+            "name": "Signage",
+            "predefined_type": "NOTDEFINED"
+        }
+    ],
+    "IfcPlate": [
+        {
+            "name": "Glazing",
+            "predefined_type": "NOTDEFINED"
+        },
+        {
+            "name": "Glass",
+            "predefined_type": "NOTDEFINED"
+        },
+        {
+            "name": "Pane",
+            "predefined_type": "NOTDEFINED"
+        }
+    ],
+    "IfcSensor": [
+        {
+            "name": "Card Reader",
+            "predefined_type": "NOTDEFINED"
+        },
+        {
+            "name": "Fob Reader",
+            "predefined_type": "NOTDEFINED"
+        }
+    ],
+    "IfcSlab": [
+        {
+            "name": "Hob",
+            "predefined_type": "NOTDEFINED"
+        }
+    ],
+    "IfcSwitchingDevice": [
+        {
+            "name": "Reed Switch",
+            "predefined_type": "NOTDEFINED"
+        },
+        {
+            "name": "Electric Isolating Switch",
+            "predefined_type": "NOTDEFINED"
+        }
+    ],
+    "IfcUnitaryEquipment": [
+        {
+            "name": "Fan Coil Unit",
+            "predefined_type": "NOTDEFINED"
+        }
+    ],
+    "IfcWall": [
+        {
+            "name": "Glazing",
+            "predefined_type": "NOTDEFINED"
+        },
+        {
+            "name": "Glass",
+            "predefined_type": "NOTDEFINED"
+        },
+        {
+            "name": "Pane",
+            "predefined_type": "NOTDEFINED"
+        }
+    ],
+    "IfcWindow": [
+        {
+            "name": "Glazing",
+            "predefined_type": "NOTDEFINED"
+        },
+        {
+            "name": "Glass",
+            "predefined_type": "NOTDEFINED"
+        },
+        {
+            "name": "Pane",
+            "predefined_type": "NOTDEFINED"
+        }
+    ]
+}

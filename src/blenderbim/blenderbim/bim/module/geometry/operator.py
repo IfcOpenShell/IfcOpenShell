@@ -61,21 +61,57 @@ class AddRepresentation(bpy.types.Operator, Operator):
     bl_idname = "bim.add_representation"
     bl_label = "Add Representation"
     bl_options = {"REGISTER", "UNDO"}
+    representation_conversion_method: bpy.props.EnumProperty(
+        items=[
+            ("OUTLINE", "Trace Outline", ""),
+            ("BOX", "Bounding Box", ""),
+            ("PROJECT", "Full Representation", ""),
+        ],
+        name="Representation Conversion Method",
+    )
 
     def _execute(self, context):
-        ifc_context = int(context.active_object.BIMGeometryProperties.contexts or "0") or None
-        if ifc_context:
-            ifc_context = tool.Ifc.get().by_id(ifc_context)
+        obj = context.active_object
+        props = obj.BIMGeometryProperties
+        ifc_context = int(props.contexts or "0") or None
+        if not ifc_context:
+            return
+        ifc_context = tool.Ifc.get().by_id(ifc_context)
+
+        if self.representation_conversion_method == "OUTLINE":
+            if ifc_context.ContextType == "Plan":
+                data = tool.Geometry.generate_outline_mesh(obj, axis="+Z")
+            elif ifc_context.ContextIdentifier == "Profile":
+                data = tool.Geometry.generate_outline_mesh(obj, axis="-Y")
+            else:
+                data = tool.Geometry.generate_outline_mesh(obj, axis="+Z")
+            tool.Geometry.change_object_data(obj, data, is_global=True)
+        elif self.representation_conversion_method == "BOX":
+            if ifc_context.ContextType == "Plan":
+                data = tool.Geometry.generate_2d_box_mesh(obj, axis="Z")
+            elif ifc_context.ContextIdentifier == "Profile":
+                data = tool.Geometry.generate_2d_box_mesh(obj, axis="Y")
+            else:
+                data = tool.Geometry.generate_3d_box_mesh(obj)
+            tool.Geometry.change_object_data(obj, data, is_global=True)
+
         core.add_representation(
             tool.Ifc,
             tool.Geometry,
             tool.Style,
             tool.Surveyor,
-            obj=context.active_object,
+            obj=obj,
             context=ifc_context,
             ifc_representation_class=None,
             profile_set_usage=None,
         )
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        row = self.layout.row()
+        row.prop(self, "representation_conversion_method", text="")
 
 
 class SelectConnection(bpy.types.Operator, Operator):
@@ -1433,9 +1469,9 @@ class OverrideModeSetObject(bpy.types.Operator):
                     profile = tool.Ifc.get().by_id(profile_id)
                     if tool.Ifc.get_object(profile):  # We are editing an arbitrary profile
                         bpy.ops.bim.edit_arbitrary_profile()
-                elif tool.Pset.get_element_pset(element, "BBIM_Railing"):
+                elif tool.Blender.Modifier.is_railing(element):
                     bpy.ops.bim.finish_editing_railing_path()
-                elif tool.Pset.get_element_pset(element, "BBIM_Roof"):
+                elif tool.Blender.Modifier.is_roof(element):
                     bpy.ops.bim.finish_editing_roof_path()
                 elif tool.Model.get_usage_type(element) == "PROFILE":
                     bpy.ops.bim.edit_extrusion_axis()

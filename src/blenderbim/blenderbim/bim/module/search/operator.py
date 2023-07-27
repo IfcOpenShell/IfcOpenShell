@@ -18,8 +18,10 @@
 
 import re
 import bpy
+import json
 import ifcopenshell
 import ifcopenshell.util.element
+import ifcopenshell.util.selector
 from ifcopenshell.util.selector import Selector
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
@@ -67,6 +69,230 @@ def does_keyword_exist(pattern, string, context):
         return True
     elif string == pattern:
         return True
+
+
+class AddFilterGroup(Operator):
+    bl_idname = "bim.add_filter_group"
+    bl_label = "Add Filter Group"
+
+    def execute(self, context):
+        context.scene.BIMSearchProperties.filter_groups.add()
+        return {"FINISHED"}
+
+
+class RemoveFilterGroup(Operator):
+    bl_idname = "bim.remove_filter_group"
+    bl_label = "Remove Filter Group"
+    index: IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMSearchProperties
+        props.filter_groups.remove(self.index)
+        return {"FINISHED"}
+
+
+class RemoveFilter(Operator):
+    bl_idname = "bim.remove_filter"
+    bl_label = "Remove Filter Group"
+    group_index: IntProperty()
+    index: IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMSearchProperties
+        props.filter_groups[self.group_index].filters.remove(self.index)
+        return {"FINISHED"}
+
+
+class AddFilter(Operator):
+    bl_idname = "bim.add_filter"
+    bl_label = "Add Filter"
+    index: IntProperty()
+    type: StringProperty()
+
+    def execute(self, context):
+        new = context.scene.BIMSearchProperties.filter_groups[self.index].filters.add()
+        new.type = self.type
+        return {"FINISHED"}
+
+
+class Search(Operator):
+    bl_idname = "bim.search"
+    bl_label = "Search"
+
+    def execute(self, context):
+        props = context.scene.BIMSearchProperties
+        results = ifcopenshell.util.selector.filter_elements(
+            tool.Ifc.get(), tool.Search.export_filter_query(props.filter_groups)
+        )
+
+        total_selected = 0
+        for element in results:
+            obj = tool.Ifc.get_object(element)
+            if obj:
+                obj.select_set(True)
+        self.report({"INFO"}, f"{len(results)} Results")
+        return {"FINISHED"}
+
+
+class SaveSearch(Operator, tool.Ifc.Operator):
+    bl_idname = "bim.save_search"
+    bl_label = "Save Search"
+    bl_description = "Save search filter to an IFC group"
+    bl_options = {"REGISTER", "UNDO"}
+    name: StringProperty(name="Name")
+
+    def _execute(self, context):
+        if not self.name:
+            return
+
+        query = tool.Search.export_filter_query(context.scene.BIMSearchProperties.filter_groups)
+        results = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query)
+
+        description = json.dumps({"type": "BBIM_Search", "query": query})
+        group = [g for g in tool.Ifc.get().by_type("IfcGroup") if g.Name == self.name]
+        if group:
+            group = group[0]
+        else:
+            group = ifcopenshell.api.run("group.add_group", tool.Ifc.get(), Name=self.name, Description=description)
+        ifcopenshell.api.run("group.assign_group", tool.Ifc.get(), products=results, group=group)
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+
+class LoadSearch(Operator, tool.Ifc.Operator):
+    bl_idname = "bim.load_search"
+    bl_label = "Load Search"
+    bl_description = "Load search filter from an IFC group"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = context.scene.BIMSearchProperties
+        group = tool.Ifc.get().by_id(int(props.saved_searches))
+        query = tool.Search.import_filter_query(group, context.scene.BIMSearchProperties.filter_groups)
+
+    def draw(self, context):
+        props = context.scene.BIMSearchProperties
+        row = self.layout.row()
+        row.prop(props, "saved_searches", text="")
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+
+class ColourByProperty(Operator):
+    bl_idname = "bim.colour_by_property"
+    bl_label = "Colour by Property"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        IfcStore.begin_transaction(self)
+        self.store_state(context)
+        result = self._execute(context)
+        IfcStore.add_transaction_operation(self)
+        IfcStore.end_transaction(self)
+        return result
+
+    def _execute(self, context):
+        props = context.scene.BIMSearchProperties
+        query = props.colourscheme_query
+
+        if not query:
+            self.report({"ERROR"}, "No Query Provided")
+            return {"CANCELLED"}
+
+        colours = cycle(colour_list)
+        colourscheme = {}
+
+        if len(props.colourscheme):
+            colourscheme = {cs.name: cs.colour[0:3] for cs in props.colourscheme}
+
+        for obj in context.visible_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            value = str(ifcopenshell.util.selector.get_element_value(element, query))
+            if value not in colourscheme:
+                colourscheme[value] = next(colours)[0:3]
+            obj.color = (*colourscheme[value], 1)
+        areas = [a for a in context.screen.areas if a.type == "VIEW_3D"]
+        if areas:
+            areas[0].spaces[0].shading.color_type = "OBJECT"
+
+        props.colourscheme.clear()
+        for value, colour in colourscheme.items():
+            new = props.colourscheme.add()
+            new.name = str(value)
+            new.colour = colour[0:3]
+        return {"FINISHED"}
+
+    def store_state(self, context):
+        areas = [a for a in context.screen.areas if a.type == "VIEW_3D"]
+        if areas:
+            self.transaction_data = {"area": areas[0], "color_type": areas[0].spaces[0].shading.color_type}
+
+    def rollback(self, data):
+        if data:
+            data["area"].spaces[0].shading.color_type = data["color_type"]
+
+    def commit(self, data):
+        if data:
+            data["area"].spaces[0].shading.color_type = "OBJECT"
+
+
+class SaveColourscheme(Operator, tool.Ifc.Operator):
+    bl_idname = "bim.save_colourscheme"
+    bl_label = "Save Colourscheme"
+    bl_description = "Save colourscheme to an IFC group"
+    bl_options = {"REGISTER", "UNDO"}
+    name: StringProperty(name="Name")
+
+    def _execute(self, context):
+        if not self.name:
+            return
+
+        props = context.scene.BIMSearchProperties
+        query = props.colourscheme_query
+
+        group = [g for g in tool.Ifc.get().by_type("IfcGroup") if g.Name == self.name]
+        if group:
+            group = group[0]
+            description = json.loads(group.Description)
+            description["colourscheme"] = {cs.name: cs.colour[0:3] for cs in props.colourscheme}
+            description["colourscheme_query"] = query
+            group.Description = json.dumps(description)
+        else:
+            description = json.dumps({"type": "BBIM_Search", "colourscheme": query})
+            group = ifcopenshell.api.run("group.add_group", tool.Ifc.get(), Name=self.name, Description=description)
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+
+class LoadColourscheme(Operator, tool.Ifc.Operator):
+    bl_idname = "bim.load_colourscheme"
+    bl_label = "Load Colourscheme"
+    bl_description = "Load colourscheme from an IFC group"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = context.scene.BIMSearchProperties
+        group = tool.Ifc.get().by_id(int(props.saved_searches))
+        description = json.loads(group.Description)
+        props.colourscheme_query = description.get("colourscheme_query")
+        props.colourscheme.clear()
+        for name, colour in description.get("colourscheme", {}).items():
+            new = props.colourscheme.add()
+            new.name = name
+            new.colour = colour
+
+    def draw(self, context):
+        props = context.scene.BIMSearchProperties
+        row = self.layout.row()
+        row.prop(props, "saved_colourschemes", text="")
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
 
 
 class SelectGlobalId(Operator):
@@ -396,14 +622,16 @@ class ColourByClass(Operator):
 
 
 class ResetObjectColours(Operator):
-    """Reset the colour of selected objects"""
+    """Reset the colour of visible objects"""
 
     bl_idname = "bim.reset_object_colours"
     bl_label = "Reset Colours"
 
     def execute(self, context):
-        for obj in context.selected_objects:
+        for obj in context.visible_objects:
             obj.color = (1, 1, 1, 1)
+        props = context.scene.BIMSearchProperties
+        props.colourscheme.clear()
         return {"FINISHED"}
 
 

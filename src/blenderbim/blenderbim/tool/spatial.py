@@ -52,7 +52,7 @@ class Spatial(blenderbim.core.tool.Spatial):
             if not structure.is_a("IfcSpatialStructureElement"):
                 return False
         else:
-            if not structure.is_a() in ("IfcSpatialElement", "IfcSpatialStructureElement"):
+            if not structure.is_a("IfcSpatialElement"):
                 return False
         if not hasattr(element, "ReferencedInStructures"):
             return False
@@ -204,9 +204,11 @@ class Spatial(blenderbim.core.tool.Spatial):
         parent = tool.Ifc.get().by_type("IfcProject")[0]
 
         for object in ifcopenshell.util.element.get_parts(parent) or []:
-            if object.is_a() in ("IfcSpatialElement", "IfcSpatialStructureElement"):
+            if object.is_a("IfcSpatialElement") or object.is_a("IfcSpatialStructureElement"):
                 cls.create_new_storey_li(object, 0)
         cls.props.is_container_update_enabled = True
+        # triggers spatial manager props setup
+        cls.props.active_container_index = 0
 
     @classmethod
     def create_new_storey_li(cls, element, level_index):
@@ -223,7 +225,7 @@ class Spatial(blenderbim.core.tool.Spatial):
             new.has_children = True
             if new.is_expanded:
                 for related_object in ifcopenshell.util.element.get_parts(element) or []:
-                    if related_object.is_a() in ("IfcSpatialElement", "IfcSpatialStructureElement"):
+                    if related_object.is_a("IfcSpatialElement") or related_object.is_a("IfcSpatialStructureElement"):
                         cls.create_new_storey_li(related_object, level_index + 1)
 
     @classmethod

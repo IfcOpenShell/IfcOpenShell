@@ -40,7 +40,8 @@ class LoadBrickProject(bpy.types.Operator, Operator):
     filter_glob: bpy.props.StringProperty(default="*.ttl", options={"HIDDEN"})
 
     def _execute(self, context):
-        core.load_brick_project(tool.Brick, filepath=self.filepath)
+        root = context.scene.BIMBrickProperties.brick_list_root
+        core.load_brick_project(tool.Brick, filepath=self.filepath, brick_root=root)
 
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
@@ -125,7 +126,7 @@ class AddBrick(bpy.types.Operator, Operator):
             tool.Brick,
             element=tool.Ifc.get_entity(context.active_object) if context.selected_objects else None,
             namespace=props.namespace,
-            brick_class=props.brick_equipment_class,
+            brick_class=props.brick_entity_classes,
             library=library,
             label=props.new_brick_label,
         )
@@ -180,7 +181,8 @@ class NewBrickFile(bpy.types.Operator):
         return {"FINISHED"}
 
     def _execute(self, context):
-        core.new_brick_file(tool.Brick)
+        root = context.scene.BIMBrickProperties.brick_list_root
+        core.new_brick_file(tool.Brick, brick_root=root)
 
     def rollback(self, data):
         BrickStore.purge()
@@ -252,3 +254,13 @@ class AddBrickNamespace(bpy.types.Operator, Operator):
         alias = props.new_brick_namespace_alias
         uri = props.new_brick_namespace_uri
         core.add_namespace(tool.Brick, alias=alias, uri=uri)
+
+
+class SetBrickListRoot(bpy.types.Operator, Operator):
+    bl_idname = "bim.set_brick_list_root"
+    bl_label = "Set Brick View Type"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        root = context.scene.BIMBrickProperties.brick_list_root
+        core.set_brick_list_root(tool.Brick, brick_root=root)

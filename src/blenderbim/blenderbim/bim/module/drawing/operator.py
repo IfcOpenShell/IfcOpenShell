@@ -919,11 +919,19 @@ class CreateDrawing(bpy.types.Operator):
                     path.getparent().remove(path)
             for result in results:
                 for geom in result.geoms:
-                    path = etree.SubElement(el, "path")
+                    path = etree.SubElement(el, "{http://www.w3.org/2000/svg}path")
                     if isinstance(geom, shapely.Polygon):
-                        d = "M" + " L".join([",".join([str(o) for o in co]) for co in geom.exterior.coords[0:-1]]) + " Z"
+                        d = (
+                            "M"
+                            + " L".join([",".join([str(o) for o in co]) for co in geom.exterior.coords[0:-1]])
+                            + " Z"
+                        )
                         for interior in geom.interiors:
-                            d += " M" + " L".join([",".join([str(o) for o in co]) for co in interior.coords[0:-1]]) + " Z"
+                            d += (
+                                " M"
+                                + " L".join([",".join([str(o) for o in co]) for co in interior.coords[0:-1]])
+                                + " Z"
+                            )
                     elif isinstance(geom, shapely.LineString):
                         d = "M" + " L".join([",".join([str(o) for o in co]) for co in geom.coords]) + " Z"
                     path.attrib["d"] = d
@@ -955,8 +963,10 @@ class CreateDrawing(bpy.types.Operator):
                 is_closed_polygon = False
                 for path in el.findall("{http://www.w3.org/2000/svg}path"):
                     for subpath in path.attrib["d"].split("M")[1:]:
-                        subpath = "M" + subpath.strip()
-                        coords = [[round(float(o), 1) for o in co[1:].split(",")] for co in subpath.split()]
+                        subpath_co = "M" + subpath.strip(" Z")
+                        coords = [[round(float(o), 1) for o in co[1:].split(",")] for co in subpath_co.split()]
+                        if subpath.strip().lower().endswith("z"):
+                            coords.append(coords[0])
                         if len(coords) > 2 and coords[0] == coords[-1]:
                             is_closed_polygon = True
                             polygons.append(shapely.Polygon(coords))
@@ -1013,7 +1023,9 @@ class CreateDrawing(bpy.types.Operator):
         filtered_drawing_elements = tool.Drawing.get_drawing_elements(self.camera_element)
         elements = [e for e in elements if e in filtered_drawing_elements]
 
-        annotations = sorted(elements, key=lambda a: tool.Drawing.get_annotation_z_index(a))
+        annotations = sorted(
+            elements, key=lambda a: (tool.Drawing.get_annotation_z_index(a), 1 if a.ObjectType == "TEXT" else 0)
+        )
 
         precision = ifcopenshell.util.element.get_pset(self.camera_element, "EPset_Drawing", "MetricPrecision")
         if not precision:

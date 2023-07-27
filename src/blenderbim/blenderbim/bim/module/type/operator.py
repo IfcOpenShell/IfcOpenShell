@@ -212,6 +212,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
         body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
         if not body:
             props.type_class = props.type_class
+            self.report({"ERROR"}, "No Model/Body/MODEL_VIEW context found.")
             return {"FINISHED"}
 
         if template == "MESH":
@@ -230,7 +231,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 bm.to_mesh(mesh)
                 bm.free()
                 obj = bpy.data.objects.new(name, mesh)
-            obj.matrix_world.col[3] = location.to_4d()
+            obj.matrix_world.translation = location
             blenderbim.core.root.assign_class(
                 tool.Ifc,
                 tool.Collector,
@@ -277,7 +278,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 axis = "AXIS3"
             ifcopenshell.api.run("pset.edit_pset", ifc_file, pset=pset, properties={"LayerSetDirection": axis})
 
-        elif template == "PROFILESET":
+        elif template == "PROFILESET" or template.startswith("DISTRIBUTION_SEGMENT_"):
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
             obj = bpy.data.objects.new(name, None)
             element = blenderbim.core.root.assign_class(
@@ -297,13 +298,45 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
             else:
                 material = self.add_default_material()
             named_profiles = [p for p in ifc_file.by_type("IfcProfileDef") if p.ProfileName]
-            if named_profiles:
-                profile = named_profiles[0]
+            if template == "PROFILESET":
+                if named_profiles:
+                    profile = named_profiles[0]
+                else:
+                    size = 0.5 / unit_scale
+                    profile = ifc_file.create_entity(
+                        "IfcRectangleProfileDef", ProfileName="New Profile", ProfileType="AREA", XDim=size, YDim=size
+                    )
             else:
-                size = 0.5 / unit_scale
-                profile = ifc_file.create_entity(
-                    "IfcRectangleProfileDef", ProfileName="New Profile", ProfileType="AREA", XDim=size, YDim=size
-                )
+                # NOTE: defaults dims are in meters / mm
+                if template == "DISTRIBUTION_SEGMENT_RECTANGULAR":
+                    default_x_dim = 0.4 / unit_scale
+                    default_y_dim = 0.2 / unit_scale
+                    profile_name = f"{ifc_class}-{default_x_dim*1000}x{default_x_dim*1000}"
+                    profile = ifc_file.create_entity(
+                        "IfcRectangleProfileDef",
+                        ProfileName=profile_name,
+                        ProfileType="AREA",
+                        XDim=default_x_dim,
+                        YDim=default_y_dim,
+                    )
+                elif template == "DISTRIBUTION_SEGMENT_CIRCULAR":
+                    default_diameter = 0.1 / unit_scale
+                    profile_name = f"{ifc_class}-{default_diameter*1000}"
+                    profile = ifc_file.create_entity(
+                        "IfcCircleProfileDef", ProfileName=profile_name, ProfileType="AREA", Radius=default_diameter / 2
+                    )
+                elif template == "DISTRIBUTION_SEGMENT_CIRCULAR_HOLLOW":
+                    default_diameter = 0.15 / unit_scale
+                    default_thickness = 0.005 / unit_scale
+                    profile_name = f"{ifc_class}-{default_diameter*1000}x{default_thickness*1000}"
+                    profile = ifc_file.create_entity(
+                        "IfcCircleHollowProfileDef",
+                        ProfileName=profile_name,
+                        ProfileType="AREA",
+                        Radius=default_diameter / 2,
+                        WallThickness=default_thickness,
+                    )
+
             rel = ifcopenshell.api.run(
                 "material.assign_material", ifc_file, product=element, type="IfcMaterialProfileSet"
             )
@@ -314,6 +347,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
             ifcopenshell.api.run(
                 "material.assign_profile", ifc_file, material_profile=material_profile, profile=profile
             )
+
         elif template == "EMPTY":
             obj = bpy.data.objects.new(name, None)
             blenderbim.core.root.assign_class(
@@ -329,7 +363,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
             )
 
         elif template == "WINDOW":
-            mesh = bpy.data.meshes.new("IfcWindow")
+            mesh = bpy.data.meshes.new(name)
             obj = bpy.data.objects.new(name, mesh)
             element = blenderbim.core.root.assign_class(
                 tool.Ifc,
@@ -340,14 +374,11 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 ifc_class="IfcWindowType" if tool.Ifc.get_schema() != "IFC2X3" else "IfcWindowStyle",
                 should_add_representation=False,
             )
-            bpy.ops.object.select_all(action="DESELECT")
-            bpy.context.view_layer.objects.active = None
-            bpy.context.view_layer.objects.active = obj
-            obj.select_set(True)
-            bpy.ops.bim.add_window()
+            tool.Blender.select_and_activate_single_object(context, obj)
+            bpy.ops.bim.add_window(obj=obj.name)
 
         elif template == "DOOR":
-            mesh = bpy.data.meshes.new("IfcDoor")
+            mesh = bpy.data.meshes.new(name)
             obj = bpy.data.objects.new(name, mesh)
             element = blenderbim.core.root.assign_class(
                 tool.Ifc,
@@ -358,14 +389,11 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 ifc_class="IfcDoorType" if tool.Ifc.get_schema() != "IFC2X3" else "IfcDoorStyle",
                 should_add_representation=False,
             )
-            bpy.ops.object.select_all(action="DESELECT")
-            bpy.context.view_layer.objects.active = None
-            bpy.context.view_layer.objects.active = obj
-            obj.select_set(True)
-            bpy.ops.bim.add_door()
+            tool.Blender.select_and_activate_single_object(context, obj)
+            bpy.ops.bim.add_door(obj=obj.name)
 
         elif template == "STAIR":
-            mesh = bpy.data.meshes.new("IfcStairFlight")
+            mesh = bpy.data.meshes.new(name)
             obj = bpy.data.objects.new(name, mesh)
             element = blenderbim.core.root.assign_class(
                 tool.Ifc,
@@ -377,14 +405,11 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 should_add_representation=True,
                 context=body,
             )
-            bpy.ops.object.select_all(action="DESELECT")
-            bpy.context.view_layer.objects.active = None
-            bpy.context.view_layer.objects.active = obj
-            obj.select_set(True)
+            tool.Blender.select_and_activate_single_object(context, obj)
             bpy.ops.bim.add_stair()
 
         elif template == "RAILING":
-            mesh = bpy.data.meshes.new("IfcRailing")
+            mesh = bpy.data.meshes.new(name)
             obj = bpy.data.objects.new(name, mesh)
             element = blenderbim.core.root.assign_class(
                 tool.Ifc,
@@ -396,14 +421,11 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 should_add_representation=True,
                 context=body,
             )
-            bpy.ops.object.select_all(action="DESELECT")
-            bpy.context.view_layer.objects.active = None
-            bpy.context.view_layer.objects.active = obj
-            obj.select_set(True)
+            tool.Blender.select_and_activate_single_object(context, obj)
             bpy.ops.bim.add_railing()
 
         elif template == "ROOF":
-            mesh = bpy.data.meshes.new("IfcRoof")
+            mesh = bpy.data.meshes.new(name)
             obj = bpy.data.objects.new(name, mesh)
             element = blenderbim.core.root.assign_class(
                 tool.Ifc,
@@ -415,10 +437,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 should_add_representation=True,
                 context=body,
             )
-            bpy.ops.object.select_all(action="DESELECT")
-            bpy.context.view_layer.objects.active = None
-            bpy.context.view_layer.objects.active = obj
-            obj.select_set(True)
+            tool.Blender.select_and_activate_single_object(obj)
             bpy.ops.bim.add_roof()
 
         bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class)

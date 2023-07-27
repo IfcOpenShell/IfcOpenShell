@@ -268,6 +268,8 @@ class Brick(blenderbim.core.tool.Brick):
         with BrickStore.graph.new_changeset("PROJECT") as cs:
             cs.load_file(filepath)
         BrickStore.path = filepath
+        BrickStore.load_namespaces()
+        BrickStore.load_entity_classes()
 
     @classmethod
     def new_brick_file(cls):
@@ -278,6 +280,8 @@ class Brick(blenderbim.core.tool.Brick):
         with BrickStore.graph.new_changeset("SCHEMA") as cs:
             cs.load_file(BrickStore.schema)
         BrickStore.graph.bind("digitaltwin", Namespace("https://example.org/digitaltwin#"))
+        BrickStore.load_namespaces()
+        BrickStore.load_entity_classes()
 
     @classmethod
     def pop_brick_breadcrumb(cls):
@@ -325,8 +329,11 @@ class Brick(blenderbim.core.tool.Brick):
     @classmethod
     def add_namespace(cls, alias, uri):
         BrickStore.graph.bind(alias, Namespace(uri))
-        # need some way to reload namespace enum view
-
+        BrickStore.load_namespaces()
+    
+    @classmethod
+    def clear_breadcrumbs(cls):
+        bpy.context.scene.BIMBrickProperties.brick_breadcrumbs.clear()
 
 class BrickStore:
     schema = None  # this is now a os path
@@ -337,16 +344,53 @@ class BrickStore:
     future = []
     current_changesets = 0
     history_size = 64
+    namespaces = []
+    root_classes = ["Equipment", "Location", "System", "Point"]
+    entity_classes = {}
 
     @staticmethod
     def purge():
         BrickStore.schema = None
         BrickStore.graph = None
         BrickStore.path = None
+        BrickStore.namespaces = []
+        BrickStore.entity_classes = {}
 
     @classmethod
     def get_project(cls):
         return BrickStore.graph.graph_at(graph="PROJECT")
+    
+    @classmethod
+    def load_namespaces(cls):
+        BrickStore.namespaces = []
+        keyword_filter = ["brickschema.org", "schema.org", "w3.org", "purl.org", "rdfs.org", "qudt.org", "ashrae.org"]
+        for alias, uri in BrickStore.graph.namespaces():
+            ignore_namespace = False
+            for keyword in keyword_filter:
+                if keyword in str(uri):
+                    ignore_namespace = True
+                    break
+            if not ignore_namespace:
+                BrickStore.namespaces.append((uri, f"{alias}: {uri}", ""))
+
+    @classmethod
+    def load_entity_classes(cls):
+        
+        for root_class in BrickStore.root_classes:
+            query = BrickStore.graph.query(
+                """
+                PREFIX brick: <https://brickschema.org/schema/Brick#>
+                PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                SELECT ?class WHERE {
+                    ?class rdfs:subClassOf* brick:{root_class} .
+                }
+            """.replace(
+                    "{root_class}", root_class
+                )
+            )
+            BrickStore.entity_classes[root_class] = []
+            for uri in sorted([x[0].toPython() for x in query]):
+                BrickStore.entity_classes[root_class].append((uri, uri.split("#")[-1], ""))
 
     @classmethod
     def set_history_size(cls, size):

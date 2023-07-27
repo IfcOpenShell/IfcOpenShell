@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import json
 import ifcopenshell.api
 import blenderbim.tool as tool
 from mathutils import Vector
@@ -457,33 +458,40 @@ class Blender:
         else:
             return {"CANCELLED"}
 
+    @classmethod
+    def is_object_an_ifc_class(cls, obj, classes):
+        if not tool.Ifc.get():
+            return False
+        element = tool.Ifc.get_entity(obj)
+        return element and element.is_a() in classes
+
+    @classmethod
+    def get_object_from_guid(cls, guid):
+        element = tool.Ifc.get().by_guid(guid)
+        obj = tool.Ifc.get_object(element)
+        if obj:
+            return obj
+
     class Modifier:
         @classmethod
-        def is_object_an_ifc_class(cls, obj, classes):
-            if not tool.Ifc.get():
-                return False
-            element = tool.Ifc.get_entity(obj)
-            return element and element.is_a() in classes
-
-        @classmethod
         def is_eligible_for_railing_modifier(cls, obj):
-            return cls.is_object_an_ifc_class(obj, ("IfcRailing", "IfcRailingType"))
+            return tool.Blender.is_object_an_ifc_class(obj, ("IfcRailing", "IfcRailingType"))
 
         @classmethod
         def is_eligible_for_stair_modifier(cls, obj):
-            return cls.is_object_an_ifc_class(obj, ("IfcStairFlight", "IfcStairFlightType"))
+            return tool.Blender.is_object_an_ifc_class(obj, ("IfcStairFlight", "IfcStairFlightType"))
 
         @classmethod
         def is_eligible_for_window_modifier(cls, obj):
-            return cls.is_object_an_ifc_class(obj, ("IfcWindow", "IfcWindowType", "IfcWindowStyle"))
+            return tool.Blender.is_object_an_ifc_class(obj, ("IfcWindow", "IfcWindowType", "IfcWindowStyle"))
 
         @classmethod
         def is_eligible_for_door_modifier(cls, obj):
-            return cls.is_object_an_ifc_class(obj, ("IfcDoor", "IfcDoorType", "IfcDoorStyle"))
+            return tool.Blender.is_object_an_ifc_class(obj, ("IfcDoor", "IfcDoorType", "IfcDoorStyle"))
 
         @classmethod
         def is_eligible_for_roof_modifier(cls, obj):
-            return cls.is_object_an_ifc_class(obj, ("IfcRoof", "IfcRoofType"))
+            return tool.Blender.is_object_an_ifc_class(obj, ("IfcRoof", "IfcRoofType"))
 
         @classmethod
         def is_railing(cls, element):
@@ -512,3 +520,68 @@ class Blender:
         @classmethod
         def is_modifier_with_non_editable_path(cls, element):
             return cls.is_stair(element) or cls.is_door(element) or cls.is_window(element)
+
+        class Array:
+            @classmethod
+            def bake_children_transform(cls, parent_element, item):
+                modifier_data = list(cls.get_modifiers_data(parent_element))[item]
+                children = cls.get_children_objects(modifier_data)
+                for child in children:
+                    constraint = next((c for c in child.constraints if c.type == "CHILD_OF"), None)
+                    if constraint:
+                        with bpy.context.temp_override(object=child):
+                            bpy.ops.constraint.apply(constraint=constraint.name, owner="OBJECT")
+
+            @classmethod
+            def constrain_children_to_parent(cls, parent_element):
+                parent_obj = tool.Ifc.get_object(parent_element)
+                children = cls.get_all_children_objects(parent_element)
+                for child in children:
+                    constraint = next((c for c in child.constraints if c.type == "CHILD_OF"), None)
+                    if constraint:
+                        child.constraints.remove(constraint)
+                    constraint = child.constraints.new("CHILD_OF")
+                    constraint.target = parent_obj
+
+            @classmethod
+            def set_children_lock_state(cls, parent_element, item, lock_state=True):
+                modifier_data = list(cls.get_modifiers_data(parent_element))[item]
+                children = cls.get_children_objects(modifier_data)
+                for child_obj in children:
+                    for prop in ("lock_location", "lock_rotation", "lock_scale"):
+                        attr = getattr(child_obj, prop)
+                        for axis_idx in range(3):
+                            attr[axis_idx] = lock_state
+
+            @classmethod
+            def remove_constraints(cls, parent_element):
+                children = cls.get_all_children_objects(parent_element)
+                for child in children:
+                    constraint = next((c for c in child.constraints if c.type == "CHILD_OF"), None)
+                    if constraint:
+                        child.constraints.remove(constraint)
+
+            @classmethod
+            def get_all_objects(cls, parent_element):
+                parent_obj = tool.Ifc.get_object(parent_element)
+                children_objects = list(cls.get_all_children_objects(parent_element))
+                array_objects = [parent_obj] + children_objects  # We ensure the parent is at index 0
+                return array_objects
+
+            @classmethod
+            def get_all_children_objects(cls, parent_element):
+                for array_modifier in cls.get_modifiers_data(parent_element):
+                    yield from cls.get_children_objects(array_modifier)
+
+            @classmethod
+            def get_modifiers_data(cls, parent_element):
+                array_pset = ifcopenshell.util.element.get_pset(parent_element, "BBIM_Array")
+                for modifier_data in json.loads(array_pset["Data"]):
+                    yield modifier_data
+
+            @classmethod
+            def get_children_objects(cls, modifier_data):
+                for child_guid in modifier_data["children"]:
+                    child_obj = tool.Blender.get_object_from_guid(child_guid)
+                    if child_obj:
+                        yield child_obj

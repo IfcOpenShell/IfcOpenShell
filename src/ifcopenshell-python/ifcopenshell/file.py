@@ -315,7 +315,7 @@ class file(object):
         """
         eid = kwargs.pop("id", -1)
 
-        e = entity_instance((self.schema, type), self)
+        e = entity_instance((self.schema_identifier, type), self)
 
         # Create pairs of {attribute index, attribute value}.
         # Keyword arguments are mapped to their corresponding

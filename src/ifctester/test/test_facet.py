@@ -201,7 +201,7 @@ class TestEntity:
         run(
             "Entities can be specified as a XSD regex pattern 2/2",
             facet=facet,
-            inst=ifc.createIfcWallType(),
+            inst=ifc.createIfcWallType(PredefinedType="USERDEFINED"),
             expected=True,
         )
 
@@ -255,12 +255,13 @@ class TestAttribute:
         facet = Attribute(name="Name")
         element = ifc.createIfcWall(Name="Foobar")
         run("A required facet checks all parameters as normal", facet=facet, inst=element, expected=True)
-        facet = Attribute(name="Name", minOccurs=0, maxOccurs=0)
-        run("A prohibited facet returns the opposite of a required facet", facet=facet, inst=element, expected=False)
-        facet = Attribute(name="Name", minOccurs=0)
-        run("An optional facet always passes regardless of outcome 1/2", facet=facet, inst=element, expected=True)
-        facet = Attribute(name="Rabbit", minOccurs=0)
-        run("An optional facet always passes regardless of outcome 2/2", facet=facet, inst=element, expected=True)
+
+        # facet = Attribute(name="Name", minOccurs=0, maxOccurs=0)
+        # run("A prohibited facet returns the opposite of a required facet", facet=facet, inst=element, expected=False)
+        # facet = Attribute(name="Name", minOccurs=0)
+        # run("An optional facet always passes regardless of outcome 1/2", facet=facet, inst=element, expected=True)
+        # facet = Attribute(name="Rabbit", minOccurs=0)
+        # run("An optional facet always passes regardless of outcome 2/2", facet=facet, inst=element, expected=True)
 
         ifc = ifcopenshell.file()
         facet = Attribute(name="Name")

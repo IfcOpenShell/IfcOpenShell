@@ -45,6 +45,7 @@ classes = (
     array.DisableEditingArray,
     array.EditArray,
     array.EnableEditingArray,
+    array.ApplyArray,
     array.RemoveArray,
     array.SelectArrayParent,
     array.SelectAllArrayObjects,
@@ -52,6 +53,7 @@ classes = (
     array.Input3DCursorYArray,
     array.Input3DCursorZArray,
     product.AddConstrTypeInstance,
+    product.AddDefaultType,
     product.AddEmptyType,
     product.AlignProduct,
     product.ChangeTypePage,
@@ -177,7 +179,15 @@ addon_keymaps = []
 
 def register():
     if not bpy.app.background:
-        bpy.utils.register_tool(workspace.BimTool, after={"builtin.scale_cage"}, separator=True, group=True)
+        bpy.utils.register_tool(workspace.WallTool, after={"builtin.transform"}, separator=True, group=False)
+        bpy.utils.register_tool(workspace.SlabTool, after={"bim.wall_tool"}, separator=False, group=False)
+        bpy.utils.register_tool(workspace.DoorTool, after={"bim.slab_tool"}, separator=False, group=False)
+        bpy.utils.register_tool(workspace.WindowTool, after={"bim.door_tool"}, separator=False, group=False)
+        bpy.utils.register_tool(workspace.ColumnTool, after={"bim.window_tool"}, separator=False, group=False)
+        bpy.utils.register_tool(workspace.BeamTool, after={"bim.column_tool"}, separator=False, group=False)
+        bpy.utils.register_tool(workspace.DuctTool, after={"bim.beam_tool"}, separator=False, group=False)
+        bpy.utils.register_tool(workspace.PipeTool, after={"bim.duct_tool"}, separator=False, group=False)
+        bpy.utils.register_tool(workspace.BimTool, after={"bim.pipe_tool"}, separator=False, group=False)
     bpy.types.Scene.BIMModelProperties = bpy.props.PointerProperty(type=prop.BIMModelProperties)
     bpy.types.Object.BIMArrayProperties = bpy.props.PointerProperty(type=prop.BIMArrayProperties)
     bpy.types.Object.BIMStairProperties = bpy.props.PointerProperty(type=prop.BIMStairProperties)
@@ -204,6 +214,14 @@ def register():
 
 def unregister():
     if not bpy.app.background:
+        bpy.utils.unregister_tool(workspace.WallTool)
+        bpy.utils.unregister_tool(workspace.SlabTool)
+        bpy.utils.unregister_tool(workspace.DoorTool)
+        bpy.utils.unregister_tool(workspace.WindowTool)
+        bpy.utils.unregister_tool(workspace.ColumnTool)
+        bpy.utils.unregister_tool(workspace.BeamTool)
+        bpy.utils.unregister_tool(workspace.DuctTool)
+        bpy.utils.unregister_tool(workspace.PipeTool)
         bpy.utils.unregister_tool(workspace.BimTool)
     del bpy.types.Scene.BIMModelProperties
     del bpy.types.Object.BIMArrayProperties

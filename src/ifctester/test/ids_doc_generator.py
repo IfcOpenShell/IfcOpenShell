@@ -26,11 +26,13 @@ import ifctester
 import test_facet
 import test_ids
 import numpy as np
+from pathlib import Path
 from xml.dom.minidom import parseString
 from ifctester import ids
 from ifcopenshell import validate
 
 outdir = "build"
+
 
 # Just for aesthetics so we don't keep on getting brand new GlobalIds on each generation
 def regenerate_guids(ifc):
@@ -183,7 +185,7 @@ test_ids.run = IdsDocGenerator()
 pytest.main(["-p", "no:pytest-blender"])
 
 for facet, testcases in test_facet.run.testcases.items():
-    with open(os.path.join(outdir, f"testcases-{facet}.md"), "w") as f:
+    with open(os.path.join(outdir, f"testcases-{facet}.md"), "w", encoding="utf-8") as f:
         write = functools.partial(print, file=f)
         write(f"# {facet.capitalize()} testcases")
         write()
@@ -207,7 +209,7 @@ for facet, testcases in test_facet.run.testcases.items():
             )
             write()
 
-with open(os.path.join(outdir, f"testcases-ids.md"), "w") as f:
+with open(os.path.join(outdir, f"testcases-ids.md"), "w", encoding="utf-8") as f:
     write = functools.partial(print, file=f)
     write(f"# IDS integration testcases")
     write()
@@ -283,13 +285,16 @@ spec.requirements.append(
     ifctester.ids.Property(
         propertySet="Pset_WallCommon",
         name="FireRating",
-        measure="IfcLabel",
+        datatype="IfcLabel",
         value=restriction,
         instructions="Fire rating is specified using the Fire Resistance Level as defined in the Australian National Construction Code (NCC) 2019. Valid examples include -/-/-, -/120/120, and 60/60/60",
     )
 )
 
-specs.to_xml(os.path.join(outdir, "library", "sample.ids"))
+ids_path = Path(outdir) / "library" / "sample.ids"
+if not ids_path.parent.exists():
+    ids_path.parent.mkdir()
+specs.to_xml(str(ids_path))
 
 # Create sample model
 model = ifcopenshell.file()

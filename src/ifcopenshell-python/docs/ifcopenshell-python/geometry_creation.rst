@@ -28,6 +28,7 @@ object's geometry is always relative to the **Object Placement**.
    **Object Placements** are optional if the object has no geometry.  However,
    any object with a geometry must have an **Object Placement**.
 
+.. image:: images/object-placement-bunny.png
 
 IFC products may have multiple geometric representations, positioned relative
 to the **Object Placement**. For example, a door might have a 3D body of a
@@ -45,6 +46,14 @@ is intended to be viewed. For example, a "2D Plan View" might be a
 **Representation Context**. This allows the user to choose to see the
 appropriate **Representation**.
 
+.. image:: images/representation-contexts.png
+
+A **Representation** contains one or more **Representation Items**. Each
+**Representation Item** could be an extrusion, a mesh, a surface, a curve, and
+so on depending on the type of geometric modeling technique. Techniques cannot
+be mixed, so a single **Representation** may be made out of multiple extrusion
+**Items** but cannot have both extrusions and meshes.
+
 Objects may also have the concept of **Types** and **Material Sets** that
 inform their shape. For example, if a light fixture **Type** has a
 **Representation**, all occurrences of that light fixture must have the exact
@@ -56,11 +65,15 @@ column **Type** has a **Material Set** defining a cross sectional profile, then
 all occurrences of that column type must have the same cross section (although
 the height of the column may vary).
 
-The vast majority of objects in the built environment use **Types** and
-**Material Sets**, such as slabs, walls, columns, beams, doors, windows,
-and furniture. For this reason, it is highly recommended to not just create
-**Representations** for individual objects, but first consider creating a
-**Type**.
+.. seealso::
+
+    The vast majority of objects in the built environment use **Types** and
+    **Material Sets**, such as slabs, walls, columns, beams, doors, windows,
+    and furniture. For this reason, it is highly recommended to not just create
+    **Representations** for individual objects, but first consider creating a
+    **Type**. After you get a general understanding of **Representations**,
+    please read the section on `Types and mapped representations`_, `Material
+    layer sets`_, and `Material profile sets`_.
 
 Project units
 -------------
@@ -459,14 +472,250 @@ Placement** to place the element on its side.
 Custom representations
 ----------------------
 
+You may also create your own solid by creating multiple custom profiles,
+extruding them into solids, then combining the solids into your own shapes. For
+example, a table may be formed by 5 rectangular extrusions: one for the table
+top, and 4 table legs. This can be done using the shape builder utility module.
+
+The standard approach is:
+
+1. Define at least one 2D outer curve and optional inner curves (for holes).
+2. Optionally convert your outer and optional inner curves into a profile. This
+   is only necessary if you want to give your profile a name (so that you may
+   reuse it and manage it in a profile library) or if you have inner curves.
+3. Optionally extrude your profile into a solid. If you are creating 2D
+   representations, then extrusion is not necessary.
+4. Optionally move your extruded solid into your desired location through
+   translation, rotation, or mirroring.
+5. Convert all your extruded solids (or just curves, if 2D) into a
+   **Representation** with a **Representation Context**.
+
+Here is an example which generates a parametric table.
+
+.. code-block:: python
+
+    # The shape_builder module depends on mathutils
+    from ifcopenshell.util.shape_builder import V
+
+    builder = ifcopenshell.util.shape_builder.ShapeBuilder(model)
+
+    # Parameters to define our table
+    width = 1200
+    depth = 700
+    height = 750
+    leg_size = 50.0
+    thickness = 50.0
+
+    # Extrude a rectangle profile for the tabletop
+    rectangle = builder.rectangle(size=V(width, depth))
+    tabletop = builder.extrude(builder.profile(rectangle), thickness, V(0, 0, height - thickness))
+
+    # Create a table leg curve, mirror it along two axes, and extrude.
+    leg_curve = builder.rectangle(size=V(leg_size, leg_size))
+    legs_curves = [leg_curve] + builder.mirror(
+        leg_curve,
+        mirror_axes=[V(1, 0), V(0, 1), V(1, 1)],
+        mirror_point=V(width / 2, depth / 2),
+        create_copy=True,
+    )
+    legs_profiles = [builder.profile(leg) for leg in legs_curves]
+    legs = [builder.extrude(leg, height - thickness) for leg in legs_profiles]
+
+    # Shift our table such that the object origin is in the center.
+    items = [tabletop] + legs
+    shift_to_center = V(-width / 2, -depth / 2)
+    builder.translate(items, shift_to_center.to_3d())
+
+    # Create a body representation
+    body = ifcopenshell.util.representation.get_context(model, "Model", "Body", "MODEL_VIEW")
+    representation = builder.get_representation(context=body, items=items)
+
+.. image:: images/custom-representation.png
+
+Another really common case for using the shape builder is when creating
+**Representations** of reinforcement bars, cables, or circular railings. IFC
+has a special type of extrusion specifically for extruding a disk (i.e. circle)
+along a path. This should almost always be used for usecases like reinforcement
+bar.
+
+.. code-block:: python
+
+    builder = ifcopenshell.util.shape_builder.ShapeBuilder(model)
+
+    # Sweep a 10mm radius disk along a polyline with a couple of straight segments and an arc.
+    curve = builder.polyline(
+        [(0., 0., 0.), (100., 0., 0.), (171., 29., 0.), (200., 100., 0.), (200., 200., 0.)],
+        arc_points=[2])
+    swept_curve = builder.create_swept_disk_solid(curve, 10)
+
+    # Create a body representation
+    body = ifcopenshell.util.representation.get_context(model, "Model", "Body", "MODEL_VIEW")
+    representation = builder.get_representation(body, swept_curve)
+
+.. image:: images/swept-disk-representation.png
+
+For more information, consult the :doc:`shape builder documentation
+<autoapi/ifcopenshell/util/shape_builder/index>`.
+
 Manual representations
 ----------------------
+
+Although IfcOpenShell provides many convenience functions and utility modules,
+you may wish to disregard this and manually create each IFC class yourself.
+This is generally not recommended but is useful as an educational exercise or
+if you want to create a particularly bespoke shape that IfcOpenShell does not
+have a convenience function for yet. You will be required to have a detailed
+understanding of IFC geometry which is explained in the IFC documentation.
+
+Here is an example of manually creating a simple extruded rectangle.
+
+.. code-block:: python
+
+    rectangle = model.createIfcRectangleProfileDef(ProfileType="AREA", XDim=500, YDim=250)
+    direction = model.createIfcDirection((0., 0., 1.))
+    extrusion = model.createIfcExtrudedAreaSolid(SweptArea=rectangle, ExtrudedDirection=direction, Depth=1000)
+    body = ifcopenshell.util.representation.get_context(model, "Model", "Body", "MODEL_VIEW")
+    representation = model.createIfcShapeRepresentation(
+        ContextOfItems=body, RepresentationIdentifier="Body", RepresentationType="SweptSolid", Items=[extrusion])
+
+.. image:: images/manual-representation.png
 
 Types and mapped representations
 --------------------------------
 
+Very often, the **Representation** of a type is exactly the same for all of its
+occurrences. For example, all furniture, equipment (pumps, valves, dampers,
+etc) occurrences will be exactly the same.
+
+In this scenario, the **Representation** should be assigned to the type. Each
+of the occurrences will then use a **Mapped Representation**. This is both
+efficient and implies that the type is interchangable (e.g. for maintenance).
+
+.. code-block:: python
+
+    # Create our element type. Types do not have an object placement.
+    element_type = run("root.create_entity", model, ifc_class="IfcFurnitureType")
+
+    # Let's create our representation!
+    # See above sections for examples on how to create representations.
+    representation = ...
+
+    # Assign our representation to the element type.
+    run("geometry.assign_representation", model, product=element_type, representation=representation)
+
+    # Create our element occurrence with an object placement.
+    element = run("root.create_entity", model, ifc_class="IfcFurniture")
+    run("geometry.edit_object_placement", model, product=element)
+
+    # Assign our furniture occurrence to the type.
+    # That's it! The representation will automatically be mapped!
+    run("type.assign_type", model, related_object=element, relating_type=element_type)
+
 Material layer sets
 -------------------
 
+If a type has a material layer set, it implies that all occurrences of that
+type must use the same material layer set. For example, if a wall type has
+multiple material layers adding up to a thickness of 100mm, then all walls of
+that wall type must be exactly 100mm thick. The height, length, angle or
+curvature of the wall may vary, but the thickness may not.
+
+Because only the thickness is fixed, you are still responsible for creating the
+representation of walls yourself. IfcOpenShell will not check whether or not
+your representation complies with the thickness constraint, so it is your
+responsibility to make sure the geometry is correct.
+
+.. code-block:: python
+
+    # Let's imagine a wall type called WAL01 using a material layer set.
+    wall_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWallType", name="WAL01")
+
+    # First, let's create a material set. This will later be assigned to our wall type element.
+    material_set = ifcopenshell.api.run("material.add_material_set", model,
+        name="GYP-ST-GYP", set_type="IfcMaterialLayerSet")
+
+    # Let's create a few materials.
+    gypsum = ifcopenshell.api.run("material.add_material", model, name="PB01", category="gypsum")
+    steel = ifcopenshell.api.run("material.add_material", model, name="ST01", category="steel")
+
+    # Create 3 layers for a steel studded plasterboard wall.
+    layer = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=gypsum)
+    ifcopenshell.api.run("material.edit_layer", model, layer=layer, attributes={"LayerThickness": 13})
+    layer = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=steel)
+    ifcopenshell.api.run("material.edit_layer", model, layer=layer, attributes={"LayerThickness": 92})
+    layer = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=gypsum)
+    ifcopenshell.api.run("material.edit_layer", model, layer=layer, attributes={"LayerThickness": 13})
+
+    # Great! Let's assign our material set to our wall type.
+    ifcopenshell.api.run("material.assign_material", model, product=wall_type, material=material_set)
+
+    # Now, let's create a wall at the origin.
+    wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
+    ifcopenshell.api.run("geometry.edit_object_placement", model, product=wall)
+
+    # The wall is a WAL01 wall type. The material layer set is inherited.
+    ifcopenshell.api.run("type.assign_type", model, related_object=wall, relating_type=wall_type)
+
+    # It's now our responsibility to create a compatible representation.
+    # Notice how our thickness of 0.118 must equal .013 + .092 + .013 from our type
+    body = ifcopenshell.util.representation.get_representation(element, "Model", "Body")
+    representation = ifcopenshell.api.run("geometry.add_wall_representation", model,
+        context=body, length=5, height=3, thickness=0.118)
+
+    # Assign our new body geometry back to our wall
+    ifcopenshell.api.run("geometry.assign_representation", model, product=wall, representation=representation)
+
 Material profile sets
 ---------------------
+
+If a type has a material profile set, it implies that all occurrences of that
+type must use the same material profile set. For example, if a beam type has a
+material profile of an "I-shape", then all beams of that beam type must use
+that exact same I-shape profile. The length, angle or curvature of the beam may
+vary, but the cross sectional profile may not.
+
+Because only the profile is fixed, you are still responsible for creating the
+representation of walls yourself. IfcOpenShell will not check whether or not
+your representation complies with the profile constraint, so it is your
+responsibility to make sure the geometry is correct.
+
+.. code-block:: python
+
+    # Let's imagine we have a steel I-beam type called B1.
+    beam_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBeamType", name="B1")
+
+    # First, let's create a material set. This will later be assigned to our beam type element.
+    material_set = ifcopenshell.api.run("material.add_profile_set", model,
+        name="B1", set_type="IfcMaterialProfileSet")
+
+    # Create a steel material.
+    steel = ifcopenshell.api.run("material.add_material", model, name="ST01", category="steel")
+
+    # Create an I-beam profile curve. Notice how we use standardised steel profile names.
+    hea100 = self.file.create_entity(
+        "IfcIShapeProfileDef", ProfileName="HEA100", ProfileType="AREA",
+        OverallWidth=100, OverallDepth=96, WebThickness=5, FlangeThickness=8, FilletRadius=12,
+    )
+
+    # Define that steel material and cross section as a single profile item. If
+    # this were a composite beam, we might add multiple profile items instead,
+    # but this is rarely the case in most construction.
+    ifcopenshell.api.run("material.add_profile", model, profile_set=material_set, material=steel, profile=hea100)
+
+    # Great! Let's assign our material set to our beam type.
+    ifcopenshell.api.run("material.assign_material", model, product=beam_type, material=material_set)
+
+    # Now, let's create a beam at the origin.
+    beam = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBeam")
+    ifcopenshell.api.run("geometry.edit_object_placement", model, product=beam)
+
+    # The beam is a B1 beam type. The material profile set is inherited.
+    ifcopenshell.api.run("type.assign_type", model, related_object=beam, relating_type=beam_type)
+
+    # It's now our responsibility to create a compatible representation.
+    # Notice how we reuse our profile instead of creating a new profile.
+    body = ifcopenshell.util.representation.get_representation(element, "Model", "Body")
+    representation = run("geometry.add_profile_representation", model, context=body, profile=hea100, depth=1)
+
+    # Assign our new body geometry back to our beam
+    ifcopenshell.api.run("geometry.assign_representation", model, product=beam, representation=representation)

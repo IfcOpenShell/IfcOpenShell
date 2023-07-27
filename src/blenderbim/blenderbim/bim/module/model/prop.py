@@ -128,25 +128,32 @@ class BIMModelProperties(PropertyGroup):
     )
     length: bpy.props.FloatProperty(default=42.0, subtype="DISTANCE")
     openings: bpy.props.CollectionProperty(type=ObjProperty)
-    x: bpy.props.FloatProperty(name="X", default=0.5)
-    y: bpy.props.FloatProperty(name="Y", default=0.5)
-    z: bpy.props.FloatProperty(name="Z", default=0.5)
-    rl1: bpy.props.FloatProperty(name="RL", default=1)  # Used for things like walls, doors, flooring, skirting, etc
-    rl2: bpy.props.FloatProperty(name="RL", default=1)  # Used for things like windows, other hosted furniture
-    x_angle: bpy.props.FloatProperty(name="X Angle", default=0, subtype="ANGLE", min=0, max=pi / 180 * 89)
+    x: bpy.props.FloatProperty(name="X", default=0.5, subtype="DISTANCE", description="Size by X axis for the opening")
+    y: bpy.props.FloatProperty(name="Y", default=0.5, subtype="DISTANCE", description="Size by Y axis for the opening")
+    z: bpy.props.FloatProperty(name="Z", default=0.5, subtype="DISTANCE", description="Size by Z axis for the opening")
+    # Used for things like walls, doors, flooring, skirting, etc
+    rl1: bpy.props.FloatProperty(name="RL", default=1, subtype="DISTANCE", description="Z offset for walls")  
+    # Used for things like windows, other hosted furniture
+    rl2: bpy.props.FloatProperty(name="RL", default=1, subtype="DISTANCE", description="Z offset for windows")
+    # Used for plan calculation points such as in room generation
+    rl3: bpy.props.FloatProperty(name="RL", default=1, subtype="DISTANCE", description="Z offset for space calculation")
+    x_angle: bpy.props.FloatProperty(name="X Angle", default=0, subtype="ANGLE", min=-pi / 180 * 89, max=pi / 180 * 89)
     type_page: bpy.props.IntProperty(name="Type Page", default=1, update=update_type_page)
     type_template: bpy.props.EnumProperty(
         items=(
-            ("MESH", "Custom Mesh", ""),
-            ("LAYERSET_AXIS2", "Vertical Layers", "For objects similar to walls"),
-            ("LAYERSET_AXIS3", "Horizontal Layers", "For objects similar to slabs"),
-            ("PROFILESET", "Extruded Profile", ""),
-            ("EMPTY", "Non-Geometric Type", ""),
-            ("WINDOW", "Window", ""),
-            ("DOOR", "Door", ""),
-            ("STAIR", "Stair", ""),
-            ("RAILING", "Railing", ""),
-            ("ROOF", "Roof", ""),
+            ("MESH", "Custom Mesh", "Use as a representation currently active object mesh or default cube if no object selected"),
+            ("LAYERSET_AXIS2", "Vertical Layers", "For objects similar to walls, will automatically add IfcMaterialLayerSet"),
+            ("LAYERSET_AXIS3", "Horizontal Layers", "For objects similar to slabs, will automatically add IfcMaterialLayerSet"),
+            ("PROFILESET", "Extruded Profile", "Create profile type object, automatically defines IfcMaterialProfileSet with the first profile from library"),
+            ("EMPTY", "Non-Geometric Type", "Start with an empty object"),
+            ("WINDOW", "Window", "Parametric window"),
+            ("DOOR", "Door", "Parametric door"),
+            ("STAIR", "Stair", "Parametric stair"),
+            ("RAILING", "Railing", "Parametric railing"),
+            ("ROOF", "Roof", "Parametric roof"),
+            ("DISTRIBUTION_SEGMENT_RECTANGULAR", "Rectangular Distribution Segment", "Works similarly to Profile, has distribution ports"),
+            ("DISTRIBUTION_SEGMENT_CIRCULAR", "Circular Distribution Segment", "Works similarly to Profile, has distribution ports"),
+            ("DISTRIBUTION_SEGMENT_CIRCULAR_HOLLOW", "Circular Hollow Distribution Segment", "Works similarly to Profile, has distribution ports"),
         ),
         name="Type Template",
         default="MESH",

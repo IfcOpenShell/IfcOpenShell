@@ -57,6 +57,14 @@ class LibraryGenerator:
                 target_view="PLAN_VIEW",
                 parent=plan,
             ),
+            "plan_annotation": ifcopenshell.api.run(
+                "context.add_context",
+                self.file,
+                context_type="Plan",
+                context_identifier="Annotation",
+                target_view="PLAN_VIEW",
+                parent=plan,
+            ),
         }
 
         self.material = ifcopenshell.api.run("material.add_material", self.file, name="Unknown")
@@ -84,11 +92,17 @@ class LibraryGenerator:
         self.create_layer_type("IfcSlabType", "FLR150", 0.2)
         self.create_layer_type("IfcSlabType", "FLR250", 0.3)
 
-        profile = self.file.create_entity("IfcRectangleProfileDef", ProfileName="500x600", ProfileType="AREA", XDim=0.5, YDim=0.6)
+        profile = self.file.create_entity(
+            "IfcRectangleProfileDef", ProfileName="500x600", ProfileType="AREA", XDim=0.5, YDim=0.6
+        )
         self.create_profile_type("IfcColumnType", "C1", profile)
 
         profile = self.file.create_entity(
-            "IfcCircleHollowProfileDef", ProfileName="500.0x5.0 CHS", ProfileType="AREA", Radius=0.25, WallThickness=0.005
+            "IfcCircleHollowProfileDef",
+            ProfileName="500.0x5.0 CHS",
+            ProfileType="AREA",
+            Radius=0.25,
+            WallThickness=0.005,
         )
         self.create_profile_type("IfcColumnType", "C2", profile)
 
@@ -132,7 +146,40 @@ class LibraryGenerator:
         self.create_type("IfcDoorType", "DT01", {"model_body": "Door", "plan_body": "Door-Plan"})
         self.create_type("IfcFurnitureType", "BUN01", {"model_body": "Bunny", "plan_body": "Bunny-Plan"})
 
+        self.create_text_type("DOOR-TAG", "door-tag", ["{{type.Name}}", "{{Name}}"])
+        self.create_text_type("WINDOW-TAG", "window-tag", ["{{Name}}"])
+        self.create_text_type("SPACE-TAG", "space-tag", ["{{Name}}", "{{Description}}", "``round({{Qto_SpaceBaseQuantities.NetFloorArea}} or 0., 2)``"])
+        self.create_text_type("MATERIAL-TAG", "rectangle-tag", ["{{material.Name}}"])
+        self.create_text_type("TYPE-TAG", "capsule-tag", ["{{type.Name}}"])
+        self.create_text_type("NAME-TAG", "capsule-tag", ["{{Name}}"])
+
         self.file.write("IFC4 Demo Library.ifc")
+
+    def create_text_type(self, name, symbol, literals):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcTypeProduct", name=name)
+        element.ApplicableOccurrence = "IfcAnnotation/TEXT"
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Annotation")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Symbol": symbol})
+        items = []
+        for literal in literals:
+            origin = self.file.createIfcAxis2Placement3D(
+                self.file.createIfcCartesianPoint((0.0, 0.0, 0.0)),
+                self.file.createIfcDirection((0.0, 0.0, 1.0)),
+                self.file.createIfcDirection((1.0, 0.0, 0.0)),
+            )
+            items.append(self.file.createIfcTextLiteralWithExtent(
+                literal, origin, "RIGHT", self.file.createIfcPlanarExtent(1000, 1000), "center"
+            ))
+
+        representation = self.file.createIfcShapeRepresentation(
+            self.representations["plan_annotation"],
+            self.representations["plan_annotation"].ContextIdentifier,
+            "Annotation2D",
+            items,
+        )
+        ifcopenshell.api.run(
+            "geometry.assign_representation", self.file, product=element, representation=representation
+        )
 
     def create_layer_type(self, ifc_class, name, thickness):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=ifc_class, name=name)
@@ -172,8 +219,8 @@ class LibraryGenerator:
                     "style.add_surface_style",
                     self.file,
                     style=style,
-                    ifc_class="IfcSurfaceStyleRendering",
-                    attributes=tool.Style.get_surface_rendering_attributes(slot.material),
+                    ifc_class="IfcSurfaceStyleShading",
+                    attributes=tool.Style.get_surface_shading_attributes(slot.material),
                 )
                 styles.append(style)
             if styles:

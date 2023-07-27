@@ -72,6 +72,40 @@ def add_empty_type_button(self, context):
     self.layout.operator(AddEmptyType.bl_idname, icon="FILE_3D")
 
 
+class AddDefaultType(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_default_type"
+    bl_label = "Add Default Type"
+    bl_options = {"REGISTER", "UNDO"}
+    ifc_element_type: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        props = context.scene.BIMModelProperties
+        props.type_class = self.ifc_element_type
+        if self.ifc_element_type == "IfcWallType":
+            props.type_predefined_type = "SOLIDWALL"
+            props.type_template = "LAYERSET_AXIS2"
+        elif self.ifc_element_type == "IfcSlabType":
+            props.type_predefined_type = "FLOOR"
+            props.type_template = "LAYERSET_AXIS3"
+        elif self.ifc_element_type == "IfcDoorType":
+            props.type_predefined_type = "DOOR"
+            props.type_template = "DOOR"
+        elif self.ifc_element_type == "IfcWindowType":
+            props.type_predefined_type = "WINDOW"
+            props.type_template = "WINDOW"
+        elif self.ifc_element_type == "IfcColumnType":
+            props.type_predefined_type = "COLUMN"
+            props.type_template = "PROFILESET"
+        elif self.ifc_element_type == "IfcBeamType":
+            props.type_predefined_type = "BEAM"
+            props.type_template = "PROFILESET"
+        elif self.ifc_element_type == "IfcDuctSegmentType":
+            return
+        elif self.ifc_element_type == "IfcPipeSegmentType":
+            return
+        bpy.ops.bim.add_type()
+
+
 class AddConstrTypeInstance(bpy.types.Operator):
     bl_idname = "bim.add_constr_type_instance"
     bl_label = "Add"
@@ -89,30 +123,30 @@ class AddConstrTypeInstance(bpy.types.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMModelProperties
-        ifc_class = self.ifc_class or props.ifc_class
         relating_type_id = self.relating_type_id or props.relating_type_id
 
-        if not ifc_class or not relating_type_id:
+        if not relating_type_id:
             return {"FINISHED"}
 
         if self.from_invoke:
-            props.ifc_class = self.ifc_class
             props.relating_type_id = str(self.relating_type_id)
 
         self.file = IfcStore.get_file()
-        instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, self.file.schema)[0]
         relating_type = self.file.by_id(int(relating_type_id))
+        ifc_class = relating_type.is_a()
+        instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, self.file.schema)[0]
         material = ifcopenshell.util.element.get_material(relating_type)
 
         if material and material.is_a("IfcMaterialProfileSet"):
-            if profile.DumbProfileGenerator(relating_type).generate():
+            if obj := profile.DumbProfileGenerator(relating_type).generate():
+                if not relating_type.is_a("IfcFlowSegmentType"):
+                    return {"FINISHED"}
+                mep.MepGenerator(relating_type).setup_ports(obj)
                 return {"FINISHED"}
+
         elif material and material.is_a("IfcMaterialLayerSet"):
             if self.generate_layered_element(ifc_class, relating_type):
                 tool.Blender.select_and_activate_single_object(context, context.selected_objects[-1])
-                return {"FINISHED"}
-        if relating_type.is_a("IfcFlowSegmentType") and not relating_type.RepresentationMaps:
-            if mep.MepGenerator(relating_type).generate():
                 return {"FINISHED"}
 
         building_obj = None
@@ -389,7 +423,7 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
             newc = mirror.matrix_world @ (c @ reflection)
 
             newmat = Matrix((newx.to_4d(), newy.to_4d(), newz.to_4d(), newc.to_4d())).transposed()
-            newmat.col[3][0:3] = Vector(newmat.col[3][0:3]) - (newmat.to_quaternion() @ centroid)
+            newmat.translation = Vector(newmat.translation) - (newmat.to_quaternion() @ centroid)
 
             obj.matrix_world = newmat
 

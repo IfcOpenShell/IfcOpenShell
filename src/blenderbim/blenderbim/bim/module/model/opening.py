@@ -76,7 +76,7 @@ class FilledOpeningGenerator:
         if voided_obj.data:
             raycast = voided_obj.closest_point_on_mesh(voided_obj.matrix_world.inverted() @ target, distance=0.01)
             if not raycast[0]:
-                target = filling_obj.matrix_world.col[3].to_3d().copy()
+                target = filling_obj.matrix_world.translation.copy()
                 raycast = voided_obj.closest_point_on_mesh(voided_obj.matrix_world.inverted() @ target, distance=0.5)
                 if not raycast[0]:
                     return
@@ -86,12 +86,12 @@ class FilledOpeningGenerator:
             axis = tool.Model.get_wall_axis(voided_obj, layers=layers)["base"]
 
             new_matrix = voided_obj.matrix_world.copy()
-            new_matrix.col[3] = tool.Cad.point_on_edge(target, axis).to_4d()
+            new_matrix.translation = tool.Cad.point_on_edge(target, axis)
 
             if filling.is_a("IfcDoor"):
-                new_matrix[2][3] = voided_obj.matrix_world[2][3]
+                new_matrix.translation.z = voided_obj.matrix_world.translation.z
             else:
-                new_matrix[2][3] = voided_obj.matrix_world[2][3] + (props.rl2 * unit_scale)
+                new_matrix.translation.z = voided_obj.matrix_world.translation.z + props.rl2
 
             filling_obj.matrix_world = new_matrix
             bpy.context.view_layer.update()
@@ -392,13 +392,12 @@ class FlipFill(bpy.types.Operator, tool.Ifc.Operator):
 
             bottom_left = obj.matrix_world @ Vector(obj.bound_box[0])
             top_right = obj.matrix_world @ Vector(obj.bound_box[6])
-            center = obj.matrix_world.col[3].to_3d().copy()
+            center = obj.matrix_world.translation.copy()
             center_offset = center - bottom_left
             flipped_center = top_right - center_offset
 
             obj.matrix_world = obj.matrix_world @ flip_matrix
-            obj.matrix_world.col[3][0] = flipped_center[0]
-            obj.matrix_world.col[3][1] = flipped_center[1]
+            obj.matrix_world.translation.xy = flipped_center.xy
             bpy.context.view_layer.update()
         return {"FINISHED"}
 
@@ -425,7 +424,7 @@ class AddPotentialOpening(Operator, AddObjectHelper):
         new_matrix = None
         if context.selected_objects and context.active_object:
             new_matrix = context.active_object.matrix_world.copy()
-            new_matrix.col[3] = context.scene.cursor.location.to_4d()
+            new_matrix.translation = context.scene.cursor.location
 
         x = self.x / 2
         y = self.y / 2
@@ -558,7 +557,6 @@ class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
             and obj.data.BIMMeshProperties.ifc_definition_id
         )
 
-
     def _execute(self, context):
         obj = context.active_object
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
@@ -578,9 +576,7 @@ class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
                     boolean_obj = self.create_half_space_solid()
                     position = boolean.BaseSurface.Position
                     position = Matrix(ifcopenshell.util.placement.get_axis2placement(position).tolist())
-                    position[0][3] *= unit_scale
-                    position[1][3] *= unit_scale
-                    position[2][3] *= unit_scale
+                    position.translation *= unit_scale
                     boolean_obj.matrix_world = obj.matrix_world @ position
             else:
                 settings = ifcopenshell.geom.settings()

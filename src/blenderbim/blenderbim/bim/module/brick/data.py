@@ -42,8 +42,6 @@ class BrickschemaData:
         cls.data = {
             "is_loaded": cls.get_is_loaded(),
             "attributes": cls.attributes(),
-            "namespaces": cls.namespaces(),
-            "brick_equipment_classes": cls.brick_equipment_classes(),
         }
 
     @classmethod
@@ -59,78 +57,51 @@ class BrickschemaData:
             brick = props.bricks[props.active_brick_index]
         except:
             return []
-        results = []
         uri = brick.uri
+        namespace = str(uri.split("#")[0])
+        if namespace == "https://brickschema.org/schema/Brick":
+            return []
+        results = []
         query = BrickStore.graph.query(
             """
             PREFIX brick: <https://brickschema.org/schema/Brick#>
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
             PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-            SELECT DISTINCT ?name ?value ?sp ?sv WHERE {
-               <{uri}> ?name ?value .
+            SELECT DISTINCT ?predicate ?object ?sp ?sv WHERE {
+               <{uri}> ?predicate ?object .
                OPTIONAL {
-               { ?name rdfs:range brick:TimeseriesReference . }
+               { ?predicate rdfs:range brick:TimeseriesReference . }
                 UNION
-               { ?name a brick:EntityProperty . }
-                ?value ?sp ?sv }
+               { ?predicate a brick:EntityProperty . }
+                ?object ?sp ?sv }
             }
         """.replace(
                 "{uri}", uri
             )
         )
-
         for row in query:
-            name = row.get("name").toPython().split("#")[-1]
-            value = row.get("value")
+            predicate = row.get("predicate").toPython().split("#")[-1]
+            object = row.get("object")
             results.append(
                 {
-                    "name": name,
-                    "value": value.toPython().split("#")[-1],
-                    "is_uri": isinstance(value, URIRef),
-                    "value_uri": value.toPython(),
-                    "is_globalid": name == "globalID",
+                    "predicate": predicate,
+                    "object": object.toPython().split("#")[-1],
+                    "is_uri": isinstance(object, URIRef),
+                    "object_uri": object.toPython(),
+                    "is_globalid": predicate == "globalID",
                 }
             )
-            if isinstance(row.get("value"), BNode):
-                for s, p, o in BrickStore.graph.triples((value, None, None)):
+            if isinstance(row.get("object"), BNode):
+                for s, p, o in BrickStore.graph.triples((object, None, None)):
                     results.append(
                         {
-                            "name": name + ":" + p.toPython().split("#")[-1],
-                            "value": o.toPython().split("#")[-1],
+                            "predicate": predicate + ":" + p.toPython().split("#")[-1],
+                            "object": o.toPython().split("#")[-1],
                             "is_uri": isinstance(o, URIRef),
-                            "value_uri": o.toPython(),
+                            "object_uri": o.toPython(),
                             "is_globalid": p.toPython().split("#")[-1] == "globalID",
                         }
                     )
-        return results
-
-    @classmethod
-    def namespaces(cls):
-        if BrickStore.graph is None:
-            return []
-        results = []
-        filter = ["brick", "owl", "w3", "xml"]
-        for alias, uri in BrickStore.graph.namespaces():
-            if alias not in filter:
-                results.append((uri, f"{alias}: {uri}", ""))
-        return results
-
-    @classmethod
-    def brick_equipment_classes(cls):
-        if BrickStore.graph is None:
-            return []
-        results = []
-        query = BrickStore.graph.query(
-            """
-            PREFIX brick: <https://brickschema.org/schema/Brick#>
-            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-            SELECT ?class WHERE {
-                ?class rdfs:subClassOf* brick:Equipment .
-            }
-        """
-        )
-        for uri in sorted([x[0].toPython() for x in query]):
-            results.append((uri, uri.split("#")[-1], ""))
         return results
 
 

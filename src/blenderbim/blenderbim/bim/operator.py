@@ -150,7 +150,7 @@ class ReloadSelectedIfcFile(bpy.types.Operator):
         valid_file = os.path.exists(filepath) and "ifc" in os.path.splitext(filepath)[1].lower()
         if not valid_file:
             self.report({"ERROR"}, f"Couldn't find .ifc file by the path '{filepath}'")
-            return {"ERROR"}
+            return {"CANCELLED"}
         context.scene.BIMProperties.ifc_file = context.scene.BIMProperties.ifc_file
         return {"FINISHED"}
 
@@ -870,7 +870,13 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
                     if not isinstance(values, (tuple, list)):
                         values = [values]
                     for value in values:
-                        self.add_item(identifier=key, name=key + " > " + value, predefined_type=value.upper())
+                        predefined_type = value["predefined_type"].upper()
+                        name = value.get("name")
+                        self.add_item(
+                            identifier=key,
+                            name=f"{key} > {name if name else predefined_type }",
+                            predefined_type=predefined_type,
+                        )
 
 
 class EditBlenderCollection(bpy.types.Operator):

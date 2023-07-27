@@ -18,20 +18,82 @@
 
 import bpy
 from bpy.types import Panel
-from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.search.data import SearchData, ColourByPropertyData
 
 
 class BIM_PT_search(Panel):
     bl_label = "Search"
     bl_idname = "BIM_PT_search"
-    # bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_selection"
+    bl_parent_id = "BIM_PT_tab_grouping_and_filtering"
 
     def draw(self, context):
+        if not SearchData.is_loaded:
+            SearchData.load()
+
         props = context.scene.BIMSearchProperties
+
+        row = self.layout.row(align=True)
+        row.label(text=f"{len(SearchData.data['saved_searches'])} Saved Searches")
+
+        if SearchData.data["saved_searches"]:
+            row.operator("bim.load_search", text="", icon="IMPORT")
+        row.operator("bim.save_search", text="", icon="EXPORT")
+
+        row = self.layout.row(align=True)
+        row.operator("bim.add_filter_group", text="Add Search Group", icon="ADD")
+
+        for i, filter_group in enumerate(props.filter_groups):
+            box = self.layout.box()
+
+            row = box.row(align=True)
+            row.prop(props, "facet", text="")
+            op = row.operator("bim.add_filter", text="Add Filter", icon="ADD")
+            op.type = props.facet
+            op.index = i
+
+            for j, ifc_filter in enumerate(filter_group.filters):
+                if ifc_filter.type == "entity":
+                    row = box.row(align=True)
+                    row.prop(ifc_filter, "value", text="", icon="FILE_3D")
+                elif ifc_filter.type == "attribute":
+                    row = box.row(align=True)
+                    row.prop(ifc_filter, "name", text="", icon="COPY_ID")
+                    row.prop(ifc_filter, "value", text="")
+                elif ifc_filter.type == "type":
+                    row = box.row(align=True)
+                    row.prop(ifc_filter, "value", text="", icon="FILE_VOLUME")
+                elif ifc_filter.type == "material":
+                    row = box.row(align=True)
+                    row.prop(ifc_filter, "value", text="", icon="MATERIAL")
+                elif ifc_filter.type == "property":
+                    row = box.row(align=True)
+                    row.prop(ifc_filter, "pset", text="", icon="PROPERTIES")
+                    row.prop(ifc_filter, "name", text="")
+                    row.prop(ifc_filter, "value", text="")
+                elif ifc_filter.type == "classification":
+                    row = box.row(align=True)
+                    row.prop(ifc_filter, "value", text="", icon="OUTLINER")
+                elif ifc_filter.type == "location":
+                    row = box.row(align=True)
+                    row.prop(ifc_filter, "name", text="", icon="PACKAGE")
+                elif ifc_filter.type == "instance":
+                    row = box.row(align=True)
+                    row.prop(ifc_filter, "value", text="", icon="GRIP")
+                op = row.operator("bim.remove_filter", text="", icon="X")
+                op.group_index = i
+                op.index = j
+
+            row = box.row()
+            row.operator("bim.remove_filter_group", icon="X").index = i
+
+        if len(props.filter_groups):
+            row = self.layout.row(align=True)
+            row.operator("bim.search", text="Search", icon="VIEWZOOM")
+
+        return  # Temporary for now whilst searching is being upgraded.
 
         row = self.layout.row()
         row.prop(props, "should_use_regex")
@@ -76,6 +138,49 @@ class BIM_PT_search(Panel):
         row.operator("bim.activate_ifc_building_storey_filter", icon="FILTER")
 
 
+class BIM_PT_colour_by_property(Panel):
+    bl_label = "Colour By Property"
+    bl_idname = "BIM_PT_colour_by_property"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_parent_id = "BIM_PT_tab_grouping_and_filtering"
+
+    def draw(self, context):
+        if not ColourByPropertyData.is_loaded:
+            ColourByPropertyData.load()
+
+        props = context.scene.BIMSearchProperties
+
+        row = self.layout.row(align=True)
+        row.label(text=f"{len(ColourByPropertyData.data['saved_colourschemes'])} Saved Colourschemes")
+
+        if ColourByPropertyData.data["saved_colourschemes"]:
+            row.operator("bim.load_colourscheme", text="", icon="IMPORT")
+        row.operator("bim.save_colourscheme", text="", icon="EXPORT")
+
+        row = self.layout.row()
+        row.prop(props, "colourscheme_query", text="Query")
+
+        row = self.layout.row(align=True)
+        row.operator("bim.colour_by_property", icon="BRUSH_DATA")
+        row.operator("bim.reset_object_colours")
+
+        if len(props.colourscheme):
+            self.layout.template_list("BIM_UL_colourscheme", "", props, "colourscheme", props, "active_colourscheme_index")
+
+
+class BIM_UL_colourscheme(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        props = context.scene.BIMWorkScheduleProperties
+        if not item:
+            return
+        row = layout.row(align=True)
+        row.label(text=item.name)
+        row.prop(item, "colour", text="")
+
+
 class BIM_UL_ifc_class_filter(bpy.types.UIList):
     use_filter_linked: bpy.props.BoolProperty(name="Included", default=True, options=set(), description="Filter")
 
@@ -115,7 +220,7 @@ class BIM_PT_IFCSelector(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_selection"
+    bl_parent_id = "BIM_PT_tab_sandbox"
 
     def draw(self, context):
         layout = self.layout

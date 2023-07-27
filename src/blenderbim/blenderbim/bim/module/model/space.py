@@ -42,11 +42,9 @@ class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
         return tool.Ifc.get_entity(collection_obj)
 
     def _execute(self, context):
-        # This only works based on a 2D plan only considering the standard
-        # layered walls (i.e. prismatic) in the currently active storey (though
-        # we can easily extend it to include other "bounding" elements). For
-        # now we generate rooms that exclude walls (i.e. not to wall midpoint
-        # or exterior / interior edge).
+        # This works as a 2.5 extruded polygon based on a cutting plane. Note
+        # that rooms exclude walls (i.e. not to wall midpoint or exterior /
+        # exterior edge.
 
         def msg(self, context):
             self.layout.label(text="NO ACTIVE STOREY")
@@ -85,24 +83,48 @@ class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
             x, y = context.scene.cursor.location.xy
             z = collection_obj.matrix_world.translation.z
             mat = Matrix()
-            mat[0][3], mat[1][3], mat[2][3] = x, y, z
+            mat.translation = (x, y, z)
             h = 3
 
-        boundary_elements = []
-        for subelement in ifcopenshell.util.element.get_decomposition(spatial_element):
-            if subelement.is_a("IfcWall") and tool.Model.get_usage_type(subelement) == "LAYER2":
-                boundary_elements.append(subelement)
-
+        calculation_rl = context.scene.BIMModelProperties.rl3
+        self.cut_point = collection_obj.matrix_world.translation.copy() + Vector((0, 0, calculation_rl))
+        self.cut_normal = Vector((0, 0, 1))
         boundary_lines = []
-        for boundary_element in boundary_elements:
-            obj = tool.Ifc.get_object(boundary_element)
-            if not obj:
+
+        gross_settings = ifcopenshell.geom.settings()
+        gross_settings.set(gross_settings.DISABLE_OPENING_SUBTRACTIONS, True)
+
+        for obj in bpy.context.visible_objects:
+            element = tool.Ifc.get_entity(obj)
+
+            if (
+                not element
+                or obj.type != "MESH"
+                or not self.is_bounding_class(element)
+                or not tool.Drawing.is_intersecting_plane(obj, self.cut_point, self.cut_normal)
+            ):
                 continue
-            axis = self.get_wall_axis(obj)
-            for ypos in ["miny", "maxy"]:
-                start, end = axis[ypos]
-                offset = (end - start).normalized() * 0.3  # Offset wall lines by 300mm
-                boundary_lines.append(shapely.LineString([start - offset, end + offset]))
+
+            old_mesh = None
+            if element.HasOpenings:
+                new_mesh = self.create_mesh(ifcopenshell.geom.create_shape(gross_settings, element))
+                old_mesh = obj.data
+                obj.data = new_mesh
+
+            local_cut_point = obj.matrix_world.inverted() @ self.cut_point
+            local_cut_normal = obj.matrix_world.inverted().to_quaternion() @ self.cut_normal
+            verts, edges = tool.Drawing.bisect_mesh_with_plane(obj, local_cut_point, local_cut_normal)
+
+            if old_mesh:
+                obj.data = old_mesh
+                bpy.data.meshes.remove(new_mesh)
+
+            for edge in edges or []:
+                boundary_lines.append(
+                    shapely.LineString(
+                        [Vector((round(x, 3) for x in verts[edge[0]])), Vector((round(x, 3) for x in verts[edge[1]]))]
+                    )
+                )
 
         unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
         closed_polygons = shapely.polygonize(unioned_boundaries.geoms)
@@ -162,23 +184,34 @@ class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
             if relating_type:
                 blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
 
-    def get_wall_axis(self, obj):
-        x_values = [v[0] for v in obj.bound_box]
-        y_values = [v[1] for v in obj.bound_box]
-        min_x = min(x_values)
-        max_x = max(x_values)
-        min_y = min(y_values)
-        max_y = max(y_values)
-        return {
-            "miny": [
-                (obj.matrix_world @ Vector((min_x, min_y, 0.0))).to_2d(),
-                (obj.matrix_world @ Vector((max_x, min_y, 0.0))).to_2d(),
-            ],
-            "maxy": [
-                (obj.matrix_world @ Vector((min_x, max_y, 0.0))).to_2d(),
-                (obj.matrix_world @ Vector((max_x, max_y, 0.0))).to_2d(),
-            ],
-        }
+    def is_bounding_class(self, element):
+        for ifc_class in ["IfcWall", "IfcColumn", "IfcMember", "IfcVirtualElement", "IfcPlate"]:
+            if element.is_a(ifc_class):
+                return True
+        return False
+
+    def create_mesh(self, shape):
+        geometry = shape.geometry
+        mesh = bpy.data.meshes.new("tmp")
+        verts = geometry.verts
+        if geometry.faces:
+            num_vertices = len(verts) // 3
+            total_faces = len(geometry.faces)
+            loop_start = range(0, total_faces, 3)
+            num_loops = total_faces // 3
+            loop_total = [3] * num_loops
+            num_vertex_indices = len(geometry.faces)
+
+            mesh.vertices.add(num_vertices)
+            mesh.vertices.foreach_set("co", verts)
+            mesh.loops.add(num_vertex_indices)
+            mesh.loops.foreach_set("vertex_index", geometry.faces)
+            mesh.polygons.add(num_loops)
+            mesh.polygons.foreach_set("loop_start", loop_start)
+            mesh.polygons.foreach_set("loop_total", loop_total)
+            mesh.polygons.foreach_set("use_smooth", [0] * total_faces)
+            mesh.update()
+        return mesh
 
 
 class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
@@ -231,7 +264,7 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
 
         union = shapely.ops.unary_union(polys).buffer(converted_tolerance, cap_style=2, join_style=2)
 
-        union = self.get_purged_inner_holes_poly(union_geom = union, min_area = self.get_converted_tolerance(tolerance = 3))
+        union = self.get_purged_inner_holes_poly(union_geom=union, min_area=self.get_converted_tolerance(tolerance=3))
 
         for i, linear_ring in enumerate(union.interiors):
             poly = Polygon(linear_ring)
@@ -250,7 +283,7 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
             self.set_obj_origin_to_bboxcenter(obj)
 
             if z != 0:
-                obj.location = obj.location + Vector((0,0,z))
+                obj.location = obj.location + Vector((0, 0, z))
 
             context.view_layer.active_layer_collection.collection.objects.link(obj)
             bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcSpace")
@@ -311,13 +344,17 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
 
         if union_geom.geom_type == "MultiPolygon":
             for poly in union_geom.geoms:
-                interiors_list = self.get_poly_valid_interior_list(poly = poly, min_area = min_area, interiors_list = interiors_list)
+                interiors_list = self.get_poly_valid_interior_list(
+                    poly=poly, min_area=min_area, interiors_list=interiors_list
+                )
 
-            new_poly = Polygon(poly.exterior.coords, holes = interiors_list)
+            new_poly = Polygon(poly.exterior.coords, holes=interiors_list)
 
         if union_geom.geom_type == "Polygon":
-            interiors_list = self.get_poly_valid_interior_list(poly = union_geom, min_area = min_area, interiors_list = interiors_list)
-            new_poly = Polygon(union_geom.exterior.coords, holes = interiors_list)
+            interiors_list = self.get_poly_valid_interior_list(
+                poly=union_geom, min_area=min_area, interiors_list=interiors_list
+            )
+            new_poly = Polygon(union_geom.exterior.coords, holes=interiors_list)
 
         return new_poly
 
@@ -327,7 +364,6 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
             if p.area >= min_area:
                 interiors_list.append(interior)
         return interiors_list
-
 
     def get_bmesh_from_polygon(self, poly, mat, h):
         bm = bmesh.new()
@@ -370,6 +406,7 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
             vert.co = inverted @ aux_vector
         obj.location = newLoc
 
+
 class ToggleSpaceVisibility(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.toggle_space_visibility"
     bl_label = "Toggle Space Visibility"
@@ -379,7 +416,7 @@ class ToggleSpaceVisibility(bpy.types.Operator, tool.Ifc.Operator):
     def execute(cls, context):
         model = tool.Ifc.get()
 
-        spaces = model.by_type('IfcSpace')
+        spaces = model.by_type("IfcSpace")
 
         if not spaces:
             print(spaces)
@@ -387,17 +424,16 @@ class ToggleSpaceVisibility(bpy.types.Operator, tool.Ifc.Operator):
 
         first_obj = tool.Ifc.get_object(spaces[0])
 
-        if bpy.data.objects[first_obj.name].display_type == 'TEXTURED':
+        if bpy.data.objects[first_obj.name].display_type == "TEXTURED":
             for space in spaces:
                 obj = tool.Ifc.get_object(space)
                 bpy.data.objects[obj.name].show_wire = True
-                bpy.data.objects[obj.name].display_type = 'WIRE'
+                bpy.data.objects[obj.name].display_type = "WIRE"
             return {"FINISHED"}
 
-        elif bpy.data.objects[first_obj.name].display_type == 'WIRE':
+        elif bpy.data.objects[first_obj.name].display_type == "WIRE":
             for space in spaces:
                 obj = tool.Ifc.get_object(space)
                 bpy.data.objects[obj.name].show_wire = False
-                bpy.data.objects[obj.name].display_type = 'TEXTURED'
+                bpy.data.objects[obj.name].display_type = "TEXTURED"
             return {"FINISHED"}
-

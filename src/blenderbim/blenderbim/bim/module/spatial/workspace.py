@@ -94,6 +94,8 @@ class SpatialToolUI:
     @classmethod
     def draw_default_interface(cls, context):
         row = cls.layout.row(align=True)
+        row.prop(data=cls.model_props, property="rl3", text="RL")
+        row = cls.layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
         row.label(text="", icon="EVENT_A")
         if context.selected_objects:
