@@ -79,7 +79,10 @@ class BIM_PT_profiles(Panel):
             self.props,
             "active_profile_index",
         )
-        if active_profile and active_profile.ifc_class == "IfcArbitraryClosedProfileDef":
+        if active_profile and active_profile.ifc_class in (
+            "IfcArbitraryClosedProfileDef",
+            "IfcArbitraryProfileDefWithVoids",
+        ):
             if self.props.active_arbitrary_profile_id:
                 row = self.layout.row(align=True)
                 row.operator("bim.edit_arbitrary_profile", text="Save Arbitrary Profile", icon="CHECKMARK")
