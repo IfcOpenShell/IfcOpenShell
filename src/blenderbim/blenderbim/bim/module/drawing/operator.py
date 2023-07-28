@@ -565,7 +565,12 @@ class CreateDrawing(bpy.types.Operator):
             for projection in projections:
                 boundary_lines = []
                 for path in projection.findall("./{http://www.w3.org/2000/svg}path"):
+                    # Rounding is necessary to ensure coincident points are coincident
                     start, end = [[round(float(o), 1) for o in co[1:].split(",")] for co in path.attrib["d"].split()]
+                    if start == end:
+                        continue
+                    # Extension by 0.5mm is necessary to ensure lines overlap with other diagonal lines
+                    start, end = tool.Drawing.extend_line(start, end, 0.5)
                     boundary_lines.append(shapely.LineString([start, end]))
                 unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
                 closed_polygons = shapely.polygonize(unioned_boundaries.geoms)
@@ -587,6 +592,9 @@ class CreateDrawing(bpy.types.Operator):
                                 e
                                 for e in tree.select_ray(self.pythonize(a), self.pythonize(b - a))
                                 if not e.instance.is_a("IfcAnnotation")
+                                and tool.Cad.is_point_on_edge(
+                                    Vector(list(e.position)), (Vector(self.pythonize(a)), Vector(self.pythonize(b)))
+                                )
                             ]
                             if elements:
                                 path = etree.Element("path")
