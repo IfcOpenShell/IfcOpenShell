@@ -44,10 +44,114 @@
         footer { color: #999; font-size: 0.8em; }
         header { text-align: center; }
         hr { margin: 20px; margin-left: 0px; margin-right: 0px;  border: none; border-top: 1px solid #ccc; }
-		details { user-select: none; }
-		details>summary span.icon { width: 24px; height: 24px; transition: all 0.3s; margin-left: auto; }
-		summary { display: flex; cursor: pointer; }
-		summary::-webkit-details-marker { display: none; }
+	details { user-select: none; }
+	details>summary span.icon { width: 24px; height: 24px; transition: all 0.3s; margin-left: auto; }
+	summary { display: flex; cursor: pointer; }
+	summary::-webkit-details-marker { display: none; }
+	* {box-sizing:border-box}
+	.container { width: 100%; background-color: #ddd; border-radius: 5px}
+	.completion { text-align: left; padding-top: 5px; padding-left: 5px; padding-bottom: 5px; color: white; }
+        .percent0  {width: 0%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent1  {width: 1%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent2  {width: 2%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent3  {width: 3%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent4  {width: 4%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent5  {width: 5%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent6  {width: 6%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent7  {width: 7%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent8  {width: 8%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent9  {width: 9%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent10 {width: 10%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent11 {width: 11%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent12 {width: 12%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent13 {width: 13%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent14 {width: 14%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent15 {width: 15%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent16 {width: 16%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent17 {width: 17%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent18 {width: 18%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent19 {width: 19%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent20 {width: 20%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent21 {width: 21%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent22 {width: 22%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent23 {width: 23%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent24 {width: 24%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent25 {width: 25%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent26 {width: 26%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent27 {width: 27%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent28 {width: 28%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent29 {width: 29%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent30 {width: 30%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent31 {width: 31%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent32 {width: 32%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent33 {width: 33%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent34 {width: 34%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent35 {width: 35%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent36 {width: 36%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent37 {width: 37%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent38 {width: 38%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent39 {width: 39%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent40 {width: 40%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent41 {width: 41%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent42 {width: 42%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent43 {width: 43%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent44 {width: 44%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent45 {width: 45%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent46 {width: 46%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent47 {width: 47%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent48 {width: 48%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent49 {width: 49%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent50 {width: 50%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent51 {width: 51%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent52 {width: 52%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent53 {width: 53%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent54 {width: 54%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent55 {width: 55%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent56 {width: 56%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent57 {width: 57%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent58 {width: 58%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent59 {width: 59%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent60 {width: 60%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent61 {width: 61%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent62 {width: 62%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent63 {width: 63%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent64 {width: 64%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent65 {width: 65%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent66 {width: 66%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent67 {width: 67%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent68 {width: 68%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent69 {width: 69%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent70 {width: 70%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent71 {width: 71%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent72 {width: 72%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent73 {width: 73%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent74 {width: 74%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent75 {width: 75%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent76 {width: 76%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent77 {width: 77%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent78 {width: 78%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent79 {width: 79%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent80 {width: 80%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent81 {width: 81%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent82 {width: 82%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent83 {width: 83%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent84 {width: 84%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent85 {width: 85%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent86 {width: 86%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent87 {width: 87%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent88 {width: 88%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent89 {width: 89%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent90 {width: 90%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent91 {width: 91%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent92 {width: 92%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent93 {width: 93%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent94 {width: 94%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent95 {width: 95%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent96 {width: 96%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent97 {width: 97%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent98 {width: 98%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent99 {width: 99%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
+        .percent100 {width: 100%; background-color: #97cc64; border-radius: 5px; font-weight: bold}
     </style>
 </head>
 <body>
@@ -58,6 +162,9 @@
     {{#specifications}}
     <section>
         <h2>{{name}}</h2>
+        <div class="container">
+            <div class="completion percent{{percentage}}">{{percentage}}%</div>
+        </div>
         <details>
             <summary>
                 <p>
