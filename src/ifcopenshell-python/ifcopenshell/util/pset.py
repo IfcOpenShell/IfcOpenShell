@@ -61,10 +61,10 @@ class PsetQto:
         for template in self.templates:
             for prop_set in template.by_type("IfcPropertySetTemplate"):
                 if pset_only:
-                    if prop_set.Name.startswith("Qto_"):
+                    if prop_set.TemplateType and prop_set.TemplateType.startswith("QTO_"):
                         continue
                 if qto_only:
-                    if not prop_set.Name.startswith("Qto_"):
+                    if prop_set.TemplateType and prop_set.TemplateType.startswith("PSET_"):
                         continue
                 if any_class or self.is_applicable(
                     entity, prop_set.ApplicableEntity or "IfcRoot", predefined_type, prop_set.TemplateType
