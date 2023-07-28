@@ -21,7 +21,6 @@ import bpy
 import ifcopenshell.util.element
 from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc, get_class_suggestions
 import blenderbim.tool as tool
-import blenderbim.bim.helper
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -71,7 +70,7 @@ class IfcClassData:
                 "IfcAnnotation",
                 "IfcRelSpaceBoundary",
             ]
-        return [(e, blenderbim.bim.helper.uncamel(e), (get_entity_doc(version, e) or {}).get("description", "")) for e in products]
+        return [(e, e, (get_entity_doc(version, e) or {}).get("description", "")) for e in products]
 
     @classmethod
     def ifc_classes(cls):
@@ -89,7 +88,7 @@ class IfcClassData:
                 # Yeah, weird isn't it.
                 names.remove("IfcOpeningStandardCase")
         version = tool.Ifc.get_schema()
-        return [(c, blenderbim.bim.helper.uncamel(c), (get_entity_doc(version, c) or {}).get("description", "")) for c in sorted(names)]
+        return [(c, c, (get_entity_doc(version, c) or {}).get("description", "")) for c in sorted(names)]
 
     @classmethod
     def ifc_predefined_types(cls):
@@ -158,10 +157,9 @@ class IfcClassData:
         if not element:
             return
         name = element.is_a()
-        name = blenderbim.bim.helper.uncamel(name)
         predefined_type = ifcopenshell.util.element.get_predefined_type(element)
         if predefined_type:
-            name += f" [{predefined_type}]"
+            name += f"[{predefined_type}]"
         return name
 
     @classmethod
