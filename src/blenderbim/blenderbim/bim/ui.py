@@ -405,20 +405,6 @@ class BIM_PT_geometry(Panel):
         pass
 
 
-class BIM_PT_tab_4D5D(Panel):
-    bl_label = "Costing and Scheduling"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-
-    @classmethod
-    def poll(cls, context):
-        return tool.Blender.is_tab(context, "SCHEDULING") and tool.Ifc.get()
-
-    def draw(self, context):
-        pass
-
-
 class BIM_PT_tab_structural(Panel):
     bl_label = "Structural"
     bl_space_type = "PROPERTIES"
