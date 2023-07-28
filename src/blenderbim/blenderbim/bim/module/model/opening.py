@@ -124,7 +124,7 @@ class FilledOpeningGenerator:
                 "geometry.assign_representation", tool.Ifc.get(), product=opening, representation=mapped_representation
             )
         else:
-            representation = self.generate_opening_from_filling(filling, filling_obj, voided_obj)
+            representation = self.generate_opening_from_filling(filling, filling_obj)
             opening = ifcopenshell.api.run(
                 "root.create_entity", tool.Ifc.get(), ifc_class="IfcOpeningElement", predefined_type="OPENING"
             )
@@ -197,7 +197,7 @@ class FilledOpeningGenerator:
                 bpy.data.objects.remove(opening_obj)
 
             filling_obj = tool.Ifc.get_object(filling)
-            representation = self.generate_opening_from_filling(filling, filling_obj, voided_obj)
+            representation = self.generate_opening_from_filling(filling, filling_obj)
             mapped_representation = ifcopenshell.api.run(
                 "geometry.map_representation", tool.Ifc.get(), representation=representation
             )
@@ -216,8 +216,10 @@ class FilledOpeningGenerator:
             should_sync_changes_first=False,
         )
 
-    def generate_opening_from_filling(self, filling, filling_obj, voided_obj):
-        thickness = voided_obj.dimensions[1] + 0.1 + 0.1
+    def generate_opening_from_filling(self, filling, filling_obj):
+        # Since openings are reused later, we give a default thickness of 1.2m
+        # which should cover the majority of curved, or super thick walls.
+        thickness = 1.2
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         shape_builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
 
@@ -263,7 +265,7 @@ class FilledOpeningGenerator:
             extrusion = shape_builder.extrude(
                 get_curve_2d_from_3d(profile),
                 magnitude=thickness / unit_scale,
-                position=Vector([0.0, -0.1 / unit_scale, 0.0]),
+                position=Vector([0.0, - thickness * 0.5 / unit_scale, 0.0]),
                 position_x_axis=Vector((1, 0, 0)),
                 position_z_axis=Vector((0, -1, 0)),
                 extrusion_vector=Vector((0, 0, -1)),
@@ -271,7 +273,7 @@ class FilledOpeningGenerator:
             return shape_builder.get_representation(context, [extrusion])
 
         x, y, z = filling_obj.dimensions
-        opening_position = Vector([0.0, -0.1 / unit_scale, 0.0])
+        opening_position = Vector([0.0, - thickness * 0.5 / unit_scale, 0.0])
         opening_size = Vector([x, z]) / unit_scale
 
         # Windows and doors can have a casing that overlaps the wall
