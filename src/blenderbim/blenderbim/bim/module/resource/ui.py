@@ -20,6 +20,7 @@ import blenderbim.bim.helper
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.resource.data import ResourceData
+import blenderbim.tool as tool
 
 
 class BIM_PT_resources(Panel):
@@ -29,12 +30,10 @@ class BIM_PT_resources(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_tab_4D5D"
 
     @classmethod
     def poll(cls, context):
-        file = IfcStore.get_file()
-        return file and hasattr(file, "schema") and file.schema != "IFC2X3"
+        return tool.Blender.is_tab(context, "SCHEDULING") and tool.Ifc.get() and tool.Ifc.get().schema != "IFC2X3"
 
     def draw(self, context):
         self.props = context.scene.BIMResourceProperties
