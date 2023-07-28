@@ -17,7 +17,6 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 # from datetime import date
-import re
 import bpy
 import json
 import math
@@ -30,11 +29,6 @@ from mathutils import geometry
 from mathutils import Vector
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
-
-
-def uncamel(s):
-    s = re.sub('([a-z0-9])([A-Z])', r'\1 \2', s[3:] if s.startswith("Ifc") else s)
-    return re.sub('([A-Z])([A-Z][a-z])', r'\1 \2', s)
 
 
 def draw_attributes(props, layout, copy_operator=None, popup_active_attribute=None):
