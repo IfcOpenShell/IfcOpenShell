@@ -884,7 +884,11 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def move_file(cls, src, dest):
-        shutil.move(src, dest)
+        try:
+            shutil.move(src, dest)
+        except:
+             # Perhaps the file is locked in Windows?
+             shutil.copy(src, dest)
 
     @classmethod
     def generate_drawing_name(cls, target_view, location_hint):
