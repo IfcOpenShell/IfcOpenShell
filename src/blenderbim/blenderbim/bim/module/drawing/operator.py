@@ -216,7 +216,7 @@ class CreateDrawing(bpy.types.Operator):
 
         if self.print_all:
             original_drawing_id = self.props.active_drawing_id
-            drawings_to_print = [d.ifc_definition_id for d in self.props.drawings if d.is_selected]
+            drawings_to_print = [d.ifc_definition_id for d in self.props.drawings if d.is_selected and d.is_drawing]
         else:
             drawings_to_print = [self.props.active_drawing_id]
 
