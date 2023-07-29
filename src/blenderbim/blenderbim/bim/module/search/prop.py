@@ -22,7 +22,7 @@ from ifcopenshell.util.selector import Selector
 import blenderbim.tool as tool
 from blenderbim.bim.prop import ObjProperty, StrProperty
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.search.data import SearchData, ColourByPropertyData
+from blenderbim.bim.module.search.data import SearchData, ColourByPropertyData, SelectSimilarData
 from bpy.types import PropertyGroup
 from blenderbim.tool.ifc import Ifc
 from . import ui, prop, operator
@@ -36,6 +36,12 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+
+
+def get_element_key(self, context):
+    if not SelectSimilarData.is_loaded:
+        SelectSimilarData.load()
+    return SelectSimilarData.data["element_key"]
 
 
 def get_saved_searches(self, context):
@@ -110,6 +116,7 @@ class BIMColour(PropertyGroup):
 
 
 class BIMSearchProperties(PropertyGroup):
+    element_key: EnumProperty(items=get_element_key, name="Element Key")
     filter_query: StringProperty(name="Filter Query")
     filter_groups: CollectionProperty(type=BIMFilterGroup, name="Filter Groups")
     facet: EnumProperty(

@@ -993,3 +993,21 @@ class AddToIfcGroup(Operator):
         bpy.ops.bim.edit_group()
         bpy.ops.bim.disable_group_editing_ui()
         return {"FINISHED"}
+
+
+class SelectSimilar(Operator, tool.Ifc.Operator):
+    bl_idname = "bim.select_similar"
+    bl_label = "Select Similar"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = context.scene.BIMSearchProperties
+        obj = context.active_object
+        element = tool.Ifc.get_entity(obj)
+        value = ifcopenshell.util.selector.get_element_value(element, props.element_key)
+        for obj in context.visible_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            if ifcopenshell.util.selector.get_element_value(element, props.element_key) == value:
+                obj.select_set(True)

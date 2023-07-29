@@ -18,7 +18,7 @@
 
 import bpy
 from bpy.types import Panel
-from blenderbim.bim.module.search.data import SearchData, ColourByPropertyData
+from blenderbim.bim.module.search.data import SearchData, ColourByPropertyData, SelectSimilarData
 
 
 class BIM_PT_search(Panel):
@@ -169,6 +169,30 @@ class BIM_PT_colour_by_property(Panel):
 
         if len(props.colourscheme):
             self.layout.template_list("BIM_UL_colourscheme", "", props, "colourscheme", props, "active_colourscheme_index")
+
+
+class BIM_PT_select_similar(Panel):
+    bl_label = "Select Similar"
+    bl_idname = "BIM_PT_select_similar"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_parent_id = "BIM_PT_tab_grouping_and_filtering"
+
+    def draw(self, context):
+        if not SelectSimilarData.is_loaded:
+            SelectSimilarData.load()
+
+        props = context.scene.BIMSearchProperties
+
+        if SelectSimilarData.data["element_key"]:
+            row = self.layout.row(align=True)
+            row.prop(props, "element_key", text="")
+            row.operator("bim.select_similar", text="", icon="RESTRICT_SELECT_OFF")
+        else:
+            row = self.layout.row()
+            row.label(text=f"No Active Element")
 
 
 class BIM_UL_colourscheme(bpy.types.UIList):
