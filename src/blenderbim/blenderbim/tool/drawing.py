@@ -1765,3 +1765,11 @@ class Drawing(blenderbim.core.tool.Drawing):
                 else:
                     result += float(child) * factor
         return result * 0.0254
+
+    @classmethod
+    def extend_line(cls, start, end, distance):
+        start = np.array(start)
+        end = np.array(end)
+        direction = end - start
+        offset = distance * (direction / np.linalg.norm(direction))
+        return (start - offset).tolist(), (end + offset).tolist()
