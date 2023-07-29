@@ -267,9 +267,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row = self.layout.row(align=True)
         row.prop(context.scene.DocProperties, "shadingstyle_default")
 
-        row = layout.row()
-        row.operator("bim.configure_visibility")
-
 
 # Scene panel groups
 class BIM_PT_tabs(Panel):
