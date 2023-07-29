@@ -79,6 +79,7 @@
 
 #include "../ifcparse/IfcGlobalId.h"
 #include "../ifcgeom_schema_agnostic/base_utils.h"
+#include "../ifcgeom_schema_agnostic/boolean_utils.h"
 
 #include <boost/format.hpp>
 #include <boost/tokenizer.hpp>
@@ -1179,7 +1180,14 @@ void SvgSerializer::write(const geometry_data& data) {
 		// Iterate over components of compound to have better chance of matching section edges to closed wires
 		for (; it.More(); it.Next(), ++dash_it) {
 
-			const TopoDS_Shape& subshape = it.Value();
+			const TopoDS_Shape& subshape_before_unification = it.Value();
+			TopoDS_Shape subshape;
+
+			if (unify_inputs_) {
+				subshape = IfcGeom::util::unify(subshape_before_unification, 1. - 6);
+			} else {
+				subshape = subshape_before_unification;
+			}
 
 			Bnd_Box bb;
 			try {
