@@ -95,44 +95,6 @@ class BIM_PT_search(Panel):
 
         return  # Temporary for now whilst searching is being upgraded.
 
-        row = self.layout.row()
-        row.prop(props, "should_use_regex")
-        row = self.layout.row()
-        row.prop(props, "should_ignorecase")
-
-        row = self.layout.row(align=True)
-        row.operator("bim.reset_object_colours", icon="BRUSH_DATA")
-
-        row = self.layout.row(align=True)
-        row.prop(props, "global_id", text="", icon="TRACKER")
-        row.operator("bim.select_global_id", text="", icon="VIEWZOOM").global_id = props.global_id
-
-        row = self.layout.row(align=True)
-        row.prop(props, "ifc_class", text="", icon="OBJECT_DATA")
-        row.operator("bim.select_ifc_class", text="", icon="VIEWZOOM").ifc_class = props.ifc_class
-        row.operator("bim.colour_by_class", text="", icon="BRUSH_DATA")
-
-        row = self.layout.row(align=True)
-        row.prop(props, "search_attribute_name", text="", icon="PROPERTIES")
-        row.prop(props, "search_attribute_value", text="")
-        op = row.operator("bim.select_attribute", text="", icon="VIEWZOOM")
-        op.attribute_name = props.search_attribute_name
-        op.attribute_value = props.search_attribute_value
-        op = row.operator("bim.colour_by_attribute", text="", icon="BRUSH_DATA")
-        op.attribute_name = props.search_attribute_name
-
-        row = self.layout.row(align=True)
-        row.prop(props, "search_pset_name", text="", icon="COPY_ID")
-        row.prop(props, "search_prop_name", text="")
-        row.prop(props, "search_pset_value", text="")
-        op = row.operator("bim.select_pset", text="", icon="VIEWZOOM")
-        op.pset_name = props.search_pset_name
-        op.prop_name = props.search_prop_name
-        op.pset_value = props.search_pset_value
-        op = row.operator("bim.colour_by_pset", text="", icon="BRUSH_DATA")
-        op.pset_name = props.search_pset_name
-        op.prop_name = props.search_prop_name
-
         row = self.layout.row(align=True)
         row.operator("bim.activate_ifc_class_filter", icon="FILTER")
         row.operator("bim.activate_ifc_building_storey_filter", icon="FILTER")
