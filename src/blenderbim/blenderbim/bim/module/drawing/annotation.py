@@ -152,6 +152,7 @@ class Annotator:
     def get_placeholder_coords(camera=None):
         if not camera:
             camera = bpy.context.scene.camera
+
         z_offset = camera.matrix_world.to_quaternion() @ Vector((0, 0, -1))
         y = camera.data.ortho_scale / 4
 
@@ -162,9 +163,13 @@ class Annotator:
 
         y_offset = camera.matrix_world.to_quaternion() @ Vector((0, y, 0))
         x_offset = camera.matrix_world.to_quaternion() @ Vector((y / 2, 0, 0))
+
+        center = camera.matrix_world.inverted() @ bpy.context.scene.cursor.location
+        center.z = 0
+
         return (
-            camera.location + z_offset,
-            camera.location + z_offset + y_offset,
-            camera.location + z_offset + x_offset,
-            camera.location + z_offset + x_offset + y_offset,
+            center + z_offset,
+            center + z_offset + y_offset,
+            center + z_offset + x_offset,
+            center + z_offset + x_offset + y_offset,
         )
