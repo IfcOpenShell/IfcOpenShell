@@ -766,41 +766,6 @@ class FetchObjectPassport(bpy.types.Operator):
         context.active_object.data = bpy.data.meshes[reference.name]
 
 
-class ConfigureVisibility(bpy.types.Operator):
-    bl_idname = "bim.configure_visibility"
-    bl_label = "Configure module UI visibility in BlenderBIM"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def invoke(self, context, event):
-        from blenderbim.bim import modules
-
-        wm = context.window_manager
-        if not len(context.scene.BIMProperties.module_visibility):
-            for module in sorted(modules.keys()):
-                new = context.scene.BIMProperties.module_visibility.add()
-                new.name = module
-        return wm.invoke_props_dialog(self, width=450)
-
-    def draw(self, context):
-        layout = self.layout
-
-        layout.prop(context.scene.BIMProperties, "ui_preset")
-        layout.separator()
-        layout.label(text="Adjust the modules to your liking:")
-
-        grid = layout.column_flow(columns=3)
-        for module in context.scene.BIMProperties.module_visibility:
-            split = grid.split()
-            col = split.column()
-            col.label(text=module.name.capitalize())
-
-            col = split.column()
-            col.prop(module, "is_visible", text="")
-
-    def execute(self, context):
-        return {"FINISHED"}
-
-
 def update_enum_property_search_prop(self, context):
     for i, prop in enumerate(self.collection_names):
         if prop.name == self.dummy_name:
