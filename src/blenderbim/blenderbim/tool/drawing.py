@@ -888,8 +888,8 @@ class Drawing(blenderbim.core.tool.Drawing):
         try:
             shutil.move(src, dest)
         except:
-             # Perhaps the file is locked in Windows?
-             shutil.copy(src, dest)
+            # Perhaps the file is locked in Windows?
+            shutil.copy(src, dest)
 
     @classmethod
     def generate_drawing_name(cls, target_view, location_hint):
@@ -1387,11 +1387,13 @@ class Drawing(blenderbim.core.tool.Drawing):
         root = tree.getroot()
         rel_location = os.path.relpath(new_location, os.path.dirname(uri))
 
-        for g in root.findall('.//{http://www.w3.org/2000/svg}g[@data-type="drawing"][@data-id="' + str(reference.id()) + '"]'):
+        for g in root.findall(
+            './/{http://www.w3.org/2000/svg}g[@data-type="drawing"][@data-id="' + str(reference.id()) + '"]'
+        ):
             for foreground in g.findall('.//{http://www.w3.org/2000/svg}image[@data-type="foreground"]'):
-                foreground.attrib['{http://www.w3.org/1999/xlink}href'] = rel_location
+                foreground.attrib["{http://www.w3.org/1999/xlink}href"] = rel_location
             for background in g.findall('.//{http://www.w3.org/2000/svg}image[@data-type="background"]'):
-                background.attrib['{http://www.w3.org/1999/xlink}href'] = rel_location[0:-4] + "-underlay.png"
+                background.attrib["{http://www.w3.org/1999/xlink}href"] = rel_location[0:-4] + "-underlay.png"
         tree.write(uri, pretty_print=True, xml_declaration=True, encoding="utf-8")
 
     @classmethod
