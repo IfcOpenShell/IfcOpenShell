@@ -328,8 +328,9 @@ def update_drawing_name(ifc, drawing_tool, drawing=None, name=None):
     if old_location != new_location:
         ifc.run("document.edit_reference", reference=reference, attributes={"Location": new_location})
         resolved_old_location = ifc.resolve_uri(old_location)
+        resolved_new_location = ifc.resolve_uri(new_location)
         if drawing_tool.does_file_exist(resolved_old_location):
-            drawing_tool.move_file(resolved_old_location, ifc.resolve_uri(new_location))
+            drawing_tool.move_file(resolved_old_location, resolved_new_location)
 
         for reference in drawing_tool.get_references_with_location(old_location):
             ifc.run("document.edit_reference", reference=reference, attributes={"Location": new_location})
@@ -337,7 +338,7 @@ def update_drawing_name(ifc, drawing_tool, drawing=None, name=None):
             if sheet:
                 uri = ifc.resolve_uri(drawing_tool.get_document_uri(sheet, "LAYOUT"))
                 if drawing_tool.does_file_exist(uri):
-                    drawing_tool.update_embedded_svg_location(uri, old_location, new_location)
+                    drawing_tool.update_embedded_svg_location(uri, reference, resolved_new_location)
 
         if drawing_tool.is_editing_sheets():
             drawing_tool.import_sheets()
