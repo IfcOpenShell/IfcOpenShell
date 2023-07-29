@@ -43,6 +43,7 @@
 #include <BRepTopAdaptor_FClass2d.hxx>
 #include <Geom_Plane.hxx>
 #include <BRepBndLib.hxx>
+#include <BRepMesh_IncrementalMesh.hxx>
 
 #if OCC_VERSION_HEX >= 0x70300
 #include <Bnd_OBB.hxx>
@@ -517,6 +518,7 @@ protected:
 	bool use_namespace_, use_hlr_poly_, use_prefiltering_, always_project_, polygonal_;
 	bool emit_building_storeys_;
 	bool no_css_;
+	bool unify_inputs_;
 
 	int profile_threshold_;
 
@@ -568,6 +570,7 @@ public:
 		, polygonal_(false)
 		, emit_building_storeys_(true)
 		, no_css_(false)
+		, unify_inputs_(false)
 		, profile_threshold_(-1)
 		, file(0)
 		, storey_(0)
@@ -662,6 +665,14 @@ public:
 
 	void setNoCSS(bool b) {
 		no_css_ = b;
+	}
+
+	void setUnifyInputs(bool b) {
+		unify_inputs_ = b;
+	}
+
+	bool getUnifyInputs() const {
+		return unify_inputs_;
 	}
 
 	void setScale(double s) { scale_ = s; }
