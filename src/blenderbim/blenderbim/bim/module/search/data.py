@@ -101,5 +101,8 @@ class SelectSimilarData:
         keys = [a.name() for a in element.wrapped_data.declaration().as_entity().all_attributes()]
         psets = ifcopenshell.util.element.get_psets(element, psets_only=True)
         for pset, properties in psets.items():
-            keys.extend([f"{pset}.{name}" for name in properties.keys() if name != "id"])
+            if pset.endswith("Common"):
+                keys.extend([f'r".*Common"."{name}"' for name in properties.keys() if name != "id"])
+            else:
+                keys.extend([f"{pset}.{name}" for name in properties.keys() if name != "id"])
         return [(k, k, "") for k in keys]
