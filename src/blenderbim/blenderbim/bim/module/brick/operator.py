@@ -132,19 +132,20 @@ class AddBrick(bpy.types.Operator, Operator):
         )
 
 
-class AddBrickFeed(bpy.types.Operator, Operator):
-    bl_idname = "bim.add_brick_feed"
-    bl_label = "Add Brick Feed"
+class AddBrickRelation(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_brick_relation"
+    bl_label = "Add Brick Relation"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        source = tool.Ifc.get_entity([o for o in context.selected_objects if o != context.active_object][0])
-        destination = tool.Ifc.get_entity(context.active_object)
-        core.add_brick_feed(
-            tool.Ifc,
+        props = context.scene.BIMBrickProperties
+        brick = props.bricks[props.active_brick_index]
+        core.add_brick_relation(
             tool.Brick,
-            source=source,
-            destination=destination,
+            brick_uri=brick.uri,
+            predicate=props.new_brick_relation_type,
+            namespace=props.new_brick_relation_namespace,
+            object=props.new_brick_relation_object
         )
 
 
