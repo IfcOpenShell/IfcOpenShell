@@ -91,7 +91,6 @@ classes = [
     operator.AddIfcFile,
     operator.BIM_OT_add_section_plane,
     operator.BIM_OT_remove_section_plane,
-    operator.ConfigureVisibility,
     operator.OpenUpstream,
     operator.OpenUri,
     operator.SwitchTab,
@@ -112,7 +111,6 @@ classes = [
     operator.BIM_OT_enum_property_search,  # /!\ Register AFTER prop.StrProperty
     prop.ObjProperty,
     prop.Attribute,
-    prop.ModuleVisibility,
     prop.BIMAreaProperties,
     prop.BIMProperties,
     prop.IfcParameter,
