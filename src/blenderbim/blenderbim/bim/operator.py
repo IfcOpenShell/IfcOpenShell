@@ -40,6 +40,38 @@ from mathutils import Vector, Matrix, Euler
 from math import radians
 
 
+class SetTab(bpy.types.Operator):
+    bl_idname = "bim.set_tab"
+    bl_label = "Set Current Tab"
+    bl_options = {"REGISTER", "UNDO"}
+    tab: bpy.props.StringProperty()
+
+    @classmethod
+    def description(cls, context, properties):
+        return next((t[1] for t in blenderbim.bim.prop.get_tab(None, context) if t[0] == properties.tab), "")
+
+    def execute(self, context):
+        if context.area.spaces.active.search_filter:
+            return {"FINISHED"}
+        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+        aprops.tab = self.tab
+        return {"FINISHED"}
+
+
+class SwitchTab(bpy.types.Operator):
+    bl_idname = "bim.switch_tab"
+    bl_label = "Switch Tab"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Switches to the last used tab"
+
+    def execute(self, context):
+        if context.area.spaces.active.search_filter:
+            return {"FINISHED"}
+        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+        aprops.tab = aprops.alt_tab
+        return {"FINISHED"}
+
+
 class OpenUri(bpy.types.Operator):
     bl_idname = "bim.open_uri"
     bl_label = "Open URI"
@@ -118,7 +150,7 @@ class ReloadSelectedIfcFile(bpy.types.Operator):
         valid_file = os.path.exists(filepath) and "ifc" in os.path.splitext(filepath)[1].lower()
         if not valid_file:
             self.report({"ERROR"}, f"Couldn't find .ifc file by the path '{filepath}'")
-            return {"ERROR"}
+            return {"CANCELLED"}
         context.scene.BIMProperties.ifc_file = context.scene.BIMProperties.ifc_file
         return {"FINISHED"}
 
@@ -165,6 +197,7 @@ class FileAssociate(bpy.types.Operator):
     def poll(cls, context):
         if platform.system() == "Linux":
             return True
+        cls.poll_message_set("Option available only on Linux.")
         # TODO Windows and Darwin
         # https://stackoverflow.com/questions/1082889/how-to-change-filetype-association-in-the-registry
         return False
@@ -239,6 +272,7 @@ class FileUnassociate(bpy.types.Operator):
     def poll(cls, context):
         if platform.system() == "Linux":
             return True
+        cls.poll_message_set("Option available only on Linux.")
         return False
 
     def execute(self, context):
@@ -836,7 +870,13 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
                     if not isinstance(values, (tuple, list)):
                         values = [values]
                     for value in values:
-                        self.add_item(identifier=key, name=key + " > " + value, predefined_type=value.upper())
+                        predefined_type = value["predefined_type"].upper()
+                        name = value.get("name")
+                        self.add_item(
+                            identifier=key,
+                            name=f"{key} > {name if name else predefined_type }",
+                            predefined_type=predefined_type,
+                        )
 
 
 class EditBlenderCollection(bpy.types.Operator):

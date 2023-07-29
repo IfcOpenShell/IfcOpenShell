@@ -142,11 +142,12 @@ class MaterialCreator:
         if len(self.mesh.materials) == 1:
             return
         material_to_slot = {}
-        for i, material in enumerate(self.mesh["ios_materials"]):
-            slot_index = self.mesh.materials.find(self.styles[material].name)
-            material_to_slot[i] = slot_index
 
         if len(self.mesh.polygons) == len(self.mesh["ios_material_ids"]):
+            for i, material in enumerate(self.mesh["ios_materials"]):
+                slot_index = self.mesh.materials.find(self.styles[material].name)
+                material_to_slot[i] = slot_index
+
             material_index = [
                 (material_to_slot[mat_id] if mat_id != -1 else 0) for mat_id in self.mesh["ios_material_ids"]
             ]
@@ -327,13 +328,19 @@ class IfcImporter:
             if isinstance(self.elements, set):
                 self.elements = list(self.elements)
             # TODO: enable filtering for annotations
-            self.annotations = set([a for a in self.file.by_type("IfcAnnotation") if not a.HasAssignments])
         else:
             if self.file.schema in ("IFC2X3", "IFC4"):
                 self.elements = self.file.by_type("IfcElement") + self.file.by_type("IfcProxy")
             else:
                 self.elements = self.file.by_type("IfcElement")
-            self.annotations = set([a for a in self.file.by_type("IfcAnnotation") if not a.HasAssignments])
+
+        drawing_groups = [g for g in self.file.by_type("IfcGroup") if g.ObjectType == "DRAWING"]
+        drawing_annotations = set()
+        for drawing_group in drawing_groups:
+            for rel in drawing_group.IsGroupedBy:
+                drawing_annotations.update(rel.RelatedObjects)
+        self.annotations = set([a for a in self.file.by_type("IfcAnnotation")])
+        self.annotations -= drawing_annotations
 
         self.elements = [e for e in self.elements if not e.is_a("IfcFeatureElement")]
         if self.ifc_import_settings.is_coordinating:
@@ -362,7 +369,7 @@ class IfcImporter:
             while True:
                 results.add(spatial_element)
                 spatial_element = ifcopenshell.util.element.get_aggregate(spatial_element)
-                if not spatial_element or spatial_element.is_a() in ("IfcContext", "IfcProject"):
+                if not spatial_element or spatial_element.is_a() in ("IfcProject", "IfcProjectLibrary"):
                     break
         return results
 
@@ -416,7 +423,7 @@ class IfcImporter:
         for representation in representations:
             items = representation["raw"].Items or []  # Be forgiving of invalid IFCs because Revit :(
             if len(items) == 1 and items[0].is_a("IfcSweptDiskSolid"):
-                if tool.Pset.get_element_pset(element, "BBIM_Railing"):
+                if tool.Blender.Modifier.is_railing(element):
                     return False
                 return True
             elif len(items) and (  # See #2508 why we accommodate for invalid IFCs here
@@ -424,7 +431,7 @@ class IfcImporter:
                 and len({i.is_a() for i in items}) == 1
                 and len({i.Radius for i in items}) == 1
             ):
-                if tool.Pset.get_element_pset(element, "BBIM_Railing"):
+                if tool.Blender.Modifier.is_railing(element):
                     return False
                 return True
         return False
@@ -686,7 +693,7 @@ class IfcImporter:
                     mesh = self.create_native_faceted_brep(element, mesh_name)
                 elif native_data["type"] == "IfcFaceBasedSurfaceModel":
                     mesh = self.create_native_faceted_brep(element, mesh_name)
-                mesh.BIMMeshProperties.ifc_definition_id = representation.id()
+                tool.Ifc.link(representation, mesh)
                 mesh.name = mesh_name
                 self.meshes[mesh_name] = mesh
             self.create_product(element, mesh=mesh)
@@ -886,7 +893,7 @@ class IfcImporter:
             return None
 
         for representation in representations:
-            if representation.RepresentationType == "PointCloud":
+            if representation.RepresentationType in ("PointCloud", "Point"):
                 return representation
 
             elif self.file.schema == "IFC2X3" and representation.RepresentationType == "GeometricSet":
@@ -915,7 +922,7 @@ class IfcImporter:
         return result
 
     def create_pointcloud(self, product, representation):
-        placement_matrix = ifcopenshell.util.placement.get_local_placement(product.ObjectPlacement)
+        placement_matrix = self.get_element_matrix(product)
         vertex_list = []
         for item in representation.Items:
             if item.is_a("IfcCartesianPointList"):
@@ -931,6 +938,7 @@ class IfcImporter:
         mesh_name = f"{representation.ContextOfItems.id()}/{representation.id()}"
         mesh = bpy.data.meshes.new(mesh_name)
         mesh.from_pydata(vertex_list, [], [])
+        tool.Ifc.link(representation, mesh)
 
         obj = bpy.data.objects.new("{}/{}".format(product.is_a(), product.Name), mesh)
         self.set_matrix_world(obj, self.apply_blender_offset_to_matrix_world(obj, placement_matrix))
@@ -1336,12 +1344,21 @@ class IfcImporter:
                 last_obj = obj
         if not last_obj:
             return
+
+        # temporarily unhide types collection to make sure all objects will be cleaned
+        project_collection = bpy.context.view_layer.layer_collection.children[self.project["blender"].name]
+        types_collection = project_collection.children[self.type_collection.name]
+        types_collection.hide_viewport = False
         bpy.context.view_layer.objects.active = last_obj
+
         context_override = {}
         bpy.ops.object.editmode_toggle(context_override)
         bpy.ops.mesh.tris_convert_to_quads(context_override)
         bpy.ops.mesh.normals_make_consistent(context_override)
         bpy.ops.object.editmode_toggle(context_override)
+
+        types_collection.hide_viewport = True
+        bpy.context.view_layer.objects.active = last_obj
         IfcStore.edited_objs.clear()
 
     def load_file(self):
@@ -1421,27 +1438,8 @@ class IfcImporter:
             self.create_spatial_decomposition_collection(self.project["blender"], orphaned_spaces)
             orphaned_spaces = [e for e in self.spatial_elements if e.GlobalId not in self.collections]
 
-        self.create_views_collection()
-        self.create_type_collection()
-
-    def create_type_collection(self):
-        for collection in self.project["blender"].children:
-            if collection.name == "Types":
-                self.type_collection = collection
-                break
-        if not self.type_collection:
-            self.type_collection = bpy.data.collections.new("Types")
-            self.project["blender"].children.link(self.type_collection)
-
-    def create_views_collection(self):
-        view_collection = None
-        for collection in self.project["blender"].children:
-            if collection.name == "Views":
-                view_collection = collection
-                break
-        if not view_collection:
-            view_collection = bpy.data.collections.new("Views")
-            self.project["blender"].children.link(view_collection)
+        tool.Loader.create_project_collection("Views")
+        self.type_collection = tool.Loader.create_project_collection("Types")
 
     def create_spatial_decomposition_collection(self, parent, related_objects):
         for element in related_objects:

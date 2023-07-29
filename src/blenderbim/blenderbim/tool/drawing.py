@@ -24,6 +24,8 @@ import lark
 import bmesh
 import shutil
 import logging
+import shapely
+from shapely.ops import unary_union
 import mathutils
 import webbrowser
 import subprocess
@@ -38,6 +40,7 @@ import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.helper as helper
 from blenderbim.bim.module.drawing.data import FONT_SIZES, DecoratorData
 from blenderbim.bim.module.drawing.prop import get_diagram_scales, BOX_ALIGNMENT_POSITIONS, ANNOTATION_TYPES_DATA
+from lxml import etree
 from mathutils import Vector
 from fractions import Fraction
 import collections
@@ -93,9 +96,11 @@ class Drawing(blenderbim.core.tool.Drawing):
             camera = get_camera_from_annotation_object(obj) or bpy.context.scene.camera
 
         current_pos = camera.matrix_world.inverted() @ obj.location
-        current_pos.z = -camera.data.clip_start
+        current_pos.z = -camera.data.clip_start - 0.05
         current_pos = camera.matrix_world @ current_pos
         obj.location = current_pos
+
+    ANNOTATION_TYPES_SUPPORT_SETUP = ("STAIR_ARROW", "TEXT", "REVISION_CLOUD", "FILL_AREA")
 
     @classmethod
     def setup_annotation_object(cls, obj, object_type, related_object=None):
@@ -135,6 +140,30 @@ class Drawing(blenderbim.core.tool.Drawing):
             cls.ensure_annotation_in_drawing_plane(obj)
             assign_product = True
 
+        elif object_type == "REVISION_CLOUD":
+            revised_object, cloud = related_object, obj
+
+            verts = [np.array(revised_object.matrix_world @ v.co) for v in revised_object.data.vertices]
+            verts = [(np.around(v[[0, 1]], decimals=3)).tolist() for v in verts]
+            edges = [e.vertices for e in revised_object.data.edges]
+
+            # shapely magic
+            boundary_lines = [shapely.LineString([verts[v] for v in e]) for e in edges]
+            unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
+            all_polygons = shapely.polygonize(unioned_boundaries.geoms).geoms
+            outer_shell = unary_union(all_polygons)
+
+            bm = tool.Blender.get_bmesh_for_mesh(obj.data, clean=True)
+            new_verts = list(outer_shell.exterior.coords)
+            bm_verts = [bm.verts.new(v + (0,)) for v in new_verts]
+            bm_edges = [bm.edges.new([bm_verts[i], bm_verts[i + 1]]) for i in range(len(new_verts) - 1)]
+            bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
+
+            tool.Blender.apply_bmesh(obj.data, bm, obj)
+            cloud.location = Vector((0, 0, 0))
+            cls.ensure_annotation_in_drawing_plane(cloud)
+            assign_product = True
+
         if assign_product and not cls.get_assigned_product(obj_entity):
             tool.Ifc.run("drawing.assign_product", relating_product=related_entity, related_object=obj_entity)
 
@@ -151,7 +180,11 @@ class Drawing(blenderbim.core.tool.Drawing):
         if element_type == "IfcAnnotation" and element.ObjectType in object_types:
             return True
 
-        if element_type == "IfcTypeProduct" and element.ApplicableOccurrence.startswith("IfcAnnotation/"):
+        if (
+            element_type == "IfcTypeProduct"
+            and element.ApplicableOccurrence
+            and element.ApplicableOccurrence.startswith("IfcAnnotation/")
+        ):
             applicable_object_type = element.ApplicableOccurrence.split("/")[1]
             if applicable_object_type in object_types:
                 return True
@@ -409,16 +442,14 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def generate_drawing_matrix(cls, target_view, location_hint):
-        x = 0 if location_hint == 0 else bpy.context.scene.cursor.matrix[0][3]
-        y = 0 if location_hint == 0 else bpy.context.scene.cursor.matrix[1][3]
-        z = 0 if location_hint == 0 else bpy.context.scene.cursor.matrix[2][3]
+        x, y, z = (0, 0, 0) if location_hint == 0 else bpy.context.scene.cursor.matrix.translation
         if target_view == "PLAN_VIEW":
             if location_hint:
-                z = tool.Ifc.get_object(tool.Ifc.get().by_id(location_hint)).matrix_world[2][3]
+                z = tool.Ifc.get_object(tool.Ifc.get().by_id(location_hint)).matrix_world.translation.z
                 return mathutils.Matrix(((1, 0, 0, x), (0, 1, 0, y), (0, 0, 1, z + 1.6), (0, 0, 0, 1)))
         elif target_view == "REFLECTED_PLAN_VIEW":
             if location_hint:
-                z = tool.Ifc.get_object(tool.Ifc.get().by_id(location_hint)).matrix_world[2][3]
+                z = tool.Ifc.get_object(tool.Ifc.get().by_id(location_hint)).matrix_world.translation.z
                 return mathutils.Matrix(((-1, 0, 0, x), (0, 1, 0, y), (0, 0, -1, z + 1.6), (0, 0, 0, 1)))
             return mathutils.Matrix(((-1, 0, 0, 0), (0, 1, 0, 0), (0, 0, -1, 0), (0, 0, 0, 1)))
         elif target_view == "ELEVATION_VIEW":
@@ -461,6 +492,10 @@ class Drawing(blenderbim.core.tool.Drawing):
         if return_list:
             return items
         return items[0]
+
+    @classmethod
+    def is_editing_sheets(cls):
+        return bpy.context.scene.DocProperties.is_editing_sheets
 
     @classmethod
     def remove_literal_from_annotation(cls, obj, literal):
@@ -547,6 +582,9 @@ class Drawing(blenderbim.core.tool.Drawing):
         for obj in ifc_importer.added_data.values():
             tool.Collector.assign(obj)
 
+    # NOTE: EPsetDrawing pset is completely synced with BIMCameraProperties
+    # but BIMCameraProperties are only synced with EPsetDrawing at drawing import
+    # therefore camera props can differ from pset if the user changed them from pset.
     @classmethod
     def import_drawing(cls, drawing):
         settings = ifcopenshell.geom.settings()
@@ -620,17 +658,38 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def import_drawings(cls):
-        current_drawings_selection = {
-            d.ifc_definition_id: d.is_selected for d in bpy.context.scene.DocProperties.drawings
-        }
-        bpy.context.scene.DocProperties.drawings.clear()
+        props = bpy.context.scene.DocProperties
+        expanded_target_views = {d.target_view for d in props.drawings if d.is_expanded}
+        current_drawings_selection = {d.ifc_definition_id: d.is_selected for d in props.drawings}
+        props.drawings.clear()
         drawings = [e for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"]
+        grouped_drawings = {
+            "MODEL_VIEW": [],
+            "PLAN_VIEW": [],
+            "SECTION_VIEW": [],
+            "ELEVATION_VIEW": [],
+            "REFLECTED_PLAN_VIEW": [],
+        }
         for drawing in drawings:
-            new = bpy.context.scene.DocProperties.drawings.add()
-            new.ifc_definition_id = drawing.id()
-            new.name = drawing.Name or "Unnamed"
-            new.target_view = cls.get_drawing_target_view(drawing)
-            new.is_selected = current_drawings_selection.get(drawing.id(), True)
+            target_view = cls.get_drawing_target_view(drawing)
+            grouped_drawings.setdefault(target_view, []).append(drawing)
+
+        for target_view, drawings in grouped_drawings.items():
+            new = props.drawings.add()
+            new.name = target_view.replace("_", " ").title() + f" ({len(drawings)})"
+            new.target_view = target_view
+            new.is_drawing = False
+            new.is_expanded = target_view in expanded_target_views
+
+            if not new.is_expanded:
+                continue
+
+            for drawing in sorted(drawings, key=lambda x: x.Name or "Unnamed"):
+                new = props.drawings.add()
+                new.ifc_definition_id = drawing.id()
+                new.name = drawing.Name or "Unnamed"
+                new.is_selected = current_drawings_selection.get(drawing.id(), True)
+                new.is_drawing = True
 
     @classmethod
     def import_documents(cls, document_type):
@@ -657,7 +716,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         expanded_sheets = {s.ifc_definition_id for s in props.sheets if s.is_expanded}
         props.sheets.clear()
         sheets = [d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "SHEET"]
-        for sheet in sheets:
+        for sheet in sorted(sheets, key=lambda s: getattr(s, "Identification", getattr(s, "DocumentId", None))):
             new = props.sheets.add()
             new.ifc_definition_id = sheet.id()
             if tool.Ifc.get_schema() == "IFC2X3":
@@ -826,7 +885,11 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def move_file(cls, src, dest):
-        shutil.move(src, dest)
+        try:
+            shutil.move(src, dest)
+        except:
+             # Perhaps the file is locked in Windows?
+             shutil.copy(src, dest)
 
     @classmethod
     def generate_drawing_name(cls, target_view, location_hint):
@@ -965,14 +1028,10 @@ class Drawing(blenderbim.core.tool.Drawing):
             xyz = camera.matrix_world.inverted() @ reference_obj.matrix_world.translation
             xyz[2] = 0
             xyz = camera.matrix_world @ xyz
-            mat[0][3] = xyz[0]
-            mat[1][3] = xyz[1]
-            mat[2][3] = xyz[2]
+            mat.translation = xyz
             annotation_offset = mathutils.Vector((0, 0, -camera.data.clip_start - 0.05))
             annotation_offset = camera.matrix_world.to_quaternion() @ annotation_offset
-            mat[0][3] += annotation_offset[0]
-            mat[1][3] += annotation_offset[1]
-            mat[2][3] += annotation_offset[2]
+            mat.translation += annotation_offset
             return mat
 
         def project_point_onto_camera(point, camera):
@@ -1030,14 +1089,10 @@ class Drawing(blenderbim.core.tool.Drawing):
             xyz = camera.matrix_world.inverted() @ reference_obj.matrix_world.translation
             xyz[2] = 0
             xyz = camera.matrix_world @ xyz
-            mat[0][3] = xyz[0]
-            mat[1][3] = xyz[1]
-            mat[2][3] = xyz[2]
+            mat.translation = xyz
             annotation_offset = mathutils.Vector((0, 0, -camera.data.clip_start - 0.05))
             annotation_offset = camera.matrix_world.to_quaternion() @ annotation_offset
-            mat[0][3] += annotation_offset[0]
-            mat[1][3] += annotation_offset[1]
-            mat[2][3] += annotation_offset[2]
+            mat.translation += annotation_offset
             return mat
 
         def clip_to_camera_boundary(mesh, bounds):
@@ -1054,20 +1109,28 @@ class Drawing(blenderbim.core.tool.Drawing):
             reference_mesh = cls.get_camera_block(reference_obj)
             obj_matrix = to_camera_coords(camera, reference_obj)
 
-            # The reference mesh vertices represent a view cube. To convert this into a section line we:
-            # 1. Select the 4 +Z vertices local to the reference element. This is the cutting plane.
+            # The reference mesh vertices represent a view cube. To convert
+            # this into a section line we:
+            # 1. Select the 4 +Z vertices local to the reference element. This
+            # is the cutting plane.
             verts_local_to_reference = [reference_obj.matrix_world.inverted() @ v for v in reference_mesh["verts"]]
             cutting_plane_verts = sorted(verts_local_to_reference, key=lambda x: x.z)[-4:]
             global_cutting_plane_verts = [reference_obj.matrix_world @ v for v in cutting_plane_verts]
             # 2. Project the cutting plane onto our viewing camera.
             verts_local_to_camera = [camera.matrix_world.inverted() @ v for v in global_cutting_plane_verts]
-            # 3. Collapse verts with the same XY coords, and set Z to be just below the clip_start so it's visible
+            # 3. Collapse verts with the same XY coords, and set Z to be just
+            # below the clip_start so it's visible
             collapsed_verts = []
             for vert in verts_local_to_camera:
                 if not [True for v in collapsed_verts if (vert.xy - v.xy).length < 1e-2]:
                     collapsed_verts.append(mathutils.Vector((vert.x, vert.y, -camera.data.clip_start - 0.05)))
             # 4. The first two vertices is the section line
             section_line = collapsed_verts[0:2]
+            # 5. Sort the vertices in the +X direction so that the vertices are
+            # ordered to "point" in the direction of the section cut.
+            section_line = sorted(
+                section_line, key=lambda co: (reference_obj.matrix_world.inverted() @ camera.matrix_world @ co).x
+            )
             global_section_line = [camera.matrix_world @ v for v in section_line]
             local_section_line = [obj_matrix.inverted() @ v for v in global_section_line]
 
@@ -1103,14 +1166,10 @@ class Drawing(blenderbim.core.tool.Drawing):
             xyz = camera.matrix_world.inverted() @ reference_obj.matrix_world.translation
             xyz[2] = 0
             xyz = camera.matrix_world @ xyz
-            mat[0][3] = xyz[0]
-            mat[1][3] = xyz[1]
-            mat[2][3] = xyz[2]
+            mat.translation = xyz
             annotation_offset = mathutils.Vector((0, 0, -camera.data.clip_start - 0.05))
             annotation_offset = camera.matrix_world.to_quaternion() @ annotation_offset
-            mat[0][3] += annotation_offset[0]
-            mat[1][3] += annotation_offset[1]
-            mat[2][3] += annotation_offset[2]
+            mat.translation += xyz
             return mat
 
         if cls.is_perpendicular(camera, reference_obj) and cls.is_intersecting(camera, reference_obj):
@@ -1162,9 +1221,7 @@ class Drawing(blenderbim.core.tool.Drawing):
             obj.matrix_world = camera.matrix_world
             annotation_offset = mathutils.Vector((0, 0, -camera.data.clip_start - 0.05))
             annotation_offset = camera.matrix_world.to_quaternion() @ annotation_offset
-            obj.matrix_world[0][3] += annotation_offset[0]
-            obj.matrix_world[1][3] += annotation_offset[1]
-            obj.matrix_world[2][3] += annotation_offset[2]
+            obj.matrix_world.translation += annotation_offset
             return obj, mesh
 
         def clip_to_camera_boundary(mesh):
@@ -1325,12 +1382,17 @@ class Drawing(blenderbim.core.tool.Drawing):
         return [r for r in tool.Ifc.get().by_type("IfcDocumentReference") if r.Location == location]
 
     @classmethod
-    def update_embedded_svg_location(cls, uri, old_location, new_location):
-        with open(uri, "r") as f:
-            svg = f.read()
-        svg = svg.replace(os.path.basename(old_location), os.path.basename(new_location))
-        with open(uri, "w") as f:
-            f.write(svg)
+    def update_embedded_svg_location(cls, uri, reference, new_location):
+        tree = etree.parse(uri)
+        root = tree.getroot()
+        rel_location = os.path.relpath(new_location, os.path.dirname(uri))
+
+        for g in root.findall('.//{http://www.w3.org/2000/svg}g[@data-type="drawing"][@data-id="' + str(reference.id()) + '"]'):
+            for foreground in g.findall('.//{http://www.w3.org/2000/svg}image[@data-type="foreground"]'):
+                foreground.attrib['{http://www.w3.org/1999/xlink}href'] = rel_location
+            for background in g.findall('.//{http://www.w3.org/2000/svg}image[@data-type="background"]'):
+                background.attrib['{http://www.w3.org/1999/xlink}href'] = rel_location[0:-4] + "-underlay.png"
+        tree.write(uri, pretty_print=True, xml_declaration=True, encoding="utf-8")
 
     @classmethod
     def get_reference_description(cls, reference):
@@ -1373,6 +1435,10 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def has_linework(cls, drawing):
         return ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {}).get("HasLinework", False)
+
+    @classmethod
+    def has_annotation(cls, drawing):
+        return ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {}).get("HasAnnotation", False)
 
     @classmethod
     def get_drawing_elements(cls, drawing):
@@ -1486,23 +1552,24 @@ class Drawing(blenderbim.core.tool.Drawing):
                     project_collection.children["Views"].children[collection.name].hide_viewport = True
                     bpy.data.collections.get(collection.name).hide_render = True
 
-                    project_collection.children["Views"].children[camera.BIMObjectProperties.collection.name].hide_viewport = False
+                    project_collection.children["Views"].children[
+                        camera.BIMObjectProperties.collection.name
+                    ].hide_viewport = False
         camera.BIMObjectProperties.collection.hide_render = False
         tool.Spatial.set_active_object(camera)
 
         # Sync viewport objects visibility with selectors from EPset_Drawing/Include and /Exclude
         drawing = tool.Ifc.get_entity(camera)
 
-        # Running operators is much more efficient in this scenario than looping through each element
-        if not bpy.app.background:
-            bpy.ops.object.hide_view_clear()
-
         filtered_elements = cls.get_drawing_elements(drawing) | cls.get_drawing_spaces(drawing)
-        for visible_obj in bpy.context.visible_objects:
-            hide = tool.Ifc.get_entity(visible_obj) not in filtered_elements
-            if bpy.context.view_layer.objects.get(visible_obj.name):
-                visible_obj.hide_set(hide)
-                visible_obj.hide_render = hide
+        filtered_elements.add(drawing)
+        for view_layer_object in bpy.context.view_layer.objects:
+            element = tool.Ifc.get_entity(view_layer_object)
+            if not element or element.is_a("IfcTypeProduct"):
+                continue
+            hide = element not in filtered_elements
+            view_layer_object.hide_set(hide)
+            view_layer_object.hide_render = hide
 
         subcontexts = []
         target_view = cls.get_drawing_target_view(drawing)
@@ -1571,7 +1638,10 @@ class Drawing(blenderbim.core.tool.Drawing):
         # Based on separating axis theorem
         plane_co = camera.matrix_world.translation
         plane_no = camera.matrix_world.col[2].xyz
+        return cls.is_intersecting_plane(obj, plane_co, plane_no)
 
+    @classmethod
+    def is_intersecting_plane(cls, obj, plane_co, plane_no):
         # Broadphase check using the bounding box
         bounding_box_world_coords = [obj.matrix_world @ Vector(coord) for coord in obj.bound_box]
         bounding_box_signed_distances = [plane_no.dot(v - plane_co) for v in bounding_box_world_coords]
@@ -1608,6 +1678,13 @@ class Drawing(blenderbim.core.tool.Drawing):
 
         # Bisect verts are offset by the clip (with 5mm tolerance) to ensure it is visible in the viewport.
         global_offset = camera.matrix_world.col[2].xyz * (-camera.data.clip_start - 0.005)
+
+        return cls.bisect_mesh_with_plane(obj, plane_co, plane_no, global_offset=global_offset)
+
+    @classmethod
+    def bisect_mesh_with_plane(cls, obj, plane_co, plane_no, global_offset=None):
+        if global_offset is None:
+            global_offset = Vector()
 
         bm = bmesh.new()
         bm.from_mesh(obj.data)
@@ -1694,3 +1771,11 @@ class Drawing(blenderbim.core.tool.Drawing):
                 else:
                     result += float(child) * factor
         return result * 0.0254
+
+    @classmethod
+    def extend_line(cls, start, end, distance):
+        start = np.array(start)
+        end = np.array(end)
+        direction = end - start
+        offset = distance * (direction / np.linalg.norm(direction))
+        return (start - offset).tolist(), (end + offset).tolist()

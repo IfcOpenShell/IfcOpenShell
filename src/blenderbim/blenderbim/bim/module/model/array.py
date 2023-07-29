@@ -134,6 +134,24 @@ class EditArray(bpy.types.Operator, tool.Ifc.Operator):
         pset = tool.Ifc.get().by_id(pset["id"])
         data = json.dumps(data)
         ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
+
+        tool.Blender.Modifier.Array.set_children_lock_state(element, self.item, True)
+        tool.Blender.Modifier.Array.constrain_children_to_parent(element)
+        return {"FINISHED"}
+
+
+class ApplyArray(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.apply_array"
+    bl_label = "Apply Array"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Apply the array and keep children as separate entities. Only available for the last array"
+
+    def _execute(self, context):
+        obj = context.active_object
+        element = tool.Ifc.get_entity(obj)
+        pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+        data = json.loads(pset["Data"])
+        bpy.ops.bim.remove_array(item=len(data) - 1, keep_objs=True)
         return {"FINISHED"}
 
 
@@ -142,6 +160,7 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Remove Array"
     bl_options = {"REGISTER", "UNDO"}
     item: bpy.props.IntProperty()
+    keep_objs: bpy.props.BoolProperty(name="Keep Objects", default=False)
 
     def _execute(self, context):
         obj = context.active_object
@@ -152,6 +171,12 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
         data = json.loads(pset["Data"])
         data[self.item]["count"] = 1
 
+        if (self.keep_objs) & (self.item < (len(data) - 1)):
+            self.report(
+                {"INFO"}, "Keeping the objects is only allowed when you are removing the last Array of the object"
+            )
+            return {"FINISHED"}
+
         props.is_editing = -1
 
         try:
@@ -159,7 +184,11 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
         except:
             return {"FINISHED"}
 
-        tool.Model.regenerate_array(parent, data)
+        if self.keep_objs:
+            tool.Blender.Modifier.Array.bake_children_transform(element, self.item)
+            tool.Blender.Modifier.Array.set_children_lock_state(element, self.item, False)
+
+        tool.Model.regenerate_array(parent, data, self.keep_objs)
 
         pset = tool.Ifc.get().by_id(pset["id"])
         if len(data) == 1:
@@ -168,6 +197,7 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
             del data[self.item]
             data = json.dumps(data)
             ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
+            tool.Blender.Modifier.Array.constrain_children_to_parent(element)
 
         return {"FINISHED"}
 
@@ -176,17 +206,35 @@ class SelectArrayParent(bpy.types.Operator):
     bl_idname = "bim.select_array_parent"
     bl_label = "Select Array Parent"
     bl_options = {"REGISTER", "UNDO"}
-    parent: bpy.props.StringProperty()
+    parent: bpy.props.StringProperty(description="Parent Element GUID")
 
     def execute(self, context):
         try:
             element = tool.Ifc.get().by_guid(self.parent)
         except:
-            return {"FINISHED"}
+            self.report({"ERROR"}, f"Couldn't find array parent by guid '{self.parent}'")
+            return {"CANCELLED"}
         obj = tool.Ifc.get_object(element)
         if obj:
-            context.view_layer.objects.active = obj
-            obj.select_set(True)
+            tool.Blender.select_and_activate_single_object(context, active_object=obj)
+        return {"FINISHED"}
+
+
+class SelectAllArrayObjects(bpy.types.Operator):
+    bl_idname = "bim.select_all_array_objects"
+    bl_label = "Select All Array Objects"
+    bl_options = {"REGISTER", "UNDO"}
+    parent: bpy.props.StringProperty(description="Parent Element GUID")
+
+    def execute(self, context):
+        try:
+            parent_element = tool.Ifc.get().by_guid(self.parent)
+        except RuntimeError:
+            self.report({"ERROR"}, f"Couldn't find array parent by guid '{self.parent}'")
+            return {"CANCELLED"}
+
+        array_objects = tool.Blender.Modifier.Array.get_all_objects(parent_element)
+        tool.Blender.set_objects_selection(context, active_object=array_objects[0], selected_objects=array_objects)
         return {"FINISHED"}
 
 
@@ -200,7 +248,7 @@ class Input3DCursorXArray(bpy.types.Operator):
         props = obj.BIMArrayProperties
         cursor = context.scene.cursor
         if props.use_local_space:
-            props.x = (Matrix.inverted(obj.matrix_world) @ cursor.matrix.col[3]).x
+            props.x = (Matrix.inverted(obj.matrix_world) @ cursor.matrix.translation).x
         else:
             props.x = cursor.location.x - obj.location.x
         return {"FINISHED"}
@@ -216,7 +264,7 @@ class Input3DCursorYArray(bpy.types.Operator):
         props = obj.BIMArrayProperties
         cursor = context.scene.cursor
         if props.use_local_space:
-            props.y = (Matrix.inverted(obj.matrix_world) @ cursor.matrix.col[3]).y
+            props.y = (Matrix.inverted(obj.matrix_world) @ cursor.matrix.translation).y
         else:
             props.y = cursor.location.y - obj.location.y
         return {"FINISHED"}
@@ -232,7 +280,7 @@ class Input3DCursorZArray(bpy.types.Operator):
         props = obj.BIMArrayProperties
         cursor = context.scene.cursor
         if props.use_local_space:
-            props.z = (Matrix.inverted(obj.matrix_world) @ cursor.matrix.col[3]).z
+            props.z = (Matrix.inverted(obj.matrix_world) @ cursor.matrix.translation).z
         else:
             props.z = cursor.location.z - obj.location.z
         return {"FINISHED"}

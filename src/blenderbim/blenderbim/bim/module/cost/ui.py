@@ -21,21 +21,19 @@ import blenderbim.bim.module.cost.prop as CostProp
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.cost.data import CostSchedulesData
+import blenderbim.tool as tool
 
 
 class BIM_PT_cost_schedules(Panel):
-    bl_label = "IFC Cost Schedules"
+    bl_label = "Cost Schedules"
     bl_idname = "BIM_PT_cost_schedules"
-    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_4D5D"
 
     @classmethod
     def poll(cls, context):
-        file = IfcStore.get_file()
-        return file and hasattr(file, "schema") and file.schema != "IFC2X3"
+        return tool.Blender.is_tab(context, "SCHEDULING") and tool.Ifc.get() and tool.Ifc.get().schema != "IFC2X3"
 
     def draw(self, context):
         if not CostSchedulesData.is_loaded:
@@ -48,8 +46,9 @@ class BIM_PT_cost_schedules(Panel):
                 row.label(text=f"{CostSchedulesData.data['total_cost_schedules']} Cost Schedules Found", icon="TEXT")
                 row.operator("bim.export_cost_schedules", text="Export as spreadsheet", icon="EXPORT")
             else:
-                row.label(text="No Cost Schedules Found found.", icon="COMMUNITY")
+                row.label(text="No Cost Schedules found.", icon="COMMUNITY")
             row = self.layout.row()
+            row.alignment = "RIGHT"
             row.prop(self.props, "cost_schedule_predefined_types")
             row.operator("bim.add_cost_schedule", icon="ADD", text="Add")
 
@@ -267,7 +266,7 @@ class BIM_PT_cost_schedules(Panel):
 
 
 class BIM_PT_cost_item_types(Panel):
-    bl_label = "IFC Cost Item Types"
+    bl_label = "Cost Item Types"
     bl_idname = "BIM_PT_cost_item_types"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -353,7 +352,7 @@ class BIM_PT_cost_item_types(Panel):
 
 
 class BIM_PT_cost_item_quantities(Panel):
-    bl_label = "IFC Cost Item Quantities"
+    bl_label = "Cost Item Quantities"
     bl_idname = "BIM_PT_cost_item_quantities"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -525,7 +524,7 @@ class BIM_PT_cost_item_quantities(Panel):
 
 
 class BIM_PT_cost_item_rates(Panel):
-    bl_label = "IFC Cost Item Rates"
+    bl_label = "Cost Item Rates"
     bl_idname = "BIM_PT_cost_item_rates"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"

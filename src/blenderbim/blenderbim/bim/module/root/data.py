@@ -19,7 +19,7 @@
 from collections import defaultdict
 import bpy
 import ifcopenshell.util.element
-from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc
+from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc, get_class_suggestions
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 
@@ -78,8 +78,10 @@ class IfcClassData:
         declaration = tool.Ifc.schema().declaration_by_name(ifc_product)
         declarations = ifcopenshell.util.schema.get_subtypes(declaration)
         names = [d.name() for d in declarations]
-        if ifc_product == "IfcElementType" and tool.Ifc.get_schema() in ("IFC2X3", "IFC4"):
-            names.extend(("IfcDoorStyle", "IfcWindowStyle"))
+        if ifc_product == "IfcElementType":
+            names.append("IfcTypeProduct")
+            if tool.Ifc.get_schema() in ("IFC2X3", "IFC4"):
+                names.extend(("IfcDoorStyle", "IfcWindowStyle"))
         if ifc_product == "IfcElement":
             names.remove("IfcOpeningElement")
             if tool.Ifc.get_schema() == "IFC4":
@@ -107,28 +109,20 @@ class IfcClassData:
 
     @classmethod
     def ifc_classes_suggestions(cls):
+        # suggestions : dict[class_name: list[dict[predefined_type, name(optional)]]]
         suggestions = defaultdict(list)
-        suggestions.update(
-            {
-                "IfcWall": ["Glazing", "Glass", "Pane"],
-                "IfcWindow": ["Glazing", "Glass", "Pane"],
-                "IfcPlate": ["Glazing", "Glass", "Pane"],
-                "IfcFurniture": ["Signage"],
-                "IfcSlab": ["Hob"],
-                "IfcCovering": ["Flashing", "Capping"],
-                "IfcCableSegment": ["Lighting Rod"],
-                "IfcSensor": ["Card Reader", "Fob Reader"],
-                "IfcSwitchingDevice": ["Reed Switch", "Electric Isolating Switch"],
-                "IfcActuator": ["Electric Strike"],
-                "IfcAirTerminalBox": ["VAV Box"],
-                "IfcUnitaryEquipment": ["Fan Coil Unit"],
-            }
-        )
         version = tool.Ifc.get_schema()
         for ifc_class, _, _ in cls.data["ifc_classes"]:
             class_doc = get_entity_doc(version, ifc_class) or {}
             predefined_types = class_doc.get("predefined_types", {})
-            suggestions[ifc_class].extend(predefined_types.keys())
+            for predefined_type in predefined_types.keys():
+                suggestions[ifc_class].append({"predefined_type": predefined_type})
+
+            class_suggestions = get_class_suggestions(version, ifc_class)
+            if not class_suggestions:
+                continue
+            for suggestion_dict in class_suggestions:
+                suggestions[ifc_class].append(suggestion_dict)
         return suggestions
 
     @classmethod
@@ -159,7 +153,7 @@ class IfcClassData:
 
     @classmethod
     def name(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
+        element = tool.Ifc.get_entity(bpy.context.view_layer.objects.active)
         if not element:
             return
         name = element.is_a()
@@ -170,13 +164,13 @@ class IfcClassData:
 
     @classmethod
     def ifc_class(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
+        element = tool.Ifc.get_entity(bpy.context.view_layer.objects.active)
         if element:
             return element.is_a()
 
     @classmethod
     def can_reassign_class(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
+        element = tool.Ifc.get_entity(bpy.context.view_layer.objects.active)
         if element:
             if element.is_a("IfcOpeningElement") or element.is_a("IfcOpeningStandardCase"):
                 return False

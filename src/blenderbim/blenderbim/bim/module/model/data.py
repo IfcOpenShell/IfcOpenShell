@@ -19,11 +19,11 @@
 import bpy
 import math
 import json
-import functools
 import ifcopenshell
 import ifcopenshell.util.element
 from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc
 import blenderbim.tool as tool
+from math import degrees
 
 
 def refresh():
@@ -41,22 +41,29 @@ class AuthoringData:
     data = {}
     type_thumbnails = {}
     types_per_page = 9
+    ifc_element_type = None
     is_loaded = False
 
     @classmethod
-    def load(cls):
+    def load(cls, ifc_element_type=None):
         cls.is_loaded = True
         cls.props = bpy.context.scene.BIMModelProperties
+        if ifc_element_type:
+            cls.ifc_element_type = None if ifc_element_type == "all" else ifc_element_type
+        cls.data["ifc_element_type"] = cls.ifc_element_type
         cls.data["ifc_classes"] = cls.ifc_classes()
-        cls.data["relating_type_id"] = cls.relating_type_id()
+        cls.data["relating_type_id"] = cls.relating_type_id()  # only after .ifc_classes()
         cls.data["type_class"] = cls.type_class()
+
+        # only after .type_class()
         cls.data["type_predefined_type"] = cls.type_predefined_type()
         cls.data["total_types"] = cls.total_types()
         cls.data["total_pages"] = cls.total_pages()
         cls.data["next_page"] = cls.next_page()
         cls.data["prev_page"] = cls.prev_page()
         cls.data["paginated_relating_types"] = cls.paginated_relating_types()
-        cls.data["type_thumbnail"] = cls.type_thumbnail()
+
+        cls.data["type_thumbnail"] = cls.type_thumbnail()  # only after .relating_type_id()
         cls.data["is_voidable_element"] = cls.is_voidable_element()
         cls.data["has_visible_openings"] = cls.has_visible_openings()
         cls.data["has_visible_boundaries"] = cls.has_visible_boundaries()
@@ -64,6 +71,7 @@ class AuthoringData:
         cls.data["active_material_usage"] = cls.active_material_usage()
         cls.data["active_representation_type"] = cls.active_representation_type()
         cls.data["boundary_class"] = cls.boundary_class()
+        cls.data["selected_material_usages"] = cls.selected_material_usages()
 
     @classmethod
     def boundary_class(cls):
@@ -111,6 +119,8 @@ class AuthoringData:
     @classmethod
     def type_thumbnail(cls):
         if not cls.data["relating_type_id"]:
+            return 0
+        if not tool.Blender.enum_property_has_valid_index(cls.props, "relating_type_id", cls.data["relating_type_id"]):
             return 0
         element = tool.Ifc.get().by_id(int(cls.props.relating_type_id))
         return cls.type_thumbnails.get(element.id(), None) or 0
@@ -206,6 +216,10 @@ class AuthoringData:
 
     @classmethod
     def ifc_classes(cls):
+        if cls.data["ifc_element_type"]:
+            if tool.Ifc.get().by_type(cls.data["ifc_element_type"]):
+                return [(cls.data["ifc_element_type"], cls.data["ifc_element_type"], "")]
+            return []
         results = []
         classes = {
             e.is_a() for e in (tool.Ifc.get().by_type("IfcElementType") + tool.Ifc.get().by_type("IfcSpaceType"))
@@ -230,11 +244,25 @@ class AuthoringData:
         if ifc_class:
             elements = sorted(tool.Ifc.get().by_type(ifc_class), key=lambda s: s.Name or "Unnamed")
             results.extend(elements)
-            return [
-                (str(e.id()), e.Name or "Unnamed", e.Description or "")
-                for e in results
-            ]
+            return [(str(e.id()), e.Name or "Unnamed", e.Description or "") for e in results]
         return []
+
+    @classmethod
+    def selected_material_usages(cls):
+        selected_usages = {}
+        for obj in bpy.context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            usage = tool.Model.get_usage_type(element)
+            if not usage:
+                representation = tool.Geometry.get_active_representation(obj)
+                if representation and representation.RepresentationType == "SweptSolid":
+                    usage = "SWEPTSOLID"
+                else:
+                    continue
+            selected_usages.setdefault(usage, []).append(obj)
+        return selected_usages
 
 
 class ArrayData:
@@ -270,17 +298,26 @@ class StairData:
     @classmethod
     def load(cls):
         cls.is_loaded = True
-        cls.data = {"parameters": cls.parameters()}
+        cls.data = {}
+        cls.data["pset_data"] = cls.pset_data()
+        if not cls.data["pset_data"]:
+            return
+        cls.data["general_params"] = cls.general_params()
 
     @classmethod
-    def parameters(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        if element:
-            psets = ifcopenshell.util.element.get_psets(element)
-            parameters = psets.get("BBIM_Stair", None)
-            if parameters:
-                parameters["data_dict"] = json.loads(parameters.get("Data", "[]") or "[]")
-                return parameters
+    def pset_data(cls):
+        return tool.Model.get_modeling_bbim_pset_data(bpy.context.active_object, "BBIM_Stair")
+
+    @classmethod
+    def general_params(cls):
+        props = bpy.context.active_object.BIMStairProperties
+        data = cls.data["pset_data"]["data_dict"]
+        general_params = {}
+        general_props = props.get_props_kwargs(stair_type=data["stair_type"])
+        for prop_name in general_props:
+            prop_readable_name, prop_value = get_prop_from_data(props, data, prop_name)
+            general_params[prop_readable_name] = prop_value
+        return general_params
 
 
 class SverchokData:
@@ -290,17 +327,12 @@ class SverchokData:
     @classmethod
     def load(cls):
         cls.is_loaded = True
-        cls.data = {"parameters": cls.parameters(), "has_sverchok": cls.has_sverchok()}
+        cls.data = {"pset_data": cls.pset_data(), "has_sverchok": cls.has_sverchok()}
 
+    # NOTE: never used
     @classmethod
-    def parameters(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        if element:
-            psets = ifcopenshell.util.element.get_psets(element)
-            parameters = psets.get("BBIM_Sverchok", None)
-            if parameters:
-                parameters["data_dict"] = json.loads(parameters.get("Data", "[]") or "[]")
-                return parameters
+    def pset_data(cls):
+        return tool.Model.get_modeling_bbim_pset_data(bpy.context.active_object, "BBIM_Sverchok")
 
     @classmethod
     def has_sverchok(cls):
@@ -312,6 +344,13 @@ class SverchokData:
             return False
 
 
+def get_prop_from_data(props, data, prop_name):
+    prop_value = data[prop_name]
+    prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
+    prop_readable_name = props.bl_rna.properties[prop_name].name
+    return prop_readable_name, prop_value
+
+
 class WindowData:
     data = {}
     is_loaded = False
@@ -319,17 +358,51 @@ class WindowData:
     @classmethod
     def load(cls):
         cls.is_loaded = True
-        cls.data = {"parameters": cls.parameters()}
+        cls.data = {}
+        cls.data["pset_data"] = cls.pset_data()
+        if not cls.data["pset_data"]:
+            return
+        cls.data["general_params"] = cls.general_params()
+        cls.data["lining_params"] = cls.lining_params()
+        cls.data["panel_params"] = cls.panel_params()
 
     @classmethod
-    def parameters(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        if element:
-            psets = ifcopenshell.util.element.get_psets(element)
-            parameters = psets.get("BBIM_Window", None)
-            if parameters:
-                parameters["data_dict"] = json.loads(parameters.get("Data", "[]") or "[]")
-                return parameters
+    def pset_data(cls):
+        return tool.Model.get_modeling_bbim_pset_data(bpy.context.active_object, "BBIM_Window")
+
+    @classmethod
+    def general_params(cls):
+        props = bpy.context.active_object.BIMWindowProperties
+        data = cls.data["pset_data"]["data_dict"]
+        general_params = {}
+        general_props = props.get_general_kwargs()
+        for prop_name in general_props:
+            prop_readable_name, prop_value = get_prop_from_data(props, data, prop_name)
+            general_params[prop_readable_name] = prop_value
+        return general_params
+
+    @classmethod
+    def lining_params(cls):
+        props = bpy.context.active_object.BIMWindowProperties
+        data = cls.data["pset_data"]["data_dict"]
+        lining_data = data["lining_properties"]
+        lining_params = {}
+        lining_props = props.get_lining_kwargs(window_type=data["window_type"])
+        for prop_name in lining_props:
+            prop_readable_name, prop_value = get_prop_from_data(props, lining_data, prop_name)
+            lining_params[prop_readable_name] = prop_value
+        return lining_params
+
+    @classmethod
+    def panel_params(cls):
+        props = bpy.context.active_object.BIMWindowProperties
+        panel_data = cls.data["pset_data"]["data_dict"]["panel_properties"]
+        panel_params = {}
+        panel_props = props.get_panel_kwargs()
+        for prop_name in panel_props:
+            prop_readable_name, prop_value = get_prop_from_data(props, panel_data, prop_name)
+            panel_params[prop_readable_name] = prop_value
+        return panel_params
 
 
 class DoorData:
@@ -339,17 +412,52 @@ class DoorData:
     @classmethod
     def load(cls):
         cls.is_loaded = True
-        cls.data = {"parameters": cls.parameters()}
+        cls.data = {}
+        cls.data["pset_data"] = cls.pset_data()
+        if not cls.data["pset_data"]:
+            return
+        cls.data["general_params"] = cls.general_params()
+        cls.data["lining_params"] = cls.lining_params()
+        cls.data["panel_params"] = cls.panel_params()
 
     @classmethod
-    def parameters(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        if element:
-            psets = ifcopenshell.util.element.get_psets(element)
-            parameters = psets.get("BBIM_Door", None)
-            if parameters:
-                parameters["data_dict"] = json.loads(parameters.get("Data", "[]") or "[]")
-                return parameters
+    def pset_data(cls):
+        return tool.Model.get_modeling_bbim_pset_data(bpy.context.active_object, "BBIM_Door")
+
+    @classmethod
+    def general_params(cls):
+        props = bpy.context.active_object.BIMDoorProperties
+        data = cls.data["pset_data"]["data_dict"]
+        general_params = {}
+        general_props = props.get_general_kwargs()
+        for prop_name in general_props:
+            prop_readable_name, prop_value = get_prop_from_data(props, data, prop_name)
+            general_params[prop_readable_name] = prop_value
+        return general_params
+
+    @classmethod
+    def lining_params(cls):
+        props = bpy.context.active_object.BIMDoorProperties
+        data = cls.data["pset_data"]["data_dict"]
+        lining_data = data["lining_properties"]
+        lining_params = {}
+        lining_props = props.get_lining_kwargs(door_type=data["door_type"], lining_data=lining_data)
+        for prop_name in lining_props:
+            prop_readable_name, prop_value = get_prop_from_data(props, lining_data, prop_name)
+            lining_params[prop_readable_name] = prop_value
+        return lining_params
+
+    @classmethod
+    def panel_params(cls):
+        props = bpy.context.active_object.BIMDoorProperties
+        data = cls.data["pset_data"]["data_dict"]
+        panel_data = cls.data["pset_data"]["data_dict"]["panel_properties"]
+        panel_params = {}
+        panel_props = props.get_panel_kwargs(lining_data=data["lining_properties"])
+        for prop_name in panel_props:
+            prop_readable_name, prop_value = get_prop_from_data(props, panel_data, prop_name)
+            panel_params[prop_readable_name] = prop_value
+        return panel_params
 
 
 class RailingData:
@@ -359,17 +467,31 @@ class RailingData:
     @classmethod
     def load(cls):
         cls.is_loaded = True
-        cls.data = {"parameters": cls.parameters()}
+        cls.data = {}
+        cls.data["pset_data"] = cls.pset_data()
+        if not cls.data["pset_data"]:
+            return
+        cls.data["general_params"] = cls.general_params()
+        cls.data["path_data"] = cls.path_data()
 
     @classmethod
-    def parameters(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        if element:
-            psets = ifcopenshell.util.element.get_psets(element)
-            parameters = psets.get("BBIM_Railing", None)
-            if parameters:
-                parameters["data_dict"] = json.loads(parameters.get("Data", "[]") or "[]")
-                return parameters
+    def pset_data(cls):
+        return tool.Model.get_modeling_bbim_pset_data(bpy.context.active_object, "BBIM_Railing")
+
+    @classmethod
+    def general_params(cls):
+        props = bpy.context.active_object.BIMRailingProperties
+        data = cls.data["pset_data"]["data_dict"]
+        general_params = {}
+        general_props = props.get_general_kwargs(railing_type=data["railing_type"])
+        for prop_name in general_props:
+            prop_readable_name, prop_value = get_prop_from_data(props, data, prop_name)
+            general_params[prop_readable_name] = prop_value
+        return general_params
+
+    @classmethod
+    def path_data(cls):
+        return cls.data["pset_data"]["data_dict"]["path_data"]
 
 
 class RoofData:
@@ -379,14 +501,27 @@ class RoofData:
     @classmethod
     def load(cls):
         cls.is_loaded = True
-        cls.data = {"parameters": cls.parameters()}
+        cls.data = {}
+        cls.data["pset_data"] = cls.pset_data()
+        if not cls.data["pset_data"]:
+            return
+        cls.data["general_params"] = cls.general_params()
 
     @classmethod
-    def parameters(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        if element:
-            psets = ifcopenshell.util.element.get_psets(element)
-            parameters = psets.get("BBIM_Roof", None)
-            if parameters:
-                parameters["data_dict"] = json.loads(parameters.get("Data", "[]") or "[]")
-                return parameters
+    def pset_data(cls):
+        return tool.Model.get_modeling_bbim_pset_data(bpy.context.active_object, "BBIM_Roof")
+
+    @classmethod
+    def general_params(cls):
+        props = bpy.context.active_object.BIMRoofProperties
+        data = cls.data["pset_data"]["data_dict"]
+        general_params = {}
+        general_props = props.get_general_kwargs(generation_method=data["generation_method"])
+        for prop_name in general_props:
+            prop_readable_name, prop_value = get_prop_from_data(props, data, prop_name)
+
+            if prop_name in ("angle", "rafter_edge_angle"):
+                prop_value = round(degrees(prop_value), 2)
+
+            general_params[prop_readable_name] = prop_value
+        return general_params

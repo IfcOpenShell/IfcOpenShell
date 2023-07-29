@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import json
 import ifcopenshell.api
 import blenderbim.tool as tool
 from mathutils import Vector
@@ -36,10 +37,37 @@ VIEWPORT_ATTRIBUTES = [
 
 
 class Blender:
+    OBJECT_TYPES_THAT_SUPPORT_EDIT_MODE = ("MESH", "CURVE", "SURFACE", "META", "FONT", "LATTICE", "ARMATURE")
+    OBJECT_TYPES_THAT_SUPPORT_EDIT_GPENCIL_MODE = ("GPENCIL",)
+
     @classmethod
     def set_active_object(cls, obj):
         bpy.context.view_layer.objects.active = obj
         obj.select_set(True)
+
+    @classmethod
+    def is_tab(cls, context, tab):
+        if not len(context.screen.BIMAreaProperties):
+            return None
+        if context.area.spaces.active.search_filter:
+            return True
+        screen_areas = context.screen.areas[:]
+        current_area = context.area
+        # If the user is using the properties panel "Display Filter" search it
+        # will create a new area that's not present in context.screen.areas for
+        # all property tabs except for the active property tab.
+        if current_area not in screen_areas:
+            current_area = next(a for a in context.screen.areas if a.x == current_area.x and a.y == current_area.y)
+        area_index = screen_areas.index(current_area)
+        return context.screen.BIMAreaProperties[area_index].tab == tab
+
+    @classmethod
+    def is_default_scene(cls):
+        if len(bpy.context.scene.objects) != 3:
+            return False
+        if {obj.type for obj in bpy.context.scene.objects} == {"MESH", "LIGHT", "CAMERA"}:
+            return True
+        return False
 
     @classmethod
     def get_name(cls, ifc_class, name):
@@ -216,6 +244,21 @@ class Blender:
         return cls.ensure_unique_name(name, objects, iteration + 1)
 
     @classmethod
+    def blender_path_to_posix(cls, blender_path):
+        """Process blender path to be saved as posix.
+
+        If path is relative the method will keep it relative to .ifc file
+        """
+        if blender_path.startswith("//"):  # detect relative blender path
+            ifc_path = Path(tool.Ifc.get_path())
+            abs_path = Path(bpy.path.abspath(blender_path))
+            path = abs_path.relative_to(ifc_path.parent)
+        else:
+            path = Path(blender_path)
+
+        return path.as_posix()
+
+    @classmethod
     def get_default_selection_keypmap(cls):
         """keymap to replicate default blender selection behaviour with click and box selection"""
         # code below comes from blender_default.py which is part of default blender scripts licensed under GPL v2
@@ -306,6 +349,26 @@ class Blender:
         active_object.select_set(True)
 
     @classmethod
+    def set_objects_selection(cls, context, active_object, selected_objects):
+        for obj in context.selected_objects:
+            obj.select_set(False)
+        for obj in selected_objects:
+            obj.select_set(True)
+        context.view_layer.objects.active = active_object
+        active_object.select_set(True)
+
+    @classmethod
+    def enum_property_has_valid_index(cls, props, prop_name, enum_items):
+        """method created for readibility and to avoid console warnings like
+        `pyrna_enum_to_py: current value '17' matches no enum in 'BIMModelProperties', '', 'relating_type_id'`
+        """
+        current_value_index = props.get(prop_name, None)
+        # assuming the default value is fine
+        if current_value_index is None:
+            return True
+        return current_value_index < len(enum_items)
+
+    @classmethod
     def append_data_block(cls, filepath, data_block_type, name, link=False, relative=False):
         if Path(filepath) == Path(bpy.data.filepath):
             data_block = getattr(bpy.data, data_block_type).get(name, None)
@@ -336,12 +399,12 @@ class Blender:
                 )
             bmesh.update_edit_mesh(mesh)
             if not obj:
-                if not bpy.context.object or bpy.context.object.data != mesh:
+                if not bpy.context.active_object or bpy.context.active_object.data != mesh:
                     raise Exception(
                         "Error applying bmesh in EDIT object - object is "
                         "not provided and can't be acquired from the context. "
                     )
-                obj = bpy.context.object
+                obj = bpy.context.active_object
             obj.update_from_editmode()
         else:
             bm.to_mesh(mesh)
@@ -382,3 +445,143 @@ class Blender:
             callback(bm_a, new_verts, new_edges, new_faces)
 
         return bm_a
+
+    @classmethod
+    def toggle_edit_mode(cls, context):
+        ao = context.active_object
+        if not ao:
+            return {"CANCELLED"}
+        if ao.type in cls.OBJECT_TYPES_THAT_SUPPORT_EDIT_MODE:
+            return bpy.ops.object.mode_set(mode="EDIT", toggle=True)
+        elif ao.type in cls.OBJECT_TYPES_THAT_SUPPORT_EDIT_GPENCIL_MODE:
+            return bpy.ops.object.mode_set(mode="EDIT_GPENCIL", toggle=True)
+        else:
+            return {"CANCELLED"}
+
+    @classmethod
+    def is_object_an_ifc_class(cls, obj, classes):
+        if not tool.Ifc.get():
+            return False
+        element = tool.Ifc.get_entity(obj)
+        return element and element.is_a() in classes
+
+    @classmethod
+    def get_object_from_guid(cls, guid):
+        element = tool.Ifc.get().by_guid(guid)
+        obj = tool.Ifc.get_object(element)
+        if obj:
+            return obj
+
+    class Modifier:
+        @classmethod
+        def is_eligible_for_railing_modifier(cls, obj):
+            return tool.Blender.is_object_an_ifc_class(obj, ("IfcRailing", "IfcRailingType"))
+
+        @classmethod
+        def is_eligible_for_stair_modifier(cls, obj):
+            return tool.Blender.is_object_an_ifc_class(obj, ("IfcStairFlight", "IfcStairFlightType"))
+
+        @classmethod
+        def is_eligible_for_window_modifier(cls, obj):
+            return tool.Blender.is_object_an_ifc_class(obj, ("IfcWindow", "IfcWindowType", "IfcWindowStyle"))
+
+        @classmethod
+        def is_eligible_for_door_modifier(cls, obj):
+            return tool.Blender.is_object_an_ifc_class(obj, ("IfcDoor", "IfcDoorType", "IfcDoorStyle"))
+
+        @classmethod
+        def is_eligible_for_roof_modifier(cls, obj):
+            return tool.Blender.is_object_an_ifc_class(obj, ("IfcRoof", "IfcRoofType"))
+
+        @classmethod
+        def is_railing(cls, element):
+            return tool.Pset.get_element_pset(element, "BBIM_Railing")
+
+        @classmethod
+        def is_roof(cls, element):
+            return tool.Pset.get_element_pset(element, "BBIM_Roof")
+
+        @classmethod
+        def is_window(cls, element):
+            return tool.Pset.get_element_pset(element, "BBIM_Window")
+
+        @classmethod
+        def is_door(cls, element):
+            return tool.Pset.get_element_pset(element, "BBIM_Door")
+
+        @classmethod
+        def is_stair(cls, element):
+            return tool.Pset.get_element_pset(element, "BBIM_Stair")
+
+        @classmethod
+        def is_editing_parameters(cls, obj):
+            return obj.BIMRailingProperties.is_editing or obj.BIMRoofProperties.is_editing
+
+        @classmethod
+        def is_modifier_with_non_editable_path(cls, element):
+            return cls.is_stair(element) or cls.is_door(element) or cls.is_window(element)
+
+        class Array:
+            @classmethod
+            def bake_children_transform(cls, parent_element, item):
+                modifier_data = list(cls.get_modifiers_data(parent_element))[item]
+                children = cls.get_children_objects(modifier_data)
+                for child in children:
+                    constraint = next((c for c in child.constraints if c.type == "CHILD_OF"), None)
+                    if constraint:
+                        with bpy.context.temp_override(object=child):
+                            bpy.ops.constraint.apply(constraint=constraint.name, owner="OBJECT")
+
+            @classmethod
+            def constrain_children_to_parent(cls, parent_element):
+                parent_obj = tool.Ifc.get_object(parent_element)
+                children = cls.get_all_children_objects(parent_element)
+                for child in children:
+                    constraint = next((c for c in child.constraints if c.type == "CHILD_OF"), None)
+                    if constraint:
+                        child.constraints.remove(constraint)
+                    constraint = child.constraints.new("CHILD_OF")
+                    constraint.target = parent_obj
+
+            @classmethod
+            def set_children_lock_state(cls, parent_element, item, lock_state=True):
+                modifier_data = list(cls.get_modifiers_data(parent_element))[item]
+                children = cls.get_children_objects(modifier_data)
+                for child_obj in children:
+                    for prop in ("lock_location", "lock_rotation", "lock_scale"):
+                        attr = getattr(child_obj, prop)
+                        for axis_idx in range(3):
+                            attr[axis_idx] = lock_state
+
+            @classmethod
+            def remove_constraints(cls, parent_element):
+                children = cls.get_all_children_objects(parent_element)
+                for child in children:
+                    constraint = next((c for c in child.constraints if c.type == "CHILD_OF"), None)
+                    if constraint:
+                        child.constraints.remove(constraint)
+
+            @classmethod
+            def get_all_objects(cls, parent_element):
+                parent_obj = tool.Ifc.get_object(parent_element)
+                children_objects = list(cls.get_all_children_objects(parent_element))
+                array_objects = [parent_obj] + children_objects  # We ensure the parent is at index 0
+                return array_objects
+
+            @classmethod
+            def get_all_children_objects(cls, parent_element):
+                for array_modifier in cls.get_modifiers_data(parent_element):
+                    yield from cls.get_children_objects(array_modifier)
+
+            @classmethod
+            def get_modifiers_data(cls, parent_element):
+                array_pset = ifcopenshell.util.element.get_pset(parent_element, "BBIM_Array")
+                for modifier_data in json.loads(array_pset["Data"]):
+                    yield modifier_data
+
+            @classmethod
+            def get_children_objects(cls, modifier_data):
+                for child_guid in modifier_data["children"]:
+                    child_obj = tool.Blender.get_object_from_guid(child_guid)
+                    if child_obj:
+                        yield child_obj

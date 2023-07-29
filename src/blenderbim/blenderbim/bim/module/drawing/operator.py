@@ -23,6 +23,7 @@ import json
 import time
 import bmesh
 import shutil
+import hashlib
 import shapely
 import subprocess
 import webbrowser
@@ -32,6 +33,7 @@ import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.util.selector
 import ifcopenshell.util.representation
+import ifcopenshell.util.element
 import blenderbim.bim.schema
 import blenderbim.tool as tool
 import blenderbim.core.drawing as core
@@ -82,6 +84,52 @@ class Operator:
         IfcStore.execute_ifc_operator(self, context)
         blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}
+
+
+class AddAnnotationType(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_annotation_type"
+    bl_label = "Add Annotation Type"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = context.scene.BIMAnnotationProperties
+        object_type = props.object_type
+        has_representation = props.create_representation_for_type
+        drawing = tool.Ifc.get_entity(bpy.context.scene.camera)
+
+        if props.create_representation_for_type:
+            obj = tool.Drawing.create_annotation_object(drawing, object_type)
+        else:
+            obj = bpy.data.objects.new(object_type, None)
+
+        obj.name = props.type_name
+        element = tool.Drawing.run_root_assign_class(
+            obj=obj,
+            ifc_class="IfcTypeProduct",
+            predefined_type=object_type,
+            should_add_representation=has_representation,
+            context=ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Annotation", "MODEL_VIEW"),
+            ifc_representation_class=tool.Drawing.get_ifc_representation_class(object_type),
+        )
+        element.ApplicableOccurrence = f"IfcAnnotation/{object_type}"
+
+
+class EnableAddAnnotationType(bpy.types.Operator, Operator):
+    bl_idname = "bim.enable_add_annotation_type"
+    bl_label = "Enable Add Annotation Type"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        bpy.context.scene.BIMAnnotationProperties.is_adding_type = True
+
+
+class DisableAddAnnotationType(bpy.types.Operator, Operator):
+    bl_idname = "bim.disable_add_annotation_type"
+    bl_label = "Disable Add Annotation Type"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        bpy.context.scene.BIMAnnotationProperties.is_adding_type = False
 
 
 class AddDrawing(bpy.types.Operator, Operator):
@@ -168,7 +216,7 @@ class CreateDrawing(bpy.types.Operator):
 
         if self.print_all:
             original_drawing_id = self.props.active_drawing_id
-            drawings_to_print = [d.ifc_definition_id for d in self.props.drawings if d.is_selected]
+            drawings_to_print = [d.ifc_definition_id for d in self.props.drawings if d.is_selected and d.is_drawing]
         else:
             drawings_to_print = [self.props.active_drawing_id]
 
@@ -184,7 +232,8 @@ class CreateDrawing(bpy.types.Operator):
             with profile("Drawing generation process"):
                 with profile("Initialize drawing generation process"):
                     self.cprops = self.camera.data.BIMCameraProperties
-                    self.drawing_name = self.file.by_id(drawing_id).Name
+                    self.drawing = self.file.by_id(drawing_id)
+                    self.drawing_name = self.drawing.Name
                     self.metadata = tool.Drawing.get_drawing_metadata(self.camera_element)
                     self.get_scale(context)
                     if self.cprops.update_representation(self.camera):
@@ -275,7 +324,7 @@ class CreateDrawing(bpy.types.Operator):
         return svg_path
 
     def generate_underlay(self, context):
-        if not self.cprops.has_underlay:
+        if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasUnderlay"):
             return
         svg_path = self.get_svg_path(cache_type="underlay")
         context.scene.render.filepath = svg_path[0:-4] + ".png"
@@ -317,7 +366,7 @@ class CreateDrawing(bpy.types.Operator):
         return svg_path
 
     def generate_linework(self, context):
-        if not self.cprops.has_linework:
+        if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasLinework"):
             return
         svg_path = self.get_svg_path(cache_type="linework")
         if os.path.isfile(svg_path) and self.props.should_use_linework_cache:
@@ -345,10 +394,6 @@ class CreateDrawing(bpy.types.Operator):
                 for el in root.findall(".//{http://www.w3.org/2000/svg}g[@{http://www.ifcopenshell.org/ns}guid]")
             }
         cached_linework -= edited_guids
-
-        # This is a work in progress. See #1153 and #1564.
-        import hashlib
-        import ifcopenshell.draw
 
         files = {context.scene.BIMProperties.ifc_file: tool.Ifc.get()}
 
@@ -520,7 +565,12 @@ class CreateDrawing(bpy.types.Operator):
             for projection in projections:
                 boundary_lines = []
                 for path in projection.findall("./{http://www.w3.org/2000/svg}path"):
-                    start, end = [co[1:].split(",") for co in path.attrib["d"].split()]
+                    # Rounding is necessary to ensure coincident points are coincident
+                    start, end = [[round(float(o), 1) for o in co[1:].split(",")] for co in path.attrib["d"].split()]
+                    if start == end:
+                        continue
+                    # Extension by 0.5mm is necessary to ensure lines overlap with other diagonal lines
+                    start, end = tool.Drawing.extend_line(start, end, 0.5)
                     boundary_lines.append(shapely.LineString([start, end]))
                 unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
                 closed_polygons = shapely.polygonize(unioned_boundaries.geoms)
@@ -542,6 +592,9 @@ class CreateDrawing(bpy.types.Operator):
                                 e
                                 for e in tree.select_ray(self.pythonize(a), self.pythonize(b - a))
                                 if not e.instance.is_a("IfcAnnotation")
+                                and tool.Cad.is_point_on_edge(
+                                    Vector(list(e.position)), (Vector(self.pythonize(a)), Vector(self.pythonize(b)))
+                                )
                             ]
                             if elements:
                                 path = etree.Element("path")
@@ -793,6 +846,7 @@ class CreateDrawing(bpy.types.Operator):
         self.serialiser.setElevationRefGuid(self.camera_element.GlobalId)
         self.serialiser.setScale(self.scale)
         self.serialiser.setSubtractionSettings(ifcopenshell.ifcopenshell_wrapper.ALWAYS)
+        self.serialiser.setUsePrefiltering(True)  # See #3359
         # tree = ifcopenshell.geom.tree()
         # This instructs the tree to explode BReps into faces and return
         # the style of the face when running tree.select_ray()
@@ -846,6 +900,50 @@ class CreateDrawing(bpy.types.Operator):
             classes.append("cut")
             el.set("class", " ".join(classes))
 
+            # An element group will contain a bunch of paths representing the
+            # cut of that element. However IfcOpenShell may not correctly
+            # create closed paths. We post-process all paths with shapely to
+            # ensure things that should be closed (i.e.
+            # shapely.polygonize_full) are, and things which aren't are left
+            # alone (e.g. dangles, cuts, invalids). See #3421.
+            line_strings = []
+            old_paths = []
+            for path in el.findall("{http://www.w3.org/2000/svg}path"):
+                for subpath in path.attrib["d"].split("M")[1:]:
+                    subpath = "M" + subpath.strip()
+                    coords = [[round(float(o), 1) for o in co[1:].split(",")] for co in subpath.split()]
+                    line_strings.append(shapely.LineString(coords))
+                old_paths.append(path)
+            unioned_line_strings = shapely.union_all(shapely.GeometryCollection(line_strings))
+            if hasattr(unioned_line_strings, "geoms"):
+                results = shapely.polygonize_full(unioned_line_strings.geoms)
+            else:
+                results = []
+
+            # If we succeeded in generating new path geometry, remove all the
+            # old paths and add new ones.
+            if results:
+                for path in old_paths:
+                    path.getparent().remove(path)
+            for result in results:
+                for geom in result.geoms:
+                    path = etree.SubElement(el, "{http://www.w3.org/2000/svg}path")
+                    if isinstance(geom, shapely.Polygon):
+                        d = (
+                            "M"
+                            + " L".join([",".join([str(o) for o in co]) for co in geom.exterior.coords[0:-1]])
+                            + " Z"
+                        )
+                        for interior in geom.interiors:
+                            d += (
+                                " M"
+                                + " L".join([",".join([str(o) for o in co]) for co in interior.coords[0:-1]])
+                                + " Z"
+                            )
+                    elif isinstance(geom, shapely.LineString):
+                        d = "M" + " L".join([",".join([str(o) for o in co]) for co in geom.coords]) + " Z"
+                    path.attrib["d"] = d
+
             # Architectural convention only merges these objects. E.g. pipe segments and fittings shouldn't merge.
             if not element.is_a("IfcWall") and not element.is_a("IfcSlab"):
                 continue
@@ -873,8 +971,10 @@ class CreateDrawing(bpy.types.Operator):
                 is_closed_polygon = False
                 for path in el.findall("{http://www.w3.org/2000/svg}path"):
                     for subpath in path.attrib["d"].split("M")[1:]:
-                        subpath = "M" + subpath.strip()
-                        coords = [[round(float(o), 1) for o in co[1:].split(",")] for co in subpath.split()]
+                        subpath_co = "M" + subpath.strip(" Z")
+                        coords = [[round(float(o), 1) for o in co[1:].split(",")] for co in subpath_co.split()]
+                        if subpath.strip().lower().endswith("z"):
+                            coords.append(coords[0])
                         if len(coords) > 2 and coords[0] == coords[-1]:
                             is_closed_polygon = True
                             polygons.append(shapely.Polygon(coords))
@@ -921,7 +1021,7 @@ class CreateDrawing(bpy.types.Operator):
         group.insert(0, projection)
 
     def generate_annotation(self, context):
-        if not self.cprops.has_annotation:
+        if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasAnnotation"):
             return
         svg_path = self.get_svg_path(cache_type="annotation")
         if os.path.isfile(svg_path) and self.props.should_use_annotation_cache:
@@ -931,7 +1031,9 @@ class CreateDrawing(bpy.types.Operator):
         filtered_drawing_elements = tool.Drawing.get_drawing_elements(self.camera_element)
         elements = [e for e in elements if e in filtered_drawing_elements]
 
-        annotations = sorted(elements, key=lambda a: tool.Drawing.get_annotation_z_index(a))
+        annotations = sorted(
+            elements, key=lambda a: (tool.Drawing.get_annotation_z_index(a), 1 if a.ObjectType == "TEXT" else 0)
+        )
 
         precision = ifcopenshell.util.element.get_pset(self.camera_element, "EPset_Drawing", "MetricPrecision")
         if not precision:
@@ -1264,7 +1366,25 @@ class ActivateModel(bpy.types.Operator):
         CutDecorator.uninstall()
 
         if not bpy.app.background:
-            bpy.ops.object.hide_view_clear()
+            view3d_context = dict()
+
+            for window in bpy.context.window_manager.windows:
+                screen = window.screen
+                for area in screen.areas:
+                    if area.type == "VIEW_3D":
+                        view3d_context["window"] = window
+                        view3d_context["screen"] = screen
+                        view3d_context["area"] = area
+                        for region in area.regions:
+                            if region.type == "WINDOW":
+                                view3d_context["region"] = region
+                                break
+                        break
+                if view3d_context:
+                    break
+
+            if view3d_context:
+                bpy.ops.object.hide_view_clear(view3d_context)
 
         subcontext = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
 
@@ -1632,10 +1752,14 @@ class ActivateDrawingStyle(bpy.types.Operator, Operator):
         space = self.get_view_3d(context)  # Do not remove. It is used in exec later
         style = json.loads(self.drawing_style.raster_style)
         for path, value in style.items():
-            if isinstance(value, str):
-                exec(f"{path} = '{value}'")
-            else:
-                exec(f"{path} = {value}")
+            try:
+                if isinstance(value, str):
+                    exec(f"{path} = '{value}'")
+                else:
+                    exec(f"{path} = {value}")
+            except:
+                # Differences in Blender versions mean result in failures here
+                print(f"Failed to set shading style {path} to {value}")
 
     def set_query(self, context):
         self.include_global_ids = []
@@ -2271,6 +2395,34 @@ class DisableEditingDrawings(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.disable_editing_drawings(tool.Drawing)
+
+
+class ExpandTargetView(bpy.types.Operator):
+    bl_idname = "bim.expand_target_view"
+    bl_label = "Expand Target View"
+    bl_options = {"REGISTER", "UNDO"}
+    target_view: bpy.props.StringProperty()
+
+    def execute(self, context):
+        props = context.scene.DocProperties
+        for drawing in [d for d in props.drawings if d.target_view == self.target_view]:
+            drawing.is_expanded = True
+        core.load_drawings(tool.Drawing)
+        return {"FINISHED"}
+
+
+class ContractTargetView(bpy.types.Operator):
+    bl_idname = "bim.contract_target_view"
+    bl_label = "Contract Target View"
+    bl_options = {"REGISTER", "UNDO"}
+    target_view: bpy.props.StringProperty()
+
+    def execute(self, context):
+        props = context.scene.DocProperties
+        for drawing in [d for d in props.drawings if d.target_view == self.target_view]:
+            drawing.is_expanded = False
+        core.load_drawings(tool.Drawing)
+        return {"FINISHED"}
 
 
 class ExpandSheet(bpy.types.Operator):

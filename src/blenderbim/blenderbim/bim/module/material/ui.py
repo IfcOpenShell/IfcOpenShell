@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import blenderbim.bim.helper
+import blenderbim.tool as tool
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import draw_attributes
@@ -25,7 +26,7 @@ from blenderbim.bim.module.material.data import MaterialsData, ObjectMaterialDat
 
 
 class BIM_PT_materials(Panel):
-    bl_label = "IFC Materials"
+    bl_label = "Materials"
     bl_idname = "BIM_PT_materials"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -88,7 +89,7 @@ class BIM_PT_materials(Panel):
         blenderbim.bim.helper.draw_attributes(self.props.material_attributes, self.layout)
 
 class BIM_PT_material(Panel):
-    bl_label = "IFC Material"
+    bl_label = "Material"
     bl_idname = "BIM_PT_material"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -111,15 +112,17 @@ class BIM_PT_material(Panel):
 
 
 class BIM_PT_object_material(Panel):
-    bl_label = "IFC Object Material"
+    bl_label = "Object Material"
     bl_idname = "BIM_PT_object_material"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "object"
-    bl_parent_id = "BIM_PT_object_metadata"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_materials"
 
     @classmethod
     def poll(cls, context):
+        if not tool.Blender.is_tab(context, "GEOMETRY"):
+            return False
         if not context.active_object:
             return False
         props = context.active_object.BIMObjectProperties

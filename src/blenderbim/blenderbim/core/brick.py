@@ -17,10 +17,10 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 
-def load_brick_project(brick, filepath=None):
+def load_brick_project(brick, filepath=None, brick_root=None):
     brick.load_brick_file(filepath)
-    brick.import_brick_classes("Class")
-    brick.set_active_brick_class("Class")
+    brick.import_brick_classes(brick_root)
+    brick.set_active_brick_class(brick_root)
 
 
 def view_brick_class(brick, brick_class=None):
@@ -47,6 +47,7 @@ def rewind_brick_class(brick):
 
 def close_brick_project(brick):
     brick.clear_project()
+    brick.clear_brick_browser()
 
 
 def convert_brick_project(ifc, brick):
@@ -67,13 +68,13 @@ def assign_brick_reference(ifc, brick, element=None, library=None, brick_uri=Non
     brick.add_brickifc_reference(brick_uri, element, project)
 
 
-def add_brick(ifc, brick, element=None, namespace=None, brick_class=None, library=None):
+def add_brick(ifc, brick, element=None, namespace=None, brick_class=None, library=None, label="Unnamed"):
     if element:
         brick_uri = brick.add_brick_from_element(element, namespace, brick_class)
         if library:
             brick.run_assign_brick_reference(element=element, library=library, brick_uri=brick_uri)
     else:
-        brick_uri = brick.add_brick(namespace, brick_class)
+        brick_uri = brick.add_brick(namespace, brick_class, label)
     brick.run_refresh_brick_viewer()
 
 
@@ -91,10 +92,10 @@ def convert_ifc_to_brick(brick, namespace=None, library=None):
     brick.run_refresh_brick_viewer()
 
 
-def new_brick_file(brick):
+def new_brick_file(brick, brick_root=None):
     brick.new_brick_file()
-    brick.import_brick_classes("Class")
-    brick.set_active_brick_class("Class")
+    brick.import_brick_classes(brick_root)
+    brick.set_active_brick_class(brick_root)
 
 
 def refresh_brick_viewer(brick):
@@ -109,3 +110,19 @@ def remove_brick(ifc, brick, library=None, brick_uri=None):
             ifc.run("library.remove_reference", reference=reference)
     brick.remove_brick(brick_uri)
     brick.run_refresh_brick_viewer()
+
+
+def serialize_brick(brick):
+    brick.serialize_brick()
+
+
+def add_namespace(brick, alias=None, uri=None):
+    brick.add_namespace(alias, uri)
+
+
+def set_brick_list_root(brick, brick_root=None):
+    brick.clear_brick_browser()
+    brick.import_brick_classes(brick_root)
+    brick.set_active_brick_class(brick_root)
+    brick.clear_breadcrumbs()
+

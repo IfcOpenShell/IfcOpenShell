@@ -21,13 +21,13 @@ from bpy.types import Panel
 
 
 class BIM_PT_debug(Panel):
-    bl_label = "IFC Debug"
+    bl_label = "Debug"
     bl_idname = "BIM_PT_debug"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_quality_control"
+    bl_parent_id = "BIM_PT_tab_quality_control"
 
     def draw(self, context):
         layout = self.layout
@@ -47,6 +47,9 @@ class BIM_PT_debug(Panel):
 
         row = layout.row()
         row.operator("bim.print_ifc_file")
+
+        row = layout.row()
+        row.operator("bim.copy_debug_information")
 
         row = layout.row()
         row.operator("bim.purge_hdf5_cache")

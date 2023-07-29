@@ -21,31 +21,290 @@ import lark
 import ifcopenshell.util
 import ifcopenshell.util.fm
 import ifcopenshell.util.element
+import ifcopenshell.util.classification
+
+
+filter_elements_grammar = lark.Lark("""start: filter_group
+    filter_group: facet_list ("+" facet_list)*
+    facet_list: facet ("," facet)*
+
+    facet: instance | entity | attribute | type | material | property | classification | location
+
+    instance: not? globalid
+    globalid: /[0-3][a-zA-Z0-9_$]{21}/
+    entity: not? ifc_class
+    attribute: attribute_name comparison value
+    type: "type" comparison value
+    material: "material" comparison value
+    property: pset "." prop comparison value
+    classification: "classification" comparison value
+    location: "location" comparison value
+
+    pset: quoted_string | unquoted_string | regex_string
+    prop: quoted_string | unquoted_string | regex_string
+
+    attribute_name: /[A-Z]\\w+/
+    ifc_class: /Ifc\\w+/
+
+    value: special | quoted_string | unquoted_string | regex_string
+    unquoted_string: /[^.=\\s]+/
+    quoted_string: ESCAPED_STRING
+    regex_string: "/" /[^\\/]+/ "/"
+
+    special: null | true | false
+
+    comparison: not? equals
+    not: "!"
+    equals: "="
+    null: "NULL"
+    true: "TRUE"
+    false: "FALSE"
+
+    // Embed common.lark for packaging
+    DIGIT: "0".."9"
+    HEXDIGIT: "a".."f"|"A".."F"|DIGIT
+    INT: DIGIT+
+    SIGNED_INT: ["+"|"-"] INT
+    DECIMAL: INT "." INT? | "." INT
+    _EXP: ("e"|"E") SIGNED_INT
+    FLOAT: INT _EXP | DECIMAL _EXP?
+    SIGNED_FLOAT: ["+"|"-"] FLOAT
+    NUMBER: FLOAT | INT
+    SIGNED_NUMBER: ["+"|"-"] NUMBER
+    _STRING_INNER: /.*?/
+    _STRING_ESC_INNER: _STRING_INNER /(?<!\\\\)(\\\\\\\\)*?/
+    ESCAPED_STRING : "\\"" _STRING_ESC_INNER "\\""
+    LCASE_LETTER: "a".."z"
+    UCASE_LETTER: "A".."Z"
+    LETTER: UCASE_LETTER | LCASE_LETTER
+    WORD: LETTER+
+    CNAME: ("_"|LETTER) ("_"|LETTER|DIGIT)*
+    WS_INLINE: (" "|/\\t/)+
+    WS: /[ \\t\\f\\r\\n]/+
+    CR : /\\r/
+    LF : /\\n/
+    NEWLINE: (CR? LF)+
+
+    %ignore WS // Disregard spaces in text
+""")
+
+get_element_grammar = lark.Lark("""start: WORD | ESCAPED_STRING | keys_regex | keys_quoted | keys_simple
+    keys_regex: "r" ESCAPED_STRING ("." ESCAPED_STRING)*
+    keys_quoted: ESCAPED_STRING ("." ESCAPED_STRING)*
+    keys_simple: /[^\\W][^.=<>!%*\\]]*/ ("." /[^\\W][^.=<>!%*\\]]*/)*
+
+    // Embed common.lark for packaging
+    _STRING_INNER: /.*?/
+    _STRING_ESC_INNER: _STRING_INNER /(?<!\\\\)(\\\\\\\\)*?/
+    ESCAPED_STRING : "\\"" _STRING_ESC_INNER "\\""
+    LCASE_LETTER: "a".."z"
+    UCASE_LETTER: "A".."Z"
+    LETTER: UCASE_LETTER | LCASE_LETTER
+    WORD: LETTER+
+    WS: /[ \\t\\f\\r\\n]/+
+
+    %ignore WS // Disregard spaces in text
+ """)
 
 
 def get_element_value(element, query):
-    l = lark.Lark(
-        """start: WORD | ESCAPED_STRING | keys_regex | keys_quoted | keys_simple
-                keys_regex: "r" ESCAPED_STRING ("." ESCAPED_STRING)*
-                keys_quoted: ESCAPED_STRING ("." ESCAPED_STRING)*
-                keys_simple: /[^\\W][^.=<>!%*\\]]*/ ("." /[^\\W][^.=<>!%*\\]]*/)*
-
-                // Embed common.lark for packaging
-                _STRING_INNER: /.*?/
-                _STRING_ESC_INNER: _STRING_INNER /(?<!\\\\)(\\\\\\\\)*?/
-                ESCAPED_STRING : "\\"" _STRING_ESC_INNER "\\""
-                LCASE_LETTER: "a".."z"
-                UCASE_LETTER: "A".."Z"
-                LETTER: UCASE_LETTER | LCASE_LETTER
-                WORD: LETTER+
-                WS: /[ \\t\\f\\r\\n]/+
-
-                %ignore WS // Disregard spaces in text
-             """
-    )
-    start = l.parse(query)
+    start = get_element_grammar.parse(query)
     filter_query = Selector.parse_filter_query(start.children[0])
     return Selector.get_element_value(element, filter_query["keys"], filter_query["is_regex"])
+
+
+def filter_elements(ifc_file, query, elements=None):
+    transformer = FacetTransformer(ifc_file, elements)
+    transformer.transform(filter_elements_grammar.parse(query))
+    return transformer.get_results()
+    return transformer.elements
+
+
+class FacetTransformer(lark.Transformer):
+    def __init__(self, ifc_file, elements):
+        self.file = ifc_file
+        self.results = []
+        self.elements = elements or set()
+        self.container_parents = {}
+        self.container_trees = {}
+
+    def get_results(self):
+        results = set()
+        for r in self.results:
+            results |= r
+        return results
+
+    def facet_list(self, args):
+        if self.elements:
+            self.results.append(self.elements)
+            self.elements = set()
+
+    def instance(self, args):
+        if args[0].data == "globalid":
+            self.elements.add(self.file.by_guid(args[0].children[0].value))
+        else:
+            self.elements.remove(self.file.by_guid(args[1].children[0].value))
+
+    def entity(self, args):
+        if args[0].data == "ifc_class":
+            self.elements |= set(self.file.by_type(args[0].children[0].value))
+        else:
+            self.elements -= set(self.file.by_type(args[1].children[0].value))
+
+    def attribute(self, args):
+        name, comparison, value = args
+        name = name.children[0].value
+
+        def filter_function(element):
+            element_value = getattr(element, name, None)
+            return self.compare(element_value, comparison, value)
+
+        self.elements = set(filter(filter_function, self.elements))
+
+    def type(self, args):
+        comparison, value = args
+
+        def filter_function(element):
+            element_value = getattr(ifcopenshell.util.element.get_type(element), "Name", None)
+            return self.compare(element_value, comparison, value)
+
+        self.elements = set(filter(filter_function, self.elements))
+
+    def material(self, args):
+        comparison, value = args
+
+        def filter_function(element):
+            materials = ifcopenshell.util.element.get_materials(element)
+            result = False if materials else None
+            for material in materials:
+                if self.compare(material.Name, comparison, value):
+                    result = True
+                if self.compare(getattr(material, "Category", None), comparison, value):
+                    result = True
+            if result is not None:
+                return result if comparison == "=" else not result
+            return self.compare(None, comparison, value)
+
+        self.elements = set(filter(filter_function, self.elements))
+
+    def property(self, args):
+        pset, prop, comparison, value = args
+
+        def filter_function(element):
+            if isinstance(pset, str) and isinstance(prop, str):
+                element_value = ifcopenshell.util.element.get_pset(element, pset, prop)
+                return self.compare(element_value, comparison, value)
+            elif isinstance(pset, str) and isinstance(prop, re.Pattern):
+                element_props = ifcopenshell.util.element.get_pset(element, pset) or {}
+                for element_prop, element_value in element_props.items():
+                    if prop.match(element_prop):
+                        return self.compare(element_value, comparison, value)
+            elif isinstance(pset, re.Pattern):
+                element_psets = ifcopenshell.util.element.get_psets(element)
+                for element_pset, element_props in element_psets.items():
+                    if not pset.match(element_pset):
+                        continue
+                    if isinstance(prop, str):
+                        element_value = element_props.get(prop, None)
+                        if element_value is not None:
+                            return self.compare(element_value, comparison, value)
+                    elif isinstance(prop, re.Pattern):
+                        for element_prop, element_value in element_props.items():
+                            if prop.match(element_prop):
+                                return self.compare(element_value, comparison, value)
+            return self.compare(None, comparison, value)
+
+        self.elements = set(filter(filter_function, self.elements))
+
+    def classification(self, args):
+        comparison, value = args
+
+        def filter_function(element):
+            references = ifcopenshell.util.classification.get_references(element)
+            result = False if references else None
+            for reference in references:
+                if self.compare(reference.Name, comparison, value):
+                    result = True
+                if self.compare(
+                    getattr(reference, "Identification", getattr(reference, "ItemReference", None)), comparison, value
+                ):
+                    result = True
+            if result is not None:
+                return result if comparison == "=" else not result
+            return self.compare(None, comparison, value)
+
+        self.elements = set(filter(filter_function, self.elements))
+
+    def location(self, args):
+        comparison, value = args
+
+        def filter_function(element):
+            container = ifcopenshell.util.element.get_container(element)
+            containers = self.get_container_tree(container)
+            result = False if containers else None
+            for container in containers:
+                if self.compare(container.Name, comparison, value):
+                    result = True
+            if result is not None:
+                return result if comparison == "=" else not result
+            return self.compare(None, comparison, value)
+
+        self.elements = set(filter(filter_function, self.elements))
+
+    def get_container_tree(self, container):
+        tree = self.container_trees.get(container, None)
+        if tree:
+            return tree
+
+        tree = []
+
+        while container:
+            if container.is_a("IfcProject"):
+                break
+            tree.append(container)
+            container = ifcopenshell.util.element.get_aggregate(container)
+
+        tree_copy = tree.copy()
+        while tree_copy:
+            self.container_trees[tree_copy.pop(0)] = tree_copy.copy()
+        return tree
+
+    def comparison(self, args):
+        return "=" if args[0].data == "equals" else "!="
+
+    def pset(self, args):
+        return self.value(args)
+
+    def prop(self, args):
+        return self.value(args)
+
+    def value(self, args):
+        if args[0].data == "unquoted_string":
+            return args[0].children[0].value
+        elif args[0].data == "quoted_string":
+            return args[0].children[0].value[1:-1].replace('\\"', '"')
+        elif args[0].data == "regex_string":
+            return re.compile(args[0].children[0].value)
+        elif args[0].data == "special":
+            if args[0].children[0].data == "null":
+                return None
+            elif args[0].children[0].data == "true":
+                return True
+            elif args[0].children[0].data == "false":
+                return False
+
+    def compare(self, element_value, comparison, value):
+        if isinstance(value, str):
+            if isinstance(element_value, int):
+                value = int(value)
+            elif isinstance(element_value, float):
+                value = float(value)
+            result = element_value == value
+        elif isinstance(value, re.Pattern):
+            result = bool(value.match(element_value))
+        elif value in (None, True, False):
+            result = element_value is value
+        return result if comparison == "=" else not result
 
 
 class Selector:
@@ -272,11 +531,13 @@ class Selector:
                 value = ifcopenshell.util.element.get_container(value)
             elif key == "class":
                 value = value.is_a()
+            elif key == "id":
+                value = value.id()
             elif isinstance(value, ifcopenshell.entity_instance):
                 if key == "Name" and value.is_a("IfcMaterialLayerSet"):
                     key = "LayerSetName"  # This oddity in the IFC spec is annoying so we account for it.
 
-                attribute = value.get_info().get(key, None)
+                attribute = getattr(value, key, None)
 
                 if attribute is not None:
                     value = attribute

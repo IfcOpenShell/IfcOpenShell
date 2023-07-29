@@ -217,10 +217,10 @@ class RemoveConstituent(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         constituent = tool.Ifc.get().by_id(self.constituent)
-        for material_set in layer.ToMaterialConstituentSet:
+        for material_set in constituent.ToMaterialConstituentSet:
             if len(material_set.MaterialConstituents) == 1:
                 self.report({"ERROR"}, "At least one constituent must exist")
-                return {"ERROR"}
+                return {"CANCELLED"}
         ifcopenshell.api.run("material.remove_constituent", tool.Ifc.get(), constituent=constituent)
 
 
@@ -255,7 +255,7 @@ class RemoveProfile(bpy.types.Operator, tool.Ifc.Operator):
         for material_set in profile.ToMaterialProfileSet:
             if len(material_set.MaterialProfiles) == 1:
                 self.report({"ERROR"}, "At least one profile must exist")
-                return {"ERROR"}
+                return {"CANCELLED"}
         ifcopenshell.api.run("material.remove_profile", tool.Ifc.get(), profile=profile)
 
 
@@ -319,7 +319,7 @@ class RemoveLayer(bpy.types.Operator, tool.Ifc.Operator):
         for material_set in layer.ToMaterialLayerSet:
             if len(material_set.MaterialLayers) == 1:
                 self.report({"ERROR"}, "At least one layer must exist")
-                return {"ERROR"}
+                return {"CANCELLED"}
         ifcopenshell.api.run("material.remove_layer", tool.Ifc.get(), layer=layer)
 
 

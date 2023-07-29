@@ -17,8 +17,9 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-from pathlib import Path
 import bpy
+import addon_utils
+from pathlib import Path
 from bpy.types import Panel
 from bpy.props import StringProperty, IntProperty, BoolProperty
 from ifcopenshell.util.doc import (
@@ -29,6 +30,7 @@ from ifcopenshell.util.doc import (
 )
 from . import ifc
 import blenderbim.tool as tool
+import blenderbim.bim
 from blenderbim.bim.helper import IfcHeaderExtractor
 from blenderbim.bim.prop import Attribute
 
@@ -88,6 +90,8 @@ class BIM_PT_section_plane(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "output"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_parent_id = "BIM_PT_tab_sandbox"
 
     def draw(self, context):
         layout = self.layout
@@ -132,6 +136,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     spreadsheet_command: StringProperty(name="Spreadsheet Command", description="E.g. [['libreoffice', path]]")
     openlca_port: IntProperty(name="OpenLCA IPC Port", default=8080)
     should_hide_empty_props: BoolProperty(name="Should Hide Empty Properties", default=True)
+    should_setup_workspace: BoolProperty(name="Should Setup Workspace Layout for BIM", default=True)
     should_play_chaching_sound: BoolProperty(
         name="Should Make A Cha-Ching Sound When Project Costs Updates", default=False
     )
@@ -208,6 +213,8 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row = layout.row()
         row.prop(self, "should_hide_empty_props")
         row = layout.row()
+        row.prop(self, "should_setup_workspace")
+        row = layout.row()
         row.prop(self, "should_play_chaching_sound")
         row = layout.row()
         row.prop(self, "lock_grids_on_import")
@@ -264,53 +271,84 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.operator("bim.configure_visibility")
 
 
-def ifc_units(self, context):
-    scene = context.scene
-    props = scene.BIMProperties
-    layout = self.layout
-    layout.use_property_decorate = False
-    layout.use_property_split = True
-    row = layout.row()
-    row.prop(props, "area_unit")
-    row = layout.row()
-    row.prop(props, "volume_unit")
-
-
 # Scene panel groups
-class BIM_PT_project_info(Panel):
-    bl_label = "IFC Project Info"
+class BIM_PT_tabs(Panel):
+    bl_label = "BlenderBIM Add-on"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bl_order = 0
+    bl_options = {"HIDE_HEADER"}
+
+    def draw(self, context):
+        try:
+            is_ifc_project = bool(tool.Ifc.get())
+            aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+
+            row = self.layout.row()
+            row.operator(
+                "bim.set_tab", text="", emboss=False, icon_value=blenderbim.bim.icons["IFC"].icon_id
+            ).tab = "PROJECT"
+            self.draw_tab_entry(row, "FILE_3D", "OBJECT", is_ifc_project)
+            self.draw_tab_entry(row, "MATERIAL", "GEOMETRY", is_ifc_project)
+            self.draw_tab_entry(row, "DOCUMENTS", "DRAWINGS", is_ifc_project)
+            self.draw_tab_entry(row, "NETWORK_DRIVE", "SERVICES", is_ifc_project)
+            self.draw_tab_entry(row, "EDITMODE_HLT", "STRUCTURE", is_ifc_project)
+            self.draw_tab_entry(row, "NLA", "SCHEDULING", is_ifc_project)
+            self.draw_tab_entry(row, "PACKAGE", "FM", is_ifc_project)
+            self.draw_tab_entry(row, "COMMUNITY", "QUALITY", True)
+            self.draw_tab_entry(row, "BLENDER", "BLENDER", True)
+            row.operator("bim.switch_tab", text="", emboss=False, icon="UV_SYNC_SELECT")
+
+            # Yes, that's right.
+            row = self.layout.row()
+            row.scale_y = 0.2
+            for tab in [
+                "PROJECT",
+                "OBJECT",
+                "GEOMETRY",
+                "DRAWINGS",
+                "SERVICES",
+                "STRUCTURE",
+                "SCHEDULING",
+                "FM",
+                "QUALITY",
+                "BLENDER",
+                "SWITCH",
+            ]:
+                if aprops.tab == tab:
+                    row.prop(aprops, "active_tab", text="", icon="BLANK1")
+                else:
+                    row.prop(aprops, "inactive_tab", text="", icon="BLANK1", emboss=False)
+
+            aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+            row = self.layout.row(align=True)
+            row.prop(aprops, "tab", text="")
+        except:
+            pass  # Prior to load_post, we may not have any area properties setup
+
+    def draw_tab_entry(self, row, icon, tab_name, enabled=True):
+        tab_entry = row.row(align=True)
+        tab_entry.operator("bim.set_tab", text="", emboss=False, icon=icon).tab = tab_name
+        tab_entry.enabled = enabled
+
+
+class BIM_PT_project_info(Panel):
+    bl_label = "Project Info"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "PROJECT")
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_project_setup(Panel):
-    bl_label = "IFC Project Setup"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-    bl_options = {"DEFAULT_CLOSED"}
-
-    def draw(self, context):
-        pass
-
-
-class BIM_PT_collaboration(Panel):
-    bl_label = "IFC Collaboration"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-    bl_options = {"DEFAULT_CLOSED"}
-
-    def draw(self, context):
-        pass
-
-
-class BIM_PT_selection(Panel):
-    bl_label = "IFC Selection"
+    bl_label = "Project Setup"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -318,14 +356,99 @@ class BIM_PT_selection(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return tool.Blender.is_tab(context, "PROJECT")
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_collaboration(Panel):
+    bl_label = "Collaboration"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "QUALITY")
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_grouping_and_filtering(Panel):
+    bl_label = "Grouping and Filtering"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "PROJECT") and tool.Ifc.get()
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_geometry(Panel):
-    bl_label = "IFC Geometry"
+    bl_label = "Geometry"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "PROJECT") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_structural(Panel):
+    bl_label = "Structural"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "STRUCTURE") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_services(Panel):
+    bl_label = "Services"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "SERVICES") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_quality_control(Panel):
+    bl_label = "Quality Control"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "QUALITY")
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_sandbox(Panel):
+    bl_label = "Sandbox"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -333,157 +456,197 @@ class BIM_PT_geometry(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return tool.Blender.is_tab(context, "QUALITY")
 
     def draw(self, context):
-        pass
-
-
-class BIM_PT_4D5D(Panel):
-    bl_label = "IFC Costing and Scheduling"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-    bl_options = {"DEFAULT_CLOSED"}
-
-    @classmethod
-    def poll(cls, context):
-        return tool.Ifc.get()
-
-    def draw(self, context):
-        pass
-
-
-class BIM_PT_structural(Panel):
-    bl_label = "IFC Structural"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-    bl_options = {"DEFAULT_CLOSED"}
-
-    @classmethod
-    def poll(cls, context):
-        return tool.Ifc.get()
-
-    def draw(self, context):
-        pass
-
-
-class BIM_PT_services(Panel):
-    bl_label = "IFC Services"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-    bl_options = {"DEFAULT_CLOSED"}
-
-    @classmethod
-    def poll(cls, context):
-        return tool.Ifc.get()
-
-    def draw(self, context):
-        pass
-
-
-class BIM_PT_quality_control(Panel):
-    bl_label = "IFC Quality Control"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-    bl_options = {"DEFAULT_CLOSED"}
-
-    def draw(self, context):
-        pass
-
-
-class BIM_PT_integrations(Panel):
-    bl_label = "BIM Integrations"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-    bl_options = {"DEFAULT_CLOSED"}
-
-    def draw(self, context):
-        pass
+        row = self.layout.row()
+        row.label(text="More Experimental Than Usual", icon="ERROR")
 
 
 # Object panel groups
-class BIM_PT_object_metadata(Panel):
-    bl_label = "IFC Object Metadata"
+class BIM_PT_tab_object_metadata(Panel):
+    bl_label = "Object Metadata"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "object"
+    bl_context = "scene"
     bl_order = 1
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return tool.Blender.is_tab(context, "OBJECT") and tool.Ifc.get()
 
     def draw(self, context):
         pass
 
 
-class BIM_PT_geometry_object(Panel):
-    bl_label = "IFC Geometry"
+class BIM_PT_tab_representations(Panel):
+    bl_label = "Representations"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "object"
+    bl_context = "scene"
     bl_order = 1
-    bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return tool.Blender.is_tab(context, "GEOMETRY") and tool.Ifc.get()
 
     def draw(self, context):
         pass
 
 
-class BIM_PT_services_object(Panel):
-    bl_label = "IFC Services"
+class BIM_PT_tab_geometric_relationships(Panel):
+    bl_label = "Geometric Relationships"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "object"
-    bl_order = 1
-    bl_options = {"DEFAULT_CLOSED"}
-
-    @classmethod
-    def poll(cls, context):
-        return tool.Ifc.get()
-
-    def draw(self, context):
-        pass
-
-
-class BIM_PT_utilities_object(Panel):
-    bl_label = "IFC Utilities"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "object"
+    bl_context = "scene"
     bl_order = 1
     bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return tool.Blender.is_tab(context, "GEOMETRY") and tool.Ifc.get()
 
     def draw(self, context):
         pass
 
 
-class BIM_PT_misc_object(Panel):
-    bl_label = "IFC Misc."
+class BIM_PT_tab_parametric_geometry(Panel):
+    bl_label = "Parametric Geometry"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "object"
+    bl_context = "scene"
     bl_order = 1
     bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return tool.Blender.is_tab(context, "GEOMETRY") and tool.Ifc.get()
 
     def draw(self, context):
         pass
+
+
+class BIM_PT_tab_materials(Panel):
+    bl_label = "Materials"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_order = 1
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "GEOMETRY") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_styles(Panel):
+    bl_label = "Styles"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_order = 1
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "GEOMETRY") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_services_object(Panel):
+    bl_label = "Services"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_order = 1
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "SERVICES") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_misc(Panel):
+    bl_label = "Misc."
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_order = 1
+    bl_options = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "OBJECT") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_handover(Panel):
+    bl_label = "Commissioning and Handover"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_order = 1
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "FM") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_operations(Panel):
+    bl_label = "Operations and Maintenance"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_order = 2
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "FM") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
+class UIData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {"version": cls.version()}
+        cls.is_loaded = True
+
+    @classmethod
+    def version(cls):
+        return ".".join(
+            [
+                str(x)
+                for x in [
+                    addon.bl_info.get("version", (-1, -1, -1))
+                    for addon in addon_utils.modules()
+                    if addon.bl_info["name"] == "BlenderBIM"
+                ][0]
+            ]
+        )
+
+
+def draw_statusbar(self, context):
+    if not UIData.is_loaded:
+        UIData.load()
+    text = f"BlenderBIM Add-on v{UIData.data['version']}"
+    if blenderbim.bim.last_commit_hash != "8888888":
+        text += f"-{blenderbim.bim.last_commit_hash[:7]}"
+    self.layout.label(text=text)
 
 
 def draw_custom_context_menu(self, context):

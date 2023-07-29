@@ -60,20 +60,33 @@ class JoinWall(bpy.types.Operator, tool.Ifc.Operator):
             for obj in selected_objs:
                 joiner.unjoin(obj)
             return {"FINISHED"}
-        if not context.active_object:
-            return {"FINISHED"}
+
+        if not context.active_object or not context.active_object.BIMObjectProperties.ifc_definition_id:
+            self.report({"ERROR"}, f"No active object selected")
+            return {"CANCELLED"}
+
         for obj in selected_objs:
             tool.Geometry.clear_scale(obj)
+
+        if not selected_objs:
+            self.report({"ERROR"}, f"No IFC objects selected")
+            return {"CANCELLED"}
+
         if len(selected_objs) == 1:
             joiner.join_E(context.active_object, context.scene.cursor.location)
             return {"FINISHED"}
-        if len(selected_objs) == 2:
+
+        if self.join_type in ("L", "V"):
+            if len(selected_objs) != 2:
+                self.report({"ERROR"}, f"It requires 2 selected objects to do join of type {self.join_type}")
+                return {"CANCELLED"}
+            another_selected_object = next(o for o in selected_objs if o != context.active_object)
             if self.join_type == "L":
-                joiner.join_L([o for o in selected_objs if o != context.active_object][0], context.active_object)
+                joiner.join_L(another_selected_object, context.active_object)
             elif self.join_type == "V":
-                joiner.join_V([o for o in selected_objs if o != context.active_object][0], context.active_object)
-        if len(selected_objs) < 2:
+                joiner.join_V(another_selected_object, context.active_object)
             return {"FINISHED"}
+
         if self.join_type == "T":
             elements = [tool.Ifc.get_entity(o) for o in context.selected_objects]
             layer2_elements = []
@@ -282,7 +295,7 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                 euler = obj.matrix_world.to_euler()
                 euler.x = x_angle
                 new_matrix = euler.to_matrix().to_4x4()
-                new_matrix.col[3] = obj.matrix_world.col[3]
+                new_matrix.translation = obj.matrix_world.translation
                 obj.matrix_world = new_matrix
         if layer2_objs:
             DumbWallRecalculator().recalculate(layer2_objs)
@@ -522,6 +535,7 @@ class DumbWallGenerator:
         return (point1 - point2).length < 0.1
 
     def derive_from_cursor(self):
+        RAYCAST_PRECISION = 0.01
         self.location = bpy.context.scene.cursor.location
         if self.collection:
             for sibling_obj in self.collection.objects:
@@ -529,24 +543,41 @@ class DumbWallGenerator:
                     continue
                 if "IfcWall" not in sibling_obj.name:
                     continue
-                local_location = sibling_obj.matrix_world.inverted() @ self.location
+                inv_obj_matrix = sibling_obj.matrix_world.inverted()
+                local_location = inv_obj_matrix @ self.location
                 try:
-                    raycast = sibling_obj.closest_point_on_mesh(local_location, distance=0.01)
+                    raycast = sibling_obj.closest_point_on_mesh(local_location, distance=RAYCAST_PRECISION)
                 except:
                     # If the mesh has no faces
                     raycast = [None]
                 if not raycast[0]:
                     continue
                 for face in sibling_obj.data.polygons:
-                    if (
-                        abs(face.normal.y) >= 0.75
-                        and abs(mathutils.geometry.distance_point_to_plane(local_location, face.center, face.normal))
-                        < 0.01
-                    ):
-                        # Rotate the wall in the direction of the face normal
-                        normal = (sibling_obj.matrix_world.to_quaternion() @ face.normal).normalized()
-                        self.rotation = math.atan2(normal[1], normal[0])
-                        break
+                    normal = (sibling_obj.matrix_world.to_quaternion() @ face.normal).normalized()
+                    face_center = sibling_obj.matrix_world @ face.center
+                    if normal.z != 0 or abs(mathutils.geometry.distance_point_to_plane(self.location, face_center, normal)) > 0.01:
+                        continue
+
+                    rotation = math.atan2(normal[1], normal[0])
+                    rotated_y_axis = Matrix.Rotation(-rotation, 4, "Z")[1].xyz
+
+                    # since wall thickness goes by local Y+ axis
+                    # we find best position for the next wall
+                    # by finding the face of another wall that will be very close to the some test point.
+                    # test point is calculated by applying to cursor position some little offset along the face
+                    #
+                    # a bit different offset to be safe on raycast
+                    test_pos = self.location + rotated_y_axis * RAYCAST_PRECISION * 1.1
+                    test_pos_local = inv_obj_matrix @ test_pos
+                    raycast = sibling_obj.closest_point_on_mesh(test_pos_local, distance=RAYCAST_PRECISION)
+
+                    if not raycast[0]:
+                        continue
+                    self.rotation = rotation
+                    break
+
+                if self.rotation != 0:
+                    break
         return self.create_wall()
 
     def create_wall(self):
@@ -556,9 +587,9 @@ class DumbWallGenerator:
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
 
         matrix_world = Matrix.Rotation(self.rotation, 4, "Z")
-        matrix_world.col[3] = self.location.to_4d()
+        matrix_world.translation = self.location
         if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
-            matrix_world[2][3] = self.collection_obj.location[2] + (props.rl1 * self.unit_scale)
+            matrix_world.translation.z = self.collection_obj.location.z + props.rl1
         obj.matrix_world = matrix_world
         bpy.context.view_layer.update()
         self.collection.objects.link(obj)
@@ -755,7 +786,7 @@ class DumbWallJoiner:
             r.RelatedOpeningElement for r in element1.HasOpenings if not r.RelatedOpeningElement.HasFillings
         ]:
             opening_matrix = Matrix(ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement).tolist())
-            opening_location = opening_matrix.col[3].to_3d()
+            opening_location = opening_matrix.translation
             _, opening_position = mathutils.geometry.intersect_point_line(opening_location.to_2d(), *axis1["reference"])
             if opening_position > cut_percentage:
                 # The opening should be removed from element1.
@@ -766,7 +797,7 @@ class DumbWallJoiner:
             r.RelatedOpeningElement for r in element2.HasOpenings if not r.RelatedOpeningElement.HasFillings
         ]:
             opening_matrix = Matrix(ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement).tolist())
-            opening_location = opening_matrix.col[3].to_3d()
+            opening_location = opening_matrix.translation
             _, opening_position = mathutils.geometry.intersect_point_line(opening_location.to_2d(), *axis1["reference"])
             if opening_position < cut_percentage:
                 # The opening should be removed from element2.
@@ -816,34 +847,34 @@ class DumbWallJoiner:
         filling_matrixes = {}
         for opening in [r.RelatedOpeningElement for r in element1.HasOpenings]:
             opening_matrix = Matrix(ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement).tolist())
-            location = opening_matrix.col[3].to_3d()
+            location = opening_matrix.translation
             location_on_base = tool.Cad.point_on_edge(location, axis1["base"])
             location_on_side = tool.Cad.point_on_edge(location, axis1["side"])
             if (location_on_base - location).length < (location_on_side - location).length:
                 axis_offset = location_on_side - location_on_base
                 offset_from_axis = location_on_base - location
-                opening_matrix.col[3] = (location_on_base - axis_offset - offset_from_axis).to_4d()
+                opening_matrix.translation = (location_on_base - axis_offset - offset_from_axis)
             else:
                 axis_offset = location_on_side - location_on_base
                 offset_from_axis = location_on_side - location
-                opening_matrix.col[3] = (location_on_side - axis_offset - offset_from_axis).to_4d()
+                opening_matrix.translation = (location_on_side - axis_offset - offset_from_axis)
             opening_matrixes[opening] = opening_matrix
 
             for filling in [r.RelatedBuildingElement for r in opening.HasFillings]:
                 filling_obj = tool.Ifc.get_object(filling)
                 filling_matrix = filling_obj.matrix_world.copy()
 
-                location = filling_matrix.col[3].to_3d()
+                location = filling_matrix.translation
                 location_on_base = tool.Cad.point_on_edge(location, axis1["base"])
                 location_on_side = tool.Cad.point_on_edge(location, axis1["side"])
                 if (location_on_base - location).length < (location_on_side - location).length:
                     axis_offset = location_on_side - location_on_base
                     offset_from_axis = location_on_base - location
-                    filling_matrix.col[3] = (location_on_base - axis_offset - offset_from_axis).to_4d()
+                    filling_matrix.translation = (location_on_base - axis_offset - offset_from_axis)
                 else:
                     axis_offset = location_on_side - location_on_base
                     offset_from_axis = location_on_side - location
-                    filling_matrix.col[3] = (location_on_side - axis_offset - offset_from_axis).to_4d()
+                    filling_matrix.translation = (location_on_side - axis_offset - offset_from_axis)
                 filling_matrixes[filling] = filling_matrix
 
         self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
@@ -1105,8 +1136,8 @@ class DumbWallJoiner:
                     )
 
         previous_matrix = obj.matrix_world.copy()
-        previous_origin = previous_matrix.col[3].to_2d()
-        obj.matrix_world[0][3], obj.matrix_world[1][3] = self.body[0]
+        previous_origin = previous_matrix.translation.xy
+        obj.matrix_world.translation.xy = self.body[0]
         bpy.context.view_layer.update()
 
         for rel in element.ConnectedFrom:
@@ -1401,6 +1432,7 @@ class DumbWallJoiner:
         return True
 
     def clip(self, wall1, slab2):
+        """returns height of the clipped wall, adds clipping plane to `clippings`"""
         element1 = tool.Ifc.get_entity(wall1)
         element2 = tool.Ifc.get_entity(slab2)
 
@@ -1410,19 +1442,15 @@ class DumbWallJoiner:
         bases = [axis1["base"][0].to_3d(), axis1["base"][1].to_3d(), axis1["side"][0].to_3d(), axis1["side"][1].to_3d()]
 
         extrusion = self.get_extrusion_data(tool.Ifc.get().by_id(wall1.data.BIMMeshProperties.ifc_definition_id))
-        d = wall1.matrix_world.to_quaternion() @ extrusion["direction"]
+        wall_dir = wall1.matrix_world.to_quaternion() @ extrusion["direction"]
 
         slab_pt = slab2.matrix_world @ Vector((0, 0, 0))
         slab_dir = slab2.matrix_world.to_quaternion() @ Vector((0, 0, -1))
 
-        tops = [mathutils.geometry.intersect_line_plane(b, b + d, slab_pt, slab_dir) for b in bases]
-
-        i_bottom = None
-        i_top = None
-        for i, co in enumerate(tops):
-            if i_top is None or co[2] > i_top[2]:
-                i_top = co
-                i_bottom = bases[i]
+        tops = [mathutils.geometry.intersect_line_plane(b, b + wall_dir, slab_pt, slab_dir) for b in bases]
+        top_index = max(range(4), key=lambda i: tops[i].z)
+        i_top = tops[top_index]
+        i_bottom = bases[top_index]
 
         quaternion = slab2.matrix_world.to_quaternion()
         x_axis = quaternion @ Vector((1, 0, 0))

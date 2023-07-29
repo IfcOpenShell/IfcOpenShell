@@ -29,6 +29,8 @@ from mathutils import Matrix, Vector
 from blenderbim.bim import import_ifc
 from blenderbim.bim.module.geometry.helper import Helper
 import collections
+from blenderbim.bim.module.model.data import AuthoringData
+import json
 
 
 class Model(blenderbim.core.tool.Model):
@@ -158,7 +160,7 @@ class Model(blenderbim.core.tool.Model):
         position.col[0][:3] = x_axis
         position.col[1][:3] = y_axis
         position.col[2][:3] = z_axis
-        position.col[3][:3] = p1
+        position.translation = p1
 
         cls.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
@@ -308,9 +310,7 @@ class Model(blenderbim.core.tool.Model):
 
         if surface.is_a("IfcCurveBoundedPlane"):
             position = Matrix(ifcopenshell.util.placement.get_axis2placement(surface.BasisSurface.Position).tolist())
-            position[0][3] *= cls.unit_scale
-            position[1][3] *= cls.unit_scale
-            position[2][3] *= cls.unit_scale
+            position.translation *= cls.unit_scale
 
             cls.import_curve(obj, position, surface.OuterBoundary)
             for inner_boundary in surface.InnerBoundaries:
@@ -391,7 +391,7 @@ class Model(blenderbim.core.tool.Model):
                 cls.edges.append([len(cls.vertices) - 1, offset])  # Close the loop
         elif curve.is_a("IfcCircle"):
             center = cls.convert_unit_to_si(
-                Matrix(ifcopenshell.util.placement.get_axis2placement(curve.Position).tolist()).col[3].to_3d()
+                Matrix(ifcopenshell.util.placement.get_axis2placement(curve.Position).tolist()).translation
             )
             radius = cls.convert_unit_to_si(curve.Radius)
             cls.vertices.extend(
@@ -407,9 +407,7 @@ class Model(blenderbim.core.tool.Model):
     def import_rectangle(cls, obj, position, profile):
         if profile.Position:
             p_position = Matrix(ifcopenshell.util.placement.get_axis2placement(profile.Position).tolist())
-            p_position[0][3] *= cls.unit_scale
-            p_position[1][3] *= cls.unit_scale
-            p_position[2][3] *= cls.unit_scale
+            p_position.translation *= cls.unit_scale
         else:
             p_position = Matrix()
 
@@ -530,7 +528,9 @@ class Model(blenderbim.core.tool.Model):
         return axes
 
     @classmethod
-    def regenerate_array(cls, parent, data):
+    def regenerate_array(cls, parent, data, keep_objs=False):
+        tool.Blender.Modifier.Array.remove_constraints(tool.Ifc.get_entity(parent))
+
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         obj_stack = [parent]
 
@@ -586,8 +586,8 @@ class Model(blenderbim.core.tool.Model):
                     if array["use_local_space"]:
                         current_obj_translation = obj.matrix_world @ offset
                     else:
-                        current_obj_translation = obj.matrix_world.col[3].to_3d() + offset
-                    new_matrix.col[3] = current_obj_translation.to_4d()
+                        current_obj_translation = obj.matrix_world.translation + offset
+                    new_matrix.translation = current_obj_translation
                     child_obj.matrix_world = new_matrix
                     children_objs.append(child_obj)
                     children_elements.append(child_element)
@@ -600,7 +600,12 @@ class Model(blenderbim.core.tool.Model):
                 element = tool.Ifc.get().by_guid(removed_child)
                 obj = tool.Ifc.get_object(element)
                 if obj:
-                    tool.Geometry.delete_ifc_object(obj)
+                    if keep_objs:
+                        pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+                        pset = tool.Ifc.get().by_id(pset["id"])
+                        ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
+                    else:
+                        tool.Geometry.delete_ifc_object(obj)
 
             bpy.context.view_layer.update()
 
@@ -630,3 +635,124 @@ class Model(blenderbim.core.tool.Model):
             is_global=True,
             should_sync_changes_first=False,
         )
+
+    @classmethod
+    def update_thumbnail_for_element(cls, element, refresh=False):
+        if bpy.app.background:
+            return
+
+        from PIL import Image, ImageDraw
+
+        obj = tool.Ifc.get_object(element)
+        if not obj:
+            return  # Nothing to process
+
+        if not refresh and element.id() in AuthoringData.type_thumbnails:
+            return  # Already processed
+
+        obj.asset_generate_preview()
+        while not obj.preview:
+            pass
+
+        # if object has .data we can use default blender .asset_generate_preview()
+        if not obj.data:
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            size = 128
+            img = Image.new("RGBA", (size, size))
+            draw = ImageDraw.Draw(img)
+
+            material = ifcopenshell.util.element.get_material(element)
+            if material and material.is_a("IfcMaterialProfileSet"):
+                profile = material.MaterialProfiles[0].Profile
+                tool.Profile.draw_image_for_ifc_profile(draw, profile, size)
+
+            elif material and material.is_a("IfcMaterialLayerSet"):
+                thicknesses = [l.LayerThickness for l in material.MaterialLayers]
+                total_thickness = sum(thicknesses)
+                si_total_thickness = total_thickness * unit_scale
+                if si_total_thickness <= 0.051:
+                    width = 10
+                elif si_total_thickness <= 0.11:
+                    width = 20
+                elif si_total_thickness <= 0.21:
+                    width = 30
+                elif si_total_thickness <= 0.31:
+                    width = 40
+                else:
+                    width = 50
+
+                height = 100
+
+                is_horizontal = False
+                if element.is_a("IfcSlabType"):
+                    is_horizontal = True
+
+                parametric = ifcopenshell.util.element.get_psets(element).get("EPset_Parametric")
+                if parametric:
+                    layer_set_direction = parametric.get("LayerSetDirection", None)
+                    if layer_set_direction == "AXIS2":
+                        is_horizontal = False
+                    elif layer_set_direction == "AXIS3":
+                        is_horizontal = True
+
+                if is_horizontal:
+                    width, height = height, width
+
+                x_offset = (size / 2) - (width / 2)
+                y_offset = (size / 2) - (height / 2)
+                draw.rectangle([x_offset, y_offset, width + x_offset, height + y_offset], outline="white", width=5)
+                current_thickness = 0
+                del thicknesses[-1]
+                for thickness in thicknesses:
+                    current_thickness += thickness
+                    if element.is_a("IfcSlabType"):
+                        y = (current_thickness / total_thickness) * height
+                        line = [x_offset, y_offset + y, x_offset + width, y_offset + y]
+                    else:
+                        x = (current_thickness / total_thickness) * width
+                        line = [x_offset + x, y_offset, x_offset + x, y_offset + height]
+                    draw.line(line, fill="white", width=2)
+            elif False:
+                # TODO: things like parametric duct segments
+                pass
+            elif not element.RepresentationMaps:
+                # Empties are represented by a generic thumbnail
+                width = height = 100
+                x_offset = (size / 2) - (width / 2)
+                y_offset = (size / 2) - (height / 2)
+                draw.line([x_offset, y_offset, width + x_offset, height + y_offset], fill="white", width=2)
+                draw.line([x_offset, y_offset + height, width + x_offset, y_offset], fill="white", width=2)
+                draw.rectangle([x_offset, y_offset, width + x_offset, height + y_offset], outline="white", width=5)
+            else:
+                draw.line([0, 0, size, size], fill="red", width=2)
+                draw.line([0, size, size, 0], fill="red", width=2)
+
+            pixels = [item for sublist in img.getdata() for item in sublist]
+
+            obj.preview.image_size = size, size
+            obj.preview.image_pixels_float = pixels
+
+        AuthoringData.type_thumbnails[element.id()] = obj.preview.icon_id
+
+    @classmethod
+    def get_modeling_bbim_pset_data(cls, object, pset_name):
+        """get modelling BBIM pset data (eg, BBIM_Roof) and loads it's `Data` as json to `data_dict`"""
+        element = tool.Ifc.get_entity(object)
+        if not element:
+            return
+        psets = ifcopenshell.util.element.get_psets(element)
+        pset_data = psets.get(pset_name, None)
+        if not pset_data:
+            return
+        pset_data["data_dict"] = json.loads(pset_data.get("Data", "[]") or "[]")
+        return pset_data
+
+    @classmethod
+    def edit_element_placement(cls, element, matrix):
+        """Useful for moving objects like ports or openings -
+        the method will ensure it will be moved in blender scene too if it exists"""
+        obj = tool.Ifc.get_object(element)
+        if obj:
+            obj.matrix_world = matrix
+            return
+        tool.Ifc.run("geometry.edit_object_placement", product=element, matrix=matrix, is_si=True)

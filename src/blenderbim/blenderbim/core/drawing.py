@@ -328,8 +328,9 @@ def update_drawing_name(ifc, drawing_tool, drawing=None, name=None):
     if old_location != new_location:
         ifc.run("document.edit_reference", reference=reference, attributes={"Location": new_location})
         resolved_old_location = ifc.resolve_uri(old_location)
+        resolved_new_location = ifc.resolve_uri(new_location)
         if drawing_tool.does_file_exist(resolved_old_location):
-            drawing_tool.move_file(resolved_old_location, ifc.resolve_uri(new_location))
+            drawing_tool.move_file(resolved_old_location, resolved_new_location)
 
         for reference in drawing_tool.get_references_with_location(old_location):
             ifc.run("document.edit_reference", reference=reference, attributes={"Location": new_location})
@@ -337,7 +338,10 @@ def update_drawing_name(ifc, drawing_tool, drawing=None, name=None):
             if sheet:
                 uri = ifc.resolve_uri(drawing_tool.get_document_uri(sheet, "LAYOUT"))
                 if drawing_tool.does_file_exist(uri):
-                    drawing_tool.update_embedded_svg_location(uri, old_location, new_location)
+                    drawing_tool.update_embedded_svg_location(uri, reference, resolved_new_location)
+
+        if drawing_tool.is_editing_sheets():
+            drawing_tool.import_sheets()
 
 
 def add_annotation(ifc, collector, drawing_tool, drawing=None, object_type=None):
@@ -370,7 +374,7 @@ def build_schedule(drawing, schedule=None):
 
 
 def sync_references(ifc, collector, drawing_tool, drawing=None):
-    if not drawing_tool.has_linework(drawing):
+    if not drawing_tool.has_annotation(drawing):
         return
 
     context = drawing_tool.get_annotation_context(drawing_tool.get_drawing_target_view(drawing))

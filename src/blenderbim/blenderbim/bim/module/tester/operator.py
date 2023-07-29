@@ -21,6 +21,7 @@ import bpy
 import time
 import tempfile
 import webbrowser
+import json
 import ifctester
 import ifctester.ids
 import ifctester.reporter
@@ -53,13 +54,28 @@ class ExecuteIfcTester(bpy.types.Operator):
             print("Finished loading:", time.time() - start)
             start = time.time()
             specs.validate(ifc)
+            
             print("Finished validating:", time.time() - start)
             start = time.time()
 
-            engine = ifctester.reporter.Html(specs)
-            engine.report()
-            engine.to_file(output)
-            webbrowser.open("file://" + output)
+            if props.generate_html_report:
+                engine = ifctester.reporter.Html(specs)
+                engine.report()            
+                engine.to_file(output)
+                webbrowser.open("file://" + output)
+            
+            report = None
+            report = ifctester.reporter.Json(specs).report()['specifications']
+            if report:
+                props.has_report = True
+                props.report = json.dumps(report)
+            props.specifications.clear()
+            c=0
+            for spec in report:
+                new_spec = props.specifications.add()
+                new_spec.name = spec['name']
+                new_spec.status = spec['status']
+
         return {"FINISHED"}
 
 
@@ -95,3 +111,64 @@ class SelectIfcTesterIfcFile(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
+
+
+class SelectRequirement(bpy.types.Operator):
+    bl_idname = "bim.select_requirement"
+    bl_label = "Select Specification"
+    bl_options = {"REGISTER", "UNDO"}
+    spec_index: bpy.props.IntProperty()
+    req_index: bpy.props.IntProperty() 
+
+    def execute(self, context):
+        props = context.scene.IfcTesterProperties
+        report = json.loads(props.report)
+        props.old_index = self.spec_index
+        failed_entities = report[self.spec_index]['requirements'] [self.req_index]['failed_entities']
+        props.n_entities = len(failed_entities)
+        props.has_entities = True if props.n_entities > 0 else False
+        props.failed_entities.clear()
+        for e in failed_entities:
+            new_entity = props.failed_entities.add()            
+            new_entity.element = e['element']
+            new_entity.reason = e['reason']
+
+        return {"FINISHED"}
+
+class SelectEntity(bpy.types.Operator):
+    bl_idname = "bim.select_entity"
+    bl_label = "Select Entity"
+    bl_options = {"REGISTER", "UNDO"}
+    ifc_id: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bpy.ops.object.select_all(action='DESELECT')
+        for obj in context.scene.objects:
+            if obj.BIMObjectProperties.ifc_definition_id == self.ifc_id:
+                obj.select_set(True)
+                bpy.context.view_layer.objects.active = obj
+        return {"FINISHED"}
+    
+class ExportBcf(bpy.types.Operator):
+    bl_idname = "bim.export_bcf"
+    bl_label = "Export BCF"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        props = context.scene.IfcTesterProperties
+        if tool.Ifc.get():
+            ifc = tool.Ifc.get()
+        else:
+            ifc = ifcopenshell.open(props.ifc_file)
+        with tempfile.TemporaryDirectory() as dirpath:
+            output = os.path.join(dirpath, "{}.bcf".format(props.specs))
+            specs = ifctester.ids.open(props.specs)
+            specs.validate(ifc)
+            bcf_reporter = ifctester.reporter.Bcf(specs)
+            bcf_reporter.report()
+            bcf_reporter.to_file(output)
+            print("Finished exporting!")
+            self.report({"INFO"}, 'Finished exporting!')
+
+        return {"FINISHED"}
+

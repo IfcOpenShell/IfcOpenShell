@@ -19,9 +19,12 @@
 import bpy
 import gpu
 import bmesh
+import shapely
 import logging
 import numpy as np
 import ifcopenshell
+import ifcopenshell.util.shape
+import ifcopenshell.util.element
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.representation
 import blenderbim.tool as tool
@@ -73,7 +76,7 @@ class FilledOpeningGenerator:
         if voided_obj.data:
             raycast = voided_obj.closest_point_on_mesh(voided_obj.matrix_world.inverted() @ target, distance=0.01)
             if not raycast[0]:
-                target = filling_obj.matrix_world.col[3].to_3d().copy()
+                target = filling_obj.matrix_world.translation.copy()
                 raycast = voided_obj.closest_point_on_mesh(voided_obj.matrix_world.inverted() @ target, distance=0.5)
                 if not raycast[0]:
                     return
@@ -83,12 +86,12 @@ class FilledOpeningGenerator:
             axis = tool.Model.get_wall_axis(voided_obj, layers=layers)["base"]
 
             new_matrix = voided_obj.matrix_world.copy()
-            new_matrix.col[3] = tool.Cad.point_on_edge(target, axis).to_4d()
+            new_matrix.translation = tool.Cad.point_on_edge(target, axis)
 
             if filling.is_a("IfcDoor"):
-                new_matrix[2][3] = voided_obj.matrix_world[2][3]
+                new_matrix.translation.z = voided_obj.matrix_world.translation.z
             else:
-                new_matrix[2][3] = voided_obj.matrix_world[2][3] + (props.rl2 * unit_scale)
+                new_matrix.translation.z = voided_obj.matrix_world.translation.z + props.rl2
 
             filling_obj.matrix_world = new_matrix
             bpy.context.view_layer.update()
@@ -121,7 +124,7 @@ class FilledOpeningGenerator:
                 "geometry.assign_representation", tool.Ifc.get(), product=opening, representation=mapped_representation
             )
         else:
-            representation = self.generate_opening_from_filling(filling, filling_obj, voided_obj)
+            representation = self.generate_opening_from_filling(filling, filling_obj)
             opening = ifcopenshell.api.run(
                 "root.create_entity", tool.Ifc.get(), ifc_class="IfcOpeningElement", predefined_type="OPENING"
             )
@@ -194,7 +197,7 @@ class FilledOpeningGenerator:
                 bpy.data.objects.remove(opening_obj)
 
             filling_obj = tool.Ifc.get_object(filling)
-            representation = self.generate_opening_from_filling(filling, filling_obj, voided_obj)
+            representation = self.generate_opening_from_filling(filling, filling_obj)
             mapped_representation = ifcopenshell.api.run(
                 "geometry.map_representation", tool.Ifc.get(), representation=representation
             )
@@ -213,11 +216,12 @@ class FilledOpeningGenerator:
             should_sync_changes_first=False,
         )
 
-    def generate_opening_from_filling(self, filling, filling_obj, voided_obj):
-        thickness = voided_obj.dimensions[1] + 0.1 + 0.1
-        ifc_file = tool.Ifc.get()
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
-        shape_builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
+    def generate_opening_from_filling(self, filling, filling_obj):
+        # Since openings are reused later, we give a default thickness of 1.2m
+        # which should cover the majority of curved, or super thick walls.
+        thickness = 1.2
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        shape_builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
 
         profile = None
         filling_type = ifcopenshell.util.element.get_type(filling)
@@ -226,21 +230,42 @@ class FilledOpeningGenerator:
                 filling_type, "Model", "Profile", "ELEVATION_VIEW"
             )
             filling_obj = tool.Ifc.get_object(filling_type)
-        context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+        context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
 
         if profile:
-            curve_3d = ifcopenshell.util.representation.resolve_representation(profile).Items[0]
+            profile = ifcopenshell.util.representation.resolve_representation(profile)
 
-            def get_curve_2d_from_3d(curve_3d):
-                ifc_segments = [shape_builder.deep_copy(s) for s in curve_3d.Segments]
-                ifc_points = ifc_file.createIfcCartesianPointList2D([Vector(p).xz for p in curve_3d.Points.CoordList])
-                ifc_curve = ifc_file.createIfcIndexedPolyCurve(Points=ifc_points, Segments=ifc_segments)
-                return ifc_curve
+            def get_curve_2d_from_3d(profile):
+                if len(profile.Items) == 1:
+                    curve_3d = profile.Items[0]
+                    if tool.Ifc.get_schema() == "IFC2X3":
+                        coords = [Vector(p).xz for p in shape_builder.get_polyline_coords(curve_3d)]
+                        return shape_builder.polyline(coords, closed=True)
+                    # using different algorithm to keep arc segments possible in the future
+                    ifc_segments = [shape_builder.deep_copy(s) for s in curve_3d.Segments]
+                    ifc_points = tool.Ifc.get().createIfcCartesianPointList2D(
+                        [Vector(p).xz for p in curve_3d.Points.CoordList]
+                    )
+                    return tool.Ifc.get().createIfcIndexedPolyCurve(Points=ifc_points, Segments=ifc_segments)
+
+                settings = ifcopenshell.geom.settings()
+                settings.set(settings.INCLUDE_CURVES, True)
+                geometry = ifcopenshell.geom.create_shape(settings, profile)
+                verts = ifcopenshell.util.shape.get_vertices(geometry)
+                # [0, 2] represents X and Z ordinates
+                verts = [(np.around(v[[0, 2]], decimals=3) / unit_scale).tolist() for v in verts]
+                edges = ifcopenshell.util.shape.get_edges(geometry)
+
+                boundary_lines = [shapely.LineString([verts[v] for v in e]) for e in edges]
+                unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
+                closed_polygons = shapely.polygonize(boundary_lines)
+                polygon = max(closed_polygons.geoms, key=lambda polygon: polygon.area)
+                return shape_builder.polyline(list(polygon.exterior.coords))
 
             extrusion = shape_builder.extrude(
-                get_curve_2d_from_3d(curve_3d),
+                get_curve_2d_from_3d(profile),
                 magnitude=thickness / unit_scale,
-                position=Vector([0.0, -0.1 / unit_scale, 0.0]),
+                position=Vector([0.0, - thickness * 0.5 / unit_scale, 0.0]),
                 position_x_axis=Vector((1, 0, 0)),
                 position_z_axis=Vector((0, -1, 0)),
                 extrusion_vector=Vector((0, 0, -1)),
@@ -248,7 +273,7 @@ class FilledOpeningGenerator:
             return shape_builder.get_representation(context, [extrusion])
 
         x, y, z = filling_obj.dimensions
-        opening_position = Vector([0.0, -0.1 / unit_scale, 0.0])
+        opening_position = Vector([0.0, - thickness * 0.5 / unit_scale, 0.0])
         opening_size = Vector([x, z]) / unit_scale
 
         # Windows and doors can have a casing that overlaps the wall
@@ -369,13 +394,12 @@ class FlipFill(bpy.types.Operator, tool.Ifc.Operator):
 
             bottom_left = obj.matrix_world @ Vector(obj.bound_box[0])
             top_right = obj.matrix_world @ Vector(obj.bound_box[6])
-            center = obj.matrix_world.col[3].to_3d().copy()
+            center = obj.matrix_world.translation.copy()
             center_offset = center - bottom_left
             flipped_center = top_right - center_offset
 
             obj.matrix_world = obj.matrix_world @ flip_matrix
-            obj.matrix_world.col[3][0] = flipped_center[0]
-            obj.matrix_world.col[3][1] = flipped_center[1]
+            obj.matrix_world.translation.xy = flipped_center.xy
             bpy.context.view_layer.update()
         return {"FINISHED"}
 
@@ -402,7 +426,7 @@ class AddPotentialOpening(Operator, AddObjectHelper):
         new_matrix = None
         if context.selected_objects and context.active_object:
             new_matrix = context.active_object.matrix_world.copy()
-            new_matrix.col[3] = context.scene.cursor.location.to_4d()
+            new_matrix.translation = context.scene.cursor.location
 
         x = self.x / 2
         y = self.y / 2
@@ -475,10 +499,12 @@ class AddBoolean(Operator, tool.Ifc.Operator):
     bl_label = "Add Boolean"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        return len(context.selected_objects) == 2
+
     def _execute(self, context):
         props = context.scene.BIMModelProperties
-        if len(context.selected_objects) != 2:
-            return {"FINISHED"}
         obj1, obj2 = context.selected_objects
         element1 = tool.Ifc.get_entity(obj1)
         element2 = tool.Ifc.get_entity(obj2)
@@ -523,14 +549,18 @@ class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
     bl_label = "Show Booleans"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        return (
+            obj is not None
+            and obj.data
+            and hasattr(obj.data, "BIMMeshProperties")
+            and obj.data.BIMMeshProperties.ifc_definition_id
+        )
+
     def _execute(self, context):
         obj = context.active_object
-        if (
-            not obj.data
-            or not hasattr(obj.data, "BIMMeshProperties")
-            or not obj.data.BIMMeshProperties.ifc_definition_id
-        ):
-            return {"FINISHED"}
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         booleans = []
@@ -548,9 +578,7 @@ class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
                     boolean_obj = self.create_half_space_solid()
                     position = boolean.BaseSurface.Position
                     position = Matrix(ifcopenshell.util.placement.get_axis2placement(position).tolist())
-                    position[0][3] *= unit_scale
-                    position[1][3] *= unit_scale
-                    position[2][3] *= unit_scale
+                    position.translation *= unit_scale
                     boolean_obj.matrix_world = obj.matrix_world @ position
             else:
                 settings = ifcopenshell.geom.settings()

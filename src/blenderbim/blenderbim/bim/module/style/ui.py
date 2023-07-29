@@ -16,15 +16,17 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 import blenderbim.bim.helper
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.style.data import StylesData, StyleAttributesData
 from bl_ui.properties_material import MaterialButtonsPanel
+from blenderbim.tool.style import TEXTURE_MAPS_BY_METHODS, STYLE_TEXTURE_PROPS_MAP
 
 
 class BIM_PT_styles(Panel):
-    bl_label = "IFC Styles"
+    bl_label = "Styles"
     bl_idname = "BIM_PT_styles"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -84,7 +86,7 @@ def draw_style_ui(self, context):
 
 
 class BIM_PT_style(MaterialButtonsPanel, Panel):
-    bl_label = "IFC Style"
+    bl_label = "Style"
     bl_idname = "BIM_PT_style"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -109,7 +111,7 @@ class BIM_PT_style(MaterialButtonsPanel, Panel):
 
 
 class BIM_PT_style_attributes(Panel):
-    bl_label = "IFC Style Attributes"
+    bl_label = "Style Attributes"
     bl_idname = "BIM_PT_style_attributes"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -157,7 +159,7 @@ class BIM_PT_style_attributes(Panel):
 
 
 class BIM_PT_external_style_attributes(Panel):
-    bl_label = "IFC External Surface Style"
+    bl_label = "External Surface Style"
     bl_idname = "BIM_PT_external_style_attributes"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -224,7 +226,7 @@ class BIM_UL_styles(UIList):
 class BIM_PT_STYLE_GRAPH(Panel):
     bl_idname = "BIM_PT_style_graph"
     bl_space_type = "NODE_EDITOR"
-    bl_label = "IFC Style Graph Settings"
+    bl_label = "Style Graph Settings"
     bl_region_type = "UI"
     bl_category = "BBIM"
 
@@ -266,19 +268,19 @@ class BIM_PT_STYLE_GRAPH(Panel):
         ):
             layout.prop(props, "roughness")
 
-        layout.label(text="Texture Maps:")
-
         def add_texture_path(path_name):
             row = layout.row(align=True)
             row.prop(props, path_name)
             op = row.operator("bim.clear_texture_map_path", text="", icon="X")
             op.texture_map_prop = path_name
+        
+        layout.separator()
+        texture_maps = TEXTURE_MAPS_BY_METHODS.get(props.reflectance_method, [])
+        if not texture_maps:
+            return
+        if not bpy.data.filepath:
+            layout.label(text="Save .blend file to keep relative paths", icon="ERROR")
 
-        if props.reflectance_method == "PHYSICAL":
-            add_texture_path("diffuse_path")
-            add_texture_path("emissive_path")
-            add_texture_path("normal_path")
-            add_texture_path("metallic_roughness_path")
-
-        if props.reflectance_method == "FLAT":
-            add_texture_path("emissive_path")
+        layout.label(text="Texture Maps:")
+        for texture_type in texture_maps:
+            add_texture_path(STYLE_TEXTURE_PROPS_MAP[texture_type])

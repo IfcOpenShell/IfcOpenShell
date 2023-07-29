@@ -133,7 +133,7 @@ class TestSetDefaultModelingDimensions(NewFile):
         assert props.extrusion_depth == 3
         assert props.length == 1
         assert props.rl1 == 0
-        assert props.rl2 == 1000
-        assert props.x == 500
-        assert props.y == 500
-        assert props.z == 500
+        assert props.rl2 == 1
+        assert props.x == 0.5
+        assert props.y == 0.5
+        assert props.z == 0.5

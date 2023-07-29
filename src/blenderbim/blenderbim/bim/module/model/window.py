@@ -96,8 +96,7 @@ def update_simple_openings(element, opening_width, opening_height):
         )
 
 
-def update_window_modifier_representation(context):
-    obj = context.active_object
+def update_window_modifier_representation(context, obj):
     element = tool.Ifc.get_entity(obj)
     props = obj.BIMWindowProperties
     ifc_file = tool.Ifc.get()
@@ -167,7 +166,8 @@ def update_window_modifier_representation(context):
         )
 
     # type attributes
-    element.PartitioningType = props.window_type
+    if tool.Ifc.get_schema() != "IFC2X3":
+        element.PartitioningType = props.window_type
 
     # occurences attributes
     occurences = tool.Ifc.get_all_element_occurences(element)
@@ -262,16 +262,19 @@ def create_bm_window(
     frame_thickness,
     glass_thickness,
     position: Vector,
-    frame_position: Vector = None,
+    x_offsets: list = None,
 ):
-    """`lining_thickness` expected to be defined as a list,
+    """`lining_thickness` and `x_offsets` are expected to be defined as a list,
     similarly to `create_bm_window_frame` `thickness` argument"""
+
+    if x_offsets is None:
+        x_offsets = [lining_to_panel_offset_x] * 4
+
     # window lining
     window_lining_verts = create_bm_window_frame(bm, lining_size, lining_thickness)
 
     # window frame
-    if frame_position is None:
-        frame_position = V(lining_to_panel_offset_x, lining_to_panel_offset_y_full, lining_to_panel_offset_x)
+    frame_position = V(x_offsets[0], lining_to_panel_offset_y_full, x_offsets[3])
     frame_verts = create_bm_window_frame(bm, frame_size, frame_thickness, frame_position)
 
     # window glass
@@ -288,7 +291,7 @@ def create_bm_window(
 
 
 def update_window_modifier_bmesh(context):
-    obj = context.object
+    obj = context.active_object
     props = obj.BIMWindowProperties
     panel_schema = DEFAULT_PANEL_SCHEMAS[props.window_type]
     accumulated_height = [0] * len(panel_schema[0])
@@ -331,7 +334,7 @@ def update_window_modifier_bmesh(context):
             # detect transom
             has_transom = unique_rows_in_col[column_i] > 1
             first_row = row_i == 0
-            last_row = row_i == unique_rows_in_col[column_i] - 1 
+            last_row = row_i == unique_rows_in_col[column_i] - 1
             top_to_transom = has_transom and not first_row
             bottom_to_transom = has_transom and not last_row
 
@@ -363,9 +366,7 @@ def update_window_modifier_bmesh(context):
 
             frame_depth = props.frame_depth[panel_i]
             frame_thickness = props.frame_thickness[panel_i]
-            base_frame_clear = lining_to_panel_offset_x + frame_thickness - lining_thickness
-            current_offset_x = base_frame_clear - frame_thickness + mullion_thickness
-            current_offset_z = base_frame_clear - frame_thickness + transom_thickness
+            lining_to_panel_offset_y_full = (lining_depth - frame_depth) + lining_to_panel_offset_y
             # add window
             window_lining_size = V(
                 panel_width,
@@ -375,6 +376,7 @@ def update_window_modifier_bmesh(context):
 
             # calculate lining thickness and frame size / offset
             # taking into account mullions and transoms
+            # fmt: off
             window_lining_thickness = [
                 mullion_thickness if right_to_mullion  else lining_thickness,
                 transom_thickness if bottom_to_transom else lining_thickness,
@@ -382,21 +384,23 @@ def update_window_modifier_bmesh(context):
                 transom_thickness if top_to_transom    else lining_thickness,
             ]
 
-            lining_to_panel_offset_y_full = (lining_depth - frame_depth) + lining_to_panel_offset_y
-            frame_position = V(
-                current_offset_x if right_to_mullion  else lining_to_panel_offset_x, 
-                lining_to_panel_offset_y_full, 
-                current_offset_z if top_to_transom    else lining_to_panel_offset_x
-            )
+            # x offsets can differ if there are mullions or transoms because we're trying to maintain symmetry
+            base_frame_clear = lining_to_panel_offset_x + frame_thickness - lining_thickness
+            current_offset_x = base_frame_clear - frame_thickness + mullion_thickness
+            current_offset_z = base_frame_clear - frame_thickness + transom_thickness
+            # fmt: off
+            x_offsets = [
+                current_offset_x if right_to_mullion  else lining_to_panel_offset_x,  # LEFT
+                current_offset_z if bottom_to_transom else lining_to_panel_offset_x,  # TOP
+                current_offset_x if left_to_mullion   else lining_to_panel_offset_x,  # RIGHT
+                current_offset_z if top_to_transom    else lining_to_panel_offset_x,  # BOTTOM
+            ]
+            # fmt: on
 
             frame_size = window_lining_size.copy()
             frame_size.y = frame_depth
-
-            frame_size.x -= current_offset_x if left_to_mullion   else lining_to_panel_offset_x
-            frame_size.x -= current_offset_x if right_to_mullion  else lining_to_panel_offset_x
-
-            frame_size.z -= current_offset_z if top_to_transom    else lining_to_panel_offset_x
-            frame_size.z -= current_offset_z if bottom_to_transom else lining_to_panel_offset_x
+            frame_size.x -= x_offsets[0] + x_offsets[2]
+            frame_size.z -= x_offsets[1] + x_offsets[3]
 
             window_position = V(accumulated_width, 0, accumulated_height[column_i])
             lining_verts, panel_verts, glass_verts = create_bm_window(
@@ -409,7 +413,7 @@ def update_window_modifier_bmesh(context):
                 frame_thickness,
                 glass_thickness,
                 window_position,
-                frame_position
+                x_offsets,
             )
 
             built_panels.append(panel_i)
@@ -420,7 +424,7 @@ def update_window_modifier_bmesh(context):
     bmesh.ops.translate(bm, vec=V(0, lining_offset, 0), verts=bm.verts)
     bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
 
-    if bpy.context.object.mode == "EDIT":
+    if bpy.context.active_object.mode == "EDIT":
         bmesh.update_edit_mesh(obj.data)
     else:
         bm.to_mesh(obj.data)
@@ -439,19 +443,24 @@ class BIM_OT_add_window(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "You need to start IFC project first to create a window.")
             return {"CANCELLED"}
 
-        if context.object is not None:
-            spawn_location = context.object.location.copy()
-            context.object.select_set(False)
+        if context.active_object is not None:
+            spawn_location = context.active_object.location.copy()
+            context.active_object.select_set(False)
         else:
             spawn_location = bpy.context.scene.cursor.location.copy()
 
         mesh = bpy.data.meshes.new("IfcWindow")
         obj = bpy.data.objects.new("IfcWindow", mesh)
         obj.location = spawn_location
+        collection = context.view_layer.active_layer_collection.collection
+        collection.objects.link(obj)
+
         element = blenderbim.core.root.assign_class(
             tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class="IfcWindow", should_add_representation=False
         )
-        element.PredefinedType = "WINDOW"
+        blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+        if tool.Ifc.get_schema() != "IFC2X3":
+            element.PredefinedType = "WINDOW"
 
         bpy.ops.object.select_all(action="DESELECT")
         bpy.context.view_layer.objects.active = None
@@ -466,15 +475,12 @@ class AddWindow(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_window"
     bl_label = "Add Window"
     bl_options = {"REGISTER"}
+    obj: bpy.props.StringProperty()
 
     def _execute(self, context):
-        obj = context.active_object
+        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMWindowProperties
-
-        if element.is_a() not in ("IfcWindow", "IfcWindowType"):
-            self.report({"ERROR"}, "Object has to be IfcWindow/IfcWindowType type to add a window.")
-            return {"CANCELLED"}
 
         window_data = props.get_general_kwargs(convert_to_project_units=True)
         lining_props = props.get_lining_kwargs(convert_to_project_units=True)
@@ -492,7 +498,7 @@ class AddWindow(bpy.types.Operator, tool.Ifc.Operator):
             pset=pset,
             properties={"Data": json.dumps(window_data, default=list)},
         )
-        update_window_modifier_representation(context)
+        update_window_modifier_representation(context, obj)
         return {"FINISHED"}
 
 
@@ -521,7 +527,7 @@ class CancelEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
             should_sync_changes_first=False,
         )
 
-        props.is_editing = -1
+        props.is_editing = False
         return {"FINISHED"}
 
 
@@ -542,9 +548,9 @@ class FinishEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
         window_data["lining_properties"] = lining_props
         window_data["panel_properties"] = panel_props
 
-        props.is_editing = -1
+        props.is_editing = False
 
-        update_window_modifier_representation(context)
+        update_window_modifier_representation(context, obj)
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Window")
         window_data = json.dumps(window_data, default=list)
@@ -568,7 +574,7 @@ class EnableEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
         # required since we could load pset from .ifc and BIMWindowProperties won't be set
         props.set_props_kwargs_from_ifc_data(data)
 
-        props.is_editing = 1
+        props.is_editing = True
         return {"FINISHED"}
 
 
@@ -581,7 +587,7 @@ class RemoveWindow(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         props = obj.BIMWindowProperties
         element = tool.Ifc.get_entity(obj)
-        obj.BIMWindowProperties.is_editing = -1
+        obj.BIMWindowProperties.is_editing = False
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Window")
         ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)

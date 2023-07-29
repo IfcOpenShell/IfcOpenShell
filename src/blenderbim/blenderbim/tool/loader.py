@@ -34,6 +34,21 @@ from pathlib import Path
 
 class Loader(blenderbim.core.tool.Loader):
     @classmethod
+    def create_project_collection(self, name):
+        project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
+        project_collection = project_obj.BIMObjectProperties.collection
+        for collection in project_collection.children:
+            if collection.name == name:
+                return collection
+        collection = bpy.data.collections.new(name)
+        project_collection.children.link(collection)
+        if name == "Types":
+            project_layer = bpy.context.view_layer.layer_collection.children.get(project_collection.name)
+            if project_layer:
+                project_layer.children[collection.name].hide_viewport = True
+        return collection
+
+    @classmethod
     def get_mesh_name(cls, geometry):
         representation_id = geometry.id
         if "-" in representation_id:
@@ -91,19 +106,25 @@ class Loader(blenderbim.core.tool.Loader):
         if surface_style.get("DiffuseColour", None) and surface_style["DiffuseColour"].is_a("IfcColourRgb"):
             surface_style["DiffuseColour"] = ("IfcColourRgb", color_to_tuple(surface_style["DiffuseColour"]))
 
-        elif surface_style.get("DiffuseColour", None) and surface_style["DiffuseColour"].is_a("IfcNormalisedRatioMeasure"):
+        elif surface_style.get("DiffuseColour", None) and surface_style["DiffuseColour"].is_a(
+            "IfcNormalisedRatioMeasure"
+        ):
             diffuse_color_value = surface_style["DiffuseColour"].wrappedValue
             diffuse_color = [v * diffuse_color_value for v in surface_style["SurfaceColor"][:3]] + [1]
             surface_style["DiffuseColour"] = ("IfcNormalisedRatioMeasure", diffuse_color)
         else:
             surface_style["DiffuseColour"] = None
 
-        if surface_style.get("SpecularColour", None) and surface_style["SpecularColour"].is_a("IfcNormalisedRatioMeasure"):
+        if surface_style.get("SpecularColour", None) and surface_style["SpecularColour"].is_a(
+            "IfcNormalisedRatioMeasure"
+        ):
             surface_style["SpecularColour"] = surface_style["SpecularColour"].wrappedValue
         else:
             surface_style["SpecularColour"] = None
 
-        if surface_style.get("SpecularHighlight", None) and surface_style["SpecularHighlight"].is_a("IfcSpecularRoughness"):
+        if surface_style.get("SpecularHighlight", None) and surface_style["SpecularHighlight"].is_a(
+            "IfcSpecularRoughness"
+        ):
             surface_style["SpecularHighlight"] = surface_style["SpecularHighlight"].wrappedValue
         else:
             surface_style["SpecularHighlight"] = None
@@ -185,15 +206,25 @@ class Loader(blenderbim.core.tool.Loader):
             mode = texture.get("Mode", None)
             node = None
 
-            if texture["type"] == "IfcImageTexture":
-                image_url = texture["URLReference"]
-                ifc_path = tool.Ifc.get_path()
-                if ifc_path:
-                    image_url = bpy.path.abspath(image_url, start=Path(ifc_path).parent)
+            if texture["type"] != "IfcImageTexture":
+                print(f"WARNING. Texture of type {texture['type']} is not currently supported, it will be skipped.")
+                continue
 
-            if not os.path.exists(image_url):
+            original_image_url = texture["URLReference"]
+            is_relative = not os.path.isabs(original_image_url)
+            image_url = Path(original_image_url)
+            if is_relative:
+                ifc_path = Path(tool.Ifc.get_path())
+                image_url = ifc_path.parent / image_url
+
+            if not image_url.exists():
                 print(f"WARNING. Couldn't find texture by path {image_url}, it will be skipped.")
                 continue
+
+            # keep url relative if it was before
+            image_url = str(image_url)
+            if is_relative and bpy.data.filepath:
+                image_url = bpy.path.relpath(image_url)
 
             if reflectance_method in ["PHYSICAL", "NOTDEFINED"]:
                 bsdf = tool.Blender.get_material_node(blender_material, "BSDF_PRINCIPLED")
@@ -246,9 +277,30 @@ class Loader(blenderbim.core.tool.Loader):
                     blender_material.node_tree.links.new(node.outputs[0], separate.inputs[0])
 
                 elif mode == "OCCLUSION":
-                    # TODO work out how to implement glTF settings here
-                    # https://docs.blender.org/manual/en/dev/addons/import_export/scene_gltf2.html
-                    pass
+
+                    def get_gltf_occlusion_output():
+                        gltf_node_group_name = "glTF Material Output"
+                        if node_group := bpy.data.node_groups.get(gltf_node_group_name, None):
+                            return node_group
+
+                        gltf_node_group = bpy.data.node_groups.new(gltf_node_group_name, "ShaderNodeTree")
+                        gltf_node_group.inputs.new("NodeSocketFloat", "Occlusion")
+                        gltf_node_group.nodes.new("NodeGroupOutput")
+                        gltf_node_group_input = gltf_node_group.nodes.new("NodeGroupInput")
+                        gltf_node_group_input.location = Vector((-200, 0))
+                        return gltf_node_group
+
+                    gltf_output_node_group = get_gltf_occlusion_output()
+                    group = blender_material.node_tree.nodes.new(type="ShaderNodeGroup")
+                    group.node_tree = gltf_output_node_group
+                    group.location = bsdf.location + Vector((800, 0))
+
+                    node = blender_material.node_tree.nodes.new(type="ShaderNodeTexImage")
+                    node.location = group.location - Vector((300, 0))
+                    image = bpy.data.images.load(image_url)
+                    image.colorspace_settings.name = "Non-Color"
+                    node.image = image
+                    blender_material.node_tree.links.new(node.outputs[0], group.inputs["Occlusion"])
 
                 elif mode == "DIFFUSE":
                     node = blender_material.node_tree.nodes.new(type="ShaderNodeTexImage")
@@ -273,6 +325,7 @@ class Loader(blenderbim.core.tool.Loader):
                 image = bpy.data.images.load(image_url)
                 # TODO: orphaned textures after shader recreated?
                 node.image = image
+
                 blender_material.node_tree.links.new(node.outputs[0], bsdf.inputs[2])
 
             # TODO: add support for texture data not ifc elements

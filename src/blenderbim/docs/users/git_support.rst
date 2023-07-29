@@ -122,8 +122,8 @@ revision you are interested-in and switch as before.
 .. Tip::
 
     Conceptually a local branch is equivalent to a remote fork in somebody
-    else's copy of your repository, and indeed with an external Git tool you
-    can import their work into a branch in your local repository.
+    else's copy of your repository, and indeed by adding a remote you
+    can fetch their work into a *remote branch* in your local repository.
 
 Merging
 -------
@@ -137,13 +137,23 @@ Merging
 
 You can merge changes that exist in a selected revision into the current
 model, even if changes have been made in both revisions - as long as these
-changes don't directly conflict. After the merge you are able to view the
-combined changes before discarding or committing them.
+changes don't directly conflict.
 
 .. Note::
 
     Merging requires the *ifcmerge* tool installed in your `PATH`, if it is
     not installed the merge operator will not be enabled.
+
+When two branches have diverged, merging an IFC model requires *conflict
+resolution* (because added entities may inadvertently reuse the same Step-IDs),
+this means that data on one side or the other may be rewritten by BlenderBIM in
+order to accomodate both sets of changes. ie. the merge process is
+*asymmetrical*.  BlenderBIM privileges data in the remote `origin/main` branch
+over the local working branch, similarly it privileges data in the local `main`
+branch over any other local working branch. The practical result of this is
+that branches branched-off the `main` branch can generally be merged back into
+`main`, but any sub-branches of these will need to be merged back into their
+parent-branch *before* merging the parent-branch back into `main`.
 
 Tags
 ----

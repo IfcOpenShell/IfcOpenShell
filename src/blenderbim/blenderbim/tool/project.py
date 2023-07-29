@@ -31,12 +31,19 @@ class Project(blenderbim.core.tool.Project):
         # TODO refactor
         filepath = os.path.join(bpy.context.scene.BIMProperties.data_dir, "libraries", template)
         bpy.ops.bim.select_library_file(filepath=filepath)
+        if IfcStore.library_file.schema != tool.Ifc.get().schema:
+            return
         for element in IfcStore.library_file.by_type("IfcTypeProduct"):
             bpy.ops.bim.append_library_element(definition=element.id())
 
     @classmethod
     def create_empty(cls, name):
         return bpy.data.objects.new(name, None)
+
+    @classmethod
+    def create_project_collections(cls):
+        tool.Loader.create_project_collection("Views")
+        tool.Loader.create_project_collection("Types")
 
     @classmethod
     def load_default_thumbnails(cls):
@@ -136,7 +143,7 @@ class Project(blenderbim.core.tool.Project):
         props.extrusion_depth = 3
         props.length = 1
         props.rl1 = 0
-        props.rl2 = 1 / unit_scale
-        props.x = 0.5 / unit_scale
-        props.y = 0.5 / unit_scale
-        props.z = 0.5 / unit_scale
+        props.rl2 = 1
+        props.x = 0.5
+        props.y = 0.5
+        props.z = 0.5

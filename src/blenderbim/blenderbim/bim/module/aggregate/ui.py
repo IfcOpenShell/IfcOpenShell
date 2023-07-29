@@ -22,13 +22,13 @@ from blenderbim.bim.ifc import IfcStore
 
 
 class BIM_PT_aggregate(Panel):
-    bl_label = "IFC Aggregates"
+    bl_label = "Aggregates"
     bl_idname = "BIM_PT_aggregate"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
-    bl_parent_id = "BIM_PT_object_metadata"
+    bl_parent_id = "BIM_PT_tab_object_metadata"
 
     @classmethod
     def poll(cls, context):

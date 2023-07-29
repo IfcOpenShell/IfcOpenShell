@@ -54,6 +54,7 @@ class BIMProfileProperties(PropertyGroup):
     profiles: CollectionProperty(name="Profiles", type=Profile)
     active_profile_index: IntProperty(name="Active Profile Index")
     active_profile_id: IntProperty(name="Active Profile Id")
+    active_arbitrary_profile_id: IntProperty(name="Active Arbitrary Profile Id")
     profile_attributes: CollectionProperty(name="Profile Attributes", type=Attribute)
     profile_classes: EnumProperty(items=get_profile_classes, name="Profile Classes")
 

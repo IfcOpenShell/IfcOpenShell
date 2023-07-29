@@ -29,7 +29,7 @@ class BIM_PT_bcf(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_collaboration"
+    bl_parent_id = "BIM_PT_tab_collaboration"
 
     def draw(self, context):
         layout = self.layout
@@ -39,14 +39,16 @@ class BIM_PT_bcf(Panel):
         scene = context.scene
         props = scene.BCFProperties
 
-        row = layout.row(align=True)
-        row.operator("bim.new_bcf_project", text="New Project")
-        row.operator("bim.load_bcf_project", text="Load Project")
 
         if not props.is_loaded:
+            row = layout.row(align=True)
+            row.operator("bim.new_bcf_project", text="New Project")
+            row.operator("bim.load_bcf_project", text="Load Project")
             return
 
-        row.operator("bim.save_bcf_project", text="Save Project")
+        row = layout.row(align=True)
+        row.operator("bim.save_bcf_project", icon="EXPORT", text="Save Project")
+        row.operator("bim.unload_bcf_project", text="", icon="CANCEL")
 
         row = layout.row()
         row.prop(props, "name")

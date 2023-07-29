@@ -35,8 +35,7 @@ import json
 import collections
 
 
-def update_door_modifier_representation(context):
-    obj = context.active_object
+def update_door_modifier_representation(context, obj):
     props = obj.BIMDoorProperties
     element = tool.Ifc.get_entity(obj)
     ifc_file = tool.Ifc.get()
@@ -128,7 +127,8 @@ def update_door_modifier_representation(context):
         )
 
     # type attributes
-    element.OperationType = props.door_type
+    if tool.Ifc.get_schema() != "IFC2X3":
+        element.OperationType = props.door_type
 
     # occurences attributes
     occurences = tool.Ifc.get_all_element_occurences(element)
@@ -275,7 +275,7 @@ def create_bm_door_lining(bm, size: Vector, thickness: list, position: Vector = 
 
 
 def update_door_modifier_bmesh(context):
-    obj = context.object
+    obj = context.active_object
     props = obj.BIMDoorProperties
 
     overall_width = props.overall_width
@@ -289,9 +289,7 @@ def update_door_modifier_bmesh(context):
     lining_depth = props.lining_depth
     lining_thickness_default = props.lining_thickness
     lining_offset = props.lining_offset
-    lining_to_panel_offset_x = (
-        props.lining_to_panel_offset_x if not sliding_door else lining_thickness_default
-    )
+    lining_to_panel_offset_x = props.lining_to_panel_offset_x if not sliding_door else lining_thickness_default
     panel_depth = props.panel_depth
     lining_to_panel_offset_y = props.lining_to_panel_offset_y if not sliding_door else -panel_depth
 
@@ -455,7 +453,7 @@ def update_door_modifier_bmesh(context):
     bmesh.ops.translate(bm, vec=V(0, lining_offset, 0), verts=lining_offset_verts)
     bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
 
-    if bpy.context.object.mode == "EDIT":
+    if bpy.context.active_object.mode == "EDIT":
         bmesh.update_edit_mesh(obj.data)
     else:
         bm.to_mesh(obj.data)
@@ -474,19 +472,24 @@ class BIM_OT_add_door(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "You need to start IFC project first to create a door.")
             return {"CANCELLED"}
 
-        if context.object is not None:
-            spawn_location = context.object.location.copy()
-            context.object.select_set(False)
+        if context.active_object is not None:
+            spawn_location = context.active_object.location.copy()
+            context.active_object.select_set(False)
         else:
             spawn_location = bpy.context.scene.cursor.location.copy()
 
         mesh = bpy.data.meshes.new("IfcDoor")
         obj = bpy.data.objects.new("IfcDoor", mesh)
         obj.location = spawn_location
+        collection = context.view_layer.active_layer_collection.collection
+        collection.objects.link(obj)
+
         element = blenderbim.core.root.assign_class(
             tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class="IfcDoor", should_add_representation=False
         )
-        element.PredefinedType = "DOOR"
+        blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+        if tool.Ifc.get_schema() != "IFC2X3":
+            element.PredefinedType = "DOOR"
 
         bpy.ops.object.select_all(action="DESELECT")
         bpy.context.view_layer.objects.active = None
@@ -501,15 +504,12 @@ class AddDoor(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_door"
     bl_label = "Add Door"
     bl_options = {"REGISTER"}
+    obj: bpy.props.StringProperty()
 
     def _execute(self, context):
-        obj = context.active_object
+        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMDoorProperties
-
-        if element.is_a() not in ("IfcDoor", "IfcDoorType"):
-            self.report({"ERROR"}, "Object has to be IfcDoor/IfcDoorType type to add a door.")
-            return {"CANCELLED"}
 
         door_data = props.get_general_kwargs(convert_to_project_units=True)
         lining_props = props.get_lining_kwargs(convert_to_project_units=True)
@@ -528,7 +528,7 @@ class AddDoor(bpy.types.Operator, tool.Ifc.Operator):
             pset=pset,
             properties={"Data": json.dumps(door_data, default=list)},
         )
-        update_door_modifier_representation(context)
+        update_door_modifier_representation(context, obj)
         return {"FINISHED"}
 
 
@@ -559,7 +559,7 @@ class CancelEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
             should_sync_changes_first=False,
         )
 
-        props.is_editing = -1
+        props.is_editing = False
         return {"FINISHED"}
 
 
@@ -580,9 +580,9 @@ class FinishEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
         door_data["lining_properties"] = lining_props
         door_data["panel_properties"] = panel_props
 
-        props.is_editing = -1
+        props.is_editing = False
 
-        update_door_modifier_representation(context)
+        update_door_modifier_representation(context, obj)
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Door")
         door_data = json.dumps(door_data, default=list)
@@ -605,7 +605,7 @@ class EnableEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
 
         # required since we could load pset from .ifc and BIMDoorProperties won't be set
         props.set_props_kwargs_from_ifc_data(data)
-        props.is_editing = 1
+        props.is_editing = True
         return {"FINISHED"}
 
 
@@ -618,7 +618,7 @@ class RemoveDoor(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         props = obj.BIMDoorProperties
         element = tool.Ifc.get_entity(obj)
-        obj.BIMDoorProperties.is_editing = -1
+        obj.BIMDoorProperties.is_editing = False
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Door")
         ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)

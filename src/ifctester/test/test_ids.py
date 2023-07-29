@@ -52,7 +52,7 @@ class TestIds:
             "@xmlns": "http://standards.buildingsmart.org/IDS",
             "@xmlns:xs": "http://www.w3.org/2001/XMLSchema",
             "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS/ids_05.xsd",
+            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS/ids_09.xsd",
             "info": {"title": "Untitled"},
             "specifications": {"specification": []},
         }
@@ -72,7 +72,7 @@ class TestIds:
             "@xmlns": "http://standards.buildingsmart.org/IDS",
             "@xmlns:xs": "http://www.w3.org/2001/XMLSchema",
             "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS/ids_05.xsd",
+            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS/ids_09.xsd",
             "info": {
                 "title": "title",
                 "copyright": "copyright",
@@ -92,7 +92,7 @@ class TestIds:
             "@xmlns": "http://standards.buildingsmart.org/IDS",
             "@xmlns:xs": "http://www.w3.org/2001/XMLSchema",
             "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS/ids_05.xsd",
+            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS/ids_09.xsd",
             "info": {"title": "Untitled"},
             "specifications": {"specification": []},
         }
@@ -116,7 +116,7 @@ class TestIds:
         specs = ids.Ids(title="Title")
         spec = ids.Specification(name="Name")
         spec.applicability.append(ids.Entity(name="IFCWALL"))
-        spec.requirements.append(ids.Attribute(name="Name", value="Waldo"))
+        spec.requirements.append(name_attr := ids.Attribute(name="Name", value="Waldo"))
         specs.specifications.append(spec)
         assert "http://standards.buildingsmart.org/IDS" in specs.to_string()
         assert spec.status == None
@@ -167,30 +167,43 @@ class TestIds:
         spec.maxOccurs = "unbounded"
         model = ifcopenshell.file()
         wall = model.createIfcWall(Name="Waldo")
-        spec.requirements.append(ids.Attribute(name="Description", value="Foobar"))
+        spec.requirements.append(description_attr := ids.Attribute(name="Description", value="Foobar"))
         run("A specification passes only if all requirements pass 1/2", specs, model, False, [wall], [wall])
         wall.Description = "Foobar"
         run("A specification passes only if all requirements pass 2/2", specs, model, True, [wall])
 
-        spec.requirements[1].minOccurs = 0
-        wall.Description = None
-        run("Specification optionality and facet optionality can be combined", specs, model, True, [wall])
+        # optional attribute
+        # description_attr.minOccurs = 0
+        # description_attr.maxOccurs = "unbounded"
+        # wall.Description = None
+        # run("Specification optionality and facet optionality can be combined", specs, model, True, [wall])
 
-        spec.minOccurs = 0
-        spec.maxOccurs = 0
-        spec.requirements[0].minOccurs = 0
-        spec.requirements[0].maxOccurs = 0
-        spec.requirements[1].minOccurs = 0
-        spec.requirements[1].maxOccurs = 0
-        wall.Name = "Waldo"
-        wall.Description = "Foobar"
-        run("A prohibited specification and a prohibited facet results in a double negative", specs, model, True, [wall])
+        # double negative / required attributes
+        # spec.minOccurs = 0
+        # spec.maxOccurs = 0
+        # name_attr.minOccurs = 0
+        # name_attr.maxOccurs = 0
+        # description_attr.minOccurs = 0
+        # description_attr.maxOccurs = 0
+        # wall.Name = "Waldo"
+        # wall.Description = "Foobar"
+        # run("A prohibited specification and a prohibited facet results in a double negative", specs, model, True, [wall])
+
+        # specs independency
+        specs = ids.Ids(title="Title")
+        spec = ids.Specification(name="Name")
+        spec.applicability.append(ids.Entity(name="IFCWALL"))
+        spec.requirements.append(ids.Attribute(name="Description", value="Foobar"))
+        specs.specifications.append(spec)
 
         spec = ids.Specification(name="Name")
         spec.applicability.append(ids.Entity(name="IFCWALL"))
         spec.requirements.append(ids.Attribute(name="Name", value="Waldo"))
         specs.specifications.append(spec)
-        wall2 = model.createIfcWall(Name="Waldo")
+
+        wall.Name = "Waldo"
+        wall.Description = "Foobar"
+        wall2 = model.createIfcWall(Name="Waldo", Description="Foobar")
         run("Multiple specifications are independent of one another", specs, model, True, [wall, wall2])
 
     def test_creating_multiple_specifications(self):

@@ -215,7 +215,7 @@ def update_stair_modifier(context):
     props_kwargs = obj.BIMStairProperties.get_props_kwargs()
     vertices, edges, faces = generate_stair_2d_profile(**props_kwargs)
 
-    obj = context.object
+    obj = context.active_object
     bm = bmesh.new()
     bm.verts.index_update()
     bm.edges.index_update()
@@ -234,7 +234,7 @@ def update_stair_modifier(context):
     translate_verts = [v for v in extruded["geom"] if isinstance(v, BMVert)]
     bmesh.ops.translate(bm, vec=extrusion_vector, verts=translate_verts)
 
-    if context.object.mode == "EDIT":
+    if context.active_object.mode == "EDIT":
         bmesh.update_edit_mesh(obj.data)
     else:
         bm.to_mesh(obj.data)
@@ -250,7 +250,8 @@ def update_ifc_stair_props(obj):
     props = obj.BIMStairProperties
     ifc_file = tool.Ifc.get()
 
-    element.PredefinedType = "STRAIGHT"
+    if tool.Ifc.get_schema() != "IFC2X3":
+        element.PredefinedType = "STRAIGHT"
     number_of_risers = props.number_of_treads + 1
     # update IfcStairFlight properties (seems already deprecated but keep it for now)
     # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcStairFlight.htm
@@ -260,7 +261,11 @@ def update_ifc_stair_props(obj):
     tread_length = props.tread_depth / si_conversion
 
     if element.is_a("IfcStairFlight"):
-        element.NumberOfRisers = number_of_risers
+        if tool.Ifc.get_schema() == "IFC2X3":
+            element.NumberOfRiser = number_of_risers
+        else:
+            element.NumberOfRisers = number_of_risers
+
         element.NumberOfTreads = props.number_of_treads
         element.RiserHeight = riser_height
         element.TreadLength = tread_length
@@ -311,15 +316,18 @@ class BIM_OT_add_clever_stair(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "You need to start IFC project first to create a stair.")
             return {"CANCELLED"}
 
-        if context.object is not None:
-            spawn_location = context.object.location.copy()
-            context.object.select_set(False)
+        if context.active_object is not None:
+            spawn_location = context.active_object.location.copy()
+            context.active_object.select_set(False)
         else:
             spawn_location = bpy.context.scene.cursor.location.copy()
 
         mesh = bpy.data.meshes.new("IfcStairFlight")
         obj = bpy.data.objects.new("StairFlight", mesh)
         obj.location = spawn_location
+        collection = context.view_layer.active_layer_collection.collection
+        collection.objects.link(obj)
+        
         body_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
         element = blenderbim.core.root.assign_class(
             tool.Ifc,
@@ -330,7 +338,8 @@ class BIM_OT_add_clever_stair(bpy.types.Operator, tool.Ifc.Operator):
             should_add_representation=True,
             context=body_context,
         )
-        element.PredefinedType = "STRAIGHT"
+        if tool.Ifc.get_schema() != "IFC2X3":
+            element.PredefinedType = "STRAIGHT"
 
         bpy.ops.object.select_all(action="DESELECT")
         bpy.context.view_layer.objects.active = None
@@ -351,10 +360,6 @@ class AddStair(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMStairProperties
         ifc_file = tool.Ifc.get()
-
-        if element.is_a() not in ("IfcStairFlight", "IfcStairFlightType"):
-            self.report({"ERROR"}, "Object has to be IfcStairFlight/IfcStairFlightType to add a stair.")
-            return {"CANCELLED"}
 
         stair_data = props.get_props_kwargs(convert_to_project_units=True)
         pset = tool.Pset.get_element_pset(element, "BBIM_Stair")
@@ -385,7 +390,7 @@ class CancelEditingStair(bpy.types.Operator, tool.Ifc.Operator):
         props.set_props_kwargs_from_ifc_data(data)
         update_stair_modifier(context)
 
-        props.is_editing = -1
+        props.is_editing = False
 
         return {"FINISHED"}
 
@@ -401,7 +406,7 @@ class FinishEditingStair(bpy.types.Operator, tool.Ifc.Operator):
         props = obj.BIMStairProperties
 
         data = props.get_props_kwargs(convert_to_project_units=True)
-        props.is_editing = -1
+        props.is_editing = False
         update_stair_modifier(context)
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Stair")
@@ -425,7 +430,7 @@ class EnableEditingStair(bpy.types.Operator, tool.Ifc.Operator):
         data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Stair", "Data"))
         # required since we could load pset from .ifc and BIMStairProperties won't be set
         props.set_props_kwargs_from_ifc_data(data)
-        props.is_editing = 1
+        props.is_editing = True
         return {"FINISHED"}
 
 
@@ -438,7 +443,7 @@ class RemoveStair(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         props = obj.BIMStairProperties
         element = tool.Ifc.get_entity(obj)
-        obj.BIMStairProperties.is_editing = -1
+        obj.BIMStairProperties.is_editing = False
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Stair")
         ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)

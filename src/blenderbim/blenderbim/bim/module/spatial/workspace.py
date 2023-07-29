@@ -49,6 +49,7 @@ class SpatialTool(WorkSpaceTool):
         ("bim.spatial_hotkey", {"type": "A", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_A")]}),
         ("bim.spatial_hotkey", {"type": "B", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_B")]}),
         ("bim.spatial_hotkey", {"type": "T", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_T")]}),
+        ("bim.spatial_hotkey", {"type": "G", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_G")]}),
     )
 
     def draw_settings(context, layout, ws_tool):
@@ -93,6 +94,8 @@ class SpatialToolUI:
     @classmethod
     def draw_default_interface(cls, context):
         row = cls.layout.row(align=True)
+        row.prop(data=cls.model_props, property="rl3", text="RL")
+        row = cls.layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
         row.label(text="", icon="EVENT_A")
         if context.selected_objects:
@@ -106,6 +109,14 @@ class SpatialToolUI:
 
     @classmethod
     def draw_selected_object_interface(cls, context):
+        active_obj = bpy.context.active_object
+        element = tool.Ifc.get_entity(active_obj)
+        if element and bpy.context.selected_objects and element.is_a("IfcSpace"):
+            row = cls.layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_G")
+            row.operator("bim.generate_space", text="Regen")
+
         row = cls.layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
         row.label(text="", icon="EVENT_B")
@@ -167,3 +178,6 @@ class Hotkey(bpy.types.Operator, Operator):
 
     def hotkey_S_T(self):
         bpy.ops.bim.toggle_space_visibility()
+
+    def hotkey_S_G(self):
+        bpy.ops.bim.generate_space()

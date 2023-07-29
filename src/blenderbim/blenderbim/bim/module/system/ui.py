@@ -24,13 +24,13 @@ from blenderbim.bim.module.system.data import SystemData, ObjectSystemData, Port
 
 
 class BIM_PT_systems(Panel):
-    bl_label = "IFC Systems"
+    bl_label = "Systems"
     bl_idname = "BIM_PT_systems"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_services"
+    bl_parent_id = "BIM_PT_tab_services"
 
     @classmethod
     def poll(cls, context):
@@ -74,14 +74,14 @@ class BIM_PT_systems(Panel):
 
 
 class BIM_PT_object_systems(Panel):
-    bl_label = "IFC Systems"
+    bl_label = "Systems"
     bl_idname = "BIM_PT_object_systems"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
     bl_order = 1
-    bl_parent_id = "BIM_PT_services_object"
+    bl_parent_id = "BIM_PT_tab_services_object"
 
     @classmethod
     def poll(cls, context):
@@ -130,14 +130,14 @@ class BIM_PT_object_systems(Panel):
 
 
 class BIM_PT_ports(Panel):
-    bl_label = "IFC Ports"
+    bl_label = "Ports"
     bl_idname = "BIM_PT_ports"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
     bl_order = 1
-    bl_parent_id = "BIM_PT_services_object"
+    bl_parent_id = "BIM_PT_tab_services_object"
 
     @classmethod
     def poll(cls, context):
@@ -163,14 +163,14 @@ class BIM_PT_ports(Panel):
 
 
 class BIM_PT_port(Panel):
-    bl_label = "IFC Port"
+    bl_label = "Port"
     bl_idname = "BIM_PT_port"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
     bl_order = 1
-    bl_parent_id = "BIM_PT_services_object"
+    bl_parent_id = "BIM_PT_tab_services_object"
 
     @classmethod
     def poll(cls, context):
@@ -183,14 +183,37 @@ class BIM_PT_port(Panel):
 
     def draw(self, context):
         self.props = context.scene.BIMSystemProperties
-        row = self.layout.row(align=True)
+
+        element = tool.Ifc.get_entity(context.active_object)
+        port_class = element.is_a()
+        layout = self.layout
+        row = layout.row(align=True)
+        row.label(text=port_class)
         row.operator("bim.connect_port", icon="PLUGIN", text="")
         row.operator("bim.disconnect_port", icon="UNLINKED", text="")
-        row.operator("bim.set_flow_direction", icon="FORWARD", text="").direction = "SOURCE"
-        row.operator("bim.set_flow_direction", icon="BACK", text="").direction = "SINK"
-        row.operator("bim.set_flow_direction", icon="ARROW_LEFTRIGHT", text="").direction = "SOURCEANDSINK"
-        row.operator("bim.set_flow_direction", icon="RESTRICT_INSTANCED_ON", text="").direction = "NOTDEFINED"
         row.operator("bim.remove_port", icon="X", text="")
+
+        if port_class == "IfcDistributionPort":
+            current_flow_direction = str(element.FlowDirection)
+            row = layout.row(align=True)
+            row.label(text="Flow Direction:")
+            row.label(text=current_flow_direction)
+
+            # TODO: replace with enum property?
+            flow_directions = (
+                ("SOURCE", "FORWARD"),
+                ("SINK", "BACK"),
+                ("SOURCEANDSINK", "ARROW_LEFTRIGHT"),
+                ("NOTDEFINED", "RESTRICT_INSTANCED_ON"),
+            )
+
+            row = layout.row(align=True)
+            row.label(text="Change Flow Direction:")
+            for flow_direction, icon in flow_directions:
+                row = layout.row()
+                row.operator("bim.set_flow_direction", icon=icon, text=flow_direction).direction = flow_direction
+                if flow_direction == current_flow_direction:
+                    row.enabled = False
 
 
 class BIM_UL_systems(UIList):

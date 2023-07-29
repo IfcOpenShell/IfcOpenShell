@@ -6,7 +6,7 @@ from blenderbim.bim.module.ifcgit.data import IfcGitData
 class IFCGIT_PT_panel(bpy.types.Panel):
     """Scene Properties panel to interact with IFC repository data"""
 
-    bl_label = "IFC Git"
+    bl_label = "Git"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -210,6 +210,33 @@ class COMMIT_UL_List(bpy.types.UIList):
         else:
             layout.label(text=refs + commit.message.split("\n")[0], icon="DECORATE_ANIMATE")
         layout.label(text=time.strftime("%c", time.localtime(commit.committed_date)))
+
+    def draw_filter(self, context, layout):
+
+        # We only need filtering and reverse sort, not reordering by name
+        row = layout.row(align=True)
+        row.prop(self, "filter_name", text="")
+        row.prop(self, "use_filter_invert", text="", icon="ARROW_LEFTRIGHT")
+        row.prop(self, "use_filter_sort_reverse", text="", icon="SORT_DESC")
+
+    def filter_items(self, context, data, propname):
+
+        commits = getattr(data, propname)
+        helper_funcs = bpy.types.UI_UL_list
+
+        # Default return values.
+        flt_flags = []
+        flt_neworder = list(range(len(commits)))
+
+        # Filtering by commit message
+        if self.filter_name:
+            flt_flags = helper_funcs.filter_items_by_name(
+                self.filter_name, self.bitflag_filter_item, commits, "message", reverse=False
+            )
+        if not flt_flags:
+            flt_flags = [self.bitflag_filter_item] * len(commits)
+
+        return flt_flags, flt_neworder
 
 
 class IFCGIT_PT_revision_inspector(bpy.types.Panel):

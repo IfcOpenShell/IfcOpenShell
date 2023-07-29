@@ -171,3 +171,19 @@ class ConvertGlobalToLocal(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.convert_global_to_local(tool.Georeference)
+
+class ConvertAngleToCoordinates(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.convert_angle_to_coord"
+    bl_label = "Convert Angle To Y Axis"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Convert angle to Y axis"
+    type: bpy.props.StringProperty()
+
+    @classmethod
+    def poll(cls, context):
+        file = tool.Ifc.get()
+        props = context.scene.BIMGeoreferenceProperties
+        return file and (props.angle_degree_input_x or props.angle_degree_input_y)
+
+    def _execute(self, context):
+        core.convert_angle_to_coord(tool.Georeference, type=self.type)

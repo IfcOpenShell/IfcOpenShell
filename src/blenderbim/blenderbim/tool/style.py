@@ -26,7 +26,7 @@ import os.path
 
 # fmt: off
 TEXTURE_MAPS_BY_METHODS = {
-    "PHYSICAL": ("NORMAL", "EMISSIVE", "METALLICROUGHNESS", "DIFFUSE"), 
+    "PHYSICAL": ("NORMAL", "EMISSIVE", "METALLICROUGHNESS", "DIFFUSE", "OCCLUSION"), 
     "FLAT": ("EMISSIVE",)
 }
 # fmt: on
@@ -45,6 +45,7 @@ STYLE_TEXTURE_PROPS_MAP = {
     "NORMAL": "normal_path",
     "METALLICROUGHNESS": "metallic_roughness_path",
     "DIFFUSE": "diffuse_path",
+    "OCCLUSION": "occlusion_path",
 }
 
 
@@ -142,13 +143,10 @@ class Style(blenderbim.core.tool.Style):
             path = getattr(props, prop_name)
             if not path:
                 continue
-            if not os.path.abspath(path) and tool.Ifc.get_path():
-                path = os.path.join(os.path.dirname(tool.Ifc.get_path()), path)
-
             texture_data = {
                 "Mode": prop_mode,
                 "type": "IfcImageTexture",
-                "URLReference": path,
+                "URLReference": tool.Blender.blender_path_to_posix(path),
             }
             textures.append(texture_data)
 
@@ -173,7 +171,8 @@ class Style(blenderbim.core.tool.Style):
         style_data = tool.Loader.surface_style_to_dict(surface_style)
         if style_data["ReflectanceMethod"] == "NOTDEFINED":
             style_data["ReflectanceMethod"] = "PHYSICAL"
-        style_data["DiffuseColour"] = style_data["DiffuseColour"][1]
+        diffuse_color = style_data["DiffuseColour"]
+        style_data["DiffuseColour"] = diffuse_color[1] if diffuse_color else None
 
         for prop_blender, prop_ifc in STYLE_PROPS_MAP.items():
             prop_value = style_data[prop_ifc]
@@ -183,13 +182,15 @@ class Style(blenderbim.core.tool.Style):
 
         texture_maps = TEXTURE_MAPS_BY_METHODS[style_data["ReflectanceMethod"]]
         unused_texture_maps = list(STYLE_TEXTURE_PROPS_MAP.keys())
-        for texture in texture_style.Textures:
-            if texture.Mode not in texture_maps:
-                print(f"WARNING. Unsupported texture mode: {texture.Mode}. Supported maps: {texture_maps}")
-                continue
-            prop_blender = STYLE_TEXTURE_PROPS_MAP.get(texture.Mode, None)
-            setattr(props, prop_blender, texture.URLReference)
-            unused_texture_maps.remove(texture.Mode)
+
+        if texture_style:
+            for texture in texture_style.Textures:
+                if texture.Mode not in texture_maps:
+                    print(f"WARNING. Unsupported texture mode: {texture.Mode}. Supported maps: {texture_maps}")
+                    continue
+                prop_blender = STYLE_TEXTURE_PROPS_MAP.get(texture.Mode, None)
+                setattr(props, prop_blender, texture.URLReference)
+                unused_texture_maps.remove(texture.Mode)
 
         # clear empty texture fields
         for texture_mode in unused_texture_maps:
@@ -199,7 +200,7 @@ class Style(blenderbim.core.tool.Style):
         props["update_graph"] = prev_update_graph_value
 
     @classmethod
-    def get_surface_rendering_attributes(cls, obj, verbose=True):
+    def get_surface_rendering_attributes(cls, obj, verbose=False):
         report = (lambda *x: print(*x)) if verbose else (lambda *x: None)
 
         def color_to_ifc_format(color):
@@ -369,7 +370,7 @@ class Style(blenderbim.core.tool.Style):
     def get_texture_style(cls, obj):
         style_elements = cls.get_style_elements(obj)
         return style_elements.get("IfcSurfaceStyleWithTextures", None)
-    
+
     @classmethod
     def get_external_style(cls, obj):
         style_elements = cls.get_style_elements(obj)

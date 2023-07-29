@@ -22,6 +22,7 @@ from ifcopenshell.util.selector import Selector
 import blenderbim.tool as tool
 from blenderbim.bim.prop import ObjProperty, StrProperty
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.search.data import SearchData, ColourByPropertyData
 from bpy.types import PropertyGroup
 from blenderbim.tool.ifc import Ifc
 from . import ui, prop, operator
@@ -35,6 +36,18 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+
+
+def get_saved_searches(self, context):
+    if not SearchData.is_loaded:
+        SearchData.load()
+    return SearchData.data["saved_searches"]
+
+
+def get_saved_colourschemes(self, context):
+    if not ColourByPropertyData.is_loaded:
+        ColourByPropertyData.load()
+    return ColourByPropertyData.data["saved_colourschemes"]
 
 
 def update_is_class_selected(self, context):
@@ -79,7 +92,43 @@ class BIMFilterBuildingStoreys(PropertyGroup):
     unselected_objects: CollectionProperty(type=ObjProperty, name="Unfiltered Objects")
 
 
+class BIMFacet(PropertyGroup):
+    name: StringProperty(name="Name")
+    pset: StringProperty(name="Pset")
+    value: StringProperty(name="Value")
+    type: StringProperty(name="Type")
+    comparison: StringProperty(name="Comparison")
+
+
+class BIMFilterGroup(PropertyGroup):
+    filters: CollectionProperty(type=BIMFacet, name="filters")
+
+
+class BIMColour(PropertyGroup):
+    name: StringProperty(name="Name")
+    colour: FloatVectorProperty(name="Colour", subtype="COLOR", default=(1, 0, 0), min=0.0, max=1.0)
+
+
 class BIMSearchProperties(PropertyGroup):
+    filter_query: StringProperty(name="Filter Query")
+    filter_groups: CollectionProperty(type=BIMFilterGroup, name="Filter Groups")
+    facet: EnumProperty(
+        items=[
+            ("entity", "Class", "", "FILE_3D", 0),
+            ("attribute", "Attribute", "", "COPY_ID", 1),
+            ("property", "Property", "", "PROPERTIES", 2),
+            ("material", "Material", "", "MATERIAL", 3),
+            ("classification", "Classification", "", "OUTLINER", 4),
+            ("location", "Location", "", "PACKAGE", 5),
+            ("type", "Type", "", "FILE_VOLUME", 6),
+            ("instance", "GlobalId", "", "GRIP", 7),
+        ],
+    )
+    saved_searches: EnumProperty(items=get_saved_searches, name="Saved Searches")
+    saved_colourschemes: EnumProperty(items=get_saved_colourschemes, name="Saved Colourschemes")
+    colourscheme_query: StringProperty(name="Colourscheme Query", default="class")
+    colourscheme: CollectionProperty(type=BIMColour)
+    active_colourscheme_index: IntProperty(name="Active Colourscheme Index")
     should_use_regex: BoolProperty(name="Search With Regex", default=False)
     should_ignorecase: BoolProperty(name="Search Ignoring Case", default=True)
     global_id: StringProperty(name="GlobalId")
@@ -133,7 +182,7 @@ def load_selection_options(self, context):
         elif self.selector == "Attribute":
             attributes = ["GlobalId", "Name", "Description", "ObjectType", "Tag", "PredefinedType"]
             for a in attributes:
-                options.append((a, a, ""))            
+                options.append((a, a, ""))
 
     elif load_option == "sub_options":
         if self.selector in ["IfcSpatialElement", "IfcElementType"]:

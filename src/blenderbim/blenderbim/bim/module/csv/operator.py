@@ -128,12 +128,14 @@ class ExportCsvAttributes(bpy.types.Operator):
 
 class ExportIfcCsv(bpy.types.Operator):
     bl_idname = "bim.export_ifccsv"
-    bl_label = "Export IFC to CSV"
-    filename_ext = ".csv"
+    bl_label = "Export IFC"
+    #filename_ext = ".csv"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    
 
     def invoke(self, context, event):
-        self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".csv")
+        props = context.scene.CsvProperties
+        self.filepath = bpy.path.ensure_ext(bpy.data.filepath, f".{props.format}")
         WindowManager = context.window_manager
         WindowManager.fileselect_add(self)
         return {"RUNNING_MODAL"}
@@ -142,7 +144,7 @@ class ExportIfcCsv(bpy.types.Operator):
         import ifccsv
 
         props = context.scene.CsvProperties
-        self.filepath = bpy.path.ensure_ext(self.filepath, ".csv")
+        self.filepath = bpy.path.ensure_ext(self.filepath, f".{props.format}")
         if props.should_load_from_memory:
             ifc_file = IfcStore.get_file()
         else:
@@ -152,7 +154,7 @@ class ExportIfcCsv(bpy.types.Operator):
         ifc_csv = ifccsv.IfcCsv()
         attributes = [a.name for a in props.csv_attributes]
         sep = props.csv_custom_delimiter if props.csv_delimiter == "CUSTOM" else props.csv_delimiter
-        ifc_csv.export(ifc_file, results, attributes, output=self.filepath, format=args.format, delimiter=sep)
+        ifc_csv.export(ifc_file, results, attributes, output=self.filepath, format=props.format, delimiter=sep)
         return {"FINISHED"}
 
 

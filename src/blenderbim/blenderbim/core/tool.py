@@ -252,16 +252,16 @@ class Drawing:
     def delete_object(cls, obj): pass
     def disable_editing_assigned_product(cls, obj): pass
     def disable_editing_drawings(cls): pass
-    def disable_editing_schedules(cls): pass
     def disable_editing_references(cls): pass
+    def disable_editing_schedules(cls): pass
     def disable_editing_sheets(cls): pass
     def disable_editing_text(cls, obj): pass
     def does_file_exist(cls, uri): pass
     def enable_editing(cls, obj): pass
     def enable_editing_assigned_product(cls, obj): pass
     def enable_editing_drawings(cls): pass
-    def enable_editing_schedules(cls): pass
     def enable_editing_references(cls): pass
+    def enable_editing_schedules(cls): pass
     def enable_editing_sheets(cls): pass
     def enable_editing_text(cls, obj): pass
     def ensure_unique_drawing_name(cls, name): pass
@@ -297,13 +297,14 @@ class Drawing:
     def get_text_literal(cls, obj): pass
     def get_unit_system(cls): pass
     def import_assigned_product(cls, obj): pass
-    def import_drawings(cls): pass
     def import_documents(cls, document_type): pass
+    def import_drawings(cls): pass
     def import_sheets(cls): pass
     def import_text_attributes(cls, obj): pass
     def is_active_drawing(cls, drawing): pass
     def is_camera_orthographic(cls): pass
     def is_drawing_active(cls): pass
+    def is_editing_sheets(cls): pass
     def move_file(cls, src, dest): pass
     def open_spreadsheet(cls, uri): pass
     def open_svg(cls, filepath): pass
@@ -370,13 +371,15 @@ class Geometry:
 
 @interface
 class Georeference:
+    def angle2coords(cls, angle, type): pass
     def disable_editing(cls): pass
     def enable_editing(cls): pass
     def enh2xyz(cls, map_conversion, coordinates): pass
+    def get_angle(cls, type): pass
     def get_coordinates(cls, io): pass
     def get_cursor_location(cls): pass
-    def get_map_conversion(cls): pass
     def get_map_conversion_attributes(cls): pass
+    def get_map_conversion(cls): pass
     def get_projected_crs_attributes(cls): pass
     def get_true_north_attributes(cls): pass
     def import_map_conversion(cls): pass
@@ -388,6 +391,7 @@ class Georeference:
     def set_cursor_location(cls, coordinates): pass
     def set_ifc_grid_north(cls): pass
     def set_ifc_true_north(cls): pass
+    def set_vector_coordinates(cls, vector_coordinates, type): pass
     def xyz2enh(cls, map_conversion, coordinates): pass
 
 
@@ -536,6 +540,7 @@ class Owner:
 class Project:
     def append_all_types_from_template(cls, template): pass
     def create_empty(cls, name): pass
+    def create_project_collections(cls): pass
     def load_default_thumbnails(cls): pass
     def run_aggregate_assign_object(cls, relating_obj=None, related_obj=None): pass
     def run_context_add_context(cls, context_type=None, context_identifier=None, target_view=None, parent=None): pass

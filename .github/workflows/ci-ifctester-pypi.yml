@@ -12,7 +12,7 @@ on:
   push:
     paths:
       - '.github/workflows/ci-ifctester-pypi.yml'
-
+  workflow_dispatch:
 
 env:
   major: 0

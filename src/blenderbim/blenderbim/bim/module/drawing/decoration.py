@@ -363,7 +363,7 @@ class BaseDecorator:
         """
 
         if multiline:
-            line_no = 0
+            line_no = line_no
             lines = text.split("\\n")
             lines = lines if multiline_to_bottom else lines[::-1]
             for line in lines:
@@ -453,6 +453,24 @@ class BaseDecorator:
         # blf.shadow_offset(font_id, 1, -1)
         blf.draw(font_id, text)
         blf.disable(font_id, blf.ROTATION)
+
+    def draw_dimension_text(self, context, get_text, description, dimension_data, **draw_label_kwargs):
+        prefix = dimension_data["text_prefix"]
+        suffix = dimension_data["text_suffix"]
+        show_description_only = dimension_data["show_description_only"]
+
+        line_number_start = 0
+        if not show_description_only:
+            text = get_text()
+            full_prefix = ((description + "\\n") if description else "") + prefix
+            text = full_prefix + text + suffix
+            line_number_start -= full_prefix.count("\\n")
+        else:
+            if not description:
+                return
+            text = description
+
+        self.draw_label(context, text=text, line_no=line_number_start, multiline=True, **draw_label_kwargs)
 
     @lru_cache(maxsize=None)
     def format_value(self, context, value):
@@ -637,39 +655,35 @@ class DimensionDecorator(BaseDecorator):
             perpendicular = Vector((-text_dir.y, text_dir.x)).normalized()
             text_offset = perpendicular * text_offset_value
 
+            common_label_attrs = {
+                "context": context,
+                "multiline": True,
+                "text_dir": text_dir,
+            }
+            base_pos = p0 + text_dir * 0.5
+
             if not show_description_only:
                 length = (v1 - v0).length
                 text = self.format_value(context, length)
+                if isinstance(self, DiameterDecorator):
+                    text = "D" + text
                 text = text_prefix + text + text_suffix
+            else:
+                if not description:
+                    continue
+                text = description
 
-                self.draw_label(
-                    context,
-                    text,
-                    p0 + text_dir * 0.5 + text_offset,
-                    text_dir,
-                    box_alignment="bottom-middle",
-                    multiline=True,
-                    multiline_to_bottom=False,
-                )
-                if description:
-                    self.draw_label(
-                        context,
-                        description,
-                        p0 + text_dir * 0.5 - text_offset,
-                        text_dir,
-                        box_alignment="top-middle",
-                        multiline=True,
-                    )
+            self.draw_label(
+                text=text,
+                pos=base_pos + text_offset,
+                box_alignment="bottom-middle",
+                multiline_to_bottom=False,
+                **common_label_attrs,
+            )
 
-            elif show_description_only and description:
+            if not show_description_only and description:
                 self.draw_label(
-                    context,
-                    description,
-                    p0 + text_dir * 0.5 + text_offset,
-                    text_dir,
-                    box_alignment="bottom-middle",
-                    multiline=True,
-                    multiline_to_bottom=False,
+                    text=description, pos=base_pos - text_offset, box_alignment="top-middle", **common_label_attrs
                 )
 
 
@@ -734,7 +748,7 @@ class AngleDecorator(BaseDecorator):
 
         arcs_color = None
         edges_color = UNSPECIAL_ELEMENT_COLOR
-        if context.object == obj and obj.data.is_editmode:
+        if context.active_object == obj and obj.data.is_editmode:
             arcs_color = context.preferences.addons["blenderbim"].preferences.decorator_color_special
             edges_color = None
 
@@ -772,19 +786,23 @@ class AngleDecorator(BaseDecorator):
             v0 = Vector(vertices[i0])
             v1 = Vector(vertices[i1])
             v2 = Vector(vertices[i1 + 1])
-            p0 = location_3d_to_region_2d(region, region3d, v0)
-            p1 = location_3d_to_region_2d(region, region3d, v1)
-            p2 = location_3d_to_region_2d(region, region3d, v2)
 
-            edge0 = p0 - p1
-            edge1 = p2 - p1
+            # calculate angle value
+            edge0_ws = v0 - v1
+            edge1_ws = v2 - v1
             try:
-                cos_a = edge0.dot(edge1) / (edge0.length * edge1.length)
+                cos_a = edge0_ws.dot(edge1_ws) / (edge0_ws.length * edge1_ws.length)
             except ZeroDivisionError:
                 continue
             circle_angle_rad = acos(cos_a)
             circle_angle = circle_angle_rad / pi * 180
 
+            # calculate angle position
+            p0 = location_3d_to_region_2d(region, region3d, v0)
+            p1 = location_3d_to_region_2d(region, region3d, v1)
+            p2 = location_3d_to_region_2d(region, region3d, v2)
+            edge0 = p0 - p1
+            edge1 = p2 - p1
             base_edge = edge0 if ccw(p0, p1, p2) else edge1
             text_offset = (Matrix.Rotation(-circle_angle_rad / 2, 2) @ base_edge).normalized() * ANGLE_LABEL_OFFSET
             label_position = p1 + text_offset
@@ -824,12 +842,15 @@ class RadiusDecorator(BaseDecorator):
 
     objecttype = "RADIUS"
 
-    def get_spline_end(self, obj):
+    def get_spline_points(self, obj):
         spline = obj.data.splines[0]
         spline_points = spline.bezier_points if spline.bezier_points else spline.points
         if not spline_points:
-            return Vector((0, 0, 0))
-        return obj.matrix_world @ spline_points[0].co
+            spline_points = [Vector([0, 0, 0])] * 2
+        elif len(spline_points) == 1:
+            spline_points = [spline_points[0]] * 2
+
+        return [(obj.matrix_world @ p.co) for p in spline_points[:2]]
 
     def decorate(self, context, obj):
         self.draw_arrow(context, obj)
@@ -838,15 +859,24 @@ class RadiusDecorator(BaseDecorator):
     def draw_labels(self, context, obj):
         region = context.region
         region3d = context.region_data
-        dir = Vector((1, 0))
-        pos = location_3d_to_region_2d(region, region3d, self.get_spline_end(obj))
+        spline_points = self.get_spline_points(obj)
 
-        spline = obj.data.splines[0]
-        spline_points = spline.bezier_points if spline.bezier_points else spline.points
-        if spline_points:
-            length = (spline_points[-1].co - spline_points[-2].co).length
-            text = self.format_value(context, length)
-            self.draw_label(context, text, pos, dir, gap=0, center=False, vcenter=False)
+        p0, p1 = [location_3d_to_region_2d(region, region3d, p) for p in self.get_spline_points(obj)]
+        element = tool.Ifc.get_entity(obj)
+        description = element.Description
+        dimension_data = DecoratorData.get_dimension_data(obj)
+        viewportDrawingScale = self.get_viewport_drawing_scale(context)
+        text_offset = 20 * viewportDrawingScale
+
+        pos = p0 - (p1 - p0).normalized() * text_offset
+
+        def get_text():
+            length = (spline_points[-1] - spline_points[-2]).length
+            return "R" + self.format_value(context, length)
+
+        self.draw_dimension_text(
+            context, get_text, description, dimension_data, pos=pos, text_dir=Vector((1, 0)), box_alignment="center"
+        )
 
 
 class FallDecorator(BaseDecorator):
@@ -1056,23 +1086,40 @@ class PlanLevelDecorator(BaseDecorator):
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         region = context.region
         region3d = context.region_data
+
+        element = tool.Ifc.get_entity(obj)
+        description = element.Description
+        dimension_data = DecoratorData.get_dimension_data(obj)
+
         for verts in splines:
             p0, p1 = [location_3d_to_region_2d(region, region3d, v) for v in verts[:2]]
-            dir = p1 - p0
-            if dir.length < 1:
+            text_dir = p1 - p0
+            if text_dir.length < 1:
                 continue
 
-            if dir.x > 0:
+            if text_dir.x > 0:
                 box_alignment = "bottom-left"
             else:
                 box_alignment = "bottom-right"
-                dir *= -1
+                text_dir *= -1
 
-            z = verts[0].z / unit_scale
-            z = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), z)
-            z *= unit_scale
-            text = "RL " + self.format_value(context, z)
-            self.draw_label(context, text, p0, dir, gap=8, center=False, box_alignment=box_alignment)
+            def get_text():
+                z = verts[0].z
+                rl = self.format_value(context, z)
+                text = "{}{}".format("" if z < 0 else "+", rl)
+                return text
+
+            self.draw_dimension_text(
+                context,
+                get_text,
+                description,
+                dimension_data,
+                box_alignment=box_alignment,
+                pos=p0,
+                text_dir=text_dir,
+                gap=8,
+                center=False,
+            )
 
 
 class SectionLevelDecorator(BaseDecorator):
@@ -1119,31 +1166,29 @@ class SectionLevelDecorator(BaseDecorator):
         self.draw_labels(context, obj, self.get_splines(obj), text_position.to_2d(), text_dir.to_2d())
 
     def draw_labels(self, context, obj, splines, text_position, text_dir):
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-
         element = tool.Ifc.get_entity(obj)
         storey = tool.Drawing.get_annotation_element(element)
         tag = storey.Name if storey else element.Description
 
+        dimension_data = DecoratorData.get_dimension_data(obj)
+
         for verts in splines:
-            z = verts[0].z / unit_scale
-            z = ifcopenshell.util.geolocation.auto_z2e(tool.Ifc.get(), z)
-            z *= unit_scale
 
-            text_lines = ["RL " + self.format_value(context, z)]
-            if tag:
-                text_lines.append(tag)
+            def get_text():
+                z = verts[0].z
+                rl = self.format_value(context, z)
+                text = "RL {}{}".format("" if z < 0 else "+", rl)
+                return text
 
-            for line_i, line in zip((0, -1), text_lines):
-                self.draw_label(
-                    context,
-                    line,
-                    text_position,
-                    text_dir,
-                    center=False,
-                    vcenter=False,
-                    line_no=line_i,
-                )
+            self.draw_dimension_text(
+                context,
+                get_text,
+                tag,
+                dimension_data,
+                box_alignment="bottom-left",
+                pos=text_position,
+                text_dir=text_dir,
+            )
             break  # support only 1 label
 
 
