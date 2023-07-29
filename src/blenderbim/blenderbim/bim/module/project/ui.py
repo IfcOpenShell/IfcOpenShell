@@ -252,6 +252,7 @@ class BIM_PT_project_library(Panel):
         row.label(text=IfcStore.library_path or "No Library Loaded", icon="ASSET_MANAGER")
         if IfcStore.library_file:
             row.label(text=IfcStore.library_file.schema)
+            row.operator("bim.append_library_element_by_query", text="", icon="APPEND_BLEND")
             row.operator("bim.save_library_file", text="", icon="EXPORT")
         row.operator("bim.select_library_file", icon="FILE_FOLDER", text="")
         if IfcStore.library_file:
