@@ -161,7 +161,7 @@ def add_layout_hotkey_operator(layout, text, hotkey, description):
 
 
 # TODO: move to operator
-def create_annotation_occurence(context):
+def create_annotation_occurrence(context):
     props = context.scene.BIMAnnotationProperties
     relating_type = tool.Ifc.get().by_id(int(props.relating_type_id))
     object_type = props.object_type
@@ -189,9 +189,8 @@ def create_annotation_occurence(context):
 
 def create_annotation():
     props = bpy.context.scene.BIMAnnotationProperties
-    create_type_occurence = props.relating_type_id != "0"
-    if create_type_occurence:
-        create_annotation_occurence(bpy.context)
+    if props.relating_type_id != "0":
+        create_annotation_occurrence(bpy.context)
     else:
         object_type = props.object_type
         bpy.ops.bim.add_annotation(object_type=object_type, data_type=ANNOTATION_TYPES_DATA[object_type][-1])
