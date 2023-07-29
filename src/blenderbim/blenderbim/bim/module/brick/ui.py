@@ -98,7 +98,6 @@ class BIM_PT_brickschema(Panel):
             row.operator("bim.rewind_brick_class", text="", icon="FRAME_PREV")
         col = row.column()
         col.alignment = "RIGHT"
-        # row.operator("bim.add_brick_feed", text="", icon="PLUGIN")
         row.operator("bim.remove_brick", text="", icon="X")
         # row.operator("bim.refresh_brick_viewer", text="", icon="FILE_REFRESH")
 
@@ -111,8 +110,29 @@ class BIM_PT_brickschema(Panel):
             row = self.layout.row(align=True)
             col = row.column()
             col.alignment = "RIGHT"
-            row.prop(data=self.props, property="brick_create_relations_toggled", text="", icon="OUTLINER_DATA_GP_LAYER")
+            row.prop(data=self.props, property="brick_create_relations_toggled", text="", icon="PLUGIN")
             row.prop(data=self.props, property="brick_edit_relations_toggled", text="", icon="TOOL_SETTINGS")
+            
+            if self.props.brick_create_relations_toggled:
+                row = self.layout.row(align=True)
+                col = row.column()
+                col.alignment = "LEFT"
+                row.label(text="Create Relation:")
+                col = row.column()
+                col.alignment = "RIGHT"
+                row.prop(data=self.props, property="split_screen_toggled", text="", icon="WINDOW")
+
+                row = self.layout.row(align=True)
+                prop_with_search(row, self.props, "new_brick_relation_namespace", text="")
+
+                row = self.layout.row(align=True)
+                prop_with_search(row, self.props, "new_brick_relation_type", text="")
+                row.prop(data=self.props, property="new_brick_relation_object", text="")
+                row.operator("bim.add_brick_relation", text="", icon="ADD")
+
+                if self.props.add_relation_failed:
+                    row = self.layout.row(align=True)
+                    row.label(text="Failed to find this entity!", icon="ERROR")
 
         for relation in BrickschemaData.data["relations"]:
             row = self.layout.row(align=True)

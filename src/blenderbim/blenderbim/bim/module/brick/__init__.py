@@ -21,7 +21,7 @@ from . import ui, prop, operator
 
 classes = (
     operator.AddBrick,
-    operator.AddBrickFeed,
+    operator.AddBrickRelation,
     operator.AssignBrickReference,
     operator.CloseBrickProject,
     operator.ConvertBrickProject,
