@@ -55,6 +55,18 @@ def get_brick_roots(self, context):
     return [(root, root, "") for root in BrickStore.root_classes]
 
 
+def get_brick_relations(self, context): # this will be queried from graph
+    return [("https://brickschema.org/schema/Brick#hasLocation", "hasLocation", ""),
+            ("https://brickschema.org/schema/Brick#isLocationOf", "isLocationOf", ""),
+            ("https://brickschema.org/schema/Brick#hasPart", "hasPart", ""),
+            ("https://brickschema.org/schema/Brick#isPartOf", "isPartOf", ""),
+            ("https://brickschema.org/schema/Brick#hasPoint", "hasPoint", ""),
+            ("https://brickschema.org/schema/Brick#isPointOf", "isPointOf", ""),
+            ("https://brickschema.org/schema/Brick#feeds", "feeds", ""),
+            ("https://brickschema.org/schema/Brick#isFedBy", "isFedBy", ""),
+            ("http://www.w3.org/2000/01/rdf-schema#label", "label", "")]
+
+
 class Brick(PropertyGroup):
     name: StringProperty(name="Name")
     label: StringProperty(name="Label")
@@ -78,3 +90,8 @@ class BIMBrickProperties(PropertyGroup):
     brick_entity_create_type: EnumProperty(name="Brick Entity Types", items=get_brick_roots)
     brick_create_relations_toggled: BoolProperty(name="Brick Create Relations Toggled", default=False)
     brick_edit_relations_toggled: BoolProperty(name="Brick Edit Relations Toggled", default=False)
+    new_brick_relation_type: EnumProperty(name="New Brick Relation Type", items=get_brick_relations)
+    new_brick_relation_namespace: EnumProperty(name="New Brick Relation Namespace", items=get_namespaces)
+    new_brick_relation_object: StringProperty(name="New Brick Relation Object")
+    add_relation_failed: BoolProperty(name="Add Relation Failed", default=False)
+    split_screen_toggled: BoolProperty(name="Split Screen Toggled", default=False)

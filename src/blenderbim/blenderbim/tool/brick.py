@@ -100,9 +100,19 @@ class Brick(blenderbim.core.tool.Brick):
         )
 
     @classmethod
-    def add_feed(cls, source, destination):
-        ns_brick = Namespace("https://brickschema.org/schema/Brick#")
-        BrickStore.graph.add((URIRef(source), ns_brick["feeds"], URIRef(destination)))
+    def add_relation(cls, brick_uri, predicate, namespace, object):
+        object_uri = namespace + object
+        query = BrickStore.graph.query(
+            "ASK { <{object_uri}> ?predicate ?object . }".replace(
+                "{object_uri}", object_uri
+            )
+        )
+        if query:
+            with BrickStore.new_changeset() as cs:
+                cs.add((URIRef(brick_uri), URIRef(predicate), URIRef(object_uri)))
+            bpy.context.scene.BIMBrickProperties.add_relation_failed = False
+        else:
+            bpy.context.scene.BIMBrickProperties.add_relation_failed = True
 
     @classmethod
     def remove_relation(cls, brick_uri, predicate, object):
