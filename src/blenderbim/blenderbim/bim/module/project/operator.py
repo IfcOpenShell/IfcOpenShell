@@ -342,7 +342,7 @@ class SaveLibraryFile(bpy.types.Operator):
 
 class AppendEntireLibrary(bpy.types.Operator):
     bl_idname = "bim.append_entire_library"
-    bl_label = "Append Entiry Library"
+    bl_label = "Append Entire Library"
 
     @classmethod
     def poll(cls, context):
@@ -361,6 +361,33 @@ class AppendEntireLibrary(bpy.types.Operator):
         for element in lib_elements:
             bpy.ops.bim.append_library_element(definition=element.id())
         return {"FINISHED"}
+
+
+class AppendLibraryElementByQuery(bpy.types.Operator):
+    bl_idname = "bim.append_library_element_by_query"
+    bl_label = "Append Library Element By Query"
+    query: bpy.props.StringProperty(name="Query")
+
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        self.file = IfcStore.get_file()
+        self.library = IfcStore.library_file
+
+        for element in ifcopenshell.util.selector.filter_elements(self.library, self.query):
+            bpy.ops.bim.append_library_element(definition=element.id())
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        self.layout.prop(self, "query")
 
 
 class AppendLibraryElement(bpy.types.Operator):
@@ -393,6 +420,8 @@ class AppendLibraryElement(bpy.types.Operator):
             return {"FINISHED"}
         if element.is_a("IfcTypeProduct"):
             self.import_type_from_ifc(element, context)
+        elif element.is_a("IfcProduct"):
+            self.import_product_from_ifc(element, context)
         elif element.is_a("IfcMaterial"):
             self.import_material_from_ifc(element, context)
         try:
@@ -411,6 +440,19 @@ class AppendLibraryElement(bpy.types.Operator):
         ifc_importer.file = self.file
         blender_material = ifc_importer.create_material(element)
         self.import_material_styles(blender_material, element, ifc_importer)
+
+    def import_product_from_ifc(self, element, context):
+        self.file = IfcStore.get_file()
+        logger = logging.getLogger("ImportIFC")
+        ifc_import_settings = import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger)
+        ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
+        ifc_importer.file = self.file
+        ifc_importer.process_context_filter()
+        ifc_importer.material_creator.load_existing_materials()
+        self.import_materials(element, ifc_importer)
+        self.import_styles(element, ifc_importer)
+        ifc_importer.create_generic_elements({element})
+        ifc_importer.place_objects_in_collections()
 
     def import_type_from_ifc(self, element, context):
         self.file = IfcStore.get_file()
@@ -431,24 +473,25 @@ class AppendLibraryElement(bpy.types.Operator):
         ifc_importer.file = self.file
         ifc_importer.type_collection = type_collection
         ifc_importer.material_creator.load_existing_materials()
-        self.import_type_materials(element, ifc_importer)
-        self.import_type_styles(element, ifc_importer)
+        self.import_materials(element, ifc_importer)
+        self.import_styles(element, ifc_importer)
         ifc_importer.create_element_type(element)
         ifc_importer.place_objects_in_collections()
 
-    def import_type_materials(self, element, ifc_importer):
-        for rel in element.HasAssociations:
-            if not rel.is_a("IfcRelAssociatesMaterial"):
+    def import_materials(self, element, ifc_importer):
+        for material in ifcopenshell.util.element.get_materials(element):
+            if IfcStore.get_element(material.id()):
                 continue
-            for material in [e for e in self.file.traverse(rel) if e.is_a("IfcMaterial")]:
-                if IfcStore.get_element(material.id()):
-                    continue
-                blender_material = ifc_importer.create_material(material)
-                self.import_material_styles(blender_material, material, ifc_importer)
+            blender_material = ifc_importer.create_material(material)
+            self.import_material_styles(blender_material, material, ifc_importer)
 
-    def import_type_styles(self, element, ifc_importer):
-        for representation_map in element.RepresentationMaps or []:
-            for element in self.file.traverse(representation_map):
+    def import_styles(self, element, ifc_importer):
+        if element.is_a("IfcTypeProduct"):
+            representations = element.RepresentationMaps or []
+        elif element.is_a("IfcProduct"):
+            representations = [element.Representation] if element.Representation else []
+        for representation in representations or []:
+            for element in self.file.traverse(representation):
                 if not element.is_a("IfcRepresentationItem") or not element.StyledByItem:
                     continue
                 for element2 in self.file.traverse(element.StyledByItem[0]):
