@@ -78,8 +78,8 @@ def add_brick(ifc, brick, element=None, namespace=None, brick_class=None, librar
     brick.run_refresh_brick_viewer()
 
 
-def add_brick_feed(ifc, brick, source=None, destination=None):
-    brick.add_feed(brick.get_brick(source), brick.get_brick(destination))
+def add_brick_relation(brick, brick_uri=None, predicate=None, namespace=None, object=None):
+    brick.add_relation(brick_uri, predicate, namespace, object)
     brick.run_refresh_brick_viewer()
 
 
