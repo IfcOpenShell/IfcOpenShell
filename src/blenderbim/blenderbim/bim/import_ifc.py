@@ -165,21 +165,27 @@ class MaterialCreator:
         bm.from_mesh(self.mesh)
         uv_layer = bm.loops.layers.uv.verify()
 
-        faceset = coordinates.MappedTo
-        coords = [mathutils.Vector(co) for co in faceset.Coordinates.CoordList]
-        # sort the verts to orginal order in ifc file
-        bm.verts.sort(key=lambda v: coords.index(v.co))
-        bm.verts.index_update()
+        # remap the faceset CoordList index to the vertices in blender mesh
+        coordinates_remap = []
+        for co in coordinates.MappedTo.Coordinates.CoordList:
+            co = mathutils.Vector(co)
+            index = next(v.index for v in bm.verts if (v.co - co).length_squared < 1e-5)
+            coordinates_remap.append(index)
 
+        faces_remap = [[coordinates_remap[i-1] for i in tex_coord_index.TexCoordsOf.CoordIndex]
+                        for tex_coord_index in coordinates.TexCoordIndices]
+        
         for id, bface in enumerate(bm.faces):
-            face = [loop.vert.index + 1 for loop in bface.loops]
-            # find the corresponding face and get the tex_coord_indices with the loop order
-            tex_coord_indices = next(
-                [i.TexCoordIndex[i.TexCoordsOf.CoordIndex.index(v)] for v in face]
-                for i in coordinates.TexCoordIndices
-                if all(v in i.TexCoordsOf.CoordIndex for v in face)
+            face = [loop.vert.index for loop in bface.loops]
+            # find the corresponding TexCoordIndex by matching ifc faceset with blender face
+            # sort TexCoordIndex as the index order may different from blender face
+            texCoordIndex = next(
+                [tex_coord_index.TexCoordIndex[face_remap.index(i)] for i in face]
+                for tex_coord_index, face_remap in zip(coordinates.TexCoordIndices, faces_remap)
+                if all(i in face for i in face_remap)
             )
-            for loop, i in zip(bface.loops, tex_coord_indices):
+            # apply uv to each loop
+            for loop, i in zip(bface.loops, texCoordIndex):
                 loop[uv_layer].uv = coordinates.TexCoords.TexCoordsList[i-1]
 
         # Finish up, write the bmesh back to the mesh
