@@ -22,6 +22,7 @@ from . import ui, prop, operator
 classes = (
     operator.AppendEntireLibrary,
     operator.AppendLibraryElement,
+    operator.AppendLibraryElementByQuery,
     operator.AssignLibraryDeclaration,
     operator.ChangeLibraryElement,
     operator.CreateProject,
