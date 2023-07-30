@@ -21,8 +21,10 @@ import bpy
 import ifcopenshell
 import ifcopenshell.util.unit
 import blenderbim.core.tool
+import blenderbim.bim.schema
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
+from pathlib import Path
 
 
 class Project(blenderbim.core.tool.Project):
@@ -50,6 +52,13 @@ class Project(blenderbim.core.tool.Project):
         if tool.Ifc.get().by_type("IfcElementType"):
             ifc_class = sorted(tool.Ifc.get().by_type("IfcElementType"), key=lambda e: e.is_a())[0].is_a()
             bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class, offset=0, limit=9)
+
+    @classmethod
+    def load_pset_templates(cls):
+        pset_dir = tool.Ifc.resolve_uri(bpy.context.scene.BIMProperties.pset_dir)
+        if os.path.isdir(pset_dir):
+            for path in Path(pset_dir).glob("*.ifc"):
+                blenderbim.bim.schema.ifc.psetqto.templates.append(ifcopenshell.open(path))
 
     @classmethod
     def run_aggregate_assign_object(cls, relating_obj=None, related_obj=None):
