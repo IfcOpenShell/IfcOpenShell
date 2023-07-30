@@ -1962,7 +1962,12 @@ class DecorationsHandler:
                 results.append((obj, dec))
 
             elif isinstance(obj.data, bpy.types.Mesh):
-                results.append((obj, self.decorators["MISC"]))
+                if object_type == "LINEWORK" and "dashed" in str(
+                    ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Classes")
+                ).split(" "):
+                    results.append((obj, self.decorators["HIDDEN_LINE"]))
+                else:
+                    results.append((obj, self.decorators["MISC"]))
 
         return results
 
