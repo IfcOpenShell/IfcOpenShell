@@ -121,7 +121,7 @@ class PurgeIfcLinks(bpy.types.Operator):
 
 
 class ConvertToBlender(bpy.types.Operator):
-    bl_idname = "bim.converttoblender"
+    bl_idname = "bim.convert_to_blender"
     bl_label = "Convert To Blender File"
     bl_description = "Removes all IFC data, and converts the file to a simple Blender file."
     bl_options = {"REGISTER", "UNDO"}

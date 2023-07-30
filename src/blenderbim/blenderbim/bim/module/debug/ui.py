@@ -58,7 +58,10 @@ class BIM_PT_debug(Panel):
         row.operator("bim.purge_ifc_links")
 
         row = layout.row()
-        row.operator("bim.converttoblender")
+        row.operator("bim.update_representation", text="Manually Save Representation")
+
+        row = layout.row()
+        row.operator("bim.convert_to_blender")
 
         row = layout.row()
         row.operator("bim.create_all_shapes")
@@ -79,6 +82,16 @@ class BIM_PT_debug(Panel):
             "bim.select_highest_polygon_meshes"
         ).percentile = context.scene.BIMDebugProperties.percentile_of_polygons
         row.prop(props, "percentile_of_polygons", text="")
+
+        if context.active_object and context.active_object.data:
+            mprops = context.active_object.data.BIMMeshProperties
+            row = layout.row()
+            row.operator("bim.get_representation_ifc_parameters")
+            for index, ifc_parameter in enumerate(mprops.ifc_parameters):
+                row = layout.row(align=True)
+                row.prop(ifc_parameter, "name", text="")
+                row.prop(ifc_parameter, "value", text="")
+                row.operator("bim.update_parametric_representation", icon="FILE_REFRESH", text="").index = index
 
         layout.label(text="Inspector:")
 
