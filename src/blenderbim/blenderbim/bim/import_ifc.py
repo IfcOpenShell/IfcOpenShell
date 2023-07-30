@@ -143,11 +143,6 @@ class MaterialCreator:
         return True
 
     def load_texture_map(self, coordinates):
-        # As IfcOpenShell triangulated Polygonal Faceset, we may need merge the triangles first.
-        # remove after this issue is fixed in ifcopenshell
-        if coordinates.is_a("IfcIndexedPolygonalTextureMap") and len(self.mesh.polygons) != len(coordinates.TexCoordIndices):
-            IfcImporter.merge_mesh(self.obj)
-
         # Get a BMesh representation
         bm = bmesh.new()
         bm.from_mesh(self.mesh)
@@ -179,7 +174,7 @@ class MaterialCreator:
             texCoordIndex = next(
                 [tex_coord_index[face_remap.index(i)] for i in face]
                 for tex_coord_index, face_remap in zip(texture_map, faces_remap)
-                if all(i in face for i in face_remap)
+                if all(i in face_remap for i in face)
             )
             # apply uv to each loop
             for loop, i in zip(bface.loops, texCoordIndex):
@@ -1385,17 +1380,6 @@ class IfcImporter:
             pass
         project_collection = bpy.context.view_layer.layer_collection.children[self.project["blender"].name]
         project_collection.children[self.type_collection.name].hide_viewport = True
-
-    @classmethod
-    def merge_mesh(cls, obj):
-        view_layer = bpy.context.view_layer
-        view_layer.active_layer_collection.collection.objects.link(obj)
-        bpy.context.view_layer.objects.active = obj
-        bpy.ops.object.mode_set(mode='EDIT')
-        bpy.ops.mesh.tris_convert_to_quads()
-        bpy.ops.mesh.normals_make_consistent()
-        bpy.ops.object.mode_set(mode='OBJECT')
-        view_layer.active_layer_collection.collection.objects.unlink(obj)
 
     def clean_mesh(self):
         obj = None
