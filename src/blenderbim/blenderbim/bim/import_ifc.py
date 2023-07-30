@@ -144,12 +144,14 @@ class MaterialCreator:
 
     def load_texture_map(self, coordinates):
         # As IfcOpenShell triangulated Polygonal Faceset, we may need merge the triangles first.
-        if len(self.mesh.polygons) != len(coordinates.TexCoordIndices):
+        # remove after this issue is fixed in ifcopenshell
+        if coordinates.is_a("IfcIndexedPolygonalTextureMap") and len(self.mesh.polygons) != len(coordinates.TexCoordIndices):
             IfcImporter.merge_mesh(self.obj)
 
         # Get a BMesh representation
         bm = bmesh.new()
         bm.from_mesh(self.mesh)
+        uv_layer = bm.loops.layers.uv.verify()
 
         # remap the faceset CoordList index to the vertices in blender mesh
         coordinates_remap = []
@@ -163,7 +165,7 @@ class MaterialCreator:
         if coordinates.is_a("IfcIndexedPolygonalTextureMap"):
             faces_remap = [[coordinates_remap[i-1] for i in tex_coord_index.TexCoordsOf.CoordIndex]
                         for tex_coord_index in coordinates.TexCoordIndices]
-            texture_map = coordinates.TexCoordIndices
+            texture_map = [tex_coord_index.TexCoordIndex for tex_coord_index in coordinates.TexCoordIndices]
         elif coordinates.is_a("IfcIndexedTriangleTextureMap"):
             faces_remap = [[coordinates_remap[i-1] for i in triangle_face]
                         for triangle_face in coordinates.MappedTo.CoordIndex]
