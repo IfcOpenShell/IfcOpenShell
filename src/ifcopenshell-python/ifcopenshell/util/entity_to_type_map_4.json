@@ -92,6 +92,9 @@
     "IfcDistributionChamberElement": [
         "IfcDistributionChamberElementType"
     ],
+    "IfcDistributionElement": [
+        "IfcDistributionElementType"
+    ],
     "IfcDoor": [
         "IfcDoorType",
         "IfcDoorStyle"
@@ -155,6 +158,9 @@
     ],
     "IfcFooting": [
         "IfcFootingType"
+    ],
+    "IfcFurnishingElement": [
+        "IfcFurnishingElementType"
     ],
     "IfcFurniture": [
         "IfcFurnitureType"
