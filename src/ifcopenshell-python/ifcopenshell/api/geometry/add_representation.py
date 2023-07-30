@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import math
 import bmesh
 import ifcopenshell.util.unit
 from mathutils import Vector, Matrix
@@ -239,7 +240,10 @@ class Usecase:
         elif isinstance(self.settings["geometry"], bpy.types.Curve):
             return self.create_curve3d_representation()
         elif isinstance(self.settings["geometry"], bpy.types.Camera):
-            return self.create_camera_block_representation()
+            if self.settings["geometry"].type == "ORTHO":
+                return self.create_camera_block_representation()
+            elif self.settings["geometry"].type == "PERSP":
+                return self.create_camera_pyramid_representation()
         elif not len(self.settings["geometry"].edges):
             return self.create_point_cloud_representation()
         elif not len(self.settings["geometry"].polygons):
@@ -269,14 +273,12 @@ class Usecase:
 
         block = self.file.create_entity(
             "IfcBlock",
-            **{
-                "Position": self.file.createIfcAxis2Placement3D(
-                    self.create_cartesian_point(-width / 2, -height / 2, -self.settings["geometry"].clip_end)
-                ),
-                "XLength": self.convert_si_to_unit(width),
-                "YLength": self.convert_si_to_unit(height),
-                "ZLength": self.convert_si_to_unit(self.settings["geometry"].clip_end),
-            },
+            Position=self.file.createIfcAxis2Placement3D(
+                self.create_cartesian_point(-width / 2, -height / 2, -self.settings["geometry"].clip_end)
+            ),
+            XLength=self.convert_si_to_unit(width),
+            YLength=self.convert_si_to_unit(height),
+            ZLength=self.convert_si_to_unit(self.settings["geometry"].clip_end),
         )
 
         return self.file.createIfcShapeRepresentation(
@@ -284,6 +286,48 @@ class Usecase:
             self.settings["context"].ContextIdentifier,
             "CSG",
             [self.file.createIfcCsgSolid(block)],
+        )
+
+    def create_camera_pyramid_representation(self):
+        raster_x = self.settings["geometry"].BIMCameraProperties.raster_x
+        raster_y = self.settings["geometry"].BIMCameraProperties.raster_y
+        fov = self.settings["geometry"].angle
+
+        clip_end = self.settings["geometry"].clip_end
+        clip_start = self.settings["geometry"].clip_start
+
+        if self.is_camera_landscape():
+            half_width = math.tan(fov / 2) * clip_end
+            half_height = half_width * raster_y / raster_x
+        else:
+            half_height = math.tan(fov / 2) * clip_end
+            half_width = half_height * raster_x / raster_y
+
+        x_length = 2 * half_width
+        y_length = 2 * half_height
+
+        pyramid = self.file.create_entity(
+            "IfcRectangularPyramid",
+            Position=self.file.createIfcAxis2Placement3D(
+                self.create_cartesian_point(-x_length / 2, -y_length / 2, -clip_end)
+            ),
+            XLength=self.convert_si_to_unit(x_length),
+            YLength=self.convert_si_to_unit(y_length),
+            Height=self.convert_si_to_unit(clip_end),
+        )
+
+        surface = self.file.createIfcPlane(
+            self.file.createIfcAxis2Placement3D(self.create_cartesian_point(0, 0, -clip_start))
+        )
+        half_space = self.file.createIfcHalfSpaceSolid(surface, False)
+
+        clipping_result = self.file.create_entity("IfcBooleanClippingResult", "DIFFERENCE", pyramid, half_space)
+
+        return self.file.createIfcShapeRepresentation(
+            self.settings["context"],
+            self.settings["context"].ContextIdentifier,
+            "CSG",
+            [self.file.createIfcCsgSolid(clipping_result)],
         )
 
     def is_camera_landscape(self):
@@ -372,6 +416,7 @@ class Usecase:
 
     def is_mesh_curve_consequtive(self, geom_data):
         import blenderbim.tool as tool
+
         bm = tool.Blender.get_bmesh_for_mesh(geom_data)
         bm.verts.ensure_lookup_table()
         start_vert = bm.verts[0]
@@ -387,6 +432,7 @@ class Usecase:
 
         processed_verts = set()
         processed_verts.add(start_vert)
+
         def validate_edge(edge, start_vert, processed_verts):
             cur_vert = edge.other_vert(start_vert)
             while True:
@@ -403,13 +449,13 @@ class Usecase:
                 edge = next(e for e in edges if e != edge)
                 cur_vert = edge.other_vert(cur_vert)
             return True
-        
+
         if not validate_edge(edge0, start_vert, processed_verts):
             return
-        
+
         if edge1 and not validate_edge(edge1, start_vert, processed_verts):
             return
-        
+
         if len(processed_verts) != n_verts:
             return False
         return True
@@ -479,6 +525,7 @@ class Usecase:
 
     def remove_doubles_from_mesh(self, mesh):
         import blenderbim.tool as tool
+
         bm = tool.Blender.get_bmesh_for_mesh(mesh)
         bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
         tool.Blender.apply_bmesh(mesh, bm)
@@ -488,8 +535,7 @@ class Usecase:
         self.remove_doubles_from_mesh(geom_data)
         curves = []
         points = [
-            self.create_cartesian_point(v.co.x, v.co.y, v.co.z if not is_2d else None)
-            for v in geom_data.vertices
+            self.create_cartesian_point(v.co.x, v.co.y, v.co.z if not is_2d else None) for v in geom_data.vertices
         ]
         coord_list = [p.Coordinates for p in points]
         edge_loops = []
