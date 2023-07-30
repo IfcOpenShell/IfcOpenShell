@@ -1402,7 +1402,7 @@ class IfcImporter:
             if not isinstance(obj, bpy.types.Object):
                 continue
             if obj.type == "MESH":
-                merge_mesh(obj)
+                obj.select_set(True)
                 last_obj = obj
         if not last_obj:
             return
