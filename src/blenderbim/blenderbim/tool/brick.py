@@ -286,6 +286,7 @@ class Brick(blenderbim.core.tool.Brick):
         BrickStore.path = filepath
         BrickStore.load_namespaces()
         BrickStore.load_entity_classes()
+        BrickStore.load_relationships()
 
     @classmethod
     def new_brick_file(cls):
@@ -298,6 +299,7 @@ class Brick(blenderbim.core.tool.Brick):
         BrickStore.graph.bind("digitaltwin", Namespace("https://example.org/digitaltwin#"))
         BrickStore.load_namespaces()
         BrickStore.load_entity_classes()
+        BrickStore.load_relationships()
 
     @classmethod
     def pop_brick_breadcrumb(cls):
@@ -363,6 +365,7 @@ class BrickStore:
     namespaces = []
     root_classes = ["Equipment", "Location", "System", "Point"]
     entity_classes = {}
+    relationships = []
 
     @staticmethod
     def purge():
@@ -371,6 +374,7 @@ class BrickStore:
         BrickStore.path = None
         BrickStore.namespaces = []
         BrickStore.entity_classes = {}
+        BrickStore.relationships = []
 
     @classmethod
     def get_project(cls):
@@ -406,6 +410,20 @@ class BrickStore:
             BrickStore.entity_classes[root_class] = []
             for uri in sorted([x[0].toPython() for x in query]):
                 BrickStore.entity_classes[root_class].append((uri, uri.split("#")[-1], ""))
+
+    @classmethod
+    def load_relationships(cls):
+        query = BrickStore.graph.query(
+            """
+            PREFIX brick: <https://brickschema.org/schema/Brick#>
+            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+            SELECT DISTINCT ?relation WHERE {
+                ?relation rdfs:subPropertyOf brick:Relationship .
+            }
+            """
+        )
+        for uri in sorted([x[0].toPython() for x in query]):
+            BrickStore.relationships.append((uri, uri.split("#")[-1], ""))
 
     @classmethod
     def set_history_size(cls, size):
