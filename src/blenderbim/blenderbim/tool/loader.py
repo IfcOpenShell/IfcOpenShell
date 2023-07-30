@@ -330,6 +330,12 @@ class Loader(blenderbim.core.tool.Loader):
 
                 blender_material.node_tree.links.new(node.outputs[0], bsdf.inputs[2])
 
+            # extend the image by repeating pixels on its edges if RepeatS or RepeatT is False
+            repeat_s = texture.get("RepeatS", True)
+            repeat_t = texture.get("RepeatT", True)
+            if node and (not repeat_s or not repeat_t):
+                node.extension = "EXTEND"
+
             # TODO: add support for texture data not ifc elements
             # IsMappedBy could only get with the entity_instance for IFC4/IFC4x3
             if isinstance(texture, dict):
