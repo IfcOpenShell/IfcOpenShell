@@ -17,10 +17,10 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import bpy
 import json
 import ifcopenshell
 import ifcopenshell.util.pset
-import bpy
 from pathlib import Path
 
 cwd = os.path.dirname(os.path.realpath(__file__))
