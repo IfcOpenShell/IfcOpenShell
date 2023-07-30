@@ -125,11 +125,14 @@ class BIM_PT_connections(Panel):
 
 
 class BIM_PT_mesh(Panel):
-    bl_label = "Representation"
+    bl_label = "Representation Utilities"
     bl_idname = "BIM_PT_mesh"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "data"
+    bl_order = 2
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_parent_id = "BIM_PT_tab_representations"
 
     @classmethod
     def poll(cls, context):
@@ -143,42 +146,33 @@ class BIM_PT_mesh(Panel):
     def draw(self, context):
         if not context.active_object.data:
             return
+        row = self.layout.row()
+        row.label(text="Advanced Users Only", icon="ERROR")
+
         layout = self.layout
-        props = context.active_object.data.BIMMeshProperties
 
         row = layout.row()
-        row.operator("bim.copy_representation")
+        row.operator("bim.copy_representation", text="Copy Mesh From Active To Selected")
 
         row = layout.row()
-        row.operator("bim.update_representation")
-
-        row = layout.row()
-        op = row.operator("bim.update_representation", text="Update Mesh As Tessellation")
+        op = row.operator("bim.update_representation", text="Convert To Tessellation")
         op.ifc_representation_class = "IfcTessellatedFaceSet"
 
         row = layout.row()
-        op = row.operator("bim.update_representation", text="Update Mesh As Rectangle Extrusion")
+        op = row.operator("bim.update_representation", text="Convert To Rectangle Extrusion")
         op.ifc_representation_class = "IfcExtrudedAreaSolid/IfcRectangleProfileDef"
 
         row = layout.row()
-        op = row.operator("bim.update_representation", text="Update Mesh As Circle Extrusion")
+        op = row.operator("bim.update_representation", text="Convert To Circle Extrusion")
         op.ifc_representation_class = "IfcExtrudedAreaSolid/IfcCircleProfileDef"
 
         row = layout.row()
-        op = row.operator("bim.update_representation", text="Update Mesh As Arbitrary Extrusion")
+        op = row.operator("bim.update_representation", text="Convert To Arbitrary Extrusion")
         op.ifc_representation_class = "IfcExtrudedAreaSolid/IfcArbitraryClosedProfileDef"
 
         row = layout.row()
-        op = row.operator("bim.update_representation", text="Update Mesh As Arbitrary Extrusion With Voids")
+        op = row.operator("bim.update_representation", text="Convert To Arbitrary Extrusion With Voids")
         op.ifc_representation_class = "IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids"
-
-        row = layout.row()
-        row.operator("bim.get_representation_ifc_parameters")
-        for index, ifc_parameter in enumerate(props.ifc_parameters):
-            row = layout.row(align=True)
-            row.prop(ifc_parameter, "name", text="")
-            row.prop(ifc_parameter, "value", text="")
-            row.operator("bim.update_parametric_representation", icon="FILE_REFRESH", text="").index = index
 
 
 def BIM_PT_transform(self, context):
