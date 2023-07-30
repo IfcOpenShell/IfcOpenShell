@@ -56,15 +56,7 @@ def get_brick_roots(self, context):
 
 
 def get_brick_relations(self, context): # this will be queried from graph
-    return [("https://brickschema.org/schema/Brick#hasLocation", "hasLocation", ""),
-            ("https://brickschema.org/schema/Brick#isLocationOf", "isLocationOf", ""),
-            ("https://brickschema.org/schema/Brick#hasPart", "hasPart", ""),
-            ("https://brickschema.org/schema/Brick#isPartOf", "isPartOf", ""),
-            ("https://brickschema.org/schema/Brick#hasPoint", "hasPoint", ""),
-            ("https://brickschema.org/schema/Brick#isPointOf", "isPointOf", ""),
-            ("https://brickschema.org/schema/Brick#feeds", "feeds", ""),
-            ("https://brickschema.org/schema/Brick#isFedBy", "isFedBy", ""),
-            ("http://www.w3.org/2000/01/rdf-schema#label", "label", "")]
+    return BrickStore.relationships
 
 
 class Brick(PropertyGroup):
