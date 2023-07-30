@@ -589,6 +589,12 @@ class Drawing(blenderbim.core.tool.Drawing):
     def import_drawing(cls, drawing):
         settings = ifcopenshell.geom.settings()
         settings.set(settings.STRICT_TOLERANCE, True)
+
+        camera_type = "ORTHO"
+        body = ifcopenshell.util.representation.get_representation(drawing, "Model", "Body", "MODEL_VIEW")
+        if "IfcRectangularPyramid" in {e.is_a() for e in tool.Ifc.get().traverse(body)}:
+            camera_type = "PERSP"
+
         shape = ifcopenshell.geom.create_shape(settings, drawing)
         geometry = shape.geometry
 
@@ -601,17 +607,37 @@ class Drawing(blenderbim.core.tool.Drawing):
         depth = max(z) - min(z)
 
         camera = bpy.data.cameras.new(tool.Loader.get_mesh_name(geometry))
-        camera.type = "ORTHO"
-        camera.ortho_scale = width if width > height else height
-        camera.clip_start = 0.002
-        camera.clip_end = depth
+        camera.type = camera_type
+        camera.show_limits = True
 
-        if width > height:
-            camera.BIMCameraProperties.raster_x = 1000
-            camera.BIMCameraProperties.raster_y = round(1000 * (height / width))
-        else:
-            camera.BIMCameraProperties.raster_x = round(1000 * (width / height))
-            camera.BIMCameraProperties.raster_y = 1000
+        if camera_type == "ORTHO":
+            camera.ortho_scale = width if width > height else height
+            camera.clip_start = 0.002  # Technically 0, but Blender doesn't allow this, so 2mm it is!
+            camera.clip_end = depth
+
+            if width > height:
+                camera.BIMCameraProperties.raster_x = 1000
+                camera.BIMCameraProperties.raster_y = round(1000 * (height / width))
+            else:
+                camera.BIMCameraProperties.raster_x = round(1000 * (width / height))
+                camera.BIMCameraProperties.raster_y = 1000
+        elif camera_type == "PERSP":
+            abs_min_z = abs(min(z))
+            abs_max_z = abs(max(z))
+            camera.clip_start = abs_max_z
+            camera.clip_end = abs_min_z
+            max_res = 1000
+
+            if width > height:
+                fov = 2 * math.atan(width / (2 * abs_min_z))
+                camera.BIMCameraProperties.raster_x = max_res
+                camera.BIMCameraProperties.raster_y = int(max_res / (width / height))
+            else:
+                fov = 2 * math.atan(height / (2 * abs_min_z))
+                camera.BIMCameraProperties.raster_y = max_res
+                camera.BIMCameraProperties.raster_x = int(max_res * (width / height))
+
+            camera.angle = fov
 
         psets = ifcopenshell.util.element.get_psets(drawing)
         pset = psets.get("EPset_Drawing")
