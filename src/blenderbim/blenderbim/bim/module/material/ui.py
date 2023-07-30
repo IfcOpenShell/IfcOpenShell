@@ -275,6 +275,8 @@ class BIM_PT_object_material(Panel):
                 op.material_set_item = set_item["id"]
             op = row.operator("bim.enable_editing_material_set_item", icon="GREASEPENCIL", text="")
             op.material_set_item = set_item["id"]
+        if ObjectMaterialData.data["set_item_name"] == "layer":
+            row.operator("bim.duplicate_layer", icon="DUPLICATE", text="").layer = set_item["id"]
         op = row.operator(f"bim.remove_{ObjectMaterialData.data['set_item_name']}", icon="X", text="")
         if ObjectMaterialData.data["material_class"] == "IfcMaterialList":
             setattr(op, "list_item_set", ObjectMaterialData.data["set"]["id"])
