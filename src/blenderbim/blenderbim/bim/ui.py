@@ -267,9 +267,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row = self.layout.row(align=True)
         row.prop(context.scene.DocProperties, "shadingstyle_default")
 
-        row = layout.row()
-        row.operator("bim.configure_visibility")
-
 
 # Scene panel groups
 class BIM_PT_tabs(Panel):
@@ -400,20 +397,6 @@ class BIM_PT_geometry(Panel):
     @classmethod
     def poll(cls, context):
         return tool.Blender.is_tab(context, "PROJECT") and tool.Ifc.get()
-
-    def draw(self, context):
-        pass
-
-
-class BIM_PT_tab_4D5D(Panel):
-    bl_label = "Costing and Scheduling"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-
-    @classmethod
-    def poll(cls, context):
-        return tool.Blender.is_tab(context, "SCHEDULING") and tool.Ifc.get()
 
     def draw(self, context):
         pass

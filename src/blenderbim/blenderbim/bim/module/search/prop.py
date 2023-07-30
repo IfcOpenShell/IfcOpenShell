@@ -22,7 +22,7 @@ from ifcopenshell.util.selector import Selector
 import blenderbim.tool as tool
 from blenderbim.bim.prop import ObjProperty, StrProperty
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.search.data import SearchData, ColourByPropertyData
+from blenderbim.bim.module.search.data import SearchData, ColourByPropertyData, SelectSimilarData
 from bpy.types import PropertyGroup
 from blenderbim.tool.ifc import Ifc
 from . import ui, prop, operator
@@ -36,6 +36,12 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+
+
+def get_element_key(self, context):
+    if not SelectSimilarData.is_loaded:
+        SelectSimilarData.load()
+    return SelectSimilarData.data["element_key"]
 
 
 def get_saved_searches(self, context):
@@ -110,6 +116,7 @@ class BIMColour(PropertyGroup):
 
 
 class BIMSearchProperties(PropertyGroup):
+    element_key: EnumProperty(items=get_element_key, name="Element Key")
     filter_query: StringProperty(name="Filter Query")
     filter_groups: CollectionProperty(type=BIMFilterGroup, name="Filter Groups")
     facet: EnumProperty(
@@ -129,15 +136,6 @@ class BIMSearchProperties(PropertyGroup):
     colourscheme_query: StringProperty(name="Colourscheme Query", default="class")
     colourscheme: CollectionProperty(type=BIMColour)
     active_colourscheme_index: IntProperty(name="Active Colourscheme Index")
-    should_use_regex: BoolProperty(name="Search With Regex", default=False)
-    should_ignorecase: BoolProperty(name="Search Ignoring Case", default=True)
-    global_id: StringProperty(name="GlobalId")
-    ifc_class: StringProperty(name="IFC Class")
-    search_attribute_name: StringProperty(name="Search Attribute Name")
-    search_attribute_value: StringProperty(name="Search Attribute Value")
-    search_pset_name: StringProperty(name="Search Pset Name")
-    search_prop_name: StringProperty(name="Search Prop Name")
-    search_pset_value: StringProperty(name="Search Pset Value")
     filter_type: StringProperty(name="Filter Type")
     filter_classes: CollectionProperty(type=BIMFilterClasses, name="Filter Classes")
     filter_classes_index: IntProperty(name="Filter Classes Index")

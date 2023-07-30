@@ -18,7 +18,7 @@
 
 import bpy
 from bpy.types import Panel
-from blenderbim.bim.module.search.data import SearchData, ColourByPropertyData
+from blenderbim.bim.module.search.data import SearchData, ColourByPropertyData, SelectSimilarData
 
 
 class BIM_PT_search(Panel):
@@ -95,44 +95,6 @@ class BIM_PT_search(Panel):
 
         return  # Temporary for now whilst searching is being upgraded.
 
-        row = self.layout.row()
-        row.prop(props, "should_use_regex")
-        row = self.layout.row()
-        row.prop(props, "should_ignorecase")
-
-        row = self.layout.row(align=True)
-        row.operator("bim.reset_object_colours", icon="BRUSH_DATA")
-
-        row = self.layout.row(align=True)
-        row.prop(props, "global_id", text="", icon="TRACKER")
-        row.operator("bim.select_global_id", text="", icon="VIEWZOOM").global_id = props.global_id
-
-        row = self.layout.row(align=True)
-        row.prop(props, "ifc_class", text="", icon="OBJECT_DATA")
-        row.operator("bim.select_ifc_class", text="", icon="VIEWZOOM").ifc_class = props.ifc_class
-        row.operator("bim.colour_by_class", text="", icon="BRUSH_DATA")
-
-        row = self.layout.row(align=True)
-        row.prop(props, "search_attribute_name", text="", icon="PROPERTIES")
-        row.prop(props, "search_attribute_value", text="")
-        op = row.operator("bim.select_attribute", text="", icon="VIEWZOOM")
-        op.attribute_name = props.search_attribute_name
-        op.attribute_value = props.search_attribute_value
-        op = row.operator("bim.colour_by_attribute", text="", icon="BRUSH_DATA")
-        op.attribute_name = props.search_attribute_name
-
-        row = self.layout.row(align=True)
-        row.prop(props, "search_pset_name", text="", icon="COPY_ID")
-        row.prop(props, "search_prop_name", text="")
-        row.prop(props, "search_pset_value", text="")
-        op = row.operator("bim.select_pset", text="", icon="VIEWZOOM")
-        op.pset_name = props.search_pset_name
-        op.prop_name = props.search_prop_name
-        op.pset_value = props.search_pset_value
-        op = row.operator("bim.colour_by_pset", text="", icon="BRUSH_DATA")
-        op.pset_name = props.search_pset_name
-        op.prop_name = props.search_prop_name
-
         row = self.layout.row(align=True)
         row.operator("bim.activate_ifc_class_filter", icon="FILTER")
         row.operator("bim.activate_ifc_building_storey_filter", icon="FILTER")
@@ -169,6 +131,30 @@ class BIM_PT_colour_by_property(Panel):
 
         if len(props.colourscheme):
             self.layout.template_list("BIM_UL_colourscheme", "", props, "colourscheme", props, "active_colourscheme_index")
+
+
+class BIM_PT_select_similar(Panel):
+    bl_label = "Select Similar"
+    bl_idname = "BIM_PT_select_similar"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_parent_id = "BIM_PT_tab_grouping_and_filtering"
+
+    def draw(self, context):
+        if not SelectSimilarData.is_loaded:
+            SelectSimilarData.load()
+
+        props = context.scene.BIMSearchProperties
+
+        if SelectSimilarData.data["element_key"]:
+            row = self.layout.row(align=True)
+            row.prop(props, "element_key", text="")
+            row.operator("bim.select_similar", text="", icon="RESTRICT_SELECT_OFF")
+        else:
+            row = self.layout.row()
+            row.label(text=f"No Active Element")
 
 
 class BIM_UL_colourscheme(bpy.types.UIList):

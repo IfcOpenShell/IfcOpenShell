@@ -58,19 +58,6 @@ colour_list = [
 ]
 
 
-def does_keyword_exist(pattern, string, context):
-    string = str(string)
-    props = context.scene.BIMSearchProperties
-    if props.should_use_regex and props.should_ignorecase and re.search(pattern, string, flags=re.IGNORECASE):
-        return True
-    elif props.should_use_regex and re.search(pattern, string):
-        return True
-    elif props.should_ignorecase and string.lower() == pattern.lower():
-        return True
-    elif string == pattern:
-        return True
-
-
 class AddFilterGroup(Operator):
     bl_idname = "bim.add_filter_group"
     bl_label = "Add Filter Group"
@@ -336,289 +323,11 @@ class SelectIfcClass(Operator):
     ifc_class: StringProperty()
 
     def execute(self, context):
-        ifc_class = self.ifc_class
-
-        if not ifc_class:
-            self.report({"ERROR"}, "Set IFC Class for search.")
-            return {"CANCELLED"}
-
-        sch = tool.Ifc.schema()
-        try:
-            sch.declaration_by_name(ifc_class)
-        except RuntimeError:
-            self.report({"ERROR"}, f"IFC Class '{ifc_class}' is not found in schema {sch.name()}.")
-            return {"CANCELLED"}
-
-        self.file = IfcStore.get_file()
-        n_objects = 0
-        for obj in context.visible_objects:
-            if not obj.BIMObjectProperties.ifc_definition_id or obj.is_library_indirect:
-                continue
-            element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-            if does_keyword_exist(ifc_class, element.is_a(), context):
+        for element in tool.Ifc.get().by_type(self.ifc_class):
+            obj = tool.Ifc.get_object(element)
+            if obj:
                 obj.select_set(True)
-                n_objects += 1
-        self.report({"INFO"}, f"{n_objects} objects selected.")
         return {"FINISHED"}
-
-
-class SelectAttribute(Operator):
-    """Click to select all objects that match with the given Attribute Name and Value"""
-
-    bl_idname = "bim.select_attribute"
-    bl_label = "Select Attribute"
-    bl_options = {"REGISTER", "UNDO"}
-
-    attribute_name: bpy.props.StringProperty(default="")
-    attribute_value: bpy.props.StringProperty(default="")
-
-    def execute(self, context):
-        attribute_name = self.attribute_name or context.scene.BIMSearchProperties.search_attribute_name
-        attribute_value = self.attribute_value
-
-        if not attribute_name:
-            self.report({"ERROR"}, "Set Attribute Name for search.")
-            return {"CANCELLED"}
-
-        self.file = IfcStore.get_file()
-        n_objects = 0
-        for obj in context.visible_objects:
-            if not obj.BIMObjectProperties.ifc_definition_id:
-                continue
-            element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-            if context.scene.BIMSearchProperties.should_ignorecase:
-                data = element.get_info()
-                value = next((v for k, v in data.items() if k.lower() == attribute_name.lower()), None)
-            else:
-                value = getattr(element, attribute_name, None)
-            if does_keyword_exist(attribute_value, value, context):
-                obj.select_set(True)
-                n_objects += 1
-        self.report({"INFO"}, f"{n_objects} objects selected.")
-        return {"FINISHED"}
-
-
-class SelectPset(Operator):
-    """Click to select all objects that match with the given Pset Name, Properties Name and Value"""
-
-    bl_idname = "bim.select_pset"
-    bl_label = "Select Pset"
-    bl_options = {"REGISTER", "UNDO"}
-
-    pset_name: bpy.props.StringProperty(default="")
-    prop_name: bpy.props.StringProperty(default="")
-    pset_value: bpy.props.StringProperty(default="")
-
-    def execute(self, context):
-        search_pset_name = self.pset_name or context.scene.BIMSearchProperties.search_pset_name
-        search_prop_name = self.prop_name or context.scene.BIMSearchProperties.search_prop_name
-        pattern = self.pset_value
-
-        if not search_pset_name:
-            self.report({"ERROR"}, "Set PSet name for search.")
-            return {"CANCELLED"}
-        if not search_prop_name:
-            self.report({"ERROR"}, "Set Property name for search.")
-            return {"CANCELLED"}
-
-        self.file = IfcStore.get_file()
-        props = context.scene.BIMSearchProperties
-        n_objects = 0
-        for obj in context.visible_objects:
-            if not obj.BIMObjectProperties.ifc_definition_id:
-                continue
-            element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-            psets = ifcopenshell.util.element.get_psets(element)
-            if search_pset_name == "":
-                props = {}
-                [props.update(p) for p in psets.values()]
-            else:
-                props = None
-            if context.scene.BIMSearchProperties.should_ignorecase:
-                props = props or next((v for k, v in psets.items() if k.lower() == search_pset_name.lower()), {})
-                value = str(next((v for k, v in props.items() if k.lower() == search_prop_name.lower()), None))
-            else:
-                props = props or psets.get(search_pset_name, {})
-                value = props.get(search_prop_name, None)
-            if does_keyword_exist(pattern, value, context):
-                obj.select_set(True)
-                n_objects += 1
-        self.report({"INFO"}, f"{n_objects} objects selected.")
-        return {"FINISHED"}
-
-
-class ColourByAttribute(Operator):
-    """Click to colour different objects according to given Attribute Name"""
-
-    bl_idname = "bim.colour_by_attribute"
-    bl_label = "Colour by Attribute"
-    bl_options = {"REGISTER", "UNDO"}
-
-    attribute_name: bpy.props.StringProperty(default="")
-
-    def execute(self, context):
-        IfcStore.begin_transaction(self)
-        self.store_state(context)
-        result = self._execute(context)
-        IfcStore.add_transaction_operation(self)
-        IfcStore.end_transaction(self)
-        return result
-
-    def _execute(self, context):
-        attribute_name = self.attribute_name or context.scene.BIMSearchProperties.search_attribute_name
-
-        if not attribute_name:
-            self.report({"ERROR"}, "Set Attribute Name for search.")
-            return {"CANCELLED"}
-
-        self.file = IfcStore.get_file()
-        colours = cycle(colour_list)
-        values = {}
-        for obj in context.visible_objects:
-            if not obj.BIMObjectProperties.ifc_definition_id:
-                continue
-            element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-            if context.scene.BIMSearchProperties.should_ignorecase:
-                data = element.get_info()
-                value = next((v for k, v in data.items() if k.lower() == attribute_name.lower()), None)
-            else:
-                value = getattr(element, attribute_name, None)
-            if value not in values:
-                values[value] = next(colours)
-            obj.color = values[value]
-        areas = [a for a in context.screen.areas if a.type == "VIEW_3D"]
-        if areas:
-            areas[0].spaces[0].shading.color_type = "OBJECT"
-        return {"FINISHED"}
-
-    def store_state(self, context):
-        areas = [a for a in context.screen.areas if a.type == "VIEW_3D"]
-        if areas:
-            self.transaction_data = {"area": areas[0], "color_type": areas[0].spaces[0].shading.color_type}
-
-    def rollback(self, data):
-        if data:
-            data["area"].spaces[0].shading.color_type = data["color_type"]
-
-    def commit(self, data):
-        if data:
-            data["area"].spaces[0].shading.color_type = "OBJECT"
-
-
-class ColourByPset(Operator):
-    """Click to colour different objects according to given Prop Name"""
-
-    bl_idname = "bim.colour_by_pset"
-    bl_label = "Colour by Pset"
-    bl_options = {"REGISTER", "UNDO"}
-
-    pset_name: bpy.props.StringProperty(default="")
-    prop_name: bpy.props.StringProperty(default="")
-
-    def execute(self, context):
-        IfcStore.begin_transaction(self)
-        self.store_state(context)
-        result = self._execute(context)
-        IfcStore.add_transaction_operation(self)
-        IfcStore.end_transaction(self)
-        return result
-
-    def _execute(self, context):
-        search_pset_name = self.pset_name or context.scene.BIMSearchProperties.search_pset_name
-        search_prop_name = self.prop_name or context.scene.BIMSearchProperties.search_prop_name
-
-        if not search_pset_name:
-            self.report({"ERROR"}, "Set PSet name for search.")
-            return {"CANCELLED"}
-        if not search_prop_name:
-            self.report({"ERROR"}, "Set Property name for search.")
-            return {"CANCELLED"}
-
-        self.file = IfcStore.get_file()
-        colours = cycle(colour_list)
-        values = {}
-        for obj in context.visible_objects:
-            if not obj.BIMObjectProperties.ifc_definition_id:
-                continue
-            element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-            psets = ifcopenshell.util.element.get_psets(element)
-            if search_pset_name == "":
-                props = {}
-                [props.update(p) for p in psets.values()]
-            else:
-                props = None
-            if context.scene.BIMSearchProperties.should_ignorecase:
-                props = props or next((v for k, v in psets.items() if k.lower() == search_pset_name.lower()), {})
-                value = str(next((v for k, v in props.items() if k.lower() == search_prop_name.lower()), None))
-            else:
-                props = props or psets.get(search_pset_name, {})
-                value = str(props.get(search_prop_name, None))
-            if value not in values:
-                values[value] = next(colours)
-            obj.color = values[value]
-        areas = [a for a in context.screen.areas if a.type == "VIEW_3D"]
-        if areas:
-            areas[0].spaces[0].shading.color_type = "OBJECT"
-        return {"FINISHED"}
-
-    def store_state(self, context):
-        areas = [a for a in context.screen.areas if a.type == "VIEW_3D"]
-        if areas:
-            self.transaction_data = {"area": areas[0], "color_type": areas[0].spaces[0].shading.color_type}
-
-    def rollback(self, data):
-        if data:
-            data["area"].spaces[0].shading.color_type = data["color_type"]
-
-    def commit(self, data):
-        if data:
-            data["area"].spaces[0].shading.color_type = "OBJECT"
-
-
-class ColourByClass(Operator):
-    """Click to colour different objects according to their IFC Classes"""
-
-    bl_idname = "bim.colour_by_class"
-    bl_label = "Colour by Class"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        IfcStore.begin_transaction(self)
-        self.store_state(context)
-        result = self._execute(context)
-        IfcStore.add_transaction_operation(self)
-        IfcStore.end_transaction(self)
-        return result
-
-    def _execute(self, context):
-        self.file = IfcStore.get_file()
-        colours = cycle(colour_list)
-        ifc_classes = {}
-        for obj in context.visible_objects:
-            if not obj.BIMObjectProperties.ifc_definition_id:
-                continue
-            element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-            ifc_class = element.is_a()
-            if ifc_class not in ifc_classes:
-                ifc_classes[ifc_class] = next(colours)
-            obj.color = ifc_classes[ifc_class]
-        areas = [a for a in context.screen.areas if a.type == "VIEW_3D"]
-        if areas:
-            areas[0].spaces[0].shading.color_type = "OBJECT"
-        return {"FINISHED"}
-
-    def store_state(self, context):
-        areas = [a for a in context.screen.areas if a.type == "VIEW_3D"]
-        if areas:
-            self.transaction_data = {"area": areas[0], "color_type": areas[0].spaces[0].shading.color_type}
-
-    def rollback(self, data):
-        if data:
-            data["area"].spaces[0].shading.color_type = data["color_type"]
-
-    def commit(self, data):
-        if data:
-            data["area"].spaces[0].shading.color_type = "OBJECT"
 
 
 class ResetObjectColours(Operator):
@@ -993,3 +702,21 @@ class AddToIfcGroup(Operator):
         bpy.ops.bim.edit_group()
         bpy.ops.bim.disable_group_editing_ui()
         return {"FINISHED"}
+
+
+class SelectSimilar(Operator, tool.Ifc.Operator):
+    bl_idname = "bim.select_similar"
+    bl_label = "Select Similar"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = context.scene.BIMSearchProperties
+        obj = context.active_object
+        element = tool.Ifc.get_entity(obj)
+        value = ifcopenshell.util.selector.get_element_value(element, props.element_key)
+        for obj in context.visible_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            if ifcopenshell.util.selector.get_element_value(element, props.element_key) == value:
+                obj.select_set(True)

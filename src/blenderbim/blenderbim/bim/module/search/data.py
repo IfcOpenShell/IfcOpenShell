@@ -18,12 +18,14 @@
 
 import bpy
 import json
+import ifcopenshell.util.element
 import blenderbim.tool as tool
 
 
 def refresh():
     SearchData.is_loaded = False
     ColourByPropertyData.is_loaded = False
+    SelectSimilarData.is_loaded = False
 
 
 class SearchData:
@@ -76,3 +78,31 @@ class ColourByPropertyData:
             except:
                 pass
         return [(str(g.id()), g.Name or "Unnamed", "") for g in sorted(results, key=lambda x: x.Name or "Unnamed")]
+
+
+class SelectSimilarData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.is_loaded = True
+        cls.data = {}
+        cls.data["element_key"] = cls.element_key()
+
+    @classmethod
+    def element_key(cls):
+        obj = bpy.context.active_object
+        if not obj:
+            return []
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return []
+        keys = [a.name() for a in element.wrapped_data.declaration().as_entity().all_attributes()]
+        psets = ifcopenshell.util.element.get_psets(element, psets_only=True)
+        for pset, properties in psets.items():
+            if pset.endswith("Common"):
+                keys.extend([f'r".*Common"."{name}"' for name in properties.keys() if name != "id"])
+            else:
+                keys.extend([f"{pset}.{name}" for name in properties.keys() if name != "id"])
+        return [(k, k, "") for k in keys]

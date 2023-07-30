@@ -58,45 +58,6 @@ def update_tab(self, context):
     self.previous_tab = self.tab
 
 
-def update_preset(self, context):
-    from blenderbim.bim.data.ui.presets import presets
-
-    module_visibility = context.scene.BIMProperties.module_visibility
-    chosen_preset = context.scene.BIMProperties.ui_preset
-
-    for module in module_visibility:
-        module.is_visible = module.name in presets[chosen_preset]
-
-
-def load_presets(self, context):
-    from blenderbim.bim.data.ui.presets import presets
-
-    return [(preset, preset, "") for preset in presets.keys()]
-
-
-def update_is_visible(self, context):
-    from blenderbim.bim import modules
-
-    # TODO: Pset depends on sequence module as an edge case.
-    if self.name == "sequence" and not self.is_visible:
-        context.scene.BIMProperties.module_visibility["pset"].is_visible = False
-
-    for cls in modules[self.name].classes:
-        if not issubclass(cls, bpy.types.Panel):
-            continue
-
-        if self.is_visible:
-            try:
-                bpy.utils.register_class(cls)
-            except:
-                pass
-        else:
-            try:
-                bpy.utils.unregister_class(cls)
-            except:
-                pass
-
-
 # If we don't cache strings, accents get mangled due to a Blender bug
 # https://blender.stackexchange.com/questions/216230/is-there-a-workaround-for-the-known-bug-in-dynamic-enumproperty
 # https://github.com/IfcOpenShell/IfcOpenShell/pull/1945
@@ -336,11 +297,6 @@ class Attribute(PropertyGroup):
         setattr(self, self.get_value_name(), value)
 
 
-class ModuleVisibility(PropertyGroup):
-    name: StringProperty(name="Name")
-    is_visible: BoolProperty(name="Value", default=True, update=update_is_visible)
-
-
 def get_tab(self, context):
     return [
         ("PROJECT", "Project Overview", "", blenderbim.bim.icons["IFC"].icon_id, 0),
@@ -365,13 +321,6 @@ class BIMAreaProperties(PropertyGroup):
 
 
 class BIMProperties(PropertyGroup):
-    ui_preset: EnumProperty(
-        name="UI Preset",
-        description="Select from one of the available UI presets, or configure the modules to your preference below",
-        update=update_preset,
-        items=load_presets,
-    )
-    module_visibility: CollectionProperty(name="Module Visibility", type=ModuleVisibility)
     schema_dir: StringProperty(
         default=os.path.join(cwd, "schema") + os.path.sep, name="Schema Directory", update=update_schema_dir
     )

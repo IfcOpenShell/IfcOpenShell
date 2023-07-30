@@ -40,6 +40,7 @@ import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.helper as helper
 from blenderbim.bim.module.drawing.data import FONT_SIZES, DecoratorData
 from blenderbim.bim.module.drawing.prop import get_diagram_scales, BOX_ALIGNMENT_POSITIONS, ANNOTATION_TYPES_DATA
+from lxml import etree
 from mathutils import Vector
 from fractions import Fraction
 import collections
@@ -884,7 +885,11 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def move_file(cls, src, dest):
-        shutil.move(src, dest)
+        try:
+            shutil.move(src, dest)
+        except:
+            # Perhaps the file is locked in Windows?
+            shutil.copy(src, dest)
 
     @classmethod
     def generate_drawing_name(cls, target_view, location_hint):
@@ -1377,12 +1382,19 @@ class Drawing(blenderbim.core.tool.Drawing):
         return [r for r in tool.Ifc.get().by_type("IfcDocumentReference") if r.Location == location]
 
     @classmethod
-    def update_embedded_svg_location(cls, uri, old_location, new_location):
-        with open(uri, "r") as f:
-            svg = f.read()
-        svg = svg.replace(os.path.basename(old_location), os.path.basename(new_location))
-        with open(uri, "w") as f:
-            f.write(svg)
+    def update_embedded_svg_location(cls, uri, reference, new_location):
+        tree = etree.parse(uri)
+        root = tree.getroot()
+        rel_location = os.path.relpath(new_location, os.path.dirname(uri))
+
+        for g in root.findall(
+            './/{http://www.w3.org/2000/svg}g[@data-type="drawing"][@data-id="' + str(reference.id()) + '"]'
+        ):
+            for foreground in g.findall('.//{http://www.w3.org/2000/svg}image[@data-type="foreground"]'):
+                foreground.attrib["{http://www.w3.org/1999/xlink}href"] = rel_location
+            for background in g.findall('.//{http://www.w3.org/2000/svg}image[@data-type="background"]'):
+                background.attrib["{http://www.w3.org/1999/xlink}href"] = rel_location[0:-4] + "-underlay.png"
+        tree.write(uri, pretty_print=True, xml_declaration=True, encoding="utf-8")
 
     @classmethod
     def get_reference_description(cls, reference):
@@ -1761,3 +1773,11 @@ class Drawing(blenderbim.core.tool.Drawing):
                 else:
                     result += float(child) * factor
         return result * 0.0254
+
+    @classmethod
+    def extend_line(cls, start, end, distance):
+        start = np.array(start)
+        end = np.array(end)
+        direction = end - start
+        offset = distance * (direction / np.linalg.norm(direction))
+        return (start - offset).tolist(), (end + offset).tolist()
