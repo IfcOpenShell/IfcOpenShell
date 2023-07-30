@@ -311,7 +311,6 @@ class RemoveLayer(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_layer"
     bl_label = "Remove Layer"
     bl_options = {"REGISTER", "UNDO"}
-    obj: bpy.props.StringProperty()
     layer: bpy.props.IntProperty()
 
     def _execute(self, context):
@@ -321,6 +320,21 @@ class RemoveLayer(bpy.types.Operator, tool.Ifc.Operator):
                 self.report({"ERROR"}, "At least one layer must exist")
                 return {"CANCELLED"}
         ifcopenshell.api.run("material.remove_layer", tool.Ifc.get(), layer=layer)
+
+
+class DuplicateLayer(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.duplicate_layer"
+    bl_label = "Duplicate Layer"
+    bl_options = {"REGISTER", "UNDO"}
+    layer: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        layer = tool.Ifc.get().by_id(self.layer)
+        new_layer = ifcopenshell.util.element.copy(tool.Ifc.get(), layer)
+        for material_set in layer.ToMaterialLayerSet:
+            layers = list(material_set.MaterialLayers)
+            layers.insert(layers.index(layer), new_layer)
+            material_set.MaterialLayers = layers
 
 
 class AddListItem(bpy.types.Operator, tool.Ifc.Operator):
