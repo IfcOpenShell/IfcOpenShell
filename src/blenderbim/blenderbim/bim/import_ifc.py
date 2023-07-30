@@ -143,27 +143,13 @@ class MaterialCreator:
         return True
 
     def load_texture_map(self, coordinates):
-        if coordinates.is_a("IfcIndexedPolygonalTextureMap"):
-            self.load_ifc_indexed_polygonal_texture_map(coordinates)
-        elif coordinates.is_a("IfcIndexedTriangleTextureMap"):
-            self.load_ifc_indexed_triangle_texture_map(coordinates)
-
-    def load_ifc_indexed_polygonal_texture_map(self, coordinates):
         # As IfcOpenShell triangulated Polygonal Faceset, we may need merge the triangles first.
         if len(self.mesh.polygons) != len(coordinates.TexCoordIndices):
-            view_layer = bpy.context.view_layer
-            view_layer.active_layer_collection.collection.objects.link(self.obj)
-            view_layer.objects.active = self.obj
-            bpy.ops.object.mode_set(mode='EDIT')
-            bpy.ops.mesh.tris_convert_to_quads()
-            bpy.ops.mesh.normals_make_consistent()
-            bpy.ops.object.mode_set(mode='OBJECT')
-            view_layer.active_layer_collection.collection.objects.unlink(self.obj)
+            IfcImporter.merge_mesh(self.obj)
 
         # Get a BMesh representation
         bm = bmesh.new()
         bm.from_mesh(self.mesh)
-        uv_layer = bm.loops.layers.uv.verify()
 
         # remap the faceset CoordList index to the vertices in blender mesh
         coordinates_remap = []
@@ -172,41 +158,30 @@ class MaterialCreator:
             index = next(v.index for v in bm.verts if (v.co - co).length_squared < 1e-5)
             coordinates_remap.append(index)
 
-        faces_remap = [[coordinates_remap[i-1] for i in tex_coord_index.TexCoordsOf.CoordIndex]
+        faces_remap = None
+        texture_map = None
+        if coordinates.is_a("IfcIndexedPolygonalTextureMap"):
+            faces_remap = [[coordinates_remap[i-1] for i in tex_coord_index.TexCoordsOf.CoordIndex]
                         for tex_coord_index in coordinates.TexCoordIndices]
-        
-        for id, bface in enumerate(bm.faces):
+            texture_map = coordinates.TexCoordIndices
+        elif coordinates.is_a("IfcIndexedTriangleTextureMap"):
+            faces_remap = [[coordinates_remap[i-1] for i in triangle_face]
+                        for triangle_face in coordinates.MappedTo.CoordIndex]
+            texture_map = coordinates.TexCoordIndex
+
+        # apply uv to each face
+        for bface in bm.faces:
             face = [loop.vert.index for loop in bface.loops]
             # find the corresponding TexCoordIndex by matching ifc faceset with blender face
-            # sort TexCoordIndex as the index order may different from blender face
+            # remap TexCoordIndex as the loop start may different from blender face
             texCoordIndex = next(
-                [tex_coord_index.TexCoordIndex[face_remap.index(i)] for i in face]
-                for tex_coord_index, face_remap in zip(coordinates.TexCoordIndices, faces_remap)
+                [tex_coord_index[face_remap.index(i)] for i in face]
+                for tex_coord_index, face_remap in zip(texture_map, faces_remap)
                 if all(i in face for i in face_remap)
             )
             # apply uv to each loop
             for loop, i in zip(bface.loops, texCoordIndex):
                 loop[uv_layer].uv = coordinates.TexCoords.TexCoordsList[i-1]
-
-        # Finish up, write the bmesh back to the mesh
-        bm.to_mesh(self.mesh)
-        bm.free()
-
-    def load_ifc_indexed_triangle_texture_map(self, coordinates):
-        # Get a BMesh representation
-        bm = bmesh.new()
-        bm.from_mesh(self.mesh)
-        uv_layer = bm.loops.layers.uv.verify()
-
-        faceset = coordinates.MappedTo
-        for id, bface in enumerate(bm.faces):
-            tex_map = coordinates.TexCoordIndex[id]
-            face_coordinates = [mathutils.Vector(faceset.Coordinates.CoordList[i-1]) for i in faceset.CoordIndex[id]]
-            for loop in bface.loops:
-                co = loop.vert.co
-                # there's rearrangement of the face indices, so we need to find the index of the vertex in the face
-                i_tex_map = next(i for i, x in enumerate(face_coordinates) if (x - co).length_squared < 1e-5)
-                loop[uv_layer].uv = coordinates.TexCoords.TexCoordsList[tex_map[i_tex_map]-1]
 
         # Finish up, write the bmesh back to the mesh
         bm.to_mesh(self.mesh)
@@ -1409,6 +1384,17 @@ class IfcImporter:
         project_collection = bpy.context.view_layer.layer_collection.children[self.project["blender"].name]
         project_collection.children[self.type_collection.name].hide_viewport = True
 
+    @classmethod
+    def merge_mesh(cls, obj):
+        view_layer = bpy.context.view_layer
+        view_layer.active_layer_collection.collection.objects.link(obj)
+        bpy.context.view_layer.objects.active = obj
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.tris_convert_to_quads()
+        bpy.ops.mesh.normals_make_consistent()
+        bpy.ops.object.mode_set(mode='OBJECT')
+        view_layer.active_layer_collection.collection.objects.unlink(obj)
+
     def clean_mesh(self):
         obj = None
         last_obj = None
@@ -1416,11 +1402,7 @@ class IfcImporter:
             if not isinstance(obj, bpy.types.Object):
                 continue
             if obj.type == "MESH":
-                bpy.context.view_layer.objects.active = obj
-                bpy.ops.object.mode_set(mode='EDIT')
-                bpy.ops.mesh.tris_convert_to_quads()
-                bpy.ops.mesh.normals_make_consistent()
-                bpy.ops.object.mode_set(mode='OBJECT')
+                merge_mesh(obj)
                 last_obj = obj
         if not last_obj:
             return
