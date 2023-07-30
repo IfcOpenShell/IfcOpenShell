@@ -499,7 +499,6 @@ ANNOTATION_TYPES_DATA = {
     "TEXT":          ("Text",             "", "SMALL_CAPS", "empty"),
     "TEXT_LEADER":   ("Leader",           "", "TRACKING_BACKWARDS", "curve"),
     "STAIR_ARROW":   ("Stair Arrow",      "Add stair arrow annotation.\nIf you have IfcStairFlight object selected, it will be used as a reference for the annotation", "SCREEN_BACK", "curve"),
-    "HIDDEN_LINE":   ("Hidden",           "", "CON_TRACKTO", "mesh"),
     "PLAN_LEVEL":    ("Level (Plan)",     "", "SORTBYEXT", "curve"),
     "SECTION_LEVEL": ("Level (Section)",  "", "TRIA_DOWN", "curve"),
     "BREAKLINE":     ("Breakline",        "", "FCURVE", "mesh"),

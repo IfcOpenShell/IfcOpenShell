@@ -203,8 +203,6 @@ class SvgWriter:
                 self.draw_section_annotation(obj)
             elif element.ObjectType == "BREAKLINE":
                 self.draw_break_annotations(obj)
-            elif element.ObjectType == "HIDDEN_LINE":
-                self.draw_line_annotation(obj)
             elif element.ObjectType == "PLAN_LEVEL":
                 self.draw_plan_level_annotation(obj)
             elif element.ObjectType == "SECTION_LEVEL":

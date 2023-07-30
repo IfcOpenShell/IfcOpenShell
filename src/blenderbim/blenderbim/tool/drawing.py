@@ -206,6 +206,7 @@ class Drawing(blenderbim.core.tool.Drawing):
     def create_camera(cls, name, matrix):
         camera = bpy.data.objects.new(name, bpy.data.cameras.new(name))
         camera.location = (0, 0, 1.5)  # The view shall be 1.5m above the origin
+        camera.data.show_limits = True
         camera.data.type = "ORTHO"
         camera.data.ortho_scale = 50  # The default of 6m is too small
         camera.data.clip_start = 0.002  # 2mm is close to zero but allows any GPU-drawn lines to be visible.
