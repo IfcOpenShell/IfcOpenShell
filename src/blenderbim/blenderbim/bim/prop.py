@@ -327,6 +327,7 @@ class BIMProperties(PropertyGroup):
     data_dir: StringProperty(
         default=os.path.join(cwd, "data") + os.path.sep, name="Data Directory", update=update_data_dir
     )
+    pset_dir: StringProperty(default=os.path.join("psets") + os.path.sep, name="Default Psets Directory")
     ifc_file: StringProperty(name="IFC File", update=update_ifc_file)
     last_transaction: StringProperty(name="Last Transaction")
     should_section_selected_objects: BoolProperty(name="Section Selected Objects", default=False)
