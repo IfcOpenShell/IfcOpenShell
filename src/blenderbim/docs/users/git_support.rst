@@ -44,14 +44,14 @@ get to a point where it would be useful to later retrieve this state, you need
 to *commit* this to the Git repository. BlenderBIM gives you three options:
 
 - Showing uncommitted changes will temporarily highlight the differences
-between the saved file and the last committed revision. Green objects are new
-and blue objects exist in the previous revision but have since been modified.
+  between the saved file and the last committed revision. Green objects are new
+  and blue objects exist in the previous revision but have since been modified.
 
 - Discarding uncommitted changes will throw away all your saved changes and
-revert the model to the previous revision.
+  revert the model to the previous revision.
 
 - Committing changes will save this state of the model in the repository, along
-with a short commit message, the date, and your author details.
+  with a short commit message, the date, and your author details.
 
 .. Tip::
 
