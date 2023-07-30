@@ -202,7 +202,7 @@ class CreateDrawing(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return bool(tool.Ifc.get() and tool.Drawing.is_camera_orthographic() and tool.Drawing.is_drawing_active())
+        return bool(tool.Ifc.get() and tool.Drawing.is_drawing_active())
 
     def invoke(self, context, event):
         # printing all drawings on shift+click
@@ -251,14 +251,20 @@ class CreateDrawing(bpy.types.Operator):
 
                     self.svg_writer.setup_drawing_resource_paths(self.camera_element)
 
+                underlay_svg = None
+                linework_svg = None
+                annotation_svg = None
+
                 with profile("Generate underlay"):
                     underlay_svg = self.generate_underlay(context)
 
                 with profile("Generate linework"):
-                    linework_svg = self.generate_linework(context)
+                    if tool.Drawing.is_camera_orthographic():
+                        linework_svg = self.generate_linework(context)
 
                 with profile("Generate annotation"):
-                    annotation_svg = self.generate_annotation(context)
+                    if tool.Drawing.is_camera_orthographic():
+                        annotation_svg = self.generate_annotation(context)
 
                 with profile("Combine SVG layers"):
                     svg_path = self.combine_svgs(context, underlay_svg, linework_svg, annotation_svg)
