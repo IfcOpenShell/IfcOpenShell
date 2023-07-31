@@ -78,7 +78,7 @@ elif sys.argv[1] == "--pyver?":
     latest_blender_version = get_latest_blender_version()
     if latest_blender_version:
         latest_blender_version_tag = f"v{latest_blender_version[0]}"
-        resp = request_repo_info(URL_BLENDER_CMAKE)
+        resp = request_repo_info(URL_BLENDER_CMAKE.format(latest_blender_version_tag))
         html_txt = str(resp.read())
         found = re.findall(RE_BLENDER_PYTHON_VERSION_MAJ_MIN, html_txt)
         if found:
