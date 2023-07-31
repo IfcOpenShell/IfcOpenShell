@@ -1189,15 +1189,17 @@ T* dcast(const U*& u) {
 
 	// @nb traverses nested collections
 	template <typename Fn>
-	taxonomy::collection::ptr filter(taxonomy::collection* collection, Fn fn) {
-		auto filtered = new taxonomy::collection;
+	taxonomy::collection::ptr filter(taxonomy::collection::ptr collection, Fn fn) {
+		auto filtered = taxonomy::make<taxonomy::collection>();
 		for (auto& child : collection->children) {
 			if (apply_predicate_to_collection(child, fn)) {
 				filtered->children.push_back(clone(child));
 			}
 		}
 		if (filtered->children.empty()) {
+#ifdef TAXONOMY_USE_NAKED_PTR
 			delete filtered;
+#endif
 			return nullptr;
 		}
 		return filtered;
