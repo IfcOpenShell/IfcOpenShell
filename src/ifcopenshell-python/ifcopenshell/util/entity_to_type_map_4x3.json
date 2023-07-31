@@ -374,6 +374,54 @@
     "IfcCivilElement": [
         "IfcCivilElementType"
     ],
+    "IfcFurnishingElement": [
+        "IfcFurnishingElementType"
+    ],
+    "IfcDistributionElement": [
+        "IfcDistributionElementType"
+    ],
+    "IfcBuiltElement": [
+        "IfcBuiltElementType"
+    ],
+    "IfcDistributionControlElement": [
+        "IfcDistributionElementType"
+    ],
+    "IfcDistributionFlowElement": [
+        "IfcDistributionElementType"
+    ],
+    "IfcEarthworksElement": [
+        "IfcBuiltElementType"
+    ],
+    "IfcEarthworksFill": [
+        "IfcBuiltElementType"
+    ],
+    "IfcEnergyConversionDevice": [
+        "IfcDistributionElementType"
+    ],
+    "IfcFlowController": [
+        "IfcDistributionElementType"
+    ],
+    "IfcFlowFitting": [
+        "IfcDistributionElementType"
+    ],
+    "IfcFlowMovingDevice": [
+        "IfcDistributionElementType"
+    ],
+    "IfcFlowSegment": [
+        "IfcDistributionElementType"
+    ],
+    "IfcFlowStorageDevice": [
+        "IfcDistributionElementType"
+    ],
+    "IfcFlowTerminal": [
+        "IfcDistributionElementType"
+    ],
+    "IfcFlowTreatmentDevice": [
+        "IfcDistributionElementType"
+    ],
+    "IfcReinforcedSoil": [
+        "IfcBuiltElementType"
+    ],
     "IfcWallStandardCase": [
         "IfcWallType"
     ]
