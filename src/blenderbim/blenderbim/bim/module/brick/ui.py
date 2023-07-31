@@ -122,8 +122,9 @@ class BIM_PT_brickschema(Panel):
                 col.alignment = "RIGHT"
                 row.prop(data=self.props, property="split_screen_toggled", text="", icon="WINDOW")
 
-                row = self.layout.row(align=True)
-                prop_with_search(row, self.props, "new_brick_relation_namespace", text="")
+                if not self.props.new_brick_relation_type == "http://www.w3.org/2000/01/rdf-schema#label":
+                    row = self.layout.row(align=True)
+                    prop_with_search(row, self.props, "new_brick_relation_namespace", text="")
 
                 row = self.layout.row(align=True)
                 prop_with_search(row, self.props, "new_brick_relation_type", text="")
