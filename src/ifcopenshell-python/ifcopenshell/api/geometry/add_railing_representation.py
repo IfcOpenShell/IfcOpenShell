@@ -210,21 +210,21 @@ class Usecase:
 
         def add_cap(railing_coords, arc_points, start=False):
             """add handrail terminal cap"""
-            # TODO: implement more cap types
             railing_coords_for_cap = railing_coords[::-1] if start else railing_coords
 
             start_point = railing_coords_for_cap[-1]
-            cap_dir = (railing_coords_for_cap[-1] - railing_coords_for_cap[-2]).xy.to_3d().normalized()
+            cap_dir = (railing_coords_for_cap[-1] - railing_coords_for_cap[-2]).to_3d().normalized()
             ortho_dir = (cap_dir.yx * V(1, -1)).to_3d().normalized()
+            local_z_down = cap_dir.cross(ortho_dir)
             if start:
                 ortho_dir = -ortho_dir
 
             arc_middle_point_cos = sin(radians(45))
 
             if cap_type in ("180", "TO_END_POST"):
-                arc_point = start_point + cap_dir * terminal_radius + terminal_radius * z_down
+                arc_point = start_point + cap_dir * terminal_radius + terminal_radius * local_z_down
                 arc_points.append(arc_point)
-                cap_coords = [arc_point, start_point + terminal_radius * 2 * z_down]
+                cap_coords = [arc_point, start_point + terminal_radius * 2 * local_z_down]
 
                 if cap_type == "TO_END_POST":
                     end_point = railing_coords_for_cap[-2].copy()
@@ -255,7 +255,7 @@ class Usecase:
                 ]
 
             elif cap_type == "TO_END_POST_AND_FLOOR":
-                first_arc_end = start_point + cap_dir * terminal_radius + terminal_radius * z_down
+                first_arc_end = start_point + cap_dir * terminal_radius + terminal_radius * local_z_down
                 first_arc_coords = get_fillet_points(
                     start_point, start_point + cap_dir * terminal_radius, first_arc_end, terminal_radius
                 )
@@ -264,7 +264,7 @@ class Usecase:
                 end_point = railing_coords_for_cap[-2].copy()
                 end_point.z -= height
                 second_arc_coords = get_fillet_points(
-                    first_arc_end, first_arc_end + z_down * terminal_radius, end_point, terminal_radius
+                    first_arc_end, first_arc_end + local_z_down * terminal_radius, end_point, terminal_radius
                 )
                 arc_points.append(second_arc_coords[1])
                 cap_coords = [start_point] + first_arc_coords + second_arc_coords + [end_point]
