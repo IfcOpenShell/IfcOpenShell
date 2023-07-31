@@ -20,6 +20,9 @@
     "IfcBeam": [
         "IfcBeamType"
     ],
+    "IfcBeamStandardCase": [
+        "IfcBeamType"
+    ],
     "IfcBoiler": [
         "IfcBoilerType"
     ],
@@ -50,10 +53,16 @@
     "IfcChimney": [
         "IfcChimneyType"
     ],
+    "IfcCivilElement": [
+        "IfcCivilElementType"
+    ],
     "IfcCoil": [
         "IfcCoilType"
     ],
     "IfcColumn": [
+        "IfcColumnType"
+    ],
+    "IfcColumnStandardCase": [
         "IfcColumnType"
     ],
     "IfcCommunicationsAppliance": [
@@ -89,7 +98,20 @@
     "IfcDistributionChamberElement": [
         "IfcDistributionChamberElementType"
     ],
+    "IfcDistributionControlElement": [
+        "IfcDistributionElementType"
+    ],
+    "IfcDistributionElement": [
+        "IfcDistributionElementType"
+    ],
+    "IfcDistributionFlowElement": [
+        "IfcDistributionElementType"
+    ],
     "IfcDoor": [
+        "IfcDoorType",
+        "IfcDoorStyle"
+    ],
+    "IfcDoorStandardCase": [
         "IfcDoorType",
         "IfcDoorStyle"
     ],
@@ -123,6 +145,9 @@
     "IfcElementAssembly": [
         "IfcElementAssemblyType"
     ],
+    "IfcEnergyConversionDevice": [
+        "IfcDistributionElementType"
+    ],
     "IfcEngine": [
         "IfcEngineType"
     ],
@@ -144,14 +169,38 @@
     "IfcFireSuppressionTerminal": [
         "IfcFireSuppressionTerminalType"
     ],
+    "IfcFlowController": [
+        "IfcDistributionElementType"
+    ],
+    "IfcFlowFitting": [
+        "IfcDistributionElementType"
+    ],
     "IfcFlowInstrument": [
         "IfcFlowInstrumentType"
     ],
     "IfcFlowMeter": [
         "IfcFlowMeterType"
     ],
+    "IfcFlowMovingDevice": [
+        "IfcDistributionElementType"
+    ],
+    "IfcFlowSegment": [
+        "IfcDistributionElementType"
+    ],
+    "IfcFlowStorageDevice": [
+        "IfcDistributionElementType"
+    ],
+    "IfcFlowTerminal": [
+        "IfcDistributionElementType"
+    ],
+    "IfcFlowTreatmentDevice": [
+        "IfcDistributionElementType"
+    ],
     "IfcFooting": [
         "IfcFootingType"
+    ],
+    "IfcFurnishingElement": [
+        "IfcFurnishingElementType"
     ],
     "IfcFurniture": [
         "IfcFurnitureType"
@@ -186,6 +235,9 @@
     "IfcMember": [
         "IfcMemberType"
     ],
+    "IfcMemberStandardCase": [
+        "IfcMemberType"
+    ],
     "IfcMotorConnection": [
         "IfcMotorConnectionType"
     ],
@@ -202,6 +254,9 @@
         "IfcPipeSegmentType"
     ],
     "IfcPlate": [
+        "IfcPlateType"
+    ],
+    "IfcPlateStandardCase": [
         "IfcPlateType"
     ],
     "IfcProtectiveDevice": [
@@ -241,6 +296,12 @@
         "IfcShadingDeviceType"
     ],
     "IfcSlab": [
+        "IfcSlabType"
+    ],
+    "IfcSlabElementedCase": [
+        "IfcSlabType"
+    ],
+    "IfcSlabStandardCase": [
         "IfcSlabType"
     ],
     "IfcSolarDevice": [
@@ -303,79 +364,18 @@
     "IfcWall": [
         "IfcWallType"
     ],
+    "IfcWallElementedCase": [
+        "IfcWallType"
+    ],
+    "IfcWallStandardCase": [
+        "IfcWallType"
+    ],
     "IfcWasteTerminal": [
         "IfcWasteTerminalType"
     ],
     "IfcWindow": [
         "IfcWindowType",
         "IfcWindowStyle"
-    ],
-    "IfcCivilElement": [
-        "IfcCivilElementType"
-    ],
-    "IfcFurnishingElement": [
-        "IfcFurnishingElementType"
-    ],
-    "IfcDistributionElement": [
-        "IfcDistributionElementType"
-    ],
-    "IfcBeamStandardCase": [
-        "IfcBeamType"
-    ],
-    "IfcColumnStandardCase": [
-        "IfcColumnType"
-    ],
-    "IfcDistributionControlElement": [
-        "IfcDistributionElementType"
-    ],
-    "IfcDistributionFlowElement": [
-        "IfcDistributionElementType"
-    ],
-    "IfcDoorStandardCase": [
-        "IfcDoorType",
-        "IfcDoorStyle"
-    ],
-    "IfcEnergyConversionDevice": [
-        "IfcDistributionElementType"
-    ],
-    "IfcFlowController": [
-        "IfcDistributionElementType"
-    ],
-    "IfcFlowFitting": [
-        "IfcDistributionElementType"
-    ],
-    "IfcFlowMovingDevice": [
-        "IfcDistributionElementType"
-    ],
-    "IfcFlowSegment": [
-        "IfcDistributionElementType"
-    ],
-    "IfcFlowStorageDevice": [
-        "IfcDistributionElementType"
-    ],
-    "IfcFlowTerminal": [
-        "IfcDistributionElementType"
-    ],
-    "IfcFlowTreatmentDevice": [
-        "IfcDistributionElementType"
-    ],
-    "IfcMemberStandardCase": [
-        "IfcMemberType"
-    ],
-    "IfcPlateStandardCase": [
-        "IfcPlateType"
-    ],
-    "IfcSlabElementedCase": [
-        "IfcSlabType"
-    ],
-    "IfcSlabStandardCase": [
-        "IfcSlabType"
-    ],
-    "IfcWallElementedCase": [
-        "IfcWallType"
-    ],
-    "IfcWallStandardCase": [
-        "IfcWallType"
     ],
     "IfcWindowStandardCase": [
         "IfcWindowType",
