@@ -248,7 +248,16 @@ class BimToolUI:
         elif cls.props.ifc_class in ("IfcDoorType", "IfcDoorStyle"):
             row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="rl1", text="RL")
-        elif cls.props.ifc_class in ("IfcWindowType", "IfcWindowStyle", "IfcDoorType", "IfcDoorStyle"):
+        elif cls.props.ifc_class in (
+            "IfcWindowType",
+            "IfcWindowStyle",
+            "IfcDoorType",
+            "IfcDoorStyle",
+            "IfcDuctSegmentType",
+            "IfcPipeSegmentType",
+            "IfcCableCarrierSegmentType",
+            "IfcCableSegmentType",
+        ):
             row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="rl2", text="RL")
         elif cls.props.ifc_class in ("IfcSpaceType"):
