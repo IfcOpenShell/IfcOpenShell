@@ -98,7 +98,7 @@ int GltfSerializer::writeMaterial(const ifcopenshell::geometry::taxonomy::style&
 		base[3] = 1. - style.transparency;
 	}
 
-	json_["materials"].push_back({ {"pbrMetallicRoughness", {{"baseColorFactor", base}, {"metallicFactor", 0}}} });
+	json_["materials"].push_back({ {"doubleSided", true}, {"pbrMetallicRoughness", {{"baseColorFactor", base}, {"metallicFactor", 0}}} });
 	
 	if (style.transparency == style.transparency && style.transparency > 1.e-9) {
 		json_["materials"].back()["alphaMode"] = "BLEND";
