@@ -50,9 +50,6 @@
     "IfcChimney": [
         "IfcChimneyType"
     ],
-    "IfcCivilElement": [
-        "IfcCivilElementType"
-    ],
     "IfcCoil": [
         "IfcCoilType"
     ],
@@ -91,9 +88,6 @@
     ],
     "IfcDistributionChamberElement": [
         "IfcDistributionChamberElementType"
-    ],
-    "IfcDistributionElement": [
-        "IfcDistributionElementType"
     ],
     "IfcDoor": [
         "IfcDoorType",
@@ -158,9 +152,6 @@
     ],
     "IfcFooting": [
         "IfcFootingType"
-    ],
-    "IfcFurnishingElement": [
-        "IfcFurnishingElementType"
     ],
     "IfcFurniture": [
         "IfcFurnitureType"
@@ -319,15 +310,54 @@
         "IfcWindowType",
         "IfcWindowStyle"
     ],
+    "IfcCivilElement": [
+        "IfcCivilElementType"
+    ],
+    "IfcFurnishingElement": [
+        "IfcFurnishingElementType"
+    ],
+    "IfcDistributionElement": [
+        "IfcDistributionElementType"
+    ],
     "IfcBeamStandardCase": [
         "IfcBeamType"
     ],
     "IfcColumnStandardCase": [
         "IfcColumnType"
     ],
+    "IfcDistributionControlElement": [
+        "IfcDistributionElementType"
+    ],
+    "IfcDistributionFlowElement": [
+        "IfcDistributionElementType"
+    ],
     "IfcDoorStandardCase": [
         "IfcDoorType",
         "IfcDoorStyle"
+    ],
+    "IfcEnergyConversionDevice": [
+        "IfcDistributionElementType"
+    ],
+    "IfcFlowController": [
+        "IfcDistributionElementType"
+    ],
+    "IfcFlowFitting": [
+        "IfcDistributionElementType"
+    ],
+    "IfcFlowMovingDevice": [
+        "IfcDistributionElementType"
+    ],
+    "IfcFlowSegment": [
+        "IfcDistributionElementType"
+    ],
+    "IfcFlowStorageDevice": [
+        "IfcDistributionElementType"
+    ],
+    "IfcFlowTerminal": [
+        "IfcDistributionElementType"
+    ],
+    "IfcFlowTreatmentDevice": [
+        "IfcDistributionElementType"
     ],
     "IfcMemberStandardCase": [
         "IfcMemberType"
