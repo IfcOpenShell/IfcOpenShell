@@ -80,7 +80,7 @@ namespace {
 	struct dispatch_conversion {
 		static bool dispatch(ifcopenshell::geometry::kernels::AbstractKernel* kernel, const ifcopenshell::geometry::taxonomy::ptr item, IfcGeom::ConversionResults& results) {
 			if (N == item->kind()) {
-				auto concrete_item = taxonomy::template cast<ifcopenshell::geometry::taxonomy::type_by_kind::type<N>>(item);
+				auto concrete_item = ifcopenshell::geometry::taxonomy::template cast<ifcopenshell::geometry::taxonomy::type_by_kind::type<N>>(item);
 				return kernel->convert_impl(concrete_item, results);
 			} else {
 				return dispatch_conversion<N + 1>::dispatch(kernel, item, results);
@@ -101,7 +101,7 @@ namespace {
 	struct dispatch_curve_creation {
 		static bool dispatch(const ifcopenshell::geometry::taxonomy::ptr item, T& visitor) {
 			// @todo it should be possible to eliminate this dynamic_cast when there is a static equivalent to kind()
-			auto v = taxonomy::template dcast<ifcopenshell::geometry::taxonomy::curves::type<N>>(item);
+			auto v = ifcopenshell::geometry::taxonomy::template dcast<ifcopenshell::geometry::taxonomy::curves::type<N>>(item);
 			if (v) {
 				visitor(v);
 				return true;
