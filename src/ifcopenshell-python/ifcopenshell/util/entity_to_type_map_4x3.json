@@ -32,6 +32,9 @@
     "IfcBuildingElementProxy": [
         "IfcBuildingElementProxyType"
     ],
+    "IfcBuiltElement": [
+        "IfcBuiltElementType"
+    ],
     "IfcBurner": [
         "IfcBurnerType"
     ],
@@ -55,6 +58,9 @@
     ],
     "IfcChimney": [
         "IfcChimneyType"
+    ],
+    "IfcCivilElement": [
+        "IfcCivilElementType"
     ],
     "IfcCoil": [
         "IfcCoilType"
@@ -107,6 +113,15 @@
     "IfcDistributionChamberElement": [
         "IfcDistributionChamberElementType"
     ],
+    "IfcDistributionControlElement": [
+        "IfcDistributionElementType"
+    ],
+    "IfcDistributionElement": [
+        "IfcDistributionElementType"
+    ],
+    "IfcDistributionFlowElement": [
+        "IfcDistributionElementType"
+    ],
     "IfcDoor": [
         "IfcDoorType"
     ],
@@ -118,6 +133,12 @@
     ],
     "IfcDuctSilencer": [
         "IfcDuctSilencerType"
+    ],
+    "IfcEarthworksElement": [
+        "IfcBuiltElementType"
+    ],
+    "IfcEarthworksFill": [
+        "IfcBuiltElementType"
     ],
     "IfcElectricAppliance": [
         "IfcElectricApplianceType"
@@ -143,6 +164,9 @@
     "IfcElementAssembly": [
         "IfcElementAssemblyType"
     ],
+    "IfcEnergyConversionDevice": [
+        "IfcDistributionElementType"
+    ],
     "IfcEngine": [
         "IfcEngineType"
     ],
@@ -164,14 +188,38 @@
     "IfcFireSuppressionTerminal": [
         "IfcFireSuppressionTerminalType"
     ],
+    "IfcFlowController": [
+        "IfcDistributionElementType"
+    ],
+    "IfcFlowFitting": [
+        "IfcDistributionElementType"
+    ],
     "IfcFlowInstrument": [
         "IfcFlowInstrumentType"
     ],
     "IfcFlowMeter": [
         "IfcFlowMeterType"
     ],
+    "IfcFlowMovingDevice": [
+        "IfcDistributionElementType"
+    ],
+    "IfcFlowSegment": [
+        "IfcDistributionElementType"
+    ],
+    "IfcFlowStorageDevice": [
+        "IfcDistributionElementType"
+    ],
+    "IfcFlowTerminal": [
+        "IfcDistributionElementType"
+    ],
+    "IfcFlowTreatmentDevice": [
+        "IfcDistributionElementType"
+    ],
     "IfcFooting": [
         "IfcFootingType"
+    ],
+    "IfcFurnishingElement": [
+        "IfcFurnishingElementType"
     ],
     "IfcFurniture": [
         "IfcFurnitureType"
@@ -265,6 +313,9 @@
     ],
     "IfcRampFlight": [
         "IfcRampFlightType"
+    ],
+    "IfcReinforcedSoil": [
+        "IfcBuiltElementType"
     ],
     "IfcReinforcingBar": [
         "IfcReinforcingBarType"
@@ -365,64 +416,13 @@
     "IfcWall": [
         "IfcWallType"
     ],
+    "IfcWallStandardCase": [
+        "IfcWallType"
+    ],
     "IfcWasteTerminal": [
         "IfcWasteTerminalType"
     ],
     "IfcWindow": [
         "IfcWindowType"
-    ],
-    "IfcCivilElement": [
-        "IfcCivilElementType"
-    ],
-    "IfcFurnishingElement": [
-        "IfcFurnishingElementType"
-    ],
-    "IfcDistributionElement": [
-        "IfcDistributionElementType"
-    ],
-    "IfcBuiltElement": [
-        "IfcBuiltElementType"
-    ],
-    "IfcDistributionControlElement": [
-        "IfcDistributionElementType"
-    ],
-    "IfcDistributionFlowElement": [
-        "IfcDistributionElementType"
-    ],
-    "IfcEarthworksElement": [
-        "IfcBuiltElementType"
-    ],
-    "IfcEarthworksFill": [
-        "IfcBuiltElementType"
-    ],
-    "IfcEnergyConversionDevice": [
-        "IfcDistributionElementType"
-    ],
-    "IfcFlowController": [
-        "IfcDistributionElementType"
-    ],
-    "IfcFlowFitting": [
-        "IfcDistributionElementType"
-    ],
-    "IfcFlowMovingDevice": [
-        "IfcDistributionElementType"
-    ],
-    "IfcFlowSegment": [
-        "IfcDistributionElementType"
-    ],
-    "IfcFlowStorageDevice": [
-        "IfcDistributionElementType"
-    ],
-    "IfcFlowTerminal": [
-        "IfcDistributionElementType"
-    ],
-    "IfcFlowTreatmentDevice": [
-        "IfcDistributionElementType"
-    ],
-    "IfcReinforcedSoil": [
-        "IfcBuiltElementType"
-    ],
-    "IfcWallStandardCase": [
-        "IfcWallType"
     ]
 }
