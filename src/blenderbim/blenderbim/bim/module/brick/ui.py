@@ -106,7 +106,7 @@ class BIM_PT_brickschema(Panel):
 
         self.layout.template_list("BIM_UL_bricks", "", self.props, "bricks", self.props, "active_brick_index")
 
-        if BrickschemaData.data["relations"]:
+        if BrickschemaData.data["active_relations"]:
             row = self.layout.row(align=True)
             col = row.column()
             col.alignment = "RIGHT"
@@ -134,7 +134,7 @@ class BIM_PT_brickschema(Panel):
                     row = self.layout.row(align=True)
                     row.label(text="Failed to find this entity!", icon="ERROR")
 
-        for relation in BrickschemaData.data["relations"]:
+        for relation in BrickschemaData.data["active_relations"]:
             row = self.layout.row(align=True)
             row.label(text=relation["predicate_name"])
             row.label(text=relation["object_name"])
