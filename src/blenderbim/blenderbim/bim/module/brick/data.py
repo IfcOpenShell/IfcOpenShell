@@ -41,7 +41,7 @@ class BrickschemaData:
         cls.is_loaded = True
         cls.data = {
             "is_loaded": cls.get_is_loaded(),
-            "relations": cls.relations(),
+            "active_relations": cls.active_relations(),
         }
 
     @classmethod
@@ -49,7 +49,7 @@ class BrickschemaData:
         return BrickStore.graph is not None
 
     @classmethod
-    def relations(cls):
+    def active_relations(cls):
         if BrickStore.graph is None:
             return []
         props = bpy.context.scene.BIMBrickProperties
