@@ -113,7 +113,6 @@ class AddConstrTypeInstance(bpy.types.Operator):
     bl_label = "Add"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Add Type Instance to the model"
-    ifc_class: bpy.props.StringProperty()
     relating_type_id: bpy.props.IntProperty()
     from_invoke: bpy.props.BoolProperty(default=False)
 
@@ -232,15 +231,13 @@ class AddConstrTypeInstance(bpy.types.Operator):
                 bpy.ops.bim.add_filled_opening(voided_obj=building_obj.name, filling_obj=obj.name)
         else:
             if collection_obj and tool.Ifc.get_entity(collection_obj):
-                obj.location[2] = collection_obj.location[2] - min([v[2] for v in obj.bound_box])
+                obj.location.z = collection_obj.location.z - tool.Blender.get_object_bounding_box(obj)["min_z"]
 
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         for port in ifcopenshell.util.system.get_ports(relating_type):
-            mat = ifcopenshell.util.placement.get_local_placement(port.ObjectPlacement)
-            mat[0][3] *= unit_scale
-            mat[1][3] *= unit_scale
-            mat[2][3] *= unit_scale
-            mat = obj.matrix_world @ mathutils.Matrix(mat)
+            mat = Matrix(ifcopenshell.util.placement.get_local_placement(port.ObjectPlacement))
+            mat.translation *= unit_scale
+            mat = obj.matrix_world @ mat
             new_port = tool.Ifc.run("root.create_entity", ifc_class="IfcDistributionPort")
             tool.Ifc.run("system.assign_port", element=element, port=new_port)
             tool.Ifc.run("geometry.edit_object_placement", product=new_port, matrix=mat, is_si=True)
