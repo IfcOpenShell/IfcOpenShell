@@ -84,7 +84,6 @@ def get_connected_port(port):
         return rel.RelatingPort
 
 
-# TODO: cover in tests
 def get_connected_to(element):
     results = []
     for port in ifcopenshell.util.system.get_ports(element):
@@ -102,7 +101,6 @@ def get_connected_to(element):
     return results
 
 
-# TODO: cover in tests
 def get_connected_from(element):
     results = []
     for port in ifcopenshell.util.system.get_ports(element):
