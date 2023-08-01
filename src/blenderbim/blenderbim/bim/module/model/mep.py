@@ -39,7 +39,92 @@ V = lambda *x: Vector([float(i) for i in x])
 float_is_zero = lambda f: 0.0001 >= f >= -0.0001
 
 
-class MEPGenerator:
+class FitFlowSegments(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.fit_flow_segments"
+    bl_label = "Fit Flow Segments"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        selected_objs = []
+        selected_profiles = []
+
+        selected_class = None
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if element and element.is_a("IfcFlowSegment"):
+                if selected_class and not element.is_a(selected_class):
+                    return  # The user is mixing up ducts and pipes.
+                profile = tool.Model.get_flow_segment_profile(element)
+                if profile:
+                    selected_profiles.append(profile)
+                    selected_objs.append(obj)
+                    selected_class = element.is_a()
+
+        total_selected_objs = len(selected_objs)
+        total_profiles = len(set(selected_profiles))
+        fitting_type = None
+
+        if total_selected_objs == 1:
+            fitting_type = "OBSTRUCTION"
+        elif total_selected_objs == 2:
+            # Shorten the axis by the profile size to allow for fuzzy intersections
+            # e.g. if two ducts touch, we want a bend, not a cross.
+
+            axis1 = tool.Model.get_flow_segment_axis(selected_objs[0])
+            profile_size = max(selected_objs[0].dimensions.x, selected_objs[0].dimensions.y)
+            offset = (axis1[1] - axis1[0]).normalized() * profile_size
+            axis1 = (axis1[0] + offset, axis1[1] - offset)
+
+            axis2 = tool.Model.get_flow_segment_axis(selected_objs[1])
+            profile_size = max(selected_objs[1].dimensions.x, selected_objs[1].dimensions.y)
+            offset = (axis2[1] - axis2[0]).normalized() * profile_size
+            axis2 = (axis2[0] + offset, axis2[1] - offset)
+
+            angle = tool.Cad.angle_edges(axis1, axis2, signed=False, degrees=True)
+            is_parallel = tool.Cad.is_x(angle, (0, 180), tolerance=0.001)
+
+            if total_profiles == 1:
+                if is_parallel:
+                    return
+                intersect1, intersect2 = tool.Cad.intersect_edges(axis1, axis2)
+                is_on_axis1 = tool.Cad.is_point_on_edge(intersect1, axis1)
+                is_on_axis2 = tool.Cad.is_point_on_edge(intersect2, axis2)
+                if not is_on_axis1 and not is_on_axis2:
+                    fitting_type = "BEND"
+                elif is_on_axis1 and is_on_axis2:
+                    fitting_type = "CROSS"
+                else:
+                    fitting_type = "TEE"
+            elif total_profiles == 2:
+                if is_parallel:
+                    fitting_type = "TRANSITION"
+        elif total_selected_objs == 3:
+            if total_profiles > 1:
+                return
+
+            axis1 = tool.Model.get_flow_segment_axis(selected_objs[0])
+            axis2 = tool.Model.get_flow_segment_axis(selected_objs[1])
+            axis3 = tool.Model.get_flow_segment_axis(selected_objs[2])
+
+            angle12 = tool.Cad.angle_edges(axis1, axis2, signed=False, degrees=True)
+            angle13 = tool.Cad.angle_edges(axis1, axis3, signed=False, degrees=True)
+            angle21 = tool.Cad.angle_edges(axis2, axis1, signed=False, degrees=True)
+            angle23 = tool.Cad.angle_edges(axis2, axis3, signed=False, degrees=True)
+            is_parallel12 = tool.Cad.is_x(angle12, (0, 180), tolerance=0.001)
+            is_parallel13 = tool.Cad.is_x(angle13, (0, 180), tolerance=0.001)
+            is_parallel21 = tool.Cad.is_x(angle21, (0, 180), tolerance=0.001)
+            is_parallel23 = tool.Cad.is_x(angle23, (0, 180), tolerance=0.001)
+
+            if not all(is_parallel12, is_parallel13, is_parallel21, is_parallel23):
+                fitting_type = "WYE"
+
+        if not fitting_type:
+            return
+
+        print(fitting_type)
+
+
+class MepGenerator:
     def __init__(self, relating_type=None):
         self.relating_type = relating_type
 

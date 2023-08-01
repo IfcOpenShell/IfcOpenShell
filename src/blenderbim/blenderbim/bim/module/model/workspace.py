@@ -318,10 +318,20 @@ class BimToolUI:
             op.depth = cls.props.extrusion_depth
 
             add_layout_hotkey_operator(cls.layout, "Extend", "S_E", "")
-            add_layout_hotkey_operator(cls.layout, "Edit Axis", "A_E", "")
-            add_layout_hotkey_operator(cls.layout, "Butt", "S_T", "")
-            add_layout_hotkey_operator(cls.layout, "Mitre", "S_Y", "")
-            add_layout_hotkey_operator(cls.layout, "Rotate 90", "S_R", bpy.ops.bim.rotate_90.__doc__)
+
+            if AuthoringData.data["active_class"] in (
+                "IfcCableCarrierSegment",
+                "IfcCableSegment",
+                "IfcDuctSegment",
+                "IfcPipeSegment",
+            ):
+                add_layout_hotkey_operator(cls.layout, "Extend", "S_E", "")
+                add_layout_hotkey_operator(cls.layout, "Add Fitting", "S_F", "")
+            else:
+                add_layout_hotkey_operator(cls.layout, "Edit Axis", "A_E", "")
+                add_layout_hotkey_operator(cls.layout, "Butt", "S_T", "")
+                add_layout_hotkey_operator(cls.layout, "Mitre", "S_Y", "")
+                add_layout_hotkey_operator(cls.layout, "Rotate 90", "S_R", bpy.ops.bim.rotate_90.__doc__)
             add_layout_hotkey_operator(cls.layout, "Regen", "S_G", bpy.ops.bim.recalculate_profile.__doc__)
             row.operator("bim.extend_profile", icon="X", text="").join_type = ""
 
@@ -357,14 +367,6 @@ class BimToolUI:
 
         elif AuthoringData.data["active_class"] in ("IfcSpace",):
             add_layout_hotkey_operator(cls.layout, "Regen", "S_G", bpy.ops.bim.generate_space.__doc__)
-
-        elif AuthoringData.data["active_class"] in (
-            "IfcCableCarrierSegmentType",
-            "IfcCableSegmentType",
-            "IfcDuctSegmentType",
-            "IfcPipeSegmentType",
-        ):
-            add_layout_hotkey_operator(cls.layout, "Extend", "S_E", "")
 
         elif (
             (RoofData.is_loaded or not RoofData.load())
@@ -631,6 +633,8 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.flip_wall()
         elif self.active_class in ("IfcWindow", "IfcWindowStandardCase", "IfcDoor", "IfcDoorStandardCase"):
             bpy.ops.bim.flip_fill()
+        elif self.active_class in ("IfcDuctSegment", "IfcPipeSegment", "IfcCableCarrierSegment", "IfcCableSegment"):
+            bpy.ops.bim.fit_flow_segments()
 
     def hotkey_S_G(self):
         if not bpy.context.selected_objects:
