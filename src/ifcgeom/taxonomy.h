@@ -697,7 +697,7 @@ struct collection_base : public geom_item {
 struct collection : public collection_base<geom_item> {
 	DECLARE_PTR(collection)
 
-	virtual collection_base* clone_() const { return new collection(*this); }
+	virtual collection* clone_() const { return new collection(*this); }
 	virtual kinds kind() const { return COLLECTION; }
 
 	virtual size_t calc_hash() const {

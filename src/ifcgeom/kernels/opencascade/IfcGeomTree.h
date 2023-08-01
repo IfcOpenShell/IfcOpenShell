@@ -270,7 +270,7 @@ namespace IfcGeom {
 			std::vector<T> select(const IfcGeom::BRepElement* elem, bool completely_within = false, double extend = -1.e-5) const {
 				auto shp = elem->geometry().as_compound();
 				auto compound = ((OpenCascadeShape*)shp)->shape();
-				const auto& m = elem->transformation().data().ccomponents();
+				const auto& m = elem->transformation().data()->ccomponents();
 				gp_Trsf tr;
 				tr.SetValues(
 					m(0, 0), m(0, 1), m(0, 2), m(0, 3),
