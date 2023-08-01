@@ -34,7 +34,6 @@ from mathutils import Vector, Matrix, Quaternion
 from blenderbim.bim.module.geometry.helper import Helper
 from blenderbim.bim.module.model.wall import DumbWallRecalculator
 from blenderbim.bim.module.model.decorator import ProfileDecorator
-from blenderbim.bim.module.model.mep import MepGenerator
 
 
 class DumbProfileGenerator:
@@ -493,7 +492,10 @@ class DumbProfileJoiner:
         )
         tool.Geometry.record_object_materials(obj)
         if element.is_a("IfcFlowSegment"):
-            MepGenerator().setup_ports(obj)
+            # lazy import to avoid circular import errors
+            from blenderbim.bim.module.model.mep import MEPGenerator
+
+            MEPGenerator().setup_ports(obj)
 
     def join(self, profile1, profile2, connection1, connection2, is_relating=True, description="BUTT"):
         element1 = tool.Ifc.get_entity(profile1)
@@ -819,7 +821,7 @@ class ChangeProfileDepth(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_profile_depth"
     bl_label = "Change Profile Length"
     bl_options = {"REGISTER", "UNDO"}
-    depth: bpy.props.FloatProperty()
+    depth: bpy.props.FloatProperty(subtype="DISTANCE")
 
     @classmethod
     def poll(cls, context):
