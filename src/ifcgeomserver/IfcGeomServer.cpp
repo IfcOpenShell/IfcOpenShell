@@ -303,7 +303,7 @@ protected:
 		swrite(s, geom->name());
 		swrite(s, geom->type());
 		swrite<int32_t>(s, geom->parent_id());
-		const auto& m = geom->transformation().data().ccomponents();
+		const auto& m = geom->transformation().data()->ccomponents();
 		const double matrix_array[16] = {
 			m(0,0), m(0,1), m(0,2), m(0,3),
 			m(1,0), m(1,1), m(1,2), m(1,3),
