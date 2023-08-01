@@ -26,8 +26,9 @@ class TestGetApplicableTypes(test.bootstrap.IFC4):
     def test_run(self):
         assert subject.get_applicable_types("IfcWall") == ["IfcWallType"]
         assert subject.get_applicable_types("IfcWallStandardCase") == ["IfcWallType"]
-        assert subject.get_applicable_types("IfcFlowSegment") == []
+        assert subject.get_applicable_types("IfcFlowSegment") == ["IfcDistributionElementType"]
         assert subject.get_applicable_types("IfcDuctSegment") == ["IfcDuctSegmentType"]
+        assert subject.get_applicable_types("IfcTask") == []
 
 
 class TestGetApplicableTypesIFC2X3(test.bootstrap.IFC2X3):
