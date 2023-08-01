@@ -685,14 +685,14 @@ responsibility to make sure the geometry is correct.
     beam_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBeamType", name="B1")
 
     # First, let's create a material set. This will later be assigned to our beam type element.
-    material_set = ifcopenshell.api.run("material.add_profile_set", model,
+    material_set = ifcopenshell.api.run("material.add_material_set", model,
         name="B1", set_type="IfcMaterialProfileSet")
 
     # Create a steel material.
     steel = ifcopenshell.api.run("material.add_material", model, name="ST01", category="steel")
 
     # Create an I-beam profile curve. Notice how we use standardised steel profile names.
-    hea100 = self.file.create_entity(
+    hea100 = model.create_entity(
         "IfcIShapeProfileDef", ProfileName="HEA100", ProfileType="AREA",
         OverallWidth=100, OverallDepth=96, WebThickness=5, FlangeThickness=8, FilletRadius=12,
     )
