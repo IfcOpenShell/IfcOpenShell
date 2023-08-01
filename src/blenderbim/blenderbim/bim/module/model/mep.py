@@ -124,7 +124,7 @@ class FitFlowSegments(bpy.types.Operator, tool.Ifc.Operator):
         print(fitting_type)
 
 
-class MepGenerator:
+class MEPGenerator:
     def __init__(self, relating_type=None):
         self.relating_type = relating_type
 
