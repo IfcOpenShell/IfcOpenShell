@@ -496,6 +496,17 @@ class Model(blenderbim.core.tool.Model):
         return booleans
 
     @classmethod
+    def get_flow_segment_axis(cls, obj):
+        z_values = [v[2] for v in obj.bound_box]
+        return (obj.matrix_world @ Vector((0, 0, min(z_values))), obj.matrix_world @ Vector((0, 0, max(z_values))))
+
+    @classmethod
+    def get_flow_segment_profile(cls, element):
+        material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+        if material and material.is_a("IfcMaterialProfileSet") and len(material.MaterialProfiles) == 1:
+            return material.MaterialProfiles[0].Profile
+
+    @classmethod
     def get_usage_type(cls, element):
         material = ifcopenshell.util.element.get_material(element, should_inherit=False)
         if material:
