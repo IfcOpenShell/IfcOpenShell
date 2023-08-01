@@ -658,7 +658,7 @@ responsibility to make sure the geometry is correct.
 
     # It's now our responsibility to create a compatible representation.
     # Notice how our thickness of 0.118 must equal .013 + .092 + .013 from our type
-    body = ifcopenshell.util.representation.get_representation(element, "Model", "Body")
+    body = ifcopenshell.util.representation.get_context(model, "Model", "Body", "MODEL_VIEW")
     representation = ifcopenshell.api.run("geometry.add_wall_representation", model,
         context=body, length=5, height=3, thickness=0.118)
 
@@ -714,7 +714,7 @@ responsibility to make sure the geometry is correct.
 
     # It's now our responsibility to create a compatible representation.
     # Notice how we reuse our profile instead of creating a new profile.
-    body = ifcopenshell.util.representation.get_representation(element, "Model", "Body")
+    body = ifcopenshell.util.representation.get_context(model, "Model", "Body", "MODEL_VIEW")
     representation = run("geometry.add_profile_representation", model, context=body, profile=hea100, depth=1)
 
     # Assign our new body geometry back to our beam
