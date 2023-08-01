@@ -125,7 +125,6 @@ class LaunchTypeManager(bpy.types.Operator):
             text = f"Add {relating_type['predefined_type']}" if relating_type["predefined_type"] else "Add"
             op = row.operator("bim.add_constr_type_instance", icon="ADD", text=text)
             op.from_invoke = True
-            op.ifc_class = relating_type["ifc_class"]
             op.relating_type_id = relating_type["id"]
 
             op = row.operator("bim.rename_type", icon="GREASEPENCIL", text="")

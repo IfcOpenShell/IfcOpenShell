@@ -411,7 +411,6 @@ class BimToolUI:
             row.label(text="", icon="EVENT_A")
             op = row.operator("bim.add_constr_type_instance", text="Add")
             op.from_invoke = True
-            op.ifc_class = cls.props.ifc_class
             if cls.props.relating_type_id.isnumeric():
                 op.relating_type_id = int(cls.props.relating_type_id)
 
@@ -463,7 +462,6 @@ class BimToolUI:
             row.label(text="", icon="EVENT_A")
             op = row.operator("bim.add_constr_type_instance", text="Add")
             op.from_invoke = True
-            op.ifc_class = cls.props.ifc_class
             if cls.props.relating_type_id.isnumeric():
                 op.relating_type_id = int(cls.props.relating_type_id)
 

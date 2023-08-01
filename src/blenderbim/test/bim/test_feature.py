@@ -754,7 +754,7 @@ def i_display_the_construction_type_browser():
 @when("I add the construction type")
 def i_add_the_active_construction_type():
     props = bpy.context.scene.BIMModelProperties
-    bpy.ops.bim.add_constr_type_instance(ifc_class=props.ifc_class, relating_type_id=int(props.relating_type_id))
+    bpy.ops.bim.add_constr_type_instance(relating_type_id=int(props.relating_type_id))
 
 
 @then(parsers.parse("construction type is {relating_type_name}"))
