@@ -22,6 +22,7 @@ import blenderbim.tool as tool
 import blenderbim.core.system as core
 import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.system.data import PortData
 
 
 class Operator:
@@ -139,6 +140,15 @@ class ShowPorts(bpy.types.Operator, Operator):
     bl_label = "Show Ports"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        if not PortData.is_loaded:
+            PortData.load()
+        if PortData.data["total_ports"] == 0:
+            cls.poll_message_set("No ports found")
+            return False
+        return True
+
     def _execute(self, context):
         core.show_ports(tool.Ifc, tool.System, tool.Spatial, element=tool.Ifc.get_entity(context.active_object))
 
@@ -147,6 +157,10 @@ class HidePorts(bpy.types.Operator, Operator):
     bl_idname = "bim.hide_ports"
     bl_label = "Hide Ports"
     bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return ShowPorts.poll(context)
 
     def _execute(self, context):
         core.hide_ports(tool.Ifc, tool.System, element=tool.Ifc.get_entity(context.active_object))
