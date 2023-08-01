@@ -28,9 +28,9 @@ jobs:
           { name: py311, distver: '3.11' }
         ]
         platform: [
-          { name: Windows, distver: windows-2022, upload: 'true' },
-          { name: Linux, distver: ubuntu-22.04,  upload: 'true' },
-          { name: macOS, distver: macos-13, upload: 'true' }
+          { name: win, distver: windows-latest, pkg_dir: 'win-64' },
+          { name: linux, distver: ubuntu-latest, pkg_dir: 'linux-64' },
+          { name: macOS, distver: macos-latest, pkg_dir: 'osx-64' }
         ]
     steps:
       - uses: actions/checkout@v3
