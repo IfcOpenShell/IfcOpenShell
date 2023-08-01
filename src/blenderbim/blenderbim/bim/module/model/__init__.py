@@ -38,6 +38,7 @@ from . import (
     door,
     railing,
     roof,
+    mep,
 )
 
 classes = (
@@ -172,6 +173,7 @@ classes = (
     roof.EnableEditingRoofPath,
     roof.RemoveRoof,
     roof.SetGableRoofEdgeAngle,
+    mep.MEPAddObstruction,
 )
 
 addon_keymaps = []
