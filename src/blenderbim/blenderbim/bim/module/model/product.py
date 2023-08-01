@@ -100,9 +100,11 @@ class AddDefaultType(bpy.types.Operator, tool.Ifc.Operator):
             props.type_predefined_type = "BEAM"
             props.type_template = "PROFILESET"
         elif self.ifc_element_type == "IfcDuctSegmentType":
-            return
+            props.type_predefined_type = "RIGIDSEGMENT"
+            props.type_template = "FLOW_SEGMENT_RECTANGULAR"
         elif self.ifc_element_type == "IfcPipeSegmentType":
-            return
+            props.type_predefined_type = "RIGIDSEGMENT"
+            props.type_template = "FLOW_SEGMENT_CIRCULAR"
         bpy.ops.bim.add_type()
 
 
