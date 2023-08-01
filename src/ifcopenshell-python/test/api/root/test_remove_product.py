@@ -266,6 +266,29 @@ class TestRemoveProduct(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcSlab")) == 1
         assert len(self.file.by_type("IfcWall")) == 1
 
+    def test_removing_ports_connection_relationship(self):
+        port1 = ifcopenshell.api.run("system.add_port", self.file)
+        element1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcFlowSegment")
+        ifcopenshell.api.run("system.assign_port", self.file, element=element1, port=port1)
+
+        port2 = ifcopenshell.api.run("system.add_port", self.file)
+        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcFlowSegment")
+        ifcopenshell.api.run("system.assign_port", self.file, element=element2, port=port2)
+
+        ifcopenshell.api.run("system.connect_port", self.file, port1=port1, port2=port2, direction="SOURCE")
+        connection = self.file.by_type("IfcRelConnectsPorts")[0]
+
+        # making sure removing realizing element won't remove the entire connection since it's optional
+        element3 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcFlowSegment")
+        connection.RealizingElement = element3
+        ifcopenshell.api.run("root.remove_product", self.file, product=element3)
+        assert len(self.file.by_type("IfcRelConnectsPorts")) == 1
+
+        ifcopenshell.api.run("root.remove_product", self.file, product=element1)
+        assert len(self.file.by_type("IfcRelConnectsPorts")) == 0
+        assert len(self.file.by_type("IfcFlowSegment")) == 1
+        assert len(self.file.by_type("IfcDistributionPort")) == 1
+
     def test_removing_all_property_relationships_of_an_element(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foo_Bar")
