@@ -201,6 +201,11 @@ class SetFlowDirection(bpy.types.Operator, Operator):
     direction: bpy.props.StringProperty()
 
     def _execute(self, context):
+        port = tool.Ifc.get_entity(context.active_object)
+        second_port = tool.System.get_connected_port(port)
+        if not second_port:
+            self.report({"ERROR"}, "To set flow direction port hast to be connected to another one.")
+            return
         core.set_flow_direction(
             tool.Ifc, tool.System, port=tool.Ifc.get_entity(context.active_object), direction=self.direction
         )
