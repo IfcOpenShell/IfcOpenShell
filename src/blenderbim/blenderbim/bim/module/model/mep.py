@@ -57,10 +57,9 @@ class MEPGenerator:
         ports = tool.System.get_ports(element)
         if not ports:
             start_port_matrix = Matrix()
-            # TODO: what are the best default directions here?
-            for mat, flow_direction in zip([start_port_matrix, end_port_matrix], ("SINK", "SOURCE")):
+            for mat in [start_port_matrix, end_port_matrix]:
                 port = tool.Ifc.run("system.add_port", element=element)
-                port.FlowDirection = flow_direction
+                port.FlowDirection = "NOTDEFINED"
                 tool.Ifc.run("geometry.edit_object_placement", product=port, matrix=obj.matrix_world @ mat, is_si=True)
             return
 
@@ -206,8 +205,7 @@ class MEPGenerator:
         else:
             obstruction_obj.location += segment_rotation @ V(0, 0, new_segment_length)
 
-        # TODO: what's best default direction here?
-        tool.Ifc.run("system.connect_port", port1=related_port, port2=obstruction_port, direction="SOURCE")
+        tool.Ifc.run("system.connect_port", port1=related_port, port2=obstruction_port, direction="NOTDEFINED")
         return obstruction, None
 
 
