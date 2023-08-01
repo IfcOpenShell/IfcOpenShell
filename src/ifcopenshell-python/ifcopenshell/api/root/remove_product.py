@@ -132,6 +132,12 @@ class Usecase:
                     ):
                         continue
                 self.file.remove(inverse)
+            elif inverse.is_a("IfcRelConnectsPorts"):
+                if self.settings["product"] not in (inverse.RelatingPort, inverse.RelatedPort):
+                    # if it's not RelatingPort/RelatedPort then it's optional RealizingElement
+                    # so we keep the relationship
+                    continue
+                self.file.remove(inverse)
             elif inverse.is_a("IfcRelAssignsToGroup"):
                 if len(inverse.RelatedObjects) == 1:
                     self.file.remove(inverse)
