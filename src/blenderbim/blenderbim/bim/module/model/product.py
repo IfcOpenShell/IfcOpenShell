@@ -139,9 +139,10 @@ class AddConstrTypeInstance(bpy.types.Operator):
 
         if material and material.is_a("IfcMaterialProfileSet"):
             if obj := profile.DumbProfileGenerator(relating_type).generate():
+                tool.Blender.select_and_activate_single_object(context, obj)
                 if relating_type.is_a("IfcFlowSegmentType"):
                     self.set_flow_segment_rl(obj)
-                    mep.MepGenerator(relating_type).setup_ports(obj)
+                    mep.MEPGenerator(relating_type).setup_ports(obj)
                 return {"FINISHED"}
         elif material and material.is_a("IfcMaterialLayerSet"):
             if self.generate_layered_element(ifc_class, relating_type):

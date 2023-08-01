@@ -301,8 +301,8 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 material = materials[0]  # Arbitrarily pick a material
             else:
                 material = self.add_default_material()
-            named_profiles = [p for p in ifc_file.by_type("IfcProfileDef") if p.ProfileName]
             if template == "PROFILESET":
+                named_profiles = [p for p in ifc_file.by_type("IfcProfileDef") if p.ProfileName]
                 if named_profiles:
                     profile = named_profiles[0]
                 else:
