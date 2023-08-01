@@ -1,16 +1,18 @@
 #!/bin/bash
 
-declare -a CMAKE_PLATFORM_FLAGS
+# IF osx use file lib suffix .dylib
+# IF linux use file lib suffix .so
+# IF windows use file lib suffix .dll
 
-if [[ ${HOST} =~ .*linux.* ]]; then
-    CMAKE_PLATFORM_FLAGS+=(-DCMAKE_TOOLCHAIN_FILE=$RECIPE_DIR/cross-linux.cmake)
+if [ "$(uname)" == "Darwin" ]; then
+    export FSUFFIX=dylib
+    export CFLAGS="$CFLAGS -Wl,-flat_namespace,-undefined,suppress"
+    export CXXFLAGS="$CXXFLAGS -Wl,-flat_namespace,-undefined,suppress"
+    export LDFLAGS="$LDFLAGS -Wl,-flat_namespace,-undefined,suppress"
+elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
+    export FSUFFIX=so
 fi
 
-if [ `uname` == Darwin ]; then
-  export CFLAGS="$CFLAGS   -Wl,-flat_namespace,-undefined,suppress"
-  export CXXFLAGS="$CXXFLAGS -Wl,-flat_namespace,-undefined,suppress"
-  export LDFLAGS="$LDFLAGS  -Wl,-flat_namespace,-undefined,suppress"
-fi
 
 cmake -G Ninja \
  -DCMAKE_BUILD_TYPE=Release \
@@ -28,7 +30,10 @@ cmake -G Ninja \
  -DHDF5_LIBRARY_DIR=$PREFIX/lib \
  -DJSON_INCLUDE_DIR=$PREFIX/include \
  -DCGAL_INCLUDE_DIR=$PREFIX/include \
- -DCOLLADA_SUPPORT=0 \
+ -DLIBXML2_INCLUDE_DIR=$PREFIX/include/libxml2 \
+ -DLIBXML2_LIBRARIES=$PREFIX/lib/libxml2.$FSUFFIX \
+ -DEIGEN_DIR:FILEPATH=$PREFIX/include/eigen3 \
+ -DCOLLADA_SUPPORT:BOOL=OFF \
  -DBUILD_EXAMPLES:BOOL=OFF \
  -DIFCXML_SUPPORT:BOOL=ON \
  -DGLTF_SUPPORT:BOOL=ON \
@@ -37,8 +42,9 @@ cmake -G Ninja \
  -DBUILD_IFCGEOM:BOOL=ON \
  -DBUILD_GEOMSERVER:BOOL=OFF \
  -DBOOST_USE_STATIC_LIBS:BOOL=OFF \
+ -DCITYJSON_SUPPORT:BOOL=OFF \
  ./cmake
 
 ninja
 
-ninja install -j 2
+ninja install -j 1

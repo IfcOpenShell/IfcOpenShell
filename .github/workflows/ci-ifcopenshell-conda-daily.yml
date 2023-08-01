@@ -1,23 +1,15 @@
-name: ci-ifcopenshell-conda-daily
+name: ci-ifcopenshell-conda-daily-v0.8.0
 
 on:
   push:
-      paths:
-        - .github/workflows/ci-ifcopenshell-conda-daily.yml
-  schedule:
-  #         ┌───────────── minute (0 - 59)
-  #         │  ┌───────────── hour (0 - 23)
-  #         │  │ ┌───────────── day of the month (1 - 31)
-  #         │  │ │ ┌───────────── month (1 - 12 or JAN-DEC)
-  #         │  │ │ │ ┌───────────── day of the week (0 - 6 or SUN-SAT)
-  #         *  * * * *
-  - cron: "49 23 * * *" # 11min before utc midnight every day
+    branches:
+      - v0.8.0-compile-daily
 
 jobs:
   activate:
     runs-on: ubuntu-latest
     if: |
-      github.repository == 'IfcOpenShell/IfcOpenShell'
+      github.repository == 'krande/IfcOpenShell'
     steps:
       - name: Set env
         run: echo ok go
@@ -33,38 +25,48 @@ jobs:
       fail-fast: false
       matrix:
         pyver: [
-          { name: py310, distver: '3.10'},
-          { name: py311, distver: '3.11'}
+          { name: py311, distver: '3.11' }
         ]
         platform: [
           { name: Windows, distver: windows-2022, upload: 'true' },
           { name: Linux, distver: ubuntu-22.04,  upload: 'true' },
-          { name: macOS, distver: macos-12, upload: 'true' }
+          { name: macOS, distver: macos-13, upload: 'true' }
         ]
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
-      - name: Download MacOSX SDK
+
+      - name: Download and extract MacOSX SDK
         if: ${{ matrix.platform.name == 'macOS' }}
         run: |
-          curl -o MacOSX10.13.sdk.tar.xz -L https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX10.13.sdk.tar.xz && \
-          tar xf MacOSX10.13.sdk.tar.xz && \
-          sudo mv -v MacOSX10.13.sdk /opt/ && \
-          ls /opt/
-      - uses: seanmiddleditch/gha-setup-ninja@master
-      - uses: conda-incubator/setup-miniconda@v2  # https://github.com/conda-incubator/setup-miniconda
+          curl -L https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX10.13.sdk.tar.xz | tar -xvJf - -C /Users/runner/work/
+
+      - name: Install ninja
+        run: |
+          if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+            sudo apt-get install ninja-build
+          elif [[ "$OSTYPE" == "darwin"* ]]; then
+            brew install ninja
+          elif [[ "$OSTYPE" == "win32" ]]; then
+            choco install ninja
+          fi
+      - uses: mamba-org/setup-micromamba@v1 # https://github.com/mamba-org/setup-micromamba
         with:
-          activate-environment: conda-build
-          python-version: ${{ matrix.pyver.distver }}
-          environment-file: conda/environment.yml
-      - name: build, test and upload ifcopenshell
-        if: ${{ matrix.platform.upload == 'true' }}
+          environment-file: conda/environment.build.yml
+          create-args: >-
+            python=${{ matrix.pyver.distver }}
+            anaconda-client
+
+      - name: create conda package dist dir
         run: |
-          conda-build . --python ${{ matrix.pyver.distver }} -c conda-forge --token ${{ secrets.ANACONDA_TOKEN }} --user ifcopenshell
-        working-directory: ./conda
+          mkdir -p ${{ github.workspace }}/dist
+
       - name: build & test ifcopenshell
-        if: ${{ matrix.platform.upload == 'false' }}
         run: |
-          conda-build . --python ${{ matrix.pyver.distver }} -c conda-forge
+          boa build . --python ${{ matrix.pyver.distver }} --no-remove-work-dir --output-folder '${{ github.workspace }}/dist'
         working-directory: ./conda
+
+      - name: upload to anaconda
+        run: |
+          anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload --force --user ${{ secrets.ANACONDA_USER }} --label dev ${{ github.workspace }}/dist/${{ matrix.pyver.pkg_dir }}/*.tar.bz2

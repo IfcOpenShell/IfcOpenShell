@@ -1,0 +1,17 @@
+name: ifcopenshell-build
+channels:
+  - conda-forge
+dependencies:
+  - boa
+  - boost-cpp
+  - occt
+  - libxml2
+  - cgal-cpp
+  - hdf5
+  - mpfr
+  - nlohmann_json
+  - swig
+  - zlib
+  # These needs to be installed per platform
+  #- sel(unix): gmp
+  #- sel(win): mpir

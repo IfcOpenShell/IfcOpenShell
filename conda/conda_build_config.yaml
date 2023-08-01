@@ -1,2 +1,11 @@
-CONDA_BUILD_SYSROOT:
-  - /opt/MacOSX10.13.sdk       # [osx]
+CONDA_BUILD_SYSROOT: # used for github actions conda daily build
+  - /Users/runner/work/MacOSX10.13.sdk       # [osx]
+
+occt:
+  - 7.7.1
+
+c_compiler:
+  - vs2022  # [win]
+
+cxx_compiler:
+  - vs2022  # [win]

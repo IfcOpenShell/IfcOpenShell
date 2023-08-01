@@ -1,22 +1,21 @@
-{% set name = "ifcopenshell" %}
-{% set version = "0.7.0" %}
-
+context:
+  name: ifcopenshell
+  version: 0.8.0alpha1
 
 package:
-  name: {{ name }}
-  version: {{ version }}
+  name: '{{ name|lower }}'
+  version: '{{ version }}'
 
 source:
   path: ..
 
 build:
-  binary_relocation: false [osx]
   number: 1
 
 requirements:
   build:
-    - {{ compiler('c') }}
-    - {{ compiler('cxx') }}
+    - "{{ compiler('c') }}"
+    - "{{ compiler('cxx') }}"
     - ninja >=1.10.2
     - cmake
     - swig >=4.0.2
@@ -28,10 +27,12 @@ requirements:
     - libxml2
     - cgal-cpp
     - hdf5
+    - eigen
     - mpfr
-    - gmp  # [unix]
-    - mpir  # [win]
+    - sel(unix): gmp
+    - sel(win): mpir
     - nlohmann_json
+    - zlib
 
   run:
     - python
@@ -40,22 +41,24 @@ requirements:
     - libxml2
     - cgal-cpp
     - hdf5
+    - eigen
     - mpfr
-    - gmp  # [unix]
-    - mpir  # [win]
+    - sel(unix): gmp
+    - sel(win): mpir
     - nlohmann_json
+    - zlib
 
 test:
   imports:
     - ifcopenshell
 
 about:
-  home: http://ifcopenshell.org
+  home: https://ifcopenshell.org
   license: LGPL-3.0-or-later
   license_file: COPYING
   summary: 'IfcOpenShell is a library to support the IFC file format'
   description: |
     IfcOpenShell is an open source (LGPL) software library for 
     working with the Industry Foundation Classes (IFC) file format.
-  doc_url: http://ifcopenshell.org/
+  doc_url: https://blenderbim.org/docs-python/
   dev_url: https://github.com/IfcOpenShell/IfcOpenShell

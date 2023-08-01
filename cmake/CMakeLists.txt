@@ -65,6 +65,7 @@ OPTION(USERSPACE_PYTHON_PREFIX "Installs IfcPython for the current user only ins
 OPTION(ADD_COMMIT_SHA "Add commit sha and branch in version number, warning results in many rebuilds, requires git" OFF)
 OPTION(WITH_OPENCASCADE "Enable geometry interpretation using Open CASCADE" ON)
 OPTION(WITH_CGAL "Enable geometry interpretation using CGAL" ON)
+OPTION(CITYJSON_SUPPORT "Build IfcConvert with CityJSON support (requires CityJSON library)." ON)
 
 IF(NOT CMAKE_BUILD_TYPE)
 	SET(CMAKE_BUILD_TYPE "Release")
@@ -154,6 +155,17 @@ endif()
 
 UNIFY_ENVVARS_AND_CACHE(EIGEN_DIR)
 
+# Include the 'convert_env_var_to_bool' and 'get_all_option_flags' functions
+include(utilities.cmake)
+
+# Get a list of all OPTION flags from the CMakeLists.txt
+get_all_option_flags(option_flags)
+
+# Loop through the list of OPTION flags and convert the corresponding environment variables
+foreach(option_flag IN LISTS option_flags)
+    convert_env_var_to_bool("${option_flag}")
+endforeach()
+
 if(WASM_BUILD)
     # when using the nix/build-all.py build script we should not
     # look into the sysroot for most of the dependencies but rather
@@ -178,8 +190,11 @@ endif()
 
 if (NOT MINIMAL_BUILD)
 if (WITH_CGAL)
-add_definitions(-DIFOPSH_WITH_CGAL)
-set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_CGAL)
+    if (CITYJSON_SUPPORT)
+        add_definitions(-DIFOPSH_WITH_CGAL)
+        set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_CGAL)
+    endif ()
+
 list(APPEND GEOMETRY_KERNELS cgal)
 endif()
 endif()
@@ -939,7 +954,8 @@ endif()
 
 if (BUILD_CONVERT)
 
-if (WITH_CGAL)
+if (WITH_CGAL AND CITYJSON_SUPPORT)
+    message(STATUS "Building CityJSON support")
 set(CITYJSON_CONVERT_FILES
 	../src/ifcconvert/cityjson/geobim.cpp
 	../src/ifcconvert/cityjson/global_execution_context.cpp
