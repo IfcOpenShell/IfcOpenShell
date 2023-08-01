@@ -3,7 +3,7 @@ name: ci-ifcopenshell-conda-daily-v0.8.0
 on:
   push:
     branches:
-      - v0.8.0-compile-daily
+      - v0.8.0-pr-conda-daily
 
 jobs:
   activate:
@@ -68,5 +68,11 @@ jobs:
         working-directory: ./conda
 
       - name: upload to anaconda
+        if: ${{ matrix.platform.name == 'win' }}
         run: |
-          anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload --force --user ${{ secrets.ANACONDA_USER }} --label dev ${{ github.workspace }}/dist/${{ matrix.pyver.pkg_dir }}/*.tar.bz2
+          anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload --force --user ifcopenshell --label dev '${{ github.workspace }}/dist/${{ matrix.platform.pkg_dir }}/*.tar.bz2'
+
+      - name: upload to anaconda
+        if: ${{ matrix.platform.name != 'win' }}
+        run: |
+          anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload --force --user ifcopenshell --label dev ${{ github.workspace }}/dist/${{ matrix.platform.pkg_dir }}/*.tar.bz2
