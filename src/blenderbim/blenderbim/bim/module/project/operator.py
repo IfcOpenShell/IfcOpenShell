@@ -1028,10 +1028,14 @@ class ExportIFC(bpy.types.Operator):
             output_file = os.path.relpath(output_file, bpy.path.abspath("//"))
         if scene.BIMProperties.ifc_file != output_file and extension not in ["ifczip", "ifcjson"]:
             scene.BIMProperties.ifc_file = output_file
-        if bpy.data.is_saved and bpy.data.is_dirty and bpy.data.filepath:
+        save_blend_file = bool(bpy.data.is_saved and bpy.data.is_dirty and bpy.data.filepath)
+        if save_blend_file:
             bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
         blenderbim.bim.handler.purge_module_data()
-        self.report({"INFO"}, f'IFC Project "{os.path.basename(output_file)}" Saved')
+        self.report(
+            {"INFO"},
+            f'IFC Project "{os.path.basename(output_file)}" {"" if not save_blend_file else "And Current Blend File Are"} Saved',
+        )
 
         if bpy.data.is_saved:
             bpy.ops.wm.save_mainfile("INVOKE_DEFAULT")
