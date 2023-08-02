@@ -767,3 +767,35 @@ class Model(blenderbim.core.tool.Model):
             obj.matrix_world = matrix
             return
         tool.Ifc.run("geometry.edit_object_placement", product=element, matrix=matrix, is_si=True)
+
+    @classmethod
+    def reload_body_representation(cls, obj_or_objects):
+        """Update body representation including all decomposed objects"""
+        if isinstance(obj_or_objects, collections.abc.Iterable):
+            objects = set(obj_or_objects)
+        else:
+            objects = {obj_or_objects}
+
+        # decompose objects
+        decomposed_objs = objects.copy()
+        for obj in objects:
+            for subelement in ifcopenshell.util.element.get_decomposition(tool.Ifc.get_entity(obj)):
+                subobj = tool.Ifc.get_object(subelement)
+                if subobj:
+                    decomposed_objs.add(subobj)
+
+        # update representation
+        for obj in decomposed_objs:
+            if not obj.data:
+                continue
+            element = tool.Ifc.get_entity(obj)
+            body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+            blenderbim.core.geometry.switch_representation(
+                tool.Ifc,
+                tool.Geometry,
+                obj=obj,
+                representation=body,
+                should_reload=True,
+                is_global=True,
+                should_sync_changes_first=False,
+            )
