@@ -3,13 +3,13 @@ name: ci-ifcopenshell-conda-daily-v0.8.0
 on:
   push:
     branches:
-      - v0.8.0-pr-conda-daily
+      - v0.8.0
 
 jobs:
   activate:
     runs-on: ubuntu-latest
     if: |
-      github.repository == 'krande/IfcOpenShell'
+      github.repository == 'IfcOpenShell/IfcOpenShell'
     steps:
       - name: Set env
         run: echo ok go
@@ -70,9 +70,9 @@ jobs:
       - name: upload to anaconda
         if: ${{ matrix.platform.name == 'win' }}
         run: |
-          anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload --force --user ifcopenshell --label dev '${{ github.workspace }}/dist/${{ matrix.platform.pkg_dir }}/*.tar.bz2'
+          anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload --force --user ifcopenshell '${{ github.workspace }}/dist/${{ matrix.platform.pkg_dir }}/*.tar.bz2'
 
       - name: upload to anaconda
         if: ${{ matrix.platform.name != 'win' }}
         run: |
-          anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload --force --user ifcopenshell --label dev ${{ github.workspace }}/dist/${{ matrix.platform.pkg_dir }}/*.tar.bz2
+          anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload --force --user ifcopenshell ${{ github.workspace }}/dist/${{ matrix.platform.pkg_dir }}/*.tar.bz2
