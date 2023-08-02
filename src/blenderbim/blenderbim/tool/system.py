@@ -65,6 +65,10 @@ class System(blenderbim.core.tool.System):
         return ifcopenshell.util.system.get_ports(element)
 
     @classmethod
+    def get_port_relating_element(cls, port):
+        return port.Nests[0].RelatingObject
+
+    @classmethod
     def import_system_attributes(cls, system):
         props = bpy.context.scene.BIMSystemProperties
         props.system_attributes.clear()
@@ -128,7 +132,6 @@ class System(blenderbim.core.tool.System):
             context=context,
             ifc_representation_class=ifc_representation_class,
         )
-
 
     @classmethod
     def select_system_products(cls, system):
