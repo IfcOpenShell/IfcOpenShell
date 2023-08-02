@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import bpy
 import ifcopenshell.api
 import blenderbim.tool as tool
@@ -40,8 +41,11 @@ class LoadBrickProject(bpy.types.Operator, Operator):
     filter_glob: bpy.props.StringProperty(default="*.ttl", options={"HIDDEN"})
 
     def _execute(self, context):
-        root = context.scene.BIMBrickProperties.brick_list_root
-        core.load_brick_project(tool.Brick, filepath=self.filepath, brick_root=root)
+        if os.path.exists(self.filepath) and "ttl" in os.path.splitext(self.filepath)[1].lower():
+            root = context.scene.BIMBrickProperties.brick_list_root
+            core.load_brick_project(tool.Brick, filepath=self.filepath, brick_root=root)
+        else:
+            self.report({'ERROR'}, f'Failed to load {self.filepath}')
 
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
