@@ -36,7 +36,7 @@ class BIM_PT_tester(Panel):
 
         if tool.Ifc.get():
             row = self.layout.row()
-            row.prop(self.props, "should_load_from_memory")
+            row.prop(props, "should_load_from_memory")
 
         row = self.layout.row()
         row.prop(props, "generate_html_report")
