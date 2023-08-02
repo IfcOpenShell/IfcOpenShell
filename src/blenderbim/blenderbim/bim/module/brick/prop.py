@@ -78,6 +78,7 @@ class BIMBrickProperties(PropertyGroup):
     bricks: CollectionProperty(name="Bricks", type=Brick)
     active_brick_index: IntProperty(name="Active Brick Index", update=update_active_brick_index)
     libraries: EnumProperty(name="Libraries", items=get_libraries)
+    set_list_root_toggled: BoolProperty(name="Set List Root Toggled", default=False)
     brick_list_root: EnumProperty(name="Brick List Root", items=get_brick_roots)
     # namespace manager
     namespace: EnumProperty(name="Namespace", items=get_namespaces)

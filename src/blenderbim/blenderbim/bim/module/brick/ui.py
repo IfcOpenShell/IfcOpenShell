@@ -76,10 +76,6 @@ class BIM_PT_brickschema(Panel):
             row.prop(data=self.props, property="new_brick_namespace_uri", text="")
             row.operator("bim.add_brick_namespace", text="", icon="ADD")
 
-            row = box.row(align=True)
-            row.operator("bim.set_brick_list_root", text="Set View")
-            row.prop(data=self.props, property="brick_list_root", text="")
-
         row = self.layout.row(align=True)
         row.label(text="Create Entity:")
 
@@ -103,6 +99,12 @@ class BIM_PT_brickschema(Panel):
 
         row = self.layout.row(align=True)
         row.label(text=self.props.active_brick_class)
+        row.prop(data=self.props, property="set_list_root_toggled", text="", icon="OUTLINER")
+
+        if self.props.set_list_root_toggled:
+            row = self.layout.row(align=True)
+            row.operator("bim.set_brick_list_root", text="Set View")
+            row.prop(data=self.props, property="brick_list_root", text="")
 
         self.layout.template_list("BIM_UL_bricks", "", self.props, "bricks", self.props, "active_brick_index")
 
