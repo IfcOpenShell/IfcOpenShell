@@ -168,6 +168,7 @@ class HidePorts(bpy.types.Operator, Operator):
 
 class AddPort(bpy.types.Operator, Operator):
     bl_idname = "bim.add_port"
+    bl_description = "Add port at current cursor position"
     bl_label = "Add Port"
     bl_options = {"REGISTER", "UNDO"}
 
