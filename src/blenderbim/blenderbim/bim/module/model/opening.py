@@ -265,7 +265,7 @@ class FilledOpeningGenerator:
             extrusion = shape_builder.extrude(
                 get_curve_2d_from_3d(profile),
                 magnitude=thickness / unit_scale,
-                position=Vector([0.0, - thickness * 0.5 / unit_scale, 0.0]),
+                position=Vector([0.0, -thickness * 0.5 / unit_scale, 0.0]),
                 position_x_axis=Vector((1, 0, 0)),
                 position_z_axis=Vector((0, -1, 0)),
                 extrusion_vector=Vector((0, 0, -1)),
@@ -273,7 +273,7 @@ class FilledOpeningGenerator:
             return shape_builder.get_representation(context, [extrusion])
 
         x, y, z = filling_obj.dimensions
-        opening_position = Vector([0.0, - thickness * 0.5 / unit_scale, 0.0])
+        opening_position = Vector([0.0, -thickness * 0.5 / unit_scale, 0.0])
         opening_size = Vector([x, z]) / unit_scale
 
         # Windows and doors can have a casing that overlaps the wall
@@ -754,27 +754,7 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                     tool.Ifc.unlink(element=opening, obj=opening_obj)
                     bpy.data.objects.remove(opening_obj)
 
-        decomposed_building_objs = set()
-        for obj in building_objs:
-            decomposed_building_objs.add(obj)
-            for subelement in ifcopenshell.util.element.get_decomposition(tool.Ifc.get_entity(obj)):
-                subobj = tool.Ifc.get_object(subelement)
-                if subobj:
-                    decomposed_building_objs.add(subobj)
-
-        for obj in decomposed_building_objs:
-            if obj.data:
-                element = tool.Ifc.get_entity(obj)
-                body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-                blenderbim.core.geometry.switch_representation(
-                    tool.Ifc,
-                    tool.Geometry,
-                    obj=obj,
-                    representation=body,
-                    should_reload=True,
-                    is_global=True,
-                    should_sync_changes_first=False,
-                )
+        tool.Model.reload_body_representation(building_objs)
         return {"FINISHED"}
 
     def get_all_building_objects_of_similar_openings(self, opening):
