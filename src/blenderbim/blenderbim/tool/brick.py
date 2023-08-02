@@ -100,22 +100,21 @@ class Brick(blenderbim.core.tool.Brick):
         )
 
     @classmethod
-    def add_relation(cls, brick_uri, predicate, namespace, object):
+    def add_relation(cls, brick_uri, predicate, object):
         if predicate == "http://www.w3.org/2000/01/rdf-schema#label":
             with BrickStore.new_changeset() as cs:
                 cs.add((URIRef(brick_uri), URIRef(predicate), Literal(object)))
             bpy.context.scene.BIMBrickProperties.new_brick_relation_type = BrickStore.relationships[0][0]
             bpy.context.scene.BIMBrickProperties.add_relation_failed = False
             return
-        object_uri = namespace + object
         query = BrickStore.graph.query(
-            "ASK { <{object_uri}> ?predicate ?object . }".replace(
-                "{object_uri}", object_uri
+            "ASK { <{object_uri}> a ?o . }".replace(
+                "{object_uri}", object
             )
         )
         if query:
             with BrickStore.new_changeset() as cs:
-                cs.add((URIRef(brick_uri), URIRef(predicate), URIRef(object_uri)))
+                cs.add((URIRef(brick_uri), URIRef(predicate), URIRef(object)))
             bpy.context.scene.BIMBrickProperties.add_relation_failed = False
         else:
             bpy.context.scene.BIMBrickProperties.add_relation_failed = True
