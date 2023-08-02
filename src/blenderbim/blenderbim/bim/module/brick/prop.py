@@ -78,18 +78,22 @@ class BIMBrickProperties(PropertyGroup):
     bricks: CollectionProperty(name="Bricks", type=Brick)
     active_brick_index: IntProperty(name="Active Brick Index", update=update_active_brick_index)
     libraries: EnumProperty(name="Libraries", items=get_libraries)
+    brick_list_root: EnumProperty(name="Brick List Root", items=get_brick_roots)
+    # namespace manager
     namespace: EnumProperty(name="Namespace", items=get_namespaces)
-    brick_entity_classes: EnumProperty(name="Brick Equipment Class", items=get_brick_entity_classes)
     brick_settings_toggled: BoolProperty(name="Brick Settings Toggled", default=False)
-    new_brick_label: StringProperty(name="New Brick Label")
     new_brick_namespace_alias: StringProperty(name="New Brick Namespace Alias")
     new_brick_namespace_uri: StringProperty(name="New Brick Namespace URI")
-    brick_list_root: EnumProperty(name="Brick List Root", items=get_brick_roots)
+    # create brick entity
+    new_brick_label: StringProperty(name="New Brick Label")
     brick_entity_create_type: EnumProperty(name="Brick Entity Types", items=get_brick_roots)
+    brick_entity_class: EnumProperty(name="Brick Equipment Class", items=get_brick_entity_classes)
+    # create relations
     brick_create_relations_toggled: BoolProperty(name="Brick Create Relations Toggled", default=False)
     brick_edit_relations_toggled: BoolProperty(name="Brick Edit Relations Toggled", default=False)
     new_brick_relation_type: EnumProperty(name="New Brick Relation Type", items=get_brick_relations)
     new_brick_relation_namespace: EnumProperty(name="New Brick Relation Namespace", items=get_namespaces)
     new_brick_relation_object: StringProperty(name="New Brick Relation Object")
     add_relation_failed: BoolProperty(name="Add Relation Failed", default=False)
+    # create relations split screen
     split_screen_toggled: BoolProperty(name="Split Screen Toggled", default=False)
