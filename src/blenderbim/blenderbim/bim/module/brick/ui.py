@@ -88,7 +88,7 @@ class BIM_PT_brickschema(Panel):
 
         row = self.layout.row(align=True)
         row.prop(data=self.props, property="new_brick_label", text="")
-        prop_with_search(row, self.props, "brick_entity_classes", text="")
+        prop_with_search(row, self.props, "brick_entity_class", text="")
         row.operator("bim.add_brick", text="", icon="ADD")
 
         row = self.layout.row(align=True)
