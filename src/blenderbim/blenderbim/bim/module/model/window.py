@@ -82,18 +82,7 @@ def update_simple_openings(element, opening_width, opening_height):
 
         has_replaced_opening_representation = True
 
-    for obj in voided_objs:
-        element = tool.Ifc.get_entity(obj)
-        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        blenderbim.core.geometry.switch_representation(
-            tool.Ifc,
-            tool.Geometry,
-            obj=obj,
-            representation=body,
-            should_reload=True,
-            is_global=True,
-            should_sync_changes_first=False,
-        )
+    tool.Model.reload_body_representation(voided_objs)
 
 
 def update_window_modifier_representation(context, obj):
