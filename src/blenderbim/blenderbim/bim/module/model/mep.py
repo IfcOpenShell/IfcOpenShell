@@ -66,6 +66,8 @@ class FitFlowSegments(bpy.types.Operator, tool.Ifc.Operator):
 
         if total_selected_objs == 1:
             fitting_type = "OBSTRUCTION"
+            bpy.ops.bim.mep_add_obstruction()
+
         elif total_selected_objs == 2:
             # Shorten the axis by the profile size to allow for fuzzy intersections
             # e.g. if two ducts touch, we want a bend, not a cross.
@@ -98,6 +100,7 @@ class FitFlowSegments(bpy.types.Operator, tool.Ifc.Operator):
             elif total_profiles == 2:
                 if is_parallel:
                     fitting_type = "TRANSITION"
+
         elif total_selected_objs == 3:
             if total_profiles > 1:
                 return
@@ -303,11 +306,6 @@ class MEPAddObstruction(bpy.types.Operator, tool.Ifc.Operator):
         name="Obstruction Length", description="Obstruction length in SI units", default=0.1, subtype="DISTANCE"
     )
     segment_id: bpy.props.IntProperty(name="Segment Element ID", default=0)
-    at_segment_start: bpy.props.BoolProperty(
-        name="At Segment Start",
-        description="Whether to add obstruction at the segment start or at the end",
-        default=False,
-    )
 
     def _execute(self, context):
         if self.segment_id:
@@ -317,7 +315,18 @@ class MEPAddObstruction(bpy.types.Operator, tool.Ifc.Operator):
         if not element:
             return {"CANCELLED"}
 
-        obstruction, error_msg = MEPGenerator().add_obstruction(element, self.length, self.at_segment_start)
+        if not element.is_a("IfcFlowSegment"):
+            self.report({"ERROR"}, f"Failed to add obstruction - object is not a MEP segment: {element.is_a()}.")
+            return {"CANCELLED"}
+
+        # derive obstruction position from the cursor
+        cursor_location = bpy.context.scene.cursor.location
+        obj = tool.Ifc.get_object(element)
+        axis = tool.Model.get_flow_segment_axis(obj)
+        # check if cursor is closer to the segment start
+        at_segment_start = (axis[0] - cursor_location).length < (axis[1] - cursor_location).length
+
+        obstruction, error_msg = MEPGenerator().add_obstruction(element, self.length, at_segment_start)
         if error_msg:
             self.report({"ERROR"}, error_msg)
             return {"CANCELLED"}
