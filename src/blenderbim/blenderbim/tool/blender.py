@@ -136,13 +136,15 @@ class Blender:
         return False
 
     @classmethod
-    def show_error_message(cls, text):
-        """useful for showing error messages outside blender operators"""
+    def show_info_message(cls, text, message_type="INFO"):
+        """useful for showing error messages outside blender operators
 
-        def error(self, context):
+        Possible `message_type`: `INFO` / `ERROR`"""
+
+        def message_ui(self, context):
             self.layout.label(text=text)
 
-        bpy.context.window_manager.popup_menu(error, title="Error", icon="ERROR")
+        bpy.context.window_manager.popup_menu(message_ui, title=message_type.capitalize(), icon=message_type)
 
     @classmethod
     def get_blender_prop_default_value(cls, props, prop_name):
