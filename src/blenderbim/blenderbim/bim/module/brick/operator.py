@@ -144,12 +144,15 @@ class AddBrickRelation(bpy.types.Operator, Operator):
     def _execute(self, context):
         props = context.scene.BIMBrickProperties
         brick = props.bricks[props.active_brick_index]
+        if props.new_brick_relation_type == "http://www.w3.org/2000/01/rdf-schema#label":
+            object = props.new_brick_relation_object
+        else: 
+            object = props.new_brick_relation_namespace + props.new_brick_relation_object
         core.add_brick_relation(
             tool.Brick,
             brick_uri=brick.uri,
             predicate=props.new_brick_relation_type,
-            namespace=props.new_brick_relation_namespace,
-            object=props.new_brick_relation_object
+            object=object
         )
 
 
