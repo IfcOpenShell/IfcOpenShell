@@ -371,7 +371,7 @@ class MEPAddObstruction(bpy.types.Operator, tool.Ifc.Operator):
         obj = tool.Ifc.get_object(element)
         axis = tool.Model.get_flow_segment_axis(obj)
         # check if cursor is closer to the segment start
-        at_segment_start = (axis[0] - cursor_location).length < (axis[1] - cursor_location).length
+        at_segment_start = tool.Cad.edge_percent(cursor_location, axis) < 0.5
 
         obstruction, error_msg = MEPGenerator().add_obstruction(element, self.length, at_segment_start)
         if error_msg:
