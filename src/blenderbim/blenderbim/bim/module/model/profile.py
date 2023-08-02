@@ -491,7 +491,7 @@ class DumbProfileJoiner:
             should_sync_changes_first=False,
         )
         tool.Geometry.record_object_materials(obj)
-        if element.is_a("IfcFlowSegment"):
+        if element.is_a("IfcFlowSegment") or element.is_a("IfcFlowFitting"):
             # lazy import to avoid circular import errors
             from blenderbim.bim.module.model.mep import MEPGenerator
 
@@ -803,14 +803,23 @@ class RecalculateProfile(bpy.types.Operator, tool.Ifc.Operator):
 
 class DumbProfileRecalculator:
     def recalculate(self, profiles):
+        "`profiles` is a list of blender profile objects"
         queue = set()
+
+        # also recalculate all connected elements
         for profile in profiles:
             element = tool.Ifc.get_entity(profile)
             queue.add((element, profile))
+            connected_elements = []
+
             for rel in getattr(element, "ConnectedTo", []):
-                queue.add((rel.RelatedElement, tool.Ifc.get_object(rel.RelatedElement)))
+                connected_elements.append(rel.RelatedElement)
             for rel in getattr(element, "ConnectedFrom", []):
-                queue.add((rel.RelatingElement, tool.Ifc.get_object(rel.RelatingElement)))
+                connected_elements.append(rel.RelatingElement)
+
+            for element in connected_elements:
+                queue.add((element, tool.Ifc.get_object(element)))
+
         joiner = DumbProfileJoiner()
         for element, profile in queue:
             if profile:

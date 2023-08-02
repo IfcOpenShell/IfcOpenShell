@@ -41,6 +41,7 @@ float_is_zero = lambda f: 0.0001 >= f >= -0.0001
 
 class FitFlowSegments(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.fit_flow_segments"
+    bl_description = "Add a fitting based on currently selected elements and cursor"
     bl_label = "Fit Flow Segments"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -135,24 +136,69 @@ class MEPGenerator:
         self.file = tool.Ifc.get()
         self.collection = bpy.context.view_layer.active_layer_collection.collection
 
-        element = tool.Ifc.get_entity(obj)
-        representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        segment = tool.Ifc.get_entity(obj)
+        representation = ifcopenshell.util.representation.get_representation(segment, "Model", "Body", "MODEL_VIEW")
         extrusion = tool.Model.get_extrusion(representation)
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         length = extrusion.Depth * si_conversion
-        end_port_matrix = Matrix.Translation((0, 0, length))
+        start_port_matrix = obj.matrix_world @ Matrix()
+        end_port_matrix = obj.matrix_world @ Matrix.Translation((0, 0, length))
 
-        ports = tool.System.get_ports(element)
-        if not ports:
-            start_port_matrix = Matrix()
+        ports = tool.System.get_ports(segment)
+        if segment.is_a("IfcFlowSegment") and not ports:
             for mat in [start_port_matrix, end_port_matrix]:
-                port = tool.Ifc.run("system.add_port", element=element)
+                # TODO: specify PredefinedType based on the segment type
+                port = tool.Ifc.run("system.add_port", element=segment)
                 port.FlowDirection = "NOTDEFINED"
-                tool.Ifc.run("geometry.edit_object_placement", product=port, matrix=obj.matrix_world @ mat, is_si=True)
+                tool.Ifc.run("geometry.edit_object_placement", product=port, matrix=mat, is_si=True)
             return
 
-        end_port = self.get_segment_data(element)["end_port"]
-        tool.Model.edit_element_placement(end_port, obj.matrix_world @ end_port_matrix)
+        # adjust current segment ports and related flow segments
+        segment_data = self.get_segment_data(segment)
+
+        for port_position in ("start_port", "end_port"):
+            port = segment_data.get(port_position, None)
+            if not port:
+                continue
+
+            # no need to correct start port position - it's corrected automatically
+            # as DumbProfileJoiner already moved the general segment position in that case
+            if port_position == "end_port":
+                tool.Model.edit_element_placement(port, end_port_matrix)
+
+            connected_port = tool.System.get_connected_port(port)
+            if not connected_port:
+                continue
+
+            # handle only obstructions for now
+            connected_element = tool.System.get_port_relating_element(connected_port)
+
+            def get_predefined_type(element):
+                element_type = ifcopenshell.util.element.get_type(element)
+                if element_type:
+                    return element_type.PredefinedType
+                return element.PredefinedType
+
+            connected_obj = tool.Ifc.get_object(connected_element)
+            connected_element_length = connected_obj.dimensions.z
+            if (segment.is_a("IfcFlowSegment") and get_predefined_type(connected_element) == "OBSTRUCTION") or (
+                segment.is_a("IfcFlowFitting") and connected_element.is_a("IfcFlowSegment")
+            ):
+                if port_position == "start_port":
+                    if segment.is_a("IfcFlowFitting"):
+                        profile_joiner = DumbProfileJoiner()
+                        connected_element_length = (
+                            tool.Model.get_flow_segment_axis(connected_obj)[0]
+                            - tool.Model.get_flow_segment_axis(obj)[0]
+                        ).length
+
+                    connected_port_matrix = start_port_matrix @ Matrix.Translation((0, 0, -connected_element_length))
+                else:
+                    connected_port_matrix = end_port_matrix
+                connected_obj.matrix_world = connected_port_matrix
+                if port_position == "start_port" and segment.is_a("IfcFlowFitting"):
+                    profile_joiner = DumbProfileJoiner()
+                    profile_joiner.set_depth(connected_obj, connected_element_length)
 
     def get_segment_data(self, segment):
         ports = tool.System.get_ports(segment)
@@ -275,6 +321,7 @@ class MEPGenerator:
 
         profile_joiner.set_depth(obstruction_obj, length)
         obstruction = tool.Ifc.get_entity(obstruction_obj)
+        # TODO: specify PredefinedType based on the segment type
         obstruction_port = tool.Ifc.run("system.add_port", element=obstruction)
         port_local_position = Matrix.Translation((0, 0, length)) if at_segment_start else Matrix()
         tool.Ifc.run(
