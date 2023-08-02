@@ -368,7 +368,12 @@ class BrickStore:
     current_changesets = 0
     history_size = 64
     namespaces = []
-    root_classes = ["Equipment", "Location", "System", "Point"]
+    root_classes = ["Equipment",
+                        "Electrical_Equipment", "Fire_Safety_Equipment", "HVAC_Equipment", "Lighting_Equipment", "Meter", 
+                    "Location",
+                    "System",
+                    "Point", 
+                        "Alarm", "Command", "Parameter", "Sensor", "Setpoint", "Status"]
     entity_classes = {}
     relationships = []
 
