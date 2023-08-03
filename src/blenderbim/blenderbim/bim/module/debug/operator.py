@@ -228,6 +228,7 @@ class CreateShapeFromStepId(bpy.types.Operator):
     bl_description = "Recreate a mesh object from a STEP ID"
     bl_options = {"REGISTER", "UNDO"}
     should_include_curves: bpy.props.BoolProperty()
+    step_id: bpy.props.IntProperty(default=0)
 
     @classmethod
     def poll(cls, context):
@@ -240,7 +241,7 @@ class CreateShapeFromStepId(bpy.types.Operator):
         logger = logging.getLogger("ImportIFC")
         self.ifc_import_settings = import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger)
         self.file = IfcStore.get_file()
-        element = self.file.by_id(int(context.scene.BIMDebugProperties.step_id))
+        element = self.file.by_id(self.step_id or int(context.scene.BIMDebugProperties.step_id))
         settings = ifcopenshell.geom.settings()
         if self.should_include_curves:
             settings.set(settings.INCLUDE_CURVES, True)
