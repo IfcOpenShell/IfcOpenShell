@@ -53,9 +53,14 @@ class Brick(blenderbim.core.tool.Brick):
         return str(brick)
 
     @classmethod
-    def add_brick_breadcrumb(cls):
-        new = bpy.context.scene.BIMBrickProperties.brick_breadcrumbs.add()
-        new.name = bpy.context.scene.BIMBrickProperties.active_brick_class
+    def add_brick_breadcrumb(cls, split_screen=False):
+        props = bpy.context.scene.BIMBrickProperties
+        if split_screen:
+            new = props.split_screen_brick_breadcrumbs.add()
+            new.name = props.split_screen_active_brick_class
+        else:
+            new = props.brick_breadcrumbs.add()
+            new.name = props.active_brick_class
 
     @classmethod
     def add_brick_from_element(cls, element, namespace, brick_class):
@@ -126,14 +131,18 @@ class Brick(blenderbim.core.tool.Brick):
                 cs.remove(triple)
 
     @classmethod
-    def clear_brick_browser(cls):
-        bpy.context.scene.BIMBrickProperties.bricks.clear()
+    def clear_brick_browser(cls, split_screen=False):
+        props = bpy.context.scene.BIMBrickProperties
+        if split_screen:
+            props.split_screen_bricks.clear()
+        else:
+            props.bricks.clear()
 
     @classmethod
     def clear_project(cls):
         BrickStore.purge()
         bpy.context.scene.BIMBrickProperties.active_brick_class == ""
-        bpy.context.scene.BIMBrickProperties.brick_breadcrumbs.clear()
+        bpy.context.scene.BIMBrickProperties.split_screen_active_brick_class == ""
 
     @classmethod
     def export_brick_attributes(cls, brick_uri):
@@ -143,7 +152,9 @@ class Brick(blenderbim.core.tool.Brick):
             return {"Identification": brick_uri, "Name": brick_uri.split("#")[-1]}
 
     @classmethod
-    def get_active_brick_class(cls):
+    def get_active_brick_class(cls, split_screen=False):
+        if split_screen:
+            return bpy.context.scene.BIMBrickProperties.split_screen_active_brick_class
         return bpy.context.scene.BIMBrickProperties.active_brick_class
 
     @classmethod
@@ -224,7 +235,7 @@ class Brick(blenderbim.core.tool.Brick):
         return uri.split("#")[0] + "#"
 
     @classmethod
-    def import_brick_classes(cls, brick_class):
+    def import_brick_classes(cls, brick_class, split_screen=False):
         query = BrickStore.graph.query(
             """
             PREFIX brick: <https://brickschema.org/schema/Brick#>
@@ -243,8 +254,12 @@ class Brick(blenderbim.core.tool.Brick):
                 "{brick_class}", brick_class
             )
         )
+        if split_screen:
+            bricks = bpy.context.scene.BIMBrickProperties.split_screen_bricks
+        else:
+            bricks = bpy.context.scene.BIMBrickProperties.bricks
         for row in query:
-            new = bpy.context.scene.BIMBrickProperties.bricks.add()
+            new = bricks.add()
             label = row.get("label")
             if label:
                 new.label = label.toPython()
@@ -253,7 +268,7 @@ class Brick(blenderbim.core.tool.Brick):
             new.total_items = row.get("total_items").toPython()
 
     @classmethod
-    def import_brick_items(cls, brick_class):
+    def import_brick_items(cls, brick_class, split_screen=False):
         query = BrickStore.graph.query(
             """
             PREFIX brick: <https://brickschema.org/schema/Brick#>
@@ -270,8 +285,12 @@ class Brick(blenderbim.core.tool.Brick):
                 "{brick_class}", brick_class
             )
         )
+        if split_screen:
+            bricks = bpy.context.scene.BIMBrickProperties.split_screen_bricks
+        else:
+            bricks = bpy.context.scene.BIMBrickProperties.bricks
         for row in query:
-            new = bpy.context.scene.BIMBrickProperties.bricks.add()
+            new = bricks.add()
             label = row.get("label")
             if label:
                 new.label = label.toPython()
@@ -307,11 +326,16 @@ class Brick(blenderbim.core.tool.Brick):
         BrickStore.load_relationships()
 
     @classmethod
-    def pop_brick_breadcrumb(cls):
-        crumb = bpy.context.scene.BIMBrickProperties.brick_breadcrumbs[-1]
+    def pop_brick_breadcrumb(cls, split_screen=False):
+        props = bpy.context.scene.BIMBrickProperties
+        if split_screen:
+            breadcrumbs = props.split_screen_brick_breadcrumbs
+        else:
+            breadcrumbs = props.brick_breadcrumbs
+        crumb = breadcrumbs[-1]
         name = crumb.name
-        last_index = len(bpy.context.scene.BIMBrickProperties.brick_breadcrumbs) - 1
-        bpy.context.scene.BIMBrickProperties.brick_breadcrumbs.remove(last_index)
+        last_index = len(breadcrumbs) - 1
+        breadcrumbs.remove(last_index)
         return name
 
     @classmethod
@@ -328,22 +352,29 @@ class Brick(blenderbim.core.tool.Brick):
         )
 
     @classmethod
-    def run_refresh_brick_viewer(cls):
-        return blenderbim.core.brick.refresh_brick_viewer(tool.Brick)
+    def run_refresh_brick_viewer(cls, split_screen=False):
+        return blenderbim.core.brick.refresh_brick_viewer(tool.Brick, split_screen)
 
     @classmethod
-    def run_view_brick_class(cls, brick_class=None):
-        return blenderbim.core.brick.view_brick_class(tool.Brick, brick_class=brick_class)
+    def run_view_brick_class(cls, brick_class=None, split_screen=False):
+        return blenderbim.core.brick.view_brick_class(tool.Brick, brick_class=brick_class, split_screen=split_screen)
 
     @classmethod
-    def select_browser_item(cls, item):
+    def select_browser_item(cls, item, split_screen=False):
         name = item.split("#")[-1]
         props = bpy.context.scene.BIMBrickProperties
-        props.active_brick_index = props.bricks.find(name)
+        if split_screen:
+            props.split_screen_active_brick_index = props.split_screen_bricks.find(name)
+        else:
+            props.active_brick_index = props.bricks.find(name)
 
     @classmethod
-    def set_active_brick_class(cls, brick_class):
-        bpy.context.scene.BIMBrickProperties.active_brick_class = brick_class
+    def set_active_brick_class(cls, brick_class, split_screen=False):
+        props = bpy.context.scene.BIMBrickProperties
+        if split_screen:
+            props.split_screen_active_brick_class = brick_class
+        else:
+            props.active_brick_class = brick_class
 
     @classmethod
     def serialize_brick(cls):
@@ -355,8 +386,11 @@ class Brick(blenderbim.core.tool.Brick):
         BrickStore.load_namespaces()
     
     @classmethod
-    def clear_breadcrumbs(cls):
-        bpy.context.scene.BIMBrickProperties.brick_breadcrumbs.clear()
+    def clear_breadcrumbs(cls, split_screen=False):
+        if split_screen:
+            bpy.context.scene.BIMBrickProperties.split_screen_brick_breadcrumbs.clear()
+        else:
+            bpy.context.scene.BIMBrickProperties.brick_breadcrumbs.clear()
 
 class BrickStore:
     schema = None  # this is now a os path

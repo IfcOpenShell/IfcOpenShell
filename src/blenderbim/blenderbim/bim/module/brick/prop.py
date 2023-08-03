@@ -98,3 +98,8 @@ class BIMBrickProperties(PropertyGroup):
     add_relation_failed: BoolProperty(name="Add Relation Failed", default=False)
     # create relations split screen
     split_screen_toggled: BoolProperty(name="Split Screen Toggled", default=False)
+    split_screen_bricks: CollectionProperty(name="Split Screen Bricks", type=Brick)
+    split_screen_active_brick_index: IntProperty(name="Split Screen Active Brick Index", update=update_active_brick_index)
+    split_screen_active_brick_class: StringProperty(name="Split Screen Active Brick Class")
+    split_screen_brick_breadcrumbs: CollectionProperty(name="Split Screen Brick Breadcrumbs", type=StrProperty)
+    split_screen_brick_list_root: EnumProperty(name="Split Screen Brick List Root", items=get_brick_roots)
