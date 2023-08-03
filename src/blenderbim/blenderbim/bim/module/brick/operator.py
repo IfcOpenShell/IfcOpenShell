@@ -57,9 +57,10 @@ class ViewBrickClass(bpy.types.Operator, Operator):
     bl_label = "View Brick Class"
     bl_options = {"REGISTER", "UNDO"}
     brick_class: bpy.props.StringProperty(name="Brick Class")
+    split_screen: bpy.props.BoolProperty(name="Split Screen", default=False, options={"HIDDEN"})
 
     def _execute(self, context):
-        core.view_brick_class(tool.Brick, brick_class=self.brick_class)
+        core.view_brick_class(tool.Brick, brick_class=self.brick_class, split_screen=self.split_screen)
 
 
 class ViewBrickItem(bpy.types.Operator, Operator):
@@ -67,18 +68,20 @@ class ViewBrickItem(bpy.types.Operator, Operator):
     bl_label = "View Brick Item"
     bl_options = {"REGISTER", "UNDO"}
     item: bpy.props.StringProperty(name="Brick Item")
+    split_screen: bpy.props.BoolProperty(name="Split Screen", default=False, options={"HIDDEN"})
 
     def _execute(self, context):
-        core.view_brick_item(tool.Brick, item=self.item)
+        core.view_brick_item(tool.Brick, item=self.item, split_screen=self.split_screen)
 
 
 class RewindBrickClass(bpy.types.Operator, Operator):
     bl_idname = "bim.rewind_brick_class"
     bl_label = "Rewind Brick Class"
     bl_options = {"REGISTER", "UNDO"}
+    split_screen: bpy.props.BoolProperty(name="Split Screen", default=False, options={"HIDDEN"})
 
     def _execute(self, context):
-        core.rewind_brick_class(tool.Brick)
+        core.rewind_brick_class(tool.Brick, split_screen=self.split_screen)
 
 
 class CloseBrickProject(bpy.types.Operator, Operator):
@@ -205,9 +208,10 @@ class RefreshBrickViewer(bpy.types.Operator, Operator):
     bl_idname = "bim.refresh_brick_viewer"
     bl_label = "Refresh Brick Viewer"
     bl_options = {"REGISTER", "UNDO"}
+    split_screen: bpy.props.BoolProperty(name="Split Screen", default=False, options={"HIDDEN"})
 
     def _execute(self, context):
-        core.refresh_brick_viewer(tool.Brick)
+        core.refresh_brick_viewer(tool.Brick, split_screen=self.split_screen)
 
 
 class RemoveBrick(bpy.types.Operator, Operator):
@@ -268,10 +272,14 @@ class SetBrickListRoot(bpy.types.Operator, Operator):
     bl_idname = "bim.set_brick_list_root"
     bl_label = "Set Brick View Type"
     bl_options = {"REGISTER", "UNDO"}
+    split_screen: bpy.props.BoolProperty(name="Split Screen", default=False, options={"HIDDEN"})
 
     def _execute(self, context):
-        root = context.scene.BIMBrickProperties.brick_list_root
-        core.set_brick_list_root(tool.Brick, brick_root=root)
+        if self.split_screen:
+            root = context.scene.BIMBrickProperties.split_screen_brick_list_root
+        else:
+            root = context.scene.BIMBrickProperties.brick_list_root
+        core.set_brick_list_root(tool.Brick, brick_root=root, split_screen=self.split_screen)
 
 
 class RemoveBrickRelation(bpy.types.Operator, Operator):
