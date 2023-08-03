@@ -104,7 +104,8 @@ class BIM_PT_brickschema(Panel):
 
         if self.props.set_list_root_toggled:
             row = grid1.row(align=True)
-            row.operator("bim.set_brick_list_root", text="Set View")
+            op = row.operator("bim.set_brick_list_root", text="Set View")
+            op.split_screen = False
             row.prop(data=self.props, property="brick_list_root", text="")
 
         row = grid1.row()
@@ -137,22 +138,39 @@ class BIM_PT_brickschema(Panel):
             row.prop(data=self.props, property="brick_edit_relations_toggled", text="", icon="TOOL_SETTINGS")
             row.operator("bim.remove_brick", text="", icon="X")
 
-            if self.props.brick_create_relations_toggled:
-                row = self.layout.row(align=True)
-                row.label(text="Create Relation:")
+            row = self.layout.row(align=True)
+            row.label(text="Create Relation:")
 
-                if not self.props.new_brick_relation_type == "http://www.w3.org/2000/01/rdf-schema#label":
-                    row = self.layout.row(align=True)
-                    prop_with_search(row, self.props, "new_brick_relation_namespace", text="")
-
+            if self.props.brick_create_relations_toggled and self.props.new_brick_relation_type == "http://www.w3.org/2000/01/rdf-schema#label":
                 row = self.layout.row(align=True)
                 prop_with_search(row, self.props, "new_brick_relation_type", text="")
                 row.prop(data=self.props, property="new_brick_relation_object", text="")
                 row.operator("bim.add_brick_relation", text="", icon="ADD")
 
-                if self.props.add_relation_failed:
-                    row = self.layout.row(align=True)
-                    row.label(text="Failed to find this entity!", icon="ERROR")
+            elif self.props.brick_create_relations_toggled and self.props.split_screen_toggled:
+                row = self.layout.row(align=True)
+                split_screen_selection = self.props.split_screen_bricks[self.props.split_screen_active_brick_index]
+                if split_screen_selection.total_items:
+                    row.label(text="No selection", icon="INFO")
+                else:
+                    prop_with_search(row, self.props, "new_brick_relation_type", text="")
+                    row.label(text=split_screen_selection.label if split_screen_selection.label else split_screen_selection.name)
+                    row.operator("bim.add_brick_relation", text="", icon="ADD")
+
+            elif self.props.brick_create_relations_toggled: 
+                row = self.layout.row(align=True)
+                prop_with_search(row, self.props, "new_brick_relation_namespace", text="")
+
+                row = self.layout.row(align=True)
+                prop_with_search(row, self.props, "new_brick_relation_type", text="")
+                row.prop(data=self.props, property="new_brick_relation_object", text="")
+                row.operator("bim.add_brick_relation", text="", icon="ADD")
+            
+
+            if self.props.brick_create_relations_toggled and self.props.add_relation_failed:
+                row = self.layout.row(align=True)
+                row.label(text="Failed to find this entity!", icon="ERROR")
+                
 
         for relation in BrickschemaData.data["active_relations"]:
             row = self.layout.row(align=True)
