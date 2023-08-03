@@ -150,6 +150,7 @@ class MEPGenerator:
                 # TODO: specify PredefinedType based on the segment type
                 port = tool.Ifc.run("system.add_port", element=segment)
                 port.FlowDirection = "NOTDEFINED"
+                port.PredefinedType = self.get_port_predefined_type(segment)
                 tool.Ifc.run("geometry.edit_object_placement", product=port, matrix=mat, is_si=True)
             return
 
@@ -222,9 +223,16 @@ class MEPGenerator:
 
         return segment_data
 
+    def get_port_predefined_type(self, segment):
+        split_camel_case = lambda x: re.findall("[A-Z][^A-Z]*", x)
+        class_name = "".join(split_camel_case(segment.is_a())[1:-1]).upper()
+        if class_name == "CONVEYOR":
+            return "NOTDEFINED"
+        return class_name
+
     def get_mep_element_class_name(self, element, mep_class_type):
         split_camel_case = lambda x: re.findall("[A-Z][^A-Z]*", x)
-        class_name = "".join(split_camel_case(element.is_a())[:2] + [mep_class_type])
+        class_name = "".join(split_camel_case(element.is_a())[:-1] + [mep_class_type])
         return class_name
 
     def get_compatible_fitting_type(self, segment, predefined_type):
@@ -323,6 +331,7 @@ class MEPGenerator:
         obstruction = tool.Ifc.get_entity(obstruction_obj)
         # TODO: specify PredefinedType based on the segment type
         obstruction_port = tool.Ifc.run("system.add_port", element=obstruction)
+        obstruction_port.PredefinedType = self.get_port_predefined_type(obstruction)
         port_local_position = Matrix.Translation((0, 0, length)) if at_segment_start else Matrix()
         tool.Ifc.run(
             "geometry.edit_object_placement",
