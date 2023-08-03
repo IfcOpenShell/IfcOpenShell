@@ -20,34 +20,37 @@
 def load_brick_project(brick, filepath=None, brick_root=None):
     brick.load_brick_file(filepath)
     brick.import_brick_classes(brick_root)
+    brick.import_brick_classes(brick_root, split_screen=True)
     brick.set_active_brick_class(brick_root)
+    brick.set_active_brick_class(brick_root, split_screen=True)
 
 
-def view_brick_class(brick, brick_class=None):
-    brick.add_brick_breadcrumb()
-    brick.clear_brick_browser()
-    brick.import_brick_classes(brick_class)
-    brick.import_brick_items(brick_class)
-    brick.set_active_brick_class(brick_class)
+def view_brick_class(brick, brick_class=None, split_screen=False):
+    brick.add_brick_breadcrumb(split_screen=split_screen)
+    brick.clear_brick_browser(split_screen=split_screen)
+    brick.import_brick_classes(brick_class, split_screen=split_screen)
+    brick.import_brick_items(brick_class, split_screen=split_screen)
+    brick.set_active_brick_class(brick_class, split_screen=split_screen)
 
 
-def view_brick_item(brick, item=None):
+def view_brick_item(brick, item=None, split_screen=False):
     brick_class = brick.get_item_class(item)
-    view_brick_class(brick, brick_class=brick_class)
-    brick.select_browser_item(item)
+    view_brick_class(brick, brick_class=brick_class, split_screen=split_screen)
+    brick.select_browser_item(item, split_screen=split_screen)
 
 
-def rewind_brick_class(brick):
-    previous_class = brick.pop_brick_breadcrumb()
-    brick.clear_brick_browser()
-    brick.import_brick_classes(previous_class)
-    brick.import_brick_items(previous_class)
-    brick.set_active_brick_class(previous_class)
+def rewind_brick_class(brick, split_screen=False):
+    previous_class = brick.pop_brick_breadcrumb(split_screen=split_screen)
+    brick.clear_brick_browser(split_screen=split_screen)
+    brick.import_brick_classes(previous_class, split_screen=split_screen)
+    brick.import_brick_items(previous_class, split_screen=split_screen)
+    brick.set_active_brick_class(previous_class, split_screen=split_screen)
 
 
 def close_brick_project(brick):
     brick.clear_project()
     brick.clear_brick_browser()
+    brick.clear_brick_browser(split_screen=True)
 
 
 def convert_brick_project(ifc, brick):
@@ -76,11 +79,13 @@ def add_brick(ifc, brick, element=None, namespace=None, brick_class=None, librar
     else:
         brick_uri = brick.add_brick(namespace, brick_class, label)
     brick.run_refresh_brick_viewer()
+    brick.run_refresh_brick_viewer(split_screen=True)
 
 
 def add_brick_relation(brick, brick_uri=None, predicate=None, object=None):
     brick.add_relation(brick_uri, predicate, object)
     brick.run_refresh_brick_viewer()
+    brick.run_refresh_brick_viewer(split_screen=True)
 
 
 def convert_ifc_to_brick(brick, namespace=None, library=None):
@@ -95,12 +100,17 @@ def convert_ifc_to_brick(brick, namespace=None, library=None):
 def new_brick_file(brick, brick_root=None):
     brick.new_brick_file()
     brick.import_brick_classes(brick_root)
+    brick.import_brick_classes(brick_root, split_screen=True)
     brick.set_active_brick_class(brick_root)
+    brick.set_active_brick_class(brick_root, split_screen=True)
 
 
-def refresh_brick_viewer(brick):
-    brick.run_view_brick_class(brick_class=brick.get_active_brick_class())
-    brick.pop_brick_breadcrumb()
+def refresh_brick_viewer(brick, split_screen=False):
+    if split_screen:
+        brick.run_view_brick_class(brick_class=brick.get_active_brick_class(split_screen=split_screen), split_screen=split_screen)
+    else:
+        brick.run_view_brick_class(brick_class=brick.get_active_brick_class(), split_screen=split_screen)
+    brick.pop_brick_breadcrumb(split_screen=split_screen)
 
 
 def remove_brick(ifc, brick, library=None, brick_uri=None):
@@ -110,6 +120,7 @@ def remove_brick(ifc, brick, library=None, brick_uri=None):
             ifc.run("library.remove_reference", reference=reference)
     brick.remove_brick(brick_uri)
     brick.run_refresh_brick_viewer()
+    brick.run_refresh_brick_viewer(split_screen=True)
 
 
 def serialize_brick(brick):
@@ -120,11 +131,11 @@ def add_namespace(brick, alias=None, uri=None):
     brick.add_namespace(alias, uri)
 
 
-def set_brick_list_root(brick, brick_root=None):
-    brick.clear_brick_browser()
-    brick.import_brick_classes(brick_root)
-    brick.set_active_brick_class(brick_root)
-    brick.clear_breadcrumbs()
+def set_brick_list_root(brick, brick_root=None, split_screen=False):
+    brick.clear_brick_browser(split_screen=split_screen)
+    brick.import_brick_classes(brick_root, split_screen=split_screen)
+    brick.set_active_brick_class(brick_root, split_screen=split_screen)
+    brick.clear_breadcrumbs(split_screen=split_screen)
 
 
 def remove_brick_relation(brick, brick_uri=None, predicate=None, object=None):

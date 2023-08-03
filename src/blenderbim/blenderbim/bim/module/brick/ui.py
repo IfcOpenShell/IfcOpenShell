@@ -86,27 +86,48 @@ class BIM_PT_brickschema(Panel):
         row.prop(data=self.props, property="new_brick_label", text="")
         prop_with_search(row, self.props, "brick_entity_class", text="")
         row.operator("bim.add_brick", text="", icon="ADD")
-
-        row = self.layout.row(align=True)
-        col = row.column()
-        col.alignment = "LEFT"
-        if len(self.props.brick_breadcrumbs):
-            row.operator("bim.rewind_brick_class", text="", icon="FRAME_PREV")
-        col = row.column()
-        col.alignment = "RIGHT"
-        row.operator("bim.remove_brick", text="", icon="X")
         # row.operator("bim.refresh_brick_viewer", text="", icon="FILE_REFRESH")
 
         row = self.layout.row(align=True)
-        row.label(text=self.props.active_brick_class)
+        col = row.column()
+        col.alignment = "RIGHT"
+        row.prop(data=self.props, property="split_screen_toggled", text="", icon="WINDOW")
+
+        grid = self.layout.grid_flow(even_columns=True)
+        grid1 = grid.column(align=True)
+        row = grid1.row(align=True)
+        if len(self.props.brick_breadcrumbs):
+            op = row.operator("bim.rewind_brick_class", text="", icon="FRAME_PREV")
+            op.split_screen = False
         row.prop(data=self.props, property="set_list_root_toggled", text="", icon="OUTLINER")
+        row.label(text=self.props.active_brick_class)
 
         if self.props.set_list_root_toggled:
-            row = self.layout.row(align=True)
+            row = grid1.row(align=True)
             row.operator("bim.set_brick_list_root", text="Set View")
             row.prop(data=self.props, property="brick_list_root", text="")
 
-        self.layout.template_list("BIM_UL_bricks", "", self.props, "bricks", self.props, "active_brick_index")
+        row = grid1.row()
+        BIM_UL_bricks.split_screen = False
+        row.template_list("BIM_UL_bricks", "", self.props, "bricks", self.props, "active_brick_index")
+
+        if self.props.split_screen_toggled:
+            grid2 = grid.column(align=True)
+            row = grid2.row(align=True)
+            if len(self.props.split_screen_brick_breadcrumbs):
+                op = row.operator("bim.rewind_brick_class", text="", icon="FRAME_PREV")
+                op.split_screen = True
+            row.label(text=self.props.split_screen_active_brick_class)
+
+            if self.props.set_list_root_toggled:
+                row = grid2.row(align=True)
+                op = row.operator("bim.set_brick_list_root", text="Set View")
+                op.split_screen = True
+                row.prop(data=self.props, property="split_screen_brick_list_root", text="")
+
+            row = grid2.row()
+            BIM_UL_bricks.split_screen = True
+            row.template_list("BIM_UL_bricks", "", self.props, "split_screen_bricks", self.props, "split_screen_active_brick_index")
 
         if BrickschemaData.data["active_relations"]:
             row = self.layout.row(align=True)
@@ -114,15 +135,11 @@ class BIM_PT_brickschema(Panel):
             col.alignment = "RIGHT"
             row.prop(data=self.props, property="brick_create_relations_toggled", text="", icon="PLUGIN")
             row.prop(data=self.props, property="brick_edit_relations_toggled", text="", icon="TOOL_SETTINGS")
-            
+            row.operator("bim.remove_brick", text="", icon="X")
+
             if self.props.brick_create_relations_toggled:
                 row = self.layout.row(align=True)
-                col = row.column()
-                col.alignment = "LEFT"
                 row.label(text="Create Relation:")
-                col = row.column()
-                col.alignment = "RIGHT"
-                row.prop(data=self.props, property="split_screen_toggled", text="", icon="WINDOW")
 
                 if not self.props.new_brick_relation_type == "http://www.w3.org/2000/01/rdf-schema#label":
                     row = self.layout.row(align=True)
@@ -203,12 +220,15 @@ class BIM_PT_ifc_brickschema_references(Panel):
 
 
 class BIM_UL_bricks(UIList):
+    split_screen = False
+
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
+            label = item.label if item.label else item.name
             if item.total_items:
                 op = row.operator("bim.view_brick_class", text="", icon="DISCLOSURE_TRI_RIGHT", emboss=False)
                 op.brick_class = item.name
-            row.label(text=item.label if item.label else item.name)
-            if item.total_items:
-                row.label(text=str(item.total_items))
+                op.split_screen = self.split_screen
+                label = label + " (" + str(item.total_items) + ")" 
+            row.label(text=label)
