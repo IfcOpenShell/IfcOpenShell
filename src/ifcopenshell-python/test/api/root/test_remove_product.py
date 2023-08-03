@@ -26,6 +26,34 @@ class TestRemoveProduct(test.bootstrap.IFC4):
         ifcopenshell.api.run("root.remove_product", self.file, product=element)
         assert len(self.file.by_type("IfcWall")) == 0
 
+    def test_removing_an_element_local_placement(self):
+        # just removing the product with the placement
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        placement = ifcopenshell.api.run("geometry.edit_object_placement", self.file, product=element)
+        ifcopenshell.api.run("root.remove_product", self.file, product=element)
+        assert len(self.file.by_type("IfcObjectPlacement")) == 0
+
+        # removing the product that shares the placement with other product
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        placement = ifcopenshell.api.run("geometry.edit_object_placement", self.file, product=element)
+        element1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element1.ObjectPlacement = placement
+        ifcopenshell.api.run("root.remove_product", self.file, product=element)
+        assert len(self.file.by_type("IfcObjectPlacement")) == 1
+        ifcopenshell.api.run("root.remove_product", self.file, product=element1)
+        assert len(self.file.by_type("IfcObjectPlacement")) == 0
+
+        # removing the product that's placement used as a reference point for another placement
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        placement = ifcopenshell.api.run("geometry.edit_object_placement", self.file, product=element)
+        element1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        placement1 = ifcopenshell.api.run("geometry.edit_object_placement", self.file, product=element1)
+        placement.PlacementRelTo = placement1
+        ifcopenshell.api.run("root.remove_product", self.file, product=element)
+        assert len(self.file.by_type("IfcObjectPlacement")) == 1
+        ifcopenshell.api.run("root.remove_product", self.file, product=element1)
+        assert len(self.file.by_type("IfcObjectPlacement")) == 0
+
     def test_removing_all_representations_of_an_element(self):
         ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
         ifcopenshell.api.run("unit.assign_unit", self.file)

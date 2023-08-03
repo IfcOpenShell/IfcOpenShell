@@ -65,6 +65,11 @@ class Usecase:
                 representations = self.settings["product"].Representation.Representations or []
             else:
                 representations = []
+            
+            object_placement = self.settings["product"].ObjectPlacement
+            if object_placement and self.file.get_total_inverses(object_placement) == 1:
+                self.settings["product"].ObjectPlacement = None # remove the inverse for remove_deep2 to work
+                ifcopenshell.util.element.remove_deep2(self.file, object_placement)
         elif self.settings["product"].is_a("IfcTypeProduct"):
             representations = [rm.MappedRepresentation for rm in self.settings["product"].RepresentationMaps or []]
         for representation in representations:
