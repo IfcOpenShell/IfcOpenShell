@@ -22,13 +22,14 @@ import site
 
 bl_info = {
     "name": "BlenderBIM",
-    "description": "Author, import, and export data using the Industry Foundation Classes schema",
+    "description": "Transforms Blender into a native Building Information Model authoring platform using IFC.",
     "author": "IfcOpenShell Contributors",
-    "blender": (2, 80, 0),
+    "blender": (3, 1, 0),
     "version": (0, 0, 999999),
-    "location": "File > Export, File > Import, Scene / Object / Material / Mesh Properties",
+    "location": "File Menu, Scene Properties Tab. See documentation for more.",
+    "doc_url": "https://blenderbim.org/docs",
     "tracker_url": "https://github.com/IfcOpenShell/IfcOpenShell/issues",
-    "category": "Import-Export",
+    "category": "System",
 }
 
 if sys.modules.get("bpy", None):
