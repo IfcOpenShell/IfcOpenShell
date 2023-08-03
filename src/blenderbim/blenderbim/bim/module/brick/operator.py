@@ -149,7 +149,9 @@ class AddBrickRelation(bpy.types.Operator, Operator):
         brick = props.bricks[props.active_brick_index]
         if props.new_brick_relation_type == "http://www.w3.org/2000/01/rdf-schema#label":
             object = props.new_brick_relation_object
-        else: 
+        elif props.split_screen_toggled:
+            object = props.split_screen_bricks[props.split_screen_active_brick_index].uri
+        else:
             object = props.new_brick_relation_namespace + props.new_brick_relation_object
         core.add_brick_relation(
             tool.Brick,
