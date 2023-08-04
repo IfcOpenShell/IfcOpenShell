@@ -177,6 +177,7 @@ classes = (
     roof.RemoveRoof,
     roof.SetGableRoofEdgeAngle,
     mep.MEPAddObstruction,
+    mep.MEPAddTransition,
 )
 
 addon_keymaps = []

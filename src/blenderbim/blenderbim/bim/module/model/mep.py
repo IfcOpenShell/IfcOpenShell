@@ -18,7 +18,10 @@
 
 import bpy
 import math
+import collections
 import bmesh
+import re
+import json
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.unit
@@ -31,13 +34,13 @@ import blenderbim.core.type
 import blenderbim.core.root
 import blenderbim.core.geometry
 import blenderbim.tool as tool
-from math import pi, degrees
+from math import pi, degrees, radians
+from copy import copy
 from mathutils import Vector, Matrix
-import re
+from ifcopenshell.util.shape_builder import ShapeBuilder
 from blenderbim.bim.module.model.profile import DumbProfileJoiner
 
 V = lambda *x: Vector([float(i) for i in x])
-float_is_zero = lambda f: 0.0001 >= f >= -0.0001
 
 
 class RegenerateDistributionElement(bpy.types.Operator, tool.Ifc.Operator):
@@ -86,7 +89,7 @@ class RegenerateDistributionElement(bpy.types.Operator, tool.Ifc.Operator):
         def process_branch(branch):
             for branch_element in branch:
                 element = branch_element["element"]
-                print('processing', element)
+                print("processing", element)
                 predecessor = branch_element["predecessor"]
                 if False:  # If the element does not need to be transformed, return early.
                     return
@@ -107,6 +110,9 @@ class FitFlowSegments(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
+        # TODO: need to add ui for parameters:
+        # - obstruction cap thickness
+        # - start/end thickness and angle for transition
         selected_objs = []
         selected_profiles = []
 
@@ -207,12 +213,7 @@ class MEPGenerator:
 
         ports = tool.System.get_ports(segment)
         if segment.is_a("IfcFlowSegment") and not ports:
-            for mat in [start_port_matrix, end_port_matrix]:
-                # TODO: specify PredefinedType based on the segment type
-                port = tool.Ifc.run("system.add_port", element=segment)
-                port.FlowDirection = "NOTDEFINED"
-                port.PredefinedType = self.get_port_predefined_type(segment)
-                tool.Ifc.run("geometry.edit_object_placement", product=port, matrix=mat, is_si=True)
+            tool.System.add_ports(obj)
             return
 
         # adjust current segment ports and related flow segments
@@ -248,7 +249,6 @@ class MEPGenerator:
             ):
                 if port_position == "start_port":
                     if segment.is_a("IfcFlowFitting"):
-                        profile_joiner = DumbProfileJoiner()
                         connected_element_length = (
                             tool.Model.get_flow_segment_axis(connected_obj)[0]
                             - tool.Model.get_flow_segment_axis(obj)[0]
@@ -269,45 +269,103 @@ class MEPGenerator:
         extrusion_depth = segment_object.dimensions.z
         end_point = segment_object.matrix_world @ V(0, 0, extrusion_depth)
         segment_data = {
-            "start_point": start_point,
-            "end_point": end_point,
+            "start_point": start_point.copy().freeze(),
+            "end_point": end_point.freeze(),
             "ports": ports,
             "extrusion_depth": extrusion_depth,
         }
 
         for port in ports:
             port_local_position = V(*port.ObjectPlacement.RelativePlacement.Location.Coordinates)
-            if float_is_zero(port_local_position.length):
+            if tool.Cad.is_x(port_local_position.length, 0.0):
                 segment_data["start_port"] = port
             else:
                 segment_data["end_port"] = port
 
         return segment_data
 
-    def get_port_predefined_type(self, segment):
-        split_camel_case = lambda x: re.findall("[A-Z][^A-Z]*", x)
-        class_name = "".join(split_camel_case(segment.is_a())[1:-1]).upper()
-        if class_name == "CONVEYOR":
-            return "NOTDEFINED"
-        return class_name
-
     def get_mep_element_class_name(self, element, mep_class_type):
         split_camel_case = lambda x: re.findall("[A-Z][^A-Z]*", x)
         class_name = "".join(split_camel_case(element.is_a())[:-1] + [mep_class_type])
         return class_name
 
-    def get_compatible_fitting_type(self, segment, predefined_type):
-        """We find compatible fitting only by checking if they were
-        already used with that segment type before.
+    def get_compatible_fitting_type(self, segment_or_segments, port_or_ports, predefined_type):
+        """
+        returns a dict of compatible fitting_type and start_port_match flag to correctly place the fitting.
+
+        We find compatible fitting only by checking
+        if they were already used with that segment type before
+        and fitting's ports should match `port_or_ports` by PredefinedType and SystemType.
+
+        If port from `port_or_ports` has PredefinedType/SystemType == None/NOTDEFINED then
+        those parameters won't be taken into account checking compatibility.
 
         There lies the problem that it won't be
-        able to identify the fittings that were not connected to any segments yet.
+        able to identify the fittings that were not yet connected to any segments yet.
         """
-        segment_type = ifcopenshell.util.element.get_type(segment)
-        if not segment_type:
-            return None
+        if not isinstance(segment_or_segments, collections.abc.Iterable):
+            segments = [segment_or_segments]
+            ports = [port_or_ports]
+        else:
+            segments = segment_or_segments
+            ports = port_or_ports
 
-        fitting_types = tool.Ifc.get().by_type(self.get_mep_element_class_name(segment, "Fitting"))
+        segments_data = []
+        for segment, port in zip(segments, ports, strict=True):
+            segment_type = ifcopenshell.util.element.get_type(segment)
+            # if segment doesn't have type we cannot check compatibility by available occurences
+            if segment_type is None:
+                return
+            segments_data.append((segment_type, port.PredefinedType, port.SystemType))
+
+        def are_connected_elements_compatible(segments_data, fitting_data):
+            # prevent arguments mutation, not using deepcopy because of the errors with ifc elements
+            segments_data = [copy(i) for i in segments_data]
+            fitting_data = [copy(i) for i in fitting_data]
+            not_defined_values = {"NOTDEFINED", None}
+
+            if len(segments_data) != len(fitting_data):
+                return False
+
+            def are_segments_compatible(test_segment_data, base_segment_data):
+                segment_type, predefined_type, system_type = test_segment_data
+                base_segment_type, base_predefined_type, base_system_type = base_segment_data
+
+                if segment_type != base_segment_type:
+                    return False
+
+                if predefined_type not in not_defined_values and predefined_type != base_predefined_type:
+                    return False
+
+                if system_type not in not_defined_values and system_type != base_system_type:
+                    return False
+
+                return True
+
+            # NOTE: I have a feeling that there are cases where order
+            # in which we're checking the segments is important
+            # but I couldn't pin it down exact cases
+            for test_segment_data in fitting_data[:]:
+                for base_segment_data in segments_data:
+                    if not are_segments_compatible(test_segment_data, base_segment_data):
+                        continue
+                    segments_data.remove(test_segment_data)
+
+            # all segments were sorted
+            return len(segments_data) == 0
+
+        def pack_return_data(fitting_type, ports, segments_data):
+            for port in ports:
+                port_local_position = V(*port.ObjectPlacement.RelativePlacement.Location.Coordinates)
+                if tool.Cad.is_x(port_local_position.length, 0.0):
+                    start_port = port
+                    break
+            connected_port = tool.System.get_connected_port(start_port)
+            connected_element = tool.System.get_port_relating_element(connected_port)
+            element_type = ifcopenshell.util.element.get_type(connected_element)
+            return {"fitting_type": fitting_type, "start_port_match": element_type == segments_data[0][0]}
+
+        fitting_types = tool.Ifc.get().by_type(self.get_mep_element_class_name(segments[0], "FittingType"))
         for fitting_type in fitting_types:
             if fitting_type.PredefinedType != predefined_type:
                 continue
@@ -315,13 +373,24 @@ class MEPGenerator:
             if not fittings:
                 continue
             fitting = fittings[0]
-            elements = set(
-                ifcopenshell.util.system.get_connected_to(fitting)
-                + ifcopenshell.util.system.get_connected_from(fitting)
-            )
-            for element in elements:
-                if element.IsTypedBy and element.IsTypedBy[0].RelatingType == segment_type:
-                    return fitting_type
+
+            ports = ifcopenshell.util.system.get_ports(fitting)
+            fitting_data = []
+            fitting_connected_to_none_type = False
+            for port in ports:
+                connected_port = tool.System.get_connected_port(port)
+                connected_element = tool.System.get_port_relating_element(connected_port)
+                element_type = ifcopenshell.util.element.get_type(connected_element)
+                if element_type is None:
+                    fitting_connected_to_none_type = True
+                    break
+                fitting_data.append((element_type, port.PredefinedType, port.SystemType))
+
+            if fitting_connected_to_none_type:
+                continue
+
+            if are_connected_elements_compatible(segments_data, fitting_data):
+                return pack_return_data(fitting_type, ports, segments_data)
 
     def create_obstruction_type(self, segment):
         # code is very similar to "bim.add_type"
@@ -333,7 +402,8 @@ class MEPGenerator:
         ifc_file = tool.Ifc.get()
         body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
 
-        obj = bpy.data.objects.new("Fitting", None)
+        obj = bpy.data.objects.new("Obstruction", None)
+        # TODO: OBSTRUCTION predefined type is available only for IfcDuctFitting and IfcPipeFitting
         element = blenderbim.core.root.assign_class(
             tool.Ifc,
             tool.Collector,
@@ -377,7 +447,8 @@ class MEPGenerator:
         segment_obj = tool.Ifc.get_object(segment)
         segment_matrix = segment_obj.matrix_world
         segment_rotation = segment_matrix.to_quaternion()
-        obstruction_type = self.get_compatible_fitting_type(segment, "OBSTRUCTION")
+        fitting_data = self.get_compatible_fitting_type(segment, related_port, "OBSTRUCTION")
+        obstruction_type = fitting_data["fitting_type"] if fitting_data else None
         if not obstruction_type:
             obstruction_type = self.create_obstruction_type(segment)
 
@@ -389,17 +460,11 @@ class MEPGenerator:
         obstruction_obj.matrix_world = segment_matrix
 
         profile_joiner.set_depth(obstruction_obj, length)
-        obstruction = tool.Ifc.get_entity(obstruction_obj)
-        # TODO: specify PredefinedType based on the segment type
-        obstruction_port = tool.Ifc.run("system.add_port", element=obstruction)
-        obstruction_port.PredefinedType = self.get_port_predefined_type(obstruction)
-        port_local_position = Matrix.Translation((0, 0, length)) if at_segment_start else Matrix()
-        tool.Ifc.run(
-            "geometry.edit_object_placement",
-            product=obstruction_port,
-            matrix=segment_matrix @ port_local_position,
-            is_si=True,
-        )
+        obstruction_port = tool.System.add_ports(
+            obstruction_obj,
+            add_start_port=not at_segment_start,
+            add_end_port=at_segment_start,
+        )[0]
 
         # change segment length
         new_segment_length = segment_data["extrusion_depth"] - length
@@ -411,6 +476,7 @@ class MEPGenerator:
             obstruction_obj.location += segment_rotation @ V(0, 0, new_segment_length)
 
         tool.Ifc.run("system.connect_port", port1=related_port, port2=obstruction_port, direction="NOTDEFINED")
+        obstruction = tool.Ifc.get_entity(obstruction_obj)
         return obstruction, None
 
 
@@ -447,5 +513,155 @@ class MEPAddObstruction(bpy.types.Operator, tool.Ifc.Operator):
         if error_msg:
             self.report({"ERROR"}, error_msg)
             return {"CANCELLED"}
+
+        return {"FINISHED"}
+
+
+class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.mep_add_transition"
+    bl_label = "Add Transition"
+    bl_description = (
+        "Adds transition between two MEP elements. Elements are either provided by ID or selected in Blender"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+    start_length: bpy.props.FloatProperty(
+        name="Start Length", description="Transition start length in SI units", default=0.1, subtype="DISTANCE"
+    )
+    end_length: bpy.props.FloatProperty(
+        name="End Length", description="Transition end length in SI units", default=0.1, subtype="DISTANCE"
+    )
+    start_segment_id: bpy.props.IntProperty(name="Start Segment Element ID", default=0)
+    end_segment_id: bpy.props.IntProperty(name="End Segment Element ID", default=0)
+
+    def _execute(self, context):
+        start_element, end_element = None, None
+        ifc_file = tool.Ifc.get()
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+
+        if self.start_segment_id and self.end_segment_id:
+            start_element = ifc_file.by_id(self.start_segment_id)
+            end_element = ifc_file.by_id(self.end_segment_id)
+            start_object = tool.Ifc.get_object(start_element)
+            end_object = tool.Ifc.get_object(end_element)
+
+        elif len(context.selected_objects) == 2:
+            start_object = context.active_object
+            end_object = next(o for o in context.selected_objects if o != context.active_object)
+            start_element = tool.Ifc.get_entity(start_object)
+            end_element = tool.Ifc.get_entity(end_object)
+            if not start_element or not end_element:
+                self.report({"ERROR"}, f"Two IFC elements should be selected for the transition")
+                return {"CANCELLED"}
+
+        else:
+            self.report({"ERROR"}, f"Two IFC elements should be provided for the transition")
+            return {"CANCELLED"}
+
+        # TODO: support IfcFlowTerminal
+        def is_mep(element):
+            return element.is_a("IfcFlowSegment") or element.is_a("IfcFlowFitting")
+
+        if not is_mep(start_element) or not is_mep(end_element):
+            self.report(
+                {"ERROR"},
+                f"Failed to add transition - some object is not a MEP element: {start_element.is_a()}, {end_element.is_a()}.",
+            )
+            return {"CANCELLED"}
+
+        start_axis = tool.Model.get_flow_segment_axis(start_object)
+        end_axis = tool.Model.get_flow_segment_axis(end_object)
+
+        # TODO: support cases when segments are partially or completely overlapping each other
+        if not tool.Cad.are_edges_collinear(start_axis, end_axis):
+            self.report({"ERROR"}, f"Failed to add transition - non collinear segments are not yet supported.")
+            return {"CANCELLED"}
+
+        start_segment_data = MEPGenerator().get_segment_data(start_element)
+        end_segment_data = MEPGenerator().get_segment_data(end_element)
+        end_port = end_segment_data["start_port"]
+        start_port = start_segment_data["end_port"]
+
+        points_ports_map = {
+            start_segment_data["start_point"]: start_segment_data["start_port"],
+            start_segment_data["end_point"]: start_segment_data["end_port"],
+            end_segment_data["start_point"]: end_segment_data["start_port"],
+            end_segment_data["end_point"]: end_segment_data["end_port"],
+        }
+
+        start_point, end_point = tool.Cad.closest_points(
+            (start_segment_data["start_point"], start_segment_data["end_point"]),
+            (end_segment_data["start_point"], end_segment_data["end_point"]),
+        )
+        transition_dir = (end_point - start_point).normalized()
+        start_port = points_ports_map[start_point]
+        end_port = points_ports_map[end_point]
+
+        # add transition representation
+        builder = ShapeBuilder(ifc_file)
+        rep, transition_data = builder.mep_transition_shape(
+            start_element, end_element, self.start_length / si_conversion, self.end_length / si_conversion
+        )
+
+        if not rep:
+            self.report({"ERROR"}, f"Failed to add transition - this kind of profiles is not yet supported.")
+            return {"CANCELLED"}
+
+        middle_point = (start_point + end_point) / 2
+        full_transition_length = transition_data["full_transition_length"] * si_conversion
+        start_segment_extend_point = middle_point - transition_dir * full_transition_length / 2
+        end_segment_extend_point = middle_point + transition_dir * full_transition_length / 2
+        DumbProfileJoiner().join_E(start_object, start_segment_extend_point)
+        DumbProfileJoiner().join_E(end_object, end_segment_extend_point)
+
+        fitting_data = MEPGenerator().get_compatible_fitting_type(
+            [start_element, end_element], [start_port, end_port], "TRANSITION"
+        )
+
+        transition_type = fitting_data["fitting_type"] if fitting_data else None
+        start_port_match = fitting_data["start_port_match"] if fitting_data else True
+
+        if not transition_type:
+            mesh = bpy.data.meshes.new("Transition")
+            obj = bpy.data.objects.new("Transition", mesh)
+            transition_type = blenderbim.core.root.assign_class(
+                tool.Ifc,
+                tool.Collector,
+                tool.Root,
+                obj=obj,
+                ifc_class=MEPGenerator().get_mep_element_class_name(start_element, "FittingType"),
+                predefined_type="TRANSITION",
+                should_add_representation=False,
+            )
+            body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+            tool.Model.replace_object_ifc_representation(body, obj, rep)
+            pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=transition_type, name="BBIM_Fitting")
+            ifcopenshell.api.run(
+                "pset.edit_pset",
+                tool.Ifc.get(),
+                pset=pset,
+                properties={"Data": json.dumps(transition_data, default=list)},
+            )
+
+        # NOTE: at this point we loose current blender objects selection
+        bpy.ops.bim.add_constr_type_instance(relating_type_id=transition_type.id())
+        transition_obj = bpy.context.active_object
+
+        # adjust transition segment rotation and location
+        transition_obj.matrix_world = start_object.matrix_world
+        context.view_layer.update()
+        transition_obj_dir = tool.Cad.get_edge_direction(tool.Model.get_flow_segment_axis(transition_obj))
+        direction_match = tool.Cad.are_vectors_equal(transition_obj_dir, transition_dir)
+
+        # if there are no mismatches or everything matches up we don't need to flip the transition
+        if start_port_match != direction_match:
+            transition_obj.matrix_world = start_object.matrix_world @ Matrix.Rotation(radians(180), 4, "X")
+        transition_obj.location = start_segment_extend_point if start_port_match else end_segment_extend_point
+
+        # add ports and connect them
+        ports = tool.System.add_ports(transition_obj)
+        if not start_port_match:
+            start_port, end_port = end_port, start_port
+        tool.Ifc.run("system.connect_port", port1=ports[0], port2=start_port, direction="NOTDEFINED")
+        tool.Ifc.run("system.connect_port", port1=ports[1], port2=end_port, direction="NOTDEFINED")
 
         return {"FINISHED"}
