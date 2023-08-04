@@ -22,6 +22,7 @@ import bmesh
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.unit
+import ifcopenshell.util.system
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import mathutils.geometry
@@ -37,6 +38,66 @@ from blenderbim.bim.module.model.profile import DumbProfileJoiner
 
 V = lambda *x: Vector([float(i) for i in x])
 float_is_zero = lambda f: 0.0001 >= f >= -0.0001
+
+
+class RegenerateDistributionElement(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.regenerate_distribution_element"
+    bl_description = (
+        "Regenerates the positions and segment lengths of a distribution element and all connected elements."
+    )
+    bl_label = "Regenerate Distribution Element"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        current_element = tool.Ifc.get_entity(bpy.context.active_object)
+        processed_elements = set()
+
+        # The goal is to regenerate all recursively connected elements that
+        # minimise movement as much as possible.
+
+        # A queue is a list of branches. A branch is a list of elements in
+        # sequence, each one connecting to another element. An element in a
+        # branch may have a child queue. The queue and child queues are
+        # acyclic.
+
+        def extend_branch(element, branch, predecessor=None):
+            processed_elements.add(element)
+            branch_element = {"element": element, "children": [], "predecessor": predecessor}
+            branch.append(branch_element)
+
+            connected = {e for e in ifcopenshell.util.system.get_connected_to(element) if e not in processed_elements}
+            connected.update(
+                [e for e in ifcopenshell.util.system.get_connected_from(element) if e not in processed_elements]
+            )
+
+            if len(connected) == 1:
+                extend_branch(list(connected)[0], branch, element)
+            else:
+                for connected_element in connected:
+                    branch_element["children"].append(extend_branch(connected_element, [], element))
+
+            return branch
+
+        queue = extend_branch(current_element, [])[0]["children"]
+
+        # import pprint
+        # pprint.pprint(queue)
+
+        def process_branch(branch):
+            for branch_element in branch:
+                element = branch_element["element"]
+                print('processing', element)
+                predecessor = branch_element["predecessor"]
+                if False:  # If the element does not need to be transformed, return early.
+                    return
+                # Perform the extend, translate, rotate, etc the element as necessary based on the predecessor.
+                # For segments, prioritise extensions instead of translations.
+                # For everything else, only translate. No rotation.
+                for child_branch in branch_element["children"]:
+                    process_branch(child_branch)
+
+        for branch in queue:
+            process_branch(branch)
 
 
 class FitFlowSegments(bpy.types.Operator, tool.Ifc.Operator):
