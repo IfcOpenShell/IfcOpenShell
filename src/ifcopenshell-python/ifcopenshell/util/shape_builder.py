@@ -19,7 +19,7 @@
 import collections
 import ifcopenshell
 import ifcopenshell.api
-from math import cos, sin, pi
+from math import cos, sin, pi, tan, radians
 from mathutils import Vector, Matrix
 from itertools import chain
 
@@ -539,7 +539,7 @@ class ShapeBuilder:
                 "Ref: https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcPositiveLengthMeasure.htm#8.11.2.71.3-Formal-representation"
             )
 
-        if profile_or_curve.is_a() not in ("IfcArbitraryClosedProfileDef", "IfcArbitraryProfileDefWithVoids"):
+        if not profile_or_curve.is_a("IfcProfileDef"):
             profile_or_curve = self.profile(profile_or_curve)
 
         if position_y_axis:
@@ -579,6 +579,8 @@ class ShapeBuilder:
                 representation_type = "AdvancedSweptSolid"
             elif "IfcExtrudedAreaSolid" in item_types:
                 representation_type = "SweptSolid"
+            elif items[0].is_a("IfcTessellatedItem"):
+                representation_type = "Tessellation"
             elif items[0].is_a("IfcCurve") and items[0].Dim == 3:
                 representation_type = "Curve3D"
             else:
@@ -746,8 +748,10 @@ class ShapeBuilder:
 
             ifc_curve = self.file.createIfcIndexedPolyCurve(Points=ifc_points, Segments=ifc_segments)
         return (points, segments, ifc_curve)
-    
-    def create_z_profile_lips_curve(self, FirstFlangeWidth, SecondFlangeWidth, Depth, Girth, WallThickness, FilletRadius):
+
+    def create_z_profile_lips_curve(
+        self, FirstFlangeWidth, SecondFlangeWidth, Depth, Girth, WallThickness, FilletRadius
+    ):
         x1 = FirstFlangeWidth
         x2 = SecondFlangeWidth
         y = Depth / 2
@@ -770,20 +774,21 @@ class ShapeBuilder:
             (-x1+t, -y+t),
             (-t/2,  -y+t)
         )
-        # fmt: on
 
         # option for no additional thickness in outer radius:
         # points, segments, ifc_curve = create_curve_from_coords(
         #   coords, fillets = (0, 1, 4, 5, 6, 7, 10, 11), fillet_radius=r, closed=True, ifc_file=ifc_file
         # )
 
-        points, segments, ifc_curve = self.get_simple_2dcurve_data(coords, 
+        points, segments, ifc_curve = self.get_simple_2dcurve_data(
+            coords, 
             fillets =     (0,   1,   4, 5, 6,   7,   10, 11), 
             fillet_radius=(r+t, r+t, r, r, r+t, r+t, r, r), 
             closed=True, create_ifc_curve=True)
+        # fmt: on
 
         return ifc_curve
-    
+
     def create_transition_arc_ifc(self, width, height, create_ifc_curve=False):
         # create an arc in the rectangle with specified width and height
         # if it's not possible to make a complete arc
@@ -815,3 +820,113 @@ class ShapeBuilder:
             curve_coords, fillets, fillet_radius, closed=False, create_ifc_curve=create_ifc_curve
         )
         return points, segments, transition_arc
+
+    def polygonal_face_set(self, points, faces):
+        """
+        > `points` - list of points
+
+        > `faces` - list of faces consisted of point indices (points indices starting from 0)
+
+        < IfcPolygonalFaceSet
+        """
+
+        ifc_points = self.file.createIfcCartesianPointList3D(points)
+        ifc_faces = []
+        for face in faces:
+            face = [i + 1 for i in face]
+            ifc_faces.append(self.file.createIfcIndexedPolygonalFace(face))
+
+        face_set = self.file.createIfcPolygonalFaceSet(Coordinates=ifc_points, Faces=ifc_faces)
+
+        return face_set
+
+    def mep_transition_shape(self, start_segment, end_segment, start_length, end_length, angle=30.0):
+        """
+        returns tuple of Model/Body/MODEL_VIEW IfcRepresentation and transition shape data
+        """
+        # good default values from angle = 30/60 deg
+        # 30 degree angle will result in 75 degrees on the transition (= 90 - α/2) - https://i.imgur.com/tcoYDWu.png
+
+        # TODO: get rid of reliance on profiles
+        def get_profile(element):
+            material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+            if material and material.is_a("IfcMaterialProfileSet") and len(material.MaterialProfiles) == 1:
+                return material.MaterialProfiles[0].Profile
+
+        start_profile = get_profile(start_segment)
+        end_profile = get_profile(end_segment)
+
+        # TODO: support more profiles
+        if not start_profile.is_a("IfcRectangleProfileDef") or not end_profile.is_a("IfcRectangleProfileDef"):
+            # Non rectangular profiles are not yet supported
+            return None, None
+
+        start_half_dim = V(start_profile.XDim / 2, start_profile.YDim / 2, start_length)
+        end_half_dim = V(end_profile.XDim / 2, end_profile.YDim / 2, end_length)
+
+        transition_items = []
+        end_extrusion_offset = V(0, 0, start_length)
+
+        def get_transition_legth(start_half_dim, end_half_dim, angle):
+            diff = start_half_dim.xy - end_half_dim.xy
+            diff = Vector([abs(i) for i in diff])
+            c = diff.x * tan(radians(90 - angle / 2))
+            a = diff.y
+            b = (c**2 - a**2) ** 0.5
+            return b
+
+        transition_length = get_transition_legth(start_half_dim, end_half_dim, angle)
+        faces = []
+        if transition_length != 0:
+            end_extrusion_offset.z += transition_length
+
+            faces += [(3, 4, 7, 0), (11, 8, 15, 12), (3, 11, 12, 4), (7, 15, 8, 0)]
+
+        # NOTE: clockwise order for correct face orientation
+        faces += [
+            # start extrusion
+            (0, 1, 2, 3),
+            (8, 11, 10, 9),
+            (0, 8, 9, 1),
+            (1, 9, 10, 2),
+            (2, 10, 11, 3),
+            # end extrusion
+            (4, 5, 6, 7),
+            (12, 15, 14, 13),
+            (4, 12, 13, 5),
+            (5, 13, 14, 6),
+            (6, 14, 15, 7),
+        ]
+        points = [
+            start_half_dim * V(-1, -1, 1),
+            start_half_dim * V(-1, -1, 0),
+            start_half_dim * V(1, -1, 0),
+            start_half_dim * V(1, -1, 1),
+            end_half_dim * V(1, -1, 0) + end_extrusion_offset,
+            end_half_dim * V(1, -1, 1) + end_extrusion_offset,
+            end_half_dim * V(-1, -1, 1) + end_extrusion_offset,
+            end_half_dim * V(-1, -1, 0) + end_extrusion_offset,
+            start_half_dim * V(-1, 1, 1),
+            start_half_dim * V(-1, 1, 0),
+            start_half_dim * V(1, 1, 0),
+            start_half_dim * V(1, 1, 1),
+            end_half_dim * V(1, 1, 0) + end_extrusion_offset,
+            end_half_dim * V(1, 1, 1) + end_extrusion_offset,
+            end_half_dim * V(-1, 1, 1) + end_extrusion_offset,
+            end_half_dim * V(-1, 1, 0) + end_extrusion_offset,
+        ]
+
+        face_set = self.polygonal_face_set(points, faces)
+        transition_items.append(face_set)
+
+        body = ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW")
+        representation = self.get_representation(body, transition_items, "Tesselation")
+        transition_data = {
+            "start_length": start_length,
+            "end_length": end_length,
+            "angle": angle,
+            "transition_length": transition_length,
+            "full_transition_length": start_length + transition_length + end_length,
+        }
+
+        return representation, transition_data
