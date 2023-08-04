@@ -107,6 +107,7 @@ classes = (
     space.GenerateSpacesFromWalls,
     space.ToggleSpaceVisibility,
     mep.FitFlowSegments,
+    mep.RegenerateDistributionElement,
     prop.BIMModelProperties,
     prop.BIMArrayProperties,
     prop.BIMStairProperties,
