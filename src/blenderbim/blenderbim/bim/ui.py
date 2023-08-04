@@ -247,7 +247,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.operator("bim.select_data_dir", icon="FILE_FOLDER", text="")
 
         row = self.layout.row(align=True)
-        row.prop(context.scene.BIMProperties, "psets_dir")
+        row.prop(context.scene.BIMProperties, "pset_dir")
         row = self.layout.row(align=True)
         row.prop(context.scene.DocProperties, "sheets_dir")
         row = self.layout.row(align=True)
