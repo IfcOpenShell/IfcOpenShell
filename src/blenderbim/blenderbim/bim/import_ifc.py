@@ -1823,6 +1823,10 @@ class IfcImporter:
                 loop_total = [3] * num_loops
                 num_vertex_indices = len(geometry.faces)
 
+                # See bug 3546
+                # ios_edges holds true edges that aren't triangulated.
+                mesh["ios_edges"] = list(set(tuple(e) for e in grouped_edges))
+
                 mesh.vertices.add(num_vertices)
                 mesh.vertices.foreach_set("co", verts)
                 mesh.loops.add(num_vertex_indices)
@@ -1909,7 +1913,7 @@ class IfcImportSettings:
         self.should_merge_materials_by_colour = False
         self.should_load_geometry = True
         self.should_use_native_meshes = False
-        self.should_clean_mesh = True
+        self.should_clean_mesh = False
         self.should_cache = True
         self.is_coordinating = True
         self.deflection_tolerance = 0.001

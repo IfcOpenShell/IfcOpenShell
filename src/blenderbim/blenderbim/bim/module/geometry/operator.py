@@ -1360,6 +1360,7 @@ class OverrideModeSetEdit(bpy.types.Operator):
                         should_sync_changes_first=False,
                         apply_openings=False,
                     )
+                tool.Geometry.dissolve_triangulated_edges(obj)
                 obj.data.BIMMeshProperties.mesh_checksum = tool.Geometry.get_mesh_checksum(obj.data)
             else:
                 obj.select_set(False)

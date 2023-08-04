@@ -119,6 +119,21 @@ class Geometry(blenderbim.core.tool.Geometry):
             pass
 
     @classmethod
+    def dissolve_triangulated_edges(cls, obj):
+        if obj.data and "ios_edges" in obj.data:
+            bm = bmesh.new()
+            bm.from_mesh(obj.data)
+            edges_to_keep = set(map(frozenset, obj.data["ios_edges"]))
+            edges_to_dissolve = []
+            for edge in bm.edges:
+                if frozenset([vert.index for vert in edge.verts]) not in edges_to_keep:
+                    edges_to_dissolve.append(edge)
+            bmesh.ops.dissolve_edges(bm, edges=edges_to_dissolve)
+            bm.to_mesh(obj.data)
+            bm.free()
+            del obj.data["ios_edges"]
+
+    @classmethod
     def does_representation_id_exist(cls, representation_id):
         try:
             tool.Ifc.get().by_id(representation_id)
