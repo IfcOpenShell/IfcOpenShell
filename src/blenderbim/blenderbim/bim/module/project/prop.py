@@ -151,7 +151,7 @@ class BIMProjectProperties(PropertyGroup):
     should_stream: BoolProperty(name="Stream Data From IFC-SPF (Only for advanced users)", default=False)
     should_load_geometry: BoolProperty(name="Load Geometry", default=True)
     should_use_native_meshes: BoolProperty(name="Native Meshes", default=False)
-    should_clean_mesh: BoolProperty(name="Clean Meshes", default=True)
+    should_clean_mesh: BoolProperty(name="Clean Meshes", default=False)
     should_cache: BoolProperty(name="Cache", default=False)
     is_coordinating: BoolProperty(name="For Coordination Only", default=False)
     deflection_tolerance: FloatProperty(name="Deflection Tolerance", default=0.001)
