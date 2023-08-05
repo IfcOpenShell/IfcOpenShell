@@ -63,25 +63,8 @@ class Usecase:
     def apply_clippings(self, first_operand):
         while self.settings["clippings"]:
             clipping = self.settings["clippings"].pop()
-            if clipping["operand_type"] == "IfcHalfSpaceSolid":
-                matrix = clipping["matrix"]
-                second_operand = self.file.createIfcHalfSpaceSolid(
-                    self.file.createIfcPlane(
-                        self.file.createIfcAxis2Placement3D(
-                            self.file.createIfcCartesianPoint(
-                                (
-                                    self.convert_si_to_unit(matrix[0][3]),
-                                    self.convert_si_to_unit(matrix[1][3]),
-                                    self.convert_si_to_unit(matrix[2][3]),
-                                )
-                            ),
-                            self.file.createIfcDirection((matrix[0][2], matrix[1][2], matrix[2][2])),
-                            self.file.createIfcDirection((matrix[0][0], matrix[1][0], matrix[2][0])),
-                        )
-                    ),
-                    False,
-                )
-            first_operand = self.file.create_entity(clipping["type"], "DIFFERENCE", first_operand, second_operand)
+            second_operand = clipping.SecondOperand
+            first_operand = self.file.create_entity(clipping.is_a(), "DIFFERENCE", first_operand, second_operand)
         return first_operand
 
     def convert_si_to_unit(self, co):
