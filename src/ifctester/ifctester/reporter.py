@@ -342,7 +342,7 @@ class Bcf(Json):
                     continue
                 for failure in requirement["failed_entities"]:
                     element = failure["element"]
-                    title = f"{element.id()}/{element.is_a()}/"
+                    title = f"ID:[{element.id()}]/GUID:[{element.GlobalId}]/{element.is_a()}/"
                     title += getattr(element, "Name", None) or "Unnamed"
                     title += " - " + failure.get("reason", "No reason")
                     description = f'{specification["name"]} - {requirement["description"]}'
