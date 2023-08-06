@@ -30,6 +30,7 @@ class Usecase:
             "cardinal_point": 5,
             # Planes are defined as a matrix. The XY plane is the clipping boundary and +Z is removed.
             # [{"type": "IfcBooleanClippingResult", "operand_type": "IfcHalfSpaceSolid", "matrix": [...]}, {...}]
+            # Clipping (or Planes) can be also a IfcBooleanResult entity
             "clippings": [],  # A list of planes that define clipping half space solids
         }
         for key, value in settings.items():
@@ -63,8 +64,37 @@ class Usecase:
     def apply_clippings(self, first_operand):
         while self.settings["clippings"]:
             clipping = self.settings["clippings"].pop()
-            second_operand = clipping.SecondOperand
-            first_operand = self.file.create_entity(clipping.is_a(), "DIFFERENCE", first_operand, second_operand)
+            if isinstance(clipping, ifcopenshell.entity_instance):
+                if clipping.is_a() == "IfcBooleanResult":
+                    second_operand = clipping.SecondOperand
+                    first_operand = self.file.create_entity(clipping.is_a(), "DIFFERENCE", first_operand, second_operand)
+                else:
+                    raise TypeError("Clipping is not an IfcBooleanResult entity")
+            elif isinstance(clipping, dict):
+                if "type" in clipping.keys() and "operand_type" in clipping.keys() and "matrix" in clipping.keys():
+                    if clipping["operand_type"] == "IfcHalfSpaceSolid":
+                        matrix = clipping["matrix"]
+                        second_operand = self.file.createIfcHalfSpaceSolid(
+                            self.file.createIfcPlane(
+                                self.file.createIfcAxis2Placement3D(
+                                    self.file.createIfcCartesianPoint(
+                                        (
+                                            self.convert_si_to_unit(matrix[0][3]),
+                                            self.convert_si_to_unit(matrix[1][3]),
+                                            self.convert_si_to_unit(matrix[2][3]),
+                                        )
+                                    ),
+                                    self.file.createIfcDirection((matrix[0][2], matrix[1][2], matrix[2][2])),
+                                    self.file.createIfcDirection((matrix[0][0], matrix[1][0], matrix[2][0])),
+                                )
+                            ),
+                            False,
+                        )
+                    first_operand = self.file.create_entity(clipping["type"], "DIFFERENCE", first_operand, second_operand)
+                else:
+                    raise TypeError("Clipping dictionary hasn't the right keys 'type', 'operand_type' and 'matrix' ")
+            else:
+                raise TypeError("Clipping is not a IfcBooleanResult nor a dictionary. Please check the clipping")
         return first_operand
 
     def convert_si_to_unit(self, co):
