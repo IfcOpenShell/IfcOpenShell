@@ -176,7 +176,7 @@ namespace IfcGeom {
 		private:
 			/// Welds vertices that belong to different faces
 			int addVertex(int item_index, int material_index, const gp_XYZ& p);
-			void addEdge(int n1, int n2, std::map<std::pair<int, int>, int>& edgecount, std::vector<std::pair<int, int> >& edges_temp);
+			void addEdge(int n1, int n2, std::map<std::pair<int, int>, int>& edgecount);
 
 			Triangulation();
 			Triangulation(const Triangulation&);
