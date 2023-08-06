@@ -47,6 +47,10 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 			m(2, 0), m(2, 1), m(2, 2)
 		);
 	}
+	
+	// When welding vertices, vertex coords will be shared among faces so we need to per-shape set
+	// to keep track of which edges were already emitted.
+	std::set<std::pair<int, int>> emitted_edges;
 
 	// Triangulate the shape
 	try {
@@ -70,7 +74,6 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 			// Keep track of the number of times an edge is used
 			// Manifold edges (i.e. edges used twice) are deemed invisible
 			std::map<std::pair<int, int>, int> edgecount;
-			std::vector<std::pair<int, int> > edges_temp;
 
 			std::vector<gp_XYZ> coords;
 			BRepGProp_Face prop(face);
@@ -142,14 +145,19 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 
 				t->addFace(item_id, surface_style_id, dict[n1], dict[n2], dict[n3]);
 
-				t->addEdge(dict[n1], dict[n2], edgecount, edges_temp);
-				t->addEdge(dict[n2], dict[n3], edgecount, edges_temp);
-				t->addEdge(dict[n3], dict[n1], edgecount, edges_temp);
+				t->addEdge(dict[n1], dict[n2], edgecount);
+				t->addEdge(dict[n2], dict[n3], edgecount);
+				t->addEdge(dict[n3], dict[n1], edgecount);
 			}
-			for (std::vector<std::pair<int, int> >::const_iterator jt = edges_temp.begin(); jt != edges_temp.end(); ++jt) {
-				if (edgecount[*jt] == 1) {
+			for (auto& p : edgecount) {
+				// @todo should be != 2?
+				if (p.second == 1 && emitted_edges.find(p.first) == emitted_edges.end()) {
 					// non manifold edge, face boundary
-					t->registerEdge(jt->first, jt->second);
+					t->registerEdge(p.first.first, p.first.second);
+					if (settings.get<settings::WeldVertices>().get()) {
+						// only relevant while welding, because otherwise vertices are not shared among distinct faces
+						emitted_edges.insert(p.first);
+					}
 				}
 			}
 		}

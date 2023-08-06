@@ -409,11 +409,9 @@ int IfcGeom::Representation::Triangulation::addVertex(int item_id, int material_
 	return i;
 }
 
-void IfcGeom::Representation::Triangulation::addEdge(int n1, int n2, std::map<std::pair<int, int>, int>& edgecount, std::vector<std::pair<int, int>>& edges_temp) {
+void IfcGeom::Representation::Triangulation::addEdge(int n1, int n2, std::map<std::pair<int, int>, int>& edgecount) {
 	const Edge e = Edge((std::min)(n1, n2), (std::max)(n1, n2));
-	if (edgecount.find(e) == edgecount.end()) edgecount[e] = 1;
-	else edgecount[e] ++;
-	edges_temp.push_back(e);
+	edgecount[e] ++;
 }
 
 const IfcGeom::ConversionResultShape* IfcGeom::Representation::BRep::item(int i) const {
