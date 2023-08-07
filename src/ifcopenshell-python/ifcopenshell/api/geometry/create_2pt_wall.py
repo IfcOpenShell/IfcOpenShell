@@ -40,7 +40,7 @@ class Usecase:
         self.settings["p1"] = np.array(self.settings["p1"])
         self.settings["p2"] = np.array(self.settings["p2"])
 
-        length = float(np.linalg.norm(self.settings["p2"] - self.settings["p1"]))
+        length = float(np.linalg.norm(self.settings["p2"] - self.settings["p1"])) * self.settings["unit_scale"]
         representation = ifcopenshell.api.run(
             "geometry.add_wall_representation",
             self.file,
@@ -53,8 +53,8 @@ class Usecase:
         v /= float(np.linalg.norm(v))
         matrix = np.array(
             [
-                [v[0], -v[1], 0, self.settings["p1"][0]],
-                [v[1], v[0], 0, self.settings["p1"][1]],
+                [v[0], -v[1], 0, self.settings["p1"][0]] * self.settings["unit_scale"],
+                [v[1], v[0], 0, self.settings["p1"][1]] * self.settings["unit_scale"],
                 [0, 0, 1, self.convert_si_to_unit(self.settings["elevation"])],
                 [0, 0, 0, 1],
             ]
