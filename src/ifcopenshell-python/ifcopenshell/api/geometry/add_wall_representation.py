@@ -95,7 +95,11 @@ class Usecase:
     def apply_clippings(self, first_operand):
         while self.settings["clippings"]:
             clipping = self.settings["clippings"].pop()
-            if clipping["operand_type"] == "IfcHalfSpaceSolid":
+            if isinstance(clipping, ifcopenshell.entity_instance):
+                new = ifcopenshell.util.element.copy(self.file, clipping)
+                new.FirstOperand = first_operand
+                first_operand = new
+            elif clipping["operand_type"] == "IfcHalfSpaceSolid":
                 matrix = clipping["matrix"]
                 second_operand = self.file.createIfcHalfSpaceSolid(
                     self.file.createIfcPlane(
@@ -113,7 +117,7 @@ class Usecase:
                     ),
                     False,
                 )
-            first_operand = self.file.create_entity(clipping["type"], "DIFFERENCE", first_operand, second_operand)
+                first_operand = self.file.create_entity(clipping["type"], "DIFFERENCE", first_operand, second_operand)
         return first_operand
 
     def convert_si_to_unit(self, co):
