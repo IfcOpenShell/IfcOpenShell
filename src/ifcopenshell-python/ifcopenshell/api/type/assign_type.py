@@ -22,7 +22,7 @@ import ifcopenshell.util.element
 
 
 class Usecase:
-    def __init__(self, file, related_object=None, relating_type=None):
+    def __init__(self, file, related_object=None, relating_type=None, should_map_representations=True):
         """Assigns a type to an occurrence of an object
 
         IFC supports the concept of occurrences and types. An occurrence is an
@@ -87,6 +87,11 @@ class Usecase:
         :type related_object: ifcopenshell.entity_instance.entity_instance
         :param relating_type: The IfcElementType type.
         :type relating_type: ifcopenshell.entity_instance.entity_instance
+        :param should_map_representations: If a type has a representation map,
+            IFC requires all occurrences to map those representations. Some IFC
+            vendors might disobey this, or you might want to handle it
+            yourself. In this scenario, you may set this to False.
+        :type should_map_representations: bool
         :return: The IfcRelDefinesByType relationship
         :rtype: ifcopenshell.entity_instance.entity_instance
 
@@ -164,6 +169,7 @@ class Usecase:
         self.settings = {
             "related_object": related_object,
             "relating_type": relating_type,
+            "should_map_representations": should_map_representations,
         }
 
     def execute(self):
@@ -207,14 +213,15 @@ class Usecase:
                 }
             )
 
-        if getattr(self.settings["relating_type"], "RepresentationMaps", None):
-            ifcopenshell.api.run(
-                "type.map_type_representations",
-                self.file,
-                related_object=self.settings["related_object"],
-                relating_type=self.settings["relating_type"],
-            )
-        self.map_material_usages()
+        if self.settings["should_map_representations"]:
+            if getattr(self.settings["relating_type"], "RepresentationMaps", None):
+                ifcopenshell.api.run(
+                    "type.map_type_representations",
+                    self.file,
+                    related_object=self.settings["related_object"],
+                    relating_type=self.settings["relating_type"],
+                )
+            self.map_material_usages()
         return types
 
     def map_material_usages(self):

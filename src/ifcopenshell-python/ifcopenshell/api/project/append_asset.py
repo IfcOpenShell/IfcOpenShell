@@ -172,6 +172,7 @@ class Usecase:
                 should_run_listeners=False,
                 related_object=element,
                 relating_type=new_type,
+                should_map_representations=False,
             )
             ifcopenshell.api.owner.settings.restore()
 
