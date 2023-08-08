@@ -22,7 +22,7 @@ import ifcopenshell.util.unit
 
 
 class Usecase:
-    def __init__(self, file, element=None, context=None, p1=None, p2=None, elevation=None, height=None, thickness=None):
+    def __init__(self, file, element=None, context=None, p1=None, p2=None, elevation=None, height=None, thickness=None, is_si=True):
         self.file = file
         self.settings = {
             "element": element,
@@ -32,15 +32,25 @@ class Usecase:
             "elevation": elevation,
             "height": height,
             "thickness": thickness,
+            "is_si": is_si
         }
 
     def execute(self):
         self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
 
-        self.settings["p1"] = np.array(self.settings["p1"])
-        self.settings["p2"] = np.array(self.settings["p2"])
+        self.settings["p1"] = np.array(self.settings["p1"]).astype(float)
+        self.settings["p2"] = np.array(self.settings["p2"]).astype(float)
 
-        length = float(np.linalg.norm(self.settings["p2"] - self.settings["p1"])) * self.settings["unit_scale"]
+        length = float(np.linalg.norm(self.settings["p2"] - self.settings["p1"]))
+
+        if not self.settings["is_si"]:
+            length=self.convert_unit_to_si(length)
+            self.settings["height"]=self.convert_unit_to_si(self.settings["height"])
+            self.settings["thickness"]=self.convert_unit_to_si(self.settings["thickness"])
+            self.settings["p1"][0] = self.convert_unit_to_si(self.settings["p1"][0])
+            self.settings["p1"][1] = self.convert_unit_to_si(self.settings["p1"][1])
+            self.settings["elevation"] = self.convert_unit_to_si(self.settings["elevation"])
+
         representation = ifcopenshell.api.run(
             "geometry.add_wall_representation",
             self.file,
@@ -53,9 +63,9 @@ class Usecase:
         v /= float(np.linalg.norm(v))
         matrix = np.array(
             [
-                [v[0], -v[1], 0, self.settings["p1"][0]] * self.settings["unit_scale"],
-                [v[1], v[0], 0, self.settings["p1"][1]] * self.settings["unit_scale"],
-                [0, 0, 1, self.convert_si_to_unit(self.settings["elevation"])],
+                [v[0], -v[1], 0, self.settings["p1"][0]],
+                [v[1], v[0], 0, self.settings["p1"][1]],
+                [0, 0, 1, self.settings["elevation"]],
                 [0, 0, 0, 1],
             ]
         )
@@ -64,7 +74,5 @@ class Usecase:
         )
         return representation
 
-    def convert_si_to_unit(self, co):
-        if isinstance(co, (tuple, list)):
-            return [self.convert_si_to_unit(o) for o in co]
-        return co / self.settings["unit_scale"]
+    def convert_unit_to_si(self, co):
+        return co * self.settings["unit_scale"]
