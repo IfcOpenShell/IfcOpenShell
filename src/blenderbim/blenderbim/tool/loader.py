@@ -110,7 +110,7 @@ class Loader(blenderbim.core.tool.Loader):
             "IfcNormalisedRatioMeasure"
         ):
             diffuse_color_value = surface_style["DiffuseColour"].wrappedValue
-            diffuse_color = [v * diffuse_color_value for v in surface_style["SurfaceColor"][:3]] + [1]
+            diffuse_color = [v * diffuse_color_value for v in surface_style["SurfaceColour"][:3]] + [1]
             surface_style["DiffuseColour"] = ("IfcNormalisedRatioMeasure", diffuse_color)
         else:
             surface_style["DiffuseColour"] = None
