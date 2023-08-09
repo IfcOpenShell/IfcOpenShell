@@ -428,6 +428,8 @@ IfcGeom::Representation::Triangulation::Triangulation(const BRep& shape_model)
 
 				for (int i = 1; i <= n; ++i) {
 					gp_XYZ p = tessellater.Value(i).XYZ();
+					auto p_local = p;
+					trsf.Transforms(p);
 
 					int current = addVertex(iit->ItemId(), surface_style_id, p);
 
@@ -455,11 +457,10 @@ IfcGeom::Representation::Triangulation::Triangulation(const BRep& shape_model)
 						}
 						d3 = d1.XYZ() + d2.XYZ();
 						d4 = d1.XYZ() - d2.XYZ();
-						p2 = p - d3.XYZ() / 10.;
-						p3 = p - d4.XYZ() / 10.;
+						p2 = p_local - d3.XYZ() / 10.;
+						p3 = p_local - d4.XYZ() / 10.;
 						trsf.Transforms(p2);
 						trsf.Transforms(p3);
-						trsf.Transforms(p);
 
 						int left = addVertex(iit->ItemId(), surface_style_id, p2);
 						int right = addVertex(iit->ItemId(), surface_style_id, p3);
