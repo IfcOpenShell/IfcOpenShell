@@ -180,7 +180,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 
 			for (int i = 1; i <= n; ++i) {
 				gp_XYZ p = tessellater.Value(i).XYZ();
-
+				auto p_local = p;
 				taxonomy_transform(place.components_, p);
 
 				int current = t->addVertex(item_id, surface_style_id, p.X(), p.Y(), p.Z());
@@ -209,12 +209,11 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 					}
 					d3 = d1.XYZ() + d2.XYZ();
 					d4 = d1.XYZ() - d2.XYZ();
-					p2 = p - d3.XYZ() / 10.;
-					p3 = p - d4.XYZ() / 10.;
+					p2 = p_local - d3.XYZ() / 10.;
+					p3 = p_local - d4.XYZ() / 10.;
 
 					taxonomy_transform(place.components_, p2);
 					taxonomy_transform(place.components_, p3);
-					taxonomy_transform(place.components_, p);
 
 					int left = t->addVertex(item_id, surface_style_id, p2.X(), p2.Y(), p2.Z());
 					int right = t->addVertex(item_id, surface_style_id, p3.X(), p3.Y(), p3.Z());
