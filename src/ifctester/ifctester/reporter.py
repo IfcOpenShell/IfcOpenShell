@@ -21,6 +21,8 @@ import sys
 import math
 import logging
 import datetime
+import ifcopenshell
+import ifcopenshell.util.element
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
@@ -189,7 +191,17 @@ class Json(Reporter):
 
     def report_failed_entities(self, requirement):
         return [
-            {"reason": requirement.failed_reasons[i], "element": str(e)}
+            {
+                "reason": requirement.failed_reasons[i],
+                "element": str(e),
+                "class": e.is_a(),
+                "predefined_type": ifcopenshell.util.element.get_predefined_type(e),
+                "name": getattr(e, "Name", None),
+                "description": getattr(e, "Description", None),
+                "id": e.id(),
+                "global_id": getattr(e, "GlobalId", None),
+                "tag": getattr(e, "Tag", None),
+            }
             for i, e in enumerate(requirement.failed_entities)
         ]
 
