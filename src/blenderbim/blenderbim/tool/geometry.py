@@ -31,6 +31,7 @@ import blenderbim.bim.import_ifc
 from math import radians
 from mathutils import Vector
 from blenderbim.bim.ifc import IfcStore
+from math import radians
 
 
 class Geometry(blenderbim.core.tool.Geometry):
@@ -544,6 +545,19 @@ class Geometry(blenderbim.core.tool.Geometry):
     @classmethod
     def rename_object(cls, obj, name):
         obj.name = name
+
+    @classmethod
+    def remove_triangulation(cls, obj):
+        """
+        Convert triangles to quads without bpy.ops.
+        Note that it uses bmesh based on object mesh.
+        """
+        mesh = obj.data
+        bm = tool.Blender.get_bmesh_for_mesh(mesh)
+        # angle values come from defaults for `bpy.ops.mesh.tris_convert_to_quads()``
+        bmesh.ops.join_triangles(bm, faces=bm.faces[:], angle_face_threshold=radians(40), angle_shape_threshold=radians(40))
+        bm.normal_update()
+        tool.Blender.apply_bmesh(mesh, bm, obj)
 
     @classmethod
     def replace_object_with_empty(cls, obj):

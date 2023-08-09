@@ -115,6 +115,7 @@ def switch_representation(
 
     geometry.change_object_data(obj, data, is_global=is_global)
     geometry.record_object_materials(obj)
+    geometry.remove_triangulation(obj)
 
     if should_reload and existing_data:
         geometry.delete_data(existing_data)
