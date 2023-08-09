@@ -54,6 +54,24 @@ class TestRemoveProduct(test.bootstrap.IFC4):
         ifcopenshell.api.run("root.remove_product", self.file, product=element1)
         assert len(self.file.by_type("IfcObjectPlacement")) == 0
 
+    def test_removing_element_type_psets(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foo_Bar")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": "Bar"})
+
+        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        element2.HasPropertySets = (pset,)
+
+        # make sure it won't remove the pset if it's connected elsewhere
+        ifcopenshell.api.run("root.remove_product", self.file, product=element2)
+        assert len(self.file.by_type("IfcPropertySet")) == 1
+        assert len(self.file.by_type("IfcPropertySingleValue")) == 1
+
+        # if it's the product is the only inverse for pset, it should remove the pset
+        ifcopenshell.api.run("root.remove_product", self.file, product=element)
+        assert len(self.file.by_type("IfcPropertySet")) == 0
+        assert len(self.file.by_type("IfcPropertySingleValue")) == 0
+
     def test_removing_all_representations_of_an_element(self):
         ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
         ifcopenshell.api.run("unit.assign_unit", self.file)
