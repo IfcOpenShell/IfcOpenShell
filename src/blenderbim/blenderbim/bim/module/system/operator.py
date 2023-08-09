@@ -205,8 +205,14 @@ class DisconnectPort(bpy.types.Operator, Operator):
     bl_label = "Disconnect Ports"
     bl_options = {"REGISTER", "UNDO"}
 
+    element_id: bpy.props.IntProperty(default=0, options={"SKIP_SAVE"})
+
     def _execute(self, context):
-        core.disconnect_port(tool.Ifc, port=tool.Ifc.get_entity(context.active_object))
+        if self.element_id != 0:
+            element = tool.Ifc.get().by_id(self.element_id)
+        else:
+            element = tool.Ifc.get_entity(context.active_object)
+        core.disconnect_port(tool.Ifc, port=element)
 
 
 class SetFlowDirection(bpy.types.Operator, Operator):
