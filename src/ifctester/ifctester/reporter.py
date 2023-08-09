@@ -163,6 +163,7 @@ class Json(Reporter):
         return self.results
 
     def report_specification(self, specification):
+        applicability = [a.to_string("applicability") for a in specification.applicability]
         requirements = []
         for requirement in specification.requirements:
             requirements.append(
@@ -182,6 +183,7 @@ class Json(Reporter):
             "total": total,
             "percentage": percentage,
             "required": specification.minOccurs != 0,
+            "applicability": applicability,
             "requirements": requirements,
         }
 
