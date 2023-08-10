@@ -270,20 +270,6 @@ class AddBrickNamespace(bpy.types.Operator, Operator):
         core.add_namespace(tool.Brick, alias=alias, uri=uri)
 
 
-class SetBrickListRoot(bpy.types.Operator, Operator):
-    bl_idname = "bim.set_brick_list_root"
-    bl_label = "Set Brick View Type"
-    bl_options = {"REGISTER", "UNDO"}
-    split_screen: bpy.props.BoolProperty(name="Split Screen", default=False, options={"HIDDEN"})
-
-    def _execute(self, context):
-        if self.split_screen:
-            root = context.scene.BIMBrickProperties.split_screen_brick_list_root
-        else:
-            root = context.scene.BIMBrickProperties.brick_list_root
-        core.set_brick_list_root(tool.Brick, brick_root=root, split_screen=self.split_screen)
-
-
 class RemoveBrickRelation(bpy.types.Operator, Operator):
     bl_idname = "bim.remove_brick_relation"
     bl_label = "Remove Relation"
