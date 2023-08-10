@@ -310,6 +310,7 @@ class Brick(blenderbim.core.tool.Brick):
             cs.load_file(filepath)
         BrickStore.path = filepath
         cls.set_last_saved()
+        BrickStore.load_sub_roots()
         BrickStore.load_namespaces()
         BrickStore.load_entity_classes()
         BrickStore.load_relationships()
@@ -323,6 +324,7 @@ class Brick(blenderbim.core.tool.Brick):
         with BrickStore.graph.new_changeset("SCHEMA") as cs:
             cs.load_file(BrickStore.schema)
         BrickStore.graph.bind("digitaltwin", Namespace("https://example.org/digitaltwin#"))
+        BrickStore.load_sub_roots()
         BrickStore.load_namespaces()
         BrickStore.load_entity_classes()
         BrickStore.load_relationships()
@@ -411,12 +413,7 @@ class BrickStore:
     current_changesets = 0
     history_size = 64
     namespaces = []
-    root_classes = ["Equipment",
-                        "Electrical_Equipment", "Fire_Safety_Equipment", "HVAC_Equipment", "Lighting_Equipment", "Meter", 
-                    "Location",
-                    "System",
-                    "Point", 
-                        "Alarm", "Command", "Parameter", "Sensor", "Setpoint", "Status"]
+    root_classes = ["Equipment", "Location", "System", "Point"]
     entity_classes = {}
     relationships = []
 
@@ -427,6 +424,7 @@ class BrickStore:
         BrickStore.path = None
         BrickStore.last_saved = None
         BrickStore.namespaces = []
+        BrickStore.root_classes = ["Equipment", "Location", "System", "Point"]
         BrickStore.entity_classes = {}
         BrickStore.relationships = []
 
@@ -434,6 +432,32 @@ class BrickStore:
     def get_project(cls):
         return BrickStore.graph.graph_at(graph="PROJECT")
     
+    @classmethod
+    def load_sub_roots(cls):
+        query = BrickStore.graph.query(
+            """
+            PREFIX brick: <https://brickschema.org/schema/Brick#>
+            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+            SELECT ?subRoot ?subClasses WHERE {
+                {
+                SELECT ?subRoot (COUNT(?subClass) as ?subClasses) WHERE {
+                    {
+                        ?subRoot rdfs:subClassOf brick:Equipment .
+                    } UNION {
+                        ?subRoot rdfs:subClassOf brick:Point .
+                    }
+                    ?subClass rdfs:subClassOf* ?subRoot .
+                }
+                GROUP BY ?subRoot
+                }
+            FILTER(?subClasses > 3)
+            }
+            """
+        )
+        for row in query:
+            sub_root = row.get("subRoot").toPython().split("#")[-1]
+            BrickStore.root_classes.append(sub_root)
+
     @classmethod
     def load_namespaces(cls):
         BrickStore.namespaces = []
