@@ -426,7 +426,7 @@ class BrickStore:
     @classmethod
     def load_namespaces(cls):
         BrickStore.namespaces = []
-        keyword_filter = ["brickschema.org", "schema.org", "w3.org", "purl.org", "rdfs.org", "qudt.org", "ashrae.org"]
+        keyword_filter = ["brickschema.org", "schema.org", "w3.org", "purl.org", "rdfs.org", "qudt.org", "ashrae.org", "usefulinc.com", "xmlns.com", "opengis.net"]
         for alias, uri in BrickStore.graph.namespaces():
             ignore_namespace = False
             for keyword in keyword_filter:
