@@ -20,6 +20,7 @@ import bpy
 import isodate
 import ifcopenshell.api
 import ifcopenshell.util.attribute
+from ifcopenshell.util.doc import get_predefined_type_doc
 import blenderbim.tool as tool
 import blenderbim.core.sequence as core
 from blenderbim.bim.ifc import IfcStore
@@ -224,10 +225,20 @@ def updateTaskDuration(self, context):
 
 
 def get_schedule_predefined_types(self, context):
-    if not SequenceData.is_loaded:
-        SequenceData.load()
-    return SequenceData.data["predefined_types"]
-
+    results = []
+    declaration = tool.Ifc().schema().declaration_by_name("IfcWorkSchedule")
+    version = tool.Ifc.get_schema()
+    for attribute in declaration.attributes():
+        if attribute.name() == "PredefinedType":
+            results.extend(
+                [
+                    (e, e, get_predefined_type_doc(version, "IfcWorkSchedule", e))
+                    for e in attribute.type_of_attribute().declared_type().enumeration_items()
+                    if e != "BASELINE"
+                ]
+            )
+            break
+    return results
 
 def update_visualisation_start(self, context):
     update_visualisation_start_finish(self, context, "visualisation_start")
@@ -292,6 +303,14 @@ def update_filter_by_active_schedule(self, context):
             tool.Sequence, product=tool.Ifc.get().by_id(context.active_object.BIMObjectProperties.ifc_definition_id)
         )
 
+def switch_options(self, context):
+    if self.should_show_visualisation_ui:
+        self.should_show_snapshot_ui = False
+
+def switch_options2(self, context):
+    if self.should_show_snapshot_ui:
+        self.should_show_visualisation_ui = False
+
 class Task(PropertyGroup):
     name: StringProperty(name="Name", update=updateTaskName)
     identification: StringProperty(name="Identification", update=updateTaskIdentification)
@@ -352,6 +371,7 @@ class BIMWorkScheduleProperties(PropertyGroup):
     work_schedule_predefined_types: EnumProperty(
         items=get_schedule_predefined_types, name="Predefined Type", default=None
     )
+    object_type: StringProperty(name="Object Type")
     durations_attributes: CollectionProperty(name="Durations Attributes", type=ISODuration)
     work_calendars: EnumProperty(items=getWorkCalendars, name="Work Calendars")
     work_schedule_attributes: CollectionProperty(name="Work Schedule Attributes", type=Attribute)
@@ -362,9 +382,9 @@ class BIMWorkScheduleProperties(PropertyGroup):
     active_task_index: IntProperty(name="Active Task Index", update=update_active_task_index)
     active_task_id: IntProperty(name="Active Task Id")
     task_attributes: CollectionProperty(name="Task Attributes", type=Attribute)
-    should_show_visualisation_ui: BoolProperty(name="Should Show Visualisation UI", default=False)
+    should_show_visualisation_ui: BoolProperty(name="Should Show Visualisation UI", default=True, update=switch_options)
     should_show_task_bar_selection: BoolProperty(name="Add to task bar", default=False)
-    should_show_snapshot_ui: BoolProperty(name="Should Show Snapshot UI", default=False)
+    should_show_snapshot_ui: BoolProperty(name="Should Show Snapshot UI", default=False, update=switch_options2)
     should_show_column_ui: BoolProperty(name="Should Show Column UI", default=False)
     columns: CollectionProperty(name="Columns", type=Attribute)
     active_column_index: IntProperty(name="Active Column Index")
