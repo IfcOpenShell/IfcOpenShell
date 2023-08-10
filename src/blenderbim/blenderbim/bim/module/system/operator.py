@@ -23,6 +23,7 @@ import blenderbim.core.system as core
 import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.system.data import PortData
+from mathutils import Matrix
 
 
 class Operator:
@@ -213,6 +214,46 @@ class DisconnectPort(bpy.types.Operator, Operator):
         else:
             element = tool.Ifc.get_entity(context.active_object)
         core.disconnect_port(tool.Ifc, port=element)
+
+
+class MEPConnectElements(bpy.types.Operator, Operator):
+    bl_idname = "bim.mep_connect_elements"
+    bl_label = "Connect MEP Elements"
+    bl_description = "Connects two selected elements if they have ports with matching location"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return len(context.selected_objects) == 2
+
+    def _execute(self, context):
+        obj1 = context.active_object
+        obj2 = next(o for o in context.selected_objects if o != obj1)
+
+        el1 = tool.Ifc.get_entity(obj1)
+        el2 = tool.Ifc.get_entity(obj2)
+
+        obj1_ports = [p for p in tool.System.get_ports(el1) if not tool.System.get_connected_port(p)]
+        obj2_ports = [p for p in tool.System.get_ports(el2) if not tool.System.get_connected_port(p)]
+
+        if not obj1_ports or not obj2_ports:
+            self.report({"ERROR"}, "Couldn't find free ports to connect.")
+            return
+
+        def get_element_matrix(element):
+            placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+            return Matrix(placement)
+
+        for port1 in obj1_ports:
+            port1_location = get_element_matrix(port1).translation
+            for port2 in obj2_ports:
+                port2_location = get_element_matrix(port2).translation
+                if tool.Cad.are_vectors_equal(port1_location, port2_location):
+                    core.connect_port(tool.Ifc, port1, port2)
+                    return {"FINISHED"}
+
+        self.report({"ERROR"}, "Couldn't find any matching ports to connect.")
+        return {"CANCELLED"}
 
 
 class SetFlowDirection(bpy.types.Operator, Operator):
