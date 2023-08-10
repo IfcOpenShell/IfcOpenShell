@@ -50,8 +50,9 @@ def enable_editing_work_plan_schedules(sequence, work_plan=None):
     sequence.enable_editing_work_plan_schedules(work_plan)
 
 
-def add_work_schedule(ifc):
-    return ifc.run("sequence.add_work_schedule")
+def add_work_schedule(ifc, sequence, name=None):
+    predefined_type, object_type = sequence.get_user_predefined_type()
+    return ifc.run("sequence.add_work_schedule", name=name, predefined_type=predefined_type, object_type=object_type)
 
 
 def remove_work_schedule(ifc, work_schedule=None):

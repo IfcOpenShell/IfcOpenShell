@@ -47,8 +47,9 @@ class BIM_PT_cost_schedules(Panel):
                 row.label(text=f"{CostSchedulesData.data['total_cost_schedules']} Cost Schedules Found", icon="TEXT")
                 row.operator("bim.export_cost_schedules", text="Export as spreadsheet", icon="EXPORT")
             else:
-                row.label(text="No Cost Schedules Found found.", icon="COMMUNITY")
-            row = self.layout.row()
+                row.label(text="No Cost Schedules found.", icon="TEXT")
+            row = self.layout.row(align=True)
+            row.alignment = "RIGHT"
             row.prop(self.props, "cost_schedule_predefined_types")
             row.operator("bim.add_cost_schedule", icon="ADD", text="Add")
 
