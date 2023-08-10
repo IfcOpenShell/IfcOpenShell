@@ -207,6 +207,7 @@ class FitFlowSegments(bpy.types.Operator, tool.Ifc.Operator):
             elif total_profiles == 2:
                 if is_parallel:
                     fitting_type = "TRANSITION"
+                    bpy.ops.bim.mep_add_transition()
 
         elif total_selected_objs == 3:
             if total_profiles > 1:
