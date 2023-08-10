@@ -409,6 +409,7 @@ class BIM_PT_tab_4D5D(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bl_options = {"HIDE_HEADER"}
 
     @classmethod
     def poll(cls, context):
