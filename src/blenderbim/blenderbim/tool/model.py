@@ -769,6 +769,11 @@ class Model(blenderbim.core.tool.Model):
         tool.Ifc.run("geometry.edit_object_placement", product=element, matrix=matrix, is_si=True)
 
     @classmethod
+    def get_element_matrix(cls, element):
+        placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+        return Matrix(placement)
+
+    @classmethod
     def reload_body_representation(cls, obj_or_objects):
         """Update body representation including all decomposed objects"""
         if isinstance(obj_or_objects, collections.abc.Iterable):

@@ -240,14 +240,10 @@ class MEPConnectElements(bpy.types.Operator, Operator):
             self.report({"ERROR"}, "Couldn't find free ports to connect.")
             return
 
-        def get_element_matrix(element):
-            placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
-            return Matrix(placement)
-
         for port1 in obj1_ports:
-            port1_location = get_element_matrix(port1).translation
+            port1_location = tool.Model.get_element_matrix(port1).translation
             for port2 in obj2_ports:
-                port2_location = get_element_matrix(port2).translation
+                port2_location = tool.Model.get_element_matrix(port2).translation
                 if tool.Cad.are_vectors_equal(port1_location, port2_location):
                     core.connect_port(tool.Ifc, port1, port2)
                     return {"FINISHED"}
