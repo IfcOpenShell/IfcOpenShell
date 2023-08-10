@@ -22,7 +22,6 @@ from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import draw_attributes
 from blenderbim.bim.module.sequence.data import WorkPlansData, WorkScheduleData, SequenceData, TaskICOMData
-import blenderbim.tool as tool
 
 
 class BIM_PT_work_plans(Panel):
@@ -32,10 +31,12 @@ class BIM_PT_work_plans(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_4D5D"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "SCHEDULING") and tool.Ifc.get() and tool.Ifc.get().schema != "IFC2X3"
+        file = IfcStore.get_file()
+        return file and file.schema != "IFC2X3"
 
     def draw(self, context):
         if not WorkPlansData.is_loaded:
@@ -98,13 +99,16 @@ class BIM_PT_work_plans(Panel):
 class BIM_PT_work_schedules(Panel):
     bl_label = "Work Schedules"
     bl_idname = "BIM_PT_work_schedules"
+    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_4D5D"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "SCHEDULING") and tool.Ifc.get() and tool.Ifc.get().schema != "IFC2X3"
+        file = IfcStore.get_file()
+        return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
         if not SequenceData.is_loaded:
@@ -127,7 +131,7 @@ class BIM_PT_work_schedules(Panel):
             row = self.layout.row(align=True)
             row.alignment = "RIGHT"
             row.prop(self.props, "work_schedule_predefined_types")
-            row.operator("bim.add_work_schedule", text="Add", icon="ADD")
+            row.operator("bim.add_work_schedule", text="Add new", icon="ADD")
 
         for work_schedule_id, work_schedule in SequenceData.data["work_schedules"].items():
 
@@ -813,10 +817,12 @@ class BIM_PT_work_calendars(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_4D5D"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "SCHEDULING") and tool.Ifc.get() and tool.Ifc.get().schema != "IFC2X3"
+        file = IfcStore.get_file()
+        return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
         if not SequenceData.is_loaded:
