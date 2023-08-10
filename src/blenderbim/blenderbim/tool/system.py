@@ -92,7 +92,11 @@ class System(blenderbim.core.tool.System):
 
     @classmethod
     def get_port_relating_element(cls, port):
-        return port.Nests[0].RelatingObject
+        if tool.Ifc.get_schema() == "IFC2X3":
+            element = port.ContainedIn[0].RelatedElement
+        else:
+            element = port.Nests[0].RelatingObject
+        return element
 
     @classmethod
     def get_port_predefined_type(cls, mep_element):
