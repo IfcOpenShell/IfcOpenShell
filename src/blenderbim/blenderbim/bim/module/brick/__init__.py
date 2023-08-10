@@ -35,7 +35,6 @@ classes = (
     operator.ViewBrickItem,
     operator.SerializeBrick,
     operator.AddBrickNamespace,
-    operator.SetBrickListRoot,
     operator.RemoveBrickRelation,
     prop.Brick,
     prop.BIMBrickProperties,
