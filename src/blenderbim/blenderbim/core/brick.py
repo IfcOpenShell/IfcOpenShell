@@ -51,6 +51,8 @@ def close_brick_project(brick):
     brick.clear_project()
     brick.clear_brick_browser()
     brick.clear_brick_browser(split_screen=True)
+    brick.clear_breadcrumbs()
+    brick.clear_breadcrumbs(split_screen=True)
 
 
 def convert_brick_project(ifc, brick):
