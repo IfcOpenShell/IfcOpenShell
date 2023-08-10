@@ -1512,6 +1512,9 @@ class RemoveDrawing(bpy.types.Operator, Operator):
                 tool.Ifc.get().by_id(d.ifc_definition_id) for d in context.scene.DocProperties.drawings if d.is_selected
             ]
         else:
+            if not self.drawing:
+                self.report({"ERROR"}, "No drawing selected")
+                return {"CANCELLED"}
             drawings = [tool.Ifc.get().by_id(self.drawing)]
 
         removed_drawings = [drawing.id() for drawing in drawings]
