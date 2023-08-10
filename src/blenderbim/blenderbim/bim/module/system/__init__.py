@@ -34,6 +34,7 @@ classes = (
     operator.RemovePort,
     operator.RemoveSystem,
     operator.SelectSystemProducts,
+    operator.MEPConnectElements,
     operator.SetFlowDirection,
     operator.ShowPorts,
     operator.UnassignSystem,
