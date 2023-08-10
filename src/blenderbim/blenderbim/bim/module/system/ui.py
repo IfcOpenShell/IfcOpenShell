@@ -166,6 +166,7 @@ class BIM_PT_ports(Panel):
         row = self.layout.row(align=True)
         total_ports = PortData.data["total_ports"]
         row.label(text=f"{total_ports} Ports Found", icon="PLUGIN")
+        row.operator("bim.mep_connect_elements", text="", icon="PLUGIN")
         row.operator("bim.show_ports", icon="HIDE_OFF", text="")
         row.operator("bim.hide_ports", icon="HIDE_ON", text="")
         row.operator("bim.add_port", icon="ADD", text="")
