@@ -91,6 +91,7 @@ class BIM_PT_brickschema(Panel):
         row = self.layout.row(align=True)
         col = row.column()
         col.alignment = "RIGHT"
+        row.prop(data=self.props, property="set_list_root_toggled", text="", icon="OUTLINER")
         row.prop(data=self.props, property="split_screen_toggled", text="", icon="WINDOW")
 
         grid = self.layout.grid_flow(even_columns=True)
@@ -99,13 +100,10 @@ class BIM_PT_brickschema(Panel):
         if len(self.props.brick_breadcrumbs):
             op = row.operator("bim.rewind_brick_class", text="", icon="FRAME_PREV")
             op.split_screen = False
-        row.prop(data=self.props, property="set_list_root_toggled", text="", icon="OUTLINER")
         row.label(text=self.props.active_brick_class)
 
         if self.props.set_list_root_toggled:
             row = grid1.row(align=True)
-            op = row.operator("bim.set_brick_list_root", text="Set View")
-            op.split_screen = False
             row.prop(data=self.props, property="brick_list_root", text="")
 
         row = grid1.row()
@@ -122,8 +120,6 @@ class BIM_PT_brickschema(Panel):
 
             if self.props.set_list_root_toggled:
                 row = grid2.row(align=True)
-                op = row.operator("bim.set_brick_list_root", text="Set View")
-                op.split_screen = True
                 row.prop(data=self.props, property="split_screen_brick_list_root", text="")
 
             row = grid2.row()
