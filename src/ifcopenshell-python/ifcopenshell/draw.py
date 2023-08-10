@@ -60,6 +60,7 @@ class draw_settings:
     merge_cells: bool = False
     include_projection: bool = True
     prefilter: bool = True
+    include_curves: bool = False
 
 
 def main(settings, files, iterators=None, merge_projection=True, progress_function=DO_NOTHING):
@@ -68,6 +69,7 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
         # this is required for serialization
         APPLY_DEFAULT_MATERIALS=True,
         DISABLE_TRIANGULATION=True,
+        INCLUDE_CURVES=settings.include_curves,
         # when not doing booleans, proper solids from shells isn't a requirement
         SEW_SHELLS=settings.subtract_before_hlr,
     )
