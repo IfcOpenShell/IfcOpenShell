@@ -129,9 +129,21 @@ class AddWorkSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_work_schedule"
     bl_label = "Add Work Schedule"
     bl_options = {"REGISTER", "UNDO"}
+    name: bpy.props.StringProperty()
 
     def _execute(self, context):
-        core.add_work_schedule(tool.Ifc)
+        core.add_work_schedule(tool.Ifc, tool.Sequence, name=self.name)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, "name", text="Name")
+        self.props = context.scene.BIMWorkScheduleProperties
+        layout.prop(self.props, "work_schedule_predefined_types", text="Type")
+        if self.props.work_schedule_predefined_types == "USERDEFINED":
+            layout.prop(self.props,"object_type", text="Object type")
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
 
 
 class EditWorkSchedule(bpy.types.Operator, tool.Ifc.Operator):

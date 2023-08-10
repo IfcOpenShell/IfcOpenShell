@@ -811,10 +811,9 @@ class Sequence(blenderbim.core.tool.Sequence):
     @classmethod
     def update_visualisation_date(cls, start_date, finish_date):
         def canonicalise_time(time):
-            if not time:
-                return "-"
             return time.strftime("%d/%m/%y")
-
+        if not (start_date and finish_date):
+            return
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.visualisation_start = canonicalise_time(start_date)
         props.visualisation_finish = canonicalise_time(finish_date)
@@ -1608,3 +1607,11 @@ class Sequence(blenderbim.core.tool.Sequence):
     @classmethod
     def is_sort_reversed(cls):
         return bpy.context.scene.BIMWorkScheduleProperties.is_sort_reversed
+
+    @classmethod
+    def get_user_predefined_type(cls):
+        predefined_type = bpy.context.scene.BIMWorkScheduleProperties.work_schedule_predefined_types
+        object_type = None
+        if predefined_type == "USERDEFINED":
+            object_type = bpy.context.scene.BIMWorkScheduleProperties.object_type
+        return predefined_type, object_type

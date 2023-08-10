@@ -19,7 +19,6 @@
 import bpy
 import blenderbim.tool as tool
 import ifcopenshell
-from ifcopenshell.util.doc import get_predefined_type_doc
 import ifcopenshell.util.date as dateutil
 
 
@@ -37,7 +36,6 @@ class SequenceData:
     @classmethod
     def load(cls):
         cls.data = {
-            "predefined_types": cls.get_work_schedule_types(),
             "has_work_plans": cls.has_work_plans(),
             "has_work_schedules": cls.has_work_schedules(),
             "has_work_calendars": cls.has_work_calendars(),
@@ -229,22 +227,6 @@ class SequenceData:
             for rel in task.Nests or []:
                 data["NestingIndex"] = rel.RelatedObjects.index(task)
             cls.data["tasks"][task.id()] = data
-
-    @classmethod
-    def get_work_schedule_types(cls):
-        results = []
-        declaration = tool.Ifc().schema().declaration_by_name("IfcWorkSchedule")
-        version = tool.Ifc.get_schema()
-        for attribute in declaration.attributes():
-            if attribute.name() == "PredefinedType":
-                results.extend(
-                    [
-                        (e, e, get_predefined_type_doc(version, "IfcWorkSchedule", e))
-                        for e in attribute.type_of_attribute().declared_type().enumeration_items()
-                    ]
-                )
-                break
-        return results
 
 
 class WorkScheduleData:

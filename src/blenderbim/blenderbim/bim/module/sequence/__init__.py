@@ -137,6 +137,7 @@ classes = (
     ui.BIM_PT_work_schedules,
     ui.BIM_PT_work_calendars,
     ui.BIM_PT_task_icom,
+    ui.BIM_PT_animation_tools,
     ui.BIM_UL_task_columns,
     ui.BIM_UL_task_inputs,
     ui.BIM_UL_task_resources,

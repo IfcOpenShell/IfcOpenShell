@@ -719,6 +719,7 @@ class Sequence:
     def get_task_time_attributes(cls): pass
     def get_task_time(cls, task): pass
     def get_tasks_for_product(cls, product, work_schedule): pass
+    def get_user_predefined_type(cls): pass
     def get_work_calendar_attributes(cls): pass
     def get_work_plan_attributes(cls): pass
     def get_work_schedule_attributes(cls): pass
