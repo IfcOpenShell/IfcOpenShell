@@ -309,11 +309,16 @@ namespace {
 					}
 				} else {
 					gp_Pnt2d tmp;
-					for (int i = 0; i < 4; ++i) {
+					// 0,1,2,3 -> interp over bounding box edges (i%4, (i+1)%4)
+					// 4,5 -> interp over bounding box diagonals (i%4, (i+2)%4)
+					// @todo use boolean_utils.h points_on_planar_face_generator?
+					// ... or skip faces with inner bounds all together ?
+					// ... ?
+					for (int i = 0; i < 6; ++i) {
 						// @todo proper edge intersection
 						for (int j = 0; j < 16; ++j) {
-							const gp_Pnt2d& a = *loop[i];
-							const gp_Pnt2d& b = *loop[(i + 1) % 4];
+							const gp_Pnt2d& a = *loop[i % 4];
+							const gp_Pnt2d& b = *loop[(i + (i >= 4 ? 2 : 1)) % 4];
 							interp(a, b, j / 16.0, tmp);
 							if (fclass->Perform(tmp) == TopAbs_OUT) {
 								return false;
