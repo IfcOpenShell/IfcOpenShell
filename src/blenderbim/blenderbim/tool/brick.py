@@ -23,6 +23,7 @@ import ifcopenshell.util.brick
 import blenderbim.core.tool
 import blenderbim.tool as tool
 from contextlib import contextmanager
+import datetime
 
 try:
     import brickschema
@@ -308,6 +309,7 @@ class Brick(blenderbim.core.tool.Brick):
         with BrickStore.graph.new_changeset("PROJECT") as cs:
             cs.load_file(filepath)
         BrickStore.path = filepath
+        cls.set_last_saved()
         BrickStore.load_namespaces()
         BrickStore.load_entity_classes()
         BrickStore.load_relationships()
@@ -378,6 +380,7 @@ class Brick(blenderbim.core.tool.Brick):
     @classmethod
     def serialize_brick(cls):
         BrickStore.get_project().serialize(destination=BrickStore.path, format="turtle")
+        cls.set_last_saved()
 
     @classmethod
     def add_namespace(cls, alias, uri):
@@ -391,11 +394,18 @@ class Brick(blenderbim.core.tool.Brick):
         else:
             bpy.context.scene.BIMBrickProperties.brick_breadcrumbs.clear()
 
+    @classmethod
+    def set_last_saved(cls):
+        save = os.path.getmtime(BrickStore.path)
+        save = datetime.datetime.fromtimestamp(save)
+        BrickStore.last_saved = f"{save.year}-{save.month}-{save.day} {save.hour}:{save.minute}"
+
 class BrickStore:
     schema = None  # this is now a os path
     path = None  # file path if the project was loaded in
     graph = None  # this is the VersionedGraphCollection with 2 arbitrarily named graphs: "schema" and "project"
     # "SCHEMA" holds the Brick.ttl metadata; "PROJECT" holds all the authored entities
+    last_saved = None
     history = []
     future = []
     current_changesets = 0
@@ -415,6 +425,7 @@ class BrickStore:
         BrickStore.schema = None
         BrickStore.graph = None
         BrickStore.path = None
+        BrickStore.last_saved = None
         BrickStore.namespaces = []
         BrickStore.entity_classes = {}
         BrickStore.relationships = []

@@ -42,9 +42,17 @@ class BIM_PT_brickschema(Panel):
             row.operator("bim.load_brick_project", text="Load Project")
             return
 
+        row = self.layout.row(align=True)
         if BrickStore.path:
-            row = self.layout.row(align=True)
             row.label(text=BrickStore.path, icon="FILEBROWSER")
+        else:
+            row.label(text="No file", icon="FILEBROWSER")
+        
+        row = self.layout.row(align=True)
+        if BrickStore.last_saved:
+            row.label(text=BrickStore.last_saved, icon="TIME")
+        else:
+            row.label(text="Not saved", icon="TIME")
 
         row = self.layout.row(align=True)
         op = row.operator("bim.serialize_brick", icon="EXPORT", text="Save")
@@ -55,7 +63,7 @@ class BIM_PT_brickschema(Panel):
 
         row = self.layout.row(align=True)
         row.prop(data=self.props, property="brick_settings_toggled", text="", icon="PREFERENCES")
-        
+
         if self.props.brick_settings_toggled:
             box = self.layout.box()
             row = box.row(align=True)
@@ -86,43 +94,43 @@ class BIM_PT_brickschema(Panel):
         row.prop(data=self.props, property="new_brick_label", text="")
         prop_with_search(row, self.props, "brick_entity_class", text="")
         row.operator("bim.add_brick", text="", icon="ADD")
-        # row.operator("bim.refresh_brick_viewer", text="", icon="FILE_REFRESH")
 
         row = self.layout.row(align=True)
         col = row.column()
         col.alignment = "RIGHT"
         row.prop(data=self.props, property="set_list_root_toggled", text="", icon="OUTLINER")
         row.prop(data=self.props, property="split_screen_toggled", text="", icon="WINDOW")
+        row.operator("bim.refresh_brick_viewer", text="", icon="FILE_REFRESH")
 
         grid = self.layout.grid_flow(even_columns=True)
-        grid1 = grid.column(align=True)
-        row = grid1.row(align=True)
+        grid_left = grid.column(align=True)
+        row = grid_left.row(align=True)
         if len(self.props.brick_breadcrumbs):
             op = row.operator("bim.rewind_brick_class", text="", icon="FRAME_PREV")
             op.split_screen = False
         row.label(text=self.props.active_brick_class)
 
         if self.props.set_list_root_toggled:
-            row = grid1.row(align=True)
+            row = grid_left.row(align=True)
             row.prop(data=self.props, property="brick_list_root", text="")
 
-        row = grid1.row()
+        row = grid_left.row()
         BIM_UL_bricks.split_screen = False
         row.template_list("BIM_UL_bricks", "", self.props, "bricks", self.props, "active_brick_index")
 
         if self.props.split_screen_toggled:
-            grid2 = grid.column(align=True)
-            row = grid2.row(align=True)
+            grid_right = grid.column(align=True)
+            row = grid_right.row(align=True)
             if len(self.props.split_screen_brick_breadcrumbs):
                 op = row.operator("bim.rewind_brick_class", text="", icon="FRAME_PREV")
                 op.split_screen = True
             row.label(text=self.props.split_screen_active_brick_class)
 
             if self.props.set_list_root_toggled:
-                row = grid2.row(align=True)
+                row = grid_right.row(align=True)
                 row.prop(data=self.props, property="split_screen_brick_list_root", text="")
 
-            row = grid2.row()
+            row = grid_right.row()
             BIM_UL_bricks.split_screen = True
             row.template_list("BIM_UL_bricks", "", self.props, "split_screen_bricks", self.props, "split_screen_active_brick_index")
 
@@ -161,12 +169,10 @@ class BIM_PT_brickschema(Panel):
                 prop_with_search(row, self.props, "new_brick_relation_type", text="")
                 row.prop(data=self.props, property="new_brick_relation_object", text="")
                 row.operator("bim.add_brick_relation", text="", icon="ADD")
-            
 
             if self.props.brick_create_relations_toggled and self.props.add_relation_failed:
                 row = self.layout.row(align=True)
                 row.label(text="Failed to find this entity!", icon="ERROR")
-                
 
         for relation in BrickschemaData.data["active_relations"]:
             row = self.layout.row(align=True)
