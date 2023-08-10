@@ -27,6 +27,7 @@ class Usecase:
         file,
         name="Unnamed",
         predefined_type="NOTDEFINED",
+        object_type=None,
         start_time=None,
         work_plan=None,
     ):
@@ -77,6 +78,7 @@ class Usecase:
         self.settings = {
             "name": name,
             "predefined_type": predefined_type,
+            "object_type": object_type,
             "start_time": start_time or datetime.now(),
             "work_plan": work_plan,
         }
@@ -98,7 +100,8 @@ class Usecase:
         work_schedule.StartTime = ifcopenshell.util.date.datetime2ifc(
             self.settings["start_time"], "IfcDateTime"
         )
-
+        if self.settings["object_type"]:
+            work_schedule.ObjectType = self.settings["object_type"]
         if self.settings["work_plan"]:
             ifcopenshell.api.run(
                 "aggregate.assign_object",
