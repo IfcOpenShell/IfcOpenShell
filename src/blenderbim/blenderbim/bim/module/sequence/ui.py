@@ -99,7 +99,6 @@ class BIM_PT_work_plans(Panel):
 class BIM_PT_work_schedules(Panel):
     bl_label = "Work Schedules"
     bl_idname = "BIM_PT_work_schedules"
-    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
