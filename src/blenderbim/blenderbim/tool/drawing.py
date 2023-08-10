@@ -122,11 +122,10 @@ class Drawing(blenderbim.core.tool.Drawing):
                 # place the arrow
                 # NOTE: may not work correctly in EDIT mode
                 bbox = tool.Blender.get_object_bounding_box(stair)
-                float_is_zero = lambda f: 0.0001 >= f >= -0.0001
                 arrow.location = stair.matrix_world @ Vector(
                     (bbox["min_x"], (bbox["max_y"] - bbox["min_y"]) / 2, bbox["max_z"])
                 )
-                last_step_x = max(v.co.x for v in stair.data.vertices if float_is_zero(v.co.z - bbox["max_z"]))
+                last_step_x = max(v.co.x for v in stair.data.vertices if tool.Cad.is_x(v.co.z - bbox["max_z"], 0))
                 arrow.data.splines[0].points[0].co = Vector((0, 0, 0, 1))
                 arrow.data.splines[0].points[1].co = Vector((last_step_x, 0, 0, 1))
 
