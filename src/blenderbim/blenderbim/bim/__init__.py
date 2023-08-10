@@ -145,6 +145,8 @@ classes = [
     ui.BIM_PT_tab_services_object,
     # Structural analysis
     ui.BIM_PT_tab_structural,
+    # Construction scheduling
+    ui.BIM_PT_tab_4D5D,
     # Facility management
     ui.BIM_PT_tab_handover,
     ui.BIM_PT_tab_operations,
