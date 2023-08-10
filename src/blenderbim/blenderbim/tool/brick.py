@@ -443,8 +443,12 @@ class BrickStore:
                 """
                 PREFIX brick: <https://brickschema.org/schema/Brick#>
                 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                PREFIX owl: <http://www.w3.org/2002/07/owl#>
                 SELECT ?class WHERE {
                     ?class rdfs:subClassOf* brick:{root_class} .
+                    FILTER NOT EXISTS {
+                        ?class owl:deprecated true .
+                    } 
                 }
             """.replace(
                     "{root_class}", root_class
