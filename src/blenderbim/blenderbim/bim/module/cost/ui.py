@@ -26,7 +26,6 @@ from blenderbim.bim.module.cost.data import CostSchedulesData
 class BIM_PT_cost_schedules(Panel):
     bl_label = "Cost Schedules"
     bl_idname = "BIM_PT_cost_schedules"
-    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"

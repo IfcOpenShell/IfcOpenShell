@@ -305,7 +305,7 @@ def get_tab(self, context):
         ("DRAWINGS", "Drawings and Documents", "", "DOCUMENTS", 3),
         ("SERVICES", "Services and Systems", "", "NETWORK_DRIVE", 4),
         ("STRUCTURE", "Structural Analysis", "", "EDITMODE_HLT", 5),
-        ("SCHEDULING", "Construction Scheduling", "", "NLA", 6),
+        ("SCHEDULING", "Costing and Scheduling", "", "NLA", 6),
         ("FM", "Facility Management", "", "PACKAGE", 7),
         ("QUALITY", "Quality and Coordination", "", "COMMUNITY", 8),
         ("BLENDER", "Blender Properties", "", "BLENDER", 9),
