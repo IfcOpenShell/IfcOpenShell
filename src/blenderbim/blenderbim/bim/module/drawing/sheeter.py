@@ -414,7 +414,7 @@ class SheetBuilder:
                 view.remove(image)
 
     def get_href(self, element):
-        return urllib.parse.unquote(element.attrib.get("{http://www.w3.org/1999/xlink}href"))
+        return urllib.parse.unquote(element.attrib.get("{http://www.w3.org/1999/xlink}href")).replace('\\','/')
 
     def parse_embedded_svg(self, image, data):
         group = ET.Element("g")
