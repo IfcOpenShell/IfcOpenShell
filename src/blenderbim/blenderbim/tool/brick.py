@@ -340,10 +340,9 @@ class Brick(blenderbim.core.tool.Brick):
 
     @classmethod
     def remove_brick(cls, brick_uri):
-        if BrickStore.graph.triples((URIRef(brick_uri), None, None)):
-            with BrickStore.new_changeset() as cs:
-                for triple in BrickStore.graph.triples((URIRef(brick_uri), None, None)):
-                    cs.remove(triple)
+        with BrickStore.new_changeset() as cs:
+            for triple in BrickStore.graph.triples((URIRef(brick_uri), None, None)):
+                cs.remove(triple)
 
     @classmethod
     def run_assign_brick_reference(cls, element=None, library=None, brick_uri=None):
