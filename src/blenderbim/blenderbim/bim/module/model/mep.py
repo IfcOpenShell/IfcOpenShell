@@ -73,29 +73,68 @@ class RegenerateDistributionElement(bpy.types.Operator, tool.Ifc.Operator):
                 [e for e in ifcopenshell.util.system.get_connected_from(element) if e not in processed_elements]
             )
 
-            if len(connected) == 1:
-                extend_branch(list(connected)[0], branch, element)
-            else:
-                for connected_element in connected:
-                    branch_element["children"].append(extend_branch(connected_element, [], element))
+            for connected_element in connected:
+                branch_element["children"].append(extend_branch(connected_element, [], element))
 
             return branch
 
-        queue = extend_branch(current_element, [])[0]["children"]
+        extended_branch = extend_branch(current_element, [])
+        queue = extended_branch[0]["children"]
 
         # import pprint
         # pprint.pprint(queue)
+
+        def get_connected_ports_between(element1, element2):
+            ports1 = tool.System.get_ports(element1)
+            ports2 = tool.System.get_ports(element2)
+
+            for p in ports1:
+                connected_port = tool.System.get_connected_port(p)
+                # in IFC2X3 there is no PredefinedType
+                if getattr(p, "PredefinedType", None) == "WIRELESS":
+                    continue
+                if connected_port in ports2:
+                    return p, connected_port
+
+            return None, None
+
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
         def process_branch(branch):
             for branch_element in branch:
                 element = branch_element["element"]
                 print("processing", element)
                 predecessor = branch_element["predecessor"]
-                if False:  # If the element does not need to be transformed, return early.
-                    return
+
                 # Perform the extend, translate, rotate, etc the element as necessary based on the predecessor.
-                # For segments, prioritise extensions instead of translations.
-                # For everything else, only translate. No rotation.
+                # For everything besides segments, only translate. No rotation.
+
+                obj = tool.Ifc.get_object(element)
+                obj_pred = tool.Ifc.get_object(predecessor)
+                if tool.Ifc.is_moved(obj):
+                    blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+                if tool.Ifc.is_moved(obj_pred):
+                    blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj_pred)
+
+                port, port_pred = get_connected_ports_between(element, predecessor)
+                port_matrix_pred = tool.Model.get_element_matrix(port_pred)
+
+                # Only segments can be extended
+                # extension for them takes priority over translation
+                if element.is_a("IfcFlowSegment"):
+                    DumbProfileJoiner().join_E(obj, port_matrix_pred.translation * si_conversion)
+                    context.view_layer.update()  # update since extrusion might involve changing object's location
+
+                port_martix = tool.Model.get_element_matrix(port)
+                port_location = port_martix.translation
+                port_location_pred = port_matrix_pred.translation
+                if not tool.Cad.are_vectors_equal(port_location, port_location_pred):
+                    obj.location += (port_location_pred - port_location) * si_conversion
+                    context.view_layer.update()  # otherwise tool.Ifc.is_moved won't get triggered
+                else:
+                    # If the element does not need to be transformed, return early.
+                    return
+
                 for child_branch in branch_element["children"]:
                     process_branch(child_branch)
 
@@ -228,6 +267,10 @@ class MEPGenerator:
             # as DumbProfileJoiner already moved the general segment position in that case
             if port_position == "end_port":
                 tool.Model.edit_element_placement(port, end_port_matrix)
+
+            continue
+
+            # NOTE: currently this functionality is moved to bim.regenerate_distribution_element
 
             connected_port = tool.System.get_connected_port(port)
             if not connected_port:
