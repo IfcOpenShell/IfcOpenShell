@@ -55,7 +55,8 @@ class Search(blenderbim.core.tool.Search):
                     comparison, value = cls.get_comparison_and_value(ifc_filter)
                     filter_group_query.append(f"location{comparison}{value}")
             if not has_instance_or_entity_filter:
-                filter_group_query.insert(0, "IfcElement")
+                filter_group_query.insert(0, "IfcProduct")
+                filter_group_query.insert(0, "IfcTypeProduct")
             query.append(", ".join(filter_group_query))
         return " + ".join(query)
 
