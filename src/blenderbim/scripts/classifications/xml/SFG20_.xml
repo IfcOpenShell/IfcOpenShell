@@ -1,0 +1,4482 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<BuildingInformation>
+	<Classification>
+		<System>
+			<Name>SFG20</Name>
+			<EditionVersion>1.1.0</EditionVersion>
+			<EditionDate>
+				<Year>2017</Year>
+				<Month>3</Month>
+				<Day>20</Day>
+			</EditionDate>
+			<Description>SFG20 is the essential tool for facilities managers, building owners, contractors and consultants, enabling you to stay compliant - saving time, energy and money.
+Assigns category classification to building elements based on SFG20 coding. It facilitates the identification of maintainable assets, providing a benchmark for optimum maintenance to avoid over or under maintaining.</Description>
+			<Source>http://www.sfg20.co.uk/</Source>
+			<Items>
+				<Item>
+					<ID>00</ID>
+					<Name>Overarching Introduction</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>00-01</ID>
+							<Name>Overarching Introduction</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>01</ID>
+					<Name>Actuators</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>01-01</ID>
+							<Name>Introductory Procedures - Actuators</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>01-02</ID>
+							<Name>Pre-Maintenance Procedures - Actuators</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>01-03</ID>
+							<Name>Thermal Actuators</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>01-04</ID>
+							<Name>Pneumatic Actuators</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>01-05</ID>
+							<Name>Hydraulic Actuators</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>01-06</ID>
+							<Name>Motor Driven Actuators</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>01-07</ID>
+							<Name>Power Fail - Motor Return Actuators</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>01-08</ID>
+							<Name>Power Fail - Spring Return Actuator</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>02</ID>
+					<Name>Air Conditioning</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>02-01</ID>
+							<Name>Introductory Procedures - Air Conditioning</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>02-02</ID>
+							<Name>Air Pressure Relief Damper</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>03</ID>
+					<Name>Air Handling Units</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>03-01</ID>
+							<Name>Air Handling Units - General</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>04</ID>
+					<Name>Belts</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>04-01</ID>
+							<Name>Belt Drives</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>05</ID>
+					<Name>Boilers/Heat Generators</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>05-01</ID>
+							<Name>Introductory Procedures - Boilers/Heat Generators</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-02</ID>
+							<Name>Pre-Maintenance Procedures - Boilers/Heat Generators</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-03</ID>
+							<Name>Atmospheric Gas Burner - Free Standing Boiler</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-04</ID>
+							<Name>Atmospheric Gas Burner - Condensing Boiler</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-05</ID>
+							<Name>Coal Fired Boilers - Bunkers and Conveyors</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-06</ID>
+							<Name>Coal Fired Boilers - Coal Storage Handling and Feed Mechanisms, Automatic Ash Removal (where fitted)</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-07</ID>
+							<Name>Coal Feed Mechanisms - Under Feed Stokers</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-08</ID>
+							<Name>Coal Feed Mechanisms - Chain Grate Stokers</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-09</ID>
+							<Name>Ash Handling System</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-10</ID>
+							<Name>Blown Gas Burner Condensing Boiler</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-11</ID>
+							<Name>Blown Gas Burner Modular Boiler</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-12</ID>
+							<Name>Forced Draught Gas Condensing Boiler</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-13</ID>
+							<Name>Forced Draught (Pressure Jet) Oil Condensing Boiler</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-14</ID>
+							<Name>Boilers MTHW up to 120ºC</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-15</ID>
+							<Name>Multiple Boilers - Sequence Controls</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-16</ID>
+							<Name>On/off</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-17</ID>
+							<Name>Boiler Protection Controls</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-18</ID>
+							<Name>Boilers - Space Temperature Controls</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-19</ID>
+							<Name>Steam Boilers Pre-Maintenance Check</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-20</ID>
+							<Name>Steam Boilers Maintenance Schedule</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-21</ID>
+							<Name>Electric Boilers</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-22</ID>
+							<Name>Electrode Boilers</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-23</ID>
+							<Name>Boilers LTHW Up to 95ºC</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-24</ID>
+							<Name>Boilers - Fire and Safety Circuits</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-25</ID>
+							<Name>Waste and Wood Burning Appliances (Including Boilers) - Fire and Boiler Safety Circuits</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-26</ID>
+							<Name>Waste and Wood Burning Appliances (Including Boilers) - Combustion Chamber</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-27</ID>
+							<Name>Waste and Wood Burning Appliances (Including Boilers) - Boiler (if fitted)</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-28</ID>
+							<Name>Atmospheric Gas Burner Boiler - Small and/or Wall Hung for Domestic/Light Commercial Installation</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-29</ID>
+							<Name>Combination Atmospheric Burner Gas Boiler</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-30</ID>
+							<Name>Atmospheric Gas Burner/Condensing Combination Boiler</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-31</ID>
+							<Name>Air to Water Heat Pump</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-32</ID>
+							<Name>Water to Water Heat Pump</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-33</ID>
+							<Name>Brine to Water Heat Pump</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-34</ID>
+							<Name>Packaged Steam Generators</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-35</ID>
+							<Name>Packaged Steam Generators - Electric</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-36</ID>
+							<Name>Steam Boiler Report - Periodic Examination</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-37</ID>
+							<Name>Boiler Superheater</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-38</ID>
+							<Name>Biomass Boiler</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-39</ID>
+							<Name>Gas Booster Sets</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-40</ID>
+							<Name>Gas Governor or Gas Regulator</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-41</ID>
+							<Name>Gas Incinerator</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-42</ID>
+							<Name>Waste Incinerator</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-43</ID>
+							<Name>Wet Scrubber System</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-44</ID>
+							<Name>Fabric Filter System</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-45</ID>
+							<Name>Sanitary Incinerator - Electrical</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-46</ID>
+							<Name>Oil Fired Space Heaters</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>05-47</ID>
+							<Name>Kiln - Electric</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>06</ID>
+					<Name>Building Management Systems</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>06-01</ID>
+							<Name>Introductory Procedures - Building Management Systems</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>06-03</ID>
+							<Name>Central Operator Station</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>06-04</ID>
+							<Name>Communications</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>06-05</ID>
+							<Name>Outstations</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>06-06</ID>
+							<Name>Software Functions</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>07</ID>
+					<Name>Burners</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>07-01</ID>
+							<Name>Atmospheric Gas Burners</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>07-02</ID>
+							<Name>Blown Gas Burner</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>07-03</ID>
+							<Name>Forced Draught Gas Burner</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>07-04</ID>
+							<Name>Fuel Oil Distribution and Pipework using Medium (220/960 Sec) Oil</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>07-05</ID>
+							<Name>Forced Draught (Pressure Jet) Oil Burner</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>07-06</ID>
+							<Name>Light Oil Vaporising Pot Burner</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>07-07</ID>
+							<Name>Gas/Oil Burners - Dual Fuel</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>09</ID>
+					<Name>Chillers - Water</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>09-01</ID>
+							<Name>Introductory Procedures - Chillers - Water</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>09-02</ID>
+							<Name>Packaged Chiller Units</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>09-03</ID>
+							<Name>Lithium Bromide/Water Absorption Chillers</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>09-04</ID>
+							<Name>Gas Fired Absorption Chiller Up to 18kw Cooling Capacity</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>09-05</ID>
+							<Name>Solar Thermal Absorption Chillers</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>10</ID>
+					<Name>Cold Rooms and Food Storage</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>10-01</ID>
+							<Name>Cold Rooms</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>10-02</ID>
+							<Name>Refrigerated Display Cabinets</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>11</ID>
+					<Name>Communicatiion and P.A Systems</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>11-01</ID>
+							<Name>Communications - Public Address Systems</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>11-02</ID>
+							<Name>Emergency Voice Communication (EVC) Systems</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>11-03</ID>
+							<Name>Intercom System</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>11-04</ID>
+							<Name>Television and Signal Receiving Equipment</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>12</ID>
+					<Name>Compressors - Refridgeration</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>12-01</ID>
+							<Name>Compressors Refrigeration - Reciprocal (Includes Hermetic, Semi-Hermetic and Open)</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>12-02</ID>
+							<Name>Compressor - Screw</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>12-03</ID>
+							<Name>Compressors Refrigeration - Centrifugal</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>12-04</ID>
+							<Name>Compressor - Scroll</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>13</ID>
+					<Name>Condensers</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>13-01</ID>
+							<Name>Condensers - Water Cooled</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>13-02</ID>
+							<Name>Condenser - Air Cooled</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>14</ID>
+					<Name>Control Panels &amp; Controllers</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>14-01</ID>
+							<Name>Introductory Procedures - Control Panels &amp; Controllers</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>14-02</ID>
+							<Name>Electrical Services (excluding Electrical Controllers and Pneumatic Relays)</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>14-03</ID>
+							<Name>Lamps, Meters, Alarms etc</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>14-04</ID>
+							<Name>Optimiser</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>14-05</ID>
+							<Name>Heating Compensator</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>14-06</ID>
+							<Name>Single Input Controller</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>14-07</ID>
+							<Name>Unit Controllers and Sensor Controllers</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>14-08</ID>
+							<Name>Controller Timers</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>14-09</ID>
+							<Name>Step Controllers</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>14-10</ID>
+							<Name>Time Switches</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>14-11</ID>
+							<Name>Multi-Input Controllers</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>14-12</ID>
+							<Name>Indicators and Displays</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>14-13</ID>
+							<Name>Alarm Modules</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>14-14</ID>
+							<Name>Level Controllers</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>14-15</ID>
+							<Name>Speed Controllers</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>14-16</ID>
+							<Name>Transducers - Pneumatic to Electronic and Electronic to Pneumatic</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>14-17</ID>
+							<Name>Direct Current (DC) Drives</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>14-18</ID>
+							<Name>Emergency Stop Buttons</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>14-19</ID>
+							<Name>Access Control</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>14-20</ID>
+							<Name>Emergency Assistance Alarm</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>14-21</ID>
+							<Name>Instrument Control Panel</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>14-22</ID>
+							<Name>Local Control Panel/Local Control Station</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>14-23</ID>
+							<Name>Motor Control Centre</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>14-24</ID>
+							<Name>Underfloor Water Detection System</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>16</ID>
+					<Name>Ducting</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>16-01</ID>
+							<Name>Introductory Procedures - Ducting and Air Distribution</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>16-02</ID>
+							<Name>Ductwork System - General</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>16-03</ID>
+							<Name>Ducting - Volume Control Dampers and Fire/Smoke Dampers</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>16-04</ID>
+							<Name>Ducting - Attenuators</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>17</ID>
+					<Name>Ductwork Cleaning</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>17-01</ID>
+							<Name>Ductwork Cleaning - Hygiene, Inspections and Monitoring</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>17-02</ID>
+							<Name>Kitchen Extract/Ventilation System</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>18</ID>
+					<Name>Electrics in Buildings</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>18-01</ID>
+							<Name>Introductory Procedures - Electrics in Buildings</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>18-02</ID>
+							<Name>Hair Dryer</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>18-03</ID>
+							<Name>Hand Dryer</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>19</ID>
+					<Name>Evaporators</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>19-01</ID>
+							<Name>Refrigeration Evaporators</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>20</ID>
+					<Name>Fans</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>20-01</ID>
+							<Name>Introductory Procedures - Fans</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>20-02</ID>
+							<Name>Ventilating Fans - General</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>20-03</ID>
+							<Name>Centrifugal Fans</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>20-04</ID>
+							<Name>Axial Fans</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>20-05</ID>
+							<Name>Propeller Fans</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>20-06</ID>
+							<Name>Mixed Flow Fans</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>20-07</ID>
+							<Name>Bifurcated Fans</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>20-08</ID>
+							<Name>Extract Fans - Including Fire/Smoke Extract Units</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>20-09</ID>
+							<Name>Ammonia Extract Fan</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>20-10</ID>
+							<Name>Hazardous Area Extract Fan</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>21</ID>
+					<Name>Filters</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>21-01</ID>
+							<Name>Introductory Procedures - Filters</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>21-02</ID>
+							<Name>Air Filters</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>21-03</ID>
+							<Name>Electrostatic Filters</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>22</ID>
+					<Name>Fire Alarm Systems</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>22-01</ID>
+							<Name>Fire Alarm System</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>22-02</ID>
+							<Name>Fire Alarms - Associated Equipment</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>22-03</ID>
+							<Name>Fire Alarm - Voice Alarm Systems</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>23</ID>
+					<Name>Fire Protection Systems</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>23-01</ID>
+							<Name>Introductory Procedures - Fire Protection Systems</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>23-02</ID>
+							<Name>Hose Reels - Pressure Boosting Sets</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>23-03</ID>
+							<Name>Hose Reels - Static or Swinging</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>23-04</ID>
+							<Name>Rising Fire Mains and Hydrants</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>23-05</ID>
+							<Name>Gas Extinguishing Systems</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>23-06</ID>
+							<Name>Carbon Dioxide Total Flooding Fire Extinguishing System</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>23-07</ID>
+							<Name>Expansion Foam Systems</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>23-08</ID>
+							<Name>Fire Extinguishers - Gas Suppression</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>23-09</ID>
+							<Name>Fire Extinguishers - Carbon Dioxide</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>23-10</ID>
+							<Name>Fire Extinguishers - Foam (Stored Pressure)</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>23-11</ID>
+							<Name>Fire Extinguishers - Powder (Gas Cartridge)</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>23-12</ID>
+							<Name>Fire Extinguishers - Water (Gas Cartridge)</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>23-13</ID>
+							<Name>Fire Extinguishers - Water Stored Pressure</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>23-14</ID>
+							<Name>Sprinkler Systems</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>23-15</ID>
+							<Name>Gas Detection/Flammable</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>23-16</ID>
+							<Name>Kitchen Hood Fire Suppression</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>23-17</ID>
+							<Name>Fire Doors</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>24</ID>
+					<Name>Flues</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>24-01</ID>
+							<Name>Flues (All Combustible Fuels)</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>25</ID>
+					<Name>Fountains</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>25-01</ID>
+							<Name>Fountains Outdoor - Ornamental</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>25-02</ID>
+							<Name>Fountains Indoor - Ornamental</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>25-03</ID>
+							<Name>Bottled Water Cooler</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>25-04</ID>
+							<Name>Point of Use Water Dispenser</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>25-05</ID>
+							<Name>Water Filter</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>26</ID>
+					<Name>Grilles and Diffusers</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>26-01</ID>
+							<Name>Grilles and Diffusers</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>26-02</ID>
+							<Name>Louvres, Bird and Insect Screens</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>27</ID>
+					<Name>Hazardous Areas (Electrics)</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>27-01</ID>
+							<Name>Introductory Procedures - Hazardous Areas (Electrics)</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>27-02</ID>
+							<Name>Hazardous Areas - Flameproof Equipment</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>27-03</ID>
+							<Name>Hazardous Areas - Lighting</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>27-04</ID>
+							<Name>Hazardous Areas - Earthing</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>28</ID>
+					<Name>Heat Emitters</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>28-01</ID>
+							<Name>Heat Emitters</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>28-02</ID>
+							<Name>Gas Fired Ceramic Plaque Infra-Red Heaters</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>28-03</ID>
+							<Name>Gas Radiant Tube Heaters</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>28-04</ID>
+							<Name>Gas Fired Natural and Fan Assisted Heaters - Conventional and Balanced Flue</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>28-05</ID>
+							<Name>Gas Fire</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>28-06</ID>
+							<Name>Gas Fired Unit Heaters</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>28-07</ID>
+							<Name>Gas Fired Radiant Heaters</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>28-08</ID>
+							<Name>Radiators and Vents</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>29</ID>
+					<Name>Heat Exchangers</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>29-01</ID>
+							<Name>Heat Exchangers - Coils</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>29-02</ID>
+							<Name>Electric/Air Heater</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>29-03</ID>
+							<Name>Plate Recuperator</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>29-04</ID>
+							<Name>Thermal Wheels - Rotary Heat Regenerators</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>29-05</ID>
+							<Name>Run Around Heat Recovery Coils</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>29-06</ID>
+							<Name>Plate Heat Exchangers</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>29-08</ID>
+							<Name>Heating Calorifiers - MTHW, HTHW or Steam</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>29-09</ID>
+							<Name>Heat Recovery Units</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>30</ID>
+					<Name>Heat Rejection Systems</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>30-01</ID>
+							<Name>Introductory Procedures - Heat Rejection Systems</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>30-02</ID>
+							<Name>Cooling Towers - Precautions against Legionnaires Disease (Legionella Pneumophila)</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>30-03</ID>
+							<Name>Dry Coolers</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>30-04</ID>
+							<Name>Adiabatic Coolers</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>31</ID>
+					<Name>Hot and Cold Water Services</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>31-01</ID>
+							<Name>Introductory Procedures - Hot and Cold Water Services</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>32</ID>
+					<Name>Hot Water Supply</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>32-01</ID>
+							<Name>Introductory Procedures - Hot Water Supply</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>32-02</ID>
+							<Name>Hot Water Services General</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>32-03</ID>
+							<Name>Introductory Procedures - Calorifier Types</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>32-04</ID>
+							<Name>Pre-Maintenance Procedures - Calorifiers</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>32-05</ID>
+							<Name>Calorifiers Heated by LTHW</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>32-06</ID>
+							<Name>Hot Water Calorifiers - Heated by MTHW, HTHW or Steam</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>32-07</ID>
+							<Name>Hot Water Supply Calorifiers</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>32-08</ID>
+							<Name>Calorifier and Heat Exchange Controls</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>32-09</ID>
+							<Name>Hot Water Cylinders</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>32-10</ID>
+							<Name>Unvented Hot Water Systems</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>32-11</ID>
+							<Name>Thermal Storage Cylinder (Individual Dwellings for DHWS)</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>32-12</ID>
+							<Name>Expansion Vessels</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>32-13</ID>
+							<Name>Direct Fired Water Heaters</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>32-14</ID>
+							<Name>Instantaneous Electric Water Heaters (Non Drinks Type)</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>32-15</ID>
+							<Name>Packaged Electric Water Heaters - Cistern Type (Non Drinks)</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>32-16</ID>
+							<Name>Vented Hot Water Systems</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>33</ID>
+					<Name>Humidifiers Including Disinfection Procedures</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>33-01</ID>
+							<Name>Humidifiers - Cold Water Evaporator, Drum Type</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>33-02</ID>
+							<Name>Humidifiers - Direct Steam Injection Type</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>33-03</ID>
+							<Name>Humidifiers - Electrode Boiler</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>33-04</ID>
+							<Name>Humidifiers - Compressed Air Type</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>33-05</ID>
+							<Name>Humidifiers - Ultrasonic</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>33-06</ID>
+							<Name>Humidifiers - Resistance Heater Type</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>33-08</ID>
+							<Name>Humidifiers - Spray</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>34</ID>
+					<Name>Ice Making Machines</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>34-01</ID>
+							<Name>Ice Making Machines</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>35</ID>
+					<Name>Insulation</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>35-01</ID>
+							<Name>Thermal Insulation</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>36</ID>
+					<Name>Lighting</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>36-01</ID>
+							<Name>Introductory Procedures - Lighting</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>36-02</ID>
+							<Name>Lighting - Switches - Internal and External</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>36-03</ID>
+							<Name>Lighting Fittings including Luminaires General</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>36-04</ID>
+							<Name>External Lighting including Illuminated Signs</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>37</ID>
+					<Name>Lighting - Emergency</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>37-01</ID>
+							<Name>Emergency Lighting - Self Contained</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>37-02</ID>
+							<Name>Emergency Lighting - Externally Powered</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>38</ID>
+					<Name>Lightning Protection</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>38-01</ID>
+							<Name>Lightning Conductor and Earth</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>38-02</ID>
+							<Name>Lightning Conductors in Hazardous Areas</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>39</ID>
+					<Name>Motors</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>39-01</ID>
+							<Name>Motors - Drive Elements</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>40</ID>
+					<Name>Pipework Systems</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>40-01</ID>
+							<Name>Pipework Systems - General</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>40-02</ID>
+							<Name>Pipework Systems - Mountings</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>40-03</ID>
+							<Name>Trace Heating - Electrical</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>40-07</ID>
+							<Name>Pneumatic Equipment/Compressed Air Systems</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>40-08</ID>
+							<Name>Air Compressors and Receivers</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>40-09</ID>
+							<Name>Air Compressors Compressed Air Dryers</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>40-10</ID>
+							<Name>Pipework for Low Pressure Natural Gas, Liquefied Petroleum Gas (LPG) or Oil</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>40-11</ID>
+							<Name>Steam Services</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>40-12</ID>
+							<Name>Flash Steam Vessel</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>40-13</ID>
+							<Name>Emergency Solenoid Fuel Valves</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>40-15</ID>
+							<Name>Pressure Reducing Valves</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>40-16</ID>
+							<Name>Water Buffer/Surge Tanks</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>40-17</ID>
+							<Name>Water Mains - Above Ground</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>40-18</ID>
+							<Name>Boiler Water Deaerator</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>40-19</ID>
+							<Name>Free Fall Fire Valves - Gas and Oil</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>40-20</ID>
+							<Name>Heat Interface Units</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>40-21</ID>
+							<Name>Side Stream Filtration Units</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>40-22</ID>
+							<Name>Solenoid Gas/Oil Shut-off (Safety) Valves</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>40-23</ID>
+							<Name>Vacuum Degasser</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>41</ID>
+					<Name>Pneumatics</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>41-01</ID>
+							<Name>Pneumatic Relays</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>42</ID>
+					<Name>Portable Equiptment</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>42-01</ID>
+							<Name>Portable Appliance Testing (PAT)</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>43</ID>
+					<Name>Power Generators</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>43-01</ID>
+							<Name>Introductory Procedures - Power Generators</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>43-02</ID>
+							<Name>Power Generation - Stand-by Generator</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>43-03</ID>
+							<Name>Batteries - Lead Acid - Unsealed</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>43-04</ID>
+							<Name>Battery Charging Equipment</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>43-05</ID>
+							<Name>Uninterruptible Power Supplies</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>43-06</ID>
+							<Name>Photovoltaics</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>43-07</ID>
+							<Name>Combined Heat and Power (CHP) - Diesel Fuel Engine</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>43-08</ID>
+							<Name>Combined Heat and Power (CHP) - Gaseous Fuel Engine</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>44</ID>
+					<Name>Power Supplies</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>44-01</ID>
+							<Name>Introductory Procedures - Power Supplies</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>44-02</ID>
+							<Name>Main Switch Panel at Supply Intake</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>44-03</ID>
+							<Name>Maximum Demand and Power Factor Correction</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>44-04</ID>
+							<Name>Armoured Cables and Conduits</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>44-05</ID>
+							<Name>Power Distribution Unit (PDU)</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>44-06</ID>
+							<Name>Earthing</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>44-07</ID>
+							<Name>Distribution Boards</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>44-08</ID>
+							<Name>Electrical Installation - Generally</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>44-09</ID>
+							<Name>Three Phase Circuits</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>44-10</ID>
+							<Name>Isolators/Starters/Fuse Switches</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>44-11</ID>
+							<Name>Periodic Inspection and Testing</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>44-12</ID>
+							<Name>Busbar System</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>45</ID>
+					<Name>Pumps</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>45-01</ID>
+							<Name>Pumps - General</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>45-02</ID>
+							<Name>Circulating Pumps - General</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>45-03</ID>
+							<Name>Centrifugal Pumps</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>45-04</ID>
+							<Name>Pressurisation Pumps</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>45-05</ID>
+							<Name>Rotary Hand Pumps</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>45-06</ID>
+							<Name>Secondary Hot Water Circulating Pumps</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>45-07</ID>
+							<Name>Sewage or Drainage Pumps Submersible</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>45-08</ID>
+							<Name>Dry Well</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>45-09</ID>
+							<Name>Compressed Air</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>45-10</ID>
+							<Name>Extended Shaft</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>45-11</ID>
+							<Name>Domestic Hot Water Accelerators</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>45-12</ID>
+							<Name>Water Booster Pumps</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>45-13</ID>
+							<Name>Ogden Steam Pump</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>46</ID>
+					<Name>Refrigerant Distribution System</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>46-01</ID>
+							<Name>Refrigerant Distribution System</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>47</ID>
+					<Name>Room Air Conditioners</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>47-01</ID>
+							<Name>Room Air Conditioners</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>48</ID>
+					<Name>Sanitary and Waste Water Plumbing</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>48-01</ID>
+							<Name>Introductory Procedures - Sanitary and Waste Water Plumbing</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>48-02</ID>
+							<Name>Macerators</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>48-03</ID>
+							<Name>Interceptors - Petrol and Oil</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>48-04</ID>
+							<Name>Interceptors - Blowdown and Sumps</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>48-05</ID>
+							<Name>Sanitary, Waste Water Plumbing and Drains</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>48-06</ID>
+							<Name>Air Admittance Valves</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>48-07</ID>
+							<Name>Rainwater Downpipes and Gutters</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>48-08</ID>
+							<Name>Water Saving Devices and Meters</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>49</ID>
+					<Name>Security Systems</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>49-01</ID>
+							<Name>Intruder Alarms</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>50</ID>
+					<Name>Sensors and Switching Devices</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>50-01</ID>
+							<Name>Pre-Maintenance Procedures - Sensors and Switching Devices</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>50-02</ID>
+							<Name>Pressure Measurement Sensors - Static and Differential</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>50-03</ID>
+							<Name>Temperature Measurement Sensors</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>50-04</ID>
+							<Name>Relative Humidity Sensors</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>50-05</ID>
+							<Name>Absolute Humidity Sensors</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>50-06</ID>
+							<Name>Air Quality Sensors</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>50-07</ID>
+							<Name>Carbon Dioxide Sensors</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>50-08</ID>
+							<Name>Velocity Sensors</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>50-09</ID>
+							<Name>Occupancy and Light Sensors</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>50-10</ID>
+							<Name>Smoke Detectors</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>50-11</ID>
+							<Name>Gas Detector Sensors/Carbon Monoxide Sensors</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>51</ID>
+					<Name>Showers</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>51-01</ID>
+							<Name>Showers</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>51-02</ID>
+							<Name>Showers Booster Pumps</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>52</ID>
+					<Name>Smoke Extract</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>52-01</ID>
+							<Name>Introductory Procedures - Smoke Extract</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>52-02</ID>
+							<Name>Smoke Relief - Natural Smoke and Heat Exhaust Ventilators</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>52-03</ID>
+							<Name>Smoke Relief - Powered Smoke and Heat Exhaust Ventilators</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>52-04</ID>
+							<Name>Smoke Curtains</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>53</ID>
+					<Name>Solar Panels</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>53-01</ID>
+							<Name>Solar Hot Water Panels and Similar Collecting Devices</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>54</ID>
+					<Name>Split Systems Including Heat Pumps</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>54-01</ID>
+							<Name>Introductory Procedures - Split Systems Including Heat Pumps</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>54-02</ID>
+							<Name>DX Split Systems (With Gas, Electric or Hot Water Heaters)</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>54-03</ID>
+							<Name>Split Systems/Heat Pumps - Air-Cooled with Direct Expansion Evaporator (DX)</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>54-04</ID>
+							<Name>Data Centre Cooling Plant - Chilled Water</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>54-05</ID>
+							<Name>Data Centre Cooling Plant - DX</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>55</ID>
+					<Name>Starters</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>55-01</ID>
+							<Name>Starters - Drive Elements</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>55-02</ID>
+							<Name>Starters - Star Delta</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>55-03</ID>
+							<Name>Starters -Two Speed - Dual Wound</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>55-04</ID>
+							<Name>Starters - Two Speed - Pole Change</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>55-05</ID>
+							<Name>Starters - Reversing</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>55-06</ID>
+							<Name>Starters - Autotransformer</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>55-07</ID>
+							<Name>Starters - Quick Transition Electric Heater</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>55-08</ID>
+							<Name>Starters - Electrolyte Type</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>55-09</ID>
+							<Name>Starters - Air Break and Contactors</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>56</ID>
+					<Name>Storage Tanks</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>56-01</ID>
+							<Name>Introductory Procedures - Storage Tanks</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>56-02</ID>
+							<Name>Cold Water Storage Tanks and Cisterns</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>56-03</ID>
+							<Name>Ice Storage Systems</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>56-04</ID>
+							<Name>Storage Tanks - Liquefied Petroleum Gas (LPG)</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>56-05</ID>
+							<Name>Storage Tanks - Oil</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>56-06</ID>
+							<Name>Underground Oil Storage Tanks</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>56-07</ID>
+							<Name>Storage Silo - Wood Chip / Pellets</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>56-08</ID>
+							<Name>Storage Silo - Coal</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>57</ID>
+					<Name>Swimming Pools</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>57-01</ID>
+							<Name>Introductory Procedures - Swimming Pools</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>57-02</ID>
+							<Name>Swimming Pools</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>57-03</ID>
+							<Name>Swimming Pools - Filters</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>57-04</ID>
+							<Name>Swimming Pools - Pipework, Pumps, Heating etc</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>57-05</ID>
+							<Name>Swimming Pools - Winterisation</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>58</ID>
+					<Name>Switches</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>58-01</ID>
+							<Name>On/Off Switching Devices</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>58-02</ID>
+							<Name>Control Relays</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>58-03</ID>
+							<Name>Automatic Transfer Switch</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>59</ID>
+					<Name>Terminal Units</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>59-01</ID>
+							<Name>Terminal Units Vav - Self Powered</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>59-02</ID>
+							<Name>Terminal Units Vav - Fan Powered</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>59-03</ID>
+							<Name>Terminal Units Vav - Pneumatic Powered</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>59-04</ID>
+							<Name>Terminal Units - Constant Volume including Mixing</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>59-05</ID>
+							<Name>Terminal Units - Induction Units</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>59-06</ID>
+							<Name>Terminal Units - Fan Coil</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>59-07</ID>
+							<Name>Terminal Units - VRV Systems</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>59-08</ID>
+							<Name>Chilled Beams</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>60</ID>
+					<Name>Vacuum Systems</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>60-01</ID>
+							<Name>Vacuum Systems - General</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>60-02</ID>
+							<Name>Vacuum Tubes - Cash Handling</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>61</ID>
+					<Name>Valves</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>61-01</ID>
+							<Name>Valves - In General</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>61-02</ID>
+							<Name>Tap and Outlet Fittings</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>61-03</ID>
+							<Name>Service Valves</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>61-04</ID>
+							<Name>Combination Tap Assemblies, Mixing Valves/Taps</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>61-05</ID>
+							<Name>Shower Valves</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>62</ID>
+					<Name>Valves - Automatic Control</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>62-01</ID>
+							<Name>Pre-Maintenance Procedures - Valves - Automatic Control</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>62-02</ID>
+							<Name>Rotary Valves - Shoe or Slipper</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>62-03</ID>
+							<Name>Butterfly and Ball Valves</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>62-04</ID>
+							<Name>Self Acting and Thermal Valves</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>62-05</ID>
+							<Name>Solenoid Valves</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>62-06</ID>
+							<Name>Pressure Control Valves</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>62-07</ID>
+							<Name>Seat Valves</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>62-08</ID>
+							<Name>Reduced Pressure Zone (RPZ) Valves</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>63</ID>
+					<Name>Vehicle Access</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>63-01</ID>
+							<Name>Underfloor Heating Including Vehicle Access Ramps</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>63-02</ID>
+							<Name>Automatic Vehicle Barrier</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>64</ID>
+					<Name>Ventilation Ancillaries</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>64-01</ID>
+							<Name>Introductory Procedures - Ventilation Ancillaries</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>64-02</ID>
+							<Name>Motor Driven Exhaust Hose Reel</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>64-03</ID>
+							<Name>Spring Recoil Hose Reel</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>64-04</ID>
+							<Name>Mobile Dust Separator for Spot Extraction</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>64-05</ID>
+							<Name>Mobile Electronically Controlled Cyclone Separator</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>64-06</ID>
+							<Name>Vehicle Exhaust Rail System</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>64-07</ID>
+							<Name>Wood Dust Extraction</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>64-08</ID>
+							<Name>Laboratory Fume Cupboard</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>64-09</ID>
+							<Name>Ammonia Leak Detection System</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>64-10</ID>
+							<Name>Car Park Ventilation System</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>64-11</ID>
+							<Name>Powered Pressurisation Fan Systems</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>65</ID>
+					<Name>Water Treatment</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>65-01</ID>
+							<Name>Introductory Procedures - Water Treatment</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>65-02</ID>
+							<Name>Ion Exchange Plant - Base Exchange Softening - Commercial</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>65-03</ID>
+							<Name>Ion Exchange Plant - Base Exchange Softening - Domestic (capacity usually below 50 litres)</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>65-04</ID>
+							<Name>Special Water Treatment Systems</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>65-05</ID>
+							<Name>Filtration, Conditioning and pH Correction - Central Plant</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>65-06</ID>
+							<Name>Filtration and Conditioning - Point of Use</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>65-07</ID>
+							<Name>Reverse Osmosis</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>65-08</ID>
+							<Name>Ultraviolet Disinfection Unit</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>65-09</ID>
+							<Name>Ozonation Plant</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>65-10</ID>
+							<Name>Chemical Dosing</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>65-13</ID>
+							<Name>Introductory Procedures - Chlorine Dioxide Dosing for Domestic Low Level Injection</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>65-14</ID>
+							<Name>Chlorine Dioxide Low Dosing Domestic Water Systems</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>66</ID>
+					<Name>Whirlpools - Hydrotherapy</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>66-01</ID>
+							<Name>Whirlpool/Spa Baths</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>66-02</ID>
+							<Name>Hydrotherapy Pools</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>66-03</ID>
+							<Name>Steam Rooms and Humidifiers</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>70</ID>
+					<Name>High Voltage Works</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>70-01</ID>
+							<Name>Introductory Procedures - High Voltage Works</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>70-02</ID>
+							<Name>HV Packaged Substations</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>70-03</ID>
+							<Name>Oil Switchgear including Oil Circuit Breakers and Oil Switches</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>70-04</ID>
+							<Name>Non - Oil Switchgear</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>70-05</ID>
+							<Name>Vacuum Indoor Switchgear</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>70-06</ID>
+							<Name>Fluid Filled Transformer</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>70-07</ID>
+							<Name>Cast Resin Transformer</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>70-08</ID>
+							<Name>Ring Main Unit</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>70-09</ID>
+							<Name>HV Switchpanel</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>71</ID>
+					<Name>Sewage Treatment Works</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>71-01</ID>
+							<Name>Introductory Procedures - Sewage Treatment Works</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>71-02</ID>
+							<Name>Package Systems</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>71-03</ID>
+							<Name>Extended Aeration and Oxidation Ditch Systems</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>71-04</ID>
+							<Name>Drainage Fields</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>71-05</ID>
+							<Name>Settlement Tanks</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>71-06</ID>
+							<Name>Separator Systems</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>81</ID>
+					<Name>Access Equipment</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>81-01</ID>
+							<Name>Cable and Track/Rail Based Safety Systems</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>81-02</ID>
+							<Name>Connectors</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>81-03</ID>
+							<Name>Energy Absorbing Lanyards</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>81-04</ID>
+							<Name>Eyebolts used for Personal Fall Protection</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>81-05</ID>
+							<Name>Mobile Man Anchors</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>81-06</ID>
+							<Name>Retractable Fall Arrester</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>81-07</ID>
+							<Name>Rope Climbing/Abseiling/Steeplejack - Connectors</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>81-08</ID>
+							<Name>Rope Climbing/Abseiling/Steeplejack - Eyebolts used for Personal Fall Protection</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>81-09</ID>
+							<Name>Rope Climbing/Abseiling/Steeplejack - Personal Suspension and Access Systems</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>82</ID>
+					<Name>Lifts</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>82-01</ID>
+							<Name>Vertical Platform Lifts</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>82-02</ID>
+							<Name>Escalator and Moving Walkways</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>82-03</ID>
+							<Name>Hydraulic Lifts</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>82-04</ID>
+							<Name>Inclined Platform Lift and Stair Riser</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>82-05</ID>
+							<Name>Traction Lifts</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>86</ID>
+					<Name>Workshop Equipment</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>86-01</ID>
+							<Name>Laser Cutting Machine</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>86-02</ID>
+							<Name>Machine Tools - General</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>86-03</ID>
+							<Name>Pedestal Grinder</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>86-04</ID>
+							<Name>Pillar Drill</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>87</ID>
+					<Name>Operational</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>87-01</ID>
+							<Name>Asbestos Register</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>87-02</ID>
+							<Name>Emergency and Panic Escape Doors</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>87-03</ID>
+							<Name>Emergency Lighting - Central Power Supply</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>87-04</ID>
+							<Name>Emergency Lighting - Maintained Fittings</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>87-05</ID>
+							<Name>Fire Alarm System - Daily and Weekly Inspections</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>87-06</ID>
+							<Name>Fire Blankets</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>87-07</ID>
+							<Name>Fire Door Automatic Release Mechanisms</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>87-08</ID>
+							<Name>Fire Evacuation Drills</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>87-09</ID>
+							<Name>Fire Exit Signage</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>87-10</ID>
+							<Name>Fire Hydrant - Weekly Checks</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>87-11</ID>
+							<Name>Gas Extinguishing Systems - Weekly, Monthly and 3 Monthly Checks</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>87-12</ID>
+							<Name>Hose Reels - Daily, Monthly and Annual Checks</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>87-13</ID>
+							<Name>Insurance Periodic Inspections</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>87-14</ID>
+							<Name>Meter Reading - Electric</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>87-15</ID>
+							<Name>Meter Reading - Gas</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>87-16</ID>
+							<Name>Meter Reading - Oil</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>87-17</ID>
+							<Name>Meter Reading - Water</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>87-18</ID>
+							<Name>Oil Storage Tanks - Above Ground</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>87-19</ID>
+							<Name>Plant Room Inspections</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>87-20</ID>
+							<Name>Portable Appliance Testing (PAT) - User Checks</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>87-21</ID>
+							<Name>Portable Fire Extinguishers - Daily Checks</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>87-22</ID>
+							<Name>Smoke Control Systems - Weekly, 3 Monthly and Annual Testing</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>87-23</ID>
+							<Name>Sprinkler Systems - Daily Inspections</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>87-24</ID>
+							<Name>Steam Boilers - Daily and Weekly Checks and Tests</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>87-25</ID>
+							<Name>Visual Inspections of Voids, Plenums, Cavities, Undercrofts and Risers</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>87-26</ID>
+							<Name>Water Risk Assessment (Legionella)</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>87-27</ID>
+							<Name>Water Sampling and Testing - Closed-Circuit Systems</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>90</ID>
+					<Name>Cabinets, Counters and Cupboards</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>90-01</ID>
+							<Name>Bain Marie/Counter - Electric</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>90-02</ID>
+							<Name>Bain Marie/Counter - Gas</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>90-03</ID>
+							<Name>Cup Warmer</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>90-04</ID>
+							<Name>Heat Lamps</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>90-05</ID>
+							<Name>Heated Mobile Trolley</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>90-06</ID>
+							<Name>Hot Cupboard - Electric</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>90-07</ID>
+							<Name>Hot Cupboard - Gas</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>90-08</ID>
+							<Name>Hot Display Counter - Electric</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>90-09</ID>
+							<Name>Hot Plate - Electric</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>90-10</ID>
+							<Name>Plate Warmer</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>90-11</ID>
+							<Name>Servery</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>90-12</ID>
+							<Name>Tray Conveyors</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>91</ID>
+					<Name>Coffee Machines</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>91-01</ID>
+							<Name>Coffee Machine (Non-Pressurised) - Electric</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>91-02</ID>
+							<Name>Coffee Machine (Non-Pressurised) - Gas</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>91-03</ID>
+							<Name>Coffee Machine (Pressurised) - Electric</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>91-04</ID>
+							<Name>Coffee Machine (Pressurised) - Gas</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>92</ID>
+					<Name>Cold Rooms and Food Storage</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>92-01</ID>
+							<Name>Fridges, Freezers and Blast Chillers</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>92-02</ID>
+							<Name>Refrigerated Milk Dispenser</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>93</ID>
+					<Name>Fat Fryers</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>93-01</ID>
+							<Name>Fat Fryer (Open Topped) - Electric</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>93-02</ID>
+							<Name>Fat Fryer (Open Topped) - Gas</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>94</ID>
+					<Name>Griddles, Grills and Salamanders</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>94-01</ID>
+							<Name>Griddle/Grill - Electric</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>94-02</ID>
+							<Name>Griddle/Grill - Gas</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>94-03</ID>
+							<Name>Salamander - Electric</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>94-04</ID>
+							<Name>Salamander - Gas</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>95</ID>
+					<Name>Kettles, Pans and Water Boilers</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>95-01</ID>
+							<Name>Boiling Pan - Electric</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>95-02</ID>
+							<Name>Bratt Pan - Electric</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>95-03</ID>
+							<Name>Bratt Pan - Gas</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>95-04</ID>
+							<Name>Kettle (Non-Pressurised)</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>95-05</ID>
+							<Name>Kettle (Pressurised)</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>95-06</ID>
+							<Name>Tilting Kettle (Non Pressurised) - Electric</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>95-07</ID>
+							<Name>Tilting Kettle (Non Pressurised) - Gas</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>95-08</ID>
+							<Name>Tilting Kettle (Pressurised) - Electric</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>95-09</ID>
+							<Name>Tilting Kettle (Pressurised) - Gas</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>95-10</ID>
+							<Name>Water Boiler (Non Pressurised) - Electric</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>95-11</ID>
+							<Name>Water Boiler (Non Pressurised) - Gas</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>95-12</ID>
+							<Name>Water Boiler (Pressurised) - Electric</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>95-13</ID>
+							<Name>Water Boiler (Pressurised) - Gas</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>96</ID>
+					<Name>Kitchen Equipment</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>96-01</ID>
+							<Name>Coffee Grinder</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>96-02</ID>
+							<Name>Crepe Machine</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>96-03</ID>
+							<Name>Degreasing Tank - Electrical</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>96-04</ID>
+							<Name>Dishwashers</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>96-05</ID>
+							<Name>Dough Kneader - Electric</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>96-06</ID>
+							<Name>Dough/Pastry Sheeter</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>96-07</ID>
+							<Name>Food Processor</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>96-08</ID>
+							<Name>Frozen Yoghurt Machine</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>96-09</ID>
+							<Name>Gas Appliances - Kitchens</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>96-10</ID>
+							<Name>Glazing Machine</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>96-11</ID>
+							<Name>Hand Held Stick Blender</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>96-12</ID>
+							<Name>Ice Cream Machine</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>96-13</ID>
+							<Name>Insect Killer</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>96-14</ID>
+							<Name>Juice Dispenser</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>96-15</ID>
+							<Name>Juice Maker</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>96-16</ID>
+							<Name>LPG BBQ - Free Standing</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>96-17</ID>
+							<Name>Mixer - Electric</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>96-18</ID>
+							<Name>Pasta Maker - Electric</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>96-19</ID>
+							<Name>Pasta Roller</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>96-20</ID>
+							<Name>Pot Wash Scrubber</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>96-21</ID>
+							<Name>Rice Cooker - Electric - Bench Standing</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>96-22</ID>
+							<Name>Salad Washer</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>96-23</ID>
+							<Name>Sandwich Maker</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>96-24</ID>
+							<Name>Scales</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>96-25</ID>
+							<Name>Slush Machine</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>96-26</ID>
+							<Name>Toaster - Conveyor/Rotary</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>96-27</ID>
+							<Name>Toaster - Pop Up</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>96-28</ID>
+							<Name>Utensil Washer</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>96-29</ID>
+							<Name>Waste Disposal Unit</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>97</ID>
+					<Name>Ovens, Hobs and Ranges</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>97-01</ID>
+							<Name>Bake Off Oven - Electric</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>97-02</ID>
+							<Name>Bake Off Oven - Gas</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>97-03</ID>
+							<Name>Baked Potato Oven - Electric</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>97-04</ID>
+							<Name>Bread Oven - Electric</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>97-05</ID>
+							<Name>Bread Oven - Gas</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>97-06</ID>
+							<Name>Bulls Eye Range - Gas</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>97-07</ID>
+							<Name>Combination Oven - Electric</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>97-08</ID>
+							<Name>Combination Oven - Gas</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>97-09</ID>
+							<Name>Convection Oven - Electric</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>97-10</ID>
+							<Name>Convection Oven - Gas</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>97-11</ID>
+							<Name>Deck Oven - Electric</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>97-12</ID>
+							<Name>Deck Oven - Gas</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>97-13</ID>
+							<Name>Hobs - Electric</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>97-14</ID>
+							<Name>Hobs - Gas</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>97-15</ID>
+							<Name>Microwave Combi Oven</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>97-16</ID>
+							<Name>Microwave Oven</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>97-17</ID>
+							<Name>Rack Oven - Electric</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>97-18</ID>
+							<Name>Rack Oven - Gas</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>97-19</ID>
+							<Name>Range - Solid Top - Electric</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>97-20</ID>
+							<Name>Range - Solid Top - Gas</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>97-21</ID>
+							<Name>Rotisserie - Electric</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>97-22</ID>
+							<Name>Rotisserie - Gas</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>97-23</ID>
+							<Name>Steaming Oven - Electric</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>97-24</ID>
+							<Name>Steaming Oven - Gas</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>97-25</ID>
+							<Name>Steaming Oven (Pressurised) - Electric</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>97-26</ID>
+							<Name>Steaming Oven (Pressurised) - Gas</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>98</ID>
+					<Name>Peelers and Slicers</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>98-01</ID>
+							<Name>Bread Slicer</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>98-02</ID>
+							<Name>Meat Slicer</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>98-03</ID>
+							<Name>Potato Chipper</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>98-04</ID>
+							<Name>Potato Peeler</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>98-05</ID>
+							<Name>Vegetable Slicer/Prep Machine</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>99</ID>
+					<Name>Filters</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>99-01</ID>
+							<Name>Fat Filter</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+			</Items>
+		</System>
+	</Classification>
+</BuildingInformation>
