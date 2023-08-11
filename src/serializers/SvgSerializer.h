@@ -521,6 +521,8 @@ protected:
 	bool emit_building_storeys_;
 	bool no_css_;
 	bool unify_inputs_;
+	bool mirror_y_;
+	bool mirror_x_;
 
 	int profile_threshold_;
 
@@ -572,6 +574,8 @@ public:
 		, polygonal_(false)
 		, emit_building_storeys_(true)
 		, no_css_(false)
+		, mirror_y_(false)
+		, mirror_x_(false)
 		, unify_inputs_(false)
 		, profile_threshold_(-1)
 		, file(0)
@@ -711,6 +715,22 @@ public:
 
 	int getProfileThreshold() const {
 		return profile_threshold_;
+	}
+
+	void setMirrorY(bool b) {
+		mirror_y_ = b;
+	}
+
+	bool getMirrorY() const {
+		return mirror_y_;
+	}
+
+	void setMirrorX(bool b) {
+		mirror_x_ = b;
+	}
+
+	bool getMirrorX() const {
+		return mirror_x_;
 	}
 
 protected:
