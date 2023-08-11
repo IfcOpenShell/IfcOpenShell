@@ -219,10 +219,10 @@ class RefreshBrickViewer(bpy.types.Operator, Operator):
     bl_label = "Refresh Brick Viewer"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Refresh the list view"
-    split_screen: bpy.props.BoolProperty(name="Split Screen", default=False, options={"HIDDEN"})
 
     def _execute(self, context):
-        core.refresh_brick_viewer(tool.Brick, split_screen=self.split_screen)
+        core.refresh_brick_viewer(tool.Brick)
+        core.refresh_brick_viewer(tool.Brick, split_screen=True)
 
 
 class RemoveBrick(bpy.types.Operator, Operator):
