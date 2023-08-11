@@ -183,7 +183,6 @@ class Cost:
     def get_cost_value_unit_component(cls): pass
     def get_direct_cost_item_products(cls): pass
     def get_highlighted_cost_item(cls): pass
-    def get_highlighted_cost_item(cls): pass
     def get_products(cls, related_object_type): pass
     def get_schedule_cost_items(cls, cost_schedule): pass
     def get_units(cls): pass
