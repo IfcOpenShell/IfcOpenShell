@@ -156,14 +156,18 @@ class Cost(blenderbim.core.tool.Cost):
     @classmethod
     def get_highlighted_cost_item(cls):
         props = bpy.context.scene.BIMCostProperties
+        if not props.active_cost_schedule_id:
+            return
         if props.active_cost_item_index < len(props.cost_items):
             return tool.Ifc.get().by_id(props.cost_items[props.active_cost_item_index].ifc_definition_id)
-        return None
+        return
 
     @classmethod
     def load_cost_item_types(cls, cost_item=None):
         if not cost_item:
-            return
+            cost_item = cls.get_highlighted_cost_item()
+            if not cost_item:
+                return
         props = bpy.context.scene.BIMCostProperties
         props.cost_item_type_products.clear()
         # TODO implement process and resource types
@@ -220,7 +224,7 @@ class Cost(blenderbim.core.tool.Cost):
         selected_quantitites = []
         unit = ""
         for quantities in ifcopenshell.util.element.get_psets(product, qtos_only=True).values():
-            for qto in (tool.Ifc.get().by_id(quantities["id"]).Quantities or []):
+            for qto in tool.Ifc.get().by_id(quantities["id"]).Quantities or []:
                 for quantity in cost_item.CostQuantities:
                     if quantity == qto:
                         selected_quantitites.append(quantity)
@@ -509,8 +513,9 @@ class Cost(blenderbim.core.tool.Cost):
         import subprocess
         import os
         import sys
+
         if filepath:
-            path=filepath
+            path = filepath
         else:
             path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "build", "cost_schedules")
 
@@ -518,6 +523,7 @@ class Cost(blenderbim.core.tool.Cost):
             os.makedirs(path)
         if format == "CSV":
             from ifc5d.ifc5Dspreadsheet import Ifc5DCsvWriter
+
             writer = Ifc5DCsvWriter(file=tool.Ifc.get(), output=path, cost_schedule=cost_schedule)
             writer.write()
         elif format == "ODS":
@@ -528,7 +534,7 @@ class Cost(blenderbim.core.tool.Cost):
         elif format == "XLSX":
             from ifc5d.ifc5Dspreadsheet import Ifc5DXlsxWriter
 
-            writer = Ifc5DXlsxWriter(file=tool.Ifc.get(), output=path, cost_schedule=cost_schedule )
+            writer = Ifc5DXlsxWriter(file=tool.Ifc.get(), output=path, cost_schedule=cost_schedule)
             writer.write()
         try:
             if path:
@@ -539,7 +545,7 @@ class Cost(blenderbim.core.tool.Cost):
                 elif sys.platform == "linux":
                     subprocess.call(["xdg-open", path])
         except:
-            return 'Could not open file location'
+            return "Could not open file location"
 
     @classmethod
     def get_units(cls):
@@ -565,7 +571,6 @@ class Cost(blenderbim.core.tool.Cost):
             if unit.get_info().get("Prefix", None):
                 name = f"{unit.Prefix} {name}"
             return f"{unit.UnitType} / {name}"
-
 
     @classmethod
     def get_cost_schedule(cls, cost_item):
@@ -649,6 +654,8 @@ class Cost(blenderbim.core.tool.Cost):
 
     @classmethod
     def toggle_cost_item_parent_change(cls, cost_item=None):
+        if not cost_item:
+            return
         props = bpy.context.scene.BIMCostProperties
         if props.change_cost_item_parent:
             props.active_cost_item_id = cost_item.id()
@@ -681,12 +688,14 @@ class Cost(blenderbim.core.tool.Cost):
         if product:
             cost_items = ifcopenshell.util.cost.get_cost_items_for_product(product)
         if pset:
+
             def get_products_from_pset(pset):
                 products = []
                 for rel in pset.DefinesOccurrence or []:
                     if rel.is_a("IfcRelDefinesByProperties"):
                         products.extend(rel.RelatedObjects)
                 return products
+
             products = get_products_from_pset(pset)
             for product in products or []:
                 cost_items.extend(ifcopenshell.util.cost.get_cost_items_for_product(product))
