@@ -20,22 +20,39 @@
 cmake_minimum_required(VERSION 3.1.3)
 
 message("Running CMakeLists.txt in /src/qtviewer")
-message("Provide the path to Qt5 via CMAKE_PREFIX_PATH")
 
-find_package(Qt5 COMPONENTS Core Gui OpenGL Widgets REQUIRED)
+# Specify the Qt version and components to use
+set(QT_VERSION 6 CACHE STRING "Qt version")
+set(QT_COMPONENTS Core Gui OpenGL OpenGLWidgets Widgets CACHE STRING "Qt components")
+
+find_package(Qt${QT_VERSION} COMPONENTS ${QT_COMPONENTS} REQUIRED PATHS ${QT_DIR})
+
+if(Qt${QT_VERSION}_FOUND)
+    message(STATUS "Found Qt Version: ${Qt${QT_VERSION}_VERSION}")
+endif()
 
 add_executable(QtViewer
-        ../../src/qtviewer/mainwindow.h
-        ../../src/qtviewer/mainwindow.cpp
-        ../../src/qtviewer/main.cpp
+    IfcViewerWidget.h
+    IfcViewerWidget.cpp
+    ParseIfcFile.h
+    ParseIfcFile.cpp
+    MainWindow.h
+    MainWindow.cpp
+    main.cpp
 )
 
 set_target_properties(QtViewer PROPERTIES
-	AUTOMOC On
+    AUTOMOC On
+    WIN32_EXECUTABLE ON
+    MACOSX_BUNDLE ON
 )
 
 target_link_libraries(QtViewer
-	${IFCLIBS}
-	Qt5::Core Qt5::Gui Qt5::OpenGL Qt5::Widgets
-	${OPENCASCADE_LIBRARIES}
+    ${IFCLIBS}
+    Qt${QT_VERSION}::Core 
+    Qt${QT_VERSION}::Gui 
+    Qt${QT_VERSION}::OpenGL 
+    Qt${QT_VERSION}::OpenGLWidgets 
+    Qt${QT_VERSION}::Widgets
+    ${OPENCASCADE_LIBRARIES}
 )
