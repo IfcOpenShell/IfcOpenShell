@@ -1401,3 +1401,12 @@ class CreateBaseline(bpy.types.Operator, tool.Ifc.Operator):
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
+
+
+class ClearPreviousAnimation(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.clear_previous_animation"
+    bl_label = "Clear Previous Animation"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.clear_previous_animation(tool.Sequence)
