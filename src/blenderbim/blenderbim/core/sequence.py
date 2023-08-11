@@ -584,3 +584,6 @@ def create_baseline(ifc, sequence, work_schedule, name):
 
 def clear_previous_animation(sequence):
     sequence.clear_objects_animation(include_blender_objects=False)
+
+def add_animation_camera(sequence):
+    sequence.add_animation_camera()
