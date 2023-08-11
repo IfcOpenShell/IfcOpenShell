@@ -12,9 +12,8 @@ if [ `uname` == Darwin ]; then
   export LDFLAGS="$LDFLAGS  -Wl,-flat_namespace,-undefined,suppress"
 fi
 
-export SCHEMA_VERSIONS="2x3;4;4x3;4x3_add1"
-
 cmake -G Ninja \
+ -DSCHEMA_VERSIONS="2x3;4;4x1;4x3;4x3_add1" \
  -DCMAKE_BUILD_TYPE=Release \
  -DCMAKE_INSTALL_PREFIX=$PREFIX \
   ${CMAKE_PLATFORM_FLAGS[@]} \
