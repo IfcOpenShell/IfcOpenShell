@@ -530,6 +530,7 @@ def disable_editing_task_animation_colors(sequence):
 
 
 def visualise_work_schedule_date_range(sequence, work_schedule=None):
+    sequence.clear_objects_animation(include_blender_objects=False)
     settings = sequence.get_animation_settings()
     if settings:
         product_frames = sequence.get_animation_product_frames(work_schedule, settings)
@@ -580,3 +581,6 @@ def reorder_task_nesting(ifc, sequence, task, new_index):
 
 def create_baseline(ifc, sequence, work_schedule, name):
     ifc.run("sequence.create_baseline", work_schedule=work_schedule, name=name)
+
+def clear_previous_animation(sequence):
+    sequence.clear_objects_animation(include_blender_objects=False)
