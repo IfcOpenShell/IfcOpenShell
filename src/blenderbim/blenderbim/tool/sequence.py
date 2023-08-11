@@ -1226,21 +1226,23 @@ class Sequence(blenderbim.core.tool.Sequence):
                     start,
                     finish,
                     props.speed_animation_frames,
-                    isodate.parse_duration(props.speed_real_duration),
+                    ifcopenshell.util.date.parse_duration(props.speed_real_duration)
                 )
             elif props.speed_types == "DURATION_SPEED":
+                animation_duration = ifcopenshell.util.date.parse_duration(props.speed_animation_duration)
+                real_duration = ifcopenshell.util.date.parse_duration(props.speed_real_duration)
                 return calculate_using_duration(
                     start,
                     finish,
                     fps,
-                    isodate.parse_duration(props.speed_animation_duration),
-                    isodate.parse_duration(props.speed_real_duration),
+                    animation_duration,
+                    real_duration,
                 )
             elif props.speed_types == "MULTIPLIER_SPEED":
                 return calculate_using_multiplier(
                     start,
                     finish,
-                    fps,
+                    1,
                     props.speed_multiplier,
                 )
 
