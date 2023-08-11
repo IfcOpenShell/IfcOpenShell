@@ -1867,7 +1867,7 @@ class RemoveSchedule(bpy.types.Operator, Operator):
     schedule: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.remove_document(tool.Ifc, tool.Drawing, "SCHEDULE", schedule=tool.Ifc.get().by_id(self.schedule))
+        core.remove_document(tool.Ifc, tool.Drawing, "SCHEDULE", document=tool.Ifc.get().by_id(self.schedule))
 
 
 class OpenSchedule(bpy.types.Operator, Operator):
