@@ -1,0 +1,3509 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<BuildingInformation>
+	<Classification>
+		<System>
+			<Name>BB/SfB (3/4 cijfers)</Name>
+			<EditionVersion>1990</EditionVersion>
+			<EditionDate>
+				<Year>2017</Year>
+				<Month>8</Month>
+				<Day>31</Day>
+			</EditionDate>
+			<Description>Kies hieronder een BB/SfB code. Deze code wordt als ifc-classificatie aan het geselecteerde element toegevoegd.
+The BB/SfB (3/4 digits) standard defines a classification and information coding system for the AEC industry in Belgium.</Description>
+			<Source/>
+			<Items>
+				<Item>
+					<ID>0-</ID>
+					<Name>TERREINEN, PROJECTEN</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children/>
+				</Item>
+				<Item>
+					<ID>1-</ID>
+					<Name>BODEM, ONDERBOUW</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>11-</ID>
+							<Name>BODEM</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>11.1</ID>
+									<Name>BODEMRELIËF, BODEMHELLING</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>11.3</ID>
+									<Name>GRONDSAMENSTELLING</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>11.4</ID>
+									<Name>GRONDWATER, WATER IN GROND</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>11.5</ID>
+									<Name>BESTAANDE ONDERGRONDSE VOORZIENINGEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>11.8</ID>
+									<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 11-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>11.9</ID>
+									<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 11-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>13-</ID>
+							<Name>LAGEN OP VOLLE GROND, VLOEREN OP VOLLE GROND</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>13.1</ID>
+									<Name>VLOEREN OP VOLLE GROND</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>13.4</ID>
+									<Name>BEPLANTE EN ONBEPLANTE ZACHTE LAGEN OP VOLLE GROND</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>13.6</ID>
+									<Name>LAGEN ONDER WATER</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>13.8</ID>
+									<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 13-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>13.9</ID>
+									<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 13-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>16-</ID>
+							<Name>FUNDERINGEN, KEERMUREN</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>16.2</ID>
+									<Name>KEERMUREN‚ KELDERMUREN IN CONTACT MET GROND</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>16.3</ID>
+									<Name>WATERKERENDE ELEMENTEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>16.4</ID>
+									<Name>FUNDERINGEN, FUNDERINGEN OP ZOLEN, FUNDERINGEN OP PUTTEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>16.8</ID>
+									<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 16-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>16.9</ID>
+									<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 16-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>17-</ID>
+							<Name>PAALFUNDERINGEN, DAMPLANKEN</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>17.1</ID>
+									<Name>DAMPLANKEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>17.2</ID>
+									<Name>PAALFUNDERINGEN GEREALISEERD MET GRONDUITGRAVINGEN EN IN SITU GESTORT</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>17.3</ID>
+									<Name>PAALFUNDERLNGEN GEREALISEERD MET GRONDVERDRINGNNG EN GEPREFABRICEERD</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>17.4</ID>
+									<Name>PAALFUNDERINGEN GEREALISEERD MET GRONDVERDRINGING EN IN SITU GEVORMD</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>17.8</ID>
+									<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 17-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>17.9</ID>
+									<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 17-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>18</ID>
+							<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 1-</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>19</ID>
+							<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 1-</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>2-</ID>
+					<Name>PRIMAIRE ELEMENTEN VAN BOVENBOUW</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>2.-</ID>
+							<Name>STRUCTUREN INGEDEELD VOLGENS CONSTRUCTIEF PRINCIPE</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>2.1</ID>
+									<Name>STRUCTUREN MET DRAGENDE WANDEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>2.2</ID>
+									<Name>SKELETSTRUCTUUR</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>2.3</ID>
+									<Name>CELSTRUCTUREN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>2.4</ID>
+									<Name>VLIESSTRUCTUREN, GEODETISCHE STRUCTUREN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>2.5</ID>
+									<Name>SCHAALSTRUCTUREN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>2.6</ID>
+									<Name>STRUCTUREN OP TREK BELAST</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>2.8</ID>
+									<Name>HOGER NIET GENOEMDE STRUCTUREN IN 2.-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>2.9</ID>
+									<Name>HOOFDDELEN VAN EEN STRUCTUUR</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>21-</ID>
+							<Name>BUITENWANDEN</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>21.1</ID>
+									<Name>DRAGENDE BUITENWANDEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>21.3</ID>
+									<Name>NIET-DRAGENDE BUITENWAND</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>21.4</ID>
+									<Name>GORDIJNGEVELS</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>21.6</ID>
+									<Name>BUITENWANDEN OPGEBOUWD UIT DRAAGSTRUCTUUR EN BEKLEDING OF INVULLING</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>21.8</ID>
+									<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 21-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>21.9</ID>
+									<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 21-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>22-</ID>
+							<Name>BINNENWANDEN</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>22.1</ID>
+									<Name>DRAGENDE BINNENWANDEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>22.3</ID>
+									<Name>NIET-DRAGENDE BINNENWANDEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>22.6</ID>
+									<Name>BINNENWANDEN OPGEBOUWD UIT DRAAGSTRUCTUUR MET BEKLEDING OF INVULLING</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>22.8</ID>
+									<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 22-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>22.9</ID>
+									<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 22-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>23-</ID>
+							<Name>VLOEREN, GALERIJEN, BALKONS, LOOPBRUGGEN</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>23.2</ID>
+									<Name>MONOLITISCHE VLOEREN EN PLAATVLOEREN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>23.4</ID>
+									<Name>SAMENGESTELDE VLOEREN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>23.7</ID>
+									<Name>GALERIJEN, BALKONS, LOOPBRUGGEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>23.8</ID>
+									<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 23-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>23.9</ID>
+									<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 23-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>24-</ID>
+							<Name>ELEMENTEN VOOR VERTICALE CIRCULATIE, TRAPPEN</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>24.1</ID>
+									<Name>RECHTE TRAP ZONDER RICHTINGSVERANDERING (MET OF ZONDER TUSSENBORDES)</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>24.3</ID>
+									<Name>RECHTE TRAP MET RICHTINGSVERANDERING (VIA BORDES OÍ VERDREVEN TREDEN)</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>24.4</ID>
+									<Name>WENTELTRAPPEN, SPIRAALTRAPPEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>24.5</ID>
+									<Name>TRAPPEN VOLGENS ANDER INDELINGSCRITERTUM</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>24.6</ID>
+									<Name>VASTE LADDERS, KLIMIJZERS, GLĲPALEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>24.7</ID>
+									<Name>HELLINGEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>24.8</ID>
+									<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 24-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>24.9</ID>
+									<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 24-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>27-</ID>
+							<Name>DAKEN</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>27.1/27.5</ID>
+									<Name>DAKEN VOLGENS VORM</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>27.1</ID>
+											<Name>PLATTE DAKEN, DAKTERRASSEN</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>27.2</ID>
+											<Name>HELLENDE DAKEN</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>27.2-</ID>
+											<Name>HELLENDE DAKEN</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children>
+												<Item>
+													<ID>27.21</ID>
+													<Name>MET EEN DAKSCHILD</Name>
+													<Description/>
+													<Availability>ModelElement</Availability>
+													<Children/>
+												</Item>
+												<Item>
+													<ID>27.22</ID>
+													<Name>MET TWEE DAKSCHILDEN</Name>
+													<Description/>
+													<Availability>ModelElement</Availability>
+													<Children/>
+												</Item>
+												<Item>
+													<ID>27.23</ID>
+													<Name>MET VIER DAKSCHILDEN</Name>
+													<Description/>
+													<Availability>ModelElement</Availability>
+													<Children/>
+												</Item>
+												<Item>
+													<ID>27.28</ID>
+													<Name>HELLENDE DAKEN NIET GENOEMD IN 27.2-</Name>
+													<Description/>
+													<Availability>ModelElement</Availability>
+													<Children/>
+												</Item>
+											</Children>
+										</Item>
+										<Item>
+											<ID>27.4</ID>
+											<Name>DAKEN MET GEPLOOIDE PLAATSTRUCTUUR</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>27.5</ID>
+											<Name>DAKEN MET EEN VORM NIET GENOEMD IN 27.1/27.4</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>27.6/27.7</ID>
+									<Name>DAKEN VOLGENS STRUCTUREEL PRINCIPE</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>27.6</ID>
+											<Name>DAKSTRUCTUREN ZONDER UITKRAGING</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>27.7</ID>
+											<Name>DAKSTRUCTUREN MET UITKRAGING</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>27.8</ID>
+									<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 27-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>27.9</ID>
+									<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 27-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>28-</ID>
+							<Name>DRAAGSTRUCTUREN VAN GEBOUWEN, HOGER NIET GENOEMDE ELEMENTEN VAN 2-</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>28.2/28.7</ID>
+									<Name>DRAAGSTRUCTUREN VAN GEBOUWEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>28.2</ID>
+											<Name>KOLOM-BALKSTRUCTUUR, PORTIEKSTRUCTUUR</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>28.3</ID>
+											<Name>KOLOM-VLOERSTRUCTUUR</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>28.5</ID>
+											<Name>KOLOM-KABELSTRUCTUUR</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>28.6</ID>
+											<Name>RUIMTELIJKE DRAAGSTRUCTUUR</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>28.7</ID>
+											<Name>DRAAGSTRUCTUREN HOGER NIET GENOEMD IN 28.2/28.6</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>28.8</ID>
+									<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 28-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>28.9</ID>
+									<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 28-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>29</ID>
+							<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 2-</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>3-</ID>
+					<Name>SECUNDAIRE ELEMENTEN, AFSLUITENDE ELEMENTEN, VAN DE BOVENBOUW</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>31-</ID>
+							<Name>SECUNDAIRE ELEMENTEN VOOR BUITENWANDEN</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>31.3</ID>
+									<Name>DEUREN, RAMEN, RAAM-DEUREN, RAAM-EN-DEUR-COMBINATIES EN OVEREENKOMSTIGE OPENINGEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>31.3-</ID>
+									<Name>RAAM-DEUREN, OPENINGEN VOOR RAAM-DEUREN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>31.31</ID>
+											<Name>RAAM-DEUREN, OPENINGEN VOOR RAAM-DEUREN (VAST)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>31.32</ID>
+											<Name>RAAM-DEUREN, OPENINGEN VOOR RAAM-DEUREN (DRAAIEND‚ KLAPPEND, VALLEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>31.33</ID>
+											<Name>RAAM-DEUREN, OPENINGEN VOOR RAAM-DEUREN (PIVOTEREND, WENTELEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>31.34</ID>
+											<Name>RAAM-DEUREN, OPENINGEN VOOR RAAM-DEUREN (HORIZONTAAL SCHUIVEND EN/OF VOUWEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>31.35</ID>
+											<Name>RAAM-DEUREN, OPENINGEN VOOR RAAM-DEUREN (VERTICAAL SCHUIVEND EN/OF VOUWEND, VERTICAAL ROLLEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>31.36</ID>
+											<Name>RAAM-DEUREN, OPENINGEN VOOR RAAM-DEUREN (OMHOOG KANTELEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>31.38</ID>
+											<Name>RAAM-DEUREN, OPENINGEN VOOR RAAM-DEUREN (OPENINGSWIJZE NIET GENOEMD IN 31.31/31.36)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>31.39</ID>
+											<Name>RAAM-DEUREN, OPENINGEN VOOR RAAM-DEUREN (ONDERDELEN EN HULPSTUKKEN VOOR SCHRIJNWERK VOOR OPENINGEN IN BOVENBOUW)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>31.4</ID>
+									<Name>RAMEN, OPENINGEN VOOR RAMEN, RAAMOPENINGEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>31.4-</ID>
+									<Name>RAMEN, OPENINGEN VOOR RAMEN, RAAMOPENINGEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>31.41</ID>
+											<Name>31.41 RAMEN, OPENINGEN VOOR RAMEN, RAAMOPENINGEN (VAST)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>31.42</ID>
+											<Name>RAMEN, OPENINGEN VOOR RAMEN, RAAMOPENINGEN (DRAAIEND‚ KLAPPEND, VALLEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>31.43</ID>
+											<Name>RAMEN, OPENINGEN VOOR RAMEN, RAAMOPENINGEN (PIVOTEREND, WENTELEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>31.44</ID>
+											<Name>RAMEN, OPENINGEN VOOR RAMEN, RAAMOPENINGEN (HORIZONTAAL SCHUIVEND EN/OF VOUWEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>31.45</ID>
+											<Name>RAMEN, OPENINGEN VOOR RAMEN, RAAMOPENINGEN (VERTICAAL SCHUIVEND EN/OF VOUWEND, VERTICAAL ROLLEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>31.46</ID>
+											<Name>RAMEN, OPENINGEN VOOR RAMEN, RAAMOPENINGEN (OMHOOG KANTELEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>31.48</ID>
+											<Name>RAMEN, OPENINGEN VOOR RAMEN, RAAMOPENINGEN (OPENINGSWIJZE NIET GENOEMD IN 31.41/31.46)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>31.49</ID>
+											<Name>RAMEN, OPENINGEN VOOR RAMEN, RAAMOPENINGEN (ONDERDELEN EN HULPSTUKKEN VOOR SCHRIJNWERK VOOR OPENINGEN IN BOVENBOUW)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>31.5</ID>
+									<Name>31.5 DEUREN, OPENINGEN VOOR DEUREN, DOORGANGEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>31.5-</ID>
+									<Name>31.5 DEUREN, OPENINGEN VOOR DEUREN, DOORGANGEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>31.51</ID>
+											<Name>DEUREN, OPENINGEN VOOR DEUREN, DOORGANGEN (VAST)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>31.52</ID>
+											<Name>DEUREN, OPENINGEN VOOR DEUREN, DOORGANGEN (DRAAIEND‚ KLAPPEND, VALLEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>31.53</ID>
+											<Name>DEUREN, OPENINGEN VOOR DEUREN, DOORGANGEN (PIVOTEREND, WENTELEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>31.54</ID>
+											<Name>DEUREN, OPENINGEN VOOR DEUREN, DOORGANGEN (HORIZONTAAL SCHUIVEND EN/OF VOUWEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>31.55</ID>
+											<Name>DEUREN, OPENINGEN VOOR DEUREN, DOORGANGEN (VERTICAAL SCHUIVEND EN/OF VOUWEND, VERTICAAL ROLLEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>31.56</ID>
+											<Name>DEUREN, OPENINGEN VOOR DEUREN, DOORGANGEN (OMHOOG KANTELEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>31.58</ID>
+											<Name>DEUREN, OPENINGEN VOOR DEUREN, DOORGANGEN (OPENINGSWIJZE NIET GENOEMD IN 31.51/31.56)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>31.59</ID>
+											<Name>DEUREN, OPENINGEN VOOR DEUREN, DOORGANGEN (ONDERDELEN EN HULPSTUKKEN VOOR SCHRIJNWERK VOOR OPENINGEN IN BOVENBOUW)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>31.7</ID>
+									<Name>LUIKEN, OPENINGEN MET OF ZONDER LUIKEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>31.7-</ID>
+									<Name>LUIKEN, OPENINGEN MET OF ZONDER LUIKEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>31.71</ID>
+											<Name>LUIKEN, OPENINGEN MET OF ZONDER LUIKEN (VAST)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>31.72</ID>
+											<Name>LUIKEN, OPENINGEN MET OF ZONDER LUIKEN (DRAAIEND‚ KLAPPEND, VALLEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>31.73</ID>
+											<Name>LUIKEN, OPENINGEN MET OF ZONDER LUIKEN (PIVOTEREND, WENTELEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>31.74</ID>
+											<Name>LUIKEN, OPENINGEN MET OF ZONDER LUIKEN (HORIZONTAAL SCHUIVEND EN/OF VOUWEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>31.75</ID>
+											<Name>LUIKEN, OPENINGEN MET OF ZONDER LUIKEN (VERTICAAL SCHUIVEND EN/OF VOUWEND, VERTICAAL ROLLEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>31.76</ID>
+											<Name>LUIKEN, OPENINGEN MET OF ZONDER LUIKEN (OMHOOG KANTELEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>31.78</ID>
+											<Name>LUIKEN, OPENINGEN MET OF ZONDER LUIKEN (OPENINGSWIJZE NIET GENOEMD IN 31.71/31.76)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>31.79</ID>
+											<Name>LUIKEN, OPENINGEN MET OF ZONDER LUIKEN (ONDERDELEN EN HULPSTUKKEN VOOR SCHRIJNWERK VOOR OPENINGEN IN BOVENBOUW)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>31.8</ID>
+									<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 31-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>31.9</ID>
+									<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 31-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>32-</ID>
+							<Name>SECUNDAIRE ELEMENTEN VOOR BINNENWANDEN</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>32.3</ID>
+									<Name>DEUREN, RAMEN, RAAM-DEUREN, RAAM-EN-DEUR-COMBINATIES EN OVEREENKOMSTIG OPENINGEN VOOR BINNENWANDEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>32.3-</ID>
+									<Name>RAAM-DEUREN, OPENINGEN VOOR RAAM-DEUREN IN BINNENWANDEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>32.31</ID>
+											<Name>RAAM-DEUREN, OPENINGEN VOOR RAAM-DEUREN IN BINNENWANDEN (VAST)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>32.32</ID>
+											<Name>RAAM-DEUREN, OPENINGEN VOOR RAAM-DEUREN IN BINNENWANDEN (DRAAIEND‚ KLAPPEND, VALLEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>32.33</ID>
+											<Name>RAAM-DEUREN, OPENINGEN VOOR RAAM-DEUREN IN BINNENWANDEN (PIVOTEREND, WENTELEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>32.34</ID>
+											<Name>RAAM-DEUREN, OPENINGEN VOOR RAAM-DEUREN IN BINNENWANDEN (HORIZONTAAL SCHUIVEND EN/OF VOUWEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>32.35</ID>
+											<Name>RAAM-DEUREN, OPENINGEN VOOR RAAM-DEUREN IN BINNENWANDEN (VERTICAAL SCHUIVEND EN/OF VOUWEND, VERTICAAL ROLLEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>32.36</ID>
+											<Name>RAAM-DEUREN, OPENINGEN VOOR RAAM-DEUREN IN BINNENWANDEN (OMHOOG KANTELEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>32.38</ID>
+											<Name>RAAM-DEUREN, OPENINGEN VOOR RAAM-DEUREN IN BINNENWANDEN (OPENINGSWIJZE NIET GENOEMD IN 32.31/31.36)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>32.39</ID>
+											<Name>RAAM-DEUREN, OPENINGEN VOOR RAAM-DEUREN IN BINNENWANDEN (ONDERDELEN EN HULPSTUKKEN VOOR SCHRIJNWERK VOOR OPENINGEN IN BOVENBOUW)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>32.4</ID>
+									<Name>32.4 RAMEN VOOR BINNENWANDEN, OPENINGEN VOOR RAMEN IN BINNENWANDEN, RAAMOPENINGEN IN BINNENWANDEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>32.4-</ID>
+									<Name>32.4 RAMEN VOOR BINNENWANDEN, OPENINGEN VOOR RAMEN IN BINNENWANDEN, RAAMOPENINGEN IN BINNENWANDEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>32.41</ID>
+											<Name>32.41 RAMEN VOOR BINNENWANDEN, OPENINGEN VOOR RAMEN IN BINNENWANDEN, RAAMOPENINGEN IN BINNENWANDEN (VAST)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>32.42</ID>
+											<Name>RAMEN VOOR BINNENWANDEN, OPENINGEN VOOR RAMEN IN BINNENWANDEN, RAAMOPENINGEN IN BINNENWANDEN (DRAAIEND‚ KLAPPEND, VALLEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>32.43</ID>
+											<Name>RAMEN VOOR BINNENWANDEN, OPENINGEN VOOR RAMEN IN BINNENWANDEN, RAAMOPENINGEN IN BINNENWANDEN (PIVOTEREND, WENTELEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>32.44</ID>
+											<Name>RAMEN VOOR BINNENWANDEN, OPENINGEN VOOR RAMEN IN BINNENWANDEN, RAAMOPENINGEN IN BINNENWANDEN (HORIZONTAAL SCHUIVEND EN/OF VOUWEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>32.45</ID>
+											<Name>RAMEN VOOR BINNENWANDEN, OPENINGEN VOOR RAMEN IN BINNENWANDEN, RAAMOPENINGEN IN BINNENWANDEN (VERTICAAL SCHUIVEND EN/OF VOUWEND, VERTICAAL ROLLEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>32.46</ID>
+											<Name>RAMEN VOOR BINNENWANDEN, OPENINGEN VOOR RAMEN IN BINNENWANDEN, RAAMOPENINGEN IN BINNENWANDEN (OMHOOG KANTELEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>32.48</ID>
+											<Name>RAMEN VOOR BINNENWANDEN, OPENINGEN VOOR RAMEN IN BINNENWANDEN, RAAMOPENINGEN IN BINNENWANDEN (OPENINGSWIJZE NIET GENOEMD IN 32.41/32.46)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>32.49</ID>
+											<Name>RAMEN VOOR BINNENWANDEN, OPENINGEN VOOR RAMEN IN BINNENWANDEN, RAAMOPENINGEN IN BINNENWANDEN (ONDERDELEN EN HULPSTUKKEN VOOR SCHRIJNWERK VOOR OPENINGEN IN BOVENBOUW)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>32.5</ID>
+									<Name>32.5 DEUREN VOOR BINNENWANDEN, DEUROPENINGEN VOOR BINNENWANDEN, DOORGANGEN IN BINNENWANDEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>32.5-</ID>
+									<Name>32.5 DEUREN VOOR BINNENWANDEN, DEUROPENINGEN VOOR BINNENWANDEN, DOORGANGEN IN BINNENWANDEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>32.51</ID>
+											<Name>DEUREN VOOR BINNENWANDEN, DEUROPENINGEN VOOR BINNENWANDEN, DOORGANGEN IN BINNENWANDEN (VAST)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>32.52</ID>
+											<Name>DEUREN VOOR BINNENWANDEN, DEUROPENINGEN VOOR BINNENWANDEN, DOORGANGEN IN BINNENWANDEN (DRAAIEND‚ KLAPPEND, VALLEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>32.53</ID>
+											<Name>DEUREN VOOR BINNENWANDEN, DEUROPENINGEN VOOR BINNENWANDEN, DOORGANGEN IN BINNENWANDEN (PIVOTEREND, WENTELEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>32.54</ID>
+											<Name>DEUREN VOOR BINNENWANDEN, DEUROPENINGEN VOOR BINNENWANDEN, DOORGANGEN IN BINNENWANDEN (HORIZONTAAL SCHUIVEND EN/OF VOUWEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>32.55</ID>
+											<Name>DEUREN VOOR BINNENWANDEN, DEUROPENINGEN VOOR BINNENWANDEN, DOORGANGEN IN BINNENWANDEN (VERTICAAL SCHUIVEND EN/OF VOUWEND, VERTICAAL ROLLEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>32.56</ID>
+											<Name>DEUREN VOOR BINNENWANDEN, DEUROPENINGEN VOOR BINNENWANDEN, DOORGANGEN IN BINNENWANDEN (OMHOOG KANTELEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>32.58</ID>
+											<Name>DEUREN VOOR BINNENWANDEN, DEUROPENINGEN VOOR BINNENWANDEN, DOORGANGEN IN BINNENWANDEN (OPENINGSWIJZE NIET GENOEMD IN 32.51/32.56)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>32.59</ID>
+											<Name>DEUREN VOOR BINNENWANDEN, DEUROPENINGEN VOOR BINNENWANDEN, DOORGANGEN IN BINNENWANDEN (ONDERDELEN EN HULPSTUKKEN VOOR SCHRIJNWERK VOOR OPENINGEN IN BOVENBOUW)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>32.7</ID>
+									<Name>LUIKEN VOOR BINNENWANDEN, OPENINGEN IN BINNENWANDEN MET OF ZONDER LUIKEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>32.7-</ID>
+									<Name>LUIKEN VOOR BINNENWANDEN, OPENINGEN IN BINNENWANDEN MET OF ZONDER LUIKEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>32.71</ID>
+											<Name>LUIKEN VOOR BINNENWANDEN, OPENINGEN IN BINNENWANDEN MET OF ZONDER LUIKEN (VAST)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>32.72</ID>
+											<Name>LUIKEN VOOR BINNENWANDEN, OPENINGEN IN BINNENWANDEN MET OF ZONDER LUIKEN (DRAAIEND‚ KLAPPEND, VALLEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>32.73</ID>
+											<Name>LUIKEN VOOR BINNENWANDEN, OPENINGEN IN BINNENWANDEN MET OF ZONDER LUIKEN (PIVOTEREND, WENTELEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>32.74</ID>
+											<Name>LUIKEN VOOR BINNENWANDEN, OPENINGEN IN BINNENWANDEN MET OF ZONDER LUIKEN (HORIZONTAAL SCHUIVEND EN/OF VOUWEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>32.75</ID>
+											<Name>LUIKEN VOOR BINNENWANDEN, OPENINGEN IN BINNENWANDEN MET OF ZONDER LUIKEN (VERTICAAL SCHUIVEND EN/OF VOUWEND, VERTICAAL ROLLEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>32.76</ID>
+											<Name>LUIKEN VOOR BINNENWANDEN, OPENINGEN IN BINNENWANDEN MET OF ZONDER LUIKEN (OMHOOG KANTELEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>32.78</ID>
+											<Name>LUIKEN VOOR BINNENWANDEN, OPENINGEN IN BINNENWANDEN MET OF ZONDER LUIKEN (OPENINGSWIJZE NIET GENOEMD IN 32.71/32.76)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>32.79</ID>
+											<Name>32.79 LUIKEN VOOR BINNENWANDEN, OPENINGEN IN BINNENWANDEN MET OF ZONDER LUIKEN (ONDERDELEN EN HULPSTUKKEN VOOR SCHRIJNWERK VOOR OPENINGEN IN BOVENBOUW)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>32.8</ID>
+									<Name>HOGER NIET GENOEMD IN ELEMENTEN VAN 32-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>32.9</ID>
+									<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 32-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>33-</ID>
+							<Name>SECUNDAIRE ELEMENTEN VOOR VLOEREN</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>33.1</ID>
+									<Name>VERHOOGDE VLOEREN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>33.2</ID>
+									<Name>SECUNDAIRE VLOERLAGEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>33.5</ID>
+									<Name>OPENINGEN IN VLOEREN MET OF ZONDER AFSLUITENDE ELEMENTEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>33.5-</ID>
+									<Name>OPENINGEN IN VLOEREN MET OF ZONDER AFSLUITENDE ELEMENTEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>33.51</ID>
+											<Name>OPENINGEN IN VLOEREN MET OF ZONDER AFSLUITENDE ELEMENTEN (VAST)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>33.52</ID>
+											<Name>OPENINGEN IN VLOEREN MET OF ZONDER AFSLUITENDE ELEMENTEN (DRAAIEND‚ KLAPPEND, VALLEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>33.53</ID>
+											<Name>OPENINGEN IN VLOEREN MET OF ZONDER AFSLUITENDE ELEMENTEN (PIVOTEREND, WENTELEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>33.54</ID>
+											<Name>OPENINGEN IN VLOEREN MET OF ZONDER AFSLUITENDE ELEMENTEN (HORIZONTAAL SCHUIVEND EN/OF VOUWEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>33.55</ID>
+											<Name>OPENINGEN IN VLOEREN MET OF ZONDER AFSLUITENDE ELEMENTEN (VERTICAAL SCHUIVEND EN/OF VOUWEND, VERTICAAL ROLLEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>33.56</ID>
+											<Name>OPENINGEN IN VLOEREN MET OF ZONDER AFSLUITENDE ELEMENTEN (OMHOOG KANTELEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>33.58</ID>
+											<Name>OPENINGEN IN VLOEREN MET OF ZONDER AFSLUITENDE ELEMENTEN (OPENINGSWIJZE NIET GENOEMD IN 33.51/33.56)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>33.59</ID>
+											<Name>OPENINGEN IN VLOEREN MET OF ZONDER AFSLUITENDE ELEMENTEN (ONDERDELEN EN HULPSTUKKEN VOOR SCHRIJNWERK VOOR OPENINGEN IN BOVENBOUW)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>33.8</ID>
+									<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 33-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>33.9</ID>
+									<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 33-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>34</ID>
+							<Name>SECUNDAIRE ELEMENTEN VOOR VERTICALE CIRCULATIE, VOOR TRAPPEN</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>35-</ID>
+							<Name>OPGEHANGEN PLAFONDS</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>35.1</ID>
+									<Name>OPGEHANGEN PLAFONDS UIT ÉÉN STUK OF MET PLATEN OF TEGELS, DIT WIL ZEGGEN NIET-LIJNVORMIGE ELEMENTEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>35.2</ID>
+									<Name>OPGEHANGEN PLAFONDS UIT LIJNVORMIGE ELEMENTEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>35.3</ID>
+									<Name>OPENINGEN IN OPGEHANGEN PLATONDS MET OF ZONDER INVULELEMENTEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>35.3-</ID>
+									<Name>OPENINGEN IN OPGEHANGEN PLATONDS MET OF ZONDER INVULELEMENTEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>35.31</ID>
+											<Name>OPENINGEN IN OPGEHANGEN PLATONDS MET OF ZONDER INVULELEMENTEN (VAST)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>35.32</ID>
+											<Name>OPENINGEN IN OPGEHANGEN PLATONDS MET OF ZONDER INVULELEMENTEN (DRAAIEND‚ KLAPPEND, VALLEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>35.33</ID>
+											<Name>OPENINGEN IN OPGEHANGEN PLATONDS MET OF ZONDER INVULELEMENTEN (PIVOTEREND, WENTELEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>35.34</ID>
+											<Name>OPENINGEN IN OPGEHANGEN PLATONDS MET OF ZONDER INVULELEMENTEN (HORIZONTAAL SCHUIVEND EN/OF VOUWEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>35.35</ID>
+											<Name>OPENINGEN IN OPGEHANGEN PLATONDS MET OF ZONDER INVULELEMENTEN (VERTICAAL SCHUIVEND EN/OF VOUWEND, VERTICAAL ROLLEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>35.36</ID>
+											<Name>OPENINGEN IN OPGEHANGEN PLATONDS MET OF ZONDER INVULELEMENTEN (OMHOOG KANTELEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>35.38</ID>
+											<Name>OPENINGEN IN OPGEHANGEN PLATONDS MET OF ZONDER INVULELEMENTEN (OPENINGSWIJZE NIET GENOEMD IN 35.31/35.36)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>35.39</ID>
+											<Name>OPENINGEN IN OPGEHANGEN PLATONDS MET OF ZONDER INVULELEMENTEN (ONDERDELEN EN HULPSTUKKEN VOOR SCHRIJNWERK VOOR OPENINGEN IN BOVENBOUW)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>35.8</ID>
+									<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 35-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>35.9</ID>
+									<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 35-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>37-</ID>
+							<Name>SECUNDAIRE ELEMENTEN VOOR DAKEN</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>37.3</ID>
+									<Name>DEUREN, RAMEN, RAAM-DEUREN, RAAM-EN-DEUR-COMBINATIES, DOORGANGEN EN OVEREENKOMSTIGE OPENINGEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>37.3-</ID>
+									<Name>RAAM-DEUREN, OPENINGEN VOOR RAAM-DEUREN IN DAKEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>37.31</ID>
+											<Name>RAAM-DEUREN, OPENINGEN VOOR RAAM-DEUREN IN DAKEN (VAST)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>37.32</ID>
+											<Name>RAAM-DEUREN, OPENINGEN VOOR RAAM-DEUREN IN DAKEN (DRAAIEND‚ KLAPPEND, VALLEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>37.33</ID>
+											<Name>RAAM-DEUREN, OPENINGEN VOOR RAAM-DEUREN IN DAKEN (PIVOTEREND, WENTELEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>37.34</ID>
+											<Name>RAAM-DEUREN, OPENINGEN VOOR RAAM-DEUREN IN DAKEN (HORIZONTAAL SCHUIVEND EN/OF VOUWEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>37.35</ID>
+											<Name>RAAM-DEUREN, OPENINGEN VOOR RAAM-DEUREN IN DAKEN (VERTICAAL SCHUIVEND EN/OF VOUWEND, VERTICAAL ROLLEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>37.36</ID>
+											<Name>RAAM-DEUREN, OPENINGEN VOOR RAAM-DEUREN IN DAKEN (OMHOOG KANTELEND)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>37.38</ID>
+											<Name>RAAM-DEUREN, OPENINGEN VOOR RAAM-DEUREN IN DAKEN (OPENINGSWIJZE NIET GENOEMD IN 37.31/37.36)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>37.39</ID>
+											<Name>RAAM-DEUREN, OPENINGEN VOOR RAAM-DEUREN IN DAKEN (ONDERDELEN EN HULPSTUKKEN VOOR SCHRIJNWERK VOOR OPENINGEN IN BOVENBOUW)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>37.4-</ID>
+									<Name>RAMEN VOOR DAKEN, RAAMOPENINGEN IN DAKEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>37.41</ID>
+											<Name>DAKLICHTEN BIJ PLATTE DAKEN (INBEGREPEN LICHTDOORLATENDE KOEPELS)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>37.42</ID>
+											<Name>DAKLANTAARNEN, NOORDERLICHTEN TOT AAN DAKNOK</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>37.44</ID>
+											<Name>DAKRAMEN UITSPRINGEND OF INSPRINGEND TEN OPZICHTE VAN EEN HELLEND DAKVLAK</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>37.45</ID>
+											<Name>DAKRAMEN IN DAKVLAK VAN HELLEND DAK</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>37.47</ID>
+											<Name>LICHTDOORLATENDE BEGAANBARE DAKDELEN</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>37.48</ID>
+											<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 37.4-</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>37.5</ID>
+									<Name>DEUREN TOEGANGEN TOT DAKEN, MET OF ZONDER AFSLIUTENDE ELEMENTEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>37.6</ID>
+									<Name>DAKRANDEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>37.8</ID>
+									<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 37-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>37.9</ID>
+									<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 37-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>38</ID>
+							<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 3-</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>39</ID>
+							<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 3-</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>4-</ID>
+					<Name>AFWERKING</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>41</ID>
+							<Name>BUITENAFWERKING VOOR WANDEN</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>42</ID>
+							<Name>BINNENAFWERKING VOOR WANDEN</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>43</ID>
+							<Name>AFWERKING VOOR VLOEREN</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>44</ID>
+							<Name>AFWERKING VOOR ELEMENTEN VOOR VERTICALE CIRCULATIE</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>45</ID>
+							<Name>AFWERKING VOOR PLAFONDS</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>47</ID>
+							<Name>BUITENAFWERKING VOOR DAKEN</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>48</ID>
+							<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 4-</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>49</ID>
+							<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 4-</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>5-</ID>
+					<Name>TECHNISCHE UITRUSTING HOOFDZAKELIJK FLUÏDA</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>5-.-X</ID>
+							<Name>UITRUSTING INGEDEELD VOLGENS ENERGIEDRAGER</Name>
+							<Description>WAAR NODIG KUNNEN DE CODES VAN (5-.-X) WORDEN AANGEVULD MET EEN VIERDE CIJFER DAT DE ENERGIEDRAGER BESCHRIJFT. DEZE CLASSIFICATIE IS ALLEEN BEDOELD ALS BRON VOOR EIGEN AAN TE MAKEN CLASSIFICATIES DIE NAAR EEN ENERGIEDRAGER VERWIJZEN.</Description>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>5.1</ID>
+									<Name>ENERGIEBRON VOOR INSTALLATIES</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>5-.-1</ID>
+											<Name>VASTE BRANDSTOF</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>5-.-2</ID>
+											<Name>VLOEIBARE BRANDSTOF</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>5-.-3</ID>
+											<Name>GASVORMIGE BRANDSTOF</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>5-.-4</ID>
+											<Name>ELEKTRICITEIT</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>5-.-5</ID>
+											<Name>ZONNESTRALING</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>5-.-6</ID>
+											<Name>HOGER NIET GENOEMDE WARMTEBRONNEN</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>5.2</ID>
+									<Name>GEÏNTEGREERDE INSTALLATIES</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>5.7</ID>
+									<Name>UITRUSTING LOKAAL, CENTRAAL, OP NIVEAU VAN DE WIJK, VOOR GROTER GEHEEL</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>52-</ID>
+							<Name>AFVALAFVOER, (UITRUSTING VOOR-)</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>52.1-</ID>
+									<Name>AFVOER VOOR VAST AFVAL</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>52.13</ID>
+											<Name>AFVOER VOOR VAST AFVAL (DROOG VERVOER)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>52.14</ID>
+											<Name>AFVOER VOOR VAST AFVAL (MANUEEL VERVOER)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>52.18</ID>
+											<Name>AFVOER VOOR VASTE ATVAL HOGER NIET GENOEMD IN 52.1-‚ INBEGREPEN AFVALVERNIETIGING</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>52.2</ID>
+									<Name>AFVOER VOOR GASVORMIGE AFVAL VIA KANAAL</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>52.3/52.5</ID>
+									<Name>VLOEISTOFAFVOER VOLGENS HUN AARD</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>52.3</ID>
+											<Name>AFVALWATERAFVOER</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>52.4</ID>
+											<Name>AFVOER VOOR SPECIALE AFVAL VLOEISTOFFEN</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>52.5</ID>
+											<Name>AFVOER VOOR HEMELWATER</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>52.6/52.7</ID>
+									<Name>VLOEISTOFFENAFVOER VOLGENS POSITIE</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>52.6</ID>
+											<Name>AFVOER BOVEN HET MAAIVELD EN GELEGEN OFWEL IN HET GEBOUW OFWEL TEGEN DE BUITENKANT ERVAN</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>52.7</ID>
+											<Name>AFVOER IN DE GROND EN GELEGEN OFWEL ONDER HET GEBOUW OFWEL TEGEN DE BUITENKANT ERVAN</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>52.8</ID>
+									<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 52-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>52.9</ID>
+									<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 52-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>53-</ID>
+							<Name>VLOEISTOFFENTOEVOER (UITRUSTING VOOR -)</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>53.1/53.6</ID>
+									<Name>WATERTOEVOER</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>53.1</ID>
+											<Name>TOEVOER VAN KOUD WATER</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>53.3/53.5</ID>
+											<Name>TOEVOER VAN WARM WATER</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children>
+												<Item>
+													<ID>53.3</ID>
+													<Name>TOEVOER VAN WARM WATER UIT EEN CENTRALE VERWARMINGSINSTALLATIE</Name>
+													<Description/>
+													<Availability>ModelElement</Availability>
+													<Children/>
+												</Item>
+												<Item>
+													<ID>53.5</ID>
+													<Name>TOEVOER VAN WARM WATER UIT VERWARMINGSINSTALLATIE BIJ VERBRUIKSPUNT</Name>
+													<Description/>
+													<Availability>ModelElement</Availability>
+													<Children/>
+												</Item>
+											</Children>
+										</Item>
+										<Item>
+											<ID>53.6</ID>
+											<Name>TOEVOER VAN BEHANDELD WATER</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>53.7/53.8 VLOEISTOFFENTOEVOER EXCLUSIEF WATER</ID>
+											<Name/>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children>
+												<Item>
+													<ID>53.7</ID>
+													<Name>TOEVOER VAN VLOEIBARE BRANDSTOFFEN</Name>
+													<Description/>
+													<Availability>ModelElement</Availability>
+													<Children/>
+												</Item>
+												<Item>
+													<ID>53.8</ID>
+													<Name>VLOEISTOFFENTOEVOER HOGER NIET GENOEMD IN 53-</Name>
+													<Description/>
+													<Availability>ModelElement</Availability>
+													<Children/>
+												</Item>
+											</Children>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>53.9</ID>
+									<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 53-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>55-</ID>
+							<Name>KOELING (UITRUSTING VOOR -)</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>55.1</ID>
+									<Name>CENTRALE KOELINSTALLATIE</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>55.5</ID>
+									<Name>LOKALE KOELINSTALLATIE</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>55.8</ID>
+									<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 55-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>55.9</ID>
+									<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 55-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>54-</ID>
+									<Name>GASTOEVOER (UITRUSTING VOOR -)</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>54.1/54.4</ID>
+											<Name>GASTOEVOER</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children>
+												<Item>
+													<ID>54.1</ID>
+													<Name>TOEVOER VAN BRANDBAAR GAS</Name>
+													<Description/>
+													<Availability>ModelElement</Availability>
+													<Children/>
+												</Item>
+												<Item>
+													<ID>54.2</ID>
+													<Name>TOEVOER VAN STOOM</Name>
+													<Description/>
+													<Availability>ModelElement</Availability>
+													<Children/>
+												</Item>
+												<Item>
+													<ID>54.3</ID>
+													<Name>TOEVOER VAN LUCHT</Name>
+													<Description/>
+													<Availability>ModelElement</Availability>
+													<Children/>
+												</Item>
+												<Item>
+													<ID>54.4</ID>
+													<Name>TOEVOER VAN GASSEN, HOGER NIET GENOEMD IN 54.1/54.3</Name>
+													<Description/>
+													<Availability>ModelElement</Availability>
+													<Children/>
+												</Item>
+											</Children>
+										</Item>
+										<Item>
+											<ID>54.5</ID>
+											<Name>"TOEVOER" VAN VACUÜM</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>54.8</ID>
+											<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 54-</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>54.9</ID>
+											<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 54-</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>56-</ID>
+							<Name>VERWARMING (UITRUSTING VOOR -)</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>56.1-</ID>
+									<Name>VERWARMING VOLGENS ENERGIEVORM</Name>
+									<Description>DEZE CODE WORDT GEBRUIKT INDIEN DE INDELING VAN 56.2/56.8 NIET RELEVANT WORDT GEACHT. DEZE CODE WORDT INGEDEELD MET EEN VIERDE CIJLER 56.1?</Description>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>56.11</ID>
+											<Name>VERWARMING, VASTE BRANDSTOF</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>56.12</ID>
+											<Name>VERWARMING, VLOEIBARE BRANDSTOF</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>56.13</ID>
+											<Name>VERWARMING, GASVORMIGE BRANDSTOF</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>56.14</ID>
+											<Name>VERWARMING, ELEKTRICITEIT</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>56.15</ID>
+											<Name>VERWARMING, ZONNESTRALING</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>56.16</ID>
+											<Name>VERWARMING, HOGER NIET GENOEMDE WARMTEBRONNEN</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>56.2</ID>
+									<Name>WIJKVERWARMING</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>56.3</ID>
+									<Name>CENTRALE VERWARMING</Name>
+									<Description>DEZE CODE WORDT GEBRUIKT INDIEN DE INDELING VOLGENS 56.4 TOT 56.7 NIET RELEVANT WORDT GEACHT.</Description>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>56.4/56.7</ID>
+									<Name>CENTRALE VERWARMING</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>56.4</ID>
+											<Name>CENTRALE VERWARMING, WARMTEDISTRIBUTIE MET WARM WATER OF STOOM</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>56.5</ID>
+											<Name>CENTRALE VERWARMING, WARMTEDLSTRIBUTIE MET WARME LUCHT</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>56.6</ID>
+											<Name>WARMTEDISTRIBUTIE VIA ELEKTRISCHE LEIDINGEN</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>56.7</ID>
+											<Name>CENTRALE VERWARMING HOGER NIET GENOEMD IN 56.4/56.6</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>56.8</ID>
+									<Name>LOKALE WARMTEPRODUKTIE, HOGER NIET GENOEMDE ELEMENTEN VAN 56-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>56.9</ID>
+									<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 56-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>57-</ID>
+							<Name>LUCHTBEHANDELING EN VENTILATIE (INSTALLATIES VOOR —)</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>57.1/57.4 INSTALLATIES VOOR LUCHTVERWARMING (EN KOELING) INCLUSIEF BEHANDELING</ID>
+									<Name/>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>57.1</ID>
+											<Name>CENTRALE INSTALLATIE VOOR LUCHTVERWARMING EN KOELING INCLUSIEF BEHANDELING</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>57.2</ID>
+											<Name>CENTRALE INSTALLATIE VOOR LUCHTVERWARMING ZONDER KOELING INCLUSIEF BEHANDELING</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>57.3</ID>
+											<Name>LOKALE INSTALLATIE VOOR LUCHTVERWARMING EN KOELING INCLUSIEF BEHANDELING</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>57.4</ID>
+											<Name>LOKALE INSTALLATIE VOOR LUCHTVERWARMLNG ZONDER KOELING INCLUSIEF BEHANDELING</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>57.5</ID>
+									<Name>INSTALLATIE VOOR LUCHTBEHANDELING ZONDER KOELEN OF VERWARMEN EN INSTALLATIES DIE KOELEN ENVERWARMEN COMBINEREN ZONDER LUCHTBEHANDELING</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>57.6/57.7</ID>
+									<Name>INSTALLATIES VOOR VENTILATIE (NIET BEHANDELDE LUCHT)</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>57.6</ID>
+											<Name>GEDWONGEN CENTRALE VENTILATIE ZONDER BEHANDELING</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>57.7</ID>
+											<Name>GEDWONGEN LOKALE VENTILATIE</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>57.8</ID>
+									<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 57-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>57.9</ID>
+									<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 57-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>58</ID>
+							<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 5-</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>59</ID>
+							<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 5-</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>6-</ID>
+					<Name>TECHNISCHE UITRUSTING HOOFDZAKELIJK ELEKTRISCH</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>61-</ID>
+							<Name>PRIMAIRE ELEKTRICITEITSNET</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>61.1/61.3</ID>
+									<Name>ELEKTRICITEITSVERDELING VOLGENS VERLOOP IN HET GEBOUW</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>61.1</ID>
+											<Name>RADIAALVERDELING</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>61.2</ID>
+											<Name>RINGVERDELING</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>61.3</ID>
+											<Name>STIJGLEIDINGEN</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>61.6/61.7</ID>
+									<Name>ELEKTRICITEITSVERDELING VOLGENS PRODUCENT</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>61.6</ID>
+											<Name>OPENBARE STROOMVOORZIENINGEN</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>61.7</ID>
+											<Name>PRIVÉ-ELEKTRICITEITSPRODUKTIE</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>61.8</ID>
+									<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 61-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>61.9</ID>
+									<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 61-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>62</ID>
+							<Name>SECUNDAIRE ELEKTRICITEITSNET</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>63-</ID>
+							<Name>VERLICHTING (INSTALLATIE VOOR -)</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>63.1</ID>
+									<Name>ALGEMENE VERLICHTING VAN RUIMTE</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>63.2</ID>
+									<Name>PLAATSELIJKE VERLICHTING (DEEL VAN EEN RUIMTE)</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>63.6</ID>
+									<Name>VERLICHTING DOOR MIDDEL VAN PROJECTOREN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>63.8</ID>
+									<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 63</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>63.9</ID>
+									<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 63</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>64-</ID>
+							<Name>COMMUNICATIE (INSTALLATIE VOOR -)</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>64.1-</ID>
+									<Name>VISUELE EN AUDIO-VISUELE COMMUNICATIE (INSTALLATIES VOOR -)</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>64.11</ID>
+											<Name>VISUELE EN AUDIO-VISUELE COMMUNICATIE (INSTALLATIES VOOR TELEVISIE)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>64.12</ID>
+											<Name>VISUELE EN AUDIO-VISUELE COMMUNICATIE (INSTALLATIES VOOR FILMPROJECTIE)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>64.13</ID>
+											<Name>VISUELE EN AUDIO-VISUELE COMMUNICATIE (INSTALLATIES VOOR LICHTSIGNALEN)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>64.18</ID>
+											<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 64.1-</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>64.3-</ID>
+									<Name>AUDITIEVE COMMUNICATIE (INSTALLATIES VOOR -)</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>64.31</ID>
+											<Name>AUDITIEVE COMMUNICATIE (INSTALLATIES VOOR RADIO)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>64.32</ID>
+											<Name>AUDITIEVE COMMUNICATIE (INSTALLATIES VOOR TELEFOON EN INTERFOON INCLUSIEF OPENBARE TELEFOONCELLEN IN EEN GEBOUW)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>64.33</ID>
+											<Name>AUDITIEVE COMMUNICATIE (INSTALLATIES VOOR GELUIDSVERDELING)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>64.34</ID>
+											<Name>AUDITIEVE COMMUNICATIE (INSTALLATIES VOOR CENTRALE AFLUISTERINSTALLATIES)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>64.35</ID>
+											<Name>AUDITIEVE COMMUNICATIE (INSTALLATIES VOOR AUDITIEVE CODES)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>64.38</ID>
+											<Name>AUDITIEVE COMMUNICATIE (INSTALLATIES VOOR HOGER NIET GENOEMDE ELEMENTEN VAN 64.3-)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>64.4-</ID>
+									<Name>ANDERE DAN VISUELE OF AUDITIEVE COMMUNICATIE (INSTALLATIES VOOR -)</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>64.41</ID>
+											<Name>ANDERE DAN VISUELE OF AUDITIEVE COMMUNICATIE (INSTALLATIES VOOR TELEGRAAF)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>64.42</ID>
+											<Name>ANDERE DAN VISUELE OF AUDITIEVE COMMUNICATIE (INSTALLATIES VOOR TELEX, TELEPRINT)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>64.43</ID>
+											<Name>ANDERE DAN VISUELE OF AUDITIEVE COMMUNICATIE (INSTALLATIES VOOR TELECOPIE)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>64.44</ID>
+											<Name>ANDERE DAN VISUELE OF AUDITIEVE COMMUNICATIE (INSTALLATIES VOOR DATATRANSMISSIE)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>64.48</ID>
+											<Name>ANDERE DAN VISUELE OF AUDITIEVE COMMUNICATIE (INSTALLATIES VOOR HOGER NIET GENOEMDE ELEMENTEN VAN 64.4-)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>64.5</ID>
+									<Name>SYNCHRONE KLOKKEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>64.8</ID>
+									<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 64-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>64.9</ID>
+									<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 64-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>66-</ID>
+							<Name>TRANSPORTINSTALLATIES</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>66.1/66.2</ID>
+									<Name>INSTALLATIES VOOR VERTICAAL TRANSPORT</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>66.1</ID>
+											<Name>LIFTEN</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>66.2</ID>
+											<Name>INSTALLATIES VOOR VERTLCAAL TRANSPORT ENKEL VOOR GOEDEREN</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>66.3/66.7</ID>
+									<Name>INSTALLATIES VOOR HORIZONTAAL TRANSPORT OF HORIZONTAAL EN VERTICAAL TRANSPORT</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>66.3</ID>
+											<Name>MOBIELE HANGSTEIGERS</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>66.4</ID>
+											<Name>ROLTRAPPEN</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>66.5</ID>
+											<Name>TRANSPORTBANDEN, TRANSPORTPLATEAUS</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>66.7</ID>
+											<Name>TRANSPORTKRANEN</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>66.8</ID>
+									<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 66-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>66.9</ID>
+									<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 66-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>68-</ID>
+							<Name>BEVEILIGINGSINSTALLATIES, CONTROLEINSTALLATIES, HOGER NIET GENOEMDE ELEMENTEN VAN 6-</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>68.1/68.6</ID>
+									<Name>INSTALLATIES VOOR BEVEILIGING EN BESCHERMING</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>68.1</ID>
+											<Name>GEÏNTEGREERDE INBRAAK- EN BRANDBEVEILIGING</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>68.2</ID>
+											<Name>INBRAAKBEVEILIGING</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>68.5</ID>
+											<Name>BRANDBEVEILIGINGSINSTAILATIES</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children>
+												<Item>
+													<ID>68.52</ID>
+													<Name>BRANDMELDINGSINSTALLATIE</Name>
+													<Description/>
+													<Availability>ModelElement</Availability>
+													<Children/>
+												</Item>
+												<Item>
+													<ID>68.53/68.56</ID>
+													<Name>BRANDBEVEILIGINGS- EN BRANDBESTRĲDINGSINSTALLATIE</Name>
+													<Description/>
+													<Availability>ModelElement</Availability>
+													<Children>
+														<Item>
+															<ID>68.53</ID>
+															<Name>BEVEILIGINGSINSTALLATIE BIJ BRAND EXCLUSIEF BRANDBESTRIJDING</Name>
+															<Description/>
+															<Availability>ModelElement</Availability>
+															<Children/>
+														</Item>
+														<Item>
+															<ID>68.54</ID>
+															<Name>AUTOMATISCHE BRANDBESTRĲDINGSINSTALLATIE</Name>
+															<Description/>
+															<Availability>ModelElement</Availability>
+															<Children/>
+														</Item>
+														<Item>
+															<ID>68.55</ID>
+															<Name>NIET-DRAAGBARE NIET-AUTOMATISCHE BRANDBESTRIJDINGSINSTALLATIE</Name>
+															<Description/>
+															<Availability>ModelElement</Availability>
+															<Children/>
+														</Item>
+														<Item>
+															<ID>68.56</ID>
+															<Name>DRAAGBARE BRANDBESTRIJDINGSTOESTELLEN</Name>
+															<Description/>
+															<Availability>ModelElement</Availability>
+															<Children/>
+														</Item>
+													</Children>
+												</Item>
+												<Item>
+													<ID>68.58</ID>
+													<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 68.5-</Name>
+													<Description/>
+													<Availability>ModelElement</Availability>
+													<Children/>
+												</Item>
+											</Children>
+										</Item>
+										<Item>
+											<ID>68.6</ID>
+											<Name>BEVEILLGINGSINSTALLATIES NIET GENOEMD IN 68.1/68.5</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>68.7</ID>
+									<Name>CONTROLE-UITRUSTING (INBEGREPEN STURING EN CONTROLE VAN PROCESSEN)</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>68.8</ID>
+									<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 68-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>68.9</ID>
+									<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 68</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>69</ID>
+							<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 6-</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>7-</ID>
+					<Name>VASTE INRICHTING</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>71-</ID>
+							<Name>VASTE INRICHTING VOOR CIRCULATIE</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>71.1</ID>
+									<Name>VASTE AANDUIDINGEN, WEGWIJZERS</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>71.2</ID>
+									<Name>VASTE ELEMENTEN DIE CIRCULATIE AFBAKENEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>71.3</ID>
+									<Name>VASTE INRICHTING IN VERBAND MET DE TOEGANG TOT GEBOUWEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>71.8</ID>
+									<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 71-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>71.9</ID>
+									<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 71-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>72-</ID>
+							<Name>VASTE INRICHTING VOOR RUSTEN EN WERKEN</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>72.1</ID>
+									<Name>VASTE INRICHTING VOOR SLAPEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>72.2</ID>
+									<Name>VASTE INRICHTING VOOR RUSTEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>72.3</ID>
+									<Name>VASTE INRICHTING VOOR WERKEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>72.6</ID>
+									<Name>VASTE BANKEN, STOELEN, ZETELS EN TAFELS VOOR RUSTEN EN WERKEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>72.8</ID>
+									<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 7-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>72.9</ID>
+									<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 72-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>73-</ID>
+							<Name>VASTE INRICHTING VOOR HET BEREIDEN EN GEBRUIKEN VAN MAALTIJDEN</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>73.1</ID>
+									<Name>VASTE WERKBLADEN EN INRICHTING VOOR HET BEREIDEN VAN MAALTIJDEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>73.2</ID>
+									<Name>VASTE INRICHTING VOOR WASSEN EN SPOELEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>73.4</ID>
+									<Name>VASTE TOESTELLEN VOOR VOEDSELBEREIDING EN KOKEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>73.5</ID>
+									<Name>VASTE KEUKENTOESTELLEN VOOR BERGING EN BEWARING</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>73.7</ID>
+									<Name>VASTE INRICHTING VOOR VERBRUIKERS VAN MAALTIJDEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>73.8</ID>
+									<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 73-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>73.9</ID>
+									<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 73-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>74-</ID>
+							<Name>SANITAIRE UITRUSTING</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>74.1</ID>
+									<Name>GEHEEL VAN SANITAIRE TOESTELLEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>74.2</ID>
+									<Name>TOESTELLEN VOOR LICHAAMSHYGIËNE</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>74.2-</ID>
+									<Name>TOESTELLEN VOOR LICHAAMSHYGIËNE</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>74.22</ID>
+											<Name>BADEN</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>74.23</ID>
+											<Name>LAVABO’S, HANDWASBEKKENS</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>74.24</ID>
+											<Name>BIDETS, VOETWASBEKKENS</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>74.26</ID>
+											<Name>DOUCHETOESTELLEN</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>74.27</ID>
+											<Name>SAUNATOESTELLEN</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>74.28</ID>
+											<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 74.2-</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>74.3</ID>
+									<Name>VASTE SANITAIRE TOESTELLEN VOOR HET DROGEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>74.4</ID>
+									<Name>TOESTELLEN VOOR AFVOER VAN UITWERPSELEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>74.4-</ID>
+									<Name>TOESTELLEN VOOR AFVOER VAN UITWERPSELEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>74.44</ID>
+											<Name>WC's</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>74.45</ID>
+											<Name>URINOIRS</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>74.48</ID>
+											<Name>HOGER NIEL GENOEMDE ELEMENTEN VAN 74.4-</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>74.7</ID>
+									<Name>TOESTELLEN VOOR VERDELING VAN ZEEP, VAN HANDDOEKEN, VAN PAPIER VOOR LICHAAMSHYGIËNE</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>74.8</ID>
+									<Name>HOGER NIET GENOEMDE ELEMENLEN VAN 74-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>74.9</ID>
+									<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 74-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>75-</ID>
+							<Name>VASTE INRICHTING VOOR ONDERHOUD EN SCHOONMAAK</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>75.1</ID>
+									<Name>VASTE WASINRICHTING, VASTE WASTOBBEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>75.3</ID>
+									<Name>DROOGTOESTELLEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>75.4</ID>
+									<Name>VASTE STRIJKINRICHTING</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>75.8</ID>
+									<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 75-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>75.9</ID>
+									<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 75-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>76-</ID>
+							<Name>VASTE INRICHTING VOOR BERGING EN AFSCHERMING</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>76.1/76.6 VASTE INRICHTING VOOR BERGING</ID>
+									<Name/>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>76.1</ID>
+											<Name>VASTE KASTEN SAMENGESTELD UIT MEERDERE ELEMENTEN DIE BESTAAN UIT LADES, REKKEN, AFSLUITBARE KASTDELEN, …</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>76.2</ID>
+											<Name>VASTE AFSLUITBARE KASTEN</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>76.3</ID>
+											<Name>VASTE LADENKASTEN</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>76.4</ID>
+											<Name>VASTE REKKEN</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>76.5</ID>
+											<Name>VASTE HANGSYSTEMEN VOOR BERGING</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>76.6</ID>
+											<Name>KASTEN MET SPECIALE EIGENSCHAPPEN, VASTE INRICHTING VOOR BERGING HOGER NIET GENOEMD IN 76.1/76.5</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>76.7</ID>
+									<Name>SCHERMEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>76.8</ID>
+									<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 76-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>76.9</ID>
+									<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 76-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>77</ID>
+							<Name>VASTE INRICHTING VOOR SPECIALE ACTIVITEITEN</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>78-</ID>
+							<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 7-</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>78.3</ID>
+									<Name>STOFFERINGEN, INCLUSIEF BEHANGWERKEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>78.6</ID>
+									<Name>KUNSTWERKEN</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>79</ID>
+							<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 7-</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>8-</ID>
+					<Name>LOSSE INRICHTING</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>81</ID>
+							<Name>LOSSE INRICHTING VOOR CIRCULATIE</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>82</ID>
+							<Name>LOSSE INRICHTING VOOR RUSTEN EN WERKEN</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>83</ID>
+							<Name>LOSSE INRICHTING VOOR BEREIDEN EN VERBRUIKEN VAN MAALTĲDEN</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>84</ID>
+							<Name>LOSSE INRICHTING VOOR SANITAIRE TOEPASSINGEN, VOOR HYGIENE</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>85</ID>
+							<Name>LOSSE INRICHTING VOOR ONDERHOUD EN SCHOONMAAK</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>86</ID>
+							<Name>LOSSE INRICHTING VOOR BERGING EN AFSCHERIMING</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>87</ID>
+							<Name>LOSSE INRICHTING VOOR SPECIALE ACTIVITEITEN</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>88</ID>
+							<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 8-</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>89</ID>
+							<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN 8-</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>9-</ID>
+					<Name>ELEMENTEN BUITEN HET GEBOUW, HOGER NIET GENOEMDE ELEMENTEN</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>90</ID>
+							<Name>ELEMENTEN BUITEN HET GEBOUW</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>90.1</ID>
+									<Name>BODEM VOORBEREID BUITEN HET GEBOUW, INDIEN NIET VERMELD ONDER 1-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>90.2</ID>
+									<Name>MINDER BELANGRIJKE CONSTRUCTIES BUITEN HET GEBOUW, INDIEN NIET VERMELD BIJ 1-/8-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>90.3</ID>
+									<Name>AFSLUITINGEN BUITEN HET GEBOUW INDIEN NIET VERMED ONDER 1-/3-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>90.4-</ID>
+									<Name>AFWERKING VAN BODEMOPPERVLAK BUITEN HET GEBOUW INDIEN NIET VERMELD ONDER 1-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>90.41</ID>
+											<Name>HARDE BODEMAFWERKING BUITEN HET GEBOUW</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>90.42</ID>
+											<Name>ZACHTE BODEMAFWERKING BUITEN HET GEBOUW</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>90.43</ID>
+											<Name>OPPERVLAKKEN ONDER WATER BUITEN HET GEBOUW</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>90.48</ID>
+											<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 90.4-</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>90.5-</ID>
+									<Name>UITRUSTING HOOFDZAKELIJK FLUIDA BUITEN HET GEBOUW INDIEN NIET VERMED ONDER 5-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>90.51</ID>
+											<Name>DRAINAGE, AFVALWATERAFVOER BUITEN HET GEBOUW</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>90.52</ID>
+											<Name>UITRUSTING HOOFDZAKELIJK FLUIDA BUITEN HET GEBOUW EXCLUSIEF DRAINAGE EN AFVALWATERAFVOER</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>90.6</ID>
+									<Name>UITRUSTING HOOFDZAKELIJK ELEKTRISCH BUITEN HET GEBOUW INDIEN NIET VERMELD ONDER 6-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>90.7</ID>
+									<Name>VASTE EN LOSSE INRICHTING BUITEN HET GEBOUW, INDIEN NIET VERMELD ONDER 7-/8-</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>90.8</ID>
+									<Name>HOGER NIET GENOEMDE ELEMENTEN VAN 90</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>98</ID>
+							<Name>ELEMENTEN VAN TABEL1 HOGER NIET GENOEMD IN 0-/97</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>99</ID>
+							<Name>HULPSTUKKEN EN ONDERDELEN VOOR ELEMENTEN VAN TABEL 1</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+			</Items>
+		</System>
+	</Classification>
+</BuildingInformation>
