@@ -412,9 +412,9 @@ class BIMWorkScheduleProperties(PropertyGroup):
     visualisation_start: StringProperty(name="Visualisation Start", update=update_visualisation_start)
     visualisation_finish: StringProperty(name="Visualisation Finish", update=update_visualisation_finish)
     speed_multiplier: FloatProperty(name="Speed Multiplier", default=10000)
-    speed_animation_duration: StringProperty(name="Speed Animation Duration", default="PT1S")
+    speed_animation_duration: StringProperty(name="Speed Animation Duration", default="1 s")
     speed_animation_frames: IntProperty(name="Speed Animation Frames", default=24)
-    speed_real_duration: StringProperty(name="Speed Real Duration", default="P1W")
+    speed_real_duration: StringProperty(name="Speed Real Duration", default="1 w")
     speed_types: EnumProperty(
         items=[
             ("FRAME_SPEED", "Frame-based", "e.g. 25 frames = 1 real week"),
