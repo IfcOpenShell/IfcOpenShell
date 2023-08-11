@@ -1614,3 +1614,18 @@ class Sequence(blenderbim.core.tool.Sequence):
             object_type = bpy.context.scene.BIMWorkScheduleProperties.object_type
         return predefined_type, object_type
 
+    @classmethod
+    def add_animation_camera(cls):
+        bpy.ops.object.camera_add()
+        camera = bpy.context.active_object
+        camera.data.lens = 26
+        camera.name = "4D Camera"
+        camera.location = mathutils.Vector((15, 0, 15))
+        camera.rotation_euler = mathutils.Euler((1.2, 0, 1.5), "XYZ")
+        for obj in bpy.context.scene.objects:
+            obj.select_set(False)
+        for obj in bpy.context.visible_objects:
+            if not (obj.hide_get() or obj.hide_render) and obj.type != "LIGHT":
+                obj.select_set(True)
+        bpy.context.scene.camera = camera
+        bpy.ops.view3d.camera_to_view_selected()
