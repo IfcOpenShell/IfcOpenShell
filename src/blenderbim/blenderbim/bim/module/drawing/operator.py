@@ -485,7 +485,7 @@ class CreateDrawing(bpy.types.Operator):
 
             drawing_elements = tool.Drawing.get_drawing_elements(self.camera_element)
 
-            self.setup_serialiser(ifc)
+            self.setup_serialiser(ifc, target_view)
             cache = IfcStore.get_cache()
             [cache.remove(guid) for guid in invalidated_guids]
             tree = ifcopenshell.geom.tree()
@@ -829,7 +829,7 @@ class CreateDrawing(bpy.types.Operator):
 
         return svg_path
 
-    def setup_serialiser(self, ifc):
+    def setup_serialiser(self, ifc, target_view):
         self.svg_settings = ifcopenshell.geom.settings(
             DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True, INCLUDE_CURVES=True
         )
@@ -853,6 +853,8 @@ class CreateDrawing(bpy.types.Operator):
         self.serialiser.setScale(self.scale)
         self.serialiser.setSubtractionSettings(ifcopenshell.ifcopenshell_wrapper.ALWAYS)
         self.serialiser.setUsePrefiltering(True)  # See #3359
+        if target_view == "REFLECTED_PLAN_VIEW":
+            self.serialiser.setMirrorY(True)
         # tree = ifcopenshell.geom.tree()
         # This instructs the tree to explode BReps into faces and return
         # the style of the face when running tree.select_ray()
