@@ -346,6 +346,27 @@ class Drawing(blenderbim.core.tool.Drawing):
         return literals
 
     @classmethod
+    def create_annotation_context(cls, target_view, object_type=None):
+        # checking PLAN target view and annotation type that doesn't require 3d
+        if target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW") and object_type not in (
+            "FALL",
+            "SECTION_LEVEL",
+            "PLAN_LEVEL",
+        ):
+            parent = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan")
+        else:
+            parent = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model")
+
+        return ifcopenshell.api.run(
+            "context.add_context",
+            tool.Ifc.get(),
+            context_type=parent.ContextType,
+            context_identifier="Annotation",
+            target_view=target_view,
+            parent=parent,
+        )
+
+    @classmethod
     def get_annotation_context(cls, target_view, object_type=None):
         # checking PLAN target view and annotation type that doesn't require 3d
         if target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW") and object_type not in (
