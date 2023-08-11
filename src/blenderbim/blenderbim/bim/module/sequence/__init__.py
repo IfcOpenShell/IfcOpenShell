@@ -20,6 +20,7 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
+    operator.AddAnimationCamera,
     operator.AddSummaryTask,
     operator.AddTask,
     operator.AddTaskBars,
