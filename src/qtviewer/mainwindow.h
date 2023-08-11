@@ -1,39 +1,32 @@
-﻿
-
-#ifndef MAINWINDOW_H
+﻿#ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include <qobject.h>
+#include <QObject>
 #include <QMainWindow>
 #include <QString>
-#include "../ifcgeom/IfcGeomObjects.h"
-
-class ObjectsView;
-
-class QGLViewer;
-
-QT_BEGIN_NAMESPACE
-class QAction;
-class QGraphicsView;
-class QGraphicsScene;
-class QGraphicsRectItem;
-QT_END_NAMESPACE
+#include <QAction>
+#include <QOpenGLWidget>
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    MainWindow();
-
-
-public Q_SLOTS:
-  void draw();
+    MainWindow(QWidget *parent = nullptr);
 
 public slots:
-    void openFile(const QString &path = QString());
+    void openFile();
 
 private:
+    void createActions();
+    void createMenus();
+    void createConnections();
+private:
+    QMenu *fileMenu;
+    QAction *openAction;
+    QAction *quitAction;
+
+    QMenu *viewMenu;
     QAction *m_nativeAction;
     QAction *m_glAction;
     QAction *m_imageAction;
@@ -42,6 +35,7 @@ private:
     QAction *m_outlineAction;
 
     QString m_currentPath;
+    QOpenGLWidget *m_glWidget;
 };
 
-#endif
+#endif // MAINWINDOW_H
