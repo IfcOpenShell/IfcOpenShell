@@ -454,6 +454,7 @@ class BIM_PT_animation_tools(Panel):
         row = self.layout.row()
         row.alignment = "RIGHT"
         row.operator("bim.clear_previous_animation", text="Clear Previous Animation", icon="TRACKING_CLEAR_FORWARDS")
+        row.operator("bim.add_animation_camera", text="Add Camera", icon="CAMERA_DATA")
 
     def draw_visualisation_ui(self):
         row = self.layout.row(align=True)

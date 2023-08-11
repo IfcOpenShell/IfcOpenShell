@@ -1410,3 +1410,13 @@ class ClearPreviousAnimation(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.clear_previous_animation(tool.Sequence)
+
+
+class AddAnimationCamera(bpy.types.Operator):
+    bl_idname = "bim.add_animation_camera"
+    bl_label = "Add Camera to Scene"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        core.add_animation_camera(tool.Sequence)
+        return {"FINISHED"}

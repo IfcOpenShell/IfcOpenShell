@@ -648,6 +648,7 @@ class Search:
 
 @interface
 class Sequence:
+    def add_animation_camera(cls): pass
     def add_task_column(cls, column_type, name, data_type): pass
     def add_text_animation_handler(cls, settings): pass
     def animate_consumption(cls, obj, start_frame, product_frame, color, animation_type): pass
@@ -660,6 +661,7 @@ class Sequence:
     def animate_operation(cls, obj, start_frame, product_frame, color): pass
     def animate_output(cls, obj, start_frame, product_frame): pass
     def clear_object_animation(cls, obj): pass
+    def clear_object_color(cls, obj): pass
     def clear_objects_animation(cls, include_blender_objects): pass
     def contract_all_tasks(cls): pass
     def contract_task(cls, task): pass
@@ -676,6 +678,7 @@ class Sequence:
     def disable_editing_work_time(cls): pass
     def disable_selecting_deleted_task(cls): pass
     def disable_work_schedule(cls): pass
+    def display_object(cls, obj): pass
     def enable_editing_rel_sequence_attributes(cls, rel_sequence): pass
     def enable_editing_sequence_lag_time(cls, rel_sequence): pass
     def enable_editing_task_animation_colors(cls): pass

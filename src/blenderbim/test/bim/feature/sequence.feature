@@ -843,3 +843,11 @@ Scenario: Duplicate Task and edit sequence Relationship
     When I press "bim.enable_editing_task_sequence(task={nested_task_one})"
     Then nothing happens
 
+Scenario: Add Animation Camera
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And I press "bim.add_animation_camera"
+    Then "scene.objects.get('4D Camera').name" is "4D Camera"
