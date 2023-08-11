@@ -233,7 +233,7 @@ class BIM_PT_work_schedules(Panel):
         if not self.props.should_show_column_ui:
             return
         row = self.layout.row()
-        row.operator("bim.setup_default_task_columns", text="Add Default Columns", icon="ANCHOR_BOTTOM")
+        row.operator("bim.setup_default_task_columns", text="Setup Default Columns", icon="ANCHOR_BOTTOM")
         row.alignment = "RIGHT"
         row = self.layout.row(align=True)
         row.prop(self.props, "column_types", text="")
