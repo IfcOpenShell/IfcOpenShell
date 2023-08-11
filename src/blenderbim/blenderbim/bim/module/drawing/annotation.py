@@ -166,6 +166,7 @@ class Annotator:
 
         center = camera.matrix_world.inverted() @ bpy.context.scene.cursor.location
         center.z = 0
+        center = camera.matrix_world @ center
 
         return (
             center + z_offset,
