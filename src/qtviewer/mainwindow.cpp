@@ -1,97 +1,107 @@
-﻿
+﻿#include <QCoreApplication>
+#include <QMenuBar>
+#include <QMenu>
+#include <QAction>
+#include <QFileDialog>
+#include <QFileInfo>
+#include <QFile>
+#include <QMessageBox>
+#include <sstream>
 
-#include "mainwindow.h"
-#include <math.h>
+#include "MainWindow.h"
+#include "ParseIfcFile.h"
+#include "IfcViewerWidget.h"
 
-#include <QtGui>
-
-MainWindow::MainWindow()
-    : QMainWindow()
+MainWindow::MainWindow(QWidget *parent) 
+    : QMainWindow(parent)
 {
+    this->setWindowTitle("IfcOpenShell Viewer");
+    this->resize(800, 600); //temporary reasonable initial size
 
+    m_glWidget = new IfcViewerWidget(this);
+    setCentralWidget(m_glWidget);
 
-	IfcGeomObjects::Settings(IfcGeomObjects::USE_WORLD_COORDS,true);
-	IfcGeomObjects::Settings(IfcGeomObjects::WELD_VERTICES,false);
-    IfcGeomObjects::Settings(IfcGeomObjects::SEW_SHELLS,true);
+    createActions();
+    createMenus();
+    createConnections();
+}
 
-
-
-    QMenu *fileMenu = new QMenu(tr("&File"), this);
-    QAction *openAction = fileMenu->addAction(tr("&Open..."));
+void MainWindow::createActions()
+{
+    openAction = new QAction(tr("&Open"), this);
     openAction->setShortcut(QKeySequence(tr("Ctrl+O")));
-    QAction *quitAction = fileMenu->addAction(tr("E&xit"));
-    quitAction->setShortcuts(QKeySequence::Quit);
 
-    menuBar()->addMenu(fileMenu);
+    quitAction = new QAction(tr("E&xit"), this);
+    quitAction->setShortcut(QKeySequence::Quit);
 
-    QMenu *viewMenu = new QMenu(tr("&View"), this);
-    m_backgroundAction = viewMenu->addAction(tr("&Background"));
+    m_backgroundAction = new QAction(tr("&Background"));
     m_backgroundAction->setEnabled(false);
     m_backgroundAction->setCheckable(true);
     m_backgroundAction->setChecked(false);
-    //connect(m_backgroundAction, SIGNAL(toggled(bool)), (QWidget*)m_v, SLOT(setViewBackground(bool)));
 
-    m_outlineAction = viewMenu->addAction(tr("&Outline"));
+    m_outlineAction = new QAction(tr("&Outline"));
     m_outlineAction->setEnabled(false);
     m_outlineAction->setCheckable(true);
-    m_outlineAction->setChecked(true);
-   // connect(m_outlineAction, SIGNAL(toggled(bool)), (QWidget*)m_v, SLOT(setViewOutline(bool)));
+    m_outlineAction->setChecked(false);
+}
 
-    menuBar()->addMenu(viewMenu);
+void MainWindow::createMenus()
+{
+    QMenuBar *menuBar = new QMenuBar();
+    setMenuBar(menuBar);
 
+    fileMenu = new QMenu(tr("&File"), menuBar);
+    menuBar->addMenu(fileMenu);
+
+    fileMenu->addAction(openAction);
+    fileMenu->addAction(quitAction);
+
+    viewMenu = new QMenu(tr("&View"), menuBar);
+    menuBar->addMenu(viewMenu);
+
+    viewMenu->addAction(m_backgroundAction);
+    viewMenu->addAction(m_outlineAction);
+}
+
+void MainWindow::createConnections()
+{
     connect(openAction, SIGNAL(triggered()), this, SLOT(openFile()));
     connect(quitAction, SIGNAL(triggered()), qApp, SLOT(quit()));
-
-    //setCentralWidget((QWidget*)m_v);
-    setWindowTitle(tr("IfcOpenShell QT Viewer"));
+    //connect(m_backgroundAction, SIGNAL(toggled(bool)), (QWidget*)m_v, SLOT(setViewBackground(bool)));
+    //connect(m_outlineAction, SIGNAL(toggled(bool)), (QWidget*)m_v, SLOT(setViewOutline(bool)));
 }
 
-void MainWindow::openFile(const QString &path)
+void MainWindow::openFile()
 {
-    QString fileName;
-    if (path.isNull())
-        fileName = QFileDialog::getOpenFileName(this, tr("Open IFC"),
-                m_currentPath, "IFC files (*.ifc)");
-    else
-        fileName = path;
+    QString filePath = QFileDialog::getOpenFileName(this, tr("Open IFC File"), 
+        ".", tr("IFC Files (*.ifc)"));
 
-    if (!fileName.isEmpty()) {
-        QFile file(fileName);
-        if (!file.exists()) {
-            QMessageBox::critical(this, tr("Open IFC"),
-                           QString("Could not open file '%1'.").arg(fileName));
+    QFileInfo fileInfo(filePath);
+    QString fileName = fileInfo.fileName();
 
-            m_outlineAction->setEnabled(false);
-            m_backgroundAction->setEnabled(false);
-            return;
-        }
-		std::stringstream ss;
-    	if ( ! IfcGeomObjects::Init(fileName.toStdString(),&std::cout,&ss) ) {
-    			QMessageBox::critical(this, tr("Open IFC"),
-    			                           QString("[Error] unable to parse file '%1'. Or no geometrical entities found" ).arg(fileName));
-    			return;
-    	}
+    if (fileName.isEmpty())
+        return;
 
-    	//connect((QWidget*)m_view, SIGNAL(drawNeeded()), this, SLOT(drawIfcObject()));
+    // Check if the file is a Qt resource file
+    if (fileName.startsWith(":/"))
+        return;
 
-        if (!fileName.startsWith(":/")) {
-            m_currentPath = fileName;
-            setWindowTitle(tr("%1 - IFCViewer").arg(m_currentPath));
-        }
+    QFile file(filePath);
+    if (!file.exists()) {
+        QMessageBox::critical(this, tr("Open IFC"),
+            QString("Could not open '%1'.").arg(filePath));
 
-        m_outlineAction->setEnabled(true);
-        m_backgroundAction->setEnabled(true);
-
-//        resize(m_view->sizeHint() + QSize(80, 80 + menuBar()->height()));
+        m_outlineAction->setEnabled(false);
+        m_backgroundAction->setEnabled(false);
+        return;
     }
+
+    ParseIfcFile parser;
+    parser.Parse(filePath.toStdString());
+
+    m_currentPath = filePath;
+    setWindowTitle(tr("%1 - IFCViewer").arg(fileName));
+
+    m_outlineAction->setEnabled(true);
+    m_backgroundAction->setEnabled(true);
 }
-
-
-void MainWindow::draw()
-{
-
-
-
-}
-
-
