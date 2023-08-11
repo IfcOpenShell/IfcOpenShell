@@ -719,26 +719,12 @@ class Sequence(blenderbim.core.tool.Sequence):
 
     @classmethod
     def setup_default_task_columns(cls):
-        items = [
-            {
-                "column_type": "IfcTaskTime",
-                "name": "ScheduleStart",
-            },
-            {
-                "column_type": "IfcTaskTime",
-                "name": "ScheduleFinish",
-            },
-            {
-                "column_type": "IfcTaskTime",
-                "name": "ScheduleDuration",
-            },
-        ]
-
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.columns.clear()
-        for item in items:
+        default_columns = ["ScheduleStart","ScheduleFinish","ScheduleDuration"]
+        for item in default_columns:
             new = props.columns.add()
-            new.name = f"{item['column_type']}.{item['name']}"
+            new.name = f"IfcTaskTime.{item}"
             new.data_type = "string"
 
     @classmethod
