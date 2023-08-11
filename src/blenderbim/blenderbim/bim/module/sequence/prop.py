@@ -209,17 +209,12 @@ def updateTaskDuration(self, context):
         self.duration = "-"
         return
 
-    self.file = tool.Ifc.get()
-    task = self.file.by_id(self.ifc_definition_id)
+    task = tool.Ifc.get().by_id(self.ifc_definition_id)
     if task.TaskTime:
         task_time = task.TaskTime
     else:
-        task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=task)
-    ifcopenshell.api.run(
-        "sequence.edit_task_time",
-        self.file,
-        **{"task_time": task_time, "attributes": {"ScheduleDuration": duration}},
-    )
+        task_time = tool.Ifc.run("sequence.add_task_time", task=task)
+    tool.Ifc.run("sequence.edit_task_time", task_time=task_time, attributes={"ScheduleDuration": duration})
     SequenceData.load()
     bpy.ops.bim.load_task_properties()
 
