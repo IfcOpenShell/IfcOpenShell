@@ -532,6 +532,39 @@ Scenario: Animate the consumption of a wall
     Then "scene.objects.get('IfcWall/Cube').hide_render" is "True"
 
 
+
+Scenario: Clear Previous Animation
+    Given an empty IFC project
+    And I press "bim.add_work_schedule"
+    And the variable "work_schedule" is "IfcStore.get_file().by_type('IfcWorkSchedule')[0].id()"
+    And I press "bim.enable_editing_work_schedule_tasks(work_schedule={work_schedule})"
+    And I press "bim.add_summary_task(work_schedule={work_schedule})"
+    And the variable "task" is "IfcStore.get_file().by_type('IfcTask')[0].id()"
+    And I press "bim.enable_editing_task_attributes(task={task})"
+    And I set "scene.BIMWorkScheduleProperties.task_attributes.get('PredefinedType').enum_value" to "CONSTRUCTION"
+    And I press "bim.edit_task"
+    And I press "bim.enable_editing_task_time(task={task})"
+    And I set "scene.BIMWorkScheduleProperties.task_time_attributes.get('ScheduleStart').string_value" to "2021-01-02"
+    And I set "scene.BIMWorkScheduleProperties.task_time_attributes.get('ScheduleFinish').string_value" to "2021-01-06"
+    And I press "bim.edit_task_time"
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And the object "IfcWall/Cube" is selected
+    And I press "bim.assign_product(task={task})"
+    And I set "scene.BIMWorkScheduleProperties.visualisation_start" to "01/01/21"
+    And I set "scene.BIMWorkScheduleProperties.visualisation_finish" to "01/02/21"
+    And I set "scene.BIMWorkScheduleProperties.speed_types" to "FRAME_SPEED"
+    And I set "scene.BIMWorkScheduleProperties.speed_animation_frames" to "7"
+    And I set "scene.BIMWorkScheduleProperties.speed_real_duration" to "1 w"
+    And I press "bim.visualise_work_schedule_date_range(work_schedule={work_schedule})"
+    And I press "bim.clear_previous_animation"
+    When I am on frame "3"
+    Then "scene.objects.get('IfcWall/Cube').hide_viewport" is "False"
+    And "scene.objects.get('IfcWall/Cube').hide_render" is "False"
+    And "scene.objects.get('IfcWall/Cube').color[:]" is "[1.0, 1.0, 1.0, 1]"
+
 Scenario: Generate Gantt Chart
     Given an empty IFC project
     And I press "bim.add_work_schedule"
@@ -809,3 +842,4 @@ Scenario: Duplicate Task and edit sequence Relationship
     And I press "bim.duplicate_task(task={task})"
     When I press "bim.enable_editing_task_sequence(task={nested_task_one})"
     Then nothing happens
+
