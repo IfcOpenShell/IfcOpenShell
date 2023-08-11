@@ -450,7 +450,10 @@ class Drawing(blenderbim.core.tool.Drawing):
         elif target_view == "REFLECTED_PLAN_VIEW":
             if location_hint:
                 z = tool.Ifc.get_object(tool.Ifc.get().by_id(location_hint)).matrix_world.translation.z
-                return mathutils.Matrix(((-1, 0, 0, x), (0, 1, 0, y), (0, 0, -1, z + 1.6), (0, 0, 0, 1)))
+                m = mathutils.Matrix()
+                m[2][2] = -1
+                m.translation = (x, y, z + 1.6)
+                return m
             return mathutils.Matrix(((-1, 0, 0, 0), (0, 1, 0, 0), (0, 0, -1, 0), (0, 0, 0, 1)))
         elif target_view == "ELEVATION_VIEW":
             if location_hint == "NORTH":
@@ -677,6 +680,10 @@ class Drawing(blenderbim.core.tool.Drawing):
             ([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1])
         )
         obj.matrix_world = mat
+
+        if cls.get_drawing_target_view(drawing) == "REFLECTED_PLAN_VIEW":
+            obj.matrix_world[1][1] *= -1
+
         tool.Geometry.record_object_position(obj)
         tool.Collector.assign(obj)
 
