@@ -1,0 +1,3889 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<BuildingInformation>
+	<Classification>
+		<System>
+			<Name>GuBIMclass ES</Name>
+			<EditionVersion>1.2</EditionVersion>
+			<EditionDate>
+				<Year>2017</Year>
+				<Month>07</Month>
+				<Day>21</Day>
+			</EditionDate>
+			<Description>Sistema de clasificación de elementos de construcción de acuerdo a su función principal dentro de un entorno BIM.</Description>
+			<Source>http://www.gubimclass.org</Source>
+			<Items>
+				<Item>
+					<ID>00</ID>
+					<Name>Trabajos previos y replanteo general</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>00.10</ID>
+							<Name>Elementos auxiliares de replanteo del modelo</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>00.10.10</ID>
+									<Name>Origen de coordenadas</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>00.10.20</ID>
+									<Name>Elementos de alineación de modelo</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>00.10.30</ID>
+									<Name>Ejes</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>00.10.40</ID>
+									<Name>Niveles</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>00.20</ID>
+							<Name>Preexistencias</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>00.20.10</ID>
+									<Name>Edificaciones colindantes preexistentes</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>00.20.20</ID>
+									<Name>Elementos de entorno urbano preexistente</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>00.20.30</ID>
+									<Name>Servicios urbanos preexistentes</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>00.30</ID>
+							<Name>Ensayos previos</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>00.30.10</ID>
+									<Name>Ensayo en el terreno</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>00.30.10.10</ID>
+											<Name>Sondeo</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>00.30.10.20</ID>
+											<Name>Penetrómetro</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>00.30.10.30</ID>
+											<Name>Piezómetro</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>00.30.20</ID>
+									<Name>Ensayo en elementos estructurales</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>00.30.20.10</ID>
+											<Name>Ensayo sobre elemento de hormigón</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>00.30.20.20</ID>
+											<Name>Ensayo sobre estructura acero</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>00.30.20.30</ID>
+											<Name>Ensayo sobre estructura fábrica</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>10</ID>
+					<Name>Adecuación del terreno y sustentación del edificio</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>10.10</ID>
+							<Name>Actuaciones para reducir y controlar las afectaciones a edificios vecinos, servicios y otros elementos</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>10.10.10</ID>
+									<Name>Apuntalamientos y arriostramientos</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>10.10.10.10</ID>
+											<Name>Puntales metálicos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>10.10.10.20</ID>
+											<Name>Anclajes temporales</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>10.10.20</ID>
+									<Name>Otras actuaciones para controlar afectaciones</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>10.20</ID>
+							<Name>Movimiento de tierras</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>10.20.10</ID>
+									<Name>Topografía</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>10.20.20</ID>
+									<Name>Excavaciones</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>10.20.20.10</ID>
+											<Name>Excavación general</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>10.20.20.20</ID>
+											<Name>Excavación de cimentación</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>10.20.30</ID>
+									<Name>Rellenos</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>10.20.30.10</ID>
+											<Name>Terraplenado</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>10.20.30.20</ID>
+											<Name>Mejora del terreno</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>10.20.30.30</ID>
+											<Name>Relleno trasdós del muro</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>10.30</ID>
+							<Name>Rebaje del nivel freático</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>10.30.10</ID>
+									<Name>Elementos generales de agotamiento del nivel freático</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>10.30.10.10</ID>
+											<Name>Decantador</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>10.30.10.20</ID>
+											<Name>Tubería para agotamientos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>10.30.10.30</ID>
+											<Name>Contador para agotamientos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>10.30.20</ID>
+									<Name>Agotamiento con sistema de bombeo</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>10.30.20.10</ID>
+											<Name>Pozo de bombeo</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>10.30.30</ID>
+									<Name>Agotamiento con sistema Wellpoint</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>10.30.30.10</ID>
+											<Name>Lanza de succión</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>20</ID>
+					<Name>Sistema estructural</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>20.10</ID>
+							<Name>Cimientos y contención de tierras</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>20.10.10</ID>
+									<Name>Elementos superficiales</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>20.10.10.10</ID>
+											<Name>Vigas riostra</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>20.10.10.20</ID>
+											<Name>Zapatas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>20.10.10.30</ID>
+											<Name>Encepados</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>20.10.10.40</ID>
+											<Name>Losas de cimentación</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>20.10.10.50</ID>
+											<Name>Hormigón de limpieza</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>20.10.10.60</ID>
+											<Name>Pozos de cimentación</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>20.10.20</ID>
+									<Name>Elementos profundos</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>20.10.20.20</ID>
+											<Name>Pantallas de cimentación</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>20.10.20.30</ID>
+											<Name>Pilotes de cimentación</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>20.10.20.40</ID>
+											<Name>Micropilotes</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>20.10.20.50</ID>
+											<Name>Jet-grouting</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>20.10.30</ID>
+									<Name>Elementos de contención</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>20.10.30.10</ID>
+											<Name>Muros de contención</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>20.10.30.15</ID>
+											<Name>Muro gunitado</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>20.10.30.20</ID>
+											<Name>Pantallas de contención</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>20.10.30.30</ID>
+											<Name>Pilones de contención</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>20.10.30.40</ID>
+											<Name>Muros de micropilotes</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>20.10.30.50</ID>
+											<Name>Muros de jet-grouting</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>20.10.30.60</ID>
+											<Name>Muros de tablestacas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>20.10.30.70</ID>
+											<Name>Sistemas de anclaje y apuntalamiento de elementos de contención definitivos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>20.10.40</ID>
+									<Name>Bases</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>20.10.40.10</ID>
+											<Name>Soleras</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>20.10.40.20</ID>
+											<Name>Rampas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>20.10.40.30</ID>
+											<Name>Subbases</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>20.20</ID>
+							<Name>Estructura</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>20.20.10</ID>
+									<Name>Estructura vertical</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>20.20.10.10</ID>
+											<Name>Pilares</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>20.20.10.20</ID>
+											<Name>Ménsulas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>20.20.10.30</ID>
+											<Name>Muros estructurales</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>20.20.10.40</ID>
+											<Name>Escaleras de estructura</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>20.20.10.50</ID>
+											<Name>Rampas de estructura</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>20.20.10.60</ID>
+											<Name>Tensores verticales</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>20.20.20</ID>
+									<Name>Estructura horizontal</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>20.20.20.10</ID>
+											<Name>Forjados</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>20.20.20.20</ID>
+											<Name>Jácenas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>20.20.20.30</ID>
+											<Name>Cerchas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>20.20.20.40</ID>
+											<Name>Viguetas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>20.20.20.50</ID>
+											<Name>Tensores horizontales</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>20.20.30</ID>
+									<Name>Estructura tridimensional</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>20.20.30.10</ID>
+											<Name>Bóveda</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>20.20.30.20</ID>
+											<Name>Arco</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>20.20.30.30</ID>
+											<Name>Cúpula</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>20.20.30.40</ID>
+											<Name>Malla espacial</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>30</ID>
+					<Name>Sistemas de envolvente y de acabados exteriores</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>30.10</ID>
+							<Name>Envolvente vertical</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>30.10.10</ID>
+									<Name>Fachadas</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>30.10.10.10</ID>
+											<Name>Fachadas in situ</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>30.10.10.20</ID>
+											<Name>Fachadas prefabricadas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>30.10.10.30</ID>
+											<Name>Sistemas especiales de fachadas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>30.10.10.40</ID>
+											<Name>Acabados de fachadas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>30.10.10.50</ID>
+											<Name>Remates de fachadas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>30.10.20</ID>
+									<Name>Carpintería de fachada</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>30.10.20.10</ID>
+											<Name>Ventanas de fachadas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>30.10.20.20</ID>
+											<Name>Puertas de fachadas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>30.10.20.30</ID>
+											<Name>Protecciones solares de fachadas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>30.10.20.40</ID>
+											<Name>Protecciones de seguridad de fachadas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>30.20</ID>
+							<Name>Envolvente horizontal superior</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>30.20.10</ID>
+									<Name>Cubiertas</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>30.20.10.10</ID>
+											<Name>Cubiertas in-situ</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>30.20.10.20</ID>
+											<Name>Cubiertas prefabricadas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>30.20.10.30</ID>
+											<Name>Sistemas especiales de cubiertas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>30.20.10.40</ID>
+											<Name>Acabados de cubiertas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>30.20.10.50</ID>
+											<Name>Remates de cubiertas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>30.20.20</ID>
+									<Name>Carpintería de cubiertas</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>30.20.20.10</ID>
+											<Name>Ventanas de cubiertas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>30.20.20.20</ID>
+											<Name>Puertas de cubiertas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>30.20.20.30</ID>
+											<Name>Protecciones solares de cubiertas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>30.20.20.40</ID>
+											<Name>Protecciones seguridad de cubiertas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>30.30</ID>
+							<Name>Envolvente horizontal inferior</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>30.30.10</ID>
+									<Name>Compartimentación exterior horizontal</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>30.30.10.10</ID>
+											<Name>Falsos techos exteriores</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>30.30.10.20</ID>
+											<Name>Remates compartimentación exterior horizontal</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>30.30.20</ID>
+									<Name>Acabados envolvente horizontal inferior</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>30.30.20.10</ID>
+											<Name>Revestimientos continuos de envolvente inferior</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>30.30.20.20</ID>
+											<Name>Remates envolvente inferior</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>30.40</ID>
+							<Name>Escaleras y rampas exteriores</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>30.40.10</ID>
+									<Name>Escalonado exterior</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>30.40.10.10</ID>
+											<Name>Escalones exteriores</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>30.40.10.20</ID>
+											<Name>Recrecido de escalones exteriores</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>30.40.20</ID>
+									<Name>Acabados de escalonado y rampas exteriores</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>30.40.20.10</ID>
+											<Name>Acabado tramo exterior</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>30.40.20.20</ID>
+											<Name>Acabado rellano exterior</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>40</ID>
+					<Name>Sistemas de compartimentación y de acabados interiores</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>40.10</ID>
+							<Name>Compartimentación y acabados interiores verticales</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>40.10.10</ID>
+									<Name>Compartimentación interior vertical</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>40.10.10.10</ID>
+											<Name>Tabiques</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>40.10.10.20</ID>
+											<Name>Mamparas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>40.10.10.30</ID>
+											<Name>Trasdosados</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>40.10.10.40</ID>
+											<Name>Carpintería interior</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>40.10.10.50</ID>
+											<Name>Protecciones interiores</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>40.10.20</ID>
+									<Name>Acabados interiores verticales</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>40.10.20.10</ID>
+											<Name>Revestimientos discontinuos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>40.10.20.20</ID>
+											<Name>Revestimientos continuos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>40.10.20.30</ID>
+											<Name>Remates interiores</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>40.10.20.40</ID>
+											<Name>Pinturas y vinilos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>40.20</ID>
+							<Name>Sistemas de compartimentación y de acabados interiores</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>40.20.10</ID>
+									<Name>Compartimentación interior horizontal</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>40.20.10.10</ID>
+											<Name>Falsos techos interiores</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>40.20.10.20</ID>
+											<Name>Suelos técnicos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>40.20.10.30</ID>
+											<Name>Recrecidos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>40.20.20</ID>
+									<Name>Acabados interiores horizontales</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>40.20.20.10</ID>
+											<Name>Revestimientos techos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>40.20.20.20</ID>
+											<Name>Pavimentos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>40.30</ID>
+							<Name>Escaleras y rampas interiores</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>40.30.10</ID>
+									<Name>Escalonado interior</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>40.30.10.10</ID>
+											<Name>Escalones interiores</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>40.30.10.20</ID>
+											<Name>Recrecido de escalones interiores</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>40.30.20</ID>
+									<Name>Acabados de escalonado y rampas interiores</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>40.30.20.10</ID>
+											<Name>Acabado tramo interior</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>40.30.20.20</ID>
+											<Name>Acabado rellano interior</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>40.40</ID>
+							<Name>Elementos especiales de acabados interiores</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>40.40.10</ID>
+									<Name>Elementos de señalización</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>40.40.10.10</ID>
+											<Name>Señalización de techo</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>40.40.10.20</ID>
+											<Name>Señalización mural</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>40.40.10.30</ID>
+											<Name>Señalización de suelos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>40.40.20</ID>
+									<Name>Otros elementos especiales de acabados interiores</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>50</ID>
+					<Name>Sistemas de acondicionamiento, instalaciones y servicios</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>50.10</ID>
+							<Name>Fontanería</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>50.10.10</ID>
+									<Name>Equipos principales de fontanería</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.10.10.10</ID>
+											<Name>Equipos de medida y control de fontanería</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.10.10.20</ID>
+											<Name>Grupos de presión de fontanería</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.10.10.30</ID>
+											<Name>Depósitos, acumuladores y calentadores</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>50.10.20</ID>
+									<Name>Red de distribución de fontanería</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.10.20.10</ID>
+											<Name>Válvulas e instrumentos de medida y control de flujo de fontanería</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.10.20.20</ID>
+											<Name>Dispositivos de fontanería</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.10.20.30</ID>
+											<Name>Canalizaciones de agua sanitaria</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.10.20.40</ID>
+											<Name>Canalizaciones de agua tratada</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.10.20.50</ID>
+											<Name>Arquetas y pozos de fontanería</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.10.20.60</ID>
+											<Name>Terminales de fontanería</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>50.20</ID>
+							<Name>Evacuación de aguas</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>50.20.10</ID>
+									<Name>Equipos principales de evacuación de aguas</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.20.10.10</ID>
+											<Name>Equipos de medida y control de evacuación de aguas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.20.10.20</ID>
+											<Name>Grupos de presión de evacuación de aguas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.20.10.30</ID>
+											<Name>Depósitos de evacuación de aguas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.20.10.40</ID>
+											<Name>Dispositivos de evacuación de aguas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>50.20.20</ID>
+									<Name>Red de recogida</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.20.20.10</ID>
+											<Name>Canalizaciones de aguas pluviales</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.20.20.20</ID>
+											<Name>Canalizaciones de aguas residuales</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.20.20.30</ID>
+											<Name>Canalizaciones de aguas grises</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.20.20.40</ID>
+											<Name>Canalizaciones para ventilación saneamiento</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.20.20.50</ID>
+											<Name>Arquetas y pozos de evacuación de aguas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.20.20.60</ID>
+											<Name>Terminales de drenaje</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>50.30</ID>
+							<Name>Instalaciones térmicas y de ventilación</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>50.30.10</ID>
+									<Name>Equipos de producción de instalaciones térmicas</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.30.10.10</ID>
+											<Name>Torres de refrigeración</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.30.10.20</ID>
+											<Name>Unidades exteriores de instalaciones térmicas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.30.10.30</ID>
+											<Name>Unidades interiores de instalaciones térmicas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.30.10.40</ID>
+											<Name>Calderas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.30.10.50</ID>
+											<Name>Termoacumuladores</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.30.10.60</ID>
+											<Name>Geotermia</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.30.10.70</ID>
+											<Name>Captadores solares térmicos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.30.10.80</ID>
+											<Name>Ventiladores</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.30.10.90</ID>
+											<Name>Recuperadores</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>50.30.20</ID>
+									<Name>Equipos secundarios de instalaciones térmicas</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.30.20.10</ID>
+											<Name>Equipos de bombeo de instalaciones térmicas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.30.20.20</ID>
+											<Name>Silenciadores</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.30.20.30</ID>
+											<Name>Compuertas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.30.20.40</ID>
+											<Name>Reguladores</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.30.20.50</ID>
+											<Name>Condensadores</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.30.20.60</ID>
+											<Name>Válvulas e instrumentos de medida y control de flujo de climatización</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>50.30.30</ID>
+									<Name>Circuitos de distribución de fluidos frío / calor</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.30.30.10</ID>
+											<Name>Líneas frigoríficas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.30.30.20</ID>
+											<Name>Líneas hidráulicas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>50.30.40</ID>
+									<Name>Conductos de distribución de aire</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.30.40.10</ID>
+											<Name>Aportación de aire primario</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.30.40.20</ID>
+											<Name>Extracción de aire primario</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.30.40.30</ID>
+											<Name>Impulsión de aire tratado</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.30.40.40</ID>
+											<Name>Retorno de aire tratado</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.30.40.50</ID>
+											<Name>Extracción de humos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>50.30.50</ID>
+									<Name>Terminales y difusores</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.30.50.10</ID>
+											<Name>Radiadores</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.30.50.20</ID>
+											<Name>Difusores</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.30.50.30</ID>
+											<Name>Suelo radiante</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.30.50.40</ID>
+											<Name>Forjados radiantes</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.30.50.50</ID>
+											<Name>Rejillas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>50.30.60</ID>
+									<Name>Dispositivos de maniobra y control</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.30.60.10</ID>
+											<Name>Cableado / BUS de climatización</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.30.60.20</ID>
+											<Name>Detectores de CO2</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>50.40</ID>
+							<Name>Suministro de combustibles</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>50.40.10</ID>
+									<Name>Equipos principales de suministro de combustibles</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.40.10.10</ID>
+											<Name>Equipos de medida, regulación y control de combustibles</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.40.10.20</ID>
+											<Name>Depósitos de combustible</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.40.10.30</ID>
+											<Name>Grupos de presión de combustible</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>50.40.20</ID>
+									<Name>Equipos secundarios de suministro de combustibles</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.40.20.10</ID>
+											<Name>Válvulas e instrumentos de medida y control de flujo de combustibles</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.40.20.20</ID>
+											<Name>Dispositivos de suministro de combustibles</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>50.40.30</ID>
+									<Name>Red de distribución de suministro de combustibles</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.40.30.10</ID>
+											<Name>Canalizaciones de suministro de combustibles</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.40.30.20</ID>
+											<Name>Arquetas y pozos de suministro de combustibles</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>50.40.40</ID>
+									<Name>Terminales de suministro de combustibles</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.40.40.10</ID>
+											<Name>Grifos de suministro de combustibles</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.40.40.20</ID>
+											<Name>Quemadores</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>50.40.50</ID>
+									<Name>Dispositivos de maniobra y control</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.40.50.10</ID>
+											<Name>Cableado / BUS para suministro de combustibles</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.40.50.20</ID>
+											<Name>Detector de gases</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>50.50</ID>
+							<Name>Protección contra incendios</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>50.50.10</ID>
+									<Name>Extinción de incendios</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.50.10.10</ID>
+											<Name>Depósitos de extinción de incendios</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.50.10.20</ID>
+											<Name>Grupos de presión de extinción de incendios</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.50.10.30</ID>
+											<Name>Válvulas e instrumentos de medida y control de flujo de extinción de incendios</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.50.10.40</ID>
+											<Name>Dispositivos de extinción de incendios</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.50.10.50</ID>
+											<Name>Canalizaciones de extinción de incendios</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.50.10.60</ID>
+											<Name>Rociadores</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.50.10.70</ID>
+											<Name>BIES</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.50.10.80</ID>
+											<Name>Extintores</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>50.50.20</ID>
+									<Name>Detección de incendios</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.50.20.10</ID>
+											<Name>Centralitas y racks de detección de incendios</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.50.20.20</ID>
+											<Name>Equipos especiales de detección de incendios</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.50.20.30</ID>
+											<Name>Canalizaciones de detección de incendios</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.50.20.40</ID>
+											<Name>Cajas de distribución de detección de incendios</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>50.50.30</ID>
+									<Name>Dispositivos de maniobra y control</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.50.30.10</ID>
+											<Name>Pulsadores</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.50.30.20</ID>
+											<Name>Cuadros de mando para contra incendios</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.50.30.30</ID>
+											<Name>Detectores de incendios</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.50.30.40</ID>
+											<Name>Mecanismos de extinción y detección de incendios</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.50.30.50</ID>
+											<Name>Cableado / BUS de contra incendios</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>50.60</ID>
+							<Name>Instalaciones eléctricas</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>50.60.10</ID>
+									<Name>Equipos eléctricos principales</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.60.10.10</ID>
+											<Name>Cuadros eléctricos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.60.10.20</ID>
+											<Name>Grupos electrógenos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.60.10.30</ID>
+											<Name>Acometidas eléctricas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.60.10.40</ID>
+											<Name>Transformadores</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>50.60.20</ID>
+									<Name>Equipos eléctricos secundarios</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.60.20.10</ID>
+											<Name>Baterías y SAI</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.60.20.20</ID>
+											<Name>Cuadros de mando eléctrico</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.60.20.30</ID>
+											<Name>Baterías de condensadores</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.60.20.40</ID>
+											<Name>Embarrados y transformadores</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>50.60.30</ID>
+									<Name>Canalizaciones de distribución eléctricas</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.60.30.10</ID>
+											<Name>Bandejas de distribución eléctrica</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.60.30.20</ID>
+											<Name>Canales de superficie de distribución eléctrica</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.60.30.30</ID>
+											<Name>Cajas de distribución eléctrica</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.60.30.40</ID>
+											<Name>Mangueras y tubos de distribución eléctrica</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.60.30.50</ID>
+											<Name>Arquetas y pozos de distribución eléctrica</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.60.30.60</ID>
+											<Name>Cableado eléctrico</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>50.60.40</ID>
+									<Name>Dispositivos de maniobra y control</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.60.40.10</ID>
+											<Name>Mecanismos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.60.40.20</ID>
+											<Name>Tomas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>50.60.50</ID>
+									<Name>Iluminación</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.60.50.10</ID>
+											<Name>Iluminación exterior</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.60.50.20</ID>
+											<Name>Iluminación interior</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.60.50.30</ID>
+											<Name>Iluminación de emergencia</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>50.60.60</ID>
+									<Name>Red de tierras</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.60.60.10</ID>
+											<Name>Pararrayos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.60.60.20</ID>
+											<Name>Piquetes y arquetas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.60.60.30</ID>
+											<Name>Mecanismos de la red de tierras</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>50.70</ID>
+							<Name>Telecomunicaciones y audiovisuales</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>50.70.10</ID>
+									<Name>Equipos principales de telecomunicaciones</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.70.10.10</ID>
+											<Name>Antenas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.70.10.20</ID>
+											<Name>Acometidas de telecomunicaciones</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.70.10.30</ID>
+											<Name>Armarios RACK</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.70.10.40</ID>
+											<Name>Servidores</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>50.70.20</ID>
+									<Name>Equipos secundarios de telecomunicaciones</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.70.20.10</ID>
+											<Name>Conversores</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.70.20.20</ID>
+											<Name>Amplificadores</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.70.20.30</ID>
+											<Name>Altavoces</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.70.20.40</ID>
+											<Name>Centralitas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.70.20.50</ID>
+											<Name>Routers</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.70.20.60</ID>
+											<Name>Monitores</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>50.70.30</ID>
+									<Name>Canalizaciones de distribución para señales débiles</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.70.30.10</ID>
+											<Name>Bandejas de distribución para señales débiles</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.70.30.20</ID>
+											<Name>Canales de superficie para señales débiles</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.70.30.30</ID>
+											<Name>Cajas de distribución para señales débiles</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.70.30.40</ID>
+											<Name>Cableado de señales débiles</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.70.30.50</ID>
+											<Name>Mangueras y tubos de distribución para señales débiles</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.70.30.60</ID>
+											<Name>Arquetas y pozos para señales débiles</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>50.70.40</ID>
+									<Name>Dispositivos de maniobra y control de telecomunicaciones</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.70.40.10</ID>
+											<Name>Tomas de telecomunicaciones</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.70.40.20</ID>
+											<Name>Cuadros de mando de telecomunicaciones</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>50.70.50</ID>
+									<Name>Terminales de telecomunicaciones</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.70.50.10</ID>
+											<Name>Equipos de telecomunicaciones</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.70.50.20</ID>
+											<Name>Emisores de telecomunicaciones</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>50.80</ID>
+							<Name>Seguridad y anti-intrusión</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>50.80.10</ID>
+									<Name>Equipos de seguridad y anti-intrusión</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.80.10.10</ID>
+											<Name>Racks para seguridad y anti-intrusión</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.80.10.20</ID>
+											<Name>Centralitas de seguridad</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.80.10.30</ID>
+											<Name>Telefonía</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>50.80.20</ID>
+									<Name>Sistemas anti-intrusión</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.80.20.10</ID>
+											<Name>Detectores anti-intrusión</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.80.20.20</ID>
+											<Name>Circuitos de TV</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.80.20.30</ID>
+											<Name>Sensores antiintrusión</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>50.80.30</ID>
+									<Name>Elementos de control de personas</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.80.30.10</ID>
+											<Name>Control de accesos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>50.80.40</ID>
+									<Name>Elementos de control de vehículos</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.80.40.10</ID>
+											<Name>Gestión de tráfico</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>50.80.50</ID>
+									<Name>Elementos de aviso y alarma</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.80.50.10</ID>
+											<Name>Sirenas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>50.90</ID>
+							<Name>Instalaciones especiales</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>50.90.10</ID>
+									<Name>Equipos principales de instalaciones especiales</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.90.10.10</ID>
+											<Name>Equipos de medida, regulación y control especiales</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.90.10.20</ID>
+											<Name>Depósitos de instalaciones especiales</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.90.10.30</ID>
+											<Name>Grupos de presión de instalaciones especiales</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>50.90.20</ID>
+									<Name>Equipos secundarios de instalaciones especiales</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.90.20.10</ID>
+											<Name>Válvulas e instrumentos de medida y control de flujo especiales</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.90.20.20</ID>
+											<Name>Dispositivos especiales</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>50.90.30</ID>
+									<Name>Red de distribución de instalaciones especiales</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.90.30.10</ID>
+											<Name>Canalizaciones especiales</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.90.30.20</ID>
+											<Name>Arquetas y pozos de instalaciones especiales</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>50.90.40</ID>
+									<Name>Terminales de instalaciones especiales</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.90.40.10</ID>
+											<Name>Grifería para instalaciones especiales</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.90.40.20</ID>
+											<Name>Otros terminales especiales</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>50.90.50</ID>
+									<Name>Dispositivos de maniobra y control</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.90.50.10</ID>
+											<Name>Mandos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.90.50.20</ID>
+											<Name>Detectores especiales</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.90.50.30</ID>
+											<Name>Sensores especiales</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.90.50.40</ID>
+											<Name>Otros dispositivos de maniobra y control especiales</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>50.100</ID>
+							<Name>Otros elementos de instalaciones</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>50.100.10</ID>
+									<Name>Elementos comunes de instalaciones</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>50.100.10.10</ID>
+											<Name>Elementos de apoyo</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.100.10.20</ID>
+											<Name>Pasarelas y escaleras de acceso para mantenimiento</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>50.100.10.30</ID>
+											<Name>Canalizaciones y arquetas comunes de instalaciones</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>60</ID>
+					<Name>Equipamientos y mobiliario</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>60.10</ID>
+							<Name>Equipamientos</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>60.10.10</ID>
+									<Name>Cuartos húmedos / sanitarios</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>60.10.10.10</ID>
+											<Name>Inodoros</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.10.10.20</ID>
+											<Name>Urinarios</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.10.10.30</ID>
+											<Name>Bidés</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.10.10.40</ID>
+											<Name>Platos de ducha</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.10.10.50</ID>
+											<Name>Bañeras</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.10.10.60</ID>
+											<Name>Lavamanos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.10.10.70</ID>
+											<Name>Fregaderos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.10.10.80</ID>
+											<Name>Accesorios para cuartos húmedos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.10.10.90</ID>
+											<Name>Lavaderos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.10.10.100</ID>
+											<Name>Vertedero</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>60.10.20</ID>
+									<Name>Otros equipamientos</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>60.10.20.10</ID>
+											<Name>Equipamientos para circulación de vehículos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.10.20.20</ID>
+											<Name>Equipamientos comerciales</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.10.20.30</ID>
+											<Name>Equipamientos institucionales</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.10.20.40</ID>
+											<Name>Equipamientos recreativos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.10.20.50</ID>
+											<Name>Equipamientos asistenciales</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.10.20.60</ID>
+											<Name>Electrodomésticos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.10.20.70</ID>
+											<Name>Aparatos informáticos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>60.20</ID>
+							<Name>Mobiliario</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>60.20.10</ID>
+									<Name>Mobiliario fijo</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>60.20.10.10</ID>
+											<Name>Encimeras</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.20.10.20</ID>
+											<Name>Estantes</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.20.10.30</ID>
+											<Name>Espejos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.20.10.40</ID>
+											<Name>Mostradores</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.20.10.50</ID>
+											<Name>Muebles de obra</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.20.10.60</ID>
+											<Name>Armarios empotrados</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.20.10.70</ID>
+											<Name>Bancadas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.20.10.80</ID>
+											<Name>Otros mobiliarios fijos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>60.20.30</ID>
+									<Name>Mobiliario móvil</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>60.20.30.10</ID>
+											<Name>Mesas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.20.30.20</ID>
+											<Name>Sillas y sofás</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.20.30.30</ID>
+											<Name>Taburetes</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.20.30.40</ID>
+											<Name>Bancos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.20.30.50</ID>
+											<Name>Camas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.20.30.60</ID>
+											<Name>Armarios, cajoneras y archivadores</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.20.30.70</ID>
+											<Name>Otros mobiliarios móviles</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>60.30</ID>
+							<Name>Sistemas de transporte</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>60.30.10</ID>
+									<Name>Transporte vertical</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>60.30.10.10</ID>
+											<Name>Ascensores</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.30.10.20</ID>
+											<Name>Montacargas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.30.10.30</ID>
+											<Name>Escaleras mecánicas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>60.30.20</ID>
+									<Name>Transporte horizontal</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>60.30.20.10</ID>
+											<Name>Pasarelas transportadoras</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.30.20.20</ID>
+											<Name>Otros sistemas de transporte</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>60.30.30</ID>
+									<Name>Manipulación de elementos</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>60.30.30.10</ID>
+											<Name>Grúas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.30.30.20</ID>
+											<Name>Polipasto</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.30.30.30</ID>
+											<Name>Cintas transportadoras</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.30.30.40</ID>
+											<Name>Sistemas neumáticos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>60.30.30.50</ID>
+											<Name>Otros sistemas de manipulación</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>70</ID>
+					<Name>Urbanización de los espacios exteriores</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>70.10</ID>
+							<Name>Elementos de cimentación, contención de tierras y elementos estructurales</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>70.10.10</ID>
+									<Name>Cimientos para elementos de urbanización</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>70.10.10.10</ID>
+											<Name>Zapatas para elementos de urbanización</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>70.10.10.20</ID>
+											<Name>Cimentación especial para elementos de urbanización</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>70.10.20</ID>
+									<Name>Muros de urbanización</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>70.10.20.10</ID>
+											<Name>Muros in-situ de urbanización</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>70.10.20.20</ID>
+											<Name>Muros prefabricados de urbanización</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>70.10.20.30</ID>
+											<Name>Muros de gravedad</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>70.10.20.40</ID>
+											<Name>Muro tierra armada</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>70.10.20.50</ID>
+											<Name>Muro de gaviones</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>70.10.30</ID>
+									<Name>Otros elementos estructurales de urbanización</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>70.20</ID>
+							<Name>Elementos de cierres y protección de urbanización</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>70.20.10</ID>
+									<Name>Cierres de parcela</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>70.20.20</ID>
+									<Name>Barreras móviles</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>70.20.30</ID>
+									<Name>Pilonas</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>70.30</ID>
+							<Name>Firmes y pavimentos</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>70.30.10</ID>
+									<Name>Bases y subbases</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>70.30.20</ID>
+									<Name>Pavimentos peatonales</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>70.30.30</ID>
+									<Name>Pavimentos para tráfico rodado</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>70.30.40</ID>
+									<Name>Escalonamientos de urbanización</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>70.30.50</ID>
+									<Name>Rampas de urbanización</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>70.40</ID>
+							<Name>Instalaciones y servicios</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>70.40.10</ID>
+									<Name>Alumbrado</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>70.40.10.10</ID>
+											<Name>Luminarias y báculos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>70.40.10.20</ID>
+											<Name>Elementos de balizamiento</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>70.40.10.30</ID>
+											<Name>Elementos de la red y control</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>70.40.20</ID>
+									<Name>Riego y abastecimiento de fuente</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>70.40.20.10</ID>
+											<Name>Canalizaciones de riego</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>70.40.20.20</ID>
+											<Name>Accesorios de riego</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>70.40.20.30</ID>
+											<Name>Arquetas de riego</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>70.40.30</ID>
+									<Name>Drenaje</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>70.40.30.10</ID>
+											<Name>Canalizaciones de drenaje</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>70.40.30.20</ID>
+											<Name>Rejas y buneras</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>70.40.30.30</ID>
+											<Name>Arquetas y pozos de drenaje</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>70.50</ID>
+							<Name>Jardinería</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>70.50.10</ID>
+									<Name>Plantaciones</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>70.50.10.10</ID>
+											<Name>Arbolados</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>70.50.10.20</ID>
+											<Name>Césped</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>70.50.10.30</ID>
+											<Name>Arbustivas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>70.50.20</ID>
+									<Name>Parterres</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>70.50.20.10</ID>
+											<Name>Parterres fijos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>70.50.20.20</ID>
+											<Name>Parterres móviles</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>70.60</ID>
+							<Name>Mobiliario urbano y elementos de señalización</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>70.60.10</ID>
+									<Name>Mobiliario exterior</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>70.60.20</ID>
+									<Name>Juegos infantiles</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>70.60.30</ID>
+									<Name>Mobiliario exterior especial</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>70.60.40</ID>
+									<Name>Señalización horizontal</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>70.60.50</ID>
+									<Name>Señalización vertical</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>80</ID>
+					<Name>Construcciones e instalaciones temporales</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>80.10</ID>
+							<Name>Implantaciones de obra</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>80.10.10</ID>
+									<Name>Andamios</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>80.10.10.10</ID>
+											<Name>Puente volante</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.10.10.20</ID>
+											<Name>Bastida fija</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.10.10.30</ID>
+											<Name>Caballete</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.10.10.40</ID>
+											<Name>Andamio móvil</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.10.10.50</ID>
+											<Name>Marquesinas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.10.10.60</ID>
+											<Name>Lonas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>80.10.20</ID>
+									<Name>Grúas</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>80.10.20.10</ID>
+											<Name>Grúa torre</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.10.20.20</ID>
+											<Name>Grueta</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.10.20.30</ID>
+											<Name>Montacargas de obra</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.10.20.40</ID>
+											<Name>Poleas y polipastos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>80.10.30</ID>
+									<Name>Casetas</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>80.10.30.10</ID>
+											<Name>Casetas de obra</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.10.30.20</ID>
+											<Name>Aseos portátiles</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.10.30.30</ID>
+											<Name>Casetas de almacenamiento</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.10.30.40</ID>
+											<Name>Otros módulos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>80.10.40</ID>
+									<Name>Cierres y señalización</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>80.10.40.10</ID>
+											<Name>Cierres perimetrales</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.10.40.20</ID>
+											<Name>Puertas de acceso</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.10.40.30</ID>
+											<Name>Rótulos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.10.40.40</ID>
+											<Name>Balizas de señalización</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>80.10.50</ID>
+									<Name>Acopio</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>80.10.50.10</ID>
+											<Name>Acopio de tierras y áridos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.10.50.20</ID>
+											<Name>Acopio de productos</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.10.50.30</ID>
+											<Name>Palets</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>80.10.60</ID>
+									<Name>Otros elementos de implantación de obra</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>80.10.60.10</ID>
+											<Name>Silo</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.10.60.20</ID>
+											<Name>Depósitos de obra</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>80.10.70</ID>
+									<Name>Gestión de residuos</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>80.10.70.10</ID>
+											<Name>Saca de escombros</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.10.70.20</ID>
+											<Name>Contenedor de escombros</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.10.70.30</ID>
+											<Name>Escombros</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.10.70.40</ID>
+											<Name>Residuos especiales</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.10.70.50</ID>
+											<Name>Chatarra</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.10.70.60</ID>
+											<Name>Tubo de descarga de escombros</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.10.70.70</ID>
+											<Name>Tolva</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>80.20</ID>
+							<Name>Construcciones temporales</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>80.20.10</ID>
+									<Name>Estructuras auxiliares y apeos</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>80.20.10.10</ID>
+											<Name>Cimentaciones auxiliares</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.20.10.20</ID>
+											<Name>Apuntalamiento de fachadas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.20.10.30</ID>
+											<Name>Apeo de servicios</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.20.10.40</ID>
+											<Name>Encofrados auxiliares</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>80.20.20</ID>
+									<Name>Instalaciones provisionales</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>80.20.20.10</ID>
+											<Name>Instalación provisional eléctrica</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.20.20.20</ID>
+											<Name>Instalación provisional de agua</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.20.20.30</ID>
+											<Name>Instalación provisional de saneamiento</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.20.20.40</ID>
+											<Name>Otras instalaciones provisionales</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>80.20.30</ID>
+									<Name>Otras construcciones temporales</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>80.20.30.10</ID>
+											<Name>Otras construcciones temporales</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>80.30</ID>
+							<Name>Equipos y herramientas</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>80.30.10</ID>
+									<Name>Maquinaria</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>80.30.10.10</ID>
+											<Name>Maquinaria de excavación y cimentación</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.30.10.20</ID>
+											<Name>Maquinaria para escombros</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.30.10.30</ID>
+											<Name>Maquinaria de elevación</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.30.10.40</ID>
+											<Name>Maquinaria de transporte</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.30.10.50</ID>
+											<Name>Máquina de tratamiento de materiales</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.30.10.60</ID>
+											<Name>Otros tipos de maquinaria</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>80.30.20</ID>
+									<Name>Herramientas</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>80.30.20.10</ID>
+											<Name>Herramientas manuales</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.30.20.20</ID>
+											<Name>Herramientas no manuales</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>80.40</ID>
+							<Name>Seguridad y salud</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>80.40.10</ID>
+									<Name>Protecciones individuales y colectivas</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>80.40.10.10</ID>
+											<Name>Equipos de protección individual</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.40.10.20</ID>
+											<Name>Vallas de protección caídas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.40.10.30</ID>
+											<Name>Redes de protección</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.40.10.40</ID>
+											<Name>Líneas de vida</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>80.40.10.50</ID>
+											<Name>Otros medios de protección colectiva</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>80.40.20</ID>
+									<Name>Equipos de medida preventiva</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>80.40.20.10</ID>
+											<Name>Equipos de medida y detección de seguridad y salud</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>80.40.30</ID>
+									<Name>Delimitaciones de zonas de seguridad</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>80.40.30.10</ID>
+											<Name>Zonas de tráfico rodado y maquinaria</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+					</Children>
+				</Item>
+			</Items>
+		</System>	
+	</Classification>		
+</BuildingInformation>
