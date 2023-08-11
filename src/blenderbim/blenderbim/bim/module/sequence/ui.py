@@ -444,6 +444,16 @@ class BIM_PT_animation_tools(Panel):
             self.draw_visualisation_ui()
         if self.props.should_show_snapshot_ui:
             self.draw_snapshot_ui()
+        self.draw_processing_options()
+
+
+    def draw_processing_options(self):
+        row = self.layout.row(align=True)
+        row.alignment = "LEFT"
+        row.label(text="Processing Tools")
+        row = self.layout.row()
+        row.alignment = "RIGHT"
+        row.operator("bim.clear_previous_animation", text="Clear Previous Animation", icon="TRACKING_CLEAR_FORWARDS")
 
     def draw_visualisation_ui(self):
         row = self.layout.row(align=True)
@@ -467,12 +477,13 @@ class BIM_PT_animation_tools(Panel):
             row.prop(self.props, "speed_real_duration", text="")
         elif self.props.speed_types == "DURATION_SPEED":
             row.prop(self.props, "speed_animation_duration", text="")
+            row.label(text="->")
             row.prop(self.props, "speed_real_duration", text="")
         elif self.props.speed_types == "MULTIPLIER_SPEED":
             row.prop(self.props, "speed_multiplier", text="")
         row = self.layout.row(align=True)
         row.label(text="Display Settings")
-        row = self.layout.row(align=True)
+        row = self.layout.row()
         row.alignment = "RIGHT"
         if not self.animation_props.is_editing:
             op = row.operator(
@@ -506,7 +517,6 @@ class BIM_PT_animation_tools(Panel):
             self.draw_visualisation_settings_ui()
 
         row = self.layout.row(align=True)
-        row.alignment = "RIGHT"
         op = row.operator("bim.visualise_work_schedule_date_range", text="Create Animation", icon="OUTLINER_OB_CAMERA")
         op.work_schedule = self.props.active_work_schedule_id
 

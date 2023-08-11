@@ -19,7 +19,6 @@
 import bpy
 import re
 import os
-import isodate
 import ifcopenshell
 import ifcopenshell.util.sequence
 import ifcopenshell.util.date
@@ -36,7 +35,6 @@ from datetime import datetime
 import mathutils
 import pystache
 import webbrowser
-from datetime import timedelta
 
 
 class Sequence(blenderbim.core.tool.Sequence):
@@ -212,7 +210,9 @@ class Sequence(blenderbim.core.tool.Sequence):
                 item.calendar = ""
                 item.derived_calendar = calendar.Name or "Unnamed" if calendar else ""
 
-            if task.TaskTime and (task.TaskTime.ScheduleStart or task.TaskTime.ScheduleFinish or task.TaskTime.ScheduleDuration):
+            if task.TaskTime and (
+                task.TaskTime.ScheduleStart or task.TaskTime.ScheduleFinish or task.TaskTime.ScheduleDuration
+            ):
                 task_time = task.TaskTime
                 item.start = (
                     canonicalise_time(ifcopenshell.util.date.ifc2datetime(task_time.ScheduleStart))
@@ -721,7 +721,7 @@ class Sequence(blenderbim.core.tool.Sequence):
     def setup_default_task_columns(cls):
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.columns.clear()
-        default_columns = ["ScheduleStart","ScheduleFinish","ScheduleDuration"]
+        default_columns = ["ScheduleStart", "ScheduleFinish", "ScheduleDuration"]
         for item in default_columns:
             new = props.columns.add()
             new.name = f"IfcTaskTime.{item}"
@@ -798,6 +798,7 @@ class Sequence(blenderbim.core.tool.Sequence):
     def update_visualisation_date(cls, start_date, finish_date):
         def canonicalise_time(time):
             return time.strftime("%d/%m/%y")
+
         if not (start_date and finish_date):
             return
         props = bpy.context.scene.BIMWorkScheduleProperties
@@ -1212,7 +1213,7 @@ class Sequence(blenderbim.core.tool.Sequence):
                     start,
                     finish,
                     props.speed_animation_frames,
-                    ifcopenshell.util.date.parse_duration(props.speed_real_duration)
+                    ifcopenshell.util.date.parse_duration(props.speed_real_duration),
                 )
             elif props.speed_types == "DURATION_SPEED":
                 animation_duration = ifcopenshell.util.date.parse_duration(props.speed_animation_duration)
@@ -1300,14 +1301,23 @@ class Sequence(blenderbim.core.tool.Sequence):
             obj.animation_data_clear()
 
     @classmethod
+    def clear_object_color(cls, obj):
+        obj.color = (1.0, 1.0, 1.0, 1.0)
+
+    @classmethod
+    def display_object(cls, obj):
+        if not obj.visible_get():
+            obj.hide_viewport = False
+            obj.hide_render = False
+
+    @classmethod
     def clear_objects_animation(cls, include_blender_objects=True):
         for obj in bpy.data.objects:
             if not include_blender_objects and not obj.BIMObjectProperties.ifc_definition_id:
                 continue
             cls.clear_object_animation(obj)
-            if not obj.visible_get():
-                obj.hide_viewport = False
-                obj.hide_render = False
+            cls.clear_object_color(obj)
+            cls.display_object(obj)
 
     @classmethod
     def animate_objects(cls, settings, frames, clear_previous=True, animation_type=""):
@@ -1502,13 +1512,13 @@ class Sequence(blenderbim.core.tool.Sequence):
             compare_start = schedule_start
             compare_finish = schedule_finish
         task_name = task.Name or "Unnamed"
-        task_name = task_name.replace('\n', "")
+        task_name = task_name.replace("\n", "")
         data = {
             "pID": task.id(),
             "pName": task_name,
             "pCaption": task_name,
             "pStart": schedule_start,
-            "pEnd": schedule_finish ,
+            "pEnd": schedule_finish,
             "pPlanStart": compare_start,
             "pPlanEnd": compare_finish,
             "pMile": 1 if task.IsMilestone else 0,
@@ -1603,3 +1613,4 @@ class Sequence(blenderbim.core.tool.Sequence):
         if predefined_type == "USERDEFINED":
             object_type = bpy.context.scene.BIMWorkScheduleProperties.object_type
         return predefined_type, object_type
+
