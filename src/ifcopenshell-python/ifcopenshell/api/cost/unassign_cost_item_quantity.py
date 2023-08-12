@@ -98,4 +98,7 @@ class Usecase:
                 count = 0
                 for rel in self.settings["cost_item"].Controls:
                     count += len(rel.RelatedObjects)
-                quantity[3] = count
+                if count:
+                    quantity[3] = count
+                else:
+                    self.file.remove(quantity)
