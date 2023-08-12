@@ -3,6 +3,7 @@ Feature: Cost
 
 Scenario: Add cost schedule
     Given an empty IFC project
+    And I set "scene.BIMCostProperties.cost_schedule_predefined_types" to "COSTPLAN"
     When I press "bim.add_cost_schedule"
     Then nothing happens
 
@@ -110,6 +111,53 @@ Scenario: Add cost item
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
     When I press "bim.add_cost_item(cost_item={cost_item})"
     Then nothing happens
+
+Scenario: Contract Cost Item
+    Given an empty IFC project
+    And I set "scene.BIMCostProperties.cost_schedule_predefined_types" to "COSTPLAN"
+    And I press "bim.add_cost_schedule"
+    And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
+    And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
+    And I press "bim.add_summary_cost_item()"
+    And I press "bim.add_cost_item(cost_item={cost_item})"
+    When I press "bim.contract_cost_item(cost_item={cost_item})"
+    Then nothing happens
+
+Scenario: Contract All Cost Items
+    Given an empty IFC project
+    And I set "scene.BIMCostProperties.cost_schedule_predefined_types" to "COSTPLAN"
+    And I press "bim.add_cost_schedule"
+    And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
+    And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
+    And I press "bim.add_summary_cost_item()"
+    And I press "bim.add_cost_item(cost_item={cost_item})"
+    When I press "bim.contract_cost_items"
+    Then nothing happens
+
+Scenario: Expand Cost Item
+    Given an empty IFC project
+    And I set "scene.BIMCostProperties.cost_schedule_predefined_types" to "COSTPLAN"
+    And I press "bim.add_cost_schedule"
+    And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
+    And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
+    And I press "bim.add_summary_cost_item()"
+    And I press "bim.add_cost_item(cost_item={cost_item})"
+    And I press "bim.contract_cost_item(cost_item={cost_item})"
+    When I press "bim.expand_cost_item(cost_item={cost_item})"
+    Then nothing happens
+
+
+Scenario: Expand All Cost Items
+    Given an empty IFC project
+    And I set "scene.BIMCostProperties.cost_schedule_predefined_types" to "COSTPLAN"
+    And I press "bim.add_cost_schedule"
+    And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
+    And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
+    And I press "bim.add_summary_cost_item()"
+    And I press "bim.add_cost_item(cost_item={cost_item})"
+    When I press "bim.expand_cost_items"
+    Then nothing happens
+
 
 Scenario: Enable editing cost item quantities
     Given an empty IFC project

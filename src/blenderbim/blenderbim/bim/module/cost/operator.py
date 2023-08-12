@@ -156,6 +156,17 @@ class ContractCostItem(bpy.types.Operator, tool.Ifc.Operator):
         core.contract_cost_item(tool.Cost, cost_item=tool.Ifc.get().by_id(self.cost_item))
 
 
+class ContractCostItems(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.contract_cost_items"
+    bl_label = "Contract Cost Item"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Collapse cost item tree"
+    cost_item: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.contract_cost_items(tool.Cost)
+
+
 class RemoveCostItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_cost_item"
     bl_label = "Remove Cost Item"
