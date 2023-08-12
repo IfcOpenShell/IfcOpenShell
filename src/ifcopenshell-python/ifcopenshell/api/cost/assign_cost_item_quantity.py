@@ -77,19 +77,30 @@ class Usecase:
                 cost_item=item, products=[slab], prop_name="NetVolume")
         """
         self.file = file
-        self.settings = {"cost_item": cost_item, "products": products or [], "prop_name": prop_name}
+        self.settings = {
+            "cost_item": cost_item,
+            "products": products or [],
+            "prop_name": prop_name,
+        }
 
     def execute(self):
         if self.settings["prop_name"]:
             self.quantities = set(self.settings["cost_item"].CostQuantities or [])
+            print(self.settings["cost_item"].CostQuantities)
         for product in self.settings["products"]:
-            ifcopenshell.api.run(
-                "control.assign_control",
-                self.file,
-                related_object=product,
-                relating_control=self.settings["cost_item"],
-            )
             if self.settings["prop_name"]:
+                if (
+                    self.settings["cost_item"].CostQuantities
+                    and self.settings["cost_item"].CostQuantities[0].Name.lower()
+                    != self.settings["prop_name"].lower()
+                ):
+                    continue
+                ifcopenshell.api.run(
+                    "control.assign_control",
+                    self.file,
+                    related_object=product,
+                    relating_control=self.settings["cost_item"],
+                )
                 self.add_quantity_from_related_object(product)
         if self.settings["prop_name"]:
             self.settings["cost_item"].CostQuantities = list(self.quantities)
@@ -107,7 +118,10 @@ class Usecase:
         if not qto.is_a("IfcElementQuantity"):
             return
         for prop in qto.Quantities:
-            if prop.is_a("IfcPhysicalSimpleQuantity") and prop.Name.lower() == self.settings["prop_name"].lower():
+            if (
+                prop.is_a("IfcPhysicalSimpleQuantity")
+                and prop.Name.lower() == self.settings["prop_name"].lower()
+            ):
                 self.quantities.add(prop)
 
     def update_cost_item_count(self):
