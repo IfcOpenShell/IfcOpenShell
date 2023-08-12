@@ -302,7 +302,7 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--ifc", type=str, required=True, help="The IFC file")
     parser.add_argument("-s", "--spreadsheet", type=str, default="data.csv", help="The spreadsheet file")
     parser.add_argument("-f", "--format", type=str, default="csv", help="The format, chosen from csv, ods, or xlsx")
-    parser.add_argument("-q", "--query", type=str, default="", help='Specify a IFC query selector, such as ".IfcWall"')
+    parser.add_argument("-q", "--query", type=str, default="", help='Specify a IFC query selector, such as "IfcWall"')
     parser.add_argument(
         "-a",
         "--arguments",
@@ -315,7 +315,7 @@ if __name__ == "__main__":
 
     if args.export:
         ifc_file = ifcopenshell.open(args.ifc)
-        results = ifcopenshell.util.selector.Selector.parse(ifc_file, args.query)
+        results = ifcopenshell.util.selector.filter_elements(ifc_file, args.query)
         ifc_csv = IfcCsv()
         ifc_csv.export(ifc_file, results, args.arguments or [], output=args.spreadsheet, format=args.format)
     elif getattr(args, "import"):
