@@ -1511,8 +1511,8 @@ class Drawing(blenderbim.core.tool.Drawing):
             else:
                 base_elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialElement"))
             elements = {e for e in (elements & base_elements) if e.is_a() != "IfcSpace"}
-            annotations = tool.Drawing.get_group_elements(tool.Drawing.get_drawing_group(drawing))
-            elements.update(annotations)
+        annotations = tool.Drawing.get_group_elements(tool.Drawing.get_drawing_group(drawing))
+        elements.update(annotations)
 
         exclude = pset.get("Exclude", None)
         if exclude:
