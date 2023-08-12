@@ -123,6 +123,7 @@ class BIM_PT_object_systems(Panel):
             "IfcDistributionSystem": "NETWORK_DRIVE",
             "IfcDistributionCircuit": "DRIVER",
             "IfcBuildingSystem": "MOD_BUILD",
+            "IfcBuiltSystem": "MOD_BUILD",
             "IfcZone": "CUBE",
         }
         for system in ObjectSystemData.data["systems"]:
@@ -284,6 +285,7 @@ class BIM_UL_systems(UIList):
             "IfcDistributionSystem": "NETWORK_DRIVE",
             "IfcDistributionCircuit": "DRIVER",
             "IfcBuildingSystem": "MOD_BUILD",
+            "IfcBuiltSystem": "MOD_BUILD",
             "IfcZone": "CUBE",
         }
         if item:
@@ -316,6 +318,7 @@ class BIM_UL_object_systems(UIList):
             "IfcDistributionSystem": "NETWORK_DRIVE",
             "IfcDistributionCircuit": "DRIVER",
             "IfcBuildingSystem": "MOD_BUILD",
+            "IfcBuiltSystem": "MOD_BUILD",
             "IfcZone": "CUBE",
         }
         if item:
