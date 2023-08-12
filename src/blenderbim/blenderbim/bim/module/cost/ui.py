@@ -139,8 +139,8 @@ class BIM_PT_cost_schedules(Panel):
         row = self.layout.row(align=True)
         row.alignment = "RIGHT"
         row.operator("bim.add_summary_cost_item", text="Add Summary Cost", icon="ADD")
-        row.operator("bim.expand_all_tasks", text="Expand All")
-        row.operator("bim.contract_all_tasks", text="Contract All")
+        row.operator("bim.expand_cost_items", text="Expand All")
+        row.operator("bim.contract_cost_items", text="Contract All")
         row = self.layout.row(align=True)
         row.alignment = "RIGHT"
         if self.props.cost_items and self.props.active_cost_item_index < len(self.props.cost_items):

@@ -96,11 +96,11 @@ class Cost(blenderbim.core.tool.Cost):
         props.contracted_cost_items = json.dumps(cls.contracted_cost_items)
 
     @classmethod
-    def contract_cost_item(cls, cost_item_id):
+    def contract_cost_item(cls, cost_item):
         props = bpy.context.scene.BIMCostProperties
         if not hasattr(cls, "contracted_cost_items"):
             cls.contracted_cost_items = json.loads(props.contracted_cost_items)
-        cls.contracted_cost_items.append(cost_item_id)
+        cls.contracted_cost_items.append(cost_item.id())
         props.contracted_cost_items = json.dumps(cls.contracted_cost_items)
 
     @classmethod
