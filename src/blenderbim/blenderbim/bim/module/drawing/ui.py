@@ -314,7 +314,7 @@ class BIM_PT_references(Panel):
 
         if not self.props.is_editing_references:
             row = self.layout.row(align=True)
-            row.label(text=f"{DocumentsData.data['total_references']} References Found", icon="LONGDISPLAY")
+            row.label(text=f"{DocumentsData.data['total_references']} References Found", icon="OBJECT_HIDDEN")
             row.operator("bim.load_references", text="", icon="IMPORT")
             return
 
