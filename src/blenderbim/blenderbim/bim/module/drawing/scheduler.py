@@ -351,7 +351,7 @@ class Scheduler:
             wrap_text: if True, text will be wrapped to fit in cell
             cell_width: width of cell, used for wrapping text
         """
-        text_lines = [str(p).upper() for p in p_tags]
+        text_lines = [str(p) for p in p_tags]
         box_alignment_params = SvgWriter.get_box_alignment_parameters(box_alignment)
         text_params = {
             "font-size": font_size,
