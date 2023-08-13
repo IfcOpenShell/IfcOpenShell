@@ -86,7 +86,6 @@ class Usecase:
     def execute(self):
         if self.settings["prop_name"]:
             self.quantities = set(self.settings["cost_item"].CostQuantities or [])
-            print(self.settings["cost_item"].CostQuantities)
         for product in self.settings["products"]:
             self.assign_cost_control(
                 related_object=product, cost_item=self.settings["cost_item"]
