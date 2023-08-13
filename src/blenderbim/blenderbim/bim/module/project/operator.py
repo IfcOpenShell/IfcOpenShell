@@ -880,6 +880,27 @@ class LoadLink(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class ToggleLinkSelectability(bpy.types.Operator):
+    bl_idname = "bim.toggle_link_selectability"
+    bl_label = "Toggle Link Selectability"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Toggle selectability"
+    link: bpy.props.StringProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMProjectProperties
+        link = props.links.get(self.link)
+        for collection in self.get_linked_collections():
+            collection.hide_select = not collection.hide_select
+            link.is_selectable = not collection.hide_select
+        return {"FINISHED"}
+
+    def get_linked_collections(self):
+        return [
+            c for c in bpy.data.collections if "IfcProject" in c.name and c.library and c.library.filepath == self.link
+        ]
+
+
 class ToggleLinkVisibility(bpy.types.Operator):
     bl_idname = "bim.toggle_link_visibility"
     bl_label = "Toggle Link Visibility"
