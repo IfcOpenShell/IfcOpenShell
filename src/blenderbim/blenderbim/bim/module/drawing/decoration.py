@@ -248,8 +248,13 @@ class BaseDecorator:
         if check_mode and obj.data.is_editmode:
             return self.get_editmesh_geom(obj)
 
-        vertices = [obj.matrix_world @ v.co for v in obj.data.vertices]
-        indices = [e.vertices for e in obj.data.edges]
+        bm = bmesh.new()
+        bm.from_mesh(obj.data)
+        vertices = [obj.matrix_world @ v.co for v in bm.verts]
+        # In object mode, it's nicer to not show "internal edges". Most will be dissolved anyway.
+        indices = [[v.index for v in e.verts] for e in bm.edges if len(e.link_faces) != 2]
+        bm.free()
+
         return vertices, indices
 
     def get_editmesh_geom(self, obj):
