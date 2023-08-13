@@ -1,16 +1,19 @@
 Installation
 ============
 
-There are different methods of installation, depending on your situation.
+There are different methods of installation, depending on your situation. If
+you aren't sure which to choose, if you're a programmer, go for the **Pre-built
+packages**. If you aren't a programmer, go for the **BlenderBIM Add-on**.
 
 1. **Pre-built packages** is recommended for users wanting to use the latest IfcOpenShell builds.
 2. **PyPI** is recommended for developers using Pip.
 3. **Conda** is recommended for developers using Anaconda.
 4. **Docker** is recommended for developers using Docker.
 5. **AWS Lambda** is recommended for developers using AWS Lambda functions.
-6. **Using the BlenderBIM Add-on** is recommended for non-developers wanting a graphical interface.
-7. **From source with precompiled binaries** is recommended for developers actively working with the Python code.
-8. **Compiling from source** is recommended for developers actively working with the C++ core.
+6. **Google Colab** is recommended for developers using Google Colab.
+7. **Using the BlenderBIM Add-on** is recommended for non-developers wanting a graphical interface.
+8. **From source with precompiled binaries** is recommended for developers actively working with the Python code.
+9. **Compiling from source** is recommended for developers actively working with the C++ core.
 
 Pre-built packages
 ------------------
@@ -181,6 +184,18 @@ Gateways, etc.
 8. Deploy to lambda. This is beyond the scope of this guide. Please refer to
    the AWS documentation. Some tools that could be useful are AWS
    CloudFormaton, AWS CDK, pulumi or terraform.
+
+Google Colab
+------------
+
+The Google Colab environment is based on the distribution from PyPI, but lets
+you run it in an online notebook without any local setup required. This is
+great for educators and those wanting to try it out without control on their
+local system.
+
+`Click here
+<https://colab.research.google.com/drive/1S9uZQvqXRpF1z6JTiKk79M1Ln63rHHIZ?usp=sharing>`__
+to launch a simple notebook.
 
 Using the BlenderBIM Add-on
 ---------------------------
