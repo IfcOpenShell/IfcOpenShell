@@ -117,6 +117,7 @@ class CostSchedulesData:
         data["TotalAppliedValue"] = 0.0
         data["TotalCost"] = 0.0
         has_unit_basis = False
+        is_sum = False
         if root_element.is_a("IfcCostItem"):
             values = root_element.CostValues
         elif root_element.is_a("IfcConstructionResource"):
@@ -130,6 +131,11 @@ class CostSchedulesData:
                 data["UnitBasisValueComponent"] = cost_value_data["UnitBasis"]["ValueComponent"]
                 data["UnitBasisUnitSymbol"] = cost_value_data["UnitBasis"]["UnitSymbol"]
                 has_unit_basis = True
+            else:
+                data["UnitBasisValueComponent"] = 1
+                data["UnitBasisUnitSymbol"] = "U"
+            if cost_value.Category == "*":
+                is_sum = True
         if has_unit_basis:
             data["TotalCost"] = data["TotalAppliedValue"] / data["UnitBasisValueComponent"]
         else:
@@ -137,7 +143,8 @@ class CostSchedulesData:
                 data["TotalCost"] = data["TotalAppliedValue"] * data["TotalCostQuantity"]
             else:
                 data["TotalCost"] = data["TotalAppliedValue"]
-                data["TotalAppliedValue"] = None
+        if is_sum:
+            data["TotalAppliedValue"] = None
 
     @classmethod
     def _load_cost_item_quantities(cls, cost_item, data):
@@ -154,7 +161,7 @@ class CostSchedulesData:
             if unit:
                 data["UnitSymbol"] = ifcopenshell.util.unit.get_unit_symbol(unit)
             else:
-                data["UnitSymbol"] = None
+                data["UnitSymbol"] = "U"
 
         # same_unit_nested_cost_item = set()
         # data["DerivedTotalCostQuantity"] = None
