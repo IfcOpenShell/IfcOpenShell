@@ -23,6 +23,7 @@ import blenderbim.core.tool
 import blenderbim.core.geometry
 import blenderbim.tool as tool
 from mathutils import Vector
+from blenderbim.bim.module.model.opening import FilledOpeningGenerator
 
 
 class Root(blenderbim.core.tool.Root):
@@ -57,7 +58,10 @@ class Root(blenderbim.core.tool.Root):
             if not source.Representation:
                 return
             dest.Representation = ifcopenshell.util.element.copy_deep(
-                tool.Ifc.get(), source.Representation, exclude=["IfcGeometricRepresentationContext"], exclude_callback=exclude_callback
+                tool.Ifc.get(),
+                source.Representation,
+                exclude=["IfcGeometricRepresentationContext"],
+                exclude_callback=exclude_callback,
             )
         elif dest.is_a("IfcTypeProduct"):
             if not source.RepresentationMaps:
@@ -140,9 +144,58 @@ class Root(blenderbim.core.tool.Root):
             for i, new_subelement in enumerate(new_subelements):
                 new_element = new_elements[i]
                 if data["type"] == "fill":
-                    obj1 = tool.Ifc.get_object(new_element)
-                    obj2 = tool.Ifc.get_object(new_subelement)
-                    bpy.ops.bim.add_filled_opening(voided_obj=obj1.name, filling_obj=obj2.name)
+                    element = new_element
+                    filling = new_subelement
+                    voided_obj = tool.Ifc.get_object(new_element)
+                    filling_obj = tool.Ifc.get_object(new_subelement)
+
+                    existing_opening_occurrence = subelement.FillsVoids[0].RelatingOpeningElement
+                    opening = ifcopenshell.api.run(
+                        "root.copy_class", tool.Ifc.get(), product=existing_opening_occurrence
+                    )
+                    ifcopenshell.api.run(
+                        "geometry.edit_object_placement",
+                        tool.Ifc.get(),
+                        product=opening,
+                        matrix=ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement),
+                        is_si=False,
+                    )
+
+                    representation = ifcopenshell.util.representation.get_representation(
+                        existing_opening_occurrence, "Model", "Body", "MODEL_VIEW"
+                    )
+                    representation = ifcopenshell.util.representation.resolve_representation(representation)
+                    mapped_representation = ifcopenshell.api.run(
+                        "geometry.map_representation", tool.Ifc.get(), representation=representation
+                    )
+                    ifcopenshell.api.run(
+                        "geometry.assign_representation",
+                        tool.Ifc.get(),
+                        product=opening,
+                        representation=mapped_representation,
+                    )
+                    ifcopenshell.api.run("void.add_opening", tool.Ifc.get(), opening=opening, element=element)
+                    ifcopenshell.api.run("void.add_filling", tool.Ifc.get(), opening=opening, element=filling)
+
+                    voided_objs = [voided_obj]
+                    # Openings affect all subelements of an aggregate
+                    for subelement in ifcopenshell.util.element.get_decomposition(element):
+                        subobj = tool.Ifc.get_object(subelement)
+                        if subobj:
+                            voided_objs.append(subobj)
+
+                    for voided_obj in voided_objs:
+                        if voided_obj.data:
+                            representation = tool.Ifc.get().by_id(voided_obj.data.BIMMeshProperties.ifc_definition_id)
+                            blenderbim.core.geometry.switch_representation(
+                                tool.Ifc,
+                                tool.Geometry,
+                                obj=voided_obj,
+                                representation=representation,
+                                should_reload=True,
+                                is_global=True,
+                                should_sync_changes_first=False,
+                            )
 
     @classmethod
     def run_geometry_add_representation(
