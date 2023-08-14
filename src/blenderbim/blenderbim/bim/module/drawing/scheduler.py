@@ -118,6 +118,25 @@ class Scheduler:
             if cell_style:
                 related_styles.append((style_name, cell_style))
 
+        # sometimes there are no column styles (e.g. in ODS from IfcCSV)
+        # and we just use some constant number for column widths
+        if not column_widths:
+            row_columns = []
+            for tr in table.getElementsByType(TableRow):
+                row_cols = 0
+                for td in tr.getElementsByType(TableCell):
+                    column_span = td.getAttribute("numbercolumnsspanned")
+                    column_span = int(column_span) if column_span else 1
+
+                    col_repeat = td.getAttribute("numbercolumnsrepeated")
+                    col_repeat = int(col_repeat) if col_repeat else 1
+                    row_cols += column_span * col_repeat
+                row_columns.append(row_cols)
+
+            n_columns = max(row_columns)
+            column_widths = [25] * n_columns  # some constant width value 👀
+            column_styles = [None] * n_columns
+
         # collect rows height
         row_heights = []
         # TODO: never used yet because unsure about priority for row styles
