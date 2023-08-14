@@ -37,6 +37,19 @@ class TestRemoveInformation(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcDocumentReference")) == 0
         assert len(self.file.by_type("IfcRelAssociatesDocument")) == 0
 
+        # test removing relationship to another information if it was the only relating element
+        information = ifcopenshell.api.run("document.add_information", self.file, parent=None)
+        information1 = ifcopenshell.api.run("document.add_information", self.file, parent=information)
+        information2 = ifcopenshell.api.run("document.add_information", self.file, parent=information)
+
+        ifcopenshell.api.run("document.remove_information", self.file, information=information1)
+        assert len(self.file.by_type("IfcDocumentInformation")) == 2
+        assert len(self.file.by_type("IfcDocumentInformationRelationship")) == 1
+
+        ifcopenshell.api.run("document.remove_information", self.file, information=information2)
+        assert len(self.file.by_type("IfcDocumentInformation")) == 1
+        assert len(self.file.by_type("IfcDocumentInformationRelationship")) == 0
+
     def test_removing_all_subdocuments_and_their_references_too(self):
         project = self.file.createIfcProject()
         information = ifcopenshell.api.run("document.add_information", self.file, parent=None)
