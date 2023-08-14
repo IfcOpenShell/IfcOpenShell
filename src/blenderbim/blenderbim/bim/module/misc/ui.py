@@ -50,8 +50,9 @@ class BIM_PT_misc_utilities(bpy.types.Panel):
         row.operator("bim.clean_wireframes")
         row = layout.row()
         row.operator("bim.patch_non_parametric_mep_segment")
-
         row = layout.row(align=True)
         row.operator("bim.enable_editing_sketch_extrusion_profile", text="Start Sketching")
         row.operator("bim.edit_sketch_extrusion_profile", text="", icon="FILE_REFRESH")
         row.operator("bim.disable_editing_sketch_extrusion_profile", text="", icon="CANCEL")
+        row = layout.row()
+        row.operator("bim.import_plot", text="Import Plot Coordinates", icon="FILE_FOLDER")
