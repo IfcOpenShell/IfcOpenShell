@@ -294,7 +294,9 @@ class FacetTransformer(lark.Transformer):
                 return False
 
     def compare(self, element_value, comparison, value):
-        if isinstance(value, str):
+        if isinstance(element_value, (list, tuple)):
+            return any(self.compare(ev, comparison, value) for ev in element_value)
+        elif isinstance(value, str):
             if isinstance(element_value, int):
                 value = int(value)
             elif isinstance(element_value, float):
