@@ -386,6 +386,53 @@ class TestGetMaterial(test.bootstrap.IFC4):
         assert subject.get_material(element, should_inherit=False) is None
 
 
+class TestGetMaterials(test.bootstrap.IFC4):
+    def test_getting_the_materials_of_a_product(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        material = ifcopenshell.api.run("material.add_material", self.file)
+        ifcopenshell.api.run("material.assign_material", self.file, product=element, material=material)
+        assert subject.get_materials(element) == [material]
+
+
+class TestGetStyles(test.bootstrap.IFC4):
+    def test_getting_the_styles_of_a_product(self):
+        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        assert subject.get_styles(element) == []
+
+        model = ifcopenshell.api.run("context.add_context", self.file, context_type="Model")
+        body = ifcopenshell.api.run("context.add_context", self.file,
+            context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model)
+
+        material = ifcopenshell.api.run("material.add_material", self.file)
+        ifcopenshell.api.run("material.assign_material", self.file, product=element, material=material)
+
+        style = ifcopenshell.api.run("style.add_style", self.file)
+        ifcopenshell.api.run("style.add_surface_style", self.file,
+            style=style, ifc_class="IfcSurfaceStyleShading", attributes={
+                "SurfaceColour": { "Name": None, "Red": 1.0, "Green": 0.8, "Blue": 0.8 },
+                "Transparency": 0., # 0 is opaque, 1 is transparent
+            })
+        ifcopenshell.api.run("style.assign_material_style", self.file, material=material, style=style, context=body)
+
+        assert subject.get_styles(element) == [style]
+
+        style2 = ifcopenshell.api.run("style.add_style", self.file)
+        ifcopenshell.api.run("style.add_surface_style", self.file,
+            style=style2, ifc_class="IfcSurfaceStyleShading", attributes={
+                "SurfaceColour": { "Name": None, "Red": 1.0, "Green": 0.8, "Blue": 0.8 },
+                "Transparency": 0., # 0 is opaque, 1 is transparent
+            })
+
+        representation = ifcopenshell.api.run("geometry.add_wall_representation", self.file,
+            context=body, length=5, height=3, thickness=0.118)
+
+        ifcopenshell.api.run("geometry.assign_representation", self.file, product=element, representation=representation)
+        ifcopenshell.api.run("style.assign_representation_styles", self.file, shape_representation=representation, styles=[style2])
+
+        assert subject.get_styles(element) == [style, style2]
+
+
 class TestGetElementsByMaterial(test.bootstrap.IFC4):
     def test_getting_elements_of_a_material(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
