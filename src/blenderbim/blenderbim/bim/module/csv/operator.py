@@ -129,9 +129,8 @@ class ExportCsvAttributes(bpy.types.Operator):
 class ExportIfcCsv(bpy.types.Operator):
     bl_idname = "bim.export_ifccsv"
     bl_label = "Export IFC"
-    #filename_ext = ".csv"
+    filename_ext = ".csv"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-    
 
     def invoke(self, context, event):
         props = context.scene.CsvProperties
@@ -149,8 +148,7 @@ class ExportIfcCsv(bpy.types.Operator):
             ifc_file = IfcStore.get_file()
         else:
             ifc_file = ifcopenshell.open(props.csv_ifc_file)
-        selector = ifcopenshell.util.selector.Selector()
-        results = selector.parse(ifc_file, props.ifc_selector)
+        results = ifcopenshell.util.selector.filter_elements(ifc_file, props.ifc_selector)
         ifc_csv = ifccsv.IfcCsv()
         attributes = [a.name for a in props.csv_attributes]
         sep = props.csv_custom_delimiter if props.csv_delimiter == "CUSTOM" else props.csv_delimiter
@@ -196,9 +194,12 @@ class EyedropIfcCsv(bpy.types.Operator):
         global_ids = []
         self.file = IfcStore.get_file()
         for obj in context.selected_objects:
-            if hasattr(obj, "BIMObjectProperties") and obj.BIMObjectProperties.ifc_definition_id:
-                global_ids.append("#" + self.file.by_id(obj.BIMObjectProperties.ifc_definition_id).GlobalId)
-        context.scene.CsvProperties.ifc_selector = "|".join(global_ids)
+            element = tool.Ifc.get_entity(obj)
+            if element:
+                global_id = getattr(element, "GlobalId", None)
+                if global_id:
+                    global_ids.append(global_id)
+        context.scene.CsvProperties.ifc_selector = ",".join(global_ids)
         return {"FINISHED"}
 
 

@@ -23,6 +23,7 @@ import ifcopenshell.util.brick
 import blenderbim.core.tool
 import blenderbim.tool as tool
 from contextlib import contextmanager
+import datetime
 
 try:
     import brickschema
@@ -308,6 +309,8 @@ class Brick(blenderbim.core.tool.Brick):
         with BrickStore.graph.new_changeset("PROJECT") as cs:
             cs.load_file(filepath)
         BrickStore.path = filepath
+        cls.set_last_saved()
+        BrickStore.load_sub_roots()
         BrickStore.load_namespaces()
         BrickStore.load_entity_classes()
         BrickStore.load_relationships()
@@ -321,6 +324,7 @@ class Brick(blenderbim.core.tool.Brick):
         with BrickStore.graph.new_changeset("SCHEMA") as cs:
             cs.load_file(BrickStore.schema)
         BrickStore.graph.bind("digitaltwin", Namespace("https://example.org/digitaltwin#"))
+        BrickStore.load_sub_roots()
         BrickStore.load_namespaces()
         BrickStore.load_entity_classes()
         BrickStore.load_relationships()
@@ -340,10 +344,9 @@ class Brick(blenderbim.core.tool.Brick):
 
     @classmethod
     def remove_brick(cls, brick_uri):
-        if BrickStore.graph.triples((URIRef(brick_uri), None, None)):
-            with BrickStore.new_changeset() as cs:
-                for triple in BrickStore.graph.triples((URIRef(brick_uri), None, None)):
-                    cs.remove(triple)
+        with BrickStore.new_changeset() as cs:
+            for triple in BrickStore.graph.triples((URIRef(brick_uri), None, None)):
+                cs.remove(triple)
 
     @classmethod
     def run_assign_brick_reference(cls, element=None, library=None, brick_uri=None):
@@ -379,6 +382,7 @@ class Brick(blenderbim.core.tool.Brick):
     @classmethod
     def serialize_brick(cls):
         BrickStore.get_project().serialize(destination=BrickStore.path, format="turtle")
+        cls.set_last_saved()
 
     @classmethod
     def add_namespace(cls, alias, uri):
@@ -392,22 +396,24 @@ class Brick(blenderbim.core.tool.Brick):
         else:
             bpy.context.scene.BIMBrickProperties.brick_breadcrumbs.clear()
 
+    @classmethod
+    def set_last_saved(cls):
+        save = os.path.getmtime(BrickStore.path)
+        save = datetime.datetime.fromtimestamp(save)
+        BrickStore.last_saved = f"{save.year}-{save.month}-{save.day} {save.hour}:{save.minute}"
+
 class BrickStore:
     schema = None  # this is now a os path
     path = None  # file path if the project was loaded in
     graph = None  # this is the VersionedGraphCollection with 2 arbitrarily named graphs: "schema" and "project"
     # "SCHEMA" holds the Brick.ttl metadata; "PROJECT" holds all the authored entities
+    last_saved = None
     history = []
     future = []
     current_changesets = 0
     history_size = 64
     namespaces = []
-    root_classes = ["Equipment",
-                        "Electrical_Equipment", "Fire_Safety_Equipment", "HVAC_Equipment", "Lighting_Equipment", "Meter", 
-                    "Location",
-                    "System",
-                    "Point", 
-                        "Alarm", "Command", "Parameter", "Sensor", "Setpoint", "Status"]
+    root_classes = ["Equipment", "Location", "System", "Point"]
     entity_classes = {}
     relationships = []
 
@@ -416,7 +422,9 @@ class BrickStore:
         BrickStore.schema = None
         BrickStore.graph = None
         BrickStore.path = None
+        BrickStore.last_saved = None
         BrickStore.namespaces = []
+        BrickStore.root_classes = ["Equipment", "Location", "System", "Point"]
         BrickStore.entity_classes = {}
         BrickStore.relationships = []
 
@@ -425,9 +433,35 @@ class BrickStore:
         return BrickStore.graph.graph_at(graph="PROJECT")
     
     @classmethod
+    def load_sub_roots(cls):
+        query = BrickStore.graph.query(
+            """
+            PREFIX brick: <https://brickschema.org/schema/Brick#>
+            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+            SELECT ?subRoot ?subClasses WHERE {
+                {
+                SELECT ?subRoot (COUNT(?subClass) as ?subClasses) WHERE {
+                    {
+                        ?subRoot rdfs:subClassOf brick:Equipment .
+                    } UNION {
+                        ?subRoot rdfs:subClassOf brick:Point .
+                    }
+                    ?subClass rdfs:subClassOf* ?subRoot .
+                }
+                GROUP BY ?subRoot
+                }
+            FILTER(?subClasses > 3)
+            }
+            """
+        )
+        for row in query:
+            sub_root = row.get("subRoot").toPython().split("#")[-1]
+            BrickStore.root_classes.append(sub_root)
+
+    @classmethod
     def load_namespaces(cls):
         BrickStore.namespaces = []
-        keyword_filter = ["brickschema.org", "schema.org", "w3.org", "purl.org", "rdfs.org", "qudt.org", "ashrae.org"]
+        keyword_filter = ["brickschema.org", "schema.org", "w3.org", "purl.org", "rdfs.org", "qudt.org", "ashrae.org", "usefulinc.com", "xmlns.com", "opengis.net"]
         for alias, uri in BrickStore.graph.namespaces():
             ignore_namespace = False
             for keyword in keyword_filter:
@@ -444,8 +478,12 @@ class BrickStore:
                 """
                 PREFIX brick: <https://brickschema.org/schema/Brick#>
                 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                PREFIX owl: <http://www.w3.org/2002/07/owl#>
                 SELECT ?class WHERE {
                     ?class rdfs:subClassOf* brick:{root_class} .
+                    FILTER NOT EXISTS {
+                        ?class owl:deprecated true .
+                    } 
                 }
             """.replace(
                     "{root_class}", root_class

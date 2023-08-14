@@ -93,6 +93,7 @@ class FilterCategory(PropertyGroup):
 class Link(PropertyGroup):
     name: StringProperty(name="Name")
     is_loaded: BoolProperty(name="Is Loaded", default=False)
+    is_selectable: BoolProperty(name="Is Selectable", default=True)
     is_wireframe: BoolProperty(name="Is Wireframe", default=False)
     is_hidden: BoolProperty(name="Is Hidden", default=False)
 

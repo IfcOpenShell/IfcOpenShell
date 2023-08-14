@@ -351,6 +351,13 @@ class BIM_UL_links(UIList):
             if item.is_loaded:
                 row.label(text=item.name)
                 op = row.operator(
+                    "bim.toggle_link_selectability",
+                    text="",
+                    icon="RESTRICT_SELECT_OFF" if item.is_selectable else "RESTRICT_SELECT_ON",
+                    emboss=False,
+                )
+                op.link = item.name
+                op = row.operator(
                     "bim.toggle_link_visibility",
                     text="",
                     icon="CUBE" if item.is_wireframe else "MESH_CUBE",

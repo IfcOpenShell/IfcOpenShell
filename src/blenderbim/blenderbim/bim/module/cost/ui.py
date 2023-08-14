@@ -139,8 +139,8 @@ class BIM_PT_cost_schedules(Panel):
         row = self.layout.row(align=True)
         row.alignment = "RIGHT"
         row.operator("bim.add_summary_cost_item", text="Add Summary Cost", icon="ADD")
-        row.operator("bim.expand_all_tasks", text="Expand All")
-        row.operator("bim.contract_all_tasks", text="Contract All")
+        row.operator("bim.expand_cost_items", text="Expand All")
+        row.operator("bim.contract_cost_items", text="Contract All")
         row = self.layout.row(align=True)
         row.alignment = "RIGHT"
         if self.props.cost_items and self.props.active_cost_item_index < len(self.props.cost_items):
@@ -620,17 +620,21 @@ class BIM_UL_cost_items_trait:
         else:
             row.label(text="", icon="DOT")
 
-    def draw_total_cost_column(self, layout, cost_item):
-        format_numbers = "{0:,.2f}".format(cost_item["TotalCost"]).replace(",", " ")
-        currency = CostSchedulesData.data["currency"]
-        text = "{} {}".format(format_numbers, currency["name"]) if currency else format_numbers
-        layout.label(text=text)
-
     def draw_quantity_column(self, layout, cost_item):
         if CostSchedulesData.data["is_editing_rates"]:
             self.draw_uom_column(layout, cost_item)
         else:
             self.draw_total_quantity_column(layout, cost_item)
+
+    def draw_uom_column(self, layout, cost_item):
+        layout.label(text=cost_item["UnitBasisUnitSymbol"])
+
+    def draw_total_quantity_column(self, layout, cost_item):
+        if cost_item["TotalCostQuantity"]:
+            label = "{0:.2f}".format(cost_item["TotalCostQuantity"]) + f" {cost_item['UnitSymbol'] or '-'}"
+            layout.label(text=label)
+        else:
+            layout.label(text="-")
 
     def draw_value_column(self, layout, cost_item):
         if cost_item["TotalAppliedValue"]:
@@ -643,8 +647,11 @@ class BIM_UL_cost_items_trait:
         else:
             layout.label(text="-")
 
-    def draw_uom_column(self, layout, cost_item):
-        layout.label(text=cost_item["UnitBasisUnitSymbol"] or "-" if cost_item["UnitBasisValueComponent"] else "-")
+    def draw_total_cost_column(self, layout, cost_item):
+        format_numbers = "{0:,.2f}".format(cost_item["TotalCost"]).replace(",", " ")
+        currency = CostSchedulesData.data["currency"]
+        text = "{} {}".format(format_numbers, currency["name"]) if currency else format_numbers
+        layout.label(text=text)
 
     def draw_order_operator(self, row, ifc_definition_id, cost_item):
         if cost_item["NestingIndex"] is not None:
@@ -657,19 +664,7 @@ class BIM_UL_cost_items_trait:
                 op.cost_item = ifc_definition_id
                 op.new_index = cost_item["NestingIndex"] - 1
 
-    def draw_total_quantity_column(self, layout, cost_item):
-        if cost_item["TotalCostQuantity"]:
-            label = "{0:.2f}".format(cost_item["TotalCostQuantity"]) + f" {cost_item['UnitSymbol'] or '-'}"
-            layout.label(text=label)
-        else:
-            layout.label(text="-")
-        # if cost_item["DerivedTotalCostQuantity"] not in [None, 0]:
-        #     layout.label(text="{0:.2f}".format(cost_item["DerivedTotalCostQuantity"]) + f" {cost_item['DerivedUnitSymbol'] or '-'}")
-        # else:
-        #     if cost_item["TotalCostQuantity"] == 0:
-        #         layout.label(text="-")
-        #     else:
-        #         layout.label(text="{0:.2f}".format(cost_item["TotalCostQuantity"]) + f" {cost_item['UnitSymbol'] or '-'}")
+
 
 
 class BIM_UL_cost_items(BIM_UL_cost_items_trait, UIList):

@@ -95,19 +95,19 @@ class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
         gross_settings.set(gross_settings.DISABLE_OPENING_SUBTRACTIONS, True)
 
         for obj in bpy.context.visible_objects:
-            element = tool.Ifc.get_entity(obj)
+            visible_element = tool.Ifc.get_entity(obj)
 
             if (
-                not element
+                not visible_element
                 or obj.type != "MESH"
-                or not self.is_bounding_class(element)
+                or not self.is_bounding_class(visible_element)
                 or not tool.Drawing.is_intersecting_plane(obj, self.cut_point, self.cut_normal)
             ):
                 continue
 
             old_mesh = None
-            if element.HasOpenings:
-                new_mesh = self.create_mesh(ifcopenshell.geom.create_shape(gross_settings, element))
+            if visible_element.HasOpenings:
+                new_mesh = self.create_mesh(ifcopenshell.geom.create_shape(gross_settings, visible_element))
                 old_mesh = obj.data
                 obj.data = new_mesh
 
