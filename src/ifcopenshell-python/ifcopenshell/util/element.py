@@ -339,6 +339,8 @@ def get_material(element, should_skip_usage=False, should_inherit=True):
     The material may be a single material, material set (layered, profiled, or
     constituent), or a material set usage.
 
+    :param element: The element to get the material of.
+    :type element: ifcopenshell.entity_instance.entity_instance
     :param should_skip_usage: If set to True, if the material is a material set
         usage, the material set itself will be returned. Useful if you don't
         care about occurrence usage parameters. If False, the usage will be
@@ -378,6 +380,8 @@ def get_materials(element, should_inherit=True):
     If the element has a material set, the individual materials of that set are
     returned as a list.
 
+    :param element: The element to get the materials of.
+    :type element: ifcopenshell.entity_instance.entity_instance
     :param should_inherit: If True, any inherited materials from associated
         types will be considered.
     :return: The associated materials of the element.
@@ -401,6 +405,51 @@ def get_materials(element, should_inherit=True):
         return [p.Material for p in material.MaterialProfiles]
     elif material.is_a("IfcMaterialConstituentSet"):
         return [c.Material for c in material.MaterialConstituents]
+
+
+def get_styles(element):
+    """Retrieves the styles used in an element's representation.
+
+    Styles may be retreived from the material or the body representation.
+
+    :param element: The element to get the styles of.
+    :type element: ifcopenshell.entity_instance.entity_instance
+    :return: A list of surface styles
+    :rtype: list[ifcopenshell.entity_instance.entity_instance]
+
+    Example:
+
+    .. code:: python
+
+        wall = file.by_type("IfcWall")[0]
+        styles = ifcopenshell.util.element.get_styles(wall)
+    """
+    styles = []
+
+    materials = ifcopenshell.util.element.get_materials(element)
+    for material in materials:
+        for material_definition_representation in material.HasRepresentation or []:
+            for representation in material_definition_representation.Representations:
+                for item in representation.Items:
+                    styles.extend([s for s in item.Styles if s.is_a("IfcSurfaceStyle")])
+
+    body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+    if not body:
+        return styles
+
+    for representation in [body]:
+        queue = list(representation.Items)
+        while queue:
+            item = queue.pop()
+            if item.is_a("IfcMappedItem"):
+                queue.extend(item.MappingSource.MappedRepresentation.Items)
+            if item.is_a("IfcBooleanResult"):
+                queue.append(item.FirstOperand)
+                queue.append(item.SecondOperand)
+            if item.StyledByItem:
+                styles.extend([s for s in item.StyledByItem[0].Styles if s.is_a("IfcSurfaceStyle")])
+    return styles
+
 
 
 def get_elements_by_material(ifc_file, material):
