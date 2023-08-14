@@ -137,6 +137,9 @@ class TestFilterElements(test.bootstrap.IFC4):
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Baz": 123})
         assert subject.filter_elements(self.file, "IfcWall, Foobar.Baz=123") == {element}
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Bay": 123.3})
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Pset_WallCommon")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Status": ["New"]})
+        assert subject.filter_elements(self.file, "IfcWall, Pset_WallCommon.Status=New") == {element}
 
     def test_selecting_by_classification(self):
         project = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
