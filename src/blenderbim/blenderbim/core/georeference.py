@@ -84,3 +84,6 @@ def convert_global_to_local(georeference):
 def convert_angle_to_coord(georeference, type):
     vector_coordinates = georeference.angle2coords(georeference.get_angle(type), type)
     georeference.set_vector_coordinates(vector_coordinates,type)
+
+def import_plot(georeference, filepath):
+    georeference.import_plot(filepath, georeference.get_map_conversion())

@@ -110,7 +110,7 @@ class SetCursorLocation(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.set_cursor_location"
     bl_label = "Set Cursor Location"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Move curson location to the specified coordinates"
+    bl_description = "Move cursor location to the specified coordinates"
 
     @classmethod
     def poll(cls, context):
@@ -187,3 +187,20 @@ class ConvertAngleToCoordinates(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.convert_angle_to_coord(tool.Georeference, type=self.type)
+
+
+class ImportPlot(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.import_plot"
+    bl_label = "Import Plot"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Import plot"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.csv", options={"HIDDEN"})
+
+    def execute(self, context):
+        core.import_plot(tool.Georeference, filepath=self.filepath)
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
