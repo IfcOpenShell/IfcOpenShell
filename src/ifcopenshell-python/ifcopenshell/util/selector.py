@@ -520,6 +520,10 @@ class Selector:
                 value = ifcopenshell.util.element.get_type(value)
             elif key in ("material", "mat"):
                 value = ifcopenshell.util.element.get_material(value, should_skip_usage=True)
+            elif key in ("materials", "mats"):
+                value = ifcopenshell.util.element.get_materials(value)
+            elif key == "styles":
+                value = ifcopenshell.util.element.get_styles(value)
             elif key in ("item", "i"):
                 if value.is_a("IfcMaterialLayerSet"):
                     value = value.MaterialLayers
