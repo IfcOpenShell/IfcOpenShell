@@ -67,9 +67,12 @@ class Brick(blenderbim.core.tool.Brick):
     def add_brick_from_element(cls, element, namespace, brick_class):
         ns = Namespace(namespace)
         brick = ns[element.GlobalId]
-        BrickStore.graph.add((brick, RDF.type, URIRef(brick_class)))
-        if element.Name:
-            BrickStore.graph.add((brick, URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal(element.Name)))
+        with BrickStore.new_changeset() as cs:
+            cs.add((brick, RDF.type, URIRef(brick_class)))
+            if element.Name:
+                cs.add((brick, URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal(element.Name)))
+            else:
+                cs.add((brick, URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal("Unnamed")))
         return str(brick)
 
     @classmethod
