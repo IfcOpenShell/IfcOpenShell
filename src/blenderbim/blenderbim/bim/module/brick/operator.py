@@ -131,16 +131,13 @@ class AddBrick(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         props = context.scene.BIMBrickProperties
-        library = None
-        if props.libraries:
-            library = tool.Ifc.get().by_id(int(props.libraries))
         core.add_brick(
             tool.Ifc,
             tool.Brick,
             element=tool.Ifc.get_entity(context.active_object) if context.selected_objects else None,
             namespace=props.namespace,
             brick_class=props.brick_entity_class,
-            library=library,
+            library=tool.Ifc.get().by_id(int(props.libraries)) if props.libraries else None,
             label=props.new_brick_label,
         )
 
