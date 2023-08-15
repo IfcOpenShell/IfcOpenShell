@@ -90,8 +90,13 @@ class BIM_PT_brickschema(Panel):
         row = self.layout.row(align=True)
         row.prop(data=self.props, property="brick_entity_create_type", text="")
 
+        # hide this if selected entity already has a reference
         row = self.layout.row(align=True)
-        row.prop(data=self.props, property="new_brick_label", text="")
+        active = tool.Ifc.get_entity(context.active_object)
+        if active and context.selected_objects:
+            row.label(text=active.Name if active.Name else "Unnamed")
+        else:
+            row.prop(data=self.props, property="new_brick_label", text="")
         prop_with_search(row, self.props, "brick_entity_class", text="")
         row.operator("bim.add_brick", text="", icon="ADD")
 
