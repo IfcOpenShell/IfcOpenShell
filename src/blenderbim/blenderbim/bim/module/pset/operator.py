@@ -398,6 +398,7 @@ class CalculateQuantity(bpy.types.Operator):
     bl_idname = "bim.calculate_quantity"
     bl_label = "Calculate Quantity"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Calculates the quantity with a defined formula for this exact entity and quantity"
     prop: bpy.props.StringProperty()
 
     def execute(self, context):
@@ -424,6 +425,10 @@ class GuessQuantity(bpy.types.Operator):
     bl_idname = "bim.guess_quantity"
     bl_label = "Guess Quantity"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = (
+        "Calculate the quantity by guessing the formula from the quantity name. "
+        "Less reliable than Calculate Quantity"
+    )
     prop: bpy.props.StringProperty()
 
     def execute(self, context):
