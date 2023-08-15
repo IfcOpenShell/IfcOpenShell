@@ -28,8 +28,9 @@ import datetime
 try:
     import brickschema
     import brickschema.persistent
+    from brickschema.namespaces import REF, A
     import urllib.parse
-    from rdflib import Literal, URIRef, Namespace
+    from rdflib import Literal, URIRef, Namespace, BNode
     from rdflib.namespace import RDF
 except:
     # See #1860
@@ -49,7 +50,7 @@ class Brick(blenderbim.core.tool.Brick):
         ns = Namespace(namespace)
         brick = ns[ifcopenshell.guid.expand(ifcopenshell.guid.new())]
         with BrickStore.new_changeset() as cs:
-            cs.add((brick, RDF.type, URIRef(brick_class)))
+            cs.add((brick, A, URIRef(brick_class)))
             cs.add((brick, URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal(label)))
         return str(brick)
 
@@ -68,7 +69,7 @@ class Brick(blenderbim.core.tool.Brick):
         ns = Namespace(namespace)
         brick = ns[element.GlobalId]
         with BrickStore.new_changeset() as cs:
-            cs.add((brick, RDF.type, URIRef(brick_class)))
+            cs.add((brick, A, URIRef(brick_class)))
             if element.Name:
                 cs.add((brick, URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal(element.Name)))
             else:
@@ -79,34 +80,25 @@ class Brick(blenderbim.core.tool.Brick):
     def add_brickifc_project(cls, namespace):
         project = tool.Ifc.get().by_type("IfcProject")[0]
         ns = Namespace(namespace)
-        ns_brickifc = Namespace("https://brickschema.org/extension/ifc#")
-        BrickStore.graph.bind("brickifc", ns_brickifc)
         brick_project = ns[project.GlobalId]
-        BrickStore.graph.add((brick_project, RDF.type, ns_brickifc["Project"]))
-        if project.Name:
-            BrickStore.graph.add(
-                (brick_project, URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal(project.Name))
-            )
-        BrickStore.graph.add((brick_project, ns_brickifc["projectID"], Literal(project.GlobalId)))
-        BrickStore.graph.add(
-            (brick_project, ns_brickifc["fileLocation"], Literal(bpy.context.scene.BIMProperties.ifc_file))
-        )
+        with BrickStore.new_changeset() as cs:
+            cs.add((brick_project, A, REF.ifcProject))
+            cs.add((brick_project, REF.ifcProjectID, Literal(project.GlobalId)))
+            cs.add((brick_project, REF.ifcFileLocation, Literal(bpy.context.scene.BIMProperties.ifc_file)))
+            if project.Name:
+                cs.add((brick_project, URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal(project.Name)))
         return str(brick_project)
 
     @classmethod
     def add_brickifc_reference(cls, brick, element, project):
-        ns_brickifc = Namespace("https://brickschema.org/extension/ifc#")
-        BrickStore.graph.bind("brickifc", ns_brickifc)
-        BrickStore.graph.add(
-            (
-                URIRef(brick),
-                ns_brickifc["hasIFCReference"],
-                [
-                    (ns_brickifc["hasProjectReference"], URIRef(project)),
-                    (ns_brickifc["globalID"], Literal(element.GlobalId)),
-                ],
-            )
-        )
+        with BrickStore.new_changeset() as cs:
+            bnode = BNode()
+            cs.add((URIRef(brick), REF.hasExternalReference, bnode))
+            cs.add((bnode, A, REF.IFCReference))
+            cs.add((bnode, REF.hasIfcProjectReference, URIRef(project)))
+            cs.add((bnode, REF.ifcGlobalID , Literal(element.GlobalId)))
+            if element.Name:
+                cs.add((bnode, REF.ifcName, Literal(element.Name)))
 
     @classmethod
     def add_relation(cls, brick_uri, predicate, object):
@@ -189,10 +181,10 @@ class Brick(blenderbim.core.tool.Brick):
         project = tool.Ifc.get().by_type("IfcProject")[0]
         query = BrickStore.graph.query(
             """
-            PREFIX brickifc: <https://brickschema.org/extension/ifc#>
+            PREFIX ref: <https://brickschema.org/schema/Brick/ref#>
             SELECT ?proj WHERE {
-                ?proj a brickifc:Project .
-                ?proj brickifc:projectID "{project_globalid}"
+                ?proj a ref:ifcProject .
+                ?proj ref:ifcProjectID "{project_globalid}" .
             }
             LIMIT 1
         """.replace(
