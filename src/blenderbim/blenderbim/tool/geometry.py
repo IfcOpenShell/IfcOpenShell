@@ -434,10 +434,17 @@ class Geometry(blenderbim.core.tool.Geometry):
 
         context = representation.ContextOfItems
         if context.ContextIdentifier == "Body" and context.TargetView == "MODEL_VIEW":
-            if element.is_a("IfcTypeProduct") or not apply_openings:
-                shape = ifcopenshell.geom.create_shape(settings, representation)
-            else:
-                shape = ifcopenshell.geom.create_shape(settings, element)
+            try:
+                if element.is_a("IfcTypeProduct") or not apply_openings:
+                    shape = ifcopenshell.geom.create_shape(settings, representation)
+                else:
+                    shape = ifcopenshell.geom.create_shape(settings, element)
+            except:
+                settings.set(settings.INCLUDE_CURVES, True)
+                if element.is_a("IfcTypeProduct") or not apply_openings:
+                    shape = ifcopenshell.geom.create_shape(settings, representation)
+                else:
+                    shape = ifcopenshell.geom.create_shape(settings, element)
         else:
             settings.set(settings.INCLUDE_CURVES, True)
             shape = ifcopenshell.geom.create_shape(settings, representation)
