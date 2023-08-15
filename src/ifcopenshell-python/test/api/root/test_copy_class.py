@@ -201,11 +201,19 @@ class TestCopyClass(test.bootstrap.IFC4):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcChiller")
         port = ifcopenshell.api.run("system.add_port", self.file)
         ifcopenshell.api.run("system.assign_port", self.file, element=element, port=port)
+
+        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcChiller")
+        port2 = ifcopenshell.api.run("system.add_port", self.file)
+        ifcopenshell.api.run("system.assign_port", self.file, element=element2, port=port2)
+        ifcopenshell.api.run("system.connect_port", self.file, port1=port, port2=port2, direction="NOTDEFINED")
+
         new = ifcopenshell.api.run("root.copy_class", self.file, product=element)
         new_ports = ifcopenshell.util.system.get_ports(new)
         assert port not in new_ports
         assert new_ports[0].is_a("IfcDistributionPort")
         assert ifcopenshell.util.system.get_ports(element) == [port]
+        # make sure port is disconnected from the previously connected ports
+        assert not ifcopenshell.util.system.get_connected_port(new_ports[0])
 
     def test_not_copying_path_connections(self):
         element1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
