@@ -495,7 +495,7 @@ Scenario: Undo test - create a wall with window opening, flip it and undo
     And I undo
     Then nothing happens
 
-Scenario: Create window type based on window modifier, add an occurence of it and edit it
+Scenario: Create window type based on window modifier, add an occurrence of it and edit it
     Given an empty IFC project
     And I set "scene.BIMModelProperties.type_class" to "IfcWindowType"
     And I set "scene.BIMModelProperties.type_predefined_type" to "WINDOW"
@@ -506,7 +506,7 @@ Scenario: Create window type based on window modifier, add an occurence of it an
     And I press "bim.finish_editing_window()"
     Then nothing happens
 
-Scenario: Create door type based on door modifier, add an occurence of it and edit it
+Scenario: Create door type based on door modifier, add an occurrence of it and edit it
     Given an empty IFC project
     And I set "scene.BIMModelProperties.type_class" to "IfcDoorType"
     And I set "scene.BIMModelProperties.type_predefined_type" to "DOOR"

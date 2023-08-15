@@ -213,7 +213,7 @@ class AddConstrTypeInstance(bpy.types.Operator):
                         tool.Ifc, tool.Collector, tool.Spatial, structure_obj=parent_obj, element_obj=obj
                     )
 
-        # set occurences properties for the types defined with modifiers
+        # set occurrences properties for the types defined with modifiers
         if instance_class in ["IfcWindow", "IfcDoor"]:
             pset_name = f"BBIM_{instance_class[3:]}"
             bbim_pset = ifcopenshell.util.element.get_psets(element).get(pset_name, None)

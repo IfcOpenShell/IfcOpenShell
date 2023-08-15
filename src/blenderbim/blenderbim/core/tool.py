@@ -410,7 +410,7 @@ class Ifc:
     def run(cls, command, **kwargs): pass
     def set(cls, ifc): pass
     def unlink(cls, element=None, obj=None): pass
-    def get_all_element_occurences(cls, element): pass
+    def get_all_element_occurrences(cls, element): pass
 
 
 @interface
