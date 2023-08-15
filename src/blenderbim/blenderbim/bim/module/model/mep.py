@@ -642,10 +642,22 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
             end_segment_data["end_point"]: end_segment_data["end_port"],
         }
 
+        # transition points
         start_point, end_point = tool.Cad.closest_points(
             (start_segment_data["start_point"], start_segment_data["end_point"]),
             (end_segment_data["start_point"], end_segment_data["end_point"]),
         )
+        
+        first_segment_start, second_segment_end = [
+            p for p in (
+            start_segment_data["start_point"], 
+            start_segment_data["end_point"],
+            end_segment_data["start_point"], 
+            end_segment_data["end_point"])
+            if p not in (start_point, end_point)
+        ]
+        entire_length = (first_segment_start - second_segment_end).length
+
         transition_dir = (end_point - start_point).normalized()
         start_port = points_ports_map[start_point]
         end_port = points_ports_map[end_point]
@@ -659,9 +671,16 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
         if not rep:
             self.report({"ERROR"}, f"Failed to add transition - this kind of profiles is not yet supported.")
             return {"CANCELLED"}
+        
+        # TODO: test it
+        full_transition_length = transition_data["full_transition_length"] * si_conversion
+        if full_transition_length >= entire_length:
+            self.report({"ERROR"}, f"Failed to add transition - transition length is larger the segments and the distance between them.")
+            # TODO: handle the case without creating representation in the first place?
+            ifcopenshell.api.run("geometry.remove_representation", ifc_file, representation=rep)
+            return {"CANCELLED"}
 
         middle_point = (start_point + end_point) / 2
-        full_transition_length = transition_data["full_transition_length"] * si_conversion
         start_segment_extend_point = middle_point - transition_dir * full_transition_length / 2
         end_segment_extend_point = middle_point + transition_dir * full_transition_length / 2
         DumbProfileJoiner().join_E(start_object, start_segment_extend_point)
