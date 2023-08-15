@@ -357,7 +357,7 @@ class MEPGenerator:
         segments_data = []
         for segment, port in zip(segments, ports, strict=True):
             segment_type = ifcopenshell.util.element.get_type(segment)
-            # if segment doesn't have type we cannot check compatibility by available occurences
+            # if segment doesn't have type we cannot check compatibility by available occurrences
             if segment_type is None:
                 return
             segments_data.append((segment_type, port.PredefinedType, port.SystemType))
@@ -413,7 +413,7 @@ class MEPGenerator:
         for fitting_type in fitting_types:
             if fitting_type.PredefinedType != predefined_type:
                 continue
-            fittings = tool.Ifc.get_all_element_occurences(fitting_type)
+            fittings = tool.Ifc.get_all_element_occurrences(fitting_type)
             if not fittings:
                 continue
             fitting = fittings[0]
@@ -497,7 +497,7 @@ class MEPGenerator:
             obstruction_type = self.create_obstruction_type(segment)
 
         profile_joiner = DumbProfileJoiner()
-        # create obstruction occurence and setup it's length and port
+        # create obstruction occurrence and setup it's length and port
         # NOTE: at this point we loose current blender objects selection
         bpy.ops.bim.add_constr_type_instance(relating_type_id=obstruction_type.id())
         obstruction_obj = bpy.context.active_object
