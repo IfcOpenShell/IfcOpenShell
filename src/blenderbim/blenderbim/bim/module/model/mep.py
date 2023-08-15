@@ -416,25 +416,35 @@ class MEPGenerator:
             fittings = tool.Ifc.get_all_element_occurrences(fitting_type)
             if not fittings:
                 continue
-            fitting = fittings[0]
 
-            ports = ifcopenshell.util.system.get_ports(fitting)
-            fitting_data = []
-            fitting_connected_to_none_type = False
-            for port in ports:
-                connected_port = tool.System.get_connected_port(port)
-                connected_element = tool.System.get_port_relating_element(connected_port)
-                element_type = ifcopenshell.util.element.get_type(connected_element)
-                if element_type is None:
-                    fitting_connected_to_none_type = True
-                    break
-                fitting_data.append((element_type, port.PredefinedType, port.SystemType))
+            for fitting in fittings:
+                ports = ifcopenshell.util.system.get_ports(fitting)
+                fitting_data = []
+                skipped_the_occurrence = False
+                for port in ports:
+                    connected_port = tool.System.get_connected_port(port)
 
-            if fitting_connected_to_none_type:
-                continue
+                    # fitting port is not connected to anything
+                    if not connected_port:
+                        skipped_the_occurrence = True
+                        break
 
-            if are_connected_elements_compatible(segments_data, fitting_data):
-                return pack_return_data(fitting_type, ports, segments_data)
+                    connected_element = tool.System.get_port_relating_element(connected_port)
+                    element_type = ifcopenshell.util.element.get_type(connected_element)
+
+                    # fitting is connected to none type
+                    if element_type is None:
+                        skipped_the_occurrence = True
+                        break
+                        
+                    fitting_data.append((element_type, port.PredefinedType, port.SystemType))
+
+                # if we skipped the occurrence we still can other occurrences
+                # otherwise checking 1 occurrence is enough
+                if not skipped_the_occurrence:
+                    if are_connected_elements_compatible(segments_data, fitting_data):
+                        return pack_return_data(fitting_type, ports, segments_data)
+                    return
 
     def create_obstruction_type(self, segment):
         # code is very similar to "bim.add_type"
