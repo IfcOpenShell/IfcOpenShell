@@ -485,7 +485,7 @@ class CreateDrawing(bpy.types.Operator):
 
             drawing_elements = tool.Drawing.get_drawing_elements(self.camera_element)
 
-            self.setup_serialiser(ifc)
+            self.setup_serialiser(ifc, target_view)
             cache = IfcStore.get_cache()
             [cache.remove(guid) for guid in invalidated_guids]
             tree = ifcopenshell.geom.tree()
@@ -829,7 +829,7 @@ class CreateDrawing(bpy.types.Operator):
 
         return svg_path
 
-    def setup_serialiser(self, ifc):
+    def setup_serialiser(self, ifc, target_view):
         self.svg_settings = ifcopenshell.geom.settings(
             DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True, INCLUDE_CURVES=True
         )
@@ -853,6 +853,8 @@ class CreateDrawing(bpy.types.Operator):
         self.serialiser.setScale(self.scale)
         self.serialiser.setSubtractionSettings(ifcopenshell.ifcopenshell_wrapper.ALWAYS)
         self.serialiser.setUsePrefiltering(True)  # See #3359
+        if target_view == "REFLECTED_PLAN_VIEW":
+            self.serialiser.setMirrorY(True)
         # tree = ifcopenshell.geom.tree()
         # This instructs the tree to explode BReps into faces and return
         # the style of the face when running tree.select_ray()
@@ -887,6 +889,21 @@ class CreateDrawing(bpy.types.Operator):
                 )
         return classes
 
+    def is_manifold(self, obj):
+        result = self.is_manifold_cache.get(obj.data.name, None)
+        if result is not None:
+            return result
+
+        bm = bmesh.new()
+        bm.from_mesh(obj.data)
+        for edge in bm.edges:
+            if not edge.is_manifold:
+                bm.free()
+                self.is_manifold_cache[obj.data.name] = False
+                return False
+        self.is_manifold_cache[obj.data.name] = True
+        return True
+
     def merge_linework_and_add_metadata(self, root):
         join_criteria = ifcopenshell.util.element.get_pset(self.camera_element, "EPset_Drawing", "JoinCriteria")
         if join_criteria:
@@ -897,6 +914,7 @@ class CreateDrawing(bpy.types.Operator):
 
         group = root.findall(".//{http://www.w3.org/2000/svg}g")[0]
         joined_paths = {}
+        self.is_manifold_cache = {}
 
         ifc = tool.Ifc.get()
         for el in root.findall(".//{http://www.w3.org/2000/svg}g[@{http://www.ifcopenshell.org/ns}guid]"):
@@ -905,6 +923,10 @@ class CreateDrawing(bpy.types.Operator):
             classes = self.get_svg_classes(element)
             classes.append("cut")
             el.set("class", " ".join(classes))
+
+            obj = tool.Ifc.get_object(element)
+            if not self.is_manifold(obj):
+                continue
 
             # An element group will contain a bunch of paths representing the
             # cut of that element. However IfcOpenShell may not correctly
@@ -1512,6 +1534,9 @@ class RemoveDrawing(bpy.types.Operator, Operator):
                 tool.Ifc.get().by_id(d.ifc_definition_id) for d in context.scene.DocProperties.drawings if d.is_selected
             ]
         else:
+            if not self.drawing:
+                self.report({"ERROR"}, "No drawing selected")
+                return {"CANCELLED"}
             drawings = [tool.Ifc.get().by_id(self.drawing)]
 
         removed_drawings = [drawing.id() for drawing in drawings]
@@ -1862,7 +1887,7 @@ class RemoveSchedule(bpy.types.Operator, Operator):
     schedule: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.remove_document(tool.Ifc, tool.Drawing, "SCHEDULE", schedule=tool.Ifc.get().by_id(self.schedule))
+        core.remove_document(tool.Ifc, tool.Drawing, "SCHEDULE", document=tool.Ifc.get().by_id(self.schedule))
 
 
 class OpenSchedule(bpy.types.Operator, Operator):

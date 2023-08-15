@@ -23,6 +23,14 @@ from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.system.data import SystemData, ObjectSystemData, PortData
 
 
+FLOW_DIRECTION_TO_ICON = {
+    "SOURCE": "FORWARD",
+    "SINK": "BACK",
+    "SOURCEANDSINK": "ARROW_LEFTRIGHT",
+    "NOTDEFINED": "RESTRICT_INSTANCED_ON",
+}
+
+
 class BIM_PT_systems(Panel):
     bl_label = "Systems"
     bl_idname = "BIM_PT_systems"
@@ -115,6 +123,7 @@ class BIM_PT_object_systems(Panel):
             "IfcDistributionSystem": "NETWORK_DRIVE",
             "IfcDistributionCircuit": "DRIVER",
             "IfcBuildingSystem": "MOD_BUILD",
+            "IfcBuiltSystem": "MOD_BUILD",
             "IfcZone": "CUBE",
         }
         for system in ObjectSystemData.data["systems"]:
@@ -156,10 +165,43 @@ class BIM_PT_ports(Panel):
         self.props = context.scene.BIMSystemProperties
 
         row = self.layout.row(align=True)
-        row.label(text=f"{PortData.data['total_ports']} Ports Found", icon="PLUGIN")
+        total_ports = PortData.data["total_ports"]
+        row.label(text=f"{total_ports} Ports Found", icon="PLUGIN")
+        row.operator("bim.mep_connect_elements", text="", icon="PLUGIN")
         row.operator("bim.show_ports", icon="HIDE_OFF", text="")
         row.operator("bim.hide_ports", icon="HIDE_ON", text="")
         row.operator("bim.add_port", icon="ADD", text="")
+
+        if total_ports == 0:
+            return
+
+        row = self.layout.row(align=True)
+        row.label(text="Ports located on object and connected objects:")
+        row = self.layout.row(align=True)
+        cols = [row.column(align=True) for i in range(6)]
+
+        for i, port_data in enumerate(PortData.data["located_ports_data"]):
+            port, port_obj, connected_obj = port_data
+            flow_direction_icon = FLOW_DIRECTION_TO_ICON[port.FlowDirection or "NOTDEFINED"]
+            if port_obj:
+                cols[0].label(text="", icon=flow_direction_icon)
+                cols[1].operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = port.id()
+                cols[2].label(text=port_obj.name)
+            else:
+                cols[0].label(text="", icon=flow_direction_icon)
+                cols[1].label(text="", icon="HIDE_ON")
+                cols[2].label(text="Port is hidden")
+
+            if connected_obj:
+                cols[3].operator("bim.disconnect_port", text="", icon="UNLINKED").element_id = port.id()
+                cols[4].operator(
+                    "bim.select_entity", text="", icon="RESTRICT_SELECT_OFF"
+                ).ifc_id = connected_obj.BIMObjectProperties.ifc_definition_id
+                cols[5].label(text=f"{connected_obj.name}")
+            else:
+                cols[3].label(text="", icon="UNLINKED")
+                cols[4].label(text="", icon="BLANK1")
+                cols[5].label(text="Port is disconnected")
 
 
 class BIM_PT_port(Panel):
@@ -184,36 +226,56 @@ class BIM_PT_port(Panel):
     def draw(self, context):
         self.props = context.scene.BIMSystemProperties
 
-        element = tool.Ifc.get_entity(context.active_object)
-        port_class = element.is_a()
         layout = self.layout
         row = layout.row(align=True)
-        row.label(text=port_class)
+        row.label(text="IfcDistributionPort")
         row.operator("bim.connect_port", icon="PLUGIN", text="")
         row.operator("bim.disconnect_port", icon="UNLINKED", text="")
         row.operator("bim.remove_port", icon="X", text="")
 
-        if port_class == "IfcDistributionPort":
-            current_flow_direction = str(element.FlowDirection)
-            row = layout.row(align=True)
-            row.label(text="Flow Direction:")
-            row.label(text=current_flow_direction)
+        if not PortData.is_loaded:
+            PortData.load()
 
-            # TODO: replace with enum property?
-            flow_directions = (
-                ("SOURCE", "FORWARD"),
-                ("SINK", "BACK"),
-                ("SOURCEANDSINK", "ARROW_LEFTRIGHT"),
-                ("NOTDEFINED", "RESTRICT_INSTANCED_ON"),
-            )
+        if not PortData.data["is_port"]:
+            return
 
-            row = layout.row(align=True)
-            row.label(text="Change Flow Direction:")
-            for flow_direction, icon in flow_directions:
-                row = layout.row()
-                row.operator("bim.set_flow_direction", icon=icon, text=flow_direction).direction = flow_direction
-                if flow_direction == current_flow_direction:
-                    row.enabled = False
+        element = tool.Ifc.get_entity(context.active_object)
+        current_flow_direction = str(element.FlowDirection)
+        row = layout.row(align=True)
+        row.label(text="Flow Direction:")
+        row.label(text=current_flow_direction)
+
+        # port located on
+        row = layout.row(align=True)
+        relating_object = PortData.data["port_relating_object"]
+        row.label(text="Port located on:")
+        row.label(text=relating_object.name)
+        row.operator(
+            "bim.select_entity", text="", icon="RESTRICT_SELECT_OFF"
+        ).ifc_id = relating_object.BIMObjectProperties.ifc_definition_id
+
+        # object connected to the port
+        row = layout.row(align=True)
+        connected_object = PortData.data["port_connected_object"]
+        if connected_object:
+            row.label(text="Port connected to:")
+            row.label(text=connected_object.name)
+            row.operator(
+                "bim.select_entity", text="", icon="RESTRICT_SELECT_OFF"
+            ).ifc_id = connected_object.BIMObjectProperties.ifc_definition_id
+        else:
+            row.label(text="Port is not connected to any element")
+
+        # TODO: replace with enum property?
+        row = layout.row(align=True)
+        row.label(text="Change Flow Direction:")
+        for flow_direction in FLOW_DIRECTION_TO_ICON.keys():
+            row = layout.row()
+            row.operator(
+                "bim.set_flow_direction", icon=FLOW_DIRECTION_TO_ICON[flow_direction], text=flow_direction
+            ).direction = flow_direction
+            if flow_direction == current_flow_direction:
+                row.enabled = False
 
 
 class BIM_UL_systems(UIList):
@@ -223,6 +285,7 @@ class BIM_UL_systems(UIList):
             "IfcDistributionSystem": "NETWORK_DRIVE",
             "IfcDistributionCircuit": "DRIVER",
             "IfcBuildingSystem": "MOD_BUILD",
+            "IfcBuiltSystem": "MOD_BUILD",
             "IfcZone": "CUBE",
         }
         if item:
@@ -255,6 +318,7 @@ class BIM_UL_object_systems(UIList):
             "IfcDistributionSystem": "NETWORK_DRIVE",
             "IfcDistributionCircuit": "DRIVER",
             "IfcBuildingSystem": "MOD_BUILD",
+            "IfcBuiltSystem": "MOD_BUILD",
             "IfcZone": "CUBE",
         }
         if item:

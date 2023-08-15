@@ -312,32 +312,36 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                     )
             else:
                 # NOTE: defaults dims are in meters / mm
+                # for now default names are hardcoded to mm
                 if template == "FLOW_SEGMENT_RECTANGULAR":
-                    default_x_dim = 0.4 / unit_scale
-                    default_y_dim = 0.2 / unit_scale
-                    profile_name = f"{ifc_class}-{default_x_dim*1000}x{default_x_dim*1000}"
+                    default_x_dim = 0.4
+                    default_y_dim = 0.2
+                    profile_name = f"{ifc_class}-{default_x_dim*1000}x{default_y_dim*1000}"
                     profile = ifc_file.create_entity(
                         "IfcRectangleProfileDef",
                         ProfileName=profile_name,
                         ProfileType="AREA",
-                        XDim=default_x_dim,
-                        YDim=default_y_dim,
+                        XDim=default_x_dim / unit_scale,
+                        YDim=default_y_dim / unit_scale,
                     )
                 elif template == "FLOW_SEGMENT_CIRCULAR":
-                    default_diameter = 0.1 / unit_scale
+                    default_diameter = 0.1
                     profile_name = f"{ifc_class}-{default_diameter*1000}"
                     profile = ifc_file.create_entity(
-                        "IfcCircleProfileDef", ProfileName=profile_name, ProfileType="AREA", Radius=default_diameter / 2
+                        "IfcCircleProfileDef",
+                        ProfileName=profile_name,
+                        ProfileType="AREA",
+                        Radius=(default_diameter / 2) / unit_scale,
                     )
                 elif template == "FLOW_SEGMENT_CIRCULAR_HOLLOW":
-                    default_diameter = 0.15 / unit_scale
-                    default_thickness = 0.005 / unit_scale
+                    default_diameter = 0.15
+                    default_thickness = 0.005
                     profile_name = f"{ifc_class}-{default_diameter*1000}x{default_thickness*1000}"
                     profile = ifc_file.create_entity(
                         "IfcCircleHollowProfileDef",
                         ProfileName=profile_name,
                         ProfileType="AREA",
-                        Radius=default_diameter / 2,
+                        Radius=(default_diameter / 2) / unit_scale,
                         WallThickness=default_thickness,
                     )
 

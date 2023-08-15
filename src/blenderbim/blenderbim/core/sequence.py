@@ -50,8 +50,9 @@ def enable_editing_work_plan_schedules(sequence, work_plan=None):
     sequence.enable_editing_work_plan_schedules(work_plan)
 
 
-def add_work_schedule(ifc):
-    return ifc.run("sequence.add_work_schedule")
+def add_work_schedule(ifc, sequence, name=None):
+    predefined_type, object_type = sequence.get_user_predefined_type()
+    return ifc.run("sequence.add_work_schedule", name=name, predefined_type=predefined_type, object_type=object_type)
 
 
 def remove_work_schedule(ifc, work_schedule=None):
@@ -529,6 +530,7 @@ def disable_editing_task_animation_colors(sequence):
 
 
 def visualise_work_schedule_date_range(sequence, work_schedule=None):
+    sequence.clear_objects_animation(include_blender_objects=False)
     settings = sequence.get_animation_settings()
     if settings:
         product_frames = sequence.get_animation_product_frames(work_schedule, settings)
@@ -579,3 +581,9 @@ def reorder_task_nesting(ifc, sequence, task, new_index):
 
 def create_baseline(ifc, sequence, work_schedule, name):
     ifc.run("sequence.create_baseline", work_schedule=work_schedule, name=name)
+
+def clear_previous_animation(sequence):
+    sequence.clear_objects_animation(include_blender_objects=False)
+
+def add_animation_camera(sequence):
+    sequence.add_animation_camera()

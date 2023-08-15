@@ -183,7 +183,6 @@ class Cost:
     def get_cost_value_unit_component(cls): pass
     def get_direct_cost_item_products(cls): pass
     def get_highlighted_cost_item(cls): pass
-    def get_highlighted_cost_item(cls): pass
     def get_products(cls, related_object_type): pass
     def get_schedule_cost_items(cls, cost_schedule): pass
     def get_units(cls): pass
@@ -648,6 +647,7 @@ class Search:
 
 @interface
 class Sequence:
+    def add_animation_camera(cls): pass
     def add_task_column(cls, column_type, name, data_type): pass
     def add_text_animation_handler(cls, settings): pass
     def animate_consumption(cls, obj, start_frame, product_frame, color, animation_type): pass
@@ -660,6 +660,7 @@ class Sequence:
     def animate_operation(cls, obj, start_frame, product_frame, color): pass
     def animate_output(cls, obj, start_frame, product_frame): pass
     def clear_object_animation(cls, obj): pass
+    def clear_object_color(cls, obj): pass
     def clear_objects_animation(cls, include_blender_objects): pass
     def contract_all_tasks(cls): pass
     def contract_task(cls, task): pass
@@ -676,6 +677,7 @@ class Sequence:
     def disable_editing_work_time(cls): pass
     def disable_selecting_deleted_task(cls): pass
     def disable_work_schedule(cls): pass
+    def display_object(cls, obj): pass
     def enable_editing_rel_sequence_attributes(cls, rel_sequence): pass
     def enable_editing_sequence_lag_time(cls, rel_sequence): pass
     def enable_editing_task_animation_colors(cls): pass
@@ -719,6 +721,7 @@ class Sequence:
     def get_task_time_attributes(cls): pass
     def get_task_time(cls, task): pass
     def get_tasks_for_product(cls, product, work_schedule): pass
+    def get_user_predefined_type(cls): pass
     def get_work_calendar_attributes(cls): pass
     def get_work_plan_attributes(cls): pass
     def get_work_schedule_attributes(cls): pass

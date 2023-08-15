@@ -40,10 +40,6 @@ from pprint import pprint
 # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRoofType.htm
 
 
-def float_is_zero(f):
-    return 0.0001 >= f >= -0.0001
-
-
 def bm_mesh_clean_up(bm):
     # remove internal edges and faces
     # adding missing faces so we could rely on `e.is_boundary` later
@@ -99,7 +95,7 @@ def is_valid_roof_footprint(bm):
     # should be bmesh to support edit mode
     bm.verts.ensure_lookup_table()
     base_z = bm.verts[0].co.z
-    all_verts_same_level = all([float_is_zero(v.co.z - base_z) for v in bm.verts[1:]])
+    all_verts_same_level = all([tool.Cad.is_x(v.co.z - base_z, 0) for v in bm.verts[1:]])
     if not all_verts_same_level:
         return (
             {"ERROR"},
@@ -202,7 +198,7 @@ def generate_hiped_roof_bmesh(
 
     def find_identical_new_vert(co):
         for v in bm.verts:
-            if float_is_zero((co - v.co).length):
+            if tool.Cad.is_x((co - v.co).length, 0):
                 return v
 
     def find_other_polygon_verts(edge):
@@ -234,7 +230,7 @@ def generate_hiped_roof_bmesh(
     bottom_chords_to_remove = []
 
     def is_footprint_vert(v):
-        return float_is_zero(v.co.z - footprint_z)
+        return tool.Cad.is_x(v.co.z - footprint_z, 0)
 
     def is_footprint_edge(edge):
         return all(is_footprint_vert(v) for v in edge.verts)
@@ -326,7 +322,7 @@ def generate_hiped_roof_bmesh(
     default_offset_dir = Vector([0, 0, 1]) * roof_thickness
     footprint_verts = set()
 
-    if not float_is_zero(rafter_edge_angle):
+    if not tool.Cad.is_x(rafter_edge_angle, 0):
         footprint_edges = []
         for edge in extruded_edges:
             if is_footprint_edge(edge):
@@ -398,7 +394,7 @@ def update_roof_modifier_ifc_data(context):
         if not angle_layer:
             return False
         for edge_angle in angle_layer:
-            if float_is_zero(edge_angle - pi / 2):
+            if tool.Cad.is_x(edge_angle - pi / 2, 0):
                 return True
         return False
 

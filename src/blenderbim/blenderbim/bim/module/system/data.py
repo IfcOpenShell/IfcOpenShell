@@ -91,8 +91,15 @@ class PortData:
 
     @classmethod
     def load(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        cls.element = element
+        is_port = cls.is_port()
         cls.data = {
             "total_ports": cls.total_ports(),
+            "located_ports_data": cls.located_ports_data(),
+            "is_port": is_port,
+            "port_connected_object": cls.port_connected_object() if is_port else None,
+            "port_relating_object": cls.port_relating_object() if is_port else None,
         }
         cls.is_loaded = True
 
@@ -100,3 +107,36 @@ class PortData:
     def total_ports(cls):
         element = tool.Ifc.get_entity(bpy.context.active_object)
         return len(ifcopenshell.util.system.get_ports(element))
+
+    @classmethod
+    def is_port(cls):
+        return cls.element and cls.element.is_a("IfcDistributionPort")
+
+    @classmethod
+    def port_relating_object(cls):
+        return tool.Ifc.get_object(tool.System.get_port_relating_element(cls.element))
+
+    @classmethod
+    def port_connected_object(cls):
+        connected_port = tool.System.get_connected_port(cls.element)
+        if not connected_port:
+            return
+        connected_element = tool.System.get_port_relating_element(connected_port)
+        return tool.Ifc.get_object(connected_element)
+
+    @classmethod
+    def located_ports_data(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        ports = ifcopenshell.util.system.get_ports(element)
+
+        data = []
+        for port in ports:
+            port_obj = tool.Ifc.get_object(port)
+            connected_port = tool.System.get_connected_port(port)
+            if connected_port:
+                connected_element = tool.Ifc.get_object(tool.System.get_port_relating_element(connected_port))
+            else:
+                connected_element = None
+
+            data.append((port, port_obj, connected_element))
+        return data

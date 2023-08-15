@@ -91,10 +91,14 @@ class Cad:
             tolerance = VTX_PRECISION
         if isinstance(x, (list, tuple)):
             for y in x:
-                if value > (y - tolerance) and value < (y + tolerance):
+                if (y + tolerance) > value > (y - tolerance):
                     return True
             return False
-        return value > (x - tolerance) and value < (x + tolerance)
+        return (x + tolerance) > value > (x - tolerance)
+
+    @classmethod
+    def are_vectors_equal(cls, v1: Vector, v2: Vector):
+        return cls.is_x((v2 - v1).length, 0)
 
     @classmethod
     def intersect_edges(cls, edge1, edge2):
@@ -226,6 +230,48 @@ class Cad:
         """returns the number of edges that a point lies on."""
         res = [cls.is_point_on_edge(pt, edge) for edge in [edges[:2], edges[2:]]]
         return len([i for i in res if i])
+
+    @classmethod
+    def get_edge_direction(cls, edge):
+        return (edge[1] - edge[0]).normalized()
+
+    @classmethod
+    def are_edges_collinear(cls, edge1, edge2):
+        def is_point_on_line(p, edge):
+            a1, a2 = edge
+            # comparing slopes between PA1 and A2A1
+            # using cross multiplication to avoid division by zero
+            return cls.is_x((p.y - a1.y) * (a2.x - a1.x), (a2.y - a1.y) * (p.x - a1.x))
+
+        edge1_dir = edge1[1] - edge1[0]
+        edge2_dir = edge2[1] - edge2[0]
+
+        if cls.is_x(edge1_dir.cross(edge2_dir).length_squared, 0):  # check they are parallel
+            if is_point_on_line(edge1[0], edge2) or is_point_on_line(edge1[1], edge2):
+                return True
+        return False
+
+    @classmethod
+    def closest_points(cls, edge1, edge2):
+        """
+
+        closest end points between `edge1` and `edge2` assuming `edge1` and `edge2` are collinear.
+
+        < returns two points, first one belongs to `edge1` and second to `edge2`
+
+        """
+        direction = (edge1[1] - edge1[0]).normalized()
+
+        # Project points onto the line to get scalar values along the direction
+        points1_values = [(p, p.dot(direction)) for p in edge1]
+        points2_values = [(p, p.dot(direction)) for p in edge2]
+
+        # Sort the projections for both edges
+        sorted_points1 = sorted(points1_values, key=lambda el: el[1])
+        sorted_points2 = sorted(points2_values, key=lambda el: el[1])
+
+        # The closest points will be the last point of the first edge and the first point of the second edge
+        return sorted_points1[-1][0], sorted_points2[0][0]
 
     @classmethod
     def find_intersecting_edges(cls, bm, pt, idx1, idx2):

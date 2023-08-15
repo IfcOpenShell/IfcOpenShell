@@ -77,28 +77,41 @@ class Usecase:
                 cost_item=item, products=[slab], prop_name="NetVolume")
         """
         self.file = file
-        self.settings = {"cost_item": cost_item, "products": products or [], "prop_name": prop_name}
+        self.settings = {
+            "cost_item": cost_item,
+            "products": products or [],
+            "prop_name": prop_name,
+        }
 
     def execute(self):
         if self.settings["prop_name"]:
             self.quantities = set(self.settings["cost_item"].CostQuantities or [])
         for product in self.settings["products"]:
-            ifcopenshell.api.run(
-                "control.assign_control",
-                self.file,
-                related_object=product,
-                relating_control=self.settings["cost_item"],
+            self.assign_cost_control(
+                related_object=product, cost_item=self.settings["cost_item"]
             )
             if self.settings["prop_name"]:
+                if (
+                    self.settings["cost_item"].CostQuantities
+                    and self.settings["cost_item"].CostQuantities[0].Name.lower()
+                    != self.settings["prop_name"].lower()
+                ) or not product.is_a("IfcObject"):
+                    continue
                 self.add_quantity_from_related_object(product)
         if self.settings["prop_name"]:
             self.settings["cost_item"].CostQuantities = list(self.quantities)
         else:
             self.update_cost_item_count()
 
+    def assign_cost_control(self, related_object, cost_item):
+        return ifcopenshell.api.run(
+            "control.assign_control",
+            self.file,
+            related_object=related_object,
+            relating_control=cost_item,
+        )
+
     def add_quantity_from_related_object(self, element):
-        if not element.is_a("IfcObject"):
-            return
         for relationship in element.IsDefinedBy:
             if relationship.is_a("IfcRelDefinesByProperties"):
                 self.add_quantity_from_qto(relationship.RelatingPropertyDefinition)
@@ -107,14 +120,17 @@ class Usecase:
         if not qto.is_a("IfcElementQuantity"):
             return
         for prop in qto.Quantities:
-            if prop.is_a("IfcPhysicalSimpleQuantity") and prop.Name.lower() == self.settings["prop_name"].lower():
+            if (
+                prop.is_a("IfcPhysicalSimpleQuantity")
+                and prop.Name.lower() == self.settings["prop_name"].lower()
+            ):
                 self.quantities.add(prop)
 
     def update_cost_item_count(self):
         # This is a bold assumption
         # https://forums.buildingsmart.org/t/how-does-a-cost-item-know-that-it-is-counting-a-controlled-product/3564
         if not self.settings["cost_item"].CostQuantities:
-            return ifcopenshell.api.run(
+            ifcopenshell.api.run(
                 "cost.add_cost_item_quantity",
                 self.file,
                 cost_item=self.settings["cost_item"],
