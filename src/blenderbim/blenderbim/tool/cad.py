@@ -252,7 +252,7 @@ class Cad:
         return False
 
     @classmethod
-    def closest_points(cls, edge1, edge2):
+    def closest_points(cls, edge1, edge2) -> bool:
         """
 
         closest end points between `edge1` and `edge2` assuming `edge1` and `edge2` are collinear.
@@ -263,15 +263,12 @@ class Cad:
         direction = (edge1[1] - edge1[0]).normalized()
 
         # Project points onto the line to get scalar values along the direction
-        points1_values = [(p, p.dot(direction)) for p in edge1]
-        points2_values = [(p, p.dot(direction)) for p in edge2]
+        points_values = [(p, p.dot(direction)) for p in (edge1 + edge2)]
+        sorted_points = sorted(points_values, key=lambda el: el[1])
 
-        # Sort the projections for both edges
-        sorted_points1 = sorted(points1_values, key=lambda el: el[1])
-        sorted_points2 = sorted(points2_values, key=lambda el: el[1])
-
-        # The closest points will be the last point of the first edge and the first point of the second edge
-        return sorted_points1[-1][0], sorted_points2[0][0]
+        edge1_point = next((p for p, v in sorted_points[1:3] if p in edge1), None)
+        edge2_point = next((p for p, v in sorted_points[1:3] if p in edge2), None)
+        return edge1_point, edge2_point
 
     @classmethod
     def find_intersecting_edges(cls, bm, pt, idx1, idx2):
