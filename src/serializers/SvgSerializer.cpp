@@ -761,7 +761,14 @@ void SvgSerializer::write(const geometry_data& data) {
 	// SVG has a coordinate system with the origin in the *upper*-left corner
 	// therefore we mirror the shape along the XZ-plane.	
 	gp_Trsf trsf_mirror;
-	trsf_mirror.SetMirror(gp_Ax2(gp::Origin(), gp::DY()));
+	if (!mirror_y_) {
+		trsf_mirror.SetMirror(gp_Ax2(gp::Origin(), gp::DY()));
+	}
+	if (mirror_x_) {
+		gp_Trsf mirror_x;
+		mirror_x.SetMirror(gp_Ax2(gp::Origin(), gp::DX()));
+		trsf_mirror.PreMultiply(mirror_x);
+	}
 	BRepBuilderAPI_Transform make_transform_mirror(compound_unmirrored, trsf_mirror, true);
 	make_transform_mirror.Build();
 	// (When determinant < 0, copy is implied and the input is not mutated.)
@@ -1667,6 +1674,13 @@ std::array<std::array<double, 3>, 3> SvgSerializer::resize() {
 			cy = ymin * sc;
 		}
 
+		if (mirror_y_) {
+			cy = - size_->second - cy;
+		}
+		if (mirror_x_) {
+			cx = - size_->first - cx;
+		}
+
 		m = {{ {{sc,0,-cx}},{{0,sc,-cy}},{{0,0,1}} }};
 
 		float_item_list::const_iterator it;
@@ -1704,7 +1718,14 @@ void SvgSerializer::draw_hlr(const gp_Pln& pln, const drawing_key& drawing_name)
 		TopoDS_Shape hlr_compound;
 		if (drawing_name.first == nullptr) {
 			gp_Trsf trsf_mirror;
-			trsf_mirror.SetMirror(gp_Ax2(gp::Origin(), gp::DY()));
+			if (!mirror_y_) {
+				trsf_mirror.SetMirror(gp_Ax2(gp::Origin(), gp::DY()));
+			}
+			if (mirror_x_) {
+				gp_Trsf mirror_x;
+				mirror_x.SetMirror(gp_Ax2(gp::Origin(), gp::DX()));
+				trsf_mirror.PreMultiply(mirror_x);
+			}
 			BRepBuilderAPI_Transform make_transform_mirror(hlr_compound_unmirrored, trsf_mirror, true);
 			make_transform_mirror.Build();
 			hlr_compound = make_transform_mirror.Shape();

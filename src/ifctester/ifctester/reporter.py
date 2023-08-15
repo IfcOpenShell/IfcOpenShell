@@ -21,6 +21,8 @@ import sys
 import math
 import logging
 import datetime
+import ifcopenshell
+import ifcopenshell.util.element
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
@@ -163,6 +165,7 @@ class Json(Reporter):
         return self.results
 
     def report_specification(self, specification):
+        applicability = [a.to_string("applicability") for a in specification.applicability]
         requirements = []
         for requirement in specification.requirements:
             requirements.append(
@@ -182,12 +185,23 @@ class Json(Reporter):
             "total": total,
             "percentage": percentage,
             "required": specification.minOccurs != 0,
+            "applicability": applicability,
             "requirements": requirements,
         }
 
     def report_failed_entities(self, requirement):
         return [
-            {"reason": requirement.failed_reasons[i], "element": str(e)}
+            {
+                "reason": requirement.failed_reasons[i],
+                "element": str(e),
+                "class": e.is_a(),
+                "predefined_type": ifcopenshell.util.element.get_predefined_type(e),
+                "name": getattr(e, "Name", None),
+                "description": getattr(e, "Description", None),
+                "id": e.id(),
+                "global_id": getattr(e, "GlobalId", None),
+                "tag": getattr(e, "Tag", None),
+            }
             for i, e in enumerate(requirement.failed_entities)
         ]
 

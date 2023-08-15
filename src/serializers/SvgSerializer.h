@@ -309,11 +309,16 @@ namespace {
 					}
 				} else {
 					gp_Pnt2d tmp;
-					for (int i = 0; i < 4; ++i) {
+					// 0,1,2,3 -> interp over bounding box edges (i%4, (i+1)%4)
+					// 4,5 -> interp over bounding box diagonals (i%4, (i+2)%4)
+					// @todo use boolean_utils.h points_on_planar_face_generator?
+					// ... or skip faces with inner bounds all together ?
+					// ... ?
+					for (int i = 0; i < 6; ++i) {
 						// @todo proper edge intersection
 						for (int j = 0; j < 16; ++j) {
-							const gp_Pnt2d& a = *loop[i];
-							const gp_Pnt2d& b = *loop[(i + 1) % 4];
+							const gp_Pnt2d& a = *loop[i % 4];
+							const gp_Pnt2d& b = *loop[(i + (i >= 4 ? 2 : 1)) % 4];
 							interp(a, b, j / 16.0, tmp);
 							if (fclass->Perform(tmp) == TopAbs_OUT) {
 								return false;
@@ -516,6 +521,8 @@ protected:
 	bool emit_building_storeys_;
 	bool no_css_;
 	bool unify_inputs_;
+	bool mirror_y_;
+	bool mirror_x_;
 
 	int profile_threshold_;
 
@@ -567,6 +574,8 @@ public:
 		, polygonal_(false)
 		, emit_building_storeys_(true)
 		, no_css_(false)
+		, mirror_y_(false)
+		, mirror_x_(false)
 		, unify_inputs_(false)
 		, profile_threshold_(-1)
 		, file(0)
@@ -706,6 +715,22 @@ public:
 
 	int getProfileThreshold() const {
 		return profile_threshold_;
+	}
+
+	void setMirrorY(bool b) {
+		mirror_y_ = b;
+	}
+
+	bool getMirrorY() const {
+		return mirror_y_;
+	}
+
+	void setMirrorX(bool b) {
+		mirror_x_ = b;
+	}
+
+	bool getMirrorX() const {
+		return mirror_x_;
 	}
 
 protected:

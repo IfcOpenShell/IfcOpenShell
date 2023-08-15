@@ -51,6 +51,8 @@ def close_brick_project(brick):
     brick.clear_project()
     brick.clear_brick_browser()
     brick.clear_brick_browser(split_screen=True)
+    brick.clear_breadcrumbs()
+    brick.clear_breadcrumbs(split_screen=True)
 
 
 def convert_brick_project(ifc, brick):
@@ -132,9 +134,7 @@ def add_namespace(brick, alias=None, uri=None):
 
 
 def set_brick_list_root(brick, brick_root=None, split_screen=False):
-    brick.clear_brick_browser(split_screen=split_screen)
-    brick.import_brick_classes(brick_root, split_screen=split_screen)
-    brick.set_active_brick_class(brick_root, split_screen=split_screen)
+    brick.run_view_brick_class(brick_class=brick_root, split_screen=split_screen)
     brick.clear_breadcrumbs(split_screen=split_screen)
 
 

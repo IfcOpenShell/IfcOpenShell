@@ -37,6 +37,7 @@ class LoadBrickProject(bpy.types.Operator, Operator):
     bl_idname = "bim.load_brick_project"
     bl_label = "Load Brickschema Project"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Load in a Brick project from a file"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ttl", options={"HIDDEN"})
 
@@ -56,6 +57,7 @@ class ViewBrickClass(bpy.types.Operator, Operator):
     bl_idname = "bim.view_brick_class"
     bl_label = "View Brick Class"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Inspect the subclasses of this class"
     brick_class: bpy.props.StringProperty(name="Brick Class")
     split_screen: bpy.props.BoolProperty(name="Split Screen", default=False, options={"HIDDEN"})
 
@@ -67,6 +69,7 @@ class ViewBrickItem(bpy.types.Operator, Operator):
     bl_idname = "bim.view_brick_item"
     bl_label = "View Brick Item"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Inspect this entity in the viewer"
     item: bpy.props.StringProperty(name="Brick Item")
     split_screen: bpy.props.BoolProperty(name="Split Screen", default=False, options={"HIDDEN"})
 
@@ -78,6 +81,7 @@ class RewindBrickClass(bpy.types.Operator, Operator):
     bl_idname = "bim.rewind_brick_class"
     bl_label = "Rewind Brick Class"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Go back to the previous list view"
     split_screen: bpy.props.BoolProperty(name="Split Screen", default=False, options={"HIDDEN"})
 
     def _execute(self, context):
@@ -88,6 +92,7 @@ class CloseBrickProject(bpy.types.Operator, Operator):
     bl_idname = "bim.close_brick_project"
     bl_label = "Close Brick Project"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Close the Brick project"
 
     def _execute(self, context):
         core.close_brick_project(tool.Brick)
@@ -122,6 +127,7 @@ class AddBrick(bpy.types.Operator, Operator):
     bl_idname = "bim.add_brick"
     bl_label = "Add Brick"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Create the Brick entity"
 
     def _execute(self, context):
         props = context.scene.BIMBrickProperties
@@ -143,6 +149,7 @@ class AddBrickRelation(bpy.types.Operator, Operator):
     bl_idname = "bim.add_brick_relation"
     bl_label = "Add Brick Relation"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Create the Brick relationship"
 
     def _execute(self, context):
         props = context.scene.BIMBrickProperties
@@ -178,6 +185,7 @@ class NewBrickFile(bpy.types.Operator):
     bl_idname = "bim.new_brick_file"
     bl_label = "New Brick File"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Create a Brick project from scratch"
 
     def execute(self, context):
         IfcStore.begin_transaction(self)
@@ -210,16 +218,18 @@ class RefreshBrickViewer(bpy.types.Operator, Operator):
     bl_idname = "bim.refresh_brick_viewer"
     bl_label = "Refresh Brick Viewer"
     bl_options = {"REGISTER", "UNDO"}
-    split_screen: bpy.props.BoolProperty(name="Split Screen", default=False, options={"HIDDEN"})
+    bl_description = "Refresh the list view"
 
     def _execute(self, context):
-        core.refresh_brick_viewer(tool.Brick, split_screen=self.split_screen)
+        core.refresh_brick_viewer(tool.Brick)
+        core.refresh_brick_viewer(tool.Brick, split_screen=True)
 
 
 class RemoveBrick(bpy.types.Operator, Operator):
     bl_idname = "bim.remove_brick"
     bl_label = "Remove Brick"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Delete this entity"
 
     def _execute(self, context):
         props = context.scene.BIMBrickProperties
@@ -262,6 +272,7 @@ class SerializeBrick(bpy.types.Operator):
 class AddBrickNamespace(bpy.types.Operator, Operator):
     bl_idname = "bim.add_brick_namespace"
     bl_label = "Add Brick Namespace"
+    bl_description = "Bind a new namespace to the Brick project"
 
     def _execute(self, context):
         props = context.scene.BIMBrickProperties
@@ -270,24 +281,11 @@ class AddBrickNamespace(bpy.types.Operator, Operator):
         core.add_namespace(tool.Brick, alias=alias, uri=uri)
 
 
-class SetBrickListRoot(bpy.types.Operator, Operator):
-    bl_idname = "bim.set_brick_list_root"
-    bl_label = "Set Brick View Type"
-    bl_options = {"REGISTER", "UNDO"}
-    split_screen: bpy.props.BoolProperty(name="Split Screen", default=False, options={"HIDDEN"})
-
-    def _execute(self, context):
-        if self.split_screen:
-            root = context.scene.BIMBrickProperties.split_screen_brick_list_root
-        else:
-            root = context.scene.BIMBrickProperties.brick_list_root
-        core.set_brick_list_root(tool.Brick, brick_root=root, split_screen=self.split_screen)
-
-
 class RemoveBrickRelation(bpy.types.Operator, Operator):
     bl_idname = "bim.remove_brick_relation"
     bl_label = "Remove Relation"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Delete this relationship"
     predicate: bpy.props.StringProperty(name="Relation")
     object: bpy.props.StringProperty(name="Object")
 

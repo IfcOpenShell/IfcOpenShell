@@ -41,6 +41,7 @@ classes = (
     operator.SaveLibraryFile,
     operator.SelectLibraryFile,
     operator.ToggleFilterCategories,
+    operator.ToggleLinkSelectability,
     operator.ToggleLinkVisibility,
     operator.UnassignLibraryDeclaration,
     operator.UnlinkIfc,

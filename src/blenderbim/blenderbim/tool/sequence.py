@@ -19,7 +19,6 @@
 import bpy
 import re
 import os
-import isodate
 import ifcopenshell
 import ifcopenshell.util.sequence
 import ifcopenshell.util.date
@@ -36,7 +35,6 @@ from datetime import datetime
 import mathutils
 import pystache
 import webbrowser
-from datetime import timedelta
 
 
 class Sequence(blenderbim.core.tool.Sequence):
@@ -212,7 +210,9 @@ class Sequence(blenderbim.core.tool.Sequence):
                 item.calendar = ""
                 item.derived_calendar = calendar.Name or "Unnamed" if calendar else ""
 
-            if task.TaskTime and (task.TaskTime.ScheduleStart or task.TaskTime.ScheduleFinish or task.TaskTime.ScheduleDuration):
+            if task.TaskTime and (
+                task.TaskTime.ScheduleStart or task.TaskTime.ScheduleFinish or task.TaskTime.ScheduleDuration
+            ):
                 task_time = task.TaskTime
                 item.start = (
                     canonicalise_time(ifcopenshell.util.date.ifc2datetime(task_time.ScheduleStart))
@@ -719,26 +719,12 @@ class Sequence(blenderbim.core.tool.Sequence):
 
     @classmethod
     def setup_default_task_columns(cls):
-        items = [
-            {
-                "column_type": "IfcTaskTime",
-                "name": "ScheduleStart",
-            },
-            {
-                "column_type": "IfcTaskTime",
-                "name": "ScheduleFinish",
-            },
-            {
-                "column_type": "IfcTaskTime",
-                "name": "ScheduleDuration",
-            },
-        ]
-
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.columns.clear()
-        for item in items:
+        default_columns = ["ScheduleStart", "ScheduleFinish", "ScheduleDuration"]
+        for item in default_columns:
             new = props.columns.add()
-            new.name = f"{item['column_type']}.{item['name']}"
+            new.name = f"IfcTaskTime.{item}"
             new.data_type = "string"
 
     @classmethod
@@ -811,10 +797,10 @@ class Sequence(blenderbim.core.tool.Sequence):
     @classmethod
     def update_visualisation_date(cls, start_date, finish_date):
         def canonicalise_time(time):
-            if not time:
-                return "-"
             return time.strftime("%d/%m/%y")
 
+        if not (start_date and finish_date):
+            return
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.visualisation_start = canonicalise_time(start_date)
         props.visualisation_finish = canonicalise_time(finish_date)
@@ -1227,21 +1213,23 @@ class Sequence(blenderbim.core.tool.Sequence):
                     start,
                     finish,
                     props.speed_animation_frames,
-                    isodate.parse_duration(props.speed_real_duration),
+                    ifcopenshell.util.date.parse_duration(props.speed_real_duration),
                 )
             elif props.speed_types == "DURATION_SPEED":
+                animation_duration = ifcopenshell.util.date.parse_duration(props.speed_animation_duration)
+                real_duration = ifcopenshell.util.date.parse_duration(props.speed_real_duration)
                 return calculate_using_duration(
                     start,
                     finish,
                     fps,
-                    isodate.parse_duration(props.speed_animation_duration),
-                    isodate.parse_duration(props.speed_real_duration),
+                    animation_duration,
+                    real_duration,
                 )
             elif props.speed_types == "MULTIPLIER_SPEED":
                 return calculate_using_multiplier(
                     start,
                     finish,
-                    fps,
+                    1,
                     props.speed_multiplier,
                 )
 
@@ -1313,14 +1301,23 @@ class Sequence(blenderbim.core.tool.Sequence):
             obj.animation_data_clear()
 
     @classmethod
+    def clear_object_color(cls, obj):
+        obj.color = (1.0, 1.0, 1.0, 1.0)
+
+    @classmethod
+    def display_object(cls, obj):
+        if not obj.visible_get():
+            obj.hide_viewport = False
+            obj.hide_render = False
+
+    @classmethod
     def clear_objects_animation(cls, include_blender_objects=True):
         for obj in bpy.data.objects:
             if not include_blender_objects and not obj.BIMObjectProperties.ifc_definition_id:
                 continue
             cls.clear_object_animation(obj)
-            if not obj.visible_get():
-                obj.hide_viewport = False
-                obj.hide_render = False
+            cls.clear_object_color(obj)
+            cls.display_object(obj)
 
     @classmethod
     def animate_objects(cls, settings, frames, clear_previous=True, animation_type=""):
@@ -1515,13 +1512,13 @@ class Sequence(blenderbim.core.tool.Sequence):
             compare_start = schedule_start
             compare_finish = schedule_finish
         task_name = task.Name or "Unnamed"
-        task_name = task_name.replace('\n', "")
+        task_name = task_name.replace("\n", "")
         data = {
             "pID": task.id(),
             "pName": task_name,
             "pCaption": task_name,
             "pStart": schedule_start,
-            "pEnd": schedule_finish ,
+            "pEnd": schedule_finish,
             "pPlanStart": compare_start,
             "pPlanEnd": compare_finish,
             "pMile": 1 if task.IsMilestone else 0,
@@ -1608,3 +1605,27 @@ class Sequence(blenderbim.core.tool.Sequence):
     @classmethod
     def is_sort_reversed(cls):
         return bpy.context.scene.BIMWorkScheduleProperties.is_sort_reversed
+
+    @classmethod
+    def get_user_predefined_type(cls):
+        predefined_type = bpy.context.scene.BIMWorkScheduleProperties.work_schedule_predefined_types
+        object_type = None
+        if predefined_type == "USERDEFINED":
+            object_type = bpy.context.scene.BIMWorkScheduleProperties.object_type
+        return predefined_type, object_type
+
+    @classmethod
+    def add_animation_camera(cls):
+        bpy.ops.object.camera_add()
+        camera = bpy.context.active_object
+        camera.data.lens = 26
+        camera.name = "4D Camera"
+        camera.location = mathutils.Vector((15, 0, 15))
+        camera.rotation_euler = mathutils.Euler((1.2, 0, 1.5), "XYZ")
+        for obj in bpy.context.scene.objects:
+            obj.select_set(False)
+        for obj in bpy.context.visible_objects:
+            if not (obj.hide_get() or obj.hide_render) and obj.type != "LIGHT":
+                obj.select_set(True)
+        bpy.context.scene.camera = camera
+        bpy.ops.view3d.camera_to_view_selected()

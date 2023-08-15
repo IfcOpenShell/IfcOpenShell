@@ -248,8 +248,13 @@ class BaseDecorator:
         if check_mode and obj.data.is_editmode:
             return self.get_editmesh_geom(obj)
 
-        vertices = [obj.matrix_world @ v.co for v in obj.data.vertices]
-        indices = [e.vertices for e in obj.data.edges]
+        bm = bmesh.new()
+        bm.from_mesh(obj.data)
+        vertices = [obj.matrix_world @ v.co for v in bm.verts]
+        # In object mode, it's nicer to not show "internal edges". Most will be dissolved anyway.
+        indices = [[v.index for v in e.verts] for e in bm.edges if len(e.link_faces) != 2]
+        bm.free()
+
         return vertices, indices
 
     def get_editmesh_geom(self, obj):
@@ -520,7 +525,11 @@ class BaseDecorator:
             return matrix.inverted()[i].to_3d().normalized()
 
         text_dir_world_x_axis = get_basis_vector(obj.matrix_world)
-        text_dir = (camera.matrix_world.inverted().to_quaternion() @ text_dir_world_x_axis).to_2d().normalized()
+        camera_matrix = camera.matrix_world.copy()
+        camera_matrix[0][0] = 1
+        camera_matrix[1][1] = 1
+        camera_matrix[2][2] = 1
+        text_dir = (camera_matrix.inverted().to_quaternion() @ text_dir_world_x_axis).to_2d().normalized()
 
         pos = location_3d_to_region_2d(region, region3d, text_world_position)
         props = obj.BIMTextProperties

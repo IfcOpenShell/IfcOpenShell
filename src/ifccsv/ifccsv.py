@@ -58,51 +58,25 @@ class IfcAttributeSetter:
             return element
         if "." not in key:
             return element
-        if key[0:3] == "Qto":
-            qto_name, prop = key.split(".", 1)
-            qto = IfcAttributeSetter.get_element_qto(element, qto_name)
-            if qto:
-                IfcAttributeSetter.set_qto_property(qto, prop, value)
-                return element
         pset_name, prop = key.split(".", 1)
-        pset = IfcAttributeSetter.get_element_pset(element, pset_name)
+        pset = ifcopenshell.util.element.get_pset(element, pset_name, should_inherit=True)
         if pset:
-            IfcAttributeSetter.set_pset_property(ifc_file, pset, prop, value)
-            return element
+            pset = ifc_file.by_id(pset["id"])
+            if pset.is_a("IfcElementQuantity"):
+                IfcAttributeSetter.set_qto_property(pset, prop, value)
+            else:
+                IfcAttributeSetter.set_pset_property(ifc_file, pset, prop, value)
         return element
-
-    @staticmethod
-    def get_element_qto(element, name):
-        for relationship in element.IsDefinedBy:
-            if (
-                relationship.is_a("IfcRelDefinesByProperties")
-                and relationship.RelatingPropertyDefinition.is_a("IfcElementQuantity")
-                and relationship.RelatingPropertyDefinition.Name == name
-            ):
-                return relationship.RelatingPropertyDefinition
 
     @staticmethod
     def set_qto_property(qto, name, value):
         for prop in qto.Quantities:
             if prop.Name != name:
                 continue
-            setattr(prop, prop.is_a()[len("IfcQuantity") :] + "Value", value)
-
-    @staticmethod
-    def get_element_pset(element, name):
-        if element.is_a("IfcTypeObject"):
-            if element.HasPropertySets:
-                for pset in element.HasPropertySets:
-                    if pset.is_a("IfcPropertySet") and pset.Name == name:
-                        return pset
-        else:
-            for relationship in element.IsDefinedBy:
-                if (
-                    relationship.is_a("IfcRelDefinesByProperties")
-                    and relationship.RelatingPropertyDefinition.is_a("IfcPropertySet")
-                    and relationship.RelatingPropertyDefinition.Name == name
-                ):
-                    return relationship.RelatingPropertyDefinition
+            try:
+                setattr(prop, prop.is_a()[len("IfcQuantity") :] + "Value", float(value))
+            except:
+                pass
 
     @staticmethod
     def set_pset_property(ifc_file, pset, name, value):
@@ -302,7 +276,7 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--ifc", type=str, required=True, help="The IFC file")
     parser.add_argument("-s", "--spreadsheet", type=str, default="data.csv", help="The spreadsheet file")
     parser.add_argument("-f", "--format", type=str, default="csv", help="The format, chosen from csv, ods, or xlsx")
-    parser.add_argument("-q", "--query", type=str, default="", help='Specify a IFC query selector, such as ".IfcWall"')
+    parser.add_argument("-q", "--query", type=str, default="", help='Specify a IFC query selector, such as "IfcWall"')
     parser.add_argument(
         "-a",
         "--arguments",
@@ -315,7 +289,7 @@ if __name__ == "__main__":
 
     if args.export:
         ifc_file = ifcopenshell.open(args.ifc)
-        results = ifcopenshell.util.selector.Selector.parse(ifc_file, args.query)
+        results = ifcopenshell.util.selector.filter_elements(ifc_file, args.query)
         ifc_csv = IfcCsv()
         ifc_csv.export(ifc_file, results, args.arguments or [], output=args.spreadsheet, format=args.format)
     elif getattr(args, "import"):

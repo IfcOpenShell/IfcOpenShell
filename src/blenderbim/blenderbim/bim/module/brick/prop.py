@@ -30,6 +30,8 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+import blenderbim.core.brick as core
+import blenderbim.tool.brick as tool
 from blenderbim.tool.brick import BrickStore
 
 def update_active_brick_index(self, context):
@@ -65,6 +67,15 @@ def get_brick_relations(self, context):
     return BrickStore.relationships
 
 
+def update_view(self, context):
+    root = context.scene.BIMBrickProperties.brick_list_root
+    core.set_brick_list_root(tool.Brick, brick_root=root, split_screen=False)
+
+def split_screen_update_view(self, context):
+    root = context.scene.BIMBrickProperties.split_screen_brick_list_root
+    core.set_brick_list_root(tool.Brick, brick_root=root, split_screen=True)
+
+
 class Brick(PropertyGroup):
     name: StringProperty(name="Name")
     label: StringProperty(name="Label")
@@ -79,7 +90,7 @@ class BIMBrickProperties(PropertyGroup):
     active_brick_index: IntProperty(name="Active Brick Index", update=update_active_brick_index)
     libraries: EnumProperty(name="Libraries", items=get_libraries)
     set_list_root_toggled: BoolProperty(name="Set List Root Toggled", default=False)
-    brick_list_root: EnumProperty(name="Brick List Root", items=get_brick_roots)
+    brick_list_root: EnumProperty(name="Brick List Root", items=get_brick_roots, update=update_view)
     # namespace manager
     namespace: EnumProperty(name="Namespace", items=get_namespaces)
     brick_settings_toggled: BoolProperty(name="Brick Settings Toggled", default=False)
@@ -102,4 +113,4 @@ class BIMBrickProperties(PropertyGroup):
     split_screen_active_brick_index: IntProperty(name="Split Screen Active Brick Index", update=update_active_brick_index)
     split_screen_active_brick_class: StringProperty(name="Split Screen Active Brick Class")
     split_screen_brick_breadcrumbs: CollectionProperty(name="Split Screen Brick Breadcrumbs", type=StrProperty)
-    split_screen_brick_list_root: EnumProperty(name="Split Screen Brick List Root", items=get_brick_roots)
+    split_screen_brick_list_root: EnumProperty(name="Split Screen Brick List Root", items=get_brick_roots, update=split_screen_update_view)

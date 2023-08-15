@@ -637,6 +637,11 @@ class OverrideDuplicateMove(bpy.types.Operator):
             element = tool.Ifc.get_entity(obj)
             if element and element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
                 continue  # For now, don't copy drawings until we stabilise a bit more. It's tricky.
+
+            # Prior to duplicating, sync the object placement to make decomposition recreation more stable.
+            if tool.Ifc.is_moved(obj):
+                blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+
             new_obj = obj.copy()
             if obj.data:
                 new_obj.data = obj.data.copy()
@@ -705,6 +710,10 @@ class OverrideDuplicateMoveLinked(bpy.types.Operator):
         relationships = tool.Root.get_decomposition_relationships(context.selected_objects)
         old_to_new = {}
         for obj in context.selected_objects:
+            # Prior to duplicating, sync the object placement to make decomposition recreation more stable.
+            if tool.Ifc.is_moved(obj):
+                blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+
             new_obj = obj.copy()
             if obj.data:
                 new_obj.data = obj.data.copy()

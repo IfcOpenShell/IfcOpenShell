@@ -358,7 +358,7 @@ class Model(blenderbim.core.tool.Model):
             is_closed = False
             if curve.Segments:
                 for segment in curve.Segments:
-                    if len(segment[0]) == 3:  # IfcArcIndex
+                    if segment.is_a("IfcArcIndex"):
                         is_arc = True
                         local_point = cls.convert_unit_to_si(curve.Points.CoordList[segment[0][0] - 1])
                         global_point = position @ Vector(local_point).to_3d()
@@ -368,12 +368,13 @@ class Model(blenderbim.core.tool.Model):
                         cls.vertices.append(global_point)
                         cls.arcs.append([len(cls.vertices) - 2, len(cls.vertices) - 1])
                     else:
-                        local_point = cls.convert_unit_to_si(curve.Points.CoordList[segment[0][0] - 1])
-                        global_point = position @ Vector(local_point).to_3d()
-                        cls.vertices.append(global_point)
-                        if is_arc:
-                            cls.arcs[-1].append(len(cls.vertices) - 1)
-                            is_arc = False
+                        for segment_index in segment[0][0:-1]:
+                            local_point = cls.convert_unit_to_si(curve.Points.CoordList[segment_index - 1])
+                            global_point = position @ Vector(local_point).to_3d()
+                            cls.vertices.append(global_point)
+                            if is_arc:
+                                cls.arcs[-1].append(len(cls.vertices) - 1)
+                                is_arc = False
 
                 if curve.Segments[0][0][0] == curve.Segments[-1][0][-1]:
                     is_closed = True
@@ -767,6 +768,11 @@ class Model(blenderbim.core.tool.Model):
             obj.matrix_world = matrix
             return
         tool.Ifc.run("geometry.edit_object_placement", product=element, matrix=matrix, is_si=True)
+
+    @classmethod
+    def get_element_matrix(cls, element):
+        placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+        return Matrix(placement)
 
     @classmethod
     def reload_body_representation(cls, obj_or_objects):

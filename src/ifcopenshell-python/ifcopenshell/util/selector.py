@@ -294,7 +294,9 @@ class FacetTransformer(lark.Transformer):
                 return False
 
     def compare(self, element_value, comparison, value):
-        if isinstance(value, str):
+        if isinstance(element_value, (list, tuple)):
+            return any(self.compare(ev, comparison, value) for ev in element_value)
+        elif isinstance(value, str):
             if isinstance(element_value, int):
                 value = int(value)
             elif isinstance(element_value, float):
@@ -520,6 +522,10 @@ class Selector:
                 value = ifcopenshell.util.element.get_type(value)
             elif key in ("material", "mat"):
                 value = ifcopenshell.util.element.get_material(value, should_skip_usage=True)
+            elif key in ("materials", "mats"):
+                value = ifcopenshell.util.element.get_materials(value)
+            elif key == "styles":
+                value = ifcopenshell.util.element.get_styles(value)
             elif key in ("item", "i"):
                 if value.is_a("IfcMaterialLayerSet"):
                     value = value.MaterialLayers
