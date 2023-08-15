@@ -78,7 +78,7 @@ class Usecase:
         parametric profile material of an I-beam, then all beam occurrences must
         also be this I-beam shape, though the length may vary.
 
-        It is highly recommended for every occurence to have a type. There are
+        It is highly recommended for every occurrence to have a type. There are
         some exceptions to the rule, such as in heritage architecture or
         as-built or dilapidation models, where existing conditions are
         ambiguous, unknown or are so bespoke as to have no logical type.

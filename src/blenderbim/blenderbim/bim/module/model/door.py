@@ -130,11 +130,11 @@ def update_door_modifier_representation(context, obj):
     if tool.Ifc.get_schema() != "IFC2X3":
         element.OperationType = props.door_type
 
-    # occurences attributes
-    occurences = tool.Ifc.get_all_element_occurences(element)
-    for occurence in occurences:
-        occurence.OverallWidth = props.overall_width / si_conversion
-        occurence.OverallHeight = props.overall_height / si_conversion
+    # occurrences attributes
+    occurrences = tool.Ifc.get_all_element_occurrences(element)
+    for occurrence in occurrences:
+        occurrence.OverallWidth = props.overall_width / si_conversion
+        occurrence.OverallHeight = props.overall_height / si_conversion
 
     update_simple_openings(element, props.overall_width / si_conversion, props.overall_height / si_conversion)
 
