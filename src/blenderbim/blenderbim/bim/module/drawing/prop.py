@@ -538,7 +538,7 @@ class BIMAnnotationProperties(PropertyGroup):
         name="Create Representation For Type",
         default=False,
         description='Whether "Add type" should define a representation for the type \n'
-        "or allow occurences to have their own",
+        "or allow occurrences to have their own",
     )
     is_adding_type: bpy.props.BoolProperty(default=False)
     type_name: bpy.props.StringProperty(name="Name", default="TYPEX")
