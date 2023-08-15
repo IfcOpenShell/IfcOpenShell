@@ -220,8 +220,11 @@ class BIM_PT_ifc_brickschema_references(Panel):
 
         if not BrickschemaReferencesData.data["libraries"]:
             row = self.layout.row(align=True)
-            row.label(text="No IFC Libraries")
-            row.operator("bim.convert_brick_project", text="", icon="ADD")
+            if BrickStore.path:
+                row.label(text="No IFC Libraries")
+                row.operator("bim.convert_brick_project", text="", icon="ADD")
+            else:
+                row.label(text="No IFC Libraries. Save the Brick project to create a new library.", icon="ERROR")
             return
 
         row = self.layout.row(align=True)
