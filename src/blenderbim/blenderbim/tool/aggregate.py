@@ -28,7 +28,7 @@ class Aggregate(blenderbim.core.tool.Aggregate):
         related_object = tool.Ifc.get_entity(related_obj)
         if not relating_object or not related_object:
             return False
-        if relating_object.is_a("IfcElement") and related_object.is_a("IfcElement"):
+        if (relating_object.is_a("IfcElement") or relating_object.is_a("IfcElementType")) and related_object.is_a("IfcElement"):
             if relating_obj.data:
                 return False
             return True
