@@ -187,7 +187,7 @@ class BIM_PT_brickschema(Panel):
                 op = row.operator("bim.remove_brick_relation", text="", icon="UNLINKED")
                 op.predicate = relation["predicate"]
                 op.object = relation["object"]
-            if relation["is_uri"] and relation["predicate_name"] != "type":
+            if relation["is_uri"] and relation["object_name"] != self.props.active_brick_class:
                 op = row.operator("bim.view_brick_item", text="", icon="DISCLOSURE_TRI_RIGHT")
                 op.item = relation["object_uri"]
             if relation["is_globalid"]:
