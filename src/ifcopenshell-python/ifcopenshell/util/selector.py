@@ -141,15 +141,27 @@ class FacetTransformer(lark.Transformer):
 
     def instance(self, args):
         if args[0].data == "globalid":
-            self.elements.add(self.file.by_guid(args[0].children[0].value))
+            try:
+                self.elements.add(self.file.by_guid(args[0].children[0].value))
+            except:
+                pass
         else:
-            self.elements.remove(self.file.by_guid(args[1].children[0].value))
+            try:
+                self.elements.remove(self.file.by_guid(args[1].children[0].value))
+            except:
+                pass
 
     def entity(self, args):
         if args[0].data == "ifc_class":
-            self.elements |= set(self.file.by_type(args[0].children[0].value))
+            try:
+                self.elements |= set(self.file.by_type(args[0].children[0].value))
+            except:
+                pass
         else:
-            self.elements -= set(self.file.by_type(args[1].children[0].value))
+            try:
+                self.elements -= set(self.file.by_type(args[1].children[0].value))
+            except:
+                pass
 
     def attribute(self, args):
         name, comparison, value = args
