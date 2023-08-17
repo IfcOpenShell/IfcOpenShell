@@ -467,11 +467,17 @@ int IfcGeom::util::eliminate_touching_operands(double prec, const TopoDS_Shape &
 
 		// Check if any of the faces in b are non-planar, which is
 		// not supported by this quick check.
+		bool non_planar = false;
 		for (int i = 1; i <= b_faces.Extent(); ++i) {
 			auto surf = BRep_Tool::Surface(TopoDS::Face(b_faces(i)));
 			if (surf->DynamicType() != STANDARD_TYPE(Geom_Plane)) {
-				continue;
+				non_planar = true;
+				break;
 			}
+		}
+
+		if (non_planar) {
+			continue;
 		}
 
 		TopTools_IndexedMapOfShape b_vertices;
