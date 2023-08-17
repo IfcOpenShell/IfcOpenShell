@@ -24,7 +24,8 @@ import ifcopenshell.util.element
 import ifcopenshell.util.classification
 
 
-filter_elements_grammar = lark.Lark("""start: filter_group
+filter_elements_grammar = lark.Lark(
+    """start: filter_group
     filter_group: facet_list ("+" facet_list)*
     facet_list: facet ("," facet)*
 
@@ -86,9 +87,11 @@ filter_elements_grammar = lark.Lark("""start: filter_group
     NEWLINE: (CR? LF)+
 
     %ignore WS // Disregard spaces in text
-""")
+"""
+)
 
-get_element_grammar = lark.Lark("""start: WORD | ESCAPED_STRING | keys_regex | keys_quoted | keys_simple
+get_element_grammar = lark.Lark(
+    """start: WORD | ESCAPED_STRING | keys_regex | keys_quoted | keys_simple
     keys_regex: "r" ESCAPED_STRING ("." ESCAPED_STRING)*
     keys_quoted: ESCAPED_STRING ("." ESCAPED_STRING)*
     keys_simple: /[^\\W][^.=<>!%*\\]]*/ ("." /[^\\W][^.=<>!%*\\]]*/)*
@@ -104,7 +107,8 @@ get_element_grammar = lark.Lark("""start: WORD | ESCAPED_STRING | keys_regex | k
     WS: /[ \\t\\f\\r\\n]/+
 
     %ignore WS // Disregard spaces in text
- """)
+ """
+)
 
 
 def get_element_value(element, query):
@@ -118,6 +122,92 @@ def filter_elements(ifc_file, query, elements=None):
     transformer.transform(filter_elements_grammar.parse(query))
     return transformer.get_results()
     return transformer.elements
+
+
+def set_element_value(ifc_file, element, query, value):
+    start = get_element_grammar.parse(query)
+    filter_query = Selector.parse_filter_query(start.children[0])
+    keys = filter_query["keys"]
+    is_regex = filter_query["is_regex"]
+
+    for i, key in enumerate(keys):
+        key = key.strip()
+        if element is None:
+            return
+        if key == "type":
+            element = ifcopenshell.util.element.get_type(element)
+        elif key in ("material", "mat"):
+            element = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+        elif key in ("materials", "mats"):
+            element = ifcopenshell.util.element.get_materials(element)
+        elif key == "styles":
+            element = ifcopenshell.util.element.get_styles(element)
+        elif key in ("item", "i"):
+            if element.is_a("IfcMaterialLayerSet"):
+                element = element.MaterialLayers
+            elif element.is_a("IfcMaterialProfileSet"):
+                element = element.MaterialProfiles
+            elif element.is_a("IfcMaterialConstituentSet"):
+                element = element.MaterialConstituents
+        elif key == "container":
+            element = ifcopenshell.util.element.get_container(element)
+        elif key == "class":
+            return ifcopenshell.util.schema.reassign_class(ifc_file, element, value)
+        elif key == "id":
+            return
+        elif isinstance(element, ifcopenshell.entity_instance):
+            if key == "Name" and element.is_a("IfcMaterialLayerSet"):
+                key = "LayerSetName"  # This oddity in the IFC spec is annoying so we account for it.
+
+            if hasattr(element, key):
+                return setattr(element, key, value)
+            else:
+                # Try to extract pset
+                if is_regex:
+                    psets = ifcopenshell.util.element.get_psets(element)
+                    matching_psets = []
+                    for pset_name, pset in psets.items():
+                        if re.match(key, pset_name):
+                            matching_psets.append(pset)
+                    result = matching_psets or None
+                else:
+                    result = ifcopenshell.util.element.get_pset(element, key)
+
+                if value and not result and len(keys) == i + 2:  # The next key is the prop name
+                    if "qto" in key.lower() or "quantity" in key.lower() or "quantities" in key.lower():
+                        pset = ifcopenshell.api.run("pset.add_qto", ifc_file, product=element, name=key)
+                    else:
+                        pset = ifcopenshell.api.run("pset.add_pset", ifc_file, product=element, name=key)
+                    result = {"id": pset.id()}
+
+                element = result
+        elif isinstance(element, dict):  # Such as from the result of a prior get_pset
+            pset = ifc_file.by_id(element["id"])
+            if value in "NULL":
+                value = None
+            if is_regex:
+                for prop in element.keys():
+                    if re.match(key, prop):
+                        if pset.is_a("IfcPropertySet"):
+                            ifcopenshell.api.run("pset.edit_pset", ifc_file, pset=pset, properties={prop: value})
+                        elif pset.is_a("IfcElementQuantity"):
+                            ifcopenshell.api.run("pset.edit_qto", ifc_file, qto=pset, properties={prop: float(value)})
+            elif pset.is_a("IfcPropertySet"):
+                ifcopenshell.api.run("pset.edit_pset", ifc_file, pset=pset, properties={key: value})
+            elif pset.is_a("IfcElementQuantity"):
+                ifcopenshell.api.run("pset.edit_qto", ifc_file, qto=pset, properties={key: float(value)})
+            return
+        elif isinstance(element, (list, tuple)):  # If we use regex
+            if key.isnumeric():
+                try:
+                    element = element[int(key)]
+                except IndexError:
+                    return
+            else:
+                results = []
+                for v in element:
+                    cls.set_element_value(v, keys[i + 1 :], is_regex=is_regex)
+                return
 
 
 class FacetTransformer(lark.Transformer):
