@@ -74,7 +74,10 @@ class ViewBrickItem(bpy.types.Operator, Operator):
     split_screen: bpy.props.BoolProperty(name="Split Screen", default=False, options={"HIDDEN"})
 
     def _execute(self, context):
-        core.view_brick_item(tool.Brick, item=self.item, split_screen=self.split_screen)
+        try:
+            core.view_brick_item(tool.Brick, item=self.item, split_screen=self.split_screen)
+        except:
+            self.report({'ERROR'}, f'Could not find {self.item}')
 
 
 class RewindBrickClass(bpy.types.Operator, Operator):
