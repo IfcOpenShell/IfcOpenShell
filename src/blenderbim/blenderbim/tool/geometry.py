@@ -460,6 +460,7 @@ class Geometry(blenderbim.core.tool.Geometry):
             mesh = ifc_importer.create_mesh(element, shape)
             ifc_importer.material_creator.load_existing_materials()
             ifc_importer.material_creator.create(element, obj, mesh)
+            mesh.BIMMeshProperties.has_openings_applied = apply_openings
 
         return mesh
 
