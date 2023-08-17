@@ -97,6 +97,7 @@ def convert_ifc_to_brick(brick, namespace=None, library=None):
         if library:
             brick.run_assign_brick_reference(element=element, library=library, brick_uri=brick_uri)
     brick.run_refresh_brick_viewer()
+    brick.run_refresh_brick_viewer(split_screen=True)
 
 
 def new_brick_file(brick, brick_root=None):
