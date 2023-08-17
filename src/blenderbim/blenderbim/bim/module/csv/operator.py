@@ -16,14 +16,15 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-import ifccsv
-import ifcopenshell
 import os
-import logging
+import bpy
 import json
-import webbrowser
+import ifccsv
+import logging
 import tempfile
+import webbrowser
+import ifcopenshell
+import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.handler import purge_module_data
 

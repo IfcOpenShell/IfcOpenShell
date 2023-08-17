@@ -147,6 +147,13 @@ class Ifc(blenderbim.core.tool.Ifc):
         IfcStore.edited_objs.add(obj)
 
     @classmethod
+    def finish_edit(cls, obj):
+        try:
+            IfcStore.edited_objs.remove(obj)
+        except:
+            pass
+
+    @classmethod
     def resolve_uri(cls, uri):
         if os.path.isabs(uri):
             return uri
