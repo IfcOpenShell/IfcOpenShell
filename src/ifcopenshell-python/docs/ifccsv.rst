@@ -66,10 +66,10 @@ utility:
 ::
 
     $ python -m ifccsv -h
-    usage: ifccsv.py [-h] -i IFC [-s SPREADSHEET] [-f FORMAT] [-q QUERY] [-a ARGUMENTS [ARGUMENTS ...]] [--export] [--import]
+    usage: ifccsv.py [-h] -i IFC [-s SPREADSHEET] [-f FORMAT] [-d DELIMITER] [-n NULL] [-q QUERY] [-a ARGUMENTS [ARGUMENTS ...]] [--export] [--import]
 
     Exports IFC data to and from CSV
-    
+
     options:
       -h, --help            show this help message and exit
       -i IFC, --ifc IFC     The IFC file
@@ -77,8 +77,11 @@ utility:
                             The spreadsheet file
       -f FORMAT, --format FORMAT
                             The format, chosen from csv, ods, or xlsx
+      -d DELIMITER, --delimiter DELIMITER
+                            The delimiter in CSV. Defaults to a comma.
+      -n NULL, --null NULL  How to represent null values. Defaults to a hyphen.
       -q QUERY, --query QUERY
-                            Specify a IFC query selector, such as ".IfcWall"
+                            Specify a IFC query selector, such as "IfcWall"
       -a ARGUMENTS [ARGUMENTS ...], --arguments ARGUMENTS [ARGUMENTS ...]
                             Specify attributes that are part of the extract, using the IfcQuery syntax such as 'type', 'Name' or 'Pset_Foo.Bar'
       --export              Export from IFC to CSV
@@ -101,7 +104,7 @@ Here is a minimal example of how to use IfcCSV as a library:
 
     # Export our model's elements and their attributes to a CSV.
     ifc_csv = IfcCsv()
-    ifc_csv.export(model, elements, attributes, output="out.csv", format="csv", delimiter=",")
+    ifc_csv.export(model, elements, attributes, output="out.csv", format="csv", delimiter=",", null="-")
 
     # Optionally, you can explicitly export to different formats.
     # ifc_csv = IfcCsv()
