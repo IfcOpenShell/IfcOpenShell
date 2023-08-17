@@ -286,17 +286,21 @@ class BIM_PT_tabs(Panel):
 
             row = self.layout.row()
             row.operator(
-                "bim.set_tab", text="", emboss=False, icon_value=blenderbim.bim.icons["IFC"].icon_id
+                "bim.set_tab",
+                text="",
+                emboss=aprops.tab == "PROJECT",
+                depress=True,
+                icon_value=blenderbim.bim.icons["IFC"].icon_id,
             ).tab = "PROJECT"
-            self.draw_tab_entry(row, "FILE_3D", "OBJECT", is_ifc_project)
-            self.draw_tab_entry(row, "MATERIAL", "GEOMETRY", is_ifc_project)
-            self.draw_tab_entry(row, "DOCUMENTS", "DRAWINGS", is_ifc_project)
-            self.draw_tab_entry(row, "NETWORK_DRIVE", "SERVICES", is_ifc_project)
-            self.draw_tab_entry(row, "EDITMODE_HLT", "STRUCTURE", is_ifc_project)
-            self.draw_tab_entry(row, "NLA", "SCHEDULING", is_ifc_project)
-            self.draw_tab_entry(row, "PACKAGE", "FM", is_ifc_project)
-            self.draw_tab_entry(row, "COMMUNITY", "QUALITY", True)
-            self.draw_tab_entry(row, "BLENDER", "BLENDER", True)
+            self.draw_tab_entry(row, "FILE_3D", "OBJECT", is_ifc_project, aprops.tab == "OBJECT")
+            self.draw_tab_entry(row, "MATERIAL", "GEOMETRY", is_ifc_project, aprops.tab == "GEOMETRY")
+            self.draw_tab_entry(row, "DOCUMENTS", "DRAWINGS", is_ifc_project, aprops.tab == "DRAWINGS")
+            self.draw_tab_entry(row, "NETWORK_DRIVE", "SERVICES", is_ifc_project, aprops.tab == "SERVICES")
+            self.draw_tab_entry(row, "EDITMODE_HLT", "STRUCTURE", is_ifc_project, aprops.tab == "STRUCTURE")
+            self.draw_tab_entry(row, "NLA", "SCHEDULING", is_ifc_project, aprops.tab == "SCHEDULING")
+            self.draw_tab_entry(row, "PACKAGE", "FM", is_ifc_project, aprops.tab == "FM")
+            self.draw_tab_entry(row, "COMMUNITY", "QUALITY", True, aprops.tab == "QUALITY")
+            self.draw_tab_entry(row, "BLENDER", "BLENDER", True, aprops.tab == "BLENDER")
             row.operator("bim.switch_tab", text="", emboss=False, icon="UV_SYNC_SELECT")
 
             # Yes, that's right.
@@ -326,9 +330,9 @@ class BIM_PT_tabs(Panel):
         except:
             pass  # Prior to load_post, we may not have any area properties setup
 
-    def draw_tab_entry(self, row, icon, tab_name, enabled=True):
+    def draw_tab_entry(self, row, icon, tab_name, enabled=True, highlight=False):
         tab_entry = row.row(align=True)
-        tab_entry.operator("bim.set_tab", text="", emboss=False, icon=icon).tab = tab_name
+        tab_entry.operator("bim.set_tab", text="", emboss=highlight, icon=icon, depress=True).tab = tab_name
         tab_entry.enabled = enabled
 
 
