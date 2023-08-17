@@ -51,6 +51,7 @@ class BimTool(WorkSpaceTool):
         ("bim.hotkey", {"type": "K", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_K")]}),
         ("bim.hotkey", {"type": "M", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_M")]}),
         ("bim.hotkey", {"type": "O", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_O")]}),
+        ("bim.hotkey", {"type": "L", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_L")]}),
         ("bim.hotkey", {"type": "Q", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_Q")]}),
         ("bim.hotkey", {"type": "R", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_R")]}),
         ("bim.hotkey", {"type": "T", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_T")]}),
@@ -393,6 +394,15 @@ class BimToolUI:
             else:
                 row.operator("bim.show_openings", icon="HIDE_OFF", text="")
 
+        if AuthoringData.data["active_class"] in (
+            "IfcOpeningElement",
+        ):
+            if len(context.selected_objects) == 2:
+                row = cls.layout.row(align=True)
+                row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="", icon="EVENT_L")
+                row.operator("bim.clone_opening", text="Clone Opening")
+
         cls.layout.row(align=True).label(text="Align")
         add_layout_hotkey_operator(cls.layout, "Align Exterior", "S_X", "")
         add_layout_hotkey_operator(cls.layout, "Align Centerline", "S_C", "")
@@ -725,6 +735,13 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             self.props.x = self.x
             self.props.y = self.y
             self.props.z = self.z
+
+    def hotkey_S_L(self):
+        if AuthoringData.data["active_class"] in (
+            "IfcOpeningElement",
+        ):
+            if len(bpy.context.selected_objects) == 2:
+                bpy.ops.bim.clone_opening()
 
     def hotkey_A_D(self):
         if not bpy.context.selected_objects:
