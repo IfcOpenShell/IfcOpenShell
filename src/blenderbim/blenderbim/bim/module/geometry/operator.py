@@ -239,6 +239,10 @@ class UpdateRepresentation(bpy.types.Operator, Operator):
         product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         material = ifcopenshell.util.element.get_material(product, should_skip_usage=True)
 
+        if getattr(product, "HasOpenings", False) and obj.data.BIMMeshProperties.has_openings_applied:
+            # Meshlike things with openings can only be updated without openings applied.
+            return
+
         if not product.is_a("IfcGridAxis"):
             tool.Geometry.clear_cache(product)
 
@@ -1442,9 +1446,11 @@ class OverrideModeSetObject(bpy.types.Operator):
                     self.reload_representation(obj)
             else:
                 self.reload_representation(obj)
+            tool.Ifc.finish_edit(obj)
 
         for obj in self.unchanged_objs_with_openings:
             self.reload_representation(obj)
+            tool.Ifc.finish_edit(obj)
         return {"FINISHED"}
 
     def reload_representation(self, obj):
