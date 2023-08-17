@@ -72,6 +72,9 @@ class BIM_PT_ifccsv(Panel):
                 row = layout.row(align=True)
                 row.prop(props, "csv_custom_delimiter")
 
+        row = layout.row(align=True)
+        row.prop(props, "null_value")
+
         row = layout.row()
         split = row.split(factor=0.5)
         c = split.column()
