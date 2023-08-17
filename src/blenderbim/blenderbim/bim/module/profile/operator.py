@@ -21,6 +21,7 @@ import ifcopenshell.api
 import blenderbim.bim.helper
 import blenderbim.tool as tool
 import blenderbim.bim.module.model.profile as model_profile
+import blenderbim.core.profile as core
 from blenderbim.bim.module.model.decorator import ProfileDecorator
 from blenderbim.bim.module.profile.prop import generate_thumbnail_for_active_profile
 from blenderbim.bim.module.profile.data import refresh
@@ -213,3 +214,14 @@ class EditArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
         props.active_arbitrary_profile_id = 0
 
         model_profile.DumbProfileRegenerator().regenerate_from_profile_def(profile)
+
+
+class PurgeOrphanProfiles(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.purge_orphan_profiles"
+    bl_label = "Purge Orphan Profiles"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        profiles_ids = [profile_prop.ifc_definition_id for profile_prop in context.scene.BIMProfileProperties.profiles]
+        core.purge_orphan_profiles(tool.Ifc, profiles_ids=profiles_ids)
+        bpy.ops.bim.load_profiles()
