@@ -48,76 +48,6 @@ except:
     pass  # No Pandas support
 
 
-class IfcAttributeSetter:
-    @staticmethod
-    def set_element_key(ifc_file, element, key, value):
-        if key == "class" and element.is_a() != value:
-            return ifcopenshell.util.schema.reassign_class(ifc_file, element, value)
-        if hasattr(element, key):
-            setattr(element, key, value)
-            return element
-        if "." not in key:
-            return element
-        pset_name, prop = key.split(".", 1)
-        pset = ifcopenshell.util.element.get_pset(element, pset_name, should_inherit=True)
-        if pset:
-            pset = ifc_file.by_id(pset["id"])
-            if pset.is_a("IfcElementQuantity"):
-                IfcAttributeSetter.set_qto_property(pset, prop, value)
-            else:
-                IfcAttributeSetter.set_pset_property(ifc_file, pset, prop, value)
-        return element
-
-    @staticmethod
-    def set_qto_property(qto, name, value):
-        for prop in qto.Quantities:
-            if prop.Name != name:
-                continue
-            try:
-                setattr(prop, prop.is_a()[len("IfcQuantity") :] + "Value", float(value))
-            except:
-                pass
-
-    @staticmethod
-    def set_pset_property(ifc_file, pset, name, value):
-        for property in pset.HasProperties:
-            if property.Name != name:
-                continue
-
-            if value.lower() in ["null", "none"]:
-                property.NominalValue = None
-                continue
-
-            # In lieu of loading a map for data casting, we only have four
-            # options, which this ugly method will determine.
-            if property.NominalValue is None:
-                if value.isnumeric():
-                    property.NominalValue = ifc_file.createIfcInteger(int(value))
-                elif value.lower() in ["1", "true", "yes", "uh-huh"]:
-                    property.NominalValue = ifc_file.createIfcBoolean(True)
-                elif value.lower() in ["0", "false", "no", "nope"]:
-                    property.NominalValue = ifc_file.createIfcBoolean(False)
-                else:
-                    try:
-                        value = float(value)
-                        property.NominalValue = ifc_file.createIfcReal(value)
-                    except:
-                        property.NominalValue = ifc_file.createIfcLabel(str(value))
-            else:
-                try:
-                    property.NominalValue.wrappedValue = str(value)
-                except:
-                    try:
-                        property.NominalValue.wrappedValue = float(value)
-                    except:
-                        try:
-                            property.NominalValue.wrappedValue = int(value)
-                        except:
-                            property.NominalValue.wrappedValue = (
-                                True if value.lower() in ["1", "true", "yes", "uh-huh"] else False
-                            )
-
-
 class IfcCsv:
     def __init__(self, output="", delimiter=","):
         self.headers = []
@@ -268,7 +198,7 @@ class IfcCsv:
                 for i, value in enumerate(row):
                     if i == 0:
                         continue  # Skip GlobalId
-                    element = IfcAttributeSetter.set_element_key(ifc_file, element, headers[i], value)
+                    ifcopenshell.util.selector.set_element_value(ifc_file, element, headers[i], value)
 
 
 if __name__ == "__main__":
