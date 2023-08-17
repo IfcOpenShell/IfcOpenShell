@@ -147,8 +147,9 @@ class BIM_PT_brickschema(Panel):
             row.prop(data=self.props, property="brick_edit_relations_toggled", text="", icon="TOOL_SETTINGS")
             row.operator("bim.remove_brick", text="", icon="X")
 
-            row = self.layout.row(align=True)
-            row.label(text="Create Relation:")
+            if self.props.brick_create_relations_toggled:
+                row = self.layout.row(align=True)
+                row.label(text="Create Relation:")
 
             if self.props.brick_create_relations_toggled and self.props.new_brick_relation_type == "http://www.w3.org/2000/01/rdf-schema#label":
                 row = self.layout.row(align=True)
