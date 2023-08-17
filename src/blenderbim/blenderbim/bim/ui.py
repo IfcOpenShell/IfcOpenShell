@@ -305,25 +305,25 @@ class BIM_PT_tabs(Panel):
             row.operator("bim.switch_tab", text="", emboss=False, icon="UV_SYNC_SELECT")
 
             # Yes, that's right.
-            # row = self.layout.row()
-            # row.scale_y = 0.2
-            # for tab in [
-            #     "PROJECT",
-            #     "OBJECT",
-            #     "GEOMETRY",
-            #     "DRAWINGS",
-            #     "SERVICES",
-            #     "STRUCTURE",
-            #     "SCHEDULING",
-            #     "FM",
-            #     "QUALITY",
-            #     "BLENDER",
-            #     "SWITCH",
-            # ]:
-            #     if aprops.tab == tab:
-            #         row.prop(aprops, "active_tab", text="", icon="BLANK1")
-            #     else:
-            #         row.prop(aprops, "inactive_tab", text="", icon="BLANK1", emboss=False)
+            row = self.layout.row()
+            row.scale_y = 0.2
+            for tab in [
+                "PROJECT",
+                "OBJECT",
+                "GEOMETRY",
+                "DRAWINGS",
+                "SERVICES",
+                "STRUCTURE",
+                "SCHEDULING",
+                "FM",
+                "QUALITY",
+                "BLENDER",
+                "SWITCH",
+            ]:
+                if aprops.tab == tab:
+                    row.prop(aprops, "active_tab", text="", icon="BLANK1")
+                else:
+                    row.prop(aprops, "inactive_tab", text="", icon="BLANK1", emboss=False)
 
             aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
             row = self.layout.row(align=True)
