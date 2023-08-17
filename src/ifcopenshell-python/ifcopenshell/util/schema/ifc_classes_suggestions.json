@@ -7,138 +7,111 @@
     ],
     "IfcAirTerminalBox": [
         {
-            "name": "VAV Box",
-            "predefined_type": "NOTDEFINED"
+            "name": "VAV Box"
         }
     ],
     "IfcCableSegment": [
         {
-            "name": "Lighting Rod",
-            "predefined_type": "NOTDEFINED"
+            "name": "Lighting Rod"
         }
     ],
     "IfcCovering": [
         {
-            "name": "Flashing",
-            "predefined_type": "NOTDEFINED"
+            "name": "Flashing"
         },
         {
-            "name": "Capping",
-            "predefined_type": "NOTDEFINED"
+            "name": "Capping"
         }
     ],
     "IfcDistributionElement": [
         {
-            "name": "Furnace",
-            "predefined_type": "NOTDEFINED"
+            "name": "Furnace"
         }
     ],
     "IfcDistributionElementType": [
         {
-            "name": "Furnace",
-            "predefined_type": "NOTDEFINED"
+            "name": "Furnace"
         }
     ],
     "IfcFurniture": [
         {
-            "name": "Casework",
-            "predefined_type": "NOTDEFINED"
+            "name": "Casework"
         },
         {
-            "name": "Millwork",
-            "predefined_type": "NOTDEFINED"
+            "name": "Millwork"
         },
         {
-            "name": "Signage",
-            "predefined_type": "NOTDEFINED"
+            "name": "Signage"
         }
     ],
     "IfcFurnitureType": [
         {
-            "name": "Casework",
-            "predefined_type": "NOTDEFINED"
+            "name": "Casework"
         },
         {
-            "name": "Millwork",
-            "predefined_type": "NOTDEFINED"
+            "name": "Millwork"
         },
         {
-            "name": "Signage",
-            "predefined_type": "NOTDEFINED"
+            "name": "Signage"
         }
     ],
     "IfcPlate": [
         {
-            "name": "Glazing",
-            "predefined_type": "NOTDEFINED"
+            "name": "Glazing"
         },
         {
-            "name": "Glass",
-            "predefined_type": "NOTDEFINED"
+            "name": "Glass"
         },
         {
-            "name": "Pane",
-            "predefined_type": "NOTDEFINED"
+            "name": "Pane"
         }
     ],
     "IfcSensor": [
         {
-            "name": "Card Reader",
-            "predefined_type": "NOTDEFINED"
+            "name": "Card Reader"
         },
         {
-            "name": "Fob Reader",
-            "predefined_type": "NOTDEFINED"
+            "name": "Fob Reader"
         }
     ],
     "IfcSlab": [
         {
-            "name": "Hob",
-            "predefined_type": "NOTDEFINED"
+            "name": "Hob"
         }
     ],
     "IfcSwitchingDevice": [
         {
-            "name": "Reed Switch",
-            "predefined_type": "NOTDEFINED"
+            "name": "Reed Switch"
         },
         {
-            "name": "Electric Isolating Switch",
-            "predefined_type": "NOTDEFINED"
+            "name": "Electric Isolating Switch"
         }
     ],
     "IfcUnitaryEquipment": [
         {
-            "name": "Fan Coil Unit",
-            "predefined_type": "NOTDEFINED"
+            "name": "Fan Coil Unit"
         }
     ],
     "IfcWall": [
         {
-            "name": "Glazing",
-            "predefined_type": "NOTDEFINED"
+            "name": "Glazing"
         },
         {
-            "name": "Glass",
-            "predefined_type": "NOTDEFINED"
+            "name": "Glass"
         },
         {
-            "name": "Pane",
-            "predefined_type": "NOTDEFINED"
+            "name": "Pane"
         }
     ],
     "IfcWindow": [
         {
-            "name": "Glazing",
-            "predefined_type": "NOTDEFINED"
+            "name": "Glazing"
         },
         {
-            "name": "Glass",
-            "predefined_type": "NOTDEFINED"
+            "name": "Glass"
         },
         {
-            "name": "Pane",
-            "predefined_type": "NOTDEFINED"
+            "name": "Pane"
         }
     ]
 }
