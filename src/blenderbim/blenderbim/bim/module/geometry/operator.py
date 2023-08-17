@@ -57,6 +57,31 @@ class EditObjectPlacement(bpy.types.Operator, Operator):
             core.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
 
+class OverrideOriginSet(bpy.types.Operator, Operator):
+    bl_idname = "bim.override_origin_set"
+    bl_label = "IFC Origin Set"
+    bl_options = {"REGISTER", "UNDO"}
+    obj: bpy.props.StringProperty()
+    origin_type: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
+        for obj in objs:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            if tool.Ifc.is_moved(obj):
+                core.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+            representation = tool.Geometry.get_active_representation(obj)
+            if not representation:
+                continue
+            representation = ifcopenshell.util.representation.resolve_representation(representation)
+            if not tool.Geometry.is_meshlike(representation):
+                continue
+            bpy.ops.object.origin_set(type=self.origin_type)
+            bpy.ops.bim.update_representation(obj=obj.name)
+
+
 class AddRepresentation(bpy.types.Operator, Operator):
     bl_idname = "bim.add_representation"
     bl_label = "Add Representation"
