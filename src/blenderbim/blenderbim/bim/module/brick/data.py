@@ -75,37 +75,52 @@ class BrickschemaData:
                { ?predicate a brick:EntityProperty . }
                 ?object ?sp ?sv }
             }
+            GROUP BY ?object
         """.replace(
                 "{uri}", uri
             )
         )
         for row in query:
-            predicate = row.get("predicate")
-            predicate_name = predicate.toPython().split("#")[-1]
-            object = row.get("object")
-            object_name = object.toPython().split("#")[-1]
+            predicate_uri = row.get("predicate")
+            predicate_name = predicate_uri.toPython().split("#")[-1]
+            object_uri = row.get("object")
+            print("DEBUG: object is ", object_uri)
+            if isinstance(object_uri, BNode):
+                object_name = "[]"
+            else:
+                try:
+                    object_name = object_uri.toPython().split("#")[-1]
+                except:
+                    object_name = str(object_uri)
             results.append(
                 {
-                    "predicate": predicate,
+                    "predicate_uri": predicate_uri,
                     "predicate_name": predicate_name,
-                    "object": object,
+                    "object_uri": object_uri,
                     "object_name": object_name,
-                    "is_uri": isinstance(object, URIRef),
-                    "object_uri": object.toPython(),
-                    "is_globalid": predicate == "globalID",
+                    "is_uri": isinstance(object_uri, URIRef),
+                    "is_globalid": predicate_uri == "globalID",
                 }
             )
-            # if isinstance(row.get("object"), BNode):
-            #     for s, p, o in BrickStore.graph.triples((object, None, None)):
-            #         results.append(
-            #             {
-            #                 "predicate": predicate + ":" + p.toPython().split("#")[-1],
-            #                 "object": o.toPython().split("#")[-1],
-            #                 "is_uri": isinstance(o, URIRef),
-            #                 "object_uri": o.toPython(),
-            #                 "is_globalid": p.toPython().split("#")[-1] == "globalID",
-            #             }
-            #         )
+            if isinstance(object_uri, BNode):
+                for subject2, predicate2, object2 in BrickStore.graph.triples((object_uri, None, None)):
+                    predicate2_name = predicate2.toPython().split("#")[-1]
+                    try:
+                        object2_name = object2.toPython().split("#")[-1]
+                    except:
+                        object2_name = str(object2)
+                    print("DEBUG: ", predicate_name, ":", predicate2_name)
+                    results.append(
+                        {
+                            "predicate_uri": None,
+                            "predicate_name": predicate_name + ":" + predicate2_name,
+                            "object_uri": object2,
+                            "object_name": object2_name,
+                            "is_uri": isinstance(object2, URIRef),
+                            "is_globalid": predicate2_name == "globalID",
+                        }
+                    )
+                print("")
         return results
 
 

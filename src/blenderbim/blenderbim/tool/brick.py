@@ -123,8 +123,11 @@ class Brick(blenderbim.core.tool.Brick):
     @classmethod
     def remove_relation(cls, brick_uri, predicate, object):
         with BrickStore.new_changeset() as cs:
-            for triple in BrickStore.graph.triples((brick_uri, predicate, object)):
-                cs.remove(triple)
+            for s, p, o in BrickStore.graph.triples((brick_uri, predicate, object)):
+                cs.remove((s, p, o))
+                if isinstance(o, BNode):
+                    for triple in BrickStore.graph.triples((object, None, None)):
+                        cs.remove(triple)
 
     @classmethod
     def clear_brick_browser(cls, split_screen=False):
@@ -340,8 +343,11 @@ class Brick(blenderbim.core.tool.Brick):
     @classmethod
     def remove_brick(cls, brick_uri):
         with BrickStore.new_changeset() as cs:
-            for triple in BrickStore.graph.triples((URIRef(brick_uri), None, None)):
-                cs.remove(triple)
+            for s, p, o in BrickStore.graph.triples((URIRef(brick_uri), None, None)):
+                cs.remove((s, p, o))
+                if isinstance(o, BNode):
+                    for triple in BrickStore.graph.triples((o, None, None)):
+                        cs.remove(triple)
 
     @classmethod
     def run_assign_brick_reference(cls, element=None, library=None, brick_uri=None):
