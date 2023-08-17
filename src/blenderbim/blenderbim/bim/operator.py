@@ -830,13 +830,13 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
             mapping = getter_suggestions.get(self.prop_name)
             if mapping is None:
                 return
-            for key, values in mapping().items():
+            for key, suggestions in mapping().items():
                 if key in self.identifiers:
-                    if not isinstance(values, (tuple, list)):
-                        values = [values]
-                    for value in values:
-                        predefined_type = value["predefined_type"].upper()
-                        name = value.get("name")
+                    if not isinstance(suggestions, (tuple, list)):
+                        suggestions = [suggestions]
+                    for suggestion in suggestions:
+                        predefined_type = suggestion.get("predefined_type", "NOTDEFINED").upper()
+                        name = suggestion.get("name")
                         self.add_item(
                             identifier=key,
                             name=f"{key} > {name if name else predefined_type }",
