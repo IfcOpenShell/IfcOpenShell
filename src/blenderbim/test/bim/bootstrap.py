@@ -43,7 +43,7 @@ class NewFile:
         if bpy.data.objects:
             bpy.data.batch_remove(bpy.data.objects)
             bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
-        blenderbim.bim.handler.setDefaultProperties(None)
+        blenderbim.bim.handler.load_post(None)
 
 
 class NewIfc:
@@ -53,7 +53,7 @@ class NewIfc:
         bpy.ops.wm.read_homefile(app_template="")
         bpy.data.batch_remove(bpy.data.objects)
         bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
-        blenderbim.bim.handler.setDefaultProperties(None)
+        blenderbim.bim.handler.load_post(None)
         bpy.ops.bim.create_project()
 
 
