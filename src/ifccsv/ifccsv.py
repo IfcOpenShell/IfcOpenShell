@@ -49,12 +49,12 @@ except:
 
 
 class IfcCsv:
-    def __init__(self, output="", delimiter=","):
+    def __init__(self):
         self.headers = []
         self.results = []
         self.dataframe = None
 
-    def export(self, ifc_file, elements, attributes, output=None, format=None, delimiter=","):
+    def export(self, ifc_file, elements, attributes, output=None, format=None, delimiter=",", null=None):
         self.ifc_file = ifc_file
         self.results = []
         for element in elements:
@@ -70,7 +70,10 @@ class IfcCsv:
                     del attributes[index]
 
             for attribute in attributes:
-                result.append(ifcopenshell.util.selector.get_element_value(element, attribute))
+                value = ifcopenshell.util.selector.get_element_value(element, attribute)
+                if value is None:
+                    value = null
+                result.append(value)
             self.results.append(result)
 
         self.headers = ["GlobalId"]
@@ -130,7 +133,7 @@ class IfcCsv:
         self.doc.spreadsheet.addElement(table)
 
         if output[-4:].lower() == ".ods":
-           output = output[0:-4]
+            output = output[0:-4]
         self.doc.save(output, True)
 
     def export_xlsx(self, output):
@@ -181,7 +184,7 @@ class IfcCsv:
                 results.update([p.Name for p in element.Quantities])
         return ["{}.{}".format(pset_qto_name, n) for n in results]
 
-    def Import(self, ifc_file, table, delimiter=","):
+    def Import(self, ifc_file, table, delimiter=",", null="-"):
         # Currently only supports CSV.
         with open(table, newline="", encoding="utf-8") as f:
             reader = csv.reader(f, delimiter=delimiter)
@@ -198,6 +201,8 @@ class IfcCsv:
                 for i, value in enumerate(row):
                     if i == 0:
                         continue  # Skip GlobalId
+                    if value == null:
+                        value = None
                     ifcopenshell.util.selector.set_element_value(ifc_file, element, headers[i], value)
 
 
@@ -206,6 +211,10 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--ifc", type=str, required=True, help="The IFC file")
     parser.add_argument("-s", "--spreadsheet", type=str, default="data.csv", help="The spreadsheet file")
     parser.add_argument("-f", "--format", type=str, default="csv", help="The format, chosen from csv, ods, or xlsx")
+    parser.add_argument("-d", "--delimiter", type=str, default=",", help="The delimiter in CSV. Defaults to a comma.")
+    parser.add_argument(
+        "-n", "--null", type=str, default="-", help="How to represent null values. Defaults to a hyphen."
+    )
     parser.add_argument("-q", "--query", type=str, default="", help='Specify a IFC query selector, such as "IfcWall"')
     parser.add_argument(
         "-a",
@@ -221,9 +230,17 @@ if __name__ == "__main__":
         ifc_file = ifcopenshell.open(args.ifc)
         results = ifcopenshell.util.selector.filter_elements(ifc_file, args.query)
         ifc_csv = IfcCsv()
-        ifc_csv.export(ifc_file, results, args.arguments or [], output=args.spreadsheet, format=args.format)
+        ifc_csv.export(
+            ifc_file,
+            results,
+            args.arguments or [],
+            output=args.spreadsheet,
+            format=args.format,
+            delimiter=args.delimiter,
+            null=args.null,
+        )
     elif getattr(args, "import"):
         ifc_csv = IfcCsv()
         ifc_file = ifcopenshell.open(args.ifc)
-        ifc_csv.Import(ifc_file, args.spreadsheet)
+        ifc_csv.Import(ifc_file, args.spreadsheet, delimiter=args.delimiter, null=args.null)
         ifc_file.write(args.ifc)
