@@ -94,8 +94,7 @@ class BIM_PT_profiles(Panel):
                         "bim.enable_editing_arbitrary_profile", text="Edit Arbitrary Profile", icon="GREASEPENCIL"
                     )
 
-            profile_entity = tool.Ifc.get().by_id(active_profile.ifc_definition_id)
-            users_of_profile = tool.Ifc.get().get_total_inverses(profile_entity)
+            users_of_profile = ProfileData.data["profiles_users"][active_profile.ifc_definition_id]
             self.layout.label(icon="INFO", text=f"Profile has {users_of_profile} inverse relationship(s) in project")
 
         if self.props.active_profile_id:
