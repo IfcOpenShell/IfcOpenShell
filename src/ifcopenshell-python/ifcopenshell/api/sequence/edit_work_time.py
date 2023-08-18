@@ -57,4 +57,6 @@ class Usecase:
         for name, value in self.settings["attributes"].items():
             if value and name in ["Start", "Finish"]:
                 value = ifcopenshell.util.date.datetime2ifc(value, "IfcDate")
+                if self.file.schema == "IFC4X3":
+                    name += "Date"
             setattr(self.settings["work_time"], name, value)
