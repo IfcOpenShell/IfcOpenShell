@@ -17,9 +17,8 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 
-def purge_orphan_profiles(ifc, profiles_ids):
-    for profile_id in profiles_ids:
-        profile_ifc = ifc.get().by_id(profile_id)
-        if ifc.get().get_total_inverses(profile_ifc) > 0:
+def purge_unused_profiles(ifc, profile):
+    for element_profile in profile.get_model_profiles():
+        if ifc.get().get_total_inverses(element_profile) > 0:
             continue
-        ifc.run("profile.remove_profile", profile=profile_ifc)
+        ifc.run("profile.remove_profile", profile=element_profile)
