@@ -26,6 +26,7 @@ classes = (
     operator.AddFilterGroup,
     operator.AddToIfcGroup,
     operator.ColourByProperty,
+    operator.EditFilterQuery,
     operator.FilterModelElements,
     operator.IfcSelector,
     operator.LoadColourscheme,
