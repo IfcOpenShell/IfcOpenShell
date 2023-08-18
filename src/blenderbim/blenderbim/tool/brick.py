@@ -96,7 +96,7 @@ class Brick(blenderbim.core.tool.Brick):
             cs.add((URIRef(brick), REF.hasExternalReference, bnode))
             cs.add((bnode, A, REF.IFCReference))
             cs.add((bnode, REF.hasIfcProjectReference, URIRef(project)))
-            cs.add((bnode, REF.ifcGlobalID , Literal(element.GlobalId)))
+            cs.add((bnode, REF.ifcGlobalID, Literal(element.GlobalId)))
             if element.Name:
                 cs.add((bnode, REF.ifcName, Literal(element.Name)))
 
@@ -108,11 +108,7 @@ class Brick(blenderbim.core.tool.Brick):
             bpy.context.scene.BIMBrickProperties.new_brick_relation_type = BrickStore.relationships[0][0]
             bpy.context.scene.BIMBrickProperties.add_relation_failed = False
             return
-        query = BrickStore.graph.query(
-            "ASK { <{object_uri}> a ?o . }".replace(
-                "{object_uri}", object
-            )
-        )
+        query = BrickStore.graph.query("ASK { <{object_uri}> a ?o . }".replace("{object_uri}", object))
         if query:
             with BrickStore.new_changeset() as cs:
                 cs.add((URIRef(brick_uri), URIRef(predicate), URIRef(object)))
@@ -200,7 +196,41 @@ class Brick(blenderbim.core.tool.Brick):
 
     @classmethod
     def get_convertable_brick_elements(cls):
-        return ifcopenshell.util.brick.get_brick_elements(tool.Ifc.get())
+        equipment = set(tool.Ifc.get().by_type("IfcDistributionElement"))
+        equipment -= set(tool.Ifc.get().by_type("IfcFlowSegment"))
+        equipment -= set(tool.Ifc.get().by_type("IfcFlowFitting"))
+        return equipment
+
+    @classmethod
+    def get_convertable_brick_spaces(cls):
+        if tool.Ifc.get_schema() == "IFC2X3":
+            return tool.Ifc.get().by_type("IfcSpatialStructureElement")
+        return tool.Ifc.get().by_type("IfcSpatialElement")
+
+    @classmethod
+    def get_convertable_brick_systems(cls):
+        systems = set(tool.Ifc.get().by_type("IfcSystem"))
+        systems -= set(tool.Ifc.get().by_type("IfcStructuralAnalysisModel"))
+        systems -= set(tool.Ifc.get().by_type("IfcZone"))
+        return systems
+
+    @classmethod
+    def get_parent_space(cls, space):
+        element = ifcopenshell.util.element.get_aggregate(space)
+        if not element.is_a("IfcProject"):
+            return element
+
+    @classmethod
+    def get_element_container(cls, element):
+        return ifcopenshell.util.element.get_container(element)
+
+    @classmethod
+    def get_element_systems(cls, element):
+        return ifcopenshell.util.system.get_element_systems(element)
+
+    @classmethod
+    def get_element_feeds(cls, element):
+        return ifcopenshell.util.brick.get_element_feeds(element)
 
     @classmethod
     def get_item_class(cls, item):
@@ -389,7 +419,7 @@ class Brick(blenderbim.core.tool.Brick):
     def add_namespace(cls, alias, uri):
         BrickStore.graph.bind(alias, Namespace(uri))
         BrickStore.load_namespaces()
-    
+
     @classmethod
     def clear_breadcrumbs(cls, split_screen=False):
         if split_screen:
@@ -402,6 +432,7 @@ class Brick(blenderbim.core.tool.Brick):
         save = os.path.getmtime(BrickStore.path)
         save = datetime.datetime.fromtimestamp(save)
         BrickStore.last_saved = f"{save.year}-{save.month}-{save.day} {save.hour}:{save.minute}"
+
 
 class BrickStore:
     schema = None  # this is now a os path
@@ -432,7 +463,7 @@ class BrickStore:
     @classmethod
     def get_project(cls):
         return BrickStore.graph.graph_at(graph="PROJECT")
-    
+
     @classmethod
     def load_sub_roots(cls):
         query = BrickStore.graph.query(
@@ -462,7 +493,18 @@ class BrickStore:
     @classmethod
     def load_namespaces(cls):
         BrickStore.namespaces = []
-        keyword_filter = ["brickschema.org", "schema.org", "w3.org", "purl.org", "rdfs.org", "qudt.org", "ashrae.org", "usefulinc.com", "xmlns.com", "opengis.net"]
+        keyword_filter = [
+            "brickschema.org",
+            "schema.org",
+            "w3.org",
+            "purl.org",
+            "rdfs.org",
+            "qudt.org",
+            "ashrae.org",
+            "usefulinc.com",
+            "xmlns.com",
+            "opengis.net",
+        ]
         for alias, uri in BrickStore.graph.namespaces():
             ignore_namespace = False
             for keyword in keyword_filter:
@@ -484,7 +526,7 @@ class BrickStore:
                     ?class rdfs:subClassOf* brick:{root_class} .
                     FILTER NOT EXISTS {
                         ?class owl:deprecated true .
-                    } 
+                    }
                 }
             """.replace(
                     "{root_class}", root_class

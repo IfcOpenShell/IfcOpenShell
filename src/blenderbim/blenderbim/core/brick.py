@@ -91,11 +91,46 @@ def add_brick_relation(brick, brick_uri=None, predicate=None, object=None):
 
 
 def convert_ifc_to_brick(brick, namespace=None, library=None):
+    spaces = brick.get_convertable_brick_spaces()
+    space_uris = {}
+    for space in spaces:
+        brick_uri = brick.add_brick_from_element(space, namespace, brick.get_brick_class(space))
+        space_uris[space] = brick_uri
+        if library:
+            brick.run_assign_brick_reference(element=space, library=library, brick_uri=brick_uri)
+
+    for space in spaces:
+        parent = brick.get_parent_space(space)
+        if parent:
+            brick.add_relation(space_uris[parent], "hasPart", space_uris[space])
+
+    systems = brick.get_convertable_brick_systems()
+    system_uris = {}
+    for system in systems:
+        brick_uri = brick.add_brick_from_element(system, namespace, brick.get_brick_class(system))
+        space_uris[space] = brick_uri
+        if library:
+            brick.run_assign_brick_reference(element=system, library=library, brick_uri=brick_uri)
+
     distribution_elements = brick.get_convertable_brick_elements()
+    equipment_uris = {}
     for element in distribution_elements:
         brick_uri = brick.add_brick_from_element(element, namespace, brick.get_brick_class(element))
+        equipment_uris[element] = brick_uri
+        space = brick.get_element_container(element)
+        brick.add_relation(brick_uri, "hasLocation", space_uris[space])
+        systems = brick.get_element_systems(element)
+        for system in systems:
+            brick.add_relation(system_uris[system], "hasPart", brick_uri)
         if library:
             brick.run_assign_brick_reference(element=element, library=library, brick_uri=brick_uri)
+
+    distribution_elements = brick.get_convertable_brick_elements()
+    for element in distribution_elements:
+        feeds = brick.get_element_feeds(element)
+        for downstream_equipment in feeds:
+            brick.add_relation(equipment_uris[element], "feeds", equipment_uris[downstream_equipment])
+
     brick.run_refresh_brick_viewer()
     brick.run_refresh_brick_viewer(split_screen=True)
 
