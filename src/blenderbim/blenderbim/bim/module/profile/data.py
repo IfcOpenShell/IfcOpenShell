@@ -36,7 +36,7 @@ class ProfileData:
     def load(cls):
         cls.data = {
             "total_profiles": cls.total_profiles(),
-            "profiles_users": cls.profiles_users(),
+            "active_profile_users": cls.active_profile_users(),
             "profile_classes": cls.profile_classes(),
             "is_arbitrary_profile": cls.is_arbitrary_profile(),
             "is_editing_arbitrary_profile": cls.is_editing_arbitrary_profile(),
@@ -48,14 +48,11 @@ class ProfileData:
         return len([p for p in tool.Ifc.get().by_type("IfcProfileDef") if p.ProfileName])
 
     @classmethod
-    def profiles_users(cls):
-        profile_id_to_users = {}
-        for profile_prop in bpy.context.scene.BIMProfileProperties.profiles:
-            profile_id = profile_prop.ifc_definition_id
-            profile_ifc = tool.Ifc.get().by_id(profile_id)
-            profile_users = tool.Ifc.get().get_total_inverses(profile_ifc)
-            profile_id_to_users[profile_id] = profile_users
-        return profile_id_to_users
+    def active_profile_users(cls):
+        profiles_props = bpy.context.scene.BIMProfileProperties
+        profile_prop = profiles_props.profiles[profiles_props.active_profile_index]
+        profile_ifc = tool.Ifc.get().by_id(profile_prop.ifc_definition_id)
+        return tool.Ifc.get().get_total_inverses(profile_ifc)
 
     @classmethod
     def profile_classes(cls):
