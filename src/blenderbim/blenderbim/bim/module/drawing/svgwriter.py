@@ -774,6 +774,15 @@ class SvgWriter:
             "text-anchor": text_anchor,
         }
 
+    def add_fill_bg(self, element):
+        element = element.copy()
+        if hasattr(element, "xml"):
+            attrib = element.xml.attrib
+        else:
+            attrib = element.attribs
+        attrib["filter"] = "url(#fill-background)"
+        return element
+
     def draw_text_annotation(self, text_obj, position):
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
@@ -803,15 +812,13 @@ class SvgWriter:
 
         classes = self.get_attribute_classes(text_obj)
         classes_str = " ".join(classes)
+        fill_bg = "fill-bg" in classes
 
         symbol = tool.Drawing.get_annotation_symbol(element)
         template_text_fields = []
-        if not symbol:
-            text_transform = f"translate({text_position_svg_str}) rotate({angle})"
-        else:
+        if symbol:
             # NOTE: for now we assume that scale is uniform
             symbol_transform = f"translate({text_position_svg_str}) rotate({angle}) scale({text_obj.scale.x})"
-            text_transform = symbol_transform
 
             symbol_svg = self.find_xml_symbol_by_id(symbol)
             if symbol_svg:
@@ -822,10 +829,13 @@ class SvgWriter:
                 if template_text_fields:
                     symbol_xml.attrib["transform"] = symbol_transform
                     symbol_xml.attrib.pop("id")
-                    # note: zip makes sure that we iterate over the shortest list
+                    # NOTE: zip makes sure that we iterate over the shortest list
                     for field, text_literal in zip(template_text_fields, text_literals):
                         field.text = tool.Drawing.replace_text_literal_variables(text_literal.Literal, product)
                         field.attrib["class"] = classes_str
+
+                    if fill_bg:
+                        self.svg.add(self.add_fill_bg(symbol_svg))
                     self.svg.add(symbol_svg)
                     return None
 
@@ -841,7 +851,7 @@ class SvgWriter:
                 angle,
                 text_literal.BoxAlignment,
                 classes_str,
-                fill_bg="fill-bg" in classes,
+                fill_bg=fill_bg,
                 line_number_start=line_number,
             )
             for tag in text_tags:
@@ -1351,18 +1361,10 @@ class SvgWriter:
         multiline_to_bottom=True,
         fill_bg=False,
         line_number_start=0,
-        _draw_fill_bg=False,
     ):
         """returns list of created text tags"""
         text_tags = []
-        if fill_bg:
-            method_kwargs = locals() | {"_draw_fill_bg": True, "fill_bg": False}
-            del method_kwargs["self"]
-            del method_kwargs["text_tags"]
-            text_tags += self.create_text_tag(**method_kwargs)
-
         base_text_attrs = SvgWriter.get_box_alignment_parameters(box_alignment)
-        base_text_attrs = base_text_attrs | ({"filter": "url(#fill-background)"} if _draw_fill_bg else {})
 
         if not multiline:
             transform_kwargs = {"transform": "rotate({} {} {})".format(angle, text_position.x, text_position.y)}
@@ -1399,6 +1401,11 @@ class SvgWriter:
             # doing it here and not in tspan constructor because constructor adds unnecessary spaces
             tspan.update({"dy": f"{line_number if multiline_to_bottom else -line_number}em"})
             text_tag.add(tspan)
+
+        if fill_bg:
+            fill_bg_tags = [self.add_fill_bg(text_tag) for text_tag in text_tags]
+            text_tags = fill_bg_tags + text_tags
+
         return text_tags
 
     def project_point_onto_camera(self, point):
