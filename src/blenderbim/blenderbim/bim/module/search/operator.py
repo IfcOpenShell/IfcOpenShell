@@ -347,14 +347,15 @@ class SaveColourscheme(Operator, tool.Ifc.Operator):
         query = props.colourscheme_query
 
         group = [g for g in tool.Ifc.get().by_type("IfcGroup") if g.Name == self.name]
+        coulour_scheme = {cs.name: cs.colour[0:3] for cs in props.colourscheme}
         if group:
             group = group[0]
             description = json.loads(group.Description)
-            description["colourscheme"] = {cs.name: cs.colour[0:3] for cs in props.colourscheme}
+            description["colourscheme"] = coulour_scheme
             description["colourscheme_query"] = query
             group.Description = json.dumps(description)
         else:
-            description = json.dumps({"type": "BBIM_Search", "colourscheme": query})
+            description = json.dumps({"type": "BBIM_Search", "colourscheme": coulour_scheme,"colourscheme_query": query})
             group = ifcopenshell.api.run("group.add_group", tool.Ifc.get(), Name=self.name, Description=description)
 
     def invoke(self, context, event):
@@ -369,7 +370,7 @@ class LoadColourscheme(Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMSearchProperties
-        group = tool.Ifc.get().by_id(int(props.saved_searches))
+        group = tool.Ifc.get().by_id(int(props.saved_colourschemes))
         description = json.loads(group.Description)
         props.colourscheme_query = description.get("colourscheme_query")
         props.colourscheme.clear()
