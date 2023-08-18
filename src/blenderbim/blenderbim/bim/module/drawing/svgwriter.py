@@ -36,7 +36,7 @@ import blenderbim.bim.module.drawing.annotation as annotation
 from blenderbim.bim.module.drawing.data import DecoratorData
 from blenderbim.bim.ifc import IfcStore
 
-from math import pi, ceil, atan, degrees
+from math import pi, ceil, atan, degrees, acos
 from mathutils import geometry, Vector
 from bpy_extras import view3d_utils
 
@@ -949,54 +949,54 @@ class SvgWriter:
 
     def draw_angle_annotations(self, obj):
         points = obj.data.splines[0].points
-        region = bpy.context.region
-        area = tool.Blender.get_viewport_context()["area"]
-        region_3d = area.spaces.active.region_3d
+        # [1, 2, 3, 4, 5] -> [[1, 2, 3], [2, 3, 4], [3, 4, 5]]
         points_chunked = [points[i : i + 3] for i in range(len(points) - 2)]
 
         for points_chunk in points_chunked:
-            points_2d = [view3d_utils.location_3d_to_region_2d(region, region_3d, p.co.xyz) for p in points_chunk]
+            points_chunk = [obj.matrix_world @ p.co.xyz for p in points_chunk]
+            self.draw_svg_3point_arc(obj, points_chunk)
 
-            edge0 = points_2d[0] - points_2d[1]
-            edge1 = points_2d[2] - points_2d[1]
-            angle_radius = min(edge0.length, edge1.length)
-            dir0 = edge0.normalized()
-            dir1 = edge1.normalized()
-            dir2 = ((dir0 + dir1) / 2).normalized()
-
-            # calculate p3 which is the center of the arc
-            # to use draw_svg_3point_arc()
-            p3 = points_2d[1] + dir2 * angle_radius
-
-            # make all edges the same radius
-            p0 = points_2d[1] + dir0 * angle_radius
-            p2 = points_2d[1] + dir1 * angle_radius
-            points_chunk = [view3d_utils.region_2d_to_origin_3d(region, region_3d, p) for p in [p0, p3, p2]]
-            # points = [p.co.xyz for p in bpy.context.active_object.data.splines[0].points[:3]]
-
-            bm = bmesh.new()
-            bm.verts.index_update()
-            bm.edges.index_update()
-            new_verts = [bm.verts.new(p) for p in points_chunk]
-            new_edges = [bm.edges.new((new_verts[e[0]], new_verts[e[1]])) for e in ((0, 1), (1, 2))]
-            self.draw_svg_3point_arc(obj, bm)
-
-    def draw_svg_3point_arc(self, obj, bm):
+    def draw_svg_3point_arc(self, obj, angle_points):
+        """`angle_points` are expected to be already in world space"""
         # This implementation uses an SVG arc, which means that it can only draw
         # arcs that are orthogonal to the view (e.g. not arcs in 3D).
         # Gosh this is bad code :(
 
-        points = [v.co for v in bm.verts][:3]
-        center = tool.Cad.get_center_of_arc(points, obj)
-        classes = self.get_attribute_classes(obj)
-        matrix_world = obj.matrix_world
-        x_offset = self.raw_width / 2
-        y_offset = self.raw_height / 2
-        bm.verts.ensure_lookup_table()
-        arc_end_verts = [v for v in bm.verts if len(v.link_edges) == 1]
-        arc_end_pts = [matrix_world @ v.co for v in arc_end_verts]
+        def position_on_svg(p):
+            p = self.project_point_onto_camera(p)
+            offset = Vector([self.raw_width / 2, self.raw_height / 2])
+            return (offset + p.xy * Vector((1, -1))) * self.svg_scale
 
-        # Probably need this when rewriting to use an SVG polyline instead of an arc
+        def get_angle_value():
+            """points should be in world space"""
+            # calculate arc angle, need to make sure we do it in world space
+            v0, v1, v2 = angle_points
+            edge0_ws = v0 - v1
+            edge1_ws = v2 - v1
+            try:
+                cos_a = edge0_ws.dot(edge1_ws) / (edge0_ws.length * edge1_ws.length)
+                angle_rad = acos(cos_a)
+                angle = angle_rad / pi * 180
+            except ZeroDivisionError:
+                angle = 0
+            return angle
+
+        angle = get_angle_value()
+        angle_points = [position_on_svg(p) for p in angle_points]
+
+        # creating arc and making sure radius is consistent across the arc
+        edge0 = angle_points[0] - angle_points[1]
+        edge1 = angle_points[2] - angle_points[1]
+        angle_radius = min(edge0.length, edge1.length)
+        dir0 = edge0.normalized()
+        dir1 = edge1.normalized()
+        arc_mid_dir = ((dir0 + dir1) / 2).normalized()
+        arc_points = [angle_points[1] + direction * angle_radius for direction in [dir0, arc_mid_dir, dir1]]
+
+        arc_end_pts = [arc_points[0], arc_points[2]]
+        arc_mid_point = arc_points[1]
+
+        # The commented code below can be useful when we start using SVG polyline instead of an arc
         # arc_path = [arc_end_verts[0]]
         # while True:
         #    last_point = arc_end_verts[0]
@@ -1009,79 +1009,44 @@ class SvgWriter:
         #    if not found_another_point:
         #        break
 
-        distance_between_end_verts = (arc_end_verts[0].co - arc_end_verts[1].co).length
-        arc_mid_vert = arc_end_verts[0].link_edges[0].other_vert(arc_end_verts[0])
-        is_reflex = 0 if (arc_mid_vert.co - arc_end_verts[1].co).length < distance_between_end_verts else 1
-
-        bm.free()
-
         # Calculate the angle
         # This is the true normal in 3D, whereas the camera projection we use is the drawing direction.
         # This assumes (because we use SVG arcs) that the radius is always orthogonal to our view.
         # When rewriting to use polylines, we should use this normal instead.
+        # center = tool.Cad.get_center_of_arc([p.to_3d() for p in arc_points], None).to_2d()
         # normal = mathutils.geometry.normal([arc_end_pts[0], arc_end_pts[1], center])
-        normal = Vector(self.camera_projection)
-        dir1 = (arc_end_pts[0] - center).normalized()
-        dir2 = (arc_end_pts[1] - center).normalized()
+        # normal = Vector(self.camera_projection)
+        # dir1 = (arc_end_pts[0] - center).normalized()
+        # arc_mid_dir = (arc_end_pts[1] - center).normalized()
 
         # Let's get the matrix that represents the coordinate system of the arc.
         # This matrix allows us to get 2D vectors for calculating the signed arc angle.
-        z = normal
-        x = (arc_end_pts[0] - center).normalized()
-        y = z.cross(x)
-        arc_matrix = mathutils.Matrix([x, y, z]).transposed().to_4x4()
+        # z = normal
+        # x = (arc_end_pts[0] - center).normalized()
+        # y = z.cross(x)
+        # arc_matrix = mathutils.Matrix([x, y, z]).transposed().to_4x4()
 
-        dir1 = ((arc_matrix.inverted() @ arc_end_pts[0]) - (arc_matrix.inverted() @ center)).normalized()
-        dir2 = ((arc_matrix.inverted() @ arc_end_pts[1]) - (arc_matrix.inverted() @ center)).normalized()
-        angle = -dir1.xy.angle_signed(dir2.xy)
+        # dir1 = ((arc_matrix.inverted() @ arc_end_pts[0]) - (arc_matrix.inverted() @ center)).normalized()
+        # dir2 = ((arc_matrix.inverted() @ arc_end_pts[1]) - (arc_matrix.inverted() @ center)).normalized()
+        # angle = -dir1.xy.angle_signed(dir2.xy)
 
-        # if is_reflex:
-        #    angle = angle % (math.pi * 2)
-
-        # Center of gravity of all vertices, used to help position the text
-        cog = Vector((0, 0, 0))
-        for point in points:
-            cog += point
-        cog = matrix_world @ (cog / len(points))
-
-        radius = ((matrix_world @ points[0]) - center).length
-
-        arc_midpoint = center + ((cog - center).normalized() * radius)
-
-        text_position = self.project_point_onto_camera(arc_midpoint)
-        text_position = Vector(
-            ((x_offset + text_position.x) * self.svg_scale, (y_offset - text_position.y) * self.svg_scale)
-        )
-
-        center_projected = self.project_point_onto_camera(center)
-        center_position = Vector(
-            ((x_offset + center_projected.x) * self.svg_scale, (y_offset - center_projected.y) * self.svg_scale)
-        )
-        text_offset = (text_position - center_position).xy.normalized() * 5
-        text_position += text_offset
-
+        # calculating text parameters and adding text
+        text_position = arc_mid_point + arc_mid_dir * 5
         text_style = SvgWriter.get_box_alignment_parameters("center")
-        angle_text = abs(round(math.degrees(angle), 3))
-        if is_reflex:
-            angle_text = 360 - angle_text
-        self.svg.add(self.svg.text(f"{angle_text}deg", insert=tuple(text_position), class_="ANGLE", **text_style))
+        angle_text = f"{int(angle)}deg"
+        self.svg.add(self.svg.text(angle_text, insert=text_position, class_="ANGLE", **text_style))
 
         # Draw SVG arc, see for details: http://xahlee.info/js/svg_circle_arc.html
-        arc_proj_end_pts = [self.project_point_onto_camera(v) for v in arc_end_pts]
-        p1 = Vector(
-            ((x_offset + arc_proj_end_pts[0].x) * self.svg_scale, (y_offset - arc_proj_end_pts[0].y) * self.svg_scale)
-        )
-        p2 = Vector(
-            ((x_offset + arc_proj_end_pts[1].x) * self.svg_scale, (y_offset - arc_proj_end_pts[1].y) * self.svg_scale)
-        )
-        r = radius * self.svg_scale
-        # reflex = 1 if angle > math.pi else 0
-        reflex = is_reflex
-        if reflex:
-            sense = 0 if angle > 0 else 1
-        else:
-            sense = 1 if angle > 0 else 0
+        p1, p2 = arc_end_pts
+        r = angle_radius
+        # reflex: 0 => arc < 180 degrees
+        #         1 => arc > 180 degrees
+        reflex = int(angle > 180)
+        # sense:  0 => moving at negative angles
+        #         1 => moving at positive angles
+        sense = int(tool.Cad.is_counter_clockwise_order(*arc_points))
         d = f"M {p1.x} {p1.y} A {r} {r} 0 {reflex} {sense} {p2.x} {p2.y}"
+        classes = self.get_attribute_classes(obj)
         path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
 
     def draw_radius_annotations(self, obj):
