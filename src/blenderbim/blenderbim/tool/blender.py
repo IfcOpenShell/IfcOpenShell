@@ -357,7 +357,8 @@ class Blender:
         for obj in selected_objects:
             obj.select_set(True)
         context.view_layer.objects.active = active_object
-        active_object.select_set(True)
+        if active_object:
+            active_object.select_set(True)
 
     @classmethod
     def enum_property_has_valid_index(cls, props, prop_name, enum_items):
