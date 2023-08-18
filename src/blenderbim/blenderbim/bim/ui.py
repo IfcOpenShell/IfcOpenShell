@@ -464,6 +464,18 @@ class BIM_PT_tab_quality_control(Panel):
     def draw(self, context):
         pass
 
+class BIM_PT_tab_clash_detection(Panel):
+    bl_label = "Clash Detection"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "QUALITY")
+
+    def draw(self, context):
+        pass
 
 class BIM_PT_tab_sandbox(Panel):
     bl_label = "Sandbox"
