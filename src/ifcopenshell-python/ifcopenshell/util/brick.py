@@ -20,6 +20,7 @@ import os
 import json
 import ifcopenshell
 import ifcopenshell.util.element
+import ifcopenshell.util.classification
 
 
 cwd = os.path.dirname(os.path.realpath(__file__))
@@ -31,6 +32,11 @@ with open(os.path.join(cwd, "ifc4_to_brick.json")) as f:
 
 
 def get_brick_type(element):
+    references = ifcopenshell.util.classification.get_references(element)
+    for reference in references:
+        system = ifcopenshell.util.classification.get_classification(reference)
+        if system.Name == "Brick":
+            return reference.Location
     result = None
     predefined_type = ifcopenshell.util.element.get_predefined_type(element)
     if predefined_type:
@@ -46,12 +52,50 @@ def get_brick_type(element):
                 result = ifc4_to_brick_map.get(ifc_type_class, None)
     if result:
         return f"https://brickschema.org/schema/Brick#{result}"
-    # We choose equipment as a generic fallback
-    return f"https://brickschema.org/schema/Brick#Equipment"
+    # Generic fallback
+    if element.is_a("IfcDistributionElement"):
+        return f"https://brickschema.org/schema/Brick#Equipment"
+    elif element.is_a("IfcSpatialElement") or element.is_a("IfcSpatialStructureElement"):
+        return f"https://brickschema.org/schema/Brick#Location"
+    elif element.is_a("IfcSystem"):
+        return f"https://brickschema.org/schema/Brick#System"
 
 
-def get_brick_elements(ifc_file):
-    elements = set(ifc_file.by_type("IfcDistributionElement"))
-    elements = elements.difference(ifc_file.by_type("IfcFlowSegment"))
-    elements = elements.difference(ifc_file.by_type("IfcFlowFitting"))
-    return elements
+def get_element_feeds(element):
+    current_element = element
+    processed_elements = set()
+    downstream_equipment = set()
+
+    # A queue is a list of branches. A branch is a list of elements in
+    # sequence, each one connecting to another element. An element in a
+    # branch may have a child queue. The queue and child queues are
+    # acyclic.
+
+    def extend_branch(element, branch, predecessor=None):
+        processed_elements.add(element)
+        branch_element = {"element": element, "children": [], "predecessor": predecessor}
+        branch.append(branch_element)
+
+        connected = {
+            e
+            for e in ifcopenshell.util.system.get_connected_to(element, flow_direction="SOURCE")
+            if e not in processed_elements
+        }
+        connected.update(
+            [
+                e
+                for e in ifcopenshell.util.system.get_connected_from(element, flow_direction="SOURCE")
+                if e not in processed_elements
+            ]
+        )
+
+        for connected_element in connected:
+            if connected_element.is_a("IfcFlowFitting") or connected_element.is_a("IfcFlowSegment"):
+                branch_element["children"].append(extend_branch(connected_element, [], element))
+            else:
+                downstream_equipment.add(connected_element)
+
+        return branch
+
+    extended_branch = extend_branch(current_element, [])
+    return downstream_equipment
