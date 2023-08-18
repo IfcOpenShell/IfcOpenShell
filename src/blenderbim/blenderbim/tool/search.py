@@ -9,8 +9,11 @@ from ifcopenshell.util.selector import Selector
 
 class Search(blenderbim.core.tool.Search):
     @classmethod
-    def import_filter_query(cls, group, filter_groups):
-        query = json.loads(group.Description)["query"]
+    def get_group_query(cls, group):
+        return json.loads(group.Description)["query"]
+
+    @classmethod
+    def import_filter_query(cls, query, filter_groups):
         filter_groups.clear()
         transformer = ImportFilterQueryTransformer(filter_groups)
         transformer.transform(ifcopenshell.util.selector.filter_elements_grammar.parse(query))
