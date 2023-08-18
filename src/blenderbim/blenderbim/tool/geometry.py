@@ -204,7 +204,7 @@ class Geometry(blenderbim.core.tool.Geometry):
                 direction = Vector((0, 1, 0))
             depsgraph = bpy.context.evaluated_depsgraph_get()
             visible_faces = []
-            face_offset = obj.matrix_world.to_quaternion() @ Vector((0,0,distance))
+            face_offset = obj.matrix_world.to_quaternion() @ Vector((0, 0, distance))
             global_direction = obj.matrix_world.to_quaternion() @ direction
             for face in bm.faces:
                 if direction.dot(face.normal) > 0:
@@ -215,7 +215,9 @@ class Geometry(blenderbim.core.tool.Geometry):
                     centroid = face.calc_center_median()
                     face_centroid_at_max = Vector((centroid.x, min_y, centroid.z))
                 face_centroid_at_max = obj.matrix_world @ face_centroid_at_max
-                hit, loc, norm, idx, o, mw = bpy.context.scene.ray_cast(depsgraph, face_centroid_at_max, global_direction, distance=distance)
+                hit, loc, norm, idx, o, mw = bpy.context.scene.ray_cast(
+                    depsgraph, face_centroid_at_max, global_direction, distance=distance
+                )
                 if o != obj or idx == face.index:
                     visible_faces.append(face)
             return visible_faces
@@ -617,3 +619,7 @@ class Geometry(blenderbim.core.tool.Geometry):
     @classmethod
     def should_use_presentation_style_assignment(cls):
         return bpy.context.scene.BIMGeometryProperties.should_use_presentation_style_assignment
+
+    @classmethod
+    def get_model_representations(cls):
+        return tool.Ifc.get().by_type("IfcShapeRepresentation")
