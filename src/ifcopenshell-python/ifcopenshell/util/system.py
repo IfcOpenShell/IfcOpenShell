@@ -67,13 +67,21 @@ def get_element_systems(element):
     return results
 
 
-def get_ports(element):
+def get_ports(element, flow_direction=None):
     results = []
     for rel in getattr(element, "IsNestedBy", []) or []:
-        results.extend([o for o in rel.RelatedObjects if o.is_a("IfcDistributionPort")])
+        for port in rel.RelatedObjects:
+            if not port.is_a("IfcDistributionPort"):
+                continue
+            if flow_direction and port.FlowDirection != flow_direction:
+                continue
+            results.append(port)
     # IFC2X3 only, deprecated in IFC4
     for rel in getattr(element, "HasPorts", []) or []:
-        results.append(rel.RelatingPort)
+        port = rel.RelatingPort
+        if flow_direction and port.FlowDirection != flow_direction:
+            continue
+        results.append(port)
     return results
 
 
@@ -84,9 +92,9 @@ def get_connected_port(port):
         return rel.RelatingPort
 
 
-def get_connected_to(element):
+def get_connected_to(element, flow_direction=None):
     results = []
-    for port in ifcopenshell.util.system.get_ports(element):
+    for port in ifcopenshell.util.system.get_ports(element, flow_direction=flow_direction):
         for relConnectsPort in port.ConnectedTo:
             for disPort in [relConnectsPort.RelatedPort, relConnectsPort.RelatingPort]:
                 if hasattr(disPort, "Nests"):
@@ -101,9 +109,9 @@ def get_connected_to(element):
     return results
 
 
-def get_connected_from(element):
+def get_connected_from(element, flow_direction=None):
     results = []
-    for port in ifcopenshell.util.system.get_ports(element):
+    for port in ifcopenshell.util.system.get_ports(element, flow_direction=flow_direction):
         for relConnectsPort in port.ConnectedFrom:
             for disPort in [relConnectsPort.RelatedPort, relConnectsPort.RelatingPort]:
                 if hasattr(disPort, "Nests"):
