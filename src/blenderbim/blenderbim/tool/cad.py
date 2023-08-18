@@ -413,6 +413,7 @@ class Cad:
 
     @classmethod
     def get_center_of_arc(cls, pts, obj=None):
+        """also will convert center of arc from local space of `obj` (if it's provided)"""
         mw = obj.matrix_world if obj else None
         V = Vector
 
@@ -490,3 +491,8 @@ class Cad:
             edges = [(n, n + 1) for n in range(len(verts) - 1)]
 
         return verts, edges
+
+    @classmethod
+    def is_counter_clockwise_order(cls, A, B, C):
+        """whether A-B-C located in counter-clockwise order in 2d space"""
+        return (C.y - A.y) * (B.x - A.x) > (B.y - A.y) * (C.x - A.x)
