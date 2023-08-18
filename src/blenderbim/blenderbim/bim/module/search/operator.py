@@ -120,6 +120,37 @@ class AddFilter(Operator):
         return {"FINISHED"}
 
 
+class SelectFilterElements(bpy.types.Operator):
+    bl_idname = "bim.select_filter_elements"
+    bl_label = "Select Filter Elements"
+    bl_options = {"REGISTER", "UNDO"}
+    group_index: IntProperty()
+    index: IntProperty()
+    module: StringProperty()
+
+    def execute(self, context):
+        if self.module == "search":
+            props = context.scene.BIMSearchProperties
+        elif self.module == "csv":
+            props = context.scene.CsvProperties
+        global_ids = []
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if element:
+                global_id = getattr(element, "GlobalId", None)
+                if global_id:
+                    global_ids.append(global_id)
+        if len(global_ids) > 50:
+            # Too much to store in a string property
+            name = "globalid-filter-" + ifcopenshell.guid.new()
+            text_data = bpy.data.texts.new(name)
+            text_data.from_string(",".join(global_ids))
+            props.filter_groups[self.group_index].filters[self.index].value = f"bpy.data.texts['{name}']"
+        else:
+            props.filter_groups[self.group_index].filters[self.index].value = ",".join(global_ids)
+        return {"FINISHED"}
+
+
 class Search(Operator):
     bl_idname = "bim.search"
     bl_label = "Search"
