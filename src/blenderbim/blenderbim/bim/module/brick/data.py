@@ -146,7 +146,7 @@ class BrickschemaReferencesData:
         for library in ifc.by_type("IfcLibraryInformation"):
             if tool.Ifc.get_schema() == "IFC2X3":
                 results.append((str(library.id()), library.Name or "Unnamed", ""))
-            elif ".ttl" in library.Location:
+            elif library.Location and ".ttl" in library.Location:
                 results.append((str(library.id()), library.Name or "Unnamed", ""))
         return results
 
