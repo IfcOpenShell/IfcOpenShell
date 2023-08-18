@@ -210,6 +210,15 @@ class RemoveRepresentation(bpy.types.Operator, Operator):
         )
 
 
+class PurgeUnusedRepresentations(bpy.types.Operator, Operator):
+    bl_idname = "bim.purge_unused_representations"
+    bl_label = "Purge Unused Representations"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.purge_unused_representations(tool.Ifc, tool.Geometry)
+
+
 class UpdateRepresentation(bpy.types.Operator, Operator):
     bl_idname = "bim.update_representation"
     bl_label = "Update Representation"

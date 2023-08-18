@@ -395,3 +395,4 @@ class BIM_PT_purge(Panel):
         layout = self.layout
         layout.operator("bim.purge_unused_profiles")
         layout.operator("bim.purge_unused_types")
+        layout.operator("bim.purge_unused_representations")
