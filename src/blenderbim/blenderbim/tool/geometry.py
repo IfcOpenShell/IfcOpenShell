@@ -59,9 +59,7 @@ class Geometry(blenderbim.core.tool.Geometry):
         # Note that clearing scale has no impact on cameras.
         if (obj.scale - Vector((1.0, 1.0, 1.0))).length > 1e-4:
             if not obj.data:
-                obj.matrix_world[0][0] = 1
-                obj.matrix_world[1][1] = 1
-                obj.matrix_world[2][2] = 1
+                obj.matrix_world.normalize()
             elif obj.data.users == 1:
                 context_override = {}
                 context_override["object"] = context_override["active_object"] = obj
