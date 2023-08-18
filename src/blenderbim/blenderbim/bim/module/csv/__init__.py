@@ -25,7 +25,6 @@ classes = (
     operator.RemoveAllCsvAttributes,
     operator.ExportIfcCsv,
     operator.ImportIfcCsv,
-    operator.EyedropIfcCsv,
     operator.SelectCsvIfcFile,
     operator.ImportCsvAttributes,
     operator.ExportCsvAttributes,

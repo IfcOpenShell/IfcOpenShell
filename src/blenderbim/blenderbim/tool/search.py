@@ -26,7 +26,11 @@ class Search(blenderbim.core.tool.Search):
                     continue
                 if ifc_filter.type == "instance":
                     has_instance_or_entity_filter = True
-                    filter_group_query.append(ifc_filter.value)
+                    if "bpy.data.texts" in ifc_filter.value:
+                        data_name = ifc_filter.value.split("bpy.data.texts")[1][2:-2]
+                        filter_group_query.append(bpy.data.texts[data_name].as_string())
+                    else:
+                        filter_group_query.append(ifc_filter.value)
                 elif ifc_filter.type == "entity":
                     has_instance_or_entity_filter = True
                     filter_group_query.append(ifc_filter.value)
@@ -92,7 +96,23 @@ class ImportFilterQueryTransformer(lark.Transformer):
 
     def facet_list(self, args):
         new = self.filter_groups.add()
+        global_ids = []
         for arg in args:
+            if arg["type"] == "instance" and global_ids:
+                if "bpy.data.texts" in new2.value:
+                    data_name = new2.value.split("bpy.data.texts")[1][2:-2]
+                    bpy.data.texts[data_name].write("," + arg["value"])
+                elif len(new2.value) > (23 * 50):
+                    name = "globalid-filter-" + ifcopenshell.guid.new()
+                    text_data = bpy.data.texts.new(name)
+                    text_data.from_string(new2.value + "," + arg["value"])
+                    new2.value = f"bpy.data.texts['{name}']"
+                else:
+                    new2.value += "," + arg["value"]
+                continue
+            global_ids = []
+            if arg["type"] == "instance":
+                global_ids.append(arg["value"])
             new2 = new.filters.add()
             new2.type = arg["type"]
             new2.value = arg["value"]

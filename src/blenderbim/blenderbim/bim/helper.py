@@ -325,6 +325,10 @@ def draw_filter(layout, props, data, module):
             elif ifc_filter.type == "instance":
                 row = box.row(align=True)
                 row.prop(ifc_filter, "value", text="", icon="GRIP")
+                op = row.operator("bim.select_filter_elements", text="", icon="EYEDROPPER")
+                op.group_index = i
+                op.index = j
+                op.module = module
             op = row.operator("bim.remove_filter", text="", icon="X")
             op.group_index = i
             op.index = j

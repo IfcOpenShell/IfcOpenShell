@@ -64,7 +64,7 @@ class RemoveAllCsvAttributes(bpy.types.Operator):
 
 class ImportCsvAttributes(bpy.types.Operator):
     bl_idname = "bim.import_csv_attributes"
-    bl_label = "Import CSV Template"
+    bl_label = "Load CSV Settings"
     bl_description = "Import a json template for CSV export"
     bl_options = {"REGISTER", "UNDO"}
     filter_glob: bpy.props.StringProperty(default="*.json", options={"HIDDEN"})
@@ -93,7 +93,7 @@ class ImportCsvAttributes(bpy.types.Operator):
 
 class ExportCsvAttributes(bpy.types.Operator):
     bl_idname = "bim.export_csv_attributes"
-    bl_label = "Export CSV Template"
+    bl_label = "Save CSV Settings"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Save a json template for CSV export"
     filename_ext = ".json"
@@ -194,24 +194,6 @@ class ImportIfcCsv(bpy.types.Operator):
         if not props.should_load_from_memory:
             ifc_file.write(props.csv_ifc_file)
         purge_module_data()
-        return {"FINISHED"}
-
-
-class EyedropIfcCsv(bpy.types.Operator):
-    bl_idname = "bim.eyedrop_ifccsv"
-    bl_label = "Query Selected Items"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        global_ids = []
-        self.file = IfcStore.get_file()
-        for obj in context.selected_objects:
-            element = tool.Ifc.get_entity(obj)
-            if element:
-                global_id = getattr(element, "GlobalId", None)
-                if global_id:
-                    global_ids.append(global_id)
-        context.scene.CsvProperties.ifc_selector = ",".join(global_ids)
         return {"FINISHED"}
 
 
