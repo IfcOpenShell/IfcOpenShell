@@ -157,6 +157,12 @@ def remove_representation(ifc, geometry, obj=None, representation=None):
         geometry.delete_data(data)
 
 
+def purge_unused_representations(ifc, geometry):
+    for representation in geometry.get_model_representations():
+        if ifc.get().get_total_inverses(representation) == 0:
+            ifc.run("geometry.remove_representation", representation=representation)
+
+
 def select_connection(geometry, connection=None):
     geometry.select_connection(connection)
 
