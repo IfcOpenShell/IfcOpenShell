@@ -27,7 +27,7 @@ class BIM_PT_ifcclash(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_tab_quality_control"
+    bl_parent_id = "BIM_PT_tab_clash_detection"
 
     def draw(self, context):
         layout = self.layout
@@ -102,9 +102,10 @@ class BIM_PT_clash_manager(Panel):
     bl_idname = "BIM_PT_clash_manager"
     bl_label = "Clash Manager"
     bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "BlenderBIM"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_clash_detection"
 
     def draw(self, context):
         layout = self.layout
