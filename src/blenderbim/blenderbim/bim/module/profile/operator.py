@@ -222,6 +222,9 @@ class PurgeOrphanProfiles(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        profiles_ids = [profile_prop.ifc_definition_id for profile_prop in context.scene.BIMProfileProperties.profiles]
+        props = context.scene.BIMProfileProperties
+        profiles_ids = [profile_prop.ifc_definition_id for profile_prop in props.profiles]
         core.purge_orphan_profiles(tool.Ifc, profiles_ids=profiles_ids)
-        bpy.ops.bim.load_profiles()
+        if props.is_editing:
+            refresh()
+            bpy.ops.bim.load_profiles()
