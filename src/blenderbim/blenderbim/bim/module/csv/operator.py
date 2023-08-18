@@ -149,7 +149,10 @@ class ExportIfcCsv(bpy.types.Operator):
             ifc_file = IfcStore.get_file()
         else:
             ifc_file = ifcopenshell.open(props.csv_ifc_file)
-        results = ifcopenshell.util.selector.filter_elements(ifc_file, props.ifc_selector)
+        results = ifcopenshell.util.selector.filter_elements(
+            ifc_file, tool.Search.export_filter_query(props.filter_groups)
+        )
+
         ifc_csv = ifccsv.IfcCsv()
         attributes = [a.name for a in props.csv_attributes]
         sep = props.csv_custom_delimiter if props.csv_delimiter == "CUSTOM" else props.csv_delimiter
