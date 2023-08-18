@@ -16,15 +16,19 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-import re
 import os
+import re
+import bpy
+import json
+import base64
+import pystache
+import mathutils
+import webbrowser
 import ifcopenshell
 import ifcopenshell.util.sequence
 import ifcopenshell.util.date
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
-import json
 import blenderbim.core.tool
 import blenderbim.core
 import blenderbim.tool as tool
@@ -32,9 +36,6 @@ import blenderbim.bim.helper
 import blenderbim.bim.module.sequence.helper as helper
 from dateutil import parser
 from datetime import datetime
-import mathutils
-import pystache
-import webbrowser
 
 
 class Sequence(blenderbim.core.tool.Sequence):
@@ -378,7 +379,6 @@ class Sequence(blenderbim.core.tool.Sequence):
     @classmethod
     def get_task_time_attributes(cls):
         def callback(attributes, prop):
-
             if "Start" in prop.name or "Finish" in prop.name or prop.name == "StatusTime":
                 if prop.is_null:
                     attributes[prop.name] = None
@@ -1553,10 +1553,9 @@ class Sequence(blenderbim.core.tool.Sequence):
     def generate_gantt_browser_chart(cls, task_json, work_schedule):
         with open(os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.html"), "w") as f:
             with open(os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.mustache"), "r") as t:
+                task_b64 = base64.b64encode(bytes(json.dumps(task_json), "utf-8")).decode("utf-8")
                 f.write(
-                    pystache.render(
-                        t.read(), {"json_data": json.dumps(task_json), "data": json.dumps(work_schedule.get_info())}
-                    )
+                    pystache.render(t.read(), {"json_data": task_b64, "data": json.dumps(work_schedule.get_info())})
                 )
         webbrowser.open("file://" + os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.html"))
 
