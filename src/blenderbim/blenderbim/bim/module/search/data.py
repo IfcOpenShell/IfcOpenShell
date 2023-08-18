@@ -48,7 +48,8 @@ class SearchData:
             try:
                 data = json.loads(group.Description)
                 if isinstance(data, dict) and data.get("type", None) == "BBIM_Search":
-                    results.append(group)
+                    if data.get("query"):
+                        results.append(group)
             except:
                 pass
         return [(str(g.id()), g.Name or "Unnamed", "") for g in sorted(results, key=lambda x: x.Name or "Unnamed")]
