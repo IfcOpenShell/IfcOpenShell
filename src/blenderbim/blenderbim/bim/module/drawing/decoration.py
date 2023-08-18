@@ -64,11 +64,6 @@ class profile_consequential:
         cls.lines = []
 
 
-def ccw(A, B, C):
-    """whether a-b-c located in counter-clockwise order in 2d space"""
-    return (C.y - A.y) * (B.x - A.x) > (B.y - A.y) * (C.x - A.x)
-
-
 def worldspace_to_winspace(verts, context):
     """Convert world space verts to window space"""
     region = context.region
@@ -748,7 +743,7 @@ class AngleDecorator(BaseDecorator):
                 except ZeroDivisionError:
                     continue
                 circle_angle = acos(cos_a)
-                counter_clockwise = ccw(v2, v1, v0)
+                counter_clockwise = tool.Cad.is_counter_clockwise_order(v2, v1, v0)
                 angle_circle = get_angle_circle(circle_start, circle_angle, counter_clockwise)
                 add_verts_sequence([v1 + v for v in angle_circle], start_i_arcs, **out_kwargs_arcs)
 
@@ -780,7 +775,7 @@ class AngleDecorator(BaseDecorator):
         region3d = context.region_data
 
         viewportDrawingScale = self.get_viewport_drawing_scale(context)
-        ANGLE_LABEL_OFFSET = 25 * viewportDrawingScale
+        ANGLE_LABEL_OFFSET = 20 * viewportDrawingScale
         last_segment_i = len(indices) - 1
 
         for edge_i, edge_vertices in enumerate(indices):
@@ -798,24 +793,24 @@ class AngleDecorator(BaseDecorator):
             edge1_ws = v2 - v1
             try:
                 cos_a = edge0_ws.dot(edge1_ws) / (edge0_ws.length * edge1_ws.length)
+                angle_rad = acos(cos_a)
+                angle = angle_rad / pi * 180
             except ZeroDivisionError:
-                continue
-            circle_angle_rad = acos(cos_a)
-            circle_angle = circle_angle_rad / pi * 180
+                angle = 0
 
             # calculate angle position
-            p0 = location_3d_to_region_2d(region, region3d, v0)
-            p1 = location_3d_to_region_2d(region, region3d, v1)
-            p2 = location_3d_to_region_2d(region, region3d, v2)
+            p0, p1, p2 = [location_3d_to_region_2d(region, region3d, p) for p in vertices[i0 : i1 + 2]]
             edge0 = p0 - p1
             edge1 = p2 - p1
-            base_edge = edge0 if ccw(p0, p1, p2) else edge1
-            text_offset = (Matrix.Rotation(-circle_angle_rad / 2, 2) @ base_edge).normalized() * ANGLE_LABEL_OFFSET
+            radius = min(edge0.length_squared, edge1.length_squared) ** 0.5
+            # TODO: can be helpful for svg positioning
+            base_edge = edge0 if tool.Cad.is_counter_clockwise_order(p0, p1, p2) else edge1
+            text_offset = (Matrix.Rotation(-angle_rad / 2, 2) @ base_edge).normalized() * (radius + ANGLE_LABEL_OFFSET)
             label_position = p1 + text_offset
 
-            text = f"{int(circle_angle)}d"
+            text = f"{int(angle)}deg"
             label_dir = Vector((1, 0))
-            self.draw_label(context, text, label_position, label_dir)
+            self.draw_label(context, text, label_position, label_dir, box_alignment="center")
 
 
 class DiameterDecorator(DimensionDecorator):
