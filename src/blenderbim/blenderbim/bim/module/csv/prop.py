@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+from blenderbim.bim.module.search.prop import BIMFilterGroup
 from blenderbim.bim.prop import StrProperty
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -34,6 +35,19 @@ from bpy.props import (
 class CsvProperties(PropertyGroup):
     csv_ifc_file: StringProperty(default="", name="IFC File")
     ifc_selector: StringProperty(default="", name="IFC Selector")
+    filter_groups: CollectionProperty(type=BIMFilterGroup, name="Filter Groups")
+    facet: EnumProperty(
+        items=[
+            ("entity", "Class", "", "FILE_3D", 0),
+            ("attribute", "Attribute", "", "COPY_ID", 1),
+            ("property", "Property", "", "PROPERTIES", 2),
+            ("material", "Material", "", "MATERIAL", 3),
+            ("classification", "Classification", "", "OUTLINER", 4),
+            ("location", "Location", "", "PACKAGE", 5),
+            ("type", "Type", "", "FILE_VOLUME", 6),
+            ("instance", "GlobalId", "", "GRIP", 7),
+        ],
+    )
     csv_attributes: CollectionProperty(name="CSV Attributes", type=StrProperty)
     null_value: StringProperty(default="N/A", name="Null Value")
     csv_delimiter: EnumProperty(
@@ -56,4 +70,5 @@ class CsvProperties(PropertyGroup):
         default="csv",
     )
     csv_custom_delimiter: StringProperty(default="", name="Custom Delimiter")
+    should_show_settings: BoolProperty(default=False, name="Show Settings")
     should_load_from_memory: BoolProperty(default=False, name="Load from Memory")

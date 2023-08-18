@@ -61,9 +61,14 @@ colour_list = [
 class AddFilterGroup(Operator):
     bl_idname = "bim.add_filter_group"
     bl_label = "Add Filter Group"
+    module: StringProperty()
 
     def execute(self, context):
-        context.scene.BIMSearchProperties.filter_groups.add()
+        if self.module == "search":
+            props = context.scene.BIMSearchProperties
+        elif self.module == "csv":
+            props = context.scene.CsvProperties
+        props.filter_groups.add()
         return {"FINISHED"}
 
 
@@ -71,9 +76,13 @@ class RemoveFilterGroup(Operator):
     bl_idname = "bim.remove_filter_group"
     bl_label = "Remove Filter Group"
     index: IntProperty()
+    module: StringProperty()
 
     def execute(self, context):
-        props = context.scene.BIMSearchProperties
+        if self.module == "search":
+            props = context.scene.BIMSearchProperties
+        elif self.module == "csv":
+            props = context.scene.CsvProperties
         props.filter_groups.remove(self.index)
         return {"FINISHED"}
 
@@ -83,9 +92,13 @@ class RemoveFilter(Operator):
     bl_label = "Remove Filter Group"
     group_index: IntProperty()
     index: IntProperty()
+    module: StringProperty()
 
     def execute(self, context):
-        props = context.scene.BIMSearchProperties
+        if self.module == "search":
+            props = context.scene.BIMSearchProperties
+        elif self.module == "csv":
+            props = context.scene.CsvProperties
         props.filter_groups[self.group_index].filters.remove(self.index)
         return {"FINISHED"}
 
@@ -95,9 +108,14 @@ class AddFilter(Operator):
     bl_label = "Add Filter"
     index: IntProperty()
     type: StringProperty()
+    module: StringProperty()
 
     def execute(self, context):
-        new = context.scene.BIMSearchProperties.filter_groups[self.index].filters.add()
+        if self.module == "search":
+            props = context.scene.BIMSearchProperties
+        elif self.module == "csv":
+            props = context.scene.CsvProperties
+        new = props.filter_groups[self.index].filters.add()
         new.type = self.type
         return {"FINISHED"}
 
@@ -127,13 +145,22 @@ class SaveSearch(Operator, tool.Ifc.Operator):
     bl_description = "Save search filter to an IFC group"
     bl_options = {"REGISTER", "UNDO"}
     name: StringProperty(name="Name")
+    module: StringProperty()
 
     def _execute(self, context):
         if not self.name:
             return
 
-        query = tool.Search.export_filter_query(context.scene.BIMSearchProperties.filter_groups)
-        results = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query)
+        if self.module == "search":
+            props = context.scene.BIMSearchProperties
+        elif self.module == "csv":
+            props = context.scene.CsvProperties
+
+        try:
+            query = tool.Search.export_filter_query(props.filter_groups)
+            results = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query)
+        except:
+            return
 
         description = json.dumps({"type": "BBIM_Search", "query": query})
         group = [g for g in tool.Ifc.get().by_type("IfcGroup") if g.Name == self.name]
@@ -141,7 +168,12 @@ class SaveSearch(Operator, tool.Ifc.Operator):
             group = group[0]
         else:
             group = ifcopenshell.api.run("group.add_group", tool.Ifc.get(), Name=self.name, Description=description)
-        ifcopenshell.api.run("group.assign_group", tool.Ifc.get(), products=results, group=group)
+        if results:
+            ifcopenshell.api.run("group.assign_group", tool.Ifc.get(), products=list(results), group=group)
+
+    def draw(self, context):
+        row = self.layout.row()
+        row.prop(self, "name")
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
@@ -152,11 +184,15 @@ class LoadSearch(Operator, tool.Ifc.Operator):
     bl_label = "Load Search"
     bl_description = "Load search filter from an IFC group"
     bl_options = {"REGISTER", "UNDO"}
+    module: StringProperty()
 
     def _execute(self, context):
-        props = context.scene.BIMSearchProperties
-        group = tool.Ifc.get().by_id(int(props.saved_searches))
-        query = tool.Search.import_filter_query(group, context.scene.BIMSearchProperties.filter_groups)
+        if self.module == "search":
+            props = context.scene.BIMSearchProperties
+        elif self.module == "csv":
+            props = context.scene.CsvProperties
+        group = tool.Ifc.get().by_id(int(context.scene.BIMSearchProperties.saved_searches))
+        query = tool.Search.import_filter_query(group, props.filter_groups)
 
     def draw(self, context):
         props = context.scene.BIMSearchProperties

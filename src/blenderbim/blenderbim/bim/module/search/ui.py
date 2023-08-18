@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import blenderbim.bim.helper
 from bpy.types import Panel
 from blenderbim.bim.module.search.data import SearchData, ColourByPropertyData, SelectSimilarData
 
@@ -35,59 +36,7 @@ class BIM_PT_search(Panel):
 
         props = context.scene.BIMSearchProperties
 
-        row = self.layout.row(align=True)
-        row.label(text=f"{len(SearchData.data['saved_searches'])} Saved Searches")
-
-        if SearchData.data["saved_searches"]:
-            row.operator("bim.load_search", text="", icon="IMPORT")
-        row.operator("bim.save_search", text="", icon="EXPORT")
-
-        row = self.layout.row(align=True)
-        row.operator("bim.add_filter_group", text="Add Search Group", icon="ADD")
-
-        for i, filter_group in enumerate(props.filter_groups):
-            box = self.layout.box()
-
-            row = box.row(align=True)
-            row.prop(props, "facet", text="")
-            op = row.operator("bim.add_filter", text="Add Filter", icon="ADD")
-            op.type = props.facet
-            op.index = i
-
-            for j, ifc_filter in enumerate(filter_group.filters):
-                if ifc_filter.type == "entity":
-                    row = box.row(align=True)
-                    row.prop(ifc_filter, "value", text="", icon="FILE_3D")
-                elif ifc_filter.type == "attribute":
-                    row = box.row(align=True)
-                    row.prop(ifc_filter, "name", text="", icon="COPY_ID")
-                    row.prop(ifc_filter, "value", text="")
-                elif ifc_filter.type == "type":
-                    row = box.row(align=True)
-                    row.prop(ifc_filter, "value", text="", icon="FILE_VOLUME")
-                elif ifc_filter.type == "material":
-                    row = box.row(align=True)
-                    row.prop(ifc_filter, "value", text="", icon="MATERIAL")
-                elif ifc_filter.type == "property":
-                    row = box.row(align=True)
-                    row.prop(ifc_filter, "pset", text="", icon="PROPERTIES")
-                    row.prop(ifc_filter, "name", text="")
-                    row.prop(ifc_filter, "value", text="")
-                elif ifc_filter.type == "classification":
-                    row = box.row(align=True)
-                    row.prop(ifc_filter, "value", text="", icon="OUTLINER")
-                elif ifc_filter.type == "location":
-                    row = box.row(align=True)
-                    row.prop(ifc_filter, "name", text="", icon="PACKAGE")
-                elif ifc_filter.type == "instance":
-                    row = box.row(align=True)
-                    row.prop(ifc_filter, "value", text="", icon="GRIP")
-                op = row.operator("bim.remove_filter", text="", icon="X")
-                op.group_index = i
-                op.index = j
-
-            row = box.row()
-            row.operator("bim.remove_filter_group", icon="X").index = i
+        blenderbim.bim.helper.draw_filter(self.layout, props, SearchData, "search")
 
         if len(props.filter_groups):
             row = self.layout.row(align=True)
