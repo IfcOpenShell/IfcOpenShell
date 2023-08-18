@@ -393,4 +393,5 @@ class BIM_PT_purge(Panel):
 
     def draw(self, context):
         layout = self.layout
-        layout.operator("bim.purge_orphan_profiles")
+        layout.operator("bim.purge_unused_profiles")
+        layout.operator("bim.purge_unused_types")

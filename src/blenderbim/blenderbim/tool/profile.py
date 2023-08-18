@@ -21,6 +21,7 @@ import ifcopenshell.util.unit
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import blenderbim.core.tool
+import blenderbim.tool as tool
 from blenderbim.bim.module.model.decorator import ProfileDecorator
 
 
@@ -70,3 +71,7 @@ class Profile(blenderbim.core.tool.Profile):
                     if profile:
                         return profile
         return None
+
+    @classmethod
+    def get_model_profiles(cls):
+        return tool.Ifc.get().by_type("IfcProfileDef")
