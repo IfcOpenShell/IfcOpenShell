@@ -151,6 +151,44 @@ class SelectFilterElements(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class EditFilterQuery(Operator, tool.Ifc.Operator):
+    bl_idname = "bim.edit_filter_query"
+    bl_label = "Edit Filter Query"
+    bl_description = "Edit the underlying filter query for advanced users"
+    bl_options = {"REGISTER", "UNDO"}
+    query: StringProperty(name="Query")
+    module: StringProperty()
+
+    def _execute(self, context):
+        if self.query == self.old_query:
+            return
+
+        if self.module == "search":
+            props = context.scene.BIMSearchProperties
+        elif self.module == "csv":
+            props = context.scene.CsvProperties
+
+        try:
+            tool.Search.import_filter_query(self.query, props.filter_groups)
+        except:
+            return
+
+    def draw(self, context):
+        row = self.layout.row()
+        row.prop(self, "query", text="")
+
+    def invoke(self, context, event):
+        if self.module == "search":
+            props = context.scene.BIMSearchProperties
+        elif self.module == "csv":
+            props = context.scene.CsvProperties
+
+        self.query = tool.Search.export_filter_query(props.filter_groups)
+        self.old_query = self.query
+
+        return context.window_manager.invoke_props_dialog(self)
+
+
 class Search(Operator):
     bl_idname = "bim.search"
     bl_label = "Search"
@@ -223,7 +261,7 @@ class LoadSearch(Operator, tool.Ifc.Operator):
         elif self.module == "csv":
             props = context.scene.CsvProperties
         group = tool.Ifc.get().by_id(int(context.scene.BIMSearchProperties.saved_searches))
-        query = tool.Search.import_filter_query(group, props.filter_groups)
+        query = tool.Search.import_filter_query(tool.Search.get_group_query(group), props.filter_groups)
 
     def draw(self, context):
         props = context.scene.BIMSearchProperties

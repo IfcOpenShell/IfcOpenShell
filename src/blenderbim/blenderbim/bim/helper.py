@@ -277,15 +277,17 @@ def draw_filter(layout, props, data, module):
     if not data.is_loaded:
         data.load()
 
-    row = layout.row(align=True)
-    row.label(text=f"{len(data.data['saved_searches'])} Saved Searches")
+    if tool.Ifc.get():
+        row = layout.row(align=True)
+        row.label(text=f"{len(data.data['saved_searches'])} Saved Searches")
 
-    if data.data["saved_searches"]:
-        row.operator("bim.load_search", text="", icon="IMPORT").module = module
-    row.operator("bim.save_search", text="", icon="EXPORT").module = module
+        if data.data["saved_searches"]:
+            row.operator("bim.load_search", text="", icon="IMPORT").module = module
+        row.operator("bim.save_search", text="", icon="EXPORT").module = module
 
     row = layout.row(align=True)
     row.operator("bim.add_filter_group", text="Add Search Group", icon="ADD").module = module
+    row.operator("bim.edit_filter_query", text="", icon="FILTER").module = module
 
     for i, filter_group in enumerate(props.filter_groups):
         box = layout.box()

@@ -40,6 +40,8 @@ class SearchData:
 
     @classmethod
     def saved_searches(cls):
+        if not tool.Ifc.get():
+            return []
         groups = tool.Ifc.get().by_type("IfcGroup")
         results = []
         for group in groups:
