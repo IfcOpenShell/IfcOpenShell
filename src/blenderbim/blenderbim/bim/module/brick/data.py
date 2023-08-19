@@ -67,13 +67,17 @@ class BrickschemaData:
             PREFIX brick: <https://brickschema.org/schema/Brick#>
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
             PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-            SELECT DISTINCT ?predicate ?object ?sp ?sv WHERE {
-               <{uri}> ?predicate ?object .
-               OPTIONAL {
-               { ?predicate rdfs:range brick:TimeseriesReference . }
-                UNION
-               { ?predicate a brick:EntityProperty . }
-                ?object ?sp ?sv }
+            SELECT DISTINCT ?predicate ?object ?label ?sp ?sv  WHERE {
+                <{uri}> ?predicate ?object .
+                OPTIONAL {
+                    ?object rdfs:label ?label . 
+                }
+                OPTIONAL {
+                    { ?predicate rdfs:range brick:TimeseriesReference . }
+                    UNION
+                    { ?predicate a brick:EntityProperty . }
+                    ?object ?sp ?sv .
+                }
             }
             GROUP BY ?object
         """.replace(
@@ -84,13 +88,15 @@ class BrickschemaData:
             predicate_uri = row.get("predicate")
             predicate_name = predicate_uri.toPython().split("#")[-1]
             object_uri = row.get("object")
-            if isinstance(object_uri, BNode):
-                object_name = "[]"
-            else:
-                try:
-                    object_name = object_uri.toPython().split("#")[-1]
-                except:
-                    object_name = str(object_uri)
+            object_name = row.get("label")
+            if not object_name:
+                if isinstance(object_uri, BNode):
+                    object_name = "[]"
+                else:
+                    try:
+                        object_name = object_uri.toPython().split("#")[-1]
+                    except:
+                        object_name = str(object_uri)
             results.append(
                 {
                     "predicate_uri": predicate_uri,
