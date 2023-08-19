@@ -207,10 +207,6 @@ class BIM_PT_brickschema_viewport(Panel):
 
             if self.props.brick_create_relations_toggled:
                 row = self.layout.row(align=True)
-                row.label(text="Create Relation:")
-
-            if self.props.brick_create_relations_toggled and self.props.new_brick_relation_type == "http://www.w3.org/2000/01/rdf-schema#label":
-                row = self.layout.row(align=True)
                 prop_with_search(row, self.props, "new_brick_relation_type", text="")
                 row.prop(data=self.props, property="new_brick_relation_object", text="")
                 row.operator("bim.add_brick_relation", text="", icon="ADD")
@@ -224,15 +220,6 @@ class BIM_PT_brickschema_viewport(Panel):
                     prop_with_search(row, self.props, "new_brick_relation_type", text="")
                     row.label(text=split_screen_selection.label if split_screen_selection.label else split_screen_selection.name)
                     row.operator("bim.add_brick_relation", text="", icon="ADD")
-
-            elif self.props.brick_create_relations_toggled: 
-                row = self.layout.row(align=True)
-                prop_with_search(row, self.props, "new_brick_relation_namespace", text="")
-
-                row = self.layout.row(align=True)
-                prop_with_search(row, self.props, "new_brick_relation_type", text="")
-                row.prop(data=self.props, property="new_brick_relation_object", text="")
-                row.operator("bim.add_brick_relation", text="", icon="ADD")
 
             if self.props.brick_create_relations_toggled and self.props.add_relation_failed:
                 row = self.layout.row(align=True)

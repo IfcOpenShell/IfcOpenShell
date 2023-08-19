@@ -103,7 +103,6 @@ class BIMBrickProperties(PropertyGroup):
     brick_create_relations_toggled: BoolProperty(name="Brick Create Relations Toggled", default=False)
     brick_edit_relations_toggled: BoolProperty(name="Brick Edit Relations Toggled", default=False)
     new_brick_relation_type: EnumProperty(name="New Brick Relation Type", items=get_brick_relations)
-    new_brick_relation_namespace: EnumProperty(name="New Brick Relation Namespace", items=get_namespaces)
     new_brick_relation_object: StringProperty(name="New Brick Relation Object")
     add_relation_failed: BoolProperty(name="Add Relation Failed", default=False)
     # create relations split screen

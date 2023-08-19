@@ -159,7 +159,7 @@ class AddBrickRelation(bpy.types.Operator, Operator):
         elif props.split_screen_toggled:
             object = props.split_screen_bricks[props.split_screen_active_brick_index].uri
         else:
-            object = props.new_brick_relation_namespace + props.new_brick_relation_object
+            object = props.namespace + props.new_brick_relation_object
         core.add_brick_relation(
             tool.Brick,
             brick_uri=brick.uri,
