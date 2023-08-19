@@ -84,7 +84,6 @@ class BrickschemaData:
             predicate_uri = row.get("predicate")
             predicate_name = predicate_uri.toPython().split("#")[-1]
             object_uri = row.get("object")
-            print("DEBUG: object is ", object_uri)
             if isinstance(object_uri, BNode):
                 object_name = "[]"
             else:
@@ -109,7 +108,6 @@ class BrickschemaData:
                         object2_name = object2.toPython().split("#")[-1]
                     except:
                         object2_name = str(object2)
-                    print("DEBUG: ", predicate_name, ":", predicate2_name)
                     results.append(
                         {
                             "predicate_uri": None,
@@ -120,7 +118,6 @@ class BrickschemaData:
                             "is_globalid": predicate2_name == "globalID",
                         }
                     )
-                print("")
         return results
 
 
