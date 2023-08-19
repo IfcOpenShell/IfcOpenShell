@@ -141,10 +141,22 @@ class Brick(blenderbim.core.tool.Brick):
 
     @classmethod
     def export_brick_attributes(cls, brick_uri):
+        query = BrickStore.graph.query(
+            """
+            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+            SELECT ?label { 
+                <{brick_uri}> rdfs:label ?label . 
+            }
+            LIMIT 1
+        """.replace("{brick_uri}", brick_uri))
+        for row in query:
+            name = row.get("label")
+        if not name:
+            name = brick_uri.split("#")[-1]
         if tool.Ifc.get_schema() == "IFC2X3":
-            return {"ItemReference": brick_uri, "Name": brick_uri.split("#")[-1]}
+            return {"ItemReference": brick_uri, "Name": name}
         else:
-            return {"Identification": brick_uri, "Name": brick_uri.split("#")[-1]}
+            return {"Identification": brick_uri, "Name": name}
 
     @classmethod
     def get_active_brick_class(cls, split_screen=False):
