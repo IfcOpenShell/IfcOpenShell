@@ -152,7 +152,8 @@ def set_element_value(ifc_file, element, query, value):
         elif key == "container":
             element = ifcopenshell.util.element.get_container(element)
         elif key == "class":
-            return ifcopenshell.util.schema.reassign_class(ifc_file, element, value)
+            if element.is_a() != value:
+                return ifcopenshell.util.schema.reassign_class(ifc_file, element, value)
         elif key == "id":
             return
         elif isinstance(element, ifcopenshell.entity_instance):
@@ -160,7 +161,8 @@ def set_element_value(ifc_file, element, query, value):
                 key = "LayerSetName"  # This oddity in the IFC spec is annoying so we account for it.
 
             if hasattr(element, key):
-                return setattr(element, key, value)
+                if getattr(element, key) != value:
+                    return setattr(element, key, value)
             else:
                 # Try to extract pset
                 if is_regex:
@@ -183,18 +185,16 @@ def set_element_value(ifc_file, element, query, value):
                 element = result
         elif isinstance(element, dict):  # Such as from the result of a prior get_pset
             pset = ifc_file.by_id(element["id"])
-            if value in "NULL":
-                value = None
             if is_regex:
-                for prop in element.keys():
+                for prop, prop_value in element.items():
                     if re.match(key, prop):
-                        if pset.is_a("IfcPropertySet"):
+                        if pset.is_a("IfcPropertySet") and prop_value != value:
                             ifcopenshell.api.run("pset.edit_pset", ifc_file, pset=pset, properties={prop: value})
-                        elif pset.is_a("IfcElementQuantity"):
+                        elif pset.is_a("IfcElementQuantity") and prop_value != float(value):
                             ifcopenshell.api.run("pset.edit_qto", ifc_file, qto=pset, properties={prop: float(value)})
-            elif pset.is_a("IfcPropertySet"):
+            elif pset.is_a("IfcPropertySet") and element[key] != value:
                 ifcopenshell.api.run("pset.edit_pset", ifc_file, pset=pset, properties={key: value})
-            elif pset.is_a("IfcElementQuantity"):
+            elif pset.is_a("IfcElementQuantity") and element[key] != float(value):
                 ifcopenshell.api.run("pset.edit_qto", ifc_file, qto=pset, properties={key: float(value)})
             return
         elif isinstance(element, (list, tuple)):  # If we use regex

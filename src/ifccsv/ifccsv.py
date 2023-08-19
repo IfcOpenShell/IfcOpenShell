@@ -54,9 +54,11 @@ class IfcCsv:
         self.results = []
         self.dataframe = None
 
-    def export(self, ifc_file, elements, attributes, output=None, format=None, delimiter=",", null=None):
+    def export(self, ifc_file, elements, attributes, headers=None, output=None, format=None, delimiter=",", null=None):
         self.ifc_file = ifc_file
         self.results = []
+        if not headers:
+            headers = [None] * len(attributes)
         for element in elements:
             result = []
             if hasattr(element, "GlobalId"):
@@ -77,7 +79,11 @@ class IfcCsv:
             self.results.append(result)
 
         self.headers = ["GlobalId"]
-        self.headers.extend(attributes or [])
+        for i, attribute in enumerate(attributes or []):
+            if headers[i]:
+                self.headers.append(headers[i])
+            else:
+                self.headers.append(attribute)
 
         if format == "csv":
             self.export_csv(output, delimiter=delimiter)
@@ -184,7 +190,7 @@ class IfcCsv:
                 results.update([p.Name for p in element.Quantities])
         return ["{}.{}".format(pset_qto_name, n) for n in results]
 
-    def Import(self, ifc_file, table, delimiter=",", null="-"):
+    def Import(self, ifc_file, table, attributes=None, delimiter=",", null="-"):
         # Currently only supports CSV.
         with open(table, newline="", encoding="utf-8") as f:
             reader = csv.reader(f, delimiter=delimiter)
@@ -192,6 +198,12 @@ class IfcCsv:
             for row in reader:
                 if not headers:
                     headers = row
+                    print("csv", headers)
+                    if not attributes:
+                        attributes = [None] * len(headers)
+                    elif len(attributes) == len(headers) - 1:
+                        attributes.insert(0, "")  # The GlobalId column
+                    print("hea", attributes)
                     continue
                 try:
                     element = ifc_file.by_guid(row[0])
@@ -203,7 +215,8 @@ class IfcCsv:
                         continue  # Skip GlobalId
                     if value == null:
                         value = None
-                    ifcopenshell.util.selector.set_element_value(ifc_file, element, headers[i], value)
+                    key = attributes[i] or headers[i]
+                    ifcopenshell.util.selector.set_element_value(ifc_file, element, key, value)
 
 
 if __name__ == "__main__":
@@ -218,9 +231,15 @@ if __name__ == "__main__":
     parser.add_argument("-q", "--query", type=str, default="", help='Specify a IFC query selector, such as "IfcWall"')
     parser.add_argument(
         "-a",
-        "--arguments",
+        "--attributes",
         nargs="+",
-        help="Specify attributes that are part of the extract, using the IfcQuery syntax such as 'type', 'Name' or 'Pset_Foo.Bar'",
+        help="Specify attributes that are part of the extract, using the IfcQuery syntax such as 'class', 'Name' or 'Pset_Foo.Bar'",
+    )
+    parser.add_argument(
+        "-h",
+        "--headers",
+        nargs="+",
+        help="Specify human readable headers that correlate to each attribute.",
     )
     parser.add_argument("--export", action="store_true", help="Export from IFC to CSV")
     parser.add_argument("--import", action="store_true", help="Import from CSV to IFC")
@@ -233,7 +252,8 @@ if __name__ == "__main__":
         ifc_csv.export(
             ifc_file,
             results,
-            args.arguments or [],
+            args.attributes or [],
+            headers=args.headers or [],
             output=args.spreadsheet,
             format=args.format,
             delimiter=args.delimiter,
@@ -242,5 +262,5 @@ if __name__ == "__main__":
     elif getattr(args, "import"):
         ifc_csv = IfcCsv()
         ifc_file = ifcopenshell.open(args.ifc)
-        ifc_csv.Import(ifc_file, args.spreadsheet, delimiter=args.delimiter, null=args.null)
+        ifc_csv.Import(ifc_file, args.spreadsheet, attributes=args.attributes or [], delimiter=args.delimiter, null=args.null)
         ifc_file.write(args.ifc)

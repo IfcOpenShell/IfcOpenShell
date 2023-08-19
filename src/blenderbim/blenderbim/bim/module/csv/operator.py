@@ -71,19 +71,15 @@ class ImportCsvAttributes(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        csv_props = context.scene.CsvProperties
-        csv_json = json.load(open(self.filepath))
+        props = context.scene.CsvProperties
+        data = json.load(open(self.filepath))
+        tool.Search.import_filter_query(data["query"], props.filter_groups)
 
-        expression = csv_json.get("expression", "")
-        if expression:
-            csv_props.ifc_selector = expression
-
-        attributes = csv_json.get("attributes", [])
-        if attributes:
-            csv_props.csv_attributes.clear()
-            for attribute in attributes:
-                csv_props.csv_attributes.add().name = attribute
-
+        props.csv_attributes.clear()
+        for i, attribute in enumerate(data["attributes"]):
+            new = props.csv_attributes.add()
+            new.name = attribute
+            new.header = data["headers"][i]
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -101,22 +97,16 @@ class ExportCsvAttributes(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        csv_props = context.scene.CsvProperties
+        props = context.scene.CsvProperties
 
-        csv_template = {}
-        expression = csv_props.ifc_selector
-        if expression:
-            csv_template["expression"] = expression
-
-        csv_attributes = []
-        for attribute in csv_props.csv_attributes:
-            attribute_name = attribute.name
-            csv_attributes.append(attribute_name)
-        if csv_attributes:
-            csv_template["attributes"] = csv_attributes
+        data = {
+            "query": tool.Search.export_filter_query(props.filter_groups),
+            "attributes": [a.name for a in props.csv_attributes],
+            "headers": [a.header for a in props.csv_attributes],
+        }
 
         with open(self.filepath, "w") as outfile:
-            json.dump(csv_template, outfile)
+            json.dump(data, outfile)
 
         return {"FINISHED"}
 
@@ -155,11 +145,13 @@ class ExportIfcCsv(bpy.types.Operator):
 
         ifc_csv = ifccsv.IfcCsv()
         attributes = [a.name for a in props.csv_attributes]
+        headers = [a.header for a in props.csv_attributes]
         sep = props.csv_custom_delimiter if props.csv_delimiter == "CUSTOM" else props.csv_delimiter
         ifc_csv.export(
             ifc_file,
             results,
             attributes,
+            headers=headers,
             output=self.filepath,
             format=props.format,
             delimiter=sep,
@@ -190,7 +182,8 @@ class ImportIfcCsv(bpy.types.Operator):
             ifc_file = ifcopenshell.open(props.csv_ifc_file)
         ifc_csv = ifccsv.IfcCsv()
         sep = props.csv_custom_delimiter if props.csv_delimiter == "CUSTOM" else props.csv_delimiter
-        ifc_csv.Import(ifc_file, self.filepath, delimiter=sep, null=props.null_value)
+        attributes = [a.name for a in props.csv_attributes]
+        ifc_csv.Import(ifc_file, self.filepath, attributes=attributes, delimiter=sep, null=props.null_value)
         if not props.should_load_from_memory:
             ifc_file.write(props.csv_ifc_file)
         purge_module_data()

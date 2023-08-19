@@ -28,6 +28,7 @@ classes = (
     operator.SelectCsvIfcFile,
     operator.ImportCsvAttributes,
     operator.ExportCsvAttributes,
+    prop.CsvAttribute,
     prop.CsvProperties,
     ui.BIM_PT_ifccsv,
 )
