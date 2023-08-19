@@ -20,11 +20,11 @@ Pre-built packages
    | build-linux64_ | build-win32_   | build-win64_   | build-macos64_ | build-macosm164_ |
    +----------------+----------------+----------------+----------------+------------------+
 
-.. _build-linux64: https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.7.0-fc50bdd-linux64.zip
-.. _build-win32: https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.7.0-fc50bdd-win32.zip
-.. _build-win64: https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.7.0-fc50bdd-win64.zip
-.. _build-macos64: https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.7.0-fc50bdd-macos64.zip
-.. _build-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.7.0-fc50bdd-macosm164.zip
+.. _build-linux64: https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.7.0-dcc9d0e-linux64.zip
+.. _build-win32: https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.7.0-dcc9d0e-win32.zip
+.. _build-win64: https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.7.0-dcc9d0e-win64.zip
+.. _build-macos64: https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.7.0-dcc9d0e-macos64.zip
+.. _build-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.7.0-dcc9d0e-macosm164.zip
 
 2. Unzip the downloaded file and run IfcConvert using the command line.
 
