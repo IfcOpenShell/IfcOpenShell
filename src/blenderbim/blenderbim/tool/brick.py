@@ -337,7 +337,7 @@ class Brick(blenderbim.core.tool.Brick):
         with BrickStore.graph.new_changeset("PROJECT") as cs:
             cs.load_file(filepath)
         BrickStore.path = filepath
-        cls.set_last_saved()
+        BrickStore.set_last_saved()
         BrickStore.load_sub_roots()
         BrickStore.load_namespaces()
         BrickStore.load_entity_classes()
@@ -413,7 +413,7 @@ class Brick(blenderbim.core.tool.Brick):
     @classmethod
     def serialize_brick(cls):
         BrickStore.get_project().serialize(destination=BrickStore.path, format="turtle")
-        cls.set_last_saved()
+        BrickStore.set_last_saved()
 
     @classmethod
     def add_namespace(cls, alias, uri):
@@ -427,11 +427,7 @@ class Brick(blenderbim.core.tool.Brick):
         else:
             bpy.context.scene.BIMBrickProperties.brick_breadcrumbs.clear()
 
-    @classmethod
-    def set_last_saved(cls):
-        save = os.path.getmtime(BrickStore.path)
-        save = datetime.datetime.fromtimestamp(save)
-        BrickStore.last_saved = f"{save.year}-{save.month}-{save.day} {save.hour}:{save.minute}"
+
 
 
 class BrickStore:
@@ -590,3 +586,9 @@ class BrickStore:
         for i in range(0, total_changesets):
             BrickStore.graph.redo()
         BrickStore.history.append(total_changesets)
+
+    @classmethod
+    def set_last_saved(cls):
+        save = os.path.getmtime(BrickStore.path)
+        save = datetime.datetime.fromtimestamp(save)
+        BrickStore.last_saved = f"{save.year}-{save.month}-{save.day} {save.hour}:{save.minute}"
