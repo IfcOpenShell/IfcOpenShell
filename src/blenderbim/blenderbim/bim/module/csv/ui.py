@@ -78,6 +78,7 @@ class BIM_PT_ifccsv(Panel):
         for index, attribute in enumerate(props.csv_attributes):
             row = layout.row(align=True)
             row.prop(attribute, "name", text="")
+            row.prop(attribute, "header", text="")
             row.operator("bim.remove_csv_attribute", icon="X", text="").index = index
 
         row = layout.row(align=True)
