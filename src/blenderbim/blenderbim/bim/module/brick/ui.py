@@ -34,8 +34,19 @@ class BIM_PT_brickschema(Panel):
     def draw(self, context):
         if not BrickschemaData.is_loaded:
             BrickschemaData.load()
-        self.props = context.scene.BIMBrickProperties
 
+
+class BIM_PT_brickschema_project_info(Panel):
+    bl_label = "Project Info"
+    bl_idname = "BIM_PT_brickschema_project_info"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_brickschema"
+
+    def draw(self, context):
+        self.props = context.scene.BIMBrickProperties
+        
         if not BrickschemaData.data["is_loaded"]:
             row = self.layout.row(align=True)
             row.operator("bim.new_brick_file", text="Create Project")
@@ -61,44 +72,91 @@ class BIM_PT_brickschema(Panel):
         op.should_save_as = True
         row.operator("bim.close_brick_project", text="", icon="CANCEL")
 
-        row = self.layout.row(align=True)
-        row.prop(data=self.props, property="brick_settings_toggled", text="", icon="PREFERENCES")
 
-        if self.props.brick_settings_toggled:
-            box = self.layout.box()
-            row = box.row(align=True)
-            row.label(text="Active Namespace:")
+class BIM_PT_brickschema_namespaces(Panel):
+    bl_label = "Namespaces"
+    bl_idname = "BIM_PT_brickschema_namespaces"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_brickschema"
 
-            row = box.row(align=True)
-            prop_with_search(row, self.props, "namespace", text="")
+    @classmethod
+    def poll(cls, context):
+        return BrickStore.graph != None
 
-            row = box.row(align=True)
-            row.label(text="Bind New Namespace:")
-
-            row = box.row(align=True)
-            row.prop(data=self.props, property="new_brick_namespace_alias", text="")
-            col = row.column()
-            col.alignment = "CENTER"
-            col.scale_x = 1.1
-            col.label(text=":")
-            row.prop(data=self.props, property="new_brick_namespace_uri", text="")
-            row.operator("bim.add_brick_namespace", text="", icon="ADD")
+    def draw(self, context):
+        self.props = context.scene.BIMBrickProperties
 
         row = self.layout.row(align=True)
-        row.label(text="Create Entity:")
+        row.label(text="Active Namespace:")
 
         row = self.layout.row(align=True)
-        row.prop(data=self.props, property="brick_entity_create_type", text="")
+        prop_with_search(row, self.props, "namespace", text="")
 
+        row = self.layout.row(align=True)
+        row.label(text="Bind New Namespace:")
+
+        row = self.layout.row(align=True)
+        row.prop(data=self.props, property="new_brick_namespace_alias", text="")
+        col = row.column()
+        col.alignment = "CENTER"
+        col.scale_x = 1.1
+        col.label(text=":")
+        row.prop(data=self.props, property="new_brick_namespace_uri", text="")
+        row.operator("bim.add_brick_namespace", text="", icon="ADD")
+
+
+class BIM_PT_brickschema_create_entity(Panel):
+    bl_label = "Create Entity"
+    bl_idname = "BIM_PT_brickschema_create_entity"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_brickschema"
+
+    @classmethod
+    def poll(cls, context):
+        return BrickStore.graph != None
+
+    def draw(self, context):
+        self.props = context.scene.BIMBrickProperties
         # hide this if selected entity already has a reference
+
+        row = self.layout.row(align=True)
+        row.prop(data=self.props, property="brick_entity_create_type", text="Class")
+
+        row = self.layout.row(align=True)
+        prop_with_search(row, self.props, "brick_entity_class", text="Type")
+        
         row = self.layout.row(align=True)
         active = tool.Ifc.get_entity(context.active_object)
         if active and context.selected_objects:
+            row.label(text="Label:")
             row.label(text=active.Name if active.Name else "Unnamed")
         else:
-            row.prop(data=self.props, property="new_brick_label", text="")
-        prop_with_search(row, self.props, "brick_entity_class", text="")
-        row.operator("bim.add_brick", text="", icon="ADD")
+            row.prop(data=self.props, property="new_brick_label", text="Label")
+
+        row = self.layout.row(align=True)
+        row.operator("bim.add_brick", text="Create Entity")
+     
+
+class BIM_PT_brickschema_viewport(Panel):
+    bl_label = "Viewport"
+    bl_idname = "BIM_PT_brickschema_viewport"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_brickschema"
+
+    @classmethod
+    def poll(cls, context):
+        return BrickStore.graph != None
+
+    def draw(self, context):
+        self.props = context.scene.BIMBrickProperties
 
         row = self.layout.row(align=True)
         col = row.column()
@@ -196,6 +254,21 @@ class BIM_PT_brickschema(Panel):
                 op.global_id = relation["object_name"]
 
 
+class BIM_UL_bricks(UIList):
+    split_screen = False
+
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item:
+            row = layout.row(align=True)
+            label = item.label if item.label else item.name
+            if item.total_items:
+                op = row.operator("bim.view_brick_class", text="", icon="DISCLOSURE_TRI_RIGHT", emboss=False)
+                op.brick_class = item.name
+                op.split_screen = self.split_screen
+                label = label + " (" + str(item.total_items) + ")" 
+            row.label(text=label)
+
+
 class BIM_PT_ifc_brickschema_references(Panel):
     bl_label = "Brickschema References"
     bl_idname = "BIM_PT_ifc_brickschema_references"
@@ -246,18 +319,3 @@ class BIM_PT_ifc_brickschema_references(Panel):
             row.label(text=reference["name"])
             row.operator("bim.unassign_library_reference", text="", icon="X").reference = reference["id"]
             row.operator("bim.view_brick_item", text="", icon="DISCLOSURE_TRI_RIGHT").item = reference["identification"]
-
-
-class BIM_UL_bricks(UIList):
-    split_screen = False
-
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        if item:
-            row = layout.row(align=True)
-            label = item.label if item.label else item.name
-            if item.total_items:
-                op = row.operator("bim.view_brick_class", text="", icon="DISCLOSURE_TRI_RIGHT", emboss=False)
-                op.brick_class = item.name
-                op.split_screen = self.split_screen
-                label = label + " (" + str(item.total_items) + ")" 
-            row.label(text=label)
