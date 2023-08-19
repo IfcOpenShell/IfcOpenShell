@@ -39,8 +39,12 @@ classes = (
     prop.Brick,
     prop.BIMBrickProperties,
     ui.BIM_PT_brickschema,
-    ui.BIM_PT_ifc_brickschema_references,
+    ui.BIM_PT_brickschema_project_info,
+    ui.BIM_PT_brickschema_namespaces,
+    ui.BIM_PT_brickschema_create_entity,
+    ui.BIM_PT_brickschema_viewport,
     ui.BIM_UL_bricks,
+    ui.BIM_PT_ifc_brickschema_references,
 )
 
 

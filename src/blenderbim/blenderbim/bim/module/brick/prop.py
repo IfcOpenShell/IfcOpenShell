@@ -93,7 +93,6 @@ class BIMBrickProperties(PropertyGroup):
     brick_list_root: EnumProperty(name="Brick List Root", items=get_brick_roots, update=update_view)
     # namespace manager
     namespace: EnumProperty(name="Namespace", items=get_namespaces)
-    brick_settings_toggled: BoolProperty(name="Brick Settings Toggled", default=False)
     new_brick_namespace_alias: StringProperty(name="New Brick Namespace Alias")
     new_brick_namespace_uri: StringProperty(name="New Brick Namespace URI")
     # create brick entity
