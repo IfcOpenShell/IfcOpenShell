@@ -98,7 +98,7 @@ class BrickschemaData:
                     "object_uri": object_uri,
                     "object_name": object_name,
                     "is_uri": isinstance(object_uri, URIRef),
-                    "is_globalid": predicate_uri == "globalID",
+                    "is_globalid": predicate_name == "ifcGlobalID",
                 }
             )
             if isinstance(object_uri, BNode):
@@ -115,7 +115,7 @@ class BrickschemaData:
                             "object_uri": object2,
                             "object_name": object2_name,
                             "is_uri": isinstance(object2, URIRef),
-                            "is_globalid": predicate2_name == "globalID",
+                            "is_globalid": predicate2_name == "ifcGlobalID",
                         }
                     )
         return results
