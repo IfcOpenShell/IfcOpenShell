@@ -32,6 +32,11 @@ from bpy.props import (
 )
 
 
+class CsvAttribute(PropertyGroup):
+    name: StringProperty(name="Query", default="class")
+    header: StringProperty(name="Header Value", default="IFC Class")
+
+
 class CsvProperties(PropertyGroup):
     csv_ifc_file: StringProperty(default="", name="IFC File")
     ifc_selector: StringProperty(default="", name="IFC Selector")
@@ -48,7 +53,7 @@ class CsvProperties(PropertyGroup):
             ("instance", "GlobalId", "", "GRIP", 7),
         ],
     )
-    csv_attributes: CollectionProperty(name="CSV Attributes", type=StrProperty)
+    csv_attributes: CollectionProperty(name="CSV Attributes", type=CsvAttribute)
     null_value: StringProperty(default="N/A", name="Null Value")
     csv_delimiter: EnumProperty(
         items=[
