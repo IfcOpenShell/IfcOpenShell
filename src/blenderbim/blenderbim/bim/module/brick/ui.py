@@ -279,18 +279,24 @@ class BIM_PT_ifc_brickschema_references(Panel):
             row.label(text="No Brickschema Project Loaded")
             return
 
-        if not BrickschemaReferencesData.data["libraries"]:
+        if not BrickschemaReferencesData.data["libraries"] and BrickStore.path:
             row = self.layout.row(align=True)
-            if BrickStore.path:
-                row.label(text="No IFC Libraries")
-                row.operator("bim.convert_brick_project", text="", icon="ADD")
-            else:
-                row.label(text="No IFC Libraries. Save the Brick project to create a new library.", icon="ERROR")
+            row.label(text="No IFC Libraries")
+            row.operator("bim.convert_brick_project", text="", icon="ADD")
+            return
+        
+        if not BrickschemaReferencesData.data["libraries"] and not BrickStore.path:
+            row = self.layout.row(align=True)
+            row.label(text="No IFC Libraries: save the Brick project to create a new library", icon="ERROR")
+
+            row = self.layout.row(align=True)
+            row.label(text="Libraries must have location pointing to a \".ttl\" file", icon="INFO")
             return
 
         row = self.layout.row(align=True)
         prop_with_search(row, self.props, "libraries")
-        row.operator("bim.convert_brick_project", text="", icon="ADD")
+        if BrickStore.path:
+            row.operator("bim.convert_brick_project", text="", icon="ADD")
 
         row = self.layout.row(align=True)
         row.operator("bim.assign_brick_reference", icon="ADD")
