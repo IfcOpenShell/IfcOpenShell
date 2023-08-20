@@ -47,21 +47,12 @@ class Usecase:
         representation_type = "Clipping"
         items = []
         for item in self.settings["representation"].Items:
-            if self.settings["operator"] == "DIFFERENCE":
-                queue = [item]
-                while queue:
-                    queue_item = queue.pop()
-                    if queue_item.is_a() == "IfcBooleanResult":
-                        representation_type = "CSG"
-                        break
-                    if queue_item.is_a("IfcBooleanClippingResult"):
-                        queue.append(item.FirstOperand)
-                        queue.append(item.SecondOperand)
-                items.append(self.file.createIfcBooleanClippingResult(self.settings["operator"], item, result))
-            else:
-                representation_type = "CSG"
-                items.append(self.file.createIfcBooleanResult(self.settings["operator"], item, result))
-        self.settings["representation"].RepresentationType = representation_type
+            # For now, we don't use IfcBooleanClippingResult.
+            # This is unofficial but we assume that clipping results are part
+            # of automated clips, whereas IfcBooleanResults are manual bools.
+            # This is really terrible, but until we find a better solution...
+            items.append(self.file.createIfcBooleanResult(self.settings["operator"], item, result))
+        self.settings["representation"].RepresentationType = "CSG"
         self.settings["representation"].Items = items
 
     def create_half_space_solid(self):
