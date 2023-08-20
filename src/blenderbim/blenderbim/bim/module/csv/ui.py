@@ -56,6 +56,7 @@ class BIM_PT_ifccsv(Panel):
             row.operator("bim.select_csv_ifc_file", icon="FILE_FOLDER", text="")
 
         if props.should_show_settings:
+            layout.use_property_split = True
             row = layout.row(align=True)
             row.prop(props, "format")
 
@@ -68,6 +69,8 @@ class BIM_PT_ifccsv(Panel):
                     row.prop(props, "csv_custom_delimiter")
 
             row = layout.row()
+            row.prop(props, "should_preserve_existing")
+            row = layout.row()
             row.prop(props, "include_global_id")
             row = layout.row()
             row.prop(props, "null_value")
@@ -75,6 +78,7 @@ class BIM_PT_ifccsv(Panel):
             row.prop(props, "true_value")
             row = layout.row()
             row.prop(props, "false_value")
+            layout.use_property_split = False
 
         blenderbim.bim.helper.draw_filter(self.layout, props, SearchData, "csv")
 
