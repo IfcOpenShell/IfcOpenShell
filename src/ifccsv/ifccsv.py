@@ -54,17 +54,31 @@ class IfcCsv:
         self.results = []
         self.dataframe = None
 
-    def export(self, ifc_file, elements, attributes, headers=None, output=None, format=None, delimiter=",", null=None):
+    def export(
+        self,
+        ifc_file,
+        elements,
+        attributes,
+        headers=None,
+        output=None,
+        format=None,
+        include_global_id=True,
+        delimiter=",",
+        null="-",
+        bool_true="YES",
+        bool_false="NO",
+    ):
         self.ifc_file = ifc_file
         self.results = []
         if not headers:
             headers = [None] * len(attributes)
         for element in elements:
             result = []
-            if hasattr(element, "GlobalId"):
-                result.append(element.GlobalId)
-            else:
-                result.append(None)
+            if include_global_id:
+                if hasattr(element, "GlobalId"):
+                    result.append(element.GlobalId)
+                else:
+                    result.append(None)
 
             for index, attribute in enumerate(attributes or []):
                 if "*" in attribute:
@@ -75,10 +89,14 @@ class IfcCsv:
                 value = ifcopenshell.util.selector.get_element_value(element, attribute)
                 if value is None:
                     value = null
+                elif value is True:
+                    value = bool_true
+                elif value is False:
+                    value = bool_false
                 result.append(value)
             self.results.append(result)
 
-        self.headers = ["GlobalId"]
+        self.headers = ["GlobalId"] if include_global_id else []
         for i, attribute in enumerate(attributes or []):
             if headers[i]:
                 self.headers.append(headers[i])
@@ -190,7 +208,7 @@ class IfcCsv:
                 results.update([p.Name for p in element.Quantities])
         return ["{}.{}".format(pset_qto_name, n) for n in results]
 
-    def Import(self, ifc_file, table, attributes=None, delimiter=",", null="-"):
+    def Import(self, ifc_file, table, attributes=None, delimiter=",", null="-", bool_true="YES", bool_false="NO"):
         # Currently only supports CSV.
         with open(table, newline="", encoding="utf-8") as f:
             reader = csv.reader(f, delimiter=delimiter)
@@ -215,6 +233,10 @@ class IfcCsv:
                         continue  # Skip GlobalId
                     if value == null:
                         value = None
+                    elif value == bool_true:
+                        value = True
+                    elif value == bool_false:
+                        value = False
                     key = attributes[i] or headers[i]
                     ifcopenshell.util.selector.set_element_value(ifc_file, element, key, value)
 
@@ -262,5 +284,7 @@ if __name__ == "__main__":
     elif getattr(args, "import"):
         ifc_csv = IfcCsv()
         ifc_file = ifcopenshell.open(args.ifc)
-        ifc_csv.Import(ifc_file, args.spreadsheet, attributes=args.attributes or [], delimiter=args.delimiter, null=args.null)
+        ifc_csv.Import(
+            ifc_file, args.spreadsheet, attributes=args.attributes or [], delimiter=args.delimiter, null=args.null
+        )
         ifc_file.write(args.ifc)
