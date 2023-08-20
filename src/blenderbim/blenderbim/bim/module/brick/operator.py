@@ -118,7 +118,15 @@ class AssignBrickReference(bpy.types.Operator, Operator):
     bl_description = "Assign the selected Ifc entity to the selected Brick entity"
 
     def _execute(self, context):
+        if not context.active_object:
+            self.report({'ERROR'}, f'No Ifc selected')
+            return
         props = context.scene.BIMBrickProperties
+        try:
+            props.bricks[props.active_brick_index]
+        except:
+            self.report({'ERROR'}, f'No Brick selected')
+            return
         core.assign_brick_reference(
             tool.Ifc,
             tool.Brick,
