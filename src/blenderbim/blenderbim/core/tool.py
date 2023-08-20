@@ -668,7 +668,6 @@ class Sequence:
     def create_new_task_json(cls, task, json, type_map=None): pass
     def create_tasks_json(cls, work_schedule=None): pass
     def disable_editing_rel_sequence(cls): pass
-    def disable_editing_task_animation_colors(cls): pass
     def disable_editing_task_time(cls): pass
     def disable_editing_task(cls): pass
     def disable_editing_work_calendar(cls): pass
@@ -680,7 +679,6 @@ class Sequence:
     def display_object(cls, obj): pass
     def enable_editing_rel_sequence_attributes(cls, rel_sequence): pass
     def enable_editing_sequence_lag_time(cls, rel_sequence): pass
-    def enable_editing_task_animation_colors(cls): pass
     def enable_editing_task_attributes(cls, task): pass
     def enable_editing_task_calendar(cls, task): pass
     def enable_editing_task_sequence(cls, task): pass
@@ -733,11 +731,12 @@ class Sequence:
     def highlight_task(cls, task): pass
     def is_filter_by_active_schedule(cls): pass
     def is_work_schedule_active(cls, work_schedule): pass
+    def load_animation_color_scheme(cls, scheme): pass
+    def load_default_animation_color_scheme(cls): pass
     def load_lag_time_attributes(cls, lag_time): pass
     def load_product_related_tasks(cls, product): pass
     def load_rel_sequence_attributes(cls, rel_sequence): pass
     def load_resources(cls): pass
-    def load_task_animation_colors(cls): pass
     def load_task_attributes(cls, task): pass
     def load_task_inputs(cls, inputs): pass
     def load_task_outputs(cls, outputs): pass
@@ -753,6 +752,7 @@ class Sequence:
     def process_task_status(cls, task, date): pass
     def remove_task_column(cls, name): pass
     def reset_time_period(cls): pass
+    def save_animation_color_scheme(cls, name): pass
     def set_object_shading(cls): pass
     def set_task_sort_column(cls, column): pass
     def setup_default_task_columns(cls): pass
