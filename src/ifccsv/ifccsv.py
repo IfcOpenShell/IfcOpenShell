@@ -20,6 +20,7 @@
 
 # This can be packaged with `pyinstaller --onefile --clean --icon=icon.ico ifccsv.py`
 
+import os
 import csv
 import argparse
 import ifcopenshell
@@ -32,12 +33,13 @@ try:
     from odf.style import Style, TableCellProperties
     from odf.table import Table, TableRow, TableCell
     from odf.text import P
+    from odf.opendocument import load
 except:
     pass  # No ODF support
 
 
 try:
-    from xlsxwriter import Workbook
+    import openpyxl
 except:
     pass  # No XLSX support
 
@@ -62,6 +64,7 @@ class IfcCsv:
         headers=None,
         output=None,
         format=None,
+        should_preserve_existing=False,
         include_global_id=True,
         delimiter=",",
         null="-",
@@ -106,9 +109,9 @@ class IfcCsv:
         if format == "csv":
             self.export_csv(output, delimiter=delimiter)
         elif format == "ods":
-            self.export_ods(output)
+            self.export_ods(output, should_preserve_existing=should_preserve_existing)
         elif format == "xlsx":
-            self.export_xlsx(output)
+            self.export_xlsx(output, should_preserve_existing=should_preserve_existing)
         elif format == "pd":
             return self.export_pd()
 
@@ -119,78 +122,82 @@ class IfcCsv:
             for row in self.results:
                 writer.writerow(row)
 
-    def export_ods(self, output):
-        self.doc = OpenDocumentSpreadsheet()
+    def export_ods(self, output, should_preserve_existing=False):
+        if os.path.exists(output) and should_preserve_existing:
+            ods_document = load(output)
+            first_table = ods_document.spreadsheet.getElementsByType(Table)[0]
 
-        self.colours = {
-            "h": "dc8774",  # Header
-            "g": "eda786",  # GlobalId
-            "a": "96c7d0",  # Other Attribute
-        }
+            df = self.export_pd()
+            for col_index, col in enumerate(df.columns):
+                # Assuming the first row of the table contains headers
+                header_cell = first_table.getElementsByType(TableRow)[0].getElementsByType(TableCell)[col_index]
+                self.set_cell_value(header_cell, col)
 
-        self.cell_formats = {}
-        for key, value in self.colours.items():
-            style = Style(name=key, family="table-cell")
-            style.addElement(TableCellProperties(backgroundcolor="#" + value))
-            self.doc.automaticstyles.addElement(style)
-            self.cell_formats[key] = style
+            # Replace existing table data with data from DataFrame
+            for row_index, (_, row) in enumerate(df.iterrows()):
+                table_row = self.get_row(first_table, row_index + 1)  # + 1 for header
 
-        table = Table(name="IfcCSV")
-        tr = TableRow()
-        for header in self.headers:
-            tc = TableCell(valuetype="string", stylename="h")
-            tc.addElement(P(text=header))
-            tr.addElement(tc)
-        table.addElement(tr)
-        for row in self.results:
-            tr = TableRow()
-            c = 0
-            for i, col in enumerate(row):
-                cell_format = "g" if i == 0 else "a"
-                tc = TableCell(valuetype="string", stylename=cell_format)
-                if col is None:
-                    col = "NULL"
-                tc.addElement(P(text=col))
-                tr.addElement(tc)
-                c += 1
-            table.addElement(tr)
-        self.doc.spreadsheet.addElement(table)
+                for col_index, value in enumerate(row):
+                    cell = self.get_col(table_row, col_index)
+                    self.set_cell_value(cell, str(value))
 
-        if output[-4:].lower() == ".ods":
-            output = output[0:-4]
-        self.doc.save(output, True)
+            # If the DataFrame has fewer rows than the table, blank out the extra rows
+            num_rows_table = len(first_table.getElementsByType(TableRow)) - 1  # Exclude header row
+            if len(df) < num_rows_table:
+                for i in range(len(df) + 1, num_rows_table + 1):  # +1 to account for header
+                    for cell in first_table.getElementsByType(TableRow)[i].getElementsByType(TableCell):
+                        for item in cell.childNodes:
+                            cell.removeChild(item)
 
-    def export_xlsx(self, output):
-        self.workbook = Workbook(output)
+            ods_document.save(output)
+        else:
+            df = self.export_pd()
+            df.to_excel(output, index=False, engine="odf")
 
-        self.colours = {
-            "h": "dc8774",  # Header
-            "g": "eda786",  # GlobalId
-            "a": "96c7d0",  # Other Attribute
-        }
+    def set_cell_value(self, cell, value):
+        for item in cell.childNodes:
+            cell.removeChild(item)
 
-        self.cell_formats = {}
-        for key, value in self.colours.items():
-            self.cell_formats[key] = self.workbook.add_format()
-            self.cell_formats[key].set_bg_color(value)
+        if isinstance(value, (int, float)):
+            # Create a new cell with float value
+            new_cell = TableCell(valuetype="float", value=str(value))
+            cell.parentNode.insertBefore(new_cell, cell)
+            cell.parentNode.removeChild(cell)
+        else:
+            # Add string value in a text paragraph
+            p_element = P(text=str(value))
+            cell.addElement(p_element)
 
-        worksheet = self.workbook.add_worksheet("IfcCSV")
-        r = 0
-        c = 0
-        for header in self.headers:
-            cell = worksheet.write(r, c, header, self.cell_formats["h"])
-            c += 1
-        c = 0
-        r += 1
-        for row in self.results:
-            c = 0
-            for i, col in enumerate(row):
-                cell_format = "g" if i == 0 else "a"
-                cell = worksheet.write(r, c, col, self.cell_formats[cell_format])
-                c += 1
-            r += 1
+    def get_row(self, table, row_index):
+        rows = table.getElementsByType(TableRow)
+        if row_index < len(rows):
+            return rows[row_index]
+        new_row = TableRow()
+        table.addElement(new_row)
+        return new_row
 
-        self.workbook.close()
+    def get_col(self, row, col_index):
+        cells = row.getElementsByType(TableCell)
+        if col_index < len(cells):
+            return cells[col_index]
+        new_cell = TableCell()
+        row.addElement(new_cell)
+        return new_cell
+
+    def export_xlsx(self, output, should_preserve_existing=False):
+        if os.path.exists(output):
+            book = openpyxl.load_workbook(output)
+            with pd.ExcelWriter(
+                output,
+                engine="openpyxl",
+                mode="a",
+                if_sheet_exists="overlay" if should_preserve_existing else "replace",
+            ) as writer:
+                df = self.export_pd()
+                df.to_excel(writer, sheet_name=book.sheetnames[0], index=False)
+        else:
+            df = self.export_pd()
+            df.to_excel(output, index=False, engine="openpyxl")
 
     def export_pd(self):
         self.dataframe = pd.DataFrame(self.results, columns=self.headers)
@@ -216,12 +223,10 @@ class IfcCsv:
             for row in reader:
                 if not headers:
                     headers = row
-                    print("csv", headers)
                     if not attributes:
                         attributes = [None] * len(headers)
                     elif len(attributes) == len(headers) - 1:
                         attributes.insert(0, "")  # The GlobalId column
-                    print("hea", attributes)
                     continue
                 try:
                     element = ifc_file.by_guid(row[0])
@@ -250,6 +255,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "-n", "--null", type=str, default="-", help="How to represent null values. Defaults to a hyphen."
     )
+    parser.add_argument("--bool_true", type=str, default="YES", help="How to represent true values. Defaults to YES.")
+    parser.add_argument("--bool_false", type=str, default="NO", help="How to represent false values. Defaults to NO.")
     parser.add_argument("-q", "--query", type=str, default="", help='Specify a IFC query selector, such as "IfcWall"')
     parser.add_argument(
         "-a",
@@ -280,6 +287,8 @@ if __name__ == "__main__":
             format=args.format,
             delimiter=args.delimiter,
             null=args.null,
+            bool_true=args.bool_true,
+            bool_false=args.bool_false,
         )
     elif getattr(args, "import"):
         ifc_csv = IfcCsv()
