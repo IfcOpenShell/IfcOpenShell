@@ -489,10 +489,8 @@ class Model(blenderbim.core.tool.Model):
         items = list(body.Items)
         while items:
             item = items.pop()
-            if item.is_a() == "IfcBooleanResult":
+            if item.is_a() == "IfcBooleanResult" or item.is_a() == "IfcBooleanClippingResult":
                 booleans.append(item)
-                items.append(item.FirstOperand)
-            elif item.is_a("IfcBooleanClippingResult"):
                 items.append(item.FirstOperand)
         return booleans
 
