@@ -159,8 +159,7 @@ class BIM_PT_brickschema_viewport(Panel):
         self.props = context.scene.BIMBrickProperties
 
         row = self.layout.row(align=True)
-        col = row.column()
-        col.alignment = "RIGHT"
+        row.column().alignment = "RIGHT"
         row.prop(data=self.props, property="set_list_root_toggled", text="", icon="OUTLINER")
         row.prop(data=self.props, property="split_screen_toggled", text="", icon="WINDOW")
         row.operator("bim.refresh_brick_viewer", text="", icon="FILE_REFRESH")
@@ -199,8 +198,7 @@ class BIM_PT_brickschema_viewport(Panel):
 
         if BrickschemaData.data["active_relations"]:
             row = self.layout.row(align=True)
-            col = row.column()
-            col.alignment = "RIGHT"
+            row.column().alignment = "RIGHT"
             row.prop(data=self.props, property="brick_create_relations_toggled", text="", icon="PLUGIN")
             row.prop(data=self.props, property="brick_edit_relations_toggled", text="", icon="TOOL_SETTINGS")
             row.operator("bim.remove_brick", text="", icon="X")
@@ -226,9 +224,12 @@ class BIM_PT_brickschema_viewport(Panel):
                 row.label(text="Failed to find this entity!", icon="ERROR")
 
         for relation in BrickschemaData.data["active_relations"]:
-            row = self.layout.row(align=True)
+            split = self.layout.split(factor=0.85, align=True)
+            row = split.row(align=True)
             row.label(text=relation["predicate_name"])
             row.label(text=relation["object_name"])
+            row = split.row(align=True)
+            row.column().alignment = "RIGHT"
             if self.props.brick_edit_relations_toggled and relation["predicate_uri"] and relation["predicate_name"] != "type":
                 op = row.operator("bim.remove_brick_relation", text="", icon="UNLINKED")
                 op.predicate = relation["predicate_uri"]
