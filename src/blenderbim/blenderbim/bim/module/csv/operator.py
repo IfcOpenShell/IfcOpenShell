@@ -166,8 +166,8 @@ class ExportIfcCsv(bpy.types.Operator):
 
 class ImportIfcCsv(bpy.types.Operator):
     bl_idname = "bim.import_ifccsv"
-    bl_label = "Import CSV to IFC"
-    filename_ext = ".csv"
+    bl_label = "Import to IFC"
+    filter_glob: bpy.props.StringProperty(default="*.csv;*.ods;*.xlsx", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def invoke(self, context, event):
