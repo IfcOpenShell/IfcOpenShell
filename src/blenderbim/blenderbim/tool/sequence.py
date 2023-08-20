@@ -1044,63 +1044,54 @@ class Sequence(blenderbim.core.tool.Sequence):
             create_task_bar_data(tasks, vertical_increment, collection)
 
     @classmethod
-    def enable_editing_task_animation_colors(cls):
-        bpy.context.scene.BIMAnimationProperties.is_editing = True
+    def has_animation_colors(cls):
+        return bpy.context.scene.BIMAnimationProperties.task_output_colors
 
     @classmethod
-    def load_task_animation_colors(cls):
+    def load_default_animation_color_scheme(cls):
+        groups = {
+            "CREATION": {
+                "PredefinedType": ["CONSTRUCTION", "INSTALLATION"],
+                "Color": (0.0, 1.0, 0.0),
+            },
+            "OPERATION": {
+                "PredefinedType": ["ATTENDANCE", "MAINTENANCE", "OPERATION", "RENOVATION"],
+                "Color": (0.0, 0.0, 1.0),
+            },
+            "MOVEMENT_TO": {
+                "PredefinedType": ["LOGISTIC", "MOVE"],
+                "Color": (1.0, 1.0, 0.0),
+            },
+            "DESTRUCTION": {
+                "PredefinedType": ["DEMOLITION", "DISMANTLE", "DISPOSAL", "REMOVAL"],
+                "Color": (1.0, 0.0, 0.0),
+            },
+            "MOVEMENT_FROM": {
+                "PredefinedType": ["LOGISTIC", "MOVE"],
+                "Color": (1.0, 0.5, 0.0),
+            },
+            "USERDEFINED": {
+                "PredefinedType": ["USERDEFINED", "NOTDEFINED"],
+                "Color": (0.2, 0.2, 0.2),
+            },
+        }
         props = bpy.context.scene.BIMAnimationProperties
-        if not props.task_colors_components_inputs:
-            if tool.Ifc.schema():
-                # for attribute in tool.Ifc.schema().declaration_by_name("IfcTask").all_attributes():
-                #     if attribute.name() != "PredefinedType":
-                #         continue
-                #     task_types = ifcopenshell.util.attribute.get_enum_items(attribute)
-                # return [(e, e, "") for e in enum_items]
-                groups = {
-                    "CREATION": {
-                        "PredefinedType": ["CONSTRUCTION", "INSTALLATION"],
-                        "Color": (0.0, 1.0, 0.0),
-                    },
-                    "OPERATION": {
-                        "PredefinedType": ["ATTENDANCE", "MAINTENANCE", "OPERATION", "RENOVATION"],
-                        "Color": (0.0, 0.0, 1.0),
-                    },
-                    "MOVEMENT_TO": {
-                        "PredefinedType": ["LOGISTIC", "MOVE"],
-                        "Color": (1.0, 1.0, 0.0),
-                    },
-                    "DESTRUCTION": {
-                        "PredefinedType": ["DEMOLITION", "DISMANTLE", "DISPOSAL", "REMOVAL"],
-                        "Color": (1.0, 0.0, 0.0),
-                    },
-                    "MOVEMENT_FROM": {
-                        "PredefinedType": ["LOGISTIC", "MOVE"],
-                        "Color": (1.0, 0.5, 0.0),
-                    },
-                    "USERDEFINED": {
-                        "PredefinedType": ["USERDEFINED", "NOTDEFINED"],
-                        "Color": (0.2, 0.2, 0.2),
-                    },
-                }
-                for group, data in groups.items():
-                    for predefined_type in data["PredefinedType"]:
-                        if group in ["CREATION", "OPERATION", "MOVEMENT_TO"]:
-                            predefined_type_item = props.task_colors_components_outputs.add()
-                        elif group in ["MOVEMENT_FROM", "DESTRUCTION"]:
-                            predefined_type_item = props.task_colors_components_inputs.add()
-                        elif group == "USERDEFINED":
-                            predefined_type_item = props.task_colors_components_inputs.add()
-                            predefined_type_item2 = props.task_colors_components_outputs.add()
-                            predefined_type_item2.name = predefined_type
-                            predefined_type_item2.color = data["Color"]
-                        # TO DO: consider cases where users confuses inputs and outputs
-                        predefined_type_item.name = predefined_type
-                        predefined_type_item.color = data["Color"]
-
-    @classmethod
-    def disable_editing_task_animation_colors(cls):
-        bpy.context.scene.BIMAnimationProperties.is_editing = False
+        props.task_output_colors.clear()
+        props.task_input_colors.clear()
+        for group, data in groups.items():
+            for predefined_type in data["PredefinedType"]:
+                if group in ["CREATION", "OPERATION", "MOVEMENT_TO"]:
+                    predefined_type_item = props.task_output_colors.add()
+                elif group in ["MOVEMENT_FROM", "DESTRUCTION"]:
+                    predefined_type_item = props.task_input_colors.add()
+                elif group == "USERDEFINED":
+                    predefined_type_item = props.task_input_colors.add()
+                    predefined_type_item2 = props.task_output_colors.add()
+                    predefined_type_item2.name = predefined_type
+                    predefined_type_item2.color = data["Color"]
+                # TO DO: consider cases where users confuses inputs and outputs
+                predefined_type_item.name = predefined_type
+                predefined_type_item.color = data["Color"]
 
     @classmethod
     def get_start_date(cls):
@@ -1341,13 +1332,13 @@ class Sequence(blenderbim.core.tool.Sequence):
     @classmethod
     def animate_input(cls, obj, start_frame, product_frame, animation_type):
         props = bpy.context.scene.BIMAnimationProperties
-        color = props.task_colors_components_inputs[product_frame["type"]].color
+        color = props.task_input_colors[product_frame["type"]].color
         cls.animate_destruction(obj, start_frame, product_frame, color, animation_type)
 
     @classmethod
     def animate_output(cls, obj, start_frame, product_frame):
         props = bpy.context.scene.BIMAnimationProperties
-        color = props.task_colors_components_outputs[product_frame["type"]].color
+        color = props.task_output_colors[product_frame["type"]].color
         if product_frame["type"] in ["CONSTRUCTION", "INSTALLATION", "NOTDEFINED"]:
             cls.animate_creation(obj, start_frame, product_frame, color)
         elif product_frame["type"] in ["ATTENDANCE", "MAINTENANCE", "OPERATION", "RENOVATION"]:
@@ -1628,3 +1619,43 @@ class Sequence(blenderbim.core.tool.Sequence):
                 obj.select_set(True)
         bpy.context.scene.camera = camera
         bpy.ops.view3d.camera_to_view_selected()
+
+    @classmethod
+    def save_animation_color_scheme(cls, name):
+        props = bpy.context.scene.BIMAnimationProperties
+        colour_scheme = {
+            "Inputs": {cs.name: cs.color[0:3] for cs in props.task_input_colors},
+            "Outputs": {cs.name: cs.color[0:3] for cs in props.task_output_colors},
+        }
+
+        group = [g for g in tool.Ifc.get().by_type("IfcGroup") if g.Name == name]
+        if group:
+            group = group[0]
+            description = json.loads(group.Description)
+            description["colourscheme"] = colour_scheme
+            group.Description = json.dumps(description)
+        else:
+            description = json.dumps({"type": "BBIM_AnimationColorScheme", "colourscheme": colour_scheme})
+            group = tool.Ifc.run("group.add_group", Name=name, Description=description)
+        return group[0]
+
+    @classmethod
+    def load_animation_color_scheme(cls, scheme):
+        if not scheme:
+            return
+        data = json.loads(scheme.Description)
+        if data.get("type") == "BBIM_AnimationColorScheme":
+            inputs_color_scheme = data.get("colourscheme").get("Inputs")
+            outputs_color_scheme = data.get("colourscheme").get("Outputs")
+            props = bpy.context.scene.BIMAnimationProperties
+            props.task_input_colors.clear()
+            props.task_output_colors.clear()
+            for value, colour in inputs_color_scheme.items():
+                new = props.task_input_colors.add()
+                new.name = str(value)
+                new.color = colour[0:3]
+
+            for value, colour in outputs_color_scheme.items():
+                new = props.task_output_colors.add()
+                new.name = str(value)
+                new.color = colour[0:3]
