@@ -155,7 +155,10 @@ class ExportIfcCsv(bpy.types.Operator):
             output=self.filepath,
             format=props.format,
             delimiter=sep,
+            include_global_id=props.include_global_id,
             null=props.null_value,
+            bool_true=props.true_value,
+            bool_false=props.false_value,
         )
         return {"FINISHED"}
 
@@ -183,7 +186,15 @@ class ImportIfcCsv(bpy.types.Operator):
         ifc_csv = ifccsv.IfcCsv()
         sep = props.csv_custom_delimiter if props.csv_delimiter == "CUSTOM" else props.csv_delimiter
         attributes = [a.name for a in props.csv_attributes]
-        ifc_csv.Import(ifc_file, self.filepath, attributes=attributes, delimiter=sep, null=props.null_value)
+        ifc_csv.Import(
+            ifc_file,
+            self.filepath,
+            attributes=attributes,
+            delimiter=sep,
+            null=props.null_value,
+            bool_true=props.true_value,
+            bool_false=props.false_value,
+        )
         if not props.should_load_from_memory:
             ifc_file.write(props.csv_ifc_file)
         purge_module_data()
