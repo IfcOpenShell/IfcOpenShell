@@ -123,7 +123,7 @@ class BIM_PT_brickschema_create_entity(Panel):
 
     def draw(self, context):
         self.props = context.scene.BIMBrickProperties
-        # hide this if selected entity already has a reference
+        # TO DO: hide this if selected entity already has a reference, or something similar
 
         row = self.layout.row(align=True)
         row.prop(data=self.props, property="brick_entity_create_type", text="Class")
@@ -203,13 +203,7 @@ class BIM_PT_brickschema_viewport(Panel):
             row.prop(data=self.props, property="brick_edit_relations_toggled", text="", icon="TOOL_SETTINGS")
             row.operator("bim.remove_brick", text="", icon="X")
 
-            if self.props.brick_create_relations_toggled:
-                row = self.layout.row(align=True)
-                prop_with_search(row, self.props, "new_brick_relation_type", text="")
-                row.prop(data=self.props, property="new_brick_relation_object", text="")
-                row.operator("bim.add_brick_relation", text="", icon="ADD")
-
-            elif self.props.brick_create_relations_toggled and self.props.split_screen_toggled:
+            if self.props.brick_create_relations_toggled and self.props.split_screen_toggled:
                 row = self.layout.row(align=True)
                 split_screen_selection = self.props.split_screen_bricks[self.props.split_screen_active_brick_index]
                 if split_screen_selection.total_items:
@@ -219,6 +213,12 @@ class BIM_PT_brickschema_viewport(Panel):
                     row.label(text=split_screen_selection.label if split_screen_selection.label else split_screen_selection.name)
                     row.operator("bim.add_brick_relation", text="", icon="ADD")
 
+            elif self.props.brick_create_relations_toggled:
+                row = self.layout.row(align=True)
+                prop_with_search(row, self.props, "new_brick_relation_type", text="")
+                row.prop(data=self.props, property="new_brick_relation_object", text="")
+                row.operator("bim.add_brick_relation", text="", icon="ADD")
+
             if self.props.brick_create_relations_toggled and self.props.add_relation_failed:
                 row = self.layout.row(align=True)
                 row.label(text="Failed to find this entity!", icon="ERROR")
@@ -227,6 +227,7 @@ class BIM_PT_brickschema_viewport(Panel):
             split = self.layout.split(factor=0.85, align=True)
             row = split.row(align=True)
             row.label(text=relation["predicate_name"])
+            row.separator()
             row.label(text=relation["object_name"])
             row = split.row(align=True)
             row.column().alignment = "RIGHT"
@@ -247,15 +248,17 @@ class BIM_UL_bricks(UIList):
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
-            row = layout.row(align=True)
+            split = layout.split(factor=0.85, align=True)
+            row = split.row()
             label = item.label if item.label else item.name
             if item.total_items:
                 op = row.operator("bim.view_brick_class", text="", icon="DISCLOSURE_TRI_RIGHT", emboss=False)
                 op.brick_class = item.name
                 op.split_screen = self.split_screen
-                label = label + " (" + str(item.total_items) + ")" 
             row.label(text=label)
-
+            if item.total_items:
+                row = split.row()
+                row.label(text=str(item.total_items))
 
 class BIM_PT_ifc_brickschema_references(Panel):
     bl_label = "Brickschema References"
@@ -286,7 +289,7 @@ class BIM_PT_ifc_brickschema_references(Panel):
             row.operator("bim.convert_brick_project", text="", icon="ADD")
             return
         
-        if not BrickschemaReferencesData.data["libraries"] and not BrickStore.path:
+        elif not BrickschemaReferencesData.data["libraries"]:
             row = self.layout.row(align=True)
             row.label(text="No IFC Libraries: save the Brick project to create a new library", icon="ERROR")
 
