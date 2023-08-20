@@ -140,7 +140,7 @@ class AddWorkSchedule(bpy.types.Operator, tool.Ifc.Operator):
         self.props = context.scene.BIMWorkScheduleProperties
         layout.prop(self.props, "work_schedule_predefined_types", text="Type")
         if self.props.work_schedule_predefined_types == "USERDEFINED":
-            layout.prop(self.props,"object_type", text="Object type")
+            layout.prop(self.props, "object_type", text="Object type")
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
@@ -1275,24 +1275,50 @@ class AddTaskBars(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class LoadTaskAnimationColors(bpy.types.Operator):
-    bl_idname = "bim.enable_editing_task_animation_colors"
+class LoadDefaultAnimationColors(bpy.types.Operator):
+    bl_idname = "bim.load_default_animation_color_scheme"
     bl_label = "Load Animation Colors"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        core.enable_editing_task_animation_colors(tool.Sequence)
+        core.load_default_animation_color_scheme(tool.Sequence)
         return {"FINISHED"}
 
 
-class DisableEditingTaskAnimationColors(bpy.types.Operator):
-    bl_idname = "bim.disable_editing_task_animation_colors"
-    bl_label = "Disable Editing Task Animation Colors"
+class SaveAnimationColorScheme(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.save_animation_color_scheme"
+    bl_label = "Save Animation Color Scheme"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Saves the current animation color scheme"
+    name: bpy.props.StringProperty()
 
-    def execute(self, context):
-        core.disable_editing_task_animation_colors(tool.Sequence)
+    def _execute(self, context):
+        if not self.name:
+            return
+        core.save_animation_color_scheme(tool.Sequence, name=self.name)
         return {"FINISHED"}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+
+class LoadAnimationColorScheme(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.load_animation_color_scheme"
+    bl_label = "Load Animation Color Scheme"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Loads the animation color scheme"
+
+    def _execute(self, context):
+        group = tool.Ifc.get().by_id(int(context.scene.BIMAnimationProperties.saved_color_schemes))
+        core.load_animation_color_scheme(tool.Sequence, scheme=group)
+
+    def draw(self, context):
+        props = context.scene.BIMAnimationProperties
+        row = self.layout.row()
+        row.prop(props, "saved_color_schemes", text="")
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
 
 
 class CopyTask(bpy.types.Operator, tool.Ifc.Operator):
