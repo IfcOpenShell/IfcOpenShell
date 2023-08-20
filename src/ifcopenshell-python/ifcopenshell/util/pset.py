@@ -48,6 +48,12 @@ class PsetQto:
             folder_path = pathlib.Path(__file__).parent.absolute()
             path = str(folder_path.joinpath("schema", self.templates_path[schema]))
             templates = [ifcopenshell.open(path)]
+            # See bug 3583. We backport this change from IFC4X3 because it just makes sense.
+            # Users aren't forced to use it.
+            if schema == "IFC4":
+                for element in templates[0].by_type("IfcPropertySetTemplate"):
+                    if element.TemplateType == "QTO_OCCURRENCEDRIVEN":
+                        element.TemplateType = "QTO_TYPEDRIVENOVERRIDE"
         self.templates = templates
 
     @lru_cache()
