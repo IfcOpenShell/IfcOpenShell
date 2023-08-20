@@ -154,6 +154,7 @@ class ExportIfcCsv(bpy.types.Operator):
             headers=headers,
             output=self.filepath,
             format=props.format,
+            should_preserve_existing=props.should_preserve_existing,
             delimiter=sep,
             include_global_id=props.include_global_id,
             null=props.null_value,
