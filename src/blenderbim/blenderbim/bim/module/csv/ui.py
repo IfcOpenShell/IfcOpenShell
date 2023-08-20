@@ -67,8 +67,14 @@ class BIM_PT_ifccsv(Panel):
                     row = layout.row(align=True)
                     row.prop(props, "csv_custom_delimiter")
 
-            row = layout.row(align=True)
+            row = layout.row()
+            row.prop(props, "include_global_id")
+            row = layout.row()
             row.prop(props, "null_value")
+            row = layout.row()
+            row.prop(props, "true_value")
+            row = layout.row()
+            row.prop(props, "false_value")
 
         blenderbim.bim.helper.draw_filter(self.layout, props, SearchData, "csv")
 
