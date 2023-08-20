@@ -39,15 +39,29 @@ class Usecase:
 
     def execute(self):
         self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
-        self.settings["representation"].RepresentationType = "Clipping"
         if self.settings["type"] == "IfcHalfSpaceSolid":
             result = self.create_half_space_solid()
         elif self.settings["type"] == "Mesh":
             if self.settings["blender_obj"]:
                 result = self.create_blender_mesh()
+        representation_type = "Clipping"
         items = []
         for item in self.settings["representation"].Items:
-            items.append(self.file.createIfcBooleanResult(self.settings["operator"], item, result))
+            if self.settings["operator"] == "DIFFERENCE":
+                queue = [item]
+                while queue:
+                    queue_item = queue.pop()
+                    if queue_item.is_a() == "IfcBooleanResult":
+                        representation_type = "CSG"
+                        break
+                    if queue_item.is_a("IfcBooleanClippingResult"):
+                        queue.append(item.FirstOperand)
+                        queue.append(item.SecondOperand)
+                items.append(self.file.createIfcBooleanClippingResult(self.settings["operator"], item, result))
+            else:
+                representation_type = "CSG"
+                items.append(self.file.createIfcBooleanResult(self.settings["operator"], item, result))
+        self.settings["representation"].RepresentationType = representation_type
         self.settings["representation"].Items = items
 
     def create_half_space_solid(self):

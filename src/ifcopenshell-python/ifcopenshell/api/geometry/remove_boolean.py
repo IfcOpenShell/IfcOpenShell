@@ -42,8 +42,13 @@ class Usecase:
         self.file.remove(item)
         ifcopenshell.util.element.remove_deep2(self.file, second_operand)
 
-        if not [i for i in representation.Items if i.is_a("IfcBooleanResult")]:
-            representation.RepresentationType == "SweptSolid"
+        item_classes = {i.is_a() for i in representation.Items}
+        if "IfcBooleanResult" in item_classes:
+            representation.RepresentationType = "CSG"
+        elif "IfcBooleanClippingResult" in item_classes:
+            representation.RepresentationType = "Clipping"
+        else:
+            representation.RepresentationType = "SweptSolid"
 
     def get_representation(self, item):
         for inverse in self.file.get_inverse(item):
