@@ -29,6 +29,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.schema
 
 try:
+    from odf.namespaces import OFFICENS
     from odf.opendocument import OpenDocumentSpreadsheet, load
     from odf.style import Style, TableCellProperties
     from odf.table import Table, TableRow, TableCell
@@ -138,7 +139,7 @@ class IfcCsv:
 
                 for col_index, value in enumerate(row):
                     cell = self.get_col(table_row, col_index)
-                    self.set_cell_value(cell, str(value))
+                    self.set_cell_value(cell, value)
 
             # If the DataFrame has fewer rows than the table, blank out the extra rows
             num_rows_table = len(first_table.getElementsByType(TableRow)) - 1  # Exclude header row
@@ -158,14 +159,13 @@ class IfcCsv:
             cell.removeChild(item)
 
         if isinstance(value, (int, float)):
-            # Create a new cell with float value
-            new_cell = TableCell(valuetype="float", value=str(value))
-            cell.parentNode.insertBefore(new_cell, cell)
-            cell.parentNode.removeChild(cell)
+            cell.setAttrNS(OFFICENS, "value-type", "float")
+            cell.setAttrNS(OFFICENS, "value", value)
         else:
-            # Add string value in a text paragraph
-            p_element = P(text=str(value))
-            cell.addElement(p_element)
+            cell.setAttrNS(OFFICENS, "value-type", "string")
+            cell.setAttrNS(OFFICENS, "value", str(value))
+        p_element = P(text=str(value))
+        cell.addElement(p_element)
 
     def get_row(self, table, row_index):
         rows = table.getElementsByType(TableRow)
