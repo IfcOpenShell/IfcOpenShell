@@ -20,6 +20,7 @@ import bpy
 import ifcopenshell
 import blenderbim.core.tool
 import blenderbim.tool as tool
+import numpy as np
 from test.bim.bootstrap import NewFile
 from blenderbim.tool.model import Model as subject
 
@@ -50,3 +51,31 @@ class TestGenerateOccurrenceName(NewFile):
         bpy.context.scene.BIMModelProperties.occurrence_name_style = "CUSTOM"
         bpy.context.scene.BIMModelProperties.occurrence_name_function = '"Foobar"'
         assert subject.generate_occurrence_name(element_type, "IfcWall") == "Foobar"
+
+class TestGetManualBooleans(NewFile):
+    def test_run(self):
+        assert isinstance(subject(), blenderbim.core.tool.Model)
+
+    def test_return_boolean(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
+        length = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="LENGTHUNIT")
+        ifcopenshell.api.run("unit.assign_unit", ifc, units=[length])
+        ifcopenshell.api.run("unit.assign_unit", ifc)
+        element = ifc.createIfcColumn()
+        hea100 = ifc.create_entity(
+            "IfcIShapeProfileDef", ProfileName="HEA100", ProfileType="AREA",
+            OverallWidth=100, OverallDepth=96, WebThickness=5, FlangeThickness=8, FilletRadius=12,
+        )
+        model3d = ifcopenshell.api.run("context.add_context", ifc, context_type="Model")
+        body = ifcopenshell.api.run("context.add_context", ifc,context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model3d)
+        representation = ifcopenshell.api.run("geometry.add_profile_representation", ifc, context=body, profile=hea100, depth=5)
+        ifcopenshell.api.run("geometry.assign_representation", ifc, product=element, representation=representation)
+        matrix = np.eye(4)
+        matrix = ifcopenshell.util.placement.rotation(45,"X") @ matrix
+        matrix[:,3][0:3] = (0, 0, 3)
+        matrix = matrix.tolist()
+        ifcopenshell.api.run("geometry.add_boolean", ifc, representation = representation, type = "IfcHalfSpaceSolid", matrix = matrix)
+        assert len(subject.get_manual_booleans(element)) == 1
+
