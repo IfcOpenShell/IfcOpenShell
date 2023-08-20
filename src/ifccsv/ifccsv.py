@@ -29,11 +29,10 @@ import ifcopenshell.util.element
 import ifcopenshell.util.schema
 
 try:
-    from odf.opendocument import OpenDocumentSpreadsheet
+    from odf.opendocument import OpenDocumentSpreadsheet, load
     from odf.style import Style, TableCellProperties
     from odf.table import Table, TableRow, TableCell
     from odf.text import P
-    from odf.opendocument import load
 except:
     pass  # No ODF support
 
@@ -216,7 +215,16 @@ class IfcCsv:
         return ["{}.{}".format(pset_qto_name, n) for n in results]
 
     def Import(self, ifc_file, table, attributes=None, delimiter=",", null="-", bool_true="YES", bool_false="NO"):
-        # Currently only supports CSV.
+        ext = table.split(".")[-1].lower()
+
+        if ext == "csv":
+            self.import_csv(ifc_file, table, attributes, delimiter, null, bool_true, bool_false)
+        elif ext == "ods":
+            self.import_ods(ifc_file, table, attributes, null, bool_true, bool_false)
+        elif ext == "xlsx":
+            self.import_xlsx(ifc_file, table, attributes, null, bool_true, bool_false)
+
+    def import_csv(self, ifc_file, table, attributes=None, delimiter=",", null="-", bool_true="YES", bool_false="NO"):
         with open(table, newline="", encoding="utf-8") as f:
             reader = csv.reader(f, delimiter=delimiter)
             headers = []
@@ -228,22 +236,68 @@ class IfcCsv:
                     elif len(attributes) == len(headers) - 1:
                         attributes.insert(0, "")  # The GlobalId column
                     continue
-                try:
-                    element = ifc_file.by_guid(row[0])
-                except:
-                    print("The element with GUID {} was not found".format(row[0]))
-                    continue
-                for i, value in enumerate(row):
-                    if i == 0:
-                        continue  # Skip GlobalId
-                    if value == null:
-                        value = None
-                    elif value == bool_true:
-                        value = True
-                    elif value == bool_false:
-                        value = False
-                    key = attributes[i] or headers[i]
-                    ifcopenshell.util.selector.set_element_value(ifc_file, element, key, value)
+                self.process_row(ifc_file, row, headers, attributes, null, bool_true, bool_false)
+
+    def import_xlsx(self, ifc_file, table, attributes, null, bool_true, bool_false):
+        workbook = openpyxl.load_workbook(filename=table, read_only=True)
+        worksheet = workbook.active  # Assuming data is on the first sheet
+        headers = None
+
+        for row in worksheet.iter_rows(values_only=True):
+            if not headers:
+                headers = list(row)
+                if not attributes:
+                    attributes = [None] * len(headers)
+                elif len(attributes) == len(headers) - 1:
+                    attributes.insert(0, "")  # The GlobalId column
+                continue
+            self.process_row(ifc_file, row, headers, attributes, null, bool_true, bool_false)
+
+    def import_ods(self, ifc_file, table, attributes, null, bool_true, bool_false):
+        doc = load(table)
+        first_sheet = doc.spreadsheet.getElementsByType(Table)[0]
+        rows = first_sheet.getElementsByType(TableRow)
+        headers = None
+
+        for row in rows:
+            values = [cell.getElementsByType(P)[0].childNodes[0].data for cell in row.getElementsByType(TableCell)]
+            if not headers:
+                headers = values
+                if not attributes:
+                    attributes = [None] * len(headers)
+                elif len(attributes) == len(headers) - 1:
+                    attributes.insert(0, "")  # The GlobalId column
+                continue
+            self.process_row(ifc_file, values, headers, attributes, null, bool_true, bool_false)
+
+    def import_pd(self, ifc_file, df, attributes=None, null="-", bool_true="YES", bool_false="NO"):
+        headers = df.columns.tolist()
+
+        if not attributes:
+            attributes = [None] * len(headers)
+        elif len(attributes) == len(headers) - 1:
+            attributes.insert(0, "")  # The GlobalId column
+
+        for _, row in df.iterrows():
+            self.process_row(ifc_file, row.tolist(), headers, attributes, null, bool_true, bool_false)
+
+    def process_row(self, ifc_file, row, headers, attributes, null, bool_true, bool_false):
+        try:
+            element = ifc_file.by_guid(row[0])
+        except:
+            print("The element with GUID {} was not found".format(row[0]))
+            return
+        for i, value in enumerate(row):
+            if i == 0:
+                continue  # Skip GlobalId
+            if value == null:
+                value = None
+            elif value == bool_true:
+                value = True
+            elif value == bool_false:
+                value = False
+            key = attributes[i] or headers[i]
+            ifcopenshell.util.selector.set_element_value(ifc_file, element, key, value)
 
 
 if __name__ == "__main__":
