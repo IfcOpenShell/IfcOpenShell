@@ -129,7 +129,7 @@ class IfcCsv:
             df = self.export_pd()
             for col_index, col in enumerate(df.columns):
                 # Assuming the first row of the table contains headers
-                header_cell = first_table.getElementsByType(TableRow)[0].getElementsByType(TableCell)[col_index]
+                header_cell = self.get_col(first_table.getElementsByType(TableRow)[0], col_index)
                 self.set_cell_value(header_cell, col)
 
             # Replace existing table data with data from DataFrame
