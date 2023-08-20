@@ -105,6 +105,7 @@ class ConvertBrickProject(bpy.types.Operator, Operator):
     bl_idname = "bim.convert_brick_project"
     bl_label = "Convert Brick Project"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Create an Ifc library for this Brick project"
 
     def _execute(self, context):
         core.convert_brick_project(tool.Ifc, tool.Brick)
@@ -114,6 +115,7 @@ class AssignBrickReference(bpy.types.Operator, Operator):
     bl_idname = "bim.assign_brick_reference"
     bl_label = "Assign Brick Reference"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Assign the selected Ifc entity to the selected Brick entity"
 
     def _execute(self, context):
         props = context.scene.BIMBrickProperties
@@ -172,6 +174,7 @@ class ConvertIfcToBrick(bpy.types.Operator, Operator):
     bl_idname = "bim.convert_ifc_to_brick"
     bl_label = "Convert IFC To Brick"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Convert Ifc entities and relations to Brick entities and relations"
 
     def _execute(self, context):
         props = context.scene.BIMBrickProperties
