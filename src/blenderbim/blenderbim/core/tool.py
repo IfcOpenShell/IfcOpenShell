@@ -757,6 +757,7 @@ class Sequence:
     def set_task_sort_column(cls, column): pass
     def setup_default_task_columns(cls): pass
     def show_snapshot(cls, product_states): pass
+    def update_task_ICOM(cls, task): pass
     def update_visualisation_date(cls, start_date, finish_date): pass
 
 

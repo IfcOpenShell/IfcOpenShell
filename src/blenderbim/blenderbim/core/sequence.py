@@ -269,24 +269,6 @@ def unassign_resource(ifc, sequence, task=None, resource=None):
     sequence.load_resources()
 
 
-def load_task_outputs(sequence):
-    task = sequence.get_highlighted_task()
-    outputs = sequence.get_task_outputs(task)
-    sequence.load_task_outputs(outputs)
-
-
-def load_task_inputs(sequence):
-    task = sequence.get_highlighted_task()
-    inputs = sequence.get_task_inputs(task)
-    sequence.load_task_inputs(inputs)
-
-
-def load_task_resources(sequence):
-    task = sequence.get_highlighted_task()
-    resources = sequence.get_task_resources(task)
-    sequence.load_task_resources(resources)
-
-
 def remove_work_calendar(ifc, work_calendar=None):
     ifc.run("sequence.remove_work_calendar", work_calendar=work_calendar)
 

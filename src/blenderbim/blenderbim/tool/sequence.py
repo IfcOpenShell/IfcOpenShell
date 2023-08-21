@@ -1657,3 +1657,14 @@ class Sequence(blenderbim.core.tool.Sequence):
                 new = props.task_output_colors.add()
                 new.name = str(value)
                 new.color = colour[0:3]
+
+    @classmethod
+    def update_task_ICOM(cls, task):
+        if not task:
+            return
+        inputs = cls.get_task_inputs(task)
+        outputs = cls.get_task_outputs(task)
+        resources = cls.get_task_resources(task)
+        cls.load_task_inputs(inputs)
+        cls.load_task_outputs(outputs)
+        cls.load_task_resources(resources)
