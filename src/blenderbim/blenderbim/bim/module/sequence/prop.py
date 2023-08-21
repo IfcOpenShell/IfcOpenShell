@@ -99,7 +99,6 @@ def update_active_task_index(self, context):
 def update_highlighted_task_id(self):
     task = tool.Sequence.get_highlighted_task()
     self.highlighted_task_id = task.id() if task else 0
-    print("current Task ID: " + str(self.highlighted_task_id))
     tool.Sequence.load_task_properties()
 
 
