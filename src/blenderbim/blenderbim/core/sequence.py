@@ -196,25 +196,25 @@ def edit_task_time(ifc, sequence, task_time=None):
 
 
 def assign_predecessor(ifc, sequence, task=None):
-    predecessor_task = sequence.get_active_task()
+    predecessor_task = sequence.get_highlighted_task()
     ifc.run("sequence.assign_sequence", relating_process=task, related_process=predecessor_task)
     sequence.load_task_properties()
 
 
 def unassign_predecessor(ifc, sequence, task=None):
-    predecessor_task = sequence.get_active_task()
+    predecessor_task = sequence.get_highlighted_task()
     ifc.run("sequence.unassign_sequence", relating_process=task, related_process=predecessor_task)
     sequence.load_task_properties()
 
 
 def assign_successor(ifc, sequence, task=None):
-    successor_task = sequence.get_active_task()
+    successor_task = sequence.get_highlighted_task()
     ifc.run("sequence.assign_sequence", relating_process=successor_task, related_process=task)
     sequence.load_task_properties()
 
 
 def unassign_successor(ifc, sequence, task=None):
-    successor_task = sequence.get_active_task()
+    successor_task = sequence.get_highlighted_task()
     ifc.run("sequence.unassign_sequence", relating_process=successor_task, related_process=task)
     sequence.load_task_properties()
 
@@ -379,13 +379,8 @@ def remove_task_calendar(ifc, sequence, task=None, work_calendar=None):
     sequence.load_task_properties()
 
 
-def enable_editing_task_sequence(sequence, task=None):
-    sequence.enable_editing_task_sequence(task)
-    sequence.load_task_properties()
-
-
-def disable_editing_task_sequence(sequence, task=None):
-    sequence.enable_editing_task_sequence(task)
+def enable_editing_task_sequence(sequence):
+    sequence.enable_editing_task_sequence()
     sequence.load_task_properties()
 
 

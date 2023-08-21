@@ -886,7 +886,7 @@ class EnableEditingTaskSequence(bpy.types.Operator):
     task: bpy.props.IntProperty()
 
     def execute(self, context):
-        core.enable_editing_task_sequence(tool.Sequence, task=tool.Ifc.get().by_id(self.task))
+        core.enable_editing_task_sequence(tool.Sequence)
         return {"FINISHED"}
 
 
