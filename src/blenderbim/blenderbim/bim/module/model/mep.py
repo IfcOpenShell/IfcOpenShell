@@ -29,6 +29,7 @@ import ifcopenshell.util.system
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import mathutils.geometry
+import numpy as np
 import blenderbim.bim.handler
 import blenderbim.core.type
 import blenderbim.core.root
@@ -347,6 +348,8 @@ class MEPGenerator:
         There lies the problem that it won't be
         able to identify the fittings that were not yet connected to any segments yet.
         """
+
+        # TODO: check angle, start, end and offset for transitions
         if not isinstance(segment_or_segments, collections.abc.Iterable):
             segments = [segment_or_segments]
             ports = [port_or_ports]
@@ -436,7 +439,7 @@ class MEPGenerator:
                     if element_type is None:
                         skipped_the_occurrence = True
                         break
-                        
+
                     fitting_data.append((element_type, port.PredefinedType, port.SystemType))
 
                 # if we skipped the occurrence we still can other occurrences
@@ -624,10 +627,13 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
 
         start_axis = tool.Model.get_flow_segment_axis(start_object)
         end_axis = tool.Model.get_flow_segment_axis(end_object)
+        start_object_rotation = start_object.matrix_world.to_quaternion()
+        start_object_z_basis = start_object_rotation.to_matrix().col[2]  # z basis vector
+        keep_only_z_axis = lambda p_ws: p_ws.dot(start_object_z_basis) * start_object_z_basis
 
         # TODO: support cases when segments are partially or completely overlapping each other
-        if not tool.Cad.are_edges_collinear(start_axis, end_axis):
-            self.report({"ERROR"}, f"Failed to add transition - non collinear segments are not yet supported.")
+        if not tool.Cad.are_edges_parallel(start_axis, end_axis):
+            self.report({"ERROR"}, f"Failed to add transition - segments are not parallel.")
             return {"CANCELLED"}
 
         start_segment_data = MEPGenerator().get_segment_data(start_element)
@@ -647,42 +653,78 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
             (start_segment_data["start_point"], start_segment_data["end_point"]),
             (end_segment_data["start_point"], end_segment_data["end_point"]),
         )
-        
+
+        # figure profile offset
+        base_transition_dir = keep_only_z_axis(end_point - start_point).normalized()
+        flip_profile_offset = base_transition_dir.dot(start_object_z_basis) < 0
+
+        if tool.Cad.are_edges_collinear(start_axis, end_axis):
+            profile_offset = None
+        else:
+            to_start_object_space = start_object_rotation.inverted()
+            profile_offset = (
+                (to_start_object_space @ end_object.location) - (to_start_object_space @ start_object.location)
+            ).xy
+            if tool.Cad.is_x(profile_offset.length_squared, 0):
+                profile_offset = None
+            else:
+                profile_offset = profile_offset / si_conversion
+                if flip_profile_offset:
+                    profile_offset *= V(1, -1)
+
+        # world space profile offset
+        profile_offset_ws = (
+            start_object_rotation @ (profile_offset * si_conversion).to_3d() if profile_offset else V(0, 0, 0)
+        )
+
+        # will need entire_length to check that transition length fill fit
         first_segment_start, second_segment_end = [
-            p for p in (
-            start_segment_data["start_point"], 
-            start_segment_data["end_point"],
-            end_segment_data["start_point"], 
-            end_segment_data["end_point"])
+            p
+            for p in (
+                start_segment_data["start_point"],
+                start_segment_data["end_point"],
+                end_segment_data["start_point"],
+                end_segment_data["end_point"],
+            )
             if p not in (start_point, end_point)
         ]
         entire_length = (first_segment_start - second_segment_end).length
 
-        transition_dir = (end_point - start_point).normalized()
+        # can't rely on (end_point-start_point) here because
+        # transition might change the segments length and therefore direction will be changed
+        segments_dir = (start_point - first_segment_start).normalized()
         start_port = points_ports_map[start_point]
         end_port = points_ports_map[end_point]
 
         # add transition representation
         builder = ShapeBuilder(ifc_file)
         rep, transition_data = builder.mep_transition_shape(
-            start_element, end_element, self.start_length / si_conversion, self.end_length / si_conversion
+            start_element,
+            end_element,
+            self.start_length / si_conversion,
+            self.end_length / si_conversion,
+            profile_offset=profile_offset,
         )
 
         if not rep:
             self.report({"ERROR"}, f"Failed to add transition - this kind of profiles is not yet supported.")
             return {"CANCELLED"}
-        
-        # TODO: test it
+
         full_transition_length = transition_data["full_transition_length"] * si_conversion
         if full_transition_length >= entire_length:
-            self.report({"ERROR"}, f"Failed to add transition - transition length is larger the segments and the distance between them.")
-            # TODO: handle the case without creating representation in the first place?
+            self.report(
+                {"ERROR"},
+                f"Failed to add transition - transition length is larger the segments and the distance between them.\n"
+                + f"Transition length: {full_transition_length:.2f}m, segments length: {entire_length:.2f}m",
+            )
+            # TODO: handle the case without creating a representation in the first place?
             ifcopenshell.api.run("geometry.remove_representation", ifc_file, representation=rep)
             return {"CANCELLED"}
 
-        middle_point = (start_point + end_point) / 2
-        start_segment_extend_point = middle_point - transition_dir * full_transition_length / 2
-        end_segment_extend_point = middle_point + transition_dir * full_transition_length / 2
+        middle_point = keep_only_z_axis((start_point + end_point) / 2 - start_point) + start_point
+        start_segment_extend_point = middle_point - segments_dir * full_transition_length / 2
+        end_segment_extend_point = middle_point + segments_dir * full_transition_length / 2 + profile_offset_ws
+        transition_dir = keep_only_z_axis(end_segment_extend_point - start_segment_extend_point).normalized()
         DumbProfileJoiner().join_E(start_object, start_segment_extend_point)
         DumbProfileJoiner().join_E(end_object, end_segment_extend_point)
 
@@ -691,6 +733,10 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
         )
 
         transition_type = fitting_data["fitting_type"] if fitting_data else None
+        if transition_type:
+            # TODO: handle the case without creating a representation in the first place?
+            ifcopenshell.api.run("geometry.remove_representation", ifc_file, representation=rep)
+
         start_port_match = fitting_data["start_port_match"] if fitting_data else True
 
         if not transition_type:
@@ -722,8 +768,9 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
         # adjust transition segment rotation and location
         transition_obj.matrix_world = start_object.matrix_world
         context.view_layer.update()
+
         transition_obj_dir = tool.Cad.get_edge_direction(tool.Model.get_flow_segment_axis(transition_obj))
-        direction_match = tool.Cad.are_vectors_equal(transition_obj_dir, transition_dir)
+        direction_match = tool.Cad.are_vectors_equal(transition_dir, transition_obj_dir)
 
         # if there are no mismatches or everything matches up we don't need to flip the transition
         if start_port_match != direction_match:
