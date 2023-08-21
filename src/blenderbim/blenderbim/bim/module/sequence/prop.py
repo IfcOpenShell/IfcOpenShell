@@ -96,12 +96,6 @@ def update_active_task_index(self, context):
         tool.Sequence.load_task_properties()
 
 
-def update_highlighted_task_id(self):
-    task = tool.Sequence.get_highlighted_task()
-    self.highlighted_task_id = task.id() if task else 0
-    tool.Sequence.load_task_properties()
-
-
 def update_active_task_outputs(self, context):
     task = tool.Sequence.get_highlighted_task()
     outputs = tool.Sequence.get_task_outputs(task)
