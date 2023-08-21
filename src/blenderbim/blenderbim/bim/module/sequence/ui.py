@@ -54,7 +54,7 @@ class BIM_PT_work_plans(Panel):
             row.label(text=f"{WorkPlansData.data['total_work_plans']} Work Plans Found", icon="TEXT")
         else:
             row.label(text="No Work Plans found.", icon="TEXT")
-        row.operator("bim.add_work_plan", icon="ADD", text="")
+        row.operator("bim.add_work_plan", icon="", text="")
         for work_plan in WorkPlansData.data["work_plans"]:
             self.draw_work_plan_ui(work_plan)
 
@@ -131,7 +131,7 @@ class BIM_PT_work_schedules(Panel):
                 )
             else:
                 row.label(text="No Work Schedules found.", icon="TEXT")
-            row.operator("bim.add_work_schedule", text="Add", icon="ADD")
+            row.operator("bim.add_work_schedule", text="", icon="ADD")
 
         for work_schedule_id, work_schedule in SequenceData.data["work_schedules"].items():
             self.draw_work_schedule_ui(work_schedule_id, work_schedule)
