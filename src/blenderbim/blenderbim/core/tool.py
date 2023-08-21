@@ -681,7 +681,7 @@ class Sequence:
     def enable_editing_sequence_lag_time(cls, rel_sequence): pass
     def enable_editing_task_attributes(cls, task): pass
     def enable_editing_task_calendar(cls, task): pass
-    def enable_editing_task_sequence(cls, task): pass
+    def enable_editing_task_sequence(cls): pass
     def enable_editing_task_time(cls, task): pass
     def enable_editing_work_calendar_times(cls, work_calendar): pass
     def enable_editing_work_calendar(cls, work_calendar): pass
