@@ -236,20 +236,16 @@ class Cad:
         return (edge[1] - edge[0]).normalized()
 
     @classmethod
-    def are_edges_collinear(cls, edge1, edge2):
-        def is_point_on_line(p, edge):
-            a1, a2 = edge
-            # comparing slopes between PA1 and A2A1
-            # using cross multiplication to avoid division by zero
-            return cls.is_x((p.y - a1.y) * (a2.x - a1.x), (a2.y - a1.y) * (p.x - a1.x))
-
+    def are_edges_parallel(cls, edge1, edge2):
         edge1_dir = edge1[1] - edge1[0]
         edge2_dir = edge2[1] - edge2[0]
+        return cls.is_x(edge1_dir.cross(edge2_dir).length_squared, 0)
 
-        if cls.is_x(edge1_dir.cross(edge2_dir).length_squared, 0):  # check they are parallel
-            if is_point_on_line(edge1[0], edge2) or is_point_on_line(edge1[1], edge2):
-                return True
-        return False
+    @classmethod
+    def are_edges_collinear(cls, edge1, edge2):
+        if not cls.are_edges_parallel(edge1, edge2):
+            return False
+        return cls.are_edges_parallel((edge2[0], edge1[0]), edge2)
 
     @classmethod
     def closest_points(cls, edge1, edge2) -> bool:
