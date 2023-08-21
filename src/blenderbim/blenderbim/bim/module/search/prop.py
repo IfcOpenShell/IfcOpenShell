@@ -128,7 +128,8 @@ class BIMSearchProperties(PropertyGroup):
             ("classification", "Classification", "", "OUTLINER", 4),
             ("location", "Location", "", "PACKAGE", 5),
             ("type", "Type", "", "FILE_VOLUME", 6),
-            ("instance", "GlobalId", "", "GRIP", 7),
+            ("query", "Query", "", "POINTCLOUD_DATA", 7),
+            ("instance", "GlobalId", "", "GRIP", 8),
         ],
     )
     saved_searches: EnumProperty(items=get_saved_searches, name="Saved Searches")

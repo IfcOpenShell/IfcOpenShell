@@ -29,7 +29,7 @@ filter_elements_grammar = lark.Lark(
     filter_group: facet_list ("+" facet_list)*
     facet_list: facet ("," facet)*
 
-    facet: instance | entity | attribute | type | material | property | classification | location
+    facet: instance | entity | attribute | type | material | query | classification | location | property
 
     instance: not? globalid
     globalid: /[0-3][a-zA-Z0-9_$]{21}/
@@ -40,9 +40,11 @@ filter_elements_grammar = lark.Lark(
     property: pset "." prop comparison value
     classification: "classification" comparison value
     location: "location" comparison value
+    query: "query:" keys comparison value
 
     pset: quoted_string | unquoted_string | regex_string
     prop: quoted_string | unquoted_string | regex_string
+    keys: quoted_string | unquoted_string
 
     attribute_name: /[A-Z]\\w+/
     ifc_class: /Ifc\\w+/
@@ -361,6 +363,14 @@ class FacetTransformer(lark.Transformer):
 
         self.elements = set(filter(filter_function, self.elements))
 
+    def query(self, args):
+        keys, comparison, value = args
+
+        def filter_function(element):
+            return self.compare(get_element_value(element, keys), comparison, value)
+
+        self.elements = set(filter(filter_function, self.elements))
+
     def get_container_tree(self, container):
         tree = self.container_trees.get(container, None)
         if tree:
@@ -381,6 +391,9 @@ class FacetTransformer(lark.Transformer):
 
     def comparison(self, args):
         return "=" if args[0].data == "equals" else "!="
+
+    def keys(self, args):
+        return self.value(args)
 
     def pset(self, args):
         return self.value(args)
@@ -646,13 +659,20 @@ class Selector:
             elif key == "container":
                 value = ifcopenshell.util.element.get_container(value)
             elif key == "space":
-                element = ifcopenshell.util.element.get_container(element, ifc_class="IfcSpace")
+                value = ifcopenshell.util.element.get_container(element, ifc_class="IfcSpace")
             elif key == "storey":
-                element = ifcopenshell.util.element.get_container(element, ifc_class="IfcBuildingStorey")
+                value = ifcopenshell.util.element.get_container(element, ifc_class="IfcBuildingStorey")
             elif key == "building":
-                element = ifcopenshell.util.element.get_container(element, ifc_class="IfcBuilding")
+                value = ifcopenshell.util.element.get_container(element, ifc_class="IfcBuilding")
             elif key == "site":
-                element = ifcopenshell.util.element.get_container(element, ifc_class="IfcSite")
+                value = ifcopenshell.util.element.get_container(element, ifc_class="IfcSite")
+            elif key == "types":
+                value = ifcopenshell.util.element.get_types(element)
+            elif key == "count":
+                if isinstance(value, set):
+                    value = len(list(value))
+                elif isinstance(value, (list, tuple)):
+                    value = len(value)
             elif key == "class":
                 value = value.is_a()
             elif key == "id":

@@ -235,6 +235,7 @@ class SaveSearch(Operator, tool.Ifc.Operator):
         group = [g for g in tool.Ifc.get().by_type("IfcGroup") if g.Name == self.name]
         if group:
             group = group[0]
+            group.Description = description
         else:
             group = ifcopenshell.api.run("group.add_group", tool.Ifc.get(), Name=self.name, Description=description)
         if results:
