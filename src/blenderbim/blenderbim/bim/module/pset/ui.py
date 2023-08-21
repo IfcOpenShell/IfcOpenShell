@@ -370,6 +370,7 @@ class BIM_PT_task_qtos(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_parent_id = "BIM_PT_work_schedules"
+    bl_order = 2
 
     @classmethod
     def poll(cls, context):
@@ -510,6 +511,7 @@ class BIM_PT_work_schedule_psets(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_parent_id = "BIM_PT_work_schedules"
+    bl_order = 3
 
     @classmethod
     def poll(cls, context):

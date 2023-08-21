@@ -1202,36 +1202,6 @@ class SetTaskSortColumn(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class LoadTaskResources(bpy.types.Operator):
-    bl_idname = "bim.load_task_resources"
-    bl_label = "Load Task Resources"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        core.load_task_resources(tool.Sequence)
-        return {"FINISHED"}
-
-
-class LoadTaskInputs(bpy.types.Operator):
-    bl_idname = "bim.load_task_inputs"
-    bl_label = "Load Task Inputs"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        core.load_task_inputs(tool.Sequence)
-        return {"FINISHED"}
-
-
-class LoadTaskOutputs(bpy.types.Operator):
-    bl_idname = "bim.load_task_outputs"
-    bl_label = "Load Task Outputs"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        core.load_task_outputs(tool.Sequence)
-        return {"FINISHED"}
-
-
 class CalculateTaskDuration(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.calculate_task_duration"
     bl_label = "Calculate Task Duration"

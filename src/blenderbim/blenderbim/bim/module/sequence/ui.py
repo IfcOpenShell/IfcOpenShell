@@ -54,7 +54,7 @@ class BIM_PT_work_plans(Panel):
             row.label(text=f"{WorkPlansData.data['total_work_plans']} Work Plans Found", icon="TEXT")
         else:
             row.label(text="No Work Plans found.", icon="TEXT")
-        row.operator("bim.add_work_plan", icon="", text="")
+        row.operator("bim.add_work_plan", icon="ADD", text="")
         for work_plan in WorkPlansData.data["work_plans"]:
             self.draw_work_plan_ui(work_plan)
 
@@ -186,10 +186,14 @@ class BIM_PT_work_schedules(Panel):
                     row2 = col.row(align=True)
                     row.operator("bim.disable_editing_work_schedule", text="Cancel", icon="CANCEL")
             if not self.props.active_work_schedule_id:
-                row.label(
+                grid = self.layout.grid_flow(columns=2, even_columns=True)
+                col1 = grid.column()
+                col1.label(
                     text="{}[{}]".format(work_schedule["Name"], work_schedule["PredefinedType"]) or "Unnamed",
                     icon="LINENUMBERS_ON",
                 )
+                col2 = grid.column()
+                row = col2.row(align=True)
                 row.operator(
                     "bim.enable_editing_work_schedule_tasks", text="Tasks", icon="ACTION"
                 ).work_schedule = work_schedule_id
@@ -434,6 +438,7 @@ class BIM_PT_animation_tools(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_parent_id = "BIM_PT_work_schedules"
+    bl_order = 4
 
     @classmethod
     def poll(cls, context):
@@ -599,6 +604,7 @@ class BIM_PT_task_icom(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_parent_id = "BIM_PT_work_schedules"
+    bl_order = 1
 
     @classmethod
     def poll(cls, context):
