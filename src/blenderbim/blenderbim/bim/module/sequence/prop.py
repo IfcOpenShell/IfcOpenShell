@@ -88,11 +88,9 @@ def getWorkCalendars(self, context):
 
 
 def update_active_task_index(self, context):
-    bpy.ops.bim.load_task_inputs()
-    bpy.ops.bim.load_task_resources()
-    bpy.ops.bim.load_task_outputs()
     task = tool.Sequence.get_highlighted_task()
     self.highlighted_task_id = task.id() if task else 0
+    tool.Sequence.update_task_ICOM(task)
     blenderbim.bim.module.pset.data.refresh()
     if self.editing_task_type == "SEQUENCE":
         tool.Sequence.load_task_properties()
@@ -106,15 +104,21 @@ def update_highlighted_task_id(self):
 
 
 def update_active_task_outputs(self, context):
-    bpy.ops.bim.load_task_outputs()
+    task = tool.Sequence.get_highlighted_task()
+    outputs = tool.Sequence.get_task_outputs(task)
+    tool.Sequence.load_task_outputs(outputs)
 
 
 def update_active_task_resources(self, context):
-    bpy.ops.bim.load_task_resources()
+    task = tool.Sequence.get_highlighted_task()
+    resources = tool.Sequence.get_task_resources(task)
+    tool.Sequence.load_task_resources(resources)
 
 
 def update_active_task_inputs(self, context):
-    bpy.ops.bim.load_task_inputs()
+    task = tool.Sequence.get_highlighted_task()
+    inputs = tool.Sequence.get_task_inputs(task)
+    tool.Sequence.load_task_inputs(inputs)
 
 
 def updateTaskName(self, context):
