@@ -35,6 +35,7 @@ def parse_datetime(value):
 def parse_duration(value):
     return ifcopenshell.util.date.parse_duration(value)
 
+
 def canonicalise_time(time):
     if not time:
         return "-"
