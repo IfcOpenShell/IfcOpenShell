@@ -151,6 +151,14 @@ def set_element_value(ifc_file, element, query, value):
                 element = element.MaterialConstituents
         elif key == "container":
             element = ifcopenshell.util.element.get_container(element)
+        elif key == "space":
+            element = ifcopenshell.util.element.get_container(element, ifc_class="IfcSpace")
+        elif key == "storey":
+            element = ifcopenshell.util.element.get_container(element, ifc_class="IfcBuildingStorey")
+        elif key == "building":
+            element = ifcopenshell.util.element.get_container(element, ifc_class="IfcBuilding")
+        elif key == "site":
+            element = ifcopenshell.util.element.get_container(element, ifc_class="IfcSite")
         elif key == "class":
             if element.is_a() != value:
                 return ifcopenshell.util.schema.reassign_class(ifc_file, element, value)
@@ -637,6 +645,14 @@ class Selector:
                     value = value.MaterialConstituents
             elif key == "container":
                 value = ifcopenshell.util.element.get_container(value)
+            elif key == "space":
+                element = ifcopenshell.util.element.get_container(element, ifc_class="IfcSpace")
+            elif key == "storey":
+                element = ifcopenshell.util.element.get_container(element, ifc_class="IfcBuildingStorey")
+            elif key == "building":
+                element = ifcopenshell.util.element.get_container(element, ifc_class="IfcBuilding")
+            elif key == "site":
+                element = ifcopenshell.util.element.get_container(element, ifc_class="IfcSite")
             elif key == "class":
                 value = value.is_a()
             elif key == "id":
