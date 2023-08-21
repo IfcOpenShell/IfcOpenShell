@@ -51,9 +51,9 @@ class BIM_PT_cost_schedules(Panel):
 
         for schedule in CostSchedulesData.data["schedules"]:
             self.draw_cost_schedule_ui(schedule)
-            row2 = self.layout.row()
-            row2.alignment = "RIGHT"
-            row2.operator("bim.export_cost_schedules", text="Export all", icon="EXPORT")
+        row2 = self.layout.row()
+        row2.alignment = "RIGHT"
+        row2.operator("bim.export_cost_schedules", text="Export all", icon="EXPORT")
 
     def draw_cost_schedule_ui(self, cost_schedule):
         row = self.layout.row(align=True)
