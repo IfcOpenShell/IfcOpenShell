@@ -1,5 +1,5 @@
-def add_cost_schedule(ifc, predefined_type):
-    ifc.run("cost.add_cost_schedule", predefined_type=predefined_type)
+def add_cost_schedule(ifc, name, predefined_type,object_type):
+    ifc.run("cost.add_cost_schedule", name=name, predefined_type=predefined_type, object_type=object_type)
 
 
 def edit_cost_schedule(ifc, cost, cost_schedule):
