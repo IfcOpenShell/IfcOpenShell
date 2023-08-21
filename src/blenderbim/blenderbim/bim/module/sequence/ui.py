@@ -219,6 +219,8 @@ class BIM_PT_work_schedules(Panel):
                 elif self.props.editing_task_type == "ATTRIBUTES":
                     row.operator("bim.edit_task", text="", icon="CHECKMARK")
                 row.operator("bim.disable_editing_task", text="Cancel", icon="CANCEL")
+            elif self.props.editing_task_type == "SEQUENCE":
+                row.operator("bim.disable_editing_task", text="Cancel", icon="CANCEL")
             else:
                 row.prop(self.props, "show_task_operators", text="Edit", icon="GREASEPENCIL")
                 if self.props.show_task_operators:
@@ -226,7 +228,7 @@ class BIM_PT_work_schedules(Panel):
                     row2.alignment = "RIGHT"
 
                     row2.prop(self.props, "enable_reorder", text="", icon="SORTALPHA")
-                    row2.operator("bim.enable_editing_task_sequence", text="", icon="TRACKING").task = ifc_definition_id
+                    row2.operator("bim.enable_editing_task_sequence", text="", icon="TRACKING")
                     row2.operator("bim.enable_editing_task_time", text="", icon="TIME").task = ifc_definition_id
                     row2.operator(
                         "bim.enable_editing_task_calendar", text="", icon="VIEW_ORTHO"
@@ -293,13 +295,13 @@ class BIM_PT_work_schedules(Panel):
             self.draw_editable_task_attributes_ui()
         elif self.props.active_task_id and self.props.editing_task_type == "CALENDAR":
             self.draw_editable_task_calendar_ui()
-        elif self.props.active_task_id and self.props.editing_task_type == "SEQUENCE":
+        elif self.props.highlighted_task_id and self.props.editing_task_type == "SEQUENCE":
             self.draw_editable_task_sequence_ui()
         elif self.props.active_task_time_id and self.props.editing_task_type == "TASKTIME":
             self.draw_editable_task_time_attributes_ui()
 
     def draw_editable_task_sequence_ui(self):
-        task = SequenceData.data["tasks"][self.props.active_task_id]
+        task = SequenceData.data["tasks"][self.props.highlighted_task_id]
         row = self.layout.row()
         row.label(text="{} Predecessors".format(len(task["IsSuccessorFrom"])), icon="BACK")
         for sequence_id in task["IsSuccessorFrom"]:
@@ -800,19 +802,18 @@ class BIM_UL_tasks(UIList):
                 )
             if self.props.enable_reorder:
                 self.draw_order_operator(row, item.ifc_definition_id)
-            if self.props.active_task_id:
-                if self.props.editing_task_type == "SEQUENCE" and self.props.active_task_id != item.ifc_definition_id:
-                    if item.is_predecessor:
-                        op = row.operator("bim.unassign_predecessor", text="", icon="BACK", emboss=False)
-                    else:
-                        op = row.operator("bim.assign_predecessor", text="", icon="TRACKING_BACKWARDS", emboss=False)
-                    op.task = item.ifc_definition_id
+            if self.props.editing_task_type == "SEQUENCE" and self.props.highlighted_task_id != item.ifc_definition_id:
+                if item.is_predecessor:
+                    op = row.operator("bim.unassign_predecessor", text="", icon="BACK", emboss=False)
+                else:
+                    op = row.operator("bim.assign_predecessor", text="", icon="TRACKING_BACKWARDS", emboss=False)
+                op.task = item.ifc_definition_id
 
-                    if item.is_successor:
-                        op = row.operator("bim.unassign_successor", text="", icon="FORWARD", emboss=False)
-                    else:
-                        op = row.operator("bim.assign_successor", text="", icon="TRACKING_FORWARDS", emboss=False)
-                    op.task = item.ifc_definition_id
+                if item.is_successor:
+                    op = row.operator("bim.unassign_successor", text="", icon="FORWARD", emboss=False)
+                else:
+                    op = row.operator("bim.assign_successor", text="", icon="TRACKING_FORWARDS", emboss=False)
+                op.task = item.ifc_definition_id
 
     def draw_order_operator(self, row, ifc_definition_id):
         task = SequenceData.data["tasks"][ifc_definition_id]

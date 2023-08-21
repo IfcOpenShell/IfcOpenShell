@@ -194,14 +194,12 @@ class Sequence(blenderbim.core.tool.Sequence):
         props.is_task_update_enabled = False
 
         for item in task_props.tasks:
-            # if task and item.ifc_definition_id != task.id():
-            #     continue
             task = tool.Ifc.get().by_id(item.ifc_definition_id)
             item.name = task.Name or "Unnamed"
             item.identification = task.Identification or "XXX"
-            if props.active_task_id:
-                item.is_predecessor = props.active_task_id in [rel.RelatedProcess.id() for rel in task.IsPredecessorTo]
-                item.is_successor = props.active_task_id in [rel.RelatingProcess.id() for rel in task.IsSuccessorFrom]
+            if props.highlighted_task_id:
+                item.is_predecessor = props.highlighted_task_id in [rel.RelatedProcess.id() for rel in task.IsPredecessorTo]
+                item.is_successor = props.highlighted_task_id in [rel.RelatingProcess.id() for rel in task.IsSuccessorFrom]
             calendar = ifcopenshell.util.sequence.derive_calendar(task)
             if task.HasAssignments:
                 for rel in task.HasAssignments:
@@ -375,6 +373,7 @@ class Sequence(blenderbim.core.tool.Sequence):
     def disable_editing_task(cls):
         bpy.context.scene.BIMWorkScheduleProperties.active_task_id = 0
         bpy.context.scene.BIMWorkScheduleProperties.active_task_time_id = 0
+        bpy.context.scene.BIMWorkScheduleProperties.editing_task_type = ""
 
     @classmethod
     def get_task_time_attributes(cls):
@@ -645,9 +644,8 @@ class Sequence(blenderbim.core.tool.Sequence):
         props.editing_task_type = "CALENDAR"
 
     @classmethod
-    def enable_editing_task_sequence(cls, task):
+    def enable_editing_task_sequence(cls):
         props = bpy.context.scene.BIMWorkScheduleProperties
-        props.active_task_id = task.id()
         props.editing_task_type = "SEQUENCE"
 
     @classmethod

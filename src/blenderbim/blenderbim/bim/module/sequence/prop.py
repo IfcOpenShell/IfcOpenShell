@@ -91,7 +91,18 @@ def update_active_task_index(self, context):
     bpy.ops.bim.load_task_inputs()
     bpy.ops.bim.load_task_resources()
     bpy.ops.bim.load_task_outputs()
+    task = tool.Sequence.get_highlighted_task()
+    self.highlighted_task_id = task.id() if task else 0
     blenderbim.bim.module.pset.data.refresh()
+    if self.editing_task_type == "SEQUENCE":
+        tool.Sequence.load_task_properties()
+
+
+def update_highlighted_task_id(self):
+    task = tool.Sequence.get_highlighted_task()
+    self.highlighted_task_id = task.id() if task else 0
+    print("current Task ID: " + str(self.highlighted_task_id))
+    tool.Sequence.load_task_properties()
 
 
 def update_active_task_outputs(self, context):
@@ -387,6 +398,7 @@ class BIMWorkScheduleProperties(PropertyGroup):
     active_work_schedule_id: IntProperty(name="Active Work Schedules Id")
     active_task_index: IntProperty(name="Active Task Index", update=update_active_task_index)
     active_task_id: IntProperty(name="Active Task Id")
+    highlighted_task_id: IntProperty(name="Highlited Task Id")
     task_attributes: CollectionProperty(name="Task Attributes", type=Attribute)
     should_show_visualisation_ui: BoolProperty(name="Should Show Visualisation UI", default=True, update=switch_options)
     should_show_task_bar_selection: BoolProperty(name="Add to task bar", default=False)
