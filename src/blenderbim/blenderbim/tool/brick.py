@@ -106,15 +106,15 @@ class Brick(blenderbim.core.tool.Brick):
             with BrickStore.new_changeset() as cs:
                 cs.add((URIRef(brick_uri), URIRef(predicate), Literal(object)))
             bpy.context.scene.BIMBrickProperties.new_brick_relation_type = BrickStore.relationships[0][0]
-            bpy.context.scene.BIMBrickProperties.add_relation_failed = False
+            bpy.context.scene.BIMBrickProperties.add_brick_relation_failed = False
             return
         query = BrickStore.graph.query("ASK { <{object_uri}> a ?o . }".replace("{object_uri}", object))
         if query:
             with BrickStore.new_changeset() as cs:
                 cs.add((URIRef(brick_uri), URIRef(predicate), URIRef(object)))
-            bpy.context.scene.BIMBrickProperties.add_relation_failed = False
+            bpy.context.scene.BIMBrickProperties.add_brick_relation_failed = False
         else:
-            bpy.context.scene.BIMBrickProperties.add_relation_failed = True
+            bpy.context.scene.BIMBrickProperties.add_brick_relation_failed = True
 
     @classmethod
     def remove_relation(cls, brick_uri, predicate, object):
