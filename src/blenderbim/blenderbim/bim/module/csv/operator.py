@@ -82,6 +82,7 @@ class ImportCsvAttributes(bpy.types.Operator):
             new.header = attribute["header"]
             new.sort = attribute["sort"]
             new.group = attribute["group"]
+            new.summary = attribute["summary"]
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -104,7 +105,8 @@ class ExportCsvAttributes(bpy.types.Operator):
         data = {
             "query": tool.Search.export_filter_query(props.filter_groups),
             "attributes": [
-                {"name": a.name, "header": a.header, "sort": a.sort, "group": a.group} for a in props.csv_attributes
+                {"name": a.name, "header": a.header, "sort": a.sort, "group": a.group, "summary": a.summary}
+                for a in props.csv_attributes
             ],
         }
 
@@ -152,11 +154,14 @@ class ExportIfcCsv(bpy.types.Operator):
 
         sort = []
         groups = []
+        summaries = []
         for attribute in props.csv_attributes:
             if attribute.sort != "NONE":
                 sort.append({"name": attribute.name, "order": attribute.sort})
             if attribute.group != "NONE":
                 groups.append({"name": attribute.name, "type": attribute.group, "varies_value": attribute.varies_value})
+            if attribute.summary != "NONE":
+                summaries.append({"name": attribute.name, "type": attribute.summary})
 
         sep = props.csv_custom_delimiter if props.csv_delimiter == "CUSTOM" else props.csv_delimiter
         ifc_csv.export(
@@ -174,6 +179,7 @@ class ExportIfcCsv(bpy.types.Operator):
             bool_false=props.false_value,
             sort=sort,
             groups=groups,
+            summaries=summaries,
         )
         return {"FINISHED"}
 

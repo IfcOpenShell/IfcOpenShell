@@ -74,6 +74,7 @@ class IfcCsv:
         bool_false="NO",
         sort=None,
         groups=None,
+        summaries=None,
     ):
         self.ifc_file = ifc_file
         self.results = []
@@ -112,65 +113,119 @@ class IfcCsv:
             else:
                 self.headers.append(attribute)
 
-        if groups:
-            group_results = {}
-            group_indices = {}
-            group_values = {}
-            group_varies_values = {}
+        self.group_results(groups, attributes)
+        self.summarise_results(summaries, attributes)
+        self.sort_results(sort, attributes)
 
-            for group in groups:
-                index = attributes.index(group["name"])
-                group_indices.setdefault(group["type"], [])
-                group_indices[group["type"]].append(index)
-                if group["type"] == "VARIES":
-                    group_varies_values[index] = group["varies_value"]
+        if format == "csv":
+            self.export_csv(output, delimiter=delimiter)
+        elif format == "ods":
+            self.export_ods(output, should_preserve_existing=should_preserve_existing)
+        elif format == "xlsx":
+            self.export_xlsx(output, should_preserve_existing=should_preserve_existing)
+        elif format == "pd":
+            return self.export_pd()
 
-            for row in self.results:
-                key = "-".join([str(row[gi]) for gi in group_indices.get("GROUP", [])])
-                for group_type, gis in group_indices.items():
-                    if group_type in ("CONCAT", "VARIES"):
-                        for gi in gis:
-                            group_values.setdefault(key, {}).setdefault(gi, set())
-                            group_values[key][gi].add(str(row[gi]))
-                    elif group_type in ("SUM", "AVERAGE", "MIN", "MAX"):
-                        for gi in gis:
-                            group_values.setdefault(key, {}).setdefault(gi, [])
-                            try:
-                                value = float(row[gi])
-                            except:
-                                continue
-                            group_values[key][gi].append(value)
-                group_results[key] = row
+    def group_results(self, groups, attributes):
+        if not groups:
+            return
 
+        group_results = {}
+        group_indices = {}
+        group_values = {}
+        group_varies_values = {}
+
+        for group in groups:
+            index = attributes.index(group["name"])
+            group_indices.setdefault(group["type"], [])
+            group_indices[group["type"]].append(index)
+            if group["type"] == "VARIES":
+                group_varies_values[index] = group["varies_value"]
+
+        for row in self.results:
+            key = "-".join([str(row[gi]) for gi in group_indices.get("GROUP", [])])
             for group_type, gis in group_indices.items():
-                if group_type == "CONCAT":
-                    for key, result in group_results.items():
-                        for gi in gis:
-                            result[gi] = ", ".join(group_values[key][gi])
-                elif group_type == "VARIES":
-                    for key, result in group_results.items():
-                        for gi in gis:
-                            if len(group_values[key][gi]) > 1:
-                                result[gi] = group_varies_values[gi]
-                elif group_type == "SUM":
-                    for key, result in group_results.items():
-                        for gi in gis:
-                            result[gi] = sum(group_values[key][gi])
-                elif group_type == "AVERAGE":
-                    for key, result in group_results.items():
-                        for gi in gis:
-                            result[gi] = mean(group_values[key][gi])
-                elif group_type == "MIN":
-                    for key, result in group_results.items():
-                        for gi in gis:
-                            result[gi] = min(group_values[key][gi])
-                elif group_type == "MAX":
-                    for key, result in group_results.items():
-                        for gi in gis:
-                            result[gi] = max(group_values[key][gi])
+                if group_type in ("CONCAT", "VARIES"):
+                    for gi in gis:
+                        group_values.setdefault(key, {}).setdefault(gi, set())
+                        group_values[key][gi].add(str(row[gi]))
+                elif group_type in ("SUM", "AVERAGE", "MIN", "MAX"):
+                    for gi in gis:
+                        group_values.setdefault(key, {}).setdefault(gi, [])
+                        try:
+                            value = float(row[gi])
+                        except:
+                            continue
+                        group_values[key][gi].append(value)
+            group_results[key] = row
 
-            self.results = group_results.values()
+        for group_type, gis in group_indices.items():
+            if group_type == "CONCAT":
+                for key, result in group_results.items():
+                    for gi in gis:
+                        result[gi] = ", ".join(group_values[key][gi])
+            elif group_type == "VARIES":
+                for key, result in group_results.items():
+                    for gi in gis:
+                        if len(group_values[key][gi]) > 1:
+                            result[gi] = group_varies_values[gi]
+            elif group_type == "SUM":
+                for key, result in group_results.items():
+                    for gi in gis:
+                        result[gi] = sum(group_values[key][gi])
+            elif group_type == "AVERAGE":
+                for key, result in group_results.items():
+                    for gi in gis:
+                        result[gi] = mean(group_values[key][gi])
+            elif group_type == "MIN":
+                for key, result in group_results.items():
+                    for gi in gis:
+                        result[gi] = min(group_values[key][gi])
+            elif group_type == "MAX":
+                for key, result in group_results.items():
+                    for gi in gis:
+                        result[gi] = max(group_values[key][gi])
 
+        self.results = group_results.values()
+
+    def summarise_results(self, summaries, attributes):
+        self.summaries = [None] * len(attributes)
+
+        if not summaries:
+            return
+
+        summary_indices = {}
+        summary_values = {}
+
+        for summary in summaries:
+            index = attributes.index(summary["name"])
+            summary_indices.setdefault(summary["type"], [])
+            summary_indices[summary["type"]].append(index)
+
+        for row in self.results:
+            for summary_type, sis in summary_indices.items():
+                if summary_type in ("SUM", "AVERAGE", "MIN", "MAX"):
+                    for si in sis:
+                        summary_values.setdefault(si, [])
+                        try:
+                            value = float(row[si])
+                        except:
+                            continue
+                        summary_values[si].append(value)
+
+        for summary_type, sis in summary_indices.items():
+            for si in sis:
+                if summary_type == "SUM":
+                    self.summaries[si] = sum(summary_values[si])
+                elif summary_type == "AVERAGE":
+                    self.summaries[si] = mean(summary_values[si])
+                elif summary_type == "MIN":
+                    self.summaries[si] = min(summary_values[si])
+                elif summary_type == "MAX":
+                    self.summaries[si] = max(summary_values[si])
+                self.summaries[si] = summary_type.title() + ": " + str(self.summaries[si])
+
+    def sort_results(self, sort, attributes):
         if sort:
             def natural_sort(value):
                 if isinstance(value, str):
@@ -187,28 +242,24 @@ class IfcCsv:
         else:
             self.results = sorted(self.results, key=lambda x: x[1 if include_global_id else 0])
 
-        if format == "csv":
-            self.export_csv(output, delimiter=delimiter)
-        elif format == "ods":
-            self.export_ods(output, should_preserve_existing=should_preserve_existing)
-        elif format == "xlsx":
-            self.export_xlsx(output, should_preserve_existing=should_preserve_existing)
-        elif format == "pd":
-            return self.export_pd()
-
     def export_csv(self, output, delimiter=None):
         with open(output, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f, delimiter=delimiter)
             writer.writerow(self.headers)
             for row in self.results:
                 writer.writerow(row)
+            if any([s for s in self.summaries if s is not None]):
+                writer.writerow(self.summaries)
 
     def export_ods(self, output, should_preserve_existing=False):
+        df = self.export_pd()
+        if self.summaries:
+            df.loc[df.shape[0]] = self.summaries
+
         if os.path.exists(output) and should_preserve_existing:
             ods_document = load(output)
             first_table = ods_document.spreadsheet.getElementsByType(Table)[0]
 
-            df = self.export_pd()
             for col_index, col in enumerate(df.columns):
                 # Assuming the first row of the table contains headers
                 header_cell = self.get_col(first_table.getElementsByType(TableRow)[0], col_index)
@@ -232,7 +283,6 @@ class IfcCsv:
 
             ods_document.save(output)
         else:
-            df = self.export_pd()
             df.to_excel(output, index=False, engine="odf")
 
     def set_cell_value(self, cell, value):
@@ -265,6 +315,10 @@ class IfcCsv:
         return new_cell
 
     def export_xlsx(self, output, should_preserve_existing=False):
+        df = self.export_pd()
+        if self.summaries:
+            df.loc[df.shape[0]] = self.summaries
+
         if os.path.exists(output):
             book = openpyxl.load_workbook(output)
             with pd.ExcelWriter(
@@ -273,10 +327,8 @@ class IfcCsv:
                 mode="a",
                 if_sheet_exists="overlay" if should_preserve_existing else "replace",
             ) as writer:
-                df = self.export_pd()
                 df.to_excel(writer, sheet_name=book.sheetnames[0], index=False)
         else:
-            df = self.export_pd()
             df.to_excel(output, index=False, engine="openpyxl")
 
     def export_pd(self):
