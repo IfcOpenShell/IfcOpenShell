@@ -269,8 +269,14 @@ class UpdateRepresentation(bpy.types.Operator, Operator):
             core.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
         if material and material.is_a() in ["IfcMaterialProfileSet", "IfcMaterialLayerSet"]:
-            # These objects are parametrically based on an axis and should not be modified as a mesh
-            return
+            if self.ifc_representation_class == "IfcTessellatedFaceSet":
+                # We are explicitly casting to a tessellation, so remove all parametric materials.
+                element_type = ifcopenshell.util.element.get_type(product)
+                ifcopenshell.api.run("material.unassign_material", tool.Ifc.get(), product=element_type)
+                ifcopenshell.api.run("material.unassign_material", tool.Ifc.get(), product=product)
+            else:
+                # These objects are parametrically based on an axis and should not be modified as a mesh
+                return
 
         old_representation = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         context_of_items = old_representation.ContextOfItems
