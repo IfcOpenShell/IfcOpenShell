@@ -198,6 +198,13 @@ class CalculateResourceWork(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     resource: bpy.props.IntProperty()
 
+    @classmethod
+    def poll(cls, context):
+        active_resource = tool.Resource.get_highlighted_resource()
+        if active_resource:
+            if tool.Resource.get_productivity(active_resource, should_inherit=True):
+                return True
+
     def _execute(self, context):
         core.calculate_resource_work(tool.Ifc, tool.Resource, resource=tool.Ifc.get().by_id(self.resource))
 
