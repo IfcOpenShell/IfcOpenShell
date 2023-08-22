@@ -76,10 +76,11 @@ class ImportCsvAttributes(bpy.types.Operator):
         tool.Search.import_filter_query(data["query"], props.filter_groups)
 
         props.csv_attributes.clear()
-        for i, attribute in enumerate(data["attributes"]):
+        for attribute in data["attributes"]:
             new = props.csv_attributes.add()
-            new.name = attribute
-            new.header = data["headers"][i]
+            new.name = attribute["name"]
+            new.header = attribute["header"]
+            new.sort = attribute["sort"]
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -101,8 +102,7 @@ class ExportCsvAttributes(bpy.types.Operator):
 
         data = {
             "query": tool.Search.export_filter_query(props.filter_groups),
-            "attributes": [a.name for a in props.csv_attributes],
-            "headers": [a.header for a in props.csv_attributes],
+            "attributes": [{"name": a.name, "header": a.header, "sort": a.sort} for a in props.csv_attributes],
         }
 
         with open(self.filepath, "w") as outfile:
@@ -146,6 +146,12 @@ class ExportIfcCsv(bpy.types.Operator):
         ifc_csv = ifccsv.IfcCsv()
         attributes = [a.name for a in props.csv_attributes]
         headers = [a.header for a in props.csv_attributes]
+
+        sort = []
+        for attribute in props.csv_attributes:
+            if attribute.sort != "NONE":
+                sort.append({"name": attribute.name, "order": attribute.sort})
+
         sep = props.csv_custom_delimiter if props.csv_delimiter == "CUSTOM" else props.csv_delimiter
         ifc_csv.export(
             ifc_file,
@@ -160,6 +166,7 @@ class ExportIfcCsv(bpy.types.Operator):
             null=props.null_value,
             bool_true=props.true_value,
             bool_false=props.false_value,
+            sort=sort,
         )
         return {"FINISHED"}
 
