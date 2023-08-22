@@ -21,6 +21,7 @@
 # This can be packaged with `pyinstaller --onefile --clean --icon=icon.ico ifccsv.py`
 
 import os
+import re
 import csv
 import argparse
 import ifcopenshell
@@ -70,20 +71,23 @@ class IfcCsv:
         null="-",
         bool_true="YES",
         bool_false="NO",
+        sort=None,
     ):
         self.ifc_file = ifc_file
         self.results = []
+        self.headers = []
+        attributes = attributes or []
+
         if not headers:
             headers = [None] * len(attributes)
+
+        if include_global_id:
+            attributes.insert(0, "GlobalId")
+            headers.insert(0, "GlobalId")
+
         for element in elements:
             result = []
-            if include_global_id:
-                if hasattr(element, "GlobalId"):
-                    result.append(element.GlobalId)
-                else:
-                    result.append(None)
-
-            for index, attribute in enumerate(attributes or []):
+            for index, attribute in enumerate(attributes):
                 if "*" in attribute:
                     attributes.extend(self.get_wildcard_attributes(attribute))
                     del attributes[index]
@@ -99,12 +103,28 @@ class IfcCsv:
                 result.append(value)
             self.results.append(result)
 
-        self.headers = ["GlobalId"] if include_global_id else []
-        for i, attribute in enumerate(attributes or []):
+        self.headers = []
+        for i, attribute in enumerate(attributes):
             if headers[i]:
                 self.headers.append(headers[i])
             else:
                 self.headers.append(attribute)
+
+        if sort:
+            def natural_sort(value):
+                if isinstance(value, str):
+                    convert = lambda text: int(text) if text.isdigit() else text.lower()
+                    return [convert(c) for c in re.split('([0-9]+)', value)]
+                return value
+
+            # Sort least important keys first, then more important keys.
+            # https://stackoverflow.com/questions/11476371/sort-by-multiple-keys-using-different-orderings
+            for sort_data in reversed(sort):
+                i = attributes.index(sort_data["name"])
+                reverse = sort_data["order"] == "DESC"
+                self.results = sorted(self.results, key=lambda x: natural_sort(x[i]), reverse=reverse)
+        else:
+            self.results = sorted(self.results, key=lambda x: x[1 if include_global_id else 0])
 
         if format == "csv":
             self.export_csv(output, delimiter=delimiter)
@@ -319,18 +339,20 @@ if __name__ == "__main__":
         help="Specify attributes that are part of the extract, using the IfcQuery syntax such as 'class', 'Name' or 'Pset_Foo.Bar'",
     )
     parser.add_argument(
-        "-h",
-        "--headers",
-        nargs="+",
-        help="Specify human readable headers that correlate to each attribute.",
+        "-h", "--headers", nargs="+", help="Specify human readable headers that correlate to each attribute."
     )
-    parser.add_argument("--export", action="store_true", help="Export from IFC to CSV")
-    parser.add_argument("--import", action="store_true", help="Import from CSV to IFC")
+    parser.add_argument("--sort", nargs="+", help="Specify one or more attributes to sort by.")
+    parser.add_argument("--order", nargs="+", help="Choose the sort order from ASC or DESC for each sorted attribute.")
+    parser.add_argument("--export", action="store_true", help="Export from IFC to the desired format.")
+    parser.add_argument("--import", action="store_true", help="Import from the autodetected format to IFC.")
     args = parser.parse_args()
 
     if args.export:
         ifc_file = ifcopenshell.open(args.ifc)
         results = ifcopenshell.util.selector.filter_elements(ifc_file, args.query)
+        sort = None
+        if args.sort and len(args.sort) == len(args.order):
+            sort = [{"name": s, "order": args.order[i]} for i, s in enumerate(args.sort)]
         ifc_csv = IfcCsv()
         ifc_csv.export(
             ifc_file,
@@ -343,6 +365,7 @@ if __name__ == "__main__":
             null=args.null,
             bool_true=args.bool_true,
             bool_false=args.bool_false,
+            sort=sort,
         )
     elif getattr(args, "import"):
         ifc_csv = IfcCsv()

@@ -35,6 +35,7 @@ from bpy.props import (
 class CsvAttribute(PropertyGroup):
     name: StringProperty(name="Query", default="class")
     header: StringProperty(name="Header Value", default="IFC Class")
+    sort: EnumProperty(items=[("NONE", "None", ""), ("ASC", "Ascending", ""), ("DESC", "Descending", "")])
 
 
 class CsvProperties(PropertyGroup):
@@ -80,4 +81,5 @@ class CsvProperties(PropertyGroup):
     )
     csv_custom_delimiter: StringProperty(default="", name="Custom Delimiter")
     should_show_settings: BoolProperty(default=False, name="Show Settings")
+    should_show_sort: BoolProperty(default=False, name="Show Sort")
     should_load_from_memory: BoolProperty(default=False, name="Load from Memory")
