@@ -58,13 +58,13 @@ def get_brick_roots(self, context):
 
 
 def get_brick_relations(self, context):
-    def is_label(relation):
-        return relation["predicate_name"] == "label"
-    if not list(filter(is_label, BrickschemaData.data["active_relations"])):
-        new_relations = BrickStore.relationships.copy()
-        new_relations.append(("http://www.w3.org/2000/01/rdf-schema#label", "label", ""))
-        return new_relations
-    return BrickStore.relationships
+    for relation in BrickschemaData.data["active_relations"]:
+        if relation["predicate_name"] == "label":
+            return BrickStore.relationships
+    new_relations = BrickStore.relationships.copy()
+    new_relations.append(("http://www.w3.org/2000/01/rdf-schema#label", "label", ""))
+    return new_relations
+    
 
 
 def update_view(self, context):
