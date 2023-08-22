@@ -50,6 +50,8 @@ classes = (
     operator.CalculateResourceWork,
     operator.ImportResources,
     operator.EditProductivityData,
+    operator.ConstrainResourceWork,
+    operator.RemoveUsageConstraint,
     prop.Resource,
     prop.BIMResourceProperties,
     prop.BIMResourceTreeProperties,

@@ -182,3 +182,35 @@ def edit_productivity_pset(ifc, resource_tool):
     else:
         pset = ifc.run("pset.add_pset", product=resource, name="EPset_Productivity")
     ifc.run("pset.edit_pset", pset=pset, properties=resource_tool.get_productivity_attributes())
+
+
+def add_usage_constraint(ifc, resource_tool, resource=None, reference_path=None):
+    metric = resource_tool.has_usage_metric(resource)
+    if metric:
+        return print("Must remove existing metric first")
+
+    objective = ifc.run("constraint.add_objective")
+    ifc.run("constraint.edit_objective", objective=objective, attributes={"ObjectiveQualifier": "PARAMETER"})
+    metric = ifc.run("constraint.add_metric", objective=objective)
+    ifc.run(
+        "constraint.edit_metric",
+        metric=metric,
+        attributes={
+            "ConstraintGrade": "HARD",
+            "Benchmark": "EQUALTO",
+        },
+    )
+    ifc.run("constraint.add_metric_reference", metric=metric, reference_path=reference_path)
+    ifc.run("constraint.assign_constraint", product=resource, constraint=objective)
+
+
+def remove_usage_constraint(ifc, resource_tool, resource, reference_path):
+    constraints = resource_tool.get_constraints(resource)
+    for constraint in constraints:
+        metrics = resource_tool.get_metrics(constraint)
+        for metric in metrics:
+            reference = resource_tool.get_metric_reference(metric, is_deep=True)
+            if reference == reference_path:
+                ifc.run("constraint.remove_metric", metric=metric)
+                ifc.run("constraint.unassign_constraint", product=resource, constraint=constraint)
+                ifc.run("constraint.remove_constraint", constraint=constraint)
