@@ -673,6 +673,7 @@ class Selector:
                     value = len(list(value))
                 elif isinstance(value, (list, tuple)):
                     value = len(value)
+                value = 1
             elif key == "class":
                 value = value.is_a()
             elif key == "id":
