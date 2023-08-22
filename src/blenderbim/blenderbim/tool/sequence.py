@@ -198,8 +198,12 @@ class Sequence(blenderbim.core.tool.Sequence):
             item.name = task.Name or "Unnamed"
             item.identification = task.Identification or "XXX"
             if props.highlighted_task_id:
-                item.is_predecessor = props.highlighted_task_id in [rel.RelatedProcess.id() for rel in task.IsPredecessorTo]
-                item.is_successor = props.highlighted_task_id in [rel.RelatingProcess.id() for rel in task.IsSuccessorFrom]
+                item.is_predecessor = props.highlighted_task_id in [
+                    rel.RelatedProcess.id() for rel in task.IsPredecessorTo
+                ]
+                item.is_successor = props.highlighted_task_id in [
+                    rel.RelatingProcess.id() for rel in task.IsSuccessorFrom
+                ]
             calendar = ifcopenshell.util.sequence.derive_calendar(task)
             if task.HasAssignments:
                 for rel in task.HasAssignments:
@@ -466,9 +470,11 @@ class Sequence(blenderbim.core.tool.Sequence):
 
     @classmethod
     def get_highlighted_task(cls):
-        props = bpy.context.scene.BIMWorkScheduleProperties
-        task_props = bpy.context.scene.BIMTaskTreeProperties
-        return tool.Ifc.get().by_id(task_props.tasks[props.active_task_index].ifc_definition_id)
+        tasks = bpy.context.scene.BIMTaskTreeProperties.tasks
+        if len(tasks) and len(tasks) > bpy.context.scene.BIMWorkScheduleProperties.active_task_index:
+            return tool.Ifc.get().by_id(
+                tasks[bpy.context.scene.BIMWorkScheduleProperties.active_task_index].ifc_definition_id
+            )
 
     @classmethod
     def get_direct_nested_tasks(cls, task):
@@ -1668,3 +1674,10 @@ class Sequence(blenderbim.core.tool.Sequence):
         cls.load_task_inputs(inputs)
         cls.load_task_outputs(outputs)
         cls.load_task_resources(resources)
+
+    @classmethod
+    def refresh_task_resources(cls):
+        task = cls.get_highlighted_task()
+        if not task:
+            return
+        cls.load_task_resources(cls.get_task_resources(task))

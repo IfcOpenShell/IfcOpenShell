@@ -766,6 +766,7 @@ class Sequence:
     def show_snapshot(cls, product_states): pass
     def update_task_ICOM(cls, task): pass
     def update_visualisation_date(cls, start_date, finish_date): pass
+    def refresh_task_resources(cls): pass
 
 
 @interface
