@@ -79,17 +79,23 @@ class BIM_PT_profiles(Panel):
             self.props,
             "active_profile_index",
         )
-        if active_profile and active_profile.ifc_class in (
-            "IfcArbitraryClosedProfileDef",
-            "IfcArbitraryProfileDefWithVoids",
-        ):
-            if self.props.active_arbitrary_profile_id:
-                row = self.layout.row(align=True)
-                row.operator("bim.edit_arbitrary_profile", text="Save Arbitrary Profile", icon="CHECKMARK")
-                row.operator("bim.disable_editing_arbitrary_profile", text="", icon="CANCEL")
-            else:
-                row = self.layout.row()
-                row.operator("bim.enable_editing_arbitrary_profile", text="Edit Arbitrary Profile", icon="GREASEPENCIL")
+        if active_profile:
+            if active_profile.ifc_class in (
+                "IfcArbitraryClosedProfileDef",
+                "IfcArbitraryProfileDefWithVoids",
+            ):
+                if self.props.active_arbitrary_profile_id:
+                    row = self.layout.row(align=True)
+                    row.operator("bim.edit_arbitrary_profile", text="Save Arbitrary Profile", icon="CHECKMARK")
+                    row.operator("bim.disable_editing_arbitrary_profile", text="", icon="CANCEL")
+                else:
+                    row = self.layout.row()
+                    row.operator(
+                        "bim.enable_editing_arbitrary_profile", text="Edit Arbitrary Profile", icon="GREASEPENCIL"
+                    )
+
+            users_of_profile = ProfileData.data["active_profile_users"]
+            self.layout.label(icon="INFO", text=f"Profile has {users_of_profile} inverse relationship(s) in project")
 
         if self.props.active_profile_id:
             self.draw_editable_ui(context)

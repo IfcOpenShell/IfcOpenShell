@@ -402,8 +402,8 @@ def update_roof_modifier_ifc_data(context):
     if props.roof_type == "HIP/GABLE ROOF":
         element.PredefinedType = "GABLE_ROOF" if roof_is_gabled() else "HIP_ROOF"
 
-    # occurences attributes
-    # occurences = tool.Ifc.get_all_element_occurences(element)
+    # occurrences attributes
+    # occurrences = tool.Ifc.get_all_element_occurrences(element)
 
     tool.Ifc.edit(obj)
 

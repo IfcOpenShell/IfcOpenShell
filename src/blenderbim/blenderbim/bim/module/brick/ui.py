@@ -90,8 +90,13 @@ class BIM_PT_brickschema(Panel):
         row = self.layout.row(align=True)
         row.prop(data=self.props, property="brick_entity_create_type", text="")
 
+        # hide this if selected entity already has a reference
         row = self.layout.row(align=True)
-        row.prop(data=self.props, property="new_brick_label", text="")
+        active = tool.Ifc.get_entity(context.active_object)
+        if active and context.selected_objects:
+            row.label(text=active.Name if active.Name else "Unnamed")
+        else:
+            row.prop(data=self.props, property="new_brick_label", text="")
         prop_with_search(row, self.props, "brick_entity_class", text="")
         row.operator("bim.add_brick", text="", icon="ADD")
 
@@ -142,8 +147,9 @@ class BIM_PT_brickschema(Panel):
             row.prop(data=self.props, property="brick_edit_relations_toggled", text="", icon="TOOL_SETTINGS")
             row.operator("bim.remove_brick", text="", icon="X")
 
-            row = self.layout.row(align=True)
-            row.label(text="Create Relation:")
+            if self.props.brick_create_relations_toggled:
+                row = self.layout.row(align=True)
+                row.label(text="Create Relation:")
 
             if self.props.brick_create_relations_toggled and self.props.new_brick_relation_type == "http://www.w3.org/2000/01/rdf-schema#label":
                 row = self.layout.row(align=True)
@@ -178,11 +184,11 @@ class BIM_PT_brickschema(Panel):
             row = self.layout.row(align=True)
             row.label(text=relation["predicate_name"])
             row.label(text=relation["object_name"])
-            if self.props.brick_edit_relations_toggled and relation["predicate_name"] != "type":
+            if self.props.brick_edit_relations_toggled and relation["predicate_uri"] and relation["predicate_name"] != "type":
                 op = row.operator("bim.remove_brick_relation", text="", icon="UNLINKED")
-                op.predicate = relation["predicate"]
-                op.object = relation["object"]
-            if relation["is_uri"] and relation["predicate_name"] != "type":
+                op.predicate = relation["predicate_uri"]
+                op.object = relation["object_uri"]
+            if relation["is_uri"] and relation["object_name"] != self.props.active_brick_class:
                 op = row.operator("bim.view_brick_item", text="", icon="DISCLOSURE_TRI_RIGHT")
                 op.item = relation["object_uri"]
             if relation["is_globalid"]:
@@ -215,8 +221,11 @@ class BIM_PT_ifc_brickschema_references(Panel):
 
         if not BrickschemaReferencesData.data["libraries"]:
             row = self.layout.row(align=True)
-            row.label(text="No IFC Libraries")
-            row.operator("bim.convert_brick_project", text="", icon="ADD")
+            if BrickStore.path:
+                row.label(text="No IFC Libraries")
+                row.operator("bim.convert_brick_project", text="", icon="ADD")
+            else:
+                row.label(text="No IFC Libraries. Save the Brick project to create a new library.", icon="ERROR")
             return
 
         row = self.layout.row(align=True)

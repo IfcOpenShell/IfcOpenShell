@@ -126,6 +126,8 @@ class Misc(blenderbim.core.tool.Misc):
             mod.object = cutter
             bpy.ops.object.modifier_apply({"object": obj}, modifier="Boolean")
 
+            bm.to_mesh(cutter_mesh)
+
             new_objs.append(new_obj)
 
         bm.to_mesh(cutter_mesh)

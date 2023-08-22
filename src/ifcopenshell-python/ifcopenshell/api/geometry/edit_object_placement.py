@@ -49,15 +49,14 @@ class Usecase:
         old_placement = self.settings["product"].ObjectPlacement
 
         if old_placement:
-            inverses = self.file.get_inverse(old_placement)
-            if len(inverses) == 1:
+            for inverse in self.file.get_inverse(old_placement):
+                if inverse.is_a("IfcLocalPlacement"):
+                    ifcopenshell.util.element.replace_attribute(inverse, old_placement, new_placement)
+
+            if self.file.get_total_inverses(old_placement) == 1:
                 self.settings["product"].ObjectPlacement = None
                 old_placement.PlacementRelTo = None
-                ifcopenshell.util.element.remove_deep2(self.file, old_placement)
-            else:
-                for inverse in inverses:
-                    if inverse.is_a("IfcLocalPlacement"):
-                        ifcopenshell.util.element.replace_attribute(inverse, old_placement, new_placement)
+                ifcopenshell.util.element.remove_deep(self.file, old_placement)
 
         new_placement.PlacementRelTo = placement_rel_to
         self.settings["product"].ObjectPlacement = new_placement
@@ -96,7 +95,6 @@ class Usecase:
             return relating_object.ObjectPlacement if hasattr(relating_object, "ObjectPlacement") else None
         elif getattr(self.settings["product"], "ContainedInStructure", None):
             return self.settings["product"].ContainedInStructure[0].RelatingStructure.ObjectPlacement
-
 
     def get_children_settings(self, placement):
         if not placement:

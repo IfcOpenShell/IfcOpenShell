@@ -1,0 +1,2256 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<BuildingInformation>
+	<Classification>
+		<System>
+			<Name>NS 3451 - Bygningsdelstabell</Name>
+			<EditionVersion>2009</EditionVersion>
+			<EditionDate>
+				<Year>2009</Year>
+				<Month>1</Month>
+				<Day>1</Day>
+			</EditionDate>
+			<Description/>
+			<Source>http://www.standard.no/</Source>
+			<Items>
+				<Item>
+					<ID>2</ID>
+					<Name>Bygning</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>20</ID>
+							<Name>Bygning, generelt</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>21</ID>
+							<Name>Grunn og fundamenter</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>211</ID>
+									<Name>Klargjøring av tomt</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>212</ID>
+									<Name>Byggegrop</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>213</ID>
+									<Name>Grunnforsterkning</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>214</ID>
+									<Name>Støttekonstruksjoner</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>215</ID>
+									<Name>Pelefundamentering</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>216</ID>
+									<Name>Direkte fundamentering</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>217</ID>
+									<Name>Drenering</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>218</ID>
+									<Name>Utstyr og komplettering</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>219</ID>
+									<Name>Andre deler av grunn og fundamenter</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>22</ID>
+							<Name>Bæresystemer</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>221</ID>
+									<Name>Rammer</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>222</ID>
+									<Name>Søyler</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>223</ID>
+									<Name>Bjelker</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>224</ID>
+									<Name>Avstivende konstruksjoner</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>225</ID>
+									<Name>Brannbeskyttelse av bærende konstruksjoner</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>226</ID>
+									<Name>Kledning og overflate</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>228</ID>
+									<Name>Utstyr og komplettering</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>229</ID>
+									<Name>Andre deler av bæresystem</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>23</ID>
+							<Name>Yttervegger</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>231</ID>
+									<Name>Bærende yttervegger</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>232</ID>
+									<Name>Ikke-bærende yttervegger</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>233</ID>
+									<Name>Glassfasader</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>234</ID>
+									<Name>Vinduer, dører, porter</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>235</ID>
+									<Name>Utvendig kledning og overflate</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>236</ID>
+									<Name>Innvendig overflate</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>237</ID>
+									<Name>Solavskjerming</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>238</ID>
+									<Name>Utstyr og komplettering</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>239</ID>
+									<Name>Andre deler av yttervegg</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>24</ID>
+							<Name>Innervegger</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>241</ID>
+									<Name>Bærende innervegger</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>242</ID>
+									<Name>Ikke-bærende innervegger</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>243</ID>
+									<Name>Systemvegger, glassfelt</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>244</ID>
+									<Name>Vinduer, dører, foldevegger</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>245</ID>
+									<Name>Skjørt</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>246</ID>
+									<Name>Kledning og overflate</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>248</ID>
+									<Name>Utstyr og komplettering</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>249</ID>
+									<Name>Andre deler av innervegg</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>25</ID>
+							<Name>Dekker</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>251</ID>
+									<Name>Frittbærende dekker</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>252</ID>
+									<Name>Gulv på grunn</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>253</ID>
+									<Name>Oppfôret gulv, påstøp</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>254</ID>
+									<Name>Gulvsystemer</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>255</ID>
+									<Name>Gulvoverflate</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>256</ID>
+									<Name>Faste himlinger og overflatebehandling</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>257</ID>
+									<Name>Systemhimlinger</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>258</ID>
+									<Name>Utstyr og komplettering</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>259</ID>
+									<Name>Andre deler av dekker</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>26</ID>
+							<Name>Yttertak</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>261</ID>
+									<Name>Primærkonstruksjon</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>262</ID>
+									<Name>Taktekking</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>263</ID>
+									<Name>Glasstak, overlys, takluker</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>264</ID>
+									<Name>Takoppbygg</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>265</ID>
+									<Name>Gesimser, takrenner og nedløp</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>266</ID>
+									<Name>Himling og innvendig overflate</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>267</ID>
+									<Name>Prefabrikkerte takelementer</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>268</ID>
+									<Name>Utstyr og kompletteringer</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>269</ID>
+									<Name>Andre deler av yttertak</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>27</ID>
+							<Name>Fast inventar</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>271</ID>
+									<Name>Murte piper og ildsteder</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>272</ID>
+									<Name>Monteringsferdige ildsteder</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>273</ID>
+									<Name>Kjøkkeninnredning</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>274</ID>
+									<Name>Innredning og garnityr</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>275</ID>
+									<Name>Skap og reoler</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>276</ID>
+									<Name>Sittebenker, stolrader, bord</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>277</ID>
+									<Name>Skilt og tavler</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>278</ID>
+									<Name>Utstyr og kompletteringer</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>279</ID>
+									<Name>Annet fast inventar</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>28</ID>
+							<Name>Trapper, balkonger, m.m.</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>281</ID>
+									<Name>Innvendige trapper</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>282</ID>
+									<Name>Utvendige trapper</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>283</ID>
+									<Name>Ramper</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>284</ID>
+									<Name>Balkonger og verandaer</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>285</ID>
+									<Name>Tribuner og amfier</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>286</ID>
+									<Name>Baldakiner og skjermtak</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>287</ID>
+									<Name>Andre rekkverk, håndlister og fendere</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>288</ID>
+									<Name>Utstyr og kompletteringer</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>289</ID>
+									<Name>Andre trapper, balkonger m.m.</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>29</ID>
+							<Name>Andre bygningsmssige deler</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>3</ID>
+					<Name>VVS-installasjoner</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>30</ID>
+							<Name>VVS-installasjoner, generelt</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>31</ID>
+							<Name>Sanitær</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>311</ID>
+									<Name>Bunnledninger for sanitærinstallasjoner</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>312</ID>
+									<Name>Ledningsnett for sanitærinstallasjoner</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>314</ID>
+									<Name>Armaturer for sanitærinstallasjoner</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>315</ID>
+									<Name>Utstyr for sanitærinstallasjoner</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>316</ID>
+									<Name>Isolasjon av sanitærinstallasjoner</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>319</ID>
+									<Name>Andre deler av sanitærinstallasjoner</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>32</ID>
+							<Name>Varme</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>321</ID>
+									<Name>Bunnledninger for varmeinstallasjoner</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>322</ID>
+									<Name>Ledningsnett for varmeinstallasjoner</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>324</ID>
+									<Name>Armaturer for varmeinstallasjon</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>325</ID>
+									<Name>Utstyr for varmeinstallasjoner</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>326</ID>
+									<Name>Isolasjon av varmeinstallasjoner</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>329</ID>
+									<Name>Andre deler av varmeinstallasjoner</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>33</ID>
+							<Name>Brannslokking</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>331</ID>
+									<Name>Installasjon for manuell brannslokking med vann</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>332</ID>
+									<Name>Installasjon for brannslokking med sprinkler</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>333</ID>
+									<Name>Installasjon for brannslokking med vanntåke</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>334</ID>
+									<Name>Installasjon for brannslokking med pulver</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>335</ID>
+									<Name>Installasjon for brannslokking med inertgass</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>339</ID>
+									<Name>Andre deler av installasjoner for brannslokking</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>34</ID>
+							<Name>Gass og trykkluft</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>341</ID>
+									<Name>Installasjon til gass for bygningsdrift</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>342</ID>
+									<Name>Installasjon til gass for virksomhet i ferdig bygg</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>343</ID>
+									<Name>Installasjon til medisinske gasser</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>345</ID>
+									<Name>Installasjon til trykkluft for virksomhet i ferdig bygg</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>346</ID>
+									<Name>Installasjon til medisinsk trykkluft</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>347</ID>
+									<Name>Vakuumsystemer</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>349</ID>
+									<Name>Andre deler av installasjoner til gass og trykkluft</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>35</ID>
+							<Name>Prosesskjøling</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>351</ID>
+									<Name>Kjøleromsystemer</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>352</ID>
+									<Name>Fryseromsystemer</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>353</ID>
+									<Name>Kjølesystemer for virksomhet</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>354</ID>
+									<Name>Kjølesystemer for produksjon</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>355</ID>
+									<Name>Kuldesystemer for innendørs idrettsbaner</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>359</ID>
+									<Name>Andre installasjoner for kulde- og kjølesystemer</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>36</ID>
+							<Name>Luftbehandling</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>361</ID>
+									<Name>Kanalnett i grunnen for luftbehandling</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>362</ID>
+									<Name>Kanalnett for luftbehandling</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>364</ID>
+									<Name>Utstyr for luftfordeling</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>365</ID>
+									<Name>Utstyr for luftbehandling</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>366</ID>
+									<Name>Isolasjon av installasjon for luftbehandling</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>369</ID>
+									<Name>Annet utstyr for luftbehandling</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>37</ID>
+							<Name>Komfortkjøling</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>371</ID>
+									<Name>Ledningsnett i grunnen for komfortkjøling</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>372</ID>
+									<Name>Ledningsnett for komfortkjøling</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>374</ID>
+									<Name>Armaturer for komfortkjøling</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>375</ID>
+									<Name>Utstyr for komfortkjøling</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>376</ID>
+									<Name>Isolasjon av installasjon for komfortkjøling</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>379</ID>
+									<Name>Andre deler for komfortkjøling</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>38</ID>
+							<Name>Vannbehandling</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>381</ID>
+									<Name>Systemer for rensing av forbruksvann</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>382</ID>
+									<Name>Systemer for rensing av avløpsvann</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>383</ID>
+									<Name>Systemer for rensing av vann til svømmebasseng</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>386</ID>
+									<Name>Innendørs fontener og</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>389</ID>
+									<Name>Andre deler for vannbehandling</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>39</ID>
+							<Name>Andre VVS-installasjoner</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>4</ID>
+					<Name>Elkraft</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>40</ID>
+							<Name>Elkraft, generelt</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>41</ID>
+							<Name>Basisinstallasjon for elkraft</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>411</ID>
+									<Name>Systemer for kabelføring</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>412</ID>
+									<Name>Systemer for jording</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>413</ID>
+									<Name>Systemer for lynvern</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>414</ID>
+									<Name>Systemer for elkraftuttak</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>419</ID>
+									<Name>Andre basisinstallasjoner for elkraft</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>42</ID>
+							<Name>Høyspent forsyning</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>421</ID>
+									<Name>Fordelingssystem</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>422</ID>
+									<Name>Nettstasjoner</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>429</ID>
+									<Name>Andre deler for høyspent forsyning</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>43</ID>
+							<Name>Lavspent forsyning</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>431</ID>
+									<Name>System for elkraftinntak</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>432</ID>
+									<Name>System for hovedfordeling</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>433</ID>
+									<Name>Elkraftfordeling til alminnelig forbruk</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>434</ID>
+									<Name>Elkraftfordeling til driftstekniske installasjoner</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>435</ID>
+									<Name>Elkraftfordeling til virksomhet</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>439</ID>
+									<Name>Andre deler for lavspent forsyning</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>44</ID>
+							<Name>Lys</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>442</ID>
+									<Name>Belysningsutstyr</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>443</ID>
+									<Name>Nødlysutstyr</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>449</ID>
+									<Name>Andre deler for installasjoner til lys</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>45</ID>
+							<Name>Elvarme</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>452</ID>
+									<Name>Varmeovner</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>453</ID>
+									<Name>Varmeelementer for innebygging</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>454</ID>
+									<Name>Vannvarmere og elektrokjeler</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>459</ID>
+									<Name>Annen elvarme</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>46</ID>
+							<Name>Reservekraft</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>461</ID>
+									<Name>Elkraftaggregater</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>462</ID>
+									<Name>Avbruddsfri kraftforsyning</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>463</ID>
+									<Name>Akkumulatoranlegg</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>469</ID>
+									<Name>Andre deler for reservekraftforsyning</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>49</ID>
+							<Name>Andre elkraftinstallasjoner</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>5</ID>
+					<Name>Tele og automatisering</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>50</ID>
+							<Name>Tele og automatisering, generelt</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>51</ID>
+							<Name>Basisinstallasjoner for tele og automatisering</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>511</ID>
+									<Name>Systemer for kabelføring</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>512</ID>
+									<Name>Jording</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>514</ID>
+									<Name>Inntakskabler for teleanlegg</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>515</ID>
+									<Name>Telefordelinger</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>519</ID>
+									<Name>Andre basisinstallasjoner for tele og automatisering</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>52</ID>
+							<Name>Integrert kommunikasjon</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>521</ID>
+									<Name>Kabling for IKT</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>522</ID>
+									<Name>Nettutstyr</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>523</ID>
+									<Name>Sentralutstyr</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>524</ID>
+									<Name>Terminalutstyr</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>529</ID>
+									<Name>Andre deler for integrert kommunikasjon</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>53</ID>
+							<Name>Telefoni og personsøkning</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>532</ID>
+									<Name>Systemer for telefoni</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>534</ID>
+									<Name>Systemer for porttelefoner</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>535</ID>
+									<Name>Systemer for høyttalende hustelefoner</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>536</ID>
+									<Name>Systemer for personsøkning</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>539</ID>
+									<Name>Andre deler for telefoni og personsøkning</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>54</ID>
+							<Name>Alarm- og signalsystemer</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>542</ID>
+									<Name>Brannalarm</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>543</ID>
+									<Name>Adgangskontroll, innbrudds- og overfallsalarm</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>544</ID>
+									<Name>Pasientsignal</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>545</ID>
+									<Name>Uranlegg og tidsregistrering</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>549</ID>
+									<Name>Andre deler for alarm og signal</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>55</ID>
+							<Name>Lyd- og bildesystemer</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>552</ID>
+									<Name>Fellesantenner</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>553</ID>
+									<Name>Internfjernsyn</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>554</ID>
+									<Name>Lyddistribusjonsanlegg</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>555</ID>
+									<Name>Lydanlegg</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>556</ID>
+									<Name>Bilde og AV-systemer</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>559</ID>
+									<Name>Andre deler for lyd- og bildesystemer</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>56</ID>
+							<Name>Automatisering</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>562</ID>
+									<Name>Sentral driftskontroll og automatisering</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>563</ID>
+									<Name>Lokal automatisering</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>564</ID>
+									<Name>Buss-system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>565</ID>
+									<Name>FDVUS: Administrativt system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>569</ID>
+									<Name>Andre deler for automatisering</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>57</ID>
+							<Name>Instrumentering</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>571</ID>
+									<Name>Kabling for instrumentering</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>572</ID>
+									<Name>Instrumentering for måling av mengde</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>573</ID>
+									<Name>Instrumentering for måling av trykk</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>574</ID>
+									<Name>Instrumentering for måling av temperatur</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>575</ID>
+									<Name>Instrumentering for måling av lengde</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>576</ID>
+									<Name>Instrumentering for måling av vekt</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>577</ID>
+									<Name>Instrumentering for måling av elektriske størrelser</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>578</ID>
+									<Name>Instrumentering for analyse</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>579</ID>
+									<Name>Annen instrumentering</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>59</ID>
+							<Name>Andre installasjoner for tele og automatisering</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>6</ID>
+					<Name>Andre installasjoner</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>60</ID>
+							<Name>Andre installasjoner, generelt</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>61</ID>
+							<Name>Prefabrikkerte rom</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>611</ID>
+									<Name>Prefabrikkerte kjølerom</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>612</ID>
+									<Name>Prefabrikkerte Fryserom</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>613</ID>
+									<Name>Prefabrikkerte baderom</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>614</ID>
+									<Name>Prefabrikkerte skjermrom</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>615</ID>
+									<Name>Prefabrikkerte sjakter</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>619</ID>
+									<Name>Andre prefabrikkerte rom</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>62</ID>
+							<Name>Person- og varetransport</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>621</ID>
+									<Name>Heiser</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>622</ID>
+									<Name>Rulletrapper</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>623</ID>
+									<Name>Rullebånd</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>624</ID>
+									<Name>Løftebord</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>625</ID>
+									<Name>Trappeheiser</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>626</ID>
+									<Name>Kraner</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>627</ID>
+									<Name>Fasade- og takvask</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>629</ID>
+									<Name>Annen person- og varetransport</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>63</ID>
+							<Name>Transportanlegg for småvarer mv.</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>631</ID>
+									<Name>Dokument- og småvaretransportører</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>632</ID>
+									<Name>Transportanlegg for tørr og løs masse</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>639</ID>
+									<Name>Andre transport anlegg for småvarer mv.</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>64</ID>
+							<Name>Sceneteknisk utstyr</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>65</ID>
+							<Name>Avfall og støvsuging</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>651</ID>
+									<Name>Utstyr for oppsamling og behandling av avfall</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>652</ID>
+									<Name>Sentralstøvsuger</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>653</ID>
+									<Name>Pneumatisk søppeltransport</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>659</ID>
+									<Name>Andre installasjoner for avfall og støvsugning</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>66</ID>
+							<Name>Fastmontert spesialutrustning for virksomhet</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>67</ID>
+							<Name>Løs spesialutrustning for virksomhet</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>69</ID>
+							<Name>Andre tekniske installasjoner</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>7</ID>
+					<Name>Utendørs</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>70</ID>
+							<Name>Utendørs, generelt</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>71</ID>
+							<Name>Bearbeidet terreng</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>711</ID>
+									<Name>Grovplanert terreng</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>712</ID>
+									<Name>Drenering</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>713</ID>
+									<Name>Forsterket grunn</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>714</ID>
+									<Name>Grøfter og groper for tekniske installasjoner</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>719</ID>
+									<Name>Annen terrengbearbeiding</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>72</ID>
+							<Name>Utendørs konstruksjoner</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>721</ID>
+									<Name>Støttemurer og andre murer</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>722</ID>
+									<Name>Trapper og ramper i terreng</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>723</ID>
+									<Name>Frittstående skjermtak, leskur mv.</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>724</ID>
+									<Name>Svømmebassenger mv.</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>725</ID>
+									<Name>Gjerder, porter og bommer</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>726</ID>
+									<Name>Kanaler og kulverter for tekniske installasjoner</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>727</ID>
+									<Name>Kummer og tanker for tekniske installasjoner</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>729</ID>
+									<Name>Andre utendørs konstruksjoner</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>73</ID>
+							<Name>Utendørs røranlegg</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>731</ID>
+									<Name>Utendørs VA</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>732</ID>
+									<Name>Utendørs varme</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>733</ID>
+									<Name>Utendørs brannslokking</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>734</ID>
+									<Name>Utendørs gassinstallasjoner</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>735</ID>
+									<Name>Utendørs kjøling for idrettsbaner</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>736</ID>
+									<Name>Utendørs luftbehandlingsanlegg</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>737</ID>
+									<Name>Utendørs forsyningsanlegg for termisk energi</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>738</ID>
+									<Name>Utendørs fontener og springvann</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>739</ID>
+									<Name>Andre utendørs røranlegg</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>74</ID>
+							<Name>Utendørs elkraft</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>742</ID>
+									<Name>Utendørs høyspent forsyning</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>743</ID>
+									<Name>Utendørs lavspent forsyning</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>744</ID>
+									<Name>Utendørs lys</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>745</ID>
+									<Name>Utendørs elvarme</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>746</ID>
+									<Name>Utendørs reservekraft</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>749</ID>
+									<Name>Andre installasjoner for utendørs elkraft</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>75</ID>
+							<Name>Utendørs tele og automatisering</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>752</ID>
+									<Name>Utendørs integrert kommunikasjon</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>753</ID>
+									<Name>Utendørs telefoni og personsøkning</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>754</ID>
+									<Name>Utendørs alarm og signal</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>755</ID>
+									<Name>Utendørs lyd og bilde</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>756</ID>
+									<Name>Utendørs automatisering</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>759</ID>
+									<Name>Andre installasjoner for utendørs tele og automatisering</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>76</ID>
+							<Name>Veger og plasser</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>761</ID>
+									<Name>Veger</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>762</ID>
+									<Name>Plasser</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>763</ID>
+									<Name>Skilter</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>764</ID>
+									<Name>Sikkerhetsrekkverk, avvisere mv.</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>769</ID>
+									<Name>Andre deler for veger og plasser</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>77</ID>
+							<Name>Parker og hager</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>771</ID>
+									<Name>Gressarealer</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>772</ID>
+									<Name>Beplantning</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>773</ID>
+									<Name>Utstyr</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>779</ID>
+									<Name>Andre deler for parker og hager</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>78</ID>
+							<Name>Utendørs infrastruktur</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>783</ID>
+									<Name>Tilknytning til eksterne nett for vannforsyning, avløp og fjernvarme</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>784</ID>
+									<Name>Tilknytning til eksternt elkraftnett</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>785</ID>
+									<Name>Tilknytning til eksternt telenett</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>789</ID>
+									<Name>Andre deler for utendørs infrastruktur</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>79</ID>
+							<Name>Andre utendørs anlegg</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+			</Items>
+		</System>
+	</Classification>
+</BuildingInformation>

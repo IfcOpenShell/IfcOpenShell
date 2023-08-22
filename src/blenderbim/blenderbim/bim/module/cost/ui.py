@@ -41,20 +41,19 @@ class BIM_PT_cost_schedules(Panel):
             CostSchedulesData.load()
 
         self.props = context.scene.BIMCostProperties
-        row = self.layout.row()
+        row = self.layout.row(align=True)
         if not self.props.active_cost_schedule_id:
             if CostSchedulesData.data["total_cost_schedules"]:
                 row.label(text=f"{CostSchedulesData.data['total_cost_schedules']} Cost Schedules Found", icon="TEXT")
-                row.operator("bim.export_cost_schedules", text="Export as spreadsheet", icon="EXPORT")
             else:
                 row.label(text="No Cost Schedules found.", icon="TEXT")
-            row = self.layout.row(align=True)
-            row.alignment = "RIGHT"
-            row.prop(self.props, "cost_schedule_predefined_types")
-            row.operator("bim.add_cost_schedule", icon="ADD", text="Add")
+            row.operator("bim.add_cost_schedule", icon="ADD", text="")
 
         for schedule in CostSchedulesData.data["schedules"]:
             self.draw_cost_schedule_ui(schedule)
+        row2 = self.layout.row()
+        row2.alignment = "RIGHT"
+        row2.operator("bim.export_cost_schedules", text="Export all", icon="EXPORT")
 
     def draw_cost_schedule_ui(self, cost_schedule):
         row = self.layout.row(align=True)
@@ -663,8 +662,6 @@ class BIM_UL_cost_items_trait:
                 op = row.operator("bim.reorder_cost_item_nesting", icon="TRIA_UP", text="")
                 op.cost_item = ifc_definition_id
                 op.new_index = cost_item["NestingIndex"] - 1
-
-
 
 
 class BIM_UL_cost_items(BIM_UL_cost_items_trait, UIList):

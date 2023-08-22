@@ -18,7 +18,7 @@
 
 import bpy
 import blenderbim.tool as tool
-from bpy.types import Panel
+from bpy.types import Panel, Menu
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import prop_with_search
 from blenderbim.bim.module.geometry.data import RepresentationsData, ConnectionsData, DerivedPlacementsData
@@ -29,6 +29,29 @@ def object_menu(self, context):
     self.layout.operator("bim.override_object_duplicate_move", icon="PLUGIN")
     self.layout.operator("bim.override_object_delete", icon="PLUGIN")
     self.layout.operator("bim.override_paste_buffer", icon="PLUGIN")
+    self.layout.menu("BIM_MT_object_set_origin", icon="PLUGIN")
+
+
+class BIM_MT_object_set_origin(Menu):
+    bl_idname = "BIM_MT_object_set_origin"
+    bl_label = "IFC Set Origin"
+
+    def draw(self, context):
+        self.layout.operator(
+            "bim.override_origin_set", icon="PLUGIN", text="IFC Geometry to Origin"
+        ).origin_type = "GEOMETRY_ORIGIN"
+        self.layout.operator(
+            "bim.override_origin_set", icon="PLUGIN", text="IFC Origin to Geometry"
+        ).origin_type = "ORIGIN_GEOMETRY"
+        self.layout.operator(
+            "bim.override_origin_set", icon="PLUGIN", text="IFC Origin to 3D Cursor"
+        ).origin_type = "ORIGIN_CURSOR"
+        self.layout.operator(
+            "bim.override_origin_set", icon="PLUGIN", text="IFC Origin to Center of Mass (Surface)"
+        ).origin_type = "ORIGIN_CENTER_OF_MASS"
+        self.layout.operator(
+            "bim.override_origin_set", icon="PLUGIN", text="IFC Origin to Center of Mass (Volume)"
+        ).origin_type = "ORIGIN_CENTER_OF_VOLUME"
 
 
 def outliner_menu(self, context):

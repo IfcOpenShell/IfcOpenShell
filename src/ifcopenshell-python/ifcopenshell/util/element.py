@@ -625,7 +625,7 @@ def get_layers(ifc_file, element):
     return layers
 
 
-def get_container(element, should_get_direct=False):
+def get_container(element, should_get_direct=False, ifc_class=None):
     """
     Retrieves the spatial structure container of an element.
 
@@ -637,6 +637,9 @@ def get_container(element, should_get_direct=False):
         part of an aggregate, and then if that aggregate is contained in a
         spatial structure element.
     :type should_get_direct: bool
+    :param ifc_class: Optionally filter the type of container you're after. For
+        example, you may be after the storey, not a space.
+    :type ifc_class: str
     :return: The direct or indirect container of the element or None.
 
     Example:
@@ -648,13 +651,23 @@ def get_container(element, should_get_direct=False):
     """
     if should_get_direct:
         if hasattr(element, "ContainedInStructure") and element.ContainedInStructure:
-            return element.ContainedInStructure[0].RelatingStructure
+            container = element.ContainedInStructure[0].RelatingStructure
+            if not ifc_class:
+                return container
+            if container.is_a(ifc_class):
+                return container
     else:
         aggregate = get_aggregate(element)
         if aggregate:
             return get_container(aggregate, should_get_direct)
         if hasattr(element, "ContainedInStructure") and element.ContainedInStructure:
-            return element.ContainedInStructure[0].RelatingStructure
+            container = element.ContainedInStructure[0].RelatingStructure
+            if not ifc_class:
+                return container
+            while container:
+                if container.is_a(ifc_class):
+                    return container
+                container = get_aggregate(container)
 
 
 def get_referenced_structures(element):

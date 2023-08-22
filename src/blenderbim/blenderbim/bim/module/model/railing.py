@@ -59,10 +59,10 @@ def update_railing_modifier_ifc_data(context):
 
     # type attributes
     element.PredefinedType = "USERDEFINED"
-    # occurences attributes
-    occurences = tool.Ifc.get_all_element_occurences(element)
-    for occurence in occurences:
-        occurence.ObjectType = props.railing_type
+    # occurrences attributes
+    occurrences = tool.Ifc.get_all_element_occurrences(element)
+    for occurrence in occurrences:
+        occurrence.ObjectType = props.railing_type
 
     # update pset
     pset_common = tool.Pset.get_element_pset(element, "Pset_RailingCommon")

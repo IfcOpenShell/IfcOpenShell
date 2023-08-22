@@ -94,11 +94,7 @@ def an_empty_ifc_2x3_project():
 
 @when("I load a new pset template file")
 def i_load_a_new_pset_template_file():
-    IfcStore.pset_template_path = os.path.join(
-        bpy.context.scene.BIMProperties.data_dir,
-        "pset",
-        bpy.context.scene.BIMPsetTemplateProperties.pset_template_files + ".ifc",
-    )
+    IfcStore.pset_template_path = bpy.context.scene.BIMPsetTemplateProperties.pset_template_files
     IfcStore.pset_template_file = ifcopenshell.open(IfcStore.pset_template_path)
 
 

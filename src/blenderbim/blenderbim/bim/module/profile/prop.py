@@ -49,10 +49,14 @@ class Profile(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
 
+def update_active_profile_index(self, context):
+    ProfileData.data["active_profile_users"] = ProfileData.active_profile_users()
+
+
 class BIMProfileProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing")
     profiles: CollectionProperty(name="Profiles", type=Profile)
-    active_profile_index: IntProperty(name="Active Profile Index")
+    active_profile_index: IntProperty(name="Active Profile Index", update=update_active_profile_index)
     active_profile_id: IntProperty(name="Active Profile Id")
     active_arbitrary_profile_id: IntProperty(name="Active Arbitrary Profile Id")
     profile_attributes: CollectionProperty(name="Profile Attributes", type=Attribute)
