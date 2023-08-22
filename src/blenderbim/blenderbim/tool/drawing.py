@@ -1504,7 +1504,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         elements = cls.get_elements_in_camera_view(tool.Ifc.get_object(drawing), bpy.data.objects)
         include = pset.get("Include", None)
         if include:
-            elements = set(ifcopenshell.util.selector.Selector.parse(ifc_file, include, elements=elements))
+            elements = set(ifcopenshell.util.selector.filter_elements(ifc_file, include, elements=elements))
         else:
             if tool.Ifc.get_schema() == "IFC2X3":
                 base_elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialStructureElement"))
@@ -1516,7 +1516,7 @@ class Drawing(blenderbim.core.tool.Drawing):
 
         exclude = pset.get("Exclude", None)
         if exclude:
-            elements -= set(ifcopenshell.util.selector.Selector.parse(ifc_file, exclude, elements=elements))
+            elements -= set(ifcopenshell.util.selector.filter_elements(ifc_file, exclude, elements=elements))
         elements -= set(ifc_file.by_type("IfcOpeningElement"))
         return elements
 
@@ -1529,10 +1529,10 @@ class Drawing(blenderbim.core.tool.Drawing):
             tool.Ifc.get_object(drawing), [tool.Ifc.get_object(e) for e in ifc_file.by_type("IfcSpace")]
         )
         if include:
-            elements = set(ifcopenshell.util.selector.Selector.parse(ifc_file, include, elements=elements))
+            elements = set(ifcopenshell.util.selector.filter_elements(ifc_file, include, elements=elements))
         exclude = pset.get("Exclude", None)
         if exclude:
-            elements -= set(ifcopenshell.util.selector.Selector.parse(ifc_file, exclude, elements=elements))
+            elements -= set(ifcopenshell.util.selector.filter_elements(ifc_file, exclude, elements=elements))
         return elements
 
     @classmethod
