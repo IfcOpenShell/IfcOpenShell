@@ -43,6 +43,10 @@ class Usecase:
         self.settings = {"metric": metric}
 
     def execute(self):
+        if self.settings["metric"].ReferencePath:
+            reference = self.settings["metric"].ReferencePath
+            self.delete_reference(reference)
+
         self.file.remove(self.settings["metric"])
         for rel in self.file.by_type("IfcRelAssociatesConstraint"):
             if not rel.RelatingConstraint:
@@ -50,3 +54,8 @@ class Usecase:
         for resource_rel in self.file.by_type("IfcResourceConstraintRelationship"):
             if not resource_rel.RelatingConstraint:
                 self.file.remove(resource_rel)
+
+    def delete_reference(self, reference):
+        if reference.InnerReference:
+            self.delete_reference(reference.InnerReference)
+        self.file.remove(reference)
