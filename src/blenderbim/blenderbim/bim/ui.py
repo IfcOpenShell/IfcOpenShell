@@ -464,6 +464,7 @@ class BIM_PT_tab_quality_control(Panel):
     def draw(self, context):
         pass
 
+
 class BIM_PT_tab_clash_detection(Panel):
     bl_label = "Clash Detection"
     bl_space_type = "PROPERTIES"
@@ -476,6 +477,7 @@ class BIM_PT_tab_clash_detection(Panel):
 
     def draw(self, context):
         pass
+
 
 class BIM_PT_tab_sandbox(Panel):
     bl_label = "Sandbox"
@@ -658,24 +660,13 @@ class UIData:
 
     @classmethod
     def version(cls):
-        return ".".join(
-            [
-                str(x)
-                for x in [
-                    addon.bl_info.get("version", (-1, -1, -1))
-                    for addon in addon_utils.modules()
-                    if addon.bl_info["name"] == "BlenderBIM"
-                ][0]
-            ]
-        )
+        return tool.Blender.get_blenderbim_version()
 
 
 def draw_statusbar(self, context):
     if not UIData.is_loaded:
         UIData.load()
     text = f"BlenderBIM Add-on v{UIData.data['version']}"
-    if blenderbim.bim.last_commit_hash != "8888888":
-        text += f"-{blenderbim.bim.last_commit_hash[:7]}"
     self.layout.label(text=text)
 
 
