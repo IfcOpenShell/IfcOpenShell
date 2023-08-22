@@ -363,3 +363,29 @@ class EditProductivityData(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.edit_productivity_pset(tool.Ifc, tool.Resource)
+
+
+class ConstrainResourceWork(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_usage_constraint"
+    bl_label = "Constrain Resource Work"
+    bl_options = {"REGISTER", "UNDO"}
+    resource: bpy.props.IntProperty()
+    attribute: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        core.add_usage_constraint(
+            tool.Ifc, tool.Resource, resource=tool.Ifc.get().by_id(self.resource), reference_path=self.attribute
+        )
+
+
+class RemoveUsageConstraint(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.remove_usage_constraint"
+    bl_label = "Remove Usage Constraint"
+    bl_options = {"REGISTER", "UNDO"}
+    resource: bpy.props.IntProperty()
+    attribute: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        core.remove_usage_constraint(
+            tool.Ifc, tool.Resource, resource=tool.Ifc.get().by_id(self.resource), reference_path=self.attribute
+        )
