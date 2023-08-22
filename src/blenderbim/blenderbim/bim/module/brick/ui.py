@@ -219,7 +219,7 @@ class BIM_PT_brickschema_viewport(Panel):
                 row.prop(data=self.props, property="new_brick_relation_object", text="")
                 row.operator("bim.add_brick_relation", text="", icon="ADD")
 
-            if self.props.brick_create_relations_toggled and self.props.add_relation_failed:
+            if self.props.brick_create_relations_toggled and self.props.add_brick_relation_failed:
                 row = self.layout.row(align=True)
                 row.label(text="Failed to find this entity!", icon="ERROR")
 
