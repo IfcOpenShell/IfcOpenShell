@@ -381,3 +381,71 @@ class Resource(blenderbim.core.tool.Resource):
             pset=pset,
             properties=attributes,
         )
+
+    @classmethod
+    def get_constraints(cls, resource):
+        constraints = []
+        for rel in resource.HasAssociations or []:
+            if rel.is_a("IfcRelAssociatesConstraint"):
+                constraints.append(rel.RelatingConstraint)
+        return constraints
+
+    @classmethod
+    def get_metrics(cls, constraint):
+        metrics = []
+        for metric in constraint.BenchmarkValues or []:
+            metrics.append(metric)
+        return metrics
+
+    @classmethod
+    def get_metric_reference(cls, metric, is_deep=True):
+        def get_reference_Attribute(ref, path):
+            if ref:
+                if is_deep:
+                    if not path:
+                        path = ref.AttributeIdentifier
+                    else:
+                        path += ".{}".format(ref.AttributeIdentifier) if ref.AttributeIdentifier else ""
+                    return get_reference_Attribute(ref.InnerReference, path)
+                else:
+                    return ref.AttributeIdentifier
+            return path
+
+        reference = metric.ReferencePath
+        return get_reference_Attribute(reference, "")
+
+    @classmethod
+    def get_resource_benchmarks(cls, resource):
+        constraints = []
+        for constraint in cls.get_constraints(resource) or []:
+            metrics = []
+            for metric in cls.get_metrics(constraint) or []:
+                metrics.append(
+                    {
+                        "reference": cls.get_metric_reference(metric),
+                        "Benchmark": metric.Benchmark,
+                        "ConstraintGrade": metric.ConstraintGrade,
+                    }
+                )
+            constraints.append({"ObjectiveQualifier": constraint.ObjectiveQualifier, "metrics": metrics})
+        return constraints
+
+    @classmethod
+    def has_metric_constraint(cls, resource, attribute):
+        constraints = tool.Resource.get_constraints(resource)
+        metrics = []
+        for constraint in constraints:
+            for metric in tool.Resource.get_metrics(constraint) or []:
+                is_same_reference = bool(
+                    tool.Resource.get_metric_reference(metric, is_deep=False) == attribute
+                    or tool.Resource.get_metric_reference(metric, is_deep=True) == attribute
+                )
+                if is_same_reference:
+                    metrics.append(metric)
+        if metrics:
+            return metrics[0]
+        return None
+
+    @classmethod
+    def has_usage_metric(cls, resource):
+        return cls.has_metric_constraint(resource, "Usage")

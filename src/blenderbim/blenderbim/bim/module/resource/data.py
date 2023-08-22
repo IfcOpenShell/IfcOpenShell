@@ -56,6 +56,7 @@ class ResourceData:
                 "type": resource.is_a(),
                 "BaseQuantity": base_quantity,
             }
+            results[resource.id()]["Benchmarks"] = tool.Resource.get_resource_benchmarks(resource)
             if resource.is_a() in ["IfcLaborResource", "IfcConstructionEquipmentResource"]:
                 results[resource.id()]["Productivity"] = {}
                 results[resource.id()]["InheritedProductivity"] = {}
