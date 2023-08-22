@@ -92,6 +92,49 @@ class BIM_PT_resources(Panel):
                 row = self.layout.row(align=True)
                 row.label(text="Resource type cannot have productivity data", icon="ERROR")
             else:
+                is_usage_locked = False
+                is_work_locked = False
+                for constraint in resource["Benchmarks"] or []:
+                    for metric in constraint["metrics"] or []:
+                        if (
+                            metric["ConstraintGrade"] == "HARD"
+                            and metric["reference"]
+                            and metric["reference"] == "Usage.ScheduleUsage"
+                        ):
+                            is_usage_locked = True
+                        elif (
+                            metric["ConstraintGrade"] == "HARD"
+                            and metric["reference"]
+                            and metric["reference"] == "Usage.ScheduleWork"
+                        ):
+                            is_work_locked = True
+                row = self.layout.row()
+                row.label(text="Resource Work")
+                schedule_usage = "Schedule Usage: {}".format(resource.get("ScheduleUsage"))
+                schedule_work = "Schedule Work: {}".format(resource.get("ScheduleWork"))
+                row = self.layout.row()
+                row.alignment = "LEFT"
+                row.label(text=schedule_usage, icon="ARMATURE_DATA")
+                row2 = self.layout.row()
+                row2.alignment = "LEFT"
+                row2.label(text=schedule_work, icon="ARMATURE_DATA")
+                if not is_usage_locked:
+                    op = row.operator("bim.add_usage_constraint", text="", icon="UNLOCKED")
+                    op.resource = ifc_definition_id
+                    op.attribute = "Usage.ScheduleUsage"
+                else:
+                    op = row.operator("bim.remove_usage_constraint", text="", icon="LOCKED")
+                    op.resource = ifc_definition_id
+                    op.attribute = "Usage.ScheduleUsage"
+                if not is_work_locked:
+                    op = row2.operator("bim.add_usage_constraint", text="", icon="UNLOCKED")
+                    op.resource = ifc_definition_id
+                    op.attribute = "Usage.ScheduleWork"
+                else:
+                    op = row2.operator("bim.remove_usage_constraint", text="", icon="LOCKED")
+                    op.resource = ifc_definition_id
+                    op.attribute = "Usage.ScheduleWork"
+
                 productivity = resource["Productivity"]
                 parent_productivity = resource["InheritedProductivity"]
 
