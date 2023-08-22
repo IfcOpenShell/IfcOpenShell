@@ -1057,7 +1057,9 @@ class CreateDrawing(bpy.types.Operator):
 
         elements = tool.Drawing.get_group_elements(tool.Drawing.get_drawing_group(self.camera_element))
         filtered_drawing_elements = tool.Drawing.get_drawing_elements(self.camera_element)
-        elements = [e for e in elements if e in filtered_drawing_elements]
+        filtered_drawing_annotations = {e for e in filtered_drawing_elements if e.is_a("IfcAnnotation")}
+        elements = {e for e in elements if e in filtered_drawing_elements}
+        elements = list(elements | filtered_drawing_annotations)
 
         annotations = sorted(
             elements, key=lambda a: (tool.Drawing.get_annotation_z_index(a), 1 if a.ObjectType == "TEXT" else 0)
