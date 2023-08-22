@@ -20,8 +20,10 @@ import bpy
 import json
 import ifcopenshell.api
 import blenderbim.tool as tool
+import blenderbim.bim
 from mathutils import Vector
 from pathlib import Path
+import addon_utils
 
 
 VIEWPORT_ATTRIBUTES = [
@@ -588,3 +590,19 @@ class Blender:
                     child_obj = tool.Blender.get_object_from_guid(child_guid)
                     if child_obj:
                         yield child_obj
+
+    @classmethod
+    def get_blenderbim_version(cls):
+        version = ".".join(
+            [
+                str(x)
+                for x in [
+                    addon.bl_info.get("version", (-1, -1, -1))
+                    for addon in addon_utils.modules()
+                    if addon.bl_info["name"] == "BlenderBIM"
+                ][0]
+            ]
+        )
+        if blenderbim.bim.last_commit_hash != "8888888":
+            version += f"-{blenderbim.bim.last_commit_hash[:7]}"
+        return version
