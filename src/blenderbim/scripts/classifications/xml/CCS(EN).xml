@@ -1,0 +1,6610 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<BuildingInformation>
+	<Classification>
+		<System>
+			<Name>CCS</Name>
+			<EditionVersion>R1 (English version)</EditionVersion>
+			<EditionDate>
+				<Year>2017</Year>
+				<Month>6</Month>
+				<Day>21</Day>
+			</EditionDate>
+			<Description>CCS provides the building and civil engineering sector with a common language and methods for creating unambiguous exchange of information throughout the construction process from idea to operation.</Description>
+			<Source>http://ccs.bips.dk/News/CCS_Vaerktoejer</Source>
+			<Items>
+				<Item>
+					<ID>Construction Entities by Function</ID>
+					<Name/>
+					<Description>Assigns a functional classification to IFC Building and IFC Site based on this CCS (R0) specification.</Description>
+					<Availability>None</Availability>
+					<Children>
+						<Item>
+							<ID>[E]A??</ID>
+							<Name>Building for human needs and human activity</Name>
+							<Description/>
+							<Availability>None</Availability>
+							<Children>
+								<Item>
+									<ID>[E]AA?</ID>
+									<Name>Residential building</Name>
+									<Description/>
+									<Availability>None</Availability>
+									<Children>
+										<Item>
+											<ID>[E]AAA</ID>
+											<Name>Single-family house</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]AAB</ID>
+											<Name>House for multiple occupation</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]AAC</ID>
+											<Name>Housing complex</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[E]AB?</ID>
+									<Name>Hotel and restaurant building</Name>
+									<Description/>
+									<Availability>None</Availability>
+									<Children>
+										<Item>
+											<ID>[E]ABA</ID>
+											<Name>Hotel building</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]ABB</ID>
+											<Name>Youth hostel building</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]ABC</ID>
+											<Name>Restaurant building</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[E]AC?</ID>
+									<Name>Hygiene building</Name>
+									<Description/>
+									<Availability>None</Availability>
+									<Children>
+										<Item>
+											<ID>[E]ACA</ID>
+											<Name>Toilet building</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]ACB</ID>
+											<Name>Baths building</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]ACC</ID>
+											<Name>Sauna building</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]ACD</ID>
+											<Name>Changing building</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[E]AD?</ID>
+									<Name>Isolation building</Name>
+									<Description/>
+									<Availability>None</Availability>
+									<Children>
+										<Item>
+											<ID>[E]ADA</ID>
+											<Name>Shelter building</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]ADB</ID>
+											<Name>Prison building</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[E]AE?</ID>
+									<Name>Administration building</Name>
+									<Description/>
+									<Availability>None</Availability>
+									<Children>
+										<Item>
+											<ID>[E]AEA</ID>
+											<Name>Office building</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]AEB</ID>
+											<Name>Service building</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]AEC</ID>
+											<Name>Emergency services building</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[E]AF?</ID>
+									<Name>Production building</Name>
+									<Description/>
+									<Availability>None</Availability>
+									<Children>
+										<Item>
+											<ID>[E]AFA</ID>
+											<Name>Fabrication building</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]AFB</ID>
+											<Name>Workshop building</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[E]AG?</ID>
+									<Name>Trading building</Name>
+									<Description/>
+									<Availability>None</Availability>
+									<Children>
+										<Item>
+											<ID>[E]AGA</ID>
+											<Name>Shop building</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]AGB</ID>
+											<Name>Shopping centre</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]AGC</ID>
+											<Name>Gallery</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]AGD</ID>
+											<Name>Exhibition hall</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[E]AH?</ID>
+									<Name>Teaching building</Name>
+									<Description/>
+									<Availability>None</Availability>
+									<Children>
+										<Item>
+											<ID>[E]AHA</ID>
+											<Name>School building</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]AHB</ID>
+											<Name>University building</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]AHC</ID>
+											<Name>Course centre building</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[E]AJ?</ID>
+									<Name>Care facility</Name>
+									<Description/>
+									<Availability>None</Availability>
+									<Children>
+										<Item>
+											<ID>[E]AJA</ID>
+											<Name>Children's institution building</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]AJB</ID>
+											<Name>Hospital building</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]AJC</ID>
+											<Name>Care home building</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[E]AK?</ID>
+									<Name>Leisure facility</Name>
+									<Description/>
+									<Availability>None</Availability>
+									<Children>
+										<Item>
+											<ID>[E]AKA</ID>
+											<Name>Summer house</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]AKB</ID>
+											<Name>Allotment hut</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]AKC</ID>
+											<Name>Gazebo</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]AKD</ID>
+											<Name>Conservatory</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[E]AL?</ID>
+									<Name>Sports building</Name>
+									<Description/>
+									<Availability>None</Availability>
+									<Children>
+										<Item>
+											<ID>[E]ALA</ID>
+											<Name>Sports hall</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]ALB</ID>
+											<Name>Stand</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]ALC</ID>
+											<Name>Swimming hall</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]ALD</ID>
+											<Name>Riding school</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]ALE</ID>
+											<Name>Diving tower</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]ALF</ID>
+											<Name>Bowling hall</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[E]AM?</ID>
+									<Name>Cultural building</Name>
+									<Description/>
+									<Availability>None</Availability>
+									<Children>
+										<Item>
+											<ID>[E]AMA</ID>
+											<Name>Theatre building</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]AMB</ID>
+											<Name>Concert building</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]AMC</ID>
+											<Name>Exhibition building</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]AMD</ID>
+											<Name>Planetarium</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]AME</ID>
+											<Name>Cinema building</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]AMF</ID>
+											<Name>Library building</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]AMG</ID>
+											<Name>Multi-functional building</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[E]AN?</ID>
+									<Name>Assembly hall</Name>
+									<Description/>
+									<Availability>None</Availability>
+									<Children>
+										<Item>
+											<ID>[E]ANA</ID>
+											<Name>Residents' hall</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]ANB</ID>
+											<Name>Local hall</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]ANC</ID>
+											<Name>Clubhouse</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]AND</ID>
+											<Name>Religious building</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[E]AP?</ID>
+									<Name>Storage building</Name>
+									<Description/>
+									<Availability>None</Availability>
+									<Children>
+										<Item>
+											<ID>[E]APA</ID>
+											<Name>Materials store</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]APB</ID>
+											<Name>Equipment building (garage)</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]APC</ID>
+											<Name>Animal house</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]APD</ID>
+											<Name>Greenhouse</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]APE</ID>
+											<Name>Mortuary</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[E]AQ?</ID>
+									<Name>Access building</Name>
+									<Description/>
+									<Availability>None</Availability>
+									<Children>
+										<Item>
+											<ID>[E]AQA</ID>
+											<Name>Passageway</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]AQB</ID>
+											<Name>Staircase tower</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]AQC</ID>
+											<Name>Lift tower</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]AQD</ID>
+											<Name>Gatehouse</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>[E]B??</ID>
+							<Name>Plant room</Name>
+							<Description/>
+							<Availability>None</Availability>
+							<Children>
+								<Item>
+									<ID>[E]BA?</ID>
+									<Name>Production plant</Name>
+									<Description/>
+									<Availability>None</Availability>
+									<Children>
+										<Item>
+											<ID>[E]BAA</ID>
+											<Name>Combined heat and power station</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]BAB</ID>
+											<Name>Water treatment works</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]BAC</ID>
+											<Name>Raw material plant</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[E]BB?</ID>
+									<Name>Linking equipment</Name>
+									<Description/>
+									<Availability>None</Availability>
+									<Children>
+										<Item>
+											<ID>[E]BBA</ID>
+											<Name>Signalling equipment</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]BBB</ID>
+											<Name>Transmission mast</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]BBC</ID>
+											<Name>Cabling</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]BBD</ID>
+											<Name>Piped network</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]BBE</ID>
+											<Name>Coupling equipment</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[E]BC?</ID>
+									<Name>Disposal systems</Name>
+									<Description/>
+									<Availability>None</Availability>
+									<Children>
+										<Item>
+											<ID>[E]BCA</ID>
+											<Name>Chimney system</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]BCB</ID>
+											<Name>Sewer system</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[E]BD?</ID>
+									<Name>Transport system</Name>
+									<Description/>
+									<Availability>None</Availability>
+									<Children>
+										<Item>
+											<ID>[E]BDA</ID>
+											<Name>Crane equipment</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]BDB</ID>
+											<Name>Transporter system</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]BDC</ID>
+											<Name>Ropeway</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[E]BE?</ID>
+									<Name>Storage equipment</Name>
+									<Description/>
+									<Availability>None</Availability>
+									<Children>
+										<Item>
+											<ID>[E]BEA</ID>
+											<Name>Measuring station</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]BEB</ID>
+											<Name>Landfill site</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]BEC</ID>
+											<Name>Container space</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]BED</ID>
+											<Name>Tank farm</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]BEE</ID>
+											<Name>Pool</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[E]BF?</ID>
+									<Name>Process plant</Name>
+									<Description/>
+									<Availability>None</Availability>
+									<Children>
+										<Item>
+											<ID>[E]BFA</ID>
+											<Name>Pumping station</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]BFB</ID>
+											<Name>Treatment pond</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]BFC</ID>
+											<Name>Sludge treatment plant</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[E]BG?</ID>
+									<Name>Entertainment system</Name>
+									<Description/>
+									<Availability>None</Availability>
+									<Children>
+										<Item>
+											<ID>[E]BGA</ID>
+											<Name>Roller-coaster</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]BGB</ID>
+											<Name>Merry-go-round</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]BGC</ID>
+											<Name>Ferris wheel</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]BGD</ID>
+											<Name>Flume</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>[E]C??</ID>
+							<Name>Infrastructure facility</Name>
+							<Description/>
+							<Availability>None</Availability>
+							<Children>
+								<Item>
+									<ID>[E]CA?</ID>
+									<Name>Bridge</Name>
+									<Description/>
+									<Availability>None</Availability>
+									<Children>
+										<Item>
+											<ID>[E]CAA</ID>
+											<Name>Bridge</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]CAB</ID>
+											<Name>Tunnel</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]CAC</ID>
+											<Name>Transport canal</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]CAD</ID>
+											<Name>Rail network</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]CAE</ID>
+											<Name>Road</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]CAF</ID>
+											<Name>Footpath</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]CAG</ID>
+											<Name>Path</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[E]CB?</ID>
+									<Name>Terminus</Name>
+									<Description/>
+									<Availability>None</Availability>
+									<Children>
+										<Item>
+											<ID>[E]CBA</ID>
+											<Name>Quay</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]CBB</ID>
+											<Name>Platform</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]CBC</ID>
+											<Name>Crossroads</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]CBD</ID>
+											<Name>Rail terminus</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]CBE</ID>
+											<Name>Airport terminal</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]CBF</ID>
+											<Name>Bus terminus</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]CBG</ID>
+											<Name>Ferry terminal</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[E]CC?</ID>
+									<Name>Parking equipment</Name>
+									<Description/>
+									<Availability>None</Availability>
+									<Children>
+										<Item>
+											<ID>[E]CCA</ID>
+											<Name>Cycle park</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]CCB</ID>
+											<Name>Car park</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]CCC</ID>
+											<Name>Sidings system</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]CCD</ID>
+											<Name>Airfield</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[E]CD?</ID>
+									<Name>Traffic system</Name>
+									<Description/>
+									<Availability>None</Availability>
+									<Children>
+										<Item>
+											<ID>[E]CDA</ID>
+											<Name>Control tower</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]CDB</ID>
+											<Name>Aerial mast</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]CDC</ID>
+											<Name>Lighthouse</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]CDD</ID>
+											<Name>Belfry</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[E]CE?</ID>
+									<Name>Water control facility</Name>
+									<Description/>
+									<Availability>None</Availability>
+									<Children>
+										<Item>
+											<ID>[E]CEA</ID>
+											<Name>Dam</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]CEB</ID>
+											<Name>Canal</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]CEC</ID>
+											<Name>Barrage</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]CED</ID>
+											<Name>Sluice system</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]CEE</ID>
+											<Name>Mole</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>[E]D??</ID>
+							<Name>Landscape</Name>
+							<Description/>
+							<Availability>None</Availability>
+							<Children>
+								<Item>
+									<ID>[E]DA?</ID>
+									<Name>Natural area</Name>
+									<Description/>
+									<Availability>None</Availability>
+									<Children>
+										<Item>
+											<ID>[E]DAA</ID>
+											<Name>Beach</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]DAB</ID>
+											<Name>Dunes</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]DAC</ID>
+											<Name>Lake</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]DAD</ID>
+											<Name>Meadow</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]DAE</ID>
+											<Name>Wetland</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]DAF</ID>
+											<Name>Watercourse</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[E]DB?</ID>
+									<Name>Recreational area</Name>
+									<Description/>
+									<Availability>None</Availability>
+									<Children>
+										<Item>
+											<ID>[E]DBA</ID>
+											<Name>Garden</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]DBB</ID>
+											<Name>Park</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]DBC</ID>
+											<Name>Campsite</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[E]DC?</ID>
+									<Name>Assembly area</Name>
+									<Description/>
+									<Availability>None</Availability>
+									<Children>
+										<Item>
+											<ID>[E]DCA</ID>
+											<Name>Meeting place</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]DCB</ID>
+											<Name>Market square</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]DCC</ID>
+											<Name>Training site</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]DCD</ID>
+											<Name>Playground</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[E]DD?</ID>
+									<Name>Production area</Name>
+									<Description/>
+									<Availability>None</Availability>
+									<Children>
+										<Item>
+											<ID>[E]DDA</ID>
+											<Name>Plot</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]DDB</ID>
+											<Name>Quarry</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]DDC</ID>
+											<Name>Pit</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]DDD</ID>
+											<Name>Woodland</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]DDE</ID>
+											<Name>Field</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[E]DE?</ID>
+									<Name>Sports field</Name>
+									<Description/>
+									<Availability>None</Availability>
+									<Children>
+										<Item>
+											<ID>[E]DEA</ID>
+											<Name>Playing field</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]DEB</ID>
+											<Name>Race track</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]DEC</ID>
+											<Name>Athletics track</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]DED</ID>
+											<Name>Swimming pool</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>[E]E??</ID>
+							<Name>Monument</Name>
+							<Description/>
+							<Availability>None</Availability>
+							<Children>
+								<Item>
+									<ID>[E]EA?</ID>
+									<Name>Memorial</Name>
+									<Description/>
+									<Availability>None</Availability>
+									<Children>
+										<Item>
+											<ID>[E]EAA</ID>
+											<Name>Cultural monument</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[E]EAB</ID>
+											<Name>Ancient monument</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>[E]Z??</ID>
+							<Name>Undefined</Name>
+							<Description/>
+							<Availability>None</Availability>
+							<Children>
+								<Item>
+									<ID>[E]ZZ?</ID>
+									<Name>Undefined</Name>
+									<Description/>
+									<Availability>None</Availability>
+									<Children>
+										<Item>
+											<ID>[E]ZZZ</ID>
+											<Name>Undefined</Name>
+											<Description/>
+											<Availability>None</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>Construction Spaces by Function</ID>
+					<Name/>
+					<Description>Assigns a functional classification to IFC Spaces (= ARCHICAD Zones) and IFC Zones based on this CCS (R1) specification.
+		</Description>
+					<Availability>Zone</Availability>
+					<Children>
+						<Item>
+							<ID>[A]A??</ID>
+							<Name>Space for human needs</Name>
+							<Description/>
+							<Availability>Zone</Availability>
+							<Children>
+								<Item>
+									<ID>[A]AA?</ID>
+									<Name>Occupiable room</Name>
+									<Description/>
+									<Availability>Zone</Availability>
+									<Children>
+										<Item>
+											<ID>[A]AAA</ID>
+											<Name>Room</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]AAB</ID>
+											<Name>Living room</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]AAC</ID>
+											<Name>Waiting room</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]AAD</ID>
+											<Name>Courtyard</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[A]AB?</ID>
+									<Name>Washroom</Name>
+									<Description/>
+									<Availability>Zone</Availability>
+									<Children>
+										<Item>
+											<ID>[A]ABA</ID>
+											<Name>Bathroom</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]ABB</ID>
+											<Name>Toilet</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]ABC</ID>
+											<Name>Nappy change</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]ABD</ID>
+											<Name>Changing room</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]ABE</ID>
+											<Name>Bathing room</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]ABF</ID>
+											<Name>Sauna</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[A]AC?</ID>
+									<Name>Isolation room</Name>
+									<Description/>
+									<Availability>Zone</Availability>
+									<Children>
+										<Item>
+											<ID>[A]ACA</ID>
+											<Name>Shelter</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]ACB</ID>
+											<Name>Cell</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[A]AD?</ID>
+									<Name>Workroom</Name>
+									<Description/>
+									<Availability>Zone</Availability>
+									<Children>
+										<Item>
+											<ID>[A]ADA</ID>
+											<Name>Office</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]ADB</ID>
+											<Name>Meeting room</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]ADC</ID>
+											<Name>Reception</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]ADD</ID>
+											<Name>Sales area</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]ADE</ID>
+											<Name>Teaching room</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]ADF</ID>
+											<Name>Study</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]ADG</ID>
+											<Name>Laundry</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]ADH</ID>
+											<Name>Packing room</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]ADJ</ID>
+											<Name>Treatment room</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]ADK</ID>
+											<Name>Examining room</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]ADL</ID>
+											<Name>Observation room</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]ADM</ID>
+											<Name>Viewing room</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]ADN</ID>
+											<Name>Media workshop</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]ADP</ID>
+											<Name>Goods reception room</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]ADQ</ID>
+											<Name>Mail room</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[A]AE?</ID>
+									<Name>Production room</Name>
+									<Description/>
+									<Availability>Zone</Availability>
+									<Children>
+										<Item>
+											<ID>[A]AEA</ID>
+											<Name>Kitchen</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]AEB</ID>
+											<Name>Materials workshop</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]AEC</ID>
+											<Name>Machine shop</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]AED</ID>
+											<Name>Studio</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[A]AF?</ID>
+									<Name>Laboratory</Name>
+									<Description/>
+									<Availability>Zone</Availability>
+									<Children>
+										<Item>
+											<ID>[A]AFA</ID>
+											<Name>Technical laboratory</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]AFB</ID>
+											<Name>Materials laboratory</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]AFC</ID>
+											<Name>Biology laboratory</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[A]AG?</ID>
+									<Name>Practice room</Name>
+									<Description/>
+									<Availability>Zone</Availability>
+									<Children>
+										<Item>
+											<ID>[A]AGA</ID>
+											<Name>Sports hall</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]AGB</ID>
+											<Name>Training room</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]AGC</ID>
+											<Name>Rehearsal room</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]AGD</ID>
+											<Name>Stage</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]AGE</ID>
+											<Name>Playroom</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[A]AH?</ID>
+									<Name>Assembly room</Name>
+									<Description/>
+									<Availability>Zone</Availability>
+									<Children>
+										<Item>
+											<ID>[A]AHA</ID>
+											<Name>Dining room</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]AHB</ID>
+											<Name>Auditorium</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]AHC</ID>
+											<Name>Hall</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]AHD</ID>
+											<Name>Gallery</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]AHE</ID>
+											<Name>Religious faith room</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]AHF</ID>
+											<Name>Library room</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>[A]C??</ID>
+							<Name>Storage space</Name>
+							<Description/>
+							<Availability>Zone</Availability>
+							<Children>
+								<Item>
+									<ID>[A]CA?</ID>
+									<Name>Materials store</Name>
+									<Description/>
+									<Availability>Zone</Availability>
+									<Children>
+										<Item>
+											<ID>[A]CAA</ID>
+											<Name>Refuse storage room</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]CAB</ID>
+											<Name>Chemicals store</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]CAC</ID>
+											<Name>Medicine store</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]CAD</ID>
+											<Name>Archive room</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]CAE</ID>
+											<Name>Liquids store</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]CAF</ID>
+											<Name>Raw materials store</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]CAG</ID>
+											<Name>Larder</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]CAH</ID>
+											<Name>Secure storage</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]CAJ</ID>
+											<Name>Packaging store</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]CAK</ID>
+											<Name>Clothes store</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]CAL</ID>
+											<Name>Building materials store</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[A]CB?</ID>
+									<Name>Equipment room</Name>
+									<Description/>
+									<Availability>Zone</Availability>
+									<Children>
+										<Item>
+											<ID>[A]CBA</ID>
+											<Name>Furniture store</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]CBB</ID>
+											<Name>Tool store</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]CBC</ID>
+											<Name>Instrument store</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]CBD</ID>
+											<Name>Garage</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]CBE</ID>
+											<Name>Cleaning room</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[A]CC?</ID>
+									<Name>Animal room</Name>
+									<Description/>
+									<Availability>Zone</Availability>
+									<Children>
+										<Item>
+											<ID>[A]CCA</ID>
+											<Name>Cage</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]CCB</ID>
+											<Name>Stall</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]CCC</ID>
+											<Name>Stable</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]CCD</ID>
+											<Name>Pool</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[A]CD?</ID>
+									<Name>Plant house</Name>
+									<Description/>
+									<Availability>Zone</Availability>
+									<Children>
+										<Item>
+											<ID>[A]CDA</ID>
+											<Name>Greenhouse</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]CDB</ID>
+											<Name>Conservatory</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[A]CE?</ID>
+									<Name>Mortuary</Name>
+									<Description/>
+									<Availability>Zone</Availability>
+									<Children>
+										<Item>
+											<ID>[A]CEA</ID>
+											<Name>Chapel of rest</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]CEB</ID>
+											<Name>Crypt</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>[A]D??</ID>
+							<Name>Room for technical systems</Name>
+							<Description/>
+							<Availability>Zone</Availability>
+							<Children>
+								<Item>
+									<ID>[A]DA?</ID>
+									<Name>Plant room</Name>
+									<Description/>
+									<Availability>Zone</Availability>
+									<Children>
+										<Item>
+											<ID>[A]DAA</ID>
+											<Name>Electrical plant room</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]DAB</ID>
+											<Name>IT equipment room</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]DAC</ID>
+											<Name>Mechanical plant room</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]DAD</ID>
+											<Name>Shared plant room</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[A]DB?</ID>
+									<Name>Equipment room</Name>
+									<Description/>
+									<Availability>Zone</Availability>
+									<Children>
+										<Item>
+											<ID>[A]DBA</ID>
+											<Name>Control equipment room</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]DBB</ID>
+											<Name>Production plant room</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]DBC</ID>
+											<Name>Service equipment room</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]DBD</ID>
+											<Name>Analysis equipment room</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>[A]E??</ID>
+							<Name>Space for infrastructure</Name>
+							<Description/>
+							<Availability>Zone</Availability>
+							<Children>
+								<Item>
+									<ID>[A]EA?</ID>
+									<Name>Circulation space</Name>
+									<Description/>
+									<Availability>Zone</Availability>
+									<Children>
+										<Item>
+											<ID>[A]EAA</ID>
+											<Name>Anteroom</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]EAB</ID>
+											<Name>Airlock</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]EAC</ID>
+											<Name>Corridor</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]EAD</ID>
+											<Name>Stairwell</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]EAE</ID>
+											<Name>Lift space</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]EAF</ID>
+											<Name>Portico</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[A]EB?</ID>
+									<Name>Services duct</Name>
+									<Description/>
+									<Availability>Zone</Availability>
+									<Children>
+										<Item>
+											<ID>[A]EBA</ID>
+											<Name>Services tunnel</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]EBB</ID>
+											<Name>Shaft</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]EBC</ID>
+											<Name>Duct</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[A]EC?</ID>
+									<Name>Transport space</Name>
+									<Description/>
+									<Availability>Zone</Availability>
+									<Children>
+										<Item>
+											<ID>[A]ECA</ID>
+											<Name>Clearance profile</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[A]ECB</ID>
+											<Name>Tunnel</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>[A]Z??</ID>
+							<Name>Undefined</Name>
+							<Description/>
+							<Availability>Zone</Availability>
+							<Children>
+								<Item>
+									<ID>[A]ZZ?</ID>
+									<Name>Undefined</Name>
+									<Description/>
+									<Availability>Zone</Availability>
+									<Children>
+										<Item>
+											<ID>[A]ZZZ</ID>
+											<Name>Undefined</Name>
+											<Description/>
+											<Availability>Zone</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>Construction Elements - Functional Systems</ID>
+					<Name/>
+					<Description>Assigns a classification by Function, Location and/or Shape to ARCHICAD Construction Elements based on this CCS (R1) specification.</Description>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>[L]A</ID>
+							<Name>Ground system</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>[L]B</ID>
+							<Name>Wall system</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>[L]C</ID>
+							<Name>Structural floor system</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>[L]D</ID>
+							<Name>Roof system</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>[L]E</ID>
+							<Name>Gas and air system</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>[L]F</ID>
+							<Name>Water and fluid system</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>[L]G</ID>
+							<Name>Drainage and waste system</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>[L]H</ID>
+							<Name>Cooling and heating system</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>[L]J</ID>
+							<Name>Ventilation system</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>[L]K</ID>
+							<Name>Electrical system</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>[L]L</ID>
+							<Name>Automation system</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>[L]M</ID>
+							<Name>IT and communication system</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>[L]N</ID>
+							<Name>Transportation system</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>[L]P</ID>
+							<Name>Fitting out system</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>Construction Elements - Technical Systems</ID>
+					<Name/>
+					<Description>Assigns a classification by Function, Location and/or Shape to ARCHICAD Construction Elements based on this CCS (R1) specification.</Description>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>[L]A?</ID>
+							<Name>Assembling technical system</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>[L]AA</ID>
+									<Name>Pavement assembly</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]AB</ID>
+									<Name>Foundation assembly</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]AC</ID>
+									<Name>Floor separating assembly</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]AD</ID>
+									<Name>Wall assembly</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]AE</ID>
+									<Name>Roof assembly</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]AF</ID>
+									<Name>Stairway assembly</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]AG</ID>
+									<Name>Ramp assembly</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>[L]B?</ID>
+							<Name>Structural technical system</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>[L]BA</ID>
+									<Name>Groundworks structure</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]BB</ID>
+									<Name>Foundation structure</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]BC</ID>
+									<Name>Slab structure</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]BD</ID>
+									<Name>Wall structure</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]BE</ID>
+									<Name>Roof structure</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]BF</ID>
+									<Name>Floor structure</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]BG</ID>
+									<Name>Ceiling structure</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>[L]H?</ID>
+							<Name>Supplying technical system</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>[L]HA</ID>
+									<Name>Gas and air supply system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]HB</ID>
+									<Name>Water supply system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]HC</ID>
+									<Name>Cooling supply system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]HD</ID>
+									<Name>Heating supply system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]HE</ID>
+									<Name>Combined heating and cooling supply system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]HF</ID>
+									<Name>Ventilation plant</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]HG</ID>
+									<Name>Power supply system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]HH</ID>
+									<Name>Lighting system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]HJ</ID>
+									<Name>Signal supply system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>[L]J?</ID>
+							<Name>Transporting technical system</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>[L]JA</ID>
+									<Name>Gas distribution system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]JB</ID>
+									<Name>Water distribution system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]JC</ID>
+									<Name>Chemical distribution system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]JD</ID>
+									<Name>Effluent system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]JE</ID>
+									<Name>Refuse system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]JF</ID>
+									<Name>Cooling distribution system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]JG</ID>
+									<Name>Heating distribution system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]JH</ID>
+									<Name>Combined heating and cooling distribution system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]JJ</ID>
+									<Name>Air distribution system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]JK</ID>
+									<Name>Power distribution system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]JL</ID>
+									<Name>Signal distribution system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]JM</ID>
+									<Name>Person transportation system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]JN</ID>
+									<Name>Goods transportation system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]JP</ID>
+									<Name>Building services routing</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>[L]K?</ID>
+							<Name>Processing technical system</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>[L]KA</ID>
+									<Name>Solar screening system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]KB</ID>
+									<Name>Door and window opening system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]KC</ID>
+									<Name>Filtration system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]KD</ID>
+									<Name>Separator system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]KE</ID>
+									<Name>Water treatment system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]KF</ID>
+									<Name>Pump system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]KG</ID>
+									<Name>Pressure and expansion system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]KH</ID>
+									<Name>Converter system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]KJ</ID>
+									<Name>Aerial system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]KK</ID>
+									<Name>Weather station system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]KL</ID>
+									<Name>Access system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>[L]L?</ID>
+							<Name>Monitoring technical system</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>[L]LA</ID>
+									<Name>Gas alarm system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]LB</ID>
+									<Name>Fire alarm system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]LC</ID>
+									<Name>Automation system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]LD</ID>
+									<Name>Access control system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]LE</ID>
+									<Name>Alarm system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]LF</ID>
+									<Name>CCTV system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>[L]M?</ID>
+							<Name>Information presenting  technical system</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>[L]MA</ID>
+									<Name>Warning system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]MB</ID>
+									<Name>Audio-Video system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]MC</ID>
+									<Name>Traffic control system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>[L]P?</ID>
+							<Name>Protecting technical system</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>[L]PA</ID>
+									<Name>Fire protection system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]PB</ID>
+									<Name>Firefighting system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]PC</ID>
+									<Name>Earthing system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]PD</ID>
+									<Name>Lightning protection system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]PE</ID>
+									<Name>Cathodic protection system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>[L]Q?</ID>
+							<Name>Storing technical system</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>[L]QA</ID>
+									<Name>Meter system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]QB</ID>
+									<Name>Gas and air storage system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]QC</ID>
+									<Name>Liquid storage system</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>[L]R?</ID>
+							<Name>Furnishing technical system</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>[L]RA</ID>
+									<Name>Planting</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]RB</ID>
+									<Name>Furniture</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+								<Item>
+									<ID>[L]RC</ID>
+									<Name>Equipment</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children/>
+								</Item>
+							</Children>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>Construction Elements - Components</ID>
+					<Name/>
+					<Description>Assigns a classification by Function, Location and/or Shape to ARCHICAD Construction Elements based on this CCS (R1) specification.</Description>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>[L]B??</ID>
+							<Name>Converting component</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>[L]BA?</ID>
+									<Name>Electrical potential converting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]BAA</ID>
+											<Name>Measuring relay (voltage)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BAB</ID>
+											<Name>Measuring transformer (voltage)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]BC?</ID>
+									<Name>Electrical current converting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]BCA</ID>
+											<Name>Measuring relay (current)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BCB</ID>
+											<Name>Measuring transformer (current)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]BD?</ID>
+									<Name>Density converting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]BDA</ID>
+											<Name>Density transmitter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BDB</ID>
+											<Name>Density switch</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]BE?</ID>
+									<Name>Electromagnetic variable converting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]BEA</ID>
+											<Name>Measuring relay</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BEB</ID>
+											<Name>Electromagnetic measuring transformer</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]BF?</ID>
+									<Name>Flow converting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]BFA</ID>
+											<Name>Liquid flow meter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BFB</ID>
+											<Name>Gas flow meter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BFC</ID>
+											<Name>Air flow transmitter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BFD</ID>
+											<Name>Air flow switch</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]BG?</ID>
+									<Name>Position converting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]BGA</ID>
+											<Name>Position transmitter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BGB</ID>
+											<Name>Position switch</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BGC</ID>
+											<Name>Motion detector</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BGD</ID>
+											<Name>Directional detector</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]BJ?</ID>
+									<Name>Consumption converting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]BJA</ID>
+											<Name>Gas meter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BJB</ID>
+											<Name>Cooling consumption meter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BJC</ID>
+											<Name>Heat consumption meter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BJD</ID>
+											<Name>Electricity meter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]BK?</ID>
+									<Name>Time converting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]BKA</ID>
+											<Name>Time counter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BKB</ID>
+											<Name>Timer switch</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]BL?</ID>
+									<Name>Level converting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]BLA</ID>
+											<Name>Level transmitter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BLB</ID>
+											<Name>Level switch</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]BM?</ID>
+									<Name>Moisture content converting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]BMA</ID>
+											<Name>Humidity transmitter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BMB</ID>
+											<Name>Humidity switch</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]BP?</ID>
+									<Name>Pressure converting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]BPA</ID>
+											<Name>Pressure transmitter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BPB</ID>
+											<Name>Pressure switch</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]BQ?</ID>
+									<Name>Quality converting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]BQA</ID>
+											<Name>Air quality meter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BQB</ID>
+											<Name>Air quality detector</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BQC</ID>
+											<Name>Smoke transmitter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BQD</ID>
+											<Name>Smoke detector</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]BR?</ID>
+									<Name>Radiation converting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]BRA</ID>
+											<Name>Light transmitter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BRB</ID>
+											<Name>Light switch</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BRC</ID>
+											<Name>Flame detector</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BRD</ID>
+											<Name>Photocell</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]BS?</ID>
+									<Name>Velocity/ frequency converting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]BSA</ID>
+											<Name>Frequency meter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BSB</ID>
+											<Name>Speedometer</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BSC</ID>
+											<Name>Tachometer</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BSD</ID>
+											<Name>Accelerometer</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BSE</ID>
+											<Name>Vibration detector</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]BT?</ID>
+									<Name>Temperature converting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]BTA</ID>
+											<Name>Temperature transmitter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BTB</ID>
+											<Name>Temperature switch</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]BU?</ID>
+									<Name>Multivariate converting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]BUA</ID>
+											<Name>Multi transmitter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BUB</ID>
+											<Name>Multi switch</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BUC</ID>
+											<Name>Encoder</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]BW?</ID>
+									<Name>Weight or force converting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]BWA</ID>
+											<Name>Load cell</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BWB</ID>
+											<Name>Force meter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]BX?</ID>
+									<Name>Sound and image converting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]BXA</ID>
+											<Name>Microphone</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BXB</ID>
+											<Name>Camera</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]BY?</ID>
+									<Name>Matter converting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]BYA</ID>
+											<Name>Plant</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]BZ?</ID>
+									<Name>Event converting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]BZA</ID>
+											<Name>Quantity meter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BZB</ID>
+											<Name>Liquid detector</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BZC</ID>
+											<Name>Card reader</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BZE</ID>
+											<Name>Cycle detector</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BZF</ID>
+											<Name>Syncronising device</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]BZG</ID>
+											<Name>Conductivity meter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>[L]C??</ID>
+							<Name>Storing  component</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>[L]CA?</ID>
+									<Name>Capacitative storing component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]CAA</ID>
+											<Name>Capacitor</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]CF?</ID>
+									<Name>Information storing component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]CFA</ID>
+											<Name>Storage media</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]CM?</ID>
+									<Name>Enclosed stationary storing component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]CMA</ID>
+											<Name>Tank</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]CMB</ID>
+											<Name>Pool</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]CMC</ID>
+											<Name>Box</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]CN?</ID>
+									<Name>Enclosed moveable storing component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]CNA</ID>
+											<Name>Container</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]CNB</ID>
+											<Name>Gas cylinder</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]CNC</ID>
+											<Name>Drum</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]CND</ID>
+											<Name>Lift car</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]CP?</ID>
+									<Name>Thermal energy storing component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]CPA</ID>
+											<Name>Hot water tank</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]CPB</ID>
+											<Name>Ice tank</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]CPC</ID>
+											<Name>Steam tank</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>[L]E??</ID>
+							<Name>Energy supplying component</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>[L]EA?</ID>
+									<Name>Light emitting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]EAA</ID>
+											<Name>Incandescent lamp</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]EAB</ID>
+											<Name>Fluorescent lamp</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]EAC</ID>
+											<Name>LED lamp</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]EB?</ID>
+									<Name>Electric thermal energy generating component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]EBA</ID>
+											<Name>Electrical boiler</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]EBB</ID>
+											<Name>Electric heating surface</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]EBC</ID>
+											<Name>Heating cable</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]EBD</ID>
+											<Name>Electric hot air blower</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]EBE</ID>
+											<Name>Electric heating pipe</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]EM?</ID>
+									<Name>Combusting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]EMA</ID>
+											<Name>Stove</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]EMB</ID>
+											<Name>Boiler</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]EMC</ID>
+											<Name>Burner</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]EP?</ID>
+									<Name>Heat transferring component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]EPA</ID>
+											<Name>Heating surface</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]EPB</ID>
+											<Name>Water heater</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]EPC</ID>
+											<Name>Heat exchanger</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]EPD</ID>
+											<Name>Heat pump</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]EPE</ID>
+											<Name>Radiator</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]EPF</ID>
+											<Name>Heating pipe</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]EPG</ID>
+											<Name>Heating panel</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]EQ?</ID>
+									<Name>Convection cooling component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]EQA</ID>
+											<Name>Cooling surface</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]EQB</ID>
+											<Name>Evaporator</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]EQC</ID>
+											<Name>Cooling pump</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]EQD</ID>
+											<Name>Cooling tower</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]EQE</ID>
+											<Name>Cooling panel</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]EQF</ID>
+											<Name>Dry chiller</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]ES?</ID>
+									<Name>Evaporative cooling component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]ESA</ID>
+											<Name>Chiller</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]EV?</ID>
+									<Name>Radiant energy heating component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]EVA</ID>
+											<Name>Solar panel</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]EZ?</ID>
+									<Name>Combined energy supplying component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]EZA</ID>
+											<Name>Heating ventilator</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]EZB</ID>
+											<Name>Heating/cooling pipe</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]EZC</ID>
+											<Name>Cooling fancoil</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]EZD</ID>
+											<Name>Combined heating and cooling fancoil</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>[L]F??</ID>
+							<Name>Protecting component</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>[L]FA?</ID>
+									<Name>Overvoltage protecting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]FAA</ID>
+											<Name>Lightning arrester</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]FAB</ID>
+											<Name>Surge arrester</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]FB?</ID>
+									<Name>Fault current protecting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]FBA</ID>
+											<Name>Residual current device</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]FC?</ID>
+									<Name>Overcurrent protecting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]FCA</ID>
+											<Name>Fuse</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]FCB</ID>
+											<Name>Circuit breaker</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]FL?</ID>
+									<Name>Pressure related protecting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]FLA</ID>
+											<Name>Safety valve</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]FLB</ID>
+											<Name>Safety damper</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]FLC</ID>
+											<Name>Vacuum breaker</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]FM?</ID>
+									<Name>Fire protecting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]FMA</ID>
+											<Name>Fire damper</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]FMB</ID>
+											<Name>Flue damper</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]FMC</ID>
+											<Name>Combined fire and flue damper</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]FMD</ID>
+											<Name>Fire cuff</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]FME</ID>
+											<Name>Fire blind</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]FMF</ID>
+											<Name>Smoke curtain</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]FMG</ID>
+											<Name>Smoke closure</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]FQ?</ID>
+									<Name>Preventing component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]FQA</ID>
+											<Name>Bird mesh</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]FQB</ID>
+											<Name>Snow guard</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]FQC</ID>
+											<Name>Handrail</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]FQD</ID>
+											<Name>Guard rail</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]FQE</ID>
+											<Name>Weed control fabric</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]FR?</ID>
+									<Name>Climate protecting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]FRA</ID>
+											<Name>Plaster</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]FRB</ID>
+											<Name>Paint</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]FRC</ID>
+											<Name>Impregnation</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]FRD</ID>
+											<Name>Corrosion protection</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]FRE</ID>
+											<Name>Subbase</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>[L]G??</ID>
+							<Name>Flow generating component</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>[L]GA?</ID>
+									<Name>Mechanical energy component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]GAA</ID>
+											<Name>Generator</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]GAB</ID>
+											<Name>Dynamo</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]GB?</ID>
+									<Name>Chemical energy component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]GBA</ID>
+											<Name>Battery</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]GBB</ID>
+											<Name>Fuel cell</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]GC?</ID>
+									<Name>Radiant energy component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]GCA</ID>
+											<Name>Solar cell</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]GF?</ID>
+									<Name>Signal generating component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]GFA</ID>
+											<Name>Television station</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]GFB</ID>
+											<Name>Telephone exchange</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]GP?</ID>
+									<Name>Fluid flow generating component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]GPA</ID>
+											<Name>Pump</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]GQ?</ID>
+									<Name>Gas or air flow generating component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]GQA</ID>
+											<Name>Ventilator</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]GQB</ID>
+											<Name>Compressor</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]GQC</ID>
+											<Name>Vacuum pump</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>[L]H??</ID>
+							<Name>Separating component</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>[L]HN?</ID>
+									<Name>Gravity separating component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]HNA</ID>
+											<Name>Separator</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]HNB</ID>
+											<Name>Settling tank</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]HP?</ID>
+									<Name>Thermal separating component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]HPA</ID>
+											<Name>Drying unit</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]HPB</ID>
+											<Name>Dehumidifier</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]HQ?</ID>
+									<Name>Filtration separating component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]HQA</ID>
+											<Name>Filter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]HQB</ID>
+											<Name>Rake</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]HR?</ID>
+									<Name>Electrostatic separating component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]HRA</ID>
+											<Name>Electrostatic filter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]HRB</ID>
+											<Name>Magnetic seperator</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>[L]K??</ID>
+							<Name>Information processing component</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>[L]KF?</ID>
+									<Name>Electrical signalling component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]KFA</ID>
+											<Name>Relay</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]KFB</ID>
+											<Name>Time relay</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]KFC</ID>
+											<Name>Computer</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]KFD</ID>
+											<Name>Control unit</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]KFE</ID>
+											<Name>IT switch</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]KFF</ID>
+											<Name>I/O module</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]KFG</ID>
+											<Name>Transmitter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]KFH</ID>
+											<Name>Receiver</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]KG?</ID>
+									<Name>Optical signalling component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]KGA</ID>
+											<Name>Optical switch</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]KGB</ID>
+											<Name>Optical router</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]KGC</ID>
+											<Name>Optical transmitter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]KGD</ID>
+											<Name>Optical receiver</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]KGE</ID>
+											<Name>Optical repeater</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]KH?</ID>
+									<Name>Mechanical signalling component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]KHA</ID>
+											<Name>Mechanical regulator</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]KZ?</ID>
+									<Name>Combined signalling component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]KZA</ID>
+											<Name>Combined transmitter/receiver</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]KZB</ID>
+											<Name>Tablet computer</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]KZC</ID>
+											<Name>Magnetic card writer</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>[L]M??</ID>
+							<Name>Powering component</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>[L]MA?</ID>
+									<Name>Electromagnetic drive component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]MAA</ID>
+											<Name>Electric motor</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]MAB</ID>
+											<Name>Linear motor</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]MAC</ID>
+											<Name>Electric actuator</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]ML?</ID>
+									<Name>Mechanical drive component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]MLA</ID>
+											<Name>Mechanical actuator</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]MLB</ID>
+											<Name>Door closer</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]MS?</ID>
+									<Name>Chemical drive component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]MSA</ID>
+											<Name>Combustion engine</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>[L]N??</ID>
+							<Name>Covering component</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>[L]NA?</ID>
+									<Name>Infilling component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]NAA</ID>
+											<Name>Pane</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]NAB</ID>
+											<Name>Panel</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]NAC</ID>
+											<Name>Grating</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]NAD</ID>
+											<Name>Joint</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]NAE</ID>
+											<Name>Gasket</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]NB?</ID>
+									<Name>Closing component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]NBA</ID>
+											<Name>Door leaf</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]NBB</ID>
+											<Name>Leaf of large door</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]NBC</ID>
+											<Name>Cupboard door</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]NBD</ID>
+											<Name>Gate frame</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]NBE</ID>
+											<Name>Hatch cover</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]NC?</ID>
+									<Name>Finishing component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]NCA</ID>
+											<Name>Paving</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]NCB</ID>
+											<Name>Wallcovering</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]NCC</ID>
+											<Name>Flooring</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]NCD</ID>
+											<Name>Ceiling finish</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]NCE</ID>
+											<Name>Roofing</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]NCF</ID>
+											<Name>Window sill</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]NCG</ID>
+											<Name>Window board</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]NCH</ID>
+											<Name>Reveal liner</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]NCJ</ID>
+											<Name>Architrave</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]NCK</ID>
+											<Name>Skirting board</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]NCL</ID>
+											<Name>Base shoe</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]NCM</ID>
+											<Name>Ridge</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]NCN</ID>
+											<Name>Flashing</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]NCP</ID>
+											<Name>Flaunching</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]NCQ</ID>
+											<Name>Bushing</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]NCR</ID>
+											<Name>Key plate</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]NCS</ID>
+											<Name>Door rose</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]ND?</ID>
+									<Name>Terminating component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]NDA</ID>
+											<Name>Edge</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]NDB</ID>
+											<Name>Crown</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]NDC</ID>
+											<Name>Eaves</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]NDD</ID>
+											<Name>Overhang</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]NDE</ID>
+											<Name>Barge</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>[L]P??</ID>
+							<Name>Information presenting component</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>[L]PF?</ID>
+									<Name>Discrete state component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]PFA</ID>
+											<Name>Signal lamp</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]PFB</ID>
+											<Name>Blinker</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]PFC</ID>
+											<Name>Traffic signal</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]PG?</ID>
+									<Name>Discrete variable component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]PGA</ID>
+											<Name>Thermometer</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]PGB</ID>
+											<Name>Barometer</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]PGC</ID>
+											<Name>Hygrometer</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]PGD</ID>
+											<Name>Pressure indicator</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]PGE</ID>
+											<Name>Tachometer</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]PGF</ID>
+											<Name>Ammeter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]PGG</ID>
+											<Name>Voltmeter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]PGH</ID>
+											<Name>Wattmeter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]PGJ</ID>
+											<Name>Frequency meter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]PGK</ID>
+											<Name>Watt-hour meter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]PGL</ID>
+											<Name>Clock</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]PGM</ID>
+											<Name>Cos-phi meter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]PGN</ID>
+											<Name>VAR meter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]PH?</ID>
+									<Name>Variable information component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]PHA</ID>
+											<Name>Display</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]PHB</ID>
+											<Name>Projector</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]PHC</ID>
+											<Name>Printer</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]PHD</ID>
+											<Name>Sign</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]PHE</ID>
+											<Name>Marking</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]PJ?</ID>
+									<Name>Audible information component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]PJA</ID>
+											<Name>Loudspeaker</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]PJB</ID>
+											<Name>Horn</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]PJC</ID>
+											<Name>Bell</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]PL?</ID>
+									<Name>Adorning component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]PLA</ID>
+											<Name>Cornice</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]PLB</ID>
+											<Name>Figure</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]PLC</ID>
+											<Name>Frieze</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]PLD</ID>
+											<Name>Stucco</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]PLE</ID>
+											<Name>Picture</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]PLF</ID>
+											<Name>Carpet</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>[L]Q??</ID>
+							<Name>Opening and closing component</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>[L]QA?</ID>
+									<Name>Electrically connecting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]QAA</ID>
+											<Name>Contactor</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]QAB</ID>
+											<Name>Motor starter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]QAC</ID>
+											<Name>Thyristor</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]QB?</ID>
+									<Name>Electrically separating component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]QBA</ID>
+											<Name>Load-break switch</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]QBB</ID>
+											<Name>Fuse-switch disconnector</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]QC?</ID>
+									<Name>Electrically earthing component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]QCA</ID>
+											<Name>Earthing switch</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]QM?</ID>
+									<Name>Mechanically connecting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]QMA</ID>
+											<Name>Shutoff valve</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]QMB</ID>
+											<Name>On-off damper</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]QN?</ID>
+									<Name>Mechanically varying component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]QNA</ID>
+											<Name>Control valve</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]QNB</ID>
+											<Name>Control damper</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]QQ?</ID>
+									<Name>Access granting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]QQA</ID>
+											<Name>Window</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]QQB</ID>
+											<Name>Window unit</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]QQC</ID>
+											<Name>Door</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]QQD</ID>
+											<Name>Hatch</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]QQE</ID>
+											<Name>Large door</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]QQF</ID>
+											<Name>Gate</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>[L]R??</ID>
+							<Name>Regulating component</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>[L]RA?</ID>
+									<Name>Electrically limiting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]RAA</ID>
+											<Name>Diode</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]RAB</ID>
+											<Name>Induction coil</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]RAC</ID>
+											<Name>Resistor</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]RB?</ID>
+									<Name>Electrically stabilising component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]RBA</ID>
+											<Name>Uninterruptible power supply (UPS)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]RBB</ID>
+											<Name>Harmonic filter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]RBC</ID>
+											<Name>Phase compensation</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]RF?</ID>
+									<Name>Signal stabilising component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]RFA</ID>
+											<Name>Equaliser</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]RFB</ID>
+											<Name>Electric filter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]RL?</ID>
+									<Name>Mechanically limiting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]RLA</ID>
+											<Name>Lock</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]RLB</ID>
+											<Name>Rat stop device</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]RLC</ID>
+											<Name>Shock absorber</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]RM?</ID>
+									<Name>Fluid flow restricting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]RMA</ID>
+											<Name>Non-return valve</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]RMB</ID>
+											<Name>Regulation valve</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]RMC</ID>
+											<Name>Nozzle</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]RMD</ID>
+											<Name>Trap</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]RN?</ID>
+									<Name>Air flow restricting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]RNA</ID>
+											<Name>Check damper</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]RNB</ID>
+											<Name>Regulation damper</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]RNC</ID>
+											<Name>Diffusor</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]RQ?</ID>
+									<Name>Climate stabilising component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]RQA</ID>
+											<Name>Insulation</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]RQB</ID>
+											<Name>Membrane</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]RQC</ID>
+											<Name>Noise protection</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]RQD</ID>
+											<Name>Screen</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]RQE</ID>
+											<Name>Curtain</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]RQF</ID>
+											<Name>Louvred blind</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]RQG</ID>
+											<Name>Shutter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]RU?</ID>
+									<Name>Access restricting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]RUA</ID>
+											<Name>Fence</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]RUB</ID>
+											<Name>Bar</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]RUC</ID>
+											<Name>Turnstile</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]RUD</ID>
+											<Name>Bollard</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]RV?</ID>
+									<Name>Inward visibility restricting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]RVA</ID>
+											<Name>Blind</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>[L]S??</ID>
+							<Name>Manually converting component</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>[L]SF?</ID>
+									<Name>Electrical signalling component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]SFA</ID>
+											<Name>Switch</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]SFB</ID>
+											<Name>Selector</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]SFC</ID>
+											<Name>Pushbutton</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]SFD</ID>
+											<Name>Panel</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]SFE</ID>
+											<Name>Keyboard</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]SG?</ID>
+									<Name>Optical-acoustic signalling componemt</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]SGA</ID>
+											<Name>Emergency alarm</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]SL?</ID>
+									<Name>Mechanical signalling component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]SLA</ID>
+											<Name>Handle</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]SLB</ID>
+											<Name>Key cylinder</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>[L]T??</ID>
+							<Name>Transforming component</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>[L]TA?</ID>
+									<Name>Electrical energy transforming component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]TAA</ID>
+											<Name>Transformer</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]TAB</ID>
+											<Name>Isolating transformer</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]TAC</ID>
+											<Name>Rectifier</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]TAD</ID>
+											<Name>Inverter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]TAE</ID>
+											<Name>Frequency converter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]TF?</ID>
+									<Name>Signal transforming component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]TFA</ID>
+											<Name>Amplifier</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]TFB</ID>
+											<Name>Aerial</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]TFC</ID>
+											<Name>Gateway</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]TM?</ID>
+									<Name>Form converting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]TMA</ID>
+											<Name>Waste grinder</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]TT?</ID>
+									<Name>Mixing component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]TTA</ID>
+											<Name>Humidifier</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]TTB</ID>
+											<Name>Mixer</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]TTC</ID>
+											<Name>Fog generator</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>[L]U??</ID>
+							<Name>Fixing component</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>[L]UA?</ID>
+									<Name>Enclosing component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]UAA</ID>
+											<Name>Electrical panel</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]UAB</ID>
+											<Name>Rack</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]UAC</ID>
+											<Name>Light fixture</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]UAD</ID>
+											<Name>Hose reel cubicle</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]UB?</ID>
+									<Name>Supporting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]UBA</ID>
+											<Name>Service duct</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]UBB</ID>
+											<Name>Hanger</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]UBC</ID>
+											<Name>Insulator</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]UBD</ID>
+											<Name>Pylon</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]UK?</ID>
+									<Name>Structural component in subbase</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]UKA</ID>
+											<Name>Sub-base</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]UKB</ID>
+											<Name>Screed</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]UKC</ID>
+											<Name>Earth anchor</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]UKD</ID>
+											<Name>Foundation column</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]UKE</ID>
+											<Name>Foundation beam</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]UKF</ID>
+											<Name>Foundation slab plate</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]UKG</ID>
+											<Name>Foundation mass</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]UKH</ID>
+											<Name>Foundation wall plate</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]UL?</ID>
+									<Name>Structural component outside sublease</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]ULC</ID>
+											<Name>Plinth</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]ULD</ID>
+											<Name>Column</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]ULE</ID>
+											<Name>Beam</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]ULF</ID>
+											<Name>Tension brace</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]ULG</ID>
+											<Name>Stone</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]ULH</ID>
+											<Name>Block</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]ULJ</ID>
+											<Name>Mass</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]ULK</ID>
+											<Name>Floorslab</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]ULL</ID>
+											<Name>Subfloor</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]ULM</ID>
+											<Name>Wall plate</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]ULN</ID>
+											<Name>Corbel</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]ULP</ID>
+											<Name>Stringer</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]ULQ</ID>
+											<Name>Step</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]ULR</ID>
+											<Name>Baluster</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]ULS</ID>
+											<Name>Underlay (backing)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]ULT</ID>
+											<Name>Bearing plate</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]ULU</ID>
+											<Name>Stake</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]UM?</ID>
+									<Name>Reinforcing component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]UMA</ID>
+											<Name>Reinforcement bar</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]UMB</ID>
+											<Name>Reinforcement mesh</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]UMC</ID>
+											<Name>Pavement reinforcement</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]UN?</ID>
+									<Name>Framing component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]UNA</ID>
+											<Name>Frame</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]UNB</ID>
+											<Name>Threshold</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]UNC</ID>
+											<Name>Frame</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]UND</ID>
+											<Name>Glazing bar</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]UP?</ID>
+									<Name>Jointing component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]UPA</ID>
+											<Name>Jointing device</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]UPB</ID>
+											<Name>Structural joint</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]UPC</ID>
+											<Name>Mechanical joint</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]UPD</ID>
+											<Name>Chemical joint</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]UQ?</ID>
+									<Name>connecting device</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]UQA</ID>
+											<Name>Permanent mechanical fixing</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]UQB</ID>
+											<Name>Reversible mechanical fixing</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]UQC</ID>
+											<Name>Chemical fixing</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>[L]W??</ID>
+							<Name>Transporting component</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>[L]WB?</ID>
+									<Name>High voltage transmission component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]WBA</ID>
+											<Name>High voltage busbar</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]WBB</ID>
+											<Name>High voltage cable</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]WD?</ID>
+									<Name>Low voltage transmission component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]WDA</ID>
+											<Name>Low voltage busbar</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]WDB</ID>
+											<Name>Low voltage cable</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]WE?</ID>
+									<Name>Earthing potential transmission component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]WEA</ID>
+											<Name>Earthing rail</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]WEB</ID>
+											<Name>Earthing cable</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]WEC</ID>
+											<Name>Equipotential bonding rail</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]WED</ID>
+											<Name>Equipotential bonding connection</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]WG?</ID>
+									<Name>Electronic signal transmission component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]WGA</ID>
+											<Name>Control cable</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]WGB</ID>
+											<Name>Data cable</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]WGC</ID>
+											<Name>Aerial cable</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]WH?</ID>
+									<Name>Optical signal transmission component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]WHA</ID>
+											<Name>Fibre cable</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]WHB</ID>
+											<Name>Fiber optical cable</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]WM?</ID>
+									<Name>Open liquid transporting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]WMA</ID>
+											<Name>Drainage layer</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]WMB</ID>
+											<Name>Gutter</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]WMC</ID>
+											<Name>Flashing</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]WMD</ID>
+											<Name>Drip nose</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]WME</ID>
+											<Name>Gutter drip</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]WP?</ID>
+									<Name>Enclosed transporting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]WPA</ID>
+											<Name>Pipe</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]WPB</ID>
+											<Name>Duct</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]WPC</ID>
+											<Name>Water hose</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]WPD</ID>
+											<Name>Air hose</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]WPE</ID>
+											<Name>Chimney</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]WU?</ID>
+									<Name>Organic matter transporting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]WUA</ID>
+											<Name>Growth layer</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>[L]X??</ID>
+							<Name>Connecting component</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>[L]XD?</ID>
+									<Name>Electrical power connecting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]XDA</ID>
+											<Name>Low voltage terminal</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]XDB</ID>
+											<Name>Power socket</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]XDC</ID>
+											<Name>Terminal box</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]XDD</ID>
+											<Name>Power outlet</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]XDE</ID>
+											<Name>Power distributor</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]XDF</ID>
+											<Name>Services chamber</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]XE?</ID>
+									<Name>Potential connecting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]XEA</ID>
+											<Name>Earth terminal</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]XEB</ID>
+											<Name>Equipotential bonding terminal</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]XEC</ID>
+											<Name>Ground terminal</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]XED</ID>
+											<Name>Earting rod</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]XEE</ID>
+											<Name>Collector</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]XG?</ID>
+									<Name>Signal connecting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]XGA</ID>
+											<Name>Signal socket</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]XGB</ID>
+											<Name>Terminal outlet</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]XGC</ID>
+											<Name>Patch panel</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]XGD</ID>
+											<Name>Signal distributor</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]XL?</ID>
+									<Name>Terminal to flow connecting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]XLA</ID>
+											<Name>Draw-off tap</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]XLB</ID>
+											<Name>Shower</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]XLC</ID>
+											<Name>Sink</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]XLD</ID>
+											<Name>Toilet</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]XLE</ID>
+											<Name>Urinal</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]XLF</ID>
+											<Name>Drip cup</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]XLG</ID>
+											<Name>Vent</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]XLH</ID>
+											<Name>Floor drain</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]XM?</ID>
+									<Name>Flow to flow connecting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]XMA</ID>
+											<Name>Hose coupling</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]XMB</ID>
+											<Name>Pipe coupling</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]XMC</ID>
+											<Name>Pipe fitting</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]XMD</ID>
+											<Name>Pipe flange</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]XME</ID>
+											<Name>Chamber</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]XMF</ID>
+											<Name>Duct fitting</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]XS?</ID>
+									<Name>Level connecting component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]XSA</ID>
+											<Name>Landing</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]XSB</ID>
+											<Name>Flight of stairs</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]XSC</ID>
+											<Name>Ladder</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>[L]XT?</ID>
+									<Name>Space linking component</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>[L]XTA</ID>
+											<Name>Hole</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]XTB</ID>
+											<Name>Box-out</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>[L]XTC</ID>
+											<Name>Excavation</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+					</Children>
+				</Item>
+			</Items>
+		</System>
+	</Classification>
+</BuildingInformation>

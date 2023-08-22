@@ -78,6 +78,7 @@ classes = (
     opening.AddPotentialHalfSpaceSolid,
     opening.AddPotentialOpening,
     opening.EditOpenings,
+    opening.CloneOpening,
     opening.FlipFill,
     opening.HideBooleans,
     opening.HideOpenings,

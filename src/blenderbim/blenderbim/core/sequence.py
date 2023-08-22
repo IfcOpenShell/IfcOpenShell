@@ -196,25 +196,25 @@ def edit_task_time(ifc, sequence, task_time=None):
 
 
 def assign_predecessor(ifc, sequence, task=None):
-    predecessor_task = sequence.get_active_task()
+    predecessor_task = sequence.get_highlighted_task()
     ifc.run("sequence.assign_sequence", relating_process=task, related_process=predecessor_task)
     sequence.load_task_properties()
 
 
 def unassign_predecessor(ifc, sequence, task=None):
-    predecessor_task = sequence.get_active_task()
+    predecessor_task = sequence.get_highlighted_task()
     ifc.run("sequence.unassign_sequence", relating_process=task, related_process=predecessor_task)
     sequence.load_task_properties()
 
 
 def assign_successor(ifc, sequence, task=None):
-    successor_task = sequence.get_active_task()
+    successor_task = sequence.get_highlighted_task()
     ifc.run("sequence.assign_sequence", relating_process=successor_task, related_process=task)
     sequence.load_task_properties()
 
 
 def unassign_successor(ifc, sequence, task=None):
-    successor_task = sequence.get_active_task()
+    successor_task = sequence.get_highlighted_task()
     ifc.run("sequence.unassign_sequence", relating_process=successor_task, related_process=task)
     sequence.load_task_properties()
 
@@ -267,24 +267,6 @@ def unassign_resource(ifc, sequence, task=None, resource=None):
     resources = sequence.get_task_resources(task)
     sequence.load_task_resources(resources)
     sequence.load_resources()
-
-
-def load_task_outputs(sequence):
-    task = sequence.get_highlighted_task()
-    outputs = sequence.get_task_outputs(task)
-    sequence.load_task_outputs(outputs)
-
-
-def load_task_inputs(sequence):
-    task = sequence.get_highlighted_task()
-    inputs = sequence.get_task_inputs(task)
-    sequence.load_task_inputs(inputs)
-
-
-def load_task_resources(sequence):
-    task = sequence.get_highlighted_task()
-    resources = sequence.get_task_resources(task)
-    sequence.load_task_resources(resources)
 
 
 def remove_work_calendar(ifc, work_calendar=None):
@@ -379,13 +361,8 @@ def remove_task_calendar(ifc, sequence, task=None, work_calendar=None):
     sequence.load_task_properties()
 
 
-def enable_editing_task_sequence(sequence, task=None):
-    sequence.enable_editing_task_sequence(task)
-    sequence.load_task_properties()
-
-
-def disable_editing_task_sequence(sequence, task=None):
-    sequence.enable_editing_task_sequence(task)
+def enable_editing_task_sequence(sequence):
+    sequence.enable_editing_task_sequence()
     sequence.load_task_properties()
 
 
@@ -463,6 +440,7 @@ def add_task_column(sequence, column_type=None, name=None, data_type=None):
         sequence.load_task_tree(work_schedule)
         sequence.load_task_properties()
 
+
 def remove_task_column(sequence, name=None):
     sequence.remove_task_column(name)
 
@@ -474,12 +452,17 @@ def set_task_sort_column(sequence, column=None):
         sequence.load_task_tree(work_schedule)
         sequence.load_task_properties()
 
+
 def calculate_task_duration(ifc, sequence, task=None):
     ifc.run("sequence.calculate_task_duration", task=task)
     work_schedule = sequence.get_active_work_schedule()
     if work_schedule:
         sequence.load_task_tree(work_schedule)
         sequence.load_task_properties()
+
+
+def load_animation_color_scheme(sequence, scheme):
+    sequence.load_animation_color_scheme(scheme)
 
 
 def highlight_task(sequence, task=None):
@@ -520,13 +503,8 @@ def add_task_bars(sequence):
         sequence.create_bars(tasks)
 
 
-def enable_editing_task_animation_colors(sequence):
-    sequence.load_task_animation_colors()
-    sequence.enable_editing_task_animation_colors()
-
-
-def disable_editing_task_animation_colors(sequence):
-    sequence.disable_editing_task_animation_colors()
+def load_default_animation_color_scheme(sequence):
+    sequence.load_default_animation_color_scheme()
 
 
 def visualise_work_schedule_date_range(sequence, work_schedule=None):
@@ -534,7 +512,8 @@ def visualise_work_schedule_date_range(sequence, work_schedule=None):
     settings = sequence.get_animation_settings()
     if settings:
         product_frames = sequence.get_animation_product_frames(work_schedule, settings)
-        sequence.load_task_animation_colors()
+        if not sequence.has_animation_colors():
+            sequence.load_default_animation_color_scheme()
         sequence.animate_objects(settings, product_frames, "date_range")
         sequence.add_text_animation_handler(settings)
         add_task_bars(sequence)
@@ -582,8 +561,14 @@ def reorder_task_nesting(ifc, sequence, task, new_index):
 def create_baseline(ifc, sequence, work_schedule, name):
     ifc.run("sequence.create_baseline", work_schedule=work_schedule, name=name)
 
+
 def clear_previous_animation(sequence):
     sequence.clear_objects_animation(include_blender_objects=False)
 
+
 def add_animation_camera(sequence):
     sequence.add_animation_camera()
+
+
+def save_animation_color_scheme(sequence, name):
+    sequence.save_animation_color_scheme(name)

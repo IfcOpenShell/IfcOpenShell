@@ -273,6 +273,79 @@ def convert_property_group_from_si(property_group, skip_props=()):
         setattr(property_group, prop_name, prop_value)
 
 
+def draw_filter(layout, props, data, module):
+    if not data.is_loaded:
+        data.load()
+
+    if tool.Ifc.get():
+        row = layout.row(align=True)
+        row.label(text=f"{len(data.data['saved_searches'])} Saved Searches")
+
+        if data.data["saved_searches"]:
+            row.operator("bim.load_search", text="", icon="IMPORT").module = module
+        row.operator("bim.save_search", text="", icon="EXPORT").module = module
+
+    row = layout.row(align=True)
+    row.operator("bim.add_filter_group", text="Add Search Group", icon="ADD").module = module
+    row.operator("bim.edit_filter_query", text="", icon="FILTER").module = module
+
+    for i, filter_group in enumerate(props.filter_groups):
+        box = layout.box()
+
+        row = box.row(align=True)
+        row.prop(props, "facet", text="")
+        op = row.operator("bim.add_filter", text="Add Filter", icon="ADD")
+        op.type = props.facet
+        op.index = i
+        op.module = module
+
+        for j, ifc_filter in enumerate(filter_group.filters):
+            if ifc_filter.type == "entity":
+                row = box.row(align=True)
+                row.prop(ifc_filter, "value", text="", icon="FILE_3D")
+            elif ifc_filter.type == "attribute":
+                row = box.row(align=True)
+                row.prop(ifc_filter, "name", text="", icon="COPY_ID")
+                row.prop(ifc_filter, "value", text="")
+            elif ifc_filter.type == "type":
+                row = box.row(align=True)
+                row.prop(ifc_filter, "value", text="", icon="FILE_VOLUME")
+            elif ifc_filter.type == "material":
+                row = box.row(align=True)
+                row.prop(ifc_filter, "value", text="", icon="MATERIAL")
+            elif ifc_filter.type == "property":
+                row = box.row(align=True)
+                row.prop(ifc_filter, "pset", text="", icon="PROPERTIES")
+                row.prop(ifc_filter, "name", text="")
+                row.prop(ifc_filter, "value", text="")
+            elif ifc_filter.type == "classification":
+                row = box.row(align=True)
+                row.prop(ifc_filter, "value", text="", icon="OUTLINER")
+            elif ifc_filter.type == "location":
+                row = box.row(align=True)
+                row.prop(ifc_filter, "name", text="", icon="PACKAGE")
+            elif ifc_filter.type == "query":
+                row = box.row(align=True)
+                row.prop(ifc_filter, "name", text="", icon="POINTCLOUD_DATA")
+                row.prop(ifc_filter, "value", text="")
+            elif ifc_filter.type == "instance":
+                row = box.row(align=True)
+                row.prop(ifc_filter, "value", text="", icon="GRIP")
+                op = row.operator("bim.select_filter_elements", text="", icon="EYEDROPPER")
+                op.group_index = i
+                op.index = j
+                op.module = module
+            op = row.operator("bim.remove_filter", text="", icon="X")
+            op.group_index = i
+            op.index = j
+            op.module = module
+
+        row = box.row()
+        op = row.operator("bim.remove_filter_group", icon="X")
+        op.index = i
+        op.module = module
+
+
 # TODO this should move into ifcopenshell.util
 
 

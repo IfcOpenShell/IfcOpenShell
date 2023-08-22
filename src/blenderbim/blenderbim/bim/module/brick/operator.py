@@ -74,7 +74,10 @@ class ViewBrickItem(bpy.types.Operator, Operator):
     split_screen: bpy.props.BoolProperty(name="Split Screen", default=False, options={"HIDDEN"})
 
     def _execute(self, context):
-        core.view_brick_item(tool.Brick, item=self.item, split_screen=self.split_screen)
+        try:
+            core.view_brick_item(tool.Brick, item=self.item, split_screen=self.split_screen)
+        except:
+            self.report({'ERROR'}, f'Could not find {self.item}')
 
 
 class RewindBrickClass(bpy.types.Operator, Operator):
@@ -131,16 +134,13 @@ class AddBrick(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         props = context.scene.BIMBrickProperties
-        library = None
-        if props.libraries:
-            library = tool.Ifc.get().by_id(int(props.libraries))
         core.add_brick(
             tool.Ifc,
             tool.Brick,
             element=tool.Ifc.get_entity(context.active_object) if context.selected_objects else None,
             namespace=props.namespace,
             brick_class=props.brick_entity_class,
-            library=library,
+            library=tool.Ifc.get().by_id(int(props.libraries)) if props.libraries else None,
             label=props.new_brick_label,
         )
 

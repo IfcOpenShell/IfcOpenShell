@@ -57,6 +57,31 @@ class EditObjectPlacement(bpy.types.Operator, Operator):
             core.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
 
+class OverrideOriginSet(bpy.types.Operator, Operator):
+    bl_idname = "bim.override_origin_set"
+    bl_label = "IFC Origin Set"
+    bl_options = {"REGISTER", "UNDO"}
+    obj: bpy.props.StringProperty()
+    origin_type: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
+        for obj in objs:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            if tool.Ifc.is_moved(obj):
+                core.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+            representation = tool.Geometry.get_active_representation(obj)
+            if not representation:
+                continue
+            representation = ifcopenshell.util.representation.resolve_representation(representation)
+            if not tool.Geometry.is_meshlike(representation):
+                continue
+            bpy.ops.object.origin_set(type=self.origin_type)
+            bpy.ops.bim.update_representation(obj=obj.name)
+
+
 class AddRepresentation(bpy.types.Operator, Operator):
     bl_idname = "bim.add_representation"
     bl_label = "Add Representation"
@@ -185,6 +210,15 @@ class RemoveRepresentation(bpy.types.Operator, Operator):
         )
 
 
+class PurgeUnusedRepresentations(bpy.types.Operator, Operator):
+    bl_idname = "bim.purge_unused_representations"
+    bl_label = "Purge Unused Representations"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.purge_unused_representations(tool.Ifc, tool.Geometry)
+
+
 class UpdateRepresentation(bpy.types.Operator, Operator):
     bl_idname = "bim.update_representation"
     bl_label = "Update Representation"
@@ -214,6 +248,10 @@ class UpdateRepresentation(bpy.types.Operator, Operator):
         product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         material = ifcopenshell.util.element.get_material(product, should_skip_usage=True)
 
+        if getattr(product, "HasOpenings", False) and obj.data.BIMMeshProperties.has_openings_applied:
+            # Meshlike things with openings can only be updated without openings applied.
+            return
+
         if not product.is_a("IfcGridAxis"):
             tool.Geometry.clear_cache(product)
 
@@ -231,8 +269,14 @@ class UpdateRepresentation(bpy.types.Operator, Operator):
             core.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
         if material and material.is_a() in ["IfcMaterialProfileSet", "IfcMaterialLayerSet"]:
-            # These objects are parametrically based on an axis and should not be modified as a mesh
-            return
+            if self.ifc_representation_class == "IfcTessellatedFaceSet":
+                # We are explicitly casting to a tessellation, so remove all parametric materials.
+                element_type = ifcopenshell.util.element.get_type(product)
+                ifcopenshell.api.run("material.unassign_material", tool.Ifc.get(), product=element_type)
+                ifcopenshell.api.run("material.unassign_material", tool.Ifc.get(), product=product)
+            else:
+                # These objects are parametrically based on an axis and should not be modified as a mesh
+                return
 
         old_representation = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         context_of_items = old_representation.ContextOfItems
@@ -1417,9 +1461,11 @@ class OverrideModeSetObject(bpy.types.Operator):
                     self.reload_representation(obj)
             else:
                 self.reload_representation(obj)
+            tool.Ifc.finish_edit(obj)
 
         for obj in self.unchanged_objs_with_openings:
             self.reload_representation(obj)
+            tool.Ifc.finish_edit(obj)
         return {"FINISHED"}
 
     def reload_representation(self, obj):

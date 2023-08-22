@@ -735,12 +735,19 @@ class EditOpenings(Operator, tool.Ifc.Operator):
     def _execute(self, context):
         props = bpy.context.scene.BIMModelProperties
         building_objs = set()
+        model = tool.Ifc.get()
+        all_openings = model.by_type("IfcOpeningElement")
+        similar_openings = []
+
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
             openings = [r.RelatedOpeningElement for r in element.HasOpenings]
             for opening in openings:
+                for all_opening in all_openings:
+                    if all_opening.ObjectPlacement == opening.ObjectPlacement:
+                        similar_openings.append(all_opening)
                 opening_obj = tool.Ifc.get_object(opening)
                 if opening_obj:
                     if tool.Ifc.is_edited(opening_obj):
@@ -749,6 +756,8 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                         blenderbim.core.geometry.edit_object_placement(
                             tool.Ifc, tool.Geometry, tool.Surveyor, obj=opening_obj
                         )
+                        for similar_opening in similar_openings:
+                            similar_opening.ObjectPlacement = opening.ObjectPlacement
                     building_objs.add(obj)
                     building_objs.update(self.get_all_building_objects_of_similar_openings(opening))
                     tool.Ifc.unlink(element=opening, obj=opening_obj)
@@ -773,6 +782,34 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                             results.add(obj)
         return results
 
+class CloneOpening(Operator, tool.Ifc.Operator):
+    bl_idname = "bim.clone_opening"
+    bl_label = "Clone Opening"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Create and assign to the selected element the selected opening and assign to it the same representation and object placement"
+
+    def _execute(self, context):
+        objects = bpy.context.selected_objects
+
+        for obj in objects:
+            entity = tool.Ifc.get_entity(obj)
+            if entity.is_a() == "IfcWall":
+                wall = entity
+                continue
+            if entity.is_a() == "IfcOpeningElement":
+                opening = entity
+                continue
+
+        opening_placement = opening.ObjectPlacement
+        opening_representations = opening.Representation.Representations
+
+        new_opening = ifcopenshell.api.run("root.create_entity", tool.Ifc.get(), ifc_class="IfcOpeningElement")
+        for representation in opening_representations:
+            ifcopenshell.api.run("geometry.assign_representation", tool.Ifc.get(), product = new_opening, representation = representation)
+
+        ifcopenshell.api.run("void.add_opening", tool.Ifc.get(), opening = new_opening, element = wall)
+        new_opening.ObjectPlacement = opening_placement
+        return {"FINISHED"}
 
 # TODO: merge with ProfileDecorator?
 class DecorationsHandler:
