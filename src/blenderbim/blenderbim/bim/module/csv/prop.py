@@ -49,6 +49,15 @@ class CsvAttribute(PropertyGroup):
         ]
     )
     varies_value: StringProperty(default="Varies", name="Varies Value")
+    summary: EnumProperty(
+        items=[
+            ("NONE", "None", ""),
+            ("SUM", "Sum", "Sums the total value of all rows."),
+            ("AVERAGE", "Average", "Averages the total value of all rows."),
+            ("MIN", "Min", "Gets the minimum value of all rows."),
+            ("MAX", "Max", "Gets the maximum value of all rows."),
+        ]
+    )
 
 
 class CsvProperties(PropertyGroup):
@@ -96,4 +105,5 @@ class CsvProperties(PropertyGroup):
     should_show_settings: BoolProperty(default=False, name="Show Settings")
     should_show_sort: BoolProperty(default=False, name="Show Sorting")
     should_show_group: BoolProperty(default=False, name="Show Grouping")
+    should_show_summary: BoolProperty(default=False, name="Show Summary")
     should_load_from_memory: BoolProperty(default=False, name="Load from Memory")
