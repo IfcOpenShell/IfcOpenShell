@@ -48,6 +48,7 @@ class BIM_PT_ifccsv(Panel):
             row.operator("bim.import_csv_attributes", icon="IMPORT", text="")
             row.operator("bim.export_csv_attributes", icon="EXPORT", text="")
         row.prop(props, "should_show_sort", icon="SORTSIZE", text="")
+        row.prop(props, "should_show_group", icon="OUTLINER_COLLECTION", text="")
         row.prop(props, "should_show_settings", icon="PREFERENCES", text="")
 
         if not IfcStore.get_file() or not props.should_load_from_memory:
@@ -90,8 +91,11 @@ class BIM_PT_ifccsv(Panel):
             row.prop(attribute, "name", text="")
             if props.should_show_sort:
                 row.prop(attribute, "sort", text="")
-            else:
-                row.prop(attribute, "header", text="")
+            if props.should_show_group:
+                row.prop(attribute, "group", text="")
+                if attribute.group == "VARIES":
+                    row.prop(attribute, "varies_value", text="")
+            row.prop(attribute, "header", text="")
             row.operator("bim.remove_csv_attribute", icon="X", text="").index = index
 
         row = layout.row(align=True)

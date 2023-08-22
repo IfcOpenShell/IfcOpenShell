@@ -28,6 +28,7 @@ import ifcopenshell
 import ifcopenshell.util.selector
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
+from statistics import mean
 
 try:
     from odf.namespaces import OFFICENS
@@ -72,6 +73,7 @@ class IfcCsv:
         bool_true="YES",
         bool_false="NO",
         sort=None,
+        groups=None,
     ):
         self.ifc_file = ifc_file
         self.results = []
@@ -109,6 +111,65 @@ class IfcCsv:
                 self.headers.append(headers[i])
             else:
                 self.headers.append(attribute)
+
+        if groups:
+            group_results = {}
+            group_indices = {}
+            group_values = {}
+            group_varies_values = {}
+
+            for group in groups:
+                index = attributes.index(group["name"])
+                group_indices.setdefault(group["type"], [])
+                group_indices[group["type"]].append(index)
+                if group["type"] == "VARIES":
+                    group_varies_values[index] = group["varies_value"]
+
+            for row in self.results:
+                key = "-".join([str(row[gi]) for gi in group_indices.get("GROUP", [])])
+                for group_type, gis in group_indices.items():
+                    if group_type in ("CONCAT", "VARIES"):
+                        for gi in gis:
+                            group_values.setdefault(key, {}).setdefault(gi, set())
+                            group_values[key][gi].add(str(row[gi]))
+                    elif group_type in ("SUM", "AVERAGE", "MIN", "MAX"):
+                        for gi in gis:
+                            group_values.setdefault(key, {}).setdefault(gi, [])
+                            try:
+                                value = float(row[gi])
+                            except:
+                                continue
+                            group_values[key][gi].append(value)
+                group_results[key] = row
+
+            for group_type, gis in group_indices.items():
+                if group_type == "CONCAT":
+                    for key, result in group_results.items():
+                        for gi in gis:
+                            result[gi] = ", ".join(group_values[key][gi])
+                elif group_type == "VARIES":
+                    for key, result in group_results.items():
+                        for gi in gis:
+                            if len(group_values[key][gi]) > 1:
+                                result[gi] = group_varies_values[gi]
+                elif group_type == "SUM":
+                    for key, result in group_results.items():
+                        for gi in gis:
+                            result[gi] = sum(group_values[key][gi])
+                elif group_type == "AVERAGE":
+                    for key, result in group_results.items():
+                        for gi in gis:
+                            result[gi] = mean(group_values[key][gi])
+                elif group_type == "MIN":
+                    for key, result in group_results.items():
+                        for gi in gis:
+                            result[gi] = min(group_values[key][gi])
+                elif group_type == "MAX":
+                    for key, result in group_results.items():
+                        for gi in gis:
+                            result[gi] = max(group_values[key][gi])
+
+            self.results = group_results.values()
 
         if sort:
             def natural_sort(value):
