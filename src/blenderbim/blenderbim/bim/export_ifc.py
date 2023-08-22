@@ -82,7 +82,7 @@ class IfcExporter:
         )
         self.file.wrapped_data.header.file_name.preprocessor_version = "IfcOpenShell {}".format(ifcopenshell.version)
         self.file.wrapped_data.header.file_name.originating_system = "{} {}".format(
-            self.get_application_name(), self.get_application_version()
+            self.get_application_name(), tool.Blender.get_blenderbim_version()
         )
 
     def sync_all_objects(self):
@@ -162,7 +162,7 @@ class IfcExporter:
         return "BlenderBIM"
 
     def get_application_version(self):
-        return ".".join(
+        version = ".".join(
             [
                 str(x)
                 for x in [
@@ -172,6 +172,9 @@ class IfcExporter:
                 ][0]
             ]
         )
+        if blenderbim.bim.last_commit_hash != "8888888":
+            version += f"-{blenderbim.bim.last_commit_hash[:7]}"
+        return version
 
 
 class IfcExportSettings:
