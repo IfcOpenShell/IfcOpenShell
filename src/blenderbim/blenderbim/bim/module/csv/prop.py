@@ -36,6 +36,19 @@ class CsvAttribute(PropertyGroup):
     name: StringProperty(name="Query", default="class")
     header: StringProperty(name="Header Value", default="IFC Class")
     sort: EnumProperty(items=[("NONE", "None", ""), ("ASC", "Ascending", ""), ("DESC", "Descending", "")])
+    group: EnumProperty(
+        items=[
+            ("NONE", "None", ""),
+            ("GROUP", "Group", "All rows where this value is identical will be merged."),
+            ("CONCAT", "Concatenation", "Concatenate values if values vary within a group."),
+            ("VARIES", "Varies", "Show a custom value if values vary within a group."),
+            ("SUM", "Sum", "Sums the total value of rows in a group."),
+            ("AVERAGE", "Average", "Averages the total value of rows in a group."),
+            ("MIN", "Min", "Gets the minimum value of rows in a group."),
+            ("MAX", "Max", "Gets the maximum value of rows in a group."),
+        ]
+    )
+    varies_value: StringProperty(default="Varies", name="Varies Value")
 
 
 class CsvProperties(PropertyGroup):
@@ -81,5 +94,6 @@ class CsvProperties(PropertyGroup):
     )
     csv_custom_delimiter: StringProperty(default="", name="Custom Delimiter")
     should_show_settings: BoolProperty(default=False, name="Show Settings")
-    should_show_sort: BoolProperty(default=False, name="Show Sort")
+    should_show_sort: BoolProperty(default=False, name="Show Sorting")
+    should_show_group: BoolProperty(default=False, name="Show Grouping")
     should_load_from_memory: BoolProperty(default=False, name="Load from Memory")
