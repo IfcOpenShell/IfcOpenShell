@@ -23,13 +23,17 @@ import ifcopenshell.util.date
 def get_productivity(resource, should_inherit=True):
     productivity = ifcopenshell.util.element.get_psets(resource).get("EPset_Productivity", None)
     if should_inherit and not productivity:
-        # Proposal for Schema - If instance doesn't have any productivity, inherit it's parent's productivity
-        if not resource.Nests:
-            return None
-        else:
-            parent_resource = resource.Nests[0].RelatingObject
-            productivity = ifcopenshell.util.element.get_psets(parent_resource).get("EPset_Productivity", None)
+        #Note: This is not part of the Schema - but it makes sense to inherit from parent
+        productivity = get_parent_productivity(resource)
     return productivity
+
+def get_parent_productivity(resource):
+    if not resource.Nests:
+        return
+    else:
+        parent_resource = resource.Nests[0].RelatingObject
+        productivity = ifcopenshell.util.element.get_psets(parent_resource).get("EPset_Productivity", None)
+        return productivity
 
 
 def get_unit_consumed(productivity):

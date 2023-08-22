@@ -58,6 +58,7 @@ class ResourceData:
             }
             if resource.is_a() in ["IfcLaborResource", "IfcConstructionEquipmentResource"]:
                 results[resource.id()]["Productivity"] = {}
+                results[resource.id()]["InheritedProductivity"] = {}
                 productivity = cls.get_productivity(resource)
                 if productivity:
                     results[resource.id()]["Productivity"] = {
@@ -65,11 +66,33 @@ class ResourceData:
                         "TimeConsumed": ifcopenshell.util.resource.get_unit_consumed(productivity),
                         "QuantityProducedName": ifcopenshell.util.resource.get_quantity_produced_name(productivity),
                     }
+                inherited_productivity = cls.get_parent_productivity(resource)
+                if inherited_productivity:
+                    results[resource.id()]["InheritedProductivity"] = {
+                        "QuantityProduced": ifcopenshell.util.resource.get_quantity_produced(inherited_productivity),
+                        "TimeConsumed": ifcopenshell.util.resource.get_unit_consumed(inherited_productivity),
+                        "QuantityProducedName": ifcopenshell.util.resource.get_quantity_produced_name(
+                            inherited_productivity
+                        ),
+                    }
+                if resource.Usage:
+                    results[resource.id()]["ScheduleWork"] = (
+                        ifcopenshell.util.date.readable_ifc_duration(resource.Usage.ScheduleWork)
+                        if resource.Usage.ScheduleWork
+                        else "Calculate",
+                    )
+                    results[resource.id()]["ScheduleUsage"] = (
+                        resource.Usage.ScheduleUsage if resource.Usage.ScheduleUsage else ""
+                    )
         return results
 
     @classmethod
     def get_productivity(cls, resource):
         return ifcopenshell.util.resource.get_productivity(resource, should_inherit=False)
+
+    @classmethod
+    def get_parent_productivity(cls, resource):
+        return ifcopenshell.util.resource.get_parent_productivity(resource)
 
     @classmethod
     def cost_values(cls):

@@ -64,11 +64,8 @@ class BIM_PT_resources(Panel):
             self.props,
             "active_resource_index",
         )
-        row = self.layout.row(align=True)
-        row.alignment = "RIGHT"
-        row.prop(self.props, "should_show_productivity", icon="RECOVER_LAST")
-        if self.props.should_show_productivity:
-            self.draw_productivity_ui(context)
+        self.draw_productivity_ui(context)
+
         if self.props.active_resource_id and self.props.editing_resource_type == "ATTRIBUTES":
             self.draw_editable_resource_attributes_ui()
         elif self.props.active_resource_id and self.props.editing_resource_type == "QUANTITY":
@@ -79,43 +76,66 @@ class BIM_PT_resources(Panel):
             self.draw_editable_resource_time_attributes_ui()
 
     def draw_productivity_ui(self, context):
-        total_resources = len(self.tprops.resources)
-        if not total_resources or self.props.active_resource_index >= total_resources:
-            return
-
-        ifc_definition_id = self.tprops.resources[self.props.active_resource_index].ifc_definition_id
-        resource = ResourceData.data["resources"][ifc_definition_id]
-
-        if not resource["type"] in ["IfcConstructionEquipmentResource", "IfcLaborResource"]:
-            row = self.layout.row(align=True)
-            row.label(text="Resource type cannot have productivity data", icon="ERROR")
-            return
-
-        self.productivity_props = context.scene.BIMResourceProductivity
-
-        if resource["Productivity"]:
-            produtivitiy_rate_message = "Current Rate: {}/{}".format(
-                resource["Productivity"]["QuantityProduced"], resource["Productivity"]["TimeConsumed"]
-            )
-            row = self.layout.row()
-            row.alignment = "LEFT"
-            row.label(text=produtivitiy_rate_message, icon="ARMATURE_DATA")
-        else:
-            row = self.layout.row(align=True)
-            row.alignment = "LEFT"
-            produtivitiy_rate_message = "No productivity data found"
-            row.label(text=produtivitiy_rate_message, icon="ARMATURE_DATA")
 
         row = self.layout.row(align=True)
         row.alignment = "RIGHT"
-        row.prop(self.productivity_props, "quantity_produced", text="Quantity Produced")
-        row.prop(self.productivity_props, "quantity_produced_name", text="Quantity Name")
-        row = self.layout.row()
-        row.alignment = "RIGHT"
-        self.draw_duration_property(self.productivity_props.quantity_consumed, row)
-        row = self.layout.row()
-        row.alignment = "RIGHT"
-        row.operator("bim.edit_productivity_data", text="Apply", icon="CHECKMARK")
+        row.prop(self.props, "should_show_resource_tools", icon="RECOVER_LAST")
+        if self.props.should_show_resource_tools:
+            total_resources = len(self.tprops.resources)
+            if not total_resources or self.props.active_resource_index >= total_resources:
+                return
+
+            ifc_definition_id = self.tprops.resources[self.props.active_resource_index].ifc_definition_id
+            resource = ResourceData.data["resources"][ifc_definition_id]
+
+            if not resource["type"] in ["IfcConstructionEquipmentResource", "IfcLaborResource"]:
+                row = self.layout.row(align=True)
+                row.label(text="Resource type cannot have productivity data", icon="ERROR")
+            else:
+                productivity = resource["Productivity"]
+                parent_productivity = resource["InheritedProductivity"]
+
+                row = self.layout.row()
+                row.operator(
+                    "bim.calculate_resource_work", text="Calculate Work", icon="TEMP"
+                ).resource = ifc_definition_id
+
+                row = self.layout.row()
+                row.label(text="Productivity")
+                row = self.layout.row()
+                if productivity:
+                    produtivitiy_rate_message = "Current Productivity Rate: {} {} / {}".format(
+                        productivity["QuantityProduced"],
+                        productivity["QuantityProducedName"],
+                        productivity["TimeConsumed"],
+                    )
+                    row.alignment = "LEFT"
+                    row.label(text=produtivitiy_rate_message, icon="ARMATURE_DATA")
+                elif parent_productivity:
+                    produtivitiy_rate_message = "Inherited Productivity Rate: {} {} / {}*".format(
+                        parent_productivity["QuantityProduced"],
+                        parent_productivity["QuantityProducedName"],
+                        parent_productivity["TimeConsumed"],
+                    )
+                    row.alignment = "LEFT"
+                    row.label(text=produtivitiy_rate_message, icon="ARMATURE_DATA")
+                else:
+                    row = self.layout.row(align=True)
+                    row.alignment = "LEFT"
+                    produtivitiy_rate_message = "No productivity data found"
+                    row.label(text=produtivitiy_rate_message, icon="ARMATURE_DATA")
+
+                productivity_props = context.scene.BIMResourceProductivity
+                row = self.layout.row(align=True)
+                row.alignment = "RIGHT"
+                row.prop(productivity_props, "quantity_produced", text="Quantity Produced")
+                row.prop(productivity_props, "quantity_produced_name", text="Quantity Name")
+                row = self.layout.row()
+                row.alignment = "RIGHT"
+                self.draw_duration_property(productivity_props.quantity_consumed, row)
+                row = self.layout.row()
+                row.alignment = "RIGHT"
+                row.operator("bim.edit_productivity_data", text="Apply", icon="CHECKMARK")
 
     def draw_resource_operators(self):
         row = self.layout.row(align=True)
@@ -153,9 +173,6 @@ class BIM_PT_resources(Panel):
 
         if not self.props.active_resource_id:
             if resource["type"] in ["IfcLaborResource", "IfcConstructionEquipmentResource"]:
-                if resource["Productivity"]:
-                    op = row.operator("bim.calculate_resource_work", text="", icon="TEMP")
-                    op.resource = ifc_definition_id
                 row.operator("bim.enable_editing_resource_time", text="", icon="TIME").resource = ifc_definition_id
             op = row.operator("bim.enable_editing_resource_base_quantity", text="", icon="PROPERTIES")
             op.resource = ifc_definition_id
