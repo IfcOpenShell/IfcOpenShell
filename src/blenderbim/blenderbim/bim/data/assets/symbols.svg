@@ -44,17 +44,17 @@
         <circle r="5" fill="white" stroke="black" style="stroke-width: 0.25;" />
         <line x1="-5" y1="0" x2="5" y2="0" style="stroke: black; stroke-width: 0.25;" />
     </g>
-    <g id="SurveyArea">
+    <g id="SURVEY">
         <circle r="1" fill="black" stroke="black" style="stroke-width: 0.25;" />
     </g>
-    <g id="SurveyArea-CONTROLPOINT">
+    <g id="SURVEY-CONTROLPOINT">
         <path style="fill: white; stroke: black; stroke-width: 0.25;" d="M 2.286165,1.4798666 H -1.0000316e-7 -2.2861651 L -1.1430826,-0.5000101 -1.0000316e-7,-2.479888 1.1430827,-0.5000101 Z" />
         <circle r="0.5" fill="black" stroke="black" style="stroke-width: 0.25;" />
     </g>
-    <g id="SurveyArea-TRAVERSEPOINT">
+    <g id="SURVEY-TRAVERSEPOINT">
         <path style="fill: white; stroke: black; stroke-width: 0.5;" d="M -2,-2 2,2 M -2,2 2,-2" />
     </g>
-    <g id="SurveyArea-SPOTELEVATION">
+    <g id="SURVEY-SPOTELEVATION">
         <path style="fill: white; stroke: black; stroke-width: 0.5;" d="M 0,-2 0,2 M -2,0 2,0" />
     </g>
 </svg>
