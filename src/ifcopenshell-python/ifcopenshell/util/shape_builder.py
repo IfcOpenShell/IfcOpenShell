@@ -930,82 +930,127 @@ class ShapeBuilder:
 
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(self.file)
 
-        # TODO: support offseted profiles
-        def get_transition_length(start_half_dim, end_half_dim, angle, profile_offset=None):
-            # NOTE: transition_length == 0 when profiles have the same dimensions
+        # TODO: move to separate shape_builder method
+        # so we could check transition length without creating representation
+        def get_transition_length(start_half_dim, end_half_dim, angle, profile_offset=None, verbose=True):
+            """get the final transition length for two profiles dimensions, angle and XY offset between them,
 
-            # holy grail of the transition length:
+            the difference from `calculate_transition` - `get_transition_length` is making sure
+            that length will fit both sides of the transition
+            """
+            print = lambda *args, **kwargs: __builtins__["print"](*args, **kwargs) if verbose else None
 
+            # offsets tend to have bunch of float point garbage
+            # that can result in errors when we're calculating value for square root below
+            offset = V(0, 0) if profile_offset is None else round_vector_to_precision(profile_offset, si_conversion)
             diff = start_half_dim.xy - end_half_dim.xy
             diff = Vector([abs(i) for i in diff])
 
-            def calculate_transition(diff, profile_offset, end_profile=False, angle=None, length=None):
+            # TODO: move to separate shape_builder method
+            # so it could be tested later separately
+            def calculate_transition(
+                start_half_dim, end_half_dim, diff, offset, end_profile=False, angle=None, length=None
+            ):
                 """will return transition length based on the profile dimension differences and offset.
 
                 If `length` is provided will return transition angle"""
 
-                # offsets tend to have bunch of float point garbage
-                # that can result in errors when we're calculating value for square root below
-                offset = V(0, 0) if profile_offset is None else round_vector_to_precision(profile_offset, si_conversion)
                 if end_profile:
                     diff, offset = diff.yx, offset.yx
+
+                same_dimensions = is_x(diff.length, 0)
 
                 a = diff.x + offset.x
                 b = diff.x - offset.x
                 if length is None:
-                    if diff.x == 0:
-                        return 0
+                    if not same_dimensions:
+                        if diff.x == 0:
+                            return 0
 
-                    t = tan(radians(angle))
-                    l1 = (a + b + sqrt(a**2 + 4 * a * b * t**2 + 2 * a * b + b**2)) / (2 * t)
-                    length = sqrt(l1**2 - offset.y**2)
+                        t = tan(radians(angle))
+                        h = (a + b + sqrt(a**2 + 4 * a * b * t**2 + 2 * a * b + b**2)) / (2 * t)
+                        length = sqrt(h**2 - offset.y**2)
 
-                    # TODO: remove after debug, move somewhere to tests?
-                    if True:
-                        A = (end_profile if end_profile else start_half_dim) * V(1, 0, 0)
-                        end_profile_offset = offset.to_3d() + V(0, 0, length)
-                        D = (start_half_dim if end_profile else end_half_dim) * V(1, 0, 0)
-                        B, C = -A, -D
-                        C += end_profile_offset
-                        D += end_profile_offset
-                        tested_angle = degrees((A - D).angle(B - C))
-                        print(f"length = {length}, requested angle = {angle}, tested angle = {tested_angle}")
+                        # TODO: move somewhere to tests?
+                        if verbose:
+                            A = (end_half_dim if end_profile else start_half_dim) * V(1, 0, 0)
+                            end_profile_offset = offset.to_3d() + V(0, 0, length)
+                            D = (start_half_dim if end_profile else end_half_dim) * V(1, 0, 0)
+                            B, C = -A, -D
+                            C += end_profile_offset
+                            D += end_profile_offset
+                            tested_angle = degrees((A - D).angle(B - C))
+                            print(f"II. length = {length}, requested angle = {angle}, tested angle = {tested_angle}")
+                    else:
+                        if is_x(offset.x, 0):
+                            angle = 90  # NOTE: for now we just hardcode the good value for that case
+                            h = start_half_dim.x / tan(radians(angle / 2))
+                            length = sqrt(h**2 - offset.y**2)
+
+                            if verbose:  # TODO: move to tests
+                                O = V(0, 0, 0)
+                                A = V(-start_half_dim.x, 0, length) + offset.to_3d()
+                                B = A * V(-1, 1, 1)
+                                tested_angle = degrees((A - O).angle(B - O))
+                                print(f"I. length = {length}, requested angle = {angle}, tested angle = {tested_angle}")
+                        else:
+                            h = offset.x / tan(radians(angle))
+                            length = sqrt(h**2 - offset.y**2)
+
+                            if verbose:  # TODO: move to tests
+                                A = V(-start_half_dim.x, 0, 0)
+                                H = A + V(0, 0, length)
+                                D = H + offset.to_3d()
+                                tested_angle = degrees((H - A).angle(D - A))
+                                print(
+                                    f"III. length = {length}, requested angle = {angle}, tested angle = {tested_angle}"
+                                )
+
                     return length
 
                 elif angle is None:
-                    # TODO: need to handle angle differently for that case
-                    # it occurs when diff == 0
-                    if length == 0:
-                        return 0
+                    # TODO: write some tests here too
+                    if not same_dimensions:
+                        if length == 0:
+                            return 0
 
-                    l1 = sqrt(length**2 + offset.y**2)
-                    t = -l1 * (a + b) / (a * b - l1**2)
-                    angle = atan(t)
+                        h = sqrt(length**2 + offset.y**2)
+                        t = -h * (a + b) / (a * b - h**2)
+                        angle = degrees(atan(t))
+                    else:
+                        h = sqrt(length**2 + offset.y**2)
+                        if is_x(offset.x, 0):
+                            angle = degrees(2 * atan(start_half_dim.x / h))
+                        else:
+                            angle = degrees(atan(offset.x / length))
                     return angle
 
-            transition_lengths = [
-                calculate_transition(diff, profile_offset, angle=angle),
-                calculate_transition(diff, profile_offset, angle=angle, end_profile=True),
-            ]
-
-            other_side_angles = [
-                calculate_transition(diff, profile_offset, length=transition_lengths[0]),
-                calculate_transition(diff, profile_offset, length=transition_lengths[1], end_profile=True),
-            ]
-
-            # NOTE: debug values
-            print(f"offset = {profile_offset}")
+            print(f"offset = {profile_offset} / {offset}")
             print(f"diff = {diff}")
-            print(f"lengths = {transition_lengths}")
-            print(f"other angles = {other_side_angles}")
-            print(f"measurable angles = {[(180 - deg)/2 for deg in other_side_angles]}")
 
-            # need to make sure that the worst angle (maximum angle)
-            # for this transition angle is `angle`
-            for transition_length, other_side_angle in zip(transition_lengths, other_side_angles):
-                if other_side_angle < angle or is_x(other_side_angle, angle):
-                    print(f"final length = {transition_length}")  # TODO: remove after debug
-                    return transition_length
+            calculation_arguments = (start_half_dim, end_half_dim, diff, offset)
+
+            def check_transition(end_profile=False):
+                length = calculate_transition(*calculation_arguments, angle=angle, end_profile=end_profile)
+                other_side_angle = calculate_transition(
+                    *calculation_arguments, length=length, end_profile=not end_profile
+                )
+
+                # NOTE: for now we just hardcode the good value for that case
+                same_dimensions = is_x(diff.length, 0)
+                if same_dimensions and is_x(offset.y if not end_profile else offset.x, 0):
+                    requested_angle = 90
+                else:
+                    requested_angle = angle
+
+                print(f"other_side_angle = {other_side_angle}, requested_angle = {requested_angle}")
+                # need to make sure that the worst angle (maximum angle)
+                # for this transition angle is `requested_angle`
+                if other_side_angle < requested_angle or is_x(other_side_angle, requested_angle):
+                    print(f"final length = {length}, angle = {requested_angle}, other side angle = {other_side_angle}")
+                    return length
+
+            return check_transition() or check_transition(True)
 
         transition_length = get_transition_length(start_half_dim, end_half_dim, angle, profile_offset)
         if transition_length is None:
