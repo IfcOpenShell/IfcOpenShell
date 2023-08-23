@@ -30,6 +30,38 @@ from blenderbim.bim.module.sequence.data import (
 )
 
 
+class BIM_PT_status(Panel):
+    bl_label = "Status"
+    bl_idname = "BIM_PT_status"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_status"
+    bl_options = {"HIDE_HEADER"}
+
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+
+    def draw(self, context):
+        self.props = context.scene.BIMStatusProperties
+
+        if not self.props.is_enabled:
+            row = self.layout.row()
+            row.operator("bim.enable_status_filters", icon="GREASEPENCIL")
+            return
+
+        row = self.layout.row(align=True)
+        row.operator("bim.activate_status_filters", icon="TIME")
+        row.operator("bim.disable_status_filters", icon="CANCEL", text="")
+
+        for status in self.props.statuses:
+            row = self.layout.row()
+            row.label(text=status.name)
+            row.prop(status, "is_visible", text="", emboss=False, icon="HIDE_OFF" if status.is_visible else "HIDE_ON")
+            row.operator("bim.select_status_filter", icon="RESTRICT_SELECT_OFF", text="").name = status.name
+
+
 class BIM_PT_work_plans(Panel):
     bl_label = "Work Plans"
     bl_idname = "BIM_PT_work_plans"
@@ -37,7 +69,7 @@ class BIM_PT_work_plans(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_tab_4D5D"
+    bl_parent_id = "BIM_PT_tab_sequence"
 
     @classmethod
     def poll(cls, context):
@@ -107,7 +139,7 @@ class BIM_PT_work_schedules(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_tab_4D5D"
+    bl_parent_id = "BIM_PT_tab_sequence"
 
     @classmethod
     def poll(cls, context):
@@ -550,7 +582,7 @@ class BIM_PT_animation_Color_Scheme(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_tab_4D5D"
+    bl_parent_id = "BIM_PT_tab_sequence"
 
     @classmethod
     def poll(cls, context):
@@ -888,7 +920,7 @@ class BIM_PT_work_calendars(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_tab_4D5D"
+    bl_parent_id = "BIM_PT_tab_sequence"
 
     @classmethod
     def poll(cls, context):

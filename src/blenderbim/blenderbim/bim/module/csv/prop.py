@@ -38,24 +38,24 @@ class CsvAttribute(PropertyGroup):
     sort: EnumProperty(items=[("NONE", "None", ""), ("ASC", "Ascending", ""), ("DESC", "Descending", "")])
     group: EnumProperty(
         items=[
-            ("NONE", "None", ""),
-            ("GROUP", "Group", "All rows where this value is identical will be merged."),
-            ("CONCAT", "Concatenation", "Concatenate values if values vary within a group."),
-            ("VARIES", "Varies", "Show a custom value if values vary within a group."),
-            ("SUM", "Sum", "Sums the total value of rows in a group."),
-            ("AVERAGE", "Average", "Averages the total value of rows in a group."),
-            ("MIN", "Min", "Gets the minimum value of rows in a group."),
-            ("MAX", "Max", "Gets the maximum value of rows in a group."),
+            ("NONE", "None", "Don't group any rows"),
+            ("GROUP", "Group", "All rows where this value is identical will be merged"),
+            ("CONCAT", "Concatenation", "Concatenate values if values vary within a group"),
+            ("VARIES", "Varies", "Show a custom value if values vary within a group"),
+            ("SUM", "Sum", "Sums the total value of rows in a group"),
+            ("AVERAGE", "Average", "Averages the total value of rows in a group"),
+            ("MIN", "Min", "Gets the minimum value of rows in a group"),
+            ("MAX", "Max", "Gets the maximum value of rows in a group"),
         ]
     )
     varies_value: StringProperty(default="Varies", name="Varies Value")
     summary: EnumProperty(
         items=[
-            ("NONE", "None", ""),
-            ("SUM", "Sum", "Sums the total value of all rows."),
-            ("AVERAGE", "Average", "Averages the total value of all rows."),
-            ("MIN", "Min", "Gets the minimum value of all rows."),
-            ("MAX", "Max", "Gets the maximum value of all rows."),
+            ("NONE", "None", "Don't provide a summary row"),
+            ("SUM", "Sum", "Sums the total value of all rows"),
+            ("AVERAGE", "Average", "Averages the total value of all rows"),
+            ("MIN", "Min", "Gets the minimum value of all rows"),
+            ("MAX", "Max", "Gets the maximum value of all rows"),
         ]
     )
 
