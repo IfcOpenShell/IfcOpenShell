@@ -94,36 +94,46 @@ class Boundary: pass
 
 @interface
 class Brick:
-    def add_brick(cls, namespace, brick_class): pass
-    def add_brick_breadcrumb(cls): pass
+    def add_brick(cls, namespace, brick_class, label): pass
+    def add_brick_breadcrumb(cls, split_screen=False): pass
     def add_brick_from_element(cls, element, namespace, brick_class): pass
     def add_brickifc_project(cls, namespace): pass
     def add_brickifc_reference(cls, brick, element, project): pass
-    def add_feed(cls, source, destination): pass
-    def clear_brick_browser(cls): pass
+    def add_relation(cls, brick_uri, predicate, object): pass
+    def remove_relation(cls, brick_uri, predicate, object): pass
+    def clear_brick_browser(cls, split_screen=False): pass
     def clear_project(cls): pass
     def export_brick_attributes(cls, brick_uri): pass
-    def get_active_brick_class(cls): pass
+    def get_active_brick_class(cls, split_screen=False): pass
     def get_brick(cls, element): pass
     def get_brick_class(cls, element): pass
     def get_brick_path(cls): pass
     def get_brick_path_name(cls): pass
     def get_brickifc_project(cls): pass
     def get_convertable_brick_elements(cls): pass
+    def get_convertable_brick_spaces(cls): pass
+    def get_convertable_brick_systems(cls): pass
+    def get_parent_space(cls, space): pass
+    def get_element_container(cls, element): pass
+    def get_element_systems(cls, element): pass
+    def get_element_feeds(cls, element): pass
     def get_item_class(cls, item): pass
     def get_library_brick_reference(cls, library, brick_uri): pass
     def get_namespace(cls, uri): pass
-    def import_brick_classes(cls, brick_class): pass
-    def import_brick_items(cls, brick_class): pass
+    def import_brick_classes(cls, brick_class, split_screen=False): pass
+    def import_brick_items(cls, brick_class, split_screen=False): pass
     def load_brick_file(cls, filepath): pass
     def new_brick_file(cls): pass
-    def pop_brick_breadcrumb(cls): pass
+    def pop_brick_breadcrumb(cls, split_screen=False): pass
     def remove_brick(cls, brick_uri): pass
     def run_assign_brick_reference(cls, element=None, library=None, brick_uri=None): pass
-    def run_refresh_brick_viewer(cls): pass
-    def run_view_brick_class(cls, brick_class=None): pass
-    def select_browser_item(cls, item): pass
-    def set_active_brick_class(cls, brick_class): pass
+    def run_refresh_brick_viewer(cls, split_screen=False): pass
+    def run_view_brick_class(cls, brick_class=None, split_screen=False): pass
+    def select_browser_item(cls, item, split_screen=False): pass
+    def set_active_brick_class(cls, brick_class, split_screen=False): pass
+    def serialize_brick(cls): pass
+    def add_namespace(cls, alias, uri): pass
+    def clear_breadcrumbs(cls, split_screen=False): pass
 
 
 @interface
