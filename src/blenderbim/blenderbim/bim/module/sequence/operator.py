@@ -27,11 +27,98 @@ import webbrowser
 import blenderbim.core.sequence as core
 import blenderbim.tool as tool
 import blenderbim.bim.module.sequence.helper as helper
+import ifcopenshell.util.sequence
+import ifcopenshell.util.selector
 from datetime import datetime
 from dateutil import parser, relativedelta
 from blenderbim.bim.ifc import IfcStore
 from bpy_extras.io_utils import ImportHelper
-import ifcopenshell.util.sequence
+
+
+class EnableStatusFilters(bpy.types.Operator):
+    bl_idname = "bim.enable_status_filters"
+    bl_label = "Enable Status Filters"
+
+    def execute(self, context):
+        props = context.scene.BIMStatusProperties
+        props.is_enabled = True
+
+        props.statuses.clear()
+
+        statuses = set()
+        for element in tool.Ifc.get().by_type("IfcPropertyEnumeratedValue"):
+            if element.Name == "Status":
+                pset = element.PartOfPset[0]
+                if pset.Name.startswith("Pset_") and pset.Name.endswith("Common"):
+                    statuses.update(element.EnumerationValues)
+                elif pset.Name == "EPset_Status": # Our secret sauce
+                    statuses.update(element.EnumerationValues)
+            elif element.Name == "UserDefinedStatus":
+                statuses.add(element.NominalValue)
+
+        statuses = ["No Status"] + sorted([s.wrappedValue for s in statuses])
+
+        for status in statuses:
+            new = props.statuses.add()
+            new.name = status
+        return {"FINISHED"}
+
+
+class DisableStatusFilters(bpy.types.Operator):
+    bl_idname = "bim.disable_status_filters"
+    bl_label = "Disable Status Filters"
+
+    def execute(self, context):
+        props = context.scene.BIMStatusProperties
+        props.is_enabled = False
+        return {"FINISHED"}
+
+
+class ActivateStatusFilters(bpy.types.Operator):
+    bl_idname = "bim.activate_status_filters"
+    bl_label = "Activate Status Filters"
+
+    def execute(self, context):
+        props = context.scene.BIMStatusProperties
+
+        query = []
+        visible_statuses = {s.name for s in props.statuses if s.is_visible}
+        for name in visible_statuses:
+            if name == "No Status":
+                q = f"IfcProduct, /Pset_.*Common/.Status=NULL, EPset_Status.Status=NULL"
+            else:
+                q = f"IfcProduct, /Pset_.*Common/.Status={name} + IfcProduct, EPset_Status.Status={name}"
+            query.append(q)
+        query = " + ".join(query)
+
+        if not query:
+            return {"FINISHED"}
+
+        visible_elements = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query)
+
+        for obj in bpy.context.view_layer.objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element or not element.is_a("IfcProduct"):
+                continue
+            obj.hide_set(element not in visible_elements)
+        return {"FINISHED"}
+
+
+class SelectStatusFilter(bpy.types.Operator):
+    bl_idname = "bim.select_status_filter"
+    bl_label = "Select Status Filter"
+    name: bpy.props.StringProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMStatusProperties
+        query = f"IfcProduct, /Pset_.*Common/.Status={self.name} + IfcProduct, EPset_Status.Status={self.name}"
+        if self.name == "No Status":
+            query = f"IfcProduct, /Pset_.*Common/.Status=NULL, EPset_Status.Status=NULL"
+        for element in ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query):
+            obj = tool.Ifc.get_object(element)
+            if obj:
+                obj.select_set(True)
+        return {"FINISHED"}
 
 
 class AddWorkPlan(bpy.types.Operator, tool.Ifc.Operator):

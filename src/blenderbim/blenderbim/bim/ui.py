@@ -408,12 +408,53 @@ class BIM_PT_geometry(Panel):
         pass
 
 
-class BIM_PT_tab_4D5D(Panel):
-    bl_label = "Costing and Scheduling"
+class BIM_PT_tab_status(Panel):
+    bl_label = "Status"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_options = {"HIDE_HEADER"}
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "SCHEDULING") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_resources(Panel):
+    bl_label = "Resources"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "SCHEDULING") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_cost(Panel):
+    bl_label = "Cost"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "SCHEDULING") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_sequence(Panel):
+    bl_label = "Construction Scheduling"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
 
     @classmethod
     def poll(cls, context):

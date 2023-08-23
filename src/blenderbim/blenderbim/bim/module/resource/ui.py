@@ -28,7 +28,8 @@ class BIM_PT_resources(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_tab_4D5D"
+    bl_parent_id = "BIM_PT_tab_resources"
+    bl_options = {"HIDE_HEADER"}
 
     @classmethod
     def poll(cls, context):
