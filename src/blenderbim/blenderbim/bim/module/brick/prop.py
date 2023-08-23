@@ -45,12 +45,12 @@ def get_libraries(self, context):
 
 
 def get_namespaces(self, context):
-    return BrickStore.namespaces
+    return [(uri, f"{alias}: {uri}", "") for alias, uri in BrickStore.namespaces]
 
 
 def get_brick_entity_classes(self, context):
     entity = self.brick_entity_create_type
-    return BrickStore.entity_classes[entity]
+    return [(uri, uri.split("#")[-1], "") for uri in BrickStore.entity_classes[entity]]
 
 
 def get_brick_roots(self, context): 
@@ -58,12 +58,12 @@ def get_brick_roots(self, context):
 
 
 def get_brick_relations(self, context):
+    relations = [(uri, uri.split("#")[-1], "") for uri in BrickStore.relationships]
     for relation in BrickschemaData.data["active_relations"]:
         if relation["predicate_name"] == "label":
-            return BrickStore.relationships
-    new_relations = BrickStore.relationships.copy()
-    new_relations.append(("http://www.w3.org/2000/01/rdf-schema#label", "label", ""))
-    return new_relations
+            return relations
+    relations.append(("http://www.w3.org/2000/01/rdf-schema#label", "label", ""))
+    return relations
     
 
 

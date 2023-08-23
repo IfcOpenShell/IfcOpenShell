@@ -105,7 +105,7 @@ class Brick(blenderbim.core.tool.Brick):
         if predicate == "http://www.w3.org/2000/01/rdf-schema#label":
             with BrickStore.new_changeset() as cs:
                 cs.add((URIRef(brick_uri), URIRef(predicate), Literal(object)))
-            bpy.context.scene.BIMBrickProperties.new_brick_relation_type = BrickStore.relationships[0][0]
+            bpy.context.scene.BIMBrickProperties.new_brick_relation_type = BrickStore.relationships[0]
             bpy.context.scene.BIMBrickProperties.add_brick_relation_failed = False
             return
         query = BrickStore.graph.query("ASK { <{object_uri}> a ?o . }".replace("{object_uri}", object))
@@ -150,7 +150,7 @@ class Brick(blenderbim.core.tool.Brick):
             LIMIT 1
         """.replace("{brick_uri}", brick_uri))
         for row in query:
-            name = row.get("label")
+            name = str(row.get("label"))
             if not name:
                 name = brick_uri.split("#")[-1]
             if tool.Ifc.get_schema() == "IFC2X3":
@@ -216,8 +216,8 @@ class Brick(blenderbim.core.tool.Brick):
     @classmethod
     def get_convertable_brick_spaces(cls):
         if tool.Ifc.get_schema() == "IFC2X3":
-            return tool.Ifc.get().by_type("IfcSpatialStructureElement")
-        return tool.Ifc.get().by_type("IfcSpatialElement")
+            return set(tool.Ifc.get().by_type("IfcSpatialStructureElement"))
+        return set(tool.Ifc.get().by_type("IfcSpatialElement"))
 
     @classmethod
     def get_convertable_brick_systems(cls):
@@ -520,7 +520,7 @@ class BrickStore:
                     ignore_namespace = True
                     break
             if not ignore_namespace:
-                BrickStore.namespaces.append((uri, f"{alias}: {uri}", ""))
+                BrickStore.namespaces.append((alias, str(uri)))
 
     @classmethod
     def load_entity_classes(cls):
@@ -542,7 +542,7 @@ class BrickStore:
             )
             BrickStore.entity_classes[root_class] = []
             for uri in sorted([x[0].toPython() for x in query]):
-                BrickStore.entity_classes[root_class].append((uri, uri.split("#")[-1], ""))
+                BrickStore.entity_classes[root_class].append(uri)
 
     @classmethod
     def load_relationships(cls):
@@ -556,7 +556,7 @@ class BrickStore:
             """
         )
         for uri in sorted([x[0].toPython() for x in query]):
-            BrickStore.relationships.append((uri, uri.split("#")[-1], ""))
+            BrickStore.relationships.append(uri)
 
     @classmethod
     def set_history_size(cls, size):
