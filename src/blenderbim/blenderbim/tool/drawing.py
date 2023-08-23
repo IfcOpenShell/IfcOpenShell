@@ -1529,10 +1529,10 @@ class Drawing(blenderbim.core.tool.Drawing):
             tool.Ifc.get_object(drawing), [tool.Ifc.get_object(e) for e in ifc_file.by_type("IfcSpace")]
         )
         if include:
-            elements = set(ifcopenshell.util.selector.filter_elements(ifc_file, include, elements=elements))
+            elements = set(ifcopenshell.util.selector.filter_elements(ifc_file, include, elements=elements.copy()))
         exclude = pset.get("Exclude", None)
         if exclude:
-            elements -= set(ifcopenshell.util.selector.filter_elements(ifc_file, exclude, elements=elements))
+            elements -= set(ifcopenshell.util.selector.filter_elements(ifc_file, exclude, elements=elements.copy()))
         return elements
 
     @classmethod
