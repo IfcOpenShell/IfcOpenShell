@@ -1,0 +1,13 @@
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION((),'2;1');
+FILE_NAME('EPset_Status.ifc','2020-01-01T00:00:00',(),(),'EPset_Status','EPset_Status',$);
+FILE_SCHEMA(('IFC4'));
+ENDSEC;
+DATA;
+#1=IFCPROPERTYSETTEMPLATE('3JoyTt$cz4fhYuQvJeTMhs',$,'EPset_Status','',.PSET_TYPEDRIVENOVERRIDE.,'IfcProduct',(#2,#4));
+#2= IFCSIMPLEPROPERTYTEMPLATE('2HBOdOfz5E3hZ7IBLCq$$D',$,'Status','Status of the element, predominately used in renovation or retrofitting projects. The status can be assigned to as "New" - element designed as new addition, "Existing" - element exists and remains, "Demolish" - element existed but is to be demolished,  "Temporary" - element will exists only temporary (like a temporary support structure).',.P_ENUMERATEDVALUE.,'IfcLabel',$,#3,$,$,$,.READWRITE.);
+#3= IFCPROPERTYENUMERATION('EPEnum_ElementStatus',(IFCLABEL('NEW'),IFCLABEL('EXISTING'),IFCLABEL('DEMOLISH'),IFCLABEL('TEMPORARY'),IFCLABEL('OTHER'),IFCLABEL('NOTKNOWN'),IFCLABEL('UNSET')),$);
+#4=IFCSIMPLEPROPERTYTEMPLATE('3ttXxqmlz62BlxjzEPpqvH',$,'UserDefinedStatus','',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
+ENDSEC;
+END-ISO-10303-21;
