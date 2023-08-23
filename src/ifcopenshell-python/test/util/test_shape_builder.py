@@ -34,14 +34,19 @@ class TestCalculateTransitions(test.bootstrap.IFC4):
         angle = params["angle"]
 
         calculated_length = self.builder.mep_transition_calculate(**params)
+        if length is None:
+            assert calculated_length is None
+            return
+
         assert is_x(calculated_length, length)
 
         # angle confirmation methods:
         # A - between two profiles of different dimensions
         # B - between two profiles of same dimensions, no offset by x
         # C - between two profiles of same dimensions, has offset by x
-        same_dimensions = is_x((start_half_dim.xy - end_half_dim.xy).length, 0)
-        if not same_dimensions:
+        diff = start_half_dim.xy - end_half_dim.xy
+        same_dimension = is_x(diff.x if not end_profile else diff.y, 0)
+        if not same_dimension:
             confirmation_method = "A"
         else:
             confirmation_method = "B" if is_x(offset.x, 0) else "C"
@@ -134,3 +139,26 @@ class TestCalculateTransitions(test.bootstrap.IFC4):
             "verbose": True,
         }
         self.calculate_and_test(params, 165.83124)
+
+    def test_mep_transition_y_offset_too_big(self):
+        self.builder = ShapeBuilder(self.file)
+
+        # method A
+        params = {
+            "start_half_dim": V(100, 50, 0),
+            "end_half_dim": V(50, 100, 0),
+            # offset.y > h - 190 > 186.6
+            "offset": V(0, 190),
+            "end_profile": False,
+            "angle": 30,
+            "verbose": True,
+        }
+        self.calculate_and_test(params, None)
+
+        # method B
+        params["end_half_dim"] = V(100, 100, 0)
+        self.calculate_and_test(params, None)
+
+        # method C
+        params["offset"].x = 10
+        self.calculate_and_test(params, None)
