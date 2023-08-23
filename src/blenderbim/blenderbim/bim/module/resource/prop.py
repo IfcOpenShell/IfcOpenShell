@@ -88,15 +88,14 @@ def updateResourceUsage(self, context):
     if self.schedule_usage == "":
         return
     resource = tool.Ifc.get().by_id(self.ifc_definition_id)
-    tool.Resource.run_edit_resource_time(resource, attributes={
-        "ScheduleUsage": self.schedule_usage
-    })
+    tool.Resource.run_edit_resource_time(resource, attributes={"ScheduleUsage": self.schedule_usage})
     tool.Resource.load_resource_properties()
     tool.Sequence.load_task_properties()
     blenderbim.bim.module.resource.data.refresh()
     blenderbim.bim.module.sequence.data.refresh()
     tool.Sequence.refresh_task_resources()
     blenderbim.bim.module.pset.data.refresh()
+
 
 class ISODuration(PropertyGroup):
     name: StringProperty(name="Name")
