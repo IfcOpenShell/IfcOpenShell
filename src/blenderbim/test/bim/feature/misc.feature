@@ -48,3 +48,10 @@ Scenario: Split along edge
     When I press "bim.split_along_edge"
     Then the object "IfcWall/Cube" is an "IfcWall"
     And the object "IfcWall/Cube.001" is an "IfcWall"
+
+Scenario: Enabling and disabling IFC Sverchok
+    Given an empty IFC project
+    And I press "preferences.addon_enable(module="sverchok")"
+    And I press "preferences.addon_enable(module="ifcsverchok")"
+    And I press "preferences.addon_disable(module="sverchok")"
+    And I press "preferences.addon_disable(module="ifcsverchok")"
