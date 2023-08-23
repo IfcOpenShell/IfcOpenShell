@@ -601,7 +601,10 @@ class Resource:
     def enable_editing_resource_time(cls, resource): pass
     def enable_editing_resource(cls, resource): pass
     def expand_resource(cls, resource): pass
+    def get_constraints(cls, resource): pass
     def get_highlighted_resource(cls): pass
+    def get_metric_reference(cls, metric, is_deep): pass
+    def get_metrics(cls, constraint): pass
     def get_productivity_attributes(cls): pass
     def get_productivity(cls, resource, should_inherit): pass
     def get_resource_attributes(cls): pass
@@ -610,6 +613,9 @@ class Resource:
     def get_resource_quantity_attributes(cls): pass
     def get_resource_time_attributes(cls): pass
     def get_resource_time(cls, resource): pass
+    def go_to_resource(cls, resource): pass
+    def has_metric_constraint(cls, resource, attribute): pass
+    def has_usage_metric(cls, resource): pass
     def import_resources(cls, file_path): pass
     def load_cost_value_attributes(cls, cost_value): pass
     def load_productivity_data(cls): pass
@@ -617,11 +623,6 @@ class Resource:
     def load_resource_properties(cls): pass
     def load_resource_time_attributes(cls, resource_time): pass
     def load_resources(cls): pass
-    def get_constraints(cls, resource): pass
-    def get_metrics(cls, constraint): pass
-    def get_metric_reference(cls, metric, is_deep): pass
-    def has_metric_constraint(cls, resource, attribute): pass
-    def has_usage_metric(cls, resource): pass
 
 
 @interface

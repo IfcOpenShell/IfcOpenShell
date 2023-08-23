@@ -279,6 +279,8 @@ class Resource(blenderbim.core.tool.Resource):
     def expand_resource(cls, resource):
         props = bpy.context.scene.BIMResourceProperties
         contracted_resources = json.loads(props.contracted_resources)
+        if not resource.id() in contracted_resources:
+            return
         contracted_resources.remove(resource.id())
         props.contracted_resources = json.dumps(contracted_resources)
 
@@ -411,3 +413,25 @@ class Resource(blenderbim.core.tool.Resource):
                 resource=resource,
             )
         tool.Ifc.run("resource.edit_resource_time", resource_time=resource.Usage, attributes=attributes)
+
+    @classmethod
+    def go_to_resource(cls, resource):
+        def get_ancestors_ids(resource):
+            ids = []
+            for rel in resource.Nests or []:
+                ids.append(rel.RelatingObject.id())
+                ids.extend(get_ancestors_ids(rel.RelatingObject))
+            return ids
+
+        ancestors = get_ancestors_ids(resource)
+        contracted_resources = json.loads(bpy.context.scene.BIMResourceProperties.contracted_resources)
+        for ancestor in ancestors:
+            if ancestor in contracted_resources:
+                contracted_resources.remove(ancestor)
+        bpy.context.scene.BIMResourceProperties.contracted_resources = json.dumps(contracted_resources)
+        cls.load_resources()
+        cls.load_resource_properties()
+
+        resource_props = bpy.context.scene.BIMResourceTreeProperties
+        expanded_resources = [item.ifc_definition_id for item in resource_props.resources]
+        bpy.context.scene.BIMResourceProperties.active_resource_index = expanded_resources.index(resource.id())
