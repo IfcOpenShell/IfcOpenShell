@@ -82,7 +82,7 @@ classes = (
     operator.ExportP6,
     operator.GenerateGanttChart,
     operator.GuessDateRange,
-    operator.HighlightTask,
+    operator.GoToTask,
     operator.ImportCSV,
     operator.ImportMSP,
     operator.ImportP6,
