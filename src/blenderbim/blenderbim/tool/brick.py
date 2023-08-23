@@ -398,8 +398,8 @@ class Brick(blenderbim.core.tool.Brick):
         )
 
     @classmethod
-    def run_refresh_brick_viewer(cls, split_screen=False):
-        return blenderbim.core.brick.refresh_brick_viewer(tool.Brick, split_screen)
+    def run_refresh_brick_viewer(cls):
+        return blenderbim.core.brick.refresh_brick_viewer(tool.Brick)
 
     @classmethod
     def run_view_brick_class(cls, brick_class=None, split_screen=False):

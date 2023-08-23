@@ -233,7 +233,6 @@ class RefreshBrickViewer(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.refresh_brick_viewer(tool.Brick)
-        core.refresh_brick_viewer(tool.Brick, split_screen=True)
 
 
 class RemoveBrick(bpy.types.Operator, Operator):
@@ -289,7 +288,7 @@ class AddBrickNamespace(bpy.types.Operator, Operator):
         props = context.scene.BIMBrickProperties
         alias = props.new_brick_namespace_alias
         uri = props.new_brick_namespace_uri
-        core.add_namespace(tool.Brick, alias=alias, uri=uri)
+        core.add_brick_namespace(tool.Brick, alias=alias, uri=uri)
 
 
 class RemoveBrickRelation(bpy.types.Operator, Operator):
