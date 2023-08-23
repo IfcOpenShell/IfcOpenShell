@@ -70,7 +70,10 @@ class FilledOpeningGenerator:
             )
 
         if target is None:
-            target = bpy.context.scene.cursor.location
+            should_set_z_level = True
+            target = bpy.context.scene.cursor.location.copy()
+        else:
+            should_set_z_level = False
 
         # Sometimes, the voided_obj may be an aggregate, which won't have any representation.
         if voided_obj.data:
@@ -86,12 +89,17 @@ class FilledOpeningGenerator:
             axis = tool.Model.get_wall_axis(voided_obj, layers=layers)["base"]
 
             new_matrix = voided_obj.matrix_world.copy()
-            new_matrix.translation = tool.Cad.point_on_edge(target, axis)
+            point_on_axis = tool.Cad.point_on_edge(target, axis)
+            new_matrix.translation.x = point_on_axis.x
+            new_matrix.translation.y = point_on_axis.y
 
-            if filling.is_a("IfcDoor"):
-                new_matrix.translation.z = voided_obj.matrix_world.translation.z
+            if should_set_z_level:
+                if filling.is_a("IfcDoor"):
+                    new_matrix.translation.z = voided_obj.matrix_world.translation.z
+                else:
+                    new_matrix.translation.z = voided_obj.matrix_world.translation.z + props.rl2
             else:
-                new_matrix.translation.z = voided_obj.matrix_world.translation.z + props.rl2
+                new_matrix.translation.z = filling_obj.matrix_world.copy().translation.z
 
             filling_obj.matrix_world = new_matrix
             bpy.context.view_layer.update()
