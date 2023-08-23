@@ -1106,13 +1106,16 @@ class ShapeBuilder:
 
         def check_transition(end_profile=False):
             length = self.mep_transition_calculate(**calculation_arguments, angle=angle, end_profile=end_profile)
+            if length is None:
+                return
+
             other_side_angle = self.mep_transition_calculate(
                 **calculation_arguments, length=length, end_profile=not end_profile
             )
 
             # NOTE: for now we just hardcode the good value for that case
-            same_dimensions = is_x(diff.length, 0)
-            if same_dimensions and is_x(offset.y if not end_profile else offset.x, 0):
+            same_dimension = is_x(diff.y if not end_profile else diff.x, 0)
+            if same_dimension and is_x(offset.y if not end_profile else offset.x, 0):
                 requested_angle = 90
             else:
                 requested_angle = angle
@@ -1142,17 +1145,24 @@ class ShapeBuilder:
         if end_profile:
             diff, offset = diff.yx, offset.yx
 
-        same_dimensions = is_x(diff.length, 0)
-
+        same_dimension = is_x(diff.x, 0)
         a = diff.x + offset.x
         b = diff.x - offset.x
         if length is None:
-            if not same_dimensions:
-                if diff.x == 0:
-                    return 0
-
+            if not same_dimension:
                 t = tan(radians(angle))
-                h = (a + b + sqrt(a**2 + 4 * a * b * t**2 + 2 * a * b + b**2)) / (2 * t)
+                h0 = a**2 + 4 * a * b * t**2 + 2 * a * b + b**2
+                # TODO: we might need to specify the exact failing cases in the future
+                if h0 < 0:
+                    print(
+                        f"B. Coulndn't calculate transition length for angle = {angle}, offset = {offset}, diff = {diff}"
+                    )
+                    return None
+
+                h = (a + b + sqrt(h0)) / (2 * t)
+                if h < abs(offset.y) or is_x(h, offset.y):
+                    print(f"B. angle = {angle} requires h = {h} which is not possible with y offset = {offset.y}")
+                    return None
                 length = sqrt(h**2 - offset.y**2)
 
                 if verbose:
@@ -1168,6 +1178,9 @@ class ShapeBuilder:
                 if is_x(offset.x, 0):
                     angle = 90  # NOTE: for now we just hardcode the good value for that case
                     h = start_half_dim.x / tan(radians(angle / 2))
+                    if h < abs(offset.y) or is_x(h, offset.y):
+                        print(f"B. angle = {angle} requires h = {h} which is not possible with y offset = {offset.y}")
+                        return None
                     length = sqrt(h**2 - offset.y**2)
 
                     if verbose:
@@ -1178,6 +1191,9 @@ class ShapeBuilder:
                         print(f"B. length = {length}, requested angle = {angle}, tested angle = {tested_angle}")
                 else:
                     h = offset.x / tan(radians(angle))
+                    if h < abs(offset.y) or is_x(h, offset.y):
+                        print(f"C. angle = {angle} requires h = {h} which is not possible with y offset = {offset.y}")
+                        return None
                     length = sqrt(h**2 - offset.y**2)
 
                     if verbose:
@@ -1192,13 +1208,14 @@ class ShapeBuilder:
             return length
 
         elif angle is None:
-            if not same_dimensions:
+            if not same_dimension:
                 if length == 0:
                     return 0
 
                 h = sqrt(length**2 + offset.y**2)
                 t = -h * (a + b) / (a * b - h**2)
                 angle = degrees(atan(t))
+
             else:
                 h = sqrt(length**2 + offset.y**2)
                 if is_x(offset.x, 0):
