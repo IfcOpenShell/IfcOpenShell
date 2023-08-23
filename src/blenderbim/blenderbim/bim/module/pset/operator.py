@@ -455,7 +455,13 @@ class CopyPropertyToSelection(bpy.types.Operator, Operator):
         else:
             is_pset = context.active_object.PsetProperties.active_pset_type == "PSET"
         pset_name = context.active_object.PsetProperties.active_pset_name
-        prop_value = context.active_object.PsetProperties.properties.get(self.name).metadata.get_value()
+        prop = context.active_object.PsetProperties.properties.get(self.name)
+        if prop.value_type == "IfcPropertySingleValue":
+            prop_value = prop.metadata.get_value()
+        elif prop.value_type == "IfcPropertyEnumeratedValue":
+            value_name = prop.metadata.get_value_name()
+            prop_value = [e[value_name] for e in prop.enumerated_value.enumerated_values if e.is_selected]
+
         for obj in tool.Blender.get_selected_objects():
             core.copy_property_to_selection(
                 tool.Ifc,
