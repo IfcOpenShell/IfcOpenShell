@@ -84,6 +84,12 @@ def get_parametric_resource_products(resource):
             products.append(rel2.RelatingProduct)
     return products
 
+def get_task_assignments(resource):
+    for rel in resource.HasAssignments or []:
+        if not rel.is_a("IfcRelAssignsToProcess"):
+            continue
+        return rel.RelatingProcess
+
 
 def get_resource_required_work(resource):
     productivity = get_productivity(resource)
