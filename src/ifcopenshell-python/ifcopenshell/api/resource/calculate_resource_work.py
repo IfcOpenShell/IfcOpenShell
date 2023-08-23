@@ -60,8 +60,14 @@ class Usecase:
         self.settings = {"resource": resource}
 
     def execute(self):
-        metrics= ifcopenshell.util.constraint.has_metric_constraints(self.settings["resource"], "Usage.ScheduleWork")
-        if metrics and metrics[0].ConstraintGrade == "HARD" and metrics[0].Benchmark == "EQUALTO":
+        metrics = ifcopenshell.util.constraint.has_metric_constraints(
+            self.settings["resource"], "Usage.ScheduleWork"
+        )
+        if (
+            metrics
+            and metrics[0].ConstraintGrade == "HARD"
+            and metrics[0].Benchmark == "EQUALTO"
+        ):
             return
         amount_worked = ifcopenshell.util.resource.get_resource_required_work(
             self.settings["resource"]
