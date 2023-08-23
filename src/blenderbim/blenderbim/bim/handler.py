@@ -73,17 +73,27 @@ def name_callback(obj, data):
         refresh_ui_data()
         return
 
-    if not obj.BIMObjectProperties.ifc_definition_id or "/" not in obj.name:
+    if not obj.BIMObjectProperties.ifc_definition_id:
         return
+
     element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+    if "/" in obj.name:
+        object_name = obj.name
+        element_name = obj.name.split("/", 1)[1]
+    else:
+        element_name = obj.name
+        object_name = element.is_a() + f"/{element_name}"
+        obj.name = object_name  # NOTE: doesn't trigger infinite recursion
+
     if element.is_a("IfcGridAxis"):
-        element.AxisTag = obj.name.split("/")[1]
+        element.AxisTag = object_name.split("/")[1]
         refresh_ui_data()
+
     if not element.is_a("IfcRoot"):
         return
+    element.Name = element_name
     if obj.BIMObjectProperties.collection:
-        obj.BIMObjectProperties.collection.name = obj.name
-    element.Name = "/".join(obj.name.split("/")[1:])
+        obj.BIMObjectProperties.collection.name = object_name
     refresh_ui_data()
 
 
