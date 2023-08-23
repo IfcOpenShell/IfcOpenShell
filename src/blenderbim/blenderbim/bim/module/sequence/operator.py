@@ -1410,14 +1410,14 @@ class LoadProductTasks(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class HighlightTask(bpy.types.Operator):
-    bl_idname = "bim.highlight_task"
+class GoToTask(bpy.types.Operator):
+    bl_idname = "bim.go_to_task"
     bl_label = "Highlight Task"
     bl_options = {"REGISTER", "UNDO"}
     task: bpy.props.IntProperty()
 
     def execute(self, context):
-        r = core.highlight_task(tool.Sequence, task=tool.Ifc.get().by_id(self.task))
+        r = core.go_to_task(tool.Sequence, task=tool.Ifc.get().by_id(self.task))
         if isinstance(r, str):
             self.report({"WARNING"}, r)
         return {"FINISHED"}
