@@ -146,6 +146,20 @@ class BIM_PT_connections(Panel):
             op = row.operator("bim.remove_connection", icon="X", text="")
             op.connection = connection["id"]
 
+            if connection["realizing_elements"]:
+                row = self.layout.row(align=True)
+                connection_type = connection["realizing_elements_connection_type"]
+                connection_type = f" ({connection_type})" if connection_type else ""
+                row.label(text=f"Realizing elements{connection_type}:")
+                
+                for element in connection["realizing_elements"]:
+                    row = self.layout.row(align=True)
+                    obj = tool.Ifc.get_object(element)
+                    row.label(text=obj.name)
+                    row.operator(
+                        "bim.select_entity", text="", icon="RESTRICT_SELECT_OFF"
+                    ).ifc_id = element.id()
+
 
 class BIM_PT_mesh(Panel):
     bl_label = "Representation Utilities"
