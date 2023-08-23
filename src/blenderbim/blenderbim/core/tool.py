@@ -620,7 +620,6 @@ class Resource:
     def get_constraints(cls, resource): pass
     def get_metrics(cls, constraint): pass
     def get_metric_reference(cls, metric, is_deep): pass
-    def get_resource_benchmarks(cls, resource): pass
     def has_metric_constraint(cls, resource, attribute): pass
     def has_usage_metric(cls, resource): pass
 
