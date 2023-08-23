@@ -465,11 +465,11 @@ def load_animation_color_scheme(sequence, scheme):
     sequence.load_animation_color_scheme(scheme)
 
 
-def highlight_task(sequence, task=None):
+def go_to_task(sequence, task=None):
     work_schedule = sequence.get_work_schedule(task)
     is_work_schedule_active = sequence.is_work_schedule_active(work_schedule)
     if is_work_schedule_active:
-        sequence.highlight_task(task)
+        sequence.go_to_task(task)
     else:
         return "Work schedule is not active"
 
@@ -485,7 +485,7 @@ def highlight_product_related_task(sequence, spatial, product_type=None):
             work_schedule = sequence.get_work_schedule(task)
             is_work_schedule_active = sequence.is_work_schedule_active(work_schedule)
             if is_work_schedule_active:
-                sequence.highlight_task(task)
+                sequence.go_to_task(task)
 
 
 def guess_date_range(sequence, work_schedule=None):
