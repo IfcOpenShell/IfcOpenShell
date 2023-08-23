@@ -32,7 +32,7 @@ import ifcopenshell.util.date as ifcdateutils
 import ifcopenshell.util.cost
 import ifcopenshell.util.resource
 import blenderbim.bim.schema
-
+import ifcopenshell.util.constraint
 
 class Resource(blenderbim.core.tool.Resource):
     @classmethod
@@ -384,68 +384,30 @@ class Resource(blenderbim.core.tool.Resource):
 
     @classmethod
     def get_constraints(cls, resource):
-        constraints = []
-        for rel in resource.HasAssociations or []:
-            if rel.is_a("IfcRelAssociatesConstraint"):
-                constraints.append(rel.RelatingConstraint)
-        return constraints
+        return ifcopenshell.util.constraint.get_constraints(product=resource)
 
     @classmethod
     def get_metrics(cls, constraint):
-        metrics = []
-        for metric in constraint.BenchmarkValues or []:
-            metrics.append(metric)
-        return metrics
+        return ifcopenshell.util.constraint.get_metrics(constraint)
 
     @classmethod
     def get_metric_reference(cls, metric, is_deep=True):
-        def get_reference_Attribute(ref, path):
-            if ref:
-                if is_deep:
-                    if not path:
-                        path = ref.AttributeIdentifier
-                    else:
-                        path += ".{}".format(ref.AttributeIdentifier) if ref.AttributeIdentifier else ""
-                    return get_reference_Attribute(ref.InnerReference, path)
-                else:
-                    return ref.AttributeIdentifier
-            return path
-
-        reference = metric.ReferencePath
-        return get_reference_Attribute(reference, "")
-
-    @classmethod
-    def get_resource_benchmarks(cls, resource):
-        constraints = []
-        for constraint in cls.get_constraints(resource) or []:
-            metrics = []
-            for metric in cls.get_metrics(constraint) or []:
-                metrics.append(
-                    {
-                        "reference": cls.get_metric_reference(metric),
-                        "Benchmark": metric.Benchmark,
-                        "ConstraintGrade": metric.ConstraintGrade,
-                    }
-                )
-            constraints.append({"ObjectiveQualifier": constraint.ObjectiveQualifier, "metrics": metrics})
-        return constraints
+        return ifcopenshell.util.constraint.get_metric_reference(metric, is_deep=is_deep)
 
     @classmethod
     def has_metric_constraint(cls, resource, attribute):
-        constraints = tool.Resource.get_constraints(resource)
-        metrics = []
-        for constraint in constraints:
-            for metric in tool.Resource.get_metrics(constraint) or []:
-                is_same_reference = bool(
-                    tool.Resource.get_metric_reference(metric, is_deep=False) == attribute
-                    or tool.Resource.get_metric_reference(metric, is_deep=True) == attribute
-                )
-                if is_same_reference:
-                    metrics.append(metric)
-        if metrics:
-            return metrics[0]
-        return None
+        metrics = ifcopenshell.util.constraint.has_metric_constraints(resource, attribute)
+        return metrics[0] if metrics else None
 
     @classmethod
     def has_usage_metric(cls, resource):
         return cls.has_metric_constraint(resource, "Usage")
+
+    @classmethod
+    def run_edit_resource_time(cls, resource, attributes):
+        if not resource.Usage:
+            tool.Ifc.run(
+                "resource.add_resource_time",
+                resource=resource,
+            )
+        tool.Ifc.run("resource.edit_resource_time", resource_time=resource.Usage, attributes=attributes)
