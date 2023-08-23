@@ -114,7 +114,13 @@ class ConnectionsData:
             else:
                 related_element = rel.RelatedElement
 
-            if element.is_a("IfcRelConnectsPathElements"):
+            realizing_elements = []
+            realizing_elements_connection_type = ""
+            if rel.is_a("IfcRelConnectsWithRealizingElements"):
+                realizing_elements.extend(rel.RealizingElements)
+                realizing_elements_connection_type = rel.ConnectionType
+
+            if rel.is_a("IfcRelConnectsPathElements"):
                 related_element_connection_type = rel.RelatedConnectionType
             else:
                 related_element_connection_type = ""
@@ -125,6 +131,8 @@ class ConnectionsData:
                     "is_relating": True,
                     "Name": related_element.Name or "Unnamed",
                     "ConnectionType": related_element_connection_type,
+                    "realizing_elements": realizing_elements,
+                    "realizing_elements_connection_type": realizing_elements_connection_type
                 }
             )
 
@@ -134,7 +142,13 @@ class ConnectionsData:
             else:
                 relating_element = rel.RelatingElement
 
-            if element.is_a("IfcRelConnectsPathElements"):
+            realizing_elements = []
+            realizing_elements_connection_type = ""
+            if rel.is_a("IfcRelConnectsWithRealizingElements"):
+                realizing_elements.extend(rel.RealizingElements)
+                realizing_elements_connection_type = rel.ConnectionType
+
+            if rel.is_a("IfcRelConnectsPathElements"):
                 relating_element_connection_type = rel.RelatingConnectionType
             else:
                 relating_element_connection_type = ""
@@ -145,6 +159,8 @@ class ConnectionsData:
                     "is_relating": False,
                     "Name": relating_element.Name or "Unnamed",
                     "ConnectionType": relating_element_connection_type,
+                    "realizing_elements": realizing_elements,
+                    "realizing_elements_connection_type": realizing_elements_connection_type
                 }
             )
 
