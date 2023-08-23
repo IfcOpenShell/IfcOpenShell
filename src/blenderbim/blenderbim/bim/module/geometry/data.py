@@ -97,7 +97,7 @@ class ConnectionsData:
 
     @classmethod
     def load(cls):
-        cls.data = {"connections": cls.connections()}
+        cls.data = {"connections": cls.connections(), "is_connection_realization": cls.is_connection_realization()}
         cls.is_loaded = True
 
     @classmethod
@@ -132,7 +132,7 @@ class ConnectionsData:
                     "Name": related_element.Name or "Unnamed",
                     "ConnectionType": related_element_connection_type,
                     "realizing_elements": realizing_elements,
-                    "realizing_elements_connection_type": realizing_elements_connection_type
+                    "realizing_elements_connection_type": realizing_elements_connection_type,
                 }
             )
 
@@ -160,10 +160,27 @@ class ConnectionsData:
                     "Name": relating_element.Name or "Unnamed",
                     "ConnectionType": relating_element_connection_type,
                     "realizing_elements": realizing_elements,
-                    "realizing_elements_connection_type": realizing_elements_connection_type
+                    "realizing_elements_connection_type": realizing_elements_connection_type,
                 }
             )
 
+        return results
+
+    @classmethod
+    def is_connection_realization(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        connections = element.IsConnectionRealization
+        if not connections:
+            return
+
+        results = []
+        for rel in connections:
+            data = {
+                "realizing_elements_connection_type": rel.ConnectionType,
+                "connected_from": rel.RelatingElement,
+                "connected_to": rel.RelatedElement,
+            }
+            results.append(data)
         return results
 
 

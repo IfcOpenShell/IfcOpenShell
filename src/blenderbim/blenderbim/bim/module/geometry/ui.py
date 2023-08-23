@@ -134,7 +134,7 @@ class BIM_PT_connections(Panel):
         layout = self.layout
         props = context.active_object.BIMObjectProperties
 
-        if not ConnectionsData.data["connections"]:
+        if not ConnectionsData.data["connections"] and not ConnectionsData.data["is_connection_realization"]:
             layout.label(text="No connections found")
 
         for connection in ConnectionsData.data["connections"]:
@@ -151,14 +151,38 @@ class BIM_PT_connections(Panel):
                 connection_type = connection["realizing_elements_connection_type"]
                 connection_type = f" ({connection_type})" if connection_type else ""
                 row.label(text=f"Realizing elements{connection_type}:")
-                
+
                 for element in connection["realizing_elements"]:
                     row = self.layout.row(align=True)
                     obj = tool.Ifc.get_object(element)
+                    row.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = element.id()
                     row.label(text=obj.name)
-                    row.operator(
-                        "bim.select_entity", text="", icon="RESTRICT_SELECT_OFF"
-                    ).ifc_id = element.id()
+
+        # display connections where element is connection realization
+        connections = ConnectionsData.data["is_connection_realization"]
+        if not connections:
+            return
+
+        row = self.layout.row(align=True)
+        row.label(text="Element is connections realization:")
+        for connection in connections:
+            # NOTE: not displayed yet
+            connection_type = connection["realizing_elements_connection_type"]
+            connection_type = f" ({connection_type})" if connection_type else ""
+
+            row = self.layout.row(align=True)
+
+            connected_from = connection["connected_from"]
+            obj = tool.Ifc.get_object(connected_from)
+            row.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = connected_from.id()
+            row.label(text=obj.name)
+
+            row.label(text="", icon="FORWARD")
+
+            connected_to = connection["connected_to"]
+            obj = tool.Ifc.get_object(connected_to)
+            row.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = connected_to.id()
+            row.label(text=obj.name)
 
 
 class BIM_PT_mesh(Panel):
