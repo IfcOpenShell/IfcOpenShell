@@ -381,6 +381,16 @@ class ISODuration(PropertyGroup):
     seconds: IntProperty(name="Seconds", default=0)
 
 
+class IFCStatus(PropertyGroup):
+    name: StringProperty(name="Name")
+    is_visible: BoolProperty(name="Is Visible", default=True)
+
+
+class BIMStatusProperties(PropertyGroup):
+    is_enabled: BoolProperty(name="Is Enabled")
+    statuses: CollectionProperty(name="Statuses", type=IFCStatus)
+
+
 class BIMWorkScheduleProperties(PropertyGroup):
     work_schedule_predefined_types: EnumProperty(
         items=get_schedule_predefined_types, name="Predefined Type", default=None
