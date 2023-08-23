@@ -351,6 +351,7 @@ class BIM_PT_work_schedules(Panel):
     def draw_editable_sequence_ui(self, sequence, process_type):
         task = SequenceData.data["tasks"][sequence[process_type]]
         row = self.layout.row(align=True)
+        row.operator("bim.go_to_task", text="", icon="RESTRICT_SELECT_OFF").task = task["id"]
         row.label(text=task["Identification"] or "XXX")
         row.label(text=task["Name"] or "Unnamed")
         row.label(text=sequence["SequenceType"] or "N/A")
@@ -765,9 +766,9 @@ class BIM_UL_task_resources(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
+            row.operator("bim.go_to_resource", text="", icon="STYLUS_PRESSURE").resource = item.ifc_definition_id
             row.prop(item, "name", emboss=False, text="")
-            row.label(text=str(item.schedule_usage))
-
+            row.prop(item, "schedule_usage", emboss=False, text="")
 
 class BIM_UL_animation_colors(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
@@ -790,7 +791,7 @@ class BIM_UL_product_input_tasks(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
-            op = row.operator("bim.highlight_task", text="", icon="STYLUS_PRESSURE")
+            op = row.operator("bim.go_to_task", text="", icon="STYLUS_PRESSURE")
             op.task = item.ifc_definition_id
             row.split(factor=0.8)
             row.label(text=item.name)
@@ -800,7 +801,7 @@ class BIM_UL_product_output_tasks(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
-            op = row.operator("bim.highlight_task", text="", icon="STYLUS_PRESSURE")
+            op = row.operator("bim.go_to_task", text="", icon="STYLUS_PRESSURE")
             op.task = item.ifc_definition_id
             row.split(factor=0.8)
             row.label(text=item.name)
