@@ -396,8 +396,16 @@ class Geometry(blenderbim.core.tool.Geometry):
         return f"{representation.ContextOfItems.id()}/{representation.id()}"
 
     @classmethod
-    def get_styles(cls, obj):
-        return [tool.Style.get_style(s.material) for s in obj.material_slots if s.material]
+    def get_styles(cls, obj, only_assigned_to_faces=False):
+        styles = [tool.Style.get_style(s.material) for s in obj.material_slots if s.material]
+        if not only_assigned_to_faces:
+            return styles
+
+        usage_count = [0] * len(obj.material_slots)
+        for poly in obj.data.polygons:
+            usage_count[poly.material_index] += 1
+        styles = [style for style, usage in zip(styles, usage_count, strict=True) if usage > 0]
+        return styles
 
     # TODO: multiple Literals?
     @classmethod

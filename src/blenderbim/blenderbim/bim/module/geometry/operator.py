@@ -329,7 +329,7 @@ class UpdateRepresentation(bpy.types.Operator, Operator):
                 "style.assign_representation_styles",
                 self.file,
                 shape_representation=new_representation,
-                styles=tool.Geometry.get_styles(obj),
+                styles=tool.Geometry.get_styles(obj, only_assigned_to_faces=True),
                 should_use_presentation_style_assignment=context.scene.BIMGeometryProperties.should_use_presentation_style_assignment,
             )
             tool.Geometry.record_object_materials(obj)
