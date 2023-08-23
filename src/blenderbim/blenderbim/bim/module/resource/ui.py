@@ -77,7 +77,6 @@ class BIM_PT_resources(Panel):
             self.draw_editable_resource_time_attributes_ui()
 
     def draw_productivity_ui(self, context):
-
         row = self.layout.row(align=True)
         row.alignment = "RIGHT"
         row.prop(self.props, "should_show_resource_tools", text="Resource Tools",icon="RECOVER_LAST")
@@ -137,6 +136,7 @@ class BIM_PT_resources(Panel):
                 row2col2 = col2.row()
                 row2col2.prop(self.tprops.resources[self.props.active_resource_index], "schedule_usage", text="")
                 row2col3 = col3.row()
+                row2col3.operator("bim.calculate_resource_usage", text="", icon="TEMP").resource = ifc_definition_id
                 op = row2col3.operator(
                     "bim.add_usage_constraint" if not is_usage_locked else "bim.remove_usage_constraint",
                     text="",

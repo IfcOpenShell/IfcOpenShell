@@ -41,6 +41,7 @@ classes = (
     operator.EnableEditingResourceBaseQuantity,
     operator.EnableEditingResourceCosts,
     operator.EnableEditingResourceCostValue,
+    operator.CalculateResourceUsage,
     operator.EnableEditingResourceCostValueFormula,
     operator.EnableEditingResourceQuantity,
     operator.EnableEditingResourceTime,

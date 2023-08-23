@@ -1683,3 +1683,9 @@ class Sequence(blenderbim.core.tool.Sequence):
         if not task:
             return
         cls.load_task_resources(cls.get_task_resources(task))
+
+    @classmethod
+    def has_duration(cls, task):
+        if task.TaskTime and task.TaskTime.ScheduleDuration:
+            return True
+        return False

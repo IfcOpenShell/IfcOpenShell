@@ -80,10 +80,10 @@ class ResourceData:
                     results[resource.id()]["ScheduleWork"] = (
                         ifcopenshell.util.date.readable_ifc_duration(resource.Usage.ScheduleWork)
                         if resource.Usage.ScheduleWork
-                        else "Calculate",
+                        else None
                     )
                     results[resource.id()]["ScheduleUsage"] = (
-                        resource.Usage.ScheduleUsage if resource.Usage.ScheduleUsage else ""
+                        resource.Usage.ScheduleUsage if resource.Usage.ScheduleUsage else None
                     )
         return results
 
