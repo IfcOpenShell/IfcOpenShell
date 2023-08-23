@@ -37,13 +37,13 @@ class Patcher:
         .. code:: python
 
             # Extract all walls
-            ifcpatch.execute({"input": model, "recipe": "ExtractElements", "arguments": [".IfcWall"]})
+            ifcpatch.execute({"input": model, "recipe": "ExtractElements", "arguments": ["IfcWall"]})
 
             # Extract all slabs
-            ifcpatch.execute({"input": model, "recipe": "ExtractElements", "arguments": [".IfcSlab"]})
+            ifcpatch.execute({"input": model, "recipe": "ExtractElements", "arguments": ["IfcSlab"]})
 
             # Extract all walls and slabs
-            ifcpatch.execute({"input": model, "recipe": "ExtractElements", "arguments": [".IfcWall|.IfcSlab"]})
+            ifcpatch.execute({"input": model, "recipe": "ExtractElements", "arguments": ["IfcWall, IfcSlab"]})
         """
         self.src = src
         self.file = file
@@ -59,8 +59,7 @@ class Patcher:
             self.owner_history = self.new.add(owner_history)
             break
         self.add_element(self.file.by_type("IfcProject")[0])
-        selector = ifcopenshell.util.selector.Selector()
-        for element in selector.parse(self.file, self.query):
+        for element in ifcopenshell.util.selector.filter_elements(self.file, self.query):
             self.add_element(element)
         self.create_spatial_tree()
         self.file = self.new
