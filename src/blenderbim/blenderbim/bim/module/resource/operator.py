@@ -389,3 +389,15 @@ class RemoveUsageConstraint(bpy.types.Operator, tool.Ifc.Operator):
         core.remove_usage_constraint(
             tool.Ifc, tool.Resource, resource=tool.Ifc.get().by_id(self.resource), reference_path=self.attribute
         )
+
+
+class GoToResource(bpy.types.Operator):
+    bl_idname = "bim.go_to_resource"
+    bl_label = "Go To Resource"
+    bl_description = "Selects the resource in the Resource Panel"
+    bl_options = {"REGISTER", "UNDO"}
+    resource: bpy.props.IntProperty()
+
+    def execute(self, context):
+        core.go_to_resource(tool.Resource, resource=tool.Ifc.get().by_id(self.resource))
+        return {"FINISHED"}
