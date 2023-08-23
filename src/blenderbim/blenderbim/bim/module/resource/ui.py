@@ -80,7 +80,7 @@ class BIM_PT_resources(Panel):
 
         row = self.layout.row(align=True)
         row.alignment = "RIGHT"
-        row.prop(self.props, "should_show_resource_tools", icon="RECOVER_LAST")
+        row.prop(self.props, "should_show_resource_tools", text="Resource Tools",icon="RECOVER_LAST")
         if self.props.should_show_resource_tools:
             total_resources = len(self.tprops.resources)
             if not total_resources or self.props.active_resource_index >= total_resources:
@@ -109,43 +109,44 @@ class BIM_PT_resources(Panel):
                             and metric["reference"] == "Usage.ScheduleWork"
                         ):
                             is_work_locked = True
-                row = self.layout.row()
-                row.label(text="Resource Work")
-                schedule_work = "Schedule Work: {}".format(resource.get("ScheduleWork"))
-                row = self.layout.row()
-                row.alignment = "LEFT"
-                row.label(text="Schedule Usage:")
-                row.prop(self.tprops.resources[self.props.active_resource_index], "schedule_usage", text="")
-                row2 = self.layout.row()
-                row2.alignment = "LEFT"
-                row2.label(text=schedule_work, icon="ARMATURE_DATA")
-                if not is_usage_locked:
-                    op = row.operator("bim.add_usage_constraint", text="", icon="UNLOCKED")
-                    op.resource = ifc_definition_id
-                    op.attribute = "Usage.ScheduleUsage"
-                else:
-                    op = row.operator("bim.remove_usage_constraint", text="", icon="LOCKED")
-                    op.resource = ifc_definition_id
-                    op.attribute = "Usage.ScheduleUsage"
-                if not is_work_locked:
-                    op = row2.operator("bim.add_usage_constraint", text="", icon="UNLOCKED")
-                    op.resource = ifc_definition_id
-                    op.attribute = "Usage.ScheduleWork"
-                else:
-                    op = row2.operator("bim.remove_usage_constraint", text="", icon="LOCKED")
-                    op.resource = ifc_definition_id
-                    op.attribute = "Usage.ScheduleWork"
+                grid = self.layout.grid_flow(columns=3, even_columns=False, even_rows=False, align=False)
+
+                col1 = grid.column(align=True)
+                col2 = grid.column(align=False)
+                col3 = grid.column(align=True)
+                col1.ui_units_x = 1
+                col2.ui_units_x = 1
+                col3.ui_units_x = 2
+
+                row1_col1 = col1.row()
+                row1_col1.label(text="Schedule Work")
+                row1col2 = col2.row()
+                row1col2.label(text=resource.get("ScheduleWork", "-"), icon="TIME")
+
+                row1col3 = col3.row()
+                row1col3.operator("bim.calculate_resource_work", text="", icon="TEMP").resource = ifc_definition_id
+                op = row1col3.operator(
+                    "bim.add_usage_constraint" if not is_work_locked else "bim.remove_usage_constraint",
+                    text="",
+                    icon="LOCKED" if is_work_locked else "UNLOCKED",
+                )
+                op.resource = ifc_definition_id
+                op.attribute = "Usage.ScheduleWork"
+                row2_col1 = col1.row()
+                row2_col1.label(text="Schedule Usage")
+                row2col2 = col2.row()
+                row2col2.prop(self.tprops.resources[self.props.active_resource_index], "schedule_usage", text="")
+                row2col3 = col3.row()
+                op = row2col3.operator(
+                    "bim.add_usage_constraint" if not is_usage_locked else "bim.remove_usage_constraint",
+                    text="",
+                    icon="LOCKED" if is_usage_locked else "UNLOCKED",
+                )
+                op.resource = ifc_definition_id
+                op.attribute = "Usage.ScheduleUsage"
 
                 productivity = resource["Productivity"]
                 parent_productivity = resource["InheritedProductivity"]
-
-                row = self.layout.row()
-                row.operator(
-                    "bim.calculate_resource_work", text="Calculate Work", icon="TEMP"
-                ).resource = ifc_definition_id
-
-                row = self.layout.row()
-                row.label(text="Productivity")
                 row = self.layout.row()
                 if productivity:
                     produtivitiy_rate_message = "Current Productivity Rate: {} {} / {}".format(
@@ -162,24 +163,30 @@ class BIM_PT_resources(Panel):
                         parent_productivity["TimeConsumed"],
                     )
                     row.alignment = "LEFT"
-                    row.label(text=produtivitiy_rate_message, icon="ARMATURE_DATA")
+                    row.label(text="Productivity: {}".format(produtivitiy_rate_message), icon="ARMATURE_DATA")
                 else:
                     row = self.layout.row(align=True)
                     row.alignment = "LEFT"
                     produtivitiy_rate_message = "No productivity data found"
-                    row.label(text=produtivitiy_rate_message, icon="ARMATURE_DATA")
-
+                    row.label(text="Productivity: {}".format(produtivitiy_rate_message), icon="ARMATURE_DATA")
                 productivity_props = context.scene.BIMResourceProductivity
-                row = self.layout.row(align=True)
-                row.alignment = "RIGHT"
-                row.prop(productivity_props, "quantity_produced", text="Quantity Produced")
-                row.prop(productivity_props, "quantity_produced_name", text="Quantity Name")
-                row = self.layout.row()
-                row.alignment = "RIGHT"
-                self.draw_duration_property(productivity_props.quantity_consumed, row)
-                row = self.layout.row()
-                row.alignment = "RIGHT"
-                row.operator("bim.edit_productivity_data", text="Apply", icon="CHECKMARK")
+                grid = self.layout.grid_flow(columns=2, even_columns=False, even_rows=False, align=False)
+                col1 = grid.column(align=False)
+                col2 = grid.column(align=False)
+                col1.ui_units_x = 1
+                col2.ui_units_x = 3
+                row1_col1 = col1.row()
+                row1_col1.label(text="Quantity")
+                row1_col2 = col2.row()
+                row1_col2.prop(productivity_props, "quantity_produced", text="")
+                row1_col2.prop(productivity_props, "quantity_produced_name", text="")
+                row2_col1 = col1.row()
+                row2_col1.label(text="Time")
+                row2_col2 = col2.row()
+                self.draw_duration_property(productivity_props.quantity_consumed, row2_col2)
+                row3_col2 = col2.row()
+                row3_col2.alignment = "RIGHT"
+                row3_col2.operator("bim.edit_productivity_data", text="", icon="CHECKMARK")
 
     def draw_resource_operators(self):
         row = self.layout.row(align=True)
@@ -311,7 +318,6 @@ class BIM_PT_resources(Panel):
     def draw_duration_property(self, duration_props, layout):
         for duration_prop in duration_props:
             if duration_prop.name == "BaseQuantityConsumed":
-                layout.label(text=duration_prop.name)
                 layout.prop(duration_prop, "years", text="Y")
                 layout.prop(duration_prop, "months", text="M")
                 layout.prop(duration_prop, "days", text="D")
