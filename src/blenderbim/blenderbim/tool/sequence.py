@@ -774,25 +774,27 @@ class Sequence(blenderbim.core.tool.Sequence):
         )
 
     @classmethod
-    def highlight_task(cls, task):
-        def expand_ancestors(task):
+    def go_to_task(cls, task):
+        def get_ancestor_ids(task):
+            ids = []
             for rel in task.Nests or []:
-                parent_task = rel.RelatingObject if rel.RelatingObject.is_a("IfcTask") else None
-                contracted_tasks = json.loads(bpy.context.scene.BIMWorkScheduleProperties.contracted_tasks)
-                if parent_task and parent_task.id() in contracted_tasks:
-                    contracted_tasks.remove(parent_task.id())
-                    bpy.context.scene.BIMWorkScheduleProperties.contracted_tasks = json.dumps(contracted_tasks)
-                    expand_ancestors(parent_task)
-            work_schedule = cls.get_active_work_schedule()
-            cls.load_task_tree(work_schedule)
-            cls.load_task_properties()
+                ids.append(rel.RelatingObject.id())
+                ids.extend(get_ancestor_ids(rel.RelatingObject))
+            return ids
+
+        contracted_tasks = json.loads(bpy.context.scene.BIMWorkScheduleProperties.contracted_tasks)
+        for ancestor_id in get_ancestor_ids(task):
+            if ancestor_id in contracted_tasks:
+                contracted_tasks.remove(ancestor_id)
+        bpy.context.scene.BIMWorkScheduleProperties.contracted_tasks = json.dumps(contracted_tasks)
+
+        work_schedule = cls.get_active_work_schedule()
+        cls.load_task_tree(work_schedule)
+        cls.load_task_properties()
 
         task_props = bpy.context.scene.BIMTaskTreeProperties
-        displayed_tasks = [item.ifc_definition_id for item in task_props.tasks]
-        if not task.id() in displayed_tasks:
-            expand_ancestors(task)
-        task_index = displayed_tasks.index(task.id()) or 0
-        bpy.context.scene.BIMWorkScheduleProperties.active_task_index = task_index
+        expanded_tasks = [item.ifc_definition_id for item in task_props.tasks]
+        bpy.context.scene.BIMWorkScheduleProperties.active_task_index = expanded_tasks.index(task.id()) or 0
 
     @classmethod
     def guess_date_range(cls, work_schedule):
