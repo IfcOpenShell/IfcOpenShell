@@ -217,3 +217,8 @@ def remove_usage_constraint(ifc, resource_tool, resource, reference_path):
 
 def go_to_resource(resource_tool, resource):
     resource_tool.go_to_resource(resource)
+
+def calculate_resource_usage(ifc, resource_tool, resource):
+    ifc.run("resource.calculate_resource_usage", resource=resource)
+    resource_tool.load_resources()
+    resource_tool.load_resource_properties()
