@@ -735,7 +735,7 @@ class Sequence:
     def get_work_time_attributes(cls): pass
     def guess_date_range(cls, work_schedule): pass
     def has_task_assignments(cls, product, cost_schedule=None): pass
-    def highlight_task(cls, task): pass
+    def go_to_task(cls, task): pass
     def is_filter_by_active_schedule(cls): pass
     def is_work_schedule_active(cls, work_schedule): pass
     def load_animation_color_scheme(cls, scheme): pass
