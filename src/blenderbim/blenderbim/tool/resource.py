@@ -435,3 +435,12 @@ class Resource(blenderbim.core.tool.Resource):
         resource_props = bpy.context.scene.BIMResourceTreeProperties
         expanded_resources = [item.ifc_definition_id for item in resource_props.resources]
         bpy.context.scene.BIMResourceProperties.active_resource_index = expanded_resources.index(resource.id())
+
+
+    @classmethod
+    def run_calculate_resource_usage(cls, resource):
+        tool.Ifc.run("resource.calculate_resource_usage", resource=resource)
+
+    @classmethod
+    def get_task_assignments(cls, resource):
+        return ifcopenshell.util.resource.get_task_assignments(resource)
