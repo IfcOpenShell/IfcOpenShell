@@ -56,7 +56,7 @@ class ResourceData:
                 "type": resource.is_a(),
                 "BaseQuantity": base_quantity,
             }
-            results[resource.id()]["Benchmarks"] = tool.Resource.get_resource_benchmarks(resource)
+            results[resource.id()]["Benchmarks"] = cls.get_resource_benchmarks(resource)
             if resource.is_a() in ["IfcLaborResource", "IfcConstructionEquipmentResource"]:
                 results[resource.id()]["Productivity"] = {}
                 results[resource.id()]["InheritedProductivity"] = {}
@@ -86,6 +86,22 @@ class ResourceData:
                         resource.Usage.ScheduleUsage if resource.Usage.ScheduleUsage else ""
                     )
         return results
+
+    @classmethod
+    def get_resource_benchmarks(cls, resource):
+        constraints = []
+        for constraint in ifcopenshell.util.constraint.get_constraints(resource) or []:
+            metrics = []
+            for metric in ifcopenshell.util.constraint.get_metrics(constraint) or []:
+                metrics.append(
+                    {
+                        "reference": ifcopenshell.util.constraint.get_metric_reference(metric),
+                        "Benchmark": metric.Benchmark,
+                        "ConstraintGrade": metric.ConstraintGrade,
+                    }
+                )
+            constraints.append({"ObjectiveQualifier": constraint.ObjectiveQualifier, "metrics": metrics})
+        return constraints
 
     @classmethod
     def get_productivity(cls, resource):
