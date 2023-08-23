@@ -24,7 +24,8 @@ from ifcopenshell.util.doc import get_predefined_type_doc
 import blenderbim.tool as tool
 import blenderbim.core.sequence as core
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.sequence.data import SequenceData, AnimationColorSchemeData
+from blenderbim.bim.module.sequence.data import SequenceData, AnimationColorSchemeData, refresh as refresh_sequence_data
+import blenderbim.bim.module.resource.data
 import blenderbim.bim.module.pset.data
 from blenderbim.bim.prop import StrProperty, Attribute
 from dateutil import parser
@@ -325,6 +326,25 @@ def get_saved_color_schemes(self, context):
     return AnimationColorSchemeData.data["saved_color_schemes"]
 
 
+def updateAssignedResourceName(self, context):
+    pass
+
+def updateAssignedResourceUsage(self, context):
+    if not self.schedule_usage:
+        return
+    resource = tool.Ifc.get().by_id(self.ifc_definition_id)
+    if resource.Usage and resource.Usage.ScheduleUsage == self.schedule_usage:
+        return
+    tool.Resource.run_edit_resource_time(resource, attributes={
+        "ScheduleUsage": self.schedule_usage
+    })
+    tool.Sequence.load_task_properties()
+    tool.Resource.load_resource_properties()
+    tool.Sequence.refresh_task_resources()
+    blenderbim.bim.module.resource.data.refresh()
+    blenderbim.bim.module.sequence.data.refresh()
+    blenderbim.bim.module.pset.data.refresh()
+
 class Task(PropertyGroup):
     name: StringProperty(name="Name", update=updateTaskName)
     identification: StringProperty(name="Identification", update=updateTaskIdentification)
@@ -352,9 +372,9 @@ class WorkPlan(PropertyGroup):
 
 
 class TaskResource(PropertyGroup):
-    name: StringProperty(name="Name")
+    name: StringProperty(name="Name", update=updateAssignedResourceName)
     ifc_definition_id: IntProperty(name="IFC Definition ID")
-    schedule_usage: FloatProperty(name="Schedule Usage")
+    schedule_usage: FloatProperty(name="Schedule Usage", update=updateAssignedResourceUsage)
 
 
 class TaskProduct(PropertyGroup):
