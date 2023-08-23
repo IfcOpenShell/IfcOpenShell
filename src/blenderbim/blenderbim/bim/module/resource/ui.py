@@ -110,11 +110,11 @@ class BIM_PT_resources(Panel):
                             is_work_locked = True
                 row = self.layout.row()
                 row.label(text="Resource Work")
-                schedule_usage = "Schedule Usage: {}".format(resource.get("ScheduleUsage"))
                 schedule_work = "Schedule Work: {}".format(resource.get("ScheduleWork"))
                 row = self.layout.row()
                 row.alignment = "LEFT"
-                row.label(text=schedule_usage, icon="ARMATURE_DATA")
+                row.label(text="Schedule Usage:")
+                row.prop(self.tprops.resources[self.props.active_resource_index], "schedule_usage", text="")
                 row2 = self.layout.row()
                 row2.alignment = "LEFT"
                 row2.label(text=schedule_work, icon="ARMATURE_DATA")

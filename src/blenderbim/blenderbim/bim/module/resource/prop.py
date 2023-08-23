@@ -1,5 +1,5 @@
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2021, 2022, 2023 Dion Moult, Yassine Oualid <dion@thinkmoult.com>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -22,8 +22,8 @@ import ifcopenshell.util.resource
 from blenderbim.bim.ifc import IfcStore
 import blenderbim.tool as tool
 import blenderbim.bim.module.pset.data
-from blenderbim.bim.module.resource.data import refresh
-from blenderbim.bim.module.sequence.data import refresh as refresh_sequence
+import blenderbim.bim.module.resource.data
+import blenderbim.bim.module.sequence.data
 from blenderbim.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -58,7 +58,7 @@ def updateResourceName(self, context):
     if props.active_resource_id == self.ifc_definition_id:
         attribute = props.resource_attributes.get("Name")
         attribute.string_value = self.name
-    refresh()
+    blenderbim.bim.module.resource.data.refresh()
     tool.Sequence.refresh_task_resources()
 
 
@@ -88,17 +88,15 @@ def updateResourceUsage(self, context):
     if self.schedule_usage == "":
         return
     resource = tool.Ifc.get().by_id(self.ifc_definition_id)
-    if not resource.Usage:
-        tool.Ifc.run(
-            "resource.add_resource_time",
-            resource=resource,
-        )
-    resource.Usage.ScheduleUsage = self.schedule_usage
-    blenderbim.bim.module.pset.data.refresh()
-    refresh()
+    tool.Resource.run_edit_resource_time(resource, attributes={
+        "ScheduleUsage": self.schedule_usage
+    })
     tool.Resource.load_resource_properties()
+    tool.Sequence.load_task_properties()
+    blenderbim.bim.module.resource.data.refresh()
+    blenderbim.bim.module.sequence.data.refresh()
     tool.Sequence.refresh_task_resources()
-
+    blenderbim.bim.module.pset.data.refresh()
 
 class ISODuration(PropertyGroup):
     name: StringProperty(name="Name")
