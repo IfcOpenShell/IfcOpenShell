@@ -376,7 +376,7 @@ class TestGenerateDrawingMatrix(NewFile):
 
     def test_creating_an_rcp_at_the_origin(self):
         assert subject.generate_drawing_matrix("REFLECTED_PLAN_VIEW", None) == mathutils.Matrix(
-            ((-1, 0, 0, 0), (0, 1, 0, 0), (0, 0, -1, 0), (0, 0, 0, 1))
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, -1, 0), (0, 0, 0, 1))
         )
 
     def test_creating_an_rcp_at_the_cursor_at_a_storey(self):
@@ -389,7 +389,7 @@ class TestGenerateDrawingMatrix(NewFile):
         obj.matrix_world[2][3] = 3
         bpy.context.scene.cursor.location = (1.0, 2.0, 0.0)
         assert subject.generate_drawing_matrix("REFLECTED_PLAN_VIEW", element.id()) == mathutils.Matrix(
-            ((-1, 0, 0, 1), (0, 1, 0, 2), (0, 0, -1, 3 + 1.6), (0, 0, 0, 1))
+            ((1, 0, 0, 1), (0, 1, 0, 2), (0, 0, -1, 3 + 1.6), (0, 0, 0, 1))
         )
 
     def test_creating_a_north_elevation_at_the_cursor(self):
@@ -485,9 +485,12 @@ class TestImportDrawings(NewFile):
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"TargetView": "PLAN_VIEW"})
         subject.import_drawings()
         props = bpy.context.scene.DocProperties
-        assert props.drawings[0].ifc_definition_id == drawing.id()
-        assert props.drawings[0].name == "FOOBAR"
-        assert props.drawings[0].target_view == "PLAN_VIEW"
+        for d in props.drawings:
+            d.is_expanded = True
+        subject.import_drawings()
+        assert props.drawings[1].target_view == "PLAN_VIEW"
+        assert props.drawings[2].ifc_definition_id == drawing.id()
+        assert props.drawings[2].name == "FOOBAR"
 
 
 class TestImportSchedules(NewFile):
@@ -668,6 +671,7 @@ class TestDrawingMaintainingSheetPosition(NewFile):
         return drawing_data
 
     def test_run(self):
+        props = bpy.context.scene.DocProperties
         bpy.ops.bim.create_project()
         ifc = tool.Ifc.get()
         sheet_path = Path.cwd() / "layouts" / "A00 - UNTITLED.svg"
@@ -676,9 +680,14 @@ class TestDrawingMaintainingSheetPosition(NewFile):
         bpy.ops.bim.add_sheet()
 
         bpy.ops.bim.load_drawings()
+        for d in props.drawings:
+            d.is_expanded = True
         bpy.ops.bim.add_drawing()
 
         drawing = ifc.by_type("IfcAnnotation")[0]
+        for i, d in enumerate(props.drawings):
+            if d.ifc_definition_id == drawing.id():
+                props.active_drawing_index = i
         bpy.ops.bim.activate_drawing(drawing=drawing.id())
         bpy.ops.bim.create_drawing()
         bpy.ops.bim.add_drawing_to_sheet()

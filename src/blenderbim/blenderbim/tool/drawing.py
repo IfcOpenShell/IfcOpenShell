@@ -475,7 +475,7 @@ class Drawing(blenderbim.core.tool.Drawing):
                 m[2][2] = -1
                 m.translation = (x, y, z + 1.6)
                 return m
-            return mathutils.Matrix(((-1, 0, 0, 0), (0, 1, 0, 0), (0, 0, -1, 0), (0, 0, 0, 1)))
+            return mathutils.Matrix(((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, -1, 0), (0, 0, 0, 1)))
         elif target_view == "ELEVATION_VIEW":
             if location_hint == "NORTH":
                 return mathutils.Matrix(((-1, 0, 0, x), (0, 0, 1, y), (0, 1, 0, z), (0, 0, 0, 1)))
