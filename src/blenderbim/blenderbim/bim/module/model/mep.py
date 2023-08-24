@@ -688,7 +688,13 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
             )
             if p not in (start_point, end_point)
         ]
-        entire_length = (first_segment_start - second_segment_end).length
+
+        def get_segments_length():
+            start_dir = (start_point - first_segment_start).normalized()
+            segments_vector = second_segment_end - first_segment_start
+            return segments_vector.dot(start_dir)
+
+        entire_length = get_segments_length()
 
         # can't rely on (end_point-start_point) here because
         # transition might change the segments length and therefore direction will be changed
@@ -717,28 +723,40 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
                 f"Failed to add transition - transition length is larger the segments and the distance between them.\n"
                 + f"Transition length: {full_transition_length:.2f}m, segments length: {entire_length:.2f}m",
             )
-            # TODO: handle the case without creating a representation in the first place?
             ifcopenshell.api.run("geometry.remove_representation", ifc_file, representation=rep)
             return {"CANCELLED"}
 
+        # calculate bunch of points to for adjustments
         middle_point = keep_only_z_axis((start_point + end_point) / 2 - start_point) + start_point
         start_segment_extend_point = middle_point - segments_dir * full_transition_length / 2
         end_segment_extend_point = middle_point + segments_dir * full_transition_length / 2 + profile_offset_ws
         transition_dir = keep_only_z_axis(end_segment_extend_point - start_segment_extend_point).normalized()
-        DumbProfileJoiner().join_E(start_object, start_segment_extend_point)
-        DumbProfileJoiner().join_E(end_object, end_segment_extend_point)
 
+        # adjust the segments
+        end_object_rotation = end_object.matrix_world.to_quaternion()
+        end_object_z_basis = end_object_rotation.to_matrix().col[2]  # z basis vector
+        if tool.Cad.is_x(start_object_z_basis.dot(transition_dir), 1):
+            start_connection = "ATEND"
+        else:
+            start_connection = "ATSTART"
+        if tool.Cad.is_x(end_object_z_basis.dot(transition_dir), 1):
+            end_connection = "ATSTART"
+        else:
+            end_connection = "ATEND"
+        DumbProfileJoiner().join_E(start_object, start_segment_extend_point, start_connection)
+        DumbProfileJoiner().join_E(end_object, end_segment_extend_point, end_connection)
+
+        # find the compatible fitting type
         fitting_data = MEPGenerator().get_compatible_fitting_type(
             [start_element, end_element], [start_port, end_port], "TRANSITION"
         )
-
         transition_type = fitting_data["fitting_type"] if fitting_data else None
         if transition_type:
             # TODO: handle the case without creating a representation in the first place?
             ifcopenshell.api.run("geometry.remove_representation", ifc_file, representation=rep)
-
         start_port_match = fitting_data["start_port_match"] if fitting_data else True
 
+        # create new fitting type if nothing is compatible
         if not transition_type:
             mesh = bpy.data.meshes.new("Transition")
             obj = bpy.data.objects.new("Transition", mesh)
@@ -762,16 +780,21 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
             )
 
         # NOTE: at this point we loose current blender objects selection
+        # create transition element
         bpy.ops.bim.add_constr_type_instance(relating_type_id=transition_type.id())
         transition_obj = bpy.context.active_object
 
         # adjust transition segment rotation and location
+        # required since we'll base our `transition_obj_dir` on this
         transition_obj.matrix_world = start_object.matrix_world
         context.view_layer.update()
 
+        # depending on transition direction we may need to flip it or attach it's origin to end segment
+        # direction can be different depending on:
+        # - order of the current segments
+        # - order of the segments that were used with the same transition type before
         transition_obj_dir = tool.Cad.get_edge_direction(tool.Model.get_flow_segment_axis(transition_obj))
         direction_match = tool.Cad.are_vectors_equal(transition_dir, transition_obj_dir)
-
         # if there are no mismatches or everything matches up we don't need to flip the transition
         if start_port_match != direction_match:
             transition_obj.matrix_world = start_object.matrix_world @ Matrix.Rotation(radians(180), 4, "X")
