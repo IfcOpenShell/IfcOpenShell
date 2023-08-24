@@ -277,6 +277,8 @@ def draw_filter(layout, props, data, module):
     if not data.is_loaded:
         data.load()
 
+    sprops = bpy.context.scene.BIMSearchProperties
+
     if tool.Ifc.get():
         row = layout.row(align=True)
         row.label(text=f"{len(data.data['saved_searches'])} Saved Searches")
@@ -293,9 +295,9 @@ def draw_filter(layout, props, data, module):
         box = layout.box()
 
         row = box.row(align=True)
-        row.prop(props, "facet", text="")
+        row.prop(sprops, "facet", text="")
         op = row.operator("bim.add_filter", text="Add Filter", icon="ADD")
-        op.type = props.facet
+        op.type = sprops.facet
         op.index = i
         op.module = module
 

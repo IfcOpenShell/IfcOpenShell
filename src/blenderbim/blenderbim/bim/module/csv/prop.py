@@ -64,18 +64,6 @@ class CsvProperties(PropertyGroup):
     csv_ifc_file: StringProperty(default="", name="IFC File")
     ifc_selector: StringProperty(default="", name="IFC Selector")
     filter_groups: CollectionProperty(type=BIMFilterGroup, name="Filter Groups")
-    facet: EnumProperty(
-        items=[
-            ("entity", "Class", "", "FILE_3D", 0),
-            ("attribute", "Attribute", "", "COPY_ID", 1),
-            ("property", "Property", "", "PROPERTIES", 2),
-            ("material", "Material", "", "MATERIAL", 3),
-            ("classification", "Classification", "", "OUTLINER", 4),
-            ("location", "Location", "", "PACKAGE", 5),
-            ("type", "Type", "", "FILE_VOLUME", 6),
-            ("instance", "GlobalId", "", "GRIP", 7),
-        ],
-    )
     csv_attributes: CollectionProperty(name="CSV Attributes", type=CsvAttribute)
     should_preserve_existing: BoolProperty(default=False, name="Preserve Existing")
     include_global_id: BoolProperty(default=True, name="Include GlobalId")
