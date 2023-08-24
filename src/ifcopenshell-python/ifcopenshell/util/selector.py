@@ -119,7 +119,9 @@ def get_element_value(element, query):
     return Selector.get_element_value(element, filter_query["keys"], filter_query["is_regex"])
 
 
-def filter_elements(ifc_file, query, elements=None):
+def filter_elements(ifc_file, query, elements=None, edit_in_place=False):
+    if elements and not edit_in_place:
+        elements = elements.copy()
     transformer = FacetTransformer(ifc_file, elements)
     transformer.transform(filter_elements_grammar.parse(query))
     return transformer.get_results()
