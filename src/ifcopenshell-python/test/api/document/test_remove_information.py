@@ -54,7 +54,6 @@ class TestRemoveInformation(test.bootstrap.IFC4):
         project = self.file.createIfcProject()
         information = ifcopenshell.api.run("document.add_information", self.file, parent=None)
         information2 = ifcopenshell.api.run("document.add_information", self.file, parent=information)
-        ifcopenshell.api.run("document.add_reference", self.file, information=information)
         ifcopenshell.api.run("document.add_reference", self.file, information=information2)
         ifcopenshell.api.run("document.remove_information", self.file, information=information)
         assert len(self.file.by_type("IfcDocumentInformation")) == 0
