@@ -490,7 +490,7 @@ class TestUpdateDrawingName:
         )
         ifc.resolve_uri("relative_layout_uri").should_be_called().will_return("absolute_layout_uri")
         drawing.does_file_exist("absolute_layout_uri").should_be_called().will_return(True)
-        drawing.update_embedded_svg_location("absolute_layout_uri", "old_location", "new_location").should_be_called()
+        drawing.update_embedded_svg_location("absolute_layout_uri", "reference_with_old_location", "new_uri").should_be_called()
 
         drawing.is_editing_sheets().should_be_called().will_return(True)
         drawing.import_sheets().should_be_called()
@@ -500,9 +500,9 @@ class TestUpdateDrawingName:
 
 class TestAddAnnotation:
     def test_run(self, ifc, collector, drawing):
-        drawing.show_decorations().should_be_called()
         drawing.get_drawing_target_view("drawing").should_be_called().will_return("target_view")
         drawing.get_annotation_context("target_view", "object_type").should_be_called().will_return("context")
+        drawing.show_decorations().should_be_called()
         drawing.create_annotation_object("drawing", "object_type").should_be_called().will_return("obj")
         ifc.get_entity("obj").should_be_called().will_return(None)
         drawing.get_ifc_representation_class("object_type").should_be_called().will_return("ifc_representation_class")
@@ -520,7 +520,24 @@ class TestAddAnnotation:
         drawing.enable_editing("obj").should_be_called()
         subject.add_annotation(ifc, collector, drawing, drawing="drawing", object_type="object_type")
 
-    def test_do_not_add_without_an_annotation_context(self, ifc, collector, drawing):
+    def test_create_a_missing_annotation_context_on_the_fly(self, ifc, collector, drawing):
         drawing.get_drawing_target_view("drawing").should_be_called().will_return("target_view")
         drawing.get_annotation_context("target_view", "object_type").should_be_called().will_return(None)
+        drawing.create_annotation_context("target_view", "object_type").should_be_called().will_return("context")
+        drawing.show_decorations().should_be_called()
+        drawing.create_annotation_object("drawing", "object_type").should_be_called().will_return("obj")
+        ifc.get_entity("obj").should_be_called().will_return(None)
+        drawing.get_ifc_representation_class("object_type").should_be_called().will_return("ifc_representation_class")
+        drawing.run_root_assign_class(
+            obj="obj",
+            ifc_class="IfcAnnotation",
+            predefined_type="object_type",
+            should_add_representation=True,
+            context="context",
+            ifc_representation_class="ifc_representation_class",
+        ).should_be_called().will_return("element")
+        drawing.get_drawing_group("drawing").should_be_called().will_return("group")
+        ifc.run("group.assign_group", group="group", products=["element"]).should_be_called()
+        collector.assign("obj").should_be_called()
+        drawing.enable_editing("obj").should_be_called()
         subject.add_annotation(ifc, collector, drawing, drawing="drawing", object_type="object_type")
