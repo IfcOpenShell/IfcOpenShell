@@ -124,7 +124,7 @@ class BIM_PT_resources(Panel):
                 schedule_work = resource.get("ScheduleWork", None)
                 derived_schedule_work = resource.get("DerivedScheduleWork", None)
                 row1col2.label(
-                    text="{}".format(schedule_work) if schedule_work else "*{}".format(derived_schedule_work),
+                    text="{}".format(schedule_work) if schedule_work else "{} h*".format(derived_schedule_work),
                     icon="TIME",
                 )
 
