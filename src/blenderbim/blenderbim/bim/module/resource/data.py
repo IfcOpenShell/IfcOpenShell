@@ -95,7 +95,7 @@ class ResourceData:
         sum = 0
         nested_resources = ifcopenshell.util.resource.get_nested_resources(resource)
         for nested_resource in nested_resources or []:
-            if not nested_resource.Usage:
+            if not nested_resource.Usage or not nested_resource.Usage.ScheduleWork:
                 continue
             duration = ifcopenshell.util.date.ifc2datetime(nested_resource.Usage.ScheduleWork)
             sum += duration.total_seconds() / 3600
