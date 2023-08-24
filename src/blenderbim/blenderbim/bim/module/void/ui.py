@@ -115,8 +115,17 @@ class BIM_PT_booleans(Panel):
             row.operator("bim.add_boolean", text="Apply Boolean", icon="ADD")
             show_boolean_button = row.row(align=True)
             show_boolean_button.operator("bim.show_booleans", text="", icon="HIDE_OFF")
-            show_boolean_button.enabled = BooleansData.data['total_booleans'] > 0
+            show_boolean_button.enabled = BooleansData.data["total_booleans"] > 0
             row.operator("bim.hide_booleans", text="", icon="HIDE_ON")
+
         elif context.active_object.data.BIMMeshProperties.ifc_boolean_id:
+            upsteam_obj = context.active_object.data.BIMMeshProperties.obj
+            upstream_obj_ifc_id = upsteam_obj.BIMObjectProperties.ifc_definition_id
+
+            row = layout.row(align=True)
+            row.label(text="Used as a boolean operand with:")
+            row.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = upstream_obj_ifc_id
+            row.label(text=upsteam_obj.name)
+
             row = layout.row()
             row.operator("bim.remove_booleans", text="Remove Boolean", icon="X")
