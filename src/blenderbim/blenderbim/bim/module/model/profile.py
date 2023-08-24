@@ -272,13 +272,21 @@ class DumbProfileJoiner:
         body = copy.deepcopy(axis1)
         self.recreate_profile(element1, profile1, axis, body)
 
-    def join_E(self, profile1, target):
+    def join_E(self, profile1, target, connection=None):
+        """`connection` = `ATEND` / `ATSTART` to explicitly define the reference point for the join.
+
+        For example if profile 1m long and `target` is at (0, 0, 0.1) and `connection` = `None`
+        it will implicitly use `connection` = `ATSTART` resulting in profile object 0.9m long and moved to (0, 0, 0.1).
+
+        But with `connection` = `ATEND` it will result in the profile object 0.1m long, locaiton unchanged.
+        """
         element1 = tool.Ifc.get_entity(profile1)
         if not element1:
             return
         axis1 = self.get_profile_axis(profile1)
-        intersect, connection = mathutils.geometry.intersect_point_line(target, *axis1)
-        connection = "ATEND" if connection > 0.5 else "ATSTART"
+        intersect, connection_value = mathutils.geometry.intersect_point_line(target, *axis1)
+        if connection is None:
+            connection = "ATEND" if connection_value > 0.5 else "ATSTART"
 
         ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type=connection)
 
