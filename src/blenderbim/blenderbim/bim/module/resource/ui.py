@@ -65,21 +65,22 @@ class BIM_PT_resources(Panel):
             self.props,
             "active_resource_index",
         )
-        self.draw_productivity_ui(context)
 
-        if self.props.active_resource_id and self.props.editing_resource_type == "ATTRIBUTES":
-            self.draw_editable_resource_attributes_ui()
-        elif self.props.active_resource_id and self.props.editing_resource_type == "QUANTITY":
-            self.draw_editable_resource_quantity_ui()
-        elif self.props.active_resource_id and self.props.editing_resource_type == "COSTS":
-            self.draw_editable_resource_costs_ui()
-        elif self.props.active_resource_id and self.props.editing_resource_type == "USAGE":
-            self.draw_editable_resource_time_attributes_ui()
+        if self.props.active_resource_id:
+            if self.props.editing_resource_type == "ATTRIBUTES":
+                self.draw_editable_resource_attributes_ui()
+            elif self.props.active_resource_id and self.props.editing_resource_type == "QUANTITY":
+                self.draw_editable_resource_quantity_ui()
+            elif self.props.active_resource_id and self.props.editing_resource_type == "COSTS":
+                self.draw_editable_resource_costs_ui()
+            elif self.props.active_resource_id and self.props.editing_resource_type == "USAGE":
+                self.draw_editable_resource_time_attributes_ui()
+        self.draw_productivity_ui(context)
 
     def draw_productivity_ui(self, context):
         row = self.layout.row(align=True)
         row.alignment = "RIGHT"
-        row.prop(self.props, "should_show_resource_tools", text="Resource Tools",icon="RECOVER_LAST")
+        row.prop(self.props, "should_show_resource_tools", text="Resource Tools", icon="RECOVER_LAST")
         if self.props.should_show_resource_tools:
             total_resources = len(self.tprops.resources)
             if not total_resources or self.props.active_resource_index >= total_resources:
@@ -120,7 +121,12 @@ class BIM_PT_resources(Panel):
                 row1_col1 = col1.row()
                 row1_col1.label(text="Schedule Work")
                 row1col2 = col2.row()
-                row1col2.label(text=resource.get("ScheduleWork", "-"), icon="TIME")
+                schedule_work = resource.get("ScheduleWork", None)
+                derived_schedule_work = resource.get("DerivedScheduleWork", None)
+                row1col2.label(
+                    text="{}".format(schedule_work) if schedule_work else "*{}".format(derived_schedule_work),
+                    icon="TIME",
+                )
 
                 row1col3 = col3.row()
                 row1col3.operator("bim.calculate_resource_work", text="", icon="TEMP").resource = ifc_definition_id
@@ -156,6 +162,12 @@ class BIM_PT_resources(Panel):
                     )
                     row.alignment = "LEFT"
                     row.label(text=produtivitiy_rate_message, icon="ARMATURE_DATA")
+                    row.operator("bim.edit_productivity_data", text="", icon="GREASEPENCIL")
+                    op = row.operator("bim.remove_pset", text="", icon="X")
+                    op.pset_id = productivity["id"]
+                    op.obj_type = "Resource"
+                    op.obj = ""
+
                 elif parent_productivity:
                     produtivitiy_rate_message = "Inherited Productivity Rate: {} {} / {}*".format(
                         parent_productivity["QuantityProduced"],
@@ -163,30 +175,14 @@ class BIM_PT_resources(Panel):
                         parent_productivity["TimeConsumed"],
                     )
                     row.alignment = "LEFT"
-                    row.label(text="Productivity: {}".format(produtivitiy_rate_message), icon="ARMATURE_DATA")
+                    row.label(text="{}".format(produtivitiy_rate_message), icon="ARMATURE_DATA")
+                    row.operator("bim.add_productivity_data", text="", icon="ADD")
                 else:
                     row = self.layout.row(align=True)
                     row.alignment = "LEFT"
                     produtivitiy_rate_message = "No productivity data found"
-                    row.label(text="Productivity: {}".format(produtivitiy_rate_message), icon="ARMATURE_DATA")
-                productivity_props = context.scene.BIMResourceProductivity
-                grid = self.layout.grid_flow(columns=2, even_columns=False, even_rows=False, align=False)
-                col1 = grid.column(align=False)
-                col2 = grid.column(align=False)
-                col1.ui_units_x = 1
-                col2.ui_units_x = 3
-                row1_col1 = col1.row()
-                row1_col1.label(text="Quantity")
-                row1_col2 = col2.row()
-                row1_col2.prop(productivity_props, "quantity_produced", text="")
-                row1_col2.prop(productivity_props, "quantity_produced_name", text="")
-                row2_col1 = col1.row()
-                row2_col1.label(text="Time")
-                row2_col2 = col2.row()
-                self.draw_duration_property(productivity_props.quantity_consumed, row2_col2)
-                row3_col2 = col2.row()
-                row3_col2.alignment = "RIGHT"
-                row3_col2.operator("bim.edit_productivity_data", text="", icon="CHECKMARK")
+                    row.label(text="{}".format(produtivitiy_rate_message), icon="ARMATURE_DATA")
+                    row.operator("bim.add_productivity_data", text="", icon="ADD")
 
     def draw_resource_operators(self):
         row = self.layout.row(align=True)
@@ -231,6 +227,12 @@ class BIM_PT_resources(Panel):
             op.resource = ifc_definition_id
             row.operator("bim.enable_editing_resource", text="", icon="GREASEPENCIL").resource = ifc_definition_id
             row.operator("bim.remove_resource", text="", icon="X").resource = ifc_definition_id
+        else:
+            if self.props.editing_resource_type == "ATTRIBUTES":
+                row.operator("bim.edit_resource", text="", icon="CHECKMARK")
+            elif self.props.editing_resource_type == "USAGE":
+                row.operator("bim.edit_resource_time", text="", icon="CHECKMARK")
+            row.operator("bim.disable_editing_resource", text="", icon="CANCEL")
 
     def draw_editable_resource_attributes_ui(self):
         blenderbim.bim.helper.draw_attributes(self.props.resource_attributes, self.layout)
@@ -354,7 +356,7 @@ class BIM_UL_resources(UIList):
             else:
                 row.label(text="", icon="DOT")
             row.prop(item, "name", emboss=False, text="", icon=icon_map[resource["type"]])
-            row.prop(item, "schedule_usage", text="", emboss=False)
+            row.prop(item, "schedule_usage", text="", emboss=False) if item.schedule_usage else None
             if context.active_object and not props.active_resource_id:
                 row = layout.row(align=True)
                 if item.ifc_definition_id in ResourceData.data["active_resource_ids"]:
@@ -370,3 +372,29 @@ class BIM_UL_resources(UIList):
                 elif props.editing_resource_type == "USAGE":
                     row.operator("bim.edit_resource_time", text="", icon="CHECKMARK")
                 row.operator("bim.disable_editing_resource", text="", icon="CANCEL")
+
+
+def draw_productivity_ui(self, context):
+    def draw_duration_property(duration_props, layout):
+        for duration_prop in duration_props:
+            if duration_prop.name == "BaseQuantityConsumed":
+                layout.prop(duration_prop, "years", text="Y")
+                layout.prop(duration_prop, "months", text="M")
+                layout.prop(duration_prop, "days", text="D")
+                layout.prop(duration_prop, "hours", text="H")
+                layout.prop(duration_prop, "minutes", text="Min")
+                layout.prop(duration_prop, "seconds", text="S")
+
+    productivity_props = context.scene.BIMResourceProductivity
+    grid = self.layout.grid_flow(columns=2, even_columns=False, even_rows=False, align=False)
+    col1 = grid.column(align=False)
+    col2 = grid.column(align=False)
+    row1_col1 = col1.row()
+    row1_col1.label(text="Quantity")
+    row1_col2 = col2.row()
+    row1_col2.prop(productivity_props, "quantity_produced", text="")
+    row1_col2.prop(productivity_props, "quantity_produced_name", text="")
+    row2_col1 = col1.row()
+    row2_col1.label(text="Time")
+    row2_col2 = col2.row()
+    draw_duration_property(productivity_props.quantity_consumed, row2_col2)

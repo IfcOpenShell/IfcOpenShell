@@ -248,7 +248,7 @@ def get_task_work_schedule(task):
 
 
 def get_nested_tasks(task):
-    return [object for rel in task.IsNestedBy for object in rel.RelatedObjects]
+    return [object for rel in task.IsNestedBy  or [] for object in rel.RelatedObjects]
 
 
 def get_parent_task(task):
