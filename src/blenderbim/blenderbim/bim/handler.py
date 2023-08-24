@@ -124,6 +124,14 @@ def update_bim_tool_props():
     representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
     if not representation:
         return
+    
+    props = bpy.context.scene.BIMModelProperties
+    if element.is_a("IfcElementType") or element.is_a("IfcElement"):
+        element_type = ifcopenshell.util.element.get_type(element)
+        if element_type:
+            props.ifc_class = element_type.is_a()
+            props.relating_type_id = str(element_type.id()
+)
     extrusion = tool.Model.get_extrusion(representation)
     if not extrusion:
         return
@@ -134,7 +142,6 @@ def update_bim_tool_props():
         return x_angle
 
     si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-    props = bpy.context.scene.BIMModelProperties
     if not AuthoringData.is_loaded:
         AuthoringData.load()
 
