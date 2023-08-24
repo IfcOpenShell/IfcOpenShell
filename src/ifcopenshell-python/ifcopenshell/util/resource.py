@@ -112,3 +112,6 @@ def get_resource_required_work(resource):
             required_work = total_quantity_to_produce * productivity_ratio
             iso_string = f"P{required_work}D"
         return iso_string
+
+def get_nested_resources(resource):
+    return [object for rel in resource.IsNestedBy or [] for object in rel.RelatedObjects]

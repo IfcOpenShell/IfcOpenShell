@@ -55,12 +55,13 @@ class Resource(blenderbim.core.tool.Resource):
         tprops = bpy.context.scene.BIMResourceTreeProperties
         tprops.resources.clear()
         contracted_resources = json.loads(props.contracted_resources)
-
+        props.is_resource_update_enabled = False
         for resource in tool.Ifc.get().by_type("IfcResource"):
             if not resource.HasContext:
                 continue
             create_new_resource_li(resource, 0)
         cls.load_productivity_data()
+        props.is_resource_update_enabled = True
         props.is_editing = True
 
     @classmethod
@@ -71,7 +72,7 @@ class Resource(blenderbim.core.tool.Resource):
         for item in tprops.resources:
             resource = tool.Ifc.get().by_id(item.ifc_definition_id)
             item.name = resource.Name if resource.Name else "Unnamed"
-            item.schedule_usage = resource.Usage.ScheduleUsage or 1 if resource.Usage else 0
+            item.schedule_usage = resource.Usage.ScheduleUsage if (resource.Usage and resource.Usage.ScheduleUsage) else 0
         props.is_resource_update_enabled = True
 
     @classmethod
@@ -374,13 +375,11 @@ class Resource(blenderbim.core.tool.Resource):
     @classmethod
     def edit_productivity_pset(cls, resource, attributes):
         productivity = cls.get_productivity(resource)
-        if productivity:
-            pset = tool.Ifc.get().by_id(productivity["id"])
-        else:
-            pset = tool.Ifc.run("pset.add_pset", product=resource, name="EPset_Productivity")
-        tool.Ifc.run(
+        if not productivity:
+            return
+        return tool.Ifc.run(
             "pset.edit_pset",
-            pset=pset,
+            pset= tool.Ifc.get().by_id(productivity["id"]),
             properties=attributes,
         )
 
@@ -444,3 +443,7 @@ class Resource(blenderbim.core.tool.Resource):
     @classmethod
     def get_task_assignments(cls, resource):
         return ifcopenshell.util.resource.get_task_assignments(resource)
+
+    @classmethod
+    def get_nested_resources(cls, resource):
+        return ifcopenshell.util.resource.get_nested_resources(resource)
