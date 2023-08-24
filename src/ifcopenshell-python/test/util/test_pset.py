@@ -46,5 +46,6 @@ class TestPsetQto:
         names = self.pset_qto.get_applicable_names("IfcWall")
         assert "Pset_WallCommon" in names
         names = self.pset_qto.get_applicable_names("IfcWallType")
-        assert len(names) == 5
+        assert len(names) == 6
         assert "Pset_WallCommon" in names
+        assert "Qto_WallBaseQuantities" in names  # Backported fix for IFC4

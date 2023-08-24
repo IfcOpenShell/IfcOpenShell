@@ -50,9 +50,7 @@ class Usecase:
         for rel in self.settings["information"].IsPointer or []:
             for information in rel.RelatedDocuments:
                 ifcopenshell.api.run("document.remove_information", self.file, information=information)
-            self.file.remove(rel)
 
-        # remove IfcDocumentInformationRelationship so it won't become invalid
         for rel in self.settings["information"].IsPointedTo or []:
             if rel.RelatedDocuments == (self.settings["information"],):
                 self.file.remove(rel)
