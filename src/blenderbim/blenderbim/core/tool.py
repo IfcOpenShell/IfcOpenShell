@@ -615,8 +615,7 @@ class Resource:
     def get_resource_time_attributes(cls): pass
     def get_resource_time(cls, resource): pass
     def go_to_resource(cls, resource): pass
-    def has_metric_constraint(cls, resource, attribute): pass
-    def has_usage_metric(cls, resource): pass
+    def has_metric_constraint(cls, resource): pass
     def import_resources(cls, file_path): pass
     def load_cost_value_attributes(cls, cost_value): pass
     def load_productivity_data(cls): pass

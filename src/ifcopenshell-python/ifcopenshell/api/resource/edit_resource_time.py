@@ -77,10 +77,10 @@ class Usecase:
             del self.settings["attributes"]["ActualFinish"]
 
         for name, value in self.settings["attributes"].items():
-            metrics = ifcopenshell.util.constraint.has_metric_constraints(
+            metrics = ifcopenshell.util.constraint.get_metric_constraints(
                 self.resource, "Usage." + name
             )
-            if metrics and self.is_hard_constraint(metrics[0]):
+            if metrics and ifcopenshell.util.constraint.is_hard_constraint(metrics[0]):
                 continue
             if value:
                 if "Start" in name or "Finish" in name or name == "StatusTime":
@@ -94,7 +94,7 @@ class Usecase:
             setattr(self.settings["resource_time"], name, value)
             if (
                 name == "ScheduleUsage"
-                and ifcopenshell.util.constraint.has_metric_constraints(
+                and ifcopenshell.util.constraint.get_metric_constraints(
                     self.resource, "Usage.ScheduleWork"
                 )
             ):
@@ -103,9 +103,6 @@ class Usecase:
                     ifcopenshell.api.run(
                         "sequence.calculate_task_duration", self.file, task=task
                     )
-
-    def is_hard_constraint(self, metric):
-        return bool(metric.ConstraintGrade == "HARD" and metric.Benchmark == "EQUALTO")
 
     def get_resource(self):
         return [

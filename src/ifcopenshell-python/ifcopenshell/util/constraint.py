@@ -20,10 +20,9 @@
 
 def get_constraints(product):
     constraints = []
-    if product.HasAssociations:
-        for rel in product.HasAssociations:
-            if rel.is_a("IfcRelAssociatesConstraint"):
-                constraints.append(rel.RelatingConstraint)
+    for rel in product.HasAssociations or []:
+        if rel.is_a("IfcRelAssociatesConstraint"):
+            constraints.append(rel.RelatingConstraint)
     return constraints
 
 def get_metrics(constraint):
@@ -48,7 +47,7 @@ def get_metric_reference(metric, is_deep=True):
     reference = metric.ReferencePath
     return get_reference_Attribute(reference, "")
 
-def has_metric_constraints(resource, attribute):
+def get_metric_constraints(resource, attribute):
     metrics = []
     for constraint in get_constraints(resource) or []:
         for metric in get_metrics(constraint) or []:
@@ -60,3 +59,17 @@ def has_metric_constraints(resource, attribute):
     if metrics:
         return metrics
     return None
+
+def is_hard_constraint(metric):
+    if metric.ConstraintGrade == "HARD" and metric.Benchmark == "EQUALTO":
+        return True
+
+def is_attribute_locked(product, attribute):
+    is_locked = False
+    metrics = get_metric_constraints(
+        product, attribute
+    )
+    for metric in metrics or []:
+        if is_hard_constraint(metric):
+            is_locked = True
+    return is_locked

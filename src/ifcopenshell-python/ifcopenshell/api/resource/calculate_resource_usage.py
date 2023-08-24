@@ -31,14 +31,7 @@ class Usecase:
         self.settings = {"resource": resource}
 
     def execute(self):
-        metrics = ifcopenshell.util.constraint.has_metric_constraints(
-            self.settings["resource"], "Usage.ScheduleUsage"
-        )
-        if (
-            metrics
-            and metrics[0].ConstraintGrade == "HARD"
-            and metrics[0].Benchmark == "EQUALTO"
-        ):
+        if ifcopenshell.util.constraint.is_attribute_locked(self.settings["resource"], "Usage.ScheduleUsage"):
             return
         if (
             not self.settings["resource"].Usage

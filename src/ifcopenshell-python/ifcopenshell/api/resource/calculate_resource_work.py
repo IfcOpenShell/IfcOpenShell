@@ -60,7 +60,7 @@ class Usecase:
         self.settings = {"resource": resource}
 
     def execute(self):
-        if self.has_hard_constraint():
+        if ifcopenshell.util.constraint.is_attribute_locked(self.settings["resource"], "Usage.ScheduleWork"):
             return
         amount_worked = ifcopenshell.util.resource.get_resource_required_work(
             self.settings["resource"]
@@ -74,15 +74,3 @@ class Usecase:
                 resource=self.settings["resource"],
             )
         self.settings["resource"].Usage.ScheduleWork = amount_worked
-
-    def has_hard_constraint(self):
-        metrics = ifcopenshell.util.constraint.has_metric_constraints(
-            self.settings["resource"], "Usage.ScheduleWork"
-        )
-        if (
-            metrics
-            and metrics[0].ConstraintGrade == "HARD"
-            and metrics[0].Benchmark == "EQUALTO"
-        ):
-            return True
-        return False

@@ -397,12 +397,8 @@ class Resource(blenderbim.core.tool.Resource):
 
     @classmethod
     def has_metric_constraint(cls, resource, attribute):
-        metrics = ifcopenshell.util.constraint.has_metric_constraints(resource, attribute)
-        return metrics[0] if metrics else None
-
-    @classmethod
-    def has_usage_metric(cls, resource):
-        return cls.has_metric_constraint(resource, "Usage")
+        metrics = ifcopenshell.util.constraint.get_metric_constraints(resource, attribute)
+        return True if metrics else False
 
     @classmethod
     def run_edit_resource_time(cls, resource, attributes):
@@ -447,3 +443,7 @@ class Resource(blenderbim.core.tool.Resource):
     @classmethod
     def get_nested_resources(cls, resource):
         return ifcopenshell.util.resource.get_nested_resources(resource)
+
+    @classmethod
+    def is_attribute_locked(cls, resource, attribute):
+        return ifcopenshell.util.constraint.is_attribute_locked(resource, attribute)
