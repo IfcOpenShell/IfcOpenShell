@@ -62,6 +62,24 @@ class RemoveAllCsvAttributes(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class ReorderCsvAttribute(bpy.types.Operator):
+    bl_idname = "bim.reorder_csv_attribute"
+    bl_label = "Reorder CSV Attribute"
+    bl_options = {"REGISTER", "UNDO"}
+    old_index: bpy.props.IntProperty()
+    new_index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        old = context.scene.CsvProperties.csv_attributes[self.old_index]
+        new = context.scene.CsvProperties.csv_attributes[self.new_index]
+        props = ["name", "header", "sort", "group", "varies_value", "summary"]
+        for prop in props:
+            value = getattr(new, prop)
+            setattr(new, prop, getattr(old, prop))
+            setattr(old, prop, value)
+        return {"FINISHED"}
+
+
 class ImportCsvAttributes(bpy.types.Operator):
     bl_idname = "bim.import_csv_attributes"
     bl_label = "Load CSV Settings"
