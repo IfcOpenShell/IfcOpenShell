@@ -84,16 +84,19 @@ def updateResourceUsage(self, context):
     props = context.scene.BIMResourceProperties
     if not props.is_resource_update_enabled:
         return
-
-    if self.schedule_usage == "":
+    if not self.schedule_usage:
         return
     resource = tool.Ifc.get().by_id(self.ifc_definition_id)
-    tool.Resource.run_edit_resource_time(resource, attributes={"ScheduleUsage": self.schedule_usage})
-    tool.Resource.load_resource_properties()
+    if resource.Usage and resource.Usage.ScheduleUsage == self.schedule_usage:
+        return
+    tool.Resource.run_edit_resource_time(resource, attributes={
+        "ScheduleUsage": self.schedule_usage
+    })
     tool.Sequence.load_task_properties()
+    tool.Resource.load_resource_properties()
+    tool.Sequence.refresh_task_resources()
     blenderbim.bim.module.resource.data.refresh()
     blenderbim.bim.module.sequence.data.refresh()
-    tool.Sequence.refresh_task_resources()
     blenderbim.bim.module.pset.data.refresh()
 
 

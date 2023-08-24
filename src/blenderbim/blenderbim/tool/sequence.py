@@ -421,6 +421,7 @@ class Sequence(blenderbim.core.tool.Sequence):
     @classmethod
     def load_resources(cls):
         blenderbim.core.resource.load_resources(tool.Resource)
+        cls.refresh_task_resources
 
     @classmethod
     def get_task_inputs(cls, task):

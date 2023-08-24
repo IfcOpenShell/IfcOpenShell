@@ -23,7 +23,6 @@ def load_resources(resource):
     resource.load_resources()
     resource.load_resource_properties()
 
-
 def add_resource(tool_ifc, resource_tool, ifc_class, parent_resource=None):
     tool_ifc.run("resource.add_resource", ifc_class=ifc_class, parent_resource=parent_resource)
     load_resources(resource_tool)
@@ -184,7 +183,7 @@ def edit_productivity_pset(ifc, resource_tool):
 
 
 def add_usage_constraint(ifc, resource_tool, resource=None, reference_path=None):
-    metric = resource_tool.has_usage_metric(resource)
+    metric = resource_tool.has_metric_constraint(resource, "Usage")
     if metric:
         return print("Must remove existing metric first")
 

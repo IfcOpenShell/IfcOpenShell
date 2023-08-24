@@ -193,6 +193,7 @@ def edit_task_time(ifc, sequence, task_time=None):
     task = sequence.get_active_task()
     sequence.load_task_properties(task=task)
     sequence.disable_editing_task_time()
+    sequence.load_resources()
 
 
 def assign_predecessor(ifc, sequence, task=None):
