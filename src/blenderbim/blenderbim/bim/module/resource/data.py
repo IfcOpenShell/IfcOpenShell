@@ -63,6 +63,7 @@ class ResourceData:
                 productivity = cls.get_productivity(resource)
                 if productivity:
                     results[resource.id()]["Productivity"] = {
+                        "id": productivity.get("id"),
                         "QuantityProduced": ifcopenshell.util.resource.get_quantity_produced(productivity),
                         "TimeConsumed": ifcopenshell.util.resource.get_unit_consumed(productivity),
                         "QuantityProducedName": ifcopenshell.util.resource.get_quantity_produced_name(productivity),
@@ -85,7 +86,20 @@ class ResourceData:
                     results[resource.id()]["ScheduleUsage"] = (
                         resource.Usage.ScheduleUsage if resource.Usage.ScheduleUsage else None
                     )
+                if resource.IsNestedBy:
+                    results[resource.id()]["DerivedScheduleWork"] = cls.sum_person_hours(resource)
         return results
+
+    @classmethod
+    def sum_person_hours(cls, resource):
+        sum = 0
+        nested_resources = ifcopenshell.util.resource.get_nested_resources(resource)
+        for nested_resource in nested_resources or []:
+            if not nested_resource.Usage:
+                continue
+            duration = ifcopenshell.util.date.ifc2datetime(nested_resource.Usage.ScheduleWork)
+            sum += duration.total_seconds() / 3600
+        return round(float(sum), 2) if sum else 0
 
     @classmethod
     def get_resource_benchmarks(cls, resource):

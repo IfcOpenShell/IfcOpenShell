@@ -416,7 +416,7 @@ class Sequence(blenderbim.core.tool.Sequence):
             new = props.task_resources.add()
             new.ifc_definition_id = resource.id()
             new.name = resource.Name or "Unnamed"
-            new.schedule_usage = resource.Usage.ScheduleUsage or 1 if resource.Usage else 0
+            new.schedule_usage = resource.Usage.ScheduleUsage or 0 if resource.Usage else 0
 
     @classmethod
     def load_resources(cls):
