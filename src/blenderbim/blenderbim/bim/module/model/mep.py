@@ -801,7 +801,7 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
         transition_obj.location = start_segment_extend_point if start_port_match else end_segment_extend_point
 
         # add ports and connect them
-        ports = tool.System.add_ports(transition_obj)
+        ports = tool.System.add_ports(transition_obj, offset_end_port=profile_offset_ws)
         if not start_port_match:
             start_port, end_port = end_port, start_port
         tool.Ifc.run("system.connect_port", port1=ports[0], port2=start_port, direction="NOTDEFINED")
