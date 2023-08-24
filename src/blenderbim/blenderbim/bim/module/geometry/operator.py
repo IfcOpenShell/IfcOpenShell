@@ -1372,6 +1372,10 @@ class OverrideModeSetEdit(bpy.types.Operator):
             is_profile = True
             if usage_type == "PROFILE":
                 operator = lambda: bpy.ops.bim.hotkey(hotkey="A_E")
+            elif "IfcCircleProfileDef" in tool.Geometry.get_ifc_representation_class(element, representation):
+                self.report({"INFO"}, "Can't edit Circle Profile Extrusion")
+                obj.select_set(False)
+                continue
             elif (
                 tool.Geometry.is_profile_based(obj.data)
                 or usage_type == "LAYER3"
@@ -1418,8 +1422,7 @@ class OverrideModeSetEdit(bpy.types.Operator):
             else:
                 obj.select_set(False)
                 continue
-
-        if not context.selected_objects or len(context.selected_objects) != len(selected_objs):
+        if len(selected_objs) > 1 and (not context.selected_objects or len(context.selected_objects) != len(selected_objs)):
             # We are trying to edit at least one non-mesh-like object : Display a hint to the user
             self.report({"INFO"}, "Only mesh-compatible representations may be edited concurrently in edit mode.")
 
