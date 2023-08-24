@@ -87,6 +87,7 @@ class BIM_PT_ifccsv(Panel):
         row.prop(props, "should_show_group", icon="OUTLINER_COLLECTION", text="")
         row.prop(props, "should_show_summary", icon="SYNTAX_ON", text="")
 
+        total = len(props.csv_attributes)
         for index, attribute in enumerate(props.csv_attributes):
             row = layout.row(align=True)
             row.prop(attribute, "name", text="")
@@ -99,6 +100,15 @@ class BIM_PT_ifccsv(Panel):
                     row.prop(attribute, "varies_value", text="")
             if props.should_show_summary:
                 row.prop(attribute, "summary", text="")
+            if total > 1:
+                if index != 0:
+                    op = row.operator(f"bim.reorder_csv_attribute", icon="TRIA_UP", text="")
+                    op.old_index = index
+                    op.new_index = index - 1
+                if index + 1 != total:
+                    op = row.operator(f"bim.reorder_csv_attribute", icon="TRIA_DOWN", text="")
+                    op.old_index = index
+                    op.new_index = index + 1
             row.operator("bim.remove_csv_attribute", icon="X", text="").index = index
 
         row = layout.row(align=True)
