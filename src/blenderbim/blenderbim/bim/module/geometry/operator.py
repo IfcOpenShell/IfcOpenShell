@@ -1370,9 +1370,10 @@ class OverrideModeSetEdit(bpy.types.Operator):
                 continue
 
             is_profile = True
+            representation_class = tool.Geometry.get_ifc_representation_class(element, representation)
             if usage_type == "PROFILE":
                 operator = lambda: bpy.ops.bim.hotkey(hotkey="A_E")
-            elif "IfcCircleProfileDef" in tool.Geometry.get_ifc_representation_class(element, representation):
+            elif representation_class and "IfcCircleProfileDef" in representation_class:
                 self.report({"INFO"}, "Can't edit Circle Profile Extrusion")
                 obj.select_set(False)
                 continue
