@@ -1160,10 +1160,11 @@ class ShapeBuilder:
                     return None
 
                 h = (a + b + sqrt(h0)) / (2 * t)
-                if h < abs(offset.y) or is_x(h, offset.y):
+                length_squared = h**2 - offset.y**2
+                if length_squared <= 0:
                     print(f"B. angle = {angle} requires h = {h} which is not possible with y offset = {offset.y}")
                     return None
-                length = sqrt(h**2 - offset.y**2)
+                length = sqrt(length_squared)
 
                 if verbose:
                     A = (end_half_dim if end_profile else start_half_dim) * V(1, 0, 0)
@@ -1178,10 +1179,11 @@ class ShapeBuilder:
                 if is_x(offset.x, 0):
                     angle = 90  # NOTE: for now we just hardcode the good value for that case
                     h = start_half_dim.x / tan(radians(angle / 2))
-                    if h < abs(offset.y) or is_x(h, offset.y):
+                    length_squared = h**2 - offset.y**2
+                    if length_squared <= 0:
                         print(f"B. angle = {angle} requires h = {h} which is not possible with y offset = {offset.y}")
                         return None
-                    length = sqrt(h**2 - offset.y**2)
+                    length = sqrt(length_squared)
 
                     if verbose:
                         O = V(0, 0, 0)
@@ -1191,10 +1193,11 @@ class ShapeBuilder:
                         print(f"B. length = {length}, requested angle = {angle}, tested angle = {tested_angle}")
                 else:
                     h = offset.x / tan(radians(angle))
-                    if h < abs(offset.y) or is_x(h, offset.y):
+                    length_squared = h**2 - offset.y**2
+                    if length_squared <= 0:
                         print(f"C. angle = {angle} requires h = {h} which is not possible with y offset = {offset.y}")
                         return None
-                    length = sqrt(h**2 - offset.y**2)
+                    length = sqrt(length_squared)
 
                     if verbose:
                         A = V(-start_half_dim.x, 0, 0)
