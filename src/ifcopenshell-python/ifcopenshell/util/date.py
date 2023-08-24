@@ -98,7 +98,7 @@ def readable_ifc_duration(string):
     final_string += f"{months} m " if months else ""
     final_string += f"{weeks} w " if weeks else ""
     final_string += f"{days} d " if days else ""
-    final_string += f"{hours} h " if hours else ""
+    final_string += f"{round(float(hours),2)} h " if hours else ""
     final_string += f"{minutes} m " if minutes else ""
     final_string += f"{seconds} s " if seconds else ""
 

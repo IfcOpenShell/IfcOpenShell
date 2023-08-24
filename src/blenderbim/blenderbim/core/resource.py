@@ -26,8 +26,7 @@ def load_resources(resource):
 
 def add_resource(tool_ifc, resource_tool, ifc_class, parent_resource=None):
     tool_ifc.run("resource.add_resource", ifc_class=ifc_class, parent_resource=parent_resource)
-    resource_tool.load_resources()
-    resource_tool.load_resource_properties()
+    load_resources(resource_tool)
 
 
 def load_resource_properties(resource_tool, resource=None):
@@ -56,8 +55,7 @@ def edit_resource(ifc, resource_tool, resource):
 
 def remove_resource(ifc, resource_tool, resource=None):
     ifc.run("resource.remove_resource", resource=resource)
-    resource_tool.load_resources()
-    resource_tool.load_resource_properties()
+    load_resources(resource_tool)
 
 
 def enable_editing_resource_time(ifc_tool, resource_tool, resource):
@@ -79,9 +77,13 @@ def disable_editing_resource_time(resource_tool):
 
 
 def calculate_resource_work(ifc, resource_tool, resource):
-    ifc.run("resource.calculate_resource_work", resource=resource)
-    resource_tool.load_resources()
-    resource_tool.load_resource_properties()
+    if resource_tool.get_task_assignments(resource):
+        ifc.run("resource.calculate_resource_work", resource=resource)
+    else:
+        nested_resources = resource_tool.get_nested_resources(resource)
+        for nested_resource in nested_resources or []:
+            ifc.run("resource.calculate_resource_work", resource=nested_resource)
+    load_resources(resource_tool)
 
 
 def enable_editing_resource_costs(resource_tool, resource):
@@ -142,20 +144,17 @@ def edit_resource_quantity(resource_tool, ifc, physical_quantity=None):
 
 def import_resources(resource_tool, file_path):
     resource_tool.import_resources(file_path)
-    resource_tool.load_resources()
-    resource_tool.load_resource_properties()
+    load_resources(resource_tool)
 
 
 def expand_resource(resource_tool, resource):
     resource_tool.expand_resource(resource)
-    resource_tool.load_resources()
-    resource_tool.load_resource_properties()
+    load_resources(resource_tool)
 
 
 def contract_resource(resource_tool, resource):
     resource_tool.contract_resource(resource)
-    resource_tool.load_resources()
-    resource_tool.load_resource_properties()
+    load_resources(resource_tool)
 
 
 def assign_resource(ifc, spatial, resource=None, products=None):
@@ -220,5 +219,4 @@ def go_to_resource(resource_tool, resource):
 
 def calculate_resource_usage(ifc, resource_tool, resource):
     ifc.run("resource.calculate_resource_usage", resource=resource)
-    resource_tool.load_resources()
-    resource_tool.load_resource_properties()
+    load_resources(resource_tool)

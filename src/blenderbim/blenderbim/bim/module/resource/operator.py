@@ -18,6 +18,7 @@
 
 import bpy
 from bpy_extras.io_utils import ImportHelper
+from blenderbim.bim.module.resource.ui import draw_productivity_ui
 import blenderbim.core.resource as core
 import blenderbim.tool as tool
 
@@ -355,6 +356,16 @@ class ImportResources(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         core.import_resources(tool.Resource, file_path=self.filepath)
 
 
+class AddProductivityData(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_productivity_data"
+    bl_description = "Apply"
+    bl_label = "Add Productivity"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        tool.Ifc.run("pset.add_pset", product=tool.Resource.get_highlighted_resource(), name="EPset_Productivity")
+
+
 class EditProductivityData(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_productivity_data"
     bl_description = "Apply"
@@ -363,6 +374,12 @@ class EditProductivityData(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.edit_productivity_pset(tool.Ifc, tool.Resource)
+
+    def draw(self, context):
+        draw_productivity_ui(self, context)
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=600)
 
 
 class ConstrainResourceWork(bpy.types.Operator, tool.Ifc.Operator):
