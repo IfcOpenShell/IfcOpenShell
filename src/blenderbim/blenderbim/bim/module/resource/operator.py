@@ -424,7 +424,6 @@ class CalculateResourceUsage(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.calculate_resource_usage"
     bl_label = "Calculate Resource Usage"
     bl_options = {"REGISTER", "UNDO"}
-    resource: bpy.props.IntProperty()
 
     @classmethod
     def poll(cls, context):
@@ -434,7 +433,8 @@ class CalculateResourceUsage(bpy.types.Operator, tool.Ifc.Operator):
                 task = tool.Resource.get_task_assignments(active_resource)
                 if task and tool.Sequence.has_duration(task):
                     return True
+
         return False
 
     def _execute(self, context):
-        core.calculate_resource_usage(tool.Ifc, tool.Resource, resource=tool.Ifc.get().by_id(self.resource))
+        core.calculate_resource_usage(tool.Ifc, tool.Resource, resource=tool.Ifc.get().by_id(tool.Resource.get_highlighted_resource()))

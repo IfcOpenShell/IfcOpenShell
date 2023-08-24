@@ -142,7 +142,7 @@ class BIM_PT_resources(Panel):
                 row2col2 = col2.row()
                 row2col2.prop(self.tprops.resources[self.props.active_resource_index], "schedule_usage", text="")
                 row2col3 = col3.row()
-                row2col3.operator("bim.calculate_resource_usage", text="", icon="TEMP").resource = ifc_definition_id
+                row2col3.operator("bim.calculate_resource_usage", text="", icon="TEMP")
                 op = row2col3.operator(
                     "bim.add_usage_constraint" if not is_usage_locked else "bim.remove_usage_constraint",
                     text="",
