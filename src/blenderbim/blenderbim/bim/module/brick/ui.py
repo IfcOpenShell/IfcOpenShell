@@ -205,8 +205,11 @@ class BIM_PT_brickschema_viewport(Panel):
 
             if self.props.brick_create_relations_toggled and self.props.split_screen_toggled:
                 row = self.layout.row(align=True)
-                split_screen_selection = self.props.split_screen_bricks[self.props.split_screen_active_brick_index]
-                if split_screen_selection.total_items:
+                try:
+                    split_screen_selection = self.props.split_screen_bricks[self.props.split_screen_active_brick_index]
+                except:
+                    split_screen_selection = None
+                if not split_screen_selection or split_screen_selection.total_items:
                     row.label(text="No selection", icon="INFO")
                 else:
                     prop_with_search(row, self.props, "new_brick_relation_type", text="")
