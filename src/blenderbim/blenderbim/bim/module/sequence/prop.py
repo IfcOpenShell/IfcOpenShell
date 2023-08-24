@@ -225,7 +225,9 @@ def updateTaskDuration(self, context):
         task_time = tool.Ifc.run("sequence.add_task_time", task=task)
     tool.Ifc.run("sequence.edit_task_time", task_time=task_time, attributes={"ScheduleDuration": duration})
     SequenceData.load()
+    blenderbim.core.sequence.load_task_properties(tool.Sequence)
     bpy.ops.bim.load_task_properties()
+    tool.Sequence.load_resources()
 
 
 def get_schedule_predefined_types(self, context):
