@@ -397,6 +397,8 @@ class GetRepresentationIfcParameters(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.get_representation_ifc_parameters(tool.Geometry, obj=context.active_object)
+        parameters = context.active_object.data.BIMMeshProperties.ifc_parameters
+        self.report({"INFO"}, f"{len(parameters)} parameters found.")
 
 
 class CopyRepresentation(bpy.types.Operator, Operator):
