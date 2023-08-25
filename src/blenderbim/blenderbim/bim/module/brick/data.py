@@ -46,7 +46,7 @@ class BrickschemaData:
 
     @classmethod
     def get_is_loaded(cls):
-        return BrickStore.graph is not None
+        return BrickStore.graph is not None  # `if BrickStore.graph` by itself takes ages.
 
     @classmethod
     def active_relations(cls):
@@ -67,13 +67,17 @@ class BrickschemaData:
             PREFIX brick: <https://brickschema.org/schema/Brick#>
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
             PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-            SELECT DISTINCT ?predicate ?object ?sp ?sv WHERE {
-               <{uri}> ?predicate ?object .
-               OPTIONAL {
-               { ?predicate rdfs:range brick:TimeseriesReference . }
-                UNION
-               { ?predicate a brick:EntityProperty . }
-                ?object ?sp ?sv }
+            SELECT DISTINCT ?predicate ?object ?label ?sp ?sv  WHERE {
+                <{uri}> ?predicate ?object .
+                OPTIONAL {
+                    ?object rdfs:label ?label . 
+                }
+                OPTIONAL {
+                    { ?predicate rdfs:range brick:TimeseriesReference . }
+                    UNION
+                    { ?predicate a brick:EntityProperty . }
+                    ?object ?sp ?sv .
+                }
             }
             GROUP BY ?object
         """.replace(
@@ -84,14 +88,15 @@ class BrickschemaData:
             predicate_uri = row.get("predicate")
             predicate_name = predicate_uri.toPython().split("#")[-1]
             object_uri = row.get("object")
-            print("DEBUG: object is ", object_uri)
-            if isinstance(object_uri, BNode):
-                object_name = "[]"
-            else:
-                try:
-                    object_name = object_uri.toPython().split("#")[-1]
-                except:
-                    object_name = str(object_uri)
+            object_name = row.get("label")
+            if not object_name:
+                if isinstance(object_uri, BNode):
+                    object_name = "[]"
+                else:
+                    try:
+                        object_name = object_uri.toPython().split("#")[-1]
+                    except:
+                        object_name = str(object_uri)
             results.append(
                 {
                     "predicate_uri": predicate_uri,
@@ -99,7 +104,7 @@ class BrickschemaData:
                     "object_uri": object_uri,
                     "object_name": object_name,
                     "is_uri": isinstance(object_uri, URIRef),
-                    "is_globalid": predicate_uri == "globalID",
+                    "is_globalid": predicate_name == "ifcGlobalID",
                 }
             )
             if isinstance(object_uri, BNode):
@@ -109,7 +114,6 @@ class BrickschemaData:
                         object2_name = object2.toPython().split("#")[-1]
                     except:
                         object2_name = str(object2)
-                    print("DEBUG: ", predicate_name, ":", predicate2_name)
                     results.append(
                         {
                             "predicate_uri": None,
@@ -117,10 +121,9 @@ class BrickschemaData:
                             "object_uri": object2,
                             "object_name": object2_name,
                             "is_uri": isinstance(object2, URIRef),
-                            "is_globalid": predicate2_name == "globalID",
+                            "is_globalid": predicate2_name == "ifcGlobalID",
                         }
                     )
-                print("")
         return results
 
 
@@ -146,7 +149,7 @@ class BrickschemaReferencesData:
         for library in ifc.by_type("IfcLibraryInformation"):
             if tool.Ifc.get_schema() == "IFC2X3":
                 results.append((str(library.id()), library.Name or "Unnamed", ""))
-            elif ".ttl" in library.Location:
+            elif library.Location and ".ttl" in library.Location:
                 results.append((str(library.id()), library.Name or "Unnamed", ""))
         return results
 

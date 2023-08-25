@@ -298,7 +298,7 @@ class BIM_PT_tabs(Panel):
             self.draw_tab_entry(row, "NETWORK_DRIVE", "SERVICES", is_ifc_project, aprops.tab == "SERVICES")
             self.draw_tab_entry(row, "EDITMODE_HLT", "STRUCTURE", is_ifc_project, aprops.tab == "STRUCTURE")
             self.draw_tab_entry(row, "NLA", "SCHEDULING", is_ifc_project, aprops.tab == "SCHEDULING")
-            self.draw_tab_entry(row, "PACKAGE", "FM", is_ifc_project, aprops.tab == "FM")
+            self.draw_tab_entry(row, "PACKAGE", "FM", True, aprops.tab == "FM")
             self.draw_tab_entry(row, "COMMUNITY", "QUALITY", True, aprops.tab == "QUALITY")
             self.draw_tab_entry(row, "BLENDER", "BLENDER", True, aprops.tab == "BLENDER")
             row.operator("bim.switch_tab", text="", emboss=False, icon="UV_SYNC_SELECT")
@@ -408,12 +408,53 @@ class BIM_PT_geometry(Panel):
         pass
 
 
-class BIM_PT_tab_4D5D(Panel):
-    bl_label = "Costing and Scheduling"
+class BIM_PT_tab_status(Panel):
+    bl_label = "Status"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_options = {"HIDE_HEADER"}
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "SCHEDULING") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_resources(Panel):
+    bl_label = "Resources"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "SCHEDULING") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_cost(Panel):
+    bl_label = "Cost"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "SCHEDULING") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_sequence(Panel):
+    bl_label = "Construction Scheduling"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
 
     @classmethod
     def poll(cls, context):
@@ -464,6 +505,7 @@ class BIM_PT_tab_quality_control(Panel):
     def draw(self, context):
         pass
 
+
 class BIM_PT_tab_clash_detection(Panel):
     bl_label = "Clash Detection"
     bl_space_type = "PROPERTIES"
@@ -476,6 +518,7 @@ class BIM_PT_tab_clash_detection(Panel):
 
     def draw(self, context):
         pass
+
 
 class BIM_PT_tab_sandbox(Panel):
     bl_label = "Sandbox"
@@ -626,7 +669,7 @@ class BIM_PT_tab_handover(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "FM") and tool.Ifc.get()
+        return tool.Blender.is_tab(context, "FM")
 
     def draw(self, context):
         pass
@@ -641,7 +684,7 @@ class BIM_PT_tab_operations(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "FM") and tool.Ifc.get()
+        return tool.Blender.is_tab(context, "FM")
 
     def draw(self, context):
         pass
@@ -658,24 +701,13 @@ class UIData:
 
     @classmethod
     def version(cls):
-        return ".".join(
-            [
-                str(x)
-                for x in [
-                    addon.bl_info.get("version", (-1, -1, -1))
-                    for addon in addon_utils.modules()
-                    if addon.bl_info["name"] == "BlenderBIM"
-                ][0]
-            ]
-        )
+        return tool.Blender.get_blenderbim_version()
 
 
 def draw_statusbar(self, context):
     if not UIData.is_loaded:
         UIData.load()
     text = f"BlenderBIM Add-on v{UIData.data['version']}"
-    if blenderbim.bim.last_commit_hash != "8888888":
-        text += f"-{blenderbim.bim.last_commit_hash[:7]}"
     self.layout.label(text=text)
 
 

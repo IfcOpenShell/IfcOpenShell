@@ -23,11 +23,9 @@ def load_resources(resource):
     resource.load_resources()
     resource.load_resource_properties()
 
-
 def add_resource(tool_ifc, resource_tool, ifc_class, parent_resource=None):
     tool_ifc.run("resource.add_resource", ifc_class=ifc_class, parent_resource=parent_resource)
-    resource_tool.load_resources()
-    resource_tool.load_resource_properties()
+    load_resources(resource_tool)
 
 
 def load_resource_properties(resource_tool, resource=None):
@@ -56,8 +54,7 @@ def edit_resource(ifc, resource_tool, resource):
 
 def remove_resource(ifc, resource_tool, resource=None):
     ifc.run("resource.remove_resource", resource=resource)
-    resource_tool.load_resources()
-    resource_tool.load_resource_properties()
+    load_resources(resource_tool)
 
 
 def enable_editing_resource_time(ifc_tool, resource_tool, resource):
@@ -79,9 +76,13 @@ def disable_editing_resource_time(resource_tool):
 
 
 def calculate_resource_work(ifc, resource_tool, resource):
-    ifc.run("resource.calculate_resource_work", resource=resource)
-    resource_tool.load_resources()
-    resource_tool.load_resource_properties()
+    if resource_tool.get_task_assignments(resource):
+        ifc.run("resource.calculate_resource_work", resource=resource)
+    else:
+        nested_resources = resource_tool.get_nested_resources(resource)
+        for nested_resource in nested_resources or []:
+            ifc.run("resource.calculate_resource_work", resource=nested_resource)
+    load_resources(resource_tool)
 
 
 def enable_editing_resource_costs(resource_tool, resource):
@@ -142,20 +143,17 @@ def edit_resource_quantity(resource_tool, ifc, physical_quantity=None):
 
 def import_resources(resource_tool, file_path):
     resource_tool.import_resources(file_path)
-    resource_tool.load_resources()
-    resource_tool.load_resource_properties()
+    load_resources(resource_tool)
 
 
 def expand_resource(resource_tool, resource):
     resource_tool.expand_resource(resource)
-    resource_tool.load_resources()
-    resource_tool.load_resource_properties()
+    load_resources(resource_tool)
 
 
 def contract_resource(resource_tool, resource):
     resource_tool.contract_resource(resource)
-    resource_tool.load_resources()
-    resource_tool.load_resource_properties()
+    load_resources(resource_tool)
 
 
 def assign_resource(ifc, spatial, resource=None, products=None):
@@ -182,3 +180,42 @@ def edit_productivity_pset(ifc, resource_tool):
     else:
         pset = ifc.run("pset.add_pset", product=resource, name="EPset_Productivity")
     ifc.run("pset.edit_pset", pset=pset, properties=resource_tool.get_productivity_attributes())
+
+
+def add_usage_constraint(ifc, resource_tool, resource=None, reference_path=None):
+    metric = resource_tool.has_metric_constraint(resource, "Usage")
+    if metric:
+        return print("Must remove existing metric first")
+
+    objective = ifc.run("constraint.add_objective")
+    ifc.run("constraint.edit_objective", objective=objective, attributes={"ObjectiveQualifier": "PARAMETER"})
+    metric = ifc.run("constraint.add_metric", objective=objective)
+    ifc.run(
+        "constraint.edit_metric",
+        metric=metric,
+        attributes={
+            "ConstraintGrade": "HARD",
+            "Benchmark": "EQUALTO",
+        },
+    )
+    ifc.run("constraint.add_metric_reference", metric=metric, reference_path=reference_path)
+    ifc.run("constraint.assign_constraint", product=resource, constraint=objective)
+
+
+def remove_usage_constraint(ifc, resource_tool, resource, reference_path):
+    constraints = resource_tool.get_constraints(resource)
+    for constraint in constraints:
+        metrics = resource_tool.get_metrics(constraint)
+        for metric in metrics:
+            reference = resource_tool.get_metric_reference(metric, is_deep=True)
+            if reference == reference_path:
+                ifc.run("constraint.remove_metric", metric=metric)
+                ifc.run("constraint.unassign_constraint", product=resource, constraint=constraint)
+                ifc.run("constraint.remove_constraint", constraint=constraint)
+
+def go_to_resource(resource_tool, resource):
+    resource_tool.go_to_resource(resource)
+
+def calculate_resource_usage(ifc, resource_tool, resource):
+    ifc.run("resource.calculate_resource_usage", resource=resource)
+    load_resources(resource_tool)

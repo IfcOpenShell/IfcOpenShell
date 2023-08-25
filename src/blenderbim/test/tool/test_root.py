@@ -160,11 +160,12 @@ class TestSetObjectName(NewFile):
         obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
         element = ifc.createIfcWall()
         subject.set_object_name(obj, element)
-        assert obj.name == "IfcWall/Object"
+        assert obj.name == "IfcWall/Unnamed"
 
-    def test_existing_ifc_prefixes_are_not_repeated(self):
+    def test_existing_blender_names_are_ignored(self):
         ifc = ifcopenshell.file()
         obj = bpy.data.objects.new("IfcSlab/Object", bpy.data.meshes.new("Mesh"))
         element = ifc.createIfcWall()
+        element.Name = "Foobar"
         subject.set_object_name(obj, element)
-        assert obj.name == "IfcWall/Object"
+        assert obj.name == "IfcWall/Foobar"

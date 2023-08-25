@@ -30,6 +30,38 @@ from blenderbim.bim.module.sequence.data import (
 )
 
 
+class BIM_PT_status(Panel):
+    bl_label = "Status"
+    bl_idname = "BIM_PT_status"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_status"
+    bl_options = {"HIDE_HEADER"}
+
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+
+    def draw(self, context):
+        self.props = context.scene.BIMStatusProperties
+
+        if not self.props.is_enabled:
+            row = self.layout.row()
+            row.operator("bim.enable_status_filters", icon="GREASEPENCIL")
+            return
+
+        row = self.layout.row(align=True)
+        row.operator("bim.activate_status_filters", icon="TIME")
+        row.operator("bim.disable_status_filters", icon="CANCEL", text="")
+
+        for status in self.props.statuses:
+            row = self.layout.row()
+            row.label(text=status.name)
+            row.prop(status, "is_visible", text="", emboss=False, icon="HIDE_OFF" if status.is_visible else "HIDE_ON")
+            row.operator("bim.select_status_filter", icon="RESTRICT_SELECT_OFF", text="").name = status.name
+
+
 class BIM_PT_work_plans(Panel):
     bl_label = "Work Plans"
     bl_idname = "BIM_PT_work_plans"
@@ -37,7 +69,7 @@ class BIM_PT_work_plans(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_tab_4D5D"
+    bl_parent_id = "BIM_PT_tab_sequence"
 
     @classmethod
     def poll(cls, context):
@@ -107,7 +139,7 @@ class BIM_PT_work_schedules(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_tab_4D5D"
+    bl_parent_id = "BIM_PT_tab_sequence"
 
     @classmethod
     def poll(cls, context):
@@ -319,6 +351,7 @@ class BIM_PT_work_schedules(Panel):
     def draw_editable_sequence_ui(self, sequence, process_type):
         task = SequenceData.data["tasks"][sequence[process_type]]
         row = self.layout.row(align=True)
+        row.operator("bim.go_to_task", text="", icon="RESTRICT_SELECT_OFF").task = task["id"]
         row.label(text=task["Identification"] or "XXX")
         row.label(text=task["Name"] or "Unnamed")
         row.label(text=sequence["SequenceType"] or "N/A")
@@ -550,7 +583,7 @@ class BIM_PT_animation_Color_Scheme(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_tab_4D5D"
+    bl_parent_id = "BIM_PT_tab_sequence"
 
     @classmethod
     def poll(cls, context):
@@ -733,9 +766,9 @@ class BIM_UL_task_resources(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
+            row.operator("bim.go_to_resource", text="", icon="STYLUS_PRESSURE").resource = item.ifc_definition_id
             row.prop(item, "name", emboss=False, text="")
-            row.label(text=str(item.schedule_usage))
-
+            row.prop(item, "schedule_usage", emboss=False, text="")
 
 class BIM_UL_animation_colors(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
@@ -758,7 +791,7 @@ class BIM_UL_product_input_tasks(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
-            op = row.operator("bim.highlight_task", text="", icon="STYLUS_PRESSURE")
+            op = row.operator("bim.go_to_task", text="", icon="STYLUS_PRESSURE")
             op.task = item.ifc_definition_id
             row.split(factor=0.8)
             row.label(text=item.name)
@@ -768,7 +801,7 @@ class BIM_UL_product_output_tasks(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
-            op = row.operator("bim.highlight_task", text="", icon="STYLUS_PRESSURE")
+            op = row.operator("bim.go_to_task", text="", icon="STYLUS_PRESSURE")
             op.task = item.ifc_definition_id
             row.split(factor=0.8)
             row.label(text=item.name)
@@ -888,7 +921,7 @@ class BIM_PT_work_calendars(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_tab_4D5D"
+    bl_parent_id = "BIM_PT_tab_sequence"
 
     @classmethod
     def poll(cls, context):

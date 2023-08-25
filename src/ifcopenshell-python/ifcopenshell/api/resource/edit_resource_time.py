@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
-import ifcopenshell.util.date
+import ifcopenshell
 
 
 class Usecase:
@@ -77,6 +77,11 @@ class Usecase:
             del self.settings["attributes"]["ActualFinish"]
 
         for name, value in self.settings["attributes"].items():
+            metrics = ifcopenshell.util.constraint.get_metric_constraints(
+                self.resource, "Usage." + name
+            )
+            if metrics and ifcopenshell.util.constraint.is_hard_constraint(metrics[0]):
+                continue
             if value:
                 if "Start" in name or "Finish" in name or name == "StatusTime":
                     value = ifcopenshell.util.date.datetime2ifc(value, "IfcDateTime")
@@ -87,6 +92,17 @@ class Usecase:
                 ):
                     value = ifcopenshell.util.date.datetime2ifc(value, "IfcDuration")
             setattr(self.settings["resource_time"], name, value)
+            if (
+                name == "ScheduleUsage"
+                and ifcopenshell.util.constraint.get_metric_constraints(
+                    self.resource, "Usage.ScheduleWork"
+                )
+            ):
+                task = ifcopenshell.util.resource.get_task_assignments(self.resource)
+                if task:
+                    ifcopenshell.api.run(
+                        "sequence.calculate_task_duration", self.file, task=task
+                    )
 
     def get_resource(self):
         return [

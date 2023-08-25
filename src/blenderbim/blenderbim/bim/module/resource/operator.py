@@ -18,6 +18,7 @@
 
 import bpy
 from bpy_extras.io_utils import ImportHelper
+from blenderbim.bim.module.resource.ui import draw_productivity_ui
 import blenderbim.core.resource as core
 import blenderbim.tool as tool
 
@@ -198,6 +199,13 @@ class CalculateResourceWork(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     resource: bpy.props.IntProperty()
 
+    @classmethod
+    def poll(cls, context):
+        active_resource = tool.Resource.get_highlighted_resource()
+        if active_resource:
+            if tool.Resource.get_productivity(active_resource, should_inherit=True):
+                return True
+
     def _execute(self, context):
         core.calculate_resource_work(tool.Ifc, tool.Resource, resource=tool.Ifc.get().by_id(self.resource))
 
@@ -348,6 +356,16 @@ class ImportResources(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         core.import_resources(tool.Resource, file_path=self.filepath)
 
 
+class AddProductivityData(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_productivity_data"
+    bl_description = "Apply"
+    bl_label = "Add Productivity"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        tool.Ifc.run("pset.add_pset", product=tool.Resource.get_highlighted_resource(), name="EPset_Productivity")
+
+
 class EditProductivityData(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_productivity_data"
     bl_description = "Apply"
@@ -356,3 +374,67 @@ class EditProductivityData(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.edit_productivity_pset(tool.Ifc, tool.Resource)
+
+    def draw(self, context):
+        draw_productivity_ui(self, context)
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=600)
+
+
+class ConstrainResourceWork(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_usage_constraint"
+    bl_label = "Constrain Resource Work"
+    bl_options = {"REGISTER", "UNDO"}
+    resource: bpy.props.IntProperty()
+    attribute: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        core.add_usage_constraint(
+            tool.Ifc, tool.Resource, resource=tool.Ifc.get().by_id(self.resource), reference_path=self.attribute
+        )
+
+
+class RemoveUsageConstraint(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.remove_usage_constraint"
+    bl_label = "Remove Usage Constraint"
+    bl_options = {"REGISTER", "UNDO"}
+    resource: bpy.props.IntProperty()
+    attribute: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        core.remove_usage_constraint(
+            tool.Ifc, tool.Resource, resource=tool.Ifc.get().by_id(self.resource), reference_path=self.attribute
+        )
+
+
+class GoToResource(bpy.types.Operator):
+    bl_idname = "bim.go_to_resource"
+    bl_label = "Go To Resource"
+    bl_description = "Selects the resource in the Resource Panel"
+    bl_options = {"REGISTER", "UNDO"}
+    resource: bpy.props.IntProperty()
+
+    def execute(self, context):
+        core.go_to_resource(tool.Resource, resource=tool.Ifc.get().by_id(self.resource))
+        return {"FINISHED"}
+
+
+class CalculateResourceUsage(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.calculate_resource_usage"
+    bl_label = "Calculate Resource Usage"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        active_resource = tool.Resource.get_highlighted_resource()
+        if active_resource:
+            if active_resource.Usage and active_resource.Usage.ScheduleWork:
+                task = tool.Resource.get_task_assignments(active_resource)
+                if task and tool.Sequence.has_duration(task):
+                    return True
+
+        return False
+
+    def _execute(self, context):
+        core.calculate_resource_usage(tool.Ifc, tool.Resource, resource=tool.Ifc.get().by_id(tool.Resource.get_highlighted_resource()))

@@ -47,7 +47,7 @@ In this example, we'll extract out all `IfcWall` elements.
 
 ::
 
-    $ ifcpatch -i input.ifc -o output.ifc -r ExtractElements -a ".IfcWall"
+    $ ifcpatch -i input.ifc -o output.ifc -r ExtractElements -a "IfcWall"
     $ cat output.ifc
 
 Here is a minimal example of how to use IfcPatch as a library:
@@ -60,7 +60,7 @@ Here is a minimal example of how to use IfcPatch as a library:
         "input": "input.ifc",
         "file": ifcopenshell.open("input.ifc"),
         "recipe": "ExtractElements",
-        "arguments": [".IfcWall"],
+        "arguments": ["IfcWall"],
     })
     ifcpatch.write(output, "output.ifc")
 

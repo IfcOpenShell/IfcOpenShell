@@ -97,7 +97,7 @@ class ConnectionsData:
 
     @classmethod
     def load(cls):
-        cls.data = {"connections": cls.connections()}
+        cls.data = {"connections": cls.connections(), "is_connection_realization": cls.is_connection_realization()}
         cls.is_loaded = True
 
     @classmethod
@@ -114,7 +114,13 @@ class ConnectionsData:
             else:
                 related_element = rel.RelatedElement
 
-            if element.is_a("IfcRelConnectsPathElements"):
+            realizing_elements = []
+            realizing_elements_connection_type = ""
+            if rel.is_a("IfcRelConnectsWithRealizingElements"):
+                realizing_elements.extend(rel.RealizingElements)
+                realizing_elements_connection_type = rel.ConnectionType
+
+            if rel.is_a("IfcRelConnectsPathElements"):
                 related_element_connection_type = rel.RelatedConnectionType
             else:
                 related_element_connection_type = ""
@@ -125,6 +131,8 @@ class ConnectionsData:
                     "is_relating": True,
                     "Name": related_element.Name or "Unnamed",
                     "ConnectionType": related_element_connection_type,
+                    "realizing_elements": realizing_elements,
+                    "realizing_elements_connection_type": realizing_elements_connection_type,
                 }
             )
 
@@ -134,7 +142,13 @@ class ConnectionsData:
             else:
                 relating_element = rel.RelatingElement
 
-            if element.is_a("IfcRelConnectsPathElements"):
+            realizing_elements = []
+            realizing_elements_connection_type = ""
+            if rel.is_a("IfcRelConnectsWithRealizingElements"):
+                realizing_elements.extend(rel.RealizingElements)
+                realizing_elements_connection_type = rel.ConnectionType
+
+            if rel.is_a("IfcRelConnectsPathElements"):
                 relating_element_connection_type = rel.RelatingConnectionType
             else:
                 relating_element_connection_type = ""
@@ -145,9 +159,28 @@ class ConnectionsData:
                     "is_relating": False,
                     "Name": relating_element.Name or "Unnamed",
                     "ConnectionType": relating_element_connection_type,
+                    "realizing_elements": realizing_elements,
+                    "realizing_elements_connection_type": realizing_elements_connection_type,
                 }
             )
 
+        return results
+
+    @classmethod
+    def is_connection_realization(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        connections = element.IsConnectionRealization
+        if not connections:
+            return
+
+        results = []
+        for rel in connections:
+            data = {
+                "realizing_elements_connection_type": rel.ConnectionType,
+                "connected_from": rel.RelatingElement,
+                "connected_to": rel.RelatedElement,
+            }
+            results.append(data)
         return results
 
 

@@ -71,6 +71,9 @@ def draw_enumerated_property(prop, layout, copy_operator=None):
         grid = layout.column_flow(columns=3)
         for e in prop.enumerated_value.enumerated_values:
             grid.prop(e, "is_selected", text=str(e[value_name]))
+    if copy_operator:
+        op = layout.operator(f"{copy_operator}", text="", icon="COPYDOWN")
+        op.name = prop.metadata.name
 
 
 def get_active_pset_obj_name(context, obj_type):

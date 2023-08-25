@@ -115,7 +115,7 @@ class IfcCsv:
 
         self.group_results(groups, attributes)
         self.summarise_results(summaries, attributes)
-        self.sort_results(sort, attributes)
+        self.sort_results(sort, attributes, include_global_id)
 
         if format == "csv":
             self.export_csv(output, delimiter=delimiter)
@@ -225,7 +225,7 @@ class IfcCsv:
                     self.summaries[si] = max(summary_values[si])
                 self.summaries[si] = summary_type.title() + ": " + str(self.summaries[si])
 
-    def sort_results(self, sort, attributes):
+    def sort_results(self, sort, attributes, include_global_id):
         if sort:
             def natural_sort(value):
                 if isinstance(value, str):

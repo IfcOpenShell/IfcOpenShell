@@ -82,7 +82,7 @@ classes = (
     operator.ExportP6,
     operator.GenerateGanttChart,
     operator.GuessDateRange,
-    operator.HighlightTask,
+    operator.GoToTask,
     operator.ImportCSV,
     operator.ImportMSP,
     operator.ImportP6,
@@ -118,12 +118,18 @@ classes = (
     operator.UnassignWorkSchedule,
     operator.VisualiseWorkScheduleDate,
     operator.VisualiseWorkScheduleDateRange,
+    operator.EnableStatusFilters,
+    operator.DisableStatusFilters,
+    operator.ActivateStatusFilters,
+    operator.SelectStatusFilter,
     prop.WorkPlan,
     prop.BIMWorkPlanProperties,
     prop.Task,
     prop.TaskResource,
     prop.TaskProduct,
     prop.ISODuration,
+    prop.IFCStatus,
+    prop.BIMStatusProperties,
     prop.BIMWorkScheduleProperties,
     prop.BIMTaskTreeProperties,
     prop.BIMTaskTypeColor,
@@ -133,6 +139,7 @@ classes = (
     prop.BIMWorkCalendarProperties,
     prop.DatePickerProperties,
     prop.BIMDateTextProperties,
+    ui.BIM_PT_status,
     ui.BIM_PT_work_plans,
     ui.BIM_PT_work_schedules,
     ui.BIM_PT_work_calendars,
@@ -165,6 +172,7 @@ def menu_func_import(self, context):
 
 
 def register():
+    bpy.types.Scene.BIMStatusProperties = bpy.props.PointerProperty(type=prop.BIMStatusProperties)
     bpy.types.Scene.BIMWorkPlanProperties = bpy.props.PointerProperty(type=prop.BIMWorkPlanProperties)
     bpy.types.Scene.BIMWorkScheduleProperties = bpy.props.PointerProperty(type=prop.BIMWorkScheduleProperties)
     bpy.types.Scene.BIMTaskTreeProperties = bpy.props.PointerProperty(type=prop.BIMTaskTreeProperties)
@@ -177,6 +185,7 @@ def register():
 
 
 def unregister():
+    del bpy.types.Scene.BIMStatusProperties
     del bpy.types.Scene.BIMWorkPlanProperties
     del bpy.types.Scene.BIMWorkScheduleProperties
     del bpy.types.Scene.BIMTaskTreeProperties

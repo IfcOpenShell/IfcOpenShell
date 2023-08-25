@@ -27,6 +27,7 @@ from bpy.app.handlers import persistent
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.owner.prop import get_user_person, get_user_organisation
 from blenderbim.bim.module.model.data import AuthoringData
+from blenderbim.bim.module.model.workspace import LIST_OF_TOOLS, TOOLS_TO_CLASSES_MAP
 from mathutils import Vector
 from math import cos, degrees
 
@@ -73,17 +74,27 @@ def name_callback(obj, data):
         refresh_ui_data()
         return
 
-    if not obj.BIMObjectProperties.ifc_definition_id or "/" not in obj.name:
+    if not obj.BIMObjectProperties.ifc_definition_id:
         return
+
     element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+    if "/" in obj.name:
+        object_name = obj.name
+        element_name = obj.name.split("/", 1)[1]
+    else:
+        element_name = obj.name
+        object_name = element.is_a() + f"/{element_name}"
+        obj.name = object_name  # NOTE: doesn't trigger infinite recursion
+
     if element.is_a("IfcGridAxis"):
-        element.AxisTag = obj.name.split("/")[1]
+        element.AxisTag = object_name.split("/")[1]
         refresh_ui_data()
+
     if not element.is_a("IfcRoot"):
         return
+    element.Name = element_name
     if obj.BIMObjectProperties.collection:
-        obj.BIMObjectProperties.collection.name = obj.name
-    element.Name = "/".join(obj.name.split("/")[1:])
+        obj.BIMObjectProperties.collection.name = object_name
     refresh_ui_data()
 
 
@@ -106,7 +117,7 @@ def update_bim_tool_props():
         return
     mode = bpy.context.mode
     current_tool = bpy.context.workspace.tools.from_space_view3d_mode(mode)
-    if not current_tool or current_tool.idname != "bim.bim_tool":
+    if not current_tool or current_tool.idname not in LIST_OF_TOOLS:
         return
     element = tool.Ifc.get_entity(obj)
     if not element:
@@ -114,6 +125,16 @@ def update_bim_tool_props():
     representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
     if not representation:
         return
+
+    props = bpy.context.scene.BIMModelProperties
+    if element.is_a("IfcElementType") or element.is_a("IfcElement"):
+        element_type = ifcopenshell.util.element.get_type(element)
+        if element_type:
+            is_bim_tool = current_tool.idname == "bim.bim_tool"
+            if is_bim_tool:
+                props.ifc_class = element_type.is_a()
+            if is_bim_tool or TOOLS_TO_CLASSES_MAP.get(current_tool.idname) == element_type.is_a():
+                props.relating_type_id = str(element_type.id())
     extrusion = tool.Model.get_extrusion(representation)
     if not extrusion:
         return
@@ -124,7 +145,6 @@ def update_bim_tool_props():
         return x_angle
 
     si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-    props = bpy.context.scene.BIMModelProperties
     if not AuthoringData.is_loaded:
         AuthoringData.load()
 

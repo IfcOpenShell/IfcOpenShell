@@ -105,6 +105,7 @@ class ConvertBrickProject(bpy.types.Operator, Operator):
     bl_idname = "bim.convert_brick_project"
     bl_label = "Convert Brick Project"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Create an Ifc library for this Brick project"
 
     def _execute(self, context):
         core.convert_brick_project(tool.Ifc, tool.Brick)
@@ -114,9 +115,18 @@ class AssignBrickReference(bpy.types.Operator, Operator):
     bl_idname = "bim.assign_brick_reference"
     bl_label = "Assign Brick Reference"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Assign the selected Ifc entity to the selected Brick entity"
 
     def _execute(self, context):
+        if not context.active_object:
+            self.report({'ERROR'}, f'No Ifc selected')
+            return
         props = context.scene.BIMBrickProperties
+        try:
+            props.bricks[props.active_brick_index]
+        except:
+            self.report({'ERROR'}, f'No Brick selected')
+            return
         core.assign_brick_reference(
             tool.Ifc,
             tool.Brick,
@@ -159,7 +169,7 @@ class AddBrickRelation(bpy.types.Operator, Operator):
         elif props.split_screen_toggled:
             object = props.split_screen_bricks[props.split_screen_active_brick_index].uri
         else:
-            object = props.new_brick_relation_namespace + props.new_brick_relation_object
+            object = props.namespace + props.new_brick_relation_object
         core.add_brick_relation(
             tool.Brick,
             brick_uri=brick.uri,
@@ -172,6 +182,7 @@ class ConvertIfcToBrick(bpy.types.Operator, Operator):
     bl_idname = "bim.convert_ifc_to_brick"
     bl_label = "Convert IFC To Brick"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Convert Ifc entities and relations to Brick entities and relations"
 
     def _execute(self, context):
         props = context.scene.BIMBrickProperties
@@ -222,7 +233,6 @@ class RefreshBrickViewer(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.refresh_brick_viewer(tool.Brick)
-        core.refresh_brick_viewer(tool.Brick, split_screen=True)
 
 
 class RemoveBrick(bpy.types.Operator, Operator):
@@ -278,7 +288,7 @@ class AddBrickNamespace(bpy.types.Operator, Operator):
         props = context.scene.BIMBrickProperties
         alias = props.new_brick_namespace_alias
         uri = props.new_brick_namespace_uri
-        core.add_namespace(tool.Brick, alias=alias, uri=uri)
+        core.add_brick_namespace(tool.Brick, alias=alias, uri=uri)
 
 
 class RemoveBrickRelation(bpy.types.Operator, Operator):

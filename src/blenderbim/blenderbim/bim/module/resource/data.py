@@ -56,20 +56,74 @@ class ResourceData:
                 "type": resource.is_a(),
                 "BaseQuantity": base_quantity,
             }
+            results[resource.id()]["Benchmarks"] = cls.get_resource_benchmarks(resource)
             if resource.is_a() in ["IfcLaborResource", "IfcConstructionEquipmentResource"]:
                 results[resource.id()]["Productivity"] = {}
+                results[resource.id()]["InheritedProductivity"] = {}
                 productivity = cls.get_productivity(resource)
                 if productivity:
                     results[resource.id()]["Productivity"] = {
+                        "id": productivity.get("id"),
                         "QuantityProduced": ifcopenshell.util.resource.get_quantity_produced(productivity),
                         "TimeConsumed": ifcopenshell.util.resource.get_unit_consumed(productivity),
                         "QuantityProducedName": ifcopenshell.util.resource.get_quantity_produced_name(productivity),
                     }
+                inherited_productivity = cls.get_parent_productivity(resource)
+                if inherited_productivity:
+                    results[resource.id()]["InheritedProductivity"] = {
+                        "QuantityProduced": ifcopenshell.util.resource.get_quantity_produced(inherited_productivity),
+                        "TimeConsumed": ifcopenshell.util.resource.get_unit_consumed(inherited_productivity),
+                        "QuantityProducedName": ifcopenshell.util.resource.get_quantity_produced_name(
+                            inherited_productivity
+                        ),
+                    }
+                if resource.Usage:
+                    results[resource.id()]["ScheduleWork"] = (
+                        ifcopenshell.util.date.readable_ifc_duration(resource.Usage.ScheduleWork)
+                        if resource.Usage.ScheduleWork
+                        else None
+                    )
+                    results[resource.id()]["ScheduleUsage"] = (
+                        resource.Usage.ScheduleUsage if resource.Usage.ScheduleUsage else None
+                    )
+                if resource.IsNestedBy:
+                    results[resource.id()]["DerivedScheduleWork"] = cls.sum_person_hours(resource)
         return results
+
+    @classmethod
+    def sum_person_hours(cls, resource):
+        sum = 0
+        nested_resources = ifcopenshell.util.resource.get_nested_resources(resource)
+        for nested_resource in nested_resources or []:
+            if not nested_resource.Usage or not nested_resource.Usage.ScheduleWork:
+                continue
+            duration = ifcopenshell.util.date.ifc2datetime(nested_resource.Usage.ScheduleWork)
+            sum += duration.total_seconds() / 3600
+        return round(float(sum), 2) if sum else 0
+
+    @classmethod
+    def get_resource_benchmarks(cls, resource):
+        constraints = []
+        for constraint in ifcopenshell.util.constraint.get_constraints(resource) or []:
+            metrics = []
+            for metric in ifcopenshell.util.constraint.get_metrics(constraint) or []:
+                metrics.append(
+                    {
+                        "reference": ifcopenshell.util.constraint.get_metric_reference(metric),
+                        "Benchmark": metric.Benchmark,
+                        "ConstraintGrade": metric.ConstraintGrade,
+                    }
+                )
+            constraints.append({"ObjectiveQualifier": constraint.ObjectiveQualifier, "metrics": metrics})
+        return constraints
 
     @classmethod
     def get_productivity(cls, resource):
         return ifcopenshell.util.resource.get_productivity(resource, should_inherit=False)
+
+    @classmethod
+    def get_parent_productivity(cls, resource):
+        return ifcopenshell.util.resource.get_parent_productivity(resource)
 
     @classmethod
     def cost_values(cls):
