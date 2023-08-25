@@ -46,7 +46,7 @@ class BrickschemaData:
 
     @classmethod
     def get_is_loaded(cls):
-        return BrickStore.graph is not None
+        return BrickStore.graph is not None  # `if BrickStore.graph` by itself takes ages.
 
     @classmethod
     def active_relations(cls):

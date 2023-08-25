@@ -144,8 +144,8 @@ class Brick(blenderbim.core.tool.Brick):
         query = BrickStore.graph.query(
             """
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-            SELECT ?label { 
-                <{brick_uri}> rdfs:label ?label . 
+            SELECT ?label {
+                <{brick_uri}> rdfs:label ?label .
             }
             LIMIT 1
         """.replace("{brick_uri}", brick_uri))

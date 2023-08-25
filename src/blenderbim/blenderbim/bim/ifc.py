@@ -221,7 +221,9 @@ class IfcStore:
             blenderbim.bim.handler.subscribe_to(obj, "diffuse_color", blenderbim.bim.handler.color_callback)
         elif isinstance(obj, bpy.types.Object):
             blenderbim.bim.handler.subscribe_to(obj, "mode", blenderbim.bim.handler.mode_callback)
-            blenderbim.bim.handler.subscribe_to(obj, "active_material_index", blenderbim.bim.handler.active_material_index_callback)
+            blenderbim.bim.handler.subscribe_to(
+                obj, "active_material_index", blenderbim.bim.handler.active_material_index_callback
+            )
 
         if IfcStore.history:
             data = {"id": element.id(), "guid": getattr(element, "GlobalId", None), "obj": obj.name}
@@ -248,7 +250,9 @@ class IfcStore:
             blenderbim.bim.handler.subscribe_to(obj, "diffuse_color", blenderbim.bim.handler.color_callback)
         elif isinstance(obj, bpy.types.Object):
             blenderbim.bim.handler.subscribe_to(obj, "mode", blenderbim.bim.handler.mode_callback)
-            blenderbim.bim.handler.subscribe_to(obj, "active_material_index", blenderbim.bim.handler.active_material_index_callback)
+            blenderbim.bim.handler.subscribe_to(
+                obj, "active_material_index", blenderbim.bim.handler.active_material_index_callback
+            )
         # TODO Listeners are not re-registered. Does this cause nasty problems to debug later on?
         # TODO We're handling id_map and guid_map, but what about edited_objs? This might cause big problems.
 
@@ -321,7 +325,7 @@ class IfcStore:
             IfcStore.begin_transaction(operator)
             if tool.Ifc.get():
                 tool.Ifc.get().begin_transaction()
-            if BrickStore.graph:
+            if BrickStore.graph is not None:  # `if BrickStore.graph` by itself takes ages.
                 BrickStore.begin_transaction()
             # This empty transaction ensures that each operator has at least one transaction
             IfcStore.add_transaction_operation(operator, rollback=lambda data: True, commit=lambda data: True)
@@ -339,7 +343,7 @@ class IfcStore:
                 IfcStore.add_transaction_operation(
                     operator, rollback=lambda d: tool.Ifc.get().undo(), commit=lambda d: tool.Ifc.get().redo()
                 )
-            if BrickStore.graph:
+            if BrickStore.graph is not None:  # `if BrickStore.graph` by itself takes ages.
                 BrickStore.end_transaction()
             IfcStore.end_transaction(operator)
             blenderbim.bim.handler.refresh_ui_data()
