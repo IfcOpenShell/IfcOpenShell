@@ -42,14 +42,14 @@ filter_elements_grammar = lark.Lark(
     location: "location" comparison value
     query: "query:" keys comparison value
 
-    pset: quoted_string | unquoted_string | regex_string
-    prop: quoted_string | unquoted_string | regex_string
+    pset: quoted_string | regex_string | unquoted_string
+    prop: quoted_string | regex_string | unquoted_string
     keys: quoted_string | unquoted_string
 
     attribute_name: /[A-Z]\\w+/
     ifc_class: /Ifc\\w+/
 
-    value: special | quoted_string | unquoted_string | regex_string
+    value: special | quoted_string | regex_string | unquoted_string
     unquoted_string: /[^.=\\s]+/
     quoted_string: ESCAPED_STRING
     regex_string: "/" /[^\\/]+/ "/"
@@ -428,7 +428,7 @@ class FacetTransformer(lark.Transformer):
                 value = float(value)
             result = element_value == value
         elif isinstance(value, re.Pattern):
-            result = bool(value.match(element_value))
+            result = bool(value.match(element_value)) if element_value is not None else False
         elif value in (None, True, False):
             result = element_value is value
         return result if comparison == "=" else not result
