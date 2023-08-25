@@ -217,6 +217,12 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(const IfcGeom::Iterat
 	BRepTools::Clean(shape_);
 }
 
+void ifcopenshell::geometry::OpenCascadeShape::Serialize(std::string& r) const {
+	std::stringstream sstream;
+	BRepTools::Write(shape_, sstream);
+	r = sstream.str();
+}
+
 int ifcopenshell::geometry::OpenCascadeShape::surface_genus() const {
 	throw std::runtime_error("Not implemented");
 }

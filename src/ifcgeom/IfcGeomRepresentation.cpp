@@ -145,11 +145,6 @@ IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
 	: Representation(brep.settings())
 	, id_(brep.id())
 {
-#ifdef IFOPSH_WITH_OPENCASCADE
-	ConversionResultShape* shape = brep.as_compound();
-	TopoDS_Compound compound = TopoDS::Compound(((ifcopenshell::geometry::OpenCascadeShape*)shape)->shape());
-	delete shape;
-
 	for (auto it = brep.begin(); it != brep.end(); ++it) {
 		int sid = -1;
 
@@ -175,12 +170,24 @@ IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
 		surface_style_ids_.push_back(sid);
 	}
 
-	std::stringstream sstream;
-	BRepTools::Write(compound,sstream);
-	brep_data_ = sstream.str();
-#else
-	throw std::runtime_error("Not available without Open Cascade");
-#endif
+	if (brep.begin() != brep.end()) {
+		if (dynamic_cast<ifcopenshell::geometry::OpenCascadeShape*>(brep.begin()->Shape())) {
+			ConversionResultShape* shape = brep.as_compound();
+			shape->Serialize(brep_data_);
+			delete shape;
+		} else {
+			for (auto it = brep.begin(); it != brep.end(); ++it) {
+				std::string part;
+				it->Shape()->Serialize(part);
+				if (brep_data_.size()) {
+					brep_data_ = brep_data_ + "\n---\n" + part;
+				} else {
+					brep_data_ = part;
+				}
+			}
+		}
+	}
+
 }
 
 IfcGeom::ConversionResultShape* IfcGeom::Representation::BRep::as_compound(bool force_meters) const {

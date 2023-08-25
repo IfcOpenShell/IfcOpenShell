@@ -753,6 +753,24 @@ namespace IfcGeom {
 		{
 		}
 
+		Iterator(const std::string& geometry_library, const IteratorSettings& settings, IfcParse::IfcFile* file)
+			: settings_(settings)
+			, ifc_file(file)
+			, owns_ifc_file(false)
+			, num_threads_(1)
+			, geometry_library_(geometry_library)
+		{
+		}
+
+		Iterator(const std::string& geometry_library, const IteratorSettings& settings, IfcParse::IfcFile* file, int num_threads)
+			: settings_(settings)
+			, ifc_file(file)
+			, owns_ifc_file(false)
+			, num_threads_(num_threads)
+			, geometry_library_(geometry_library)
+		{
+		}
+
 		~Iterator() {
 			if (owns_ifc_file) {
 				delete ifc_file;
