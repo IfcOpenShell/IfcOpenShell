@@ -61,6 +61,7 @@ class draw_settings:
     include_projection: bool = True
     prefilter: bool = True
     include_curves: bool = False
+    unify_inputs: bool = True
 
 
 def main(settings, files, iterators=None, merge_projection=True, progress_function=DO_NOTHING):
@@ -135,6 +136,7 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
         sr.setSubtractionSettings(W.ALWAYS)
 
     sr.setUsePrefiltering(settings.prefilter)
+    sr.setUnifyInputs(settings.unify_inputs)
 
     try:
         sh = ["none", "full", "left"].index(settings.storey_heights)
