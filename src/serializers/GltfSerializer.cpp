@@ -121,16 +121,27 @@ const uint32_t component_type<int>::value = CT_UNSIGNED_INT;
 template <>
 const uint32_t component_type<float>::value = CT_FLOAT;
 
+static int bufferViewId = 0;
+
 template <size_t N, typename It>
 size_t write_accessor(json& j, std::ofstream& ofs, It begin, It end) {
 	auto num = std::distance(begin, end) / N;
 
 	json accessor = json::object();
 
-	accessor["bufferView"] = N == 1 ? 0 : 1;
-	accessor["byteOffset"] = (size_t)ofs.tellp();
+	accessor["bufferView"] = bufferViewId;
+	accessor["byteOffset"] = 0;
 	accessor["componentType"] = component_type<typename It::value_type>::value;
 	accessor["count"] = num;
+
+	if (N == 1) {
+		j["bufferViews"].push_back({ {"buffer", 0}, {"byteOffset", (size_t)ofs.tellp()}, { "byteLength", num *  4}, {"target", 34963} });
+	}
+	else {
+		j["bufferViews"].push_back({ {"buffer", 0}, {"byteStride", 12}, { "byteOffset", (size_t)ofs.tellp()}, { "byteLength", num * 12}, {"target", 34962}});
+	}
+
+	bufferViewId++;
 
 	std::array<typename It::value_type, N> min, max;
 	min.fill(std::numeric_limits<typename It::value_type>::max());
@@ -325,8 +336,12 @@ void GltfSerializer::finalize() {
 	json scene_0;
 	scene_0["nodes"] = node_array_;
 	json_["scenes"].push_back(scene_0);
-	json_["bufferViews"].push_back({ {"buffer", 0}, { "byteLength", indices_length } });
-	json_["bufferViews"].push_back({ {"buffer", 0}, {"byteStride", 12}, { "byteOffset", indices_length },  { "byteLength", binary_length - indices_length } });
+
+	for (auto &n : json_["bufferViews"]) {
+		if (n.contains("byteStride"))
+			n["byteOffset"] = (int)n["byteOffset"] + indices_length;
+	}
+
 	json_["buffers"].push_back({ {"byteLength", binary_length} });
 
 	std::string json_contents = json_.dump();
