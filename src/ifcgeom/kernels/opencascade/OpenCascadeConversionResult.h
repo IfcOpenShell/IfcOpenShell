@@ -49,9 +49,7 @@ namespace ifcopenshell {
 
 			virtual void Triangulate(const IfcGeom::IteratorSettings& settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int surface_style_id) const;
 
-			virtual void Serialize(std::string&) const {
-				throw std::runtime_error("Not implemented");
-			}
+			virtual void Serialize(std::string&) const;
 
 			virtual IfcGeom::ConversionResultShape* clone() const {
 				return new OpenCascadeShape(shape_);

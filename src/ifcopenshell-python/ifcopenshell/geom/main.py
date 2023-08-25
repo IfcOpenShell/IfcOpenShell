@@ -75,7 +75,7 @@ class settings(ifcopenshell_wrapper.SerializerSettings):
 
 # Make sure people are able to use python's platform agnostic paths
 class iterator(ifcopenshell_wrapper.Iterator):
-    def __init__(self, settings, file_or_filename, num_threads=1, include=None, exclude=None):
+    def __init__(self, settings, file_or_filename, num_threads=1, include=None, exclude=None, geometry_library="opencascade"):
         self.settings = settings
         if isinstance(file_or_filename, file):
             file_or_filename = file_or_filename.wrapped_data
@@ -105,10 +105,10 @@ class iterator(ifcopenshell_wrapper.Iterator):
                 initializer = ifcopenshell_wrapper.construct_iterator_with_include_exclude
 
             self.this = initializer(
-                self.settings, file_or_filename, include_or_exclude, include is not None, num_threads
+                geometry_library, self.settings, file_or_filename, include_or_exclude, include is not None, num_threads
             )
         else:
-            ifcopenshell_wrapper.Iterator.__init__(self, settings, file_or_filename, num_threads)
+            ifcopenshell_wrapper.Iterator.__init__(self, geometry_library, settings, file_or_filename, num_threads)
 
     if has_occ:
 

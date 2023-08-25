@@ -102,6 +102,12 @@ void ifcopenshell::geometry::CgalShape::Triangulate(const IfcGeom::IteratorSetti
 
 }
 
+void ifcopenshell::geometry::CgalShape::Serialize(std::string& r) const {
+	std::stringstream sstream;
+	sstream << shape_;
+	r = sstream.str();
+}
+
 #include <CGAL/Polygon_mesh_processing/bbox.h>
 
 double ifcopenshell::geometry::CgalShape::bounding_box(void *& b) const {
