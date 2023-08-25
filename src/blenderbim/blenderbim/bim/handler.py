@@ -27,7 +27,7 @@ from bpy.app.handlers import persistent
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.owner.prop import get_user_person, get_user_organisation
 from blenderbim.bim.module.model.data import AuthoringData
-from blenderbim.bim.module.model.workspace import LIST_OF_TOOLS
+from blenderbim.bim.module.model.workspace import LIST_OF_TOOLS, TOOLS_TO_CLASSES_MAP
 from mathutils import Vector
 from math import cos, degrees
 
@@ -130,9 +130,11 @@ def update_bim_tool_props():
     if element.is_a("IfcElementType") or element.is_a("IfcElement"):
         element_type = ifcopenshell.util.element.get_type(element)
         if element_type:
-            if current_tool.idname == "bim.bim_tool":
+            is_bim_tool = current_tool.idname == "bim.bim_tool"
+            if is_bim_tool:
                 props.ifc_class = element_type.is_a()
-            props.relating_type_id = str(element_type.id())
+            if is_bim_tool or TOOLS_TO_CLASSES_MAP.get(current_tool.idname) == element_type.is_a():
+                props.relating_type_id = str(element_type.id())
     extrusion = tool.Model.get_extrusion(representation)
     if not extrusion:
         return
