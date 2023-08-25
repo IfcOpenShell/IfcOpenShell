@@ -699,6 +699,11 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 	IfcUtil::IfcBaseEntity* storey = p ? p->first : nullptr;
 	double elev = p ? p->second : std::numeric_limits<double>::quiet_NaN();
 	// @todo is it correct to call nameElement() here with a single storey (what if this element spans multiple?)
+
+	if (unify_inputs_) {
+		compound_local = IfcGeom::util::unify(compound_local, 1.e-6);
+	}
+
 	geometry_data data{ compound_local, dash_arrays, trsf, brep_obj->product(), storey, elev, brep_obj->name(), nameElement(storey, brep_obj) };
 
 	if (auto_section_ || auto_elevation_ || section_ref_ || elevation_ref_ || elevation_ref_guid_ || deferred_section_data_) {
@@ -1187,14 +1192,7 @@ void SvgSerializer::write(const geometry_data& data) {
 		// Iterate over components of compound to have better chance of matching section edges to closed wires
 		for (; it.More(); it.Next(), ++dash_it) {
 
-			const TopoDS_Shape& subshape_before_unification = it.Value();
-			TopoDS_Shape subshape;
-
-			if (unify_inputs_) {
-				subshape = IfcGeom::util::unify(subshape_before_unification, 1. - 6);
-			} else {
-				subshape = subshape_before_unification;
-			}
+			const TopoDS_Shape& subshape = it.Value();
 
 			Bnd_Box bb;
 			try {
