@@ -39,12 +39,12 @@ class TestImplementsTool(NewFile):
 class TestAddBrick(NewFile):
     def test_run(self):
         BrickStore.graph = brickschema.persistent.VersionedGraphCollection("sqlite://")
-        result = subject.add_brick("https://example.org/digitaltwin#", "https://brickschema.org/schema/Brick#Equipment", "label")
+        result = subject.add_brick(
+            "https://example.org/digitaltwin#", "https://brickschema.org/schema/Brick#Equipment", "label"
+        )
         assert "https://example.org/digitaltwin#" in result
         assert list(
-            BrickStore.graph.triples(
-                (URIRef(result), A, URIRef("https://brickschema.org/schema/Brick#Equipment"))
-            )
+            BrickStore.graph.triples((URIRef(result), A, URIRef("https://brickschema.org/schema/Brick#Equipment")))
         )
         assert list(
             BrickStore.graph.triples(
@@ -89,7 +89,7 @@ class TestAddBrickFromElement(NewFile):
                 (URIRef(uri), URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal("Chiller"))
             )
         )
-    
+
     def test_run_no_element_name(self):
         ifc = ifcopenshell.file()
         element = ifc.createIfcChiller()
@@ -120,18 +120,10 @@ class TestAddBrickifcProject(NewFile):
         result = subject.add_brickifc_project("http://example.org/digitaltwin#")
         assert result == f"http://example.org/digitaltwin#{project.GlobalId}"
         brick = URIRef(result)
+        assert list(BrickStore.graph.triples((brick, A, REF.ifcProject)))
+        assert list(BrickStore.graph.triples((brick, REF.ifcProjectID, Literal(project.GlobalId))))
         assert list(
-            BrickStore.graph.triples((brick, A, REF.ifcProject))
-        )
-        assert list(
-            BrickStore.graph.triples(
-                (brick, REF.ifcProjectID, Literal(project.GlobalId))
-            )
-        )
-        assert list(
-            BrickStore.graph.triples(
-                (brick, REF.ifcFileLocation, Literal(bpy.context.scene.BIMProperties.ifc_file))
-            )
+            BrickStore.graph.triples((brick, REF.ifcFileLocation, Literal(bpy.context.scene.BIMProperties.ifc_file)))
         )
         assert list(
             BrickStore.graph.triples(
@@ -148,38 +140,20 @@ class TestAddBrickifcReference(NewFile):
         project = URIRef(f"http://example.org/digitaltwin#{tool.Ifc.get().by_type('IfcProject')[0].GlobalId}")
         subject.add_brickifc_reference("http://example.org/digitaltwin#foo", element, project)
         brick = URIRef("http://example.org/digitaltwin#foo")
-        bnode = list(
-            BrickStore.graph.triples((brick, A, REF.IFCReference))
-        )
-        assert list(
-            BrickStore.graph.triples(
-                (bnode, REF.hasIfcProjectReference, URIRef(project))
-            )
-        )
-        assert list(
-            BrickStore.graph.triples(
-                (bnode, REF.ifcGlobalID, Literal(element.GlobalId))
-            )
-        )
-        assert list(
-            BrickStore.graph.triples(
-                (bnode, REF.ifcName, Literal(element.Name))
-            )
-        )
+        bnode = list(BrickStore.graph.triples((brick, A, REF.IFCReference)))
+        assert list(BrickStore.graph.triples((bnode, REF.hasIfcProjectReference, URIRef(project))))
+        assert list(BrickStore.graph.triples((bnode, REF.ifcGlobalID, Literal(element.GlobalId))))
+        assert list(BrickStore.graph.triples((bnode, REF.ifcName, Literal(element.Name))))
 
 
 class TestAddRelation(NewFile):
     def test_run(self):
         BrickStore.graph = brickschema.persistent.VersionedGraphCollection("sqlite://")
         source = subject.add_brick(
-            "http://example.org/digitaltwin#",
-            "https://brickschema.org/schema/Brick#Equipment",
-            "source"
+            "http://example.org/digitaltwin#", "https://brickschema.org/schema/Brick#Equipment", "source"
         )
         destination = subject.add_brick(
-            "http://example.org/digitaltwin#",
-            "https://brickschema.org/schema/Brick#Equipment",
-            "destination"
+            "http://example.org/digitaltwin#", "https://brickschema.org/schema/Brick#Equipment", "destination"
         )
         subject.add_relation(source, "https://brickschema.org/schema/Brick#feeds", destination)
         assert list(
@@ -196,7 +170,9 @@ class TestAddRelation(NewFile):
 class TestRemoveRelation(NewFile):
     def test_run(self):
         TestAddRelation().test_run()
-        source, relation, destination = list(BrickStore.graph.triples((None, URIRef("https://brickschema.org/schema/Brick#feeds"), None)))[0]
+        source, relation, destination = list(
+            BrickStore.graph.triples((None, URIRef("https://brickschema.org/schema/Brick#feeds"), None))
+        )[0]
         subject.remove_relation(source, relation, destination)
         assert not list(
             BrickStore.graph.triples(
@@ -214,7 +190,7 @@ class TestClearBrickBrowser(NewFile):
         bpy.context.scene.BIMBrickProperties.bricks.add()
         subject.clear_brick_browser()
         assert len(bpy.context.scene.BIMBrickProperties.bricks) == 0
-    
+
     def test_run_split_screen(self):
         bpy.context.scene.BIMBrickProperties.split_screen_bricks.add()
         subject.clear_brick_browser(split_screen=True)
@@ -235,7 +211,9 @@ class TestClearProject(NewFile):
 class TestExportBrickAttributes(NewFile):
     def test_run(self):
         BrickStore.graph = brickschema.persistent.VersionedGraphCollection("sqlite://")
-        brick = subject.add_brick("https://example.org/digitaltwin#", "https://brickschema.org/schema/Brick#Equipment", "name")
+        brick = subject.add_brick(
+            "https://example.org/digitaltwin#", "https://brickschema.org/schema/Brick#Equipment", "name"
+        )
         assert subject.export_brick_attributes(brick) == {
             "Identification": brick,
             "Name": "name",
@@ -243,7 +221,9 @@ class TestExportBrickAttributes(NewFile):
 
     def test_run_ifc2x3(self):
         BrickStore.graph = brickschema.persistent.VersionedGraphCollection("sqlite://")
-        brick = subject.add_brick("https://example.org/digitaltwin#", "https://brickschema.org/schema/Brick#Equipment", "name")
+        brick = subject.add_brick(
+            "https://example.org/digitaltwin#", "https://brickschema.org/schema/Brick#Equipment", "name"
+        )
         tool.Ifc.set(ifcopenshell.file(schema="IFC2X3"))
         assert subject.export_brick_attributes(brick) == {
             "ItemReference": brick,
@@ -344,6 +324,7 @@ class TestGetParentSpace(NewFile):
         ifcopenshell.api.run("aggregate.assign_object", ifc, product=element, relating_object=project)
         assert subject.get_parent_space(subelement) == element
         assert subject.get_parent_space(element) is None
+
 
 class TestGetElementContainer(NewFile):
     def test_nothing(cls):
@@ -491,13 +472,17 @@ class TestPopBrickBreadcrumb(NewFile):
 class TestRemoveBrick(NewFile):
     def test_run(self):
         BrickStore.graph = brickschema.persistent.VersionedGraphCollection("sqlite://")
-        result = subject.add_brick("http://example.org/digitaltwin#", "https://brickschema.org/schema/Brick#Equipment", "label")
+        result = subject.add_brick(
+            "http://example.org/digitaltwin#", "https://brickschema.org/schema/Brick#Equipment", "label"
+        )
         subject.remove_brick(result)
         assert not list(BrickStore.graph.triples((URIRef(result), None, None)))
 
     def test_run_with_bnode(self):
         BrickStore.graph = brickschema.persistent.VersionedGraphCollection("sqlite://")
-        result = subject.add_brick("http://example.org/digitaltwin#", "https://brickschema.org/schema/Brick#Equipment", "label")
+        result = subject.add_brick(
+            "http://example.org/digitaltwin#", "https://brickschema.org/schema/Brick#Equipment", "label"
+        )
         TestAddBrickifcProject().test_run()
         element = tool.Ifc.get().createIfcChiller(ifcopenshell.guid.new())
         element.Name = "Chiller"

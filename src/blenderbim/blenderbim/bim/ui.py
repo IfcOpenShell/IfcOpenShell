@@ -298,7 +298,7 @@ class BIM_PT_tabs(Panel):
             self.draw_tab_entry(row, "NETWORK_DRIVE", "SERVICES", is_ifc_project, aprops.tab == "SERVICES")
             self.draw_tab_entry(row, "EDITMODE_HLT", "STRUCTURE", is_ifc_project, aprops.tab == "STRUCTURE")
             self.draw_tab_entry(row, "NLA", "SCHEDULING", is_ifc_project, aprops.tab == "SCHEDULING")
-            self.draw_tab_entry(row, "PACKAGE", "FM", is_ifc_project, aprops.tab == "FM")
+            self.draw_tab_entry(row, "PACKAGE", "FM", True, aprops.tab == "FM")
             self.draw_tab_entry(row, "COMMUNITY", "QUALITY", True, aprops.tab == "QUALITY")
             self.draw_tab_entry(row, "BLENDER", "BLENDER", True, aprops.tab == "BLENDER")
             row.operator("bim.switch_tab", text="", emboss=False, icon="UV_SYNC_SELECT")
@@ -669,7 +669,7 @@ class BIM_PT_tab_handover(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "FM") and tool.Ifc.get()
+        return tool.Blender.is_tab(context, "FM")
 
     def draw(self, context):
         pass
@@ -684,7 +684,7 @@ class BIM_PT_tab_operations(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "FM") and tool.Ifc.get()
+        return tool.Blender.is_tab(context, "FM")
 
     def draw(self, context):
         pass
