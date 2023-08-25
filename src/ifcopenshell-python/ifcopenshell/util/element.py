@@ -88,6 +88,7 @@ def get_pset(element, name, prop=None, should_inherit=True):
         return type_pset
     return value
 
+
 def get_psets(element, psets_only=False, qtos_only=False, should_inherit=True):
     """Retrieve property sets, their related properties' names & values and ids.
 
@@ -451,7 +452,6 @@ def get_styles(element):
     return styles
 
 
-
 def get_elements_by_material(ifc_file, material):
     """Retrieves the elements related to a material.
 
@@ -475,7 +475,7 @@ def get_elements_by_material(ifc_file, material):
     results = set()
     for inverse in ifc_file.get_inverse(material):
         if inverse.is_a("IfcRelAssociatesMaterial"):
-            results.update(inverse.RelatedObjects)
+            results.update(inverse.RelatedObjects or [])  # See Revit bug #675
         elif inverse.is_a("IfcMaterialLayer"):
             for material_set in inverse.ToMaterialLayerSet:
                 results.update(get_elements_by_material(ifc_file, material_set))
@@ -869,7 +869,7 @@ def unbatch_remove_deep2(ifc_file):
     :rtype: ifcopenshell.file.file
     """
     ifc_string = ifc_file.to_string()
-    lines = iter(ifc_string.split('\n'))
+    lines = iter(ifc_string.split("\n"))
     ids_to_delete = iter(sorted([e.id() for e in ifc_file.to_delete]))
     id_to_delete = next(ids_to_delete, None)
     result = []
