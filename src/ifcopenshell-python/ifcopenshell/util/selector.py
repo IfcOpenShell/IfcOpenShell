@@ -42,14 +42,14 @@ filter_elements_grammar = lark.Lark(
     location: "location" comparison value
     query: "query:" keys comparison value
 
-    pset: quoted_string | unquoted_string | regex_string
-    prop: quoted_string | unquoted_string | regex_string
+    pset: quoted_string | regex_string | unquoted_string
+    prop: quoted_string | regex_string | unquoted_string
     keys: quoted_string | unquoted_string
 
     attribute_name: /[A-Z]\\w+/
     ifc_class: /Ifc\\w+/
 
-    value: special | quoted_string | unquoted_string | regex_string
+    value: special | quoted_string | regex_string | unquoted_string
     unquoted_string: /[^.=\\s]+/
     quoted_string: ESCAPED_STRING
     regex_string: "/" /[^\\/]+/ "/"
@@ -119,7 +119,9 @@ def get_element_value(element, query):
     return Selector.get_element_value(element, filter_query["keys"], filter_query["is_regex"])
 
 
-def filter_elements(ifc_file, query, elements=None):
+def filter_elements(ifc_file, query, elements=None, edit_in_place=False):
+    if elements and not edit_in_place:
+        elements = elements.copy()
     transformer = FacetTransformer(ifc_file, elements)
     transformer.transform(filter_elements_grammar.parse(query))
     return transformer.get_results()
@@ -426,7 +428,7 @@ class FacetTransformer(lark.Transformer):
                 value = float(value)
             result = element_value == value
         elif isinstance(value, re.Pattern):
-            result = bool(value.match(element_value))
+            result = bool(value.match(element_value)) if element_value is not None else False
         elif value in (None, True, False):
             result = element_value is value
         return result if comparison == "=" else not result

@@ -184,7 +184,7 @@ class ImportFilterQueryTransformer(lark.Transformer):
         elif args[0].data == "quoted_string":
             return args[0].children[0].value[1:-1].replace('\\"', '"')
         elif args[0].data == "regex_string":
-            return args[0].children[0].value
+            return "/" + args[0].children[0].value + "/"
         elif args[0].data == "special":
             if args[0].children[0].data == "null":
                 return "NULL"

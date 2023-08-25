@@ -50,6 +50,8 @@ class ProfileData:
     @classmethod
     def active_profile_users(cls):
         profiles_props = bpy.context.scene.BIMProfileProperties
+        if profiles_props.active_profile_index >= len(profiles_props.profiles):
+            return 0
         profile_prop = profiles_props.profiles[profiles_props.active_profile_index]
         profile_ifc = tool.Ifc.get().by_id(profile_prop.ifc_definition_id)
         return tool.Ifc.get().get_total_inverses(profile_ifc)

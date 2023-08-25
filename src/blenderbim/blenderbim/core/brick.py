@@ -25,6 +25,14 @@ def load_brick_project(brick, filepath=None, brick_root=None):
     brick.set_active_brick_class(brick_root, split_screen=True)
 
 
+def new_brick_file(brick, brick_root=None):
+    brick.new_brick_file()
+    brick.import_brick_classes(brick_root)
+    brick.import_brick_classes(brick_root, split_screen=True)
+    brick.set_active_brick_class(brick_root)
+    brick.set_active_brick_class(brick_root, split_screen=True)
+
+
 def view_brick_class(brick, brick_class=None, split_screen=False):
     brick.add_brick_breadcrumb(split_screen=split_screen)
     brick.clear_brick_browser(split_screen=split_screen)
@@ -35,7 +43,7 @@ def view_brick_class(brick, brick_class=None, split_screen=False):
 
 def view_brick_item(brick, item=None, split_screen=False):
     brick_class = brick.get_item_class(item)
-    view_brick_class(brick, brick_class=brick_class, split_screen=split_screen)
+    brick.run_view_brick_class(brick_class=brick_class, split_screen=split_screen)
     brick.select_browser_item(item, split_screen=split_screen)
 
 
@@ -79,18 +87,17 @@ def add_brick(ifc, brick, element=None, namespace=None, brick_class=None, librar
         if library:
             brick.run_assign_brick_reference(element=element, library=library, brick_uri=brick_uri)
     else:
-        brick_uri = brick.add_brick(namespace, brick_class, label)
+        brick.add_brick(namespace, brick_class, label)
     brick.run_refresh_brick_viewer()
-    brick.run_refresh_brick_viewer(split_screen=True)
 
 
 def add_brick_relation(brick, brick_uri=None, predicate=None, object=None):
     brick.add_relation(brick_uri, predicate, object)
     brick.run_refresh_brick_viewer()
-    brick.run_refresh_brick_viewer(split_screen=True)
 
 
 def convert_ifc_to_brick(brick, namespace=None, library=None):
+    # convert spaces to brick
     spaces = brick.get_convertable_brick_spaces()
     space_uris = {}
     for space in spaces:
@@ -98,57 +105,43 @@ def convert_ifc_to_brick(brick, namespace=None, library=None):
         space_uris[space] = brick_uri
         if library:
             brick.run_assign_brick_reference(element=space, library=library, brick_uri=brick_uri)
-
     for space in spaces:
         parent = brick.get_parent_space(space)
         if parent:
-            brick.add_relation(space_uris[parent], "hasPart", space_uris[space])
-
+            brick.add_relation(space_uris[parent], "https://brickschema.org/schema/Brick#hasPart", space_uris[space])
+    # convert systems to brick
     systems = brick.get_convertable_brick_systems()
     system_uris = {}
     for system in systems:
         brick_uri = brick.add_brick_from_element(system, namespace, brick.get_brick_class(system))
-        space_uris[space] = brick_uri
+        system_uris[system] = brick_uri
         if library:
             brick.run_assign_brick_reference(element=system, library=library, brick_uri=brick_uri)
-
+    # convert services to brick
     distribution_elements = brick.get_convertable_brick_elements()
     equipment_uris = {}
     for element in distribution_elements:
         brick_uri = brick.add_brick_from_element(element, namespace, brick.get_brick_class(element))
         equipment_uris[element] = brick_uri
         space = brick.get_element_container(element)
-        brick.add_relation(brick_uri, "hasLocation", space_uris[space])
+        brick.add_relation(brick_uri, "https://brickschema.org/schema/Brick#hasLocation", space_uris[space])
         systems = brick.get_element_systems(element)
         for system in systems:
-            brick.add_relation(system_uris[system], "hasPart", brick_uri)
+            brick.add_relation(system_uris[system], "https://brickschema.org/schema/Brick#hasPart", brick_uri)
         if library:
             brick.run_assign_brick_reference(element=element, library=library, brick_uri=brick_uri)
-
-    distribution_elements = brick.get_convertable_brick_elements()
     for element in distribution_elements:
         feeds = brick.get_element_feeds(element)
         for downstream_equipment in feeds:
-            brick.add_relation(equipment_uris[element], "feeds", equipment_uris[downstream_equipment])
-
+            brick.add_relation(equipment_uris[element], "https://brickschema.org/schema/Brick#feeds", equipment_uris[downstream_equipment])
     brick.run_refresh_brick_viewer()
-    brick.run_refresh_brick_viewer(split_screen=True)
 
 
-def new_brick_file(brick, brick_root=None):
-    brick.new_brick_file()
-    brick.import_brick_classes(brick_root)
-    brick.import_brick_classes(brick_root, split_screen=True)
-    brick.set_active_brick_class(brick_root)
-    brick.set_active_brick_class(brick_root, split_screen=True)
-
-
-def refresh_brick_viewer(brick, split_screen=False):
-    if split_screen:
-        brick.run_view_brick_class(brick_class=brick.get_active_brick_class(split_screen=split_screen), split_screen=split_screen)
-    else:
-        brick.run_view_brick_class(brick_class=brick.get_active_brick_class(), split_screen=split_screen)
-    brick.pop_brick_breadcrumb(split_screen=split_screen)
+def refresh_brick_viewer(brick):
+    brick.run_view_brick_class(brick_class=brick.get_active_brick_class())
+    brick.pop_brick_breadcrumb()
+    brick.run_view_brick_class(brick_class=brick.get_active_brick_class(split_screen=True), split_screen=True)
+    brick.pop_brick_breadcrumb(split_screen=True)
 
 
 def remove_brick(ifc, brick, library=None, brick_uri=None):
@@ -158,14 +151,13 @@ def remove_brick(ifc, brick, library=None, brick_uri=None):
             ifc.run("library.remove_reference", reference=reference)
     brick.remove_brick(brick_uri)
     brick.run_refresh_brick_viewer()
-    brick.run_refresh_brick_viewer(split_screen=True)
 
 
 def serialize_brick(brick):
     brick.serialize_brick()
 
 
-def add_namespace(brick, alias=None, uri=None):
+def add_brick_namespace(brick, alias=None, uri=None):
     brick.add_namespace(alias, uri)
 
 
@@ -176,4 +168,3 @@ def set_brick_list_root(brick, brick_root=None, split_screen=False):
 
 def remove_brick_relation(brick, brick_uri=None, predicate=None, object=None):
     brick.remove_relation(brick_uri, predicate, object)
-    brick.run_refresh_brick_viewer()

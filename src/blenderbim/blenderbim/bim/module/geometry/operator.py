@@ -329,7 +329,7 @@ class UpdateRepresentation(bpy.types.Operator, Operator):
                 "style.assign_representation_styles",
                 self.file,
                 shape_representation=new_representation,
-                styles=tool.Geometry.get_styles(obj),
+                styles=tool.Geometry.get_styles(obj, only_assigned_to_faces=True),
                 should_use_presentation_style_assignment=context.scene.BIMGeometryProperties.should_use_presentation_style_assignment,
             )
             tool.Geometry.record_object_materials(obj)
@@ -397,6 +397,8 @@ class GetRepresentationIfcParameters(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.get_representation_ifc_parameters(tool.Geometry, obj=context.active_object)
+        parameters = context.active_object.data.BIMMeshProperties.ifc_parameters
+        self.report({"INFO"}, f"{len(parameters)} parameters found.")
 
 
 class CopyRepresentation(bpy.types.Operator, Operator):
@@ -1370,8 +1372,13 @@ class OverrideModeSetEdit(bpy.types.Operator):
                 continue
 
             is_profile = True
+            representation_class = tool.Geometry.get_ifc_representation_class(element, representation)
             if usage_type == "PROFILE":
                 operator = lambda: bpy.ops.bim.hotkey(hotkey="A_E")
+            elif representation_class and "IfcCircleProfileDef" in representation_class:
+                self.report({"INFO"}, "Can't edit Circle Profile Extrusion")
+                obj.select_set(False)
+                continue
             elif (
                 tool.Geometry.is_profile_based(obj.data)
                 or usage_type == "LAYER3"
@@ -1418,8 +1425,7 @@ class OverrideModeSetEdit(bpy.types.Operator):
             else:
                 obj.select_set(False)
                 continue
-
-        if not context.selected_objects or len(context.selected_objects) != len(selected_objs):
+        if len(selected_objs) > 1 and (not context.selected_objects or len(context.selected_objects) != len(selected_objs)):
             # We are trying to edit at least one non-mesh-like object : Display a hint to the user
             self.report({"INFO"}, "Only mesh-compatible representations may be edited concurrently in edit mode.")
 

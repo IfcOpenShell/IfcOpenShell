@@ -19,6 +19,8 @@
 import os
 import bpy
 import brickschema
+import brickschema.persistent
+from brickschema.namespaces import REF, A
 import ifcopenshell
 import blenderbim.core.tool
 import blenderbim.tool as tool
@@ -36,17 +38,17 @@ class TestImplementsTool(NewFile):
 
 class TestAddBrick(NewFile):
     def test_run(self):
-        BrickStore.graph = brickschema.Graph()
-        result = subject.add_brick("https://example.org/digitaltwin#", "https://brickschema.org/schema/Brick#Equipment")
+        BrickStore.graph = brickschema.persistent.VersionedGraphCollection("sqlite://")
+        result = subject.add_brick(
+            "https://example.org/digitaltwin#", "https://brickschema.org/schema/Brick#Equipment", "label"
+        )
         assert "https://example.org/digitaltwin#" in result
         assert list(
-            BrickStore.graph.triples(
-                (URIRef(result), RDF.type, URIRef("https://brickschema.org/schema/Brick#Equipment"))
-            )
+            BrickStore.graph.triples((URIRef(result), A, URIRef("https://brickschema.org/schema/Brick#Equipment")))
         )
         assert list(
             BrickStore.graph.triples(
-                (URIRef(result), URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal("Unnamed"))
+                (URIRef(result), URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal("label"))
             )
         )
 
@@ -59,6 +61,13 @@ class TestAddBrickBreadcrumb(NewFile):
         subject.add_brick_breadcrumb()
         assert bpy.context.scene.BIMBrickProperties.brick_breadcrumbs[1].name == "brick_class"
 
+    def test_run_split_screen(self):
+        subject.set_active_brick_class("brick_class", split_screen=True)
+        subject.add_brick_breadcrumb(split_screen=True)
+        assert bpy.context.scene.BIMBrickProperties.split_screen_brick_breadcrumbs[0].name == "brick_class"
+        subject.add_brick_breadcrumb(split_screen=True)
+        assert bpy.context.scene.BIMBrickProperties.split_screen_brick_breadcrumbs[1].name == "brick_class"
+
 
 class TestAddBrickFromElement(NewFile):
     def test_run(self):
@@ -66,18 +75,37 @@ class TestAddBrickFromElement(NewFile):
         element = ifc.createIfcChiller()
         element.Name = "Chiller"
         element.GlobalId = ifcopenshell.guid.new()
-        BrickStore.graph = brickschema.Graph()
+        BrickStore.graph = brickschema.persistent.VersionedGraphCollection("sqlite://")
         result = subject.add_brick_from_element(
             element, "http://example.org/digitaltwin#", "https://brickschema.org/schema/Brick#Equipment"
         )
         uri = f"http://example.org/digitaltwin#{element.GlobalId}"
         assert result == uri
         assert list(
-            BrickStore.graph.triples((URIRef(uri), RDF.type, URIRef("https://brickschema.org/schema/Brick#Equipment")))
+            BrickStore.graph.triples((URIRef(uri), A, URIRef("https://brickschema.org/schema/Brick#Equipment")))
         )
         assert list(
             BrickStore.graph.triples(
                 (URIRef(uri), URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal("Chiller"))
+            )
+        )
+
+    def test_run_no_element_name(self):
+        ifc = ifcopenshell.file()
+        element = ifc.createIfcChiller()
+        element.GlobalId = ifcopenshell.guid.new()
+        BrickStore.graph = brickschema.persistent.VersionedGraphCollection("sqlite://")
+        result = subject.add_brick_from_element(
+            element, "http://example.org/digitaltwin#", "https://brickschema.org/schema/Brick#Equipment"
+        )
+        uri = f"http://example.org/digitaltwin#{element.GlobalId}"
+        assert result == uri
+        assert list(
+            BrickStore.graph.triples((URIRef(uri), A, URIRef("https://brickschema.org/schema/Brick#Equipment")))
+        )
+        assert list(
+            BrickStore.graph.triples(
+                (URIRef(uri), URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal("Unnamed"))
             )
         )
 
@@ -88,30 +116,18 @@ class TestAddBrickifcProject(NewFile):
         tool.Ifc.set(ifc)
         project = ifc.createIfcProject(ifcopenshell.guid.new())
         project.Name = "My Project"
-        BrickStore.graph = brickschema.Graph()
+        BrickStore.graph = brickschema.persistent.VersionedGraphCollection("sqlite://")
         result = subject.add_brickifc_project("http://example.org/digitaltwin#")
         assert result == f"http://example.org/digitaltwin#{project.GlobalId}"
         brick = URIRef(result)
+        assert list(BrickStore.graph.triples((brick, A, REF.ifcProject)))
+        assert list(BrickStore.graph.triples((brick, REF.ifcProjectID, Literal(project.GlobalId))))
         assert list(
-            BrickStore.graph.triples((brick, RDF.type, URIRef("https://brickschema.org/extension/ifc#Project")))
+            BrickStore.graph.triples((brick, REF.ifcFileLocation, Literal(bpy.context.scene.BIMProperties.ifc_file)))
         )
         assert list(
             BrickStore.graph.triples(
                 (brick, URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal("My Project"))
-            )
-        )
-        assert list(
-            BrickStore.graph.triples(
-                (brick, URIRef("https://brickschema.org/extension/ifc#projectID"), Literal(project.GlobalId))
-            )
-        )
-        assert list(
-            BrickStore.graph.triples(
-                (
-                    brick,
-                    URIRef("https://brickschema.org/extension/ifc#fileLocation"),
-                    Literal(bpy.context.scene.BIMProperties.ifc_file),
-                )
             )
         )
 
@@ -120,34 +136,50 @@ class TestAddBrickifcReference(NewFile):
     def test_run(self):
         TestAddBrickifcProject().test_run()
         element = tool.Ifc.get().createIfcChiller(ifcopenshell.guid.new())
+        element.Name = "Chiller"
         project = URIRef(f"http://example.org/digitaltwin#{tool.Ifc.get().by_type('IfcProject')[0].GlobalId}")
         subject.add_brickifc_reference("http://example.org/digitaltwin#foo", element, project)
         brick = URIRef("http://example.org/digitaltwin#foo")
-        bnode = list(
-            BrickStore.graph.triples((brick, URIRef("https://brickschema.org/extension/ifc#hasIFCReference"), None))
-        )[0][2]
-        assert list(
-            BrickStore.graph.triples(
-                (bnode, URIRef("https://brickschema.org/extension/ifc#hasProjectReference"), project)
-            )
-        )
-        assert list(
-            BrickStore.graph.triples(
-                (bnode, URIRef("https://brickschema.org/extension/ifc#globalID"), Literal(element.GlobalId))
-            )
-        )
+        bnode = list(BrickStore.graph.triples((brick, A, REF.IFCReference)))
+        assert list(BrickStore.graph.triples((bnode, REF.hasIfcProjectReference, URIRef(project))))
+        assert list(BrickStore.graph.triples((bnode, REF.ifcGlobalID, Literal(element.GlobalId))))
+        assert list(BrickStore.graph.triples((bnode, REF.ifcName, Literal(element.Name))))
 
 
-class TestAddFeed(NewFile):
+class TestAddRelation(NewFile):
     def test_run(self):
-        BrickStore.graph = brickschema.Graph()
-        subject.add_feed("http://example.org/digitaltwin#source", "http://example.org/digitaltwin#destination")
+        BrickStore.graph = brickschema.persistent.VersionedGraphCollection("sqlite://")
+        source = subject.add_brick(
+            "http://example.org/digitaltwin#", "https://brickschema.org/schema/Brick#Equipment", "source"
+        )
+        destination = subject.add_brick(
+            "http://example.org/digitaltwin#", "https://brickschema.org/schema/Brick#Equipment", "destination"
+        )
+        subject.add_relation(source, "https://brickschema.org/schema/Brick#feeds", destination)
         assert list(
             BrickStore.graph.triples(
                 (
-                    URIRef("http://example.org/digitaltwin#source"),
+                    URIRef(source),
                     URIRef("https://brickschema.org/schema/Brick#feeds"),
-                    URIRef("http://example.org/digitaltwin#destination"),
+                    URIRef(destination),
+                )
+            )
+        )
+
+
+class TestRemoveRelation(NewFile):
+    def test_run(self):
+        TestAddRelation().test_run()
+        source, relation, destination = list(
+            BrickStore.graph.triples((None, URIRef("https://brickschema.org/schema/Brick#feeds"), None))
+        )[0]
+        subject.remove_relation(source, relation, destination)
+        assert not list(
+            BrickStore.graph.triples(
+                (
+                    URIRef(source),
+                    URIRef(relation),
+                    URIRef(destination),
                 )
             )
         )
@@ -159,30 +191,43 @@ class TestClearBrickBrowser(NewFile):
         subject.clear_brick_browser()
         assert len(bpy.context.scene.BIMBrickProperties.bricks) == 0
 
+    def test_run_split_screen(self):
+        bpy.context.scene.BIMBrickProperties.split_screen_bricks.add()
+        subject.clear_brick_browser(split_screen=True)
+        assert len(bpy.context.scene.BIMBrickProperties.split_screen_bricks) == 0
+
 
 class TestClearProject(NewFile):
     def test_run(self):
         BrickStore.graph = "graph"
         bpy.context.scene.BIMBrickProperties.active_brick_class == "brick_class"
-        bpy.context.scene.BIMBrickProperties.brick_breadcrumbs.add().name = "foo"
+        bpy.context.scene.BIMBrickProperties.split_screen_active_brick_class == "brick_class2"
         subject.clear_project()
         assert BrickStore.graph is None
         assert bpy.context.scene.BIMBrickProperties.active_brick_class == ""
-        assert len(bpy.context.scene.BIMBrickProperties.brick_breadcrumbs) == 0
+        assert bpy.context.scene.BIMBrickProperties.split_screen_active_brick_class == ""
 
 
 class TestExportBrickAttributes(NewFile):
     def test_run(self):
-        assert subject.export_brick_attributes("http://example.org/digitaltwin#floor") == {
-            "Identification": "http://example.org/digitaltwin#floor",
-            "Name": "floor",
+        BrickStore.graph = brickschema.persistent.VersionedGraphCollection("sqlite://")
+        brick = subject.add_brick(
+            "https://example.org/digitaltwin#", "https://brickschema.org/schema/Brick#Equipment", "name"
+        )
+        assert subject.export_brick_attributes(brick) == {
+            "Identification": brick,
+            "Name": "name",
         }
 
     def test_run_ifc2x3(self):
+        BrickStore.graph = brickschema.persistent.VersionedGraphCollection("sqlite://")
+        brick = subject.add_brick(
+            "https://example.org/digitaltwin#", "https://brickschema.org/schema/Brick#Equipment", "name"
+        )
         tool.Ifc.set(ifcopenshell.file(schema="IFC2X3"))
-        assert subject.export_brick_attributes("http://example.org/digitaltwin#floor") == {
-            "ItemReference": "http://example.org/digitaltwin#floor",
-            "Name": "floor",
+        assert subject.export_brick_attributes(brick) == {
+            "ItemReference": brick,
+            "Name": "name",
         }
 
 
@@ -190,6 +235,10 @@ class TestGetActiveBrickClass(NewFile):
     def test_run(self):
         subject.set_active_brick_class("brick_class")
         assert subject.get_active_brick_class() == "brick_class"
+
+    def test_run_split_screen(self):
+        subject.set_active_brick_class("brick_class", split_screen=True)
+        assert subject.get_active_brick_class(split_screen=True) == "brick_class"
 
 
 class TestGetBrick(NewFile):
@@ -247,6 +296,51 @@ class TestGetConvertableBrickElements(NewFile):
         assert subject.get_convertable_brick_elements() == {element}
 
 
+class TestGetConvertableBrickSpaces(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        element = ifc.createIfcBuildingStorey()
+        ifc.createIfcWall()
+        assert subject.get_convertable_brick_spaces() == {element}
+
+
+class TestGetConvertableBrickSystems(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        element = ifc.createIfcSystem()
+        ifc.createIfcWall()
+        assert subject.get_convertable_brick_systems() == {element}
+
+
+class TestGetParentSpace(NewFile):
+    def test_run(cls):
+        ifc = ifcopenshell.file()
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcBuildingStorey")
+        subelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcSpace")
+        project = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
+        ifcopenshell.api.run("aggregate.assign_object", ifc, product=subelement, relating_object=element)
+        ifcopenshell.api.run("aggregate.assign_object", ifc, product=element, relating_object=project)
+        assert subject.get_parent_space(subelement) == element
+        assert subject.get_parent_space(element) is None
+
+
+class TestGetElementContainer(NewFile):
+    def test_nothing(cls):
+        pass
+
+
+class TestGetElementSystems(NewFile):
+    def test_nothing(cls):
+        pass
+
+
+class TestGetElementFeeds(NewFile):
+    def test_run(cls):
+        pass
+
+
 class TestGetItemClass(NewFile):
     def test_run(self):
         TestLoadBrickFile().test_run()
@@ -291,6 +385,21 @@ class TestImportBrickClasses(NewFile):
         assert brick.total_items == 1
         assert not brick.label
 
+    def test_run_split_sccreen(self):
+        TestLoadBrickFile().test_run()
+        subject.import_brick_classes("Class", split_screen=True)
+        assert len(bpy.context.scene.BIMBrickProperties.split_screen_bricks) == 2
+        brick = bpy.context.scene.BIMBrickProperties.split_screen_bricks[0]
+        assert brick.name == "Building"
+        assert brick.uri == "https://brickschema.org/schema/Brick#Building"
+        assert brick.total_items == 1
+        assert not brick.label
+        brick = bpy.context.scene.BIMBrickProperties.split_screen_bricks[1]
+        assert brick.name == "Location"
+        assert brick.uri == "https://brickschema.org/schema/Brick#Location"
+        assert brick.total_items == 1
+        assert not brick.label
+
 
 class TestImportBrickItems(NewFile):
     def test_run(self):
@@ -298,6 +407,16 @@ class TestImportBrickItems(NewFile):
         subject.import_brick_items("Building")
         assert len(bpy.context.scene.BIMBrickProperties.bricks) == 1
         brick = bpy.context.scene.BIMBrickProperties.bricks[0]
+        assert brick.name == "bldg"
+        assert brick.label == "My Building"
+        assert brick.uri == "https://example.org/digitaltwin#bldg"
+        assert brick.total_items == 0
+
+    def test_run_split_screen(self):
+        TestLoadBrickFile().test_run()
+        subject.import_brick_items("Building", split_screen=True)
+        assert len(bpy.context.scene.BIMBrickProperties.split_screen_bricks) == 1
+        brick = bpy.context.scene.BIMBrickProperties.split_screen_bricks[0]
         assert brick.name == "bldg"
         assert brick.label == "My Building"
         assert brick.uri == "https://example.org/digitaltwin#bldg"
@@ -315,6 +434,8 @@ class TestLoadBrickFile(NewFile):
         filepath = os.path.join(cwd, "..", "files", "spaces.ttl")
         subject.load_brick_file(filepath)
         assert BrickStore.graph
+        namespaces = [(ns[0], ns[1].toPython()) for ns in BrickStore.graph.namespaces()]
+        assert ("brick", "https://brickschema.org/schema/Brick#") in namespaces
 
 
 class TestNewBrickFile(NewFile):
@@ -340,13 +461,36 @@ class TestPopBrickBreadcrumb(NewFile):
         assert len(bpy.context.scene.BIMBrickProperties.brick_breadcrumbs) == 1
         assert bpy.context.scene.BIMBrickProperties.brick_breadcrumbs[0].name == "foo"
 
+    def test_run_split_screen(self):
+        bpy.context.scene.BIMBrickProperties.split_screen_brick_breadcrumbs.add().name = "foo"
+        bpy.context.scene.BIMBrickProperties.split_screen_brick_breadcrumbs.add().name = "bar"
+        assert subject.pop_brick_breadcrumb(split_screen=True) == "bar"
+        assert len(bpy.context.scene.BIMBrickProperties.split_screen_brick_breadcrumbs) == 1
+        assert bpy.context.scene.BIMBrickProperties.split_screen_brick_breadcrumbs[0].name == "foo"
+
 
 class TestRemoveBrick(NewFile):
     def test_run(self):
-        BrickStore.graph = brickschema.Graph()
-        result = subject.add_brick("http://example.org/digitaltwin#", "https://brickschema.org/schema/Brick#Equipment")
+        BrickStore.graph = brickschema.persistent.VersionedGraphCollection("sqlite://")
+        result = subject.add_brick(
+            "http://example.org/digitaltwin#", "https://brickschema.org/schema/Brick#Equipment", "label"
+        )
         subject.remove_brick(result)
         assert not list(BrickStore.graph.triples((URIRef(result), None, None)))
+
+    def test_run_with_bnode(self):
+        BrickStore.graph = brickschema.persistent.VersionedGraphCollection("sqlite://")
+        result = subject.add_brick(
+            "http://example.org/digitaltwin#", "https://brickschema.org/schema/Brick#Equipment", "label"
+        )
+        TestAddBrickifcProject().test_run()
+        element = tool.Ifc.get().createIfcChiller(ifcopenshell.guid.new())
+        element.Name = "Chiller"
+        project = URIRef(f"http://example.org/digitaltwin#{tool.Ifc.get().by_type('IfcProject')[0].GlobalId}")
+        subject.add_brickifc_reference(result, element, project)
+        subject.remove_brick(result)
+        assert not list(BrickStore.graph.triples((URIRef(result), None, None)))
+        assert not list(BrickStore.graph.triples((None, REF.hasIfcProjectReference, None)))
 
 
 class TestRunAssignBrickReference(NewFile):
@@ -359,7 +503,7 @@ class TestRunRefreshBrickViewer(NewFile):
         pass
 
 
-class TestViewBrickClass(NewFile):
+class TestRunViewBrickClass(NewFile):
     def test_nothing(self):
         pass
 
@@ -369,6 +513,10 @@ class TestSelectBrowserItem(NewFile):
         subject.set_active_brick_class("brick_class")
         assert bpy.context.scene.BIMBrickProperties.active_brick_class == "brick_class"
 
+    def test_run(self):
+        subject.set_active_brick_class("brick_class", split_screen=True)
+        assert bpy.context.scene.BIMBrickProperties.split_screen_active_brick_class == "brick_class"
+
 
 class TestSetActiveBrickClass(NewFile):
     def test_run(self):
@@ -376,3 +524,15 @@ class TestSetActiveBrickClass(NewFile):
         bpy.context.scene.BIMBrickProperties.bricks.add().name = "bar"
         subject.select_browser_item("namespace#bar")
         assert bpy.context.scene.BIMBrickProperties.active_brick_index == 1
+
+
+class TestSerializeBrick(NewFile):
+    def test_nothing(self):
+        pass
+
+
+class TestAddNamespace(NewFile):
+    def test_run(self):
+        BrickStore.graph = brickschema.persistent.VersionedGraphCollection("sqlite://")
+        subject.add_namespace("digitaltwin", "http://example.org/digitaltwin")
+        assert ("digitaltwin", "http://example.org/digitaltwin") in BrickStore.namespaces
