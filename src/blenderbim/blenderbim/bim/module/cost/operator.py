@@ -33,9 +33,26 @@ class AddCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Add Cost Schedule"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Add a new cost schedule"
+    name: bpy.props.StringProperty()
+    object_type: bpy.props.StringProperty()
 
     def _execute(self, context):
-        core.add_cost_schedule(tool.Ifc, predefined_type=context.scene.BIMCostProperties.cost_schedule_predefined_types)
+        core.add_cost_schedule(
+            tool.Ifc,
+            name=self.name,
+            predefined_type=context.scene.BIMCostProperties.cost_schedule_predefined_types,
+            object_type=self.object_type,
+        )
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, "name", text="Name")
+        layout.prop(context.scene.BIMCostProperties, "cost_schedule_predefined_types", text="Type")
+        if context.scene.BIMCostProperties.cost_schedule_predefined_types == "USERDEFINED":
+            layout.prop(self, "object_type", text="Object type")
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
 
 
 class EditCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
@@ -154,6 +171,17 @@ class ContractCostItem(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.contract_cost_item(tool.Cost, cost_item=tool.Ifc.get().by_id(self.cost_item))
+
+
+class ContractCostItems(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.contract_cost_items"
+    bl_label = "Contract Cost Item"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Collapse cost item tree"
+    cost_item: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.contract_cost_items(tool.Cost)
 
 
 class RemoveCostItem(bpy.types.Operator, tool.Ifc.Operator):
@@ -635,7 +663,9 @@ class ExportCostSchedules(bpy.types.Operator):
 
     def execute(self, context):
         cost_schedule = tool.Ifc.get().by_id(self.cost_schedule) if self.cost_schedule else None
-        r = core.export_cost_schedules(tool.Cost, filepath=self.filepath, format=self.format, cost_schedule=cost_schedule)
+        r = core.export_cost_schedules(
+            tool.Cost, filepath=self.filepath, format=self.format, cost_schedule=cost_schedule
+        )
         if isinstance(r, str):
             self.report({"ERROR"}, r)
         return {"FINISHED"}

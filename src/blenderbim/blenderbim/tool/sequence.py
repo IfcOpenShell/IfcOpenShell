@@ -16,16 +16,19 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-import re
 import os
-import isodate
+import re
+import bpy
+import json
+import base64
+import pystache
+import mathutils
+import webbrowser
 import ifcopenshell
 import ifcopenshell.util.sequence
 import ifcopenshell.util.date
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
-import json
 import blenderbim.core.tool
 import blenderbim.core
 import blenderbim.tool as tool
@@ -33,10 +36,6 @@ import blenderbim.bim.helper
 import blenderbim.bim.module.sequence.helper as helper
 from dateutil import parser
 from datetime import datetime
-import mathutils
-import pystache
-import webbrowser
-from datetime import timedelta
 
 
 class Sequence(blenderbim.core.tool.Sequence):
@@ -195,14 +194,16 @@ class Sequence(blenderbim.core.tool.Sequence):
         props.is_task_update_enabled = False
 
         for item in task_props.tasks:
-            # if task and item.ifc_definition_id != task.id():
-            #     continue
             task = tool.Ifc.get().by_id(item.ifc_definition_id)
             item.name = task.Name or "Unnamed"
             item.identification = task.Identification or "XXX"
-            if props.active_task_id:
-                item.is_predecessor = props.active_task_id in [rel.RelatedProcess.id() for rel in task.IsPredecessorTo]
-                item.is_successor = props.active_task_id in [rel.RelatingProcess.id() for rel in task.IsSuccessorFrom]
+            if props.highlighted_task_id:
+                item.is_predecessor = props.highlighted_task_id in [
+                    rel.RelatedProcess.id() for rel in task.IsPredecessorTo
+                ]
+                item.is_successor = props.highlighted_task_id in [
+                    rel.RelatingProcess.id() for rel in task.IsSuccessorFrom
+                ]
             calendar = ifcopenshell.util.sequence.derive_calendar(task)
             if task.HasAssignments:
                 for rel in task.HasAssignments:
@@ -212,7 +213,9 @@ class Sequence(blenderbim.core.tool.Sequence):
                 item.calendar = ""
                 item.derived_calendar = calendar.Name or "Unnamed" if calendar else ""
 
-            if task.TaskTime and (task.TaskTime.ScheduleStart or task.TaskTime.ScheduleFinish or task.TaskTime.ScheduleDuration):
+            if task.TaskTime and (
+                task.TaskTime.ScheduleStart or task.TaskTime.ScheduleFinish or task.TaskTime.ScheduleDuration
+            ):
                 task_time = task.TaskTime
                 item.start = (
                     canonicalise_time(ifcopenshell.util.date.ifc2datetime(task_time.ScheduleStart))
@@ -374,11 +377,11 @@ class Sequence(blenderbim.core.tool.Sequence):
     def disable_editing_task(cls):
         bpy.context.scene.BIMWorkScheduleProperties.active_task_id = 0
         bpy.context.scene.BIMWorkScheduleProperties.active_task_time_id = 0
+        bpy.context.scene.BIMWorkScheduleProperties.editing_task_type = ""
 
     @classmethod
     def get_task_time_attributes(cls):
         def callback(attributes, prop):
-
             if "Start" in prop.name or "Finish" in prop.name or prop.name == "StatusTime":
                 if prop.is_null:
                     attributes[prop.name] = None
@@ -413,11 +416,12 @@ class Sequence(blenderbim.core.tool.Sequence):
             new = props.task_resources.add()
             new.ifc_definition_id = resource.id()
             new.name = resource.Name or "Unnamed"
-            new.schedule_usage = resource.Usage.ScheduleUsage or 1 if resource.Usage else 0
+            new.schedule_usage = resource.Usage.ScheduleUsage or 0 if resource.Usage else 0
 
     @classmethod
     def load_resources(cls):
         blenderbim.core.resource.load_resources(tool.Resource)
+        cls.refresh_task_resources
 
     @classmethod
     def get_task_inputs(cls, task):
@@ -467,9 +471,11 @@ class Sequence(blenderbim.core.tool.Sequence):
 
     @classmethod
     def get_highlighted_task(cls):
-        props = bpy.context.scene.BIMWorkScheduleProperties
-        task_props = bpy.context.scene.BIMTaskTreeProperties
-        return tool.Ifc.get().by_id(task_props.tasks[props.active_task_index].ifc_definition_id)
+        tasks = bpy.context.scene.BIMTaskTreeProperties.tasks
+        if len(tasks) and len(tasks) > bpy.context.scene.BIMWorkScheduleProperties.active_task_index:
+            return tool.Ifc.get().by_id(
+                tasks[bpy.context.scene.BIMWorkScheduleProperties.active_task_index].ifc_definition_id
+            )
 
     @classmethod
     def get_direct_nested_tasks(cls, task):
@@ -483,15 +489,6 @@ class Sequence(blenderbim.core.tool.Sequence):
     def get_task_outputs(cls, task):
         is_deep = bpy.context.scene.BIMWorkScheduleProperties.show_nested_outputs
         return ifcopenshell.util.sequence.get_task_outputs(task, is_deep)
-
-    @classmethod
-    def get_task_resources(cls, task):
-        resources = []
-        for rel in task.OperatesOn:
-            for object in rel.RelatedObjects:
-                if object.is_a("IfcResource"):
-                    resources.append(object)
-        return resources
 
     @classmethod
     def enable_editing_work_calendar_times(cls, work_calendar):
@@ -645,9 +642,8 @@ class Sequence(blenderbim.core.tool.Sequence):
         props.editing_task_type = "CALENDAR"
 
     @classmethod
-    def enable_editing_task_sequence(cls, task):
+    def enable_editing_task_sequence(cls):
         props = bpy.context.scene.BIMWorkScheduleProperties
-        props.active_task_id = task.id()
         props.editing_task_type = "SEQUENCE"
 
     @classmethod
@@ -719,26 +715,12 @@ class Sequence(blenderbim.core.tool.Sequence):
 
     @classmethod
     def setup_default_task_columns(cls):
-        items = [
-            {
-                "column_type": "IfcTaskTime",
-                "name": "ScheduleStart",
-            },
-            {
-                "column_type": "IfcTaskTime",
-                "name": "ScheduleFinish",
-            },
-            {
-                "column_type": "IfcTaskTime",
-                "name": "ScheduleDuration",
-            },
-        ]
-
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.columns.clear()
-        for item in items:
+        default_columns = ["ScheduleStart", "ScheduleFinish", "ScheduleDuration"]
+        for item in default_columns:
             new = props.columns.add()
-            new.name = f"{item['column_type']}.{item['name']}"
+            new.name = f"IfcTaskTime.{item}"
             new.data_type = "string"
 
     @classmethod
@@ -784,25 +766,27 @@ class Sequence(blenderbim.core.tool.Sequence):
         )
 
     @classmethod
-    def highlight_task(cls, task):
-        def expand_ancestors(task):
+    def go_to_task(cls, task):
+        def get_ancestor_ids(task):
+            ids = []
             for rel in task.Nests or []:
-                parent_task = rel.RelatingObject if rel.RelatingObject.is_a("IfcTask") else None
-                contracted_tasks = json.loads(bpy.context.scene.BIMWorkScheduleProperties.contracted_tasks)
-                if parent_task and parent_task.id() in contracted_tasks:
-                    contracted_tasks.remove(parent_task.id())
-                    bpy.context.scene.BIMWorkScheduleProperties.contracted_tasks = json.dumps(contracted_tasks)
-                    expand_ancestors(parent_task)
-            work_schedule = cls.get_active_work_schedule()
-            cls.load_task_tree(work_schedule)
-            cls.load_task_properties()
+                ids.append(rel.RelatingObject.id())
+                ids.extend(get_ancestor_ids(rel.RelatingObject))
+            return ids
+
+        contracted_tasks = json.loads(bpy.context.scene.BIMWorkScheduleProperties.contracted_tasks)
+        for ancestor_id in get_ancestor_ids(task):
+            if ancestor_id in contracted_tasks:
+                contracted_tasks.remove(ancestor_id)
+        bpy.context.scene.BIMWorkScheduleProperties.contracted_tasks = json.dumps(contracted_tasks)
+
+        work_schedule = cls.get_active_work_schedule()
+        cls.load_task_tree(work_schedule)
+        cls.load_task_properties()
 
         task_props = bpy.context.scene.BIMTaskTreeProperties
-        displayed_tasks = [item.ifc_definition_id for item in task_props.tasks]
-        if not task.id() in displayed_tasks:
-            expand_ancestors(task)
-        task_index = displayed_tasks.index(task.id()) or 0
-        bpy.context.scene.BIMWorkScheduleProperties.active_task_index = task_index
+        expanded_tasks = [item.ifc_definition_id for item in task_props.tasks]
+        bpy.context.scene.BIMWorkScheduleProperties.active_task_index = expanded_tasks.index(task.id()) or 0
 
     @classmethod
     def guess_date_range(cls, work_schedule):
@@ -811,10 +795,10 @@ class Sequence(blenderbim.core.tool.Sequence):
     @classmethod
     def update_visualisation_date(cls, start_date, finish_date):
         def canonicalise_time(time):
-            if not time:
-                return "-"
             return time.strftime("%d/%m/%y")
 
+        if not (start_date and finish_date):
+            return
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.visualisation_start = canonicalise_time(start_date)
         props.visualisation_finish = canonicalise_time(finish_date)
@@ -1058,63 +1042,54 @@ class Sequence(blenderbim.core.tool.Sequence):
             create_task_bar_data(tasks, vertical_increment, collection)
 
     @classmethod
-    def enable_editing_task_animation_colors(cls):
-        bpy.context.scene.BIMAnimationProperties.is_editing = True
+    def has_animation_colors(cls):
+        return bpy.context.scene.BIMAnimationProperties.task_output_colors
 
     @classmethod
-    def load_task_animation_colors(cls):
+    def load_default_animation_color_scheme(cls):
+        groups = {
+            "CREATION": {
+                "PredefinedType": ["CONSTRUCTION", "INSTALLATION"],
+                "Color": (0.0, 1.0, 0.0),
+            },
+            "OPERATION": {
+                "PredefinedType": ["ATTENDANCE", "MAINTENANCE", "OPERATION", "RENOVATION"],
+                "Color": (0.0, 0.0, 1.0),
+            },
+            "MOVEMENT_TO": {
+                "PredefinedType": ["LOGISTIC", "MOVE"],
+                "Color": (1.0, 1.0, 0.0),
+            },
+            "DESTRUCTION": {
+                "PredefinedType": ["DEMOLITION", "DISMANTLE", "DISPOSAL", "REMOVAL"],
+                "Color": (1.0, 0.0, 0.0),
+            },
+            "MOVEMENT_FROM": {
+                "PredefinedType": ["LOGISTIC", "MOVE"],
+                "Color": (1.0, 0.5, 0.0),
+            },
+            "USERDEFINED": {
+                "PredefinedType": ["USERDEFINED", "NOTDEFINED"],
+                "Color": (0.2, 0.2, 0.2),
+            },
+        }
         props = bpy.context.scene.BIMAnimationProperties
-        if not props.task_colors_components_inputs:
-            if tool.Ifc.schema():
-                # for attribute in tool.Ifc.schema().declaration_by_name("IfcTask").all_attributes():
-                #     if attribute.name() != "PredefinedType":
-                #         continue
-                #     task_types = ifcopenshell.util.attribute.get_enum_items(attribute)
-                # return [(e, e, "") for e in enum_items]
-                groups = {
-                    "CREATION": {
-                        "PredefinedType": ["CONSTRUCTION", "INSTALLATION"],
-                        "Color": (0.0, 1.0, 0.0),
-                    },
-                    "OPERATION": {
-                        "PredefinedType": ["ATTENDANCE", "MAINTENANCE", "OPERATION", "RENOVATION"],
-                        "Color": (0.0, 0.0, 1.0),
-                    },
-                    "MOVEMENT_TO": {
-                        "PredefinedType": ["LOGISTIC", "MOVE"],
-                        "Color": (1.0, 1.0, 0.0),
-                    },
-                    "DESTRUCTION": {
-                        "PredefinedType": ["DEMOLITION", "DISMANTLE", "DISPOSAL", "REMOVAL"],
-                        "Color": (1.0, 0.0, 0.0),
-                    },
-                    "MOVEMENT_FROM": {
-                        "PredefinedType": ["LOGISTIC", "MOVE"],
-                        "Color": (1.0, 0.5, 0.0),
-                    },
-                    "USERDEFINED": {
-                        "PredefinedType": ["USERDEFINED", "NOTDEFINED"],
-                        "Color": (0.2, 0.2, 0.2),
-                    },
-                }
-                for group, data in groups.items():
-                    for predefined_type in data["PredefinedType"]:
-                        if group in ["CREATION", "OPERATION", "MOVEMENT_TO"]:
-                            predefined_type_item = props.task_colors_components_outputs.add()
-                        elif group in ["MOVEMENT_FROM", "DESTRUCTION"]:
-                            predefined_type_item = props.task_colors_components_inputs.add()
-                        elif group == "USERDEFINED":
-                            predefined_type_item = props.task_colors_components_inputs.add()
-                            predefined_type_item2 = props.task_colors_components_outputs.add()
-                            predefined_type_item2.name = predefined_type
-                            predefined_type_item2.color = data["Color"]
-                        # TO DO: consider cases where users confuses inputs and outputs
-                        predefined_type_item.name = predefined_type
-                        predefined_type_item.color = data["Color"]
-
-    @classmethod
-    def disable_editing_task_animation_colors(cls):
-        bpy.context.scene.BIMAnimationProperties.is_editing = False
+        props.task_output_colors.clear()
+        props.task_input_colors.clear()
+        for group, data in groups.items():
+            for predefined_type in data["PredefinedType"]:
+                if group in ["CREATION", "OPERATION", "MOVEMENT_TO"]:
+                    predefined_type_item = props.task_output_colors.add()
+                elif group in ["MOVEMENT_FROM", "DESTRUCTION"]:
+                    predefined_type_item = props.task_input_colors.add()
+                elif group == "USERDEFINED":
+                    predefined_type_item = props.task_input_colors.add()
+                    predefined_type_item2 = props.task_output_colors.add()
+                    predefined_type_item2.name = predefined_type
+                    predefined_type_item2.color = data["Color"]
+                # TO DO: consider cases where users confuses inputs and outputs
+                predefined_type_item.name = predefined_type
+                predefined_type_item.color = data["Color"]
 
     @classmethod
     def get_start_date(cls):
@@ -1227,21 +1202,23 @@ class Sequence(blenderbim.core.tool.Sequence):
                     start,
                     finish,
                     props.speed_animation_frames,
-                    isodate.parse_duration(props.speed_real_duration),
+                    ifcopenshell.util.date.parse_duration(props.speed_real_duration),
                 )
             elif props.speed_types == "DURATION_SPEED":
+                animation_duration = ifcopenshell.util.date.parse_duration(props.speed_animation_duration)
+                real_duration = ifcopenshell.util.date.parse_duration(props.speed_real_duration)
                 return calculate_using_duration(
                     start,
                     finish,
                     fps,
-                    isodate.parse_duration(props.speed_animation_duration),
-                    isodate.parse_duration(props.speed_real_duration),
+                    animation_duration,
+                    real_duration,
                 )
             elif props.speed_types == "MULTIPLIER_SPEED":
                 return calculate_using_multiplier(
                     start,
                     finish,
-                    fps,
+                    1,
                     props.speed_multiplier,
                 )
 
@@ -1313,14 +1290,23 @@ class Sequence(blenderbim.core.tool.Sequence):
             obj.animation_data_clear()
 
     @classmethod
+    def clear_object_color(cls, obj):
+        obj.color = (1.0, 1.0, 1.0, 1.0)
+
+    @classmethod
+    def display_object(cls, obj):
+        if not obj.visible_get():
+            obj.hide_viewport = False
+            obj.hide_render = False
+
+    @classmethod
     def clear_objects_animation(cls, include_blender_objects=True):
         for obj in bpy.data.objects:
             if not include_blender_objects and not obj.BIMObjectProperties.ifc_definition_id:
                 continue
             cls.clear_object_animation(obj)
-            if not obj.visible_get():
-                obj.hide_viewport = False
-                obj.hide_render = False
+            cls.clear_object_color(obj)
+            cls.display_object(obj)
 
     @classmethod
     def animate_objects(cls, settings, frames, clear_previous=True, animation_type=""):
@@ -1344,13 +1330,13 @@ class Sequence(blenderbim.core.tool.Sequence):
     @classmethod
     def animate_input(cls, obj, start_frame, product_frame, animation_type):
         props = bpy.context.scene.BIMAnimationProperties
-        color = props.task_colors_components_inputs[product_frame["type"]].color
+        color = props.task_input_colors[product_frame["type"]].color
         cls.animate_destruction(obj, start_frame, product_frame, color, animation_type)
 
     @classmethod
     def animate_output(cls, obj, start_frame, product_frame):
         props = bpy.context.scene.BIMAnimationProperties
-        color = props.task_colors_components_outputs[product_frame["type"]].color
+        color = props.task_output_colors[product_frame["type"]].color
         if product_frame["type"] in ["CONSTRUCTION", "INSTALLATION", "NOTDEFINED"]:
             cls.animate_creation(obj, start_frame, product_frame, color)
         elif product_frame["type"] in ["ATTENDANCE", "MAINTENANCE", "OPERATION", "RENOVATION"]:
@@ -1515,13 +1501,13 @@ class Sequence(blenderbim.core.tool.Sequence):
             compare_start = schedule_start
             compare_finish = schedule_finish
         task_name = task.Name or "Unnamed"
-        task_name = task_name.replace('\n', "")
+        task_name = task_name.replace("\n", "")
         data = {
             "pID": task.id(),
             "pName": task_name,
             "pCaption": task_name,
             "pStart": schedule_start,
-            "pEnd": schedule_finish ,
+            "pEnd": schedule_finish,
             "pPlanStart": compare_start,
             "pPlanEnd": compare_finish,
             "pMile": 1 if task.IsMilestone else 0,
@@ -1556,10 +1542,9 @@ class Sequence(blenderbim.core.tool.Sequence):
     def generate_gantt_browser_chart(cls, task_json, work_schedule):
         with open(os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.html"), "w") as f:
             with open(os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.mustache"), "r") as t:
+                task_b64 = base64.b64encode(bytes(json.dumps(task_json), "utf-8")).decode("utf-8")
                 f.write(
-                    pystache.render(
-                        t.read(), {"json_data": json.dumps(task_json), "data": json.dumps(work_schedule.get_info())}
-                    )
+                    pystache.render(t.read(), {"json_data": task_b64, "data": json.dumps(work_schedule.get_info())})
                 )
         webbrowser.open("file://" + os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.html"))
 
@@ -1608,3 +1593,91 @@ class Sequence(blenderbim.core.tool.Sequence):
     @classmethod
     def is_sort_reversed(cls):
         return bpy.context.scene.BIMWorkScheduleProperties.is_sort_reversed
+
+    @classmethod
+    def get_user_predefined_type(cls):
+        predefined_type = bpy.context.scene.BIMWorkScheduleProperties.work_schedule_predefined_types
+        object_type = None
+        if predefined_type == "USERDEFINED":
+            object_type = bpy.context.scene.BIMWorkScheduleProperties.object_type
+        return predefined_type, object_type
+
+    @classmethod
+    def add_animation_camera(cls):
+        bpy.ops.object.camera_add()
+        camera = bpy.context.active_object
+        camera.data.lens = 26
+        camera.name = "4D Camera"
+        camera.location = mathutils.Vector((15, 0, 15))
+        camera.rotation_euler = mathutils.Euler((1.2, 0, 1.5), "XYZ")
+        for obj in bpy.context.scene.objects:
+            obj.select_set(False)
+        for obj in bpy.context.visible_objects:
+            if not (obj.hide_get() or obj.hide_render) and obj.type != "LIGHT":
+                obj.select_set(True)
+        bpy.context.scene.camera = camera
+        bpy.ops.view3d.camera_to_view_selected()
+
+    @classmethod
+    def save_animation_color_scheme(cls, name):
+        props = bpy.context.scene.BIMAnimationProperties
+        colour_scheme = {
+            "Inputs": {cs.name: cs.color[0:3] for cs in props.task_input_colors},
+            "Outputs": {cs.name: cs.color[0:3] for cs in props.task_output_colors},
+        }
+
+        group = [g for g in tool.Ifc.get().by_type("IfcGroup") if g.Name == name]
+        if group:
+            group = group[0]
+            description = json.loads(group.Description)
+            description["colourscheme"] = colour_scheme
+            group.Description = json.dumps(description)
+        else:
+            description = json.dumps({"type": "BBIM_AnimationColorScheme", "colourscheme": colour_scheme})
+            group = tool.Ifc.run("group.add_group", Name=name, Description=description)
+        return group[0]
+
+    @classmethod
+    def load_animation_color_scheme(cls, scheme):
+        if not scheme:
+            return
+        data = json.loads(scheme.Description)
+        if data.get("type") == "BBIM_AnimationColorScheme":
+            inputs_color_scheme = data.get("colourscheme").get("Inputs")
+            outputs_color_scheme = data.get("colourscheme").get("Outputs")
+            props = bpy.context.scene.BIMAnimationProperties
+            props.task_input_colors.clear()
+            props.task_output_colors.clear()
+            for value, colour in inputs_color_scheme.items():
+                new = props.task_input_colors.add()
+                new.name = str(value)
+                new.color = colour[0:3]
+
+            for value, colour in outputs_color_scheme.items():
+                new = props.task_output_colors.add()
+                new.name = str(value)
+                new.color = colour[0:3]
+
+    @classmethod
+    def update_task_ICOM(cls, task):
+        if not task:
+            return
+        inputs = cls.get_task_inputs(task)
+        outputs = cls.get_task_outputs(task)
+        resources = cls.get_task_resources(task)
+        cls.load_task_inputs(inputs)
+        cls.load_task_outputs(outputs)
+        cls.load_task_resources(resources)
+
+    @classmethod
+    def refresh_task_resources(cls):
+        task = cls.get_highlighted_task()
+        if not task:
+            return
+        cls.load_task_resources(cls.get_task_resources(task))
+
+    @classmethod
+    def has_duration(cls, task):
+        if task.TaskTime and task.TaskTime.ScheduleDuration:
+            return True
+        return False

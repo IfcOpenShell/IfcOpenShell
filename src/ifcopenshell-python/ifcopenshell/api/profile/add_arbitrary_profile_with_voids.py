@@ -69,7 +69,7 @@ class Usecase:
             outer_curve = self.file.createIfcPolyline([self.file.createIfcCartesianPoint(p) for p in outer_points])
             inner_curves = []
             for inner_point in inner_points:
-                inner_curves.append(self.file.createIfcPolyline([self.file.createIfcCartesianPoint(p) for p in inner_point])
+                inner_curves.append(self.file.createIfcPolyline([self.file.createIfcCartesianPoint(p) for p in inner_point]))
         else:
             outer_curve = self.file.createIfcIndexedPolyCurve(self.file.createIfcCartesianPointList3D(outer_points))
             inner_curves = []

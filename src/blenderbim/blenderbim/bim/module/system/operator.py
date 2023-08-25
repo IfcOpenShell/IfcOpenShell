@@ -22,6 +22,8 @@ import blenderbim.tool as tool
 import blenderbim.core.system as core
 import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.system.data import PortData
+from mathutils import Matrix
 
 
 class Operator:
@@ -139,6 +141,15 @@ class ShowPorts(bpy.types.Operator, Operator):
     bl_label = "Show Ports"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        if not PortData.is_loaded:
+            PortData.load()
+        if PortData.data["total_ports"] == 0:
+            cls.poll_message_set("No ports found")
+            return False
+        return True
+
     def _execute(self, context):
         core.show_ports(tool.Ifc, tool.System, tool.Spatial, element=tool.Ifc.get_entity(context.active_object))
 
@@ -148,12 +159,17 @@ class HidePorts(bpy.types.Operator, Operator):
     bl_label = "Hide Ports"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        return ShowPorts.poll(context)
+
     def _execute(self, context):
         core.hide_ports(tool.Ifc, tool.System, element=tool.Ifc.get_entity(context.active_object))
 
 
 class AddPort(bpy.types.Operator, Operator):
     bl_idname = "bim.add_port"
+    bl_description = "Add port at current cursor position"
     bl_label = "Add Port"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -190,8 +206,50 @@ class DisconnectPort(bpy.types.Operator, Operator):
     bl_label = "Disconnect Ports"
     bl_options = {"REGISTER", "UNDO"}
 
+    element_id: bpy.props.IntProperty(default=0, options={"SKIP_SAVE"})
+
     def _execute(self, context):
-        core.disconnect_port(tool.Ifc, port=tool.Ifc.get_entity(context.active_object))
+        if self.element_id != 0:
+            element = tool.Ifc.get().by_id(self.element_id)
+        else:
+            element = tool.Ifc.get_entity(context.active_object)
+        core.disconnect_port(tool.Ifc, port=element)
+
+
+class MEPConnectElements(bpy.types.Operator, Operator):
+    bl_idname = "bim.mep_connect_elements"
+    bl_label = "Connect MEP Elements"
+    bl_description = "Connects two selected elements if they have ports with matching location"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return len(context.selected_objects) == 2
+
+    def _execute(self, context):
+        obj1 = context.active_object
+        obj2 = next(o for o in context.selected_objects if o != obj1)
+
+        el1 = tool.Ifc.get_entity(obj1)
+        el2 = tool.Ifc.get_entity(obj2)
+
+        obj1_ports = [p for p in tool.System.get_ports(el1) if not tool.System.get_connected_port(p)]
+        obj2_ports = [p for p in tool.System.get_ports(el2) if not tool.System.get_connected_port(p)]
+
+        if not obj1_ports or not obj2_ports:
+            self.report({"ERROR"}, "Couldn't find free ports to connect.")
+            return
+
+        for port1 in obj1_ports:
+            port1_location = tool.Model.get_element_matrix(port1).translation
+            for port2 in obj2_ports:
+                port2_location = tool.Model.get_element_matrix(port2).translation
+                if tool.Cad.are_vectors_equal(port1_location, port2_location):
+                    core.connect_port(tool.Ifc, port1, port2)
+                    return {"FINISHED"}
+
+        self.report({"ERROR"}, "Couldn't find any matching ports to connect.")
+        return {"CANCELLED"}
 
 
 class SetFlowDirection(bpy.types.Operator, Operator):
@@ -201,6 +259,11 @@ class SetFlowDirection(bpy.types.Operator, Operator):
     direction: bpy.props.StringProperty()
 
     def _execute(self, context):
+        port = tool.Ifc.get_entity(context.active_object)
+        second_port = tool.System.get_connected_port(port)
+        if not second_port:
+            self.report({"ERROR"}, "To set flow direction port has to be connected to another one.")
+            return
         core.set_flow_direction(
             tool.Ifc, tool.System, port=tool.Ifc.get_entity(context.active_object), direction=self.direction
         )

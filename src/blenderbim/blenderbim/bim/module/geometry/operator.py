@@ -57,6 +57,31 @@ class EditObjectPlacement(bpy.types.Operator, Operator):
             core.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
 
+class OverrideOriginSet(bpy.types.Operator, Operator):
+    bl_idname = "bim.override_origin_set"
+    bl_label = "IFC Origin Set"
+    bl_options = {"REGISTER", "UNDO"}
+    obj: bpy.props.StringProperty()
+    origin_type: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
+        for obj in objs:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            if tool.Ifc.is_moved(obj):
+                core.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+            representation = tool.Geometry.get_active_representation(obj)
+            if not representation:
+                continue
+            representation = ifcopenshell.util.representation.resolve_representation(representation)
+            if not tool.Geometry.is_meshlike(representation):
+                continue
+            bpy.ops.object.origin_set(type=self.origin_type)
+            bpy.ops.bim.update_representation(obj=obj.name)
+
+
 class AddRepresentation(bpy.types.Operator, Operator):
     bl_idname = "bim.add_representation"
     bl_label = "Add Representation"
@@ -185,6 +210,15 @@ class RemoveRepresentation(bpy.types.Operator, Operator):
         )
 
 
+class PurgeUnusedRepresentations(bpy.types.Operator, Operator):
+    bl_idname = "bim.purge_unused_representations"
+    bl_label = "Purge Unused Representations"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.purge_unused_representations(tool.Ifc, tool.Geometry)
+
+
 class UpdateRepresentation(bpy.types.Operator, Operator):
     bl_idname = "bim.update_representation"
     bl_label = "Update Representation"
@@ -214,6 +248,10 @@ class UpdateRepresentation(bpy.types.Operator, Operator):
         product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         material = ifcopenshell.util.element.get_material(product, should_skip_usage=True)
 
+        if getattr(product, "HasOpenings", False) and obj.data.BIMMeshProperties.has_openings_applied:
+            # Meshlike things with openings can only be updated without openings applied.
+            return
+
         if not product.is_a("IfcGridAxis"):
             tool.Geometry.clear_cache(product)
 
@@ -231,8 +269,14 @@ class UpdateRepresentation(bpy.types.Operator, Operator):
             core.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
         if material and material.is_a() in ["IfcMaterialProfileSet", "IfcMaterialLayerSet"]:
-            # These objects are parametrically based on an axis and should not be modified as a mesh
-            return
+            if self.ifc_representation_class == "IfcTessellatedFaceSet":
+                # We are explicitly casting to a tessellation, so remove all parametric materials.
+                element_type = ifcopenshell.util.element.get_type(product)
+                ifcopenshell.api.run("material.unassign_material", tool.Ifc.get(), product=element_type)
+                ifcopenshell.api.run("material.unassign_material", tool.Ifc.get(), product=product)
+            else:
+                # These objects are parametrically based on an axis and should not be modified as a mesh
+                return
 
         old_representation = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         context_of_items = old_representation.ContextOfItems
@@ -285,7 +329,7 @@ class UpdateRepresentation(bpy.types.Operator, Operator):
                 "style.assign_representation_styles",
                 self.file,
                 shape_representation=new_representation,
-                styles=tool.Geometry.get_styles(obj),
+                styles=tool.Geometry.get_styles(obj, only_assigned_to_faces=True),
                 should_use_presentation_style_assignment=context.scene.BIMGeometryProperties.should_use_presentation_style_assignment,
             )
             tool.Geometry.record_object_materials(obj)
@@ -637,6 +681,11 @@ class OverrideDuplicateMove(bpy.types.Operator):
             element = tool.Ifc.get_entity(obj)
             if element and element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
                 continue  # For now, don't copy drawings until we stabilise a bit more. It's tricky.
+
+            # Prior to duplicating, sync the object placement to make decomposition recreation more stable.
+            if tool.Ifc.is_moved(obj):
+                blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+
             new_obj = obj.copy()
             if obj.data:
                 new_obj.data = obj.data.copy()
@@ -705,6 +754,10 @@ class OverrideDuplicateMoveLinked(bpy.types.Operator):
         relationships = tool.Root.get_decomposition_relationships(context.selected_objects)
         old_to_new = {}
         for obj in context.selected_objects:
+            # Prior to duplicating, sync the object placement to make decomposition recreation more stable.
+            if tool.Ifc.is_moved(obj):
+                blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+
             new_obj = obj.copy()
             if obj.data:
                 new_obj.data = obj.data.copy()
@@ -1317,8 +1370,13 @@ class OverrideModeSetEdit(bpy.types.Operator):
                 continue
 
             is_profile = True
+            representation_class = tool.Geometry.get_ifc_representation_class(element, representation)
             if usage_type == "PROFILE":
                 operator = lambda: bpy.ops.bim.hotkey(hotkey="A_E")
+            elif representation_class and "IfcCircleProfileDef" in representation_class:
+                self.report({"INFO"}, "Can't edit Circle Profile Extrusion")
+                obj.select_set(False)
+                continue
             elif (
                 tool.Geometry.is_profile_based(obj.data)
                 or usage_type == "LAYER3"
@@ -1360,12 +1418,12 @@ class OverrideModeSetEdit(bpy.types.Operator):
                         should_sync_changes_first=False,
                         apply_openings=False,
                     )
+                tool.Geometry.dissolve_triangulated_edges(obj)
                 obj.data.BIMMeshProperties.mesh_checksum = tool.Geometry.get_mesh_checksum(obj.data)
             else:
                 obj.select_set(False)
                 continue
-
-        if not context.selected_objects or len(context.selected_objects) != len(selected_objs):
+        if len(selected_objs) > 1 and (not context.selected_objects or len(context.selected_objects) != len(selected_objs)):
             # We are trying to edit at least one non-mesh-like object : Display a hint to the user
             self.report({"INFO"}, "Only mesh-compatible representations may be edited concurrently in edit mode.")
 
@@ -1407,9 +1465,11 @@ class OverrideModeSetObject(bpy.types.Operator):
                     self.reload_representation(obj)
             else:
                 self.reload_representation(obj)
+            tool.Ifc.finish_edit(obj)
 
         for obj in self.unchanged_objs_with_openings:
             self.reload_representation(obj)
+            tool.Ifc.finish_edit(obj)
         return {"FINISHED"}
 
     def reload_representation(self, obj):

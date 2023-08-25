@@ -65,8 +65,29 @@ class Usecase:
                 representations = self.settings["product"].Representation.Representations or []
             else:
                 representations = []
+
+            # remove object placements
+            object_placement = self.settings["product"].ObjectPlacement
+            if object_placement:
+                if self.file.get_total_inverses(object_placement) == 1:
+                    self.settings["product"].ObjectPlacement = None  # remove the inverse for remove_deep2 to work
+                    ifcopenshell.util.element.remove_deep2(self.file, object_placement)
+
         elif self.settings["product"].is_a("IfcTypeProduct"):
             representations = [rm.MappedRepresentation for rm in self.settings["product"].RepresentationMaps or []]
+
+            # remove psets
+            psets = self.settings["product"].HasPropertySets or []
+            for pset in psets:
+                if self.file.get_total_inverses(pset) != 1:
+                    continue
+                ifcopenshell.api.run(
+                    "pset.remove_pset",
+                    self.file,
+                    product=self.settings["product"],
+                    pset=pset,
+                )
+
         for representation in representations:
             ifcopenshell.api.run(
                 "geometry.unassign_representation",
@@ -131,6 +152,12 @@ class Usecase:
                         el for el in inverse.RealizingElements if el != self.settings["product"]
                     ):
                         continue
+                self.file.remove(inverse)
+            elif inverse.is_a("IfcRelConnectsPorts"):
+                if self.settings["product"] not in (inverse.RelatingPort, inverse.RelatedPort):
+                    # if it's not RelatingPort/RelatedPort then it's optional RealizingElement
+                    # so we keep the relationship
+                    continue
                 self.file.remove(inverse)
             elif inverse.is_a("IfcRelAssignsToGroup"):
                 if len(inverse.RelatedObjects) == 1:

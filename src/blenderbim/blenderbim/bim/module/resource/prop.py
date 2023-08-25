@@ -1,5 +1,5 @@
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2021, 2022, 2023 Dion Moult, Yassine Oualid <dion@thinkmoult.com>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -22,6 +22,8 @@ import ifcopenshell.util.resource
 from blenderbim.bim.ifc import IfcStore
 import blenderbim.tool as tool
 import blenderbim.bim.module.pset.data
+import blenderbim.bim.module.resource.data
+import blenderbim.bim.module.sequence.data
 from blenderbim.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -56,6 +58,8 @@ def updateResourceName(self, context):
     if props.active_resource_id == self.ifc_definition_id:
         attribute = props.resource_attributes.get("Name")
         attribute.string_value = self.name
+    blenderbim.bim.module.resource.data.refresh()
+    tool.Sequence.refresh_task_resources()
 
 
 def get_quantity_types(self, context):
@@ -72,7 +76,7 @@ def get_quantity_types(self, context):
 
 def update_active_resource_index(self, context):
     blenderbim.bim.module.pset.data.refresh()
-    if self.should_show_productivity:
+    if self.should_show_resource_tools:
         tool.Resource.load_productivity_data()
 
 
@@ -80,18 +84,20 @@ def updateResourceUsage(self, context):
     props = context.scene.BIMResourceProperties
     if not props.is_resource_update_enabled:
         return
-
-    if self.schedule_usage == "":
+    if not self.schedule_usage:
         return
     resource = tool.Ifc.get().by_id(self.ifc_definition_id)
-    if not resource.Usage:
-        tool.Ifc.run(
-            "resource.add_resource_time",
-            resource=resource,
-        )
-    resource.Usage.ScheduleUsage = self.schedule_usage
-    blenderbim.bim.module.pset.data.refresh()
+    if resource.Usage and resource.Usage.ScheduleUsage == self.schedule_usage:
+        return
+    tool.Resource.run_edit_resource_time(resource, attributes={
+        "ScheduleUsage": self.schedule_usage
+    })
+    tool.Sequence.load_task_properties()
     tool.Resource.load_resource_properties()
+    tool.Sequence.refresh_task_resources()
+    blenderbim.bim.module.resource.data.refresh()
+    blenderbim.bim.module.sequence.data.refresh()
+    blenderbim.bim.module.pset.data.refresh()
 
 
 class ISODuration(PropertyGroup):
@@ -144,7 +150,7 @@ class BIMResourceProperties(PropertyGroup):
     quantity_types: EnumProperty(items=get_quantity_types, name="Quantity Types")
     is_editing_quantity: BoolProperty(name="Is Editing Quantity")
     quantity_attributes: CollectionProperty(name="Quantity Attributes", type=Attribute)
-    should_show_productivity: BoolProperty(name="Edit Productivity", update=update_active_resource_index)
+    should_show_resource_tools: BoolProperty(name="Edit Productivity", update=update_active_resource_index)
 
 
 class BIMResourceProductivity(PropertyGroup):

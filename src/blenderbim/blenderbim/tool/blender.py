@@ -20,8 +20,10 @@ import bpy
 import json
 import ifcopenshell.api
 import blenderbim.tool as tool
+import blenderbim.bim
 from mathutils import Vector
 from pathlib import Path
+import addon_utils
 
 
 VIEWPORT_ATTRIBUTES = [
@@ -136,13 +138,15 @@ class Blender:
         return False
 
     @classmethod
-    def show_error_message(cls, text):
-        """useful for showing error messages outside blender operators"""
+    def show_info_message(cls, text, message_type="INFO"):
+        """useful for showing error messages outside blender operators
 
-        def error(self, context):
+        Possible `message_type`: `INFO` / `ERROR`"""
+
+        def message_ui(self, context):
             self.layout.label(text=text)
 
-        bpy.context.window_manager.popup_menu(error, title="Error", icon="ERROR")
+        bpy.context.window_manager.popup_menu(message_ui, title=message_type.capitalize(), icon=message_type)
 
     @classmethod
     def get_blender_prop_default_value(cls, props, prop_name):
@@ -355,7 +359,8 @@ class Blender:
         for obj in selected_objects:
             obj.select_set(True)
         context.view_layer.objects.active = active_object
-        active_object.select_set(True)
+        if active_object:
+            active_object.select_set(True)
 
     @classmethod
     def enum_property_has_valid_index(cls, props, prop_name, enum_items):
@@ -585,3 +590,19 @@ class Blender:
                     child_obj = tool.Blender.get_object_from_guid(child_guid)
                     if child_obj:
                         yield child_obj
+
+    @classmethod
+    def get_blenderbim_version(cls):
+        version = ".".join(
+            [
+                str(x)
+                for x in [
+                    addon.bl_info.get("version", (-1, -1, -1))
+                    for addon in addon_utils.modules()
+                    if addon.bl_info["name"] == "BlenderBIM"
+                ][0]
+            ]
+        )
+        if blenderbim.bim.last_commit_hash != "8888888":
+            version += f"-{blenderbim.bim.last_commit_hash[:7]}"
+        return version

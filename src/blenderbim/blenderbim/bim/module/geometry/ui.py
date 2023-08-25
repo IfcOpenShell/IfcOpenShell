@@ -18,7 +18,7 @@
 
 import bpy
 import blenderbim.tool as tool
-from bpy.types import Panel
+from bpy.types import Panel, Menu
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import prop_with_search
 from blenderbim.bim.module.geometry.data import RepresentationsData, ConnectionsData, DerivedPlacementsData
@@ -29,6 +29,29 @@ def object_menu(self, context):
     self.layout.operator("bim.override_object_duplicate_move", icon="PLUGIN")
     self.layout.operator("bim.override_object_delete", icon="PLUGIN")
     self.layout.operator("bim.override_paste_buffer", icon="PLUGIN")
+    self.layout.menu("BIM_MT_object_set_origin", icon="PLUGIN")
+
+
+class BIM_MT_object_set_origin(Menu):
+    bl_idname = "BIM_MT_object_set_origin"
+    bl_label = "IFC Set Origin"
+
+    def draw(self, context):
+        self.layout.operator(
+            "bim.override_origin_set", icon="PLUGIN", text="IFC Geometry to Origin"
+        ).origin_type = "GEOMETRY_ORIGIN"
+        self.layout.operator(
+            "bim.override_origin_set", icon="PLUGIN", text="IFC Origin to Geometry"
+        ).origin_type = "ORIGIN_GEOMETRY"
+        self.layout.operator(
+            "bim.override_origin_set", icon="PLUGIN", text="IFC Origin to 3D Cursor"
+        ).origin_type = "ORIGIN_CURSOR"
+        self.layout.operator(
+            "bim.override_origin_set", icon="PLUGIN", text="IFC Origin to Center of Mass (Surface)"
+        ).origin_type = "ORIGIN_CENTER_OF_MASS"
+        self.layout.operator(
+            "bim.override_origin_set", icon="PLUGIN", text="IFC Origin to Center of Mass (Volume)"
+        ).origin_type = "ORIGIN_CENTER_OF_VOLUME"
 
 
 def outliner_menu(self, context):
@@ -111,7 +134,7 @@ class BIM_PT_connections(Panel):
         layout = self.layout
         props = context.active_object.BIMObjectProperties
 
-        if not ConnectionsData.data["connections"]:
+        if not ConnectionsData.data["connections"] and not ConnectionsData.data["is_connection_realization"]:
             layout.label(text="No connections found")
 
         for connection in ConnectionsData.data["connections"]:
@@ -122,6 +145,44 @@ class BIM_PT_connections(Panel):
             op.connection = connection["id"]
             op = row.operator("bim.remove_connection", icon="X", text="")
             op.connection = connection["id"]
+
+            if connection["realizing_elements"]:
+                row = self.layout.row(align=True)
+                connection_type = connection["realizing_elements_connection_type"]
+                connection_type = f" ({connection_type})" if connection_type else ""
+                row.label(text=f"Realizing elements{connection_type}:")
+
+                for element in connection["realizing_elements"]:
+                    row = self.layout.row(align=True)
+                    obj = tool.Ifc.get_object(element)
+                    row.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = element.id()
+                    row.label(text=obj.name)
+
+        # display connections where element is connection realization
+        connections = ConnectionsData.data["is_connection_realization"]
+        if not connections:
+            return
+
+        row = self.layout.row(align=True)
+        row.label(text="Element is connections realization:")
+        for connection in connections:
+            # NOTE: not displayed yet
+            connection_type = connection["realizing_elements_connection_type"]
+            connection_type = f" ({connection_type})" if connection_type else ""
+
+            row = self.layout.row(align=True)
+
+            connected_from = connection["connected_from"]
+            obj = tool.Ifc.get_object(connected_from)
+            row.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = connected_from.id()
+            row.label(text=obj.name)
+
+            row.label(text="", icon="FORWARD")
+
+            connected_to = connection["connected_to"]
+            obj = tool.Ifc.get_object(connected_to)
+            row.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = connected_to.id()
+            row.label(text=obj.name)
 
 
 class BIM_PT_mesh(Panel):

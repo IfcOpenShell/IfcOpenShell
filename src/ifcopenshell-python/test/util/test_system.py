@@ -79,3 +79,31 @@ class TestGetConnectedPort(test.bootstrap.IFC4):
         ifcopenshell.api.run("system.connect_port", self.file, port1=port1, port2=port2)
         assert subject.get_connected_port(port1) == port2
         assert subject.get_connected_port(port2) == port1
+
+
+class TestGetConnectedToFrom(test.bootstrap.IFC4):
+    def test_run(self):
+        port1 = ifcopenshell.api.run("system.add_port", self.file)
+        element1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcFlowSegment")
+        ifcopenshell.api.run("system.assign_port", self.file, element=element1, port=port1)
+
+        port2 = ifcopenshell.api.run("system.add_port", self.file)
+        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcFlowSegment")
+        ifcopenshell.api.run("system.assign_port", self.file, element=element2, port=port2)
+
+        ifcopenshell.api.run("system.connect_port", self.file, port1=port1, port2=port2, direction="SOURCE")
+        assert subject.get_connected_to(element1) == [element2]
+        assert subject.get_connected_from(element1) == []
+        assert subject.get_connected_to(element2) == []
+        assert subject.get_connected_from(element2) == [element1]
+
+        ifcopenshell.api.run("system.connect_port", self.file, port1=port1, port2=port2, direction="SINK")
+        assert subject.get_connected_to(element1) == []
+        assert subject.get_connected_from(element1) == [element2]
+        assert subject.get_connected_to(element2) == [element1]
+        assert subject.get_connected_from(element2) == []
+
+
+class TestGetConnectedToFromIFC2X3(test.bootstrap.IFC2X3):
+    def test_run(self):
+        TestGetConnectedToFrom.test_run(self)

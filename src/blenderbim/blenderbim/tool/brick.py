@@ -23,12 +23,14 @@ import ifcopenshell.util.brick
 import blenderbim.core.tool
 import blenderbim.tool as tool
 from contextlib import contextmanager
+import datetime
 
 try:
     import brickschema
     import brickschema.persistent
+    from brickschema.namespaces import REF, A
     import urllib.parse
-    from rdflib import Literal, URIRef, Namespace
+    from rdflib import Literal, URIRef, Namespace, BNode
     from rdflib.namespace import RDF
 except:
     # See #1860
@@ -48,81 +50,119 @@ class Brick(blenderbim.core.tool.Brick):
         ns = Namespace(namespace)
         brick = ns[ifcopenshell.guid.expand(ifcopenshell.guid.new())]
         with BrickStore.new_changeset() as cs:
-            cs.add((brick, RDF.type, URIRef(brick_class)))
+            cs.add((brick, A, URIRef(brick_class)))
             cs.add((brick, URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal(label)))
         return str(brick)
 
     @classmethod
-    def add_brick_breadcrumb(cls):
-        new = bpy.context.scene.BIMBrickProperties.brick_breadcrumbs.add()
-        new.name = bpy.context.scene.BIMBrickProperties.active_brick_class
+    def add_brick_breadcrumb(cls, split_screen=False):
+        props = bpy.context.scene.BIMBrickProperties
+        if split_screen:
+            new = props.split_screen_brick_breadcrumbs.add()
+            new.name = props.split_screen_active_brick_class
+        else:
+            new = props.brick_breadcrumbs.add()
+            new.name = props.active_brick_class
 
     @classmethod
     def add_brick_from_element(cls, element, namespace, brick_class):
         ns = Namespace(namespace)
         brick = ns[element.GlobalId]
-        BrickStore.graph.add((brick, RDF.type, URIRef(brick_class)))
-        if element.Name:
-            BrickStore.graph.add((brick, URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal(element.Name)))
+        with BrickStore.new_changeset() as cs:
+            cs.add((brick, A, URIRef(brick_class)))
+            if element.Name:
+                cs.add((brick, URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal(element.Name)))
+            else:
+                cs.add((brick, URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal("Unnamed")))
         return str(brick)
 
     @classmethod
     def add_brickifc_project(cls, namespace):
         project = tool.Ifc.get().by_type("IfcProject")[0]
         ns = Namespace(namespace)
-        ns_brickifc = Namespace("https://brickschema.org/extension/ifc#")
-        BrickStore.graph.bind("brickifc", ns_brickifc)
         brick_project = ns[project.GlobalId]
-        BrickStore.graph.add((brick_project, RDF.type, ns_brickifc["Project"]))
-        if project.Name:
-            BrickStore.graph.add(
-                (brick_project, URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal(project.Name))
-            )
-        BrickStore.graph.add((brick_project, ns_brickifc["projectID"], Literal(project.GlobalId)))
-        BrickStore.graph.add(
-            (brick_project, ns_brickifc["fileLocation"], Literal(bpy.context.scene.BIMProperties.ifc_file))
-        )
+        with BrickStore.new_changeset() as cs:
+            cs.add((brick_project, A, REF.ifcProject))
+            cs.add((brick_project, REF.ifcProjectID, Literal(project.GlobalId)))
+            cs.add((brick_project, REF.ifcFileLocation, Literal(bpy.context.scene.BIMProperties.ifc_file)))
+            if project.Name:
+                cs.add((brick_project, URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal(project.Name)))
         return str(brick_project)
 
     @classmethod
     def add_brickifc_reference(cls, brick, element, project):
-        ns_brickifc = Namespace("https://brickschema.org/extension/ifc#")
-        BrickStore.graph.bind("brickifc", ns_brickifc)
-        BrickStore.graph.add(
-            (
-                URIRef(brick),
-                ns_brickifc["hasIFCReference"],
-                [
-                    (ns_brickifc["hasProjectReference"], URIRef(project)),
-                    (ns_brickifc["globalID"], Literal(element.GlobalId)),
-                ],
-            )
-        )
+        with BrickStore.new_changeset() as cs:
+            bnode = BNode()
+            cs.add((URIRef(brick), REF.hasExternalReference, bnode))
+            cs.add((bnode, A, REF.IFCReference))
+            cs.add((bnode, REF.hasIfcProjectReference, URIRef(project)))
+            cs.add((bnode, REF.ifcGlobalID, Literal(element.GlobalId)))
+            if element.Name:
+                cs.add((bnode, REF.ifcName, Literal(element.Name)))
 
     @classmethod
-    def add_feed(cls, source, destination):
-        ns_brick = Namespace("https://brickschema.org/schema/Brick#")
-        BrickStore.graph.add((URIRef(source), ns_brick["feeds"], URIRef(destination)))
+    def add_relation(cls, brick_uri, predicate, object):
+        if predicate == "http://www.w3.org/2000/01/rdf-schema#label":
+            with BrickStore.new_changeset() as cs:
+                cs.add((URIRef(brick_uri), URIRef(predicate), Literal(object)))
+            bpy.context.scene.BIMBrickProperties.new_brick_relation_type = BrickStore.relationships[0]
+            bpy.context.scene.BIMBrickProperties.add_brick_relation_failed = False
+            return
+        query = BrickStore.graph.query("ASK { <{object_uri}> a ?o . }".replace("{object_uri}", object))
+        if query:
+            with BrickStore.new_changeset() as cs:
+                cs.add((URIRef(brick_uri), URIRef(predicate), URIRef(object)))
+            bpy.context.scene.BIMBrickProperties.add_brick_relation_failed = False
+        else:
+            bpy.context.scene.BIMBrickProperties.add_brick_relation_failed = True
 
     @classmethod
-    def clear_brick_browser(cls):
-        bpy.context.scene.BIMBrickProperties.bricks.clear()
+    def remove_relation(cls, brick_uri, predicate, object):
+        with BrickStore.new_changeset() as cs:
+            for s, p, o in BrickStore.graph.triples((brick_uri, predicate, object)):
+                cs.remove((s, p, o))
+                if isinstance(o, BNode):
+                    for triple in BrickStore.graph.triples((object, None, None)):
+                        cs.remove(triple)
+
+    @classmethod
+    def clear_brick_browser(cls, split_screen=False):
+        props = bpy.context.scene.BIMBrickProperties
+        if split_screen:
+            props.split_screen_bricks.clear()
+        else:
+            props.bricks.clear()
 
     @classmethod
     def clear_project(cls):
         BrickStore.purge()
         bpy.context.scene.BIMBrickProperties.active_brick_class == ""
-        bpy.context.scene.BIMBrickProperties.brick_breadcrumbs.clear()
+        bpy.context.scene.BIMBrickProperties.split_screen_active_brick_class == ""
 
     @classmethod
     def export_brick_attributes(cls, brick_uri):
+        query = BrickStore.graph.query(
+            """
+            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+            SELECT ?label { 
+                <{brick_uri}> rdfs:label ?label . 
+            }
+            LIMIT 1
+        """.replace("{brick_uri}", brick_uri))
+        name = None
+        for row in query:
+            name = str(row.get("label"))
+        if not name:
+            name = brick_uri.split("#")[-1]
         if tool.Ifc.get_schema() == "IFC2X3":
-            return {"ItemReference": brick_uri, "Name": brick_uri.split("#")[-1]}
+            return {"ItemReference": brick_uri, "Name": name}
         else:
-            return {"Identification": brick_uri, "Name": brick_uri.split("#")[-1]}
+            return {"Identification": brick_uri, "Name": name}
 
     @classmethod
-    def get_active_brick_class(cls):
+    def get_active_brick_class(cls, split_screen=False):
+        if split_screen:
+            return bpy.context.scene.BIMBrickProperties.split_screen_active_brick_class
         return bpy.context.scene.BIMBrickProperties.active_brick_class
 
     @classmethod
@@ -153,10 +193,10 @@ class Brick(blenderbim.core.tool.Brick):
         project = tool.Ifc.get().by_type("IfcProject")[0]
         query = BrickStore.graph.query(
             """
-            PREFIX brickifc: <https://brickschema.org/extension/ifc#>
+            PREFIX ref: <https://brickschema.org/schema/Brick/ref#>
             SELECT ?proj WHERE {
-                ?proj a brickifc:Project .
-                ?proj brickifc:projectID "{project_globalid}"
+                ?proj a ref:ifcProject .
+                ?proj ref:ifcProjectID "{project_globalid}" .
             }
             LIMIT 1
         """.replace(
@@ -169,7 +209,41 @@ class Brick(blenderbim.core.tool.Brick):
 
     @classmethod
     def get_convertable_brick_elements(cls):
-        return ifcopenshell.util.brick.get_brick_elements(tool.Ifc.get())
+        equipment = set(tool.Ifc.get().by_type("IfcDistributionElement"))
+        equipment -= set(tool.Ifc.get().by_type("IfcFlowSegment"))
+        equipment -= set(tool.Ifc.get().by_type("IfcFlowFitting"))
+        return equipment
+
+    @classmethod
+    def get_convertable_brick_spaces(cls):
+        if tool.Ifc.get_schema() == "IFC2X3":
+            return set(tool.Ifc.get().by_type("IfcSpatialStructureElement"))
+        return set(tool.Ifc.get().by_type("IfcSpatialElement"))
+
+    @classmethod
+    def get_convertable_brick_systems(cls):
+        systems = set(tool.Ifc.get().by_type("IfcSystem"))
+        systems -= set(tool.Ifc.get().by_type("IfcStructuralAnalysisModel"))
+        systems -= set(tool.Ifc.get().by_type("IfcZone"))
+        return systems
+
+    @classmethod
+    def get_parent_space(cls, space):
+        element = ifcopenshell.util.element.get_aggregate(space)
+        if not element.is_a("IfcProject"):
+            return element
+
+    @classmethod
+    def get_element_container(cls, element):
+        return ifcopenshell.util.element.get_container(element)
+
+    @classmethod
+    def get_element_systems(cls, element):
+        return ifcopenshell.util.system.get_element_systems(element)
+
+    @classmethod
+    def get_element_feeds(cls, element):
+        return ifcopenshell.util.brick.get_element_feeds(element)
 
     @classmethod
     def get_item_class(cls, item):
@@ -203,7 +277,7 @@ class Brick(blenderbim.core.tool.Brick):
         return uri.split("#")[0] + "#"
 
     @classmethod
-    def import_brick_classes(cls, brick_class):
+    def import_brick_classes(cls, brick_class, split_screen=False):
         query = BrickStore.graph.query(
             """
             PREFIX brick: <https://brickschema.org/schema/Brick#>
@@ -222,8 +296,12 @@ class Brick(blenderbim.core.tool.Brick):
                 "{brick_class}", brick_class
             )
         )
+        if split_screen:
+            bricks = bpy.context.scene.BIMBrickProperties.split_screen_bricks
+        else:
+            bricks = bpy.context.scene.BIMBrickProperties.bricks
         for row in query:
-            new = bpy.context.scene.BIMBrickProperties.bricks.add()
+            new = bricks.add()
             label = row.get("label")
             if label:
                 new.label = label.toPython()
@@ -232,7 +310,7 @@ class Brick(blenderbim.core.tool.Brick):
             new.total_items = row.get("total_items").toPython()
 
     @classmethod
-    def import_brick_items(cls, brick_class):
+    def import_brick_items(cls, brick_class, split_screen=False):
         query = BrickStore.graph.query(
             """
             PREFIX brick: <https://brickschema.org/schema/Brick#>
@@ -249,8 +327,12 @@ class Brick(blenderbim.core.tool.Brick):
                 "{brick_class}", brick_class
             )
         )
+        if split_screen:
+            bricks = bpy.context.scene.BIMBrickProperties.split_screen_bricks
+        else:
+            bricks = bpy.context.scene.BIMBrickProperties.bricks
         for row in query:
-            new = bpy.context.scene.BIMBrickProperties.bricks.add()
+            new = bricks.add()
             label = row.get("label")
             if label:
                 new.label = label.toPython()
@@ -268,8 +350,11 @@ class Brick(blenderbim.core.tool.Brick):
         with BrickStore.graph.new_changeset("PROJECT") as cs:
             cs.load_file(filepath)
         BrickStore.path = filepath
+        BrickStore.set_last_saved()
+        BrickStore.load_sub_roots()
         BrickStore.load_namespaces()
         BrickStore.load_entity_classes()
+        BrickStore.load_relationships()
 
     @classmethod
     def new_brick_file(cls):
@@ -280,23 +365,32 @@ class Brick(blenderbim.core.tool.Brick):
         with BrickStore.graph.new_changeset("SCHEMA") as cs:
             cs.load_file(BrickStore.schema)
         BrickStore.graph.bind("digitaltwin", Namespace("https://example.org/digitaltwin#"))
+        BrickStore.load_sub_roots()
         BrickStore.load_namespaces()
         BrickStore.load_entity_classes()
+        BrickStore.load_relationships()
 
     @classmethod
-    def pop_brick_breadcrumb(cls):
-        crumb = bpy.context.scene.BIMBrickProperties.brick_breadcrumbs[-1]
+    def pop_brick_breadcrumb(cls, split_screen=False):
+        props = bpy.context.scene.BIMBrickProperties
+        if split_screen:
+            breadcrumbs = props.split_screen_brick_breadcrumbs
+        else:
+            breadcrumbs = props.brick_breadcrumbs
+        crumb = breadcrumbs[-1]
         name = crumb.name
-        last_index = len(bpy.context.scene.BIMBrickProperties.brick_breadcrumbs) - 1
-        bpy.context.scene.BIMBrickProperties.brick_breadcrumbs.remove(last_index)
+        last_index = len(breadcrumbs) - 1
+        breadcrumbs.remove(last_index)
         return name
 
     @classmethod
     def remove_brick(cls, brick_uri):
-        if BrickStore.graph.triples((URIRef(brick_uri), None, None)):
-            with BrickStore.new_changeset() as cs:
-                for triple in BrickStore.graph.triples((URIRef(brick_uri), None, None)):
-                    cs.remove(triple)
+        with BrickStore.new_changeset() as cs:
+            for s, p, o in BrickStore.graph.triples((URIRef(brick_uri), None, None)):
+                cs.remove((s, p, o))
+                if isinstance(o, BNode):
+                    for triple in BrickStore.graph.triples((o, None, None)):
+                        cs.remove(triple)
 
     @classmethod
     def run_assign_brick_reference(cls, element=None, library=None, brick_uri=None):
@@ -309,37 +403,52 @@ class Brick(blenderbim.core.tool.Brick):
         return blenderbim.core.brick.refresh_brick_viewer(tool.Brick)
 
     @classmethod
-    def run_view_brick_class(cls, brick_class=None):
-        return blenderbim.core.brick.view_brick_class(tool.Brick, brick_class=brick_class)
+    def run_view_brick_class(cls, brick_class=None, split_screen=False):
+        return blenderbim.core.brick.view_brick_class(tool.Brick, brick_class=brick_class, split_screen=split_screen)
 
     @classmethod
-    def select_browser_item(cls, item):
+    def select_browser_item(cls, item, split_screen=False):
         name = item.split("#")[-1]
         props = bpy.context.scene.BIMBrickProperties
-        props.active_brick_index = props.bricks.find(name)
+        if split_screen:
+            props.split_screen_active_brick_index = props.split_screen_bricks.find(name)
+        else:
+            props.active_brick_index = props.bricks.find(name)
 
     @classmethod
-    def set_active_brick_class(cls, brick_class):
-        bpy.context.scene.BIMBrickProperties.active_brick_class = brick_class
+    def set_active_brick_class(cls, brick_class, split_screen=False):
+        props = bpy.context.scene.BIMBrickProperties
+        if split_screen:
+            props.split_screen_active_brick_class = brick_class
+        else:
+            props.active_brick_class = brick_class
 
     @classmethod
     def serialize_brick(cls):
         BrickStore.get_project().serialize(destination=BrickStore.path, format="turtle")
+        BrickStore.set_last_saved()
 
     @classmethod
     def add_namespace(cls, alias, uri):
         BrickStore.graph.bind(alias, Namespace(uri))
         BrickStore.load_namespaces()
-    
+
     @classmethod
-    def clear_breadcrumbs(cls):
-        bpy.context.scene.BIMBrickProperties.brick_breadcrumbs.clear()
+    def clear_breadcrumbs(cls, split_screen=False):
+        if split_screen:
+            bpy.context.scene.BIMBrickProperties.split_screen_brick_breadcrumbs.clear()
+        else:
+            bpy.context.scene.BIMBrickProperties.brick_breadcrumbs.clear()
+
+
+
 
 class BrickStore:
     schema = None  # this is now a os path
     path = None  # file path if the project was loaded in
     graph = None  # this is the VersionedGraphCollection with 2 arbitrarily named graphs: "schema" and "project"
     # "SCHEMA" holds the Brick.ttl metadata; "PROJECT" holds all the authored entities
+    last_saved = None
     history = []
     future = []
     current_changesets = 0
@@ -347,23 +456,64 @@ class BrickStore:
     namespaces = []
     root_classes = ["Equipment", "Location", "System", "Point"]
     entity_classes = {}
+    relationships = []
 
     @staticmethod
     def purge():
         BrickStore.schema = None
         BrickStore.graph = None
         BrickStore.path = None
+        BrickStore.last_saved = None
         BrickStore.namespaces = []
+        BrickStore.root_classes = ["Equipment", "Location", "System", "Point"]
         BrickStore.entity_classes = {}
+        BrickStore.relationships = []
 
     @classmethod
     def get_project(cls):
         return BrickStore.graph.graph_at(graph="PROJECT")
-    
+
+    @classmethod
+    def load_sub_roots(cls):
+        query = BrickStore.graph.query(
+            """
+            PREFIX brick: <https://brickschema.org/schema/Brick#>
+            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+            SELECT ?subRoot ?subClasses WHERE {
+                {
+                SELECT ?subRoot (COUNT(?subClass) as ?subClasses) WHERE {
+                    {
+                        ?subRoot rdfs:subClassOf brick:Equipment .
+                    } UNION {
+                        ?subRoot rdfs:subClassOf brick:Point .
+                    }
+                    ?subClass rdfs:subClassOf* ?subRoot .
+                }
+                GROUP BY ?subRoot
+                }
+            FILTER(?subClasses > 3)
+            }
+            """
+        )
+        for row in query:
+            sub_root = row.get("subRoot").toPython().split("#")[-1]
+            BrickStore.root_classes.append(sub_root)
+
     @classmethod
     def load_namespaces(cls):
         BrickStore.namespaces = []
-        keyword_filter = ["brickschema.org", "schema.org", "w3.org", "purl.org", "rdfs.org", "qudt.org", "ashrae.org"]
+        keyword_filter = [
+            "brickschema.org",
+            "schema.org",
+            "w3.org",
+            "purl.org",
+            "rdfs.org",
+            "qudt.org",
+            "ashrae.org",
+            "usefulinc.com",
+            "xmlns.com",
+            "opengis.net",
+        ]
         for alias, uri in BrickStore.graph.namespaces():
             ignore_namespace = False
             for keyword in keyword_filter:
@@ -371,18 +521,21 @@ class BrickStore:
                     ignore_namespace = True
                     break
             if not ignore_namespace:
-                BrickStore.namespaces.append((uri, f"{alias}: {uri}", ""))
+                BrickStore.namespaces.append((alias, str(uri)))
 
     @classmethod
     def load_entity_classes(cls):
-        
         for root_class in BrickStore.root_classes:
             query = BrickStore.graph.query(
                 """
                 PREFIX brick: <https://brickschema.org/schema/Brick#>
                 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                PREFIX owl: <http://www.w3.org/2002/07/owl#>
                 SELECT ?class WHERE {
                     ?class rdfs:subClassOf* brick:{root_class} .
+                    FILTER NOT EXISTS {
+                        ?class owl:deprecated true .
+                    }
                 }
             """.replace(
                     "{root_class}", root_class
@@ -390,7 +543,21 @@ class BrickStore:
             )
             BrickStore.entity_classes[root_class] = []
             for uri in sorted([x[0].toPython() for x in query]):
-                BrickStore.entity_classes[root_class].append((uri, uri.split("#")[-1], ""))
+                BrickStore.entity_classes[root_class].append(uri)
+
+    @classmethod
+    def load_relationships(cls):
+        query = BrickStore.graph.query(
+            """
+            PREFIX brick: <https://brickschema.org/schema/Brick#>
+            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+            SELECT DISTINCT ?relation WHERE {
+                ?relation rdfs:subPropertyOf brick:Relationship .
+            }
+            """
+        )
+        for uri in sorted([x[0].toPython() for x in query]):
+            BrickStore.relationships.append(uri)
 
     @classmethod
     def set_history_size(cls, size):
@@ -432,3 +599,9 @@ class BrickStore:
         for i in range(0, total_changesets):
             BrickStore.graph.redo()
         BrickStore.history.append(total_changesets)
+
+    @classmethod
+    def set_last_saved(cls):
+        save = os.path.getmtime(BrickStore.path)
+        save = datetime.datetime.fromtimestamp(save)
+        BrickStore.last_saved = f"{save.year}-{save.month}-{save.day} {save.hour}:{save.minute}"

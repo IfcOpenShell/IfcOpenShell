@@ -19,8 +19,8 @@
 import bpy
 import blenderbim.tool as tool
 import ifcopenshell
-from ifcopenshell.util.doc import get_predefined_type_doc
 import ifcopenshell.util.date as dateutil
+import json
 
 
 def refresh():
@@ -28,6 +28,7 @@ def refresh():
     WorkPlansData.is_loaded = False
     TaskICOMData.is_loaded = False
     WorkScheduleData.is_loaded = False
+    AnimationColorSchemeData.is_loaded = False
 
 
 class SequenceData:
@@ -37,7 +38,6 @@ class SequenceData:
     @classmethod
     def load(cls):
         cls.data = {
-            "predefined_types": cls.get_work_schedule_types(),
             "has_work_plans": cls.has_work_plans(),
             "has_work_schedules": cls.has_work_schedules(),
             "has_work_calendars": cls.has_work_calendars(),
@@ -230,22 +230,6 @@ class SequenceData:
                 data["NestingIndex"] = rel.RelatedObjects.index(task)
             cls.data["tasks"][task.id()] = data
 
-    @classmethod
-    def get_work_schedule_types(cls):
-        results = []
-        declaration = tool.Ifc().schema().declaration_by_name("IfcWorkSchedule")
-        version = tool.Ifc.get_schema()
-        for attribute in declaration.attributes():
-            if attribute.name() == "PredefinedType":
-                results.extend(
-                    [
-                        (e, e, get_predefined_type_doc(version, "IfcWorkSchedule", e))
-                        for e in attribute.type_of_attribute().declared_type().enumeration_items()
-                    ]
-                )
-                break
-        return results
-
 
 class WorkScheduleData:
     data = {}
@@ -344,3 +328,31 @@ class TaskICOMData:
             resource_id = resource_tprops.resources[resource_props.active_resource_index].ifc_definition_id
             return not tool.Ifc.get().by_id(resource_id).is_a("IfcCrewResource")
         return False
+
+
+class AnimationColorSchemeData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.is_loaded = True
+        cls.data = {}
+        cls.data["saved_color_schemes"] = cls.saved_color_schemes()
+
+    @classmethod
+    def saved_color_schemes(cls):
+        groups = tool.Ifc.get().by_type("IfcGroup")
+        results = []
+        for group in groups:
+            try:
+                data = json.loads(group.Description)
+                if (
+                    isinstance(data, dict)
+                    and data.get("type", None) == "BBIM_AnimationColorScheme"
+                    and data.get("colourscheme", None)
+                ):
+                    results.append(group)
+            except:
+                pass
+        return [(str(g.id()), g.Name or "Unnamed", "") for g in sorted(results, key=lambda x: x.Name or "Unnamed")]

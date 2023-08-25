@@ -46,10 +46,15 @@ class Usecase:
     def execute(self):
         for reference in self.settings["information"].HasDocumentReferences or []:
             ifcopenshell.api.run("document.remove_reference", self.file, reference=reference)
+
         for rel in self.settings["information"].IsPointer or []:
             for information in rel.RelatedDocuments:
                 ifcopenshell.api.run("document.remove_information", self.file, information=information)
-            self.file.remove(rel)
+
+        for rel in self.settings["information"].IsPointedTo or []:
+            if rel.RelatedDocuments == (self.settings["information"],):
+                self.file.remove(rel)
+
         for rel in self.settings["information"].DocumentInfoForObjects or []:
             self.file.remove(rel)
         self.file.remove(self.settings["information"])

@@ -145,11 +145,17 @@ classes = [
     ui.BIM_PT_tab_services_object,
     # Structural analysis
     ui.BIM_PT_tab_structural,
+    # Construction scheduling
+    ui.BIM_PT_tab_status,
+    ui.BIM_PT_tab_resources,
+    ui.BIM_PT_tab_cost,
+    ui.BIM_PT_tab_sequence,
     # Facility management
     ui.BIM_PT_tab_handover,
     ui.BIM_PT_tab_operations,
     # Quality and coordination
     ui.BIM_PT_tab_quality_control,
+    ui.BIM_PT_tab_clash_detection,
     ui.BIM_PT_tab_collaboration,
     ui.BIM_PT_tab_sandbox,
     # TODO: move this somewhere else and clean it up

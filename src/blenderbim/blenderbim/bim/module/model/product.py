@@ -100,9 +100,11 @@ class AddDefaultType(bpy.types.Operator, tool.Ifc.Operator):
             props.type_predefined_type = "BEAM"
             props.type_template = "PROFILESET"
         elif self.ifc_element_type == "IfcDuctSegmentType":
-            return
+            props.type_predefined_type = "RIGIDSEGMENT"
+            props.type_template = "FLOW_SEGMENT_RECTANGULAR"
         elif self.ifc_element_type == "IfcPipeSegmentType":
-            return
+            props.type_predefined_type = "RIGIDSEGMENT"
+            props.type_template = "FLOW_SEGMENT_CIRCULAR"
         bpy.ops.bim.add_type()
 
 
@@ -111,7 +113,6 @@ class AddConstrTypeInstance(bpy.types.Operator):
     bl_label = "Add"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Add Type Instance to the model"
-    ifc_class: bpy.props.StringProperty()
     relating_type_id: bpy.props.IntProperty()
     from_invoke: bpy.props.BoolProperty(default=False)
 
@@ -131,19 +132,18 @@ class AddConstrTypeInstance(bpy.types.Operator):
         if self.from_invoke:
             props.relating_type_id = str(self.relating_type_id)
 
-        self.file = IfcStore.get_file()
-        relating_type = self.file.by_id(int(relating_type_id))
+        relating_type = tool.Ifc.get().by_id(int(relating_type_id))
         ifc_class = relating_type.is_a()
-        instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, self.file.schema)[0]
+        instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, tool.Ifc.get().schema)[0]
         material = ifcopenshell.util.element.get_material(relating_type)
 
         if material and material.is_a("IfcMaterialProfileSet"):
             if obj := profile.DumbProfileGenerator(relating_type).generate():
-                if not relating_type.is_a("IfcFlowSegmentType"):
-                    return {"FINISHED"}
-                mep.MepGenerator(relating_type).setup_ports(obj)
+                tool.Blender.select_and_activate_single_object(context, obj)
+                if relating_type.is_a("IfcFlowSegmentType"):
+                    self.set_flow_segment_rl(obj)
+                    mep.MEPGenerator(relating_type).setup_ports(obj)
                 return {"FINISHED"}
-
         elif material and material.is_a("IfcMaterialLayerSet"):
             if self.generate_layered_element(ifc_class, relating_type):
                 tool.Blender.select_and_activate_single_object(context, context.selected_objects[-1])
@@ -189,6 +189,7 @@ class AddConstrTypeInstance(bpy.types.Operator):
         blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
 
         # Update required as core.type.assign_type may change obj.data
+        # TODO: This is inefficient. It literally creates a mesh, then potentially removes it.
         context.view_layer.update()
 
         if (
@@ -212,7 +213,7 @@ class AddConstrTypeInstance(bpy.types.Operator):
                         tool.Ifc, tool.Collector, tool.Spatial, structure_obj=parent_obj, element_obj=obj
                     )
 
-        # set occurences properties for the types defined with modifiers
+        # set occurrences properties for the types defined with modifiers
         if instance_class in ["IfcWindow", "IfcDoor"]:
             pset_name = f"BBIM_{instance_class[3:]}"
             bbim_pset = ifcopenshell.util.element.get_psets(element).get(pset_name, None)
@@ -230,16 +231,14 @@ class AddConstrTypeInstance(bpy.types.Operator):
                 # TODO For now we are hardcoding windows and doors as a prototype
                 bpy.ops.bim.add_filled_opening(voided_obj=building_obj.name, filling_obj=obj.name)
         else:
-            if collection_obj and collection_obj.BIMObjectProperties.ifc_definition_id:
-                obj.location[2] = collection_obj.location[2] - min([v[2] for v in obj.bound_box])
+            if collection_obj and tool.Ifc.get_entity(collection_obj):
+                obj.location.z = collection_obj.location.z - tool.Blender.get_object_bounding_box(obj)["min_z"]
 
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         for port in ifcopenshell.util.system.get_ports(relating_type):
-            mat = ifcopenshell.util.placement.get_local_placement(port.ObjectPlacement)
-            mat[0][3] *= unit_scale
-            mat[1][3] *= unit_scale
-            mat[2][3] *= unit_scale
-            mat = obj.matrix_world @ mathutils.Matrix(mat)
+            mat = Matrix(ifcopenshell.util.placement.get_local_placement(port.ObjectPlacement))
+            mat.translation *= unit_scale
+            mat = obj.matrix_world @ mat
             new_port = tool.Ifc.run("root.create_entity", ifc_class="IfcDistributionPort")
             tool.Ifc.run("system.assign_port", element=element, port=new_port)
             tool.Ifc.run("geometry.edit_object_placement", product=new_port, matrix=mat, is_si=True)
@@ -249,6 +248,13 @@ class AddConstrTypeInstance(bpy.types.Operator):
         else:
             tool.Blender.select_and_activate_single_object(context, obj)
         return {"FINISHED"}
+
+    def set_flow_segment_rl(self, obj):
+        collection = bpy.context.view_layer.active_layer_collection.collection
+        collection_obj = collection.BIMCollectionProperties.obj
+
+        if collection_obj and tool.Ifc.get_entity(collection_obj):
+            obj.location[2] = collection_obj.location[2] + bpy.context.scene.BIMModelProperties.rl2
 
     @staticmethod
     def generate_layered_element(ifc_class, relating_type):

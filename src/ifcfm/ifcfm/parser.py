@@ -22,7 +22,276 @@ import ifcopenshell.util.fm
 import ifcopenshell.util.selector
 import ifcopenshell.util.date
 import ifcopenshell.util.schema
+import ifcopenshell.util.system
+import ifcopenshell.util.placement
 import ifcopenshell.util.classification
+
+
+class Parser2:
+    def __init__(self, preset="BASIC"):
+        self.file = None
+        self.categories = {}
+        self.get_category_elements = {}
+        self.get_element_data = {}
+        self.get_custom_element_data = {}
+        self.duplicate_keys = []
+
+        if preset == "BASIC":
+            self.get_category_elements = {
+                "actors": get_actors,
+                "facilities": get_facilities,
+                "storeys": get_storeys,
+                "spaces": get_spaces,
+                "zones": get_zones,
+                "types": get_types,
+                "elements": get_elements,
+                "systems": get_systems,
+            }
+            self.get_element_data = {
+                "actors": get_actor_data,
+                "facilities": get_facility_data,
+                "storeys": get_storey_data,
+                "spaces": get_space_data,
+                "zones": get_zone_data,
+                "types": get_type_data,
+                "elements": get_element_data,
+                "systems": get_system_data,
+            }
+
+    def parse(self, ifc_file):
+        for category_name, get_category_elements in self.get_category_elements.items():
+            self.categories.setdefault(category_name, {})
+            for element in get_category_elements(ifc_file):
+                data = self.get_element_data[category_name](ifc_file, element) or {}
+                custom_data = (
+                    self.get_custom_element_data.get(category_name, lambda x, y: None)(ifc_file, element) or {}
+                )
+                data.update(custom_data)
+
+                if data:
+                    if data["key"] in self.categories[category_name]:
+                        self.duplicate_keys.append((self.categories[category_name][data["key"]], data))
+                    self.categories[category_name][data["key"]] = data
+
+
+def get_actors(ifc_file):
+    return ifc_file.by_type("IfcActor")
+
+
+def get_facilities(ifc_file):
+    return ifc_file.by_type("IfcBuilding")
+
+
+def get_storeys(ifc_file):
+    return ifc_file.by_type("IfcBuildingStorey")
+
+
+def get_spaces(ifc_file):
+    return ifc_file.by_type("IfcSpace")
+
+
+def get_zones(ifc_file):
+    zones = []
+    for zone in ifc_file.by_type("IfcZone"):
+        for rel in zone.IsGroupedBy:
+            zones.extend([(zone, space) for space in rel.RelatedObjects])
+    return zones
+
+
+def get_types(ifc_file):
+    return ifcopenshell.util.fm.get_fmhem_types(ifc_file)
+
+
+def get_elements(ifc_file):
+    elements = set()
+    for element_type in ifcopenshell.util.fm.get_fmhem_types(ifc_file):
+        elements.update(ifcopenshell.util.element.get_types(element_type))
+    return elements
+
+
+def get_systems(ifc_file):
+    return ifc_file.by_type("IfcSystem")
+
+
+def get_actor_data(ifc_file, element):
+    return {
+        "key": element.TheActor.Name,
+        "Name": element.TheActor.Name,
+        "Category": get_classification(element),
+        "Email": get_actor_address(element, "ElectronicMailAddresses"),
+        "Phone": get_actor_address(element, "TelephoneNumbers"),
+        "CompanyURL": get_actor_address(element, "WWWHomePageURL"),
+        "Department": get_actor_address(element, "InternalLocation"),
+        "Address1": get_actor_address(element, "AddressLines"),
+        "Address2": get_actor_address(element, "Town"),
+        "StateRegion": get_actor_address(element, "Region"),
+        "PostalCode": get_actor_address(element, "PostalCode"),
+        "Country": get_actor_address(element, "Country"),
+    }
+
+
+def get_facility_data(ifc_file, element):
+    return {
+        "key": element.Name,
+        "Name": element.Name,
+        "AuthorOrganizationName": get_owner_name(element),
+        "AuthorDate": get_owner_creation_date(ifc_file.by_type("IfcProject")[0]),
+        "Category": get_classification(element),
+        "ProjectName": ifc_file.by_type("IfcProject")[0].Name,
+        "SiteName": getattr(get_facility_parent(element, "IfcSite"), "Name", None),
+        "LinearUnits": "millimeters",
+        "AreaUnits": "square meters",
+        "AreaMeasurement": "BIM Software",
+        "Phase": ifc_file.by_type("IfcProject")[0].Phase,
+        "ModelSoftware": get_owner_application(element),
+        "ModelProjectID": ifc_file.by_type("IfcProject")[0].GlobalId,
+        "ModelSiteID": getattr(get_facility_parent(element, "IfcSite"), "GlobalId", None),
+        "ModelBuildingID": element.GlobalId,
+    }
+
+
+def get_storey_data(ifc_file, element):
+    return {
+        "key": element.Name,
+        "Name": element.Name,
+        "AuthorOrganizationName": get_owner_name(element),
+        "AuthorDate": get_owner_creation_date(element),
+        "Category": "Level",
+        "ModelSoftware": get_owner_application(element),
+        "ModelObject": element.is_a(),
+        "ModelID": element.GlobalId,
+        "Elevation": ifcopenshell.util.placement.get_storey_elevation(element),
+    }
+
+
+def get_space_data(ifc_file, element):
+    psets = ifcopenshell.util.element.get_psets(element)
+    return {
+        "key": element.Name,
+        "Name": element.Name,
+        "AuthorOrganizationName": get_owner_name(element),
+        "AuthorDate": get_owner_creation_date(element),
+        "Category": get_classification(element),
+        "LevelName": getattr(get_facility_parent(element, "IfcBuildingStorey"), "Name", None),
+        "Description": element.LongName,
+        "ModelSoftware": get_owner_application(element),
+        "ModelID": element.GlobalId,
+        "AreaGross": get_property(psets, "Qto_SpaceBaseQuantities", "GrossFloorArea", decimals=2),
+        "AreaNet": get_property(psets, "Qto_SpaceBaseQuantities", "NetFloorArea", decimals=2),
+    }
+
+
+def get_zone_data(ifc_file, element):
+    zone, space = element
+    return {
+        "key": (element.Name or "Unnamed") + (space.Name or "Unnamed"),
+        "Name": zone.Name,
+        "AuthorOrganizationName": get_owner_name(zone),
+        "AuthorDate": get_owner_creation_date(zone),
+        "SpaceName": space.Name,
+        "ModelSoftware": get_owner_application(zone),
+        "ModelID": zone.GlobalId,
+    }
+
+
+def get_type_data(ifc_file, element):
+    return {
+        "key": element.Name,
+        "Name": element.Name,
+        "AuthorOrganizationName": get_owner_name(element),
+        "AuthorDate": get_owner_creation_date(element),
+        "Category": get_classification(element),
+        "Description": element.Description,
+        "ModelSoftware": get_owner_application(element),
+        "ModelObject": "{}[{}]".format(element.is_a(), ifcopenshell.util.element.get_predefined_type(element)),
+        "ModelTag": element.Tag,
+        "ModelID": element.GlobalId,
+    }
+
+
+def get_element_data(ifc_file, element):
+    space = ifcopenshell.util.element.get_container(element)
+    space_name = space.Name if space.is_a("IfcSpace") else None
+    systems = ifcopenshell.util.system.get_element_systems(element)
+    system = systems[0].Name if systems else None
+    return {
+        "key": element.Name,
+        "Name": element.Name,
+        "AuthorOrganizationName": get_owner_name(element),
+        "AuthorDate": get_owner_creation_date(element),
+        "TypeName": ifcopenshell.util.element.get_type(element).Name,
+        "SpaceName": space_name,
+        "SystemName": system,
+        "ModelSoftware": get_owner_application(element),
+        "ModelObject": "{}[{}]".format(element.is_a(), ifcopenshell.util.element.get_predefined_type(element)),
+        "ModelID": element.GlobalId,
+    }
+
+
+def get_system_data(ifc_file, element):
+    return {
+        "key": element.Name,
+        "Name": element.Name,
+        "Description": element.Description,
+        "AuthorOrganizationName": get_owner_name(element),
+        "AuthorDate": get_owner_creation_date(element),
+        "Category": get_classification(element),
+        "ModelSoftware": get_owner_application(element),
+        "ModelID": element.GlobalId,
+    }
+
+
+def get_owner_name(element):
+    if not getattr(element, "OwnerHistory", None):
+        return
+    return element.OwnerHistory.OwningUser.TheOrganization.Name
+
+
+def get_owner_creation_date(element):
+    if not getattr(element, "OwnerHistory", None):
+        return
+    return ifcopenshell.util.date.ifc2datetime(element.OwnerHistory.CreationDate).isoformat()
+
+
+def get_owner_application(element):
+    if not getattr(element, "OwnerHistory", None):
+        return
+    return element.OwnerHistory.OwningApplication.ApplicationFullName
+
+
+def get_facility_parent(element, ifc_class):
+    parent = ifcopenshell.util.element.get_aggregate(element)
+    while parent:
+        if parent.is_a(ifc_class):
+            return parent
+        if parent.is_a("IfcProject"):
+            return
+        parent = ifcopenshell.util.element.get_aggregate(parent)
+
+
+def get_classification(element):
+    references = list(ifcopenshell.util.classification.get_references(element))
+    if references:
+        if hasattr(references[0], "Identification"):
+            return "{}:{}".format(references[0].Identification, references[0].Name)
+        return "{}:{}".format(references[0].ItemReference, references[0].Name)
+
+
+def get_actor_address(element, name):
+    for address in element.TheActor.Addresses or []:
+        if hasattr(address, name) and getattr(address, name, None):
+            result = getattr(address, name)
+            if isinstance(result, tuple):
+                return result[0]
+            return result
+
+
+def get_property(psets, pset_name, prop_name, decimals=None):
+    if pset_name in psets:
+        result = psets[pset_name].get(prop_name, None)
+        if decimals is None or result is None:
+            return result
+        return round(result, decimals)
 
 
 class Parser:

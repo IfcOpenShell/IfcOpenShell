@@ -26,6 +26,52 @@ class TestRemoveProduct(test.bootstrap.IFC4):
         ifcopenshell.api.run("root.remove_product", self.file, product=element)
         assert len(self.file.by_type("IfcWall")) == 0
 
+    def test_removing_an_element_local_placement(self):
+        # just removing the product with the placement
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        placement = ifcopenshell.api.run("geometry.edit_object_placement", self.file, product=element)
+        ifcopenshell.api.run("root.remove_product", self.file, product=element)
+        assert len(self.file.by_type("IfcObjectPlacement")) == 0
+
+        # removing the product that shares the placement with other product
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        placement = ifcopenshell.api.run("geometry.edit_object_placement", self.file, product=element)
+        element1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element1.ObjectPlacement = placement
+        ifcopenshell.api.run("root.remove_product", self.file, product=element)
+        assert len(self.file.by_type("IfcObjectPlacement")) == 1
+        ifcopenshell.api.run("root.remove_product", self.file, product=element1)
+        assert len(self.file.by_type("IfcObjectPlacement")) == 0
+
+        # removing the product that's placement used as a reference point for another placement
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        placement = ifcopenshell.api.run("geometry.edit_object_placement", self.file, product=element)
+        element1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        placement1 = ifcopenshell.api.run("geometry.edit_object_placement", self.file, product=element1)
+        placement.PlacementRelTo = placement1
+        ifcopenshell.api.run("root.remove_product", self.file, product=element)
+        assert len(self.file.by_type("IfcObjectPlacement")) == 1
+        ifcopenshell.api.run("root.remove_product", self.file, product=element1)
+        assert len(self.file.by_type("IfcObjectPlacement")) == 0
+
+    def test_removing_element_type_psets(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foo_Bar")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": "Bar"})
+
+        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        element2.HasPropertySets = (pset,)
+
+        # make sure it won't remove the pset if it's connected elsewhere
+        ifcopenshell.api.run("root.remove_product", self.file, product=element2)
+        assert len(self.file.by_type("IfcPropertySet")) == 1
+        assert len(self.file.by_type("IfcPropertySingleValue")) == 1
+
+        # if it's the product is the only inverse for pset, it should remove the pset
+        ifcopenshell.api.run("root.remove_product", self.file, product=element)
+        assert len(self.file.by_type("IfcPropertySet")) == 0
+        assert len(self.file.by_type("IfcPropertySingleValue")) == 0
+
     def test_removing_all_representations_of_an_element(self):
         ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
         ifcopenshell.api.run("unit.assign_unit", self.file)
@@ -265,6 +311,29 @@ class TestRemoveProduct(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcRelConnectsElements")) == 0
         assert len(self.file.by_type("IfcSlab")) == 1
         assert len(self.file.by_type("IfcWall")) == 1
+
+    def test_removing_ports_connection_relationship(self):
+        port1 = ifcopenshell.api.run("system.add_port", self.file)
+        element1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcFlowSegment")
+        ifcopenshell.api.run("system.assign_port", self.file, element=element1, port=port1)
+
+        port2 = ifcopenshell.api.run("system.add_port", self.file)
+        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcFlowSegment")
+        ifcopenshell.api.run("system.assign_port", self.file, element=element2, port=port2)
+
+        ifcopenshell.api.run("system.connect_port", self.file, port1=port1, port2=port2, direction="SOURCE")
+        connection = self.file.by_type("IfcRelConnectsPorts")[0]
+
+        # making sure removing realizing element won't remove the entire connection since it's optional
+        element3 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcFlowSegment")
+        connection.RealizingElement = element3
+        ifcopenshell.api.run("root.remove_product", self.file, product=element3)
+        assert len(self.file.by_type("IfcRelConnectsPorts")) == 1
+
+        ifcopenshell.api.run("root.remove_product", self.file, product=element1)
+        assert len(self.file.by_type("IfcRelConnectsPorts")) == 0
+        assert len(self.file.by_type("IfcFlowSegment")) == 1
+        assert len(self.file.by_type("IfcDistributionPort")) == 1
 
     def test_removing_all_property_relationships_of_an_element(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")

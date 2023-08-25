@@ -154,6 +154,8 @@ class ValidateIfcFile(bpy.types.Operator):
         logger = logging.getLogger("validate")
         logger.setLevel(logging.DEBUG)
         ifcopenshell.validate.validate(IfcStore.get_file(), logger, express_rules=True)
+
+        self.report({"INFO"}, "Check validation results in the system console.")
         return {"FINISHED"}
 
 
@@ -228,6 +230,7 @@ class CreateShapeFromStepId(bpy.types.Operator):
     bl_description = "Recreate a mesh object from a STEP ID"
     bl_options = {"REGISTER", "UNDO"}
     should_include_curves: bpy.props.BoolProperty()
+    step_id: bpy.props.IntProperty(default=0)
 
     @classmethod
     def poll(cls, context):
@@ -240,7 +243,7 @@ class CreateShapeFromStepId(bpy.types.Operator):
         logger = logging.getLogger("ImportIFC")
         self.ifc_import_settings = import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger)
         self.file = IfcStore.get_file()
-        element = self.file.by_id(int(context.scene.BIMDebugProperties.step_id))
+        element = self.file.by_id(self.step_id or int(context.scene.BIMDebugProperties.step_id))
         settings = ifcopenshell.geom.settings()
         if self.should_include_curves:
             settings.set(settings.INCLUDE_CURVES, True)
@@ -378,10 +381,30 @@ class InspectFromObject(bpy.types.Operator):
 class PrintObjectPlacement(bpy.types.Operator):
     bl_idname = "bim.print_object_placement"
     bl_label = "Print Object Placement"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = (
+        "Print object placement to the system console.\n\n" + "ALT+CLICK create an empty object at that position"
+    )
     step_id: bpy.props.IntProperty()
+    create_empty_object: bpy.props.BoolProperty(name="Create Empty Object", default=False, options={"SKIP_SAVE"})
+    arrow_size: bpy.props.FloatProperty(name="Arrow Size", default=0.2, subtype="DISTANCE")
+
+    def invoke(self, context, event):
+        # keep the viewport position on alt+click
+        # make sure to use SKIP_SAVE on property, otherwise it might get stuck
+        if event.type == "LEFTMOUSE" and event.alt:
+            self.create_empty_object = True
+        return self.execute(context)
 
     def execute(self, context):
-        print(ifcopenshell.util.placement.get_local_placement(IfcStore.get_file().by_id(self.step_id)))
+        placement = ifcopenshell.util.placement.get_local_placement(IfcStore.get_file().by_id(self.step_id))
+        if self.create_empty_object:
+            bpy.ops.object.empty_add(type="ARROWS")
+            si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            context.active_object.matrix_world = placement.transpose()
+            context.active_object.matrix_world.translation *= si_conversion
+            context.active_object.empty_display_size = self.arrow_size
+        print(placement)
         return {"FINISHED"}
 
 

@@ -227,16 +227,16 @@ class IfcImporter:
         self.settings.set_deflection_tolerance(self.ifc_import_settings.deflection_tolerance)
         self.settings.set_angular_tolerance(self.ifc_import_settings.angular_tolerance)
         self.settings.set(self.settings.STRICT_TOLERANCE, True)
-        self.settings_curve = ifcopenshell.geom.settings()
-        self.settings_curve.set_deflection_tolerance(self.ifc_import_settings.deflection_tolerance)
-        self.settings_curve.set_angular_tolerance(self.ifc_import_settings.angular_tolerance)
-        self.settings_curve.set(self.settings_curve.STRICT_TOLERANCE, True)
-        self.settings_curve.set(self.settings_curve.INCLUDE_CURVES, True)
+        self.settings_body_2d = ifcopenshell.geom.settings()
+        self.settings_body_2d.set_deflection_tolerance(self.ifc_import_settings.deflection_tolerance)
+        self.settings_body_2d.set_angular_tolerance(self.ifc_import_settings.angular_tolerance)
+        self.settings_body_2d.set(self.settings_body_2d.STRICT_TOLERANCE, True)
+        self.settings_body_2d.set(self.settings_body_2d.INCLUDE_CURVES, True)
         self.settings_native = ifcopenshell.geom.settings()
         self.settings_native.set(self.settings_native.INCLUDE_CURVES, True)
-        self.settings_2d = ifcopenshell.geom.settings()
-        self.settings_2d.set(self.settings_2d.INCLUDE_CURVES, True)
-        self.settings_2d.set(self.settings_2d.STRICT_TOLERANCE, True)
+        self.settings_plan_2d = ifcopenshell.geom.settings()
+        self.settings_plan_2d.set(self.settings_plan_2d.INCLUDE_CURVES, True)
+        self.settings_plan_2d.set(self.settings_plan_2d.STRICT_TOLERANCE, True)
         self.project = None
         self.has_existing_project = False
         self.collections = {}
@@ -348,13 +348,14 @@ class IfcImporter:
             if c.ContextIdentifier in ["Body", "Facetation"]
         ]
         # Ideally, all representations should be in a subcontext, but some BIM programs don't do this correctly
-        self.body_contexts.extend(
-            [
-                c.id()
-                for c in self.file.by_type("IfcGeometricRepresentationContext", include_subtypes=False)
-                if c.ContextType == "Model"
-            ]
-        )
+        if not self.body_contexts:
+            self.body_contexts.extend(
+                [
+                    c.id()
+                    for c in self.file.by_type("IfcGeometricRepresentationContext", include_subtypes=False)
+                    if c.ContextType == "Model"
+                ]
+            )
         if self.body_contexts:
             self.settings.set_context_ids(self.body_contexts)
         # Annotation ContextType is to accommodate broken Revit files
@@ -365,7 +366,7 @@ class IfcImporter:
             if c.ContextType in ["Plan", "Annotation"] or c.ContextIdentifier == "Annotation"
         ]
         if self.plan_contexts:
-            self.settings_2d.set_context_ids(self.plan_contexts)
+            self.settings_plan_2d.set_context_ids(self.plan_contexts)
 
     def process_element_filter(self):
         offset = self.ifc_import_settings.element_offset
@@ -645,7 +646,7 @@ class IfcImporter:
                 self.ifc_import_settings.logger.error("An invalid grid was found %s", grid)
                 continue
             if grid.Representation:
-                shape = ifcopenshell.geom.create_shape(self.settings_2d, grid)
+                shape = ifcopenshell.geom.create_shape(self.settings_plan_2d, grid)
             grid_obj = self.create_product(grid, shape)
             if bpy.context.preferences.addons["blenderbim"].preferences.lock_grids_on_import:
                 grid_obj.lock_location = (True, True, True)
@@ -664,7 +665,7 @@ class IfcImporter:
 
     def create_grid_axes(self, axes, grid_collection, grid_obj):
         for axis in axes:
-            shape = ifcopenshell.geom.create_shape(self.settings_2d, axis.AxisCurve)
+            shape = ifcopenshell.geom.create_shape(self.settings_plan_2d, axis.AxisCurve)
             mesh = self.create_mesh(axis, shape)
             obj = bpy.data.objects.new(f"IfcGridAxis/{axis.AxisTag}", mesh)
             if bpy.context.preferences.addons["blenderbim"].preferences.lock_grids_on_import:
@@ -698,7 +699,7 @@ class IfcImporter:
                         shape = ifcopenshell.geom.create_shape(self.settings, representation)
                     except:
                         try:
-                            shape = ifcopenshell.geom.create_shape(self.settings_2d, representation)
+                            shape = ifcopenshell.geom.create_shape(self.settings_plan_2d, representation)
                         except:
                             self.ifc_import_settings.logger.error("Failed to generate shape for %s", element)
                     if shape:
@@ -764,9 +765,9 @@ class IfcImporter:
         if self.ifc_import_settings.should_load_geometry:
             products = self.create_products(elements)
             elements -= products
-            products = self.create_products(elements, settings=self.settings_curve)
+            products = self.create_products(elements, settings=self.settings_body_2d)
             elements -= products
-            products = self.create_products(elements, settings=self.settings_2d)
+            products = self.create_products(elements, settings=self.settings_plan_2d)
             elements -= products
             products = self.create_pointclouds(elements)
             elements -= products
@@ -901,10 +902,10 @@ class IfcImporter:
         self.structural_collection.children.link(self.structural_connection_collection)
         self.project["blender"].children.link(self.structural_collection)
 
-        self.create_products(self.file.by_type("IfcStructuralCurveMember"), settings=self.settings_2d)
-        self.create_products(self.file.by_type("IfcStructuralCurveConnection"), settings=self.settings_2d)
-        self.create_products(self.file.by_type("IfcStructuralSurfaceMember"), settings=self.settings_2d)
-        self.create_products(self.file.by_type("IfcStructuralSurfaceConnection"), settings=self.settings_2d)
+        self.create_products(self.file.by_type("IfcStructuralCurveMember"), settings=self.settings_plan_2d)
+        self.create_products(self.file.by_type("IfcStructuralCurveConnection"), settings=self.settings_plan_2d)
+        self.create_products(self.file.by_type("IfcStructuralSurfaceMember"), settings=self.settings_plan_2d)
+        self.create_products(self.file.by_type("IfcStructuralSurfaceConnection"), settings=self.settings_plan_2d)
         self.create_structural_point_connections()
 
     def create_structural_point_connections(self):
@@ -1823,6 +1824,10 @@ class IfcImporter:
                 loop_total = [3] * num_loops
                 num_vertex_indices = len(geometry.faces)
 
+                # See bug 3546
+                # ios_edges holds true edges that aren't triangulated.
+                mesh["ios_edges"] = list(set(tuple(e) for e in ifcopenshell.util.shape.get_edges(geometry)))
+
                 mesh.vertices.add(num_vertices)
                 mesh.vertices.foreach_set("co", verts)
                 mesh.loops.add(num_vertex_indices)
@@ -1909,7 +1914,7 @@ class IfcImportSettings:
         self.should_merge_materials_by_colour = False
         self.should_load_geometry = True
         self.should_use_native_meshes = False
-        self.should_clean_mesh = True
+        self.should_clean_mesh = False
         self.should_cache = True
         self.is_coordinating = True
         self.deflection_tolerance = 0.001

@@ -21,9 +21,38 @@ import ifcopenshell.util.system
 import blenderbim.core.tool
 import blenderbim.tool as tool
 from blenderbim.bim import import_ifc
+import re
+from mathutils import Matrix, Vector
 
 
 class System(blenderbim.core.tool.System):
+    @classmethod
+    def add_ports(cls, obj, add_start_port=True, add_end_port=True, offset_end_port=None):
+        def add_port(mep_element, matrix):
+            port = tool.Ifc.run("system.add_port", element=mep_element)
+            port.FlowDirection = "NOTDEFINED"
+            port.PredefinedType = tool.System.get_port_predefined_type(mep_element)
+            tool.Ifc.run("geometry.edit_object_placement", product=port, matrix=matrix, is_si=True)
+            return port
+
+        # make sure obj.dimensions and .matrix_world has valid data
+        bpy.context.view_layer.update()
+        # need to make sure .ObjectPlacement is also updated when we're going to add ports
+        if tool.Ifc.is_moved(obj):
+            blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+
+        mep_element = tool.Ifc.get_entity(obj)
+        length = obj.dimensions.z
+        ports = []
+        if add_start_port:
+            ports.append(add_port(mep_element, obj.matrix_world @ Matrix()))
+        if add_end_port:
+            m = obj.matrix_world @ Matrix.Translation((0, 0, length))
+            if offset_end_port:
+                m.translation += offset_end_port
+            ports.append(add_port(mep_element, m))
+        return ports
+
     @classmethod
     def create_empty_at_cursor_with_element_orientation(cls, element):
         element_obj = tool.Ifc.get_object(element)
@@ -63,6 +92,22 @@ class System(blenderbim.core.tool.System):
     @classmethod
     def get_ports(cls, element):
         return ifcopenshell.util.system.get_ports(element)
+
+    @classmethod
+    def get_port_relating_element(cls, port):
+        if tool.Ifc.get_schema() == "IFC2X3":
+            element = port.ContainedIn[0].RelatedElement
+        else:
+            element = port.Nests[0].RelatingObject
+        return element
+
+    @classmethod
+    def get_port_predefined_type(cls, mep_element):
+        split_camel_case = lambda x: re.findall("[A-Z][^A-Z]*", x)
+        class_name = "".join(split_camel_case(mep_element.is_a())[1:-1]).upper()
+        if class_name == "CONVEYOR":
+            return "NOTDEFINED"
+        return class_name
 
     @classmethod
     def import_system_attributes(cls, system):
@@ -128,7 +173,6 @@ class System(blenderbim.core.tool.System):
             context=context,
             ifc_representation_class=ifc_representation_class,
         )
-
 
     @classmethod
     def select_system_products(cls, system):

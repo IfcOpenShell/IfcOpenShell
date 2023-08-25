@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+from blenderbim.bim.module.search.prop import BIMFilterGroup
 from blenderbim.bim.prop import StrProperty
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -31,10 +32,44 @@ from bpy.props import (
 )
 
 
+class CsvAttribute(PropertyGroup):
+    name: StringProperty(name="Query", default="class")
+    header: StringProperty(name="Header Value", default="IFC Class")
+    sort: EnumProperty(items=[("NONE", "None", ""), ("ASC", "Ascending", ""), ("DESC", "Descending", "")])
+    group: EnumProperty(
+        items=[
+            ("NONE", "None", "Don't group any rows"),
+            ("GROUP", "Group", "All rows where this value is identical will be merged"),
+            ("CONCAT", "Concatenation", "Concatenate values if values vary within a group"),
+            ("VARIES", "Varies", "Show a custom value if values vary within a group"),
+            ("SUM", "Sum", "Sums the total value of rows in a group"),
+            ("AVERAGE", "Average", "Averages the total value of rows in a group"),
+            ("MIN", "Min", "Gets the minimum value of rows in a group"),
+            ("MAX", "Max", "Gets the maximum value of rows in a group"),
+        ]
+    )
+    varies_value: StringProperty(default="Varies", name="Varies Value")
+    summary: EnumProperty(
+        items=[
+            ("NONE", "None", "Don't provide a summary row"),
+            ("SUM", "Sum", "Sums the total value of all rows"),
+            ("AVERAGE", "Average", "Averages the total value of all rows"),
+            ("MIN", "Min", "Gets the minimum value of all rows"),
+            ("MAX", "Max", "Gets the maximum value of all rows"),
+        ]
+    )
+
+
 class CsvProperties(PropertyGroup):
     csv_ifc_file: StringProperty(default="", name="IFC File")
     ifc_selector: StringProperty(default="", name="IFC Selector")
-    csv_attributes: CollectionProperty(name="CSV Attributes", type=StrProperty)
+    filter_groups: CollectionProperty(type=BIMFilterGroup, name="Filter Groups")
+    csv_attributes: CollectionProperty(name="CSV Attributes", type=CsvAttribute)
+    should_preserve_existing: BoolProperty(default=False, name="Preserve Existing")
+    include_global_id: BoolProperty(default=True, name="Include GlobalId")
+    null_value: StringProperty(default="N/A", name="Null Value")
+    true_value: StringProperty(default="YES", name="True Value")
+    false_value: StringProperty(default="NO", name="False Value")
     csv_delimiter: EnumProperty(
         items=[
             (";", ";", ""),
@@ -55,4 +90,8 @@ class CsvProperties(PropertyGroup):
         default="csv",
     )
     csv_custom_delimiter: StringProperty(default="", name="Custom Delimiter")
+    should_show_settings: BoolProperty(default=False, name="Show Settings")
+    should_show_sort: BoolProperty(default=False, name="Show Sorting")
+    should_show_group: BoolProperty(default=False, name="Show Grouping")
+    should_show_summary: BoolProperty(default=False, name="Show Summary")
     should_load_from_memory: BoolProperty(default=False, name="Load from Memory")

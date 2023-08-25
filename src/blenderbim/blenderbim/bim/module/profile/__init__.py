@@ -29,6 +29,7 @@ classes = (
     operator.EnableEditingArbitraryProfile,
     operator.EnableEditingProfile,
     operator.LoadProfiles,
+    operator.PurgeUnusedProfiles,
     operator.RemoveProfileDef,
     prop.Profile,
     prop.BIMProfileProperties,

@@ -351,6 +351,13 @@ class BIM_UL_links(UIList):
             if item.is_loaded:
                 row.label(text=item.name)
                 op = row.operator(
+                    "bim.toggle_link_selectability",
+                    text="",
+                    icon="RESTRICT_SELECT_OFF" if item.is_selectable else "RESTRICT_SELECT_ON",
+                    emboss=False,
+                )
+                op.link = item.name
+                op = row.operator(
                     "bim.toggle_link_visibility",
                     text="",
                     icon="CUBE" if item.is_wireframe else "MESH_CUBE",
@@ -374,3 +381,18 @@ class BIM_UL_links(UIList):
                 op.filepath = item.name
                 op = row.operator("bim.unlink_ifc", text="", icon="X")
                 op.filepath = item.name
+
+
+class BIM_PT_purge(Panel):
+    bl_label = "Purge Data"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_quality_control"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.operator("bim.purge_unused_profiles")
+        layout.operator("bim.purge_unused_types")
+        layout.operator("bim.purge_unused_representations")

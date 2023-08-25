@@ -20,15 +20,19 @@
 
 # This can be packaged with `pyinstaller --onefile --clean --icon=icon.ico ifccsv.py`
 
+import os
+import re
 import csv
 import argparse
 import ifcopenshell
 import ifcopenshell.util.selector
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
+from statistics import mean
 
 try:
-    from odf.opendocument import OpenDocumentSpreadsheet
+    from odf.namespaces import OFFICENS
+    from odf.opendocument import OpenDocumentSpreadsheet, load
     from odf.style import Style, TableCellProperties
     from odf.table import Table, TableRow, TableCell
     from odf.text import P
@@ -37,7 +41,7 @@ except:
 
 
 try:
-    from xlsxwriter import Workbook
+    import openpyxl
 except:
     pass  # No XLSX support
 
@@ -48,138 +52,195 @@ except:
     pass  # No Pandas support
 
 
-class IfcAttributeSetter:
-    @staticmethod
-    def set_element_key(ifc_file, element, key, value):
-        if key == "class" and element.is_a() != value:
-            return ifcopenshell.util.schema.reassign_class(ifc_file, element, value)
-        if hasattr(element, key):
-            setattr(element, key, value)
-            return element
-        if "." not in key:
-            return element
-        if key[0:3] == "Qto":
-            qto_name, prop = key.split(".", 1)
-            qto = IfcAttributeSetter.get_element_qto(element, qto_name)
-            if qto:
-                IfcAttributeSetter.set_qto_property(qto, prop, value)
-                return element
-        pset_name, prop = key.split(".", 1)
-        pset = IfcAttributeSetter.get_element_pset(element, pset_name)
-        if pset:
-            IfcAttributeSetter.set_pset_property(ifc_file, pset, prop, value)
-            return element
-        return element
-
-    @staticmethod
-    def get_element_qto(element, name):
-        for relationship in element.IsDefinedBy:
-            if (
-                relationship.is_a("IfcRelDefinesByProperties")
-                and relationship.RelatingPropertyDefinition.is_a("IfcElementQuantity")
-                and relationship.RelatingPropertyDefinition.Name == name
-            ):
-                return relationship.RelatingPropertyDefinition
-
-    @staticmethod
-    def set_qto_property(qto, name, value):
-        for prop in qto.Quantities:
-            if prop.Name != name:
-                continue
-            setattr(prop, prop.is_a()[len("IfcQuantity") :] + "Value", value)
-
-    @staticmethod
-    def get_element_pset(element, name):
-        if element.is_a("IfcTypeObject"):
-            if element.HasPropertySets:
-                for pset in element.HasPropertySets:
-                    if pset.is_a("IfcPropertySet") and pset.Name == name:
-                        return pset
-        else:
-            for relationship in element.IsDefinedBy:
-                if (
-                    relationship.is_a("IfcRelDefinesByProperties")
-                    and relationship.RelatingPropertyDefinition.is_a("IfcPropertySet")
-                    and relationship.RelatingPropertyDefinition.Name == name
-                ):
-                    return relationship.RelatingPropertyDefinition
-
-    @staticmethod
-    def set_pset_property(ifc_file, pset, name, value):
-        for property in pset.HasProperties:
-            if property.Name != name:
-                continue
-
-            if value.lower() in ["null", "none"]:
-                property.NominalValue = None
-                continue
-
-            # In lieu of loading a map for data casting, we only have four
-            # options, which this ugly method will determine.
-            if property.NominalValue is None:
-                if value.isnumeric():
-                    property.NominalValue = ifc_file.createIfcInteger(int(value))
-                elif value.lower() in ["1", "true", "yes", "uh-huh"]:
-                    property.NominalValue = ifc_file.createIfcBoolean(True)
-                elif value.lower() in ["0", "false", "no", "nope"]:
-                    property.NominalValue = ifc_file.createIfcBoolean(False)
-                else:
-                    try:
-                        value = float(value)
-                        property.NominalValue = ifc_file.createIfcReal(value)
-                    except:
-                        property.NominalValue = ifc_file.createIfcLabel(str(value))
-            else:
-                try:
-                    property.NominalValue.wrappedValue = str(value)
-                except:
-                    try:
-                        property.NominalValue.wrappedValue = float(value)
-                    except:
-                        try:
-                            property.NominalValue.wrappedValue = int(value)
-                        except:
-                            property.NominalValue.wrappedValue = (
-                                True if value.lower() in ["1", "true", "yes", "uh-huh"] else False
-                            )
-
-
 class IfcCsv:
-    def __init__(self, output="", delimiter=","):
+    def __init__(self):
         self.headers = []
         self.results = []
         self.dataframe = None
 
-    def export(self, ifc_file, elements, attributes, output=None, format=None, delimiter=","):
+    def export(
+        self,
+        ifc_file,
+        elements,
+        attributes,
+        headers=None,
+        output=None,
+        format=None,
+        should_preserve_existing=False,
+        include_global_id=True,
+        delimiter=",",
+        null="-",
+        bool_true="YES",
+        bool_false="NO",
+        sort=None,
+        groups=None,
+        summaries=None,
+    ):
         self.ifc_file = ifc_file
         self.results = []
+        self.headers = []
+        attributes = attributes or []
+
+        if not headers:
+            headers = [None] * len(attributes)
+
+        if include_global_id:
+            attributes.insert(0, "GlobalId")
+            headers.insert(0, "GlobalId")
+
         for element in elements:
             result = []
-            if hasattr(element, "GlobalId"):
-                result.append(element.GlobalId)
-            else:
-                result.append(None)
-
-            for index, attribute in enumerate(attributes or []):
+            for index, attribute in enumerate(attributes):
                 if "*" in attribute:
                     attributes.extend(self.get_wildcard_attributes(attribute))
                     del attributes[index]
 
             for attribute in attributes:
-                result.append(ifcopenshell.util.selector.get_element_value(element, attribute))
+                value = ifcopenshell.util.selector.get_element_value(element, attribute)
+                if value is None:
+                    value = null
+                elif value is True:
+                    value = bool_true
+                elif value is False:
+                    value = bool_false
+                result.append(value)
             self.results.append(result)
 
-        self.headers = ["GlobalId"]
-        self.headers.extend(attributes or [])
+        self.headers = []
+        for i, attribute in enumerate(attributes):
+            if headers[i]:
+                self.headers.append(headers[i])
+            else:
+                self.headers.append(attribute)
+
+        self.group_results(groups, attributes)
+        self.summarise_results(summaries, attributes)
+        self.sort_results(sort, attributes)
 
         if format == "csv":
             self.export_csv(output, delimiter=delimiter)
         elif format == "ods":
-            self.export_ods(output)
+            self.export_ods(output, should_preserve_existing=should_preserve_existing)
         elif format == "xlsx":
-            self.export_xlsx(output)
+            self.export_xlsx(output, should_preserve_existing=should_preserve_existing)
         elif format == "pd":
             return self.export_pd()
+
+    def group_results(self, groups, attributes):
+        if not groups:
+            return
+
+        group_results = {}
+        group_indices = {}
+        group_values = {}
+        group_varies_values = {}
+
+        for group in groups:
+            index = attributes.index(group["name"])
+            group_indices.setdefault(group["type"], [])
+            group_indices[group["type"]].append(index)
+            if group["type"] == "VARIES":
+                group_varies_values[index] = group["varies_value"]
+
+        for row in self.results:
+            key = "-".join([str(row[gi]) for gi in group_indices.get("GROUP", [])])
+            for group_type, gis in group_indices.items():
+                if group_type in ("CONCAT", "VARIES"):
+                    for gi in gis:
+                        group_values.setdefault(key, {}).setdefault(gi, set())
+                        group_values[key][gi].add(str(row[gi]))
+                elif group_type in ("SUM", "AVERAGE", "MIN", "MAX"):
+                    for gi in gis:
+                        group_values.setdefault(key, {}).setdefault(gi, [])
+                        try:
+                            value = float(row[gi])
+                        except:
+                            continue
+                        group_values[key][gi].append(value)
+            group_results[key] = row
+
+        for group_type, gis in group_indices.items():
+            if group_type == "CONCAT":
+                for key, result in group_results.items():
+                    for gi in gis:
+                        result[gi] = ", ".join(group_values[key][gi])
+            elif group_type == "VARIES":
+                for key, result in group_results.items():
+                    for gi in gis:
+                        if len(group_values[key][gi]) > 1:
+                            result[gi] = group_varies_values[gi]
+            elif group_type == "SUM":
+                for key, result in group_results.items():
+                    for gi in gis:
+                        result[gi] = sum(group_values[key][gi])
+            elif group_type == "AVERAGE":
+                for key, result in group_results.items():
+                    for gi in gis:
+                        result[gi] = mean(group_values[key][gi])
+            elif group_type == "MIN":
+                for key, result in group_results.items():
+                    for gi in gis:
+                        result[gi] = min(group_values[key][gi])
+            elif group_type == "MAX":
+                for key, result in group_results.items():
+                    for gi in gis:
+                        result[gi] = max(group_values[key][gi])
+
+        self.results = group_results.values()
+
+    def summarise_results(self, summaries, attributes):
+        self.summaries = [None] * len(attributes)
+
+        if not summaries:
+            return
+
+        summary_indices = {}
+        summary_values = {}
+
+        for summary in summaries:
+            index = attributes.index(summary["name"])
+            summary_indices.setdefault(summary["type"], [])
+            summary_indices[summary["type"]].append(index)
+
+        for row in self.results:
+            for summary_type, sis in summary_indices.items():
+                if summary_type in ("SUM", "AVERAGE", "MIN", "MAX"):
+                    for si in sis:
+                        summary_values.setdefault(si, [])
+                        try:
+                            value = float(row[si])
+                        except:
+                            continue
+                        summary_values[si].append(value)
+
+        for summary_type, sis in summary_indices.items():
+            for si in sis:
+                if summary_type == "SUM":
+                    self.summaries[si] = sum(summary_values[si])
+                elif summary_type == "AVERAGE":
+                    self.summaries[si] = mean(summary_values[si])
+                elif summary_type == "MIN":
+                    self.summaries[si] = min(summary_values[si])
+                elif summary_type == "MAX":
+                    self.summaries[si] = max(summary_values[si])
+                self.summaries[si] = summary_type.title() + ": " + str(self.summaries[si])
+
+    def sort_results(self, sort, attributes):
+        if sort:
+            def natural_sort(value):
+                if isinstance(value, str):
+                    convert = lambda text: int(text) if text.isdigit() else text.lower()
+                    return [convert(c) for c in re.split('([0-9]+)', value)]
+                return value
+
+            # Sort least important keys first, then more important keys.
+            # https://stackoverflow.com/questions/11476371/sort-by-multiple-keys-using-different-orderings
+            for sort_data in reversed(sort):
+                i = attributes.index(sort_data["name"])
+                reverse = sort_data["order"] == "DESC"
+                self.results = sorted(self.results, key=lambda x: natural_sort(x[i]), reverse=reverse)
+        else:
+            self.results = sorted(self.results, key=lambda x: x[1 if include_global_id else 0])
 
     def export_csv(self, output, delimiter=None):
         with open(output, "w", newline="", encoding="utf-8") as f:
@@ -187,79 +248,88 @@ class IfcCsv:
             writer.writerow(self.headers)
             for row in self.results:
                 writer.writerow(row)
+            if any([s for s in self.summaries if s is not None]):
+                writer.writerow(self.summaries)
 
-    def export_ods(self, output):
-        self.doc = OpenDocumentSpreadsheet()
+    def export_ods(self, output, should_preserve_existing=False):
+        df = self.export_pd()
+        if self.summaries:
+            df.loc[df.shape[0]] = self.summaries
 
-        self.colours = {
-            "h": "dc8774",  # Header
-            "g": "eda786",  # GlobalId
-            "a": "96c7d0",  # Other Attribute
-        }
+        if os.path.exists(output) and should_preserve_existing:
+            ods_document = load(output)
+            first_table = ods_document.spreadsheet.getElementsByType(Table)[0]
 
-        self.cell_formats = {}
-        for key, value in self.colours.items():
-            style = Style(name=key, family="table-cell")
-            style.addElement(TableCellProperties(backgroundcolor="#" + value))
-            self.doc.automaticstyles.addElement(style)
-            self.cell_formats[key] = style
+            for col_index, col in enumerate(df.columns):
+                # Assuming the first row of the table contains headers
+                header_cell = self.get_col(first_table.getElementsByType(TableRow)[0], col_index)
+                self.set_cell_value(header_cell, col)
 
-        table = Table(name="IfcCSV")
-        tr = TableRow()
-        for header in self.headers:
-            tc = TableCell(valuetype="string", stylename="h")
-            tc.addElement(P(text=header))
-            tr.addElement(tc)
-        table.addElement(tr)
-        for row in self.results:
-            tr = TableRow()
-            c = 0
-            for i, col in enumerate(row):
-                cell_format = "g" if i == 0 else "a"
-                tc = TableCell(valuetype="string", stylename=cell_format)
-                if col is None:
-                    col = "NULL"
-                tc.addElement(P(text=col))
-                tr.addElement(tc)
-                c += 1
-            table.addElement(tr)
-        self.doc.spreadsheet.addElement(table)
+            # Replace existing table data with data from DataFrame
+            for row_index, (_, row) in enumerate(df.iterrows()):
+                table_row = self.get_row(first_table, row_index + 1)  # + 1 for header
 
-        if output[-4:].lower() == ".ods":
-           output = output[0:-4]
-        self.doc.save(output, True)
+                for col_index, value in enumerate(row):
+                    cell = self.get_col(table_row, col_index)
+                    self.set_cell_value(cell, value)
 
-    def export_xlsx(self, output):
-        self.workbook = Workbook(output)
+            # If the DataFrame has fewer rows than the table, blank out the extra rows
+            num_rows_table = len(first_table.getElementsByType(TableRow)) - 1  # Exclude header row
+            if len(df) < num_rows_table:
+                for i in range(len(df) + 1, num_rows_table + 1):  # +1 to account for header
+                    for cell in first_table.getElementsByType(TableRow)[i].getElementsByType(TableCell):
+                        for item in cell.childNodes:
+                            cell.removeChild(item)
 
-        self.colours = {
-            "h": "dc8774",  # Header
-            "g": "eda786",  # GlobalId
-            "a": "96c7d0",  # Other Attribute
-        }
+            ods_document.save(output)
+        else:
+            df.to_excel(output, index=False, engine="odf")
 
-        self.cell_formats = {}
-        for key, value in self.colours.items():
-            self.cell_formats[key] = self.workbook.add_format()
-            self.cell_formats[key].set_bg_color(value)
+    def set_cell_value(self, cell, value):
+        for item in cell.childNodes:
+            cell.removeChild(item)
 
-        worksheet = self.workbook.add_worksheet("IfcCSV")
-        r = 0
-        c = 0
-        for header in self.headers:
-            cell = worksheet.write(r, c, header, self.cell_formats["h"])
-            c += 1
-        c = 0
-        r += 1
-        for row in self.results:
-            c = 0
-            for i, col in enumerate(row):
-                cell_format = "g" if i == 0 else "a"
-                cell = worksheet.write(r, c, col, self.cell_formats[cell_format])
-                c += 1
-            r += 1
+        if isinstance(value, (int, float)):
+            cell.setAttrNS(OFFICENS, "value-type", "float")
+            cell.setAttrNS(OFFICENS, "value", value)
+        else:
+            cell.setAttrNS(OFFICENS, "value-type", "string")
+            cell.setAttrNS(OFFICENS, "value", str(value))
+        p_element = P(text=str(value))
+        cell.addElement(p_element)
 
-        self.workbook.close()
+    def get_row(self, table, row_index):
+        rows = table.getElementsByType(TableRow)
+        if row_index < len(rows):
+            return rows[row_index]
+        new_row = TableRow()
+        table.addElement(new_row)
+        return new_row
+
+    def get_col(self, row, col_index):
+        cells = row.getElementsByType(TableCell)
+        if col_index < len(cells):
+            return cells[col_index]
+        new_cell = TableCell()
+        row.addElement(new_cell)
+        return new_cell
+
+    def export_xlsx(self, output, should_preserve_existing=False):
+        df = self.export_pd()
+        if self.summaries:
+            df.loc[df.shape[0]] = self.summaries
+
+        if os.path.exists(output):
+            book = openpyxl.load_workbook(output)
+            with pd.ExcelWriter(
+                output,
+                engine="openpyxl",
+                mode="a",
+                if_sheet_exists="overlay" if should_preserve_existing else "replace",
+            ) as writer:
+                df.to_excel(writer, sheet_name=book.sheetnames[0], index=False)
+        else:
+            df.to_excel(output, index=False, engine="openpyxl")
 
     def export_pd(self):
         self.dataframe = pd.DataFrame(self.results, columns=self.headers)
@@ -277,24 +347,90 @@ class IfcCsv:
                 results.update([p.Name for p in element.Quantities])
         return ["{}.{}".format(pset_qto_name, n) for n in results]
 
-    def Import(self, ifc_file, table, delimiter=","):
-        # Currently only supports CSV.
+    def Import(self, ifc_file, table, attributes=None, delimiter=",", null="-", bool_true="YES", bool_false="NO"):
+        ext = table.split(".")[-1].lower()
+
+        if ext == "csv":
+            self.import_csv(ifc_file, table, attributes, delimiter, null, bool_true, bool_false)
+        elif ext == "ods":
+            self.import_ods(ifc_file, table, attributes, null, bool_true, bool_false)
+        elif ext == "xlsx":
+            self.import_xlsx(ifc_file, table, attributes, null, bool_true, bool_false)
+
+    def import_csv(self, ifc_file, table, attributes=None, delimiter=",", null="-", bool_true="YES", bool_false="NO"):
         with open(table, newline="", encoding="utf-8") as f:
             reader = csv.reader(f, delimiter=delimiter)
             headers = []
             for row in reader:
                 if not headers:
                     headers = row
+                    if not attributes:
+                        attributes = [None] * len(headers)
+                    elif len(attributes) == len(headers) - 1:
+                        attributes.insert(0, "")  # The GlobalId column
                     continue
-                try:
-                    element = ifc_file.by_guid(row[0])
-                except:
-                    print("The element with GUID {} was not found".format(row[0]))
-                    continue
-                for i, value in enumerate(row):
-                    if i == 0:
-                        continue  # Skip GlobalId
-                    element = IfcAttributeSetter.set_element_key(ifc_file, element, headers[i], value)
+                self.process_row(ifc_file, row, headers, attributes, null, bool_true, bool_false)
+
+    def import_xlsx(self, ifc_file, table, attributes, null, bool_true, bool_false):
+        workbook = openpyxl.load_workbook(filename=table, read_only=True)
+        worksheet = workbook.active  # Assuming data is on the first sheet
+        headers = None
+
+        for row in worksheet.iter_rows(values_only=True):
+            if not headers:
+                headers = list(row)
+                if not attributes:
+                    attributes = [None] * len(headers)
+                elif len(attributes) == len(headers) - 1:
+                    attributes.insert(0, "")  # The GlobalId column
+                continue
+            self.process_row(ifc_file, row, headers, attributes, null, bool_true, bool_false)
+
+    def import_ods(self, ifc_file, table, attributes, null, bool_true, bool_false):
+        doc = load(table)
+        first_sheet = doc.spreadsheet.getElementsByType(Table)[0]
+        rows = first_sheet.getElementsByType(TableRow)
+        headers = None
+
+        for row in rows:
+            values = [cell.getElementsByType(P)[0].childNodes[0].data for cell in row.getElementsByType(TableCell)]
+            if not headers:
+                headers = values
+                if not attributes:
+                    attributes = [None] * len(headers)
+                elif len(attributes) == len(headers) - 1:
+                    attributes.insert(0, "")  # The GlobalId column
+                continue
+            self.process_row(ifc_file, values, headers, attributes, null, bool_true, bool_false)
+
+    def import_pd(self, ifc_file, df, attributes=None, null="-", bool_true="YES", bool_false="NO"):
+        headers = df.columns.tolist()
+
+        if not attributes:
+            attributes = [None] * len(headers)
+        elif len(attributes) == len(headers) - 1:
+            attributes.insert(0, "")  # The GlobalId column
+
+        for _, row in df.iterrows():
+            self.process_row(ifc_file, row.tolist(), headers, attributes, null, bool_true, bool_false)
+
+    def process_row(self, ifc_file, row, headers, attributes, null, bool_true, bool_false):
+        try:
+            element = ifc_file.by_guid(row[0])
+        except:
+            print("The element with GUID {} was not found".format(row[0]))
+            return
+        for i, value in enumerate(row):
+            if i == 0:
+                continue  # Skip GlobalId
+            if value == null:
+                value = None
+            elif value == bool_true:
+                value = True
+            elif value == bool_false:
+                value = False
+            key = attributes[i] or headers[i]
+            ifcopenshell.util.selector.set_element_value(ifc_file, element, key, value)
 
 
 if __name__ == "__main__":
@@ -302,24 +438,52 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--ifc", type=str, required=True, help="The IFC file")
     parser.add_argument("-s", "--spreadsheet", type=str, default="data.csv", help="The spreadsheet file")
     parser.add_argument("-f", "--format", type=str, default="csv", help="The format, chosen from csv, ods, or xlsx")
-    parser.add_argument("-q", "--query", type=str, default="", help='Specify a IFC query selector, such as ".IfcWall"')
+    parser.add_argument("-d", "--delimiter", type=str, default=",", help="The delimiter in CSV. Defaults to a comma.")
+    parser.add_argument(
+        "-n", "--null", type=str, default="-", help="How to represent null values. Defaults to a hyphen."
+    )
+    parser.add_argument("--bool_true", type=str, default="YES", help="How to represent true values. Defaults to YES.")
+    parser.add_argument("--bool_false", type=str, default="NO", help="How to represent false values. Defaults to NO.")
+    parser.add_argument("-q", "--query", type=str, default="", help='Specify a IFC query selector, such as "IfcWall"')
     parser.add_argument(
         "-a",
-        "--arguments",
+        "--attributes",
         nargs="+",
-        help="Specify attributes that are part of the extract, using the IfcQuery syntax such as 'type', 'Name' or 'Pset_Foo.Bar'",
+        help="Specify attributes that are part of the extract, using the IfcQuery syntax such as 'class', 'Name' or 'Pset_Foo.Bar'",
     )
-    parser.add_argument("--export", action="store_true", help="Export from IFC to CSV")
-    parser.add_argument("--import", action="store_true", help="Import from CSV to IFC")
+    parser.add_argument(
+        "-h", "--headers", nargs="+", help="Specify human readable headers that correlate to each attribute."
+    )
+    parser.add_argument("--sort", nargs="+", help="Specify one or more attributes to sort by.")
+    parser.add_argument("--order", nargs="+", help="Choose the sort order from ASC or DESC for each sorted attribute.")
+    parser.add_argument("--export", action="store_true", help="Export from IFC to the desired format.")
+    parser.add_argument("--import", action="store_true", help="Import from the autodetected format to IFC.")
     args = parser.parse_args()
 
     if args.export:
         ifc_file = ifcopenshell.open(args.ifc)
-        results = ifcopenshell.util.selector.Selector.parse(ifc_file, args.query)
+        results = ifcopenshell.util.selector.filter_elements(ifc_file, args.query)
+        sort = None
+        if args.sort and len(args.sort) == len(args.order):
+            sort = [{"name": s, "order": args.order[i]} for i, s in enumerate(args.sort)]
         ifc_csv = IfcCsv()
-        ifc_csv.export(ifc_file, results, args.arguments or [], output=args.spreadsheet, format=args.format)
+        ifc_csv.export(
+            ifc_file,
+            results,
+            args.attributes or [],
+            headers=args.headers or [],
+            output=args.spreadsheet,
+            format=args.format,
+            delimiter=args.delimiter,
+            null=args.null,
+            bool_true=args.bool_true,
+            bool_false=args.bool_false,
+            sort=sort,
+        )
     elif getattr(args, "import"):
         ifc_csv = IfcCsv()
         ifc_file = ifcopenshell.open(args.ifc)
-        ifc_csv.Import(ifc_file, args.spreadsheet)
+        ifc_csv.Import(
+            ifc_file, args.spreadsheet, attributes=args.attributes or [], delimiter=args.delimiter, null=args.null
+        )
         ifc_file.write(args.ifc)

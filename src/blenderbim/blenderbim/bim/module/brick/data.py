@@ -41,7 +41,7 @@ class BrickschemaData:
         cls.is_loaded = True
         cls.data = {
             "is_loaded": cls.get_is_loaded(),
-            "attributes": cls.attributes(),
+            "active_relations": cls.active_relations(),
         }
 
     @classmethod
@@ -49,7 +49,7 @@ class BrickschemaData:
         return BrickStore.graph is not None
 
     @classmethod
-    def attributes(cls):
+    def active_relations(cls):
         if BrickStore.graph is None:
             return []
         props = bpy.context.scene.BIMBrickProperties
@@ -67,39 +67,61 @@ class BrickschemaData:
             PREFIX brick: <https://brickschema.org/schema/Brick#>
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
             PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-            SELECT DISTINCT ?predicate ?object ?sp ?sv WHERE {
-               <{uri}> ?predicate ?object .
-               OPTIONAL {
-               { ?predicate rdfs:range brick:TimeseriesReference . }
-                UNION
-               { ?predicate a brick:EntityProperty . }
-                ?object ?sp ?sv }
+            SELECT DISTINCT ?predicate ?object ?label ?sp ?sv  WHERE {
+                <{uri}> ?predicate ?object .
+                OPTIONAL {
+                    ?object rdfs:label ?label . 
+                }
+                OPTIONAL {
+                    { ?predicate rdfs:range brick:TimeseriesReference . }
+                    UNION
+                    { ?predicate a brick:EntityProperty . }
+                    ?object ?sp ?sv .
+                }
             }
+            GROUP BY ?object
         """.replace(
                 "{uri}", uri
             )
         )
         for row in query:
-            predicate = row.get("predicate").toPython().split("#")[-1]
-            object = row.get("object")
+            predicate_uri = row.get("predicate")
+            predicate_name = predicate_uri.toPython().split("#")[-1]
+            object_uri = row.get("object")
+            object_name = row.get("label")
+            if not object_name:
+                if isinstance(object_uri, BNode):
+                    object_name = "[]"
+                else:
+                    try:
+                        object_name = object_uri.toPython().split("#")[-1]
+                    except:
+                        object_name = str(object_uri)
             results.append(
                 {
-                    "predicate": predicate,
-                    "object": object.toPython().split("#")[-1],
-                    "is_uri": isinstance(object, URIRef),
-                    "object_uri": object.toPython(),
-                    "is_globalid": predicate == "globalID",
+                    "predicate_uri": predicate_uri,
+                    "predicate_name": predicate_name,
+                    "object_uri": object_uri,
+                    "object_name": object_name,
+                    "is_uri": isinstance(object_uri, URIRef),
+                    "is_globalid": predicate_name == "ifcGlobalID",
                 }
             )
-            if isinstance(row.get("object"), BNode):
-                for s, p, o in BrickStore.graph.triples((object, None, None)):
+            if isinstance(object_uri, BNode):
+                for subject2, predicate2, object2 in BrickStore.graph.triples((object_uri, None, None)):
+                    predicate2_name = predicate2.toPython().split("#")[-1]
+                    try:
+                        object2_name = object2.toPython().split("#")[-1]
+                    except:
+                        object2_name = str(object2)
                     results.append(
                         {
-                            "predicate": predicate + ":" + p.toPython().split("#")[-1],
-                            "object": o.toPython().split("#")[-1],
-                            "is_uri": isinstance(o, URIRef),
-                            "object_uri": o.toPython(),
-                            "is_globalid": p.toPython().split("#")[-1] == "globalID",
+                            "predicate_uri": None,
+                            "predicate_name": predicate_name + ":" + predicate2_name,
+                            "object_uri": object2,
+                            "object_name": object2_name,
+                            "is_uri": isinstance(object2, URIRef),
+                            "is_globalid": predicate2_name == "ifcGlobalID",
                         }
                     )
         return results
@@ -127,7 +149,7 @@ class BrickschemaReferencesData:
         for library in ifc.by_type("IfcLibraryInformation"):
             if tool.Ifc.get_schema() == "IFC2X3":
                 results.append((str(library.id()), library.Name or "Unnamed", ""))
-            elif ".ttl" in library.Location:
+            elif library.Location and ".ttl" in library.Location:
                 results.append((str(library.id()), library.Name or "Unnamed", ""))
         return results
 

@@ -268,6 +268,10 @@ IfcGeom::Representation::Triangulation::Triangulation(const BRep& shape_model)
 		weld_offset_ += welds.size();
 		welds.clear();
 
+		// When welding vertices, vertex coords will be shared among faces so we need to per-shape set
+		// to keep track of which edges were already emitted.
+		std::set<std::pair<int, int>> emitted_edges;
+
 		int surface_style_id = -1;
 		if (iit->hasStyle()) {
 			Material adapter(iit->StylePtr());
@@ -319,7 +323,6 @@ IfcGeom::Representation::Triangulation::Triangulation(const BRep& shape_model)
 				// Keep track of the number of times an edge is used
 				// Manifold edges (i.e. edges used twice) are deemed invisible
 				std::map<std::pair<int, int>, int> edgecount;
-				std::vector<std::pair<int, int> > edges_temp;
 
 				std::vector<gp_XYZ> coords;
 				BRepGProp_Face prop(face);
@@ -389,15 +392,20 @@ IfcGeom::Representation::Triangulation::Triangulation(const BRep& shape_model)
 					_material_ids.push_back(surface_style_id);
 					_item_ids.push_back(iit->ItemId());
 
-					addEdge(dict[n1], dict[n2], edgecount, edges_temp);
-					addEdge(dict[n2], dict[n3], edgecount, edges_temp);
-					addEdge(dict[n3], dict[n1], edgecount, edges_temp);
+					addEdge(dict[n1], dict[n2], edgecount);
+					addEdge(dict[n2], dict[n3], edgecount);
+					addEdge(dict[n3], dict[n1], edgecount);
 				}
-				for (std::vector<std::pair<int, int> >::const_iterator jt = edges_temp.begin(); jt != edges_temp.end(); ++jt) {
-					if (edgecount[*jt] == 1) {
+				for (auto& p : edgecount) {
+					// @todo should be != 2?
+					if (p.second == 1 && emitted_edges.find(p.first) == emitted_edges.end()) {
 						// non manifold edge, face boundary
-						_edges.push_back(jt->first);
-						_edges.push_back(jt->second);
+						_edges.push_back(p.first.first);
+						_edges.push_back(p.first.second);
+						if (settings().get(IteratorSettings::WELD_VERTICES)) {
+							// only relevant while welding, because otherwise vertices are not shared among distinct faces
+							emitted_edges.insert(p.first);
+						}
 					}
 				}
 			}
@@ -420,6 +428,8 @@ IfcGeom::Representation::Triangulation::Triangulation(const BRep& shape_model)
 
 				for (int i = 1; i <= n; ++i) {
 					gp_XYZ p = tessellater.Value(i).XYZ();
+					auto p_local = p;
+					trsf.Transforms(p);
 
 					int current = addVertex(iit->ItemId(), surface_style_id, p);
 
@@ -447,11 +457,10 @@ IfcGeom::Representation::Triangulation::Triangulation(const BRep& shape_model)
 						}
 						d3 = d1.XYZ() + d2.XYZ();
 						d4 = d1.XYZ() - d2.XYZ();
-						p2 = p - d3.XYZ() / 10.;
-						p3 = p - d4.XYZ() / 10.;
+						p2 = p_local - d3.XYZ() / 10.;
+						p3 = p_local - d4.XYZ() / 10.;
 						trsf.Transforms(p2);
 						trsf.Transforms(p3);
-						trsf.Transforms(p);
 
 						int left = addVertex(iit->ItemId(), surface_style_id, p2);
 						int right = addVertex(iit->ItemId(), surface_style_id, p3);
@@ -526,9 +535,7 @@ int IfcGeom::Representation::Triangulation::addVertex(int item_index, int materi
 	return i;
 }
 
-void IfcGeom::Representation::Triangulation::addEdge(int n1, int n2, std::map<std::pair<int, int>, int>& edgecount, std::vector<std::pair<int, int>>& edges_temp) {
+void IfcGeom::Representation::Triangulation::addEdge(int n1, int n2, std::map<std::pair<int, int>, int>& edgecount) {
 	const Edge e = Edge((std::min)(n1, n2), (std::max)(n1, n2));
-	if (edgecount.find(e) == edgecount.end()) edgecount[e] = 1;
-	else edgecount[e] ++;
-	edges_temp.push_back(e);
+	edgecount[e] ++;
 }

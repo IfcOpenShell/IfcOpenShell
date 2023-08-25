@@ -658,7 +658,7 @@ responsibility to make sure the geometry is correct.
 
     # It's now our responsibility to create a compatible representation.
     # Notice how our thickness of 0.118 must equal .013 + .092 + .013 from our type
-    body = ifcopenshell.util.representation.get_representation(element, "Model", "Body")
+    body = ifcopenshell.util.representation.get_context(model, "Model", "Body", "MODEL_VIEW")
     representation = ifcopenshell.api.run("geometry.add_wall_representation", model,
         context=body, length=5, height=3, thickness=0.118)
 
@@ -685,14 +685,14 @@ responsibility to make sure the geometry is correct.
     beam_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBeamType", name="B1")
 
     # First, let's create a material set. This will later be assigned to our beam type element.
-    material_set = ifcopenshell.api.run("material.add_profile_set", model,
+    material_set = ifcopenshell.api.run("material.add_material_set", model,
         name="B1", set_type="IfcMaterialProfileSet")
 
     # Create a steel material.
     steel = ifcopenshell.api.run("material.add_material", model, name="ST01", category="steel")
 
     # Create an I-beam profile curve. Notice how we use standardised steel profile names.
-    hea100 = self.file.create_entity(
+    hea100 = model.create_entity(
         "IfcIShapeProfileDef", ProfileName="HEA100", ProfileType="AREA",
         OverallWidth=100, OverallDepth=96, WebThickness=5, FlangeThickness=8, FilletRadius=12,
     )
@@ -714,7 +714,7 @@ responsibility to make sure the geometry is correct.
 
     # It's now our responsibility to create a compatible representation.
     # Notice how we reuse our profile instead of creating a new profile.
-    body = ifcopenshell.util.representation.get_representation(element, "Model", "Body")
+    body = ifcopenshell.util.representation.get_context(model, "Model", "Body", "MODEL_VIEW")
     representation = run("geometry.add_profile_representation", model, context=body, profile=hea100, depth=1)
 
     # Assign our new body geometry back to our beam

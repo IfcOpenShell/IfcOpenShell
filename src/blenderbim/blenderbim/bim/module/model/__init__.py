@@ -31,6 +31,7 @@ from . import (
     stair,
     window,
     opening,
+    mep,
     pie,
     workspace,
     profile,
@@ -38,6 +39,7 @@ from . import (
     door,
     railing,
     roof,
+    mep,
 )
 
 classes = (
@@ -76,6 +78,7 @@ classes = (
     opening.AddPotentialHalfSpaceSolid,
     opening.AddPotentialOpening,
     opening.EditOpenings,
+    opening.CloneOpening,
     opening.FlipFill,
     opening.HideBooleans,
     opening.HideOpenings,
@@ -104,6 +107,8 @@ classes = (
     space.GenerateSpace,
     space.GenerateSpacesFromWalls,
     space.ToggleSpaceVisibility,
+    mep.FitFlowSegments,
+    mep.RegenerateDistributionElement,
     prop.BIMModelProperties,
     prop.BIMArrayProperties,
     prop.BIMStairProperties,
@@ -172,6 +177,8 @@ classes = (
     roof.EnableEditingRoofPath,
     roof.RemoveRoof,
     roof.SetGableRoofEdgeAngle,
+    mep.MEPAddObstruction,
+    mep.MEPAddTransition,
 )
 
 addon_keymaps = []

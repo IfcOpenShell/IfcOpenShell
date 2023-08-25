@@ -94,36 +94,46 @@ class Boundary: pass
 
 @interface
 class Brick:
-    def add_brick(cls, namespace, brick_class): pass
-    def add_brick_breadcrumb(cls): pass
+    def add_brick(cls, namespace, brick_class, label): pass
+    def add_brick_breadcrumb(cls, split_screen=False): pass
     def add_brick_from_element(cls, element, namespace, brick_class): pass
     def add_brickifc_project(cls, namespace): pass
     def add_brickifc_reference(cls, brick, element, project): pass
-    def add_feed(cls, source, destination): pass
-    def clear_brick_browser(cls): pass
+    def add_relation(cls, brick_uri, predicate, object): pass
+    def remove_relation(cls, brick_uri, predicate, object): pass
+    def clear_brick_browser(cls, split_screen=False): pass
     def clear_project(cls): pass
     def export_brick_attributes(cls, brick_uri): pass
-    def get_active_brick_class(cls): pass
+    def get_active_brick_class(cls, split_screen=False): pass
     def get_brick(cls, element): pass
     def get_brick_class(cls, element): pass
     def get_brick_path(cls): pass
     def get_brick_path_name(cls): pass
     def get_brickifc_project(cls): pass
     def get_convertable_brick_elements(cls): pass
+    def get_convertable_brick_spaces(cls): pass
+    def get_convertable_brick_systems(cls): pass
+    def get_parent_space(cls, space): pass
+    def get_element_container(cls, element): pass
+    def get_element_systems(cls, element): pass
+    def get_element_feeds(cls, element): pass
     def get_item_class(cls, item): pass
     def get_library_brick_reference(cls, library, brick_uri): pass
     def get_namespace(cls, uri): pass
-    def import_brick_classes(cls, brick_class): pass
-    def import_brick_items(cls, brick_class): pass
+    def import_brick_classes(cls, brick_class, split_screen=False): pass
+    def import_brick_items(cls, brick_class, split_screen=False): pass
     def load_brick_file(cls, filepath): pass
     def new_brick_file(cls): pass
-    def pop_brick_breadcrumb(cls): pass
+    def pop_brick_breadcrumb(cls, split_screen=False): pass
     def remove_brick(cls, brick_uri): pass
     def run_assign_brick_reference(cls, element=None, library=None, brick_uri=None): pass
-    def run_refresh_brick_viewer(cls): pass
-    def run_view_brick_class(cls, brick_class=None): pass
-    def select_browser_item(cls, item): pass
-    def set_active_brick_class(cls, brick_class): pass
+    def run_refresh_brick_viewer(cls, split_screen=False): pass
+    def run_view_brick_class(cls, brick_class=None, split_screen=False): pass
+    def select_browser_item(cls, item, split_screen=False): pass
+    def set_active_brick_class(cls, brick_class, split_screen=False): pass
+    def serialize_brick(cls): pass
+    def add_namespace(cls, alias, uri): pass
+    def clear_breadcrumbs(cls, split_screen=False): pass
 
 
 @interface
@@ -183,7 +193,6 @@ class Cost:
     def get_cost_value_unit_component(cls): pass
     def get_direct_cost_item_products(cls): pass
     def get_highlighted_cost_item(cls): pass
-    def get_highlighted_cost_item(cls): pass
     def get_products(cls, related_object_type): pass
     def get_schedule_cost_items(cls, cost_schedule): pass
     def get_units(cls): pass
@@ -242,6 +251,7 @@ class Drawing:
     def activate_drawing(cls, camera): pass
     def add_literal_to_annotation(cls, obj, Literal='Literal', Path='RIGHT', BoxAlignment='bottom-left'): pass
     def copy_representation(cls, source, dest): pass
+    def create_annotation_context(cls, target_view, object_type=None): pass
     def create_annotation_object(cls, drawing, object_type): pass
     def create_camera(cls, name, matrix): pass
     def create_svg_schedule(cls, schedule): pass
@@ -411,7 +421,7 @@ class Ifc:
     def run(cls, command, **kwargs): pass
     def set(cls, ifc): pass
     def unlink(cls, element=None, obj=None): pass
-    def get_all_element_occurences(cls, element): pass
+    def get_all_element_occurrences(cls, element): pass
 
 
 @interface
@@ -602,7 +612,10 @@ class Resource:
     def enable_editing_resource_time(cls, resource): pass
     def enable_editing_resource(cls, resource): pass
     def expand_resource(cls, resource): pass
+    def get_constraints(cls, resource): pass
     def get_highlighted_resource(cls): pass
+    def get_metric_reference(cls, metric, is_deep): pass
+    def get_metrics(cls, constraint): pass
     def get_productivity_attributes(cls): pass
     def get_productivity(cls, resource, should_inherit): pass
     def get_resource_attributes(cls): pass
@@ -611,6 +624,8 @@ class Resource:
     def get_resource_quantity_attributes(cls): pass
     def get_resource_time_attributes(cls): pass
     def get_resource_time(cls, resource): pass
+    def go_to_resource(cls, resource): pass
+    def has_metric_constraint(cls, resource): pass
     def import_resources(cls, file_path): pass
     def load_cost_value_attributes(cls, cost_value): pass
     def load_productivity_data(cls): pass
@@ -618,6 +633,7 @@ class Resource:
     def load_resource_properties(cls): pass
     def load_resource_time_attributes(cls, resource_time): pass
     def load_resources(cls): pass
+
 
 @interface
 class Root:
@@ -648,6 +664,7 @@ class Search:
 
 @interface
 class Sequence:
+    def add_animation_camera(cls): pass
     def add_task_column(cls, column_type, name, data_type): pass
     def add_text_animation_handler(cls, settings): pass
     def animate_consumption(cls, obj, start_frame, product_frame, color, animation_type): pass
@@ -660,6 +677,7 @@ class Sequence:
     def animate_operation(cls, obj, start_frame, product_frame, color): pass
     def animate_output(cls, obj, start_frame, product_frame): pass
     def clear_object_animation(cls, obj): pass
+    def clear_object_color(cls, obj): pass
     def clear_objects_animation(cls, include_blender_objects): pass
     def contract_all_tasks(cls): pass
     def contract_task(cls, task): pass
@@ -667,7 +685,6 @@ class Sequence:
     def create_new_task_json(cls, task, json, type_map=None): pass
     def create_tasks_json(cls, work_schedule=None): pass
     def disable_editing_rel_sequence(cls): pass
-    def disable_editing_task_animation_colors(cls): pass
     def disable_editing_task_time(cls): pass
     def disable_editing_task(cls): pass
     def disable_editing_work_calendar(cls): pass
@@ -676,12 +693,12 @@ class Sequence:
     def disable_editing_work_time(cls): pass
     def disable_selecting_deleted_task(cls): pass
     def disable_work_schedule(cls): pass
+    def display_object(cls, obj): pass
     def enable_editing_rel_sequence_attributes(cls, rel_sequence): pass
     def enable_editing_sequence_lag_time(cls, rel_sequence): pass
-    def enable_editing_task_animation_colors(cls): pass
     def enable_editing_task_attributes(cls, task): pass
     def enable_editing_task_calendar(cls, task): pass
-    def enable_editing_task_sequence(cls, task): pass
+    def enable_editing_task_sequence(cls): pass
     def enable_editing_task_time(cls, task): pass
     def enable_editing_work_calendar_times(cls, work_calendar): pass
     def enable_editing_work_calendar(cls, work_calendar): pass
@@ -719,6 +736,7 @@ class Sequence:
     def get_task_time_attributes(cls): pass
     def get_task_time(cls, task): pass
     def get_tasks_for_product(cls, product, work_schedule): pass
+    def get_user_predefined_type(cls): pass
     def get_work_calendar_attributes(cls): pass
     def get_work_plan_attributes(cls): pass
     def get_work_schedule_attributes(cls): pass
@@ -727,14 +745,15 @@ class Sequence:
     def get_work_time_attributes(cls): pass
     def guess_date_range(cls, work_schedule): pass
     def has_task_assignments(cls, product, cost_schedule=None): pass
-    def highlight_task(cls, task): pass
+    def go_to_task(cls, task): pass
     def is_filter_by_active_schedule(cls): pass
     def is_work_schedule_active(cls, work_schedule): pass
+    def load_animation_color_scheme(cls, scheme): pass
+    def load_default_animation_color_scheme(cls): pass
     def load_lag_time_attributes(cls, lag_time): pass
     def load_product_related_tasks(cls, product): pass
     def load_rel_sequence_attributes(cls, rel_sequence): pass
     def load_resources(cls): pass
-    def load_task_animation_colors(cls): pass
     def load_task_attributes(cls, task): pass
     def load_task_inputs(cls, inputs): pass
     def load_task_outputs(cls, outputs): pass
@@ -750,11 +769,14 @@ class Sequence:
     def process_task_status(cls, task, date): pass
     def remove_task_column(cls, name): pass
     def reset_time_period(cls): pass
+    def save_animation_color_scheme(cls, name): pass
     def set_object_shading(cls): pass
     def set_task_sort_column(cls, column): pass
     def setup_default_task_columns(cls): pass
     def show_snapshot(cls, product_states): pass
+    def update_task_ICOM(cls, task): pass
     def update_visualisation_date(cls, start_date, finish_date): pass
+    def refresh_task_resources(cls): pass
 
 
 @interface

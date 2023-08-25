@@ -51,6 +51,7 @@ class BimTool(WorkSpaceTool):
         ("bim.hotkey", {"type": "K", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_K")]}),
         ("bim.hotkey", {"type": "M", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_M")]}),
         ("bim.hotkey", {"type": "O", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_O")]}),
+        ("bim.hotkey", {"type": "L", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_L")]}),
         ("bim.hotkey", {"type": "Q", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_Q")]}),
         ("bim.hotkey", {"type": "R", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_R")]}),
         ("bim.hotkey", {"type": "T", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_T")]}),
@@ -248,7 +249,16 @@ class BimToolUI:
         elif cls.props.ifc_class in ("IfcDoorType", "IfcDoorStyle"):
             row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="rl1", text="RL")
-        elif cls.props.ifc_class in ("IfcWindowType", "IfcWindowStyle", "IfcDoorType", "IfcDoorStyle"):
+        elif cls.props.ifc_class in (
+            "IfcWindowType",
+            "IfcWindowStyle",
+            "IfcDoorType",
+            "IfcDoorStyle",
+            "IfcDuctSegmentType",
+            "IfcPipeSegmentType",
+            "IfcCableCarrierSegmentType",
+            "IfcCableSegmentType",
+        ):
             row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="rl2", text="RL")
         elif cls.props.ifc_class in ("IfcSpaceType"):
@@ -309,10 +319,20 @@ class BimToolUI:
             op.depth = cls.props.extrusion_depth
 
             add_layout_hotkey_operator(cls.layout, "Extend", "S_E", "")
-            add_layout_hotkey_operator(cls.layout, "Edit Axis", "A_E", "")
-            add_layout_hotkey_operator(cls.layout, "Butt", "S_T", "")
-            add_layout_hotkey_operator(cls.layout, "Mitre", "S_Y", "")
-            add_layout_hotkey_operator(cls.layout, "Rotate 90", "S_R", bpy.ops.bim.rotate_90.__doc__)
+
+            if AuthoringData.data["active_class"] in (
+                "IfcCableCarrierSegment",
+                "IfcCableSegment",
+                "IfcDuctSegment",
+                "IfcPipeSegment",
+            ):
+                add_layout_hotkey_operator(cls.layout, "Extend", "S_E", "")
+                add_layout_hotkey_operator(cls.layout, "Add Fitting", "S_F", "")
+            else:
+                add_layout_hotkey_operator(cls.layout, "Edit Axis", "A_E", "")
+                add_layout_hotkey_operator(cls.layout, "Butt", "S_T", "")
+                add_layout_hotkey_operator(cls.layout, "Mitre", "S_Y", "")
+                add_layout_hotkey_operator(cls.layout, "Rotate 90", "S_R", bpy.ops.bim.rotate_90.__doc__)
             add_layout_hotkey_operator(cls.layout, "Regen", "S_G", bpy.ops.bim.recalculate_profile.__doc__)
             row.operator("bim.extend_profile", icon="X", text="").join_type = ""
 
@@ -349,14 +369,6 @@ class BimToolUI:
         elif AuthoringData.data["active_class"] in ("IfcSpace",):
             add_layout_hotkey_operator(cls.layout, "Regen", "S_G", bpy.ops.bim.generate_space.__doc__)
 
-        elif AuthoringData.data["active_class"] in (
-            "IfcCableCarrierSegmentType",
-            "IfcCableSegmentType",
-            "IfcDuctSegmentType",
-            "IfcPipeSegmentType",
-        ):
-            add_layout_hotkey_operator(cls.layout, "Extend", "S_E", "")
-
         elif (
             (RoofData.is_loaded or not RoofData.load())
             and RoofData.data["pset_data"]
@@ -382,6 +394,15 @@ class BimToolUI:
             else:
                 row.operator("bim.show_openings", icon="HIDE_OFF", text="")
 
+        if AuthoringData.data["active_class"] in (
+            "IfcOpeningElement",
+        ):
+            if len(context.selected_objects) == 2:
+                row = cls.layout.row(align=True)
+                row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="", icon="EVENT_L")
+                row.operator("bim.clone_opening", text="Clone Opening")
+
         cls.layout.row(align=True).label(text="Align")
         add_layout_hotkey_operator(cls.layout, "Align Exterior", "S_X", "")
         add_layout_hotkey_operator(cls.layout, "Align Centerline", "S_C", "")
@@ -402,7 +423,6 @@ class BimToolUI:
             row.label(text="", icon="EVENT_A")
             op = row.operator("bim.add_constr_type_instance", text="Add")
             op.from_invoke = True
-            op.ifc_class = cls.props.ifc_class
             if cls.props.relating_type_id.isnumeric():
                 op.relating_type_id = int(cls.props.relating_type_id)
 
@@ -454,7 +474,6 @@ class BimToolUI:
             row.label(text="", icon="EVENT_A")
             op = row.operator("bim.add_constr_type_instance", text="Add")
             op.from_invoke = True
-            op.ifc_class = cls.props.ifc_class
             if cls.props.relating_type_id.isnumeric():
                 op.relating_type_id = int(cls.props.relating_type_id)
 
@@ -624,6 +643,8 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.flip_wall()
         elif self.active_class in ("IfcWindow", "IfcWindowStandardCase", "IfcDoor", "IfcDoorStandardCase"):
             bpy.ops.bim.flip_fill()
+        elif self.active_class in ("IfcDuctSegment", "IfcPipeSegment", "IfcCableCarrierSegment", "IfcCableSegment"):
+            bpy.ops.bim.fit_flow_segments()
 
     def hotkey_S_G(self):
         if not bpy.context.selected_objects:
@@ -715,6 +736,13 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             self.props.y = self.y
             self.props.z = self.z
 
+    def hotkey_S_L(self):
+        if AuthoringData.data["active_class"] in (
+            "IfcOpeningElement",
+        ):
+            if len(bpy.context.selected_objects) == 2:
+                bpy.ops.bim.clone_opening()
+
     def hotkey_A_D(self):
         if not bpy.context.selected_objects:
             return
@@ -733,3 +761,6 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.edit_openings()
         else:
             bpy.ops.bim.show_openings()
+
+
+LIST_OF_TOOLS = [cls.bl_idname for cls in (BimTool.__subclasses__() + [BimTool])]

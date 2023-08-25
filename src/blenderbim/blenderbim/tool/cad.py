@@ -91,10 +91,14 @@ class Cad:
             tolerance = VTX_PRECISION
         if isinstance(x, (list, tuple)):
             for y in x:
-                if value > (y - tolerance) and value < (y + tolerance):
+                if (y + tolerance) > value > (y - tolerance):
                     return True
             return False
-        return value > (x - tolerance) and value < (x + tolerance)
+        return (x + tolerance) > value > (x - tolerance)
+
+    @classmethod
+    def are_vectors_equal(cls, v1: Vector, v2: Vector):
+        return cls.is_x((v2 - v1).length, 0)
 
     @classmethod
     def intersect_edges(cls, edge1, edge2):
@@ -226,6 +230,41 @@ class Cad:
         """returns the number of edges that a point lies on."""
         res = [cls.is_point_on_edge(pt, edge) for edge in [edges[:2], edges[2:]]]
         return len([i for i in res if i])
+
+    @classmethod
+    def get_edge_direction(cls, edge):
+        return (edge[1] - edge[0]).normalized()
+
+    @classmethod
+    def are_edges_parallel(cls, edge1, edge2):
+        edge1_dir = edge1[1] - edge1[0]
+        edge2_dir = edge2[1] - edge2[0]
+        return cls.is_x(edge1_dir.cross(edge2_dir).length_squared, 0)
+
+    @classmethod
+    def are_edges_collinear(cls, edge1, edge2):
+        if not cls.are_edges_parallel(edge1, edge2):
+            return False
+        return cls.are_edges_parallel((edge2[0], edge1[0]), edge2)
+
+    @classmethod
+    def closest_points(cls, edge1, edge2) -> bool:
+        """
+
+        closest end points between `edge1` and `edge2` assuming `edge1` and `edge2` are collinear.
+
+        < returns two points, first one belongs to `edge1` and second to `edge2`
+
+        """
+        direction = (edge1[1] - edge1[0]).normalized()
+
+        # Project points onto the line to get scalar values along the direction
+        points_values = [(p, p.dot(direction)) for p in (edge1 + edge2)]
+        sorted_points = sorted(points_values, key=lambda el: el[1])
+
+        edge1_point = next((p for p, v in sorted_points[1:3] if p in edge1), None)
+        edge2_point = next((p for p, v in sorted_points[1:3] if p in edge2), None)
+        return edge1_point, edge2_point
 
     @classmethod
     def find_intersecting_edges(cls, bm, pt, idx1, idx2):
@@ -367,6 +406,7 @@ class Cad:
 
     @classmethod
     def get_center_of_arc(cls, pts, obj=None):
+        """also will convert center of arc from local space of `obj` (if it's provided)"""
         mw = obj.matrix_world if obj else None
         V = Vector
 
@@ -444,3 +484,8 @@ class Cad:
             edges = [(n, n + 1) for n in range(len(verts) - 1)]
 
         return verts, edges
+
+    @classmethod
+    def is_counter_clockwise_order(cls, A, B, C):
+        """whether A-B-C located in counter-clockwise order in 2d space"""
+        return (C.y - A.y) * (B.x - A.x) > (B.y - A.y) * (C.x - A.x)

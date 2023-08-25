@@ -34,7 +34,6 @@ from mathutils import Vector, Matrix, Quaternion
 from blenderbim.bim.module.geometry.helper import Helper
 from blenderbim.bim.module.model.wall import DumbWallRecalculator
 from blenderbim.bim.module.model.decorator import ProfileDecorator
-from blenderbim.bim.module.model.mep import MepGenerator
 
 
 class DumbProfileGenerator:
@@ -273,13 +272,21 @@ class DumbProfileJoiner:
         body = copy.deepcopy(axis1)
         self.recreate_profile(element1, profile1, axis, body)
 
-    def join_E(self, profile1, target):
+    def join_E(self, profile1, target, connection=None):
+        """`connection` = `ATEND` / `ATSTART` to explicitly define the reference point for the join.
+
+        For example if profile 1m long and `target` is at (0, 0, 0.1) and `connection` = `None`
+        it will implicitly use `connection` = `ATSTART` resulting in profile object 0.9m long and moved to (0, 0, 0.1).
+
+        But with `connection` = `ATEND` it will result in the profile object 0.1m long, locaiton unchanged.
+        """
         element1 = tool.Ifc.get_entity(profile1)
         if not element1:
             return
         axis1 = self.get_profile_axis(profile1)
-        intersect, connection = mathutils.geometry.intersect_point_line(target, *axis1)
-        connection = "ATEND" if connection > 0.5 else "ATSTART"
+        intersect, connection_value = mathutils.geometry.intersect_point_line(target, *axis1)
+        if connection is None:
+            connection = "ATEND" if connection_value > 0.5 else "ATSTART"
 
         ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type=connection)
 
@@ -492,8 +499,11 @@ class DumbProfileJoiner:
             should_sync_changes_first=False,
         )
         tool.Geometry.record_object_materials(obj)
-        if element.is_a("IfcFlowSegment"):
-            MepGenerator().setup_ports(obj)
+        if element.is_a("IfcFlowSegment") or element.is_a("IfcFlowFitting"):
+            # lazy import to avoid circular import errors
+            from blenderbim.bim.module.model.mep import MEPGenerator
+
+            MEPGenerator().setup_ports(obj)
 
     def join(self, profile1, profile2, connection1, connection2, is_relating=True, description="BUTT"):
         element1 = tool.Ifc.get_entity(profile1)
@@ -801,14 +811,23 @@ class RecalculateProfile(bpy.types.Operator, tool.Ifc.Operator):
 
 class DumbProfileRecalculator:
     def recalculate(self, profiles):
+        "`profiles` is a list of blender profile objects"
         queue = set()
+
+        # also recalculate all connected elements
         for profile in profiles:
             element = tool.Ifc.get_entity(profile)
             queue.add((element, profile))
+            connected_elements = []
+
             for rel in getattr(element, "ConnectedTo", []):
-                queue.add((rel.RelatedElement, tool.Ifc.get_object(rel.RelatedElement)))
+                connected_elements.append(rel.RelatedElement)
             for rel in getattr(element, "ConnectedFrom", []):
-                queue.add((rel.RelatingElement, tool.Ifc.get_object(rel.RelatingElement)))
+                connected_elements.append(rel.RelatingElement)
+
+            for element in connected_elements:
+                queue.add((element, tool.Ifc.get_object(element)))
+
         joiner = DumbProfileJoiner()
         for element, profile in queue:
             if profile:
@@ -819,7 +838,7 @@ class ChangeProfileDepth(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_profile_depth"
     bl_label = "Change Profile Length"
     bl_options = {"REGISTER", "UNDO"}
-    depth: bpy.props.FloatProperty()
+    depth: bpy.props.FloatProperty(subtype="DISTANCE")
 
     @classmethod
     def poll(cls, context):

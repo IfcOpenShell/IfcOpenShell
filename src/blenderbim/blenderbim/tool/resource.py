@@ -32,7 +32,7 @@ import ifcopenshell.util.date as ifcdateutils
 import ifcopenshell.util.cost
 import ifcopenshell.util.resource
 import blenderbim.bim.schema
-
+import ifcopenshell.util.constraint
 
 class Resource(blenderbim.core.tool.Resource):
     @classmethod
@@ -55,12 +55,13 @@ class Resource(blenderbim.core.tool.Resource):
         tprops = bpy.context.scene.BIMResourceTreeProperties
         tprops.resources.clear()
         contracted_resources = json.loads(props.contracted_resources)
-
+        props.is_resource_update_enabled = False
         for resource in tool.Ifc.get().by_type("IfcResource"):
             if not resource.HasContext:
                 continue
             create_new_resource_li(resource, 0)
         cls.load_productivity_data()
+        props.is_resource_update_enabled = True
         props.is_editing = True
 
     @classmethod
@@ -71,7 +72,7 @@ class Resource(blenderbim.core.tool.Resource):
         for item in tprops.resources:
             resource = tool.Ifc.get().by_id(item.ifc_definition_id)
             item.name = resource.Name if resource.Name else "Unnamed"
-            item.schedule_usage = resource.Usage.ScheduleUsage or 1 if resource.Usage else 0
+            item.schedule_usage = resource.Usage.ScheduleUsage if (resource.Usage and resource.Usage.ScheduleUsage) else 0
         props.is_resource_update_enabled = True
 
     @classmethod
@@ -279,6 +280,8 @@ class Resource(blenderbim.core.tool.Resource):
     def expand_resource(cls, resource):
         props = bpy.context.scene.BIMResourceProperties
         contracted_resources = json.loads(props.contracted_resources)
+        if not resource.id() in contracted_resources:
+            return
         contracted_resources.remove(resource.id())
         props.contracted_resources = json.dumps(contracted_resources)
 
@@ -372,12 +375,75 @@ class Resource(blenderbim.core.tool.Resource):
     @classmethod
     def edit_productivity_pset(cls, resource, attributes):
         productivity = cls.get_productivity(resource)
-        if productivity:
-            pset = tool.Ifc.get().by_id(productivity["id"])
-        else:
-            pset = tool.Ifc.run("pset.add_pset", product=resource, name="EPset_Productivity")
-        tool.Ifc.run(
+        if not productivity:
+            return
+        return tool.Ifc.run(
             "pset.edit_pset",
-            pset=pset,
+            pset= tool.Ifc.get().by_id(productivity["id"]),
             properties=attributes,
         )
+
+    @classmethod
+    def get_constraints(cls, resource):
+        return ifcopenshell.util.constraint.get_constraints(product=resource)
+
+    @classmethod
+    def get_metrics(cls, constraint):
+        return ifcopenshell.util.constraint.get_metrics(constraint)
+
+    @classmethod
+    def get_metric_reference(cls, metric, is_deep=True):
+        return ifcopenshell.util.constraint.get_metric_reference(metric, is_deep=is_deep)
+
+    @classmethod
+    def has_metric_constraint(cls, resource, attribute):
+        metrics = ifcopenshell.util.constraint.get_metric_constraints(resource, attribute)
+        return True if metrics else False
+
+    @classmethod
+    def run_edit_resource_time(cls, resource, attributes):
+        if not resource.Usage:
+            tool.Ifc.run(
+                "resource.add_resource_time",
+                resource=resource,
+            )
+        tool.Ifc.run("resource.edit_resource_time", resource_time=resource.Usage, attributes=attributes)
+
+    @classmethod
+    def go_to_resource(cls, resource):
+        def get_ancestors_ids(resource):
+            ids = []
+            for rel in resource.Nests or []:
+                ids.append(rel.RelatingObject.id())
+                ids.extend(get_ancestors_ids(rel.RelatingObject))
+            return ids
+
+        ancestors = get_ancestors_ids(resource)
+        contracted_resources = json.loads(bpy.context.scene.BIMResourceProperties.contracted_resources)
+        for ancestor in ancestors:
+            if ancestor in contracted_resources:
+                contracted_resources.remove(ancestor)
+        bpy.context.scene.BIMResourceProperties.contracted_resources = json.dumps(contracted_resources)
+        cls.load_resources()
+        cls.load_resource_properties()
+
+        resource_props = bpy.context.scene.BIMResourceTreeProperties
+        expanded_resources = [item.ifc_definition_id for item in resource_props.resources]
+        bpy.context.scene.BIMResourceProperties.active_resource_index = expanded_resources.index(resource.id())
+
+
+    @classmethod
+    def run_calculate_resource_usage(cls, resource):
+        tool.Ifc.run("resource.calculate_resource_usage", resource=resource)
+
+    @classmethod
+    def get_task_assignments(cls, resource):
+        return ifcopenshell.util.resource.get_task_assignments(resource)
+
+    @classmethod
+    def get_nested_resources(cls, resource):
+        return ifcopenshell.util.resource.get_nested_resources(resource)
+
+    @classmethod
+    def is_attribute_locked(cls, resource, attribute):
+        return ifcopenshell.util.constraint.is_attribute_locked(resource, attribute)

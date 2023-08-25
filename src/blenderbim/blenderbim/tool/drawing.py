@@ -122,11 +122,10 @@ class Drawing(blenderbim.core.tool.Drawing):
                 # place the arrow
                 # NOTE: may not work correctly in EDIT mode
                 bbox = tool.Blender.get_object_bounding_box(stair)
-                float_is_zero = lambda f: 0.0001 >= f >= -0.0001
                 arrow.location = stair.matrix_world @ Vector(
                     (bbox["min_x"], (bbox["max_y"] - bbox["min_y"]) / 2, bbox["max_z"])
                 )
-                last_step_x = max(v.co.x for v in stair.data.vertices if float_is_zero(v.co.z - bbox["max_z"]))
+                last_step_x = max(v.co.x for v in stair.data.vertices if tool.Cad.is_x(v.co.z - bbox["max_z"], 0))
                 arrow.data.splines[0].points[0].co = Vector((0, 0, 0, 1))
                 arrow.data.splines[0].points[1].co = Vector((last_step_x, 0, 0, 1))
 
@@ -347,6 +346,27 @@ class Drawing(blenderbim.core.tool.Drawing):
         return literals
 
     @classmethod
+    def create_annotation_context(cls, target_view, object_type=None):
+        # checking PLAN target view and annotation type that doesn't require 3d
+        if target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW") and object_type not in (
+            "FALL",
+            "SECTION_LEVEL",
+            "PLAN_LEVEL",
+        ):
+            parent = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan")
+        else:
+            parent = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model")
+
+        return ifcopenshell.api.run(
+            "context.add_context",
+            tool.Ifc.get(),
+            context_type=parent.ContextType,
+            context_identifier="Annotation",
+            target_view=target_view,
+            parent=parent,
+        )
+
+    @classmethod
     def get_annotation_context(cls, target_view, object_type=None):
         # checking PLAN target view and annotation type that doesn't require 3d
         if target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW") and object_type not in (
@@ -451,8 +471,11 @@ class Drawing(blenderbim.core.tool.Drawing):
         elif target_view == "REFLECTED_PLAN_VIEW":
             if location_hint:
                 z = tool.Ifc.get_object(tool.Ifc.get().by_id(location_hint)).matrix_world.translation.z
-                return mathutils.Matrix(((-1, 0, 0, x), (0, 1, 0, y), (0, 0, -1, z + 1.6), (0, 0, 0, 1)))
-            return mathutils.Matrix(((-1, 0, 0, 0), (0, 1, 0, 0), (0, 0, -1, 0), (0, 0, 0, 1)))
+                m = mathutils.Matrix()
+                m[2][2] = -1
+                m.translation = (x, y, z + 1.6)
+                return m
+            return mathutils.Matrix(((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, -1, 0), (0, 0, 0, 1)))
         elif target_view == "ELEVATION_VIEW":
             if location_hint == "NORTH":
                 return mathutils.Matrix(((-1, 0, 0, x), (0, 0, 1, y), (0, 1, 0, z), (0, 0, 0, 1)))
@@ -678,6 +701,10 @@ class Drawing(blenderbim.core.tool.Drawing):
             ([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1])
         )
         obj.matrix_world = mat
+
+        if cls.get_drawing_target_view(drawing) == "REFLECTED_PLAN_VIEW":
+            obj.matrix_world[1][1] *= -1
+
         tool.Geometry.record_object_position(obj)
         tool.Collector.assign(obj)
 
@@ -1477,19 +1504,19 @@ class Drawing(blenderbim.core.tool.Drawing):
         elements = cls.get_elements_in_camera_view(tool.Ifc.get_object(drawing), bpy.data.objects)
         include = pset.get("Include", None)
         if include:
-            elements = set(ifcopenshell.util.selector.Selector.parse(ifc_file, include, elements=elements))
+            elements = ifcopenshell.util.selector.filter_elements(ifc_file, include, elements=elements)
         else:
             if tool.Ifc.get_schema() == "IFC2X3":
                 base_elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialStructureElement"))
             else:
                 base_elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialElement"))
             elements = {e for e in (elements & base_elements) if e.is_a() != "IfcSpace"}
-            annotations = tool.Drawing.get_group_elements(tool.Drawing.get_drawing_group(drawing))
-            elements.update(annotations)
+        annotations = tool.Drawing.get_group_elements(tool.Drawing.get_drawing_group(drawing))
+        elements.update(annotations)
 
         exclude = pset.get("Exclude", None)
         if exclude:
-            elements -= set(ifcopenshell.util.selector.Selector.parse(ifc_file, exclude, elements=elements))
+            elements -= ifcopenshell.util.selector.filter_elements(ifc_file, exclude)
         elements -= set(ifc_file.by_type("IfcOpeningElement"))
         return elements
 
@@ -1502,10 +1529,10 @@ class Drawing(blenderbim.core.tool.Drawing):
             tool.Ifc.get_object(drawing), [tool.Ifc.get_object(e) for e in ifc_file.by_type("IfcSpace")]
         )
         if include:
-            elements = set(ifcopenshell.util.selector.Selector.parse(ifc_file, include, elements=elements))
+            elements = ifcopenshell.util.selector.filter_elements(ifc_file, include, elements=elements)
         exclude = pset.get("Exclude", None)
         if exclude:
-            elements -= set(ifcopenshell.util.selector.Selector.parse(ifc_file, exclude, elements=elements))
+            elements -= ifcopenshell.util.selector.filter_elements(ifc_file, exclude)
         return elements
 
     @classmethod

@@ -19,12 +19,17 @@
 import collections
 import ifcopenshell
 import ifcopenshell.api
-from math import cos, sin, pi
+from math import cos, sin, pi, tan, radians, degrees, atan, sqrt
 from mathutils import Vector, Matrix
 from itertools import chain
 
 V = lambda *x: Vector([float(i) for i in x])
 sign = lambda x: x and (1, -1)[x < 0]
+PRECISION = 1.0e-5
+is_x = lambda value, x: (x + PRECISION) > value > (x - PRECISION)
+round_to_precision = lambda x, si_conversion: round(x * si_conversion, 5) / si_conversion
+round_vector_to_precision = lambda v, si_conversion: Vector([round_to_precision(i, si_conversion) for i in v])
+
 
 # Note: using ShapeBuilder try not to reuse IFC elements in the process
 # otherwise you might run into situation where builder.mirror or other operation
@@ -539,7 +544,7 @@ class ShapeBuilder:
                 "Ref: https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcPositiveLengthMeasure.htm#8.11.2.71.3-Formal-representation"
             )
 
-        if profile_or_curve.is_a() not in ("IfcArbitraryClosedProfileDef", "IfcArbitraryProfileDefWithVoids"):
+        if not profile_or_curve.is_a("IfcProfileDef"):
             profile_or_curve = self.profile(profile_or_curve)
 
         if position_y_axis:
@@ -579,6 +584,8 @@ class ShapeBuilder:
                 representation_type = "AdvancedSweptSolid"
             elif "IfcExtrudedAreaSolid" in item_types:
                 representation_type = "SweptSolid"
+            elif items[0].is_a("IfcTessellatedItem"):
+                representation_type = "Tessellation"
             elif items[0].is_a("IfcCurve") and items[0].Dim == 3:
                 representation_type = "Curve3D"
             else:
@@ -746,8 +753,10 @@ class ShapeBuilder:
 
             ifc_curve = self.file.createIfcIndexedPolyCurve(Points=ifc_points, Segments=ifc_segments)
         return (points, segments, ifc_curve)
-    
-    def create_z_profile_lips_curve(self, FirstFlangeWidth, SecondFlangeWidth, Depth, Girth, WallThickness, FilletRadius):
+
+    def create_z_profile_lips_curve(
+        self, FirstFlangeWidth, SecondFlangeWidth, Depth, Girth, WallThickness, FilletRadius
+    ):
         x1 = FirstFlangeWidth
         x2 = SecondFlangeWidth
         y = Depth / 2
@@ -770,20 +779,21 @@ class ShapeBuilder:
             (-x1+t, -y+t),
             (-t/2,  -y+t)
         )
-        # fmt: on
 
         # option for no additional thickness in outer radius:
         # points, segments, ifc_curve = create_curve_from_coords(
         #   coords, fillets = (0, 1, 4, 5, 6, 7, 10, 11), fillet_radius=r, closed=True, ifc_file=ifc_file
         # )
 
-        points, segments, ifc_curve = self.get_simple_2dcurve_data(coords, 
+        points, segments, ifc_curve = self.get_simple_2dcurve_data(
+            coords, 
             fillets =     (0,   1,   4, 5, 6,   7,   10, 11), 
             fillet_radius=(r+t, r+t, r, r, r+t, r+t, r, r), 
             closed=True, create_ifc_curve=True)
+        # fmt: on
 
         return ifc_curve
-    
+
     def create_transition_arc_ifc(self, width, height, create_ifc_curve=False):
         # create an arc in the rectangle with specified width and height
         # if it's not possible to make a complete arc
@@ -815,3 +825,404 @@ class ShapeBuilder:
             curve_coords, fillets, fillet_radius, closed=False, create_ifc_curve=create_ifc_curve
         )
         return points, segments, transition_arc
+
+    def polygonal_face_set(self, points, faces):
+        """
+        > `points` - list of points
+
+        > `faces` - list of faces consisted of point indices (points indices starting from 0)
+
+        < IfcPolygonalFaceSet
+        """
+
+        ifc_points = self.file.createIfcCartesianPointList3D(points)
+        ifc_faces = []
+        for face in faces:
+            face = [i + 1 for i in face]
+            ifc_faces.append(self.file.createIfcIndexedPolygonalFace(face))
+
+        face_set = self.file.createIfcPolygonalFaceSet(Coordinates=ifc_points, Faces=ifc_faces)
+
+        return face_set
+
+    def mep_transition_shape(
+        self, start_segment, end_segment, start_length, end_length, angle=30.0, profile_offset=None
+    ):
+        """
+        returns tuple of Model/Body/MODEL_VIEW IfcRepresentation and transition shape data
+        """
+        # good default values from angle = 30/60 deg
+        # 30 degree angle will result in 75 degrees on the transition (= 90 - α/2) - https://i.imgur.com/tcoYDWu.png
+
+        # TODO: get rid of reliance on profiles
+        def get_profile(element):
+            material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+            if material and material.is_a("IfcMaterialProfileSet") and len(material.MaterialProfiles) == 1:
+                return material.MaterialProfiles[0].Profile
+
+        def get_circle_points(radius, segments=16):
+            """starting from (R,0), going counter-clockwise"""
+            angle_d = 2 * pi / segments
+            verts = []
+            for i in range(segments):
+                angle = angle_d * i
+                verts.append(V(cos(angle), sin(angle), 0) * radius)
+            return verts
+
+        def get_rectangle_points(dim):
+            """Starting from (+X/2, +Y/2) going counter-clockwise"""
+            dim = dim / 2
+            points = [
+                dim * V(1, 1, 0),
+                dim * V(-1, 1, 0),
+                dim * V(-1, -1, 0),
+                dim * V(1, -1, 0),
+            ]
+            return points
+
+        # TODO: support more profiles
+        def get_dim(profile, depth):
+            if profile.is_a("IfcRectangleProfileDef"):
+                return V(profile.XDim / 2, profile.YDim / 2, depth)
+            elif profile.is_a("IfcCircleProfileDef"):
+                return V(profile.Radius, profile.Radius, depth)
+            return None
+
+        def get_profile_faceset(points, length, offset=None):
+            # prevent mutating arguments, deepcopy doesn't work
+            start_points = [p.copy() if not offset else (p + offset) for p in points]
+            end_points = [p.copy() for p in start_points]
+            for p in end_points:
+                p.z += length
+
+            points = start_points + end_points
+            faces = []
+            n_verts = len(start_points)
+            last_vert_i = n_verts - 1
+            for i in range(last_vert_i):
+                face = (i, i + 1, n_verts + i + 1, n_verts + i)
+                faces.append(face)
+            faces.append((last_vert_i, 0, n_verts + 0, n_verts + last_vert_i))  # close the loop
+
+            # if there is offset we put a cap at the end
+            # otherwise at the start
+            if offset:
+                faces.append(tuple(range(n_verts, n_verts * 2)))
+            else:
+                faces.append(tuple(reversed(range(n_verts))))
+
+            face_set = self.polygonal_face_set(points, faces)
+            return face_set
+
+        start_profile = get_profile(start_segment)
+        end_profile = get_profile(end_segment)
+
+        start_half_dim = get_dim(start_profile, start_length)
+        end_half_dim = get_dim(end_profile, end_length)
+
+        # if profile types are not supported
+        if not start_half_dim or not end_half_dim:
+            return None, None
+
+        transition_items = []
+        start_offset = V(0, 0, start_length)
+        end_extrusion_offset = start_offset.copy()
+
+        transition_length = self.mep_transition_length(start_half_dim, end_half_dim, angle, profile_offset)
+        if transition_length is None:
+            return None, None
+
+        faces = []
+        end_extrusion_offset.z += transition_length
+        if profile_offset:
+            end_extrusion_offset.xy += profile_offset
+
+        if start_profile.is_a("IfcRectangleProfileDef") and end_profile.is_a("IfcRectangleProfileDef"):
+            # no transitions for exactly the same profiles
+            if transition_length == 0:
+                return None, None
+
+            faces += [(3, 4, 7, 0), (11, 8, 15, 12), (3, 11, 12, 4), (7, 15, 8, 0)]
+
+            # NOTE: clockwise order for correct face orientation
+            faces += [
+                # start extrusion
+                (0, 1, 2, 3),
+                (8, 11, 10, 9),
+                (0, 8, 9, 1),
+                (1, 9, 10, 2),
+                (2, 10, 11, 3),
+                # end extrusion
+                (4, 5, 6, 7),
+                (12, 15, 14, 13),
+                (4, 12, 13, 5),
+                (5, 13, 14, 6),
+                (6, 14, 15, 7),
+            ]
+            points = [
+                start_half_dim * V(-1, -1, 1),
+                start_half_dim * V(-1, -1, 0),
+                start_half_dim * V(1, -1, 0),
+                start_half_dim * V(1, -1, 1),
+                end_half_dim * V(1, -1, 0) + end_extrusion_offset,
+                end_half_dim * V(1, -1, 1) + end_extrusion_offset,
+                end_half_dim * V(-1, -1, 1) + end_extrusion_offset,
+                end_half_dim * V(-1, -1, 0) + end_extrusion_offset,
+                start_half_dim * V(-1, 1, 1),
+                start_half_dim * V(-1, 1, 0),
+                start_half_dim * V(1, 1, 0),
+                start_half_dim * V(1, 1, 1),
+                end_half_dim * V(1, 1, 0) + end_extrusion_offset,
+                end_half_dim * V(1, 1, 1) + end_extrusion_offset,
+                end_half_dim * V(-1, 1, 1) + end_extrusion_offset,
+                end_half_dim * V(-1, 1, 0) + end_extrusion_offset,
+            ]
+        elif start_profile.is_a("IfcCircleProfileDef") and end_profile.is_a("IfcCircleProfileDef"):
+            # no transitions for exactly the same profiles
+            if transition_length == 0:
+                return None, None
+
+            n_segments = 16
+            first_profile_points = get_circle_points(start_profile.Radius, n_segments)
+            second_profile_points = get_circle_points(end_profile.Radius, n_segments)
+
+            faces = []
+            for i in range(n_segments):
+                # For wrapping around the circle
+                next_i = (i + 1) % n_segments
+                face = [i, next_i, next_i + n_segments, i + n_segments]
+                faces.append(face)
+
+            transition_items.append(get_profile_faceset(first_profile_points, start_length))
+            transition_items.append(get_profile_faceset(second_profile_points, end_length, end_extrusion_offset))
+
+            first_profile_points = [p + start_offset for p in first_profile_points]
+            second_profile_points = [p + end_extrusion_offset for p in second_profile_points]
+
+            points = first_profile_points + second_profile_points
+
+        else:  # one is circular, another one is rectangular
+            # support transition from rectangle to circle of the same dimensions
+            if transition_length == 0:
+                transition_length = (start_length + end_length) / 2
+                end_extrusion_offset.z += transition_length
+
+            starting_with_circle = start_profile.is_a("IfcCircleProfileDef")
+            if starting_with_circle:
+                circle_profile, rect_profile = start_profile, end_profile
+            else:
+                circle_profile, rect_profile = end_profile, start_profile
+
+            circle_points = get_circle_points(circle_profile.Radius)
+            rect_points = get_rectangle_points(V(rect_profile.XDim, rect_profile.YDim, 0))
+
+            if starting_with_circle:
+                start_points, end_points = circle_points, rect_points
+            else:
+                start_points, end_points = rect_points, circle_points
+
+            transition_items.append(get_profile_faceset(start_points, start_length))
+            transition_items.append(get_profile_faceset(end_points, end_length, end_extrusion_offset))
+
+            # offset verts
+            if starting_with_circle:
+                circle_points = [p + start_offset for p in circle_points]
+                rect_points = [p + end_extrusion_offset for p in rect_points]
+            else:
+                rect_points = [p + start_offset for p in rect_points]
+                circle_points = [p + end_extrusion_offset for p in circle_points]
+
+            # circle verts are 0-15, rect verts are 16-19
+            points = circle_points + rect_points
+            transition_faces = [
+                (0, 19, 16),  # base
+                (0, 16, 1),
+                (1, 16, 2),
+                (2, 16, 3),
+                (3, 16, 4),
+                (4, 16, 17),  # base
+                (4, 17, 5),
+                (5, 17, 6),
+                (6, 17, 7),
+                (7, 17, 8),
+                (8, 17, 18),  # base
+                (8, 18, 9),
+                (9, 18, 10),
+                (10, 18, 11),
+                (11, 18, 12),
+                (12, 18, 19),  # base
+                (12, 19, 13),
+                (13, 19, 14),
+                (14, 19, 15),
+                (15, 19, 0),
+            ]
+            # revert them in case it's starting with circle profile to keep the face orientation
+            if starting_with_circle:
+                transition_faces = [f[::-1] for f in transition_faces]
+            faces += transition_faces
+
+        face_set = self.polygonal_face_set(points, faces)
+        transition_items.append(face_set)
+
+        body = ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW")
+        representation = self.get_representation(body, transition_items, "Tesselation")
+        transition_data = {
+            "start_length": start_length,
+            "end_length": end_length,
+            "angle": angle,
+            "transition_length": transition_length,
+            "full_transition_length": start_length + transition_length + end_length,
+        }
+
+        return representation, transition_data
+
+    # TODO: move to separate shape_builder method
+    # so we could check transition length without creating representation
+    def mep_transition_length(self, start_half_dim, end_half_dim, angle, profile_offset=None, verbose=True):
+        """get the final transition length for two profiles dimensions, angle and XY offset between them,
+
+        the difference from `calculate_transition` - `get_transition_length` is making sure
+        that length will fit both sides of the transition
+        """
+        print = lambda *args, **kwargs: __builtins__["print"](*args, **kwargs) if verbose else None
+
+        # offsets tend to have bunch of float point garbage
+        # that can result in errors when we're calculating value for square root below
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(self.file)
+        offset = V(0, 0) if profile_offset is None else round_vector_to_precision(profile_offset, si_conversion)
+        diff = start_half_dim.xy - end_half_dim.xy
+        diff = Vector([abs(i) for i in diff])
+
+        print(f"offset = {profile_offset} / {offset}")
+        print(f"diff = {diff}")
+
+        calculation_arguments = {
+            "start_half_dim": start_half_dim,
+            "end_half_dim": end_half_dim,
+            "diff": diff,
+            "offset": offset,
+            "verbose": verbose,
+        }
+
+        def check_transition(end_profile=False):
+            length = self.mep_transition_calculate(**calculation_arguments, angle=angle, end_profile=end_profile)
+            if length is None:
+                return
+
+            other_side_angle = self.mep_transition_calculate(
+                **calculation_arguments, length=length, end_profile=not end_profile
+            )
+
+            # NOTE: for now we just hardcode the good value for that case
+            same_dimension = is_x(diff.y if not end_profile else diff.x, 0)
+            if same_dimension and is_x(offset.y if not end_profile else offset.x, 0):
+                requested_angle = 90
+            else:
+                requested_angle = angle
+
+            print(f"other_side_angle = {other_side_angle}, requested_angle = {requested_angle}")
+            # need to make sure that the worst angle (maximum angle)
+            # for this transition angle is `requested_angle`
+            if other_side_angle < requested_angle or is_x(other_side_angle, requested_angle):
+                print(f"final length = {length}, angle = {requested_angle}, other side angle = {other_side_angle}")
+                return length
+
+        return check_transition() or check_transition(True)
+
+    def mep_transition_calculate(
+        self, start_half_dim, end_half_dim, offset, diff=None, end_profile=False, angle=None, length=None, verbose=True
+    ):
+        """will return transition length based on the profile dimension differences and offset.
+
+        If `length` is provided will return transition angle"""
+
+        print = lambda *args, **kwargs: __builtins__["print"](*args, **kwargs) if verbose else None
+
+        if diff is None:
+            diff = start_half_dim.xy - end_half_dim.xy
+            diff = Vector([abs(i) for i in diff])
+
+        if end_profile:
+            diff, offset = diff.yx, offset.yx
+
+        same_dimension = is_x(diff.x, 0)
+        a = diff.x + offset.x
+        b = diff.x - offset.x
+        if length is None:
+            if not same_dimension:
+                t = tan(radians(angle))
+                h0 = a**2 + 4 * a * b * t**2 + 2 * a * b + b**2
+                # TODO: we might need to specify the exact failing cases in the future
+                if h0 < 0:
+                    print(
+                        f"B. Coulndn't calculate transition length for angle = {angle}, offset = {offset}, diff = {diff}"
+                    )
+                    return None
+
+                h = (a + b + sqrt(h0)) / (2 * t)
+                length_squared = h**2 - offset.y**2
+                if length_squared <= 0:
+                    print(f"B. angle = {angle} requires h = {h} which is not possible with y offset = {offset.y}")
+                    return None
+                length = sqrt(length_squared)
+
+                if verbose:
+                    A = (end_half_dim if end_profile else start_half_dim) * V(1, 0, 0)
+                    end_profile_offset = offset.to_3d() + V(0, 0, length)
+                    D = (start_half_dim if end_profile else end_half_dim) * V(1, 0, 0)
+                    B, C = -A, -D
+                    C += end_profile_offset
+                    D += end_profile_offset
+                    tested_angle = degrees((A - D).angle(B - C))
+                    print(f"A. length = {length}, requested angle = {angle}, tested angle = {tested_angle}")
+            else:
+                if is_x(offset.x, 0):
+                    angle = 90  # NOTE: for now we just hardcode the good value for that case
+                    h = start_half_dim.x / tan(radians(angle / 2))
+                    length_squared = h**2 - offset.y**2
+                    if length_squared <= 0:
+                        print(f"B. angle = {angle} requires h = {h} which is not possible with y offset = {offset.y}")
+                        return None
+                    length = sqrt(length_squared)
+
+                    if verbose:
+                        O = V(0, 0, 0)
+                        A = V(-start_half_dim.x, 0, length) + offset.to_3d()
+                        B = A * V(-1, 1, 1)
+                        tested_angle = degrees((A - O).angle(B - O))
+                        print(f"B. length = {length}, requested angle = {angle}, tested angle = {tested_angle}")
+                else:
+                    h = offset.x / tan(radians(angle))
+                    length_squared = h**2 - offset.y**2
+                    if length_squared <= 0:
+                        print(f"C. angle = {angle} requires h = {h} which is not possible with y offset = {offset.y}")
+                        return None
+                    length = sqrt(length_squared)
+
+                    if verbose:
+                        A = V(-start_half_dim.x, 0, 0)
+                        H = A + V(0, 0, length)
+                        H.y += offset.y
+                        D = H.copy()
+                        D.x += offset.x
+                        tested_angle = degrees((H - A).angle(D - A))
+                        print(f"C. length = {length}, requested angle = {angle}, tested angle = {tested_angle}")
+
+            return length
+
+        elif angle is None:
+            if not same_dimension:
+                if length == 0:
+                    return 0
+
+                h = sqrt(length**2 + offset.y**2)
+                t = -h * (a + b) / (a * b - h**2)
+                angle = degrees(atan(t))
+
+            else:
+                h = sqrt(length**2 + offset.y**2)
+                if is_x(offset.x, 0):
+                    angle = degrees(2 * atan(start_half_dim.x / h))
+                else:
+                    angle = degrees(atan(offset.x / h))
+            return angle

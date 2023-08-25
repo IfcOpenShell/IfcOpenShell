@@ -358,7 +358,7 @@ class Model(blenderbim.core.tool.Model):
             is_closed = False
             if curve.Segments:
                 for segment in curve.Segments:
-                    if len(segment[0]) == 3:  # IfcArcIndex
+                    if segment.is_a("IfcArcIndex"):
                         is_arc = True
                         local_point = cls.convert_unit_to_si(curve.Points.CoordList[segment[0][0] - 1])
                         global_point = position @ Vector(local_point).to_3d()
@@ -368,12 +368,13 @@ class Model(blenderbim.core.tool.Model):
                         cls.vertices.append(global_point)
                         cls.arcs.append([len(cls.vertices) - 2, len(cls.vertices) - 1])
                     else:
-                        local_point = cls.convert_unit_to_si(curve.Points.CoordList[segment[0][0] - 1])
-                        global_point = position @ Vector(local_point).to_3d()
-                        cls.vertices.append(global_point)
-                        if is_arc:
-                            cls.arcs[-1].append(len(cls.vertices) - 1)
-                            is_arc = False
+                        for segment_index in segment[0][0:-1]:
+                            local_point = cls.convert_unit_to_si(curve.Points.CoordList[segment_index - 1])
+                            global_point = position @ Vector(local_point).to_3d()
+                            cls.vertices.append(global_point)
+                            if is_arc:
+                                cls.arcs[-1].append(len(cls.vertices) - 1)
+                                is_arc = False
 
                 if curve.Segments[0][0][0] == curve.Segments[-1][0][-1]:
                     is_closed = True
@@ -494,6 +495,17 @@ class Model(blenderbim.core.tool.Model):
             elif item.is_a("IfcBooleanClippingResult"):
                 items.append(item.FirstOperand)
         return booleans
+
+    @classmethod
+    def get_flow_segment_axis(cls, obj):
+        z_values = [v[2] for v in obj.bound_box]
+        return (obj.matrix_world @ Vector((0, 0, min(z_values))), obj.matrix_world @ Vector((0, 0, max(z_values))))
+
+    @classmethod
+    def get_flow_segment_profile(cls, element):
+        material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+        if material and material.is_a("IfcMaterialProfileSet") and len(material.MaterialProfiles) == 1:
+            return material.MaterialProfiles[0].Profile
 
     @classmethod
     def get_usage_type(cls, element):
@@ -756,3 +768,40 @@ class Model(blenderbim.core.tool.Model):
             obj.matrix_world = matrix
             return
         tool.Ifc.run("geometry.edit_object_placement", product=element, matrix=matrix, is_si=True)
+
+    @classmethod
+    def get_element_matrix(cls, element):
+        placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+        return Matrix(placement)
+
+    @classmethod
+    def reload_body_representation(cls, obj_or_objects):
+        """Update body representation including all decomposed objects"""
+        if isinstance(obj_or_objects, collections.abc.Iterable):
+            objects = set(obj_or_objects)
+        else:
+            objects = {obj_or_objects}
+
+        # decompose objects
+        decomposed_objs = objects.copy()
+        for obj in objects:
+            for subelement in ifcopenshell.util.element.get_decomposition(tool.Ifc.get_entity(obj)):
+                subobj = tool.Ifc.get_object(subelement)
+                if subobj:
+                    decomposed_objs.add(subobj)
+
+        # update representation
+        for obj in decomposed_objs:
+            if not obj.data:
+                continue
+            element = tool.Ifc.get_entity(obj)
+            body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+            blenderbim.core.geometry.switch_representation(
+                tool.Ifc,
+                tool.Geometry,
+                obj=obj,
+                representation=body,
+                should_reload=True,
+                is_global=True,
+                should_sync_changes_first=False,
+            )

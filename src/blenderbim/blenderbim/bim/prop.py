@@ -305,7 +305,7 @@ def get_tab(self, context):
         ("DRAWINGS", "Drawings and Documents", "", "DOCUMENTS", 3),
         ("SERVICES", "Services and Systems", "", "NETWORK_DRIVE", 4),
         ("STRUCTURE", "Structural Analysis", "", "EDITMODE_HLT", 5),
-        ("SCHEDULING", "Construction Scheduling", "", "NLA", 6),
+        ("SCHEDULING", "Costing and Scheduling", "", "NLA", 6),
         ("FM", "Facility Management", "", "PACKAGE", 7),
         ("QUALITY", "Quality and Coordination", "", "COMMUNITY", 8),
         ("BLENDER", "Blender Properties", "", "BLENDER", 9),
@@ -435,6 +435,7 @@ class BIMMeshProperties(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     ifc_boolean_id: IntProperty(name="IFC Boolean ID")
     obj: bpy.props.PointerProperty(type=bpy.types.Object)
+    has_openings_applied: BoolProperty(name="Has Openings Applied", default=True)
     is_native: BoolProperty(name="Is Native", default=False)
     is_swept_solid: BoolProperty(name="Is Swept Solid")
     is_parametric: BoolProperty(name="Is Parametric", default=False)

@@ -880,6 +880,27 @@ class LoadLink(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class ToggleLinkSelectability(bpy.types.Operator):
+    bl_idname = "bim.toggle_link_selectability"
+    bl_label = "Toggle Link Selectability"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Toggle selectability"
+    link: bpy.props.StringProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMProjectProperties
+        link = props.links.get(self.link)
+        for collection in self.get_linked_collections():
+            collection.hide_select = not collection.hide_select
+            link.is_selectable = not collection.hide_select
+        return {"FINISHED"}
+
+    def get_linked_collections(self):
+        return [
+            c for c in bpy.data.collections if "IfcProject" in c.name and c.library and c.library.filepath == self.link
+        ]
+
+
 class ToggleLinkVisibility(bpy.types.Operator):
     bl_idname = "bim.toggle_link_visibility"
     bl_label = "Toggle Link Visibility"
@@ -1028,10 +1049,14 @@ class ExportIFC(bpy.types.Operator):
             output_file = os.path.relpath(output_file, bpy.path.abspath("//"))
         if scene.BIMProperties.ifc_file != output_file and extension not in ["ifczip", "ifcjson"]:
             scene.BIMProperties.ifc_file = output_file
-        if bpy.data.is_saved and bpy.data.is_dirty and bpy.data.filepath:
+        save_blend_file = bool(bpy.data.is_saved and bpy.data.is_dirty and bpy.data.filepath)
+        if save_blend_file:
             bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
         blenderbim.bim.handler.purge_module_data()
-        self.report({"INFO"}, f'IFC Project "{os.path.basename(output_file)}" Saved')
+        self.report(
+            {"INFO"},
+            f'IFC Project "{os.path.basename(output_file)}" {"" if not save_blend_file else "And Current Blend File Are"} Saved',
+        )
 
         if bpy.data.is_saved:
             bpy.ops.wm.save_mainfile("INVOKE_DEFAULT")

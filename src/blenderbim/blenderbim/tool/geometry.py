@@ -56,8 +56,11 @@ class Geometry(blenderbim.core.tool.Geometry):
 
     @classmethod
     def clear_scale(cls, obj):
+        # Note that clearing scale has no impact on cameras.
         if (obj.scale - Vector((1.0, 1.0, 1.0))).length > 1e-4:
-            if obj.data.users == 1:
+            if not obj.data:
+                obj.matrix_world.normalize()
+            elif obj.data.users == 1:
                 context_override = {}
                 context_override["object"] = context_override["active_object"] = obj
                 context_override["selected_objects"] = context_override["selected_editable_objects"] = [obj]
@@ -117,6 +120,21 @@ class Geometry(blenderbim.core.tool.Geometry):
             bpy.data.objects.remove(obj)
         except:
             pass
+
+    @classmethod
+    def dissolve_triangulated_edges(cls, obj):
+        if obj.data and "ios_edges" in obj.data:
+            bm = bmesh.new()
+            bm.from_mesh(obj.data)
+            edges_to_keep = set(map(frozenset, obj.data["ios_edges"]))
+            edges_to_dissolve = []
+            for edge in bm.edges:
+                if frozenset([vert.index for vert in edge.verts]) not in edges_to_keep:
+                    edges_to_dissolve.append(edge)
+            bmesh.ops.dissolve_edges(bm, edges=edges_to_dissolve)
+            bm.to_mesh(obj.data)
+            bm.free()
+            del obj.data["ios_edges"]
 
     @classmethod
     def does_representation_id_exist(cls, representation_id):
@@ -186,7 +204,7 @@ class Geometry(blenderbim.core.tool.Geometry):
                 direction = Vector((0, 1, 0))
             depsgraph = bpy.context.evaluated_depsgraph_get()
             visible_faces = []
-            face_offset = obj.matrix_world.to_quaternion() @ Vector((0,0,distance))
+            face_offset = obj.matrix_world.to_quaternion() @ Vector((0, 0, distance))
             global_direction = obj.matrix_world.to_quaternion() @ direction
             for face in bm.faces:
                 if direction.dot(face.normal) > 0:
@@ -197,7 +215,9 @@ class Geometry(blenderbim.core.tool.Geometry):
                     centroid = face.calc_center_median()
                     face_centroid_at_max = Vector((centroid.x, min_y, centroid.z))
                 face_centroid_at_max = obj.matrix_world @ face_centroid_at_max
-                hit, loc, norm, idx, o, mw = bpy.context.scene.ray_cast(depsgraph, face_centroid_at_max, global_direction, distance=distance)
+                hit, loc, norm, idx, o, mw = bpy.context.scene.ray_cast(
+                    depsgraph, face_centroid_at_max, global_direction, distance=distance
+                )
                 if o != obj or idx == face.index:
                     visible_faces.append(face)
             return visible_faces
@@ -376,8 +396,18 @@ class Geometry(blenderbim.core.tool.Geometry):
         return f"{representation.ContextOfItems.id()}/{representation.id()}"
 
     @classmethod
-    def get_styles(cls, obj):
-        return [tool.Style.get_style(s.material) for s in obj.material_slots if s.material]
+    def get_styles(cls, obj, only_assigned_to_faces=False):
+        styles = [tool.Style.get_style(s.material) for s in obj.material_slots if s.material]
+        if not only_assigned_to_faces:
+            return styles
+
+        usage_count = [0] * len(obj.material_slots)
+        if not usage_count: # if there are no materials, polygons will still use index 0
+            return []
+        for poly in obj.data.polygons:
+            usage_count[poly.material_index] += 1
+        styles = [style for style, usage in zip(styles, usage_count, strict=True) if usage > 0]
+        return styles
 
     # TODO: multiple Literals?
     @classmethod
@@ -414,10 +444,17 @@ class Geometry(blenderbim.core.tool.Geometry):
 
         context = representation.ContextOfItems
         if context.ContextIdentifier == "Body" and context.TargetView == "MODEL_VIEW":
-            if element.is_a("IfcTypeProduct") or not apply_openings:
-                shape = ifcopenshell.geom.create_shape(settings, representation)
-            else:
-                shape = ifcopenshell.geom.create_shape(settings, element)
+            try:
+                if element.is_a("IfcTypeProduct") or not apply_openings:
+                    shape = ifcopenshell.geom.create_shape(settings, representation)
+                else:
+                    shape = ifcopenshell.geom.create_shape(settings, element)
+            except:
+                settings.set(settings.INCLUDE_CURVES, True)
+                if element.is_a("IfcTypeProduct") or not apply_openings:
+                    shape = ifcopenshell.geom.create_shape(settings, representation)
+                else:
+                    shape = ifcopenshell.geom.create_shape(settings, element)
         else:
             settings.set(settings.INCLUDE_CURVES, True)
             shape = ifcopenshell.geom.create_shape(settings, representation)
@@ -433,6 +470,7 @@ class Geometry(blenderbim.core.tool.Geometry):
             mesh = ifc_importer.create_mesh(element, shape)
             ifc_importer.material_creator.load_existing_materials()
             ifc_importer.material_creator.create(element, obj, mesh)
+            mesh.BIMMeshProperties.has_openings_applied = apply_openings
 
         return mesh
 
@@ -591,3 +629,7 @@ class Geometry(blenderbim.core.tool.Geometry):
     @classmethod
     def should_use_presentation_style_assignment(cls):
         return bpy.context.scene.BIMGeometryProperties.should_use_presentation_style_assignment
+
+    @classmethod
+    def get_model_representations(cls):
+        return tool.Ifc.get().by_type("IfcShapeRepresentation")
