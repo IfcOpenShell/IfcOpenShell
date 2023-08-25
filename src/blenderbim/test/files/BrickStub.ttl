@@ -22,3 +22,16 @@ brick:Location a owl:Class ;
 
 brick:Building a owl:Class ;
     rdfs:subClassOf brick:Class, brick:Location .
+
+brick:Chiller a owl:Class,
+        sh:NodeShape ;
+    rdfs:subClassOf brick:HVAC_Equipment .
+
+brick:HVAC_Equipment a owl:Class,
+        sh:NodeShape ;
+    rdfs:subClassOf brick:Equipment .
+
+brick:Equipment a owl:Class,
+        sh:NodeShape ;
+    rdfs:subClassOf brick:Class,
+        brick:Entity .

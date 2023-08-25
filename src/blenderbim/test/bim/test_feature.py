@@ -24,6 +24,7 @@ import ifcopenshell
 import blenderbim.tool as tool
 import blenderbim.bim
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.tool.brick import BrickStore
 from blenderbim.bim.module.model.data import AuthoringData
 from pytest_bdd import scenarios, given, when, then, parsers
 from mathutils import Vector
@@ -71,6 +72,8 @@ def an_empty_blender_session():
     if len(bpy.data.objects) > 0:
         bpy.data.batch_remove(bpy.data.objects)
         bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
+    if len(bpy.data.materials) > 0:
+        bpy.data.batch_remove(bpy.data.materials)
 
     # default project settings
     bpy.context.scene.unit_settings.system = "METRIC"
@@ -90,6 +93,13 @@ def an_empty_ifc_2x3_project():
     an_empty_blender_session()
     bpy.context.scene.BIMProjectProperties.export_schema = "IFC2X3"
     bpy.ops.bim.create_project()
+
+
+@given("the Brickschema is stubbed")
+def the_brickschema_is_stubbed():
+    # This makes things run faster since we don't need to load the entire brick schema
+    cwd = os.path.dirname(os.path.realpath(__file__))
+    BrickStore.schema = os.path.join(cwd, "..", "files", "BrickStub.ttl")
 
 
 @when("I load a new pset template file")

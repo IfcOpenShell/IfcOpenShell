@@ -456,7 +456,7 @@ Scenario: Export IFC - with changed style colour synchronised
     When the material "Material" colour is set to "1,0,0,1"
     And I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc')"
     And an empty Blender session is started
-    And I press "bim.load_project(filepath='{cwd}/test/files/temp/export.ifc')"
+    And I press "bim.load_project(filepath='{cwd}/test/files/temp/export.ifc', should_start_fresh_session=False)"
     Then the material "Material" colour is "1,0,0,1"
 
 Scenario: Export IFC - with changed style element synchronised
@@ -471,5 +471,5 @@ Scenario: Export IFC - with changed style element synchronised
     And the material "Material.001" colour is set to "1,0,0,1"
     And I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc')"
     And an empty Blender session is started
-    And I press "bim.load_project(filepath='{cwd}/test/files/temp/export.ifc')"
+    And I press "bim.load_project(filepath='{cwd}/test/files/temp/export.ifc', should_start_fresh_session=False)"
     Then the material "Material.001" colour is "1,0,0,1"
