@@ -853,6 +853,7 @@ class CreateDrawing(bpy.types.Operator):
         self.serialiser.setScale(self.scale)
         self.serialiser.setSubtractionSettings(ifcopenshell.ifcopenshell_wrapper.ALWAYS)
         self.serialiser.setUsePrefiltering(True)  # See #3359
+        self.serialiser.setUnifyInputs(True)
         if target_view == "REFLECTED_PLAN_VIEW":
             self.serialiser.setMirrorY(True)
         # tree = ifcopenshell.geom.tree()
