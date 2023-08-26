@@ -173,12 +173,13 @@ IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
 	if (brep.begin() != brep.end()) {
 		if (dynamic_cast<ifcopenshell::geometry::OpenCascadeShape*>(brep.begin()->Shape())) {
 			ConversionResultShape* shape = brep.as_compound();
-			shape->Serialize(brep_data_);
+			ifcopenshell::geometry::taxonomy::matrix4 identity;
+			shape->Serialize(identity, brep_data_);
 			delete shape;
 		} else {
 			for (auto it = brep.begin(); it != brep.end(); ++it) {
 				std::string part;
-				it->Shape()->Serialize(part);
+				it->Shape()->Serialize(*it->Placement(), part);
 				if (brep_data_.size()) {
 					brep_data_ = brep_data_ + "\n---\n" + part;
 				} else {

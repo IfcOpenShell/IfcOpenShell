@@ -102,9 +102,26 @@ void ifcopenshell::geometry::CgalShape::Triangulate(const IfcGeom::IteratorSetti
 
 }
 
-void ifcopenshell::geometry::CgalShape::Serialize(std::string& r) const {
+void ifcopenshell::geometry::CgalShape::Serialize(const ifcopenshell::geometry::taxonomy::matrix4& place, std::string& r) const {
+	cgal_shape_t s = shape_;
+
+	if (!place.is_identity()) {
+		const auto& m = place.ccomponents();
+
+		// @todo check
+		const cgal_placement_t trsf(
+			m(0, 0), m(0, 1), m(0, 2), m(0, 3),
+			m(1, 0), m(1, 1), m(1, 2), m(1, 3),
+			m(2, 0), m(2, 1), m(2, 2), m(2, 3));
+
+		// Apply transformation
+		for (auto &vertex : vertices(s)) {
+			vertex->point() = vertex->point().transform(trsf);
+		}
+	}
+
 	std::stringstream sstream;
-	sstream << shape_;
+	sstream << s;
 	r = sstream.str();
 }
 

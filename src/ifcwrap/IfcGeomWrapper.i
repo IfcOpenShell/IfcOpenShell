@@ -217,25 +217,25 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 // I couldn't get the vector<string> typemap to be applied when %extending Iterator constructor.
 // anyway it does not matter as SWIG generates C code without actual constructors
 %inline %{
-	IfcGeom::Iterator* construct_iterator_with_include_exclude(IfcGeom::IteratorSettings settings, IfcParse::IfcFile* file, std::vector<std::string> elems, bool include, int num_threads) {
+	IfcGeom::Iterator* construct_iterator_with_include_exclude(const std::string& geometry_library, IfcGeom::IteratorSettings settings, IfcParse::IfcFile* file, std::vector<std::string> elems, bool include, int num_threads) {
 		std::set<std::string> elems_set(elems.begin(), elems.end());
 		IfcGeom::entity_filter ef{ include, false, elems_set };
-		return new IfcGeom::Iterator(settings, file, {ef}, num_threads);
+		return new IfcGeom::Iterator(geometry_library, settings, file, {ef}, num_threads);
 	}
 
-	IfcGeom::Iterator* construct_iterator_with_include_exclude_globalid(IfcGeom::IteratorSettings settings, IfcParse::IfcFile* file, std::vector<std::string> elems, bool include, int num_threads) {
+	IfcGeom::Iterator* construct_iterator_with_include_exclude_globalid(const std::string& geometry_library, IfcGeom::IteratorSettings settings, IfcParse::IfcFile* file, std::vector<std::string> elems, bool include, int num_threads) {
 		std::set<std::string> elems_set(elems.begin(), elems.end());
 		IfcGeom::attribute_filter af;
 		af.attribute_name = "GlobalId";
 		af.populate(elems_set);
 		af.include = include;
-		return new IfcGeom::Iterator(settings, file, {af}, num_threads);
+		return new IfcGeom::Iterator(geometry_library, settings, file, {af}, num_threads);
 	}
 
-	IfcGeom::Iterator* construct_iterator_with_include_exclude_id(IfcGeom::IteratorSettings settings, IfcParse::IfcFile* file, std::vector<int> elems, bool include, int num_threads) {
+	IfcGeom::Iterator* construct_iterator_with_include_exclude_id(const std::string& geometry_library, IfcGeom::IteratorSettings settings, IfcParse::IfcFile* file, std::vector<int> elems, bool include, int num_threads) {
 		std::set<int> elems_set(elems.begin(), elems.end());
 		IfcGeom::instance_id_filter af(include, false, elems_set);
-		return new IfcGeom::Iterator(settings, file, {af}, num_threads);
+		return new IfcGeom::Iterator(geometry_library, settings, file, {af}, num_threads);
 	}
 %}
 
@@ -373,10 +373,10 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 	}
 
 	template <typename Schema>
-	static boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*> helper_fn_create_shape(IfcGeom::IteratorSettings& settings, IfcUtil::IfcBaseClass* instance, IfcUtil::IfcBaseClass* representation = 0) {
+	static boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*> helper_fn_create_shape(const std::string& geometry_library, IfcGeom::IteratorSettings& settings, IfcUtil::IfcBaseClass* instance, IfcUtil::IfcBaseClass* representation = 0) {
 		IfcParse::IfcFile* file = instance->data().file;
 			
-		ifcopenshell::geometry::Converter kernel("opencascade", file, settings);
+		ifcopenshell::geometry::Converter kernel(geometry_library, file, settings);
 			
 		if (instance->declaration().is(Schema::IfcProduct::Class())) {
 			if (representation) {
@@ -501,62 +501,62 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 %}
 
 %inline %{
-	static boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*> create_shape(IfcGeom::IteratorSettings& settings, IfcUtil::IfcBaseClass* instance, IfcUtil::IfcBaseClass* representation = 0) {
+	static boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*> create_shape(IfcGeom::IteratorSettings& settings, IfcUtil::IfcBaseClass* instance, IfcUtil::IfcBaseClass* representation = 0, const char* const geometry_library="opencascade") {
 		const std::string& schema_name = instance->declaration().schema()->name();
 
 		#ifdef HAS_SCHEMA_2x3
 		if (schema_name == "IFC2X3") {
-			return helper_fn_create_shape<Ifc2x3>(settings, instance, representation);
+			return helper_fn_create_shape<Ifc2x3>(geometry_library, settings, instance, representation);
 		}
 		#endif
 		#ifdef HAS_SCHEMA_4
 		if (schema_name == "IFC4") {
-			return helper_fn_create_shape<Ifc4>(settings, instance, representation);
+			return helper_fn_create_shape<Ifc4>(geometry_library, settings, instance, representation);
 		}
 		#endif
 		#ifdef HAS_SCHEMA_4x1
 		if (schema_name == "IFC4X1") {
-			return helper_fn_create_shape<Ifc4x1>(settings, instance, representation);
+			return helper_fn_create_shape<Ifc4x1>(geometry_library, settings, instance, representation);
 		}
 		#endif
 		#ifdef HAS_SCHEMA_4x2
 		if (schema_name == "IFC4X2") {
-			return helper_fn_create_shape<Ifc4x2>(settings, instance, representation);
+			return helper_fn_create_shape<Ifc4x2>(geometry_library, settings, instance, representation);
 		}
 		#endif
 		#ifdef HAS_SCHEMA_4x3_rc1
 		if (schema_name == "IFC4X3_RC1") {
-			return helper_fn_create_shape<Ifc4x3_rc1>(settings, instance, representation);
+			return helper_fn_create_shape<Ifc4x3_rc1>(geometry_library, settings, instance, representation);
 		}
 		#endif
 		#ifdef HAS_SCHEMA_4x3_rc2
 		if (schema_name == "IFC4X3_RC2") {
-			return helper_fn_create_shape<Ifc4x3_rc2>(settings, instance, representation);
+			return helper_fn_create_shape<Ifc4x3_rc2>(geometry_library, settings, instance, representation);
 		}
 		#endif
 		#ifdef HAS_SCHEMA_4x3_rc3
 		if (schema_name == "IFC4X3_RC3") {
-			return helper_fn_create_shape<Ifc4x3_rc3>(settings, instance, representation);
+			return helper_fn_create_shape<Ifc4x3_rc3>(geometry_library, settings, instance, representation);
 		}
 		#endif
 		#ifdef HAS_SCHEMA_4x3_rc4
 		if (schema_name == "IFC4X3_RC4") {
-			return helper_fn_create_shape<Ifc4x3_rc4>(settings, instance, representation);
+			return helper_fn_create_shape<Ifc4x3_rc4>(geometry_library, settings, instance, representation);
 		}
 		#endif
 		#ifdef HAS_SCHEMA_4x3
 		if (schema_name == "IFC4X3") {
-			return helper_fn_create_shape<Ifc4x3>(settings, instance, representation);
+			return helper_fn_create_shape<Ifc4x3>(geometry_library, settings, instance, representation);
 		}
 		#endif
 		#ifdef HAS_SCHEMA_4x3_tc1
 		if (schema_name == "IFC4X3_TC1") {
-			return helper_fn_create_shape<Ifc4x3_tc1>(settings, instance, representation);
+			return helper_fn_create_shape<Ifc4x3_tc1>(geometry_library, settings, instance, representation);
 		}
 		#endif
         #ifdef HAS_SCHEMA_4x3_add1
 		if (schema_name == "IFC4X3_ADD1") {
-			return helper_fn_create_shape<Ifc4x3_add1>(settings, instance, representation);
+			return helper_fn_create_shape<Ifc4x3_add1>(geometry_library, settings, instance, representation);
 		}
 		#endif
 		
