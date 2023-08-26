@@ -91,10 +91,6 @@ class IfcCsv:
 
         for element in elements:
             result = []
-            for index, attribute in enumerate(attributes):
-                if "*" in attribute:
-                    attributes.extend(self.get_wildcard_attributes(attribute))
-                    del attributes[index]
 
             for attribute in attributes:
                 value = ifcopenshell.util.selector.get_element_value(element, attribute)
@@ -262,7 +258,7 @@ class IfcCsv:
                 reverse = sort_data["order"] == "DESC"
                 self.results = sorted(self.results, key=lambda x: natural_sort(x[i]), reverse=reverse)
         else:
-            if include_global_id and len(self.results[0]) > 1:
+            if include_global_id and len(list(self.results[0])) > 1:
                 self.results = sorted(self.results, key=lambda x: x[1])
             elif not include_global_id:
                 self.results = sorted(self.results, key=lambda x: x[0])
@@ -397,36 +393,12 @@ class IfcCsv:
                 self.process_row(ifc_file, row, headers, attributes, null, bool_true, bool_false)
 
     def import_xlsx(self, ifc_file, table, attributes, null, bool_true, bool_false):
-        workbook = openpyxl.load_workbook(filename=table, read_only=True)
-        worksheet = workbook.active  # Assuming data is on the first sheet
-        headers = None
-
-        for row in worksheet.iter_rows(values_only=True):
-            if not headers:
-                headers = list(row)
-                if not attributes:
-                    attributes = [None] * len(headers)
-                elif len(attributes) == len(headers) - 1:
-                    attributes.insert(0, "")  # The GlobalId column
-                continue
-            self.process_row(ifc_file, row, headers, attributes, null, bool_true, bool_false)
+        df = pd.read_excel(table)
+        self.import_pd(ifc_file, df, attributes, null, bool_true, bool_false)
 
     def import_ods(self, ifc_file, table, attributes, null, bool_true, bool_false):
-        doc = load(table)
-        first_sheet = doc.spreadsheet.getElementsByType(Table)[0]
-        rows = first_sheet.getElementsByType(TableRow)
-        headers = None
-
-        for row in rows:
-            values = [cell.getElementsByType(P)[0].childNodes[0].data for cell in row.getElementsByType(TableCell)]
-            if not headers:
-                headers = values
-                if not attributes:
-                    attributes = [None] * len(headers)
-                elif len(attributes) == len(headers) - 1:
-                    attributes.insert(0, "")  # The GlobalId column
-                continue
-            self.process_row(ifc_file, values, headers, attributes, null, bool_true, bool_false)
+        df = pd.read_excel(table, engine="odf")
+        self.import_pd(ifc_file, df, attributes, null, bool_true, bool_false)
 
     def import_pd(self, ifc_file, df, attributes=None, null="-", bool_true="YES", bool_false="NO"):
         headers = df.columns.tolist()
