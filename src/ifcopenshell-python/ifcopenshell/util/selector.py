@@ -20,6 +20,7 @@ import re
 import lark
 import ifcopenshell.util
 import ifcopenshell.util.fm
+import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.classification
 
@@ -111,6 +112,106 @@ get_element_grammar = lark.Lark(
     %ignore WS // Disregard spaces in text
  """
 )
+
+format_grammar = lark.Lark(
+    """start: function
+
+    function: round | format_length | lower | upper | title | concat | ESCAPED_STRING | NUMBER
+
+    round: "round(" function "," NUMBER ")"
+    format_length: metric_length | imperial_length
+    metric_length: "metric_length(" function "," NUMBER "," NUMBER ")"
+    imperial_length: "imperial_length(" function "," NUMBER ["," ESCAPED_STRING] ")"
+    lower: "lower(" function ")"
+    upper: "upper(" function ")"
+    title: "title(" function ")"
+    concat: "concat(" function ("," function)* ")"
+
+    // Embed common.lark for packaging
+    DIGIT: "0".."9"
+    HEXDIGIT: "a".."f"|"A".."F"|DIGIT
+    INT: DIGIT+
+    SIGNED_INT: ["+"|"-"] INT
+    DECIMAL: INT "." INT? | "." INT
+    _EXP: ("e"|"E") SIGNED_INT
+    FLOAT: INT _EXP | DECIMAL _EXP?
+    SIGNED_FLOAT: ["+"|"-"] FLOAT
+    NUMBER: FLOAT | INT
+    SIGNED_NUMBER: ["+"|"-"] NUMBER
+    _STRING_INNER: /.*?/
+    _STRING_ESC_INNER: _STRING_INNER /(?<!\\\\)(\\\\\\\\)*?/
+    ESCAPED_STRING : "\\"" _STRING_ESC_INNER "\\""
+    LCASE_LETTER: "a".."z"
+    UCASE_LETTER: "A".."Z"
+    LETTER: UCASE_LETTER | LCASE_LETTER
+    WORD: LETTER+
+    CNAME: ("_"|LETTER) ("_"|LETTER|DIGIT)*
+    WS_INLINE: (" "|/\\t/)+
+    WS: /[ \\t\\f\\r\\n]/+
+    CR : /\\r/
+    LF : /\\n/
+    NEWLINE: (CR? LF)+
+
+    %ignore WS // Disregard spaces in text
+"""
+)
+
+
+class FormatTransformer(lark.Transformer):
+    def start(self, args):
+        return args[0]
+
+    def function(self, args):
+        return args[0]
+
+    def ESCAPED_STRING(self, args):
+        return args[1:-1].replace("\\", "")
+
+    def NUMBER(self, args):
+        return str(args)
+
+    def lower(self, args):
+        return str(args[0]).lower()
+
+    def upper(self, args):
+        return str(args[0]).upper()
+
+    def title(self, args):
+        return str(args[0]).title()
+
+    def concat(self, args):
+        return "".join(args)
+
+    def round(self, args):
+        return str(round(float(args[0]) / float(args[1])) * float(args[1]))
+
+    def format_length(self, args):
+        return args[0]
+
+    def metric_length(self, args):
+        value, precision, decimal_places = args
+        return ifcopenshell.util.unit.format_length(
+            float(value), float(precision), int(decimal_places), unit_system="metric"
+        )
+
+    def imperial_length(self, args):
+        if len(args) == 2:
+            imperial_unit = "foot"
+            value, precision = args
+        else:
+            value, precision, imperial_unit = args
+            if imperial_unit == "inch":
+                imperial_unit = "inch"
+            else:
+                imperial_unit = "foot"
+
+        return ifcopenshell.util.unit.format_length(
+            float(value), int(precision), unit_system="imperial", imperial_unit=imperial_unit
+        )
+
+
+def format(query):
+    return FormatTransformer().transform(format_grammar.parse(query))
 
 
 def get_element_value(element, query):

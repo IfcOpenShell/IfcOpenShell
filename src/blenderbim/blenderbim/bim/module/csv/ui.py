@@ -23,7 +23,7 @@ from blenderbim.bim.module.search.data import SearchData
 
 
 class BIM_PT_ifccsv(Panel):
-    bl_label = "CSV Import/Export"
+    bl_label = "Spreadsheet Import/Export"
     bl_idname = "BIM_PT_ifccsv"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -86,6 +86,7 @@ class BIM_PT_ifccsv(Panel):
         row.prop(props, "should_show_sort", icon="SORTSIZE", text="")
         row.prop(props, "should_show_group", icon="OUTLINER_COLLECTION", text="")
         row.prop(props, "should_show_summary", icon="SYNTAX_ON", text="")
+        row.prop(props, "should_show_formatting", icon="CON_TRANSLIKE", text="")
 
         total = len(props.csv_attributes)
         for index, attribute in enumerate(props.csv_attributes):
@@ -100,6 +101,8 @@ class BIM_PT_ifccsv(Panel):
                     row.prop(attribute, "varies_value", text="")
             if props.should_show_summary:
                 row.prop(attribute, "summary", text="")
+            if props.should_show_formatting:
+                row.prop(attribute, "formatting", text="")
             if total > 1:
                 if index != 0:
                     op = row.operator(f"bim.reorder_csv_attribute", icon="TRIA_UP", text="")
