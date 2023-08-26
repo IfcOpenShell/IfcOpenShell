@@ -36,7 +36,7 @@ namespace IfcGeom {
 	public:
 		virtual void Triangulate(const IteratorSettings& settings, const ifcopenshell::geometry::taxonomy::matrix4& place, Representation::Triangulation* t, int surface_style_id) const = 0;
 
-		virtual void Serialize(std::string&) const = 0;
+		virtual void Serialize(const ifcopenshell::geometry::taxonomy::matrix4& place, std::string&) const = 0;
 		virtual ConversionResultShape* clone() const = 0;
 		virtual int surface_genus() const = 0;
 		virtual bool is_manifold() const = 0;

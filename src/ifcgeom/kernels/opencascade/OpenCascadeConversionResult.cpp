@@ -2,6 +2,7 @@
 
 #include "../../../ifcparse/IfcLogger.h"
 #include "../../../ifcgeom/IfcGeomRepresentation.h"
+#include "base_utils.h"
 
 #include <TopoDS.hxx>
 #include <Geom_SphericalSurface.hxx>
@@ -217,9 +218,10 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(const IfcGeom::Iterat
 	BRepTools::Clean(shape_);
 }
 
-void ifcopenshell::geometry::OpenCascadeShape::Serialize(std::string& r) const {
+void ifcopenshell::geometry::OpenCascadeShape::Serialize(const ifcopenshell::geometry::taxonomy::matrix4& place, std::string& r) const {
+	auto s = IfcGeom::util::apply_transformation(shape_, place);
 	std::stringstream sstream;
-	BRepTools::Write(shape_, sstream);
+	BRepTools::Write(s, sstream);
 	r = sstream.str();
 }
 

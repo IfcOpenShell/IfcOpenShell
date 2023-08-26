@@ -286,13 +286,29 @@ TopoDS_Shape IfcGeom::util::apply_transformation(const TopoDS_Shape& s, const gp
 	}
 }
 
+
 TopoDS_Shape IfcGeom::util::apply_transformation(const TopoDS_Shape& s, const gp_GTrsf& t) {
 	if (t.Form() == gp_Other) {
 		return BRepBuilderAPI_GTransform(s, t, true);
 	} else {
-
 		return apply_transformation(s, t.Trsf());
 	}
+}
+
+TopoDS_Shape IfcGeom::util::apply_transformation(const TopoDS_Shape& s, const ifcopenshell::geometry::taxonomy::matrix4& t) {
+	// @todo this probably discards non-uniform scale?
+	gp_GTrsf trsf;
+	if (t.components_) {
+		gp_Trsf tr;
+		const auto& m = t.ccomponents();
+		tr.SetValues(
+			m(0, 0), m(0, 1), m(0, 2), m(0, 3),
+			m(1, 0), m(1, 1), m(1, 2), m(1, 3),
+			m(2, 0), m(2, 1), m(2, 2), m(2, 3)
+		);
+		trsf = tr;
+	}
+	return apply_transformation(s, trsf);
 }
 
 bool IfcGeom::util::fit_halfspace(const TopoDS_Shape& a, const TopoDS_Shape& b, TopoDS_Shape& box, double& height, double tol) {

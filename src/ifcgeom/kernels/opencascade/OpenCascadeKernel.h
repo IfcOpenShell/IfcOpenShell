@@ -138,10 +138,6 @@ public:
 	bool convert(const taxonomy::solid::ptr, TopoDS_Shape&);
 	bool convert(const taxonomy::bspline_surface::ptr bs, Handle(Geom_Surface) surf);
 
-	TopoDS_Shape apply_transformation(const TopoDS_Shape& s, const taxonomy::matrix4& t);
-	TopoDS_Shape apply_transformation(const TopoDS_Shape& s, const gp_GTrsf& t);
-	TopoDS_Shape apply_transformation(const TopoDS_Shape& s, const gp_Trsf& t);
-
 	virtual bool convert_impl(const taxonomy::face::ptr, IfcGeom::ConversionResults&);
 	virtual bool convert_impl(const taxonomy::solid::ptr, IfcGeom::ConversionResults&);
 	virtual bool convert_impl(const taxonomy::shell::ptr, IfcGeom::ConversionResults&);
