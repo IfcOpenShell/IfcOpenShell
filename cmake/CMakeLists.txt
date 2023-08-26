@@ -946,12 +946,6 @@ TARGET_LINK_LIBRARIES(Serializers ${SERIALIZER_SCHEMA_LIBRARIES} ${OPENCOLLADA_L
 
 endif()
 
-if (MSVC)
-# @todo still needs to be understood better, but the cgal and cgal-simple kernel cause multiply defined boost lambda placeholders _1 ... _3
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /FORCE:MULTIPLE") 
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /FORCE:MULTIPLE") 
-endif()
-
 if (BUILD_CONVERT)
 
 if (WITH_CGAL AND CITYJSON_SUPPORT)
@@ -1044,6 +1038,13 @@ if (GIT_FOUND)
 	add_definitions(-DIFCOPENSHELL_BRANCH=${git_branch})
 	add_definitions(-DIFCOPENSHELL_COMMIT=${git_sha})
 endif()
+endif()
+
+if (MSVC)
+# @todo still needs to be understood better, but the cgal and cgal-simple kernel cause multiply defined boost lambda placeholders _1 ... _3
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /FORCE:MULTIPLE")
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /FORCE:MULTIPLE")
+set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} /FORCE:MULTIPLE")
 endif()
 
 # Documentation

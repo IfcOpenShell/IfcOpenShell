@@ -14,6 +14,7 @@
 #undef CGALCONVERSIONRESULT_H
 #define IFOPSH_SIMPLE_KERNEL
 #include "../ifcgeom/kernels/cgal/CgalKernel.h"
+#undef CgalKernel
 #endif
 
 using namespace ifcopenshell::geometry;
