@@ -75,6 +75,7 @@ class IfcCsv:
         sort=None,
         groups=None,
         summaries=None,
+        formatting=None,
     ):
         self.ifc_file = ifc_file
         self.results = []
@@ -116,6 +117,7 @@ class IfcCsv:
         self.group_results(groups, attributes)
         self.summarise_results(summaries, attributes)
         self.sort_results(sort, attributes, include_global_id)
+        self.format_results(formatting, attributes, null)
 
         if format == "csv":
             self.export_csv(output, delimiter=delimiter)
@@ -225,7 +227,27 @@ class IfcCsv:
                     self.summaries[si] = max(summary_values[si])
                 self.summaries[si] = summary_type.title() + ": " + str(self.summaries[si])
 
+    def format_results(self, formatting, attributes, null):
+        if not formatting:
+            return
+
+        formatting_indices = {}
+
+        for data in formatting:
+            index = attributes.index(data["name"])
+            formatting_indices[index] = data["format"]
+
+        for row in self.results:
+            for index, format_query in formatting_indices.items():
+                if row[index] == null:
+                    continue
+                if not isinstance(row[index], str):
+                    row[index] = '"' + str(row[index]) + '"'
+                row[index] = ifcopenshell.util.selector.format(format_query.replace("{{value}}", row[index]))
+
     def sort_results(self, sort, attributes, include_global_id):
+        if not self.results:
+            return
         if sort:
             def natural_sort(value):
                 if isinstance(value, str):
@@ -240,7 +262,10 @@ class IfcCsv:
                 reverse = sort_data["order"] == "DESC"
                 self.results = sorted(self.results, key=lambda x: natural_sort(x[i]), reverse=reverse)
         else:
-            self.results = sorted(self.results, key=lambda x: x[1 if include_global_id else 0])
+            if include_global_id and len(self.results[0]) > 1:
+                self.results = sorted(self.results, key=lambda x: x[1])
+            elif not include_global_id:
+                self.results = sorted(self.results, key=lambda x: x[0])
 
     def export_csv(self, output, delimiter=None):
         with open(output, "w", newline="", encoding="utf-8") as f:
