@@ -101,6 +101,7 @@ class ImportCsvAttributes(bpy.types.Operator):
             new.sort = attribute["sort"]
             new.group = attribute["group"]
             new.summary = attribute["summary"]
+            new.formatting = attribute["formatting"]
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -123,7 +124,14 @@ class ExportCsvAttributes(bpy.types.Operator):
         data = {
             "query": tool.Search.export_filter_query(props.filter_groups),
             "attributes": [
-                {"name": a.name, "header": a.header, "sort": a.sort, "group": a.group, "summary": a.summary}
+                {
+                    "name": a.name,
+                    "header": a.header,
+                    "sort": a.sort,
+                    "group": a.group,
+                    "summary": a.summary,
+                    "formatting": a.formatting,
+                }
                 for a in props.csv_attributes
             ],
         }
@@ -173,6 +181,7 @@ class ExportIfcCsv(bpy.types.Operator):
         sort = []
         groups = []
         summaries = []
+        formatting = []
         for attribute in props.csv_attributes:
             if attribute.sort != "NONE":
                 sort.append({"name": attribute.name, "order": attribute.sort})
@@ -180,6 +189,9 @@ class ExportIfcCsv(bpy.types.Operator):
                 groups.append({"name": attribute.name, "type": attribute.group, "varies_value": attribute.varies_value})
             if attribute.summary != "NONE":
                 summaries.append({"name": attribute.name, "type": attribute.summary})
+
+            if attribute.formatting != "{{value}}" and "{{value}}" in attribute.formatting:
+                formatting.append({"name": attribute.name, "format": attribute.formatting})
 
         sep = props.csv_custom_delimiter if props.csv_delimiter == "CUSTOM" else props.csv_delimiter
         ifc_csv.export(
@@ -198,6 +210,7 @@ class ExportIfcCsv(bpy.types.Operator):
             sort=sort,
             groups=groups,
             summaries=summaries,
+            formatting=formatting,
         )
         return {"FINISHED"}
 

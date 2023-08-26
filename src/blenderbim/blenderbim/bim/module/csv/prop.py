@@ -58,6 +58,7 @@ class CsvAttribute(PropertyGroup):
             ("MAX", "Max", "Gets the maximum value of all rows"),
         ]
     )
+    formatting: StringProperty(default="{{value}}", name="Formatting")
 
 
 class CsvProperties(PropertyGroup):
@@ -94,4 +95,5 @@ class CsvProperties(PropertyGroup):
     should_show_sort: BoolProperty(default=False, name="Show Sorting")
     should_show_group: BoolProperty(default=False, name="Show Grouping")
     should_show_summary: BoolProperty(default=False, name="Show Summary")
+    should_show_formatting: BoolProperty(default=False, name="Show Formatting")
     should_load_from_memory: BoolProperty(default=False, name="Load from Memory")

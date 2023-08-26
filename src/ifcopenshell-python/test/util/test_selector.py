@@ -22,6 +22,32 @@ import ifcopenshell.api
 import ifcopenshell.util.selector as subject
 
 
+class TestFormat():
+    def test_no_formatting(self):
+        assert subject.format("123") == "123"
+        assert subject.format('\"123\"') == "123"
+        assert subject.format('\"foo\"') == "foo"
+
+    def test_string_formatting(self):
+        assert subject.format('upper(\"fOo\")') == "FOO"
+        assert subject.format('lower(\"fOo\")') == "foo"
+        assert subject.format('title(\"fOo\")') == "Foo"
+        assert subject.format('concat(\"fOo\", \"bar\")') == "fOobar"
+        assert subject.format('upper(concat(\"fOo\", \"bar\"))') == "FOOBAR"
+
+    def test_number_formatting(self):
+        assert subject.format("round(123, 5)") == "125.0"
+        assert subject.format('round(\"123\", 5)') == "125.0"
+        assert subject.format('metric_length(123, 5, 2)') == "125.00"
+        assert subject.format('metric_length(123.123, 0.1, 2)') == "123.10"
+        assert subject.format('metric_length(\"123\", 5, 2)') == "125.00"
+        assert subject.format('imperial_length(1, 1)') == "1'"
+        assert subject.format('imperial_length(3.123, 1)') == "3' - 1\""
+        assert subject.format('imperial_length(3.123, 2)') == "3' - 1 1/2\""
+        assert subject.format('imperial_length(\"3.123\", 2)') == "3' - 1 1/2\""
+        assert subject.format('imperial_length(\"123.123\", 2, \"inch\")') == "10' - 3\""
+
+
 class TestGetElementValue(test.bootstrap.IFC4):
     def test_selecting_an_elements_class_or_id_using_a_query(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")

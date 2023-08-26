@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 from math import pi
+from fractions import Fraction
 
 prefixes = {
     "EXA": 1e18,
