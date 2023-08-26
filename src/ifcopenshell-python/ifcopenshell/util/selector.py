@@ -52,8 +52,8 @@ filter_elements_grammar = lark.Lark(
 
     value: special | quoted_string | regex_string | unquoted_string
     unquoted_string: /[^.=\\s]+/
-    quoted_string: ESCAPED_STRING
     regex_string: "/" /[^\\/]+/ "/"
+    quoted_string: ESCAPED_STRING
 
     special: null | true | false
 
@@ -94,19 +94,18 @@ filter_elements_grammar = lark.Lark(
 )
 
 get_element_grammar = lark.Lark(
-    """start: WORD | ESCAPED_STRING | keys_regex | keys_quoted | keys_simple
-    keys_regex: "r" ESCAPED_STRING ("." ESCAPED_STRING)*
-    keys_quoted: ESCAPED_STRING ("." ESCAPED_STRING)*
-    keys_simple: /[^\\W][^.=<>!%*\\]]*/ ("." /[^\\W][^.=<>!%*\\]]*/)*
+    """start: keys
+
+    keys: key ("." key)*
+    key: quoted_string | regex_string | unquoted_string
+    unquoted_string: /[^.=\\/\\s]+/
+    regex_string: "/" /[^\\/]+/ "/"
+    quoted_string: ESCAPED_STRING
 
     // Embed common.lark for packaging
     _STRING_INNER: /.*?/
     _STRING_ESC_INNER: _STRING_INNER /(?<!\\\\)(\\\\\\\\)*?/
     ESCAPED_STRING : "\\"" _STRING_ESC_INNER "\\""
-    LCASE_LETTER: "a".."z"
-    UCASE_LETTER: "A".."Z"
-    LETTER: UCASE_LETTER | LCASE_LETTER
-    WORD: LETTER+
     WS: /[ \\t\\f\\r\\n]/+
 
     %ignore WS // Disregard spaces in text
@@ -210,14 +209,36 @@ class FormatTransformer(lark.Transformer):
         )
 
 
+class GetElementTransformer(lark.Transformer):
+    def start(self, args):
+        return args[0]
+
+    def keys(self, args):
+        return args
+
+    def key(self, args):
+        return args[0]
+
+    def quoted_string(self, args):
+        return str(args[0])
+
+    def regex_string(self, args):
+        return re.compile(args[0])
+
+    def unquoted_string(self, args):
+        return str(args[0])
+
+    def ESCAPED_STRING(self, args):
+        return args[1:-1].replace("\\", "")
+
+
 def format(query):
     return FormatTransformer().transform(format_grammar.parse(query))
 
 
 def get_element_value(element, query):
-    start = get_element_grammar.parse(query)
-    filter_query = Selector.parse_filter_query(start.children[0])
-    return Selector.get_element_value(element, filter_query["keys"], filter_query["is_regex"])
+    keys = GetElementTransformer().transform(get_element_grammar.parse(query))
+    return Selector.get_element_value(element, keys)
 
 
 def filter_elements(ifc_file, query, elements=None, edit_in_place=False):
@@ -230,13 +251,14 @@ def filter_elements(ifc_file, query, elements=None, edit_in_place=False):
 
 
 def set_element_value(ifc_file, element, query, value):
-    start = get_element_grammar.parse(query)
-    filter_query = Selector.parse_filter_query(start.children[0])
-    keys = filter_query["keys"]
-    is_regex = filter_query["is_regex"]
+    if isinstance(query, (list, tuple)):
+        keys = query
+    else:
+        keys = GetElementTransformer().transform(get_element_grammar.parse(query))
 
     for i, key in enumerate(keys):
-        key = key.strip()
+        if isinstance(key, str):
+            key = key.strip()
         if element is None:
             return
         if key == "type":
@@ -265,7 +287,7 @@ def set_element_value(ifc_file, element, query, value):
         elif key == "site":
             element = ifcopenshell.util.element.get_container(element, ifc_class="IfcSite")
         elif key == "class":
-            if element.is_a() != value:
+            if element.is_a().lower() != value.lower():
                 return ifcopenshell.util.schema.reassign_class(ifc_file, element, value)
         elif key == "id":
             return
@@ -273,42 +295,49 @@ def set_element_value(ifc_file, element, query, value):
             if key == "Name" and element.is_a("IfcMaterialLayerSet"):
                 key = "LayerSetName"  # This oddity in the IFC spec is annoying so we account for it.
 
-            if hasattr(element, key):
+            if isinstance(key, str) and hasattr(element, key):
                 if getattr(element, key) != value:
                     return setattr(element, key, value)
             else:
                 # Try to extract pset
-                if is_regex:
+                if isinstance(key, re.Pattern):
                     psets = ifcopenshell.util.element.get_psets(element)
                     matching_psets = []
                     for pset_name, pset in psets.items():
-                        if re.match(key, pset_name):
+                        if key.match(pset_name):
                             matching_psets.append(pset)
                     result = matching_psets or None
+                    if result and len(result) == 1:
+                        result = result[0]
                 else:
                     result = ifcopenshell.util.element.get_pset(element, key)
 
-                if value and not result and len(keys) == i + 2:  # The next key is the prop name
-                    if "qto" in key.lower() or "quantity" in key.lower() or "quantities" in key.lower():
-                        pset = ifcopenshell.api.run("pset.add_qto", ifc_file, product=element, name=key)
-                    else:
-                        pset = ifcopenshell.api.run("pset.add_pset", ifc_file, product=element, name=key)
-                    result = {"id": pset.id()}
+                    if value and not result and len(keys) == i + 2:  # The next key is the prop name
+                        if "qto" in key.lower() or "quantity" in key.lower() or "quantities" in key.lower():
+                            pset = ifcopenshell.api.run("pset.add_qto", ifc_file, product=element, name=key)
+                        else:
+                            pset = ifcopenshell.api.run("pset.add_pset", ifc_file, product=element, name=key)
+                        result = {"id": pset.id()}
 
                 element = result
         elif isinstance(element, dict):  # Such as from the result of a prior get_pset
             pset = ifc_file.by_id(element["id"])
-            if is_regex:
+            if isinstance(key, re.Pattern):
                 for prop, prop_value in element.items():
-                    if re.match(key, prop):
+                    if key.match(prop):
                         if pset.is_a("IfcPropertySet") and prop_value != value:
                             ifcopenshell.api.run("pset.edit_pset", ifc_file, pset=pset, properties={prop: value})
                         elif pset.is_a("IfcElementQuantity") and prop_value != float(value):
                             ifcopenshell.api.run("pset.edit_qto", ifc_file, qto=pset, properties={prop: float(value)})
-            elif pset.is_a("IfcPropertySet") and element[key] != value:
+            elif pset.is_a("IfcPropertySet") and element.get(key, None) != value:
                 ifcopenshell.api.run("pset.edit_pset", ifc_file, pset=pset, properties={key: value})
-            elif pset.is_a("IfcElementQuantity") and element[key] != float(value):
-                ifcopenshell.api.run("pset.edit_qto", ifc_file, qto=pset, properties={key: float(value)})
+            elif pset.is_a("IfcElementQuantity"):
+                try:
+                    value = float(value)
+                    if element.get(key, None) != value:
+                        ifcopenshell.api.run("pset.edit_qto", ifc_file, qto=pset, properties={key: value})
+                except:
+                    pass
             return
         elif isinstance(element, (list, tuple)):  # If we use regex
             if key.isnumeric():
@@ -319,7 +348,7 @@ def set_element_value(ifc_file, element, query, value):
             else:
                 results = []
                 for v in element:
-                    cls.set_element_value(v, keys[i + 1 :], is_regex=is_regex)
+                    cls.set_element_value(ifc_file, v, keys[i + 1 :], value)
                 return
 
 
@@ -713,7 +742,9 @@ class Selector:
             elif token_type == "NULL":
                 value = None
         for element in elements:
-            element_value = cls.get_element_value(element, filter_query["keys"], is_regex=filter_query["is_regex"])
+            if filter_query["is_regex"]:
+                filter_query["keys"] = [re.compile(k) for k in filter_query["keys"]]
+            element_value = cls.get_element_value(element, filter_query["keys"])
             if element_value is None and value is not None and "not" not in comparison:
                 continue
             if comparison and cls.filter_element(element, element_value, comparison, value, is_regex=is_regex):
@@ -738,10 +769,11 @@ class Selector:
         return {"keys": keys, "is_regex": is_regex}
 
     @classmethod
-    def get_element_value(cls, element, keys, is_regex=False):
+    def get_element_value(cls, element, keys):
         value = element
         for key in keys:
-            key = key.strip()
+            if isinstance(key, str):
+                key = key.strip()
             if value is None:
                 return
             if key == "type":
@@ -785,37 +817,47 @@ class Selector:
                 if key == "Name" and value.is_a("IfcMaterialLayerSet"):
                     key = "LayerSetName"  # This oddity in the IFC spec is annoying so we account for it.
 
-                attribute = getattr(value, key, None)
+                if isinstance(key, re.Pattern):
+                    attribute = None # Should we support regex attributes? Probably not for now.
+                else:
+                    attribute = getattr(value, key, None)
 
                 if attribute is not None:
                     value = attribute
                 else:
                     # Try to extract pset
-                    if is_regex:
+                    if isinstance(key, re.Pattern):
                         psets = ifcopenshell.util.element.get_psets(value)
                         matching_psets = []
                         for pset_name, pset in psets.items():
-                            if re.match(key, pset_name):
+                            if key.match(pset_name):
+                                del pset["id"]
                                 matching_psets.append(pset)
                         result = matching_psets or None
+                        if result and len(result) == 1:
+                            result = result[0]
                     else:
                         result = ifcopenshell.util.element.get_pset(value, key)
+                        if result:
+                            del result["id"]
 
                     value = result
             elif isinstance(value, dict):  # Such as from the result of a prior get_pset
-                if is_regex:
+                if isinstance(key, re.Pattern):
                     results = []
                     for prop_name, prop_value in value.items():
-                        if re.match(key, prop_name):
+                        if key.match(prop_name):
                             if isinstance(prop_value, (list, tuple)):
                                 results.extend(prop_value)
                             else:
                                 results.append(prop_value)
-                    value = results
+                    value = results or None
+                    if value and len(value) == 1:
+                        value = value[0]
                 else:
                     value = value.get(key, None)
             elif isinstance(value, (list, tuple)):  # If we use regex
-                if key.isnumeric():
+                if isinstance(key, str) and key.isnumeric():
                     try:
                         value = value[int(key)]
                     except IndexError:
@@ -823,7 +865,7 @@ class Selector:
                 else:
                     results = []
                     for v in value:
-                        subvalue = cls.get_element_value(v, [key], is_regex=is_regex)
+                        subvalue = cls.get_element_value(v, [key])
                         if isinstance(subvalue, list):
                             results.extend(subvalue)
                         else:
