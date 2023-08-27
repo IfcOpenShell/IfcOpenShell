@@ -888,12 +888,15 @@ class ReloadLink(bpy.types.Operator):
     filepath: bpy.props.StringProperty()
 
     def execute(self, context):
-        def get_linked_ifc():
+        def get_linked_ifcs():
             selected_filename = os.path.basename(self.filepath)
-            return [c for c in bpy.data.collections if "IfcProject" in c.name and c.library and os.path.basename(c.library.filepath) == selected_filename]
-
-        for linked_ifc in get_linked_ifc:
-            linked_ifc.reload()
+            return [
+                c.library
+                for c in bpy.data.collections
+                if "IfcProject" in c.name and c.library and os.path.basename(c.library.filepath) == selected_filename
+            ]
+        for library in get_linked_ifcs() or []:
+            library.reload()
         return {"FINISHED"}
 
 
@@ -1054,6 +1057,7 @@ class ExportIFC(bpy.types.Operator):
         settings.json_compact = self.json_compact
 
         ifc_exporter = export_ifc.IfcExporter(settings)
+        print("Starting export")
         settings.logger.info("Starting export")
         ifc_exporter.export()
         settings.logger.info("Export finished in {:.2f} seconds".format(time.time() - start))
