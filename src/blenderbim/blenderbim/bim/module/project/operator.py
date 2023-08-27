@@ -880,6 +880,23 @@ class LoadLink(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class ReloadLink(bpy.types.Operator):
+    bl_idname = "bim.reload_link"
+    bl_label = "Reload Link"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Reload the selected file"
+    filepath: bpy.props.StringProperty()
+
+    def execute(self, context):
+        def get_linked_ifc():
+            selected_filename = os.path.basename(self.filepath)
+            return [c for c in bpy.data.collections if "IfcProject" in c.name and c.library and os.path.basename(c.library.filepath) == selected_filename]
+
+        for linked_ifc in get_linked_ifc:
+            linked_ifc.reload()
+        return {"FINISHED"}
+
+
 class ToggleLinkSelectability(bpy.types.Operator):
     bl_idname = "bim.toggle_link_selectability"
     bl_label = "Toggle Link Selectability"
