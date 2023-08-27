@@ -15,4 +15,5 @@ system, as well as high level analysis and authoring functions.
    ifcopenshell-python/geometry_processing
    ifcopenshell-python/geometry_creation
    ifcopenshell-python/geometry_tree
+   ifcopenshell-python/selector_syntax
    ifcopenshell-python/developer_guide
