@@ -794,15 +794,15 @@ class Selector:
             elif key == "container":
                 value = ifcopenshell.util.element.get_container(value)
             elif key == "space":
-                value = ifcopenshell.util.element.get_container(element, ifc_class="IfcSpace")
+                value = ifcopenshell.util.element.get_container(value, ifc_class="IfcSpace")
             elif key == "storey":
-                value = ifcopenshell.util.element.get_container(element, ifc_class="IfcBuildingStorey")
+                value = ifcopenshell.util.element.get_container(value, ifc_class="IfcBuildingStorey")
             elif key == "building":
-                value = ifcopenshell.util.element.get_container(element, ifc_class="IfcBuilding")
+                value = ifcopenshell.util.element.get_container(value, ifc_class="IfcBuilding")
             elif key == "site":
-                value = ifcopenshell.util.element.get_container(element, ifc_class="IfcSite")
-            elif key == "types":
-                value = ifcopenshell.util.element.get_types(element)
+                value = ifcopenshell.util.element.get_container(value, ifc_class="IfcSite")
+            elif key in ("types", "occurrences"):
+                value = ifcopenshell.util.element.get_types(value)
             elif key == "count":
                 if isinstance(value, set):
                     value = len(list(value))
@@ -812,6 +812,8 @@ class Selector:
                     value = 1
             elif key == "class":
                 value = value.is_a()
+            elif key == "predefined_type":
+                value = ifcopenshell.util.element.get_predefined_type(value)
             elif key == "id":
                 value = value.id()
             elif isinstance(value, ifcopenshell.entity_instance):
