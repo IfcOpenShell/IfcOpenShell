@@ -375,6 +375,8 @@ class BIM_UL_links(UIList):
                 op.mode = "VISIBLE"
                 op = row.operator("bim.unload_link", text="", icon="UNLINKED")
                 op.filepath = item.name
+                op = row.operator("bim.reload_link", text="", icon="FILE_REFRESH")
+                op.filepath = item.name
             else:
                 row.prop(item, "name", text="")
                 op = row.operator("bim.load_link", text="", icon="LINKED")
