@@ -883,7 +883,7 @@ if(BUILD_IFCGEOM)
 
 foreach(schema ${SCHEMA_VERSIONS})
 	add_library(IfcGeom_ifc${schema} STATIC ${IFCGEOM_FILES})
-	set_target_properties(IfcGeom_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${s}")
+	set_target_properties(IfcGeom_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema}")
 	if (NOT WASM_BUILD)
         target_link_libraries(IfcGeom_ifc${schema} IfcParse ${OPENCASCADE_LIBRARIES})	    
 	endif()
@@ -920,7 +920,7 @@ if(BUILD_CONVERT OR BUILD_IFCPYTHON)
 
 foreach(schema ${SCHEMA_VERSIONS})
 	add_library(Serializers_ifc${schema} STATIC ${SERIALIZERS_S_FILES})
-	set_target_properties(Serializers_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${s} ${CONVERT_PRECISION}")
+	set_target_properties(Serializers_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema} ${CONVERT_PRECISION}")
 	
 	if (WASM_BUILD)
         target_link_libraries(Serializers_ifc${schema} ${HDF5_LIBRARIES})
