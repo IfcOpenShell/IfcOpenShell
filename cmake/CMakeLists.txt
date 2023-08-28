@@ -276,6 +276,14 @@ else()
     endif()
 endif()
 
+if (WASM_BUILD)
+    set(BOOST_COMPONENTS)
+else()
+    # @todo review this, shouldn't this be all possible header-only now?
+    # ... or rewritten using C++17 features?
+    set(BOOST_COMPONENTS system program_options regex thread date_time)
+endif()
+
 if(USE_MMAP)
     if(MSVC)
         # filesystem is necessary for the utf-16 wpath
@@ -290,14 +298,6 @@ endif()
 find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 message(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
 message(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
-
-if (WASM_BUILD)
-    set(BOOST_COMPONENTS)
-else()
-    # @todo review this, shouldn't this be all possible header-only now?
-    # ... or rewritten using C++17 features?
-    set(BOOST_COMPONENTS system program_options regex thread date_time)
-endif()
 
 if(NOT MINIMAL_BUILD)
     # libxml2 is required for IFCXML (optional) and SVGFILL (mandatory)
