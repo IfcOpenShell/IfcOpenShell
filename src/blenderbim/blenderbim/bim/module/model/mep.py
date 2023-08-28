@@ -35,7 +35,7 @@ import blenderbim.core.type
 import blenderbim.core.root
 import blenderbim.core.geometry
 import blenderbim.tool as tool
-from math import pi, degrees, radians
+from math import pi, degrees, radians, sin, cos, asin
 from copy import copy
 from mathutils import Vector, Matrix
 from ifcopenshell.util.shape_builder import ShapeBuilder
@@ -201,6 +201,7 @@ class FitFlowSegments(bpy.types.Operator, tool.Ifc.Operator):
                 is_on_axis2 = tool.Cad.is_point_on_edge(intersect2, axis2)
                 if not is_on_axis1 and not is_on_axis2:
                     fitting_type = "BEND"
+                    bpy.ops.bim.mep_add_bend()
                 elif is_on_axis1 and is_on_axis2:
                     fitting_type = "CROSS"
                 else:
@@ -644,32 +645,40 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
             return {"CANCELLED"}
 
         # TODO: support different profiles rotation by local Z
-        rotation_difference_z = start_object.matrix_world.to_quaternion().rotation_difference(end_object.matrix_world.to_quaternion()).to_euler().z
+        # check rotation difference
+        end_object_rotation = end_object.matrix_world.to_quaternion()
+        rotation_difference_z = (
+            start_object.matrix_world.to_quaternion().rotation_difference(end_object_rotation).to_euler().z
+        )
+
         def is_multiple_of_pi(value):
             n = round(value / pi)
             return tool.Cad.is_x(abs(value - n * pi), 0)
-        
+
         if not is_multiple_of_pi(rotation_difference_z):
-            self.report({"ERROR"}, f"There is some rotation difference between profiles by local Z axis: {round(degrees(rotation_difference_z))} deg, this kind of transition is not yet supported.")
+            self.report(
+                {"ERROR"},
+                "There is some rotation difference between profiles by local Z axis: "
+                f"{round(degrees(rotation_difference_z))} deg, this kind of transition is not yet supported.",
+            )
             return {"CANCELLED"}
 
+        # setup start / end points
         start_segment_data = MEPGenerator().get_segment_data(start_element)
         end_segment_data = MEPGenerator().get_segment_data(end_element)
-        end_port = end_segment_data["start_port"]
-        start_port = start_segment_data["end_port"]
-
         points_ports_map = {
             start_segment_data["start_point"]: start_segment_data["start_port"],
             start_segment_data["end_point"]: start_segment_data["end_port"],
             end_segment_data["start_point"]: end_segment_data["start_port"],
             end_segment_data["end_point"]: end_segment_data["end_port"],
         }
-
         # transition points
-        start_point, end_point = tool.Cad.closest_points(
+        (start_point, end_point), (first_segment_start, second_segment_end) = tool.Cad.closest_points(
             (start_segment_data["start_point"], start_segment_data["end_point"]),
             (end_segment_data["start_point"], end_segment_data["end_point"]),
         )
+        start_port = points_ports_map[start_point]
+        end_port = points_ports_map[end_point]
 
         # figure profile offset
         base_transition_dir = keep_only_z_axis(end_point - start_point).normalized()
@@ -694,18 +703,6 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
             start_object_rotation @ (profile_offset * si_conversion).to_3d() if profile_offset else V(0, 0, 0)
         )
 
-        # will need entire_length to check that transition length fill fit
-        first_segment_start, second_segment_end = [
-            p
-            for p in (
-                start_segment_data["start_point"],
-                start_segment_data["end_point"],
-                end_segment_data["start_point"],
-                end_segment_data["end_point"],
-            )
-            if p not in (start_point, end_point)
-        ]
-
         def get_segments_length():
             start_dir = (start_point - first_segment_start).normalized()
             segments_vector = second_segment_end - first_segment_start
@@ -716,8 +713,6 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
         # can't rely on (end_point-start_point) here because
         # transition might change the segments length and therefore direction will be changed
         segments_dir = (start_point - first_segment_start).normalized()
-        start_port = points_ports_map[start_point]
-        end_port = points_ports_map[end_point]
 
         # add transition representation
         builder = ShapeBuilder(ifc_file)
@@ -752,6 +747,8 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
         # adjust the segments
         end_object_rotation = end_object.matrix_world.to_quaternion()
         end_object_z_basis = end_object_rotation.to_matrix().col[2]  # z basis vector
+
+        # TODO: do it beforehand, as with bends
         if tool.Cad.is_x(start_object_z_basis.dot(transition_dir), 1):
             start_connection = "ATEND"
         else:
@@ -768,13 +765,11 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
             [start_element, end_element], [start_port, end_port], "TRANSITION"
         )
         transition_type = fitting_data["fitting_type"] if fitting_data else None
+        start_port_match = fitting_data["start_port_match"] if fitting_data else True
         if transition_type:
             # TODO: handle the case without creating a representation in the first place?
             ifcopenshell.api.run("geometry.remove_representation", ifc_file, representation=rep)
-        start_port_match = fitting_data["start_port_match"] if fitting_data else True
-
-        # create new fitting type if nothing is compatible
-        if not transition_type:
+        else:  # create new fitting type if nothing is compatible
             mesh = bpy.data.meshes.new("Transition")
             obj = bpy.data.objects.new("Transition", mesh)
             transition_type = blenderbim.core.root.assign_class(
@@ -824,4 +819,317 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
         tool.Ifc.run("system.connect_port", port1=ports[0], port2=start_port, direction="NOTDEFINED")
         tool.Ifc.run("system.connect_port", port1=ports[1], port2=end_port, direction="NOTDEFINED")
 
+        return {"FINISHED"}
+
+
+class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.mep_add_bend"
+    bl_label = "Add Bend"
+    bl_description = "Adds a bend between two MEP elements. Elements are either provided by ID or selected in Blender"
+    bl_options = {"REGISTER", "UNDO"}
+    start_length: bpy.props.FloatProperty(
+        name="Start Length", description="Bend start length in SI units", default=0.1, subtype="DISTANCE"
+    )
+    end_length: bpy.props.FloatProperty(
+        name="End Length", description="Bend end length in SI units", default=0.1, subtype="DISTANCE"
+    )
+    start_segment_id: bpy.props.IntProperty(name="Start Segment Element ID", default=0)
+    end_segment_id: bpy.props.IntProperty(name="End Segment Element ID", default=0)
+    radius: bpy.props.FloatProperty(
+        "Bend Inner Radius", description="Bend inner radius in SI units", default=0.2, subtype="DISTANCE"
+    )
+
+    def _execute(self, context):
+        start_element, end_element = None, None
+        ifc_file = tool.Ifc.get()
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+
+        self.start_length, self.end_length = 0, 0
+
+        if not (self.start_length == 0 and self.end_length == 0):
+            self.report({"ERROR"}, f"Only zero lengths are now supported.")
+            return {"CANCELLED"}
+
+        if self.start_segment_id and self.end_segment_id:
+            start_element = ifc_file.by_id(self.start_segment_id)
+            end_element = ifc_file.by_id(self.end_segment_id)
+            start_object = tool.Ifc.get_object(start_element)
+            end_object = tool.Ifc.get_object(end_element)
+
+        elif len(context.selected_objects) == 2:
+            start_object = context.active_object
+            end_object = next(o for o in context.selected_objects if o != context.active_object)
+            start_element = tool.Ifc.get_entity(start_object)
+            end_element = tool.Ifc.get_entity(end_object)
+            if not start_element or not end_element:
+                self.report({"ERROR"}, f"Two IFC elements should be selected for the bend.")
+                return {"CANCELLED"}
+
+        else:
+            self.report({"ERROR"}, f"Two IFC elements should be provided for the bend.")
+            return {"CANCELLED"}
+
+        # check rotation difference
+        def rotation_difference_check():
+            end_object_rotation = end_object.matrix_world.to_quaternion()
+            rotation_difference = start_object.matrix_world.to_quaternion().rotation_difference(end_object_rotation).to_euler()
+
+            def is_multiple_of_pi(value):
+                n = round(value / pi)
+                return tool.Cad.is_x(abs(value - n * pi), 0)
+
+            if not is_multiple_of_pi(rotation_difference.z):
+                error_msg = (
+                    "There is some rotation difference between profiles by local Z axis: "
+                    f"{round(degrees(rotation_difference.z))} deg, adding a bend is not possible."
+                )
+                return error_msg
+
+        if error_msg := rotation_difference_check():
+            self.report({"ERROR"}, error_msg)
+            return {"CANCELLED"}
+
+        # check segments types
+        def types_check():
+            start_type = ifcopenshell.util.element.get_type(start_element)
+            end_type = ifcopenshell.util.element.get_type(end_element)
+            if not start_type or not end_type:
+                return False
+            return start_type == end_type
+
+        if not types_check():
+            self.report(
+                {"ERROR"},
+                "Segments types do not match "
+                "or one of the segments doesn't have type which is required for a bend.",
+            )
+            return {"CANCELLED"}
+
+        # TODO: support circular profiles
+        profile = tool.Model.get_flow_segment_profile(start_element)
+        if not profile.is_a("IfcRectangleProfileDef"):
+            self.report(
+                {
+                    "ERROR",
+                    "For now Only IfcRectangleProfileDef profiles supported for a bend, "
+                    f"the segments are {profile.is_a()}",
+                }
+            )
+            return {"CANCELLED"}
+
+        def get_dim(profile):
+            if profile.is_a("IfcRectangleProfileDef"):
+                return V(profile.XDim / 2, profile.YDim / 2)
+            elif profile.is_a("IfcCircleProfileDef"):
+                return V(profile.Radius, profile.Radius)
+            return None
+
+        # setup start / end points
+        start_object_rotation = start_object.matrix_world.to_quaternion().to_matrix()
+        start_segment_data = MEPGenerator().get_segment_data(start_element)
+        end_segment_data = MEPGenerator().get_segment_data(end_element)
+        points_ports_map = {
+            start_segment_data["start_point"]: start_segment_data["start_port"],
+            start_segment_data["end_point"]: start_segment_data["end_port"],
+            end_segment_data["start_point"]: end_segment_data["start_port"],
+            end_segment_data["end_point"]: end_segment_data["end_port"],
+        }
+        (start_point, end_point), (first_segment_start, second_segment_end) = tool.Cad.closest_points(
+            (start_segment_data["start_point"], start_segment_data["end_point"]),
+            (end_segment_data["start_point"], end_segment_data["end_point"]),
+        )
+        start_port = points_ports_map[start_point]
+        end_port = points_ports_map[end_point]
+        start_point_on_origin = start_point == start_segment_data["start_point"]
+        start_connection = "ATSTART" if start_point_on_origin else "ATEND"
+        start_segment_sign = -1 if start_point_on_origin else 1
+
+        end_point_on_origin = end_point == end_segment_data["start_point"]
+        end_connection = "ATSTART" if end_point_on_origin else "ATEND"
+        end_segment_sign = -1 if end_point_on_origin else 1
+
+        profile_dim = get_dim(profile) * si_conversion
+
+        # TODO: profile offset may need to be flipped (check transition code)
+        to_start_object_space = start_object_rotation.inverted()
+        profile_offset = (to_start_object_space @ end_point) - (to_start_object_space @ start_point)
+
+        def check_for_double_bends():
+            # The theory is To avoid double bends, the profile offset should occur along only two axes:
+            # 1) The local Z-axis of the start segment
+            # 2) One of the lateral axes (either X or Y)
+            #
+            # Double bend required when:
+            # - there are 2 or 0 lateral axes involved
+            # - offset appear by the non-lateral axis
+            #
+            # NOTE: some double bends are only possible for square profiles:
+            # https://i.imgur.com/ZhdGbEp.png
+
+            z_axis_end_object = end_object.matrix_world.col[2].normalized().to_3d()
+            z_axis_end_object_local = to_start_object_space @ z_axis_end_object
+            lateral_axes = [i for i in range(2) if not tool.Cad.is_x(z_axis_end_object_local[i], 0)]
+
+            if len(lateral_axes) != 1:
+                return (
+                    None,
+                    f"For now only one lateral axis is supported for a bend (double bends not supported). Found lateral axes: {len(lateral_axes)}.",
+                )
+
+            non_lateral_axis = 0 if lateral_axes[0] == 1 else 1
+            non_lateral_axis_offset = profile_offset[non_lateral_axis]
+            if not tool.Cad.is_x(non_lateral_axis_offset, 0):
+                return (
+                    None,
+                    "For now offset by non-lateral axis is not supported for a bend (double bends not supported).\n"
+                    f"Detected an offset of {round(non_lateral_axis_offset, 5)} along the local axis {'XY'[non_lateral_axis]} when lateral axis is {'XY'[lateral_axes[0]]}.",
+                )
+
+            return lateral_axes[0], None
+
+        lateral_axis, error_msg = check_for_double_bends()
+        if error_msg:
+            self.report({"ERROR"}, error_msg)
+            return {"CANCELLED"}
+
+        O = V(0, 0, 0)
+        get_z_basis = lambda o: o.matrix_world.col[2].normalized().to_3d()
+        angle = tool.Cad.angle_edges((get_z_basis(start_object), O), (get_z_basis(end_object), O))
+
+        lateral_sign = tool.Cad.sign(profile_offset[lateral_axis])
+        radial_offset = V(0, 0, 0)
+        ref_point_radius = self.radius + profile_dim[lateral_axis]
+        radial_offset[lateral_axis] = ref_point_radius * (1 - cos(angle)) * lateral_sign
+        radial_offset.z = ref_point_radius * sin(angle)
+
+        def get_segments_extend():
+            end_segment_z_local = to_start_object_space @ get_z_basis(end_object)
+            segments_intersection = tool.Cad.intersect_edges(
+                (V(0, 0, 1), V(0, 0, 0)), (profile_offset + end_segment_z_local, profile_offset)
+            )[0]
+
+            curent_start_offset = segments_intersection.length
+            required_start_offset = abs(radial_offset.z)
+            current_end_offset = (segments_intersection - profile_offset).length
+            required_end_offset = abs(radial_offset[lateral_axis])
+
+            start_extend = curent_start_offset - required_start_offset
+            end_extend = current_end_offset - required_end_offset
+
+            return start_extend, end_extend
+
+        def check_new_segment_length(start_point, end_point, extend_point):
+            """Check if segment is placed too near to the bend point.
+
+            The idea is that we can either extend segment toward the bend
+            but we can shrink it only until it's start.
+
+            If the segment is too near it will return offset to fix the problem,
+            otherwise returns `None`.
+
+            """
+            base_edge = end_point - start_point
+            new_edge = extend_point - start_point
+            projection = new_edge.dot(base_edge.normalized())
+            if projection < 0 or tool.Cad.is_x(projection, 0):
+                return projection
+            return None
+
+        # adjust segments to fit the radius and angle
+        start_segment_extend, end_segment_extend = get_segments_extend()
+
+        start_segment_extend_point = start_point + start_segment_sign * start_segment_extend * get_z_basis(start_object)
+        projection = check_new_segment_length(first_segment_start, start_point, start_segment_extend_point)
+        if projection is not None:
+            self.report(
+                {"ERROR"},
+                f"Start segment starts too near to the bend, need to offset it atleast by {round(projection, 3)} m.",
+            )
+            return {"ERROR"}
+
+        end_segment_extend_point = end_point + end_segment_sign * end_segment_extend * get_z_basis(end_object)
+        projection = check_new_segment_length(second_segment_end, end_point, end_segment_extend_point)
+        if projection is not None:
+            self.report(
+                {"ERROR"},
+                f"End segment starts too near to the bend, need to offset it atleast by {round(projection, 3)} m.",
+            )
+            return {"ERROR"}
+
+        DumbProfileJoiner().join_E(start_object, start_segment_extend_point, start_connection)
+        DumbProfileJoiner().join_E(end_object, end_segment_extend_point, end_connection)
+
+        context.view_layer.update()  # update matrices
+
+        builder = ShapeBuilder(ifc_file)
+        rep, bend_data = builder.mep_bend_shape(
+            start_element,
+            self.start_length / si_conversion,
+            self.end_length / si_conversion,
+            angle,
+            self.radius / si_conversion,
+            profile_offset / si_conversion,
+        )
+
+        bpy.ops.bim.create_shape_from_step_id(step_id=rep.id(), should_include_curves=True)
+
+        # find the compatible fitting type
+        fitting_data = MEPGenerator().get_compatible_fitting_type(
+            [start_element, end_element], [start_port, end_port], "BEND"
+        )
+        bend_type = fitting_data["fitting_type"] if fitting_data else None
+        start_port_match = fitting_data["start_port_match"] if fitting_data else True
+        if bend_type:
+            # TODO: handle the case without creating a representation in the first place?
+            ifcopenshell.api.run("geometry.remove_representation", ifc_file, representation=rep)
+        else:  # create new fitting type if nothing is compatible
+            mesh = bpy.data.meshes.new("Bend")
+            obj = bpy.data.objects.new("Bend", mesh)
+            bend_type = blenderbim.core.root.assign_class(
+                tool.Ifc,
+                tool.Collector,
+                tool.Root,
+                obj=obj,
+                ifc_class=MEPGenerator().get_mep_element_class_name(start_element, "FittingType"),
+                predefined_type="BEND",
+                should_add_representation=False,
+            )
+            body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+            tool.Model.replace_object_ifc_representation(body, obj, rep)
+            pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=bend_type, name="BBIM_Fitting")
+            ifcopenshell.api.run(
+                "pset.edit_pset",
+                tool.Ifc.get(),
+                pset=pset,
+                properties={"Data": json.dumps(bend_data, default=list)},
+            )
+
+        # NOTE: at this point we loose current blender objects selection
+        # create transition element
+        bpy.ops.bim.add_constr_type_instance(relating_type_id=bend_type.id())
+        fitting_obj = bpy.context.active_object
+
+        # adjust fitting object rotation and location
+        # required since we'll base our `fitting_obj_dir` on this
+        fitting_obj.matrix_world = start_object.matrix_world
+        context.view_layer.update()
+
+        # depending on fitting direction we may need to flip it or attach it's origin to end segment
+        # direction can be different depending on:
+        # - order of the current segments
+        # - order of the segments that were used with the same fitting type before
+        direction_match = tool.Cad.are_vectors_equal(get_z_basis(start_object), get_z_basis(fitting_obj))
+        # if there are no mismatches or everything matches up we don't need to flip the transition
+        if start_port_match != direction_match:
+            fitting_obj.matrix_world = start_object.matrix_world @ Matrix.Rotation(radians(180), 4, "X")
+        fitting_obj.location = start_segment_extend_point if start_port_match else end_segment_extend_point
+
+        # add ports and connect them
+        ports = tool.System.add_ports(fitting_obj, offset_end_port=start_object_rotation @ (radial_offset * V(1, 1, 0)))
+        if not start_port_match:
+            start_port, end_port = end_port, start_port
+        tool.Ifc.run("system.connect_port", port1=ports[0], port2=start_port, direction="NOTDEFINED")
+        tool.Ifc.run("system.connect_port", port1=ports[1], port2=end_port, direction="NOTDEFINED")
+
+        self.report({"INFO"}, f"Success!.. kind of. The angle was {round(bend_data['angle'])}")
         return {"FINISHED"}

@@ -56,3 +56,34 @@ class TestAreEdgesCollinear(NewFile):
             (V(0,1,0), V(1,0,1))
         )
         # fmt: on
+
+
+class TestClosestPoints(NewFile):
+    def test_run(self):
+        # non collinear
+        edge1 = (V(0, 0, 0), V(1, 0, 0))
+        edge2 = (V(2, 0, 1), V(2, 0, 2))
+        assert subject.closest_points(edge1, edge2)[0] == (edge1[1], edge2[0])
+
+        # check other points
+        assert subject.closest_points(edge1, edge2)[1] == (edge1[0], edge2[1])
+
+        # collinear
+        edge1 = (V(0, 0, 0), V(1, 0, 0))
+        edge2 = (V(3, 0, 0), V(2, 0, 0))
+        assert subject.closest_points(edge1, edge2)[0] == (edge1[1], edge2[1])
+
+        # parallel
+        edge1 = (V(0, 0, 0), V(1, 0, 0))
+        edge2 = (V(-5, 0, 0), V(-1, 0, 0))
+        assert subject.closest_points(edge1, edge2)[0] == (edge1[0], edge2[1])
+
+        # overlapping
+        edge1 = (V(0, 0, 0), V(3, 0, 0))
+        edge2 = (V(2, 0, 0), V(5, 0, 0))
+        assert subject.closest_points(edge1, edge2)[0] == (edge1[1], edge2[0])
+
+        # edge as a point
+        edge1 = (V(0, 0, 0), V(0, 0, 0))
+        edge2 = (V(1, 0, 1), V(2, 0, 2))
+        assert subject.closest_points(edge1, edge2)[0] == (edge1[0], edge2[0])

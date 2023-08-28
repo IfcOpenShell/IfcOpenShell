@@ -42,7 +42,8 @@ class System(blenderbim.core.tool.System):
             blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
         mep_element = tool.Ifc.get_entity(obj)
-        length = obj.dimensions.z
+        bbox = tool.Blender.get_object_bounding_box(obj)
+        length = bbox["min_z"] if tool.Cad.is_x(bbox["max_z"], 0) else bbox["max_z"]
         ports = []
         if add_start_port:
             ports.append(add_port(mep_element, obj.matrix_world @ Matrix()))
