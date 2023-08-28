@@ -28,17 +28,12 @@ cmake_policy(SET CMP0074 NEW)
 cmake_policy(SET CMP0078 OLD)
 cmake_policy(SET CMP0086 NEW)
 
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release")
+endif()
+
 # use extra version to make pre-release using eg semver
 set(EXTRA_VERSION "-alpha.3")
-
-foreach(max_year RANGE 2014 2030)
-    set(max_sdk "$ENV{ADSK_3DSMAX_SDK_${max_year}}")
-
-    if(NOT "${max_sdk}" STREQUAL "")
-        message(STATUS "Autodesk 3ds Max SDK found at ${max_sdk}")
-        set(HAS_MAX TRUE)
-    endif()
-endforeach()
 
 option(MINIMAL_BUILD "The build is to make a minimal version of IFC converter from OCCT into IFC." OFF)
 option(COLLADA_SUPPORT "Build IfcConvert with COLLADA support (requires OpenCOLLADA)." ON)
@@ -70,10 +65,10 @@ endif()
 
 option(USERSPACE_PYTHON_PREFIX "Installs IfcPython for the current user only instead of system-wide." OFF)
 option(ADD_COMMIT_SHA "Add commit sha and branch in version number, warning results in many rebuilds, requires git" OFF)
-
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Release")
-endif()
+option(GLTF_SUPPORT "Build IfcConvert with glTF support (requires json.hpp)." OFF)
+option(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
+# QtViewer requires Qt5
+option(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer" OFF)
 
 if(MSVC AND MSVC_PARALLEL_BUILD)
     add_definitions("/MP")
@@ -1048,7 +1043,20 @@ if(BUILD_EXAMPLES)
 endif()
 
 if(NOT MINIMAL_BUILD AND BUILD_IFCMAX)
-    add_subdirectory(../src/ifcmax ifcmax)
+    foreach(max_year RANGE 2014 2030)
+        set(max_sdk "$ENV{ADSK_3DSMAX_SDK_${max_year}}")
+
+        if(NOT "${max_sdk}" STREQUAL "")
+            message(STATUS "Autodesk 3ds Max SDK found at ${max_sdk}")
+            set(HAS_MAX TRUE)
+        endif()
+    endforeach()
+
+    if(HAS_MAX)
+        message(STATUS "No Autodesk 3ds Max SDK found, can not build IFCMax.")
+    else()
+        add_subdirectory(../src/ifcmax ifcmax)
+    endif()
 endif()
 
 if(NOT MINIMAL_BUILD)
