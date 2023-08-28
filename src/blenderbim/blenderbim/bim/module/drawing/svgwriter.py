@@ -774,11 +774,14 @@ class SvgWriter:
             "text-anchor": text_anchor,
         }
 
-    def add_fill_bg(self, element):
-        element = element.copy()
+    def add_fill_bg(self, element, copy=True):
+        if copy:
+            element = element.copy()
         if hasattr(element, "xml"):
             attrib = element.xml.attrib
-        else:
+        elif isinstance(element, ET.Element):
+            attrib = element.attrib
+        else:  # assuming it's svgwrite.base.BaseElement
             attrib = element.attribs
         attrib["filter"] = "url(#fill-background)"
         return element
@@ -831,7 +834,12 @@ class SvgWriter:
                         field.attrib["class"] = classes_str
 
                     if fill_bg:
-                        self.svg.add(self.add_fill_bg(symbol_svg))
+                        symbol_copied = symbol_svg.copy()
+                        for text_tag in symbol_copied.xml.findall("text"):
+                            self.add_fill_bg(text_tag, copy=False)
+                        # NOTE: in case we'll later need to add fill-bg for the entire symbol:
+                        # self.add_fill_bg(symbol_svg, copy=False)
+                        self.svg.add(symbol_copied)
                     self.svg.add(symbol_svg)
                     return None
 
