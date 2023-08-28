@@ -36,6 +36,8 @@ private:
 	std::ofstream fstream_, tmp_fstream1_, tmp_fstream2_;
 	std::map<std::string, int> materials_, meshes_;
 	json json_, node_array_;
+	int bufferViewId;
+
 
 	int writeMaterial(const IfcGeom::Material& style);
 public:

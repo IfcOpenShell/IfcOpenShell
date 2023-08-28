@@ -44,6 +44,9 @@ static const uint32_t PRIM_TRIANGLES = 4;
 static const uint32_t PRIM_TRIANGLE_STRIP = 5;
 static const uint32_t PRIM_TRIANGLE_FAN = 6;
 
+static const uint32_t ELEMENT_ARRAY_BUFFER = 34963;
+static const uint32_t ARRAY_BUFFER = 34962;
+
 GltfSerializer::GltfSerializer(const std::string& filename, const SerializerSettings& settings)
 	: WriteOnlyGeometrySerializer(settings)
 	, filename_(filename)
@@ -52,6 +55,7 @@ GltfSerializer::GltfSerializer(const std::string& filename, const SerializerSett
 	, fstream_(IfcUtil::path::from_utf8(filename).c_str(), std::ios_base::binary)
 	, tmp_fstream1_(IfcUtil::path::from_utf8(tmp_filename1_).c_str(), std::ios_base::binary)
 	, tmp_fstream2_(IfcUtil::path::from_utf8(tmp_filename2_).c_str(), std::ios_base::binary)
+	, bufferViewId(0)
 	{}
 
 GltfSerializer::~GltfSerializer() {
@@ -121,10 +125,9 @@ const uint32_t component_type<int>::value = CT_UNSIGNED_INT;
 template <>
 const uint32_t component_type<float>::value = CT_FLOAT;
 
-static int bufferViewId = 0;
 
 template <size_t N, typename It>
-size_t write_accessor(json& j, std::ofstream& ofs, It begin, It end) {
+size_t write_accessor(json& j, std::ofstream& ofs, It begin, It end, int bufferViewId) {
 	auto num = std::distance(begin, end) / N;
 
 	json accessor = json::object();
@@ -135,13 +138,11 @@ size_t write_accessor(json& j, std::ofstream& ofs, It begin, It end) {
 	accessor["count"] = num;
 
 	if (N == 1) {
-		j["bufferViews"].push_back({ {"buffer", 0}, {"byteOffset", (size_t)ofs.tellp()}, { "byteLength", num *  4}, {"target", 34963} });
-	}
-	else {
-		j["bufferViews"].push_back({ {"buffer", 0}, {"byteStride", 12}, { "byteOffset", (size_t)ofs.tellp()}, { "byteLength", num * 12}, {"target", 34962}});
+		j["bufferViews"].push_back({ {"buffer", 0}, {"byteOffset", (size_t)ofs.tellp()}, { "byteLength", num *  4}, {"target", ELEMENT_ARRAY_BUFFER} });
+	} else {
+		j["bufferViews"].push_back({ {"buffer", 0}, {"byteStride", 12}, { "byteOffset", (size_t)ofs.tellp()}, { "byteLength", num * 12}, {"target", ARRAY_BUFFER}});
 	}
 
-	bufferViewId++;
 
 	std::array<typename It::value_type, N> min, max;
 	min.fill(std::numeric_limits<typename It::value_type>::max());
@@ -244,16 +245,16 @@ void GltfSerializer::write(const IfcGeom::TriangulationElement* o) {
 
 				json primitive = json::object();
 				
-				primitive["indices"] = write_accessor<1U>(json_, tmp_fstream1_, idx_transformed.begin(), idx_transformed.end());
+				primitive["indices"] = write_accessor<1U>(json_, tmp_fstream1_, idx_transformed.begin(), idx_transformed.end(), bufferViewId++);
 
 				auto vbegin = o->geometry().verts().begin();
 				std::vector<float> vf(vbegin + idx_begin * 3, vbegin + idx_end * 3);
-				primitive["attributes"]["POSITION"] = write_accessor<3U>(json_, tmp_fstream2_, vf.begin(), vf.end());
+				primitive["attributes"]["POSITION"] = write_accessor<3U>(json_, tmp_fstream2_, vf.begin(), vf.end(), bufferViewId++);
 
 				if (o->geometry().normals().size()) {
 					auto nbegin = o->geometry().normals().begin();
 					std::vector<float> nf(nbegin + idx_begin * 3, nbegin + idx_end * 3);
-					primitive["attributes"]["NORMAL"] = write_accessor<3U>(json_, tmp_fstream2_, nf.begin(), nf.end());
+					primitive["attributes"]["NORMAL"] = write_accessor<3U>(json_, tmp_fstream2_, nf.begin(), nf.end(), bufferViewId++);
 				}
 				
 				primitive["material"] = writeMaterial(o->geometry().materials()[*mid0]);
@@ -337,9 +338,13 @@ void GltfSerializer::finalize() {
 	scene_0["nodes"] = node_array_;
 	json_["scenes"].push_back(scene_0);
 
+	//The generated glb file will contain the indices buffer followed by the vertices buffer.
+	//Therefore once we know the size of the indices buffer, we update our vertices buffer 
+	//to have an offset equal to the size of the indices buffer.
 	for (auto &n : json_["bufferViews"]) {
-		if (n.contains("byteStride"))
+		if (n.contains("byteStride")) {
 			n["byteOffset"] = (int)n["byteOffset"] + indices_length;
+		}
 	}
 
 	json_["buffers"].push_back({ {"byteLength", binary_length} });
@@ -347,16 +352,23 @@ void GltfSerializer::finalize() {
 	std::string json_contents = json_.dump();
 	uint32_t json_length = (uint32_t) json_contents.size();
 
-	uint32_t header[] = { GLTF, 2U, 12 + 8 + json_length + padding_for(json_length) + 8 + binary_length + padding_for(binary_length) };
+	const int GLB_FILE_HEADER = 12;
+	const int GLB_JSON_HEADER = 8;
+	const int GLB_BINARY_CHUNK_HEADER = 8;
+
+	uint32_t header[] = { GLTF, 2U, GLB_FILE_HEADER + GLB_JSON_HEADER + json_length + padding_for(json_length) + 
+						  GLB_BINARY_CHUNK_HEADER + binary_length + padding_for(binary_length) };
 	fstream_.write((const char*)header, sizeof(header));
 
 	write_block<JSON>(fstream_, json_contents.begin(), json_contents.end());
 	write_header<BIN>(fstream_, binary_length);
 	{
+		//First, write the indices buffer into our glb file
 		std::ifstream ifs(IfcUtil::path::from_utf8(tmp_filename1_).c_str(), std::ios::binary);
 		fstream_ << ifs.rdbuf();
 	}
 	{
+		//Next, write the vertices buffer into our glb file
 		std::ifstream ifs(IfcUtil::path::from_utf8(tmp_filename2_).c_str(), std::ios::binary);
 		fstream_ << ifs.rdbuf();
 	}
