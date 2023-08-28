@@ -52,20 +52,16 @@ option(USE_MMAP "Adds a command line options to parse IFC files from memory mapp
 option(BUILD_SHARED_LIBS "Build IfcParse and IfcGeom as shared libs (SO/DLL)." OFF)
 option(MSVC_PARALLEL_BUILD "Multi-threaded compilation in Microsoft Visual Studio (/MP)" OFF)
 
-OPTION(NO_WARN "Disable all warnings" OFF)
-OPTION(WASM_BUILD OFF)
-if(${HAS_MAX})
-    option(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
-endif()
+option(NO_WARN "Disable all warnings" OFF)
+option(WASM_BUILD OFF)
 
 if(${BUILD_CONVERT})
     option(GLTF_SUPPORT "Build IfcConvert with glTF support (requires json.hpp)." OFF)
-OPTION(USD_SUPPORT "Build IfcConvert with USD support (requires pixar's USD library)." OFF)
+    option(USD_SUPPORT "Build IfcConvert with USD support (requires pixar's USD library)." OFF)
 endif()
 
 option(USERSPACE_PYTHON_PREFIX "Installs IfcPython for the current user only instead of system-wide." OFF)
 option(ADD_COMMIT_SHA "Add commit sha and branch in version number, warning results in many rebuilds, requires git" OFF)
-option(GLTF_SUPPORT "Build IfcConvert with glTF support (requires json.hpp)." OFF)
 option(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
 # QtViewer requires Qt5
 option(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer" OFF)
@@ -82,8 +78,6 @@ if(NO_WARN)
     endif()
 endif()
 
-# QtViewer requires Qt6
-OPTION(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer" OFF)
 include(GNUInstallDirs)
 
 if((BUILD_CONVERT OR BUILD_GEOMSERVER OR BUILD_IFCPYTHON) AND(NOT BUILD_IFCGEOM))
@@ -178,7 +172,7 @@ endif()
 
 if(NOT MINIMAL_BUILD AND GLTF_SUPPORT AND BUILD_CONVERT)
     UNIFY_ENVVARS_AND_CACHE(JSON_INCLUDE_DIR)
-    FIND_FILE(json_hpp "json.hpp" ${JSON_INCLUDE_DIR}/nlohmann)
+    find_file(json_hpp "json.hpp" ${JSON_INCLUDE_DIR}/nlohmann)
 
     if(json_hpp)
         message(STATUS "JSON for Modern C++ header file found")
@@ -282,14 +276,6 @@ else()
     endif()
 endif()
 
-if (WASM_BUILD)
-    set(BOOST_COMPONENTS)
-else()
-    # @todo review this, shouldn't this be all possible header-only now?
-    # ... or rewritten using C++17 features?
-    set(BOOST_COMPONENTS system program_options regex thread date_time)
-endif()
-
 if(USE_MMAP)
     if(MSVC)
         # filesystem is necessary for the utf-16 wpath
@@ -301,9 +287,17 @@ if(USE_MMAP)
     add_definitions(-DUSE_MMAP)
 endif()
 
-FIND_PACKAGE(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
-MESSAGE(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
-MESSAGE(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
+find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
+message(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
+message(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
+
+if (WASM_BUILD)
+    set(BOOST_COMPONENTS)
+else()
+    # @todo review this, shouldn't this be all possible header-only now?
+    # ... or rewritten using C++17 features?
+    set(BOOST_COMPONENTS system program_options regex thread date_time)
+endif()
 
 if(NOT MINIMAL_BUILD)
     # libxml2 is required for IFCXML (optional) and SVGFILL (mandatory)
@@ -314,10 +308,6 @@ if(NOT MINIMAL_BUILD AND IFCXML_SUPPORT)
     add_definitions(-DWITH_IFCXML)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_IFCXML)
 endif()
-
-find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
-message(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
-message(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
 
 # Usage:
 # set(SOME_LIRARIES foo bar)
@@ -437,35 +427,31 @@ if(BUILD_IFCGEOM)
         list(APPEND OPENCASCADE_LIBRARIES ws2_32.lib)
     endif()
 
-# Make sure cross-referenced symbols between static OCC libraries get
-# resolved. Also add thread and rt libraries.
-get_filename_component(libTKernelExt ${libTKernel} EXT)
-if("${libTKernelExt}" STREQUAL ".a")
-    set(OCCT_STATIC ON)
-endif()
+    # Make sure cross-referenced symbols between static OCC libraries get
+    # resolved. Also add thread and rt libraries.
+    get_filename_component(libTKernelExt ${libTKernel} EXT)
+    if("${libTKernelExt}" STREQUAL ".a")
+        set(OCCT_STATIC ON)
+    endif()
 
-if(WASM_BUILD)
-    set(CMAKE_FIND_ROOT_PATH "${CMAKE_FIND_ROOT_PATH_BACKUP}")
-endif()
-
-if(OCCT_STATIC)
-    find_package(Threads)
-    
-    if(WASM_BUILD)
-        set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
-    else()
-        # OPENCASCADE_LIBRARIES repeated N times below in order to fix cyclic dependencies - use --start-group ... --end-group instead?
-        # tfk: --start-group ... --end-group didn't work on the apple linker when last tested
-        set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    if(OCCT_STATIC)
+        find_package(Threads)
+        
+        if(WASM_BUILD)
+            set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+        else()
+            # OPENCASCADE_LIBRARIES repeated N times below in order to fix cyclic dependencies - use --start-group ... --end-group instead?
+            # tfk: --start-group ... --end-group didn't work on the apple linker when last tested
+            set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+        endif()
+        
+        if (NOT APPLE AND NOT WIN32)
+            set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} "rt")
+        endif()
+        if (NOT WIN32)
+            set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} "dl")
+        endif()
     endif()
-    
-    if (NOT APPLE AND NOT WIN32)
-        set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} "rt")
-    endif()
-    if (NOT WIN32)
-        set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} "dl")
-    endif()
-endif()
 
 endif(BUILD_IFCGEOM)
 
@@ -729,7 +715,7 @@ else()
     endif()
 endif()
 
-INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCLUDE_DIRS}
+include_directories(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCLUDE_DIRS}
 	${Boost_INCLUDE_DIRS} ${LIBXML2_INCLUDE_DIR} ${JSON_INCLUDE_DIR} ${HDF5_INCLUDE_DIR}
     ${USD_INCLUDE_DIR}
 )
@@ -753,8 +739,8 @@ if(NOT SCHEMA_VERSIONS)
     endif()
 endif()
 
-foreach(s ${SCHEMA_VERSIONS})
-    add_definitions(-DHAS_SCHEMA_${s})
+foreach(schema ${SCHEMA_VERSIONS})
+    add_definitions(-DHAS_SCHEMA_${schema})
 endforeach()
 
 string(REPLACE ";" ")(" schema_version_seq "(${SCHEMA_VERSIONS})")
@@ -815,9 +801,9 @@ if(COMPILE_SCHEMA)
         OUTPUT_VARIABLE COMPILED_SCHEMA_NAME)
 
     # Prevent the schema that had just been compiled from being excluded
-    foreach(s ${SCHEMA_VERSIONS})
-        if("${COMPILED_SCHEMA_NAME}" STREQUAL "${s}")
-            list(REMOVE_ITEM IFC_RELEASE_NOT_USED "${s}")
+    foreach(schema ${SCHEMA_VERSIONS})
+        if("${COMPILED_SCHEMA_NAME}" STREQUAL "${schema}")
+            list(REMOVE_ITEM IFC_RELEASE_NOT_USED "${schema}")
         endif()
     endforeach()
 endif()
@@ -829,8 +815,8 @@ endif()
 
 set(IFCOPENSHELL_LIBRARIES IfcParse)
 if (BUILD_IFCGEOM)
-	foreach(s ${SCHEMA_VERSIONS})
-		set(IFCGEOM_SCHEMA_LIBRARIES ${IFCGEOM_SCHEMA_LIBRARIES} IfcGeom_ifc${s})
+	foreach(schema ${SCHEMA_VERSIONS})
+		set(IFCGEOM_SCHEMA_LIBRARIES ${IFCGEOM_SCHEMA_LIBRARIES} IfcGeom_ifc${schema})
 	endforeach()
 	if (WASM_BUILD)
 	    set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES})
@@ -838,9 +824,10 @@ if (BUILD_IFCGEOM)
 	    set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES})	
 	endif()
 endif()
+
 if (BUILD_CONVERT OR BUILD_IFCPYTHON)
-	foreach(s ${SCHEMA_VERSIONS})
-		set(SERIALIZER_SCHEMA_LIBRARIES ${SERIALIZER_SCHEMA_LIBRARIES} Serializers_ifc${s})
+	foreach(schema ${SCHEMA_VERSIONS})
+		set(SERIALIZER_SCHEMA_LIBRARIES ${SERIALIZER_SCHEMA_LIBRARIES} Serializers_ifc${schema})
 	endforeach()
 	set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} Serializers ${SERIALIZER_SCHEMA_LIBRARIES})
 endif()
@@ -849,30 +836,30 @@ endif()
 file(GLOB IFCPARSE_H_FILES_ALL ../src/ifcparse/*.h)
 file(GLOB IFCPARSE_CPP_FILES_ALL ../src/ifcparse/*.cpp)
 
-foreach(s ${IFCPARSE_H_FILES_ALL})
-    get_filename_component(p "${s}" NAME)
+foreach(file ${IFCPARSE_H_FILES_ALL})
+    get_filename_component(filename "${file}" NAME)
 
-    if(NOT "${p}" MATCHES "[0-9]")
-        list(APPEND IFCPARSE_H_FILES "${s}")
+    if(NOT "${filename}" MATCHES "[0-9]")
+        list(APPEND IFCPARSE_H_FILES "${file}")
     endif()
 endforeach()
 
-foreach(s ${IFCPARSE_CPP_FILES_ALL})
-    get_filename_component(p "${s}" NAME)
+foreach(file ${IFCPARSE_CPP_FILES_ALL})
+    get_filename_component(filename "${file}" NAME)
 
-    if(NOT "${p}" MATCHES "[0-9]")
-        list(APPEND IFCPARSE_CPP_FILES "${s}")
+    if(NOT "${filename}" MATCHES "[0-9]")
+        list(APPEND IFCPARSE_CPP_FILES "${file}")
     endif()
 endforeach()
 
-foreach(s ${SCHEMA_VERSIONS})
+foreach(schema ${SCHEMA_VERSIONS})
     list(APPEND IFCPARSE_H_FILES
-        ../src/ifcparse/Ifc${s}.h
-        ../src/ifcparse/Ifc${s}-definitions.h
+        ../src/ifcparse/Ifc${schema}.h
+        ../src/ifcparse/Ifc${schema}-definitions.h
     )
     list(APPEND IFCPARSE_CPP_FILES
-        ../src/ifcparse/Ifc${s}.cpp
-        ../src/ifcparse/Ifc${s}-schema.cpp
+        ../src/ifcparse/Ifc${schema}.cpp
+        ../src/ifcparse/Ifc${schema}-schema.cpp
     )
 endforeach()
 
@@ -882,9 +869,9 @@ add_library(IfcParse ${IFCPARSE_FILES})
 set_target_properties(IfcParse PROPERTIES COMPILE_FLAGS -DIFC_PARSE_EXPORTS VERSION "0.6.0" SOVERSION "0.6")
 
 if (WASM_BUILD)
-    TARGET_LINK_LIBRARIES(IfcParse ${BCRYPT_LIBRARIES} ${LIBXML2_LIBRARIES})
+    target_link_libraries(IfcParse ${BCRYPT_LIBRARIES} ${LIBXML2_LIBRARIES})
 else()
-    TARGET_LINK_LIBRARIES(IfcParse ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES} ${LIBXML2_LIBRARIES})
+    target_link_libraries(IfcParse ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES} ${LIBXML2_LIBRARIES})
 endif()
 
 
@@ -894,11 +881,11 @@ if(BUILD_IFCGEOM)
     file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/*.cpp)
     set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
 
-foreach(s ${SCHEMA_VERSIONS})
-	add_library(IfcGeom_ifc${s} STATIC ${IFCGEOM_FILES})
-	set_target_properties(IfcGeom_ifc${s} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${s}")
+foreach(schema ${SCHEMA_VERSIONS})
+	add_library(IfcGeom_ifc${schema} STATIC ${IFCGEOM_FILES})
+	set_target_properties(IfcGeom_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${s}")
 	if (NOT WASM_BUILD)
-	    TARGET_LINK_LIBRARIES(IfcGeom_ifc${s} IfcParse ${OPENCASCADE_LIBRARIES})	    
+        target_link_libraries(IfcGeom_ifc${schema} IfcParse ${OPENCASCADE_LIBRARIES})	    
 	endif()
 endforeach()
 
@@ -915,9 +902,9 @@ endforeach()
     endif()
 
 if (WASM_BUILD)
-    TARGET_LINK_LIBRARIES(IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    target_link_libraries(IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 else()
-    TARGET_LINK_LIBRARIES(IfcGeom IfcParse ${IFCGEOM_SCHEMA_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    target_link_libraries(IfcGeom IfcParse ${IFCGEOM_SCHEMA_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 endif()
 
 endif(BUILD_IFCGEOM)
@@ -931,21 +918,21 @@ if(BUILD_CONVERT OR BUILD_IFCPYTHON)
     file(GLOB SERIALIZERS_S_CPP_FILES ../src/serializers/schema_dependent/*.cpp)
     set(SERIALIZERS_S_FILES ${SERIALIZERS_S_H_FILES} ${SERIALIZERS_S_CPP_FILES})
 
-foreach(s ${SCHEMA_VERSIONS})
-	add_library(Serializers_ifc${s} STATIC ${SERIALIZERS_S_FILES})
-	set_target_properties(Serializers_ifc${s} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${s} ${CONVERT_PRECISION}")
+foreach(schema ${SCHEMA_VERSIONS})
+	add_library(Serializers_ifc${schema} STATIC ${SERIALIZERS_S_FILES})
+	set_target_properties(Serializers_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${s} ${CONVERT_PRECISION}")
 	
 	if (WASM_BUILD)
-	    TARGET_LINK_LIBRARIES(Serializers_ifc${s} ${HDF5_LIBRARIES})
+        target_link_libraries(Serializers_ifc${schema} ${HDF5_LIBRARIES})
 	else()
-	    TARGET_LINK_LIBRARIES(Serializers_ifc${s} IfcGeom ${OPENCASCADE_LIBRARIES} ${HDF5_LIBRARIES})
+        target_link_libraries(Serializers_ifc${schema} IfcGeom ${OPENCASCADE_LIBRARIES} ${HDF5_LIBRARIES})
 	endif()
 endforeach()
 
     add_library(Serializers ${SERIALIZERS_FILES})
     set_target_properties(Serializers PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS ${CONVERT_PRECISION}" VERSION "0.6.0" SOVERSION "0.6")
 
-TARGET_LINK_LIBRARIES(Serializers ${SERIALIZER_SCHEMA_LIBRARIES} ${OPENCOLLADA_LIBRARIES} ${USD_LIBRARIES})
+    target_link_libraries(Serializers ${SERIALIZER_SCHEMA_LIBRARIES} ${OPENCOLLADA_LIBRARIES} ${USD_LIBRARIES})
 
 endif(BUILD_CONVERT OR BUILD_IFCPYTHON)
 
@@ -957,7 +944,7 @@ if(BUILD_CONVERT)
     add_executable(IfcConvert ${IFCCONVERT_FILES})
     set_target_properties(IfcConvert PROPERTIES COMPILE_FLAGS "${CONVERT_PRECISION}")
 
-TARGET_LINK_LIBRARIES(IfcConvert ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ${USD_LIBRARIES})
+    target_link_libraries(IfcConvert ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ${USD_LIBRARIES})
 
     if((NOT WIN32) AND BUILD_SHARED_LIBS)
         # Only set RPATHs when building shared libraries (i.e. IfcParse and
@@ -1059,84 +1046,21 @@ if(NOT MINIMAL_BUILD)
     add_subdirectory(../src/svgfill svgfill)
 endif()
 
+if(BUILD_QTVIEWER)
+    add_subdirectory(../src/qtviewer qtviewer)
+endif()
+
 # CMake installation targets
 install(FILES ${IFCPARSE_H_FILES}
-    DESTINATION ${INCLUDEDIR}/ifcparse
-)
-
-install(TARGETS IfcParse
-    ARCHIVE DESTINATION ${LIBDIR}
-    LIBRARY DESTINATION ${LIBDIR}
-    RUNTIME DESTINATION ${BINDIR}
-)
-
-<<<<<<< HEAD
-endif()
-
-if (ADD_COMMIT_SHA)
-find_package (Git)
-if (GIT_FOUND)
-	message("git found: ${GIT_EXECUTABLE} with version ${GIT_VERSION_STRING}")
-	execute_process(
-		COMMAND ${GIT_EXECUTABLE} branch -a --contains HEAD
-		OUTPUT_VARIABLE git_branches
-		OUTPUT_STRIP_TRAILING_WHITESPACE
-	)
-	string(REPLACE "\n" ";" git_branch_list "${git_branches}")
-	foreach(git_branch_candidate IN ITEMS ${git_branch_list})
-		string(REPLACE "*" "" git_branch_candidate_temp "${git_branch_candidate}")
-		string(STRIP "${git_branch_candidate_temp}" git_branch_candidate_2)
-		if (NOT git_branch_candidate_2 MATCHES "^HEAD$")
-			string(REPLACE "/" ";" git_branch_candidate_2_list "${git_branch_candidate_2}")
-			list(GET git_branch_candidate_2_list -1 git_branch)
-		endif()
-	endforeach()
-	execute_process(
-		COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
-		OUTPUT_VARIABLE git_sha
-		OUTPUT_STRIP_TRAILING_WHITESPACE
-	)
-	message(STATUS "IfcOpenShell branch: \"${git_branch}\"")
-	message(STATUS "IfcOpenShell commit: \"${git_sha}\"")
-	add_definitions(-DIFCOPENSHELL_BRANCH=${git_branch})
-	add_definitions(-DIFCOPENSHELL_COMMIT=${git_sha})
-endif()
-endif()
-
-# Documentation
-IF(BUILD_DOCUMENTATION)
-	set(CMAKE_MODULE_PATH "../docs/cmake")
-	ADD_SUBDIRECTORY(../docs docs)
-ENDIF()
-
-IF(NOT MINIMAL_BUILD AND BUILD_IFCPYTHON)
-	ADD_SUBDIRECTORY(../src/ifcwrap ifcwrap)
-ENDIF()
-
-IF(BUILD_EXAMPLES)
-	ADD_SUBDIRECTORY(../src/examples examples)
-ENDIF()
-
-IF(NOT MINIMAL_BUILD AND BUILD_IFCMAX)
-	ADD_SUBDIRECTORY(../src/ifcmax ifcmax)
-ENDIF()
-if (NOT MINIMAL_BUILD)
-ADD_SUBDIRECTORY(../src/svgfill svgfill)
-endif()
-
-# CMake installation targets
-INSTALL(FILES ${IFCPARSE_H_FILES}
 	DESTINATION ${INCLUDEDIR}/ifcparse
 )
 
-INSTALL(TARGETS IfcParse
+install(TARGETS IfcParse
 	ARCHIVE DESTINATION ${LIBDIR}
 	LIBRARY DESTINATION ${LIBDIR}
 	RUNTIME DESTINATION ${BINDIR}
 )
 
-=======
->>>>>>> af84942e (cmake format and unify file)
 if(BUILD_IFCGEOM)
     install(FILES ${IFCGEOM_H_FILES}
         DESTINATION ${INCLUDEDIR}/ifcgeom
@@ -1169,15 +1093,6 @@ if(BUILD_CONVERT)
     )
 endif()
 
-if(BUILD_QTVIEWER)
-    add_subdirectory(../src/qtviewer qtviewer)
-endif()
-
-list(APPEND CPACK_SOURCE_IGNORE_FILES
-    .git
-    .gitignore
-)
-
 # Cmake uninstall target
 if(NOT TARGET uninstall)
     configure_file(
@@ -1189,6 +1104,11 @@ if(NOT TARGET uninstall)
         COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
 endif()
 
+# Packaging
+list(APPEND CPACK_SOURCE_IGNORE_FILES
+    .git
+    .gitignore
+)
 set(CPACK_PACKAGE_NAME "${PROJECT_NAME}-${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}${EXTRA_VERSION}")
 set(CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}${EXTRA_VERSION}")
 SET(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}${EXTRA_VERSION}-${CMAKE_SYSTEM_NAME}")
