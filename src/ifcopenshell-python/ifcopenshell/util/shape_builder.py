@@ -127,13 +127,16 @@ class ShapeBuilder:
 
     def rectangle(self, size: Vector = Vector((1.0, 1.0)).freeze(), position: Vector = None):
         """
-        function supports both 2d and 3d rectangle sizes
+        Generate a rectangle polyline, method supports both 2d and 3d rectangle sizes.
 
+        :param size: rectangle size
+        :param type: Vector
+        :param size: rectangle position, default to `None`.
         if `position` not specified zero-vector will be used
+        :param type: Vector, optional
 
-        returns IfcIndexedPolyCurve
+        :return: IfcIndexedPolyCurve
         """
-        # < IfcIndexedPolyCurve
         return self.polyline(self.get_rectangle_coords(size, position), closed=True)
 
     def circle(self, center: Vector = Vector((0.0, 0.0)).freeze(), radius=1.0):
@@ -572,9 +575,17 @@ class ShapeBuilder:
         disk_solid = self.file.createIfcSweptDiskSolid(Directrix=path_curve, Radius=radius)
         return disk_solid
 
-    def get_representation(self, context, items, representation_type=None):
-        # > items - could be a list or single curve/IfcExtrudedAreaSolid
-        # < IfcShapeRepresentation
+    def get_representation(self, context, items, representation_type:str = None):
+        """Create IFC representation for the specified context and items.
+        
+        :param context: IfcGeometricRepresentationSubContext
+        :param items: could be a list or single curve/IfcExtrudedAreaSolid
+        :param representation_type: Explicitly specified RepresentationType, defaults to `None`.
+        If not provided it will be guessed from the items types.
+        :type representation_type: str, optional
+
+        :return: IfcRepresentation
+        """
         if not isinstance(items, collections.abc.Iterable):
             items = [items]
 
