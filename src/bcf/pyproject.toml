@@ -17,7 +17,7 @@ dependencies = [
     "numpy",
     "ifcopenshell",
 ]
-version = "0.0.1"
+version = "0.0.999999"
 classifiers = [
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Operating System :: OS Independent",
@@ -76,7 +76,7 @@ deps =
     black
     isort
     pylint
-commands = 
+commands =
     black {posargs:.}
     isort {posargs:.}
     pylint {posargs:.} --output-format=colorized
