@@ -1835,3 +1835,17 @@ class Drawing(blenderbim.core.tool.Drawing):
         direction = end - start
         offset = distance * (direction / np.linalg.norm(direction))
         return (start - offset).tolist(), (end + offset).tolist()
+
+    @classmethod
+    def get_sheet_references(cls, drawing):
+        sheet_references = []
+        drawing_reference = cls.get_drawing_document(drawing)
+        for sheet in tool.Ifc.get().by_type("IfcDocumentInformation"):
+            if not sheet.Scope == "SHEET":
+                continue
+            references = cls.get_document_references(sheet)
+            for reference in references:
+                if reference.Location == drawing_reference.Location:
+                    sheet_references.append(reference)
+                    break
+        return sheet_references

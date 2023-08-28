@@ -1545,6 +1545,9 @@ class RemoveDrawing(bpy.types.Operator, Operator):
         removed_drawings = [drawing.id() for drawing in drawings]
 
         for drawing in drawings:
+            sheet_references = tool.Drawing.get_sheet_references(drawing)
+            for reference in sheet_references:
+                bpy.ops.bim.remove_drawing_from_sheet(reference=reference.id())
             core.remove_drawing(tool.Ifc, tool.Drawing, drawing=drawing)
 
 
