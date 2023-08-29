@@ -18,6 +18,7 @@
 
 import test.bootstrap
 import ifcopenshell.api
+import ifcopenshell.util.constraint
 
 
 class TestCalculateResourceWork(test.bootstrap.IFC4):

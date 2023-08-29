@@ -51,6 +51,7 @@ class BimTool(WorkSpaceTool):
         ("bim.hotkey", {"type": "K", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_K")]}),
         ("bim.hotkey", {"type": "M", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_M")]}),
         ("bim.hotkey", {"type": "O", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_O")]}),
+        ("bim.hotkey", {"type": "L", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_L")]}),
         ("bim.hotkey", {"type": "Q", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_Q")]}),
         ("bim.hotkey", {"type": "R", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_R")]}),
         ("bim.hotkey", {"type": "T", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_T")]}),
@@ -77,9 +78,11 @@ class WallTool(BimTool):
     bl_description = "Create and edit walls"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.wall")
     bl_widget = None
+    ifc_element_type = "IfcWallType"
 
-    def draw_settings(context, layout, ws_tool):
-        BimToolUI.draw(context, layout, ifc_element_type="IfcWallType")
+    @classmethod
+    def draw_settings(cls, context, layout, ws_tool):
+        BimToolUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
 class SlabTool(BimTool):
@@ -90,9 +93,11 @@ class SlabTool(BimTool):
     bl_description = "Create and edit slabs"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.slab")
     bl_widget = None
+    ifc_element_type = "IfcSlabType"
 
-    def draw_settings(context, layout, ws_tool):
-        BimToolUI.draw(context, layout, ifc_element_type="IfcSlabType")
+    @classmethod
+    def draw_settings(cls, context, layout, ws_tool):
+        BimToolUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
 class DoorTool(BimTool):
@@ -103,9 +108,11 @@ class DoorTool(BimTool):
     bl_description = "Create and edit doors"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.door")
     bl_widget = None
+    ifc_element_type = "IfcDoorType"
 
-    def draw_settings(context, layout, ws_tool):
-        BimToolUI.draw(context, layout, ifc_element_type="IfcDoorType")
+    @classmethod
+    def draw_settings(cls, context, layout, ws_tool):
+        BimToolUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
 class WindowTool(BimTool):
@@ -116,9 +123,11 @@ class WindowTool(BimTool):
     bl_description = "Create and edit windows"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.window")
     bl_widget = None
+    ifc_element_type = "IfcWindowType"
 
-    def draw_settings(context, layout, ws_tool):
-        BimToolUI.draw(context, layout, ifc_element_type="IfcWindowType")
+    @classmethod
+    def draw_settings(cls, context, layout, ws_tool):
+        BimToolUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
 class ColumnTool(BimTool):
@@ -129,9 +138,11 @@ class ColumnTool(BimTool):
     bl_description = "Create and edit columns"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.column")
     bl_widget = None
+    ifc_element_type = "IfcColumnType"
 
-    def draw_settings(context, layout, ws_tool):
-        BimToolUI.draw(context, layout, ifc_element_type="IfcColumnType")
+    @classmethod
+    def draw_settings(cls, context, layout, ws_tool):
+        BimToolUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
 class BeamTool(BimTool):
@@ -142,9 +153,11 @@ class BeamTool(BimTool):
     bl_description = "Create and edit beams"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.beam")
     bl_widget = None
+    ifc_element_type = "IfcBeamType"
 
-    def draw_settings(context, layout, ws_tool):
-        BimToolUI.draw(context, layout, ifc_element_type="IfcBeamType")
+    @classmethod
+    def draw_settings(cls, context, layout, ws_tool):
+        BimToolUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
 class DuctTool(BimTool):
@@ -155,9 +168,11 @@ class DuctTool(BimTool):
     bl_description = "Create and edit ducks"  # No, not a typo.
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.duct")
     bl_widget = None
+    ifc_element_type = "IfcDuctSegmentType"
 
-    def draw_settings(context, layout, ws_tool):
-        BimToolUI.draw(context, layout, ifc_element_type="IfcDuctSegmentType")
+    @classmethod
+    def draw_settings(cls, context, layout, ws_tool):
+        BimToolUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
 class PipeTool(BimTool):
@@ -168,9 +183,11 @@ class PipeTool(BimTool):
     bl_description = "Create and edit pipes"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.pipe")
     bl_widget = None
+    ifc_element_type = "IfcPipeSegmentType"
 
-    def draw_settings(context, layout, ws_tool):
-        BimToolUI.draw(context, layout, ifc_element_type="IfcPipeSegmentType")
+    @classmethod
+    def draw_settings(cls, context, layout, ws_tool):
+        BimToolUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
 def add_layout_hotkey_operator(layout, text, hotkey, description):
@@ -392,6 +409,13 @@ class BimToolUI:
                 row.operator("bim.hide_openings", icon="CANCEL", text="")
             else:
                 row.operator("bim.show_openings", icon="HIDE_OFF", text="")
+
+        if AuthoringData.data["active_class"] in ("IfcOpeningElement",):
+            if len(context.selected_objects) == 2:
+                row = cls.layout.row(align=True)
+                row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="", icon="EVENT_L")
+                row.operator("bim.clone_opening", text="Clone Opening")
 
         cls.layout.row(align=True).label(text="Align")
         add_layout_hotkey_operator(cls.layout, "Align Exterior", "S_X", "")
@@ -726,6 +750,11 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             self.props.y = self.y
             self.props.z = self.z
 
+    def hotkey_S_L(self):
+        if AuthoringData.data["active_class"] in ("IfcOpeningElement",):
+            if len(bpy.context.selected_objects) == 2:
+                bpy.ops.bim.clone_opening()
+
     def hotkey_A_D(self):
         if not bpy.context.selected_objects:
             return
@@ -744,3 +773,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.edit_openings()
         else:
             bpy.ops.bim.show_openings()
+
+
+LIST_OF_TOOLS = [cls.bl_idname for cls in (BimTool.__subclasses__() + [BimTool])]
+TOOLS_TO_CLASSES_MAP = {cls.bl_idname: cls.ifc_element_type for cls in BimTool.__subclasses__()}

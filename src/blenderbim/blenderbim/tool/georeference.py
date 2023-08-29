@@ -296,3 +296,37 @@ class Georeference(blenderbim.core.tool.Georeference):
         elif type == "rel_y":
             bpy.context.scene.BIMGeoreferenceProperties.y_axis_abscissa_output = str(x)
             bpy.context.scene.BIMGeoreferenceProperties.y_axis_ordinate_output = str(y)
+
+    @classmethod
+    def import_plot(cls, filepath, map_conversion):
+        import bmesh
+
+        def parse_csv(file_path):
+            import csv
+
+            with open(file_path, "r") as f:
+                reader = csv.reader(f)  # Assuming tab-delimited CSV
+                rows = []
+                for row in reader:
+                    if len(row) == 0:
+                        continue
+                    rows.append(row)
+                return rows
+
+        rows = parse_csv(filepath)
+        vertices = []
+        for row in rows:
+            coordinates = cls.enh2xyz([float(row[0]), float(row[1]), float(row[2])], map_conversion)
+            vertices.append(coordinates)
+
+        mesh = bpy.data.meshes.new("mesh")
+        obj = bpy.data.objects.new("Plot Line", mesh)
+        bpy.context.scene.collection.objects.link(obj)
+        bpy.context.view_layer.objects.active = obj
+        obj.select_set(True)
+        obj.data
+        bm = bmesh.new()
+        for vertex in vertices:
+            bm.verts.new(vertex)
+        bm.to_mesh(mesh)
+        bm.free()

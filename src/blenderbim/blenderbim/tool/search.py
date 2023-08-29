@@ -9,8 +9,11 @@ from ifcopenshell.util.selector import Selector
 
 class Search(blenderbim.core.tool.Search):
     @classmethod
-    def import_filter_query(cls, group, filter_groups):
-        query = json.loads(group.Description)["query"]
+    def get_group_query(cls, group):
+        return json.loads(group.Description)["query"]
+
+    @classmethod
+    def import_filter_query(cls, query, filter_groups):
         filter_groups.clear()
         transformer = ImportFilterQueryTransformer(filter_groups)
         transformer.transform(ifcopenshell.util.selector.filter_elements_grammar.parse(query))
@@ -26,7 +29,11 @@ class Search(blenderbim.core.tool.Search):
                     continue
                 if ifc_filter.type == "instance":
                     has_instance_or_entity_filter = True
-                    filter_group_query.append(ifc_filter.value)
+                    if "bpy.data.texts" in ifc_filter.value:
+                        data_name = ifc_filter.value.split("bpy.data.texts")[1][2:-2]
+                        filter_group_query.append(bpy.data.texts[data_name].as_string())
+                    else:
+                        filter_group_query.append(ifc_filter.value)
                 elif ifc_filter.type == "entity":
                     has_instance_or_entity_filter = True
                     filter_group_query.append(ifc_filter.value)
@@ -54,6 +61,10 @@ class Search(blenderbim.core.tool.Search):
                 elif ifc_filter.type == "location":
                     comparison, value = cls.get_comparison_and_value(ifc_filter)
                     filter_group_query.append(f"location{comparison}{value}")
+                elif ifc_filter.type == "query":
+                    keys = cls.wrap_value(ifc_filter, ifc_filter.name)
+                    comparison, value = cls.get_comparison_and_value(ifc_filter)
+                    filter_group_query.append(f"query:{keys}{comparison}{value}")
             if not has_instance_or_entity_filter:
                 filter_group_query.insert(0, "IfcProduct")
                 filter_group_query.insert(0, "IfcTypeProduct")
@@ -92,7 +103,23 @@ class ImportFilterQueryTransformer(lark.Transformer):
 
     def facet_list(self, args):
         new = self.filter_groups.add()
+        global_ids = []
         for arg in args:
+            if arg["type"] == "instance" and global_ids:
+                if "bpy.data.texts" in new2.value:
+                    data_name = new2.value.split("bpy.data.texts")[1][2:-2]
+                    bpy.data.texts[data_name].write("," + arg["value"])
+                elif len(new2.value) > (23 * 50):
+                    name = "globalid-filter-" + ifcopenshell.guid.new()
+                    text_data = bpy.data.texts.new(name)
+                    text_data.from_string(new2.value + "," + arg["value"])
+                    new2.value = f"bpy.data.texts['{name}']"
+                else:
+                    new2.value += "," + arg["value"]
+                continue
+            global_ids = []
+            if arg["type"] == "instance":
+                global_ids.append(arg["value"])
             new2 = new.filters.add()
             new2.type = arg["type"]
             new2.value = arg["value"]
@@ -135,8 +162,15 @@ class ImportFilterQueryTransformer(lark.Transformer):
         comparison, value = args
         return {"type": "location", "value": f"{comparison}{value}"}
 
+    def query(self, args):
+        keys, comparison, value = args
+        return {"type": "query", "name": keys, "value": f"{comparison}{value}"}
+
     def comparison(self, args):
         return "" if args[0].data == "equals" else "!="
+
+    def keys(self, args):
+        return self.value(args)
 
     def pset(self, args):
         return self.value(args)
@@ -150,7 +184,7 @@ class ImportFilterQueryTransformer(lark.Transformer):
         elif args[0].data == "quoted_string":
             return args[0].children[0].value[1:-1].replace('\\"', '"')
         elif args[0].data == "regex_string":
-            return args[0].children[0].value
+            return "/" + args[0].children[0].value + "/"
         elif args[0].data == "special":
             if args[0].children[0].data == "null":
                 return "NULL"
@@ -158,16 +192,3 @@ class ImportFilterQueryTransformer(lark.Transformer):
                 return "TRUE"
             elif args[0].children[0].data == "false":
                 return "FALSE"
-
-    def compare(self, element_value, comparison, value):
-        if isinstance(value, str):
-            if isinstance(element_value, int):
-                value = int(value)
-            elif isinstance(element_value, float):
-                value = float(value)
-            result = element_value == value
-        elif isinstance(value, re.Pattern):
-            result = bool(value.match(element_value))
-        elif value in (None, True, False):
-            result = element_value is value
-        return result if comparison == "=" else not result

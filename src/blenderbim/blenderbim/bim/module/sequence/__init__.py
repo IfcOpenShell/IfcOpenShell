@@ -49,7 +49,6 @@ classes = (
     operator.CreateBaseline,
     operator.DisableEditingSequence,
     operator.DisableEditingTask,
-    operator.DisableEditingTaskAnimationColors,
     operator.DisableEditingTaskTime,
     operator.DisableEditingWorkCalendar,
     operator.DisableEditingWorkPlan,
@@ -83,18 +82,16 @@ classes = (
     operator.ExportP6,
     operator.GenerateGanttChart,
     operator.GuessDateRange,
-    operator.HighlightTask,
+    operator.GoToTask,
     operator.ImportCSV,
     operator.ImportMSP,
     operator.ImportP6,
     operator.ImportP6XER,
     operator.ImportPP,
+    operator.LoadAnimationColorScheme,
+    operator.LoadDefaultAnimationColors,
     operator.LoadProductTasks,
-    operator.LoadTaskAnimationColors,
-    operator.LoadTaskInputs,
-    operator.LoadTaskOutputs,
     operator.LoadTaskProperties,
-    operator.LoadTaskResources,
     operator.RecalculateSchedule,
     operator.RemoveTask,
     operator.RemoveTaskCalendar,
@@ -105,6 +102,7 @@ classes = (
     operator.RemoveWorkSchedule,
     operator.RemoveWorkTime,
     operator.ReorderTask,
+    operator.SaveAnimationColorScheme,
     operator.SelectTaskRelatedInputs,
     operator.SelectTaskRelatedProducts,
     operator.SelectUnassignedWorkScheduleProducts,
@@ -120,12 +118,18 @@ classes = (
     operator.UnassignWorkSchedule,
     operator.VisualiseWorkScheduleDate,
     operator.VisualiseWorkScheduleDateRange,
+    operator.EnableStatusFilters,
+    operator.DisableStatusFilters,
+    operator.ActivateStatusFilters,
+    operator.SelectStatusFilter,
     prop.WorkPlan,
     prop.BIMWorkPlanProperties,
     prop.Task,
     prop.TaskResource,
     prop.TaskProduct,
     prop.ISODuration,
+    prop.IFCStatus,
+    prop.BIMStatusProperties,
     prop.BIMWorkScheduleProperties,
     prop.BIMTaskTreeProperties,
     prop.BIMTaskTypeColor,
@@ -135,18 +139,19 @@ classes = (
     prop.BIMWorkCalendarProperties,
     prop.DatePickerProperties,
     prop.BIMDateTextProperties,
+    ui.BIM_PT_status,
     ui.BIM_PT_work_plans,
     ui.BIM_PT_work_schedules,
     ui.BIM_PT_work_calendars,
-    ui.BIM_PT_task_icom,
     ui.BIM_PT_animation_tools,
+    ui.BIM_PT_task_icom,
+    ui.BIM_PT_animation_Color_Scheme,
     ui.BIM_UL_task_columns,
     ui.BIM_UL_task_inputs,
     ui.BIM_UL_task_resources,
     ui.BIM_UL_task_outputs,
     ui.BIM_UL_tasks,
     ui.BIM_PT_4D_Tools,
-    ui.BIM_PT_Task_Bar_Creator,
     ui.BIM_UL_animation_colors,
     ui.BIM_UL_product_input_tasks,
     ui.BIM_UL_product_output_tasks,
@@ -167,6 +172,7 @@ def menu_func_import(self, context):
 
 
 def register():
+    bpy.types.Scene.BIMStatusProperties = bpy.props.PointerProperty(type=prop.BIMStatusProperties)
     bpy.types.Scene.BIMWorkPlanProperties = bpy.props.PointerProperty(type=prop.BIMWorkPlanProperties)
     bpy.types.Scene.BIMWorkScheduleProperties = bpy.props.PointerProperty(type=prop.BIMWorkScheduleProperties)
     bpy.types.Scene.BIMTaskTreeProperties = bpy.props.PointerProperty(type=prop.BIMTaskTreeProperties)
@@ -179,6 +185,7 @@ def register():
 
 
 def unregister():
+    del bpy.types.Scene.BIMStatusProperties
     del bpy.types.Scene.BIMWorkPlanProperties
     del bpy.types.Scene.BIMWorkScheduleProperties
     del bpy.types.Scene.BIMTaskTreeProperties

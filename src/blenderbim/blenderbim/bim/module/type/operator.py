@@ -445,7 +445,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 should_add_representation=True,
                 context=body,
             )
-            tool.Blender.select_and_activate_single_object(obj)
+            tool.Blender.select_and_activate_single_object(context, obj)
             bpy.ops.bim.add_roof()
 
         bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class)

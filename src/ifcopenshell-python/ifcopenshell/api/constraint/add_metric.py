@@ -58,4 +58,5 @@ class Usecase:
         if self.settings["objective"]:
             benchmark_values = list(self.settings["objective"].BenchmarkValues or [])
             benchmark_values.append(metric)
+            self.settings["objective"].BenchmarkValues = benchmark_values
         return metric

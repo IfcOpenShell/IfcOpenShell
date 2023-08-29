@@ -18,6 +18,7 @@
 
 import os
 import bpy
+import pathlib
 import ifcopenshell
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
@@ -51,17 +52,23 @@ class PsetTemplatesData:
 
     @classmethod
     def pset_template_files(cls):
-        files = os.listdir(os.path.join(bpy.context.scene.BIMProperties.data_dir, "pset"))
-        return [(f.replace(".ifc", ""), f.replace(".ifc", ""), "") for f in files]
+        results = []
+        pset_dir = os.path.join(bpy.context.scene.BIMProperties.data_dir, "pset")
+        files = os.listdir(pset_dir)
+        for f in files:
+            results.append((os.path.join(pset_dir, f), f.strip(".ifc"), "Global Pset Template"))
+
+        pset_dir = tool.Ifc.resolve_uri(bpy.context.scene.BIMProperties.pset_dir)
+        if os.path.isdir(pset_dir):
+            for path in pathlib.Path(pset_dir).glob("*.ifc"):
+                results.append((str(path), os.path.basename(str(path)).strip(".ifc"), "Project Pset Template"))
+
+        return sorted(results, key=lambda x: x[1])
 
     @classmethod
     def pset_templates(cls):
         if not IfcStore.pset_template_file:
-            IfcStore.pset_template_path = os.path.join(
-                bpy.context.scene.BIMProperties.data_dir,
-                "pset",
-                bpy.context.scene.BIMPsetTemplateProperties.pset_template_files + ".ifc",
-            )
+            IfcStore.pset_template_path = bpy.context.scene.BIMPsetTemplateProperties.pset_template_files
             IfcStore.pset_template_file = ifcopenshell.open(IfcStore.pset_template_path)
         return [(str(t.id()), t.Name, "") for t in IfcStore.pset_template_file.by_type("IfcPropertySetTemplate")]
 

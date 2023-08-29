@@ -147,6 +147,13 @@ class Ifc(blenderbim.core.tool.Ifc):
         IfcStore.edited_objs.add(obj)
 
     @classmethod
+    def finish_edit(cls, obj):
+        try:
+            IfcStore.edited_objs.remove(obj)
+        except:
+            pass
+
+    @classmethod
     def resolve_uri(cls, uri):
         if os.path.isabs(uri):
             return uri
@@ -169,17 +176,17 @@ class Ifc(blenderbim.core.tool.Ifc):
         IfcStore.unlink_element(element, obj)
 
     @classmethod
-    def get_all_element_occurences(cls, element):
+    def get_all_element_occurrences(cls, element):
         if element.is_a("IfcElementType"):
             element_type = element
-            occurences = ifcopenshell.util.element.get_types(element_type)
+            occurrences = ifcopenshell.util.element.get_types(element_type)
         else:
             element_type = ifcopenshell.util.element.get_type(element)
             if element_type:
-                occurences = ifcopenshell.util.element.get_types(element_type)
+                occurrences = ifcopenshell.util.element.get_types(element_type)
             else:
-                occurences = [element]
-        return occurences
+                occurrences = [element]
+        return occurrences
 
     class Operator:
         def execute(self, context):

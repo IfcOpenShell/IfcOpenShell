@@ -375,9 +375,26 @@ class BIM_UL_links(UIList):
                 op.mode = "VISIBLE"
                 op = row.operator("bim.unload_link", text="", icon="UNLINKED")
                 op.filepath = item.name
+                op = row.operator("bim.reload_link", text="", icon="FILE_REFRESH")
+                op.filepath = item.name
             else:
                 row.prop(item, "name", text="")
                 op = row.operator("bim.load_link", text="", icon="LINKED")
                 op.filepath = item.name
                 op = row.operator("bim.unlink_ifc", text="", icon="X")
                 op.filepath = item.name
+
+
+class BIM_PT_purge(Panel):
+    bl_label = "Purge Data"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_quality_control"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.operator("bim.purge_unused_profiles")
+        layout.operator("bim.purge_unused_types")
+        layout.operator("bim.purge_unused_representations")

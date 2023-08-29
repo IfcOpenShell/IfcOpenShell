@@ -39,15 +39,20 @@ class Usecase:
 
     def execute(self):
         self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
-        self.settings["representation"].RepresentationType = "Clipping"
         if self.settings["type"] == "IfcHalfSpaceSolid":
             result = self.create_half_space_solid()
         elif self.settings["type"] == "Mesh":
             if self.settings["blender_obj"]:
                 result = self.create_blender_mesh()
+        representation_type = "Clipping"
         items = []
         for item in self.settings["representation"].Items:
+            # For now, we don't use IfcBooleanClippingResult.
+            # This is unofficial but we assume that clipping results are part
+            # of automated clips, whereas IfcBooleanResults are manual bools.
+            # This is really terrible, but until we find a better solution...
             items.append(self.file.createIfcBooleanResult(self.settings["operator"], item, result))
+        self.settings["representation"].RepresentationType = "CSG"
         self.settings["representation"].Items = items
 
     def create_half_space_solid(self):

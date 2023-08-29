@@ -60,6 +60,8 @@ class Usecase:
         self.settings = {"resource": resource}
 
     def execute(self):
+        if ifcopenshell.util.constraint.is_attribute_locked(self.settings["resource"], "Usage.ScheduleWork"):
+            return
         amount_worked = ifcopenshell.util.resource.get_resource_required_work(
             self.settings["resource"]
         )
