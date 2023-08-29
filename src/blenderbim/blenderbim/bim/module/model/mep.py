@@ -639,9 +639,18 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
         start_object_z_basis = start_object_rotation.to_matrix().col[2]  # z basis vector
         keep_only_z_axis = lambda p_ws: p_ws.dot(start_object_z_basis) * start_object_z_basis
 
-        # TODO: support cases when segments are partially or completely overlapping each other
         if not tool.Cad.are_edges_parallel(start_axis, end_axis):
             self.report({"ERROR"}, f"Failed to add transition - segments are not parallel.")
+            return {"CANCELLED"}
+
+        # TODO: support different profiles rotation by local Z
+        rotation_difference_z = start_object.matrix_world.to_quaternion().rotation_difference(end_object.matrix_world.to_quaternion()).to_euler().z
+        def is_multiple_of_pi(value):
+            n = round(value / pi)
+            return tool.Cad.is_x(abs(value - n * pi), 0)
+        
+        if not is_multiple_of_pi(rotation_difference_z):
+            self.report({"ERROR"}, f"There is some rotation difference between profiles by local Z axis: {round(degrees(rotation_difference_z))} deg, this kind of transition is not yet supported.")
             return {"CANCELLED"}
 
         start_segment_data = MEPGenerator().get_segment_data(start_element)
