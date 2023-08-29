@@ -21,7 +21,45 @@ import blenderbim.bim.helper
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import draw_attributes
-from blenderbim.bim.module.sequence.data import WorkPlansData, WorkScheduleData, SequenceData, TaskICOMData
+from blenderbim.bim.module.sequence.data import (
+    WorkPlansData,
+    WorkScheduleData,
+    SequenceData,
+    TaskICOMData,
+    AnimationColorSchemeData,
+)
+
+
+class BIM_PT_status(Panel):
+    bl_label = "Status"
+    bl_idname = "BIM_PT_status"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_status"
+    bl_options = {"HIDE_HEADER"}
+
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+
+    def draw(self, context):
+        self.props = context.scene.BIMStatusProperties
+
+        if not self.props.is_enabled:
+            row = self.layout.row()
+            row.operator("bim.enable_status_filters", icon="GREASEPENCIL")
+            return
+
+        row = self.layout.row(align=True)
+        row.operator("bim.activate_status_filters", icon="TIME")
+        row.operator("bim.disable_status_filters", icon="CANCEL", text="")
+
+        for status in self.props.statuses:
+            row = self.layout.row()
+            row.label(text=status.name)
+            row.prop(status, "is_visible", text="", emboss=False, icon="HIDE_OFF" if status.is_visible else "HIDE_ON")
+            row.operator("bim.select_status_filter", icon="RESTRICT_SELECT_OFF", text="").name = status.name
 
 
 class BIM_PT_work_plans(Panel):
@@ -31,7 +69,7 @@ class BIM_PT_work_plans(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_tab_4D5D"
+    bl_parent_id = "BIM_PT_tab_sequence"
 
     @classmethod
     def poll(cls, context):
@@ -58,7 +96,7 @@ class BIM_PT_work_plans(Panel):
         if self.props.active_work_plan_id == work_plan["id"]:
             if self.props.editing_type == "ATTRIBUTES":
                 row.operator("bim.edit_work_plan", text="", icon="CHECKMARK")
-            row.operator("bim.disable_editing_work_plan",  text="Cancel", icon="CANCEL")
+            row.operator("bim.disable_editing_work_plan", text="Cancel", icon="CANCEL")
         elif self.props.active_work_plan_id:
             row.operator("bim.remove_work_plan", text="", icon="X").work_plan = work_plan["id"]
         else:
@@ -101,7 +139,7 @@ class BIM_PT_work_schedules(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_tab_4D5D"
+    bl_parent_id = "BIM_PT_tab_sequence"
 
     @classmethod
     def poll(cls, context):
@@ -125,7 +163,7 @@ class BIM_PT_work_schedules(Panel):
                 )
             else:
                 row.label(text="No Work Schedules found.", icon="TEXT")
-            row.operator("bim.add_work_schedule", text="Add", icon="ADD")
+            row.operator("bim.add_work_schedule", text="", icon="ADD")
 
         for work_schedule_id, work_schedule in SequenceData.data["work_schedules"].items():
             self.draw_work_schedule_ui(work_schedule_id, work_schedule)
@@ -180,7 +218,14 @@ class BIM_PT_work_schedules(Panel):
                     row2 = col.row(align=True)
                     row.operator("bim.disable_editing_work_schedule", text="Cancel", icon="CANCEL")
             if not self.props.active_work_schedule_id:
-                row.label(text="{}[{}]".format(work_schedule["Name"], work_schedule["PredefinedType"]) or "Unnamed", icon="LINENUMBERS_ON")
+                grid = self.layout.grid_flow(columns=2, even_columns=True)
+                col1 = grid.column()
+                col1.label(
+                    text="{}[{}]".format(work_schedule["Name"], work_schedule["PredefinedType"]) or "Unnamed",
+                    icon="LINENUMBERS_ON",
+                )
+                col2 = grid.column()
+                row = col2.row(align=True)
                 row.operator(
                     "bim.enable_editing_work_schedule_tasks", text="Tasks", icon="ACTION"
                 ).work_schedule = work_schedule_id
@@ -209,7 +254,9 @@ class BIM_PT_work_schedules(Panel):
                     row.operator("bim.edit_task_time", text="", icon="CHECKMARK")
                 elif self.props.editing_task_type == "ATTRIBUTES":
                     row.operator("bim.edit_task", text="", icon="CHECKMARK")
-                row.operator("bim.disable_editing_task",  text="Cancel", icon="CANCEL")
+                row.operator("bim.disable_editing_task", text="Cancel", icon="CANCEL")
+            elif self.props.editing_task_type == "SEQUENCE":
+                row.operator("bim.disable_editing_task", text="Cancel", icon="CANCEL")
             else:
                 row.prop(self.props, "show_task_operators", text="Edit", icon="GREASEPENCIL")
                 if self.props.show_task_operators:
@@ -217,7 +264,7 @@ class BIM_PT_work_schedules(Panel):
                     row2.alignment = "RIGHT"
 
                     row2.prop(self.props, "enable_reorder", text="", icon="SORTALPHA")
-                    row2.operator("bim.enable_editing_task_sequence", text="", icon="TRACKING").task = ifc_definition_id
+                    row2.operator("bim.enable_editing_task_sequence", text="", icon="TRACKING")
                     row2.operator("bim.enable_editing_task_time", text="", icon="TIME").task = ifc_definition_id
                     row2.operator(
                         "bim.enable_editing_task_calendar", text="", icon="VIEW_ORTHO"
@@ -284,13 +331,13 @@ class BIM_PT_work_schedules(Panel):
             self.draw_editable_task_attributes_ui()
         elif self.props.active_task_id and self.props.editing_task_type == "CALENDAR":
             self.draw_editable_task_calendar_ui()
-        elif self.props.active_task_id and self.props.editing_task_type == "SEQUENCE":
+        elif self.props.highlighted_task_id and self.props.editing_task_type == "SEQUENCE":
             self.draw_editable_task_sequence_ui()
         elif self.props.active_task_time_id and self.props.editing_task_type == "TASKTIME":
             self.draw_editable_task_time_attributes_ui()
 
     def draw_editable_task_sequence_ui(self):
-        task = SequenceData.data["tasks"][self.props.active_task_id]
+        task = SequenceData.data["tasks"][self.props.highlighted_task_id]
         row = self.layout.row()
         row.label(text="{} Predecessors".format(len(task["IsSuccessorFrom"])), icon="BACK")
         for sequence_id in task["IsSuccessorFrom"]:
@@ -304,6 +351,7 @@ class BIM_PT_work_schedules(Panel):
     def draw_editable_sequence_ui(self, sequence, process_type):
         task = SequenceData.data["tasks"][sequence[process_type]]
         row = self.layout.row(align=True)
+        row.operator("bim.go_to_task", text="", icon="RESTRICT_SELECT_OFF").task = task["id"]
         row.label(text=task["Identification"] or "XXX")
         row.label(text=task["Name"] or "Unnamed")
         row.label(text=sequence["SequenceType"] or "N/A")
@@ -315,12 +363,12 @@ class BIM_PT_work_schedules(Panel):
         if self.props.active_sequence_id == sequence["id"]:
             if self.props.editing_sequence_type == "ATTRIBUTES":
                 row.operator("bim.edit_sequence_attributes", text="", icon="CHECKMARK")
-                row.operator("bim.disable_editing_sequence",  text="Cancel", icon="CANCEL")
+                row.operator("bim.disable_editing_sequence", text="Cancel", icon="CANCEL")
                 self.draw_editable_sequence_attributes_ui()
             elif self.props.editing_sequence_type == "LAG_TIME":
                 op = row.operator("bim.edit_sequence_lag_time", text="", icon="CHECKMARK")
                 op.lag_time = sequence["TimeLag"]
-                row.operator("bim.disable_editing_sequence",  text="Cancel", icon="CANCEL")
+                row.operator("bim.disable_editing_sequence", text="Cancel", icon="CANCEL")
                 self.draw_editable_sequence_lag_time_ui()
         else:
             if sequence["TimeLag"]:
@@ -423,6 +471,7 @@ class BIM_PT_animation_tools(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_parent_id = "BIM_PT_work_schedules"
+    bl_order = 4
 
     @classmethod
     def poll(cls, context):
@@ -436,9 +485,7 @@ class BIM_PT_animation_tools(Panel):
         self.animation_props = context.scene.BIMAnimationProperties
         row = self.layout.row(align=True)
         row.alignment = "RIGHT"
-        row.prop(
-            self.props, "should_show_visualisation_ui", text="Animation Settings", icon="SETTINGS"
-        )
+        row.prop(self.props, "should_show_visualisation_ui", text="Animation Settings", icon="SETTINGS")
         row.prop(self.props, "should_show_snapshot_ui", text="Snapshot Settings", icon="SETTINGS")
         if self.props.should_show_visualisation_ui:
             self.draw_visualisation_ui()
@@ -446,17 +493,19 @@ class BIM_PT_animation_tools(Panel):
             self.draw_snapshot_ui()
         self.draw_processing_options()
 
-
     def draw_processing_options(self):
         row = self.layout.row(align=True)
         row.alignment = "LEFT"
         row.label(text="Processing Tools")
         row = self.layout.row()
         row.alignment = "RIGHT"
-        row.operator("bim.clear_previous_animation", text="Clear Previous Animation", icon="TRACKING_CLEAR_FORWARDS")
         row.operator("bim.add_animation_camera", text="Add Camera", icon="CAMERA_DATA")
+        row.operator("bim.clear_previous_animation", text="Reset Animation", icon="TRACKING_CLEAR_FORWARDS")
 
     def draw_visualisation_ui(self):
+        if not AnimationColorSchemeData.is_loaded:
+            AnimationColorSchemeData.load()
+
         row = self.layout.row(align=True)
         row.label(text="Start Date/ Date Range:", icon="CAMERA_DATA")
         row = self.layout.row(align=True)
@@ -486,16 +535,7 @@ class BIM_PT_animation_tools(Panel):
         row.label(text="Display Settings")
         row = self.layout.row()
         row.alignment = "RIGHT"
-        if not self.animation_props.is_editing:
-            op = row.operator(
-                "bim.enable_editing_task_animation_colors", text="Customize Object Colors", icon="SEQUENCE_COLOR_04"
-            )
-        else:
-            op = row.operator(
-                "bim.disable_editing_task_animation_colors", text="Hide Object Colors", icon="SEQUENCE_COLOR_01"
-            )
-
-        row.prop(self.animation_props, "should_show_task_bar_options", text="Task Bar", icon="NLA_PUSHDOWN")
+        row.prop(self.animation_props, "should_show_task_bar_options", text="Task Bars", icon="NLA_PUSHDOWN")
         if self.animation_props.should_show_task_bar_options:
             row = self.layout.row()
             row.label(text="Task Bar Options", icon="NLA_PUSHDOWN")
@@ -514,10 +554,12 @@ class BIM_PT_animation_tools(Panel):
             row = col.row(align=True)
             row.prop(self.animation_props, "color_full")
 
-        if self.animation_props.is_editing:
-            self.draw_visualisation_settings_ui()
-
         row = self.layout.row(align=True)
+        row.alignment = "RIGHT"
+        if self.animation_props.saved_color_schemes:
+            row.prop(self.animation_props, "saved_color_schemes", text="Color Scheme", icon="SEQUENCE_COLOR_04")
+        else:
+            row.label(text="No Color Scheme Saved", icon="INFO")
         op = row.operator("bim.visualise_work_schedule_date_range", text="Create Animation", icon="OUTLINER_OB_CAMERA")
         op.work_schedule = self.props.active_work_schedule_id
 
@@ -533,7 +575,33 @@ class BIM_PT_animation_tools(Panel):
         op = row.operator("bim.visualise_work_schedule_date", text="Create SnapShot", icon="CAMERA_STEREO")
         op.work_schedule = self.props.active_work_schedule_id
 
-    def draw_visualisation_settings_ui(self):
+
+class BIM_PT_animation_Color_Scheme(Panel):
+    bl_label = "Animation Color Scheme"
+    bl_idname = "BIM_PT_animation_Color_Scheme"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_sequence"
+
+    @classmethod
+    def poll(cls, context):
+        file = IfcStore.get_file()
+        return file and hasattr(file, "schema") and file.schema != "IFC2X3"
+
+    def draw(self, context):
+        if not AnimationColorSchemeData.is_loaded:
+            AnimationColorSchemeData.load()
+
+        self.animation_props = context.scene.BIMAnimationProperties
+        row = self.layout.row(align=True)
+        row.alignment = "RIGHT"
+        row.operator("bim.load_default_animation_color_scheme", text="Load default", icon="SEQUENCE_COLOR_04")
+        if AnimationColorSchemeData.data["saved_color_schemes"]:
+            row.operator("bim.load_animation_color_scheme", text="Load Scheme", icon="IMPORT")
+        row.operator("bim.save_animation_color_scheme", text="Save Scheme", icon="EXPORT")
+
         grid = self.layout.grid_flow(columns=2, even_columns=True)
         col = grid.column()
         row1 = col.row(align=True)
@@ -543,7 +611,7 @@ class BIM_PT_animation_tools(Panel):
             "BIM_UL_animation_colors",
             "",
             self.animation_props,
-            "task_colors_components_inputs",
+            "task_input_colors",
             self.animation_props,
             "active_color_component_inputs_index",
         )
@@ -555,10 +623,11 @@ class BIM_PT_animation_tools(Panel):
             "BIM_UL_animation_colors",
             "",
             self.animation_props,
-            "task_colors_components_outputs",
+            "task_output_colors",
             self.animation_props,
             "active_color_component_outputs_index",
         )
+
 
 class BIM_PT_task_icom(Panel):
     bl_label = "Task ICOM"
@@ -568,6 +637,7 @@ class BIM_PT_task_icom(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_parent_id = "BIM_PT_work_schedules"
+    bl_order = 1
 
     @classmethod
     def poll(cls, context):
@@ -696,9 +766,9 @@ class BIM_UL_task_resources(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
+            row.operator("bim.go_to_resource", text="", icon="STYLUS_PRESSURE").resource = item.ifc_definition_id
             row.prop(item, "name", emboss=False, text="")
-            row.label(text=str(item.schedule_usage))
-
+            row.prop(item, "schedule_usage", emboss=False, text="")
 
 class BIM_UL_animation_colors(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
@@ -721,7 +791,7 @@ class BIM_UL_product_input_tasks(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
-            op = row.operator("bim.highlight_task", text="", icon="STYLUS_PRESSURE")
+            op = row.operator("bim.go_to_task", text="", icon="STYLUS_PRESSURE")
             op.task = item.ifc_definition_id
             row.split(factor=0.8)
             row.label(text=item.name)
@@ -731,7 +801,7 @@ class BIM_UL_product_output_tasks(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
-            op = row.operator("bim.highlight_task", text="", icon="STYLUS_PRESSURE")
+            op = row.operator("bim.go_to_task", text="", icon="STYLUS_PRESSURE")
             op.task = item.ifc_definition_id
             row.split(factor=0.8)
             row.label(text=item.name)
@@ -771,19 +841,18 @@ class BIM_UL_tasks(UIList):
                 )
             if self.props.enable_reorder:
                 self.draw_order_operator(row, item.ifc_definition_id)
-            if self.props.active_task_id:
-                if self.props.editing_task_type == "SEQUENCE" and self.props.active_task_id != item.ifc_definition_id:
-                    if item.is_predecessor:
-                        op = row.operator("bim.unassign_predecessor", text="", icon="BACK", emboss=False)
-                    else:
-                        op = row.operator("bim.assign_predecessor", text="", icon="TRACKING_BACKWARDS", emboss=False)
-                    op.task = item.ifc_definition_id
+            if self.props.editing_task_type == "SEQUENCE" and self.props.highlighted_task_id != item.ifc_definition_id:
+                if item.is_predecessor:
+                    op = row.operator("bim.unassign_predecessor", text="", icon="BACK", emboss=False)
+                else:
+                    op = row.operator("bim.assign_predecessor", text="", icon="TRACKING_BACKWARDS", emboss=False)
+                op.task = item.ifc_definition_id
 
-                    if item.is_successor:
-                        op = row.operator("bim.unassign_successor", text="", icon="FORWARD", emboss=False)
-                    else:
-                        op = row.operator("bim.assign_successor", text="", icon="TRACKING_FORWARDS", emboss=False)
-                    op.task = item.ifc_definition_id
+                if item.is_successor:
+                    op = row.operator("bim.unassign_successor", text="", icon="FORWARD", emboss=False)
+                else:
+                    op = row.operator("bim.assign_successor", text="", icon="TRACKING_FORWARDS", emboss=False)
+                op.task = item.ifc_definition_id
 
     def draw_order_operator(self, row, ifc_definition_id):
         task = SequenceData.data["tasks"][ifc_definition_id]
@@ -852,7 +921,7 @@ class BIM_PT_work_calendars(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_tab_4D5D"
+    bl_parent_id = "BIM_PT_tab_sequence"
 
     @classmethod
     def poll(cls, context):
@@ -882,7 +951,7 @@ class BIM_PT_work_calendars(Panel):
         if self.props.active_work_calendar_id == work_calendar_id:
             if self.props.editing_type == "ATTRIBUTES":
                 row.operator("bim.edit_work_calendar", text="", icon="CHECKMARK")
-            row.operator("bim.disable_editing_work_calendar",  text="Cancel", icon="CANCEL")
+            row.operator("bim.disable_editing_work_calendar", text="Cancel", icon="CANCEL")
         elif self.props.active_work_calendar_id:
             row.operator("bim.remove_work_calendar", text="", icon="X").work_calendar = work_calendar_id
         else:
@@ -920,7 +989,7 @@ class BIM_PT_work_calendars(Panel):
             row.label(text="{} - {}".format(work_time["Start"] or "*", work_time["Finish"] or "*"))
         if self.props.active_work_time_id == work_time["id"]:
             row.operator("bim.edit_work_time", text="", icon="CHECKMARK")
-            row.operator("bim.disable_editing_work_time",  text="Cancel", icon="CANCEL")
+            row.operator("bim.disable_editing_work_time", text="Cancel", icon="CANCEL")
         elif self.props.active_work_time_id:
             op = row.operator("bim.remove_work_time", text="", icon="X")
             op.work_time = work_time["id"]
@@ -1041,29 +1110,3 @@ class BIM_PT_4D_Tools(Panel):
             self.props,
             "active_product_output_task_index",
         )
-
-
-class BIM_PT_Task_Bar_Creator(Panel):
-    bl_label = "Task Bar Creator"
-    bl_idname = "BIM_PT_Task_Bar_Creator"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_options = {"DEFAULT_CLOSED"}
-    bl_parent_id = "BIM_PT_4D_Tools"
-
-    def draw(self, context):
-        self.animation_props = context.scene.BIMAnimationProperties
-        row = self.layout.row()
-        row.operator("bim.add_task_bars", text="Add Bar Visual", icon="NLA_PUSHDOWN")
-
-        grid = self.layout.grid_flow(columns=2, even_columns=True)
-        # Column1
-        col = grid.column()
-        row1 = col.row(align=True)
-        row1.label(text="Bar Colors", icon="NLA_PUSHDOWN")
-
-        row2 = col.row(align=True)
-        row2.prop(self.animation_props, "color_progress")
-
-        row3 = col.row(align=True)
-        row3.prop(self.animation_props, "color_full")

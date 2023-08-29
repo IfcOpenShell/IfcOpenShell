@@ -38,17 +38,21 @@ endif
 VERSION:=`date '+%y%m%d'`
 LAST_COMMIT_HASH:=$(shell git rev-parse HEAD)
 PYVERSION:=py310
+PYPI_IMP:=cp
 
 ifeq ($(PYVERSION), py39)
 PYLIBDIR:=python3.9
 PYNUMBER:=39
+PYPI_VERSION:=3.9
 endif
 ifeq ($(PYVERSION), py310)
 PYLIBDIR:=python3.10
 PYNUMBER:=310
+PYPI_VERSION:=3.10
 endif
 
 ifeq ($(PLATFORM), linux)
+PYPI_PLATFORM:=--platform manylinux_2_17_x86_64
 ifeq ($(PYVERSION), py39)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.3.4/download/linux-64/hpp-fcl-2.3.4-py39h40a70d0_0.conda
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.1.0/download/linux-64/eigenpy-3.1.0-py39hdfdd6bb_0.conda
@@ -74,6 +78,7 @@ ZLIB_URL:=https://anaconda.org/conda-forge/zlib/1.2.11/download/linux-64/zlib-1.
 endif
 
 ifeq ($(PLATFORM), macos)
+PYPI_PLATFORM:=--platform macosx_10_9_x86_64
 ifeq ($(PYVERSION), py39)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.3.4/download/osx-64/hpp-fcl-2.3.4-py39hd85b194_0.conda
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.1.0/download/osx-64/eigenpy-3.1.0-py39hc4d6e28_0.conda
@@ -99,6 +104,7 @@ ZLIB_URL:=https://anaconda.org/conda-forge/zlib/1.2.11/download/osx-64/zlib-1.2.
 endif
 
 ifeq ($(PLATFORM), macosm1)
+PYPI_PLATFORM:=--platform macosx_11_0_arm64
 ifeq ($(PYVERSION), py39)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.3.4/download/osx-arm64/hpp-fcl-2.3.4-py39hc34188a_0.conda
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.1.0/download/osx-arm64/eigenpy-3.1.0-py39h13cfc01_0.conda
@@ -124,6 +130,7 @@ ZLIB_URL:=https://anaconda.org/conda-forge/zlib/1.2.11/download/osx-arm64/zlib-1
 endif
 
 ifeq ($(PLATFORM), win)
+PYPI_PLATFORM:=--platform win_amd64
 ifeq ($(PYVERSION), py39)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.3.4/download/win-64/hpp-fcl-2.3.4-py39h39b25cb_0.conda
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.1.0/download/win-64/eigenpy-3.1.0-py39hb6c915b_0.conda
@@ -164,7 +171,7 @@ endif
 	cp -r blenderbim/* dist/blenderbim/
 
 	# Provides IfcOpenShell Python functionality
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.7.0-fc50bdd-$(PLATFORM)64.zip
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.7.0-dadcbe6-$(PLATFORM)64.zip
 	cd dist/working && unzip ifcopenshell-python*
 	cp -r dist/working/ifcopenshell dist/blenderbim/libs/site/packages/
 
@@ -376,6 +383,10 @@ endif
 	mkdir dist/working
 	cd dist/working && $(PYTHON) -m venv env
 	cd dist/working && mkdir site-packages
+	# Required by IfcCSV
+	cd dist/working && . env/bin/activate && $(PIP) install pandas $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) install openpyxl --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) install odfpy --target=./site-packages
 	# Required by IFCCityJSON
 	cd dist/working && . env/bin/activate && $(PIP) install cjio --target=./site-packages
 	# Provides express rule validation for ifcopenshell.validate
@@ -588,20 +599,6 @@ endif
 	cd dist/working && wget https://files.pythonhosted.org/packages/0c/bc/82d6783f83f65f56d8b77d052773c4a2f952fa86385f0cd54e1e006658d7/XlsxWriter-1.2.9.tar.gz
 	cd dist/working && tar -xzvf XlsxWriter*
 	cd dist/working/XlsxWriter-1.2.9/ && cp -r xlsxwriter ../../blenderbim/libs/site/packages/
-	rm -rf dist/working
-
-	# Required by IFCCOBie for ODS support
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/97/73/8ade73f6749177003f7ce3304f524774adda96e6aaab30ea79fd8fda7934/odfpy-1.4.1.tar.gz
-	cd dist/working && tar -xzvf odfpy*
-	cd dist/working/odfpy-1.4.1/ && cp -r odf ../../blenderbim/libs/site/packages/
-	rm -rf dist/working
-
-	# Required by odfpy
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/a4/5f/f8aa58ca0cf01cbcee728abc9d88bfeb74e95e6cb4334cfd5bed5673ea77/defusedxml-0.6.0.tar.gz
-	cd dist/working && tar -xzvf defusedxml*
-	cd dist/working/defusedxml-0.6.0/ && cp -r defusedxml ../../blenderbim/libs/site/packages/
 	rm -rf dist/working
 
 	# Required by augin

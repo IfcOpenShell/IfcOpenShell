@@ -475,7 +475,7 @@ class Drawing(blenderbim.core.tool.Drawing):
                 m[2][2] = -1
                 m.translation = (x, y, z + 1.6)
                 return m
-            return mathutils.Matrix(((-1, 0, 0, 0), (0, 1, 0, 0), (0, 0, -1, 0), (0, 0, 0, 1)))
+            return mathutils.Matrix(((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, -1, 0), (0, 0, 0, 1)))
         elif target_view == "ELEVATION_VIEW":
             if location_hint == "NORTH":
                 return mathutils.Matrix(((-1, 0, 0, x), (0, 0, 1, y), (0, 1, 0, z), (0, 0, 0, 1)))
@@ -1504,7 +1504,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         elements = cls.get_elements_in_camera_view(tool.Ifc.get_object(drawing), bpy.data.objects)
         include = pset.get("Include", None)
         if include:
-            elements = set(ifcopenshell.util.selector.Selector.parse(ifc_file, include, elements=elements))
+            elements = ifcopenshell.util.selector.filter_elements(ifc_file, include, elements=elements)
         else:
             if tool.Ifc.get_schema() == "IFC2X3":
                 base_elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialStructureElement"))
@@ -1516,7 +1516,7 @@ class Drawing(blenderbim.core.tool.Drawing):
 
         exclude = pset.get("Exclude", None)
         if exclude:
-            elements -= set(ifcopenshell.util.selector.Selector.parse(ifc_file, exclude, elements=elements))
+            elements -= ifcopenshell.util.selector.filter_elements(ifc_file, exclude)
         elements -= set(ifc_file.by_type("IfcOpeningElement"))
         return elements
 
@@ -1529,10 +1529,10 @@ class Drawing(blenderbim.core.tool.Drawing):
             tool.Ifc.get_object(drawing), [tool.Ifc.get_object(e) for e in ifc_file.by_type("IfcSpace")]
         )
         if include:
-            elements = set(ifcopenshell.util.selector.Selector.parse(ifc_file, include, elements=elements))
+            elements = ifcopenshell.util.selector.filter_elements(ifc_file, include, elements=elements)
         exclude = pset.get("Exclude", None)
         if exclude:
-            elements -= set(ifcopenshell.util.selector.Selector.parse(ifc_file, exclude, elements=elements))
+            elements -= ifcopenshell.util.selector.filter_elements(ifc_file, exclude)
         return elements
 
     @classmethod
@@ -1835,3 +1835,17 @@ class Drawing(blenderbim.core.tool.Drawing):
         direction = end - start
         offset = distance * (direction / np.linalg.norm(direction))
         return (start - offset).tolist(), (end + offset).tolist()
+
+    @classmethod
+    def get_sheet_references(cls, drawing):
+        sheet_references = []
+        drawing_reference = cls.get_drawing_document(drawing)
+        for sheet in tool.Ifc.get().by_type("IfcDocumentInformation"):
+            if not sheet.Scope == "SHEET":
+                continue
+            references = cls.get_document_references(sheet)
+            for reference in references:
+                if reference.Location == drawing_reference.Location:
+                    sheet_references.append(reference)
+                    break
+        return sheet_references

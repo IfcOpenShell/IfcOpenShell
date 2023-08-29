@@ -70,7 +70,10 @@ class FilledOpeningGenerator:
             )
 
         if target is None:
-            target = bpy.context.scene.cursor.location
+            should_set_z_level = True
+            target = bpy.context.scene.cursor.location.copy()
+        else:
+            should_set_z_level = False
 
         # Sometimes, the voided_obj may be an aggregate, which won't have any representation.
         if voided_obj.data:
@@ -86,12 +89,17 @@ class FilledOpeningGenerator:
             axis = tool.Model.get_wall_axis(voided_obj, layers=layers)["base"]
 
             new_matrix = voided_obj.matrix_world.copy()
-            new_matrix.translation = tool.Cad.point_on_edge(target, axis)
+            point_on_axis = tool.Cad.point_on_edge(target, axis)
+            new_matrix.translation.x = point_on_axis.x
+            new_matrix.translation.y = point_on_axis.y
 
-            if filling.is_a("IfcDoor"):
-                new_matrix.translation.z = voided_obj.matrix_world.translation.z
+            if should_set_z_level:
+                if filling.is_a("IfcDoor"):
+                    new_matrix.translation.z = voided_obj.matrix_world.translation.z
+                else:
+                    new_matrix.translation.z = voided_obj.matrix_world.translation.z + props.rl2
             else:
-                new_matrix.translation.z = voided_obj.matrix_world.translation.z + props.rl2
+                new_matrix.translation.z = filling_obj.matrix_world.copy().translation.z
 
             filling_obj.matrix_world = new_matrix
             bpy.context.view_layer.update()
@@ -498,10 +506,14 @@ class AddBoolean(Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_boolean"
     bl_label = "Add Boolean"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Applies a boolean to the selected IFC object using the other selected blender object as a void"
 
     @classmethod
     def poll(cls, context):
-        return len(context.selected_objects) == 2
+        if not len(context.selected_objects) == 2:
+            cls.poll_message_set("Exactly 2 objects need to be selected.")
+            return False
+        return True
 
     def _execute(self, context):
         props = context.scene.BIMModelProperties
@@ -646,6 +658,7 @@ class RemoveBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
+        upstream_obj = None
         for obj in context.selected_objects:
             if (
                 not obj.data
@@ -673,6 +686,8 @@ class RemoveBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
                         should_sync_changes_first=False,
                     )
             bpy.data.objects.remove(obj)
+        
+        tool.Blender.set_active_object(upstream_obj)
         return {"FINISHED"}
 
 
@@ -735,12 +750,19 @@ class EditOpenings(Operator, tool.Ifc.Operator):
     def _execute(self, context):
         props = bpy.context.scene.BIMModelProperties
         building_objs = set()
+        model = tool.Ifc.get()
+        all_openings = model.by_type("IfcOpeningElement")
+        similar_openings = []
+
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
             openings = [r.RelatedOpeningElement for r in element.HasOpenings]
             for opening in openings:
+                for all_opening in all_openings:
+                    if all_opening.ObjectPlacement == opening.ObjectPlacement:
+                        similar_openings.append(all_opening)
                 opening_obj = tool.Ifc.get_object(opening)
                 if opening_obj:
                     if tool.Ifc.is_edited(opening_obj):
@@ -749,6 +771,8 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                         blenderbim.core.geometry.edit_object_placement(
                             tool.Ifc, tool.Geometry, tool.Surveyor, obj=opening_obj
                         )
+                        for similar_opening in similar_openings:
+                            similar_opening.ObjectPlacement = opening.ObjectPlacement
                     building_objs.add(obj)
                     building_objs.update(self.get_all_building_objects_of_similar_openings(opening))
                     tool.Ifc.unlink(element=opening, obj=opening_obj)
@@ -773,6 +797,34 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                             results.add(obj)
         return results
 
+class CloneOpening(Operator, tool.Ifc.Operator):
+    bl_idname = "bim.clone_opening"
+    bl_label = "Clone Opening"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Create and assign to the selected element the selected opening and assign to it the same representation and object placement"
+
+    def _execute(self, context):
+        objects = bpy.context.selected_objects
+
+        for obj in objects:
+            entity = tool.Ifc.get_entity(obj)
+            if entity.is_a() == "IfcWall":
+                wall = entity
+                continue
+            if entity.is_a() == "IfcOpeningElement":
+                opening = entity
+                continue
+
+        opening_placement = opening.ObjectPlacement
+        opening_representations = opening.Representation.Representations
+
+        new_opening = ifcopenshell.api.run("root.create_entity", tool.Ifc.get(), ifc_class="IfcOpeningElement")
+        for representation in opening_representations:
+            ifcopenshell.api.run("geometry.assign_representation", tool.Ifc.get(), product = new_opening, representation = representation)
+
+        ifcopenshell.api.run("void.add_opening", tool.Ifc.get(), opening = new_opening, element = wall)
+        new_opening.ObjectPlacement = opening_placement
+        return {"FINISHED"}
 
 # TODO: merge with ProfileDecorator?
 class DecorationsHandler:

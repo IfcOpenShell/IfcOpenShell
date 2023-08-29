@@ -125,6 +125,8 @@ class Usecase:
             or "ScheduleDuration" in self.settings["attributes"].keys()
         ):
             ifcopenshell.api.run("sequence.cascade_schedule", self.file, task=self.task)
+        if self.settings["task_time"].ScheduleDuration:
+            self.handle_resource_calculation()
 
     def calculate_finish(self):
         finish = ifcopenshell.util.sequence.get_start_or_finish_date(
@@ -173,3 +175,12 @@ class Usecase:
             for e in self.file.get_inverse(self.settings["task_time"])
             if e.is_a("IfcTask")
         ][0]
+
+    def handle_resource_calculation(self):
+        resources = ifcopenshell.util.sequence.get_task_resources(self.task, is_deep=False)
+        for resource in resources:
+            if ifcopenshell.util.constraint.is_attribute_locked(resource, "Usage.ScheduleWork"):
+                ifcopenshell.api.run("resource.calculate_resource_usage", self.file, resource=resource)
+            #TODO: If the duration changes, this implies the productivity rate must change to accomModate the new Schedule Work to be calculated.
+            # elif ifcopenshell.util.constraint.is_attribute_locked(resource, "Usage.ScheduleUsage"):
+            #     ifcopenshell.api.run("resource.calculate_resource_work", self.file, resource=resource)

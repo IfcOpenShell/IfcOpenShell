@@ -20,15 +20,17 @@ import re
 import lark
 import ifcopenshell.util
 import ifcopenshell.util.fm
+import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.classification
 
 
-filter_elements_grammar = lark.Lark("""start: filter_group
+filter_elements_grammar = lark.Lark(
+    """start: filter_group
     filter_group: facet_list ("+" facet_list)*
     facet_list: facet ("," facet)*
 
-    facet: instance | entity | attribute | type | material | property | classification | location
+    facet: instance | entity | attribute | type | material | query | classification | location | property
 
     instance: not? globalid
     globalid: /[0-3][a-zA-Z0-9_$]{21}/
@@ -39,17 +41,19 @@ filter_elements_grammar = lark.Lark("""start: filter_group
     property: pset "." prop comparison value
     classification: "classification" comparison value
     location: "location" comparison value
+    query: "query:" keys comparison value
 
-    pset: quoted_string | unquoted_string | regex_string
-    prop: quoted_string | unquoted_string | regex_string
+    pset: quoted_string | regex_string | unquoted_string
+    prop: quoted_string | regex_string | unquoted_string
+    keys: quoted_string | unquoted_string
 
     attribute_name: /[A-Z]\\w+/
     ifc_class: /Ifc\\w+/
 
-    value: special | quoted_string | unquoted_string | regex_string
+    value: special | quoted_string | regex_string | unquoted_string
     unquoted_string: /[^.=\\s]+/
-    quoted_string: ESCAPED_STRING
     regex_string: "/" /[^\\/]+/ "/"
+    quoted_string: ESCAPED_STRING
 
     special: null | true | false
 
@@ -86,14 +90,53 @@ filter_elements_grammar = lark.Lark("""start: filter_group
     NEWLINE: (CR? LF)+
 
     %ignore WS // Disregard spaces in text
-""")
+"""
+)
 
-get_element_grammar = lark.Lark("""start: WORD | ESCAPED_STRING | keys_regex | keys_quoted | keys_simple
-    keys_regex: "r" ESCAPED_STRING ("." ESCAPED_STRING)*
-    keys_quoted: ESCAPED_STRING ("." ESCAPED_STRING)*
-    keys_simple: /[^\\W][^.=<>!%*\\]]*/ ("." /[^\\W][^.=<>!%*\\]]*/)*
+get_element_grammar = lark.Lark(
+    """start: keys
+
+    keys: key ("." key)*
+    key: quoted_string | regex_string | unquoted_string
+    unquoted_string: /[^.=\\/\\s]+/
+    regex_string: "/" /[^\\/]+/ "/"
+    quoted_string: ESCAPED_STRING
 
     // Embed common.lark for packaging
+    _STRING_INNER: /.*?/
+    _STRING_ESC_INNER: _STRING_INNER /(?<!\\\\)(\\\\\\\\)*?/
+    ESCAPED_STRING : "\\"" _STRING_ESC_INNER "\\""
+    WS: /[ \\t\\f\\r\\n]/+
+
+    %ignore WS // Disregard spaces in text
+ """
+)
+
+format_grammar = lark.Lark(
+    """start: function
+
+    function: round | format_length | lower | upper | title | concat | ESCAPED_STRING | NUMBER
+
+    round: "round(" function "," NUMBER ")"
+    format_length: metric_length | imperial_length
+    metric_length: "metric_length(" function "," NUMBER "," NUMBER ")"
+    imperial_length: "imperial_length(" function "," NUMBER ["," ESCAPED_STRING] ")"
+    lower: "lower(" function ")"
+    upper: "upper(" function ")"
+    title: "title(" function ")"
+    concat: "concat(" function ("," function)* ")"
+
+    // Embed common.lark for packaging
+    DIGIT: "0".."9"
+    HEXDIGIT: "a".."f"|"A".."F"|DIGIT
+    INT: DIGIT+
+    SIGNED_INT: ["+"|"-"] INT
+    DECIMAL: INT "." INT? | "." INT
+    _EXP: ("e"|"E") SIGNED_INT
+    FLOAT: INT _EXP | DECIMAL _EXP?
+    SIGNED_FLOAT: ["+"|"-"] FLOAT
+    NUMBER: FLOAT | INT
+    SIGNED_NUMBER: ["+"|"-"] NUMBER
     _STRING_INNER: /.*?/
     _STRING_ESC_INNER: _STRING_INNER /(?<!\\\\)(\\\\\\\\)*?/
     ESCAPED_STRING : "\\"" _STRING_ESC_INNER "\\""
@@ -101,23 +144,212 @@ get_element_grammar = lark.Lark("""start: WORD | ESCAPED_STRING | keys_regex | k
     UCASE_LETTER: "A".."Z"
     LETTER: UCASE_LETTER | LCASE_LETTER
     WORD: LETTER+
+    CNAME: ("_"|LETTER) ("_"|LETTER|DIGIT)*
+    WS_INLINE: (" "|/\\t/)+
     WS: /[ \\t\\f\\r\\n]/+
+    CR : /\\r/
+    LF : /\\n/
+    NEWLINE: (CR? LF)+
 
     %ignore WS // Disregard spaces in text
- """)
+"""
+)
+
+
+class FormatTransformer(lark.Transformer):
+    def start(self, args):
+        return args[0]
+
+    def function(self, args):
+        return args[0]
+
+    def ESCAPED_STRING(self, args):
+        return args[1:-1].replace("\\", "")
+
+    def NUMBER(self, args):
+        return str(args)
+
+    def lower(self, args):
+        return str(args[0]).lower()
+
+    def upper(self, args):
+        return str(args[0]).upper()
+
+    def title(self, args):
+        return str(args[0]).title()
+
+    def concat(self, args):
+        return "".join(args)
+
+    def round(self, args):
+        return str(round(float(args[0]) / float(args[1])) * float(args[1]))
+
+    def format_length(self, args):
+        return args[0]
+
+    def metric_length(self, args):
+        value, precision, decimal_places = args
+        return ifcopenshell.util.unit.format_length(
+            float(value), float(precision), int(decimal_places), unit_system="metric"
+        )
+
+    def imperial_length(self, args):
+        if len(args) == 2:
+            imperial_unit = "foot"
+            value, precision = args
+        else:
+            value, precision, imperial_unit = args
+            if imperial_unit == "inch":
+                imperial_unit = "inch"
+            else:
+                imperial_unit = "foot"
+
+        return ifcopenshell.util.unit.format_length(
+            float(value), int(precision), unit_system="imperial", imperial_unit=imperial_unit
+        )
+
+
+class GetElementTransformer(lark.Transformer):
+    def start(self, args):
+        return args[0]
+
+    def keys(self, args):
+        return args
+
+    def key(self, args):
+        return args[0]
+
+    def quoted_string(self, args):
+        return str(args[0])
+
+    def regex_string(self, args):
+        return re.compile(args[0])
+
+    def unquoted_string(self, args):
+        return str(args[0])
+
+    def ESCAPED_STRING(self, args):
+        return args[1:-1].replace("\\", "")
+
+
+def format(query):
+    return FormatTransformer().transform(format_grammar.parse(query))
 
 
 def get_element_value(element, query):
-    start = get_element_grammar.parse(query)
-    filter_query = Selector.parse_filter_query(start.children[0])
-    return Selector.get_element_value(element, filter_query["keys"], filter_query["is_regex"])
+    keys = GetElementTransformer().transform(get_element_grammar.parse(query))
+    return Selector.get_element_value(element, keys)
 
 
-def filter_elements(ifc_file, query, elements=None):
+def filter_elements(ifc_file, query, elements=None, edit_in_place=False):
+    if elements and not edit_in_place:
+        elements = elements.copy()
     transformer = FacetTransformer(ifc_file, elements)
     transformer.transform(filter_elements_grammar.parse(query))
     return transformer.get_results()
     return transformer.elements
+
+
+def set_element_value(ifc_file, element, query, value):
+    if isinstance(query, (list, tuple)):
+        keys = query
+    else:
+        keys = GetElementTransformer().transform(get_element_grammar.parse(query))
+
+    for i, key in enumerate(keys):
+        if isinstance(key, str):
+            key = key.strip()
+        if element is None:
+            return
+        if key == "type":
+            element = ifcopenshell.util.element.get_type(element)
+        elif key in ("material", "mat"):
+            element = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+        elif key in ("materials", "mats"):
+            element = ifcopenshell.util.element.get_materials(element)
+        elif key == "styles":
+            element = ifcopenshell.util.element.get_styles(element)
+        elif key in ("item", "i"):
+            if element.is_a("IfcMaterialLayerSet"):
+                element = element.MaterialLayers
+            elif element.is_a("IfcMaterialProfileSet"):
+                element = element.MaterialProfiles
+            elif element.is_a("IfcMaterialConstituentSet"):
+                element = element.MaterialConstituents
+        elif key == "container":
+            element = ifcopenshell.util.element.get_container(element)
+        elif key == "space":
+            element = ifcopenshell.util.element.get_container(element, ifc_class="IfcSpace")
+        elif key == "storey":
+            element = ifcopenshell.util.element.get_container(element, ifc_class="IfcBuildingStorey")
+        elif key == "building":
+            element = ifcopenshell.util.element.get_container(element, ifc_class="IfcBuilding")
+        elif key == "site":
+            element = ifcopenshell.util.element.get_container(element, ifc_class="IfcSite")
+        elif key == "class":
+            if element.is_a().lower() != value.lower():
+                return ifcopenshell.util.schema.reassign_class(ifc_file, element, value)
+        elif key == "id":
+            return
+        elif isinstance(element, ifcopenshell.entity_instance):
+            if key == "Name" and element.is_a("IfcMaterialLayerSet"):
+                key = "LayerSetName"  # This oddity in the IFC spec is annoying so we account for it.
+
+            if isinstance(key, str) and hasattr(element, key):
+                if getattr(element, key) != value:
+                    return setattr(element, key, value)
+            else:
+                # Try to extract pset
+                if isinstance(key, re.Pattern):
+                    psets = ifcopenshell.util.element.get_psets(element)
+                    matching_psets = []
+                    for pset_name, pset in psets.items():
+                        if key.match(pset_name):
+                            matching_psets.append(pset)
+                    result = matching_psets or None
+                    if result and len(result) == 1:
+                        result = result[0]
+                else:
+                    result = ifcopenshell.util.element.get_pset(element, key)
+
+                    if value and not result and len(keys) == i + 2:  # The next key is the prop name
+                        if "qto" in key.lower() or "quantity" in key.lower() or "quantities" in key.lower():
+                            pset = ifcopenshell.api.run("pset.add_qto", ifc_file, product=element, name=key)
+                        else:
+                            pset = ifcopenshell.api.run("pset.add_pset", ifc_file, product=element, name=key)
+                        result = {"id": pset.id()}
+
+                element = result
+        elif isinstance(element, dict):  # Such as from the result of a prior get_pset
+            pset = ifc_file.by_id(element["id"])
+            if isinstance(key, re.Pattern):
+                for prop, prop_value in element.items():
+                    if key.match(prop):
+                        if pset.is_a("IfcPropertySet") and prop_value != value:
+                            ifcopenshell.api.run("pset.edit_pset", ifc_file, pset=pset, properties={prop: value})
+                        elif pset.is_a("IfcElementQuantity") and prop_value != float(value):
+                            ifcopenshell.api.run("pset.edit_qto", ifc_file, qto=pset, properties={prop: float(value)})
+            elif pset.is_a("IfcPropertySet") and element.get(key, None) != value:
+                ifcopenshell.api.run("pset.edit_pset", ifc_file, pset=pset, properties={key: value})
+            elif pset.is_a("IfcElementQuantity"):
+                try:
+                    value = float(value)
+                    if element.get(key, None) != value:
+                        ifcopenshell.api.run("pset.edit_qto", ifc_file, qto=pset, properties={key: value})
+                except:
+                    pass
+            return
+        elif isinstance(element, (list, tuple)):  # If we use regex
+            if key.isnumeric():
+                try:
+                    element = element[int(key)]
+                except IndexError:
+                    return
+            else:
+                results = []
+                for v in element:
+                    cls.set_element_value(ifc_file, v, keys[i + 1 :], value)
+                return
 
 
 class FacetTransformer(lark.Transformer):
@@ -141,15 +373,27 @@ class FacetTransformer(lark.Transformer):
 
     def instance(self, args):
         if args[0].data == "globalid":
-            self.elements.add(self.file.by_guid(args[0].children[0].value))
+            try:
+                self.elements.add(self.file.by_guid(args[0].children[0].value))
+            except:
+                pass
         else:
-            self.elements.remove(self.file.by_guid(args[1].children[0].value))
+            try:
+                self.elements.remove(self.file.by_guid(args[1].children[0].value))
+            except:
+                pass
 
     def entity(self, args):
         if args[0].data == "ifc_class":
-            self.elements |= set(self.file.by_type(args[0].children[0].value))
+            try:
+                self.elements |= set(self.file.by_type(args[0].children[0].value))
+            except:
+                pass
         else:
-            self.elements -= set(self.file.by_type(args[1].children[0].value))
+            try:
+                self.elements -= set(self.file.by_type(args[1].children[0].value))
+            except:
+                pass
 
     def attribute(self, args):
         name, comparison, value = args
@@ -251,6 +495,14 @@ class FacetTransformer(lark.Transformer):
 
         self.elements = set(filter(filter_function, self.elements))
 
+    def query(self, args):
+        keys, comparison, value = args
+
+        def filter_function(element):
+            return self.compare(get_element_value(element, keys), comparison, value)
+
+        self.elements = set(filter(filter_function, self.elements))
+
     def get_container_tree(self, container):
         tree = self.container_trees.get(container, None)
         if tree:
@@ -271,6 +523,9 @@ class FacetTransformer(lark.Transformer):
 
     def comparison(self, args):
         return "=" if args[0].data == "equals" else "!="
+
+    def keys(self, args):
+        return self.value(args)
 
     def pset(self, args):
         return self.value(args)
@@ -294,14 +549,16 @@ class FacetTransformer(lark.Transformer):
                 return False
 
     def compare(self, element_value, comparison, value):
-        if isinstance(value, str):
+        if isinstance(element_value, (list, tuple)):
+            return any(self.compare(ev, comparison, value) for ev in element_value)
+        elif isinstance(value, str):
             if isinstance(element_value, int):
                 value = int(value)
             elif isinstance(element_value, float):
                 value = float(value)
             result = element_value == value
         elif isinstance(value, re.Pattern):
-            result = bool(value.match(element_value))
+            result = bool(value.match(element_value)) if element_value is not None else False
         elif value in (None, True, False):
             result = element_value is value
         return result if comparison == "=" else not result
@@ -485,7 +742,9 @@ class Selector:
             elif token_type == "NULL":
                 value = None
         for element in elements:
-            element_value = cls.get_element_value(element, filter_query["keys"], is_regex=filter_query["is_regex"])
+            if filter_query["is_regex"]:
+                filter_query["keys"] = [re.compile(k) for k in filter_query["keys"]]
+            element_value = cls.get_element_value(element, filter_query["keys"])
             if element_value is None and value is not None and "not" not in comparison:
                 continue
             if comparison and cls.filter_element(element, element_value, comparison, value, is_regex=is_regex):
@@ -510,10 +769,11 @@ class Selector:
         return {"keys": keys, "is_regex": is_regex}
 
     @classmethod
-    def get_element_value(cls, element, keys, is_regex=False):
+    def get_element_value(cls, element, keys):
         value = element
         for key in keys:
-            key = key.strip()
+            if isinstance(key, str):
+                key = key.strip()
             if value is None:
                 return
             if key == "type":
@@ -533,45 +793,74 @@ class Selector:
                     value = value.MaterialConstituents
             elif key == "container":
                 value = ifcopenshell.util.element.get_container(value)
+            elif key == "space":
+                value = ifcopenshell.util.element.get_container(value, ifc_class="IfcSpace")
+            elif key == "storey":
+                value = ifcopenshell.util.element.get_container(value, ifc_class="IfcBuildingStorey")
+            elif key == "building":
+                value = ifcopenshell.util.element.get_container(value, ifc_class="IfcBuilding")
+            elif key == "site":
+                value = ifcopenshell.util.element.get_container(value, ifc_class="IfcSite")
+            elif key in ("types", "occurrences"):
+                value = ifcopenshell.util.element.get_types(value)
+            elif key == "count":
+                if isinstance(value, set):
+                    value = len(list(value))
+                elif isinstance(value, (list, tuple)):
+                    value = len(value)
+                else:
+                    value = 1
             elif key == "class":
                 value = value.is_a()
+            elif key == "predefined_type":
+                value = ifcopenshell.util.element.get_predefined_type(value)
             elif key == "id":
                 value = value.id()
             elif isinstance(value, ifcopenshell.entity_instance):
                 if key == "Name" and value.is_a("IfcMaterialLayerSet"):
                     key = "LayerSetName"  # This oddity in the IFC spec is annoying so we account for it.
 
-                attribute = getattr(value, key, None)
+                if isinstance(key, re.Pattern):
+                    attribute = None # Should we support regex attributes? Probably not for now.
+                else:
+                    attribute = getattr(value, key, None)
 
                 if attribute is not None:
                     value = attribute
                 else:
                     # Try to extract pset
-                    if is_regex:
+                    if isinstance(key, re.Pattern):
                         psets = ifcopenshell.util.element.get_psets(value)
                         matching_psets = []
                         for pset_name, pset in psets.items():
-                            if re.match(key, pset_name):
+                            if key.match(pset_name):
+                                del pset["id"]
                                 matching_psets.append(pset)
                         result = matching_psets or None
+                        if result and len(result) == 1:
+                            result = result[0]
                     else:
                         result = ifcopenshell.util.element.get_pset(value, key)
+                        if result:
+                            del result["id"]
 
                     value = result
             elif isinstance(value, dict):  # Such as from the result of a prior get_pset
-                if is_regex:
+                if isinstance(key, re.Pattern):
                     results = []
                     for prop_name, prop_value in value.items():
-                        if re.match(key, prop_name):
+                        if key.match(prop_name):
                             if isinstance(prop_value, (list, tuple)):
                                 results.extend(prop_value)
                             else:
                                 results.append(prop_value)
-                    value = results
+                    value = results or None
+                    if value and len(value) == 1:
+                        value = value[0]
                 else:
                     value = value.get(key, None)
             elif isinstance(value, (list, tuple)):  # If we use regex
-                if key.isnumeric():
+                if isinstance(key, str) and key.isnumeric():
                     try:
                         value = value[int(key)]
                     except IndexError:
@@ -579,7 +868,7 @@ class Selector:
                 else:
                     results = []
                     for v in value:
-                        subvalue = cls.get_element_value(v, [key], is_regex=is_regex)
+                        subvalue = cls.get_element_value(v, [key])
                         if isinstance(subvalue, list):
                             results.extend(subvalue)
                         else:

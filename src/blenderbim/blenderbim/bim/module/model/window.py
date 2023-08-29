@@ -34,7 +34,7 @@ from mathutils import Vector
 # TODO: move to some utils helpers/tool module
 def update_simple_openings(element, opening_width, opening_height):
     ifc_file = tool.Ifc.get()
-    fillings = tool.Ifc.get_all_element_occurences(element)
+    fillings = tool.Ifc.get_all_element_occurrences(element)
 
     voided_objs = set()
     has_replaced_opening_representation = False
@@ -158,11 +158,11 @@ def update_window_modifier_representation(context, obj):
     if tool.Ifc.get_schema() != "IFC2X3":
         element.PartitioningType = props.window_type
 
-    # occurences attributes
-    occurences = tool.Ifc.get_all_element_occurences(element)
-    for occurence in occurences:
-        occurence.OverallWidth = props.overall_width / si_conversion
-        occurence.OverallHeight = props.overall_height / si_conversion
+    # occurrences attributes
+    occurrences = tool.Ifc.get_all_element_occurrences(element)
+    for occurrence in occurrences:
+        occurrence.OverallWidth = props.overall_width / si_conversion
+        occurrence.OverallHeight = props.overall_height / si_conversion
 
     update_simple_openings(element, props.overall_width / si_conversion, props.overall_height / si_conversion)
 

@@ -21,6 +21,7 @@ import ifcopenshell.api
 import blenderbim.bim.helper
 import blenderbim.tool as tool
 import blenderbim.bim.module.model.profile as model_profile
+import blenderbim.core.profile as core
 from blenderbim.bim.module.model.decorator import ProfileDecorator
 from blenderbim.bim.module.profile.prop import generate_thumbnail_for_active_profile
 from blenderbim.bim.module.profile.data import refresh
@@ -213,3 +214,16 @@ class EditArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
         props.active_arbitrary_profile_id = 0
 
         model_profile.DumbProfileRegenerator().regenerate_from_profile_def(profile)
+
+
+class PurgeUnusedProfiles(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.purge_unused_profiles"
+    bl_label = "Purge Unused Profiles"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = context.scene.BIMProfileProperties
+        core.purge_unused_profiles(tool.Ifc, tool.Profile)
+        if props.is_editing:
+            refresh()
+            bpy.ops.bim.load_profiles()

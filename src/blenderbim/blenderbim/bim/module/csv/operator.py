@@ -16,14 +16,15 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-import ifccsv
-import ifcopenshell
 import os
-import logging
+import bpy
 import json
-import webbrowser
+import ifccsv
+import logging
 import tempfile
+import webbrowser
+import ifcopenshell
+import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.handler import purge_module_data
 
@@ -61,28 +62,46 @@ class RemoveAllCsvAttributes(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class ReorderCsvAttribute(bpy.types.Operator):
+    bl_idname = "bim.reorder_csv_attribute"
+    bl_label = "Reorder CSV Attribute"
+    bl_options = {"REGISTER", "UNDO"}
+    old_index: bpy.props.IntProperty()
+    new_index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        old = context.scene.CsvProperties.csv_attributes[self.old_index]
+        new = context.scene.CsvProperties.csv_attributes[self.new_index]
+        props = ["name", "header", "sort", "group", "varies_value", "summary"]
+        for prop in props:
+            value = getattr(new, prop)
+            setattr(new, prop, getattr(old, prop))
+            setattr(old, prop, value)
+        return {"FINISHED"}
+
+
 class ImportCsvAttributes(bpy.types.Operator):
     bl_idname = "bim.import_csv_attributes"
-    bl_label = "Import CSV Template"
+    bl_label = "Load CSV Settings"
     bl_description = "Import a json template for CSV export"
     bl_options = {"REGISTER", "UNDO"}
     filter_glob: bpy.props.StringProperty(default="*.json", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        csv_props = context.scene.CsvProperties
-        csv_json = json.load(open(self.filepath))
+        props = context.scene.CsvProperties
+        data = json.load(open(self.filepath))
+        tool.Search.import_filter_query(data["query"], props.filter_groups)
 
-        expression = csv_json.get("expression", "")
-        if expression:
-            csv_props.ifc_selector = expression
-
-        attributes = csv_json.get("attributes", [])
-        if attributes:
-            csv_props.csv_attributes.clear()
-            for attribute in attributes:
-                csv_props.csv_attributes.add().name = attribute
-
+        props.csv_attributes.clear()
+        for attribute in data["attributes"]:
+            new = props.csv_attributes.add()
+            new.name = attribute["name"]
+            new.header = attribute["header"]
+            new.sort = attribute["sort"]
+            new.group = attribute["group"]
+            new.summary = attribute["summary"]
+            new.formatting = attribute["formatting"]
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -92,7 +111,7 @@ class ImportCsvAttributes(bpy.types.Operator):
 
 class ExportCsvAttributes(bpy.types.Operator):
     bl_idname = "bim.export_csv_attributes"
-    bl_label = "Export CSV Template"
+    bl_label = "Save CSV Settings"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Save a json template for CSV export"
     filename_ext = ".json"
@@ -100,22 +119,25 @@ class ExportCsvAttributes(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        csv_props = context.scene.CsvProperties
+        props = context.scene.CsvProperties
 
-        csv_template = {}
-        expression = csv_props.ifc_selector
-        if expression:
-            csv_template["expression"] = expression
-
-        csv_attributes = []
-        for attribute in csv_props.csv_attributes:
-            attribute_name = attribute.name
-            csv_attributes.append(attribute_name)
-        if csv_attributes:
-            csv_template["attributes"] = csv_attributes
+        data = {
+            "query": tool.Search.export_filter_query(props.filter_groups),
+            "attributes": [
+                {
+                    "name": a.name,
+                    "header": a.header,
+                    "sort": a.sort,
+                    "group": a.group,
+                    "summary": a.summary,
+                    "formatting": a.formatting,
+                }
+                for a in props.csv_attributes
+            ],
+        }
 
         with open(self.filepath, "w") as outfile:
-            json.dump(csv_template, outfile)
+            json.dump(data, outfile)
 
         return {"FINISHED"}
 
@@ -148,18 +170,55 @@ class ExportIfcCsv(bpy.types.Operator):
             ifc_file = IfcStore.get_file()
         else:
             ifc_file = ifcopenshell.open(props.csv_ifc_file)
-        results = ifcopenshell.util.selector.filter_elements(ifc_file, props.ifc_selector)
+        results = ifcopenshell.util.selector.filter_elements(
+            ifc_file, tool.Search.export_filter_query(props.filter_groups)
+        )
+
         ifc_csv = ifccsv.IfcCsv()
         attributes = [a.name for a in props.csv_attributes]
+        headers = [a.header for a in props.csv_attributes]
+
+        sort = []
+        groups = []
+        summaries = []
+        formatting = []
+        for attribute in props.csv_attributes:
+            if attribute.sort != "NONE":
+                sort.append({"name": attribute.name, "order": attribute.sort})
+            if attribute.group != "NONE":
+                groups.append({"name": attribute.name, "type": attribute.group, "varies_value": attribute.varies_value})
+            if attribute.summary != "NONE":
+                summaries.append({"name": attribute.name, "type": attribute.summary})
+
+            if attribute.formatting != "{{value}}" and "{{value}}" in attribute.formatting:
+                formatting.append({"name": attribute.name, "format": attribute.formatting})
+
         sep = props.csv_custom_delimiter if props.csv_delimiter == "CUSTOM" else props.csv_delimiter
-        ifc_csv.export(ifc_file, results, attributes, output=self.filepath, format=props.format, delimiter=sep)
+        ifc_csv.export(
+            ifc_file,
+            results,
+            attributes,
+            headers=headers,
+            output=self.filepath,
+            format=props.format,
+            should_preserve_existing=props.should_preserve_existing,
+            delimiter=sep,
+            include_global_id=props.include_global_id,
+            null=props.null_value,
+            bool_true=props.true_value,
+            bool_false=props.false_value,
+            sort=sort,
+            groups=groups,
+            summaries=summaries,
+            formatting=formatting,
+        )
         return {"FINISHED"}
 
 
 class ImportIfcCsv(bpy.types.Operator):
     bl_idname = "bim.import_ifccsv"
-    bl_label = "Import CSV to IFC"
-    filename_ext = ".csv"
+    bl_label = "Import to IFC"
+    filter_glob: bpy.props.StringProperty(default="*.csv;*.ods;*.xlsx", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def invoke(self, context, event):
@@ -178,28 +237,19 @@ class ImportIfcCsv(bpy.types.Operator):
             ifc_file = ifcopenshell.open(props.csv_ifc_file)
         ifc_csv = ifccsv.IfcCsv()
         sep = props.csv_custom_delimiter if props.csv_delimiter == "CUSTOM" else props.csv_delimiter
-        ifc_csv.Import(ifc_file, self.filepath, delimiter=sep)
+        attributes = [a.name for a in props.csv_attributes]
+        ifc_csv.Import(
+            ifc_file,
+            self.filepath,
+            attributes=attributes,
+            delimiter=sep,
+            null=props.null_value,
+            bool_true=props.true_value,
+            bool_false=props.false_value,
+        )
         if not props.should_load_from_memory:
             ifc_file.write(props.csv_ifc_file)
         purge_module_data()
-        return {"FINISHED"}
-
-
-class EyedropIfcCsv(bpy.types.Operator):
-    bl_idname = "bim.eyedrop_ifccsv"
-    bl_label = "Query Selected Items"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        global_ids = []
-        self.file = IfcStore.get_file()
-        for obj in context.selected_objects:
-            element = tool.Ifc.get_entity(obj)
-            if element:
-                global_id = getattr(element, "GlobalId", None)
-                if global_id:
-                    global_ids.append(global_id)
-        context.scene.CsvProperties.ifc_selector = ",".join(global_ids)
         return {"FINISHED"}
 
 

@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 from math import pi
+from fractions import Fraction
 
 prefixes = {
     "EXA": 1e18,
@@ -516,7 +517,7 @@ def convert(value, from_prefix, from_unit, to_prefix, to_unit):
     return value
 
 
-def calculate_unit_scale(file):
+def calculate_unit_scale(ifc_file):
     """Returns a unit scale factor to convert to and from IFC project length units and SI meters
 
     Example:
@@ -526,12 +527,14 @@ def calculate_unit_scale(file):
         ifc_project_length * unit_scale = si_meters
         si_meters / unit_scale = ifc_project_length
 
+    :param ifc_file: The IFC file.
+    :type ifc_file: ifcopenshell.file.file
     :returns: The scale factor
     :rtype: float
     """
-    if not file.by_type("IfcUnitAssignment"):
+    if not ifc_file.by_type("IfcUnitAssignment"):
         return 1
-    units = file.by_type("IfcUnitAssignment")[0]
+    units = ifc_file.by_type("IfcUnitAssignment")[0]
     unit_scale = 1
     for unit in units.Units:
         if not hasattr(unit, "UnitType") or unit.UnitType != "LENGTHUNIT":
@@ -542,3 +545,64 @@ def calculate_unit_scale(file):
         if unit.is_a("IfcSIUnit"):
             unit_scale *= get_prefix_multiplier(unit.Prefix)
     return unit_scale
+
+
+def format_length(
+    value, precision, decimal_places=2, suppress_zero_inches=True, unit_system="imperial", imperial_unit="foot"
+):
+    """Formats a length for readability and imperial formatting
+
+    :param value: The value in meters if metric, or either decimal feet or
+        inches if imperial depending on imperial_unit.
+    :type value: float
+    :param precision: How precise the format should be. I.e. round to nearest.
+        For imperial, it is 1/Nth. E.g. 12 means to the nearest 1/12th of an
+        inch.
+    :type precision: float
+    :param decimal_places: How many decimal places to display. Defaults to 2.
+    :type decimal_places: int
+    :param suppress_zero_inches: If imperial, whether or not to supress the
+        inches if the inches is zero.
+    :type suppress_zero_inches: bool
+    :param unit_system: Choose whether your value is "metric" or "imperial"
+    :type unit_system: str
+    :param imperial_unit: If imperial, specify whether your value is "foot" or
+        "inch".
+    :type imperial_unit: str
+    """
+    if unit_system == "imperial":
+        if imperial_unit == "foot":
+            feet = int(value)
+            inches = (value - feet) * 12
+
+        elif imperial_unit == "inch":
+            inches = value * 12
+
+
+        # Round to the nearest 1/N
+        nearest = round(inches * precision)
+
+        # Create a fraction based on the rounded value and the precision
+        frac = Fraction(nearest, precision)
+
+        # If fraction is a whole number, format it accordingly
+        if frac.denominator == 1:
+            if imperial_unit == "inch":
+                return f"{round(inches)}\""
+            if suppress_zero_inches:
+                if imperial_unit == "foot":
+                    return f"{round(value)}'"
+            elif not suppress_zero_inches:
+                if imperial_unit == "foot":
+                    return f"{round(value)}' - 0\"" 
+        if frac.numerator > frac.denominator and not frac.denominator == 0:
+            remainder = frac.numerator % frac.denominator
+            whole = int((frac.numerator - remainder) / frac.denominator)
+            if imperial_unit == "foot":
+                return f"{feet}' - {whole} {remainder}/{frac.denominator}\""
+            elif imperial_unit == "inch":
+                return f"{whole} {remainder}/{frac.denominator}\""
+
+    elif unit_system == "metric":
+        rounded_val = round(value / precision) * precision
+        return f"{rounded_val:.{decimal_places}f}"

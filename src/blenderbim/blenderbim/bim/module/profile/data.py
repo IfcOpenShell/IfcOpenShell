@@ -36,6 +36,7 @@ class ProfileData:
     def load(cls):
         cls.data = {
             "total_profiles": cls.total_profiles(),
+            "active_profile_users": cls.active_profile_users(),
             "profile_classes": cls.profile_classes(),
             "is_arbitrary_profile": cls.is_arbitrary_profile(),
             "is_editing_arbitrary_profile": cls.is_editing_arbitrary_profile(),
@@ -45,6 +46,15 @@ class ProfileData:
     @classmethod
     def total_profiles(cls):
         return len([p for p in tool.Ifc.get().by_type("IfcProfileDef") if p.ProfileName])
+
+    @classmethod
+    def active_profile_users(cls):
+        profiles_props = bpy.context.scene.BIMProfileProperties
+        if profiles_props.active_profile_index >= len(profiles_props.profiles):
+            return 0
+        profile_prop = profiles_props.profiles[profiles_props.active_profile_index]
+        profile_ifc = tool.Ifc.get().by_id(profile_prop.ifc_definition_id)
+        return tool.Ifc.get().get_total_inverses(profile_ifc)
 
     @classmethod
     def profile_classes(cls):
@@ -72,4 +82,9 @@ class ProfileData:
     @classmethod
     def is_editing_arbitrary_profile(cls):
         obj = bpy.context.active_object
-        return obj and obj.data and hasattr(obj.data, "BIMMeshProperties") and obj.data.BIMMeshProperties.subshape_type == "PROFILE"
+        return (
+            obj
+            and obj.data
+            and hasattr(obj.data, "BIMMeshProperties")
+            and obj.data.BIMMeshProperties.subshape_type == "PROFILE"
+        )

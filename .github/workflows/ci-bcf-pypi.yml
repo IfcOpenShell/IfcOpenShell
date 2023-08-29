@@ -1,0 +1,57 @@
+name: ci-bcf-pypi
+
+on:
+  schedule:
+    #         ┌───────────── minute (0 - 59)
+    #         │  ┌───────────── hour (0 - 23)
+    #         │  │ ┌───────────── day of the month (1 - 31)
+    #         │  │ │ ┌───────────── month (1 - 12 or JAN-DEC)
+    #         │  │ │ │ ┌───────────── day of the week (0 - 6 or SUN-SAT)
+    #         *  * * * *
+    - cron: "0 0 18 * *"
+  push:
+    paths:
+      - '.github/workflows/ci-bcf-pypi.yml'
+  workflow_dispatch:
+
+env:
+  major: 0
+  minor: 0
+  name: ifcopenshell
+
+jobs:
+  activate:
+    runs-on: ubuntu-latest
+    if: |
+      github.repository == 'IfcOpenShell/IfcOpenShell'
+    steps:
+    - name: Set env
+      run: echo ok go
+
+  build:
+    needs: activate
+    name: ${{ matrix.config.name }}-${{ matrix.pyver }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v2 # https://github.com/actions/checkout
+      - uses: actions/setup-python@v2 # https://github.com/actions/setup-python
+        with:
+          python-version: '3.10' # Version range or exact version of a Python version to use, using SemVer's version range syntax
+          architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
+      - run: echo ${{ env.DATE }}
+      - name: Get current date
+        id: date
+        run: echo "::set-output name=date::$(date +'%y%m%d')"
+      - name: Compile
+        run: |
+          pip install build
+          cd src/bcf &&
+          make dist
+      - name: Publish a Python distribution to PyPI
+        uses: ortega2247/pypi-upload-action@master
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          packages_dir: src/bcf/dist

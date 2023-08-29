@@ -853,6 +853,7 @@ class CreateDrawing(bpy.types.Operator):
         self.serialiser.setScale(self.scale)
         self.serialiser.setSubtractionSettings(ifcopenshell.ifcopenshell_wrapper.ALWAYS)
         self.serialiser.setUsePrefiltering(True)  # See #3359
+        self.serialiser.setUnifyInputs(True)
         if target_view == "REFLECTED_PLAN_VIEW":
             self.serialiser.setMirrorY(True)
         # tree = ifcopenshell.geom.tree()
@@ -1057,7 +1058,9 @@ class CreateDrawing(bpy.types.Operator):
 
         elements = tool.Drawing.get_group_elements(tool.Drawing.get_drawing_group(self.camera_element))
         filtered_drawing_elements = tool.Drawing.get_drawing_elements(self.camera_element)
-        elements = [e for e in elements if e in filtered_drawing_elements]
+        filtered_drawing_annotations = {e for e in filtered_drawing_elements if e.is_a("IfcAnnotation")}
+        elements = {e for e in elements if e in filtered_drawing_elements}
+        elements = list(elements | filtered_drawing_annotations)
 
         annotations = sorted(
             elements, key=lambda a: (tool.Drawing.get_annotation_z_index(a), 1 if a.ObjectType == "TEXT" else 0)
@@ -1542,6 +1545,9 @@ class RemoveDrawing(bpy.types.Operator, Operator):
         removed_drawings = [drawing.id() for drawing in drawings]
 
         for drawing in drawings:
+            sheet_references = tool.Drawing.get_sheet_references(drawing)
+            for reference in sheet_references:
+                bpy.ops.bim.remove_drawing_from_sheet(reference=reference.id())
             core.remove_drawing(tool.Ifc, tool.Drawing, drawing=drawing)
 
 
