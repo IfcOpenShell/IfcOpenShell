@@ -910,6 +910,9 @@ class ToggleLinkSelectability(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMProjectProperties
         link = props.links.get(self.link)
+        self.filepath = self.link
+        if not os.path.isabs(self.filepath):
+            self.filepath = os.path.abspath(os.path.join(bpy.path.abspath("//"), self.filepath))
         for collection in self.get_linked_collections():
             collection.hide_select = not collection.hide_select
             link.is_selectable = not collection.hide_select
@@ -917,7 +920,7 @@ class ToggleLinkSelectability(bpy.types.Operator):
 
     def get_linked_collections(self):
         return [
-            c for c in bpy.data.collections if "IfcProject" in c.name and c.library and c.library.filepath == self.link
+            c for c in bpy.data.collections if "IfcProject" in c.name and c.library and c.library.filepath == self.filepath
         ]
 
 
@@ -932,6 +935,9 @@ class ToggleLinkVisibility(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMProjectProperties
         link = props.links.get(self.link)
+        self.filepath = self.link
+        if not os.path.isabs(self.filepath):
+            self.filepath = os.path.abspath(os.path.join(bpy.path.abspath("//"), self.filepath))
         if self.mode == "WIREFRAME":
             self.toggle_wireframe(link)
         elif self.mode == "VISIBLE":
@@ -968,7 +974,7 @@ class ToggleLinkVisibility(bpy.types.Operator):
 
     def get_linked_collections(self):
         return [
-            c for c in bpy.data.collections if "IfcProject" in c.name and c.library and c.library.filepath == self.link
+            c for c in bpy.data.collections if "IfcProject" in c.name and c.library and c.library.filepath == self.filepath
         ]
 
 
