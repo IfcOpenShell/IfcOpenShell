@@ -31,7 +31,9 @@ if(Qt${QT_VERSION}_FOUND)
     message(STATUS "Found Qt Version: ${Qt${QT_VERSION}_VERSION}")
 endif()
 
-add_executable(QtViewer
+set(targetName "QtViewer")
+
+add_executable(${targetName}
     IfcViewerWidget.h
     IfcViewerWidget.cpp
     ParseIfcFile.h
@@ -41,14 +43,14 @@ add_executable(QtViewer
     main.cpp
 )
 
-set_target_properties(QtViewer PROPERTIES
+set_target_properties(${targetName} PROPERTIES
     AUTOMOC On
     WIN32_EXECUTABLE ON
     MACOSX_BUNDLE ON
 )
 
-target_link_libraries(QtViewer
-    ${IFCLIBS}
+target_link_libraries(${targetName}
+    ${IFCOPENSHELL_LIBRARIES}
     Qt${QT_VERSION}::Core 
     Qt${QT_VERSION}::Gui 
     Qt${QT_VERSION}::OpenGL 
@@ -56,3 +58,10 @@ target_link_libraries(QtViewer
     Qt${QT_VERSION}::Widgets
     ${OPENCASCADE_LIBRARIES}
 )
+
+target_include_directories(${targetName} PUBLIC 
+    ${QT_DIR}/include
+)
+
+get_target_property(targetIncludeDirs ${targetName} INCLUDE_DIRECTORIES)
+message(STATUS "target_include_directories: ${targetIncludeDirs}")
