@@ -220,7 +220,7 @@ class IfcGit:
 
         bpy.data.orphans_purge(do_recursive=True)
 
-        bpy.ops.bim.load_project(filepath=path_ifc)
+        bpy.ops.bim.load_project(filepath=path_ifc, should_start_fresh_session=False)
         bpy.ops.object.select_all(action="DESELECT")
 
     @classmethod
