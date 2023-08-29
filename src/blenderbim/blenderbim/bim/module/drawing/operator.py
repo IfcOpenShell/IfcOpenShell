@@ -1416,6 +1416,7 @@ class ActivateModel(bpy.types.Operator):
 
             if view3d_context:
                 bpy.ops.object.hide_view_clear(view3d_context)
+                bpy.ops.bim.activate_status_filters()
 
         subcontext = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
 
