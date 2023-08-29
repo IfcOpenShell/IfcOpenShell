@@ -136,13 +136,13 @@ operating systems. GCC (4.7 or newer) or Clang (any version) is required.
               -DOCC_INCLUDE_DIR=/usr/include/ \
 
               # Optional Collada support
-              -DCOLLADA_SUPPORT=On
+              -DCOLLADA_SUPPORT=On \
               -DOPENCOLLADA_INCLUDE_DIR="/usr/local/include/opencollada" \
               -DOPENCOLLADA_LIBRARY_DIR="/usr/local/lib/opencollada"  \
               -DPCRE_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu/ \
 
               # Optional HDF5 support
-              -DHDF5_SUPPORT=On
+              -DHDF5_SUPPORT=On \
               -DHDF5_LIBRARIES="/usr/local/hdf5/lib/libhdf5_cpp.so;/usr/local/hdf5/lib/libhdf5.so;/usr/lib64/libz.so;/usr/lib64/libsz.so;/usr/lib64/libaec.so" \
               -DHDF5_INCLUDE_DIR="/usr/local/hdf5/include" \
 
@@ -190,7 +190,7 @@ GCC (4.7 or newer) or Clang (any version) is required.
         $ mkdir build && cd build
         # set library flags
         $ export LDFLAGS="$LDFLAGS -Wl,-flat_namespace,-undefined,suppress"
-        $ cmake ../cmake
+        $ cmake ../cmake \
             -DPYTHON_EXECUTABLE=/opt/homebrew/bin/python3.10 \
             -DPYTHON_LIBRARY=/opt/homebrew/opt/python@3.10/Frameworks/Python.framework/Versions/3.10/lib/libpython3.10.dylib \
             -DPYTHON_INCLUDE_DIR=/opt/homebrew/opt/python@3.10/Frameworks/Python.framework/Versions/3.10/include/python3.10/ \
@@ -198,10 +198,10 @@ GCC (4.7 or newer) or Clang (any version) is required.
             -DOCC_INCLUDE_DIR=/opt/homebrew/include/opencascade/ \
             -DCGAL_INCLUDE_DIR=/opt/homebrew/include/ \
             -DGMP_LIBRARY_DIR=/opt/homebrew/lib/ \
-            -DMPFR_LIBRARY_DIR=/opt/homebrew/lib/
+            -DMPFR_LIBRARY_DIR=/opt/homebrew/lib/ \
             -DHDF5_LIBRARY_DIR=/opt/homebrew/lib/ \
             -DHDF5_INCLUDE_DIR=/opt/homebrew/include/ \
-            -DCOLLADA_SUPPORT=0 \
+            -DCOLLADA_SUPPORT=0
         # `sysctl -n hw.ncpu` returns the number of cpu cores on macOS
         $ make -j$(sysctl -n hw.ncpu)
 
