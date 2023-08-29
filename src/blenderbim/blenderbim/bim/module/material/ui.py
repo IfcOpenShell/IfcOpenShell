@@ -58,6 +58,8 @@ class BIM_PT_materials(Panel):
         row.alignment = "RIGHT"
 
         if self.props.material_type == "IfcMaterial":
+            if not self.props.active_material_id:
+                row.operator("bim.add_material", text="", icon="ADD")
             if self.props.materials and self.props.active_material_index < len(self.props.materials):
                 material = self.props.materials[self.props.active_material_index]
                 if material.ifc_definition_id:
@@ -66,13 +68,10 @@ class BIM_PT_materials(Panel):
                         row.operator("bim.disable_editing_material", text="", icon="CANCEL").material = material.ifc_definition_id
                         self.draw_editable_material_attributes_ui()
                     else:
-                        row.operator("bim.add_material", text="", icon="ADD")
                         op = row.operator("bim.select_by_material", text="", icon="RESTRICT_SELECT_OFF")
                         op.material = material.ifc_definition_id
                         row.operator("bim.enable_editing_material", text="", icon="GREASEPENCIL").material = material.ifc_definition_id
                         row.operator("bim.remove_material", text="", icon="X").material = material.ifc_definition_id
-            else:
-                row.operator("bim.add_material", text="", icon="ADD")
         else:
             row.operator("bim.add_material_set", text="", icon="ADD").set_type = self.props.material_type
             if self.props.materials and self.props.active_material_index < len(self.props.materials):
