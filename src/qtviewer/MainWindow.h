@@ -6,6 +6,9 @@
 #include <QString>
 #include <QAction>
 #include <QOpenGLWidget>
+#include <QPlainTextEdit>
+
+#include "ParseIfcFile.h"
 
 class MainWindow : public QMainWindow
 {
@@ -21,6 +24,7 @@ private:
     void createActions();
     void createMenus();
     void createConnections();
+    void appendToOutputText(const QString& message);
 private:
     QMenu *fileMenu;
     QAction *openAction;
@@ -35,7 +39,11 @@ private:
     QAction *m_outlineAction;
 
     QString m_currentPath;
+
     QOpenGLWidget *m_glWidget;
+    QPlainTextEdit *m_outputText;
+
+    ParseIfcFile m_parser;
 };
 
 #endif // MAINWINDOW_H
