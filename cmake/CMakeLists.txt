@@ -82,7 +82,7 @@ if(NO_WARN)
     endif()
 endif()
 
-# QtViewer requires Qt5
+# QtViewer requires Qt6
 OPTION(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer" OFF)
 include(GNUInstallDirs)
 if((BUILD_CONVERT OR BUILD_GEOMSERVER OR BUILD_IFCPYTHON) AND (NOT BUILD_IFCGEOM))
