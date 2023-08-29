@@ -6,10 +6,10 @@
 #include <QFileInfo>
 #include <QFile>
 #include <QMessageBox>
+#include <QSplitter>
 #include <sstream>
 
 #include "MainWindow.h"
-#include "ParseIfcFile.h"
 #include "IfcViewerWidget.h"
 
 MainWindow::MainWindow(QWidget *parent) 
@@ -19,7 +19,18 @@ MainWindow::MainWindow(QWidget *parent)
     this->resize(800, 600); //temporary reasonable initial size
 
     m_glWidget = new IfcViewerWidget(this);
-    setCentralWidget(m_glWidget);
+    QSizePolicy glSizePolicy = m_glWidget->sizePolicy();
+    glSizePolicy.setVerticalStretch(3);
+    m_glWidget->setSizePolicy(glSizePolicy);
+
+    m_outputText = new QPlainTextEdit(this);
+    m_outputText->setReadOnly(true);
+
+    QSplitter* splitter = new QSplitter(Qt::Vertical, this);
+    splitter->addWidget(m_glWidget);
+    splitter->addWidget(m_outputText);
+
+    setCentralWidget(splitter);
 
     createActions();
     createMenus();
@@ -69,6 +80,13 @@ void MainWindow::createConnections()
     connect(quitAction, SIGNAL(triggered()), qApp, SLOT(quit()));
     //connect(m_backgroundAction, SIGNAL(toggled(bool)), (QWidget*)m_v, SLOT(setViewBackground(bool)));
     //connect(m_outlineAction, SIGNAL(toggled(bool)), (QWidget*)m_v, SLOT(setViewOutline(bool)));
+
+    connect(&m_parser, &ParseIfcFile::parsingInfo, this, &MainWindow::appendToOutputText);
+}
+
+void MainWindow::appendToOutputText(const QString& message)
+{
+    m_outputText->appendPlainText(message);
 }
 
 void MainWindow::openFile()
@@ -96,8 +114,10 @@ void MainWindow::openFile()
         return;
     }
 
-    ParseIfcFile parser;
-    parser.Parse(filePath.toStdString());
+    QString message = tr("Opening file: %1\n").arg(filePath);
+    appendToOutputText(message);
+
+    m_parser.Parse(filePath.toStdString());
 
     m_currentPath = filePath;
     setWindowTitle(tr("%1 - IFCViewer").arg(fileName));
