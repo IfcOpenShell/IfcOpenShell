@@ -49,8 +49,8 @@ class IfcClassData:
     @classmethod
     def ifc_products(cls):
         products = [
-            "IfcElement",
             "IfcElementType",
+            "IfcElement",
             "IfcSpatialElement",
             "IfcSpatialElementType",
             "IfcGroup",
@@ -62,8 +62,8 @@ class IfcClassData:
         version = tool.Ifc.get_schema()
         if version == "IFC2X3":
             products = [
-                "IfcElement",
                 "IfcElementType",
+                "IfcElement",
                 "IfcSpatialStructureElement",
                 "IfcGroup",
                 "IfcStructuralItem",
