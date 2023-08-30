@@ -60,3 +60,11 @@ download.
 
     See also blocks should be used to reference `further reading
     <https://blenderbim.org>`__ links.
+
+Tables can be very annoying to format. You can use a CSV table instead.
+
+.. csv-table::
+   :header: "Foo", "Bar", "Baz"
+
+    "ABC", "01", "02"
+    "DEF", "03", "04"

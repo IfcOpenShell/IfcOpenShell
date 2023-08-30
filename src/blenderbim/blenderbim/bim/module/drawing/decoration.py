@@ -520,7 +520,9 @@ class BaseDecorator:
             return matrix.inverted()[i].to_3d().normalized()
 
         text_dir_world_x_axis = get_basis_vector(obj.matrix_world)
-        camera_matrix = camera.matrix_world.normalized()
+
+        camera_matrix = tool.Drawing.get_camera_matrix(camera)
+
         text_dir = (camera_matrix.inverted().to_quaternion() @ text_dir_world_x_axis).to_2d().normalized()
 
         pos = location_3d_to_region_2d(region, region3d, text_world_position)
