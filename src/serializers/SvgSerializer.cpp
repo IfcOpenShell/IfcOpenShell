@@ -1149,14 +1149,14 @@ void SvgSerializer::write(const geometry_data& data) {
 					if (storey) {
 						auto it = storey_hlr.find(storey);
 						if (it == storey_hlr.end()) {
-							it = storey_hlr.insert({ storey, hlr_t(use_prefiltering_, use_hlr_poly_, projection_plane) }).first;
+							it = storey_hlr.insert({ storey, hlr_t(use_prefiltering_, use_hlr_poly_, segment_projection_, projection_plane) }).first;
 						}
-						it->second.add(*compound_to_hlr);
+						it->second.add(*compound_to_hlr, data.product);
 					} else {
 						Logger::Warning("Unable to invoke HLR due to absence of storey containment", data.product);
 					}
 				} else if (hlr) {
-					hlr->add(*compound_to_hlr);
+					hlr->add(*compound_to_hlr, data.product);
 				}
 			}
 		}
@@ -1699,55 +1699,66 @@ std::array<std::array<double, 3>, 3> SvgSerializer::resize() {
 }
 
 void SvgSerializer::draw_hlr(const gp_Pln& pln, const drawing_key& drawing_name) {
-	TopoDS_Shape hlr_compound_unmirrored = (drawing_name.first ? this->storey_hlr.find(drawing_name.first)->second : *hlr).build();
+	auto hlr_items = (drawing_name.first ? this->storey_hlr.find(drawing_name.first)->second : *hlr).build();
 
-	if (!hlr_compound_unmirrored.IsNull()) {
-		// Compound 3D curves for mirroring to work
-		ShapeFix_Edge sfe;
-		TopExp_Explorer exp(hlr_compound_unmirrored, TopAbs_EDGE);
-		for (; exp.More(); exp.Next()) {
-			sfe.FixAddCurve3d(TopoDS::Edge(exp.Current()));
-		}
+	for (auto& p : hlr_items) {
+		const TopoDS_Shape& hlr_compound_unmirrored = p.second;
 
-		// Mirror to match SVG coord system.
-		// @todo this is very wasteful. We better do the Y-mirror in the SVG writing and
-		// not on the TopoDS_Shape input.
-
-		TopoDS_Shape hlr_compound;
-		if (drawing_name.first == nullptr) {
-			gp_Trsf trsf_mirror;
-			if (!mirror_y_) {
-				trsf_mirror.SetMirror(gp_Ax2(gp::Origin(), gp::DY()));
+		if (!hlr_compound_unmirrored.IsNull()) {
+			// Compound 3D curves for mirroring to work
+			ShapeFix_Edge sfe;
+			TopExp_Explorer exp(hlr_compound_unmirrored, TopAbs_EDGE);
+			for (; exp.More(); exp.Next()) {
+				sfe.FixAddCurve3d(TopoDS::Edge(exp.Current()));
 			}
-			if (mirror_x_) {
-				gp_Trsf mirror_x;
-				mirror_x.SetMirror(gp_Ax2(gp::Origin(), gp::DX()));
-				trsf_mirror.PreMultiply(mirror_x);
+
+			// Mirror to match SVG coord system.
+			// @todo this is very wasteful. We better do the Y-mirror in the SVG writing and
+			// not on the TopoDS_Shape input.
+
+			TopoDS_Shape hlr_compound;
+			if (drawing_name.first == nullptr) {
+				gp_Trsf trsf_mirror;
+				if (!mirror_y_) {
+					trsf_mirror.SetMirror(gp_Ax2(gp::Origin(), gp::DY()));
+				}
+				if (mirror_x_) {
+					gp_Trsf mirror_x;
+					mirror_x.SetMirror(gp_Ax2(gp::Origin(), gp::DX()));
+					trsf_mirror.PreMultiply(mirror_x);
+				}
+				BRepBuilderAPI_Transform make_transform_mirror(hlr_compound_unmirrored, trsf_mirror, true);
+				make_transform_mirror.Build();
+				hlr_compound = make_transform_mirror.Shape();
+			} else {
+				// In case of building storey-based floor plan the mirroring has already
+				// been taken into account before projection.
+				hlr_compound = hlr_compound_unmirrored;
 			}
-			BRepBuilderAPI_Transform make_transform_mirror(hlr_compound_unmirrored, trsf_mirror, true);
-			make_transform_mirror.Build();
-			hlr_compound = make_transform_mirror.Shape();
-		} else {
-			// In case of building storey-based floor plan the mirroring has already
-			// been taken into account before projection.
-			hlr_compound = hlr_compound_unmirrored;
-		}		
 
-		exp.Init(hlr_compound, TopAbs_EDGE);
-		BRep_Builder B;
-		path_object* po;
-		if (drawing_name.first) {
-			po = &start_path(pln, drawing_name.first, "class=\"projection\"");
-		} else {
-			po = &start_path(pln, drawing_name.second, "class=\"projection\"");
-		}
-		for (; exp.More(); exp.Next()) {
-			TopoDS_Wire w;
-			B.MakeWire(w);
-			B.Add(w, exp.Current());
-			write(*po, w);
-		}
+			exp.Init(hlr_compound, TopAbs_EDGE);
+			BRep_Builder B;
+			path_object* po;
+			std::string name;
+			if (p.first) {
+				name = nameElement(p.first);
+				boost::replace_all(name, "class=\"", "class=\"projection ");
+			} else {
+				name = "class=\"projection\"";
+			}
+			if (drawing_name.first) {
+				po = &start_path(pln, drawing_name.first, name);
+			} else {
+				po = &start_path(pln, drawing_name.second, name);
+			}
+			for (; exp.More(); exp.Next()) {
+				TopoDS_Wire w;
+				B.MakeWire(w);
+				B.Add(w, exp.Current());
+				write(*po, w);
+			}
 
+		}
 	}
 }
 
@@ -1812,17 +1823,18 @@ void SvgSerializer::addTextAnnotations(const drawing_key& k) {
 							v.Transform(trsf_view);
 
 							auto svg_name = nameElement(ann);
-							path_object* po;
-							if (k.first) {
-								po = &start_path(meta.pln_3d, k.first, svg_name);
-							} else {
-								po = &start_path(meta.pln_3d, k.second, svg_name);
-							}
 
 							if (object_type.size()) {
 								// postfix the object_type for CSS matching
 								boost::replace_all(svg_name, "class=\"IfcAnnotation\"", "class=\"IfcAnnotation " + object_type + "\"");
 							}
+
+							path_object* po;
+							if (k.first) {
+								po = &start_path(meta.pln_3d, k.first, svg_name);
+							} else {
+								po = &start_path(meta.pln_3d, k.second, svg_name);
+							}							
 
 							boost::optional<double> font_size;
 							std::vector<std::string> tokens;
@@ -1987,7 +1999,7 @@ void SvgSerializer::finalize() {
 
 			// @todo do we have always have pln here?
 			if (use_hlr && pln) {
-				hlr = new hlr_t(use_prefiltering_, use_hlr_poly_, *pln);
+				hlr = new hlr_t(use_prefiltering_, use_hlr_poly_, segment_projection_, *pln);
 			}
 
 			section_data_ = std::vector<section_data>{ sd };
