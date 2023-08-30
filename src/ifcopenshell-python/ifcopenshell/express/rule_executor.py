@@ -217,7 +217,14 @@ def run(f, logger):
                 check(value[0], S.declaration_by_name(value.is_a()), instance=inst)
 
     for inst in f:
-        values = list(inst)
+        try:
+            values = list(inst)
+        except Exception as e:
+            if hasattr(logger, "set_state"):
+                logger.error(str(e))
+            else:
+                logger.error("For instance:\n    %s\n%s", inst, e)
+            continue
         entity = S.declaration_by_name(inst.is_a())
         attrs = entity.all_attributes()
         for i, (attr, val, is_derived) in enumerate(
