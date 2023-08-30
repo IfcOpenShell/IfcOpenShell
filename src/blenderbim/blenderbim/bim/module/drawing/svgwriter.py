@@ -805,7 +805,7 @@ class SvgWriter:
         text_dir_world_x_axis = get_basis_vector(text_obj.matrix_world)
 
         # RCP cameras may be scaled, so reset scales.
-        camera_matrix = self.camera.matrix_world.normalized()
+        camera_matrix = tool.Drawing.get_camera_matrix(self.camera)
         text_dir = (camera_matrix.inverted().to_quaternion() @ text_dir_world_x_axis).to_2d().normalized()
         angle = math.degrees(-text_dir.angle_signed(Vector((1, 0))))
 
