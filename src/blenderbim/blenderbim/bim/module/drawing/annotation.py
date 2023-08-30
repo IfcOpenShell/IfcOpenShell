@@ -16,11 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 import os
-import blenderbim.tool as tool
-from mathutils import Vector
+import bpy
+import math
 import bmesh
+import blenderbim.tool as tool
+import ifcopenshell.util.element
+from mathutils import Vector, Matrix
 
 
 class Annotator:
@@ -111,7 +113,7 @@ class Annotator:
     def get_annotation_obj(drawing, object_type, data_type):
         camera = tool.Ifc.get_object(drawing)
         co1, _, _, _ = Annotator.get_placeholder_coords(camera)
-        matrix_world = camera.matrix_world.copy()
+        matrix_world = tool.Drawing.get_camera_matrix(camera)
         matrix_world.translation = co1
         collection = camera.BIMObjectProperties.collection
 
@@ -154,6 +156,13 @@ class Annotator:
             camera = bpy.context.scene.camera
 
         z_offset = camera.matrix_world.to_quaternion() @ Vector((0, 0, -1))
+
+        if (
+            ifcopenshell.util.element.get_pset(tool.Ifc.get_entity(camera), "EPset_Drawing", "TargetView")
+            == "REFLECTED_PLAN_VIEW"
+        ):
+            z_offset *= -1
+
         y = camera.data.ortho_scale / 4
 
         res_x = bpy.context.scene.render.resolution_x
