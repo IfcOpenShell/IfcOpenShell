@@ -1849,3 +1849,12 @@ class Drawing(blenderbim.core.tool.Drawing):
                     sheet_references.append(reference)
                     break
         return sheet_references
+
+    def get_camera_matrix(self, camera):
+        matrix_world = camera.matrix_world.copy().normalized()
+        location, rotation, scale = matrix_world.decompose()
+        if scale.x < 0 or scale.y < 0 or scale.z < 0:
+            # RCPs may be inversely scaled. We discard the scale and rotate the Z to compensate.
+            rotate180z = mathutils.Matrix.Rotation(math.radians(180.0), 4, "Z")
+            return mathutils.Matrix.Translation(location) @ rotation.to_matrix().to_4x4() @ rotate180z
+        return mathutils.Matrix.Translation(location) @ rotation.to_matrix().to_4x4()
