@@ -1849,8 +1849,9 @@ class Drawing(blenderbim.core.tool.Drawing):
                     sheet_references.append(reference)
                     break
         return sheet_references
-
-    def get_camera_matrix(self, camera):
+    
+    @classmethod
+    def get_camera_matrix(cls, camera):
         matrix_world = camera.matrix_world.copy().normalized()
         location, rotation, scale = matrix_world.decompose()
         if scale.x < 0 or scale.y < 0 or scale.z < 0:
