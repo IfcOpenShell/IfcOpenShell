@@ -985,17 +985,18 @@ if(ADD_COMMIT_SHA)
     if(GIT_FOUND)
         message("git found: ${GIT_EXECUTABLE} with version ${GIT_VERSION_STRING}")
         execute_process(
-            COMMAND ${GIT_EXECUTABLE} branch --contains HEAD
+            COMMAND ${GIT_EXECUTABLE} branch -a --contains HEAD
             OUTPUT_VARIABLE git_branches
             OUTPUT_STRIP_TRAILING_WHITESPACE
         )
         string(REPLACE "\n" ";" git_branch_list "${git_branches}")
 
         foreach(git_branch_candidate IN ITEMS ${git_branch_list})
-            string(STRIP "${git_branch_candidate}" git_branch_candidate_2)
-
-            if(NOT git_branch_candidate_2 MATCHES "^HEAD$")
-                set(git_branch ${git_branch_candidate_2})
+		    string(REPLACE "*" "" git_branch_candidate_temp "${git_branch_candidate}")
+		    string(STRIP "${git_branch_candidate_temp}" git_branch_candidate_2)
+            if (NOT git_branch_candidate_2 MATCHES "^HEAD$")
+                string(REPLACE "/" ";" git_branch_candidate_2_list "${git_branch_candidate_2}")
+                list(GET git_branch_candidate_2_list -1 git_branch)
             endif()
         endforeach()
 
