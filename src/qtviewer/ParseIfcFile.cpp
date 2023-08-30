@@ -1,6 +1,5 @@
 #include "ParseIfcFile.h"
 
-#include "../ifcgeom/IfcGeom.h"
 #include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 
 ParseIfcFile::ParseIfcFile() {}
