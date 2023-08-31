@@ -566,10 +566,19 @@ class CreateDrawing(bpy.types.Operator):
             m44[1][3] = m3[1][2]
             m44 = np.linalg.inv(m44)
 
+            elements_with_faces = set()
+            for element in drawing_elements.copy():
+                obj = tool.Ifc.get_object(element)
+                if obj and obj.type == "MESH" and len(obj.data.polygons):
+                    elements_with_faces.add(element.GlobalId)
+
             projections = root.xpath(".//svg:g[contains(@class, 'projection')]", namespaces={'svg': 'http://www.w3.org/2000/svg'})
 
             boundary_lines = []
             for projection in projections:
+                global_id = projection.attrib['{http://www.ifcopenshell.org/ns}guid']
+                if global_id not in elements_with_faces:
+                    continue
                 for path in projection.findall("./{http://www.w3.org/2000/svg}path"):
                     # Rounding is necessary to ensure coincident points are coincident
                     start, end = [[round(float(o), 1) for o in co[1:].split(",")] for co in path.attrib["d"].split()]
