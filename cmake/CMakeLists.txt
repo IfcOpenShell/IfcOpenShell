@@ -925,7 +925,7 @@ if(BUILD_CONVERT OR BUILD_IFCPYTHON)
 
 foreach(schema ${SCHEMA_VERSIONS})
 	add_library(Serializers_ifc${schema} STATIC ${SERIALIZERS_S_FILES})
-	set_target_properties(Serializers_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema} ${CONVERT_PRECISION}")
+	set_target_properties(Serializers_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema}")
 	
 	if (WASM_BUILD)
         target_link_libraries(Serializers_ifc${schema} ${HDF5_LIBRARIES})
@@ -935,7 +935,7 @@ foreach(schema ${SCHEMA_VERSIONS})
 endforeach()
 
     add_library(Serializers ${SERIALIZERS_FILES})
-    set_target_properties(Serializers PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS ${CONVERT_PRECISION}" VERSION "${PROJECT_VERSION}" SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
+    set_target_properties(Serializers PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS" VERSION "${PROJECT_VERSION}" SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
 
     target_link_libraries(Serializers ${SERIALIZER_SCHEMA_LIBRARIES} ${OPENCOLLADA_LIBRARIES} ${USD_LIBRARIES})
 
@@ -947,7 +947,6 @@ if(BUILD_CONVERT)
     file(GLOB IFCCONVERT_H_FILES ../src/ifcconvert/*.h)
     set(IFCCONVERT_FILES ${IFCCONVERT_CPP_FILES} ${IFCCONVERT_H_FILES})
     add_executable(IfcConvert ${IFCCONVERT_FILES})
-    set_target_properties(IfcConvert PROPERTIES COMPILE_FLAGS "${CONVERT_PRECISION}")
 
     target_link_libraries(IfcConvert ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ${USD_LIBRARIES})
 
