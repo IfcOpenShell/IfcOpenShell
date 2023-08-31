@@ -555,7 +555,7 @@ class CreateDrawing(bpy.types.Operator):
 
         if self.camera.data.BIMCameraProperties.calculate_shapely_surfaces:
             # shapely variant
-            group = root.findall(".//{http://www.w3.org/2000/svg}g")[0]
+            group = root.find("{http://www.w3.org/2000/svg}g")
             nm = group.attrib["{http://www.ifcopenshell.org/ns}name"]
             m4 = np.array(json.loads(group.attrib["{http://www.ifcopenshell.org/ns}plane"]))
             m3 = np.array(json.loads(group.attrib["{http://www.ifcopenshell.org/ns}matrix3"]))
@@ -566,10 +566,10 @@ class CreateDrawing(bpy.types.Operator):
             m44[1][3] = m3[1][2]
             m44 = np.linalg.inv(m44)
 
-            projections = group.findall('.//{http://www.w3.org/2000/svg}g[@class="projection"]') or []
+            projections = root.xpath(".//svg:g[contains(@class, 'projection')]", namespaces={'svg': 'http://www.w3.org/2000/svg'})
 
+            boundary_lines = []
             for projection in projections:
-                boundary_lines = []
                 for path in projection.findall("./{http://www.w3.org/2000/svg}path"):
                     # Rounding is necessary to ensure coincident points are coincident
                     start, end = [[round(float(o), 1) for o in co[1:].split(",")] for co in path.attrib["d"].split()]
@@ -578,50 +578,57 @@ class CreateDrawing(bpy.types.Operator):
                     # Extension by 0.5mm is necessary to ensure lines overlap with other diagonal lines
                     start, end = tool.Drawing.extend_line(start, end, 0.5)
                     boundary_lines.append(shapely.LineString([start, end]))
-                unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
-                closed_polygons = shapely.polygonize(unioned_boundaries.geoms)
 
-                for polygon in closed_polygons.geoms:
-                    # Less than 1mm2 is not worth styling on sheet
-                    if polygon.area < 1:
-                        continue
-                    centroid = polygon.centroid
-                    internal_point = centroid if polygon.contains(centroid) else polygon.representative_point()
-                    if internal_point:
-                        internal_point = [internal_point.x, internal_point.y]
-                        a, b = self.drawing_to_model_co(m44, m4, internal_point, 0.0), self.drawing_to_model_co(
-                            m44, m4, internal_point, -100.0
-                        )
-                        inside_elements = [e for e in tree.select(self.pythonize(a)) if not e.is_a("IfcAnnotation")]
-                        if not inside_elements:
-                            elements = [
-                                e
-                                for e in tree.select_ray(self.pythonize(a), self.pythonize(b - a))
-                                if not e.instance.is_a("IfcAnnotation")
-                                and tool.Cad.is_point_on_edge(
-                                    Vector(list(e.position)), (Vector(self.pythonize(a)), Vector(self.pythonize(b)))
+            unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
+            closed_polygons = shapely.polygonize(unioned_boundaries.geoms)
+
+            for polygon in closed_polygons.geoms:
+                # Less than 1mm2 is not worth styling on sheet
+                if polygon.area < 1:
+                    continue
+                centroid = polygon.centroid
+                internal_point = centroid if polygon.contains(centroid) else polygon.representative_point()
+                if internal_point:
+                    internal_point = [internal_point.x, internal_point.y]
+                    a, b = self.drawing_to_model_co(m44, m4, internal_point, 0.0), self.drawing_to_model_co(
+                        m44, m4, internal_point, -100.0
+                    )
+                    inside_elements = [e for e in tree.select(self.pythonize(a)) if not e.is_a("IfcAnnotation")]
+                    if not inside_elements:
+                        elements = [
+                            e
+                            for e in tree.select_ray(self.pythonize(a), self.pythonize(b - a))
+                            if not e.instance.is_a("IfcAnnotation")
+                            and tool.Cad.is_point_on_edge(
+                                Vector(list(e.position)), (Vector(self.pythonize(a)), Vector(self.pythonize(b)))
+                            )
+                        ]
+                        if elements:
+                            path = etree.Element("path")
+                            d = (
+                                "M"
+                                + " L".join(
+                                    [",".join([str(o) for o in co]) for co in polygon.exterior.coords[0:-1]]
                                 )
-                            ]
-                            if elements:
-                                path = etree.Element("path")
-                                d = (
-                                    "M"
-                                    + " L".join(
-                                        [",".join([str(o) for o in co]) for co in polygon.exterior.coords[0:-1]]
-                                    )
+                                + " Z"
+                            )
+                            for interior in polygon.interiors:
+                                d += (
+                                    " M"
+                                    + " L".join([",".join([str(o) for o in co]) for co in interior.coords[0:-1]])
                                     + " Z"
                                 )
-                                for interior in polygon.interiors:
-                                    d += (
-                                        " M"
-                                        + " L".join([",".join([str(o) for o in co]) for co in interior.coords[0:-1]])
-                                        + " Z"
-                                    )
-                                path.attrib["d"] = d
-                                classes = self.get_svg_classes(ifc.by_id(elements[0].instance.id()))
-                                classes.append("surface")
-                                path.set("class", " ".join(list(classes)))
-                                group.insert(0, path)
+                            path.attrib["d"] = d
+                            classes = self.get_svg_classes(ifc.by_id(elements[0].instance.id()))
+                            classes.append(f"intpoint-{internal_point}")
+                            classes.append(f"ab-{a}, {b}")
+                            for i, ray_result in enumerate(elements):
+                                classes.append(f"el{i}-{ray_result.instance.id()}")
+                                classes.append(f"el{i}-pos-{list(ray_result.position)}")
+                                classes.append(f"el{i}-dst-{ray_result.distance}")
+                            classes.append("surface")
+                            path.set("class", " ".join(list(classes)))
+                            group.insert(0, path)
 
         if self.camera.data.BIMCameraProperties.calculate_svgfill_surfaces:
             results = etree.tostring(root).decode("utf8")
@@ -636,7 +643,7 @@ class CreateDrawing(bpy.types.Operator):
 
             dom1 = parseString(svg_data_1)
             svg1 = dom1.childNodes[0]
-            groups1 = [g for g in yield_groups(svg1) if g.getAttribute("class") == "projection"]
+            groups1 = [g for g in yield_groups(svg1) if "projection" in g.getAttribute("class")]
 
             ls_groups = ifcopenshell.ifcopenshell_wrapper.svg_to_line_segments(results, "projection")
 
@@ -854,6 +861,7 @@ class CreateDrawing(bpy.types.Operator):
         self.serialiser.setSubtractionSettings(ifcopenshell.ifcopenshell_wrapper.ALWAYS)
         self.serialiser.setUsePrefiltering(True)  # See #3359
         self.serialiser.setUnifyInputs(True)
+        self.serialiser.setSegmentProjection(True)
         if target_view == "REFLECTED_PLAN_VIEW":
             self.serialiser.setMirrorY(True)
         # tree = ifcopenshell.geom.tree()
@@ -913,7 +921,7 @@ class CreateDrawing(bpy.types.Operator):
             # Drawing convention states that same objects classes with the same material are merged when cut.
             join_criteria = ["class", "material.Name", 'r"Pset.*Common"."Status"']
 
-        group = root.findall(".//{http://www.w3.org/2000/svg}g")[0]
+        group = root.find("{http://www.w3.org/2000/svg}g")
         joined_paths = {}
         self.is_manifold_cache = {}
 
@@ -921,9 +929,15 @@ class CreateDrawing(bpy.types.Operator):
         for el in root.findall(".//{http://www.w3.org/2000/svg}g[@{http://www.ifcopenshell.org/ns}guid]"):
             element = ifc.by_guid(el.get("{http://www.ifcopenshell.org/ns}guid"))
 
-            classes = self.get_svg_classes(element)
-            classes.append("cut")
-            el.set("class", " ".join(classes))
+            if "projection" in el.get("class", "").split():
+                classes = self.get_svg_classes(element)
+                classes.append("projection")
+                el.set("class", " ".join(classes))
+                continue
+            else:
+                classes = self.get_svg_classes(element)
+                classes.append("cut")
+                el.set("class", " ".join(classes))
 
             obj = tool.Ifc.get_object(element)
             if not self.is_manifold(obj):
@@ -1045,9 +1059,10 @@ class CreateDrawing(bpy.types.Operator):
         # IfcConvert puts the projection afterwards which is not correct since
         # projection should be drawn underneath the cut.
         group = root.find("{http://www.w3.org/2000/svg}g")
-        projection = group.find("{http://www.w3.org/2000/svg}g[@class='projection']")
-        projection.getparent().remove(projection)
-        group.insert(0, projection)
+        projections = root.xpath(".//svg:g[contains(@class, 'projection')]", namespaces={'svg': 'http://www.w3.org/2000/svg'})
+        for projection in projections:
+            projection.getparent().remove(projection)
+            group.insert(0, projection)
 
     def generate_annotation(self, context):
         if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasAnnotation"):
