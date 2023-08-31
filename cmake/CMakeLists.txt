@@ -63,7 +63,7 @@ endif()
 option(USERSPACE_PYTHON_PREFIX "Installs IfcPython for the current user only instead of system-wide." OFF)
 option(ADD_COMMIT_SHA "Add commit sha and branch in version number, warning results in many rebuilds, requires git" OFF)
 option(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
-# QtViewer requires Qt5
+# QtViewer requires Qt6
 option(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer" OFF)
 
 if(MSVC AND MSVC_PARALLEL_BUILD)
