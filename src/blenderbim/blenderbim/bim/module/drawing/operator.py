@@ -70,15 +70,6 @@ class profile:
         print(self.task, timer() - self.start)
 
 
-def open_with_user_command(user_command, path):
-    if user_command:
-        commands = eval(user_command)
-        for command in commands:
-            subprocess.Popen(command)
-    else:
-        webbrowser.open("file://" + path)
-
-
 class Operator:
     def execute(self, context):
         IfcStore.execute_ifc_operator(self, context)
@@ -269,7 +260,7 @@ class CreateDrawing(bpy.types.Operator):
                 with profile("Combine SVG layers"):
                     svg_path = self.combine_svgs(context, underlay_svg, linework_svg, annotation_svg)
 
-            open_with_user_command(context.preferences.addons["blenderbim"].preferences.svg_command, svg_path)
+            tool.Drawing.open_with_user_command(context.preferences.addons["blenderbim"].preferences.svg_command, svg_path)
 
         if self.print_all:
             bpy.ops.bim.activate_drawing(drawing=original_drawing_id, camera_view_point=False)
@@ -572,11 +563,13 @@ class CreateDrawing(bpy.types.Operator):
                 if obj and obj.type == "MESH" and len(obj.data.polygons):
                     elements_with_faces.add(element.GlobalId)
 
-            projections = root.xpath(".//svg:g[contains(@class, 'projection')]", namespaces={'svg': 'http://www.w3.org/2000/svg'})
+            projections = root.xpath(
+                ".//svg:g[contains(@class, 'projection')]", namespaces={"svg": "http://www.w3.org/2000/svg"}
+            )
 
             boundary_lines = []
             for projection in projections:
-                global_id = projection.attrib['{http://www.ifcopenshell.org/ns}guid']
+                global_id = projection.attrib["{http://www.ifcopenshell.org/ns}guid"]
                 if global_id not in elements_with_faces:
                     continue
                 for path in projection.findall("./{http://www.w3.org/2000/svg}path"):
@@ -616,9 +609,7 @@ class CreateDrawing(bpy.types.Operator):
                             path = etree.Element("path")
                             d = (
                                 "M"
-                                + " L".join(
-                                    [",".join([str(o) for o in co]) for co in polygon.exterior.coords[0:-1]]
-                                )
+                                + " L".join([",".join([str(o) for o in co]) for co in polygon.exterior.coords[0:-1]])
                                 + " Z"
                             )
                             for interior in polygon.interiors:
@@ -1068,7 +1059,9 @@ class CreateDrawing(bpy.types.Operator):
         # IfcConvert puts the projection afterwards which is not correct since
         # projection should be drawn underneath the cut.
         group = root.find("{http://www.w3.org/2000/svg}g")
-        projections = root.xpath(".//svg:g[contains(@class, 'projection')]", namespaces={'svg': 'http://www.w3.org/2000/svg'})
+        projections = root.xpath(
+            ".//svg:g[contains(@class, 'projection')]", namespaces={"svg": "http://www.w3.org/2000/svg"}
+        )
         for projection in projections:
             projection.getparent().remove(projection)
             group.insert(0, projection)
@@ -1285,11 +1278,15 @@ class CreateSheets(bpy.types.Operator, Operator):
 
         # These variables will be made available to the evaluated commands
         svg = references["SHEET"]
-        basename = os.path.basename(svg)
-        path = os.path.dirname(svg)
         pdf = os.path.splitext(svg)[0] + ".pdf"
-        eps = os.path.splitext(svg)[0] + ".eps"
-        dxf = os.path.splitext(svg)[0] + ".dxf"
+        replacements = {
+            "svg": svg,
+            "basename": os.path.basename(svg),
+            "path": os.path.dirname(svg),
+            "pdf": pdf,
+            "eps": os.path.splitext(svg)[0] + ".eps",
+            "dxf": os.path.splitext(svg)[0] + ".dxf",
+        }
 
         has_sheet_reference = False
         for reference in tool.Drawing.get_document_references(sheet):
@@ -1322,22 +1319,23 @@ class CreateSheets(bpy.types.Operator, Operator):
 
         if svg2pdf_command:
             # With great power comes great responsibility. Example:
-            # [['inkscape', svg, '-o', pdf]]
-            commands = eval(svg2pdf_command)
+            # [["inkscape", "svg", "-o", "pdf"]]
+            commands = json.loads(svg2pdf_command)
             for command in commands:
-                subprocess.run(command)
+                subprocess.run([replacements.get(c, c) for c in command])
 
         if svg2dxf_command:
             # With great power comes great responsibility. Example:
-            # [['inkscape', svg, '-o', eps], ['pstoedit', '-dt', '-f', 'dxf:-polyaslines -mm', eps, dxf, '-psarg', '-dNOSAFER']]
-            commands = eval(svg2dxf_command)
+            # [["inkscape", "svg", "-o", "eps"], ["pstoedit", "-dt", "-f", "dxf:-polyaslines -mm", "eps", "dxf", "-psarg", "-dNOSAFER"]]
+            commands = json.loads(svg2dxf_command)
             for command in commands:
-                subprocess.run(command)
+                command[0] = shutil.which(command[0]) or command[0]
+                subprocess.run([replacements.get(c, c) for c in command])
 
         if svg2pdf_command:
-            open_with_user_command(context.preferences.addons["blenderbim"].preferences.pdf_command, pdf)
+            tool.Drawing.open_with_user_command(context.preferences.addons["blenderbim"].preferences.pdf_command, pdf)
         else:
-            open_with_user_command(context.preferences.addons["blenderbim"].preferences.svg_command, svg)
+            tool.Drawing.open_with_user_command(context.preferences.addons["blenderbim"].preferences.svg_command, svg)
 
 
 class SelectAllDrawings(bpy.types.Operator):
@@ -1404,7 +1402,9 @@ class OpenDrawing(bpy.types.Operator):
             return {"CANCELLED"}
 
         for drawing_uri in drawing_uris:
-            open_with_user_command(context.preferences.addons["blenderbim"].preferences.svg_command, drawing_uri)
+            tool.Drawing.open_with_user_command(
+                context.preferences.addons["blenderbim"].preferences.svg_command, drawing_uri
+            )
         return {"FINISHED"}
 
 

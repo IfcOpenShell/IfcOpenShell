@@ -20,6 +20,7 @@ import os
 import re
 import bpy
 import math
+import json
 import lark
 import bmesh
 import shutil
@@ -835,9 +836,11 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def open_with_user_command(cls, user_command, path):
         if user_command:
-            commands = eval(user_command)
+            commands = json.loads(user_command)
+            replacements = {"path": path}
             for command in commands:
-                subprocess.Popen(command)
+                command[0] = shutil.which(command[0]) or command[0]
+                subprocess.Popen([replacements.get(c, c) for c in command])
         else:
             webbrowser.open("file://" + path)
 
@@ -1849,7 +1852,7 @@ class Drawing(blenderbim.core.tool.Drawing):
                     sheet_references.append(reference)
                     break
         return sheet_references
-    
+
     @classmethod
     def get_camera_matrix(cls, camera):
         matrix_world = camera.matrix_world.copy().normalized()
