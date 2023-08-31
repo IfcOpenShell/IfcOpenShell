@@ -508,7 +508,7 @@ namespace {
 			}
 			
 			hlr_calc vis(projector_);
-			if (true) {
+			if (segment_projection_) {
 				vis.set_product_shape(&items_);
 			}
 			return boost::apply_visitor(vis, engine_);
