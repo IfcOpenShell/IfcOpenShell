@@ -126,14 +126,14 @@ class BIM_UL_topics(bpy.types.UIList):
 
 class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     bl_idname = "blenderbim"
-    svg2pdf_command: StringProperty(name="SVG to PDF Command", description="E.g. [['inkscape', svg, '-o', pdf]]")
+    svg2pdf_command: StringProperty(name="SVG to PDF Command", description='E.g. [["inkscape", "svg", "-o", pdf]]')
     svg2dxf_command: StringProperty(
         name="SVG to DXF Command",
-        description="E.g. [['inkscape', svg, '-o', eps], ['pstoedit', '-dt', '-f', 'dxf:-polyaslines -mm', eps, dxf, '-psarg', '-dNOSAFER']]",
+        description='E.g. [["inkscape", "svg", "-o", "eps"], ["pstoedit", "-dt", "-f", "dxf:-polyaslines -mm", "eps", "dxf", "-psarg", "-dNOSAFER"]]',
     )
-    svg_command: StringProperty(name="SVG Command", description="E.g. [['firefox', path]]")
-    pdf_command: StringProperty(name="PDF Command", description="E.g. [['firefox', path]]")
-    spreadsheet_command: StringProperty(name="Spreadsheet Command", description="E.g. [['libreoffice', path]]")
+    svg_command: StringProperty(name="SVG Command", description='E.g. [["firefox", "path"]]')
+    pdf_command: StringProperty(name="PDF Command", description='E.g. [["firefox", "path"]]')
+    spreadsheet_command: StringProperty(name="Spreadsheet Command", description='E.g. [["libreoffice", "path"]]')
     openlca_port: IntProperty(name="OpenLCA IPC Port", default=8080)
     should_hide_empty_props: BoolProperty(name="Should Hide Empty Properties", default=True)
     should_setup_workspace: BoolProperty(name="Should Setup Workspace Layout for BIM", default=True)
