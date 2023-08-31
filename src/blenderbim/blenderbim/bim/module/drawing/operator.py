@@ -847,7 +847,7 @@ class CreateDrawing(bpy.types.Operator):
         self.serialiser.setPolygonal(True)
         self.serialiser.setUseHlrPoly(True)
         # Objects with more than these edges are rendered as wireframe instead of HLR for optimisation
-        self.serialiser.setProfileThreshold(1000)
+        self.serialiser.setProfileThreshold(10000)
         self.serialiser.setUseNamespace(True)
         self.serialiser.setAlwaysProject(True)
         self.serialiser.setAutoElevation(False)
