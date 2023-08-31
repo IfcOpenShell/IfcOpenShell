@@ -617,6 +617,11 @@ if(NOT MINIMAL_BUILD AND HDF5_SUPPORT)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_HDF5)
 endif()
 
+if(WASM_BUILD)
+    # reset to use sysroot
+    set(CMAKE_FIND_ROOT_PATH "${CMAKE_FIND_ROOT_PATH_BACKUP}")
+endif()
+
 if(ENABLE_BUILD_OPTIMIZATIONS)
     if(MSVC)
         # NOTE: RelWithDebInfo and Release use O2 (= /Ox /Gl /Gy/ = Og /Oi /Ot /Oy /Ob2 /Gs /GF /Gy) by default,
