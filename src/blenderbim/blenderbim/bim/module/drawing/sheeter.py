@@ -174,6 +174,8 @@ class SheetBuilder:
         ET.register_namespace("", "http://www.w3.org/2000/svg")
 
         layout_path = tool.Drawing.get_document_uri(sheet, "LAYOUT")
+        if not os.path.exists(layout_path):
+            return
         layout_tree = ET.parse(layout_path)
         layout_root = layout_tree.getroot()
 
