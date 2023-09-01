@@ -6,11 +6,14 @@ int main(int argc, char *argv[])
 {
   QApplication app(argc, argv);
 
-  // Set the icon in the window title-bar
+  // Set the icon in the window title-bar on mswindows
+  // and dock icon on macos.
   // "icon" alias defined in .qrc file
-  // (.rc file sets the file icon on mswindows)
   QIcon appIcon(":/icon");
   app.setWindowIcon(appIcon);
+  // File icon set with:
+  // mswindows - .rc file
+  // macos - .icns file (using CMake)
 
   MainWindow window;
 
