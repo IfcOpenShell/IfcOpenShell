@@ -168,6 +168,8 @@ class Specification:
 
     def parse(self, ids_dict):
         self.name = ids_dict.get("@name", "")
+        self.description = ids_dict.get("@description", "")
+        self.instructions = ids_dict.get("@instructions", "")
         self.minOccurs = ids_dict["@minOccurs"]
         self.maxOccurs = ids_dict["@maxOccurs"]
         self.ifcVersion = ids_dict["@ifcVersion"]
