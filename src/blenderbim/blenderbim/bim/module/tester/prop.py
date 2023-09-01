@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+from blenderbim.bim.module.tester.data import TesterData
 from blenderbim.bim.prop import StrProperty
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -34,8 +35,8 @@ def purge():
     pass
 
 
-def get_failure_entities():
-    return
+def update_active_specification_index(self, context):
+    TesterData.load()
 
 
 class Specification(PropertyGroup):
@@ -53,13 +54,10 @@ class IfcTesterProperties(PropertyGroup):
     ifc_file: StringProperty(default="", name="IFC File")
     should_load_from_memory: BoolProperty(default=False, name="Load from Memory")
     generate_html_report: BoolProperty(default=False, name="Generate HTML report")
-    active_specification_index: IntProperty(name="Active Specification Index")
-    active_requirement_index: IntProperty(name="Active Requirement Index")
+    active_specification_index: IntProperty(name="Active Specification Index", update=update_active_specification_index)
     old_index: IntProperty(name="", default=0)
     active_failed_entity_index: IntProperty(name="Active Failed Entity Index")
-    report: StringProperty(default="", name="JSON report")
     specifications: CollectionProperty(name="Specifications", type=Specification)
     failed_entities: CollectionProperty(name="FailedEntities", type=FailedEntities)
-    has_report: BoolProperty(default=False, name="")
     has_entities: BoolProperty(default=False, name="")
     n_entities: IntProperty(name="", default=0)
