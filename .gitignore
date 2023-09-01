@@ -96,6 +96,8 @@ src/ifcopenshell-python/ifcopenshell/ifcopenshell_wrapper.py
 # apple
 .DS_Store
 
+# clangd config
+.clangd
 # clangd cache
 .cache
 
