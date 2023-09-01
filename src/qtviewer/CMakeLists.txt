@@ -38,6 +38,7 @@ set(CMAKE_AUTORCC ON)
 
 set(RESOURCE_FILES
     resources/qt_resources.qrc
+    resources/qt_res.rc
 )
 
 add_executable(${targetName}
@@ -48,6 +49,7 @@ add_executable(${targetName}
     MainWindow.h
     MainWindow.cpp
     main.cpp
+    ${RESOURCE_FILES}
 )
 
 set_target_properties(${targetName} PROPERTIES
