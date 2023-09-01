@@ -68,6 +68,7 @@ class ExecuteIfcTester(bpy.types.Operator, tool.Ifc.Operator):
             report = None
             report = ifctester.reporter.Json(specs).report()["specifications"]
             if report:
+                tool.Tester.specs = specs
                 tool.Tester.report = report
             props.specifications.clear()
             for spec in report:
@@ -155,21 +156,16 @@ class ExportBcf(bpy.types.Operator):
     bl_idname = "bim.export_bcf"
     bl_label = "Export BCF"
     bl_options = {"REGISTER", "UNDO"}
+    filter_glob: bpy.props.StringProperty(default="*.bcf", options={"HIDDEN"})
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        props = context.scene.IfcTesterProperties
-        if tool.Ifc.get():
-            ifc = tool.Ifc.get()
-        else:
-            ifc = ifcopenshell.open(props.ifc_file)
-        with tempfile.TemporaryDirectory() as dirpath:
-            output = os.path.join(dirpath, "{}.bcf".format(props.specs))
-            specs = ifctester.ids.open(props.specs)
-            specs.validate(ifc)
-            bcf_reporter = ifctester.reporter.Bcf(specs)
-            bcf_reporter.report()
-            bcf_reporter.to_file(output)
-            print("Finished exporting!")
-            self.report({"INFO"}, "Finished exporting!")
-
+        bcf_reporter = ifctester.reporter.Bcf(tool.Tester.specs)
+        bcf_reporter.report()
+        bcf_reporter.to_file(self.filepath)
+        self.report({"INFO"}, "Finished exporting!")
         return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
