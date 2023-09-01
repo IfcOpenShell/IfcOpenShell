@@ -21,8 +21,11 @@ import sys
 import math
 import logging
 import datetime
+import numpy as np
 import ifcopenshell
+import ifcopenshell.util.unit
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
@@ -410,6 +413,7 @@ class Bcf(Json):
     def to_file(self, filepath):
         from bcf.v2.bcfxml import BcfXml
 
+        unit_scale = None
         bcfxml = BcfXml.create_new(self.results["title"])
         for specification in self.results["specifications"]:
             if specification["status"]:
@@ -419,11 +423,17 @@ class Bcf(Json):
                     continue
                 for failure in requirement["failed_entities"]:
                     element = failure["element"]
-                    title = f"ID:[{element.id()}]/GUID:[{element.GlobalId}]/{element.is_a()}/"
+                    title = f"{element.is_a()}/"
                     title += getattr(element, "Name", None) or "Unnamed"
                     title += " - " + failure.get("reason", "No reason")
                     description = f'{specification["name"]} - {requirement["description"]}'
                     topic = bcfxml.add_topic(title, description, "IfcTester")
+                    if getattr(element, "ObjectPlacement", None):
+                        placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+                        if unit_scale is None:
+                            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(element.wrapped_data.file)
+                        location = [(o * unit_scale) + 5. for o in placement[:,3][:3]]
+                        viewpoint = topic.add_viewpoint_from_point_and_guids(np.array(location), element.GlobalId)
                     if element.is_a("IfcElement"):
                         topic.add_viewpoint(element)
         bcfxml.save_project(filepath)
