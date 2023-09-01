@@ -1,5 +1,0 @@
-{
-  "compile_flags": [
-    "-I/opt/homebrew/Cellar/qt/6.5.1_2/include"
-  ]
-}
