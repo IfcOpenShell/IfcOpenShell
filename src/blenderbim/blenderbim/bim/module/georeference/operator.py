@@ -76,7 +76,7 @@ class SetIfcGridNorth(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.set_ifc_grid_north"
     bl_label = "Set IFC Grid North"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Set IFC grid north"
+    bl_description = "Set IFC grid north based on current Blender North Offset"
 
     def _execute(self, context):
         core.set_ifc_grid_north(tool.Georeference)
@@ -86,7 +86,7 @@ class SetBlenderGridNorth(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.set_blender_grid_north"
     bl_label = "Set Blender Grid North"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Set Blender grid north"
+    bl_description = "Set Blender North Offset based on current IFC grid north"
 
     def _execute(self, context):
         core.set_blender_grid_north(tool.Georeference)
@@ -125,7 +125,7 @@ class SetIfcTrueNorth(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.set_ifc_true_north"
     bl_label = "Set IFC True North"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Set IFC True north"
+    bl_description = "Set IFC true north based on current Blender North Offset"
 
     def _execute(self, context):
         core.set_ifc_true_north(tool.Georeference)
@@ -135,7 +135,7 @@ class SetBlenderTrueNorth(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.set_blender_true_north"
     bl_label = "Set Blender True North"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Set Blender true north"
+    bl_description = "Set Blender North Offset based on current IFC true north"
 
     def _execute(self, context):
         core.set_blender_true_north(tool.Georeference)
