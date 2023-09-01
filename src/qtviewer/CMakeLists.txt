@@ -33,6 +33,13 @@ endif()
 
 set(targetName "QtViewer")
 
+# Scan for .qrc files and add to build process
+set(CMAKE_AUTORCC ON)
+
+set(RESOURCE_FILES
+    resources/qt_resources.qrc
+)
+
 add_executable(${targetName}
     IfcViewerWidget.h
     IfcViewerWidget.cpp
@@ -47,6 +54,7 @@ set_target_properties(${targetName} PROPERTIES
     AUTOMOC On
     WIN32_EXECUTABLE ON
     MACOSX_BUNDLE ON
+    RESOURCE "${RESOURCE_FILES}"
 )
 
 target_link_libraries(${targetName}
