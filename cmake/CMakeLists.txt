@@ -191,10 +191,9 @@ if(NOT MINIMAL_BUILD AND USD_SUPPORT)
 
     if("${USD_INCLUDE_DIR}" STREQUAL "")
         find_path(USD_INCLUDE_DIR pxr.h
-            [PATHS
+            PATHS
                 /usr/include/pxr
                 /usr/local/include/pxr
-            ]
             REQUIRED
         )
         if(USD_INCLUDE_DIR)
@@ -355,11 +354,10 @@ if(BUILD_IFCGEOM)
     # Open CASCADE
     if("${OCC_INCLUDE_DIR}" STREQUAL "")
         find_path(OCC_INCLUDE_DIR Standard_Version.hxx
-            [PATHS
-            /usr/include/occt
-            /usr/include/oce
-            /usr/include/opencascade
-            ]
+            PATHS
+                /usr/include/occt
+                /usr/include/oce
+                /usr/include/opencascade
             REQUIRED
         )
 
@@ -383,9 +381,8 @@ if(BUILD_IFCGEOM)
 
     if("${OCC_LIBRARY_DIR}" STREQUAL "")
         find_library(OCC_LIBRARY TKernel
-            [PATHS
-            /usr/lib
-            ]
+            PATHS
+                /usr/lib
             REQUIRED
         )
 
