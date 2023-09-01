@@ -369,7 +369,17 @@ class Ods(Json):
                 continue
             table = Table(name=specification["name"])
             tr = TableRow()
-            for header in ["Requirement", "Problem", "Class", "PredefinedType", "Name", "Description", "GlobalId", "Tag", "Element"]:
+            for header in [
+                "Requirement",
+                "Problem",
+                "Class",
+                "PredefinedType",
+                "Name",
+                "Description",
+                "GlobalId",
+                "Tag",
+                "Element",
+            ]:
                 tc = TableCell(valuetype="string", stylename="h")
                 tc.addElement(P(text=header))
                 tr.addElement(tc)
@@ -423,16 +433,21 @@ class Bcf(Json):
                     continue
                 for failure in requirement["failed_entities"]:
                     element = failure["element"]
-                    title = f"{element.is_a()}/"
-                    title += getattr(element, "Name", None) or "Unnamed"
-                    title += " - " + failure.get("reason", "No reason")
+                    title_components = [
+                        element.is_a(),
+                        getattr(element, "Name", None) or "Unnamed",
+                        failure.get("reason", "No reason"),
+                        getattr(element, "GlobalId", ""),
+                        getattr(element, "Tag", ""),
+                    ]
+                    title = " - ".join(title_components)
                     description = f'{specification["name"]} - {requirement["description"]}'
                     topic = bcfxml.add_topic(title, description, "IfcTester")
                     if getattr(element, "ObjectPlacement", None):
                         placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
                         if unit_scale is None:
                             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(element.wrapped_data.file)
-                        location = [(o * unit_scale) + 5. for o in placement[:,3][:3]]
+                        location = [(o * unit_scale) + 5.0 for o in placement[:, 3][:3]]
                         viewpoint = topic.add_viewpoint_from_point_and_guids(np.array(location), element.GlobalId)
                     if element.is_a("IfcElement"):
                         topic.add_viewpoint(element)
