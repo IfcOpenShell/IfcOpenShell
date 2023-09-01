@@ -159,31 +159,85 @@ class Json(Reporter):
 
     def report(self):
         self.results["title"] = self.ids.info.get("title", "Untitled IDS")
+        self.results["date"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        total_specifications = 0
+        total_specifications_pass = 0
+        total_requirements = 0
+        total_requirements_pass = 0
+        total_checks = 0
+        total_checks_pass = 0
+        status = True
         self.results["specifications"] = []
         for specification in self.ids.specifications:
-            self.results["specifications"].append(self.report_specification(specification))
+            specification_report = self.report_specification(specification)
+            self.results["specifications"].append(specification_report)
+            total_specifications += 1
+            total_specifications_pass += 1 if specification_report["status"] else 0
+            total_requirements += len(specification_report["requirements"])
+            total_requirements_pass += len([r for r in specification_report["requirements"] if r["status"]])
+            total_checks += specification_report["total_checks"]
+            total_checks_pass += specification_report["total_checks_pass"]
+            if not specification_report["status"]:
+                status = False
+        self.results["status"] = status
+        self.results["total_specifications"] = total_specifications
+        self.results["total_specifications_pass"] = total_specifications_pass
+        self.results["total_specifications_fail"] = total_specifications - total_specifications_pass
+        self.results["percent_specifications_pass"] = (
+            math.floor((total_specifications_pass / total_specifications) * 100) if total_specifications else "N/A"
+        )
+        self.results["total_requirements"] = total_requirements
+        self.results["total_requirements_pass"] = total_requirements_pass
+        self.results["total_requirements_fail"] = total_requirements - total_requirements_pass
+        self.results["percent_requirements_pass"] = (
+            math.floor((total_requirements_pass / total_requirements) * 100) if total_requirements else "N/A"
+        )
+        self.results["total_checks"] = total_checks
+        self.results["total_checks_pass"] = total_checks_pass
+        self.results["total_checks_fail"] = total_checks - total_checks_pass
+        self.results["percent_checks_pass"] = (
+            math.floor((total_checks_pass / total_checks) * 100) if total_checks else "N/A"
+        )
         return self.results
 
     def report_specification(self, specification):
         applicability = [a.to_string("applicability") for a in specification.applicability]
+        total_applicable = len(specification.applicable_entities)
+        total_checks = 0
+        total_checks_pass = 0
         requirements = []
         for requirement in specification.requirements:
+            total_fail = len(requirement.failed_entities)
+            total_checks += total_applicable
+            total_checks_pass += total_applicable - total_fail
             requirements.append(
                 {
                     "description": requirement.to_string("requirement"),
                     "status": requirement.status,
                     "failed_entities": self.report_failed_entities(requirement),
+                    "total_applicable": total_applicable,
+                    "total_pass": total_applicable - total_fail,
+                    "total_fail": total_fail,
                 }
             )
-        total = len(specification.applicable_entities)
-        total_successes = total - len(specification.failed_entities)
-        percentage = math.floor((total_successes / total) * 100) if total else "N/A"
+        total_applicable_pass = total_applicable - len(specification.failed_entities)
+        percent_applicable_pass = (
+            math.floor((total_applicable_pass / total_applicable) * 100) if total_applicable else "N/A"
+        )
+        percent_checks_pass = math.floor((total_checks_pass / total_checks) * 100) if total_checks else "N/A"
         return {
             "name": specification.name,
+            "description": specification.description,
+            "instructions": specification.instructions,
             "status": specification.status,
-            "total_successes": total_successes,
-            "total": total,
-            "percentage": percentage,
+            "total_applicable": total_applicable,
+            "total_applicable_pass": total_applicable_pass,
+            "total_applicable_fail": total_applicable - total_applicable_pass,
+            "percent_applicable_pass": percent_applicable_pass,
+            "total_checks": total_checks,
+            "total_checks_pass": total_checks_pass,
+            "total_checks_fail": total_checks - total_checks_pass,
+            "percent_checks_pass": percent_checks_pass,
             "required": specification.minOccurs != 0,
             "applicability": applicability,
             "requirements": requirements,
@@ -223,12 +277,15 @@ class Html(Json):
         self.results = {}
 
     def report(self):
-        self.results["title"] = self.ids.info.get("title", "Untitled IDS")
-        self.results["time"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        self.results["specifications"] = []
-        for specification in self.ids.specifications:
-            self.results["specifications"].append(self.report_specification(specification))
-        return self.results
+        super().report()
+        entity_limit = 100
+        for spec in self.results["specifications"]:
+            for requirement in spec["requirements"]:
+                total = len(requirement["failed_entities"])
+                requirement["failed_entities"] = requirement["failed_entities"][0:entity_limit]
+                requirement["has_omitted"] = total > entity_limit
+                requirement["total_entities"] = total
+                requirement["total_omitted"] = total - entity_limit
 
     def to_string(self):
         import pystache
@@ -272,7 +329,7 @@ class Ods(Json):
 
         table = Table(name=self.results["title"])
         tr = TableRow()
-        for header in ["Specification", "Status", "Total Compliant", "Total Applicable", "Percentage Compliant"]:
+        for header in ["Specification", "Status", "Total Pass", "Total Checks", "Percentage Pass"]:
             tc = TableCell(valuetype="string", stylename="h")
             tc.addElement(P(text=header))
             tr.addElement(tc)
@@ -284,9 +341,9 @@ class Ods(Json):
                 [
                     specification["name"],
                     "Pass" if specification["status"] else "Fail",
-                    str(specification["total_successes"]),
-                    str(specification["total"]),
-                    str(specification["percentage"]),
+                    str(specification["total_checks_pass"]),
+                    str(specification["total_checks"]),
+                    str(specification["percent_checks_pass"]),
                 ]
             )
 
@@ -309,7 +366,7 @@ class Ods(Json):
                 continue
             table = Table(name=specification["name"])
             tr = TableRow()
-            for header in ["Requirement", "Problem", "Element"]:
+            for header in ["Requirement", "Problem", "Class", "PredefinedType", "Name", "Description", "GlobalId", "Tag", "Element"]:
                 tc = TableCell(valuetype="string", stylename="h")
                 tc.addElement(P(text=header))
                 tr.addElement(tc)
@@ -321,6 +378,12 @@ class Ods(Json):
                     row = [
                         requirement["description"],
                         failure.get("reason", "No reason provided"),
+                        failure["class"],
+                        failure["predefined_type"],
+                        failure["name"],
+                        failure["description"],
+                        failure["global_id"],
+                        failure["tag"],
                         str(failure.get("element", "No element found")),
                     ]
                     tr = TableRow()
