@@ -1,0 +1,15 @@
+cmake ../cmake \
+    -DPYTHON_EXECUTABLE=/opt/homebrew/bin/python3 \
+    -DPYTHON_LIBRARY=/opt/homebrew/Frameworks/Python.framework/Versions/3.11/lib/libpython3.11.dylib \
+    -DPYTHON_INCLUDE_DIR=/opt/homebrew/Frameworks/Python.framework/Versions/3.11/include/python3.11/ \
+    -DOCC_LIBRARY_DIR=/opt/homebrew/Cellar/opencascade/7.7.2_1/lib/ \
+    -DOCC_INCLUDE_DIR=/opt/homebrew/Cellar/opencascade/7.7.2_1/include/opencascade/ \
+    -DCGAL_INCLUDE_DIR=/opt/homebrew/include/ \
+    -DGMP_LIBRARY_DIR=/opt/homebrew/lib/ \
+    -DMPFR_LIBRARY_DIR=/opt/homebrew/lib/ \
+    -DHDF5_LIBRARY_DIR=/opt/homebrew/lib/ \
+    -DHDF5_INCLUDE_DIR=/opt/homebrew/include/ \
+    -DCOLLADA_SUPPORT=OFF \
+    -DBUILD_QTVIEWER=ON \
+    -DQT_DIR=/opt/homebrew/Cellar/qt/6.5.1_2 \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=true

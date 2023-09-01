@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file>ifcopenshell_logo.png</file>
+        <file>ifcopenshell_logo.ico</file>
+    </qresource>
+</RCC>
