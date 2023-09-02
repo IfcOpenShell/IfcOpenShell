@@ -420,6 +420,15 @@ def process_expression(context):
                 exclude=[context.rel_op_extended],
             )
         else:
+            if len(context.simple_expression.branches()) == 2 and str(context.rel_op_extended) == 'in':
+                # IfcBlobTexture
+                try:
+                    is_literal_str_list = set(map(type, ast.literal_eval(str(context.simple_expression.branches()[1])))) == {str}
+                except:
+                    is_literal_str_list = False
+                if is_literal_str_list:
+                    a, b = map(str, context.simple_expression.branches())
+                    return f"{a}.lower() {str(context.rel_op_extended)} {b}"
             return concat(context.rel_op_extended, context.simple_expression)
     elif context.multiplication_like_op:
         if str(context.multiplication_like_op.branches()[0]) == "||":
