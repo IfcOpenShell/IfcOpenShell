@@ -980,9 +980,13 @@ class IfcImporter:
         placement_matrix = self.get_element_matrix(product)
         vertex_list = []
         for item in representation.Items:
-            if item.is_a("IfcCartesianPointList"):
+            if item.is_a("IfcCartesianPointList3D"):
                 vertex_list.extend(
                     mathutils.Vector(list(coordinates)) * self.unit_scale for coordinates in item.CoordList
+                )
+            elif item.is_a("IfcCartesianPointList2D"):
+                vertex_list.extend(
+                    mathutils.Vector(list(coordinates)).to_3d() * self.unit_scale for coordinates in item.CoordList
                 )
             elif item.is_a("IfcCartesianPoint"):
                 vertex_list.append(mathutils.Vector(list(item.Coordinates)) * self.unit_scale)
