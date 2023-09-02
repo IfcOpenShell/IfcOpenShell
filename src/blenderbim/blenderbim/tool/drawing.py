@@ -71,6 +71,8 @@ class Drawing(blenderbim.core.tool.Drawing):
             obj = annotation.Annotator.add_plane_to_annotation(obj)
         elif object_type == "REVISION_CLOUD":
             obj = annotation.Annotator.add_plane_to_annotation(obj, remove_face=True)
+        elif object_type == "MULTI_SYMBOL":
+            obj = annotation.Annotator.add_vertex_to_annotation(obj)
         elif object_type == "TEXT_LEADER":
             co1, _, co2, _ = annotation.Annotator.get_placeholder_coords()
             obj = annotation.Annotator.add_line_to_annotation(obj, co2, co1)
