@@ -502,6 +502,8 @@ ANNOTATION_TYPES_DATA = {
     "PLAN_LEVEL":    ("Level (Plan)",     "", "SORTBYEXT", "curve"),
     "SECTION_LEVEL": ("Level (Section)",  "", "TRIA_DOWN", "curve"),
     "BREAKLINE":     ("Breakline",        "", "FCURVE", "mesh"),
+    "SYMBOL":        ("Symbol",           "", "KEYFRAME", "empty"),
+    "MULTI_SYMBOL":  ("Multi-Symbol",     "", "OUTLINER_DATA_POINTCLOUD", "mesh"),
     "LINEWORK":      ("Line",             "", "SNAP_MIDPOINT", "mesh"),
     "BATTING":       ("Batting",          "Add batting annotation.\nThickness could be changed through Thickness property of BBIM_Batting property set", "FORCE_FORCE", "mesh"),
     "REVISION_CLOUD":("Revision Cloud",   "Add revision cloud", "VOLUME_DATA", "mesh"),
