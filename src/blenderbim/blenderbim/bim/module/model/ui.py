@@ -156,15 +156,14 @@ class BIM_PT_authoring(Panel):
 class BIM_PT_Grids(Panel):
     bl_label = "Grids"
     bl_idname = "BIM_PT_Grids"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
     bl_options = {"DEFAULT_CLOSED"}
-    bl_category = "BlenderBIM"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_project_setup"
 
     def draw(self, context):
-        self.animation_props = context.scene.BIMAnimationProperties
-        row = self.layout.row()
-        row.operator("mesh.add_grid", icon="ADD", text="Add Grids")
+        self.layout.row().operator("mesh.add_grid", icon="ADD", text="Add Grids")
 
 
 class BIM_PT_array(bpy.types.Panel):

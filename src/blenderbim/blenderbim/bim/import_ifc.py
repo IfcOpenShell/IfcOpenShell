@@ -574,7 +574,13 @@ class IfcImporter:
                 return
             if not self.does_element_likely_have_geometry_far_away(element):
                 continue
-            shape = ifcopenshell.geom.create_shape(self.settings, element)
+            try:
+                shape = ifcopenshell.geom.create_shape(self.settings, element)
+            except:
+                try:
+                    shape = ifcopenshell.geom.create_shape(self.settings_body_2d, element)
+                except:
+                    continue
             m = shape.transformation.matrix.data
             mat = np.array(
                 ([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1])
@@ -974,9 +980,13 @@ class IfcImporter:
         placement_matrix = self.get_element_matrix(product)
         vertex_list = []
         for item in representation.Items:
-            if item.is_a("IfcCartesianPointList"):
+            if item.is_a("IfcCartesianPointList3D"):
                 vertex_list.extend(
                     mathutils.Vector(list(coordinates)) * self.unit_scale for coordinates in item.CoordList
+                )
+            elif item.is_a("IfcCartesianPointList2D"):
+                vertex_list.extend(
+                    mathutils.Vector(list(coordinates)).to_3d() * self.unit_scale for coordinates in item.CoordList
                 )
             elif item.is_a("IfcCartesianPoint"):
                 vertex_list.append(mathutils.Vector(list(item.Coordinates)) * self.unit_scale)

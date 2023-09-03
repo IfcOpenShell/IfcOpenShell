@@ -18,7 +18,7 @@
 
 import blenderbim.tool as tool
 from bpy.types import Panel, UIList
-import json
+from blenderbim.bim.module.tester.data import TesterData
 
 
 class BIM_PT_tester(Panel):
@@ -31,6 +31,9 @@ class BIM_PT_tester(Panel):
     bl_parent_id = "BIM_PT_tab_quality_control"
 
     def draw(self, context):
+        if not TesterData.is_loaded:
+            TesterData.load()
+
         self.layout.use_property_split = True
         props = context.scene.IfcTesterProperties
 
@@ -53,7 +56,7 @@ class BIM_PT_tester(Panel):
         row = self.layout.row()
         row.operator("bim.execute_ifc_tester")
 
-        if props.has_report:
+        if TesterData.data["has_report"]:
             self.layout.template_list(
                 "BIM_UL_tester_specifications",
                 "",
@@ -69,33 +72,26 @@ class BIM_PT_tester(Panel):
 
     def draw_editable_ui(self, context):
         props = context.scene.IfcTesterProperties
-        i = props.active_specification_index
-        dic_report = json.loads(props.report)
+        specification = TesterData.data["specification"]
 
-        total_successes = dic_report[i]["total_successes"]
-        total = dic_report[i]["total"]
-        percentage = dic_report[i]["percentage"]
-        n_requirements = len(dic_report[i]["requirements"])
+        n_requirements = len(specification["requirements"])
 
         row = self.layout.row()
-        row.label(text=f"Passed: {total_successes}/{total} ({percentage}%)")
+        row.label(
+            text=f'Passed: {specification["total_checks_pass"]}/{specification["total_checks"]} ({specification["percent_checks_pass"]}%)'
+        )
         row = self.layout.row()
         row.label(text=f"Requirements ({n_requirements}):")
-        c = 0
         box = self.layout.box()
-        for req in dic_report[i]["requirements"]:
+        for i, requirement in enumerate(specification["requirements"]):
             row = box.row(align=True)
-            row.label(text=f" {c+1}. {req['description']}")
-            if req["status"]:
-                row.label(text="PASS", icon="CHECKMARK")
-            else:
-                row.label(text="FAIL", icon="CANCEL")
+            row.label(text=requirement["description"], icon="CHECKMARK" if requirement["status"] else "CANCEL")
+            if not requirement["status"]:
                 op = row.operator("bim.select_requirement", text="", icon="LONGDISPLAY")
-                op.spec_index = i
-                op.req_index = c
-            c += 1
+                op.spec_index = props.active_specification_index
+                op.req_index = i
 
-        if props.old_index == i and props.n_entities > 0:
+        if props.old_index == props.active_specification_index and props.n_entities > 0:
             row = self.layout.row()
             row.label(text=f"Failed entities [{props.n_entities}]:")
             self.layout.template_list(
@@ -112,11 +108,7 @@ class BIM_UL_tester_specifications(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
-            row.label(text=item.name, icon="WORDWRAP_ON")
-            if item.status:
-                row.label(text="PASS")
-            else:
-                row.label(text="FAIL")
+            row.label(text=item.name, icon="CHECKMARK" if item.status else "CANCEL")
 
 
 class BIM_UL_tester_failed_entities(UIList):

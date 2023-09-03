@@ -416,6 +416,8 @@ int main(int argc, char** argv) {
 			"Uses the polygonal algorithm for hidden line rendering")
 		("svg-prefilter",
 			"Prefilter faces and shapes before feeding to HLR algorithm")
+		("svg-segment-projection",
+			"Segment result of projection wrt original products")
 		("svg-write-poly",
 			"Approximate every curve as polygonal in SVG output")
 		("svg-project",
@@ -1085,6 +1087,7 @@ int main(int argc, char** argv) {
 		static_cast<SvgSerializer*>(serializer.get())->setUseNamespace(vmap.count("svg-xmlns") > 0);
 		static_cast<SvgSerializer*>(serializer.get())->setUseHlrPoly(vmap.count("svg-poly") > 0);
 		static_cast<SvgSerializer*>(serializer.get())->setUsePrefiltering(vmap.count("svg-prefilter") > 0);
+		static_cast<SvgSerializer*>(serializer.get())->setSegmentProjection(vmap.count("svg-segment-projection") > 0);
 		static_cast<SvgSerializer*>(serializer.get())->setPolygonal(vmap.count("svg-write-poly") > 0);
 		static_cast<SvgSerializer*>(serializer.get())->setAlwaysProject(vmap.count("svg-project") > 0);
 		static_cast<SvgSerializer*>(serializer.get())->setWithoutStoreys(vmap.count("svg-without-storeys") > 0);

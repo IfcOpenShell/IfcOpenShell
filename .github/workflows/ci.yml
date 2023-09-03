@@ -114,6 +114,7 @@ jobs:
           sudo /usr/bin/python -m pip install https://github.com/Andrej730/aud/archive/refs/heads/master-reduced-size.zip
           sudo /usr/bin/python -m pip install tabulate
           sudo /usr/bin/python -m pip install python-dateutil
+          sudo /usr/bin/python -m pip install mathutils
 
       - name: Test
         run: |

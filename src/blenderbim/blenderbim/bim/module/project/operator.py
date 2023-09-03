@@ -850,7 +850,7 @@ class UnloadLink(bpy.types.Operator):
         for scene in bpy.data.scenes:
             if scene.library and scene.library.filepath == filepath:
                 bpy.data.scenes.remove(scene)
-        link = context.scene.BIMProjectProperties.links.get(filepath)
+        link = context.scene.BIMProjectProperties.links.get(self.filepath)
         link.is_loaded = False
         return {"FINISHED"}
 
@@ -866,7 +866,7 @@ class LoadLink(bpy.types.Operator):
         filepath = self.filepath
         if not os.path.isabs(filepath):
             filepath = os.path.abspath(os.path.join(bpy.path.abspath("//"), filepath))
-        with bpy.data.libraries.load(self.filepath, link=True) as (data_from, data_to):
+        with bpy.data.libraries.load(filepath, link=True) as (data_from, data_to):
             data_to.scenes = data_from.scenes
         for scene in bpy.data.scenes:
             if not scene.library or scene.library.filepath != filepath:
@@ -875,8 +875,28 @@ class LoadLink(bpy.types.Operator):
                 if "IfcProject" not in child.name:
                     continue
                 bpy.data.scenes[0].collection.children.link(child)
-        link = context.scene.BIMProjectProperties.links.get(filepath)
+        link = context.scene.BIMProjectProperties.links.get(self.filepath)
         link.is_loaded = True
+        return {"FINISHED"}
+
+
+class ReloadLink(bpy.types.Operator):
+    bl_idname = "bim.reload_link"
+    bl_label = "Reload Link"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Reload the selected file"
+    filepath: bpy.props.StringProperty()
+
+    def execute(self, context):
+        def get_linked_ifcs():
+            selected_filename = os.path.basename(self.filepath)
+            return [
+                c.library
+                for c in bpy.data.collections
+                if "IfcProject" in c.name and c.library and os.path.basename(c.library.filepath) == selected_filename
+            ]
+        for library in get_linked_ifcs() or []:
+            library.reload()
         return {"FINISHED"}
 
 
@@ -890,6 +910,9 @@ class ToggleLinkSelectability(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMProjectProperties
         link = props.links.get(self.link)
+        self.filepath = self.link
+        if not os.path.isabs(self.filepath):
+            self.filepath = os.path.abspath(os.path.join(bpy.path.abspath("//"), self.filepath))
         for collection in self.get_linked_collections():
             collection.hide_select = not collection.hide_select
             link.is_selectable = not collection.hide_select
@@ -897,7 +920,7 @@ class ToggleLinkSelectability(bpy.types.Operator):
 
     def get_linked_collections(self):
         return [
-            c for c in bpy.data.collections if "IfcProject" in c.name and c.library and c.library.filepath == self.link
+            c for c in bpy.data.collections if "IfcProject" in c.name and c.library and c.library.filepath == self.filepath
         ]
 
 
@@ -912,6 +935,9 @@ class ToggleLinkVisibility(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMProjectProperties
         link = props.links.get(self.link)
+        self.filepath = self.link
+        if not os.path.isabs(self.filepath):
+            self.filepath = os.path.abspath(os.path.join(bpy.path.abspath("//"), self.filepath))
         if self.mode == "WIREFRAME":
             self.toggle_wireframe(link)
         elif self.mode == "VISIBLE":
@@ -948,7 +974,7 @@ class ToggleLinkVisibility(bpy.types.Operator):
 
     def get_linked_collections(self):
         return [
-            c for c in bpy.data.collections if "IfcProject" in c.name and c.library and c.library.filepath == self.link
+            c for c in bpy.data.collections if "IfcProject" in c.name and c.library and c.library.filepath == self.filepath
         ]
 
 
@@ -1037,6 +1063,7 @@ class ExportIFC(bpy.types.Operator):
         settings.json_compact = self.json_compact
 
         ifc_exporter = export_ifc.IfcExporter(settings)
+        print("Starting export")
         settings.logger.info("Starting export")
         ifc_exporter.export()
         settings.logger.info("Export finished in {:.2f} seconds".format(time.time() - start))

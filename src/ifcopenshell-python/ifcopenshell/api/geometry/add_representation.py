@@ -823,6 +823,8 @@ class Usecase:
     def create_annotation2d_representation(self):
         if isinstance(self.settings["geometry"], bpy.types.Mesh) and len(self.settings["geometry"].polygons):
             items = self.create_annotation_fill_areas(is_2d=True)
+        elif isinstance(self.settings["geometry"], bpy.types.Mesh) and not len(self.settings["geometry"].edges):
+            return self.create_point_cloud_representation(is_2d=True)
         else:
             items = [self.file.createIfcGeometricCurveSet(self.create_curves(is_2d=True))]
         return self.file.createIfcShapeRepresentation(

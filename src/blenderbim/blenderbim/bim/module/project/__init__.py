@@ -47,6 +47,7 @@ classes = (
     operator.UnlinkIfc,
     operator.UnloadLink,
     operator.UnloadProject,
+    operator.ReloadLink,
     prop.LibraryElement,
     prop.FilterCategory,
     prop.Link,

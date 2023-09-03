@@ -323,7 +323,8 @@ def validate(f, logger, express_rules=False):
 
                 f = ifcopenshell.open(f)
             else:
-                raise e
+                logger.error(f'Unsupported schema: {schema_name}')
+                return
 
         log_internal_cpp_errors(filename, logger)
 
@@ -406,7 +407,15 @@ def validate(f, logger, express_rules=False):
                             )
 
         for attr in entity.all_inverse_attributes():
-            val = getattr(inst, attr.name())
+            try:
+                val = getattr(inst, attr.name())
+            except Exception as e:
+                if hasattr(logger, "set_state"):
+                    logger.set_state('attribute', f"{entity.name()}.{attr.name()}")
+                    logger.error(str(e))
+                else:
+                    logger.error("For instance:\n    %s\n%s", inst, e)
+                continue
             try:
                 assert_valid_inverse(attr, val, schema)
             except ValidationError as e:
