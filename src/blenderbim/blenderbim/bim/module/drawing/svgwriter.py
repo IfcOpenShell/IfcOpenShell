@@ -326,11 +326,12 @@ class SvgWriter:
         # We have to decide whether this should come from Blender or from IFC.
         # For the moment, for convenience of experimenting with ideas, it comes
         # from Blender. In the future, it should probably come from IFC.
-        if not isinstance(obj.data, bpy.types.Mesh):
-            return
-
         classes = self.get_attribute_classes(obj)
-        if len(obj.data.vertices) and not len(obj.data.edges):
+        if obj.data is None:
+            return self.draw_empty_annotation(obj, classes)
+        elif not isinstance(obj.data, bpy.types.Mesh):
+            return
+        elif len(obj.data.vertices) and not len(obj.data.edges):
             return self.draw_point_annotation(obj, classes)
         elif len(obj.data.polygons) == 0:
             return self.draw_edge_annotation(obj, classes)
@@ -774,11 +775,14 @@ class SvgWriter:
             "text-anchor": text_anchor,
         }
 
-    def add_fill_bg(self, element):
-        element = element.copy()
+    def add_fill_bg(self, element, copy=True):
+        if copy:
+            element = element.copy()
         if hasattr(element, "xml"):
             attrib = element.xml.attrib
-        else:
+        elif isinstance(element, ET.Element):
+            attrib = element.attrib
+        else:  # assuming it's svgwrite.base.BaseElement
             attrib = element.attribs
         attrib["filter"] = "url(#fill-background)"
         return element
@@ -802,7 +806,7 @@ class SvgWriter:
         text_dir_world_x_axis = get_basis_vector(text_obj.matrix_world)
 
         # RCP cameras may be scaled, so reset scales.
-        camera_matrix = self.camera.matrix_world.normalized()
+        camera_matrix = tool.Drawing.get_camera_matrix(self.camera)
         text_dir = (camera_matrix.inverted().to_quaternion() @ text_dir_world_x_axis).to_2d().normalized()
         angle = math.degrees(-text_dir.angle_signed(Vector((1, 0))))
 
@@ -831,7 +835,12 @@ class SvgWriter:
                         field.attrib["class"] = classes_str
 
                     if fill_bg:
-                        self.svg.add(self.add_fill_bg(symbol_svg))
+                        symbol_copied = symbol_svg.copy()
+                        for text_tag in symbol_copied.xml.findall("text"):
+                            self.add_fill_bg(text_tag, copy=False)
+                        # NOTE: in case we'll later need to add fill-bg for the entire symbol:
+                        # self.add_fill_bg(symbol_svg, copy=False)
+                        self.svg.add(symbol_copied)
                     self.svg.add(symbol_svg)
                     return None
 
@@ -854,6 +863,27 @@ class SvgWriter:
                 self.svg.add(tag)
             line_number += len(tag.elements)
 
+    def draw_empty_annotation(self, obj, classes):
+        x_offset = self.raw_width / 2
+        y_offset = self.raw_height / 2
+
+        point = self.project_point_onto_camera(obj.matrix_world.translation)
+
+        element = tool.Ifc.get_entity(obj)
+        svg_id = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Symbol")
+        if not svg_id:
+            # EPset_AnnotationSurveyArea is not standard! See bSI-4.3 proposal #660.
+            svg_id = ifcopenshell.util.element.get_pset(element, "EPset_AnnotationSurveyArea", "PointType")
+        if not svg_id:
+            svg_id = str(ifcopenshell.util.element.get_predefined_type(element))
+        if not svg_id:
+            return
+
+        point = Vector(((x_offset + point.x), (y_offset - point.y)))
+        symbol_position_svg = point * self.svg_scale
+        self.svg.add(self.svg.use(f"#{svg_id}", insert=symbol_position_svg))
+
+
     def draw_point_annotation(self, obj, classes):
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
@@ -862,12 +892,14 @@ class SvgWriter:
         projected_points = [self.project_point_onto_camera(matrix_world @ v.co) for v in obj.data.vertices]
 
         element = tool.Ifc.get_entity(obj)
-        svg_id = str(ifcopenshell.util.element.get_predefined_type(element))
-
-        # EPset_AnnotationSurveyArea is not standard! See bSI-4.3 proposal #660.
-        point_type = ifcopenshell.util.element.get_pset(element, "EPset_AnnotationSurveyArea", "PointType")
-        if point_type:
-            svg_id += f"-{point_type}"
+        svg_id = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Symbol")
+        if not svg_id:
+            # EPset_AnnotationSurveyArea is not standard! See bSI-4.3 proposal #660.
+            svg_id = ifcopenshell.util.element.get_pset(element, "EPset_AnnotationSurveyArea", "PointType")
+        if not svg_id:
+            svg_id = str(ifcopenshell.util.element.get_predefined_type(element))
+        if not svg_id:
+            return
 
         for symbol_position in projected_points:
             symbol_position = Vector(((x_offset + symbol_position.x), (y_offset - symbol_position.y)))

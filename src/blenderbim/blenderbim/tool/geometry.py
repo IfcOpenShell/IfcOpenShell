@@ -29,7 +29,7 @@ import blenderbim.core.spatial
 import blenderbim.tool as tool
 import blenderbim.bim.import_ifc
 from math import radians
-from mathutils import Vector
+from mathutils import Vector, Matrix
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -59,6 +59,8 @@ class Geometry(blenderbim.core.tool.Geometry):
         # Note that clearing scale has no impact on cameras.
         if (obj.scale - Vector((1.0, 1.0, 1.0))).length > 1e-4:
             if not obj.data:
+                location, rotation, _ = obj.matrix_world.decompose()
+                obj.matrix_world = Matrix.Translation(location) @ rotation.to_matrix().to_4x4()
                 obj.matrix_world.normalize()
             elif obj.data.users == 1:
                 context_override = {}

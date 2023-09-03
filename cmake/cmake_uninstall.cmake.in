@@ -17,51 +17,27 @@
 #                                                                              #
 ################################################################################
 
-cmake_minimum_required(VERSION 3.1.3)
-
-message("Running CMakeLists.txt in /src/qtviewer")
-
-# Specify the Qt version and components to use
-set(QT_VERSION 6 CACHE STRING "Qt version")
-set(QT_COMPONENTS Core Gui OpenGL OpenGLWidgets Widgets CACHE STRING "Qt components")
-
-find_package(Qt${QT_VERSION} COMPONENTS ${QT_COMPONENTS} REQUIRED PATHS ${QT_DIR})
-
-if(Qt${QT_VERSION}_FOUND)
-    message(STATUS "Found Qt Version: ${Qt${QT_VERSION}_VERSION}")
+if(NOT EXISTS "@CMAKE_BINARY_DIR@/install_manifest.txt")
+    message(FATAL_ERROR "Cannot find install manifest: @CMAKE_BINARY_DIR@/install_manifest.txt")
 endif()
 
-set(targetName "QtViewer")
+file(READ "@CMAKE_BINARY_DIR@/install_manifest.txt" files)
+string(REGEX REPLACE "\n" ";" files "${files}")
 
-add_executable(${targetName}
-    IfcViewerWidget.h
-    IfcViewerWidget.cpp
-    ParseIfcFile.h
-    ParseIfcFile.cpp
-    MainWindow.h
-    MainWindow.cpp
-    main.cpp
-)
+foreach(file ${files})
+    message(STATUS "Uninstalling $ENV{DESTDIR}${file}")
 
-set_target_properties(${targetName} PROPERTIES
-    AUTOMOC On
-    WIN32_EXECUTABLE ON
-    MACOSX_BUNDLE ON
-)
+    if(IS_SYMLINK "$ENV{DESTDIR}${file}" OR EXISTS "$ENV{DESTDIR}${file}")
+        exec_program(
+            "@CMAKE_COMMAND@" ARGS "-E remove \"$ENV{DESTDIR}${file}\""
+            OUTPUT_VARIABLE rm_out
+            RETURN_VALUE rm_retval
+        )
 
-target_link_libraries(${targetName}
-    ${IFCOPENSHELL_LIBRARIES}
-    Qt${QT_VERSION}::Core 
-    Qt${QT_VERSION}::Gui 
-    Qt${QT_VERSION}::OpenGL 
-    Qt${QT_VERSION}::OpenGLWidgets 
-    Qt${QT_VERSION}::Widgets
-    ${OPENCASCADE_LIBRARIES}
-)
-
-target_include_directories(${targetName} PUBLIC 
-    ${QT_DIR}/include
-)
-
-get_target_property(targetIncludeDirs ${targetName} INCLUDE_DIRECTORIES)
-message(STATUS "target_include_directories: ${targetIncludeDirs}")
+        if(NOT "${rm_retval}" STREQUAL 0)
+            message(FATAL_ERROR "Problem when removing $ENV{DESTDIR}${file}")
+        endif()
+    else(IS_SYMLINK "$ENV{DESTDIR}${file}" OR EXISTS "$ENV{DESTDIR}${file}")
+        message(STATUS "File $ENV{DESTDIR}${file} does not exist.")
+    endif()
+endforeach()

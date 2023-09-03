@@ -1877,4 +1877,4 @@ class LibraryGenerator:
 
 if __name__ == "__main__":
     path = Path(__file__).parents[1] / "blenderbim/bim/data/libraries"
-    LibraryGenerator().generate(output_filename=str(path / "IFC4 AU Library.ifc"))
+    LibraryGenerator().generate(output_filename=str(path / "IFC4 Furniture Library.ifc"))

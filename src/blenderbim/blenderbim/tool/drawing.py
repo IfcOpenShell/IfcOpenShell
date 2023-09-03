@@ -20,6 +20,7 @@ import os
 import re
 import bpy
 import math
+import json
 import lark
 import bmesh
 import shutil
@@ -70,6 +71,8 @@ class Drawing(blenderbim.core.tool.Drawing):
             obj = annotation.Annotator.add_plane_to_annotation(obj)
         elif object_type == "REVISION_CLOUD":
             obj = annotation.Annotator.add_plane_to_annotation(obj, remove_face=True)
+        elif object_type == "MULTI_SYMBOL":
+            obj = annotation.Annotator.add_vertex_to_annotation(obj)
         elif object_type == "TEXT_LEADER":
             co1, _, co2, _ = annotation.Annotator.get_placeholder_coords()
             obj = annotation.Annotator.add_line_to_annotation(obj, co2, co1)
@@ -835,9 +838,11 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def open_with_user_command(cls, user_command, path):
         if user_command:
-            commands = eval(user_command)
+            commands = json.loads(user_command)
+            replacements = {"path": path}
             for command in commands:
-                subprocess.Popen(command)
+                command[0] = shutil.which(command[0]) or command[0]
+                subprocess.Popen([replacements.get(c, c) for c in command])
         else:
             webbrowser.open("file://" + path)
 
@@ -1835,3 +1840,27 @@ class Drawing(blenderbim.core.tool.Drawing):
         direction = end - start
         offset = distance * (direction / np.linalg.norm(direction))
         return (start - offset).tolist(), (end + offset).tolist()
+
+    @classmethod
+    def get_sheet_references(cls, drawing):
+        sheet_references = []
+        drawing_reference = cls.get_drawing_document(drawing)
+        for sheet in tool.Ifc.get().by_type("IfcDocumentInformation"):
+            if not sheet.Scope == "SHEET":
+                continue
+            references = cls.get_document_references(sheet)
+            for reference in references:
+                if reference.Location == drawing_reference.Location:
+                    sheet_references.append(reference)
+                    break
+        return sheet_references
+
+    @classmethod
+    def get_camera_matrix(cls, camera):
+        matrix_world = camera.matrix_world.copy().normalized()
+        location, rotation, scale = matrix_world.decompose()
+        if scale.x < 0 or scale.y < 0 or scale.z < 0:
+            # RCPs may be inversely scaled. We discard the scale and rotate the Z to compensate.
+            rotate180z = mathutils.Matrix.Rotation(math.radians(180.0), 4, "Z")
+            return mathutils.Matrix.Translation(location) @ rotation.to_matrix().to_4x4() @ rotate180z
+        return mathutils.Matrix.Translation(location) @ rotation.to_matrix().to_4x4()

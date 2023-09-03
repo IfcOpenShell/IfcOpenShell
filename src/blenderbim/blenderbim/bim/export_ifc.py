@@ -93,6 +93,8 @@ class IfcExporter:
             try:
                 if isinstance(obj, bpy.types.Material):
                     continue
+                if obj.library:
+                    continue
                 tool.Collector.sync(obj)
                 result = self.sync_object_placement(obj)
                 if result:

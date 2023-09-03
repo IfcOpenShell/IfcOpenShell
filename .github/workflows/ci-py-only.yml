@@ -88,6 +88,7 @@ jobs:
           sudo /usr/bin/python -m pip install networkx
           sudo /usr/bin/python -m pip install tabulate
           sudo /usr/bin/python -m pip install python-dateutil
+          sudo /usr/bin/python -m pip install mathutils
 
       - name: Test
         run: |

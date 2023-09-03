@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 from math import pi
+from fractions import Fraction
 
 prefixes = {
     "EXA": 1e18,
@@ -573,9 +574,10 @@ def format_length(
         if imperial_unit == "foot":
             feet = int(value)
             inches = (value - feet) * 12
+
         elif imperial_unit == "inch":
-            inches = value % 12
-            feet = int(round((value - inches) / 12))
+            inches = value * 12
+
 
         # Round to the nearest 1/N
         nearest = round(inches * precision)
@@ -585,14 +587,22 @@ def format_length(
 
         # If fraction is a whole number, format it accordingly
         if frac.denominator == 1:
-            if suppress_zero_inches and frac.numerator == 0:
-                return f"{feet}'"
-            return f"{feet}' - {frac.numerator}\""
-        if frac.numerator > frac.denominator:
+            if imperial_unit == "inch":
+                return f"{round(inches)}\""
+            if suppress_zero_inches:
+                if imperial_unit == "foot":
+                    return f"{round(value)}'"
+            elif not suppress_zero_inches:
+                if imperial_unit == "foot":
+                    return f"{round(value)}' - 0\"" 
+        if frac.numerator > frac.denominator and not frac.denominator == 0:
             remainder = frac.numerator % frac.denominator
             whole = int((frac.numerator - remainder) / frac.denominator)
-            return f"{feet}' - {whole} {remainder}/{frac.denominator}\""
-        return f"{feet}' - {frac.numerator}/{frac.denominator}\""
+            if imperial_unit == "foot":
+                return f"{feet}' - {whole} {remainder}/{frac.denominator}\""
+            elif imperial_unit == "inch":
+                return f"{whole} {remainder}/{frac.denominator}\""
+
     elif unit_system == "metric":
         rounded_val = round(value / precision) * precision
         return f"{rounded_val:.{decimal_places}f}"

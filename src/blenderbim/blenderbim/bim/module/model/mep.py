@@ -402,15 +402,23 @@ class MEPGenerator:
             return len(segments_data) == 0
 
         def pack_return_data(fitting_type, ports, segments_data):
+            packed_data = {"fitting_type": fitting_type}
+
+            if predefined_type == "OBSTRUCTION":
+                return packed_data
+                        
             for port in ports:
                 port_local_position = V(*port.ObjectPlacement.RelativePlacement.Location.Coordinates)
                 if tool.Cad.is_x(port_local_position.length, 0.0):
                     start_port = port
                     break
+                    
             connected_port = tool.System.get_connected_port(start_port)
             connected_element = tool.System.get_port_relating_element(connected_port)
             element_type = ifcopenshell.util.element.get_type(connected_element)
-            return {"fitting_type": fitting_type, "start_port_match": element_type == segments_data[0][0]}
+            packed_data["start_port_match"] = element_type == segments_data[0][0]
+
+            return packed_data
 
         fitting_types = tool.Ifc.get().by_type(self.get_mep_element_class_name(segments[0], "FittingType"))
         for fitting_type in fitting_types:

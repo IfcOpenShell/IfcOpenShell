@@ -75,6 +75,7 @@ class IfcCsv:
         sort=None,
         groups=None,
         summaries=None,
+        formatting=None,
     ):
         self.ifc_file = ifc_file
         self.results = []
@@ -90,10 +91,6 @@ class IfcCsv:
 
         for element in elements:
             result = []
-            for index, attribute in enumerate(attributes):
-                if "*" in attribute:
-                    attributes.extend(self.get_wildcard_attributes(attribute))
-                    del attributes[index]
 
             for attribute in attributes:
                 value = ifcopenshell.util.selector.get_element_value(element, attribute)
@@ -116,6 +113,7 @@ class IfcCsv:
         self.group_results(groups, attributes)
         self.summarise_results(summaries, attributes)
         self.sort_results(sort, attributes, include_global_id)
+        self.format_results(formatting, attributes, null)
 
         if format == "csv":
             self.export_csv(output, delimiter=delimiter)
@@ -225,7 +223,27 @@ class IfcCsv:
                     self.summaries[si] = max(summary_values[si])
                 self.summaries[si] = summary_type.title() + ": " + str(self.summaries[si])
 
+    def format_results(self, formatting, attributes, null):
+        if not formatting:
+            return
+
+        formatting_indices = {}
+
+        for data in formatting:
+            index = attributes.index(data["name"])
+            formatting_indices[index] = data["format"]
+
+        for row in self.results:
+            for index, format_query in formatting_indices.items():
+                if row[index] == null:
+                    continue
+                if not isinstance(row[index], str):
+                    row[index] = '"' + str(row[index]) + '"'
+                row[index] = ifcopenshell.util.selector.format(format_query.replace("{{value}}", row[index]))
+
     def sort_results(self, sort, attributes, include_global_id):
+        if not self.results:
+            return
         if sort:
             def natural_sort(value):
                 if isinstance(value, str):
@@ -240,7 +258,10 @@ class IfcCsv:
                 reverse = sort_data["order"] == "DESC"
                 self.results = sorted(self.results, key=lambda x: natural_sort(x[i]), reverse=reverse)
         else:
-            self.results = sorted(self.results, key=lambda x: x[1 if include_global_id else 0])
+            if include_global_id and len(list(self.results)[0]) > 1:
+                self.results = sorted(self.results, key=lambda x: x[1])
+            elif not include_global_id:
+                self.results = sorted(self.results, key=lambda x: x[0])
 
     def export_csv(self, output, delimiter=None):
         with open(output, "w", newline="", encoding="utf-8") as f:
@@ -372,36 +393,12 @@ class IfcCsv:
                 self.process_row(ifc_file, row, headers, attributes, null, bool_true, bool_false)
 
     def import_xlsx(self, ifc_file, table, attributes, null, bool_true, bool_false):
-        workbook = openpyxl.load_workbook(filename=table, read_only=True)
-        worksheet = workbook.active  # Assuming data is on the first sheet
-        headers = None
-
-        for row in worksheet.iter_rows(values_only=True):
-            if not headers:
-                headers = list(row)
-                if not attributes:
-                    attributes = [None] * len(headers)
-                elif len(attributes) == len(headers) - 1:
-                    attributes.insert(0, "")  # The GlobalId column
-                continue
-            self.process_row(ifc_file, row, headers, attributes, null, bool_true, bool_false)
+        df = pd.read_excel(table)
+        self.import_pd(ifc_file, df, attributes, null, bool_true, bool_false)
 
     def import_ods(self, ifc_file, table, attributes, null, bool_true, bool_false):
-        doc = load(table)
-        first_sheet = doc.spreadsheet.getElementsByType(Table)[0]
-        rows = first_sheet.getElementsByType(TableRow)
-        headers = None
-
-        for row in rows:
-            values = [cell.getElementsByType(P)[0].childNodes[0].data for cell in row.getElementsByType(TableCell)]
-            if not headers:
-                headers = values
-                if not attributes:
-                    attributes = [None] * len(headers)
-                elif len(attributes) == len(headers) - 1:
-                    attributes.insert(0, "")  # The GlobalId column
-                continue
-            self.process_row(ifc_file, values, headers, attributes, null, bool_true, bool_false)
+        df = pd.read_excel(table, engine="odf")
+        self.import_pd(ifc_file, df, attributes, null, bool_true, bool_false)
 
     def import_pd(self, ifc_file, df, attributes=None, null="-", bool_true="YES", bool_false="NO"):
         headers = df.columns.tolist()
