@@ -36,35 +36,50 @@ endif()
 set(EXTRA_VERSION "-alpha.3")
 
 option(MINIMAL_BUILD "The build is to make a minimal version of IFC converter from OCCT into IFC." OFF)
-option(COLLADA_SUPPORT "Build IfcConvert with COLLADA support (requires OpenCOLLADA)." ON)
-option(IFCXML_SUPPORT "Build IfcParse with ifcXML support (requires libxml2)." ON)
+option(WASM_BUILD "Build a WebAssembly binary." OFF)
+
 option(ENABLE_BUILD_OPTIMIZATIONS "Enable certain compiler and linker optimizations on RelWithDebInfo and Release builds." OFF)
-option(BUILD_PACKAGE "" OFF)
-option(BUILD_IFCGEOM "Build IfcGeom." ON)
-option(BUILD_DOCUMENTATION "Build IfcOpenShell Documentation." OFF)
-option(BUILD_IFCPYTHON "Build IfcPython." ON)
-option(BUILD_EXAMPLES "Build example applications." ON)
-option(BUILD_GEOMSERVER "Build IfcGeomServer executable." ON)
-option(BUILD_CONVERT "Build IfcConvert executable." ON)
-option(HDF5_SUPPORT "Enable HDF5 support (requires HDF5, zlib)" ON)
-option(USE_VLD "Use Visual Leak Detector for debugging memory leaks, MSVC-only." OFF)
-option(USE_MMAP "Adds a command line options to parse IFC files from memory mapped files using Boost.Iostreams" OFF)
 option(BUILD_SHARED_LIBS "Build IfcParse and IfcGeom as shared libs (SO/DLL)." OFF)
 option(MSVC_PARALLEL_BUILD "Multi-threaded compilation in Microsoft Visual Studio (/MP)" OFF)
-
+option(USE_VLD "Use Visual Leak Detector for debugging memory leaks, MSVC-only." OFF)
+option(USE_MMAP "Adds a command line options to parse IFC files from memory mapped files using Boost.Iostreams" OFF)
 option(NO_WARN "Disable all warnings" OFF)
-option(WASM_BUILD OFF)
 
-if(${BUILD_CONVERT})
-    option(GLTF_SUPPORT "Build IfcConvert with glTF support (requires json.hpp)." OFF)
-    option(USD_SUPPORT "Build IfcConvert with USD support (requires pixar's USD library)." OFF)
-endif()
+option(BUILD_IFCGEOM "Build IfcGeom." ON)
+option(BUILD_IFCPYTHON "Build IfcPython." ON)
+option(BUILD_CONVERT "Build IfcConvert executable." ON)
+option(BUILD_DOCUMENTATION "Build IfcOpenShell Documentation." OFF)
+option(BUILD_EXAMPLES "Build example applications." ON)
+option(BUILD_GEOMSERVER "Build IfcGeomServer executable." ON)
+option(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
+option(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer" OFF) # QtViewer requires Qt6
+option(BUILD_PACKAGE "" OFF)
+
+option(COLLADA_SUPPORT "Build IfcConvert with COLLADA support (requires OpenCOLLADA)." ON)
+option(GLTF_SUPPORT "Build IfcConvert with glTF support (requires json.hpp)." OFF)
+option(HDF5_SUPPORT "Enable HDF5 support (requires HDF5, zlib)" ON)
+option(IFCXML_SUPPORT "Build IfcParse with ifcXML support (requires libxml2)." ON)
+option(USD_SUPPORT "Build IfcConvert with USD support (requires pixar's USD library)." OFF)
 
 option(USERSPACE_PYTHON_PREFIX "Installs IfcPython for the current user only instead of system-wide." OFF)
 option(ADD_COMMIT_SHA "Add commit sha and branch in version number, warning results in many rebuilds, requires git" OFF)
-option(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
-# QtViewer requires Qt6
-option(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer" OFF)
+
+if(MINIMAL_BUILD)
+    message(STATUS "Setting options for minimal build")
+    set(BUILD_CONVERT OFF)
+    set(BUILD_GEOMSERVER OFF)
+    set(BUILD_IFCPYTHON OFF)
+    set(COLLADA_SUPPORT OFF)
+    set(GLTF_SUPPORT OFF)
+    set(HDF5_SUPPORT OFF)
+    set(IFCXML_SUPPORT OFF)
+    set(USD_SUPPORT OFF)
+endif()
+
+if((BUILD_CONVERT OR BUILD_GEOMSERVER OR BUILD_IFCPYTHON) AND(NOT BUILD_IFCGEOM))
+    message(STATUS "'IfcGeom' is required with current outputs")
+    set(BUILD_IFCGEOM ON)
+endif()
 
 if(MSVC AND MSVC_PARALLEL_BUILD)
     add_definitions("/MP")
@@ -80,50 +95,37 @@ endif()
 
 include(GNUInstallDirs)
 
-if((BUILD_CONVERT OR BUILD_GEOMSERVER OR BUILD_IFCPYTHON) AND(NOT BUILD_IFCGEOM))
-    message(STATUS "'IfcGeom' is required with current outputs")
-    set(BUILD_IFCGEOM ON)
-endif()
-
-# Specify where to install files
+# Specify paths to install files
 if(NOT BINDIR)
     set(BINDIR bin)
 endif()
-
 if(NOT IS_ABSOLUTE ${BINDIR})
     set(BINDIR ${CMAKE_INSTALL_BINDIR})
 endif()
-
 message(STATUS "BINDIR: ${BINDIR}")
 
 if(NOT INCLUDEDIR)
     set(INCLUDEDIR include)
 endif()
-
 if(NOT IS_ABSOLUTE ${INCLUDEDIR})
     set(INCLUDEDIR ${CMAKE_INSTALL_INCLUDEDIR})
 endif()
-
 message(STATUS "INCLUDEDIR: ${INCLUDEDIR}")
 
 if(NOT LIBDIR)
     set(LIBDIR lib)
 endif()
-
 if(NOT IS_ABSOLUTE ${LIBDIR})
     set(LIBDIR ${CMAKE_INSTALL_LIBDIR})
 endif()
-
 message(STATUS "LIBDIR: ${LIBDIR}")
 
 set(IFCOPENSHELL_LIBRARY_DIR "") # for *nix rpaths
 
 if(BUILD_SHARED_LIBS)
     add_definitions(-DIFC_SHARED_BUILD)
-
     if(MSVC)
         message(WARNING "Building DLLs against the static VC run-time. This is not recommended if the DLLs are to be redistributed.")
-
         # C4521: 'identifier' : class 'type' needs to have dll-interface to be used by clients of class 'type2'
         # There will be couple hundreds of these so suppress them away, https://msdn.microsoft.com/en-us/library/esew7y1w.aspx
         add_definitions(-wd4251)
@@ -170,7 +172,7 @@ if(WASM_BUILD)
     set(CMAKE_FIND_ROOT_PATH "")
 endif()
 
-if(NOT MINIMAL_BUILD AND GLTF_SUPPORT AND BUILD_CONVERT)
+if(GLTF_SUPPORT AND BUILD_CONVERT)
     UNIFY_ENVVARS_AND_CACHE(JSON_INCLUDE_DIR)
     find_file(json_hpp "json.hpp" ${JSON_INCLUDE_DIR}/nlohmann)
 
@@ -185,7 +187,7 @@ if(NOT MINIMAL_BUILD AND GLTF_SUPPORT AND BUILD_CONVERT)
 endif()
 
 # Add USD support to serializers 
-if(NOT MINIMAL_BUILD AND USD_SUPPORT)
+if(USD_SUPPORT)
     UNIFY_ENVVARS_AND_CACHE(USD_INCLUDE_DIR)
     UNIFY_ENVVARS_AND_CACHE(USD_LIBRARY_DIR)
 
@@ -303,7 +305,7 @@ if(NOT MINIMAL_BUILD)
     find_package(LibXml2 REQUIRED)
 endif()
 
-if(NOT MINIMAL_BUILD AND IFCXML_SUPPORT)
+if(IFCXML_SUPPORT)
     add_definitions(-DWITH_IFCXML)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_IFCXML)
 endif()
@@ -452,7 +454,7 @@ if(BUILD_IFCGEOM)
 
 endif(BUILD_IFCGEOM)
 
-if(NOT MINIMAL_BUILD AND COLLADA_SUPPORT)
+if(COLLADA_SUPPORT)
     # Find OpenCOLLADA
     if("${OPENCOLLADA_INCLUDE_DIR}" STREQUAL "")
         message(STATUS "No OpenCOLLADA include directory specified")
@@ -536,7 +538,7 @@ if(NOT MINIMAL_BUILD AND COLLADA_SUPPORT)
     endif()
 endif()
 
-if(NOT MINIMAL_BUILD AND HDF5_SUPPORT)
+if(HDF5_SUPPORT)
     if("${HDF5_INCLUDE_DIR}" STREQUAL "")
         message(STATUS "No HDF5 include directory specified")
     else()
@@ -876,7 +878,6 @@ else()
     target_link_libraries(IfcParse ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES} ${LIBXML2_LIBRARIES})
 endif()
 
-
 if(BUILD_IFCGEOM)
     # IfcGeom
     file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/*.h ../src/ifcgeom/*.i)
@@ -962,7 +963,7 @@ if(BUILD_CONVERT)
 endif(BUILD_CONVERT)
 
 # IfcGeomServer
-if(NOT MINIMAL_BUILD AND BUILD_GEOMSERVER)
+if(BUILD_GEOMSERVER)
     file(GLOB CPP_FILES ../src/ifcgeomserver/*.cpp)
     file(GLOB H_FILES ../src/ifcgeomserver/*.h)
     set(SOURCE_FILES ${CPP_FILES} ${H_FILES})
@@ -1019,7 +1020,7 @@ if(BUILD_DOCUMENTATION)
     add_subdirectory(../docs docs)
 endif()
 
-if(NOT MINIMAL_BUILD AND BUILD_IFCPYTHON)
+if(BUILD_IFCPYTHON)
     add_subdirectory(../src/ifcwrap ifcwrap)
 endif()
 
