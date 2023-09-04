@@ -45,7 +45,7 @@ class SetTab(bpy.types.Operator):
     # NOTE: bl_label is set to empty string intentionally 
     # to avoid showing the operator's name in the tooltips, see #3704
     bl_label = ""
-    bl_options = {"REGISTER", "UNDO", "HIDDEN"}
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
     tab: bpy.props.StringProperty()
 
     @classmethod
