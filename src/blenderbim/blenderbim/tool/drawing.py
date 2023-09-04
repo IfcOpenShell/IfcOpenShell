@@ -1509,7 +1509,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         elements = cls.get_elements_in_camera_view(tool.Ifc.get_object(drawing), bpy.data.objects)
         include = pset.get("Include", None)
         if include:
-            elements = ifcopenshell.util.selector.filter_elements(ifc_file, include, elements=elements)
+            elements = ifcopenshell.util.selector.filter_elements(ifc_file, include)
         else:
             if tool.Ifc.get_schema() == "IFC2X3":
                 base_elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialStructureElement"))
