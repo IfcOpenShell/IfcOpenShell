@@ -66,7 +66,6 @@ option(ADD_COMMIT_SHA "Add commit sha and branch in version number, warning resu
 
 if(MINIMAL_BUILD)
     message(STATUS "Setting options for minimal build")
-    set(BUILD_CONVERT OFF)
     set(BUILD_GEOMSERVER OFF)
     set(BUILD_IFCPYTHON OFF)
     set(COLLADA_SUPPORT OFF)
