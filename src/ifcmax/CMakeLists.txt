@@ -16,9 +16,24 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.         #
 #                                                                              #
 ################################################################################
+
+# check for 3ds Max SDK
 foreach(max_year RANGE 2014 2030)
     set(max_sdk "$ENV{ADSK_3DSMAX_SDK_${max_year}}")
-    if (NOT "${max_sdk}" STREQUAL "")
+
+    if(NOT "${max_sdk}" STREQUAL "")
+        message(STATUS "Autodesk 3ds Max SDK ${max_year} found at ${max_sdk}")
+        list(APPEND FOUND_MAX_YEARS ${max_year})
+        list(APPEND FOUND_MAX_SDKS ${max_sdk})
+        set(HAS_MAX TRUE)
+    endif()
+endforeach()
+
+if(HAS_MAX)
+    # build libraray for each found 3ds Max SDK
+    foreach(max_year max_sdk IN ZIP_LISTS FOUND_MAX_YEARS FOUND_MAX_SDKS)
+
+        message(STATUS "Building IFCMax library for Autodesk 3ds Max SDK ${max_year}")
 
         include_directories(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCLUDE_DIRS} ${ICU_INCLUDE_DIR}
             ${Boost_INCLUDE_DIRS} ${max_sdk}/include
@@ -65,6 +80,8 @@ foreach(max_year RANGE 2014 2030)
         set_target_properties(IfcMax_${max_year} PROPERTIES SUFFIX ".dli")
 
         install(TARGETS IfcMax_${max_year} RUNTIME DESTINATION ${BINDIR})
+    endforeach()
+else()
+    message(STATUS "Autodesk 3ds Max SDK not found, is required to build IFCMax.")
+endif()
 
-    endif()
-endforeach()
