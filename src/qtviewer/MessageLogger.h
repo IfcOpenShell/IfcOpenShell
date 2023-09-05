@@ -1,3 +1,6 @@
+#ifndef MESSAGELOGGER_H
+#define MESSAGELOGGER_H
+
 #include <QObject>
 #include <string>
 
@@ -38,3 +41,5 @@ private:
     // Disable copy assignment operator for MessageLogger
     MessageLogger& operator=(const MessageLogger&) = delete;
 };
+
+#endif // MESSAGELOGGER_H
