@@ -5,13 +5,15 @@
 MouseHandler::MouseHandler(osgViewer::Viewer* viewer) :
     osgGA::TrackballManipulator(),
     viewer(viewer)
-{ }
+{
+    MessageLogger::log("MouseHandler constructed");
+}
 
 bool MouseHandler::handle (
     const osgGA::GUIEventAdapter& ea,
     const osgGA::GUIActionAdapter& aa)
 {
-    MessageLogger::log("test from MouseHandler.h");
+    MessageLogger::log("MouseHandler::handle() called");
     switch (ea.getEventType()) {
         case (osgGA::GUIEventAdapter::DRAG):
         {
