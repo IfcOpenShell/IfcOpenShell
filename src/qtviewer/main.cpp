@@ -5,7 +5,6 @@
 int main(int argc, char *argv[])
 {
   QApplication app(argc, argv);
-  qreal dpiScale = app.devicePixelRatio();
 
   // Set the icon in the window title-bar on mswindows
   // and dock icon on macos.
@@ -15,6 +14,8 @@ int main(int argc, char *argv[])
   // File icon set with:
   // mswindows - .rc file
   // macos - .icns file (using CMake)
+
+  qreal dpiScale = app.devicePixelRatio();
 
   MainWindow window(dpiScale);
 
