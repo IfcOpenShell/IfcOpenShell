@@ -1,0 +1,340 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="109.26941mm"
+   height="43.140995mm"
+   viewBox="0 0 109.26941 43.140994"
+   version="1.1"
+   id="svg5949"
+   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   sodipodi:docname="ifc-concepts.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview5951"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="3.2213244"
+     inkscape:cx="203.48774"
+     inkscape:cy="70.623127"
+     inkscape:window-width="1920"
+     inkscape:window-height="1055"
+     inkscape:window-x="0"
+     inkscape:window-y="25"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="g6319" />
+  <defs
+     id="defs5946" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-50.82658,-122.98702)">
+    <rect
+       style="fill:#ffffff;stroke:#2e3436;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:2.4, 1.2"
+       id="rect6321"
+       width="108.964"
+       height="42.840996"
+       x="50.978603"
+       y="123.13702"
+       rx="1"
+       ry="1" />
+    <g
+       id="g6319">
+      <text
+         xml:space="preserve"
+         style="font-size:7.05556px;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT, Normal';text-align:center;text-anchor:middle;fill:#2e3436;stroke:none;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+         x="63.653316"
+         y="136.22639"
+         id="text2382"><tspan
+           sodipodi:role="line"
+           id="tspan2380"
+           style="fill:#2e3436;stroke:none;stroke-width:0.3"
+           x="63.653316"
+           y="136.22639">BEAM</tspan></text>
+      <path
+         style="fill:none;stroke:#2e3436;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+         d="M 81.679206,134.15073 H 71.177442"
+         id="path2452"
+         sodipodi:nodetypes="cc" />
+      <path
+         style="fill:none;stroke:#2e3436;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+         d="m 88.001513,134.15073 h 6.268424"
+         id="path2454"
+         sodipodi:nodetypes="cc" />
+      <rect
+         style="fill:none;stroke:#2e3436;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+         id="rect2384"
+         width="15.048248"
+         height="5.4335899"
+         x="56.129192"
+         y="131.43393"
+         rx="1"
+         ry="1" />
+      <rect
+         style="fill:none;stroke:#2e3436;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+         id="rect2392"
+         width="6.3223071"
+         height="2.2828455"
+         x="81.679207"
+         y="133.00931"
+         rx="0.42013577"
+         ry="0.42013577" />
+      <g
+         id="g2515"
+         transform="translate(41.0339,46.77625)">
+        <text
+           xml:space="preserve"
+           style="font-size:7.05556px;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT, Normal';text-align:center;text-anchor:middle;fill:#73d216;stroke:none;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+           x="65.356758"
+           y="89.45015"
+           id="text2388"><tspan
+             sodipodi:role="line"
+             id="tspan2386"
+             style="fill:#73d216;stroke:none;stroke-width:0.3"
+             x="65.356758"
+             y="89.45015">MATERIAL</tspan></text>
+        <rect
+           style="fill:none;stroke:#73d216;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+           id="rect2390"
+           width="24.448156"
+           height="5.4335899"
+           x="53.236038"
+           y="84.657684"
+           rx="1"
+           ry="1" />
+      </g>
+      <text
+         xml:space="preserve"
+         style="font-size:2.82222px;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT, Normal';text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+         x="58.451916"
+         y="129.84737"
+         id="text2466"><tspan
+           sodipodi:role="line"
+           style="font-size:2.82222px;text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3"
+           x="58.451916"
+           y="129.84737"
+           id="tspan2464">THIS BEAM</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:2.82222px;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT, Normal';text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+         x="77.731064"
+         y="129.84737"
+         id="text2484"><tspan
+           sodipodi:role="line"
+           style="font-size:2.82222px;text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3"
+           x="77.731064"
+           y="129.84737"
+           id="tspan2482">IS MADE FROM</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:2.82222px;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT, Normal';text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+         x="103.59808"
+         y="129.84737"
+         id="text2488"><tspan
+           sodipodi:role="line"
+           style="font-size:2.82222px;text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3"
+           x="103.59808"
+           y="129.84737"
+           id="tspan2486">STEEL</tspan></text>
+      <g
+         id="g2505"
+         transform="translate(41.0339,46.77625)">
+        <text
+           xml:space="preserve"
+           style="font-size:7.05556px;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT, Normal';text-align:center;text-anchor:middle;fill:#2e3436;stroke:none;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+           x="66.070381"
+           y="101.95021"
+           id="text2492"><tspan
+             sodipodi:role="line"
+             id="tspan2490"
+             style="fill:#2e3436;stroke:none;stroke-width:0.3"
+             x="66.070381"
+             y="101.95021">STOREY</tspan></text>
+        <rect
+           style="fill:none;stroke:#2e3436;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+           id="rect2494"
+           width="22.647181"
+           height="5.4335899"
+           x="54.746784"
+           y="97.157753"
+           rx="1"
+           ry="1" />
+      </g>
+      <rect
+         style="fill:none;stroke:#2e3436;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+         id="rect2517"
+         width="6.3223071"
+         height="2.2828455"
+         x="81.679207"
+         y="145.50937"
+         rx="0.42013577"
+         ry="0.42013577" />
+      <rect
+         style="fill:none;stroke:#2e3436;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+         id="rect2519"
+         width="6.3223071"
+         height="2.2828455"
+         x="81.679207"
+         y="156.96959"
+         rx="0.42013577"
+         ry="0.42013577" />
+      <path
+         style="fill:none;stroke:#2e3436;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+         d="m 88.001513,146.6508 h 7.779171"
+         id="path2521"
+         sodipodi:nodetypes="cc" />
+      <path
+         style="fill:none;stroke:#2e3436;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+         d="m 88.001513,158.11101 10.127774,1e-5"
+         id="path2523"
+         sodipodi:nodetypes="cc" />
+      <g
+         id="g2510"
+         transform="translate(41.0339,46.77625)">
+        <text
+           xml:space="preserve"
+           style="font-size:7.05556px;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT, Normal';text-align:center;text-anchor:middle;fill:#3465a4;stroke:none;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+           x="64.681526"
+           y="113.41045"
+           id="text2498"><tspan
+             sodipodi:role="line"
+             id="tspan2496"
+             style="fill:#3465a4;stroke:none;stroke-width:0.3"
+             x="64.681526"
+             y="113.41045">TASK</tspan></text>
+        <rect
+           style="fill:none;stroke:#204a87;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+           id="rect2500"
+           width="15.048248"
+           height="5.4335899"
+           x="57.095387"
+           y="108.61797"
+           rx="1"
+           ry="1" />
+      </g>
+      <path
+         style="fill:none;stroke:#2e3436;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+         d="m 81.679206,146.6508 c -6.322309,0 -6.309216,-12.50007 -10.501764,-12.50007 4.192548,0 4.179457,23.96028 10.501764,23.96028"
+         id="path2525"
+         sodipodi:nodetypes="ccc" />
+      <text
+         xml:space="preserve"
+         style="font-size:2.82222px;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT, Normal';text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+         x="77.540207"
+         y="142.06029"
+         id="text2529"><tspan
+           sodipodi:role="line"
+           style="font-size:2.82222px;text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3"
+           x="77.540207"
+           y="142.06029"
+           id="tspan2527">IS LOCATED ON</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:2.82222px;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT, Normal';text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+         x="79.1091"
+         y="153.96016"
+         id="text2533"><tspan
+           sodipodi:role="line"
+           style="font-size:2.82222px;text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3"
+           x="79.1091"
+           y="153.96016"
+           id="tspan2531">IS BUILT ON</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:2.82222px;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT, Normal';text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+         x="103.17963"
+         y="142.06029"
+         id="text2537"><tspan
+           sodipodi:role="line"
+           style="font-size:2.82222px;text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3"
+           x="103.17963"
+           y="142.06029"
+           id="tspan2535">LEVEL 3</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:2.82222px;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT, Normal';text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+         x="99.207642"
+         y="153.96016"
+         id="text2541"><tspan
+           sodipodi:role="line"
+           style="font-size:2.82222px;text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3"
+           x="99.207642"
+           y="153.96016"
+           id="tspan2539">ACTIVITY 3.14</tspan></text>
+      <rect
+         style="fill:none;stroke:#2e3436;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+         id="rect2692"
+         width="6.3223071"
+         height="2.2828455"
+         x="123.30532"
+         y="156.96959"
+         rx="0.42013577"
+         ry="0.42013577" />
+      <path
+         style="fill:none;stroke:#2e3436;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+         d="m 113.17753,158.11102 10.12778,-1e-5"
+         id="path2694" />
+      <g
+         id="g2702"
+         transform="translate(82.649738,46.77625)">
+        <text
+           xml:space="preserve"
+           style="font-size:7.05556px;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT, Normal';text-align:center;text-anchor:middle;fill:#3465a4;stroke:none;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+           x="64.681526"
+           y="113.41045"
+           id="text2698"><tspan
+             sodipodi:role="line"
+             id="tspan2696"
+             style="fill:#3465a4;stroke:none;stroke-width:0.3"
+             x="64.681526"
+             y="113.41045">TIME</tspan></text>
+        <rect
+           style="fill:none;stroke:#204a87;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+           id="rect2700"
+           width="15.048248"
+           height="5.4335899"
+           x="57.095387"
+           y="108.61797"
+           rx="1"
+           ry="1" />
+      </g>
+      <path
+         style="fill:none;stroke:#2e3436;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+         d="m 129.62762,158.11101 h 10.1175"
+         id="path2704" />
+      <text
+         xml:space="preserve"
+         style="font-size:2.82222px;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT, Normal';text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+         x="119.19112"
+         y="153.96016"
+         id="text2708"><tspan
+           sodipodi:role="line"
+           style="font-size:2.82222px;text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3"
+           x="119.19112"
+           y="153.96016"
+           id="tspan2706">SCHEDULED ON</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:2.82222px;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT, Normal';text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+         x="141.91006"
+         y="153.96016"
+         id="text2712"><tspan
+           sodipodi:role="line"
+           style="font-size:2.82222px;text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3"
+           x="141.91006"
+           y="153.96016"
+           id="tspan2710">OCTOBER 2</tspan></text>
+    </g>
+  </g>
+</svg>
