@@ -1,10 +1,11 @@
-﻿#include "MainWindow.h"
+#include "MainWindow.h"
 
 #include <QApplication>
 
 int main(int argc, char *argv[])
 {
   QApplication app(argc, argv);
+  qreal dpiScale = app.devicePixelRatio();
 
   // Set the icon in the window title-bar on mswindows
   // and dock icon on macos.
@@ -15,7 +16,7 @@ int main(int argc, char *argv[])
   // mswindows - .rc file
   // macos - .icns file (using CMake)
 
-  MainWindow window;
+  MainWindow window(dpiScale);
 
   window.show();
 

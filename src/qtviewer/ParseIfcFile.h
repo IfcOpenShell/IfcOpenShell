@@ -7,14 +7,6 @@
 
 class ParseIfcFile : public QObject
 {
-    Q_OBJECT
-
-signals:
-    void parsingInfo(const QString& info);
-
-private:
-    void outputMsg(const std::string& msg);
-
 public:
     ParseIfcFile();
     ~ParseIfcFile();

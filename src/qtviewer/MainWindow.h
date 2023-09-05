@@ -1,4 +1,4 @@
-﻿#ifndef MAINWINDOW_H
+#ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
 #include <QObject>
@@ -15,17 +15,19 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent = nullptr);
+    MainWindow(qreal dpiScale, QWidget *parent = nullptr);
 
 public slots:
     void openFile();
+    void appendToOutputText(const QString& message);
 
 private:
     void createActions();
     void createMenus();
     void createConnections();
-    void appendToOutputText(const QString& message);
 private:
+    qreal m_dpiScale;
+
     QMenu *fileMenu;
     QAction *openAction;
     QAction *quitAction;
