@@ -12,4 +12,5 @@ cmake ../cmake \
     -DCOLLADA_SUPPORT=OFF \
     -DBUILD_QTVIEWER=ON \
     -DQT_DIR=/opt/homebrew/Cellar/qt/6.5.1_2 \
+    -DOSG_DIR=/opt/homebrew/Cellar/open-scene-graph/3.6.5_2 \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=true

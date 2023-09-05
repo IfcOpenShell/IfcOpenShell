@@ -31,6 +31,17 @@ if(Qt${QT_VERSION}_FOUND)
     message(STATUS "Found Qt Version: ${Qt${QT_VERSION}_VERSION}")
 endif()
 
+message(STATUS "OSG_DIR: ${OSG_DIR}")
+set(OSG_COMPONENTS osgDB osgGA osgUtil osgViewer CACHE STRING "OSG components")
+
+# Do not add "PATHS <path>" in find_package for OpenSceneGraph CMake config to work
+# on appleSiliconMacOS + Homebrew
+find_package(OpenSceneGraph COMPONENTS ${OSG_COMPONENTS} REQUIRED)
+
+if(OPENSCENEGRAPH_FOUND)
+    message(STATUS "Found OpenSceneGraph Version: ${OPENSCENEGRAPH_VERSION}")
+endif()
+
 set(targetName "QtViewer")
 
 # Scan for .qrc files and add to build process
@@ -52,6 +63,9 @@ set_source_files_properties(${app_icon_macos} PROPERTIES
         MACOSX_PACKAGE_LOCATION "Resources")
 
 add_executable(${targetName}
+    MessageLogger.h
+    MouseHandler.h
+    MouseHandler.cpp
     IfcViewerWidget.h
     IfcViewerWidget.cpp
     ParseIfcFile.h
@@ -72,16 +86,18 @@ set_target_properties(${targetName} PROPERTIES
 
 target_link_libraries(${targetName}
     ${IFCOPENSHELL_LIBRARIES}
+    ${OPENCASCADE_LIBRARIES}
+    ${OPENSCENEGRAPH_LIBRARIES}
     Qt${QT_VERSION}::Core 
     Qt${QT_VERSION}::Gui 
     Qt${QT_VERSION}::OpenGL 
     Qt${QT_VERSION}::OpenGLWidgets 
     Qt${QT_VERSION}::Widgets
-    ${OPENCASCADE_LIBRARIES}
 )
 
 target_include_directories(${targetName} PUBLIC 
     ${QT_DIR}/include
+    ${OPENSCENEGRAPH_INCLUDE_DIRS}
 )
 
 get_target_property(targetIncludeDirs ${targetName} INCLUDE_DIRECTORIES)

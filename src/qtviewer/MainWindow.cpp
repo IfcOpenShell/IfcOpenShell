@@ -1,4 +1,4 @@
-﻿#include <QCoreApplication>
+#include <QCoreApplication>
 #include <QMenuBar>
 #include <QMenu>
 #include <QAction>
@@ -10,15 +10,16 @@
 #include <sstream>
 
 #include "MainWindow.h"
+#include "MessageLogger.h"
 #include "IfcViewerWidget.h"
 
-MainWindow::MainWindow(QWidget *parent) 
-    : QMainWindow(parent)
+MainWindow::MainWindow(qreal dpiScale, QWidget *parent) 
+    : QMainWindow(parent), m_dpiScale(dpiScale)
 {
     this->setWindowTitle("IfcOpenShell Viewer");
     this->resize(800, 600); //temporary reasonable initial size
 
-    m_glWidget = new IfcViewerWidget(this);
+    m_glWidget = new IfcViewerWidget(m_dpiScale, this);
     QSizePolicy glSizePolicy = m_glWidget->sizePolicy();
     glSizePolicy.setVerticalStretch(3);
     m_glWidget->setSizePolicy(glSizePolicy);
@@ -81,7 +82,8 @@ void MainWindow::createConnections()
     //connect(m_backgroundAction, SIGNAL(toggled(bool)), (QWidget*)m_v, SLOT(setViewBackground(bool)));
     //connect(m_outlineAction, SIGNAL(toggled(bool)), (QWidget*)m_v, SLOT(setViewOutline(bool)));
 
-    connect(&m_parser, &ParseIfcFile::parsingInfo, this, &MainWindow::appendToOutputText);
+    //connect(&m_parser, &ParseIfcFile::parsingInfo, this, &MainWindow::appendToOutputText);
+    connect(&MessageLogger::getInstance(), SIGNAL(logMessage(QString)), this, SLOT(appendToOutputText(QString)));
 }
 
 void MainWindow::appendToOutputText(const QString& message)
