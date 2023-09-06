@@ -31,6 +31,9 @@ NetFloorArea: it doesn't count the following entities contained in the spatial e
 NetVolume: like NetFloorArea, it doesn't count the following entities contained in the spatial entity: IfcColumn and IfcWall
 Also, the entire IfcColumn (or IfcWall) object volume is substracted, so it should be better to substract only the shared volume between IfcSpace and IfcColumn. Look at todo list
 
+DUCT SEGMENTS AND DUCT FITTINGS
+The length is calculated like a beam. Also outer surface area. Gross cross section area, net cross section area and weight are not calculated right now because the parametrically cross section area seems filled (without hole).
+
 WEIGHT
 The object weight is calculated by multiplying the object mass density with the object volume (net or gross).
 It's only calculated if the object material has a MassDensity property in the Pset_MaterialCommon.
