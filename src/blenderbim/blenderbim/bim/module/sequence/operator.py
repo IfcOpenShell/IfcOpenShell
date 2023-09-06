@@ -51,7 +51,7 @@ class EnableStatusFilters(bpy.types.Operator):
                 pset = element.PartOfPset[0]
                 if pset.Name.startswith("Pset_") and pset.Name.endswith("Common"):
                     statuses.update(element.EnumerationValues)
-                elif pset.Name == "EPset_Status": # Our secret sauce
+                elif pset.Name == "EPset_Status":  # Our secret sauce
                     statuses.update(element.EnumerationValues)
             elif element.Name == "UserDefinedStatus":
                 statuses.add(element.NominalValue)
@@ -67,6 +67,7 @@ class EnableStatusFilters(bpy.types.Operator):
 class DisableStatusFilters(bpy.types.Operator):
     bl_idname = "bim.disable_status_filters"
     bl_label = "Disable Status Filters"
+    bl_description = "Deactivate status filters panel.\nCan be used to refresh the displayed statuses"
 
     def execute(self, context):
         props = context.scene.BIMStatusProperties
@@ -77,6 +78,7 @@ class DisableStatusFilters(bpy.types.Operator):
 class ActivateStatusFilters(bpy.types.Operator):
     bl_idname = "bim.activate_status_filters"
     bl_label = "Activate Status Filters"
+    bl_description = "Filter and display objects based on currently selected IFC statuses"
 
     def execute(self, context):
         props = context.scene.BIMStatusProperties
@@ -92,6 +94,7 @@ class ActivateStatusFilters(bpy.types.Operator):
         query = " + ".join(query)
 
         if not query:
+            self.report({"INFO"}, "No statuses selected.")
             return {"FINISHED"}
 
         visible_elements = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query)
@@ -107,6 +110,7 @@ class ActivateStatusFilters(bpy.types.Operator):
 class SelectStatusFilter(bpy.types.Operator):
     bl_idname = "bim.select_status_filter"
     bl_label = "Select Status Filter"
+    bl_description = "Select elements with currently selected status"
     name: bpy.props.StringProperty()
 
     def execute(self, context):
