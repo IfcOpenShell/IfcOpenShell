@@ -52,7 +52,7 @@ class BIM_PT_status(Panel):
             return
 
         row = self.layout.row(align=True)
-        row.operator("bim.activate_status_filters", icon="TIME")
+        row.label(text="Statuses found in the project:")
         row.operator("bim.disable_status_filters", icon="CANCEL", text="")
 
         for status in self.props.statuses:
