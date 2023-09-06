@@ -689,8 +689,11 @@ class OverrideDuplicateMove(bpy.types.Operator):
                 blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
             new_obj = obj.copy()
+            temp_data = None
             if obj.data:
-                new_obj.data = obj.data.copy()
+                # assure root.copy_class won't replace the previous mesh globally
+                temp_data = obj.data.copy()
+                new_obj.data = temp_data
             if obj == context.active_object:
                 self.new_active_obj = new_obj
             for collection in obj.users_collection:
@@ -699,8 +702,13 @@ class OverrideDuplicateMove(bpy.types.Operator):
             new_obj.select_set(True)
             # clear object's collection so it will be able to have it's own
             new_obj.BIMObjectProperties.collection = None
-            # Copy the actual class
+            # copy the actual class
             new = blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
+
+            # clean up the orphaned mesh with ifc id of the original object to avoid confusion
+            if temp_data:
+                tool.Blender.remove_data_block(temp_data)
+
             if new:
                 array_pset = ifcopenshell.util.element.get_pset(new, "BBIM_Array")
                 if array_pset:

@@ -387,6 +387,11 @@ class Blender:
             getattr(data_to, data_block_type).append(name)
         return {"data_block": getattr(data_to, data_block_type)[0], "msg": ""}
 
+    @classmethod
+    def remove_data_block(cls, data_block):
+        collection_name = repr(data_block).split(".", 2)[-1].split("[", 1)[0]
+        getattr(bpy.data, collection_name).remove(data_block)
+
     ## BMESH UTILS ##
     @classmethod
     def apply_bmesh(cls, mesh, bm, obj=None):
