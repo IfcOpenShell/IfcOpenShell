@@ -71,10 +71,10 @@ mapper = {
         'Area' : "get_net_side_area",
     },
     'Qto_DuctSegmentBaseQuantities' : {
-        'Length' : None,
+        'Length' : "get_length",
         'GrossCrossSectionArea' : None,
         'NetCrossSectionArea' : None,
-        'OuterSurfaceArea' : None,
+        'OuterSurfaceArea' : "get_outer_surface_area",
         'GrossWeight' : None,
     },
     'Qto_TransformerBaseQuantities' : {
@@ -203,10 +203,10 @@ mapper = {
         'Weight' : None,
     },
     'Qto_DuctFittingBaseQuantities' : {
-        'Length' : None,
+        'Length' : "get_length",
         'GrossCrossSectionArea' : None,
         'NetCrossSectionArea' : None,
-        'OuterSurfaceArea' : None,
+        'OuterSurfaceArea' : "get_outer_surface_area",
         'GrossWeight' : None,
     },
     'Qto_UnitaryControlElementBaseQuantities' : {
