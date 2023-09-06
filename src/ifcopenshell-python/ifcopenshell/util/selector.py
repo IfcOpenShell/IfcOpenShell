@@ -51,7 +51,7 @@ filter_elements_grammar = lark.Lark(
     ifc_class: /Ifc\\w+/
 
     value: special | quoted_string | regex_string | unquoted_string
-    unquoted_string: /[^.=\\s]+/
+    unquoted_string: /[^,.=\\s]+/
     regex_string: "/" /[^\\/]+/ "/"
     quoted_string: ESCAPED_STRING
 
