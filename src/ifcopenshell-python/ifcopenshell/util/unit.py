@@ -586,7 +586,7 @@ def format_length(
         frac = Fraction(nearest, precision)
 
         # If fraction is a whole number, format it accordingly
-        if frac.denominator == 1:
+        if frac.numerator == 0:
             if imperial_unit == "inch":
                 return f"{round(inches)}\""
             if suppress_zero_inches:
@@ -595,13 +595,20 @@ def format_length(
             elif not suppress_zero_inches:
                 if imperial_unit == "foot":
                     return f"{round(value)}' - 0\"" 
-        if frac.numerator > frac.denominator and not frac.denominator == 0:
+        if frac.numerator > frac.denominator:
             remainder = frac.numerator % frac.denominator
             whole = int((frac.numerator - remainder) / frac.denominator)
             if imperial_unit == "foot":
-                return f"{feet}' - {whole} {remainder}/{frac.denominator}\""
+                if remainder == 0:
+                    return f"{feet}' - {whole}\""
+                elif remainder != 0:
+                    return f"{feet}' - {whole} {remainder}/{frac.denominator}\""
             elif imperial_unit == "inch":
-                return f"{whole} {remainder}/{frac.denominator}\""
+                if remainder == 0:
+                    return f"{whole}\""
+                elif remainder != 0:
+                    return f"{whole} {remainder}/{frac.denominator}\""
+
 
     elif unit_system == "metric":
         rounded_val = round(value / precision) * precision
