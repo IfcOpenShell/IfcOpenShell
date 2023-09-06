@@ -147,6 +147,9 @@ class TestFilterElements(test.bootstrap.IFC4):
         assert subject.filter_elements(self.file, 'IfcWall, Name="Foo\'s \\"quoted\\" name..."') == {element}
         assert subject.filter_elements(self.file, "IfcWall, Name=/Fo.*/") == {element}
         assert subject.filter_elements(self.file, "IfcWall, Description=NULL") == {element, element2}
+        element.Name = "Foo"
+        element.Description = "Foobar"
+        assert subject.filter_elements(self.file, "IfcWall, Name=Foo, Description=Foobar") == {element}
 
     def test_selecting_by_type(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
