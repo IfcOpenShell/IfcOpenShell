@@ -134,8 +134,10 @@ FAQ
 
    Check which BlenderBIM Add-on build you are using. The zip will have either
    ``py37``, ``py39``, or ``py310`` in the name. See the instructions in the
-   **Unstable installation** section to check that you have installed the
+   `Unstable installation <../devs/installation.html#unstable-installation>`__ section to check that you have installed the
    correct version.
+
+
 
 2. **I am on Ubuntu and get an error similar to "ImportError:
    /lib/x86_64-linux-gnu/libm.so.6: version GLIBC_2.29 not found"**
