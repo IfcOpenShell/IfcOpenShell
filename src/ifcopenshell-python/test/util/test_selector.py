@@ -45,7 +45,8 @@ class TestFormat():
         assert subject.format('imperial_length(3.123, 1)') == "3' - 1\""
         assert subject.format('imperial_length(3.123, 2)') == "3' - 1 1/2\""
         assert subject.format('imperial_length(\"3.123\", 2)') == "3' - 1 1/2\""
-        assert subject.format('imperial_length(\"123.123\", 2, \"inch\")') == "10' - 3\""
+        assert subject.format('imperial_length(\"123.123\", 2, \"inch\", \"foot\")') == "10' - 3\""
+        assert subject.format('imperial_length(\"123.123\", 2, \"inch\", \"inch\")') == "123\""
 
 
 class TestGetElementValue(test.bootstrap.IFC4):
