@@ -55,6 +55,28 @@
             "name": "Signage"
         }
     ],
+    "IfcGeographicElement": [
+        {
+            "name": "Tree"
+        },
+        {
+            "name": "Plants"
+        },
+        {
+            "name": "Shrubs"
+        }
+    ],
+    "IfcGeographicElementType": [
+        {
+            "name": "Tree"
+        },
+        {
+            "name": "Plants"
+        },
+        {
+            "name": "Shrubs"
+        }
+    ],    
     "IfcPlate": [
         {
             "name": "Glazing"
