@@ -184,6 +184,12 @@ Valid keys are:
     "``material`` or ``mat``", "Gets the assigned material, which may be a material set."
     "``item`` or ``i``", "If the previous key returns a material set, gets the relevant material set items"
     "``materials`` or ``mats``", "Gets a list of IfcMaterials assigned directly or indirectly (such as via a material set) to the element"
+    "``x``", "Gets the X coordinate of the element's placement"
+    "``y``", "Gets the Y coordinate of the element's placement"
+    "``z``", "Gets the Z coordinate of the element's placement"
+    "``easting``", "Gets the map easting of the element's placement"
+    "``northing``", "Gets the map northing of the element's placement"
+    "``elevation``", "Gets the map elevation of the element's placement"
     "``count``", "If the previous key returns multiple things, count that list. Otherwise, return 1."
     "``{{number}}``", "If the previous key returns multiple things, fetch the ``{{number}}`` index (e.g. 0, 1, 2, 3, etc) item in that list."
 
