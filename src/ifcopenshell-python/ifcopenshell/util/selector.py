@@ -115,7 +115,7 @@ get_element_grammar = lark.Lark(
 format_grammar = lark.Lark(
     """start: function
 
-    function: round | format_length | lower | upper | title | concat | ESCAPED_STRING | NUMBER
+    function: round | format_length | lower | upper | title | concat | substr | ESCAPED_STRING | NUMBER
 
     round: "round(" function "," NUMBER ")"
     format_length: metric_length | imperial_length
@@ -125,6 +125,7 @@ format_grammar = lark.Lark(
     upper: "upper(" function ")"
     title: "title(" function ")"
     concat: "concat(" function ("," function)* ")"
+    substr: "substr(" function "," SIGNED_INT "," SIGNED_INT ")"
 
     // Embed common.lark for packaging
     DIGIT: "0".."9"
@@ -180,6 +181,9 @@ class FormatTransformer(lark.Transformer):
 
     def concat(self, args):
         return "".join(args)
+
+    def substr(self, args):
+        return str(args[0])[int(args[1]):int(args[2])]
 
     def round(self, args):
         return str(round(float(args[0]) / float(args[1])) * float(args[1]))
