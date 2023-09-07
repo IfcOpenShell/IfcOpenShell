@@ -205,6 +205,7 @@ class ExportIfcCsv(bpy.types.Operator):
             delimiter=sep,
             include_global_id=props.include_global_id,
             null=props.null_value,
+            empty=props.empty_value,
             bool_true=props.true_value,
             bool_false=props.false_value,
             sort=sort,
@@ -244,6 +245,7 @@ class ImportIfcCsv(bpy.types.Operator):
             attributes=attributes,
             delimiter=sep,
             null=props.null_value,
+            empty=props.empty_value,
             bool_true=props.true_value,
             bool_false=props.false_value,
         )
