@@ -120,7 +120,6 @@ class Ifc(blenderbim.core.tool.Ifc):
                 IfcStore.guid_map[global_id] = obj
 
             blenderbim.bim.handler.subscribe_to(obj, "name", blenderbim.bim.handler.name_callback)
-            blenderbim.bim.handler.subscribe_to(obj, "mode", blenderbim.bim.handler.mode_callback)
             blenderbim.bim.handler.subscribe_to(
                 obj, "active_material_index", blenderbim.bim.handler.active_material_index_callback
             )
