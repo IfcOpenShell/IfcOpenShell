@@ -34,6 +34,8 @@ class TestFormat():
         assert subject.format('title(\"fOo\")') == "Foo"
         assert subject.format('concat(\"fOo\", \"bar\")') == "fOobar"
         assert subject.format('upper(concat(\"fOo\", \"bar\"))') == "FOOBAR"
+        assert subject.format('substr(\"foobar\", 1, 2)') == "o"
+        assert subject.format('substr(\"foobar\", 1, -1)') == "ooba"
 
     def test_number_formatting(self):
         assert subject.format("round(123, 5)") == "125.0"
