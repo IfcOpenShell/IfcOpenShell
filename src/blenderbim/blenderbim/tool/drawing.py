@@ -895,7 +895,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         literals = cls.get_text_literal(obj, return_list=True)
         cls.import_text_attributes(obj)
         for i, literal in enumerate(literals):
-            product = cls.get_assigned_product(tool.Ifc.get_entity(obj))
+            product = cls.get_assigned_product(tool.Ifc.get_entity(obj)) or tool.Ifc.get_entity(obj)
             props.literals[i].value = cls.replace_text_literal_variables(literal.Literal, product)
 
     @classmethod
