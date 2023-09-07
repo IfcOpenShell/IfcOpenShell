@@ -45,7 +45,7 @@ By selecting elements by their **IFC Class**, and reading their attributes, you
 can navigate from one element to another. The relationships between elements are
 called **IFC Concepts** and create meaning in our industry. For example, if a
 **IfcWall** element has an attribute that references an **IfcBuildingStorey**
-element in a particular way, it might mean that the wall is located in the
+element in a particular way, it will mean that the wall is located in the
 ground floor of the building.
 
 .. image:: images/ifc-concepts.svg
