@@ -831,7 +831,9 @@ class SvgWriter:
                     symbol_xml.attrib.pop("id")
                     # NOTE: zip makes sure that we iterate over the shortest list
                     for field, text_literal in zip(template_text_fields, text_literals):
-                        field.text = tool.Drawing.replace_text_literal_variables(text_literal.Literal, product)
+                        field.text = tool.Drawing.replace_text_literal_variables(
+                            text_literal.Literal, product or element
+                        )
                         field.attrib["class"] = classes_str
 
                     if fill_bg:
@@ -849,7 +851,7 @@ class SvgWriter:
 
         line_number = 0
         for text_literal in text_literals:
-            text = tool.Drawing.replace_text_literal_variables(text_literal.Literal, product)
+            text = tool.Drawing.replace_text_literal_variables(text_literal.Literal, product or element)
             text_tags = self.create_text_tag(
                 text,
                 text_position_svg,
@@ -882,7 +884,6 @@ class SvgWriter:
         point = Vector(((x_offset + point.x), (y_offset - point.y)))
         symbol_position_svg = point * self.svg_scale
         self.svg.add(self.svg.use(f"#{svg_id}", insert=symbol_position_svg))
-
 
     def draw_point_annotation(self, obj, classes):
         x_offset = self.raw_width / 2

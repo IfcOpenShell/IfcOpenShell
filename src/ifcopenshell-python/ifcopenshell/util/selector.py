@@ -22,6 +22,8 @@ import ifcopenshell.util
 import ifcopenshell.util.fm
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
+import ifcopenshell.util.geolocation
 import ifcopenshell.util.classification
 
 
@@ -292,6 +294,8 @@ def set_element_value(ifc_file, element, query, value):
             if element.is_a().lower() != value.lower():
                 return ifcopenshell.util.schema.reassign_class(ifc_file, element, value)
         elif key == "id":
+            return
+        elif key in ("x", "y", "z", "easting", "northing", "elevation") and hasattr(element, "ObjectPlacement"):
             return
         elif isinstance(element, ifcopenshell.entity_instance):
             if key == "Name" and element.is_a("IfcMaterialLayerSet"):
@@ -818,6 +822,17 @@ class Selector:
                 value = ifcopenshell.util.element.get_predefined_type(value)
             elif key == "id":
                 value = value.id()
+            elif key in ("x", "y", "z", "easting", "northing", "elevation") and hasattr(value, "ObjectPlacement"):
+                if getattr(value, "ObjectPlacement", None):
+                    matrix = ifcopenshell.util.placement.get_local_placement(value.ObjectPlacement)
+                    xyz = matrix[:,3][:3]
+                    if key in ("x", "y", "z"):
+                        value = xyz["xyz".index(key)]
+                    else:
+                        enh = ifcopenshell.util.geolocation.auto_xyz2enh(element.wrapped_data.file, *xyz)
+                        value = enh[("easting", "northing", "elevation").index(key)]
+                else:
+                    value = None
             elif isinstance(value, ifcopenshell.entity_instance):
                 if key == "Name" and value.is_a("IfcMaterialLayerSet"):
                     key = "LayerSetName"  # This oddity in the IFC spec is annoying so we account for it.
