@@ -66,7 +66,8 @@ utility:
 ::
 
     $ python -m ifccsv -h
-    usage: ifccsv.py [-h] -i IFC [-s SPREADSHEET] [-f FORMAT] [-d DELIMITER] [-n NULL] [-q QUERY] [-a ARGUMENTS [ARGUMENTS ...]] [--export] [--import]
+    usage: ifccsv.py [-h] -i IFC [-s SPREADSHEET] [-f FORMAT] [-d DELIMITER] [-n NULL] [--bool_true BOOL_TRUE] [--bool_false BOOL_FALSE] [-q QUERY] [-a ATTRIBUTES [ATTRIBUTES ...]] [--headers HEADERS [HEADERS ...]] [--sort SORT [SORT ...]]
+                     [--order ORDER [ORDER ...]] [--export] [--import]
 
     Exports IFC data to and from CSV
 
@@ -80,12 +81,22 @@ utility:
       -d DELIMITER, --delimiter DELIMITER
                             The delimiter in CSV. Defaults to a comma.
       -n NULL, --null NULL  How to represent null values. Defaults to a hyphen.
+      --bool_true BOOL_TRUE
+                            How to represent true values. Defaults to YES.
+      --bool_false BOOL_FALSE
+                            How to represent false values. Defaults to NO.
       -q QUERY, --query QUERY
                             Specify a IFC query selector, such as "IfcWall"
-      -a ARGUMENTS [ARGUMENTS ...], --arguments ARGUMENTS [ARGUMENTS ...]
-                            Specify attributes that are part of the extract, using the IfcQuery syntax such as 'type', 'Name' or 'Pset_Foo.Bar'
-      --export              Export from IFC to CSV
-      --import              Import from CSV to IFC
+      -a ATTRIBUTES [ATTRIBUTES ...], --attributes ATTRIBUTES [ATTRIBUTES ...]
+                            Specify attributes that are part of the extract, using the IfcQuery syntax such as 'class', 'Name' or 'Pset_Foo.Bar'
+      --headers HEADERS [HEADERS ...]
+                            Specify human readable headers that correlate to each attribute.
+      --sort SORT [SORT ...]
+                            Specify one or more attributes to sort by.
+      --order ORDER [ORDER ...]
+                            Choose the sort order from ASC or DESC for each sorted attribute.
+      --export              Export from IFC to the desired format.
+      --import              Import from the autodetected format to IFC.
     $ python -m ifccsv -i model.ifc -s out.csv -f csv -q .IfcProduct -a "Name" "Description" --export
     $ cat out.csv
 

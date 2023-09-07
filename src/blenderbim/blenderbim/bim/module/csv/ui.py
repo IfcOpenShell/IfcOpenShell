@@ -74,6 +74,8 @@ class BIM_PT_ifccsv(Panel):
             row = layout.row()
             row.prop(props, "null_value")
             row = layout.row()
+            row.prop(props, "empty_value")
+            row = layout.row()
             row.prop(props, "true_value")
             row = layout.row()
             row.prop(props, "false_value")
