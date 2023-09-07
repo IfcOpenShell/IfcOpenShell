@@ -1391,8 +1391,9 @@ class Drawing(blenderbim.core.tool.Drawing):
             original_command = command
             for variable in re.findall("{{.*?}}", command):
                 value = ifcopenshell.util.selector.get_element_value(product, variable[2:-2])
-                command = command.replace(variable, repr(value))
-            text = text.replace(original_command, str(eval(command[2:-2])))
+                value = '"' + str(value).replace('"', '\\"') + '"'
+                command = command.replace(variable, value)
+            text = text.replace(original_command, ifcopenshell.util.selector.format(command[2:-2]))
 
         for variable in re.findall("{{.*?}}", text):
             value = ifcopenshell.util.selector.get_element_value(product, variable[2:-2])
