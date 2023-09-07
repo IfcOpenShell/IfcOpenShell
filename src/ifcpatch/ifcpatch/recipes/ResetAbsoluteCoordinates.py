@@ -18,7 +18,7 @@
 
 
 class Patcher:
-    def __init__(self, src, file, logger, a=None, b=None, c=None, d=None):
+    def __init__(self, src, file, logger, mode="geometry", a=None, b=None, c=None, d=None):
         """Reset any large coordinates to smaller coordinates based on a threshold
 
         If you find large coordinates in your model, the large coordinates may
@@ -59,6 +59,13 @@ class Patcher:
         numbers are treated as the X, Y, Z offset to apply (a, b, c). The fourth
         (d) will be treated as the threshold.
 
+        :param mode: Choose from "geometry", "placement", or "both". Choosing
+            "geometry" will only replace cartesian points used in shape
+            representations. Choosing "placement" will only replace cartesian
+            points used in object placements. Choosing "both" will replace all
+            cartesian points regardless of use (useful if the model has both
+            large placement offsets and large geometry offsets).
+        :type mode: str
         :param a: The first parameter
         :type a: float,optional
         :param b: The second parameter
@@ -87,6 +94,7 @@ class Patcher:
         self.src = src
         self.file = file
         self.logger = logger
+        self.mode = mode
         self.args = [x for x in [a, b, c, d] if x is not None]
 
     def patch(self):
@@ -128,8 +136,12 @@ class Patcher:
         for point in self.file.by_type("IfcCartesianPoint"):
             if len(point.Coordinates) == 2 or not self.is_point_far_away(point):
                 continue
-            if point.id() in placement_coord_ids:
-                continue
+            if self.mode == "geometry":
+                if point.id() in placement_coord_ids:
+                    continue
+            elif self.mode == "placement":
+                if point.id() not in placement_coord_ids:
+                    continue
             if not offset_point:
                 offset_point = (-point.Coordinates[0], -point.Coordinates[1], -point.Coordinates[2])
                 self.logger.info(f"Resetting absolute coordinates by {point}")
