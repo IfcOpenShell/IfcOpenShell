@@ -300,7 +300,12 @@ class BimToolUI:
 
             add_layout_hotkey_operator(cls.layout, "Extend", "S_E", "")
             add_layout_hotkey_operator(cls.layout, "Butt", "S_T", "")
-            add_layout_hotkey_operator(cls.layout, "Mitre", "S_Y", "")
+            add_layout_hotkey_operator(
+                cls.layout,
+                "Mitre",
+                "S_Y",
+                "Join two intersecting walls using a mitre joint.\nOther selected wall is connected to the active",
+            )
 
             add_layout_hotkey_operator(cls.layout, "Merge", "S_M", bpy.ops.bim.merge_wall.__doc__)
             add_layout_hotkey_operator(cls.layout, "Flip", "S_F", bpy.ops.bim.flip_wall.__doc__)
