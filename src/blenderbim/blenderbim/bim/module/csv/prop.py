@@ -69,6 +69,7 @@ class CsvProperties(PropertyGroup):
     should_preserve_existing: BoolProperty(default=False, name="Preserve Existing")
     include_global_id: BoolProperty(default=True, name="Include GlobalId")
     null_value: StringProperty(default="N/A", name="Null Value")
+    empty_value: StringProperty(default="-", name="Empty String Value")
     true_value: StringProperty(default="YES", name="True Value")
     false_value: StringProperty(default="NO", name="False Value")
     csv_delimiter: EnumProperty(
