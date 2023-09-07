@@ -1415,6 +1415,7 @@ class OverrideModeSetEdit(bpy.types.Operator):
                     continue
 
             if tool.Geometry.is_meshlike(representation):
+                tool.Ifc.edit(obj)
                 if getattr(element, "HasOpenings", None):
                     # Mesh elements with openings must disable openings
                     # so that you can edit the original topology.
@@ -1559,6 +1560,8 @@ class OverrideModeSetObject(bpy.types.Operator):
                     self.edited_objs.append(obj)
                 elif getattr(element, "HasOpenings", None):
                     self.unchanged_objs_with_openings.append(obj)
+                else:
+                    tool.Ifc.finish_edit(obj)
 
         if self.edited_objs:
             return context.window_manager.invoke_props_dialog(self)

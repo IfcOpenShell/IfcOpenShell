@@ -185,10 +185,11 @@ class FormatTransformer(lark.Transformer):
         return "".join(args)
 
     def substr(self, args):
-        return str(args[0])[int(args[1]):int(args[2])]
+        return str(args[0])[int(args[1]) : int(args[2])]
 
     def round(self, args):
-        return str(round(float(args[0]) / float(args[1])) * float(args[1]))
+        value = args[0] or 0.0
+        return str(round(float(value) / float(args[1])) * float(args[1]))
 
     def format_length(self, args):
         return args[0]
@@ -825,7 +826,7 @@ class Selector:
             elif key in ("x", "y", "z", "easting", "northing", "elevation") and hasattr(value, "ObjectPlacement"):
                 if getattr(value, "ObjectPlacement", None):
                     matrix = ifcopenshell.util.placement.get_local_placement(value.ObjectPlacement)
-                    xyz = matrix[:,3][:3]
+                    xyz = matrix[:, 3][:3]
                     if key in ("x", "y", "z"):
                         value = xyz["xyz".index(key)]
                     else:
