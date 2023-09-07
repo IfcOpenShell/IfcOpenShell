@@ -120,7 +120,7 @@ format_grammar = lark.Lark(
     round: "round(" function "," NUMBER ")"
     format_length: metric_length | imperial_length
     metric_length: "metric_length(" function "," NUMBER "," NUMBER ")"
-    imperial_length: "imperial_length(" function "," NUMBER ["," ESCAPED_STRING] ")"
+    imperial_length: "imperial_length(" function "," NUMBER ["," ESCAPED_STRING "," ESCAPED_STRING] ")"
     lower: "lower(" function ")"
     upper: "upper(" function ")"
     title: "title(" function ")"
@@ -195,17 +195,15 @@ class FormatTransformer(lark.Transformer):
 
     def imperial_length(self, args):
         if len(args) == 2:
-            imperial_unit = "foot"
+            input_unit = "foot"
             value, precision = args
         else:
-            value, precision, imperial_unit = args
-            if imperial_unit == "inch":
-                imperial_unit = "inch"
-            else:
-                imperial_unit = "foot"
+            value, precision, input_unit, output_unit = args
+            input_unit = "inch" if input_unit == "inch" else "foot"
+            output_unit = "inch" if output_unit == "inch" else "foot"
 
         return ifcopenshell.util.unit.format_length(
-            float(value), int(precision), unit_system="imperial", imperial_unit=imperial_unit
+            float(value), int(precision), unit_system="imperial", input_unit=input_unit, output_unit=output_unit
         )
 
 
@@ -821,7 +819,7 @@ class Selector:
                     key = "LayerSetName"  # This oddity in the IFC spec is annoying so we account for it.
 
                 if isinstance(key, re.Pattern):
-                    attribute = None # Should we support regex attributes? Probably not for now.
+                    attribute = None  # Should we support regex attributes? Probably not for now.
                 else:
                     attribute = getattr(value, key, None)
 
