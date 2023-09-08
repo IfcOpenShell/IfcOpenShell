@@ -25,6 +25,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.classification
+from decimal import Decimal
 
 
 filter_elements_grammar = lark.Lark(
@@ -188,9 +189,9 @@ class FormatTransformer(lark.Transformer):
         return str(args[0])[int(args[1]) : int(args[2])]
 
     def round(self, args):
-        value = args[0] or 0.0
-        nearest = float(args[1])
-        result = round(float(value) / nearest) * nearest
+        value = Decimal(args[0] or 0.0)
+        nearest = Decimal(args[1])
+        result = round(value / nearest) * nearest
         if nearest % 1 == 0:
             return str(int(result))
         return str(result)
