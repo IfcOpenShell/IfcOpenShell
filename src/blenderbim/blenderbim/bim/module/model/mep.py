@@ -40,6 +40,7 @@ from copy import copy
 from mathutils import Vector, Matrix
 from ifcopenshell.util.shape_builder import ShapeBuilder
 from blenderbim.bim.module.model.profile import DumbProfileJoiner
+from blenderbim.tool.cad import VTX_PRECISION
 
 V = lambda *x: Vector([float(i) for i in x])
 
@@ -47,7 +48,8 @@ V = lambda *x: Vector([float(i) for i in x])
 class RegenerateDistributionElement(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.regenerate_distribution_element"
     bl_description = (
-        "Regenerates the positions and segment lengths of a distribution element and all connected elements."
+        "Regenerates the positions and segment lengths of a distribution element and all connected elements.\n"
+        "Will try to adjust as less elements as possible, never rotate them. Segments will also try to change their length to fit"
     )
     bl_label = "Regenerate Distribution Element"
     bl_options = {"REGISTER", "UNDO"}
@@ -335,7 +337,7 @@ class MEPGenerator:
         class_name = "".join(split_camel_case(element.is_a())[:-1] + [mep_class_type])
         return class_name
 
-    def get_compatible_fitting_type(self, segment_or_segments, port_or_ports, predefined_type):
+    def get_compatible_fitting_type(self, segment_or_segments, port_or_ports, predefined_type, bbim_data=None):
         """
         returns a dict of compatible fitting_type and start_port_match flag to correctly place the fitting.
 
@@ -348,15 +350,22 @@ class MEPGenerator:
 
         There lies the problem that it won't be
         able to identify the fittings that were not yet connected to any segments yet.
+
+
+        `bbim_data` is used to find compatible fitting build with BBIM parametrically (BBIM_Fitting pset).
+        All data in `bbim_data` supposed to be in project units.
         """
 
-        # TODO: check angle, start, end and offset for transitions
         if not isinstance(segment_or_segments, collections.abc.Iterable):
             segments = [segment_or_segments]
             ports = [port_or_ports]
         else:
             segments = segment_or_segments
             ports = port_or_ports
+
+        ifc_file = tool.Ifc.get()
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        precision = VTX_PRECISION / si_conversion
 
         segments_data = []
         for segment, port in zip(segments, ports, strict=True):
@@ -365,6 +374,28 @@ class MEPGenerator:
             if segment_type is None:
                 return
             segments_data.append((segment_type, port.PredefinedType, port.SystemType))
+
+        # TODO: test it with flipped transition where start length != end length
+        def compatible_with_bbim_data(fitting_type):
+            if not bbim_data:
+                return True
+            fitting_type_obj = tool.Ifc.get_object(fitting_type)
+            fitting_bbim_data = tool.Model.get_modeling_bbim_pset_data(fitting_type_obj, "BBIM_Fitting")
+            if not fitting_bbim_data:
+                return False
+
+            fitting_bbim_data = fitting_bbim_data["data_dict"]
+            for key in bbim_data:
+                requested_value = bbim_data[key]
+                fitting_value = fitting_bbim_data[key]
+                if isinstance(requested_value, float):
+                    compare_precision = None if key == "angle" else precision
+                    compare = tool.Cad.is_x(requested_value, fitting_value, compare_precision)
+                elif isinstance(fitting_value, list):
+                    compare = tool.Cad.are_vectors_equal(requested_value, Vector(fitting_value), precision)
+                if not compare:
+                    return False
+            return True
 
         def are_connected_elements_compatible(segments_data, fitting_data):
             # prevent arguments mutation, not using deepcopy because of the errors with ifc elements
@@ -392,7 +423,7 @@ class MEPGenerator:
 
             # NOTE: I have a feeling that there are cases where order
             # in which we're checking the segments is important
-            # but I couldn't pin it down exact cases
+            # but I couldn't pin it down to exact cases
             for test_segment_data in fitting_data[:]:
                 for base_segment_data in segments_data:
                     if not are_segments_compatible(test_segment_data, base_segment_data):
@@ -407,13 +438,13 @@ class MEPGenerator:
 
             if predefined_type == "OBSTRUCTION":
                 return packed_data
-                        
+
             for port in ports:
                 port_local_position = V(*port.ObjectPlacement.RelativePlacement.Location.Coordinates)
                 if tool.Cad.is_x(port_local_position.length, 0.0):
                     start_port = port
                     break
-                    
+
             connected_port = tool.System.get_connected_port(start_port)
             connected_element = tool.System.get_port_relating_element(connected_port)
             element_type = ifcopenshell.util.element.get_type(connected_element)
@@ -451,12 +482,14 @@ class MEPGenerator:
 
                     fitting_data.append((element_type, port.PredefinedType, port.SystemType))
 
-                # if we skipped the occurrence we still can other occurrences
+                # if we skipped the occurrence we still need to check other occurrences
                 # otherwise checking 1 occurrence is enough
                 if not skipped_the_occurrence:
-                    if are_connected_elements_compatible(segments_data, fitting_data):
+                    if compatible_with_bbim_data(fitting_type) and are_connected_elements_compatible(
+                        segments_data, fitting_data
+                    ):
                         return pack_return_data(fitting_type, ports, segments_data)
-                    return
+                    break
 
     def create_obstruction_type(self, segment):
         # code is very similar to "bim.add_type"
@@ -596,6 +629,9 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
     end_length: bpy.props.FloatProperty(
         name="End Length", description="Transition end length in SI units", default=0.1, subtype="DISTANCE"
     )
+    angle: bpy.props.FloatProperty(
+        name="Transition Angle", description="Transition angle in degrees", default=pi / 6, subtype="ANGLE"
+    )
     start_segment_id: bpy.props.IntProperty(name="Start Segment Element ID", default=0)
     end_segment_id: bpy.props.IntProperty(name="End Segment Element ID", default=0)
 
@@ -685,23 +721,18 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
         flip_profile_offset = base_transition_dir.dot(start_object_z_basis) < 0
 
         if tool.Cad.are_edges_collinear(start_axis, end_axis):
-            profile_offset = None
+            profile_offset = V(0, 0)
         else:
             to_start_object_space = start_object_rotation.inverted()
             profile_offset = (
                 (to_start_object_space @ end_object.location) - (to_start_object_space @ start_object.location)
             ).xy
-            if tool.Cad.is_x(profile_offset.length_squared, 0):
-                profile_offset = None
-            else:
-                profile_offset = profile_offset / si_conversion
-                if flip_profile_offset:
-                    profile_offset *= V(1, -1)
+            profile_offset = profile_offset / si_conversion
+            if flip_profile_offset:
+                profile_offset *= V(1, -1)
 
         # world space profile offset
-        profile_offset_ws = (
-            start_object_rotation @ (profile_offset * si_conversion).to_3d() if profile_offset else V(0, 0, 0)
-        )
+        profile_offset_ws = start_object_rotation @ (profile_offset * si_conversion).to_3d()
 
         def get_segments_length():
             start_dir = (start_point - first_segment_start).normalized()
@@ -721,6 +752,7 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
             end_element,
             self.start_length / si_conversion,
             self.end_length / si_conversion,
+            angle=degrees(self.angle),
             profile_offset=profile_offset,
         )
 
@@ -760,9 +792,16 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
         DumbProfileJoiner().join_E(start_object, start_segment_extend_point, start_connection)
         DumbProfileJoiner().join_E(end_object, end_segment_extend_point, end_connection)
 
+        parametric_data = {
+            "start_length": self.start_length / si_conversion,
+            "end_length": self.end_length / si_conversion,
+            "profile_offset": profile_offset,
+            "angle": degrees(self.angle),
+        }
+
         # find the compatible fitting type
         fitting_data = MEPGenerator().get_compatible_fitting_type(
-            [start_element, end_element], [start_port, end_port], "TRANSITION"
+            [start_element, end_element], [start_port, end_port], "TRANSITION", bbim_data=parametric_data
         )
         transition_type = fitting_data["fitting_type"] if fitting_data else None
         start_port_match = fitting_data["start_port_match"] if fitting_data else True
@@ -818,7 +857,6 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
             start_port, end_port = end_port, start_port
         tool.Ifc.run("system.connect_port", port1=ports[0], port2=start_port, direction="NOTDEFINED")
         tool.Ifc.run("system.connect_port", port1=ports[1], port2=end_port, direction="NOTDEFINED")
-
         return {"FINISHED"}
 
 
@@ -872,7 +910,9 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
         # check rotation difference
         def rotation_difference_check():
             end_object_rotation = end_object.matrix_world.to_quaternion()
-            rotation_difference = start_object.matrix_world.to_quaternion().rotation_difference(end_object_rotation).to_euler()
+            rotation_difference = (
+                start_object.matrix_world.to_quaternion().rotation_difference(end_object_rotation).to_euler()
+            )
 
             def is_multiple_of_pi(value):
                 n = round(value / pi)
@@ -900,8 +940,7 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
         if not types_check():
             self.report(
                 {"ERROR"},
-                "Segments types do not match "
-                "or one of the segments doesn't have type which is required for a bend.",
+                "Segments types do not match " "or one of the segments doesn't have type which is required for a bend.",
             )
             return {"CANCELLED"}
 
