@@ -707,7 +707,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
             new = blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
 
             # clean up the orphaned mesh with ifc id of the original object to avoid confusion
-            if temp_data:
+            if new and temp_data:
                 tool.Blender.remove_data_block(temp_data)
 
             if new:
@@ -1435,7 +1435,9 @@ class OverrideModeSetEdit(bpy.types.Operator):
             else:
                 obj.select_set(False)
                 continue
-        if len(selected_objs) > 1 and (not context.selected_objects or len(context.selected_objects) != len(selected_objs)):
+        if len(selected_objs) > 1 and (
+            not context.selected_objects or len(context.selected_objects) != len(selected_objs)
+        ):
             # We are trying to edit at least one non-mesh-like object : Display a hint to the user
             self.report({"INFO"}, "Only mesh-compatible representations may be edited concurrently in edit mode.")
 
