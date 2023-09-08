@@ -189,7 +189,11 @@ class FormatTransformer(lark.Transformer):
 
     def round(self, args):
         value = args[0] or 0.0
-        return str(round(float(value) / float(args[1])) * float(args[1]))
+        nearest = float(args[1])
+        result = round(float(value) / nearest) * nearest
+        if nearest % 1 == 0:
+            return str(int(result))
+        return str(result)
 
     def format_length(self, args):
         return args[0]
