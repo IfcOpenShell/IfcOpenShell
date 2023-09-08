@@ -100,8 +100,8 @@ class Cad:
         return (x + tolerance) > value > (x - tolerance)
 
     @classmethod
-    def are_vectors_equal(cls, v1: Vector, v2: Vector):
-        return cls.is_x((v2 - v1).length, 0)
+    def are_vectors_equal(cls, v1: Vector, v2: Vector, tolerance: float = None):
+        return cls.is_x((v2 - v1).length, 0, tolerance)
 
     @classmethod
     def intersect_edges(cls, edge1, edge2):
