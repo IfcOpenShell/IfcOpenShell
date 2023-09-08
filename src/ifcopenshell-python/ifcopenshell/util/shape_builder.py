@@ -917,7 +917,7 @@ class ShapeBuilder:
 
     # TODO: move MEP to separate shape builder sub module
     def mep_transition_shape(
-        self, start_segment, end_segment, start_length, end_length, angle=30.0, profile_offset=None
+        self, start_segment, end_segment, start_length, end_length, angle=30.0, profile_offset=V(0, 0).freeze()
     ):
         """
         returns tuple of Model/Body/MODEL_VIEW IfcRepresentation and transition shape data
@@ -979,8 +979,7 @@ class ShapeBuilder:
 
         faces = []
         end_extrusion_offset.z += transition_length
-        if profile_offset:
-            end_extrusion_offset.xy += profile_offset
+        end_extrusion_offset.xy += profile_offset
 
         if start_profile.is_a("IfcRectangleProfileDef") and end_profile.is_a("IfcRectangleProfileDef"):
             # no transitions for exactly the same profiles
@@ -1115,10 +1114,12 @@ class ShapeBuilder:
 
         body = ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW")
         representation = self.get_representation(body, transition_items, "Tesselation")
+
         transition_data = {
             "start_length": start_length,
             "end_length": end_length,
             "angle": angle,
+            "profile_offset": profile_offset,
             "transition_length": transition_length,
             "full_transition_length": start_length + transition_length + end_length,
         }
@@ -1127,7 +1128,7 @@ class ShapeBuilder:
 
     # TODO: move to separate shape_builder method
     # so we could check transition length without creating representation
-    def mep_transition_length(self, start_half_dim, end_half_dim, angle, profile_offset=None, verbose=True):
+    def mep_transition_length(self, start_half_dim, end_half_dim, angle, profile_offset=V(0, 0).freeze(), verbose=True):
         """get the final transition length for two profiles dimensions, angle and XY offset between them,
 
         the difference from `calculate_transition` - `get_transition_length` is making sure
@@ -1138,7 +1139,7 @@ class ShapeBuilder:
         # offsets tend to have bunch of float point garbage
         # that can result in errors when we're calculating value for square root below
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(self.file)
-        offset = V(0, 0) if profile_offset is None else round_vector_to_precision(profile_offset, si_conversion)
+        offset = round_vector_to_precision(profile_offset, si_conversion)
         diff = start_half_dim.xy - end_half_dim.xy
         diff = Vector([abs(i) for i in diff])
 
