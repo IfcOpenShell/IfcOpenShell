@@ -167,7 +167,8 @@ class Blender:
         when in real life you can have a couple of those but should work for the most cases.
         """
         area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
-        context_override = {"area": area}
+        region = next(region for region in area.regions if region.type == "WINDOW")
+        context_override = {"area": area, "region": region}
         return context_override
 
     @classmethod
