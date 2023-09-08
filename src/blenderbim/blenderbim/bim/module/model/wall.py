@@ -1319,6 +1319,7 @@ class DumbWallJoiner:
 
         bra1 = to_3d_axis(axis1["reference"], bp1.z)
         bba1 = to_3d_axis(axis1["base"], bp1.z)
+        tba1 = to_3d_axis(axis1["base"], tp1.z)
         bsa1 = to_3d_axis(axis1["side"], bp1.z)
         bba2 = to_3d_axis(axis2["base"], bp2.z)
         bsa2 = to_3d_axis(axis2["side"], bp2.z)
@@ -1350,14 +1351,29 @@ class DumbWallJoiner:
         connected_at_end = connection1 == "ATEND"
         i = 0 if connected_at_end else 1
 
-        def get_closest_and_furthest_vectors(point_2d, vectors):
-            closest = tool.Cad.closest_vector(point_2d.to_3d(), vectors)
+        def get_closest_and_furthest_vectors(ref_point_2d, vectors, clamp_axis=None):
+            def clamp_point_by_direction(point, edge):
+                percent = tool.Cad.edge_percent(point, edge)
+                if percent < 0:
+                    return edge[0]
+                return point
+
+            # When there is a small angle between walls, intersection points can occur outside the wall's axis.
+            # Which can lead to inaccuracies - therefore we bottom clamp them to stay within the axis
+            if clamp_axis:
+                # if wall connected at the start then reference point will be at the end
+                # therefore we reverse the axis
+                if not connected_at_end:
+                    clamp_axis = clamp_axis[::-1]
+                vectors = tuple([clamp_point_by_direction(v, clamp_axis) for v in vectors])
+
+            closest = tool.Cad.closest_vector(ref_point_2d.to_3d(), vectors)
             farthest = vectors[1] if closest == vectors[0] else vectors[0]
             return closest, farthest
 
-        bbn, bbf = get_closest_and_furthest_vectors(axis1["base"][i], (bb1, bb2))
+        bbn, bbf = get_closest_and_furthest_vectors(axis1["base"][i], (bb1, bb2), bba1)
         bsn, bsf = get_closest_and_furthest_vectors(axis1["side"][i], (bs1, bs2))
-        tbn, tbf = get_closest_and_furthest_vectors(axis1["base"][i], (tb1, tb2))
+        tbn, tbf = get_closest_and_furthest_vectors(axis1["base"][i], (tb1, tb2), tba1)
         tsn, tsf = get_closest_and_furthest_vectors(axis1["side"][i], (ts1, ts2))
 
         j = 1 if connected_at_end else 0
@@ -1392,6 +1408,9 @@ class DumbWallJoiner:
 
             if connection1 != "ATEND":
                 y_axis *= -1
+
+            x_axis.normalize()
+            y_axis.normalize()
             z_axis = x_axis.cross(y_axis)
             y_axis = z_axis.cross(x_axis)
 
