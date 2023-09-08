@@ -29,7 +29,8 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.classification
 
 try:
-    from xlsxwriter import Workbook
+    from openpyxl import Workbook
+    from openpyxl.styles import PatternFill
 except:
     pass  # No XLSX support
 
@@ -123,25 +124,25 @@ class Writer:
         if preset == "BASIC":
             self.config = {
                 "Actors": {"colours": "ppssssssss", "sort": [{"name": "Name", "order": "ASC"}]},
-                "Facilities": {"colours": "prppppsssseeee", "sort": [{"name": "Name", "order": "ASC"}]},
+                "Facilities": {"colours": "ppppreeeeessss", "sort": [{"name": "Name", "order": "ASC"}]},
                 "Storeys": {
-                    "colours": "prppeees",
+                    "colours": "ppreeees",
                     "sort": [{"name": "Elevation", "order": "ASC"}, {"name": "Name", "order": "ASC"}],
                 },
                 "Spaces": {
-                    "colours": "prpprpeess",
+                    "colours": "ppprreeess",
                     "sort": [{"name": "LevelName", "order": "ASC"}, {"name": "Name", "order": "ASC"}],
                 },
-                "Zones": {"colours": "prpree", "sort": [{"name": "Name", "order": "ASC"}]},
+                "Zones": {"colours": "prreee", "sort": [{"name": "Name", "order": "ASC"}]},
                 "Types": {
-                    "colours": "prpppeeee",
+                    "colours": "pppreeeee",
                     "sort": [{"name": "ModelObject", "order": "ASC"}, {"name": "Name", "order": "ASC"}],
                 },
                 "Elements": {
-                    "colours": "prprrreee",
+                    "colours": "prrrreeee",
                     "sort": [{"name": "TypeName", "order": "ASC"}, {"name": "Name", "order": "ASC"}],
                 },
-                "Systems": {"colours": "pprppee", "sort": [{"name": "Name", "order": "ASC"}]},
+                "Systems": {"colours": "pppreee", "sort": [{"name": "Name", "order": "ASC"}]},
             }
 
     def write(self, null="N/A", empty="-", bool_true="YES", bool_false="NO"):
@@ -234,6 +235,44 @@ class Writer:
 
         doc.save(output, True)
 
+    def write_xlsx(self, output):
+        workbook = Workbook()
+
+        cell_formats = {}
+        for key, value in self.colours.items():
+            fill = PatternFill(start_color=value, end_color=value, fill_type="solid")
+            cell_formats[key] = fill
+
+        for category, data in self.categories.items():
+            colours = self.config.get(category, {}).get("colours", [])
+
+            if category in workbook.sheetnames:
+                worksheet = workbook[category]
+            else:
+                worksheet = workbook.create_sheet(category)
+
+            r = 1  # Openpyxl uses 1-based indexing
+            c = 1
+            for header in data["headers"]:
+                cell = worksheet.cell(row=r, column=c, value=header)
+                cell.fill = cell_formats["h"]
+                c += 1
+
+            r += 1
+            for row in data["rows"]:
+                c = 1
+                for col in row:
+                    if c > len(colours):  # Adjusted the comparison
+                        cell_format = "n"
+                    else:
+                        cell_format = colours[c - 1]  # Adjusted the indexing
+                    cell = worksheet.cell(row=r, column=c, value=col)
+                    cell.fill = cell_formats[cell_format]
+                    c += 1
+                r += 1
+
+        workbook.save(output)
+
 
 def get_actors(ifc_file):
     return ifc_file.by_type("IfcActor")
@@ -295,19 +334,19 @@ def get_facility_data(ifc_file, element):
     return {
         "key": element.Name,
         "Name": element.Name,
-        "AuthorOrganizationName": get_owner_name(element),
-        "AuthorDate": get_owner_creation_date(ifc_file.by_type("IfcProject")[0]),
-        "Category": get_classification(element),
         "ProjectName": ifc_file.by_type("IfcProject")[0].Name,
         "SiteName": getattr(get_facility_parent(element, "IfcSite"), "Name", None),
-        "LinearUnits": "millimeters",
-        "AreaUnits": "square meters",
-        "AreaMeasurement": "BIM Software",
-        "Phase": ifc_file.by_type("IfcProject")[0].Phase,
+        "Category": get_classification(element),
+        "AuthorOrganizationName": get_owner_name(element),
+        "AuthorDate": get_owner_creation_date(ifc_file.by_type("IfcProject")[0]),
         "ModelSoftware": get_owner_application(element),
         "ModelProjectID": ifc_file.by_type("IfcProject")[0].GlobalId,
         "ModelSiteID": getattr(get_facility_parent(element, "IfcSite"), "GlobalId", None),
         "ModelBuildingID": element.GlobalId,
+        "LinearUnits": "millimeters",
+        "AreaUnits": "square meters",
+        "AreaMeasurement": "BIM Software",
+        "Phase": ifc_file.by_type("IfcProject")[0].Phase,
     }
 
 
@@ -315,9 +354,9 @@ def get_storey_data(ifc_file, element):
     return {
         "key": element.Name,
         "Name": element.Name,
+        "Category": "Level",
         "AuthorOrganizationName": get_owner_name(element),
         "AuthorDate": get_owner_creation_date(element),
-        "Category": "Level",
         "ModelSoftware": get_owner_application(element),
         "ModelObject": element.is_a(),
         "ModelID": element.GlobalId,
@@ -330,11 +369,11 @@ def get_space_data(ifc_file, element):
     return {
         "key": element.Name,
         "Name": element.Name,
-        "AuthorOrganizationName": get_owner_name(element),
-        "AuthorDate": get_owner_creation_date(element),
+        "Description": element.LongName,
         "Category": get_classification(element),
         "LevelName": getattr(get_facility_parent(element, "IfcBuildingStorey"), "Name", None),
-        "Description": element.LongName,
+        "AuthorOrganizationName": get_owner_name(element),
+        "AuthorDate": get_owner_creation_date(element),
         "ModelSoftware": get_owner_application(element),
         "ModelID": element.GlobalId,
         "AreaGross": get_property(psets, "Qto_SpaceBaseQuantities", "GrossFloorArea", decimals=2),
@@ -347,9 +386,9 @@ def get_zone_data(ifc_file, element):
     return {
         "key": (element.Name or "Unnamed") + (space.Name or "Unnamed"),
         "Name": zone.Name,
+        "SpaceName": space.Name,
         "AuthorOrganizationName": get_owner_name(zone),
         "AuthorDate": get_owner_creation_date(zone),
-        "SpaceName": space.Name,
         "ModelSoftware": get_owner_application(zone),
         "ModelID": zone.GlobalId,
     }
@@ -359,10 +398,10 @@ def get_type_data(ifc_file, element):
     return {
         "key": element.Name,
         "Name": element.Name,
+        "Description": element.Description,
+        "Category": get_classification(element),
         "AuthorOrganizationName": get_owner_name(element),
         "AuthorDate": get_owner_creation_date(element),
-        "Category": get_classification(element),
-        "Description": element.Description,
         "ModelSoftware": get_owner_application(element),
         "ModelObject": "{}[{}]".format(element.is_a(), ifcopenshell.util.element.get_predefined_type(element)),
         "ModelTag": element.Tag,
@@ -378,11 +417,11 @@ def get_element_data(ifc_file, element):
     return {
         "key": element.Name,
         "Name": element.Name,
-        "AuthorOrganizationName": get_owner_name(element),
-        "AuthorDate": get_owner_creation_date(element),
         "TypeName": ifcopenshell.util.element.get_type(element).Name,
         "SpaceName": space_name,
         "SystemName": system,
+        "AuthorOrganizationName": get_owner_name(element),
+        "AuthorDate": get_owner_creation_date(element),
         "ModelSoftware": get_owner_application(element),
         "ModelObject": "{}[{}]".format(element.is_a(), ifcopenshell.util.element.get_predefined_type(element)),
         "ModelID": element.GlobalId,
@@ -394,9 +433,9 @@ def get_system_data(ifc_file, element):
         "key": element.Name,
         "Name": element.Name,
         "Description": element.Description,
+        "Category": get_classification(element),
         "AuthorOrganizationName": get_owner_name(element),
         "AuthorDate": get_owner_creation_date(element),
-        "Category": get_classification(element),
         "ModelSoftware": get_owner_application(element),
         "ModelID": element.GlobalId,
     }
