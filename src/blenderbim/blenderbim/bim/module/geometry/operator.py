@@ -1213,7 +1213,7 @@ class RefreshAggregate(bpy.types.Operator):
 
             new_obj = tool.Ifc.get_object(new[0])
 
-            matrix_diff = new_obj.matrix_world @ original_matrix
+            matrix_diff =  Matrix.inverted(original_matrix) @ new_obj.matrix_world
             new_matrix = selected_matrix @ matrix_diff
 
             new_obj.matrix_world = new_matrix
