@@ -318,6 +318,7 @@ class IfcImporter:
             self.profile_code("Merging by colour")
         self.set_default_context()
         self.profile_code("Setting default context")
+        self.setup_viewport_camera()
         self.update_progress(100)
         bpy.context.window_manager.progress_end()
 
@@ -1912,6 +1913,13 @@ class IfcImporter:
     def set_matrix_world(self, obj, matrix_world):
         obj.matrix_world = matrix_world
         tool.Geometry.record_object_position(obj)
+
+    def setup_viewport_camera(self):
+        context_override = tool.Blender.get_viewport_context()
+        with bpy.context.temp_override(**context_override):
+            bpy.ops.object.select_all(action="SELECT")
+            bpy.ops.view3d.view_selected()
+            bpy.ops.object.select_all(action="DESELECT")
 
 
 class IfcImportSettings:
