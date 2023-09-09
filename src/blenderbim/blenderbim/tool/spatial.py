@@ -212,12 +212,13 @@ class Spatial(blenderbim.core.tool.Spatial):
 
     @classmethod
     def create_new_storey_li(cls, element, level_index):
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         new = cls.props.containers.add()
         new.name = element.Name or "Unnamed"
         new.long_name = element.LongName or ""
         new.has_decomposition = bool(element.IsDecomposedBy)
         new.ifc_definition_id = element.id()
-        new.elevation = ifcopenshell.util.placement.get_storey_elevation(element)
+        new.elevation = ifcopenshell.util.placement.get_storey_elevation(element) * si_conversion
 
         new.is_expanded = element.id() not in cls.contracted_containers
         new.level_index = level_index
