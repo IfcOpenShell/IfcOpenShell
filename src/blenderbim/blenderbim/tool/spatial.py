@@ -198,6 +198,7 @@ class Spatial(blenderbim.core.tool.Spatial):
     @classmethod
     def load_container_manager(cls):
         cls.props = bpy.context.scene.BIMSpatialManagerProperties
+        previous_container_index = cls.props.active_container_index
         cls.props.containers.clear()
         cls.contracted_containers = json.loads(cls.props.contracted_containers)
         cls.props.is_container_update_enabled = False
@@ -208,7 +209,7 @@ class Spatial(blenderbim.core.tool.Spatial):
                 cls.create_new_storey_li(object, 0)
         cls.props.is_container_update_enabled = True
         # triggers spatial manager props setup
-        cls.props.active_container_index = 0
+        cls.props.active_container_index = min(previous_container_index, len(cls.props.containers) - 1)
 
     @classmethod
     def create_new_storey_li(cls, element, level_index):
