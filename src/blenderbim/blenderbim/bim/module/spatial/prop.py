@@ -44,10 +44,9 @@ def update_elevation(self, context):
 
 
 def update_active_container_index(self, context):
-    si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
     self.active_container_id = self.containers[self.active_container_index].ifc_definition_id
     self.container_name = self.containers[self.active_container_index].name
-    self.elevation = self.containers[self.active_container_index].elevation * si_conversion
+    self.elevation = self.containers[self.active_container_index].elevation
 
 
 def updateContainerName(self, context):
@@ -78,7 +77,7 @@ class BIMObjectSpatialProperties(PropertyGroup):
 
 class BIMContainer(PropertyGroup):
     name: StringProperty(name="Name", update=updateContainerName)
-    elevation: FloatProperty(name="Elevation")
+    elevation: FloatProperty(name="Elevation", subtype="DISTANCE")
     level_index: IntProperty(name="Level Index")
     has_children: BoolProperty(name="Has Children")
     is_expanded: BoolProperty(name="Is Expanded")

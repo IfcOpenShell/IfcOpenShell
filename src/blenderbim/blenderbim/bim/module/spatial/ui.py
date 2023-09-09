@@ -147,7 +147,7 @@ class BIM_UL_containers_manager(UIList):
             split1 = row.split(factor=0.7)
             split1.prop(item, "name", emboss=False, text="")
             split2 = row.split(factor=1)
-            split2.label(text=str(item.elevation), icon="BLANK1")
+            split2.label(icon="BLANK1", text=tool.Unit.blender_format_unit(item.elevation))
 
     def draw_hierarchy(self, row, item):
         for i in range(0, item.level_index):
