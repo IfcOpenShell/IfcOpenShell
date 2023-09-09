@@ -53,11 +53,34 @@ def get_spaces(ifc_file):
 
 
 def get_zones(ifc_file):
-    zones = []
-    for zone in ifc_file.by_type("IfcZone"):
+    results = []
+    zones = ifc_file.by_type("IfcZone")
+    for zone in zones or []:
+        has_space = False
         for rel in zone.IsGroupedBy:
-            zones.extend([(zone, space) for space in rel.RelatedObjects])
-    return zones
+            items = [(zone, space) for space in rel.RelatedObjects if space.is_a("IfcSpace") and val(space.Name)]
+            if items:
+                results.extend(items)
+                has_space = True
+        if not has_space:
+            results.append((zone, None))
+    if zones:
+        return results
+
+    zone_spaces = {}
+    for space in ifc_file.by_type("IfcSpace"):
+        for _, props in ifcopenshell.util.element.get_psets(space).items():
+            for name, value in props.items():
+                if "ZoneName" in name:
+                    zone_name = val(value)
+                    space_name = val(space.Name)
+                    category = name
+                    zone_key = str(name) + "," + str(category)
+                    zone_spaces.setdefault(zone_key, [])
+                    if space_name not in zone_spaces[zone_key]:
+                        zone_spaces[zone_key].append(space_name)
+                        results.append(((zone_name, category), space_name))
+    return results
 
 
 def get_types(ifc_file):
@@ -78,12 +101,9 @@ def get_systems(ifc_file):
 def get_contact_data(ifc_file, element):
     email = get_email_from_pao(element)
 
-    history = None
+    history = get_history(ifc_file)
     created_by = None
     created_on = None
-    histories = ifc_file.by_type("IfcOwnerHistory")
-    if histories:
-        history = sorted(histories, key=lambda x: x.id())[-1]
 
     roles = []
     for actor in [element, element.ThePerson, element.TheOrganization]:
@@ -266,14 +286,42 @@ def get_space_data(ifc_file, element):
 
 def get_zone_data(ifc_file, element):
     zone, space = element
+
+    if isinstance(zone, tuple):
+        name, category = zone
+        history = get_history(ifc_file)
+        return {
+            "key": "-".join([str(name), str(category), str(space)]),
+            "Name": name,
+            "CreatedBy": get_email_from_history(history) if history else None,
+            "CreatedOn": ifcopenshell.util.date.ifc2datetime(history.CreationDate).isoformat() if history else None,
+            "Category": category,
+            "SpaceNames": space,
+            "ExternalSystem": history.OwningApplication.ApplicationFullName if history else None,
+            "ExternalObject": "IfcPropertySingleValue",
+            "ExternalIdentifier": None,
+            "Description": val(name) or val(category),
+        }
+
+    name = zone.Name
+    parent = ifcopenshell.util.element.get_aggregate(zone)
+    if parent and val(parent.Name):
+        name = parent.Name + "-" + name
+
+    category = get_category(zone)
+    space_name = val(space.Name) if space else None
+
     return {
-        "key": (element.Name or "Unnamed") + (space.Name or "Unnamed"),
-        "Name": zone.Name,
-        "SpaceName": space.Name,
-        "AuthorOrganizationName": get_owner_name(zone),
-        "AuthorDate": get_owner_creation_date(zone),
-        "ModelSoftware": get_external_system(zone),
-        "ModelID": zone.GlobalId,
+        "key": "-".join([str(name), str(category), str(space_name)]),
+        "Name": name,
+        "CreatedBy": get_created_by(zone),
+        "CreatedOn": get_created_on(zone),
+        "Category": category,
+        "SpaceNames": space_name,
+        "ExternalSystem": get_external_system(zone),
+        "ExternalObject": zone.is_a(),
+        "ExternalIdentifier": zone.GlobalId,
+        "Description": val(zone.Description) or zone.Name,
     }
 
 
@@ -482,6 +530,12 @@ def get_property(psets, pset_name, prop_name, decimals=None):
         if decimals is None or result is None:
             return result
         return round(result, decimals)
+
+
+def get_history(ifc_file):
+    histories = ifc_file.by_type("IfcOwnerHistory")
+    if histories:
+        return sorted(histories, key=lambda x: x.id())[-1]
 
 
 get_category_elements = {
