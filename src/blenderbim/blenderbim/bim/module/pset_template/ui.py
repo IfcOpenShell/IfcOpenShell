@@ -38,9 +38,9 @@ class BIM_PT_pset_template(Panel):
         self.props = context.scene.BIMPsetTemplateProperties
 
         row = self.layout.row(align=True)
-        prop_with_search(row, self.props, "pset_template_files", text="")
-        row.operator("bim.save_pset_template_file", text="", icon="EXPORT")
-        row.operator("bim.add_pset_file", icon="ADD", text="")
+        prop_with_search(row, self.props, "pset_template_files", text="", icon="FILE")
+        row.operator("bim.add_pset_template_file", icon="ADD", text="")
+        row.operator("bim.remove_pset_template_file", icon="X", text="")
 
         row = self.layout.row(align=True)
 
