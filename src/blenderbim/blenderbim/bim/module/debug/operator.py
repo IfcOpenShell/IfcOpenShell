@@ -116,7 +116,7 @@ class PurgeIfcLinks(bpy.types.Operator):
         context.scene.BIMProperties.ifc_file = ""
         context.scene.BIMDebugProperties.attributes.clear()
         IfcStore.purge()
-        blenderbim.bim.handler.purge_module_data()
+        blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
 
@@ -136,7 +136,7 @@ class ConvertToBlender(bpy.types.Operator):
             m.BIMMaterialProperties.ifc_style_id = False
         bpy.context.scene.BIMProperties.ifc_file = ""
         IfcStore.purge()
-        blenderbim.bim.handler.purge_module_data()
+        blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
 

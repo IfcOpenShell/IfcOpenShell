@@ -720,7 +720,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
                     tool.Boundary.decorate_boundary(new_obj)
         # Recreate decompositions
         tool.Root.recreate_decompositions(relationships, old_to_new)
-        blenderbim.bim.handler.purge_module_data()
+        blenderbim.bim.handler.refresh_ui_data()
 
 
 class OverrideDuplicateMoveLinkedMacro(bpy.types.Macro):
@@ -788,7 +788,7 @@ class OverrideDuplicateMoveLinked(bpy.types.Operator):
                 old_to_new[tool.Ifc.get_entity(obj)] = new
         # Recreate decompositions
         tool.Root.recreate_decompositions(relationships, old_to_new)
-        blenderbim.bim.handler.purge_module_data()
+        blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
 
@@ -1076,7 +1076,7 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
 
         tool.Root.recreate_decompositions(relationships, old_to_new)
 
-        blenderbim.bim.handler.purge_module_data()
+        blenderbim.bim.handler.refresh_ui_data()
 
         return {"FINISHED"}
 
@@ -1223,7 +1223,7 @@ class RefreshAggregate(bpy.types.Operator):
 
         tool.Root.recreate_decompositions(relationships, old_to_new)
 
-        blenderbim.bim.handler.purge_module_data()
+        blenderbim.bim.handler.refresh_ui_data()
 
         return {"FINISHED"}
 
