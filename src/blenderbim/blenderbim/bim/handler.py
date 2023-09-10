@@ -177,30 +177,20 @@ def refresh_ui_data():
         except AttributeError:
             pass
 
-    if isinstance(tool.Ifc.get(), ifcopenshell.sqlite):
-        tool.Ifc.get().clear_cache()
-
-
-def purge_module_data():
-    from blenderbim.bim import modules
-
-    refresh_ui_data()
-    for name, value in modules.items():
-        try:
-            getattr(getattr(getattr(ifcopenshell.api, name), "data"), "Data").purge()
-        except AttributeError:
-            pass
-
+        # TODO: deprecate prop purge functions and refactor into data classes.
         try:
             getattr(value, "prop").purge()
         except AttributeError:
             pass
 
+    if isinstance(tool.Ifc.get(), ifcopenshell.sqlite):
+        tool.Ifc.get().clear_cache()
+
 
 @persistent
 def loadIfcStore(scene):
     IfcStore.purge()
-    purge_module_data()
+    refresh_ui_data()
     if not IfcStore.get_file():
         return
     IfcStore.get_schema()
@@ -212,7 +202,7 @@ def undo_post(scene):
     if IfcStore.last_transaction != bpy.context.scene.BIMProperties.last_transaction:
         IfcStore.last_transaction = bpy.context.scene.BIMProperties.last_transaction
         IfcStore.undo(until_key=bpy.context.scene.BIMProperties.last_transaction)
-        purge_module_data()
+        refresh_ui_data()
     tool.Ifc.rebuild_element_maps()
 
 
@@ -221,7 +211,7 @@ def redo_post(scene):
     if IfcStore.last_transaction != bpy.context.scene.BIMProperties.last_transaction:
         IfcStore.last_transaction = bpy.context.scene.BIMProperties.last_transaction
         IfcStore.redo(until_key=bpy.context.scene.BIMProperties.last_transaction)
-        purge_module_data()
+        refresh_ui_data()
     tool.Ifc.rebuild_element_maps()
 
 

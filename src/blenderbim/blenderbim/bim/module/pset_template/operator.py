@@ -58,17 +58,13 @@ class AddPsetTemplateFile(bpy.types.Operator):
 
     def execute(self, context):
         template = ifcopenshell.file()
-        filepath = os.path.join(
-            context.scene.BIMProperties.data_dir,
-            "pset",
-            self.props.new_template_filename + ".ifc",
-        )
+        filepath = os.path.join(context.scene.BIMProperties.data_dir, "pset", self.props.new_template_filename + ".ifc")
 
         pset_template = ifcopenshell.api.run("pset_template.add_pset_template", template)
         ifcopenshell.api.run("pset_template.add_prop_template", template, pset_template=pset_template)
         template.write(filepath)
         self.props.new_template_filename = ""
-        blenderbim.bim.handler.purge_module_data()
+        blenderbim.bim.handler.refresh_ui_data()
         blenderbim.bim.schema.reload(tool.Ifc.get().schema)
         context.scene.BIMPsetTemplateProperties.pset_template_files = filepath
         return {"FINISHED"}
@@ -227,7 +223,7 @@ class SavePsetTemplateFile(bpy.types.Operator):
 
     def execute(self, context):
         IfcStore.pset_template_file.write(IfcStore.pset_template_path)
-        blenderbim.bim.handler.purge_module_data()
+        blenderbim.bim.handler.refresh_ui_data()
         blenderbim.bim.schema.reload(tool.Ifc.get().schema)
         return {"FINISHED"}
 
@@ -241,7 +237,7 @@ class RemovePsetTemplateFile(bpy.types.Operator):
             os.remove(IfcStore.pset_template_path)
         except:
             pass
-        blenderbim.bim.handler.purge_module_data()
+        blenderbim.bim.handler.refresh_ui_data()
         blenderbim.bim.schema.reload(tool.Ifc.get().schema)
         return {"FINISHED"}
 
