@@ -26,7 +26,7 @@ import webbrowser
 import ifcopenshell
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.handler import purge_module_data
+from blenderbim.bim.handler import refresh_ui_data
 
 
 class AddCsvAttribute(bpy.types.Operator):
@@ -251,7 +251,7 @@ class ImportIfcCsv(bpy.types.Operator):
         )
         if not props.should_load_from_memory:
             ifc_file.write(props.csv_ifc_file)
-        purge_module_data()
+        refresh_ui_data()
         return {"FINISHED"}
 
 
