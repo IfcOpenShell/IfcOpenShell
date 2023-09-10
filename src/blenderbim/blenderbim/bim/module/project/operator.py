@@ -429,7 +429,7 @@ class AppendLibraryElement(bpy.types.Operator):
         except:
             # TODO Remove this terrible code when I refactor this into the core
             pass
-        blenderbim.bim.handler.purge_module_data()
+        blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
     def import_material_from_ifc(self, element, context):
@@ -1079,7 +1079,7 @@ class ExportIFC(bpy.types.Operator):
         save_blend_file = bool(bpy.data.is_saved and bpy.data.is_dirty and bpy.data.filepath)
         if save_blend_file:
             bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
-        blenderbim.bim.handler.purge_module_data()
+        blenderbim.bim.handler.refresh_ui_data()
         self.report(
             {"INFO"},
             f'IFC Project "{os.path.basename(output_file)}" {"" if not save_blend_file else "And Current Blend File Are"} Saved',

@@ -31,10 +31,6 @@ from bpy.props import (
 )
 
 
-def purge():
-    pass
-
-
 def update_active_specification_index(self, context):
     TesterData.load()
 

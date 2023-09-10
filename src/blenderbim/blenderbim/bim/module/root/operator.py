@@ -212,4 +212,4 @@ class CopyClass(bpy.types.Operator, Operator):
         objects = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
         for obj in objects:
             core.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=obj)
-        blenderbim.bim.handler.purge_module_data()
+        blenderbim.bim.handler.refresh_ui_data()
