@@ -35,7 +35,7 @@ import blenderbim.core.type
 import blenderbim.core.root
 import blenderbim.core.geometry
 import blenderbim.tool as tool
-from math import pi, degrees, radians, sin, cos, asin
+from math import pi, degrees, radians, sin, cos, asin, tan
 from copy import copy
 from mathutils import Vector, Matrix
 from ifcopenshell.util.shape_builder import ShapeBuilder
@@ -973,10 +973,20 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
             end_segment_data["start_point"]: end_segment_data["start_port"],
             end_segment_data["end_point"]: end_segment_data["end_port"],
         }
-        (start_point, end_point), (first_segment_start, second_segment_end) = tool.Cad.closest_points(
-            (start_segment_data["start_point"], start_segment_data["end_point"]),
-            (end_segment_data["start_point"], end_segment_data["end_point"]),
+
+        get_z_basis = lambda o: o.matrix_world.col[2].normalized().to_3d()
+        segments_intersection_ws = tool.Cad.intersect_edges(
+            (start_object.location, start_object.location + get_z_basis(start_object)),
+            (end_object.location, end_object.location + get_z_basis(end_object)),
+        )[0]
+
+        start_point, first_segment_start = tool.Cad.closest_and_furthest_vectors(
+            segments_intersection_ws, (start_segment_data["start_point"], start_segment_data["end_point"])
         )
+        end_point, second_segment_end = tool.Cad.closest_and_furthest_vectors(
+            segments_intersection_ws, (end_segment_data["start_point"], end_segment_data["end_point"])
+        )
+
         start_port = points_ports_map[start_point]
         end_port = points_ports_map[end_point]
         start_point_on_origin = start_point == start_segment_data["start_point"]
@@ -1032,7 +1042,6 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
             return {"CANCELLED"}
 
         O = V(0, 0, 0)
-        get_z_basis = lambda o: o.matrix_world.col[2].normalized().to_3d()
         angle = tool.Cad.angle_edges((get_z_basis(start_object), O), (get_z_basis(end_object), O))
 
         lateral_sign = tool.Cad.sign(profile_offset[lateral_axis])
@@ -1042,18 +1051,18 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
         radial_offset.z = ref_point_radius * sin(angle)
 
         def get_segments_extend():
-            end_segment_z_local = to_start_object_space @ get_z_basis(end_object)
-            segments_intersection = tool.Cad.intersect_edges(
-                (V(0, 0, 1), V(0, 0, 0)), (profile_offset + end_segment_z_local, profile_offset)
-            )[0]
+            segments_intersection = segments_intersection_ws - start_point
+            segments_intersection = to_start_object_space @ segments_intersection
 
-            curent_start_offset = segments_intersection.length
-            required_start_offset = abs(radial_offset.z)
+            # since tangent segments are equal
+            # if drawn for the circle from the same point
+            required_offset = ref_point_radius * tan(angle / 2)
+
+            current_start_offset = segments_intersection.length
             current_end_offset = (segments_intersection - profile_offset).length
-            required_end_offset = abs(radial_offset[lateral_axis])
 
-            start_extend = curent_start_offset - required_start_offset
-            end_extend = current_end_offset - required_end_offset
+            start_extend = current_start_offset - required_offset
+            end_extend = current_end_offset - required_offset
 
             return start_extend, end_extend
 
@@ -1076,7 +1085,6 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
 
         # adjust segments to fit the radius and angle
         start_segment_extend, end_segment_extend = get_segments_extend()
-
         start_segment_extend_point = start_point + start_segment_sign * start_segment_extend * get_z_basis(start_object)
         projection = check_new_segment_length(first_segment_start, start_point, start_segment_extend_point)
         if projection is not None:
@@ -1108,6 +1116,7 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
             angle,
             self.radius / si_conversion,
             profile_offset / si_conversion,
+            flip_z_axis=start_segment_sign == -1,
         )
 
         bpy.ops.bim.create_shape_from_step_id(step_id=rep.id(), should_include_curves=True)
