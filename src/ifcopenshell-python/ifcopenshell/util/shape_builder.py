@@ -1278,7 +1278,14 @@ class ShapeBuilder:
             return angle
 
     def mep_bend_shape(
-        self, segment, start_length: float, end_length: float, angle: float, radius: float, profile_offset: Vector
+        self,
+        segment,
+        start_length: float,
+        end_length: float,
+        angle: float,
+        radius: float,
+        profile_offset: Vector,
+        flip_z_axis: bool,
     ):
         """
 
@@ -1290,9 +1297,11 @@ class ShapeBuilder:
         :param radius: bend radius
         :param type: float
         :param profile_offset: offset between start and end segments in local space of start segment
-            used mainly to determine the bend axes and their direction.
-            Values themselves are replaced by the radius.
+            used mainly to determine the seconn bend axis and it's direction.
         :param type: Vector
+        :param flip_z_axis: since we cannot determine z axis direction from the profile offset,
+        there is an option to flip it if bend is going by start segment Z- axis.
+        :param type: bool
 
         :return: tuple of Model/Body/MODEL_VIEW IfcRepresentation and transition shape data
         """
@@ -1318,7 +1327,7 @@ class ShapeBuilder:
         lateral_axis = next(i for i in range(2) if not is_x(rounded_offset[i], 0))
         non_lateral_axis = 1 if lateral_axis == 0 else 0
         lateral_sign = sign(profile_offset[lateral_axis])
-        z_sign = sign(profile_offset.z)
+        z_sign = -1 if flip_z_axis else 1
 
         rep_items = []
 
