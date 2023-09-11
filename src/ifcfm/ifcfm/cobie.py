@@ -95,7 +95,14 @@ def get_components(ifc_file):
 
 
 def get_systems(ifc_file):
-    return ifc_file.by_type("IfcSystem")
+    results = []
+    components = get_components(ifc_file)
+    systems = ifc_file.by_type("IfcSystem", include_subtypes=False) + ifc_file.by_type("IfcDistributionSystem")
+    for system in systems:
+        for element in ifcopenshell.util.system.get_system_elements(system):
+            if element in components:
+                results.append((system, element))
+    return results
 
 
 def get_contact_data(ifc_file, element):
@@ -515,15 +522,18 @@ def get_component_data(ifc_file, element):
 
 
 def get_system_data(ifc_file, element):
+    system, component = element
     return {
-        "key": element.Name,
-        "Name": element.Name,
-        "Description": element.Description,
-        "Category": get_classification(element),
-        "AuthorOrganizationName": get_owner_name(element),
-        "AuthorDate": get_owner_creation_date(element),
-        "ModelSoftware": get_external_system(element),
-        "ModelID": element.GlobalId,
+        "key": val(system.Name),
+        "Name": val(system.Name),
+        "CreatedBy": get_created_by(system),
+        "CreatedOn": get_created_on(system),
+        "Category": get_category(system),
+        "ComponentNames": val(component.Name),
+        "ExternalSystem": get_external_system(system),
+        "ExternalObject": system.is_a(),
+        "ExternalIdentifier": system.GlobalId,
+        "Description": val(system.Description) or val(system.Name),
     }
 
 
