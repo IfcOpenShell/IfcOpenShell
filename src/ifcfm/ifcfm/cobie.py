@@ -181,10 +181,10 @@ def get_facility_data(ifc_file, element):
         "Category": get_category(element),
         "ProjectName": project_name,
         "SiteName": site_name,
-        "LinearUnits": get_unit_name(ifc_file, "LENGTHUNIT"),
-        "AreaUnits": get_unit_name(ifc_file, "AREAUNIT"),
-        "VolumeUnits": get_unit_name(ifc_file, "VOLUMEUNIT"),
-        "CurrencyUnit": get_unit_name(ifc_file, "IfcMonetaryUnit"),
+        "LinearUnits": get_unit_type_name(ifc_file, "LENGTHUNIT"),
+        "AreaUnits": get_unit_type_name(ifc_file, "AREAUNIT"),
+        "VolumeUnits": get_unit_type_name(ifc_file, "VOLUMEUNIT"),
+        "CurrencyUnit": get_unit_type_name(ifc_file, "IfcMonetaryUnit"),
         "AreaMeasurement": get_area_measurement(element),
         "ExternalSystem": get_external_system(element),
         "ExternalProjectObject": "IfcProject",
@@ -326,36 +326,191 @@ def get_zone_data(ifc_file, element):
 
 
 def get_type_data(ifc_file, element):
+    pset_metadata = {}
+    pset_mapping = {
+        "manufacturer": {"Manufacturer"},
+        "model_number": {"ModelNumber", "ArticleNumber", "ModelLabel"},
+        "warranty_guarantor_parts": {"WarrantyGuarantorParts", "PointOfContact"},
+        "warranty_guarantor_labor": {"WarrantyGuarantorLabor", "PointOfContact"},
+        "warranty_description": {"WarrantyDescription", "WarrantyIdentifier"},
+        "replacement_cost": {"ReplacementCost", "Replacement Cost", "Replacement", "Cost"},
+        "nominal_length": {"NominalLength", "OverallLength"},
+        "nominal_width": {"NominalWidth", "Width"},
+        # https://github.com/opensourceBIM/COBie-plugins/blob/master/COBiePlugins/lib/IfcToCobieConfig.xml#L104
+        "nominal_height": {"NominalHeight", "Height"},  # Original has a typo "Heght"
+        "model_reference": {"ModelReference", "Reference"},
+        "shape": {"Shape"},
+        "size": {"Size"},
+        "color": {"Color", "Colour"},
+        "finish": {"Finish"},
+        "grade": {"Grade"},
+        "material": {"Material"},
+        "constituents": {"Constituents", "Parts"},
+        "features": {"Features"},
+        "accessibility_performance": {"AccessibilityPerformance", "Access"},
+        "code_performance": {"CodePerformance", "Regulation"},
+        "sustainability_performance": {"SustainabilityPerformance", "Environmental"},
+    }
+    asset_type = None
+    asset_type_names = {"AssetType", "AssetAccountingType"}
+    warranty_duration_parts = None
+    warranty_duration_parts_names = {"WarrantyDurationParts", "WarrantyPeriod"}
+    warranty_duration_labor = None
+    warranty_duration_labor_names = {"WarrantyDurationLabor", "WarrantyPeriod"}
+    warranty_duration_unit = None
+    expected_life = None
+    expected_life_names = {"ExpectedLife", "Expected Life", "ServiceLifeDuration", "Expected"}
+    duration_unit = None
+
+    for pset_name, props in ifcopenshell.util.element.get_psets(element):
+        pset_warranty_type = None
+        if pset_name == "Pset_Warranty":
+            if "parts" in (props.get("WarrantyIdentifier", "") or "").lower():
+                pset_warranty_type = "parts"
+            elif "labor" in (props.get("WarrantyIdentifier", "") or "").lower():
+                pset_warranty_type = "labor"
+
+        for name, value in props.items():
+            for key, prop_names in pset_mapping.items():
+                if not pset_metadata.get(key, None) and name in prop_names and val(value):
+                    pset_metadata[key] = str(value)
+
+            if not asset_type and name in asset_type_names and val(value):
+                value = value.strip().lower()
+                if value in ("moveable", "nonfixed"):
+                    asset_type = "Moveable"
+                elif value == "fixed":
+                    asset_type = "Fixed"
+            if not warranty_duration_parts and name in warranty_duration_parts_names and val(value):
+                warranty_duration_parts = str(value)
+                if not warranty_duration_unit:
+                    warranty_duration_unit = get_property_unit(props["id"], name)
+            if not warranty_duration_labor and name in warranty_duration_labor_names and val(value):
+                warranty_duration_labor = str(value)
+                if not warranty_duration_unit:
+                    warranty_duration_unit = get_property_unit(props["id"], name)
+            if not expected_life and name in expected_life_names and val(value):
+                expected_life = str(value)
+                if not duration_unit:
+                    duration_unit = get_property_unit(props["id"], name)
+
+            if pset_warranty_type == "parts" and val(value):
+                if name == "PointOfContact":
+                    # https://github.com/buildingSMART/IFC4.3.x-development/issues/698
+                    warranty_guarantor_parts = str(value)
+                elif name == "WarrantyPeriod":
+                    warranty_duration_parts = str(value)
+                    unit = get_property_unit(props["id"], name)
+                    warranty_duration_unit = unit or warranty_duration_unit
+            elif pset_warranty_type == "labor" and val(value):
+                if name == "PointOfContact":
+                    # https://github.com/buildingSMART/IFC4.3.x-development/issues/698
+                    warranty_guarantor_labor = str(value)
+                elif name == "WarrantyPeriod":
+                    warranty_duration_labor = str(value)
+                    unit = get_property_unit(props["id"], name)
+                    warranty_duration_unit = unit or warranty_duration_unit
+
+    if warranty_duration_parts or warranty_duration_labor:
+        if not warranty_duration_unit:
+            warranty_duration_unit = get_unit_type_name(ifc_file, "TIMEUNIT")
+
+    if not asset_type and element.is_a("IfcFurnitureType"):
+        asset_type = "Moveable"
+
     return {
-        "key": element.Name,
-        "Name": element.Name,
-        "Description": element.Description,
-        "Category": get_classification(element),
-        "AuthorOrganizationName": get_owner_name(element),
-        "AuthorDate": get_owner_creation_date(element),
-        "ModelSoftware": get_external_system(element),
-        "ModelObject": "{}[{}]".format(element.is_a(), ifcopenshell.util.element.get_predefined_type(element)),
-        "ModelTag": element.Tag,
-        "ModelID": element.GlobalId,
+        "key": var(element.Name),
+        "Name": var(element.Name),
+        "CreatedBy": get_created_by(element),
+        "CreatedOn": get_created_on(element),
+        "Category": get_category(element),
+        "Description": var(element.Description) or var(element.Name),
+        "AssetType": asset_type,
+        "Manufacturer": pset_metadata.get("manufacturer", None),
+        "ModelNumber": pset_metadata.get("model_number", None),
+        "WarrantyGuarantorParts": pset_metadata.get("warranty_guarantor_parts", None),
+        "WarrantyDurationParts": warranty_duration_parts,
+        "WarrantyGuarantorLabor": pset_metadata.get("warranty_guarantor_labor", None),
+        "WarrantyDurationLabor": warranty_duration_labor,
+        "WarrantyDurationUnit": warranty_duration_unit,
+        "ExternalSystem": get_external_system(element),
+        "ExternalObject": element.is_a(),
+        "ExternalIdentifier": element.GlobalId,
+        "ReplacementCost": pset_metadata.get("replacement_cost", None),
+        "ExpectedLife": expected_life,
+        "DurationUnit": duration_unit,
+        "WarrantyDescription": pset_metadata.get("warranty_description", None),
+        "NominalLength": pset_metadata.get("nominal_length", None),
+        "NominalWidth": pset_metadata.get("nominal_width", None),
+        "NominalHeight": pset_metadata.get("nominal_height", None),
+        "ModelReference": pset_metadata.get("model_reference", None),
+        "Shape": pset_metadata.get("shape", None),
+        "Size": pset_metadata.get("size", None),
+        "Color": pset_metadata.get("color", None),
+        "Finish": pset_metadata.get("finish", None),
+        "Grade": pset_metadata.get("grade", None),
+        "Material": pset_metadata.get("material", None),
+        "Constituents": pset_metadata.get("constituents", None),
+        "Features": pset_metadata.get("features", None),
+        "AccessibilityPerformance": pset_metadata.get("accessibility_performance", None),
+        "CodePerformance": pset_metadata.get("code_performance", None),
+        "SustainabilityPerformance": pset_metadata.get("sustainability_performance", None),
     }
 
 
-def get_element_data(ifc_file, element):
+def get_component_data(ifc_file, element):
     space = ifcopenshell.util.element.get_container(element)
     space_name = space.Name if space.is_a("IfcSpace") else None
     systems = ifcopenshell.util.system.get_element_systems(element)
     system = systems[0].Name if systems else None
+
+    type_name = None
+    relating_type = ifcopenshell.util.element.get_type(element)
+    if relating_type and val(relating_type.Name):
+        type_name = relating_type.Name
+    else:
+        material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+        type_name = getattr(material, "Name", None) or getattr(material, "LayerSetName", None)
+
+    serial_number = None
+    installation_date = None
+    warranty_start_date = None
+    tag_number = None
+    bar_code = None
+    asset_identifier = None
+
+    for _, props in ifcopenshell.util.element.get_psets(element):
+        for name, value in props.items():
+            if not serial_number and name == "SerialNumber" and val(value):
+                serial_number = str(value)
+            if not installation_date and name == "InstallationDate" and val(value):
+                installation_date = str(value)
+            if not warranty_start_date and name == "WarrantyStartDate" and val(value):
+                warranty_start_date = str(value)
+            if not tag_number and name == "TagNumber" and val(value):
+                tag_number = str(value)
+            if not bar_code and name == "BarCode" and val(value):
+                bar_code = str(value)
+            if not asset_identifier and name == "AssetIdentifier" and val(value):
+                asset_identifier = str(value)
+
     return {
         "key": element.Name,
         "Name": element.Name,
-        "TypeName": ifcopenshell.util.element.get_type(element).Name,
-        "SpaceName": space_name,
-        "SystemName": system,
-        "AuthorOrganizationName": get_owner_name(element),
-        "AuthorDate": get_owner_creation_date(element),
-        "ModelSoftware": get_external_system(element),
-        "ModelObject": "{}[{}]".format(element.is_a(), ifcopenshell.util.element.get_predefined_type(element)),
-        "ModelID": element.GlobalId,
+        "CreatedBy": get_created_by(element),
+        "CreatedOn": get_created_on(element),
+        "TypeName": type_name,
+        "Space": space_name,
+        "Description": var(element.Description) or var(element.Name),
+        "ExternalSystem": get_external_system(element),
+        "ExternalObject": element.is_a(),
+        "ExternalIdentifier": element.GlobalId,
+        "SerialNumber": serial_number,
+        "InstallationDate": installation_date,
+        "WarrantyStartDate": warranty_start_date,
+        "TagNumber": tag_number,
+        "BarCode": bar_code,
+        "AssetIdentifier": asset_identifier,
     }
 
 
@@ -372,7 +527,7 @@ def get_system_data(ifc_file, element):
     }
 
 
-def get_unit_name(ifc_file, unit_type):
+def get_unit_type_name(ifc_file, unit_type):
     for unit in ifc_file.by_type("IfcUnitAssignment")[0].Units:
         if unit.is_a("IfcNamedUnit") and unit.UnitType == unit_type:
             if unit.is_a("IfcSIUnit"):
@@ -387,6 +542,11 @@ def get_unit_name(ifc_file, unit_type):
                 return val(unit.Name)
         elif unit.is_a("IfcMonetaryUnit") and unit_type == "IfcMonetaryUnit":
             return val(unit.Currency)
+
+
+def get_unit_name(ifc_file, unit):
+    if unit.is_a("IfcNamedUnit"):
+        return val(unit.Name)
 
 
 def get_created_by(element):
@@ -536,6 +696,15 @@ def get_history(ifc_file):
     histories = ifc_file.by_type("IfcOwnerHistory")
     if histories:
         return sorted(histories, key=lambda x: x.id())[-1]
+
+
+def get_property_unit(pset_id, prop_name):
+    pset = ifc_file.by_id(pset_id)
+    for prop in getattr(pset, "HasProperties", []) or []:
+        if prop.Name == prop_name:
+            unit = getattr(prop, "Unit", None)
+            if unit:
+                return get_unit_name(unit)
 
 
 get_category_elements = {
