@@ -1367,9 +1367,7 @@ class DumbWallJoiner:
                     clamp_axis = clamp_axis[::-1]
                 vectors = tuple([clamp_point_by_direction(v, clamp_axis) for v in vectors])
 
-            closest = tool.Cad.closest_vector(ref_point_2d.to_3d(), vectors)
-            farthest = vectors[1] if closest == vectors[0] else vectors[0]
-            return closest, farthest
+            return tool.Cad.closest_and_furthest_vectors(ref_point_2d.to_3d(), vectors)
 
         bbn, bbf = get_closest_and_furthest_vectors(axis1["base"][i], (bb1, bb2), bba1)
         bsn, bsf = get_closest_and_furthest_vectors(axis1["side"][i], (bs1, bs2))

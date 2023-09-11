@@ -193,6 +193,18 @@ class Cad:
             return v1 if distance_test else v2
 
     @classmethod
+    def closest_and_furthest_vectors(cls, pt, e):
+        """
+        > pt:       vector
+        > e:        2 vector tuple
+        < returns the two vectors closest to and furthest from pt.
+        """
+        if isinstance(e, tuple) and all([isinstance(co, Vector) for co in e]):
+            closest = cls.closest_vector(pt, e)
+            furthest = e[1] if closest == e[0] else e[0]
+            return closest, furthest
+
+    @classmethod
     def coords_tuple_from_edge_idx(cls, bm, idx):
         """bm is a bmesh representation"""
         return tuple(v.co for v in bm.edges[idx].verts)
