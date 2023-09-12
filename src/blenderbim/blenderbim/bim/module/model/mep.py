@@ -940,19 +940,16 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
         if not types_check():
             self.report(
                 {"ERROR"},
-                "Segments types do not match " "or one of the segments doesn't have type which is required for a bend.",
+                "Segments types do not match or one of the segments doesn't have type which is required for a bend.",
             )
             return {"CANCELLED"}
 
-        # TODO: support circular profiles
         profile = tool.Model.get_flow_segment_profile(start_element)
-        if not profile.is_a("IfcRectangleProfileDef"):
+        if not profile.is_a("IfcRectangleProfileDef") and not profile.is_a("IfcCircleProfileDef"):
             self.report(
-                {
-                    "ERROR",
-                    "For now Only IfcRectangleProfileDef profiles supported for a bend, "
-                    f"the segments are {profile.is_a()}",
-                }
+                {"ERROR"},
+                "For now Only IfcRectangleProfileDef/IfcCircleProfileDef profiles supported for a bend, "
+                f"the segments are {profile.is_a()}",
             )
             return {"CANCELLED"}
 
