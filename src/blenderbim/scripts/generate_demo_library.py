@@ -146,20 +146,30 @@ class LibraryGenerator:
         self.create_type("IfcDoorType", "DT01", {"model_body": "Door", "plan_body": "Door-Plan"})
         self.create_type("IfcFurnitureType", "BUN01", {"model_body": "Bunny", "plan_body": "Bunny-Plan"})
 
+        self.create_symbol_type("SETOUT-POINT", "setout-point")
+        self.create_symbol_type("CONTROL-POINT", "control-point")
+        self.create_symbol_type("TRAVERSE-POINT", "traverse-point")
         self.create_line_type("DASHED", "dashed")
         self.create_line_type("FINE", "fine")
         self.create_line_type("THIN", "thin")
         self.create_line_type("MEDIUM", "medium")
         self.create_line_type("THICK", "thick")
         self.create_line_type("STRONG", "strong")
+        self.create_text_type("SETOUT-TAG", "setout-tag", ["E ``round({{easting}}, 0.001)``", "N ``round({{northing}}, 0.001)``"])
         self.create_text_type("DOOR-TAG", "door-tag", ["{{type.Name}}", "{{Name}}"])
         self.create_text_type("WINDOW-TAG", "window-tag", ["{{Name}}"])
-        self.create_text_type("SPACE-TAG", "space-tag", ["{{Name}}", "{{Description}}", "``round({{Qto_SpaceBaseQuantities.NetFloorArea}} or 0., 2)``"])
+        self.create_text_type("SPACE-TAG", "space-tag", ["{{Name}}", "{{Description}}", "``round({{Qto_SpaceBaseQuantities.NetFloorArea}}, 0.01)``"])
         self.create_text_type("MATERIAL-TAG", "rectangle-tag", ["{{material.Name}}"])
         self.create_text_type("TYPE-TAG", "capsule-tag", ["{{type.Name}}"])
         self.create_text_type("NAME-TAG", "capsule-tag", ["{{Name}}"])
 
         self.file.write("IFC4 Demo Library.ifc")
+
+    def create_symbol_type(self, name, symbol):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcTypeProduct", name=name)
+        element.ApplicableOccurrence = "IfcAnnotation/SYMBOL"
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Annotation")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Symbol": symbol})
 
     def create_line_type(self, name, classes):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcTypeProduct", name=name)

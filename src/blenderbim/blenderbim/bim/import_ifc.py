@@ -318,6 +318,7 @@ class IfcImporter:
             self.profile_code("Merging by colour")
         self.set_default_context()
         self.profile_code("Setting default context")
+        self.setup_viewport_camera()
         self.update_progress(100)
         bpy.context.window_manager.progress_end()
 
@@ -980,9 +981,13 @@ class IfcImporter:
         placement_matrix = self.get_element_matrix(product)
         vertex_list = []
         for item in representation.Items:
-            if item.is_a("IfcCartesianPointList"):
+            if item.is_a("IfcCartesianPointList3D"):
                 vertex_list.extend(
                     mathutils.Vector(list(coordinates)) * self.unit_scale for coordinates in item.CoordList
+                )
+            elif item.is_a("IfcCartesianPointList2D"):
+                vertex_list.extend(
+                    mathutils.Vector(list(coordinates)).to_3d() * self.unit_scale for coordinates in item.CoordList
                 )
             elif item.is_a("IfcCartesianPoint"):
                 vertex_list.append(mathutils.Vector(list(item.Coordinates)) * self.unit_scale)
@@ -1908,6 +1913,13 @@ class IfcImporter:
     def set_matrix_world(self, obj, matrix_world):
         obj.matrix_world = matrix_world
         tool.Geometry.record_object_position(obj)
+
+    def setup_viewport_camera(self):
+        context_override = tool.Blender.get_viewport_context()
+        with bpy.context.temp_override(**context_override):
+            bpy.ops.object.select_all(action="SELECT")
+            bpy.ops.view3d.view_selected()
+            bpy.ops.object.select_all(action="DESELECT")
 
 
 class IfcImportSettings:

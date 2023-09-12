@@ -1119,8 +1119,13 @@ class DumbWallJoiner:
                 other = tool.Ifc.get_object(rel.RelatedElement)
                 if connection not in ["ATPATH", "NOTDEFINED"]:
                     self.join(
-                        obj, other, connection, rel.RelatedConnectionType, is_relating=True, description=rel.Description
-                    )
+                        obj, 
+                        other, 
+                        connection, 
+                        rel.RelatedConnectionType, 
+                        is_relating=True, 
+                        description=rel.Description
+                  )
         for rel in element.ConnectedFrom:
             if rel.is_a("IfcRelConnectsPathElements"):
                 connection = rel.RelatedConnectionType
@@ -1299,7 +1304,7 @@ class DumbWallJoiner:
             # The user has moved the wall into an invalid position that cannot connect at the desired end
             return False
 
-        self.axis[1 if connection1 == "ATEND" else 0] = intersect
+        self.axis = proposed_axis
 
         # Work out body
 
@@ -1309,55 +1314,79 @@ class DumbWallJoiner:
         tp1 = wall1.matrix_world @ Vector(wall1.bound_box[1])
 
         # Axis lines on bottom, for reference, base, and side axes
-        bra1 = (Vector((*axis1["reference"][0], bp1[2])), Vector((*axis1["reference"][1], bp1[2])))
-        bba1 = (Vector((*axis1["base"][0], bp1[2])), Vector((*axis1["base"][1], bp1[2])))
-        bsa1 = (Vector((*axis1["side"][0], bp1[2])), Vector((*axis1["side"][1], bp1[2])))
-        bba2 = (Vector((*axis2["base"][0], bp2[2])), Vector((*axis2["base"][1], bp2[2])))
-        bsa2 = (Vector((*axis2["side"][0], bp2[2])), Vector((*axis2["side"][1], bp2[2])))
+        def to_3d_axis(axis, z):
+            return (Vector((*axis[0], z)), Vector((*axis[1], z)))
+
+        bra1 = to_3d_axis(axis1["reference"], bp1.z)
+        bba1 = to_3d_axis(axis1["base"], bp1.z)
+        tba1 = to_3d_axis(axis1["base"], tp1.z)
+        bsa1 = to_3d_axis(axis1["side"], bp1.z)
+        bba2 = to_3d_axis(axis2["base"], bp2.z)
+        bsa2 = to_3d_axis(axis2["side"], bp2.z)
 
         # Intersecting the walls sides defined by planes gives 4 lines of intersection
         # Line point, and line direction
-        lp1, ld1 = mathutils.geometry.intersect_plane_plane(bba1[0], normal1, bba2[0], normal2)
-        lp2, ld2 = mathutils.geometry.intersect_plane_plane(bba1[0], normal1, bsa2[0], normal2)
-        lp3, ld3 = mathutils.geometry.intersect_plane_plane(bsa1[0], normal1, bba2[0], normal2)
-        lp4, ld4 = mathutils.geometry.intersect_plane_plane(bsa1[0], normal1, bsa2[0], normal2)
+        lpb1, ldb1 = mathutils.geometry.intersect_plane_plane(bba1[0], normal1, bba2[0], normal2)
+        lpb2, ldb2 = mathutils.geometry.intersect_plane_plane(bba1[0], normal1, bsa2[0], normal2)
+        lps1, lds1 = mathutils.geometry.intersect_plane_plane(bsa1[0], normal1, bba2[0], normal2)
+        lps2, lds2 = mathutils.geometry.intersect_plane_plane(bsa1[0], normal1, bsa2[0], normal2)
 
         # Intersecting the 4 lines gives the 8 possible verts of intersection
         # 4 on bottom, and 4 on top. 4 on our base line, 4 on our side line.
-        bb1 = mathutils.geometry.intersect_line_plane(lp1, lp1 + ld1, bp1, Vector((0, 0, 1)))
-        bb2 = mathutils.geometry.intersect_line_plane(lp2, lp2 + ld2, bp1, Vector((0, 0, 1)))
-        bs1 = mathutils.geometry.intersect_line_plane(lp3, lp3 + ld3, bp1, Vector((0, 0, 1)))
-        bs2 = mathutils.geometry.intersect_line_plane(lp4, lp4 + ld4, bp1, Vector((0, 0, 1)))
-        tb1 = mathutils.geometry.intersect_line_plane(lp1, lp1 + ld1, tp1, Vector((0, 0, 1)))
-        tb2 = mathutils.geometry.intersect_line_plane(lp2, lp2 + ld2, tp1, Vector((0, 0, 1)))
-        ts1 = mathutils.geometry.intersect_line_plane(lp3, lp3 + ld3, tp1, Vector((0, 0, 1)))
-        ts2 = mathutils.geometry.intersect_line_plane(lp4, lp4 + ld4, tp1, Vector((0, 0, 1)))
+        # Diagram: https://i.imgur.com/jwWx2Ox.png
+        # NOTE: bb/bs always equal lpb/lps?
+        bb1 = mathutils.geometry.intersect_line_plane(lpb1, lpb1 + ldb1, bp1, Vector((0, 0, 1)))
+        bb2 = mathutils.geometry.intersect_line_plane(lpb2, lpb2 + ldb2, bp1, Vector((0, 0, 1)))
+        bs1 = mathutils.geometry.intersect_line_plane(lps1, lps1 + lds1, bp1, Vector((0, 0, 1)))
+        bs2 = mathutils.geometry.intersect_line_plane(lps2, lps2 + lds2, bp1, Vector((0, 0, 1)))
+
+        # similar to bb/bs but also have local z offset
+        tb1 = mathutils.geometry.intersect_line_plane(lpb1, lpb1 + ldb1, tp1, Vector((0, 0, 1)))
+        tb2 = mathutils.geometry.intersect_line_plane(lpb2, lpb2 + ldb2, tp1, Vector((0, 0, 1)))
+        ts1 = mathutils.geometry.intersect_line_plane(lps1, lps1 + lds1, tp1, Vector((0, 0, 1)))
+        ts2 = mathutils.geometry.intersect_line_plane(lps2, lps2 + lds2, tp1, Vector((0, 0, 1)))
 
         # Let's distinguish the 8 points by whether they are nearer or further away from the other end
         # These 8 points will be used to find the final body position and clippings.
-        i = 0 if connection1 == "ATEND" else 1
-        j = 1 if connection1 == "ATEND" else 0
-        bbn = tool.Cad.closest_vector(axis1["base"][i].to_3d(), (bb1, bb2))
-        bbf = bb2 if bbn == bb1 else bb1
-        bsn = tool.Cad.closest_vector(axis1["side"][i].to_3d(), (bs1, bs2))
-        bsf = bs2 if bsn == bs1 else bs1
-        tbn = tool.Cad.closest_vector(axis1["base"][i].to_3d(), (tb1, tb2))
-        tbf = tb2 if tbn == tb1 else tb1
-        tsn = tool.Cad.closest_vector(axis1["side"][i].to_3d(), (ts1, ts2))
-        tsf = ts2 if tsn == ts1 else ts1
+        connected_at_end = connection1 == "ATEND"
+        i = 0 if connected_at_end else 1
 
+        def get_closest_and_furthest_vectors(ref_point_2d, vectors, clamp_axis=None):
+            def clamp_point_by_direction(point, edge):
+                percent = tool.Cad.edge_percent(point, edge)
+                if percent < 0:
+                    return edge[0]
+                return point
+
+            # When there is a small angle between walls, intersection points can occur outside the wall's axis.
+            # Which can lead to inaccuracies - therefore we bottom clamp them to stay within the axis
+            if clamp_axis:
+                # if wall connected at the start then reference point will be at the end
+                # therefore we reverse the axis
+                if not connected_at_end:
+                    clamp_axis = clamp_axis[::-1]
+                vectors = tuple([clamp_point_by_direction(v, clamp_axis) for v in vectors])
+
+            return tool.Cad.closest_and_furthest_vectors(ref_point_2d.to_3d(), vectors)
+
+        bbn, bbf = get_closest_and_furthest_vectors(axis1["base"][i], (bb1, bb2), bba1)
+        bsn, bsf = get_closest_and_furthest_vectors(axis1["side"][i], (bs1, bs2))
+        tbn, tbf = get_closest_and_furthest_vectors(axis1["base"][i], (tb1, tb2), tba1)
+        tsn, tsf = get_closest_and_furthest_vectors(axis1["side"][i], (ts1, ts2))
+
+        j = 1 if connected_at_end else 0
         if description == "MITRE":
             # Mitre joints are an unofficial convention
             bsf_ = tool.Cad.point_on_edge(bsf, bba1)
             tbf_ = tool.Cad.point_on_edge(tbf, bba1)
             tsf_ = tool.Cad.point_on_edge(tsf, bba1)
-            new_body = tool.Cad.furthest_vector(bba1[i], (bbf, bsf_)).copy()
-            new_body = tool.Cad.furthest_vector(bba1[i], (new_body, tbf_)).copy()
+            new_body = tool.Cad.furthest_vector(bba1[i], (bbf, bsf_))
+            new_body = tool.Cad.furthest_vector(bba1[i], (new_body, tbf_))
             new_body = tool.Cad.furthest_vector(bba1[i], (new_body, tsf_)).copy()
             self.body[j] = tool.Cad.point_on_edge(new_body, bra1).to_2d()
 
             if connection1 == connection2:
-                if (connection1 == "ATEND" and angle > 0) or (connection1 != "ATEND" and angle < 0):
+                if (connected_at_end and angle > 0) or (not connected_at_end and angle < 0):
                     pt = bbf.to_2d().to_3d()
                     x_axis = bsn - bbf
                     y_axis = tbf - bbf
@@ -1366,7 +1395,7 @@ class DumbWallJoiner:
                     x_axis = bsf - bbn
                     y_axis = tbn - bbn
             else:
-                if (connection1 == "ATEND" and angle < 0) or (connection1 != "ATEND" and angle > 0):
+                if (connected_at_end and angle < 0) or (not connected_at_end and angle > 0):
                     pt = bbf.to_2d().to_3d()
                     x_axis = bsn - bbf
                     y_axis = tbf - bbf
@@ -1377,6 +1406,9 @@ class DumbWallJoiner:
 
             if connection1 != "ATEND":
                 y_axis *= -1
+
+            x_axis.normalize()
+            y_axis.normalize()
             z_axis = x_axis.cross(y_axis)
             y_axis = z_axis.cross(x_axis)
 

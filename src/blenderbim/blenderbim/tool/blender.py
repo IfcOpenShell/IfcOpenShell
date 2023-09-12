@@ -167,7 +167,8 @@ class Blender:
         when in real life you can have a couple of those but should work for the most cases.
         """
         area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
-        context_override = {"area": area}
+        region = next(region for region in area.regions if region.type == "WINDOW")
+        context_override = {"area": area, "region": region}
         return context_override
 
     @classmethod
@@ -386,6 +387,11 @@ class Blender:
                 return {"data_block": None, "msg": f"Data-block {data_block_type}/{name} not found in {filepath}"}
             getattr(data_to, data_block_type).append(name)
         return {"data_block": getattr(data_to, data_block_type)[0], "msg": ""}
+
+    @classmethod
+    def remove_data_block(cls, data_block):
+        collection_name = repr(data_block).split(".", 2)[-1].split("[", 1)[0]
+        getattr(bpy.data, collection_name).remove(data_block)
 
     ## BMESH UTILS ##
     @classmethod

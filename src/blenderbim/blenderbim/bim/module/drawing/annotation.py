@@ -93,6 +93,15 @@ class Annotator:
         return obj
 
     @staticmethod
+    def add_vertex_to_annotation(obj):
+        verts_world_space = Annotator.get_placeholder_coords()
+        vert_local = obj.matrix_world.inverted() @ verts_world_space[0]
+        bm = tool.Blender.get_bmesh_for_mesh(obj.data, clean=True)
+        bm.verts.new(vert_local)
+        tool.Blender.apply_bmesh(obj.data, bm, obj)
+        return obj
+
+    @staticmethod
     def add_plane_to_annotation(obj, remove_face=False):
         # default order = bot left, top left, bot right, top right
         # therefore we redefine the order
@@ -144,6 +153,8 @@ class Annotator:
             data = bpy.data.curves.new(object_type, type="CURVE")
             data.dimensions = "3D"
             data.resolution_u = 2
+        elif data_type == "empty":
+            data = None
 
         obj = bpy.data.objects.new(object_type, data)
         obj.matrix_world = matrix_world

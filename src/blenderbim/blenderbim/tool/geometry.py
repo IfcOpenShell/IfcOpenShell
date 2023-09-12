@@ -46,7 +46,7 @@ class Geometry(blenderbim.core.tool.Geometry):
     @classmethod
     def clear_cache(cls, element):
         cache = IfcStore.get_cache()
-        if cache:
+        if cache and hasattr(element, "GlobalId"):
             cache.remove(element.GlobalId)
 
     @classmethod

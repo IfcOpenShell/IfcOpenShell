@@ -54,7 +54,10 @@ release = "0.7.0"
 # - No subnav making it really hard to navigate
 # - Kinda hacky setup https://stackoverflow.com/questions/2701998/sphinx-autodoc-is-not-automatic-enough
 # - I couldn't customise the template to show submodules above members which makes API discovery hard for users
-extensions = ["autoapi.extension"]
+extensions = ["autoapi.extension", "sphinx.ext.autosectionlabel"]
+
+# Auto add document prefixes to help guarantee uniqueness of automatic section references.
+autosectionlabel_prefix_document = True
 
 # We'll add the toctree entry ourselves to distinguish between C++ and Python
 autoapi_add_toctree_entry = True

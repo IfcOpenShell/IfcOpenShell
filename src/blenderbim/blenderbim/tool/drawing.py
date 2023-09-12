@@ -71,6 +71,8 @@ class Drawing(blenderbim.core.tool.Drawing):
             obj = annotation.Annotator.add_plane_to_annotation(obj)
         elif object_type == "REVISION_CLOUD":
             obj = annotation.Annotator.add_plane_to_annotation(obj, remove_face=True)
+        elif object_type == "MULTI_SYMBOL":
+            obj = annotation.Annotator.add_vertex_to_annotation(obj)
         elif object_type == "TEXT_LEADER":
             co1, _, co2, _ = annotation.Annotator.get_placeholder_coords()
             obj = annotation.Annotator.add_line_to_annotation(obj, co2, co1)
@@ -893,7 +895,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         literals = cls.get_text_literal(obj, return_list=True)
         cls.import_text_attributes(obj)
         for i, literal in enumerate(literals):
-            product = cls.get_assigned_product(tool.Ifc.get_entity(obj))
+            product = cls.get_assigned_product(tool.Ifc.get_entity(obj)) or tool.Ifc.get_entity(obj)
             props.literals[i].value = cls.replace_text_literal_variables(literal.Literal, product)
 
     @classmethod
@@ -1389,8 +1391,9 @@ class Drawing(blenderbim.core.tool.Drawing):
             original_command = command
             for variable in re.findall("{{.*?}}", command):
                 value = ifcopenshell.util.selector.get_element_value(product, variable[2:-2])
-                command = command.replace(variable, repr(value))
-            text = text.replace(original_command, str(eval(command[2:-2])))
+                value = '"' + str(value).replace('"', '\\"') + '"'
+                command = command.replace(variable, value)
+            text = text.replace(original_command, ifcopenshell.util.selector.format(command[2:-2]))
 
         for variable in re.findall("{{.*?}}", text):
             value = ifcopenshell.util.selector.get_element_value(product, variable[2:-2])
@@ -1507,7 +1510,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         elements = cls.get_elements_in_camera_view(tool.Ifc.get_object(drawing), bpy.data.objects)
         include = pset.get("Include", None)
         if include:
-            elements = ifcopenshell.util.selector.filter_elements(ifc_file, include, elements=elements)
+            elements = ifcopenshell.util.selector.filter_elements(ifc_file, include)
         else:
             if tool.Ifc.get_schema() == "IFC2X3":
                 base_elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialStructureElement"))

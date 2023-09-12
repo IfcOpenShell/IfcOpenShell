@@ -42,13 +42,15 @@ from math import radians
 
 class SetTab(bpy.types.Operator):
     bl_idname = "bim.set_tab"
-    bl_label = "Set Current Tab"
-    bl_options = {"REGISTER", "UNDO"}
+    # NOTE: bl_label is set to empty string intentionally 
+    # to avoid showing the operator's name in the tooltips, see #3704
+    bl_label = ""
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
     tab: bpy.props.StringProperty()
 
     @classmethod
-    def description(cls, context, properties):
-        return next((t[1] for t in blenderbim.bim.prop.get_tab(None, context) if t[0] == properties.tab), "")
+    def description(cls, context, operator):
+        return next((t[1] for t in blenderbim.bim.prop.get_tab(None, context) if t[0] == operator.tab), "")
 
     def execute(self, context):
         if context.area.spaces.active.search_filter:

@@ -198,6 +198,7 @@ class Spatial(blenderbim.core.tool.Spatial):
     @classmethod
     def load_container_manager(cls):
         cls.props = bpy.context.scene.BIMSpatialManagerProperties
+        previous_container_index = cls.props.active_container_index
         cls.props.containers.clear()
         cls.contracted_containers = json.loads(cls.props.contracted_containers)
         cls.props.is_container_update_enabled = False
@@ -208,16 +209,17 @@ class Spatial(blenderbim.core.tool.Spatial):
                 cls.create_new_storey_li(object, 0)
         cls.props.is_container_update_enabled = True
         # triggers spatial manager props setup
-        cls.props.active_container_index = 0
+        cls.props.active_container_index = min(previous_container_index, len(cls.props.containers) - 1)
 
     @classmethod
     def create_new_storey_li(cls, element, level_index):
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         new = cls.props.containers.add()
         new.name = element.Name or "Unnamed"
         new.long_name = element.LongName or ""
         new.has_decomposition = bool(element.IsDecomposedBy)
         new.ifc_definition_id = element.id()
-        new.elevation = ifcopenshell.util.placement.get_storey_elevation(element)
+        new.elevation = ifcopenshell.util.placement.get_storey_elevation(element) * si_conversion
 
         new.is_expanded = element.id() not in cls.contracted_containers
         new.level_index = level_index

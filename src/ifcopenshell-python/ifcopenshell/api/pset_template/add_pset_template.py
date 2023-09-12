@@ -21,7 +21,11 @@ import ifcopenshell
 
 class Usecase:
     def __init__(
-        self, file, name="New_Pset", template_type="PSET_TYPEDRIVENOVERRIDE", applicable_entity="IfcTypeObject"
+        self,
+        file,
+        name="New_Pset",
+        template_type="PSET_TYPEDRIVENOVERRIDE",
+        applicable_entity="IfcObject,IfcTypeObject",
     ):
         """Adds a new property set template
 

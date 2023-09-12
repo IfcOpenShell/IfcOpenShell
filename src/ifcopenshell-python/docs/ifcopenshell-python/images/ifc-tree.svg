@@ -1,0 +1,493 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="112.01208mm"
+   height="157.0311mm"
+   viewBox="0 0 112.01209 157.03109"
+   version="1.1"
+   id="svg6566"
+   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   sodipodi:docname="ifc-tree.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview6568"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="1.1389101"
+     inkscape:cx="193.60614"
+     inkscape:cy="326.18903"
+     inkscape:window-width="1920"
+     inkscape:window-height="1055"
+     inkscape:window-x="0"
+     inkscape:window-y="25"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs6563">
+    <marker
+       style="overflow:visible"
+       id="Dot"
+       refX="0"
+       refY="0"
+       orient="auto"
+       inkscape:stockid="Dot"
+       markerWidth="5.6666665"
+       markerHeight="5.6666665"
+       viewBox="0 0 5.6666667 5.6666667"
+       inkscape:isstock="true"
+       inkscape:collect="always"
+       preserveAspectRatio="xMidYMid">
+      <path
+         transform="scale(0.5)"
+         style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+         d="M 5,0 C 5,2.76 2.76,5 0,5 -2.76,5 -5,2.76 -5,0 c 0,-2.76 2.3,-5 5,-5 2.76,0 5,2.24 5,5 z"
+         id="Dot1"
+         sodipodi:nodetypes="sssss" />
+    </marker>
+  </defs>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-21.200816,-31.216754)">
+    <rect
+       style="fill:#ffffff;stroke:#2e3436;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:2.4, 1.2"
+       id="rect7104"
+       width="111.712"
+       height="156.731"
+       x="21.350901"
+       y="31.36676"
+       rx="1"
+       ry="1" />
+    <g
+       id="g7188">
+      <g
+         id="g3435"
+         transform="translate(-46.33097,17.229709)">
+        <path
+           id="path1709"
+           style="fill:none;stroke:#2e3436;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+           d="m 135.03507,19.287295 c -0.554,0 -0.99994,0.445939 -0.99994,0.999939 0.0332,8.996822 0.002,9.463219 0,17.300237 0,0.553999 0.44594,0.999939 0.99994,0.999939 h 19.70835 c 0.554,0 0.99994,-0.44594 0.99994,-0.999939 V 24.721073 c 0,-0.554 -0.44594,-1.000456 -0.99994,-1.000456 h -5.66012 v -3.433383 c 0,-0.554 -0.44594,-0.999939 -0.99993,-0.999939 z"
+           sodipodi:nodetypes="sccssssscsss" />
+        <text
+           xml:space="preserve"
+           style="font-size:5.64444px;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT, Normal';text-align:center;text-anchor:middle;fill:#2e3436;stroke:none;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+           x="140.09"
+           y="24.079739"
+           id="text1713"><tspan
+             sodipodi:role="line"
+             id="tspan1711"
+             style="font-size:5.64444px;fill:#2e3436;stroke:none;stroke-width:0.3"
+             x="140.09"
+             y="24.079739">ROOT</tspan></text>
+        <text
+           xml:space="preserve"
+           style="font-size:3.52778px;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT, Normal';text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+           x="135.17041"
+           y="27.999969"
+           id="text1725"><tspan
+             sodipodi:role="line"
+             style="font-size:3.52778px;text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3"
+             x="135.17041"
+             y="27.999969"
+             id="tspan1715">- GLOBAL ID</tspan><tspan
+             sodipodi:role="line"
+             style="font-size:3.52778px;text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3"
+             x="135.17041"
+             y="32.409695"
+             id="tspan1717">- NAME</tspan><tspan
+             sodipodi:role="line"
+             style="font-size:3.52778px;text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3"
+             x="135.17041"
+             y="36.81942"
+             id="tspan1719">- DESCRIPTION</tspan><tspan
+             sodipodi:role="line"
+             style="font-size:3.52778px;text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3"
+             x="135.17041"
+             y="41.229145"
+             id="tspan1723" /></text>
+      </g>
+      <g
+         id="g3183"
+         transform="translate(-46.571039,17.229709)">
+        <path
+           id="path1729"
+           style="fill:none;stroke:#2e3436;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+           d="m 120.4235,46.746787 c -0.554,0 -0.99994,0.445939 -0.99994,0.999939 0.0332,8.996821 0.002,18.459051 0,26.296069 0,0.553999 0.44594,0.999939 0.99994,0.999939 h 19.70835 c 0.554,0 0.99994,-0.44594 0.99994,-0.999939 V 52.180564 c 0,-0.554 -0.44594,-1.000456 -0.99994,-1.000456 h -1.95595 v -3.433382 c 0,-0.554 -0.44594,-0.999939 -0.99993,-0.999939 z"
+           sodipodi:nodetypes="sccssssscsss" />
+        <text
+           xml:space="preserve"
+           style="font-size:5.64444px;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT, Normal';text-align:center;text-anchor:middle;fill:#2e3436;stroke:none;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+           x="128.53528"
+           y="51.539227"
+           id="text1733"><tspan
+             sodipodi:role="line"
+             id="tspan1731"
+             style="font-size:5.64444px;fill:#2e3436;stroke:none;stroke-width:0.3"
+             x="128.53528"
+             y="51.539227">OBJECTS</tspan></text>
+        <text
+           xml:space="preserve"
+           style="font-size:3.52778px;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT, Normal';text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+           x="120.55885"
+           y="55.459461"
+           id="text1745"><tspan
+             sodipodi:role="line"
+             style="font-size:3.52778px;text-align:start;text-anchor:start;fill:#babdb6;stroke:none;stroke-width:0.3"
+             x="120.55885"
+             y="55.459461"
+             id="tspan1735">- GLOBAL ID</tspan><tspan
+             sodipodi:role="line"
+             style="font-size:3.52778px;text-align:start;text-anchor:start;fill:#babdb6;stroke:none;stroke-width:0.3"
+             x="120.55885"
+             y="59.869186"
+             id="tspan1737">- NAME</tspan><tspan
+             sodipodi:role="line"
+             style="font-size:3.52778px;text-align:start;text-anchor:start;fill:#babdb6;stroke:none;stroke-width:0.3"
+             x="120.55885"
+             y="64.278908"
+             id="tspan1739">- DESCRIPTION</tspan><tspan
+             sodipodi:role="line"
+             style="font-size:3.52778px;text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3"
+             x="120.55885"
+             y="68.688637"
+             id="tspan1741">- TYPE</tspan><tspan
+             sodipodi:role="line"
+             style="font-size:3.52778px;text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3"
+             x="120.55885"
+             y="73.098358"
+             id="tspan1743">...</tspan></text>
+      </g>
+      <g
+         id="g3190"
+         transform="translate(-49.001431,17.229709)">
+        <path
+           id="path2090"
+           style="fill:none;stroke:#2e3436;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+           d="m 152.55717,46.746787 c -0.554,0 -0.99994,0.445939 -0.99994,0.999939 0.0332,8.996821 0.002,0.467384 0,8.304402 0,0.553999 0.44594,0.999939 0.99994,0.999939 h 19.70835 c 0.554,0 0.99994,-0.44594 0.99994,-0.999939 v -3.870564 c 0,-0.554 -0.44594,-1.000456 -0.99994,-1.000456 h -1.95595 v -3.433382 c 0,-0.554 -0.44594,-0.999939 -0.99993,-0.999939 z"
+           sodipodi:nodetypes="sccssssscsss" />
+        <text
+           xml:space="preserve"
+           style="font-size:5.64444px;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT, Normal';text-align:center;text-anchor:middle;fill:#2e3436;stroke:none;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+           x="158.9061"
+           y="51.539227"
+           id="text2094"><tspan
+             sodipodi:role="line"
+             id="tspan2092"
+             style="font-size:5.64444px;fill:#2e3436;stroke:none;stroke-width:0.3"
+             x="158.9061"
+             y="51.539227">TYPES</tspan></text>
+        <text
+           xml:space="preserve"
+           style="font-size:3.52778px;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT, Normal';text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+           x="152.69252"
+           y="55.459461"
+           id="text2106"><tspan
+             sodipodi:role="line"
+             style="font-size:3.52778px;text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3"
+             x="152.69252"
+             y="55.459461"
+             id="tspan2104">...</tspan></text>
+      </g>
+      <g
+         id="g3216"
+         transform="translate(-79.922916,20.533045)">
+        <path
+           id="path1951"
+           style="fill:none;stroke:#2e3436;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+           d="m 120.4235,79.522043 c -0.554,0 -0.99994,0.445939 -0.99994,0.999939 0.0332,8.996821 0.002,23.221548 0,31.058568 0,0.554 0.44594,0.99994 0.99994,0.99994 h 23.41251 c 0.554,0 0.99994,-0.44594 0.99994,-0.99994 V 84.95582 c 0,-0.554 -0.44594,-1.000456 -0.99994,-1.000456 h -1.95595 v -3.433382 c 0,-0.554 -0.44594,-0.999939 -0.99993,-0.999939 z"
+           sodipodi:nodetypes="sccssssscsss" />
+        <text
+           xml:space="preserve"
+           style="font-size:5.64444px;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT, Normal';text-align:center;text-anchor:middle;fill:#2e3436;stroke:none;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+           x="130.48898"
+           y="84.314484"
+           id="text1955"><tspan
+             sodipodi:role="line"
+             id="tspan1953"
+             style="font-size:5.64444px;fill:#2e3436;stroke:none;stroke-width:0.3"
+             x="130.48898"
+             y="84.314484">PRODUCTS</tspan></text>
+        <text
+           xml:space="preserve"
+           style="font-size:3.52778px;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT, Normal';text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+           x="120.55885"
+           y="88.234718"
+           id="text1967"><tspan
+             sodipodi:role="line"
+             style="font-size:3.52778px;text-align:start;text-anchor:start;fill:#babdb6;stroke:none;stroke-width:0.3"
+             x="120.55885"
+             y="88.234718"
+             id="tspan1957">- GLOBAL ID</tspan><tspan
+             sodipodi:role="line"
+             style="font-size:3.52778px;text-align:start;text-anchor:start;fill:#babdb6;stroke:none;stroke-width:0.3"
+             x="120.55885"
+             y="92.64444"
+             id="tspan1959">- NAME</tspan><tspan
+             sodipodi:role="line"
+             style="font-size:3.52778px;text-align:start;text-anchor:start;fill:#babdb6;stroke:none;stroke-width:0.3"
+             x="120.55885"
+             y="97.054169"
+             id="tspan1961">- DESCRIPTION</tspan><tspan
+             sodipodi:role="line"
+             style="font-size:3.52778px;text-align:start;text-anchor:start;fill:#babdb6;stroke:none;stroke-width:0.3"
+             x="120.55885"
+             y="101.46389"
+             id="tspan1963">- TYPE</tspan><tspan
+             sodipodi:role="line"
+             style="font-size:3.52778px;text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3"
+             x="120.55885"
+             y="105.87362"
+             id="tspan1965">- GEOMETRY</tspan><tspan
+             sodipodi:role="line"
+             style="font-size:3.52778px;text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3"
+             x="120.55885"
+             y="110.28334"
+             id="tspan2260">- LOCATION</tspan></text>
+      </g>
+      <g
+         id="g3197"
+         transform="translate(-78.74649,20.533045)">
+        <path
+           id="path2119"
+           style="fill:none;stroke:#2e3436;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+           d="m 152.55717,79.522043 c -0.554,0 -0.99994,0.445939 -0.99994,0.999939 0.0332,8.996821 0.002,0.467384 0,8.304402 0,0.553999 0.44594,0.999939 0.99994,0.999939 h 18.12085 c 0.554,0 0.99994,-0.44594 0.99994,-0.999939 V 84.95582 c 0,-0.554 -0.44594,-1.000456 -0.99994,-1.000456 h -1.95595 v -3.433382 c 0,-0.554 -0.44594,-0.999939 -0.99993,-0.999939 z"
+           sodipodi:nodetypes="sccssssscsss" />
+        <text
+           xml:space="preserve"
+           style="font-size:5.64444px;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT, Normal';text-align:center;text-anchor:middle;fill:#2e3436;stroke:none;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+           x="159.96442"
+           y="84.314484"
+           id="text2123"><tspan
+             sodipodi:role="line"
+             id="tspan2121"
+             style="font-size:5.64444px;fill:#2e3436;stroke:none;stroke-width:0.3"
+             x="159.96442"
+             y="84.314484">GROUPS</tspan></text>
+        <text
+           xml:space="preserve"
+           style="font-size:3.52778px;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT, Normal';text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+           x="152.69252"
+           y="88.234718"
+           id="text2127"><tspan
+             sodipodi:role="line"
+             style="font-size:3.52778px;text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3"
+             x="152.69252"
+             y="88.234718"
+             id="tspan2125">...</tspan></text>
+      </g>
+      <g
+         id="g3204"
+         transform="translate(-78.347362,20.533045)">
+        <path
+           id="path2129"
+           style="fill:none;stroke:#2e3436;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+           d="m 180.26003,79.522043 c -0.554,0 -0.99994,0.445939 -0.99994,0.999939 0.0332,8.996821 0.002,0.467384 0,8.304402 0,0.553999 0.44594,0.999939 0.99994,0.999939 h 25.00002 c 0.554,0 0.99994,-0.44594 0.99994,-0.999939 V 84.95582 c 0,-0.554 -0.44594,-1.000456 -0.99994,-1.000456 h -1.95595 v -3.433382 c 0,-0.554 -0.44594,-0.999939 -0.99993,-0.999939 z"
+           sodipodi:nodetypes="sccssssscsss" />
+        <text
+           xml:space="preserve"
+           style="font-size:5.64444px;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT, Normal';text-align:center;text-anchor:middle;fill:#2e3436;stroke:none;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+           x="191.37144"
+           y="84.314484"
+           id="text2133"><tspan
+             sodipodi:role="line"
+             id="tspan2131"
+             style="font-size:5.64444px;fill:#2e3436;stroke:none;stroke-width:0.3"
+             x="191.37144"
+             y="84.314484">RESOURCES</tspan></text>
+        <text
+           xml:space="preserve"
+           style="font-size:3.52778px;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT, Normal';text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+           x="180.39539"
+           y="88.234718"
+           id="text2137"><tspan
+             sodipodi:role="line"
+             style="font-size:3.52778px;text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3"
+             x="180.39539"
+             y="88.234718"
+             id="tspan2135">...</tspan></text>
+      </g>
+      <g
+         id="g3596"
+         transform="translate(-94.414472,20.738137)">
+        <g
+           id="g3230">
+          <path
+             id="rect1405"
+             style="fill:none;stroke:#2e3436;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+             d="m 121.9155,120.68433 c -0.554,0 -0.99994,0.44594 -0.99994,0.99994 0.0332,8.99683 0.002,31.68823 0,39.52525 0,0.554 0.44594,0.99994 0.99994,0.99994 h 19.70835 c 0.554,0 0.99994,-0.44594 0.99994,-0.99994 v -35.09141 c 0,-0.554 -0.44594,-1.00046 -0.99994,-1.00046 h -5.66012 v -3.43338 c 0,-0.554 -0.44594,-0.99994 -0.99993,-0.99994 z"
+             sodipodi:nodetypes="sccssssscsss" />
+          <text
+             xml:space="preserve"
+             style="font-size:5.64444px;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT, Normal';text-align:center;text-anchor:middle;fill:#2e3436;stroke:none;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+             x="128.43977"
+             y="125.47677"
+             id="text1409"><tspan
+               sodipodi:role="line"
+               id="tspan1407"
+               style="font-size:5.64444px;fill:#2e3436;stroke:none;stroke-width:0.3"
+               x="128.43977"
+               y="125.47677">WALL</tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:3.52778px;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT, Normal';text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+             x="122.05083"
+             y="129.397"
+             id="text1415"><tspan
+               sodipodi:role="line"
+               style="font-size:3.52778px;text-align:start;text-anchor:start;fill:#babdb6;stroke:none;stroke-width:0.3"
+               x="122.05083"
+               y="129.397"
+               id="tspan1519">- GLOBAL ID</tspan><tspan
+               sodipodi:role="line"
+               style="font-size:3.52778px;text-align:start;text-anchor:start;fill:#babdb6;stroke:none;stroke-width:0.3"
+               x="122.05083"
+               y="133.80673"
+               id="tspan1527">- NAME</tspan><tspan
+               sodipodi:role="line"
+               style="font-size:3.52778px;text-align:start;text-anchor:start;fill:#babdb6;stroke:none;stroke-width:0.3"
+               x="122.05083"
+               y="138.21645"
+               id="tspan1521">- DESCRIPTION</tspan><tspan
+               sodipodi:role="line"
+               style="font-size:3.52778px;text-align:start;text-anchor:start;fill:#babdb6;stroke:none;stroke-width:0.3"
+               x="122.05083"
+               y="142.62617"
+               id="tspan2262">- TYPE</tspan><tspan
+               sodipodi:role="line"
+               style="font-size:3.52778px;text-align:start;text-anchor:start;fill:#babdb6;stroke:none;stroke-width:0.3"
+               x="122.05083"
+               y="147.0359"
+               id="tspan2264">- GEOMETRY</tspan><tspan
+               sodipodi:role="line"
+               style="font-size:3.52778px;text-align:start;text-anchor:start;fill:#babdb6;stroke:none;stroke-width:0.3"
+               x="122.05083"
+               y="151.44563"
+               id="tspan2266">- LOCATION</tspan><tspan
+               sodipodi:role="line"
+               style="font-size:3.52778px;text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3"
+               x="122.05083"
+               y="155.85535"
+               id="tspan1523">- WALL TYPE</tspan><tspan
+               sodipodi:role="line"
+               style="font-size:3.52778px;text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3"
+               x="122.05083"
+               y="160.26508"
+               id="tspan1529">...</tspan></text>
+        </g>
+        <g
+           id="g3256"
+           transform="translate(29.703283)">
+          <path
+             id="path3232"
+             style="fill:none;stroke:#2e3436;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+             d="m 121.9155,120.68433 c -0.554,0 -0.99994,0.44594 -0.99994,0.99994 0.0332,8.99683 0.002,31.68823 0,39.52525 0,0.554 0.44594,0.99994 0.99994,0.99994 h 19.70835 c 0.554,0 0.99994,-0.44594 0.99994,-0.99994 v -35.09141 c 0,-0.554 -0.44594,-1.00046 -0.99994,-1.00046 h -5.66012 v -3.43338 c 0,-0.554 -0.44594,-0.99994 -0.99993,-0.99994 z"
+             sodipodi:nodetypes="sccssssscsss" />
+          <text
+             xml:space="preserve"
+             style="font-size:5.64444px;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT, Normal';text-align:center;text-anchor:middle;fill:#2e3436;stroke:none;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+             x="128.43977"
+             y="125.47677"
+             id="text3236"><tspan
+               sodipodi:role="line"
+               id="tspan3234"
+               style="font-size:5.64444px;fill:#2e3436;stroke:none;stroke-width:0.3"
+               x="128.43977"
+               y="125.47677">SLAB</tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:3.52778px;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT, Normal';text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round"
+             x="122.05083"
+             y="129.397"
+             id="text3254"><tspan
+               sodipodi:role="line"
+               style="font-size:3.52778px;text-align:start;text-anchor:start;fill:#babdb6;stroke:none;stroke-width:0.3"
+               x="122.05083"
+               y="129.397"
+               id="tspan3238">- GLOBAL ID</tspan><tspan
+               sodipodi:role="line"
+               style="font-size:3.52778px;text-align:start;text-anchor:start;fill:#babdb6;stroke:none;stroke-width:0.3"
+               x="122.05083"
+               y="133.80673"
+               id="tspan3240">- NAME</tspan><tspan
+               sodipodi:role="line"
+               style="font-size:3.52778px;text-align:start;text-anchor:start;fill:#babdb6;stroke:none;stroke-width:0.3"
+               x="122.05083"
+               y="138.21645"
+               id="tspan3242">- DESCRIPTION</tspan><tspan
+               sodipodi:role="line"
+               style="font-size:3.52778px;text-align:start;text-anchor:start;fill:#babdb6;stroke:none;stroke-width:0.3"
+               x="122.05083"
+               y="142.62617"
+               id="tspan3244">- TYPE</tspan><tspan
+               sodipodi:role="line"
+               style="font-size:3.52778px;text-align:start;text-anchor:start;fill:#babdb6;stroke:none;stroke-width:0.3"
+               x="122.05083"
+               y="147.0359"
+               id="tspan3246">- GEOMETRY</tspan><tspan
+               sodipodi:role="line"
+               style="font-size:3.52778px;text-align:start;text-anchor:start;fill:#babdb6;stroke:none;stroke-width:0.3"
+               x="122.05083"
+               y="151.44563"
+               id="tspan3248">- LOCATION</tspan><tspan
+               sodipodi:role="line"
+               style="font-size:3.52778px;text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3"
+               x="122.05083"
+               y="155.85535"
+               id="tspan3250">- SLAB TYPE</tspan><tspan
+               sodipodi:role="line"
+               style="font-size:3.52778px;text-align:start;text-anchor:start;fill:#2e3436;stroke:none;stroke-width:0.3"
+               x="122.05083"
+               y="160.26508"
+               id="tspan3252">...</tspan></text>
+        </g>
+      </g>
+      <path
+         style="fill:none;stroke:#2e3436;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;marker-end:url(#Dot)"
+         d="m 98.558201,55.817119 c 0,3.949447 -16.32226,3.949447 -16.32958,8.159377"
+         id="path3794"
+         sodipodi:nodetypes="cc" />
+      <path
+         style="fill:none;stroke:#2e3436;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;marker-end:url(#Dot)"
+         d="m 98.599271,55.817119 c 0,3.949447 13.325309,3.949447 13.332629,8.159377"
+         id="path3798"
+         sodipodi:nodetypes="cc" />
+      <path
+         style="fill:none;stroke:#2e3436;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;marker-end:url(#Dot)"
+         d="m 83.706561,92.272444 c 0,3.949446 -32.97041,3.572713 -32.97773,7.782646"
+         id="path4597"
+         sodipodi:nodetypes="cc" />
+      <path
+         style="fill:none;stroke:#2e3436;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;marker-end:url(#Dot)"
+         d="m 83.706561,92.272444 c 0,3.949446 -2.30615,3.572712 -2.31347,7.782646"
+         id="path4601"
+         sodipodi:nodetypes="cc" />
+      <path
+         style="fill:none;stroke:#2e3436;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;marker-end:url(#Dot)"
+         d="m 83.706561,92.272444 c 0,3.949446 29.235429,3.572711 29.228109,7.782646"
+         id="path4607"
+         sodipodi:nodetypes="cc" />
+      <path
+         style="fill:none;stroke:#2e3436;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;marker-end:url(#Dot)"
+         d="m 52.206771,133.11353 c 0,3.94945 -18.17435,4.09899 -18.18167,8.30893"
+         id="path4613"
+         sodipodi:nodetypes="cc" />
+      <path
+         style="fill:none;stroke:#2e3436;stroke-width:0.3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;marker-end:url(#Dot)"
+         d="m 52.206771,133.11353 c 0,3.94945 11.52893,4.09899 11.52161,8.30893"
+         id="path4617"
+         sodipodi:nodetypes="cc" />
+    </g>
+  </g>
+</svg>

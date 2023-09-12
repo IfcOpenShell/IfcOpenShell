@@ -143,7 +143,7 @@ class CopyToContainer(bpy.types.Operator, tool.Ifc.Operator):
                 old_to_new[tool.Ifc.get_entity(obj)] = result_objs
         # Recreate decompositions
         tool.Root.recreate_decompositions(relationships, old_to_new)
-        blenderbim.bim.handler.purge_module_data()
+        blenderbim.bim.handler.refresh_ui_data()
 
 
 class SelectContainer(bpy.types.Operator, tool.Ifc.Operator):

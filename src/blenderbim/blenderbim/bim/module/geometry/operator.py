@@ -272,7 +272,8 @@ class UpdateRepresentation(bpy.types.Operator, Operator):
             if self.ifc_representation_class == "IfcTessellatedFaceSet":
                 # We are explicitly casting to a tessellation, so remove all parametric materials.
                 element_type = ifcopenshell.util.element.get_type(product)
-                ifcopenshell.api.run("material.unassign_material", tool.Ifc.get(), product=element_type)
+                if element_type:  # Some invalid IFCs use material sets without a type.
+                    ifcopenshell.api.run("material.unassign_material", tool.Ifc.get(), product=element_type)
                 ifcopenshell.api.run("material.unassign_material", tool.Ifc.get(), product=product)
             else:
                 # These objects are parametrically based on an axis and should not be modified as a mesh
@@ -689,8 +690,11 @@ class OverrideDuplicateMove(bpy.types.Operator):
                 blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
             new_obj = obj.copy()
+            temp_data = None
             if obj.data:
-                new_obj.data = obj.data.copy()
+                # assure root.copy_class won't replace the previous mesh globally
+                temp_data = obj.data.copy()
+                new_obj.data = temp_data
             if obj == context.active_object:
                 self.new_active_obj = new_obj
             for collection in obj.users_collection:
@@ -699,8 +703,13 @@ class OverrideDuplicateMove(bpy.types.Operator):
             new_obj.select_set(True)
             # clear object's collection so it will be able to have it's own
             new_obj.BIMObjectProperties.collection = None
-            # Copy the actual class
+            # copy the actual class
             new = blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
+
+            # clean up the orphaned mesh with ifc id of the original object to avoid confusion
+            if new and temp_data:
+                tool.Blender.remove_data_block(temp_data)
+
             if new:
                 array_pset = ifcopenshell.util.element.get_pset(new, "BBIM_Array")
                 if array_pset:
@@ -711,7 +720,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
                     tool.Boundary.decorate_boundary(new_obj)
         # Recreate decompositions
         tool.Root.recreate_decompositions(relationships, old_to_new)
-        blenderbim.bim.handler.purge_module_data()
+        blenderbim.bim.handler.refresh_ui_data()
 
 
 class OverrideDuplicateMoveLinkedMacro(bpy.types.Macro):
@@ -779,7 +788,7 @@ class OverrideDuplicateMoveLinked(bpy.types.Operator):
                 old_to_new[tool.Ifc.get_entity(obj)] = new
         # Recreate decompositions
         tool.Root.recreate_decompositions(relationships, old_to_new)
-        blenderbim.bim.handler.purge_module_data()
+        blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
 
@@ -1067,7 +1076,7 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
 
         tool.Root.recreate_decompositions(relationships, old_to_new)
 
-        blenderbim.bim.handler.purge_module_data()
+        blenderbim.bim.handler.refresh_ui_data()
 
         return {"FINISHED"}
 
@@ -1214,7 +1223,7 @@ class RefreshAggregate(bpy.types.Operator):
 
         tool.Root.recreate_decompositions(relationships, old_to_new)
 
-        blenderbim.bim.handler.purge_module_data()
+        blenderbim.bim.handler.refresh_ui_data()
 
         return {"FINISHED"}
 
@@ -1407,6 +1416,7 @@ class OverrideModeSetEdit(bpy.types.Operator):
                     continue
 
             if tool.Geometry.is_meshlike(representation):
+                tool.Ifc.edit(obj)
                 if getattr(element, "HasOpenings", None):
                     # Mesh elements with openings must disable openings
                     # so that you can edit the original topology.
@@ -1425,7 +1435,9 @@ class OverrideModeSetEdit(bpy.types.Operator):
             else:
                 obj.select_set(False)
                 continue
-        if len(selected_objs) > 1 and (not context.selected_objects or len(context.selected_objects) != len(selected_objs)):
+        if len(selected_objs) > 1 and (
+            not context.selected_objects or len(context.selected_objects) != len(selected_objs)
+        ):
             # We are trying to edit at least one non-mesh-like object : Display a hint to the user
             self.report({"INFO"}, "Only mesh-compatible representations may be edited concurrently in edit mode.")
 
@@ -1551,6 +1563,8 @@ class OverrideModeSetObject(bpy.types.Operator):
                     self.edited_objs.append(obj)
                 elif getattr(element, "HasOpenings", None):
                     self.unchanged_objs_with_openings.append(obj)
+                else:
+                    tool.Ifc.finish_edit(obj)
 
         if self.edited_objs:
             return context.window_manager.invoke_props_dialog(self)
