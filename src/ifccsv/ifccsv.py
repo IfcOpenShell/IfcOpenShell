@@ -240,8 +240,7 @@ class IfcCsv:
             for index, format_query in formatting_indices.items():
                 if row[index] == null:
                     continue
-                if not isinstance(row[index], str):
-                    row[index] = '"' + str(row[index]).replace('"', '\\"') + '"'
+                row[index] = '"' + str(row[index]).replace('"', '\\"') + '"'
                 row[index] = ifcopenshell.util.selector.format(format_query.replace("{{value}}", row[index]))
 
     def sort_results(self, sort, attributes, include_global_id):
