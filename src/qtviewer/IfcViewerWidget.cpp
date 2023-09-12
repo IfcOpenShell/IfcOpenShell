@@ -1,16 +1,20 @@
 #include "IfcViewerWidget.h"
 #include <OpenGL/OpenGL.h>
-#include <osgGA/TrackballManipulator>
-#include <osgGA/FirstPersonManipulator>
 #include <osg/ShapeDrawable>
 #include <osg/Material>
 #include <osg/MatrixTransform>
+#include <osg/ComputeBoundsVisitor>
 #include <QMouseEvent>
 #include <QWheelEvent>
 #include <string>
+#include <vector>
+#include "MainWindow.h"
 #include "MessageLogger.h"
-#include "MouseHandler.h"
+#include "osg/Geode"
+#include "osg/Geometry"
+#include "osg/Vec3"
 #include "osg/ref_ptr"
+#include "osgGA/TrackballManipulator"
 
 IfcViewerWidget::IfcViewerWidget(qreal dpiScale, QWidget *parent) : 
     QOpenGLWidget(parent),
@@ -21,15 +25,20 @@ IfcViewerWidget::IfcViewerWidget(qreal dpiScale, QWidget *parent) :
                      )),
     m_viewer(new osgViewer::Viewer),
     root(new osg::Group)
-{ }
+{ 
+    m_mouseHandler = new osgGA::TrackballManipulator;
+    m_clearColor = osg::Vec4(0.7, 0.7, 0.7, 1.0);
+
+    //debug - override
+    //std::string filePath = "/Users/onizudb/Downloads/IFC/wallAtOrigin.ifc";
+    //this->loadFile(filePath);
+}
 
 void IfcViewerWidget::initializeGL()
 {
+    MessageLogger::log("Press `Cmd/Ctrl + o` or use the File menu to open an IFC file");
+
     // Set up the rendering context, load shaders and other resources, etc.:
-
-    MessageLogger::log("devicePixelRatio: " + std::to_string(m_dpiScale));
-
-    this->buildSceneData();
 
     // Set the root node as the scene data for the viewer
     m_viewer->setSceneData(root);
@@ -38,20 +47,16 @@ void IfcViewerWidget::initializeGL()
     state->setMode(GL_DEPTH_TEST, osg::StateAttribute::ON);
 
     m_viewer->getCamera()->setViewport(0, 0, this->width(), this->height());
-    m_viewer->getCamera()->setClearColor(osg::Vec4(0.8f, 0.8f, 0.8f, 1.0f));
+    m_viewer->getCamera()->setClearColor(m_clearColor);
     m_viewer->getCamera()->setGraphicsContext(m_graphicsWindow);
 
     // Add event handlers
 
     this->setMouseTracking(false);
-    
-    //osg::ref_ptr<osgGA::TrackballManipulator> trackballManipulator = new osgGA::TrackballManipulator;
-    //trackballManipulator->setAllowThrow(false);
-    //m_viewer->setCameraManipulator(trackballManipulator);
 
-    osg::ref_ptr<MouseHandler> mouseHandler = new MouseHandler(m_viewer);
-    mouseHandler->setAllowThrow(false);
-    m_viewer->setCameraManipulator(mouseHandler);
+    m_mouseHandler->setAllowThrow(false);
+
+    m_viewer->setCameraManipulator(m_mouseHandler);
 
     m_viewer->setThreadingModel(osgViewer::Viewer::SingleThreaded);
     m_viewer->realize();
@@ -70,16 +75,6 @@ void IfcViewerWidget::resizeGL(int w, int h)
 
 void IfcViewerWidget::paintGL()
 {
-    // Render geometries from the parsed IFC file
-    // Draw the scene:
-    //QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
-    //f->glClear(GL_COLOR_BUFFER_BIT); 
-
-    //MessageLogger::log("paintGL called");
-
-    glClear(GL_COLOR_BUFFER_BIT);
-    //glClearColor(0.2f, 0.6f, 0.9f, 0.5f);
-
     // Render OSG scene
     m_viewer->frame();
 }
@@ -141,32 +136,35 @@ unsigned int IfcViewerWidget::getMouseButtonNum(QMouseEvent* event)
     return button;
 }
 
-void IfcViewerWidget::buildSceneData()
+void IfcViewerWidget::loadFile(const std::string& filePath)
 {
-    // Cube
-    osg::ref_ptr<osg::Box> box = new osg::Box(osg::Vec3(0, 0, 0), 1.0f);
-    osg::ref_ptr<osg::ShapeDrawable> shapeDrawable = new osg::ShapeDrawable(box);
+    std::vector<osg::ref_ptr<osg::Geometry>> geometries;
 
-    // Set material properties (optional)
-    osg::ref_ptr<osg::Material> material = new osg::Material;
-    material->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4(1.0f, 0.0f, 0.0f, 1.0f)); // Red color
-    shapeDrawable->getOrCreateStateSet()->setAttributeAndModes(material.get());
+    if(!m_parser.Parse(filePath, geometries)) {
+        MessageLogger::log("Failed to prepare IFC geometry");
+        return;
+    }
+
+    MessageLogger::log("\nIFC geometry prepared");
 
     osg::ref_ptr<osg::Geode> geode = new osg::Geode;
-    geode->addDrawable(shapeDrawable);
+    for (auto geometry : geometries) {
+        geode->addDrawable(geometry);
+    }
 
-    // Apply a rotation to the cube to make it 3D
-    osg::ref_ptr<osg::MatrixTransform> cubeTransform = new osg::MatrixTransform;
+    prepareSceneWithGeometry(geode);
+
+    m_viewer->setCameraManipulator(m_mouseHandler);
+}
+
+void IfcViewerWidget::prepareSceneWithGeometry(osg::ref_ptr<osg::Geode> geode)
+{
+    // Apply a rotation to the model
+    // MatrixTransform allows applying transformations (translation, rotation, scaling) to its children
     osg::ref_ptr<osg::MatrixTransform> rotationTransform = new osg::MatrixTransform;
-    rotationTransform->setMatrix(osg::Matrix::rotate(osg::DegreesToRadians(45.0), osg::Vec3(1.0, 1.0, 0.0)));
-    cubeTransform->addChild(geode);
-    rotationTransform->addChild(cubeTransform);
+    rotationTransform->setMatrix(osg::Matrix::rotate(osg::DegreesToRadians(45.0), osg::Vec3(0.0, 0.0, 1.0)));
+    rotationTransform->addChild(geode);
 
-    // Translate the cube to a proper position
-    osg::ref_ptr<osg::MatrixTransform> translationTransform = new osg::MatrixTransform;
-    translationTransform->setMatrix(osg::Matrix::translate(osg::Vec3(0.0, 0.0, -5.0)));
-    translationTransform->addChild(rotationTransform);
-
-    // Add the cube to the root node
-    root->addChild(translationTransform);
+    // Add the model to the root node
+    root->addChild(rotationTransform);
 }
