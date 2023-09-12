@@ -22,6 +22,7 @@ import ifcopenshell.api
 from math import cos, sin, pi, tan, radians, degrees, atan, sqrt, ceil
 from mathutils import Vector, Matrix
 from itertools import chain
+from typing import List
 
 V = lambda *x: Vector([float(i) for i in x])
 sign = lambda x: x and (1, -1)[x < 0]
@@ -48,9 +49,25 @@ class ShapeBuilder:
     def __init__(self, ifc_file):
         self.file = ifc_file
 
-    def polyline(self, points, closed=False, position_offset=None, arc_points=[]):
-        # > points - list of points formatted like ( (x0, y0), (x1, y1) )
-        # < IfcIndexedPolyCurve
+    def polyline(
+        self, points: List[Vector], closed: bool = False, position_offset: Vector = None, arc_points: List[int] = []
+    ):
+        """
+        Generate an IfcIndexedPolyCurve based on the provided points.
+
+        :param points: List of points formatted as ( (x0, y0), (x1, y1) )
+        :type: List[Vector]
+        :param closed: Whether polyline should be closed. Default is False.
+        :type: bool, optional
+        :param position_offset: Optional offset to be applied to all points.
+        :type: Optional[Vector]
+        :param arc_points: Indices of the middle points for arcs. For creating an arc segment,
+        provide 3 points: `arc_start`, `arc_middle` and `arc_end` and add the `arc_middle`
+        point's index to this list.
+        :type: List[int]
+
+        :return: IfcIndexedPolyCurve
+        """
 
         if arc_points and self.file.schema == "IFC2X3":
             raise Exception("Arcs are not supported for IFC2X3.")
@@ -1372,44 +1389,32 @@ class ShapeBuilder:
             return tangent
 
         def get_bend_representation_item():
-            if is_circular_profile:
-                theta_segments = [0, theta / 2, theta]
-            else:
-                # TODO: try to replace with curves instead of segments
-                # get as much segment_length segments as possible
-                segment_length = pi / 20
-                num_segments = ceil(theta / segment_length)
-                theta_segments = [i * segment_length for i in range(num_segments)]
-                if not is_x(theta_segments[-1], theta):
-                    theta_segments.append(theta)
-
-            inner_points, outer_points = [], []
             r = radius
+            theta_segments = [0, theta / 2, theta]
             if is_circular_profile:
                 r += profile_dim[lateral_axis]
+                points = [get_circle_point(cur_theta, r) for cur_theta in theta_segments]
+                arc_points = (1,)
             else:
                 outer_r = r + 2 * profile_dim[lateral_axis]
+                inner_points = [get_circle_point(cur_theta, r) for cur_theta in theta_segments]
+                outer_points = [get_circle_point(cur_theta, outer_r) for cur_theta in theta_segments[::-1]]
+                points = inner_points + outer_points
+                arc_points = (1, 4)
 
-            for cur_theta in theta_segments:
-                inner_points.append(get_circle_point(cur_theta, r))
-                if not is_circular_profile:
-                    outer_points.append(get_circle_point(cur_theta, outer_r))
-
-            points = inner_points + outer_points[::-1]
             points = [p + O for p in points]
             offset = V(0, 0, 0)
             offset.z = z_sign * start_length
 
             if is_circular_profile:
-                bend_path = self.polyline(points, closed=False, arc_points=[1], position_offset=offset)
+                bend_path = self.polyline(points, closed=False, arc_points=arc_points, position_offset=offset)
                 bend = self.create_swept_disk_solid(bend_path, profile_dim[lateral_axis])
             else:
                 main_axes = lambda v: getattr(v, "xy"[lateral_axis] + "z")
-
                 offset[non_lateral_axis] = -profile_dim[non_lateral_axis]
 
                 extrusion_kwargs = self.extrude_kwargs("XY"[non_lateral_axis])
-                profile_curve = self.polyline([main_axes(p) for p in points], closed=True)
+                profile_curve = self.polyline([main_axes(p) for p in points], arc_points=arc_points, closed=True)
                 bend = self.extrude(
                     self.profile(profile_curve), profile_dim[non_lateral_axis] * 2, position=offset, **extrusion_kwargs
                 )
