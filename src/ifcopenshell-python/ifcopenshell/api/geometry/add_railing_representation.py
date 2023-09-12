@@ -111,7 +111,7 @@ class Usecase:
             support_disk_circle = builder.circle(radius=support_disk_radius)
 
             angle = V(0, 1).angle_signed(ortho_dir.xy)
-            y_extrusion_kwargs = builder.rotate_extrusion_kwargs_by_z(builder.extrude_by_y_kwargs(), angle)
+            y_extrusion_kwargs = builder.rotate_extrusion_kwargs_by_z(builder.extrude_kwargs("Y"), angle)
             support_disk = builder.extrude(
                 support_disk_circle, support_disk_depth, position=support_points[-1], **y_extrusion_kwargs
             )
