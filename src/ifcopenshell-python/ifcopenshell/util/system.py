@@ -92,35 +92,37 @@ def get_connected_port(port):
         return rel.RelatingPort
 
 
+def get_port_element(port):
+    if hasattr(port, "Nests"):
+        for rel in port.Nests:
+            return rel.RelatingObject
+    # IFC2X3 only, deprecated in IFC4
+    elif hasattr(port, "ContainedIn"):
+        for rel in port.ContainedIn:
+            return rel.RelatedElement
+
+
 def get_connected_to(element, flow_direction=None):
     results = []
     for port in ifcopenshell.util.system.get_ports(element, flow_direction=flow_direction):
-        for relConnectsPort in port.ConnectedTo:
-            for disPort in [relConnectsPort.RelatedPort, relConnectsPort.RelatingPort]:
-                if hasattr(disPort, "Nests"):
-                    for relNest in disPort.Nests:
-                        if relNest.RelatingObject != element:
-                            results.append(relNest.RelatingObject)
-                # IFC2X3 only, deprecated in IFC4
-                elif hasattr(disPort, "ContainedIn"):
-                    for relConPortToElement in disPort.ContainedIn:
-                        if relConPortToElement.RelatedElement != element:
-                            results.append(relConPortToElement.RelatedElement)
+        for rel in port.ConnectedTo:
+            for other_port in [rel.RelatedPort, rel.RelatingPort]:
+                if other_port == port:
+                    continue
+                other_element = get_port_element(other_port)
+                if other_element:
+                    results.append(other_element)
     return results
 
 
 def get_connected_from(element, flow_direction=None):
     results = []
     for port in ifcopenshell.util.system.get_ports(element, flow_direction=flow_direction):
-        for relConnectsPort in port.ConnectedFrom:
-            for disPort in [relConnectsPort.RelatedPort, relConnectsPort.RelatingPort]:
-                if hasattr(disPort, "Nests"):
-                    for relNest in disPort.Nests:
-                        if relNest.RelatingObject != element:
-                            results.append(relNest.RelatingObject)
-                # IFC2X3 only, deprecated in IFC4
-                elif hasattr(disPort, "ContainedIn"):
-                    for relConPortToElement in disPort.ContainedIn:
-                        if relConPortToElement.RelatedElement != element:
-                            results.append(relConPortToElement.RelatedElement)
+        for rel in port.ConnectedFrom:
+            for other_port in [rel.RelatedPort, rel.RelatingPort]:
+                if other_port == port:
+                    continue
+                other_element = get_port_element(other_port)
+                if other_element:
+                    results.append(other_element)
     return results
