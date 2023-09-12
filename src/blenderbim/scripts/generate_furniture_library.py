@@ -1134,8 +1134,7 @@ class LibraryGenerator:
             back_wall_extruded = builder.extrude(
                 back_wall,
                 back_wall_depth + back_wall_border_mask_depth,
-                position_z_axis=V(0, -1, 0),
-                extrusion_vector=V(0, 0, -1),
+                **builder.extrude_kwargs("Y")
             )
             items_3d_to_center.append(back_wall_extruded)
 
