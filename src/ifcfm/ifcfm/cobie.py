@@ -105,12 +105,66 @@ def get_systems(ifc_file):
     return results
 
 
+def get_assemblies(ifc_file):
+    results = []
+    layer_sets = ifc_file.by_type("IfcMaterialLayerSet")
+    layer_sets = []  # This is temporarily overridden because it is unclear exactly how this is stored in Type.
+    for layer_set in layer_sets:
+        for layer in layer_set.MaterialLayers:
+            results.append((None, layer_set, layer.Material))
+    rels = ifc_file.by_type("IfcRelAggregates") + ifc_file.by_type("IfcRelNests")
+    types = get_types(ifc_file)
+    components = get_components(ifc_file)
+    for rel in rels:
+        if rel.RelatingObject.is_a("IfcSpace"):
+            for related_object in rel.RelatedObjects:
+                if related_object.is_a("IfcSpace"):
+                    results.append((rel, rel.RelatingObject, related_object))
+        elif rel.RelatingObject.is_a("IfcZone"):
+            for related_object in rel.RelatedObjects:
+                if related_object.is_a("IfcZone"):
+                    results.append((rel, rel.RelatingObject, related_object))
+        elif rel.RelatingObject in types:
+            for related_object in rel.RelatedObjects:
+                if related_object in types:
+                    results.append((rel, rel.RelatingObject, related_object))
+        elif rel.RelatingObject in components:
+            for related_object in rel.RelatedObjects:
+                if related_object in components:
+                    results.append((rel, rel.RelatingObject, related_object))
+        elif rel.RelatingObject.is_a() in ("IfcSystem", "IfcDistributionSystem"):
+            for related_object in rel.RelatedObjects:
+                if related_object.is_a() in ("IfcSystem", "IfcDistributionSystem"):
+                    results.append((rel, rel.RelatingObject, related_object))
+    return results
+
+
+def get_connections(ifc_file):
+    return ifc_file.by_type("IfcRelConnectsPorts")
+
+
+def get_spares(ifc_file):
+    return ifc_file.by_type("IfcConstructionProductResource")
+
+
+def get_resources(ifc_file):
+    return ifc_file.by_type("IfcConstructionEquipmentResource")
+
+
+def get_jobs(ifc_file):
+    return ifc_file.by_type("IfcTask")
+
+
+def get_documents(ifc_file):
+    return [
+        r for r in ifc_file.by_type("IfcRelAssociatesDocument") if r.RelatingDocument.is_a("IfcDocumentInformation")
+    ]
+
+
 def get_contact_data(ifc_file, element):
     email = get_email_from_pao(element)
 
     history = get_history(ifc_file)
-    created_by = None
-    created_on = None
 
     roles = []
     for actor in [element, element.ThePerson, element.TheOrganization]:
@@ -523,17 +577,214 @@ def get_component_data(ifc_file, element):
 
 def get_system_data(ifc_file, element):
     system, component = element
+    category = get_category(system)
+    component_name = val(component.Name)
     return {
-        "key": val(system.Name),
+        "key": str(val(system.Name)) + str(category) + str(component_name),
         "Name": val(system.Name),
         "CreatedBy": get_created_by(system),
         "CreatedOn": get_created_on(system),
         "Category": get_category(system),
-        "ComponentNames": val(component.Name),
+        "ComponentNames": component_name,
         "ExternalSystem": get_external_system(system),
         "ExternalObject": system.is_a(),
         "ExternalIdentifier": system.GlobalId,
         "Description": val(system.Description) or val(system.Name),
+    }
+
+
+def get_assembly_data(ifc_file, element):
+    rel, relating_object, related_object = element
+
+    if relating_object.is_a("IfcMaterialLayerSet"):
+        name = val(relating_object.LayerSetName)
+        parent_name = name
+        if name:
+            name += " assembly"
+        assembly_type = "Layer"
+        sheet_name = "Type"
+        description = val(relating_object.LayerSetName)
+    else:
+        name = val(relating_object.Name)
+        parent_name = name
+        assembly_type = "Fixed"
+        sheet_name = "Component"
+        if relating_object.is_a("IfcSpace"):
+            sheet_name = "Space"
+        elif relating_object.is_a("IfcZone"):
+            sheet_name = "Zone"
+        elif relating_object.is_a("IfcSystem"):
+            sheet_name = "System"
+        elif relating_object.is_a("IfcElementType"):
+            sheet_name = "Type"
+        description = val(rel.Description) or val(rel.Name)
+
+    child_name = val(related_object.Name)
+    history = get_history(ifc_file)
+
+    return {
+        "key": str(name) + str(sheet_name) + str(parent_name),
+        "Name": name,
+        "CreatedBy": get_email_from_history(history) if history else None,
+        "CreatedOn": ifcopenshell.util.date.ifc2datetime(history.CreationDate).isoformat() if history else None,
+        "SheetName": sheet_name,
+        "ParentName": parent_name,
+        "ChildNames": child_name,
+        "AssemblyType": assembly_type,
+        "ExternalSystem": history.OwningApplication.ApplicationFullName if history else None,
+        "ExternalObject": rel.is_a() if rel else relating_object.is_a(),
+        "ExternalIdentifier": rel.GlobalId if rel else None,
+        "Description": description,
+    }
+
+
+def get_connection_data(ifc_file, element):
+    connection_type = (
+        val(element.RelatingPort.ObjectType)
+        or val(element.RelatedPort.ObjectType)
+        or val(element.Description)
+        or val(element.Name)
+    )
+    name = val(element.Name)
+    row_name1 = val(ifcopenshell.util.system.get_port_element(element.RelatingPort).Name)
+    row_name2 = val(ifcopenshell.util.system.get_port_element(element.RelatedPort).Name)
+    return {
+        "key": str(name) + str(connection_type) + str(row_name1) + str(row_name2),
+        "Name": name,
+        "CreatedBy": get_created_by(element),
+        "CreatedOn": get_created_on(element),
+        "ConnectionType": connection_type,
+        "SheetName": "Component",
+        "RowName1": row_name1,
+        "RowName2": row_name2,
+        "RealizingElement": val(element.RealizingElement.Name) if element.RealizingElement else None,
+        "PortName1": val(element.RelatingPort.Name),
+        "PortName2": val(element.RelatedPort.Name),
+        "ExternalSystem": get_external_system(element),
+        "ExternalObject": element.is_a(),
+        "ExternalIdentifier": element.GlobalId,
+        "Description": val(element.Description) or val(element.Name),
+    }
+
+
+def get_spare_data(ifc_file, element):
+    type_name = None
+    for rel in element.ResourceOf or []:
+        for related_object in rel.RelatedObjects or []:
+            if val(related_object.Name):
+                type_name = val(related_object.Name)
+
+    suppliers = None
+    set_number = None
+    part_number = None
+    for _, props in ifcopenshell.util.element.get_psets(element):
+        for name, value in props.items():
+            if name == "Suppliers" and val(value):
+                suppliers = str(value)
+            if name == "SetNumber" and val(value):
+                set_number = str(value)
+            if name == "PartNumber" and val(value):
+                part_number = str(value)
+
+    return {
+        "key": val(element),
+        "Name": val(element.Name),
+        "CreatedBy": get_created_by(element),
+        "CreatedOn": get_created_on(element),
+        "Category": get_category(element),
+        "TypeName": type_name,
+        "Suppliers": suppliers,
+        "ExternalSystem": get_external_system(element),
+        "ExternalObject": element.is_a(),
+        "ExternalIdentifier": element.GlobalId,
+        "Description": val(element.Description) or val(element.Name),
+        "SetNumber": set_number,
+        "PartNumber": part_number,
+    }
+
+
+def get_resource_data(ifc_file, element):
+    return {
+        "key": val(element.Name),
+        "Name": val(element.Name),
+        "CreatedBy": get_created_by(element),
+        "CreatedOn": get_created_on(element),
+        "Category": val(element.ObjectType),
+        "ExternalSystem": get_external_system(element),
+        "ExternalObject": element.is_a(),
+        "ExternalIdentifier": element.GlobalId,
+        "Description": val(element.Description) or val(element.Name),
+    }
+
+
+def get_job_data(ifc_file, element):
+    type_names = []
+    resource_names = []
+    for rel in element.OperatesOn or []:
+        for related_object in rel.RelatedObjects or []:
+            if not val(related_object.Name):
+                continue
+            if related_object.is_a("IfcTypeObject"):
+                type_names.append(related_object.Name)
+            elif related_object.is_a("IfcConstructionEquipmentResource"):
+                resource_names.append(related_object.Name)
+    type_name = ",".join(type_names) if type_names else None
+    resource_names = ",".join(resource_names) if resource_names else None
+
+    duration = None
+    duration_unit = None
+    start = None
+    task_start_unit = None
+    frequency = None
+    frequency_unit = None
+
+    for _, props in ifcopenshell.util.element.get_psets(element):
+        for name, value in props.items():
+            if not duration and name == "TaskDuration" and val(value):
+                duration = str(value)
+                if not duration_unit:
+                    duration_unit = get_property_unit(props["id"], name)
+            if not start and name == "TaskStartDate" and val(value):
+                start = str(value)
+                if not task_start_unit:
+                    task_start_unit = get_property_unit(props["id"], name)
+            if not frequency and name == "TaskInterval" and val(value):
+                frequency = str(value)
+                if not frequency_unit:
+                    frequency_unit = get_property_unit(props["id"], name)
+
+    task_number = val(getattr(element, "Id", None)) or val(getattr(element, "Identification", None))
+
+    priors = []
+    for rel in element.IsSuccessorFrom or []:
+        if rel.RelatedProcess.is_a("IfcTask"):
+            prior_task = rel.RelatedProcess
+            prior_id = val(getattr(prior_task, "Id", None)) or val(getattr(prior_task, "Identification", None))
+            if prior_id:
+                priors.append(prior_id)
+    priors = ",".join(priors) if priors else task_number
+
+    return {
+        "key": val(element.Name),
+        "Name": val(element.Name),
+        "CreatedBy": get_created_by(element),
+        "CreatedOn": get_created_on(element),
+        "Category": val(element.ObjectType),
+        "Status": val(element.Status),
+        "TypeName": type_name,
+        "Description": val(element.Description) or val(element.Name),
+        "Duration": duration,
+        "DurationUnit": duration_unit,
+        "Start": start,
+        "TaskStartUnit": task_start_unit,
+        "Frequency": frequency,
+        "FrequencyUnit": frequency_unit,
+        "ExternalSystem": get_external_system(element),
+        "ExternalObject": element.is_a(),
+        "ExternalIdentifier": element.GlobalId,
+        "TaskNumber": task_number,
+        "Priors": priors,
+        "ResourceNames": resource_names,
     }
 
 
@@ -726,6 +977,18 @@ get_category_elements = {
     "Type": get_types,
     "Component": get_components,
     "System": get_systems,
+    "Assembly": get_assemblies,
+    "Connection": get_connections,
+    "Spare": get_spares,
+    "Resource": get_resources,
+    "Job": get_jobs,
+    # "Impact": get_impacts, # Not implemented for some reason in BIMServer COBie-Plugins
+    "Document": get_documents,
+    "Attribute": get_attributes,
+    # Not implemented for some reason in BIMServer COBie-Plugins
+    # "Coordinate": get_coordinates,
+    # "Issue": get_issues,
+    # "Picklist": get_picklists,
 }
 
 get_element_data = {
@@ -737,6 +1000,17 @@ get_element_data = {
     "Type": get_type_data,
     "Component": get_component_data,
     "System": get_system_data,
+    "Assembly": get_assembly_data,
+    "Connection": get_connection_data,
+    "Spare": get_spare_data,
+    "Resource": get_resource_data,
+    "Job": get_job_data,
+    # "Impact": get_impact_data,
+    "Document": get_document_data,
+    "Attribute": get_attribute_data,
+    # "Coordinate": get_coordinate_data,
+    # "Issue": get_issue_data,
+    # "Picklist": get_picklist_data,
 }
 
 config = {
