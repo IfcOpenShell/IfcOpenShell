@@ -624,17 +624,36 @@ class ShapeBuilder:
         return ifcopenshell.util.element.copy_deep(self.file, element)
 
     # UTILITIES
-    def extrude_by_y_kwargs(self):
-        """Shortcut to get kwargs for `ShapeBuilder.extrude` to extrude by Y axis.
+    def extrude_kwargs(self, axis):
+        """Shortcut to get kwargs for `ShapeBuilder.extrude` to extrude by some axis.
 
-        It assumes you have 2D profile in XZ plane and trying to extrude it by Y axis.
+        It assumes you have 2D profile in:
+            XZ plane for Y axis extrusion, \n
+            YZ plane for X axis extrusion, \n
+            XY plane for Z axis extrusion, \n
 
-        Extruding by Y using other kwargs might break ValidExtrusionDirection."""
-        return {
-            "position_x_axis": Vector((1, 0, 0)),
-            "position_z_axis": Vector((0, -1, 0)),
-            "extrusion_vector": Vector((0, 0, -1)),
-        }
+        Extruding by X/Y using other kwargs might break ValidExtrusionDirection."""
+
+        axis = axis.upper()
+
+        if axis == "Y":
+            return {
+                "position_x_axis": Vector((1, 0, 0)),
+                "position_z_axis": Vector((0, -1, 0)),
+                "extrusion_vector": Vector((0, 0, -1)),
+            }
+        elif axis == "X":
+            return {
+                "position_x_axis": Vector((0, 1, 0)),
+                "position_z_axis": Vector((1, 0, 0)),
+                "extrusion_vector": Vector((0, 0, 1)),
+            }
+        elif axis == "Z":
+            return {
+                "position_x_axis": Vector((1, 0, 0)),
+                "position_z_axis": Vector((0, 0, 1)),
+                "extrusion_vector": Vector((0, 0, 1)),
+            }
 
     def rotate_extrusion_kwargs_by_z(self, kwargs, angle, counter_clockwise=False):
         """shortcut to rotate extrusion kwargs by z axis
@@ -1370,20 +1389,18 @@ class ShapeBuilder:
 
             points = inner_points + outer_points[::-1]
             points = [p + O for p in points]
-            offset = V(0, 0, 0)
 
             if is_circular_profile:
                 bend_path = self.polyline(points, closed=False, arc_points=[1])
                 bend = self.create_swept_disk_solid(bend_path, profile_dim[lateral_axis])
             else:
+                main_axes = lambda v: getattr(v, "xy"[lateral_axis] + "z")
+                offset = V(0, 0, 0)
                 offset[non_lateral_axis] = -profile_dim[non_lateral_axis]
-                extrusion_vector = V(0, 0, 0)
-                extrusion_vector[non_lateral_axis] = 1
-                bend = self.extrude_face_set(
-                    points,
-                    magnitude=profile_dim[non_lateral_axis] * 2,
-                    offset=offset,
-                    extrusion_vector=extrusion_vector,
+                extrusion_kwargs = self.extrude_kwargs("XY"[non_lateral_axis])
+                profile_curve = self.polyline([main_axes(p) for p in points], closed=True)
+                bend = self.extrude(
+                    self.profile(profile_curve), profile_dim[non_lateral_axis] * 2, position=offset, **extrusion_kwargs
                 )
             return bend
 
