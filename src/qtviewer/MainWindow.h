@@ -7,8 +7,7 @@
 #include <QAction>
 #include <QOpenGLWidget>
 #include <QPlainTextEdit>
-
-#include "ParseIfcFile.h"
+#include <string>
 
 class MainWindow : public QMainWindow
 {
@@ -16,6 +15,9 @@ class MainWindow : public QMainWindow
 
 public:
     MainWindow(qreal dpiScale, QWidget *parent = nullptr);
+
+signals:
+    void loadFileInViewerWidget(const std::string& filePath);
 
 public slots:
     void openFile();
@@ -40,12 +42,8 @@ private:
     QAction *m_backgroundAction;
     QAction *m_outlineAction;
 
-    QString m_currentPath;
-
     QOpenGLWidget *m_glWidget;
     QPlainTextEdit *m_outputText;
-
-    ParseIfcFile m_parser;
 };
 
 #endif // MAINWINDOW_H

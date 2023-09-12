@@ -64,8 +64,6 @@ set_source_files_properties(${app_icon_macos} PROPERTIES
 
 add_executable(${targetName}
     MessageLogger.h
-    MouseHandler.h
-    MouseHandler.cpp
     IfcViewerWidget.h
     IfcViewerWidget.cpp
     ParseIfcFile.h
