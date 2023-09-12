@@ -84,6 +84,8 @@ void MainWindow::createConnections()
 
     //connect(&m_parser, &ParseIfcFile::parsingInfo, this, &MainWindow::appendToOutputText);
     connect(&MessageLogger::getInstance(), SIGNAL(logMessage(QString)), this, SLOT(appendToOutputText(QString)));
+
+    connect(this, SIGNAL(loadFileInViewerWidget(const std::string&)), m_glWidget, SLOT(loadFile(const std::string&)));
 }
 
 void MainWindow::appendToOutputText(const QString& message)
@@ -119,11 +121,10 @@ void MainWindow::openFile()
     QString message = tr("Opening file: %1\n").arg(filePath);
     appendToOutputText(message);
 
-    m_parser.Parse(filePath.toStdString());
-
-    m_currentPath = filePath;
     setWindowTitle(tr("%1 - IFCViewer").arg(fileName));
 
     m_outlineAction->setEnabled(true);
     m_backgroundAction->setEnabled(true);
+
+    emit loadFileInViewerWidget(filePath.toStdString());
 }

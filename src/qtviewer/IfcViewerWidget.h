@@ -9,13 +9,25 @@
 #include <osg/ref_ptr>
 #include <osgViewer/GraphicsWindow>
 #include <osgViewer/Viewer>
+#include <osgGA/TrackballManipulator>
 #include <osg/Group>
+#include <string>
+
+#include "ParseIfcFile.h"
+#include "osg/Vec4"
 
 class IfcViewerWidget : public QOpenGLWidget
 {
+    Q_OBJECT
 
 public:
-    IfcViewerWidget(qreal dpiScale, QWidget *parent = nullptr);
+    IfcViewerWidget(
+        qreal dpiScale, 
+        QWidget *parent = nullptr
+    );
+
+public slots:
+    void loadFile(const std::string& filePath);
 
 protected:
     virtual void initializeGL() override; // to set up resources, state
@@ -31,13 +43,18 @@ protected:
 private:
     qreal m_dpiScale;
     QMatrix4x4 m_projection;
+    osg::Vec4 m_clearColor;
+    osg::ref_ptr<osgGA::TrackballManipulator> m_mouseHandler;
     osg::ref_ptr<osgViewer::GraphicsWindowEmbedded> m_graphicsWindow;
     osg::ref_ptr<osgViewer::Viewer> m_viewer;
     osg::ref_ptr<osg::Group> root; // OSG root node
 
+    ParseIfcFile m_parser;
+
     osgGA::EventQueue* getEventQueue() const;
     unsigned int getMouseButtonNum(QMouseEvent* event);
-    void buildSceneData();
+
+    void prepareSceneWithGeometry(osg::ref_ptr<osg::Geode> geode);
 };
 
 #endif // IFCVIEWERWIDGET_H
