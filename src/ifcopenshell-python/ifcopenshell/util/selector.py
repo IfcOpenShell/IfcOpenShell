@@ -128,7 +128,7 @@ format_grammar = lark.Lark(
     upper: "upper(" function ")"
     title: "title(" function ")"
     concat: "concat(" function ("," function)* ")"
-    substr: "substr(" function "," SIGNED_INT "," SIGNED_INT ")"
+    substr: "substr(" function "," SIGNED_INT ["," SIGNED_INT] ")"
 
     // Embed common.lark for packaging
     DIGIT: "0".."9"
@@ -186,7 +186,12 @@ class FormatTransformer(lark.Transformer):
         return "".join(args)
 
     def substr(self, args):
-        return str(args[0])[int(args[1]) : int(args[2])]
+        if len(args) == 3:
+            if args[2] is None:
+                return str(args[0])[int(args[1]) :]
+            return str(args[0])[int(args[1]) : int(args[2])]
+        elif len(args) == 2:
+            return str(args[0])[int(args[1]) :]
 
     def round(self, args):
         value = Decimal(args[0] or 0.0)
