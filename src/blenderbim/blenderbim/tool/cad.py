@@ -526,3 +526,7 @@ class Cad:
         if cls.is_x(value, 0):
             return 0
         return 1 if value > 0 else -1
+
+    @classmethod
+    def get_basis_vector(cls, object, axis_i):
+        return object.matrix_world.col[axis_i].normalized().to_3d()

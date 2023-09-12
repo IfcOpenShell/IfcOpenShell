@@ -882,12 +882,6 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
         ifc_file = tool.Ifc.get()
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
 
-        self.start_length, self.end_length = 0, 0
-
-        if not (self.start_length == 0 and self.end_length == 0):
-            self.report({"ERROR"}, f"Only zero lengths are now supported.")
-            return {"CANCELLED"}
-
         if self.start_segment_id and self.end_segment_id:
             start_element = ifc_file.by_id(self.start_segment_id)
             end_element = ifc_file.by_id(self.end_segment_id)
@@ -971,7 +965,7 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
             end_segment_data["end_point"]: end_segment_data["end_port"],
         }
 
-        get_z_basis = lambda o: o.matrix_world.col[2].normalized().to_3d()
+        get_z_basis = lambda o: tool.Cad.get_basis_vector(o, 2)
         segments_intersection_ws = tool.Cad.intersect_edges(
             (start_object.location, start_object.location + get_z_basis(start_object)),
             (end_object.location, end_object.location + get_z_basis(end_object)),
@@ -1058,8 +1052,8 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
             current_start_offset = segments_intersection.length
             current_end_offset = (segments_intersection - profile_offset).length
 
-            start_extend = current_start_offset - required_offset
-            end_extend = current_end_offset - required_offset
+            start_extend = current_start_offset - (required_offset + self.start_length)
+            end_extend = current_end_offset - (required_offset + self.end_length)
 
             return start_extend, end_extend
 
