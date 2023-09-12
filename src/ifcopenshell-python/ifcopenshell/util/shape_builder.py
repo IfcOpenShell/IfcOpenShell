@@ -1321,6 +1321,7 @@ class ShapeBuilder:
         # TODO: test with 0 radius
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         profile = get_profile(segment)
+        is_circular_profile = profile.is_a("IfcCircleProfileDef")
         profile_dim = get_dim(profile, start_length)
 
         rounded_offset = round_vector_to_precision(profile_offset, si_conversion)
@@ -1334,19 +1335,23 @@ class ShapeBuilder:
         # bend circle center
         O = V(0, 0, 0)
         O[lateral_axis] = (radius + profile_dim[lateral_axis]) * lateral_sign
-
         theta = angle
 
-        def get_circle_extrusion():
-            # get as much segment_length segments as possible
-            segment_length = pi / 20
-            num_segments = ceil(theta / segment_length)
-            theta_segments = [i * segment_length for i in range(num_segments)]
-            if not is_x(theta_segments[-1], theta):
-                theta_segments.append(theta)
+        def get_bend_representation_item():
+            if is_circular_profile:
+                theta_segments = [0, theta / 2, theta]
+            else:
+                # get as much segment_length segments as possible
+                segment_length = pi / 20
+                num_segments = ceil(theta / segment_length)
+                theta_segments = [i * segment_length for i in range(num_segments)]
+                if not is_x(theta_segments[-1], theta):
+                    theta_segments.append(theta)
 
             inner_points, outer_points = [], []
             r = radius
+            if is_circular_profile:
+                r += profile_dim[lateral_axis]
 
             for cur_theta in theta_segments:
                 cur_theta -= pi / 2
@@ -1356,24 +1361,33 @@ class ShapeBuilder:
                 inner[lateral_axis] = lateral_sign * sin(cur_theta) * r
                 inner_points.append(inner)
 
-                outer = V(0, 0, 0)
-                outer.z             = z_sign       * cos(cur_theta) * (r + 2 * profile_dim[lateral_axis])
-                outer[lateral_axis] = lateral_sign * sin(cur_theta) * (r + 2 * profile_dim[lateral_axis])
-                outer_points.append(outer)
+                if not is_circular_profile:
+                    outer = V(0, 0, 0)
+                    outer.z             = z_sign       * cos(cur_theta) * (r + 2 * profile_dim[lateral_axis])
+                    outer[lateral_axis] = lateral_sign * sin(cur_theta) * (r + 2 * profile_dim[lateral_axis])
+                    outer_points.append(outer)
                 # fmt: on
 
             points = inner_points + outer_points[::-1]
             points = [p + O for p in points]
             offset = V(0, 0, 0)
-            offset[non_lateral_axis] = -profile_dim[non_lateral_axis]
-            extrusion_vector = V(0, 0, 0)
-            extrusion_vector[non_lateral_axis] = 1
-            extrusion = self.extrude_face_set(
-                points, magnitude=profile_dim[non_lateral_axis] * 2, offset=offset, extrusion_vector=extrusion_vector
-            )
-            return extrusion
 
-        rep_items.append(get_circle_extrusion())
+            if is_circular_profile:
+                bend_path = self.polyline(points, closed=False, arc_points=[1])
+                bend = self.create_swept_disk_solid(bend_path, profile_dim[lateral_axis])
+            else:
+                offset[non_lateral_axis] = -profile_dim[non_lateral_axis]
+                extrusion_vector = V(0, 0, 0)
+                extrusion_vector[non_lateral_axis] = 1
+                bend = self.extrude_face_set(
+                    points,
+                    magnitude=profile_dim[non_lateral_axis] * 2,
+                    offset=offset,
+                    extrusion_vector=extrusion_vector,
+                )
+            return bend
+
+        rep_items.append(get_bend_representation_item())
         body = ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW")
         rep = self.get_representation(body, rep_items)
 
