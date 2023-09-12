@@ -272,8 +272,6 @@ def set_element_value(ifc_file, element, query, value):
         keys = GetElementTransformer().transform(get_element_grammar.parse(query))
 
     for i, key in enumerate(keys):
-        if isinstance(key, str):
-            key = key.strip()
         if element is None:
             return
         if key == "type":
@@ -789,8 +787,6 @@ class Selector:
     def get_element_value(cls, element, keys):
         value = element
         for key in keys:
-            if isinstance(key, str):
-                key = key.strip()
             if value is None:
                 return
             if key == "type":
