@@ -68,9 +68,7 @@ def update_simple_openings(element, opening_width, opening_height):
             shape_builder.rectangle(size=Vector([opening_width, 0.0, opening_height]).xz),
             magnitude=thickness / unit_scale,
             position=Vector([0.0, -0.1 / unit_scale, 0.0]),
-            position_x_axis=V(1, 0, 0),
-            position_z_axis=V(0, -1, 0),
-            extrusion_vector=V(0, 0, -1),
+            **shape_builder.extrude_kwargs("Y")
         )
 
         new_representation = shape_builder.get_representation(context, extrusion)
