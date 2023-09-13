@@ -1454,5 +1454,6 @@ class ShapeBuilder:
             "lateral_axis": lateral_axis,
             "lateral_sign": lateral_sign,
             "flip_z_axis": flip_z_axis,
+            "main_profile_dimension": profile_dim[lateral_axis],
         }
         return rep, bend_data
