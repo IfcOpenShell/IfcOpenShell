@@ -46,12 +46,12 @@ function(get_all_option_flags output_list)
     file(READ "${CMAKE_SOURCE_DIR}/CMakeLists.txt" cmake_contents)
 
     # Find all OPTION flags using a regular expression
-    string(REGEX MATCHALL "OPTION\\s*\\(\\s*([A-Za-z0-9_]+)" matches "${cmake_contents}")
+    string(REGEX MATCHALL "[oO][pP][tT][iI][oO][nN]\\s*\\(\\s*([A-Za-z0-9_]+)" matches "${cmake_contents}")
 
     # Extract the variable names from the matches
     set(option_flags)
     foreach(match IN LISTS matches)
-        string(REGEX REPLACE "OPTION\\s*\\(\\s*([A-Za-z0-9_]+)" "\\1" option_flag "${match}")
+        string(REGEX REPLACE "[oO][pP][tT][iI][oO][nN]\\s*\\(\\s*([A-Za-z0-9_]+)" "\\1" option_flag "${match}")
         list(APPEND option_flags "${option_flag}")
     endforeach()
 
