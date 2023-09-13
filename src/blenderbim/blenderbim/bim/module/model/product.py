@@ -283,49 +283,6 @@ class AddConstrTypeInstance(bpy.types.Operator):
             return True
 
 
-class ReplaceSelectedWithTypeOccurences(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.replace_selected_with_type_occurences"
-    bl_label = "Replace Selected With Type Occurences"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = (
-        "\nReplace selected objects with type either chosen in BIM tools or provided in the argument.\n\n"
-        "NOTE: Currently it's just replacing original object by occurence with the same transform, \n"
-        "no other data from original object is preserved."
-    )
-    relating_type_id: bpy.props.IntProperty(default=0)
-
-    @classmethod
-    def poll(cls, context):
-        if not context.selected_objects:
-            cls.poll_message_set("No objects selected")
-            return False
-        return True
-
-    def _execute(self, context):
-        props = context.scene.BIMModelProperties
-        relating_type_id = self.relating_type_id or int(props.relating_type_id)
-
-        if not relating_type_id:
-            self.report({"ERROR"}, "No type provided.")
-            return {"FINISHED"}
-
-        originally_active_object = context.active_object
-        new_active_object = None
-        objs = bpy.context.selected_objects[:]
-        new_objects = []
-        for replaced_obj in objs:
-            bpy.ops.bim.add_constr_type_instance(relating_type_id=relating_type_id)
-            new_objects.append(obj := bpy.context.active_object)
-
-            obj.matrix_world = replaced_obj.matrix_world
-            if replaced_obj == originally_active_object:
-                new_active_object = obj
-
-            bpy.data.objects.remove(replaced_obj)
-        tool.Blender.set_objects_selection(context, new_active_object, new_objects)
-        return {"FINISHED"}
-
-
 class ChangeTypePage(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_type_page"
     bl_label = "Change Type Page"
