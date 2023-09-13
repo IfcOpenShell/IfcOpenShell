@@ -73,7 +73,15 @@ namespace ifcopenshell {
 				size_t circle_segments_;
 
 #ifndef IFOPSH_SIMPLE_KERNEL
-				bool preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_reference, const cgal_shape_t& shape_const, CGAL::Nef_polyhedron_3<Kernel_>& result, bool dilate);
+				enum boolean_operand_preprocess { 
+					PP_MINKOWSKY_DILATE,
+					PP_SNAP_POINTS_TO_FIRST_OPERAND,
+					PP_SNAP_PLANES_TO_FIRST_OPERAND,
+					PP_UNIFY_PLANES_INTERNALLY,
+					PP_NONE
+				};
+
+				bool preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_reference, const std::list<cgal_shape_t>& first_operands, const std::list<CGAL::Nef_polyhedron_3<Kernel_>>& first_operands_nef, const std::list<Kernel_::Plane_3>& all_operand_planes, const cgal_shape_t& shape_const, CGAL::Nef_polyhedron_3<Kernel_>& result, boolean_operand_preprocess proc);
 
 				bool thin_solid(const CGAL::Nef_polyhedron_3<Kernel_>& a, CGAL::Nef_polyhedron_3<Kernel_>& result);
 

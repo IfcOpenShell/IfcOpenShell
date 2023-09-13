@@ -23,6 +23,7 @@
 
 #include "../../../ifcparse/IfcLogger.h"
 #include "../../../ifcgeom/kernels/cgal/CgalConversionResult.h"
+#include "../../../ifcgeom/kernels/cgal/nef_to_halfspace_tree.h"
 
 #include <CGAL/minkowski_sum_3.h>
 #include <CGAL/exceptions.h>
@@ -32,6 +33,7 @@
 #include <CGAL/Arr_vertical_decomposition_2.h>
 #include <CGAL/Polygon_vertical_decomposition_2.h>
 #include <CGAL/Polygon_triangulation_decomposition_2.h>
+#include <CGAL/Polygon_mesh_processing/locate.h>
 
 using namespace IfcGeom;
 using namespace ifcopenshell::geometry;
@@ -807,6 +809,33 @@ bool ifcopenshell::geometry::kernels::CgalKernel::convert_openings(const IfcUtil
 	
 	std::list<std::pair<const IfcUtil::IfcBaseClass*, std::list<cgal_shape_t>>> operands;
 
+	std::list<const IfcUtil::IfcBaseClass*> second_operand_instances;
+	std::list<cgal_shape_t> first_operands, second_operands;
+	std::list<CGAL::Nef_polyhedron_3<Kernel_>> first_operands_nef, second_operands_nef;
+
+	for (auto& shp : entity_shapes) {
+		auto entity_shape = ((CgalShape*)shp.Shape())->shape();
+		const auto& m = shp.Placement()->ccomponents();
+		if (!m.isIdentity()) {
+			cgal_placement_t trsf;
+			convert_placement(m, trsf);
+			for (auto &vertex : vertices(entity_shape)) {
+				vertex->point() = vertex->point().transform(trsf);
+			}
+		}
+		first_operands.push_back(entity_shape);
+
+
+		CGAL::Nef_polyhedron_3<Kernel_> a;
+		if (!preprocess_boolean_operand(entity, {}, {}, {}, entity_shape, a, PP_UNIFY_PLANES_INTERNALLY)) {
+			continue;
+		}
+
+		first_operands_nef.push_back(a);
+	}
+
+	std::list<Kernel_::Plane_3> all_operand_planes;
+
 	for (auto& op : openings) {
 		auto opening_trsf = op.second;
 		Eigen::Matrix4d relative = entity_trsf.ccomponents().inverse() * opening_trsf.ccomponents();
@@ -829,12 +858,30 @@ bool ifcopenshell::geometry::kernels::CgalKernel::convert_openings(const IfcUtil
 				}
 			}
 			CGAL::Nef_polyhedron_3<Kernel_> nef;
-			if (!preprocess_boolean_operand(op.first->instance->as<IfcUtil::IfcBaseClass>(), entity_shape, nef, true)) {
+			if (!preprocess_boolean_operand(op.first->instance->as<IfcUtil::IfcBaseClass>(), {}, {}, {}, entity_shape, nef, PP_NONE)) {
 				continue;
 			}
-			second_operand_collector.add_polyhedron(nef);
-			second_operand_collector_size++;
+
+			auto graph = build_facet_edge_graph(nef);
+			auto tree = build_halfspace_tree(graph, nef);
+			tree->accumulate(all_operand_planes);
+
+			second_operand_instances.push_back(op.first->instance->as<IfcUtil::IfcBaseClass>());
+			second_operands.push_back(entity_shape);
+			second_operands_nef.push_back(nef);
 		}
+	}
+
+	auto iit = second_operand_instances.begin();
+	auto pit = second_operands.begin();
+	for (auto& nef : second_operands_nef) {
+		auto& inst = *iit++;
+		auto& entity_shape = *pit++;
+		if (!preprocess_boolean_operand(inst, first_operands, first_operands_nef, all_operand_planes, entity_shape, nef, PP_SNAP_PLANES_TO_FIRST_OPERAND)) {
+			continue;
+		}
+		second_operand_collector.add_polyhedron(nef);
+		second_operand_collector_size++;
 	}
 
 	if (!second_operand_collector_size) {
@@ -843,20 +890,16 @@ bool ifcopenshell::geometry::kernels::CgalKernel::convert_openings(const IfcUtil
 
 	auto opening_union = second_operand_collector.get_union();
 
-	for (auto& shp : entity_shapes) {
-		auto entity_shape = ((CgalShape*)shp.Shape())->shape();
-		const auto& m = shp.Placement()->ccomponents();
-		if (!m.isIdentity()) {
-			cgal_placement_t trsf;
-			convert_placement(m, trsf);
-			for (auto &vertex : vertices(entity_shape)) {
-				vertex->point() = vertex->point().transform(trsf);
-			}
-		}
+	auto it = entity_shapes.begin();
+	auto nit = first_operands_nef.begin();
+	for (auto& entity_shape : first_operands) {
+		auto& a = *nit;
 
-		CGAL::Nef_polyhedron_3<Kernel_> a;
-		if (!preprocess_boolean_operand(entity, entity_shape, a, false)) {
-			continue;
+		{
+			static int NN = 0;
+			auto s = std::string("debug-first-operand-") + std::to_string(NN++) + ".off";
+			std::ofstream ofs(s.c_str());
+			ofs << entity_shape;
 		}
 
 		a -= opening_union;
@@ -869,7 +912,9 @@ bool ifcopenshell::geometry::kernels::CgalKernel::convert_openings(const IfcUtil
 			return false;
 		}
 
-		cut_shapes.push_back(IfcGeom::ConversionResult(shp.ItemId(), new CgalShape(a_poly), shp.StylePtr()));
+		cut_shapes.push_back(IfcGeom::ConversionResult(it->ItemId(), new CgalShape(a_poly), it->StylePtr()));
+		it++;
+		nit++;
 	}
 
 	return true;
@@ -1197,7 +1242,7 @@ bool CgalKernel::thin_solid(const CGAL::Nef_polyhedron_3<Kernel_>& a, CGAL::Nef_
 	return true;
 }
 
-bool CgalKernel::preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_reference, const cgal_shape_t& shape_const, CGAL::Nef_polyhedron_3<Kernel_>& result, bool dilate) {
+bool CgalKernel::preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_reference, const std::list<cgal_shape_t>& first_operands, const std::list<CGAL::Nef_polyhedron_3<Kernel_>>& first_operands_nef, const std::list<Kernel_::Plane_3>& all_operand_planes, const cgal_shape_t& shape_const, CGAL::Nef_polyhedron_3<Kernel_>& result, boolean_operand_preprocess proc) {
 	cgal_shape_t shape = shape_const;
 
 	if (!shape.is_valid()) {
@@ -1231,6 +1276,67 @@ bool CgalKernel::preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_ref
 		return false;
 	}
 
+	if (proc == PP_SNAP_POINTS_TO_FIRST_OPERAND) {
+		static int NN = 0;
+		typedef CGAL::AABB_face_graph_triangle_primitive<cgal_shape_t>                AABB_face_graph_primitive;
+		typedef CGAL::AABB_traits<Kernel_, AABB_face_graph_primitive>               AABB_face_graph_traits;
+
+		CGAL::AABB_tree<AABB_face_graph_traits> tree;
+
+		for (auto& op : first_operands) {
+			auto tm = op;
+
+			CGAL::Polygon_mesh_processing::triangulate_faces(tm);
+			CGAL::Polygon_mesh_processing::build_AABB_tree(tm, tree);
+
+			std::transform(tm.facets_begin(), tm.facets_end(), tm.planes_begin(), [](auto& f) {
+				auto h = f.halfedge();
+				return CGAL::Plane_3<Kernel_>(h->vertex()->point(),
+					h->next()->vertex()->point(),
+					h->next()->next()->vertex()->point());
+			});
+
+			for (auto it = shape.vertices_begin(); it != shape.vertices_end(); ++it) {
+				for (auto& x : first_operands) {
+					// @nb snapping_tolerance 'snaps' the barycentric coords to 0 or 1
+					// so that not only the point aligns to the face, but to an edge
+					// as well. Snapping only to face would cause a rotation of line b:
+					//         +
+					//         |
+					//         |
+					//         |
+					//         |
+					//         |
+					//      o-->
+					//      |  |
+					//      |  |
+					//      |  |
+					//     b|  |
+					//      |  |
+					//      |  |
+					//      |  |
+					//      o  |
+					//  +---v--+
+					auto ploc = CGAL::Polygon_mesh_processing::locate_with_AABB_tree(it->point(), tree, tm, CGAL::Polygon_mesh_processing::parameters::snapping_tolerance(1.e-5));
+					/*std::stringstream ss;
+					ss << std::setprecision(16) << ploc.second[0] << " " << ploc.second[1] << " " << ploc.second[2] << std::endl;
+					auto sss = ss.str();
+					std::wcout << sss.c_str() << std::endl;*/
+					auto v = ploc.first->plane().orthogonal_vector();
+					auto new_point = CGAL::Polygon_mesh_processing::construct_point(ploc, tm);
+					if ((v * (new_point - it->point())) > 0) {
+						auto vl = std::sqrt(CGAL::to_double(v.squared_length()));
+						// @nb offsetting along plane normal is still necessary even after snapping
+						it->point() = new_point + (v / vl) * 1.e-5;
+					}
+				}
+			}
+		}
+		auto s = std::string("debug-operand-") + std::to_string(NN++) + ".off";
+		std::ofstream ofs(s.c_str());
+		ofs << shape;
+	}
+
 	try {
 		result = CGAL::Nef_polyhedron_3<Kernel_>(shape);
 	} catch (CGAL::Failure_exception& e) {
@@ -1239,9 +1345,45 @@ bool CgalKernel::preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_ref
 		return false;
 	}
 
-	auto precision_cube_ = precision_cube();
+	if (proc == PP_SNAP_PLANES_TO_FIRST_OPERAND) {
+		std::list<Kernel_::Plane_3> planes_fixed;
+		for (auto& nef : first_operands_nef) {
+			// @todo eliminate this copy (= to remove const)
+			auto nef_copy = nef;
+			auto graph = build_facet_edge_graph(nef);
+			auto tree = build_halfspace_tree(graph, nef_copy);
+			tree->accumulate(planes_fixed);
+		}
+		{
+			// @nb we snap internally as well...
+			// @todo we can probably eliminate an evaluate() here
+			{
+				auto graph = build_facet_edge_graph(result);
+				// @todo is it deterministic enough so that rebuilding the same tree is identical/compatible?
+				auto tree = build_halfspace_tree(graph, result);
+				auto pmap = snap_halfspaces(all_operand_planes, 1.e-5);
+				result = tree->map(pmap)->evaluate();
+			}
+			{
+				std::list<Kernel_::Plane_3> planes;
+				auto graph = build_facet_edge_graph(result);
+				auto tree = build_halfspace_tree(graph, result);
+				tree->accumulate(planes);
+				auto pmap = snap_halfspaces_2(planes_fixed, planes, 1.e-5);
+				result = tree->map(pmap)->evaluate();
+			}
+		}
+	} else if (proc == PP_UNIFY_PLANES_INTERNALLY) {
+		std::list<Kernel_::Plane_3> planes;
+		auto graph = build_facet_edge_graph(result);
+		auto tree = build_halfspace_tree(graph, result);
+		tree->accumulate(planes);
+		auto pmap = snap_halfspaces(planes, 1.e-4);
+		result = tree->map(pmap)->evaluate();
+	}
 
-	if (dilate) {
+	if (proc == PP_MINKOWSKY_DILATE) {
+		auto precision_cube_ = precision_cube();
 		try {
 			// @todo don't dilate in 3 dimensions but only in the XY plane, orthogonal to wall axis.
 			result = CGAL::minkowski_sum_3(result, precision_cube_);
@@ -1784,17 +1926,24 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 
 	first = true;
 
+	std::list<cgal_shape_t> ops;
+	std::list<CGAL::Nef_polyhedron_3<Kernel_>> nefops;
+	std::list<Kernel_::Plane_3> all_operand_planes;
+
 	for (auto& li : operands) {
 
 		auto entity_instance = li.first;
 		for (auto& entity_shape : li.second) {
 
 			CGAL::Nef_polyhedron_3<Kernel_> nef;
-			if (!preprocess_boolean_operand(entity_instance, entity_shape, nef,
-				// Dilate boolean subtraction operands
-				(!first && br->operation == taxonomy::boolean_result::SUBTRACTION))) {
+			if (!preprocess_boolean_operand(entity_instance, ops, nefops, all_operand_planes, entity_shape, nef,
+				// Snap boolean subtraction operands
+				first ? PP_NONE : PP_SNAP_PLANES_TO_FIRST_OPERAND)) {
 				continue;
 			}
+
+			ops.push_front(entity_shape);
+			nefops.push_back(nef);
 
 			if (first) {
 				a = nef;
