@@ -63,6 +63,7 @@ classes = (
     product.EnableAddType,
     product.LoadTypeThumbnails,
     product.MirrorElements,
+    product.ReplaceSelectedWithTypeOccurences,
     workspace.Hotkey,
     wall.AlignWall,
     wall.ChangeExtrusionDepth,
