@@ -1446,5 +1446,13 @@ class ShapeBuilder:
         body = ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW")
         rep = self.get_representation(body, rep_items)
 
-        bend_data = {"start_length": start_length, "end_length": end_length, "radius": radius, "angle": degrees(theta)}
+        bend_data = {
+            "start_length": start_length,
+            "end_length": end_length,
+            "radius": radius,
+            "angle": degrees(theta),
+            "lateral_axis": lateral_axis,
+            "lateral_sign": lateral_sign,
+            "flip_z_axis": flip_z_axis,
+        }
         return rep, bend_data
