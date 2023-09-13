@@ -1121,6 +1121,7 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
             "end_length": self.end_length / si_conversion,
             "radius": self.radius / si_conversion,
             "angle": degrees(angle),
+            "main_profile_dimension": profile_dim[lateral_axis] / si_conversion,
         }
         # find the compatible fitting type
         fitting_data = MEPGenerator().get_compatible_fitting_type(
