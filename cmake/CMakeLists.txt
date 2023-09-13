@@ -17,9 +17,10 @@
 #                                                                              #
 ################################################################################
 
-cmake_minimum_required(VERSION 3.1.3)
+cmake_minimum_required(VERSION 3.21)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON) # not necessary, but encouraged
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(IfcOpenShell VERSION 0.8.0)
 
