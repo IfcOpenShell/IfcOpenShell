@@ -51,9 +51,9 @@
 	</xs:complexType>
 	<xs:complexType name="partOfType">
 		<xs:sequence>
-			<xs:element name="entity" type="ids:entityType" minOccurs="1" />
+			<xs:element name="entity" type="ids:entityType" minOccurs="1"/>
 		</xs:sequence>
-		<xs:attribute name="relation" type="ids:relations" />
+		<xs:attribute name="relation" type="ids:relations"/>
 	</xs:complexType>
 	<xs:complexType name="applicabilityType">
 		<xs:sequence>
@@ -212,7 +212,7 @@
 		</xs:attribute>
 		<xs:attribute name="identifier" type="xs:string">
 			<xs:annotation>
-				<xs:documentation>Author of the IDS can provide an identifier to the specification. This is intended to be a machine readable identifier. Beware: because of the possibility to combine different 'requirement' elements from several ids files this cannot be enforced/assumed as (global) unique.</xs:documentation>
+				<xs:documentation>Author of the IDS can provide an identifier to the specification. This is intended to be a machine readable identifier. Beware: because of the possibility to combine different 'specification' elements from several ids files this cannot be enforced/assumed as (global) unique.</xs:documentation>
 			</xs:annotation>
 		</xs:attribute>
 		<xs:attribute name="description" type="xs:string" use="optional"/>
