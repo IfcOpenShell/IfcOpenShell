@@ -461,6 +461,7 @@ class BimToolUI:
             else:
                 row.label(text="No Construction Type", icon="FILE_3D")
             row.operator("bim.launch_type_manager", icon="LIGHTPROBE_GRID", text="")
+            row.operator("bim.replace_selected_with_type_occurences", icon="ARROW_LEFTRIGHT", text="")
         else:
             if AuthoringData.data["ifc_element_type"]:
                 row.label(text=f"No {AuthoringData.data['ifc_element_type']} Found", icon="ERROR")
@@ -474,6 +475,7 @@ class BimToolUI:
             else:
                 row.label(text="No Element Types Found", icon="ERROR")
                 row.operator("bim.launch_type_manager", icon="LIGHTPROBE_GRID", text="Launch Type Manager")
+                row.operator("bim.replace_selected_with_type_occurences", icon="ARROW_LEFTRIGHT", text="")
 
     @classmethod
     def draw_basic_bim_tool_interface(cls):
