@@ -199,6 +199,8 @@ endif
 	cp -r dist/working/IfcOpenShell-0.7.0/src/ifcbimtester/bimtester dist/blenderbim/libs/site/packages/
 	# Provides IFCTester functionality
 	cp -r dist/working/IfcOpenShell-0.7.0/src/ifctester/ifctester dist/blenderbim/libs/site/packages/
+	# Provides IFCFM functionality
+	cp -r dist/working/IfcOpenShell-0.7.0/src/ifcfm/ifcfm dist/blenderbim/libs/site/packages/
 	# Provides IFCCOBie functionality
 	cp -r dist/working/IfcOpenShell-0.7.0/src/ifccobie/* dist/blenderbim/libs/site/packages/
 	# Provides IFCDiff functionality
