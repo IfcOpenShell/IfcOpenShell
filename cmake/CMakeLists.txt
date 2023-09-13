@@ -33,6 +33,9 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
 endif()
 
+# Include utility macros and functions
+include(utilities.cmake)
+
 # use extra version to make pre-release using eg semver
 set(EXTRA_VERSION "-alpha.3")
 
@@ -138,13 +141,6 @@ if(BUILD_SHARED_LIBS)
     set(IFCOPENSHELL_LIBRARY_DIR "${LIBDIR}")
 endif()
 
-# Create cache entries if absent for environment variables
-macro(UNIFY_ENVVARS_AND_CACHE VAR)
-    if((NOT DEFINED ${VAR}) AND(NOT "$ENV{${VAR}}" STREQUAL ""))
-        set(${VAR} "$ENV{${VAR}}" CACHE STRING "${VAR}" FORCE)
-    endif()
-endmacro()
-
 UNIFY_ENVVARS_AND_CACHE(OCC_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(OCC_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(BOOST_ROOT)
@@ -168,9 +164,6 @@ if(NOT MINIMAL_BUILD)
     UNIFY_ENVVARS_AND_CACHE(MPFR_INCLUDE_DIR)
     UNIFY_ENVVARS_AND_CACHE(MPFR_LIBRARY_DIR)
 endif()
-
-# Include the 'convert_env_var_to_bool' and 'get_all_option_flags' functions
-include(utilities.cmake)
 
 # Get a list of all OPTION flags from the CMakeLists.txt
 get_all_option_flags(option_flags)
@@ -264,22 +257,6 @@ if(USD_SUPPORT)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_USD)
 endif(USD_SUPPORT)
 
-# Set INSTALL_RPATH for target
-macro(SET_INSTALL_RPATHS _target _paths)
-    set(${_target}_rpaths "")
-
-    foreach(_path ${_paths})
-        list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${_path}" isSystemDir)
-
-        if("${isSystemDir}" STREQUAL "-1")
-            list(APPEND ${_target}_rpaths ${_path})
-        endif()
-    endforeach()
-
-    message(STATUS "Set INSTALL_RPATH for ${_target}: ${${_target}_rpaths}")
-    set_target_properties(${_target} PROPERTIES INSTALL_RPATH "${${_target}_rpaths}")
-endmacro()
-
 # Find Boost: On win32 the (hardcoded) default is to use static libraries and
 # runtime, when doing running conda-build we pick what conda prepared for us.
 if(WIN32 AND("$ENV{CONDA_BUILD}" STREQUAL ""))
@@ -340,44 +317,6 @@ if(IFCXML_SUPPORT)
     add_definitions(-DWITH_IFCXML)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_IFCXML)
 endif()
-
-# Usage:
-# set(SOME_LIRARIES foo bar)
-# add_debug_variants(SOME_LIRARIES "${SOME_LIRARIES}" d)
-# "foo bar" -> "optimized foo debug food optimized bar debug bard"
-# or
-# set(SOME_LIRARIES path/foo.lib)
-# add_debug_variants(SOME_LIRARIES "${SOME_LIRARIES}" "d")
-# "path/foo.lib" -> "optimized path/foo.lib debug path/food.lib"
-# TODO Could be refined: take the library file extension as a parameter and
-# make sure the lib variable ends with not just contains it.
-function(add_debug_variants NAME LIBRARIES POSTFIX)
-    set(LIBRARIES_STR "${LIBRARIES}")
-    set(LIBRARIES "")
-
-    # the result, "optimized <lib> debug <lib>", needs to be a list instead of a string
-    foreach(lib ${LIBRARIES_STR})
-        list(APPEND LIBRARIES optimized)
-
-        if("${lib}" MATCHES ".lib")
-            string(REPLACE ".lib" "" lib ${lib})
-            list(APPEND LIBRARIES ${lib}.lib)
-        else()
-            list(APPEND LIBRARIES ${lib})
-        endif()
-
-        list(APPEND LIBRARIES debug)
-
-        if("${lib}" MATCHES ".lib")
-            string(REPLACE ".lib" "" lib ${lib})
-            list(APPEND LIBRARIES ${lib}${POSTFIX}.lib)
-        else()
-            list(APPEND LIBRARIES ${lib}${POSTFIX})
-        endif()
-    endforeach()
-
-    set(${NAME} ${LIBRARIES} PARENT_SCOPE)
-endfunction()
 
 if(BUILD_IFCGEOM)
     if(MSVC)
@@ -755,16 +694,6 @@ include_directories(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCL
 	${Boost_INCLUDE_DIRS} ${LIBXML2_INCLUDE_DIR} ${JSON_INCLUDE_DIR} ${HDF5_INCLUDE_DIR}
     ${EIGEN_DIR} ${CGAL_INCLUDE_DIR} ${GMP_INCLUDE_DIR} ${MPFR_INCLUDE_DIR} ${USD_INCLUDE_DIR}
 )
-
-function(files_for_ifc_version IFC_VERSION RESULT_NAME)
-    set(IFC_PARSE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../src/ifcparse)
-    set(${RESULT_NAME}
-        ${IFC_PARSE_DIR}/Ifc${IFC_VERSION}.h
-        ${IFC_PARSE_DIR}/Ifc${IFC_VERSION}enum.h
-        ${IFC_PARSE_DIR}/Ifc${IFC_VERSION}.cpp
-        PARENT_SCOPE
-    )
-endfunction()
 
 if(NOT SCHEMA_VERSIONS)
     if(WASM_BUILD)
