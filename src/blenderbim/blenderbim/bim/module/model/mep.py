@@ -366,6 +366,7 @@ class MEPGenerator:
         ifc_file = tool.Ifc.get()
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
         precision = VTX_PRECISION / si_conversion
+        angle_precision = degrees(precision)
 
         segments_data = []
         for segment, port in zip(segments, ports, strict=True):
@@ -388,8 +389,9 @@ class MEPGenerator:
             for key in bbim_data:
                 requested_value = bbim_data[key]
                 fitting_value = fitting_bbim_data[key]
+
                 if isinstance(requested_value, float):
-                    compare_precision = None if key == "angle" else precision
+                    compare_precision = angle_precision if key == "angle" else precision
                     compare = tool.Cad.is_x(requested_value, fitting_value, compare_precision)
                 elif isinstance(fitting_value, list):
                     compare = tool.Cad.are_vectors_equal(requested_value, Vector(fitting_value), precision)
@@ -1112,9 +1114,15 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
 
         bpy.ops.bim.create_shape_from_step_id(step_id=rep.id(), should_include_curves=True)
 
+        parametric_data = {
+            "start_length": self.start_length / si_conversion,
+            "end_length": self.end_length / si_conversion,
+            "radius": self.radius / si_conversion,
+            "angle": degrees(angle),
+        }
         # find the compatible fitting type
         fitting_data = MEPGenerator().get_compatible_fitting_type(
-            [start_element, end_element], [start_port, end_port], "BEND"
+            [start_element, end_element], [start_port, end_port], "BEND", bbim_data=parametric_data
         )
         bend_type = fitting_data["fitting_type"] if fitting_data else None
         start_port_match = fitting_data["start_port_match"] if fitting_data else True
