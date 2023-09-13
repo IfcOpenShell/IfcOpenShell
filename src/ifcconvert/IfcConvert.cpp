@@ -585,6 +585,11 @@ int main(int argc, char** argv) {
 		}
 	}
 #endif
+
+	if (num_threads <= 0) {
+		num_threads = std::thread::hardware_concurrency();
+		Logger::Notice("Using " + std::to_string(num_threads) + " threads");
+	}
     
 	if (vmap.count("log-format") == 1) {
 		boost::to_lower(log_format);
@@ -727,6 +732,8 @@ int main(int argc, char** argv) {
 	boost::to_lower(output_extension);
 
 	IfcParse::IfcFile* ifc_file = 0;
+
+	boost::optional<std::list<IfcGeom::Element*>> elems_from_adaptor;
     
     const path_t OBJ = IfcUtil::path::from_utf8(".obj"),
 		MTL = IfcUtil::path::from_utf8(".mtl"),
@@ -789,24 +796,35 @@ int main(int argc, char** argv) {
 		return exit_code;
 	}
 #ifdef IFOPSH_WITH_CGAL
-	else if (output_extension == CITY_JSON || output_extension == OBJ && vmap.count("exterior-only")) {
+	else if ((output_extension == CITY_JSON || output_extension == OBJ || output_extension == DAE || output_extension == GLB) && vmap.count("exterior-only")) {
 		geobim_settings settings;
 		settings.input_filenames = { IfcUtil::path::to_utf8(input_filename) };
 		settings.file = { new IfcParse::IfcFile(IfcUtil::path::to_utf8(input_filename)) };
+		
+		/*
+		// No longer set, because we pass to real serializers now, awaiting a proper iterator adaptor
 		if (output_extension == OBJ) {
 			settings.obj_output_filename = IfcUtil::path::to_utf8(output_filename);
-		} else {
+		}
+		*/
+	
+		if (output_extension == CITY_JSON) {
+			// we don't have a cityjson serializer though
 			settings.cityjson_output_filename = IfcUtil::path::to_utf8(output_filename);
 		}
+
 		// @todo
 		settings.radii = { "0.05" };
 		settings.apply_openings = false;
 		settings.apply_openings_posthoc = true;
 		settings.debug = false;
-		settings.exact_segmentation = false;
+		settings.exact_segmentation = true;
 		settings.minkowski_triangles = false;
 		settings.no_erosion = false;
 		settings.spherical_padding = false;
+		if (num_threads != 1) {
+			settings.threads = num_threads;
+		}
 
 		settings.settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, false);
 		settings.settings.set(IfcGeom::IteratorSettings::WELD_VERTICES, false);
@@ -826,9 +844,13 @@ int main(int argc, char** argv) {
 			settings.entity_names_included = false;
 		}
 		
-		perform(settings);
+		elems_from_adaptor.emplace();
+		perform(settings, *elems_from_adaptor);
 		
-		return 0;
+		if (output_extension == CITY_JSON) {
+			return 0;
+		}
+		// else ... continue on to serialize elems_from_adaptor
 	}
 #endif
 
@@ -991,11 +1013,6 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-	if (num_threads <= 0) {
-		num_threads = std::thread::hardware_concurrency();
-		Logger::Notice("Using " + std::to_string(num_threads) + " threads");
-	}
-
 	if (vmap.count("log-file")) {
 		Logger::SetOutput(quiet ? nullptr : &cout_, &log_fs);
 	} else {
@@ -1065,22 +1082,25 @@ int main(int argc, char** argv) {
         Logger::Notice(msg.str());
     }
 
-	IfcGeom::Iterator context_iterator(geometry_kernel, settings, ifc_file, filter_funcs, num_threads);
+	std::unique_ptr<IfcGeom::Iterator> context_iterator;
+	if (!elems_from_adaptor) {
+		context_iterator.reset(new IfcGeom::Iterator(geometry_kernel, settings, ifc_file, filter_funcs, num_threads));
+	}	
 
 #if defined(WITH_HDF5) && defined(IFOPSH_WITH_OPENCASCADE)
 	std::unique_ptr<HdfSerializer> cache;
-	if (vmap.count("cache-file") || vmap.count("cache")) {
+	if (context_iterator && vmap.count("cache-file") || vmap.count("cache")) {
 		if (!vmap.count("cache-file")) {
 			cache_file = input_filename + CACHE + HDF;
 		}
 		cache.reset(new HdfSerializer(IfcUtil::path::to_utf8(cache_file), settings));
-		context_iterator.set_cache(cache.get());
+		context_iterator->set_cache(cache.get());
 	}
 #endif
 
 	Logger::Message(Logger::LOG_PERF, "file geometry conversion");
 
-    if (!context_iterator.initialize()) {
+    if (context_iterator && !context_iterator->initialize()) {
         /// @todo It would be nice to know and print separate error prints for a case where we found no entities
         /// and for a case we found no entities that satisfy our filtering criteria.
         Logger::Notice("No geometrical elements found or none succesfully converted");
@@ -1090,7 +1110,7 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-	serializer->setFile(context_iterator.file());
+	serializer->setFile(ifc_file);
 
 #ifdef IFOPSH_WITH_OPENCASCADE
 	if (output_extension == SVG) {
@@ -1166,8 +1186,8 @@ int main(int argc, char** argv) {
 	}
 #endif
 
-    if (convert_back_units) {
-		serializer->setUnitNameAndMagnitude(context_iterator.unit_name(), static_cast<float>(context_iterator.unit_magnitude()));
+    if (context_iterator && convert_back_units) {
+		serializer->setUnitNameAndMagnitude(context_iterator->unit_name(), static_cast<float>(context_iterator->unit_magnitude()));
 	} else {
 		serializer->setUnitNameAndMagnitude("METER", 1.0f);
 	}
@@ -1191,10 +1211,15 @@ int main(int argc, char** argv) {
 	// non-null return value guarantees that a successfully processed product is 
 	// available. 
 	size_t num_created = 0;
+
+	std::list<IfcGeom::Element*>::const_iterator elems_from_adaptor_it;
+	if (elems_from_adaptor) {
+		elems_from_adaptor_it = elems_from_adaptor->begin();
+	}
 	
-	do {
+	while (true) {
 		
-        IfcGeom::Element* geom_object = context_iterator.get();
+        IfcGeom::Element* geom_object = elems_from_adaptor ? *elems_from_adaptor_it : context_iterator->get();
 
 		if (is_tesselated)
 		{
@@ -1206,8 +1231,8 @@ int main(int argc, char** argv) {
 		}
 
         if (!no_progress) {
+			int progress = context_iterator ? context_iterator->progress() : (int)std::distance(elems_from_adaptor->cbegin(), elems_from_adaptor_it) * 100 / elems_from_adaptor->size();
 			if (quiet) {
-				const int progress = context_iterator.progress();
 				for (; old_progress < progress; ++old_progress) {
 					cout_ << ".";
 					if (stderr_progress)
@@ -1217,16 +1242,26 @@ int main(int argc, char** argv) {
 				if (stderr_progress)
 					cerr_ << std::flush;
 			} else if (vcounter.count == 2) {
-				const int progress = context_iterator.progress();
 				Logger::Message(Logger::LOG_DEBUG, "Progress " + boost::lexical_cast<std::string>(progress));
 			} else {
-				const int progress = context_iterator.progress() / 2;
+				progress = progress / 2;
 				if (old_progress != progress) Logger::ProgressBar(progress);
 				old_progress = progress;
 			}
         }
-    } while (++num_created, context_iterator.next());
 
+		++num_created;
+		if (context_iterator) {
+			if (!context_iterator->next()) {
+				break;
+			}
+		} else {
+			++elems_from_adaptor_it;
+			if (elems_from_adaptor_it == elems_from_adaptor->end()) {
+				break;
+			}
+		}
+    } 
 	if (!no_progress && quiet) {
 		for (; old_progress < 100; ++old_progress) {
 			cout_ << ".";

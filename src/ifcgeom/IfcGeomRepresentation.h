@@ -177,14 +177,12 @@ namespace IfcGeom {
 
 			void addEdge(int n1, int n2, std::map<std::pair<int, int>, int>& edgecount, std::vector<std::pair<int, int> >& edges_temp);
 
-
-		private:
-
 			void resetWelds() {
 				weld_offset_ += welds.size();
 				welds.clear();
 			}
 
+		private:
 			Triangulation();
 			Triangulation(const Triangulation&);
 			Triangulation& operator=(const Triangulation&);
