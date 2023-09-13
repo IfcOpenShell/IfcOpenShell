@@ -90,3 +90,9 @@ src/blenderbim/test/files/temp
 # ifcopenshell swig and compiled files
 src/ifcopenshell-python/ifcopenshell/_ifcopenshell_wrapper.so
 src/ifcopenshell-python/ifcopenshell/ifcopenshell_wrapper.py
+
+# apple
+.DS_Store
+
+# clangd cache
+.cache
