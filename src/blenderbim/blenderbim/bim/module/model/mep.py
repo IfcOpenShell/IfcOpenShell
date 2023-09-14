@@ -626,13 +626,13 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
     )
     bl_options = {"REGISTER", "UNDO"}
     start_length: bpy.props.FloatProperty(
-        name="Start Length", description="Transition start length in SI units", default=0.1, subtype="DISTANCE"
+        name="Start Length", description="Transition start length in SI units", default=0.1, subtype="DISTANCE", min=0
     )
     end_length: bpy.props.FloatProperty(
-        name="End Length", description="Transition end length in SI units", default=0.1, subtype="DISTANCE"
+        name="End Length", description="Transition end length in SI units", default=0.1, subtype="DISTANCE", min=0
     )
     angle: bpy.props.FloatProperty(
-        name="Transition Angle", description="Transition angle in degrees", default=pi / 6, subtype="ANGLE"
+        name="Transition Angle", description="Transition angle in degrees", default=pi / 6, subtype="ANGLE", min=0
     )
     start_segment_id: bpy.props.IntProperty(name="Start Segment Element ID", default=0)
     end_segment_id: bpy.props.IntProperty(name="End Segment Element ID", default=0)
@@ -868,15 +868,15 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Adds a bend between two MEP elements. Elements are either provided by ID or selected in Blender"
     bl_options = {"REGISTER", "UNDO"}
     start_length: bpy.props.FloatProperty(
-        name="Start Length", description="Bend start length in SI units", default=0.1, subtype="DISTANCE"
+        name="Start Length", description="Bend start length in SI units", default=0.1, subtype="DISTANCE", min=0
     )
     end_length: bpy.props.FloatProperty(
-        name="End Length", description="Bend end length in SI units", default=0.1, subtype="DISTANCE"
+        name="End Length", description="Bend end length in SI units", default=0.1, subtype="DISTANCE", min=0
     )
     start_segment_id: bpy.props.IntProperty(name="Start Segment Element ID", default=0)
     end_segment_id: bpy.props.IntProperty(name="End Segment Element ID", default=0)
     radius: bpy.props.FloatProperty(
-        "Bend Inner Radius", description="Bend inner radius in SI units", default=0.2, subtype="DISTANCE"
+        "Bend Inner Radius", description="Bend inner radius in SI units", default=0.2, subtype="DISTANCE", min=0
     )
 
     def _execute(self, context):
