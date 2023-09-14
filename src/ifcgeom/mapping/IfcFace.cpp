@@ -29,16 +29,15 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcFace* inst) {
 			if (!bound->Orientation()) {
 				r->reverse();
 			}
-			if (bound->declaration().is(IfcSchema::IfcFaceOuterBound::Class())) {
-				r->external = true;
-				/*
-				// Make a copy in case we need immutability later for e.g. caching
-				auto s = r->clone();
-				((taxonomy::loop*)s)->external = true;
-				delete r;
-				r = s;
-				*/
-			}
+			// @todo check why loop sets external to true initially
+			r->external = bound->declaration().is(IfcSchema::IfcFaceOuterBound::Class());
+			/*
+			// Make a copy in case we need immutability later for e.g. caching
+			auto s = r->clone();
+			((taxonomy::loop*)s)->external = true;
+			delete r;
+			r = s;
+			*/
 			face->children.push_back(r);
 		}
 	}
