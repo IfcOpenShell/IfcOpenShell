@@ -1354,7 +1354,6 @@ class ShapeBuilder:
                 return V(profile.Radius, profile.Radius, depth)
             return None
 
-        # TODO: test with 0 radius
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         profile = get_profile(segment)
         is_circular_profile = profile.is_a("IfcCircleProfileDef")
@@ -1397,10 +1396,14 @@ class ShapeBuilder:
                 arc_points = (1,)
             else:
                 outer_r = r + 2 * profile_dim[lateral_axis]
-                inner_points = [get_circle_point(cur_theta, r) for cur_theta in theta_segments]
                 outer_points = [get_circle_point(cur_theta, outer_r) for cur_theta in theta_segments[::-1]]
-                points = inner_points + outer_points
-                arc_points = (1, 4)
+                if is_x(r, 0):
+                    points = [get_circle_point(theta, r)] + outer_points
+                    arc_points = (2,)
+                else:
+                    inner_points = [get_circle_point(cur_theta, r) for cur_theta in theta_segments]
+                    points = inner_points + outer_points
+                    arc_points = (1, 4)
 
             points = [p + O for p in points]
             offset = V(0, 0, 0)
