@@ -717,6 +717,12 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
         )
         start_port = points_ports_map[start_point]
         end_port = points_ports_map[end_point]
+        start_point_on_origin = start_point == start_segment_data["start_point"]
+        start_connection = "ATSTART" if start_point_on_origin else "ATEND"
+        start_segment_sign = -1 if start_point_on_origin else 1
+
+        end_point_on_origin = end_point == end_segment_data["start_point"]
+        end_connection = "ATSTART" if end_point_on_origin else "ATEND"
 
         # figure profile offset
         base_transition_dir = keep_only_z_axis(end_point - start_point).normalized()
@@ -779,24 +785,16 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
         transition_dir = keep_only_z_axis(end_segment_extend_point - start_segment_extend_point).normalized()
 
         # adjust the segments
-        end_object_rotation = end_object.matrix_world.to_quaternion()
-        end_object_z_basis = end_object_rotation.to_matrix().col[2]  # z basis vector
-
-        # TODO: do it beforehand, as with bends
-        if tool.Cad.is_x(start_object_z_basis.dot(transition_dir), 1):
-            start_connection = "ATEND"
-        else:
-            start_connection = "ATSTART"
-        if tool.Cad.is_x(end_object_z_basis.dot(transition_dir), 1):
-            end_connection = "ATSTART"
-        else:
-            end_connection = "ATEND"
         DumbProfileJoiner().join_E(start_object, start_segment_extend_point, start_connection)
         DumbProfileJoiner().join_E(end_object, end_segment_extend_point, end_connection)
 
+        # For bbim transitions, there is small convention that:
+        # - start_length segment positioned at the start of the transition's Z-axis.
+        # - end_length segment positioned at the of it.
+        # this is why we sort the lengths in parametric data too
         parametric_data = {
-            "start_length": self.start_length / si_conversion,
-            "end_length": self.end_length / si_conversion,
+            "start_length": (self.start_length if start_segment_sign == 1 else self.end_length) / si_conversion,
+            "end_length": (self.end_length if start_segment_sign == 1 else self.start_length) / si_conversion,
             "profile_offset": profile_offset,
             "angle": degrees(self.angle),
         }
