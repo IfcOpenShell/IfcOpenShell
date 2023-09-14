@@ -51,7 +51,7 @@ void ifcopenshell::geometry::CgalShape::Triangulate(const IfcGeom::IteratorSetti
 
 		if (!s.is_valid()) {
 			Logger::Message(Logger::LOG_ERROR, "Invalid Polyhedron_3 in object (after triangulation)");
-			return;
+			// return;
 		}
 
 	}
