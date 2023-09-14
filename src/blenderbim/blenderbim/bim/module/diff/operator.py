@@ -22,6 +22,7 @@ import ifccsv
 import ifcopenshell
 import blenderbim.bim.handler
 import blenderbim.tool as tool
+from blenderbim.bim.ifc import IfcStore
 
 
 class SelectDiffJsonFile(bpy.types.Operator):
@@ -51,8 +52,27 @@ class VisualiseDiff(bpy.types.Operator):
             diff = json.load(file)
         for obj in context.visible_objects:
             obj.color = (1.0, 1.0, 1.0, 1.0)
-            element = tool.Ifc.get_entity(obj)
-            if not element:
+
+            if not obj.BIMObjectProperties.ifc_definition_id:
+                continue
+
+            ifc_file = ""
+            for scene in obj.users_scene:
+                if scene.BIMProperties.ifc_file:
+                    ifc_file = scene.BIMProperties.ifc_file
+                    if scene.library:
+                        break
+
+            if ifc_file:
+                if ifc_file not in IfcStore.session_files:
+                    IfcStore.session_files[ifc_file] = ifcopenshell.open(ifc_file)
+                element_file = IfcStore.session_files[ifc_file]
+            else:
+                element_file = ifc_file
+
+            try:
+                element = element_file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+            except:
                 continue
             global_id = getattr(element, "GlobalId", None)
             if not global_id:
