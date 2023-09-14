@@ -407,8 +407,8 @@ int convert_to_ifc(const TopoDS_Edge& e, IfcSchema::IfcCurve*& c, bool advanced)
 		return 0;
 	}
 
-	aggregate_of_instance::ptr trim1(new aggregate_of_instance);
-	aggregate_of_instance::ptr trim2(new aggregate_of_instance);
+	IfcSchema::IfcTrimmingSelect::list::ptr trim1(new IfcSchema::IfcTrimmingSelect::list);
+	IfcSchema::IfcTrimmingSelect::list::ptr trim2(new IfcSchema::IfcTrimmingSelect::list);
 	trim1->push(new IfcSchema::IfcParameterValue(a));
 	trim2->push(new IfcSchema::IfcParameterValue(b));
 
@@ -643,7 +643,7 @@ IfcUtil::IfcBaseClass* POSTFIX_SCHEMA(serialise)(const TopoDS_Shape& shape, bool
 	} else {
 
 		// If not, see if there is a shell
-		IfcSchema::IfcOpenShell::list::ptr shells(new IfcSchema::IfcOpenShell::list);
+		IfcSchema::IfcShell::list::ptr shells(new IfcSchema::IfcShell::list);
 		for (TopExp_Explorer exp(shape, TopAbs_SHELL); exp.More(); exp.Next()) {
 			IfcSchema::IfcOpenShell* shell;
 			if (!convert_to_ifc(exp.Current(), shell, advanced)) {
@@ -653,7 +653,7 @@ IfcUtil::IfcBaseClass* POSTFIX_SCHEMA(serialise)(const TopoDS_Shape& shape, bool
 		}
 
 		if (shells->size() > 0) {
-			items->push(new IfcSchema::IfcShellBasedSurfaceModel(shells->generalize()));
+			items->push(new IfcSchema::IfcShellBasedSurfaceModel(shells));
 			rep = new IfcSchema::IfcShapeRepresentation(0, std::string("Body"), advanced ? std::string("AdvancedBrep") : std::string("Brep"), items);
 		} else {
 
@@ -686,7 +686,7 @@ IfcUtil::IfcBaseClass* POSTFIX_SCHEMA(serialise)(const TopoDS_Shape& shape, bool
 					rep = new IfcSchema::IfcShapeRepresentation(0, std::string("Axis"), std::string("Curve2D"), edges->as<IfcSchema::IfcRepresentationItem>());
 				} else {
 					// A geometric set is created as that probably (?) makes more sense in IFC
-					IfcSchema::IfcGeometricCurveSet* curves = new IfcSchema::IfcGeometricCurveSet(edges);
+					IfcSchema::IfcGeometricCurveSet* curves = new IfcSchema::IfcGeometricCurveSet(edges->as<IfcSchema::IfcGeometricSetSelect>());
 					items->push(curves);
 					rep = new IfcSchema::IfcShapeRepresentation(0, std::string("Axis"), std::string("GeometricCurveSet"), items->as<IfcSchema::IfcRepresentationItem>());
 				}
