@@ -50,6 +50,9 @@ class Parser:
             module = importlib.import_module(f"ifcfm.{preset}")
             self.get_category_elements = getattr(module, "get_category_elements")
             self.get_element_data = getattr(module, "get_element_data")
+        elif isinstance(preset, dict):
+            self.get_category_elements = preset["get_category_elements"]
+            self.get_element_data = preset["get_element_data"]
         else:
             self.get_category_elements = getattr(preset, "get_category_elements")
             self.get_element_data = getattr(preset, "get_element_data")
@@ -91,6 +94,8 @@ class Writer:
         if isinstance(self.parser.preset, str):
             module = importlib.import_module(f"ifcfm.{self.parser.preset}")
             self.config = getattr(module, "config")
+        elif isinstance(self.parser.preset, dict):
+            self.config = self.parser.preset["config"]
         else:
             self.config = getattr(self.parser.preset, "config")
 

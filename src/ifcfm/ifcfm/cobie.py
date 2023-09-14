@@ -89,7 +89,7 @@ def get_types(ifc_file):
 
 def get_components(ifc_file):
     elements = set()
-    for element_type in ifcopenshell.util.fm.get_cobie_types(ifc_file):
+    for element_type in get_types(ifc_file):
         elements.update(ifcopenshell.util.element.get_types(element_type))
     return elements
 
