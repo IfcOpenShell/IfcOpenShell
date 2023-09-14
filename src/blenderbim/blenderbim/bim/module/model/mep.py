@@ -1112,8 +1112,6 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
             flip_z_axis=start_segment_sign == -1,
         )
 
-        bpy.ops.bim.create_shape_from_step_id(step_id=rep.id(), should_include_curves=True)
-
         parametric_data = {
             "start_length": self.start_length / si_conversion,
             "end_length": self.end_length / si_conversion,
