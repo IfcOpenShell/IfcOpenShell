@@ -134,7 +134,7 @@ def get_space_data(ifc_file, element):
 def get_zone_data(ifc_file, element):
     zone, space = element
     return {
-        "key": (element.Name or "Unnamed") + (space.Name or "Unnamed"),
+        "key": (zone.Name or "Unnamed") + (space.Name or "Unnamed"),
         "Name": zone.Name,
         "SpaceName": space.Name,
         "AuthorOrganizationName": get_owner_name(zone),
