@@ -89,7 +89,7 @@ def get_types(ifc_file):
 
 def get_components(ifc_file):
     elements = set()
-    for element_type in ifcopenshell.util.fm.get_cobie_types(ifc_file):
+    for element_type in get_types(ifc_file):
         elements.update(ifcopenshell.util.element.get_types(element_type))
     return elements
 
@@ -97,7 +97,10 @@ def get_components(ifc_file):
 def get_systems(ifc_file):
     results = []
     components = get_components(ifc_file)
-    systems = ifc_file.by_type("IfcSystem", include_subtypes=False) + ifc_file.by_type("IfcDistributionSystem")
+    if ifc_file.schema == "IFC2X3":
+        systems = ifc_file.by_type("IfcSystem", include_subtypes=False)
+    else:
+        systems = ifc_file.by_type("IfcSystem", include_subtypes=False) + ifc_file.by_type("IfcDistributionSystem")
     for system in systems:
         for element in ifcopenshell.util.system.get_system_elements(system):
             if element in components:
@@ -156,9 +159,107 @@ def get_jobs(ifc_file):
 
 
 def get_documents(ifc_file):
-    return [
-        r for r in ifc_file.by_type("IfcRelAssociatesDocument") if r.RelatingDocument.is_a("IfcDocumentInformation")
-    ]
+    # The original COBie-Plugins assumes a single related object per rel. I think this was wrong.
+    results = []
+    for rel in ifc_file.by_type("IfcRelAssociatesDocument"):
+        doc = rel.RelatingDocument
+        if doc.is_a("IfcDocumentInformation"):
+            for related_object in rel.RelatedObjects:
+                results.append((rel, doc, related_object))
+        elif doc.is_a("IfcDocumentReference") and doc.ReferencedDocument:
+            for related_object in rel.RelatedObjects:
+                results.append((rel, doc.ReferencedDocument, related_object))
+    return results
+
+
+def get_attributes(ifc_file):
+    results = []
+    history = get_history(ifc_file)
+    created_by = get_email_from_history(history) if history else None
+    created_on = ifcopenshell.util.date.ifc2datetime(history.CreationDate).isoformat() if history else None
+    external_system = history.OwningApplication.ApplicationFullName if history else None
+    get_sheets = {
+        "Facility": get_facilities,
+        "Floor": get_floors,
+        "Space": get_spaces,
+        "Type": get_types,
+        "Component": get_components,
+    }
+
+    # COBie-Plugins includes what seems like a whole bunch of arbitrary "at the
+    # time it seemed to help" exclusion names. I don't like that strategy. If
+    # you've got garbage in your model, clean it out first.
+
+    # fmt: off
+    excluded_names = {
+        "Manufacturer",
+        "ModelNumber", "ArticleNumber", "ModelLabel",
+        "WarrantyGuarantorParts", "PointOfContact",
+        "WarrantyGuarantorLabor", "PointOfContact",
+        "WarrantyDescription", "WarrantyIdentifier",
+        "ReplacementCost", "Replacement Cost", "Replacement", "Cost",
+        "NominalLength", "OverallLength",
+        "NominalWidth", "Width",
+        "NominalHeight", "Height",
+        "ModelReference", "Reference",
+        "Shape",
+        "Size",
+        "Color", "Colour",
+        "Finish",
+        "Grade",
+        "Material",
+        "Constituents", "Parts",
+        "Features",
+        "AccessibilityPerformance", "Access",
+        "CodePerformance", "Regulation",
+        "SustainabilityPerformance", "Environmental",
+        "SerialNumber", "InstallationDate", "WarrantyStartDate", "TagNumber", "BarCode", "AssetIdentifier"
+    }
+    # fmt: on
+
+    for sheet_name, get_sheet in get_sheets.items():
+        for element in get_sheet(ifc_file):
+            for pset_name, props in ifcopenshell.util.element.get_psets(element).items():
+                pset = ifc_file.by_id(props["id"])
+                pset_created_by = get_created_by(pset) or created_by
+                pset_created_on = get_created_on(pset) or created_on
+                pset_external_system = get_external_system(element) or external_system
+                pset_description = val(pset.Description) or pset_name
+                category = get_category(pset)
+                for name, value in props.items():
+                    if value == "default" or not val(value):
+                        continue
+                    elif name in excluded_names:
+                        continue
+                    elif name == "id":
+                        continue
+
+                    unit = None
+                    if isinstance(value, (int, float)):
+                        unit = get_property_unit(props["id"], name)
+
+                    allowed_values = None
+                    if isinstance(value, (tuple, list)):
+                        allowed_values = get_property_unit(props["id"], name)
+
+                    data = {
+                        "key": str(val(name)) + str(sheet_name) + str(val(element.Name)),
+                        "Name": val(name),
+                        "CreatedBy": pset_created_by,
+                        "CreatedOn": pset_created_on,
+                        "Category": category,
+                        "SheetName": sheet_name,
+                        "RowName": val(element.Name),
+                        "Value": value,
+                        "Unit": unit,
+                        "ExternalSystem": pset_external_system,
+                        "ExternalObject": pset_name,
+                        "ExternalIdentifier": pset.GlobalId,
+                        "Description": pset_description,
+                        "AllowedValues": allowed_values,
+                    }
+                    results.append(data)
+    return results
 
 
 def get_contact_data(ifc_file, element):
@@ -263,7 +364,7 @@ def get_facility_data(ifc_file, element):
 
 def get_floor_data(ifc_file, element):
     external_object = element.is_a()
-    if external_object.ObjectType and external_object.ObjectType.lower() in ("site", "ifcsite"):
+    if element.ObjectType and element.ObjectType.lower() in ("site", "ifcsite"):
         external_object = "IfcSite"
 
     height_names = {
@@ -279,7 +380,7 @@ def get_floor_data(ifc_file, element):
     }
 
     height = None
-    for _, props in ifcopenshell.util.element.get_psets(element):
+    for _, props in ifcopenshell.util.element.get_psets(element).items():
         if height is not None:
             break
         for name, value in props.items():
@@ -287,9 +388,12 @@ def get_floor_data(ifc_file, element):
                 height = str(value)
                 break
 
+    elevation = getattr(element, "Elevation", "")
+    elevation = "" if elevation is None else str(elevation)
+
     return {
-        "key": var(element.Name),
-        "Name": var(element.Name),
+        "key": val(element.Name),
+        "Name": val(element.Name),
         "CreatedBy": get_created_by(element),
         "CreatedOn": get_created_on(element),
         "Category": get_category(element),
@@ -297,7 +401,7 @@ def get_floor_data(ifc_file, element):
         "ExternalObject": external_object,
         "ExternalIdentifier": element.GlobalId,
         "Description": val(element.Description) or val(element.LongName) or val(element.Name),
-        "Elevation": val(str(getattr(element, "Elevation", ""))),
+        "Elevation": val(elevation),
         "Height": height,
     }
 
@@ -316,7 +420,7 @@ def get_space_data(ifc_file, element):
     gross_area_names = {"GrossFloorArea", "GSA"}
     net_area = None
     net_area_names = {"NetFloorArea", "GSA"}
-    for _, props in ifcopenshell.util.element.get_psets(element):
+    for _, props in ifcopenshell.util.element.get_psets(element).items():
         for name, value in props.items():
             if not room_tag and name in room_tag_names and val(value):
                 room_tag = str(value)
@@ -423,13 +527,15 @@ def get_type_data(ifc_file, element):
     expected_life_names = {"ExpectedLife", "Expected Life", "ServiceLifeDuration", "Expected"}
     duration_unit = None
 
-    for pset_name, props in ifcopenshell.util.element.get_psets(element):
+    for pset_name, props in ifcopenshell.util.element.get_psets(element).items():
         pset_warranty_type = None
         if pset_name == "Pset_Warranty":
             if "parts" in (props.get("WarrantyIdentifier", "") or "").lower():
                 pset_warranty_type = "parts"
             elif "labor" in (props.get("WarrantyIdentifier", "") or "").lower():
                 pset_warranty_type = "labor"
+
+        pset = ifc_file.by_id(props["id"])
 
         for name, value in props.items():
             for key, prop_names in pset_mapping.items():
@@ -445,15 +551,15 @@ def get_type_data(ifc_file, element):
             if not warranty_duration_parts and name in warranty_duration_parts_names and val(value):
                 warranty_duration_parts = str(value)
                 if not warranty_duration_unit:
-                    warranty_duration_unit = get_property_unit(props["id"], name)
+                    warranty_duration_unit = get_property_unit(pset, name)
             if not warranty_duration_labor and name in warranty_duration_labor_names and val(value):
                 warranty_duration_labor = str(value)
                 if not warranty_duration_unit:
-                    warranty_duration_unit = get_property_unit(props["id"], name)
+                    warranty_duration_unit = get_property_unit(pset, name)
             if not expected_life and name in expected_life_names and val(value):
                 expected_life = str(value)
                 if not duration_unit:
-                    duration_unit = get_property_unit(props["id"], name)
+                    duration_unit = get_property_unit(pset, name)
 
             if pset_warranty_type == "parts" and val(value):
                 if name == "PointOfContact":
@@ -461,7 +567,7 @@ def get_type_data(ifc_file, element):
                     warranty_guarantor_parts = str(value)
                 elif name == "WarrantyPeriod":
                     warranty_duration_parts = str(value)
-                    unit = get_property_unit(props["id"], name)
+                    unit = get_property_unit(pset, name)
                     warranty_duration_unit = unit or warranty_duration_unit
             elif pset_warranty_type == "labor" and val(value):
                 if name == "PointOfContact":
@@ -469,7 +575,7 @@ def get_type_data(ifc_file, element):
                     warranty_guarantor_labor = str(value)
                 elif name == "WarrantyPeriod":
                     warranty_duration_labor = str(value)
-                    unit = get_property_unit(props["id"], name)
+                    unit = get_property_unit(pset, name)
                     warranty_duration_unit = unit or warranty_duration_unit
 
     if warranty_duration_parts or warranty_duration_labor:
@@ -480,12 +586,12 @@ def get_type_data(ifc_file, element):
         asset_type = "Moveable"
 
     return {
-        "key": var(element.Name),
-        "Name": var(element.Name),
+        "key": val(element.Name),
+        "Name": val(element.Name),
         "CreatedBy": get_created_by(element),
         "CreatedOn": get_created_on(element),
         "Category": get_category(element),
-        "Description": var(element.Description) or var(element.Name),
+        "Description": val(element.Description) or val(element.Name),
         "AssetType": asset_type,
         "Manufacturer": pset_metadata.get("manufacturer", None),
         "ModelNumber": pset_metadata.get("model_number", None),
@@ -540,7 +646,7 @@ def get_component_data(ifc_file, element):
     bar_code = None
     asset_identifier = None
 
-    for _, props in ifcopenshell.util.element.get_psets(element):
+    for _, props in ifcopenshell.util.element.get_psets(element).items():
         for name, value in props.items():
             if not serial_number and name == "SerialNumber" and val(value):
                 serial_number = str(value)
@@ -562,7 +668,7 @@ def get_component_data(ifc_file, element):
         "CreatedOn": get_created_on(element),
         "TypeName": type_name,
         "Space": space_name,
-        "Description": var(element.Description) or var(element.Name),
+        "Description": val(element.Description) or val(element.Name),
         "ExternalSystem": get_external_system(element),
         "ExternalObject": element.is_a(),
         "ExternalIdentifier": element.GlobalId,
@@ -608,15 +714,7 @@ def get_assembly_data(ifc_file, element):
         name = val(relating_object.Name)
         parent_name = name
         assembly_type = "Fixed"
-        sheet_name = "Component"
-        if relating_object.is_a("IfcSpace"):
-            sheet_name = "Space"
-        elif relating_object.is_a("IfcZone"):
-            sheet_name = "Zone"
-        elif relating_object.is_a("IfcSystem"):
-            sheet_name = "System"
-        elif relating_object.is_a("IfcElementType"):
-            sheet_name = "Type"
+        sheet_name = get_sheet_name(relating_object)
         description = val(rel.Description) or val(rel.Name)
 
     child_name = val(related_object.Name)
@@ -677,7 +775,7 @@ def get_spare_data(ifc_file, element):
     suppliers = None
     set_number = None
     part_number = None
-    for _, props in ifcopenshell.util.element.get_psets(element):
+    for _, props in ifcopenshell.util.element.get_psets(element).items():
         for name, value in props.items():
             if name == "Suppliers" and val(value):
                 suppliers = str(value)
@@ -738,20 +836,21 @@ def get_job_data(ifc_file, element):
     frequency = None
     frequency_unit = None
 
-    for _, props in ifcopenshell.util.element.get_psets(element):
+    for _, props in ifcopenshell.util.element.get_psets(element).items():
+        pset = ifc_file.by_id(props["id"])
         for name, value in props.items():
             if not duration and name == "TaskDuration" and val(value):
                 duration = str(value)
                 if not duration_unit:
-                    duration_unit = get_property_unit(props["id"], name)
+                    duration_unit = get_property_unit(pset, name)
             if not start and name == "TaskStartDate" and val(value):
                 start = str(value)
                 if not task_start_unit:
-                    task_start_unit = get_property_unit(props["id"], name)
+                    task_start_unit = get_property_unit(pset, name)
             if not frequency and name == "TaskInterval" and val(value):
                 frequency = str(value)
                 if not frequency_unit:
-                    frequency_unit = get_property_unit(props["id"], name)
+                    frequency_unit = get_property_unit(pset, name)
 
     task_number = val(getattr(element, "Id", None)) or val(getattr(element, "Identification", None))
 
@@ -765,7 +864,7 @@ def get_job_data(ifc_file, element):
     priors = ",".join(priors) if priors else task_number
 
     return {
-        "key": val(element.Name),
+        "key": str(val(element.Name)) + str(type_name) + str(task_number),
         "Name": val(element.Name),
         "CreatedBy": get_created_by(element),
         "CreatedOn": get_created_on(element),
@@ -786,6 +885,48 @@ def get_job_data(ifc_file, element):
         "Priors": priors,
         "ResourceNames": resource_names,
     }
+
+
+def get_document_data(ifc_file, element):
+    rel, doc, related_object = element
+    directory = getattr(doc, "Location", None)
+    file = None
+    if not directory:
+        references = getattr(doc, "DocumentReferences", []) or getattr(doc, "HasDocumentReferences", [])
+        for reference in references or []:
+            if val(reference.Location):
+                directory = reference.Location
+            identification = getattr(reference, "ItemReference", None) or getattr(reference, "Identification", None)
+            if val(reference.Name) and doc.Name != reference.Name:
+                file = reference.Name
+            elif val(identification):
+                file = identification
+    name = val(doc.Name)
+    stage = val(doc.Scope) or "Requirement"
+    sheet_name = get_sheet_name(related_object)
+    row_name = val(related_object.Name)
+    return {
+        "key": str(name) + str(stage) + str(sheet_name) + str(row_name),
+        "Name": name,
+        "CreatedBy": get_created_by(rel),
+        "CreatedOn": get_created_on(rel),
+        "Category": val(doc.Purpose),
+        "ApprovalBy": val(doc.IntendedUse) or "Information Only",
+        "Stage": stage,
+        "SheetName": sheet_name,
+        "RowName": row_name,
+        "Directory": directory,
+        "File": file,
+        "ExternalSystem": get_external_system(rel),
+        "ExternalObject": rel.is_a(),
+        "ExternalIdentifier": rel.GlobalId,
+        "Description": val(doc.Description),
+        "Reference": val(doc.Description) or val(doc.Name),
+    }
+
+
+def get_attribute_data(ifc_file, element):
+    return element
 
 
 def get_unit_type_name(ifc_file, unit_type):
@@ -934,7 +1075,7 @@ def get_category(element):
 
 
 def get_pao_address(element, name):
-    for actor in [element.TheActor.ThePerson, element.TheActor.TheOrganization]:
+    for actor in [element.ThePerson, element.TheOrganization]:
         for address in actor.Addresses or []:
             if hasattr(address, name) and getattr(address, name, None):
                 result = getattr(address, name)
@@ -959,13 +1100,43 @@ def get_history(ifc_file):
         return sorted(histories, key=lambda x: x.id())[-1]
 
 
-def get_property_unit(pset_id, prop_name):
-    pset = ifc_file.by_id(pset_id)
+def get_property_unit(pset, prop_name):
     for prop in getattr(pset, "HasProperties", []) or []:
         if prop.Name == prop_name:
             unit = getattr(prop, "Unit", None)
             if unit:
                 return get_unit_name(unit)
+
+
+def get_allowed_values(pset_id, prop_name):
+    pset = ifc_file.by_id(pset_id)
+    for prop in getattr(pset, "HasProperties", []) or []:
+        if prop.Name == prop_name:
+            if prop.is_a("IfcPropertyEnumeratedValue") and prop.EnumerationValues:
+                return ",".join([v.wrappedValue for v in prop.EnumerationValues])
+
+
+def get_sheet_name(element):
+    if element.is_a("IfcBuilding"):
+        return "Facility"
+    elif element.is_a("IfcBuildingStorey"):
+        return "Floor"
+    elif element.is_a("IfcSpace"):
+        return "Space"
+    elif element.is_a("IfcZone"):
+        return "Zone"
+    elif element.is_a("IfcSystem"):
+        return "System"
+    elif element.is_a("IfcElementType"):
+        return "Type"
+    elif element.is_a("IfcElement"):
+        return "Component"
+    elif element.is_a("IfcTask"):
+        return "Job"
+    elif element.is_a("IfcConstructionProductResource"):
+        return "Spare"
+    elif element.is_a("IfcConstructionEquipmentResource"):
+        return "Resource"
 
 
 get_category_elements = {
@@ -1013,120 +1184,340 @@ get_element_data = {
     # "Picklist": get_picklist_data,
 }
 
+
 config = {
-    "Actors": {
-        "headers": [
-            "Name",
-            "Category",
-            "Email",
-            "Phone",
-            "CompanyURL",
-            "Department",
-            "Address1",
-            "Address2",
-            "StateRegion",
-            "PostalCode",
-            "Country",
-        ],
-        "colours": "ppssssssss",
-        "sort": [{"name": "Name", "order": "ASC"}],
+    "colours": {
+        "h": "c0c0c0",  # Header data
+        "r": "ffff99",  # Required
+        "i": "ffcc99",  # Internal reference
+        "e": "cc99ff",  # External reference
+        "o": "ccffcc",  # Optionally specified
+        "s": "c0c0c0",  # Secondary product data
+        "b": "99ccff",  # Bespoke data
+        "x": "000000",  # Not in scope
     },
-    "Facilities": {
-        "headers": [
-            "Name",
-            "ProjectName",
-            "SiteName",
-            "Category",
-            "AuthorOrganizationName",
-            "AuthorDate",
-            "ModelSoftware",
-            "ModelProjectID",
-            "ModelSiteID",
-            "ModelBuildingID",
-            "LinearUnits",
-            "AreaUnits",
-            "AreaMeasurement",
-            "Phase",
-        ],
-        "colours": "ppppreeeeessss",
-        "sort": [{"name": "Name", "order": "ASC"}],
-    },
-    "Storeys": {
-        "headers": [
-            "Name",
-            "Category",
-            "AuthorOrganizationName",
-            "AuthorDate",
-            "ModelSoftware",
-            "ModelObject",
-            "ModelID",
-            "Elevation",
-        ],
-        "colours": "ppreeees",
-        "sort": [{"name": "Elevation", "order": "ASC"}, {"name": "Name", "order": "ASC"}],
-    },
-    "Spaces": {
-        "headers": [
-            "Name",
-            "Description",
-            "Category",
-            "LevelName",
-            "AuthorOrganizationName",
-            "AuthorDate",
-            "ModelSoftware",
-            "ModelID",
-            "AreaGross",
-            "AreaNet",
-        ],
-        "colours": "ppprreeess",
-        "sort": [{"name": "LevelName", "order": "ASC"}, {"name": "Name", "order": "ASC"}],
-    },
-    "Zones": {
-        "headers": ["Name", "SpaceName", "AuthorOrganizationName", "AuthorDate", "ModelSoftware", "ModelID"],
-        "colours": "prreee",
-        "sort": [{"name": "Name", "order": "ASC"}],
-    },
-    "Types": {
-        "headers": [
-            "Name",
-            "Description",
-            "Category",
-            "AuthorOrganizationName",
-            "AuthorDate",
-            "ModelSoftware",
-            "ModelObject",
-            "ModelTag",
-            "ModelID",
-        ],
-        "colours": "pppreeeee",
-        "sort": [{"name": "ModelObject", "order": "ASC"}, {"name": "Name", "order": "ASC"}],
-    },
-    "Elements": {
-        "headers": [
-            "Name",
-            "TypeName",
-            "SpaceName",
-            "SystemName",
-            "AuthorOrganizationName",
-            "AuthorDate",
-            "ModelSoftware",
-            "ModelObject",
-            "ModelID",
-        ],
-        "colours": "prrrreeee",
-        "sort": [{"name": "TypeName", "order": "ASC"}, {"name": "Name", "order": "ASC"}],
-    },
-    "Systems": {
-        "headers": [
-            "Name",
-            "Description",
-            "Category",
-            "AuthorOrganizationName",
-            "AuthorDate",
-            "ModelSoftware",
-            "ModelID",
-        ],
-        "colours": "pppreee",
-        "sort": [{"name": "Name", "order": "ASC"}],
-    },
+    "null": "n/a",
+    "empty": "n/a",
+    "bool_true": "Yes",
+    "bool_false": "No",
+    "categories": {
+        "Contact": {
+            "headers": [
+                "Email",
+                "CreatedBy",
+                "CreatedOn",
+                "Category",
+                "Company",
+                "Phone",
+                "ExternalSystem",
+                "ExternalObject",
+                "ExternalIdentifier",
+                "Department",
+                "OrganizationCode",
+                "GivenName",
+                "FamilyName",
+                "Street",
+                "PostalBox",
+                "Town",
+                "StateRegion",
+                "PostalCode",
+                "Country",
+            ],
+            "colours": "rrrrrreeeoooooooooo",
+            "sort": [{"name": "Email", "order": "ASC"}],
+        },
+        "Facility": {
+            "headers": [
+                "Name",
+                "CreatedBy",
+                "CreatedOn",
+                "Category",
+                "ProjectName",
+                "SiteName",
+                "LinearUnits",
+                "AreaUnits",
+                "VolumeUnits",
+                "CurrencyUnit",
+                "AreaMeasurement",
+                "ExternalSystem",
+                "ExternalProjectObject",
+                "ExternalProjectIdentifier",
+                "ExternalSiteObject",
+                "ExternalSiteIdentifier",
+                "ExternalFacilityObject",
+                "ExternalFacilityIdentifier",
+                "Description",
+                "ProjectDescription",
+                "SiteDescription",
+                "Phase",
+            ],
+            "colours": "ririrriiiireeeeeeeoooo",
+            "sort": [{"name": "Name", "order": "ASC"}],
+        },
+        "Floor": {
+            "headers": [
+                "Name",
+                "CreatedBy",
+                "CreatedOn",
+                "Category",
+                "ExternalSystem",
+                "ExternalObject",
+                "ExternalIdentifier",
+                "Description",
+                "Elevation",
+                "Height",
+            ],
+            "colours": "ririeeeooo",
+            "sort": [{"name": "Elevation", "order": "ASC"}, {"name": "Name", "order": "ASC"}],
+        },
+        "Space": {
+            "headers": [
+                "Name",
+                "CreatedBy",
+                "CreatedOn",
+                "Category",
+                "FloorName",
+                "Description",
+                "ExternalSystem",
+                "ExternalObject",
+                "ExternalIdentifier",
+                "RoomTag",
+                "UsableHeight",
+                "GrossArea",
+                "NetArea",
+            ],
+            "colours": "ririrreeeoooo",
+            "sort": [{"name": "FloorName", "order": "ASC"}, {"name": "Name", "order": "ASC"}],
+        },
+        "Zone": {
+            "headers": [
+                "Name",
+                "CreatedBy",
+                "CreatedOn",
+                "Category",
+                "SpaceNames",
+                "ExternalSystem",
+                "ExternalObject",
+                "ExternalIdentifier",
+                "Description",
+            ],
+            "colours": "ririreeeo",
+            "sort": [{"name": "Name", "order": "ASC"}],
+        },
+        "Type": {
+            "headers": [
+                "Name",
+                "CreatedBy",
+                "CreatedOn",
+                "Category",
+                "Description",
+                "AssetType",
+                "Manufacturer",
+                "ModelNumber",
+                "WarrantyGuarantorParts",
+                "WarrantyDurationParts",
+                "WarrantyGuarantorLabor",
+                "WarrantyDurationLabor",
+                "WarrantyDurationUnit",
+                "ExternalSystem",
+                "ExternalObject",
+                "ExternalIdentifier",
+                "ReplacementCost",
+                "ExpectedLife",
+                "DurationUnit",
+                "WarrantyDescription",
+                "NominalLength",
+                "NominalWidth",
+                "NominalHeight",
+                "ModelReference",
+                "Shape",
+                "Size",
+                "Color",
+                "Finish",
+                "Grade",
+                "Material",
+                "Constituents",
+                "Features",
+                "AccessibilityPerformance",
+                "CodePerformance",
+                "SustainabilityPerformance",
+            ],
+            "colours": "riririiriririeeeooiorrroooooooooooo",
+            "sort": [{"name": "ExternalObject", "order": "ASC"}, {"name": "Name", "order": "ASC"}],
+        },
+        "Component": {
+            "headers": [
+                "Name",
+                "CreatedBy",
+                "CreatedOn",
+                "TypeName",
+                "Space",
+                "Description",
+                "ExternalSystem",
+                "ExternalObject",
+                "ExternalIdentifier",
+                "SerialNumber",
+                "InstallationDate",
+                "WarrantyStartDate",
+                "TagNumber",
+                "BarCode",
+                "AssetIdentifier",
+            ],
+            "colours": "ririireeeoooooo",
+            "sort": [
+                {"name": "ExternalObject", "order": "ASC"},
+                {"name": "TypeName", "order": "ASC"},
+                {"name": "Name", "order": "ASC"},
+            ],
+        },
+        "System": {
+            "headers": [
+                "Name",
+                "CreatedBy",
+                "CreatedOn",
+                "Category",
+                "ComponentNames",
+                "ExternalSystem",
+                "ExternalObject",
+                "ExternalIdentifier",
+                "Description",
+            ],
+            "colours": "ririieeeo",
+            "sort": [{"name": "Name", "order": "ASC"}],
+        },
+        "Assembly": {
+            "headers": [
+                "Name",
+                "CreatedBy",
+                "CreatedOn",
+                "SheetName",
+                "ParentName",
+                "ChildNames",
+                "AssemblyType",
+                "ExternalSystem",
+                "ExternalObject",
+                "ExternalIdentifier",
+                "Description",
+            ],
+            "colours": "ririiiieeeo",
+            "sort": [{"name": "Name", "order": "ASC"}],
+        },
+        "Connection": {
+            "headers": [
+                "Name",
+                "CreatedBy",
+                "CreatedOn",
+                "ConnectionType",
+                "SheetName",
+                "RowName1",
+                "RowName2",
+                "RealizingElement",
+                "PortName1",
+                "PortName2",
+                "ExternalSystem",
+                "ExternalObject",
+                "ExternalIdentifier",
+                "Description",
+            ],
+            "colours": "ririiiiiiieeeo",
+            "sort": [{"name": "Name", "order": "ASC"}],
+        },
+        "Spare": {
+            "headers": [
+                "Name",
+                "CreatedBy",
+                "CreatedOn",
+                "Category",
+                "TypeName",
+                "Suppliers",
+                "ExternalSystem",
+                "ExternalObject",
+                "ExternalIdentifier",
+                "Description",
+                "SetNumber",
+                "PartNumber",
+            ],
+            "colours": "ririiieeeooo",
+            "sort": [{"name": "Name", "order": "ASC"}],
+        },
+        "Resource": {
+            "headers": [
+                "Name",
+                "CreatedBy",
+                "CreatedOn",
+                "Category",
+                "ExternalSystem",
+                "ExternalObject",
+                "ExternalIdentifier",
+                "Description",
+            ],
+            "colours": "ririeeeo",
+            "sort": [{"name": "Name", "order": "ASC"}],
+        },
+        "Job": {
+            "headers": [
+                "Name",
+                "CreatedBy",
+                "CreatedOn",
+                "Category",
+                "Status",
+                "TypeName",
+                "Description",
+                "Duration",
+                "DurationUnit",
+                "Start",
+                "TaskStartUnit",
+                "Frequency",
+                "FrequencyUnit",
+                "ExternalSystem",
+                "ExternalObject",
+                "ExternalIdentifier",
+                "TaskNumber",
+                "Priors",
+                "ResourceNames",
+            ],
+            "colours": "ririiirriririeeeoii",
+            "sort": [{"name": "TypeName", "order": "ASC"}, {"name": "TaskNumber", "order": "ASC"}],
+        },
+        "Document": {
+            "headers": [
+                "Name",
+                "CreatedBy",
+                "CreatedOn",
+                "Category",
+                "ApprovalBy",
+                "Stage",
+                "SheetName",
+                "RowName",
+                "Directory",
+                "File",
+                "ExternalSystem",
+                "ExternalObject",
+                "ExternalIdentifier",
+                "Description",
+                "Reference",
+            ],
+            "colours": "ririiiiirreeeoo",
+            "sort": [{"name": "Name", "order": "ASC"}],
+        },
+        "Attribute": {
+            "headers": [
+                "Name",
+                "CreatedBy",
+                "CreatedOn",
+                "Category",
+                "SheetName",
+                "RowName",
+                "Value",
+                "Unit",
+                "ExternalSystem",
+                "ExternalObject",
+                "ExternalIdentifier",
+                "Description",
+                "AllowedValues",
+            ],
+            "colours": "ririiirreeeoo",
+            "sort": [{"name": "Category", "order": "ASC"}, {"name": "Name", "order": "ASC"}],
+        },
+    }
 }

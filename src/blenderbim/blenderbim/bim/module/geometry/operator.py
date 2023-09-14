@@ -1549,6 +1549,9 @@ class OverrideModeSetObject(bpy.types.Operator):
                     bpy.ops.bim.finish_editing_roof_path()
                 elif tool.Model.get_usage_type(element) == "PROFILE":
                     bpy.ops.bim.edit_extrusion_axis()
+                # if in the process of editing arbitrary profile
+                elif context.scene.BIMProfileProperties.active_arbitrary_profile_id:
+                    bpy.ops.bim.edit_arbitrary_profile()
                 else:
                     bpy.ops.bim.edit_extrusion_profile()
                 return self.execute(context)
