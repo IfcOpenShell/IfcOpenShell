@@ -24,10 +24,6 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.classification
 
 
-def get_actors(ifc_file):
-    return ifc_file.by_type("IfcActor")
-
-
 def get_facilities(ifc_file):
     return ifc_file.by_type("IfcBuilding")
 
@@ -63,23 +59,6 @@ def get_systems(ifc_file):
     return ifc_file.by_type("IfcSystem")
 
 
-def get_actor_data(ifc_file, element):
-    return {
-        "key": element.TheActor.Name,
-        "Name": element.TheActor.Name,
-        "Category": get_classification(element),
-        "Email": get_actor_address(element, "ElectronicMailAddresses"),
-        "Phone": get_actor_address(element, "TelephoneNumbers"),
-        "CompanyURL": get_actor_address(element, "WWWHomePageURL"),
-        "Department": get_actor_address(element, "InternalLocation"),
-        "Address": get_actor_address(element, "AddressLines"),
-        "Town": get_actor_address(element, "Town"),
-        "Region": get_actor_address(element, "Region"),
-        "PostalCode": get_actor_address(element, "PostalCode"),
-        "Country": get_actor_address(element, "Country"),
-    }
-
-
 def get_facility_data(ifc_file, element):
     return {
         "key": element.Name,
@@ -95,7 +74,6 @@ def get_facility_data(ifc_file, element):
         "ModelBuildingID": element.GlobalId,
         "LinearUnits": "millimeters",
         "AreaUnits": "square meters",
-        "AreaMeasurement": "BIM Software",
         "Phase": ifc_file.by_type("IfcProject")[0].Phase,
     }
 
@@ -145,6 +123,7 @@ def get_zone_data(ifc_file, element):
 
 
 def get_element_type_data(ifc_file, element):
+    psets = ifcopenshell.util.element.get_psets(element)
     return {
         "key": element.Name,
         "Name": element.Name,
@@ -156,6 +135,11 @@ def get_element_type_data(ifc_file, element):
         "ModelObject": "{}[{}]".format(element.is_a(), ifcopenshell.util.element.get_predefined_type(element)),
         "ModelID": element.GlobalId,
         "ModelTag": element.Tag,
+        "Manufacturer": get_property(psets, "Pset_ManufacturerTypeInformation", "Manufacturer"),
+        "ModelReference": get_property(psets, "Pset_ManufacturerTypeInformation", "ModelReference"),
+        "ModelLabel": get_property(psets, "Pset_ManufacturerTypeInformation", "ModelLabel"),
+        "PointOfContact": get_property(psets, "Pset_Warranty", "PointOfContact"),
+        "WarrantyPeriod": get_property(psets, "Pset_Warranty", "WarrantyPeriod"),
     }
 
 
@@ -164,6 +148,7 @@ def get_element_data(ifc_file, element):
     space_name = space.Name if space.is_a("IfcSpace") else None
     systems = ifcopenshell.util.system.get_element_systems(element)
     system = systems[0].Name if systems else None
+    psets = ifcopenshell.util.element.get_psets(element)
     return {
         "key": element.Name,
         "Name": element.Name,
@@ -176,6 +161,13 @@ def get_element_data(ifc_file, element):
         "ModelObject": "{}[{}]".format(element.is_a(), ifcopenshell.util.element.get_predefined_type(element)),
         "ModelID": element.GlobalId,
         "ModelTag": element.Tag,
+        "SerialNumber": get_property(psets, "Pset_ManufacturerOccurrence", "SerialNumber"),
+        "BarCode": get_property(psets, "Pset_ManufacturerOccurrence", "BarCode"),
+        "BatchReference": get_property(psets, "Pset_ManufacturerOccurrence", "BatchReference"),
+        "TagNumber": get_property(psets, "Pset_ConstructionOccurrence", "TagNumber"),
+        "AssetIdentifier": get_property(psets, "Pset_ConstructionOccurrence", "AssetIdentifier"),
+        "InstallationDate": get_property(psets, "Pset_ConstructionOccurrence", "InstallationDate"),
+        "WarrantyStartDate": get_property(psets, "Pset_Warranty", "WarrantyStartDate"),
     }
 
 
@@ -228,21 +220,6 @@ def get_classification(element):
         return "{}:{}".format(references[0].ItemReference, references[0].Name)
 
 
-def get_actor_address(element, name):
-    actors = []
-    if element.TheActor.is_a("IfcOrganization") or element.TheActor.is_a("IfcPerson"):
-        actors = [element.TheActor]
-    elif element.TheActor.is_a("IfcPersonAndOrganization"):
-        actors = [element.TheActor.TheOrganization, element.TheActor.ThePerson]
-    for actor in actors:
-        for address in actor.Addresses or []:
-            if hasattr(address, name) and getattr(address, name, None):
-                result = getattr(address, name)
-                if isinstance(result, tuple):
-                    return result[0]
-                return result
-
-
 def get_property(psets, pset_name, prop_name, decimals=None):
     if pset_name in psets:
         result = psets[pset_name].get(prop_name, None)
@@ -252,7 +229,6 @@ def get_property(psets, pset_name, prop_name, decimals=None):
 
 
 get_category_elements = {
-    "Actors": get_actors,
     "Facilities": get_facilities,
     "Storeys": get_storeys,
     "Spaces": get_spaces,
@@ -263,7 +239,6 @@ get_category_elements = {
 }
 
 get_element_data = {
-    "Actors": get_actor_data,
     "Facilities": get_facility_data,
     "Storeys": get_storey_data,
     "Spaces": get_space_data,
@@ -285,23 +260,6 @@ config = {
         "b": "000000",  # Not in scope
     },
     "categories": {
-        "Actors": {
-            "headers": [
-                "Name",
-                "Category",
-                "Email",
-                "Phone",
-                "CompanyURL",
-                "Department",
-                "Address",
-                "Town",
-                "Region",
-                "PostalCode",
-                "Country",
-            ],
-            "colours": "ppssssssss",
-            "sort": [{"name": "Name", "order": "ASC"}],
-        },
         "Facilities": {
             "headers": [
                 "Name",
@@ -316,10 +274,9 @@ config = {
                 "ModelBuildingID",
                 "LinearUnits",
                 "AreaUnits",
-                "AreaMeasurement",
                 "Phase",
             ],
-            "colours": "ppppreeeeessss",
+            "colours": "ppppreeeeesss",
             "sort": [{"name": "Name", "order": "ASC"}],
         },
         "Storeys": {
@@ -368,8 +325,13 @@ config = {
                 "ModelObject",
                 "ModelID",
                 "ModelTag",
+                "Manufacturer",
+                "ModelReference",
+                "ModelLabel",
+                "PointOfContact",
+                "WarrantyPeriod",
             ],
-            "colours": "pppreeeee",
+            "colours": "pppreeeeesssss",
             "sort": [{"name": "ModelObject", "order": "ASC"}, {"name": "Name", "order": "ASC"}],
         },
         "Elements": {
@@ -384,8 +346,15 @@ config = {
                 "ModelObject",
                 "ModelID",
                 "ModelTag",
+                "SerialNumber",
+                "BarCode",
+                "BatchReference",
+                "TagNumber",
+                "AssetIdentifier",
+                "InstallationDate",
+                "WarrantyStartDate",
             ],
-            "colours": "prrrreeeee",
+            "colours": "prrrreeeeesssssss",
             "sort": [{"name": "TypeName", "order": "ASC"}, {"name": "Name", "order": "ASC"}],
         },
         "Systems": {
