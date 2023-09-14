@@ -336,8 +336,15 @@ class SelectIfcClashResults(bpy.types.Operator):
             else:
                 element_file = self.file
 
-            element = element_file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-            if element.GlobalId in global_ids:
+            try:
+                element = element_file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+            except:
+                continue
+
+            global_id = getattr(element, "GlobalId", None)
+            if not global_id:
+                continue
+            if global_id in global_ids:
                 obj.select_set(True)
         return {"FINISHED"}
 
