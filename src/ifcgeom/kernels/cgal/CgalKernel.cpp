@@ -189,10 +189,8 @@ bool CgalKernel::convert(const taxonomy::shell::ptr l, cgal_shape_t& shape) {
 	std::list<cgal_face_t> face_list;
 	for (auto& f : l->children) {
 		bool success = false;
-		cgal_face_t face;
-
 		try {
-			success = convert(f, face);
+			success = convert(f, face_list);
 		} catch (...) {}
 
 		if (!success) {
@@ -204,22 +202,20 @@ bool CgalKernel::convert(const taxonomy::shell::ptr l, cgal_shape_t& shape) {
 		//    for (auto &point: face.outer) {
 		//      std::cout << "\tPoint(" << point << ")" << std::endl;
 		//    }
-
-		face_list.push_back(face);
 	}
 
 	shape = utils::create_polyhedron(face_list);
 	return shape.size_of_facets();
 }
 
-bool CgalKernel::convert(const taxonomy::face::ptr face, cgal_face_t& result) {
+bool CgalKernel::convert(const taxonomy::face::ptr face, std::list<cgal_face_t>& result) {
 	int num_outer_bounds = 0;
 
 	for (auto& bound : face->children) {
 		if (bound->external.get_value_or(false)) num_outer_bounds++;
 	}
 
-	if (num_outer_bounds != 1) {
+	if (num_outer_bounds != 1 && num_outer_bounds != face->children.size()) {
 		Logger::Message(Logger::LOG_ERROR, "Invalid configuration of boundaries for:", face->instance);
 		return false;
 	}
@@ -241,9 +237,16 @@ bool CgalKernel::convert(const taxonomy::face::ptr face, cgal_face_t& result) {
 		} else {
 			mf.inner.push_back(wire);
 		}
+
+		if (num_outer_bounds > 1) {
+			result.push_back(mf);
+			mf = cgal_face_t{};
+		}
 	}
 
-	result = mf;
+	if (num_outer_bounds == 1) {
+		result.push_back(mf);
+	}
 
 	//  std::cout << "Face: " << std::endl;
 	//  for (auto &point: face.outer) {
@@ -1114,12 +1117,12 @@ bool CgalKernel::convert(const taxonomy::extrusion::ptr extrusion, cgal_shape_t 
 		return false;
 	}
 
-	cgal_face_t bottom_face;
-	if (!convert(extrusion->basis, bottom_face)) {
+	std::list<cgal_face_t> bottom_face;
+	if (!convert(extrusion->basis, bottom_face) || bottom_face.size() != 1) {
 		return false;
 	}
 
-	return process_extrusion(bottom_face, extrusion->direction, extrusion->depth, shape);
+	return process_extrusion(bottom_face.front(), extrusion->direction, extrusion->depth, shape);
 }
 
 CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_cube(double d) {
@@ -1844,14 +1847,14 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 			}
 
 			if (!face->children.empty()) {
-				cgal_face_t f;
-				if (!convert(face, f)) {
+				std::list<cgal_face_t> fs;
+				if (!convert(face, fs) || fs.size() != 1) {
 					return false;
 				}
 				// static 
 				auto z = taxonomy::make<taxonomy::direction3>(0, 0, 1);
 				cgal_shape_t poly;
-				process_extrusion(f, z, 200, poly);
+				process_extrusion(fs.front(), z, 200, poly);
 				for (auto& v : vertices(poly)) {
 					v->point() = Kernel_::Point_3(
 						v->point().cartesian(0),

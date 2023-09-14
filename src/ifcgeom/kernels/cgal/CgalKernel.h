@@ -100,7 +100,7 @@ namespace ifcopenshell {
 				void remove_duplicate_points_from_loop(cgal_wire_t& polygon);
 
 				bool convert(const taxonomy::extrusion::ptr, cgal_shape_t&);
-				bool convert(const taxonomy::face::ptr, cgal_face_t&);
+				bool convert(const taxonomy::face::ptr, std::list<cgal_face_t>&);
 				bool convert(const taxonomy::loop::ptr, cgal_wire_t&);
 				// bool convert(const taxonomy::matrix4::ptr, cgal_placement_t&);
 				bool convert(const taxonomy::shell::ptr, cgal_shape_t&);
