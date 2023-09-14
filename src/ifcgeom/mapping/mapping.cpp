@@ -318,8 +318,8 @@ namespace {
 	template <typename T>
 	std::pair<IfcSchema::IfcSurfaceStyle*, T*> get_surface_style(const IfcSchema::IfcStyledItem* si) {
 #ifdef SCHEMA_HAS_IfcStyleAssignmentSelect
-		aggregate_of_instance::ptr style_assignments = si->Styles();
-		for (aggregate_of_instance::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
+		auto style_assignments = si->Styles();
+		for (auto kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
 			if (!(*kt)->declaration().is(IfcSchema::IfcPresentationStyleAssignment::Class())) {
 				continue;
 			}
@@ -338,12 +338,12 @@ namespace {
 		auto styles = si->Styles();
 #endif
 			for (auto lt = styles->begin(); lt != styles->end(); ++lt) {
-				IfcUtil::IfcBaseClass* style = *lt;
+				auto style = *lt;
 				if (style->declaration().is(IfcSchema::IfcSurfaceStyle::Class())) {
 					IfcSchema::IfcSurfaceStyle* surface_style = (IfcSchema::IfcSurfaceStyle*) style;
 					if (surface_style->Side() != IfcSchema::IfcSurfaceSide::IfcSurfaceSide_NEGATIVE) {
-						aggregate_of_instance::ptr styles_elements = surface_style->Styles();
-						for (aggregate_of_instance::it mt = styles_elements->begin(); mt != styles_elements->end(); ++mt) {
+						auto styles_elements = surface_style->Styles();
+						for (auto mt = styles_elements->begin(); mt != styles_elements->end(); ++mt) {
 							if ((*mt)->declaration().is(T::Class())) {
 								return std::make_pair(surface_style, (T*)*mt);
 							}
@@ -596,12 +596,12 @@ void mapping::initialize_units_() {
 	bool length_unit_encountered = false, angle_unit_encountered = false;
 
 	try {
-		aggregate_of_instance::ptr units = unit_assignment->Units();
+		auto units = unit_assignment->Units();
 		if (!units || !units->size()) {
 			Logger::Warning("No unit information found");
 		} else {
-			for (aggregate_of_instance::it it = units->begin(); it != units->end(); ++it) {
-				IfcUtil::IfcBaseClass* base = *it;
+			for (auto it = units->begin(); it != units->end(); ++it) {
+				IfcSchema::IfcUnit* base = *it;
 				if (base->declaration().is(IfcSchema::IfcNamedUnit::Class())) {
 					IfcSchema::IfcNamedUnit* named_unit = base->as<IfcSchema::IfcNamedUnit>();
 					if (named_unit->UnitType() == IfcSchema::IfcUnitEnum::IfcUnit_LENGTHUNIT ||

@@ -47,9 +47,9 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcIndexedPolyCurve* inst) {
 	auto loop = taxonomy::make<taxonomy::loop>();
 
 	if(inst->Segments()) {
-		aggregate_of_instance::ptr segments = *inst->Segments();
-		for (aggregate_of_instance::it it = segments->begin(); it != segments->end(); ++it) {
-			IfcUtil::IfcBaseClass* segment = *it;
+		auto segments = *inst->Segments();
+		for (auto it = segments->begin(); it != segments->end(); ++it) {
+			auto segment = *it;
 			if (segment->declaration().is(IfcSchema::IfcLineIndex::Class())) {
 				IfcSchema::IfcLineIndex* line = (IfcSchema::IfcLineIndex*) segment;
 				std::vector<int> indices = *line;
