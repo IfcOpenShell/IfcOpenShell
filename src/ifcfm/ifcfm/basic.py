@@ -48,7 +48,7 @@ def get_zones(ifc_file):
     return zones
 
 
-def get_types(ifc_file):
+def get_element_types(ifc_file):
     return ifcopenshell.util.fm.get_fmhem_types(ifc_file)
 
 
@@ -144,7 +144,7 @@ def get_zone_data(ifc_file, element):
     }
 
 
-def get_type_data(ifc_file, element):
+def get_element_type_data(ifc_file, element):
     return {
         "key": element.Name,
         "Name": element.Name,
@@ -154,8 +154,8 @@ def get_type_data(ifc_file, element):
         "AuthorDate": get_owner_creation_date(element),
         "ModelSoftware": get_owner_application(element),
         "ModelObject": "{}[{}]".format(element.is_a(), ifcopenshell.util.element.get_predefined_type(element)),
-        "ModelTag": element.Tag,
         "ModelID": element.GlobalId,
+        "ModelTag": element.Tag,
     }
 
 
@@ -175,6 +175,7 @@ def get_element_data(ifc_file, element):
         "ModelSoftware": get_owner_application(element),
         "ModelObject": "{}[{}]".format(element.is_a(), ifcopenshell.util.element.get_predefined_type(element)),
         "ModelID": element.GlobalId,
+        "ModelTag": element.Tag,
     }
 
 
@@ -256,7 +257,7 @@ get_category_elements = {
     "Storeys": get_storeys,
     "Spaces": get_spaces,
     "Zones": get_zones,
-    "Types": get_types,
+    "ElementTypes": get_element_types,
     "Elements": get_elements,
     "Systems": get_systems,
 }
@@ -267,7 +268,7 @@ get_element_data = {
     "Storeys": get_storey_data,
     "Spaces": get_space_data,
     "Zones": get_zone_data,
-    "Types": get_type_data,
+    "ElementTypes": get_element_type_data,
     "Elements": get_element_data,
     "Systems": get_system_data,
 }
@@ -292,9 +293,9 @@ config = {
                 "Phone",
                 "CompanyURL",
                 "Department",
-                "Address1",
-                "Address2",
-                "StateRegion",
+                "Address",
+                "Town",
+                "Region",
                 "PostalCode",
                 "Country",
             ],
@@ -356,7 +357,7 @@ config = {
             "colours": "prreee",
             "sort": [{"name": "Name", "order": "ASC"}],
         },
-        "Types": {
+        "ElementTypes": {
             "headers": [
                 "Name",
                 "Description",
@@ -365,8 +366,8 @@ config = {
                 "AuthorDate",
                 "ModelSoftware",
                 "ModelObject",
-                "ModelTag",
                 "ModelID",
+                "ModelTag",
             ],
             "colours": "pppreeeee",
             "sort": [{"name": "ModelObject", "order": "ASC"}, {"name": "Name", "order": "ASC"}],
@@ -382,6 +383,7 @@ config = {
                 "ModelSoftware",
                 "ModelObject",
                 "ModelID",
+                "ModelTag",
             ],
             "colours": "prrrreeee",
             "sort": [{"name": "TypeName", "order": "ASC"}, {"name": "Name", "order": "ASC"}],
@@ -395,8 +397,9 @@ config = {
                 "AuthorDate",
                 "ModelSoftware",
                 "ModelID",
+                "ModelTag",
             ],
-            "colours": "pppreee",
+            "colours": "pppreeee",
             "sort": [{"name": "Name", "order": "ASC"}],
         },
     },
