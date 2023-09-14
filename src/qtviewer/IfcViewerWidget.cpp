@@ -12,6 +12,7 @@
 #include "MessageLogger.h"
 #include "osg/Geode"
 #include "osg/Geometry"
+#include "osg/StateSet"
 #include "osg/Vec3"
 #include "osg/ref_ptr"
 #include "osgGA/TrackballManipulator"
@@ -26,11 +27,11 @@ IfcViewerWidget::IfcViewerWidget(qreal dpiScale, QWidget *parent) :
     m_viewer(new osgViewer::Viewer),
     root(new osg::Group)
 { 
-    m_mouseHandler = new osgGA::TrackballManipulator;
-    m_clearColor = osg::Vec4(0.7, 0.7, 0.7, 1.0);
+    m_clearColor = osg::Vec4(0.8, 0.8, 0.8, 1.0);
 
     //debug - override
     //std::string filePath = "/Users/onizudb/Downloads/IFC/wallAtOrigin.ifc";
+    //std::string filePath = "/Users/onizudb/Downloads/IFC/FromAC_IFC4ref.ifc";
     //this->loadFile(filePath);
 }
 
@@ -50,13 +51,8 @@ void IfcViewerWidget::initializeGL()
     m_viewer->getCamera()->setClearColor(m_clearColor);
     m_viewer->getCamera()->setGraphicsContext(m_graphicsWindow);
 
-    // Add event handlers
-
-    this->setMouseTracking(false);
-
-    m_mouseHandler->setAllowThrow(false);
-
-    m_viewer->setCameraManipulator(m_mouseHandler);
+    // set camera manipulator, etc.
+    setupViewController();
 
     m_viewer->setThreadingModel(osgViewer::Viewer::SingleThreaded);
     m_viewer->realize();
@@ -136,6 +132,14 @@ unsigned int IfcViewerWidget::getMouseButtonNum(QMouseEvent* event)
     return button;
 }
 
+void IfcViewerWidget::setupViewController()
+{
+    setMouseTracking(false);
+    m_mouseHandler = new osgGA::TrackballManipulator;
+    m_mouseHandler->setAllowThrow(false);
+    m_viewer->setCameraManipulator(m_mouseHandler);
+}
+
 void IfcViewerWidget::loadFile(const std::string& filePath)
 {
     std::vector<osg::ref_ptr<osg::Geometry>> geometries;
@@ -152,19 +156,45 @@ void IfcViewerWidget::loadFile(const std::string& filePath)
         geode->addDrawable(geometry);
     }
 
-    prepareSceneWithGeometry(geode);
+    // Add the model to the root node
+    root->addChild(geode);
 
-    m_viewer->setCameraManipulator(m_mouseHandler);
+    // set initial camera position
+    orientScene(geode);
 }
 
-void IfcViewerWidget::prepareSceneWithGeometry(osg::ref_ptr<osg::Geode> geode)
+void IfcViewerWidget::orientScene(osg::ref_ptr<osg::Geode> geode)
 {
-    // Apply a rotation to the model
-    // MatrixTransform allows applying transformations (translation, rotation, scaling) to its children
-    osg::ref_ptr<osg::MatrixTransform> rotationTransform = new osg::MatrixTransform;
-    rotationTransform->setMatrix(osg::Matrix::rotate(osg::DegreesToRadians(45.0), osg::Vec3(0.0, 0.0, 1.0)));
-    rotationTransform->addChild(geode);
+    // Get the bounding-box
+    osg::ComputeBoundsVisitor cbv;
+    geode->accept(cbv);
+    //root.get()->accept(cbv);
+    const osg::BoundingBox& bb = cbv.getBoundingBox();
 
-    // Add the model to the root node
-    root->addChild(rotationTransform);
+    // Center (average of opposite corners of bb)
+    osg::Vec3d center = (bb.corner(0) + bb.corner(7)) * 0.5;
+
+    // Radius (distance between the center and the corner)
+    // assuming corner(7) has maximum x,y,z coords
+    float radius = (bb.corner(7) - center).length();
+
+    // Calc. eye position
+    osg::Vec3d eye = center + osg::Vec3d(radius * 3, -radius * 3, 0.0);
+
+    osg::Vec3d up = osg::Vec3d(0.0, 0.0, 1.0);
+
+    // Set the camera's view matrix
+    // In case a cameraManipulator is set, lookAt position setting does not work on the camera
+    // as it is overridden.
+    // So set it on the manipulator and reapply it to the viewer
+    m_mouseHandler->setHomePosition(eye, center, up);
+    m_viewer->setCameraManipulator(m_mouseHandler);
+
+    auto log = [center, radius, eye]() {
+        MessageLogger::log("center: " + std::to_string(center.length()));
+        MessageLogger::log("radius: " + std::to_string(radius));
+        MessageLogger::log("center: " + std::to_string(center.x()) + ", " + std::to_string(center.y()) + ", " + std::to_string(center.z()));
+        MessageLogger::log("eye: " + std::to_string(eye.x()) + ", " + std::to_string(eye.y()) + ", " + std::to_string(eye.z()));
+    };
+    //log();
 }
