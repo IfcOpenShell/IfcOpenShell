@@ -24,10 +24,6 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.classification
 
 
-def get_actors(ifc_file):
-    return ifc_file.by_type("IfcActor")
-
-
 def get_facilities(ifc_file):
     return ifc_file.by_type("IfcBuilding")
 
@@ -48,7 +44,7 @@ def get_zones(ifc_file):
     return zones
 
 
-def get_types(ifc_file):
+def get_element_types(ifc_file):
     return ifcopenshell.util.fm.get_fmhem_types(ifc_file)
 
 
@@ -61,23 +57,6 @@ def get_elements(ifc_file):
 
 def get_systems(ifc_file):
     return ifc_file.by_type("IfcSystem")
-
-
-def get_actor_data(ifc_file, element):
-    return {
-        "key": element.TheActor.Name,
-        "Name": element.TheActor.Name,
-        "Category": get_classification(element),
-        "Email": get_actor_address(element, "ElectronicMailAddresses"),
-        "Phone": get_actor_address(element, "TelephoneNumbers"),
-        "CompanyURL": get_actor_address(element, "WWWHomePageURL"),
-        "Department": get_actor_address(element, "InternalLocation"),
-        "Address": get_actor_address(element, "AddressLines"),
-        "Town": get_actor_address(element, "Town"),
-        "Region": get_actor_address(element, "Region"),
-        "PostalCode": get_actor_address(element, "PostalCode"),
-        "Country": get_actor_address(element, "Country"),
-    }
 
 
 def get_facility_data(ifc_file, element):
@@ -95,7 +74,6 @@ def get_facility_data(ifc_file, element):
         "ModelBuildingID": element.GlobalId,
         "LinearUnits": "millimeters",
         "AreaUnits": "square meters",
-        "AreaMeasurement": "BIM Software",
         "Phase": ifc_file.by_type("IfcProject")[0].Phase,
     }
 
@@ -134,7 +112,7 @@ def get_space_data(ifc_file, element):
 def get_zone_data(ifc_file, element):
     zone, space = element
     return {
-        "key": (element.Name or "Unnamed") + (space.Name or "Unnamed"),
+        "key": (zone.Name or "Unnamed") + (space.Name or "Unnamed"),
         "Name": zone.Name,
         "SpaceName": space.Name,
         "AuthorOrganizationName": get_owner_name(zone),
@@ -144,7 +122,8 @@ def get_zone_data(ifc_file, element):
     }
 
 
-def get_type_data(ifc_file, element):
+def get_element_type_data(ifc_file, element):
+    psets = ifcopenshell.util.element.get_psets(element)
     return {
         "key": element.Name,
         "Name": element.Name,
@@ -154,8 +133,13 @@ def get_type_data(ifc_file, element):
         "AuthorDate": get_owner_creation_date(element),
         "ModelSoftware": get_owner_application(element),
         "ModelObject": "{}[{}]".format(element.is_a(), ifcopenshell.util.element.get_predefined_type(element)),
-        "ModelTag": element.Tag,
         "ModelID": element.GlobalId,
+        "ModelTag": element.Tag,
+        "Manufacturer": get_property(psets, "Pset_ManufacturerTypeInformation", "Manufacturer"),
+        "ModelReference": get_property(psets, "Pset_ManufacturerTypeInformation", "ModelReference"),
+        "ModelLabel": get_property(psets, "Pset_ManufacturerTypeInformation", "ModelLabel"),
+        "PointOfContact": get_property(psets, "Pset_Warranty", "PointOfContact"),
+        "WarrantyPeriod": get_property(psets, "Pset_Warranty", "WarrantyPeriod"),
     }
 
 
@@ -164,6 +148,7 @@ def get_element_data(ifc_file, element):
     space_name = space.Name if space.is_a("IfcSpace") else None
     systems = ifcopenshell.util.system.get_element_systems(element)
     system = systems[0].Name if systems else None
+    psets = ifcopenshell.util.element.get_psets(element)
     return {
         "key": element.Name,
         "Name": element.Name,
@@ -175,6 +160,14 @@ def get_element_data(ifc_file, element):
         "ModelSoftware": get_owner_application(element),
         "ModelObject": "{}[{}]".format(element.is_a(), ifcopenshell.util.element.get_predefined_type(element)),
         "ModelID": element.GlobalId,
+        "ModelTag": element.Tag,
+        "SerialNumber": get_property(psets, "Pset_ManufacturerOccurrence", "SerialNumber"),
+        "BarCode": get_property(psets, "Pset_ManufacturerOccurrence", "BarCode"),
+        "BatchReference": get_property(psets, "Pset_ManufacturerOccurrence", "BatchReference"),
+        "TagNumber": get_property(psets, "Pset_ConstructionOccurrence", "TagNumber"),
+        "AssetIdentifier": get_property(psets, "Pset_ConstructionOccurrence", "AssetIdentifier"),
+        "InstallationDate": get_property(psets, "Pset_ConstructionOccurrence", "InstallationDate"),
+        "WarrantyStartDate": get_property(psets, "Pset_Warranty", "WarrantyStartDate"),
     }
 
 
@@ -227,21 +220,6 @@ def get_classification(element):
         return "{}:{}".format(references[0].ItemReference, references[0].Name)
 
 
-def get_actor_address(element, name):
-    actors = []
-    if element.TheActor.is_a("IfcOrganization") or element.TheActor.is_a("IfcPerson"):
-        actors = [element.TheActor]
-    elif element.TheActor.is_a("IfcPersonAndOrganization"):
-        actors = [element.TheActor.TheOrganization, element.TheActor.ThePerson]
-    for actor in actors:
-        for address in actor.Addresses or []:
-            if hasattr(address, name) and getattr(address, name, None):
-                result = getattr(address, name)
-                if isinstance(result, tuple):
-                    return result[0]
-                return result
-
-
 def get_property(psets, pset_name, prop_name, decimals=None):
     if pset_name in psets:
         result = psets[pset_name].get(prop_name, None)
@@ -251,141 +229,146 @@ def get_property(psets, pset_name, prop_name, decimals=None):
 
 
 get_category_elements = {
-    "Actors": get_actors,
     "Facilities": get_facilities,
     "Storeys": get_storeys,
     "Spaces": get_spaces,
     "Zones": get_zones,
-    "Types": get_types,
+    "ElementTypes": get_element_types,
     "Elements": get_elements,
     "Systems": get_systems,
 }
 
 get_element_data = {
-    "Actors": get_actor_data,
     "Facilities": get_facility_data,
     "Storeys": get_storey_data,
     "Spaces": get_space_data,
     "Zones": get_zone_data,
-    "Types": get_type_data,
+    "ElementTypes": get_element_type_data,
     "Elements": get_element_data,
     "Systems": get_system_data,
 }
 
 config = {
-    "Actors": {
-        "headers": [
-            "Name",
-            "Category",
-            "Email",
-            "Phone",
-            "CompanyURL",
-            "Department",
-            "Address1",
-            "Address2",
-            "StateRegion",
-            "PostalCode",
-            "Country",
-        ],
-        "colours": "ppssssssss",
-        "sort": [{"name": "Name", "order": "ASC"}],
+    "colours": {
+        "h": "dddddd",  # Header data
+        "p": "dc8774",  # Primary identification data
+        "s": "b8dd73",  # Secondary asset data
+        "r": "eda786",  # Internal reference
+        "e": "96c7d0",  # External / autogenerated data
+        "o": "ddb873",  # Conditional / optional data
+        "n": "eeeeee",  # Other data
+        "b": "000000",  # Not in scope
     },
-    "Facilities": {
-        "headers": [
-            "Name",
-            "ProjectName",
-            "SiteName",
-            "Category",
-            "AuthorOrganizationName",
-            "AuthorDate",
-            "ModelSoftware",
-            "ModelProjectID",
-            "ModelSiteID",
-            "ModelBuildingID",
-            "LinearUnits",
-            "AreaUnits",
-            "AreaMeasurement",
-            "Phase",
-        ],
-        "colours": "ppppreeeeessss",
-        "sort": [{"name": "Name", "order": "ASC"}],
-    },
-    "Storeys": {
-        "headers": [
-            "Name",
-            "Category",
-            "AuthorOrganizationName",
-            "AuthorDate",
-            "ModelSoftware",
-            "ModelObject",
-            "ModelID",
-            "Elevation",
-        ],
-        "colours": "ppreeees",
-        "sort": [{"name": "Elevation", "order": "ASC"}, {"name": "Name", "order": "ASC"}],
-    },
-    "Spaces": {
-        "headers": [
-            "Name",
-            "Description",
-            "Category",
-            "LevelName",
-            "AuthorOrganizationName",
-            "AuthorDate",
-            "ModelSoftware",
-            "ModelID",
-            "AreaGross",
-            "AreaNet",
-        ],
-        "colours": "ppprreeess",
-        "sort": [{"name": "LevelName", "order": "ASC"}, {"name": "Name", "order": "ASC"}],
-    },
-    "Zones": {
-        "headers": ["Name", "SpaceName", "AuthorOrganizationName", "AuthorDate", "ModelSoftware", "ModelID"],
-        "colours": "prreee",
-        "sort": [{"name": "Name", "order": "ASC"}],
-    },
-    "Types": {
-        "headers": [
-            "Name",
-            "Description",
-            "Category",
-            "AuthorOrganizationName",
-            "AuthorDate",
-            "ModelSoftware",
-            "ModelObject",
-            "ModelTag",
-            "ModelID",
-        ],
-        "colours": "pppreeeee",
-        "sort": [{"name": "ModelObject", "order": "ASC"}, {"name": "Name", "order": "ASC"}],
-    },
-    "Elements": {
-        "headers": [
-            "Name",
-            "TypeName",
-            "SpaceName",
-            "SystemName",
-            "AuthorOrganizationName",
-            "AuthorDate",
-            "ModelSoftware",
-            "ModelObject",
-            "ModelID",
-        ],
-        "colours": "prrrreeee",
-        "sort": [{"name": "TypeName", "order": "ASC"}, {"name": "Name", "order": "ASC"}],
-    },
-    "Systems": {
-        "headers": [
-            "Name",
-            "Description",
-            "Category",
-            "AuthorOrganizationName",
-            "AuthorDate",
-            "ModelSoftware",
-            "ModelID",
-        ],
-        "colours": "pppreee",
-        "sort": [{"name": "Name", "order": "ASC"}],
+    "categories": {
+        "Facilities": {
+            "headers": [
+                "Name",
+                "ProjectName",
+                "SiteName",
+                "Category",
+                "AuthorOrganizationName",
+                "AuthorDate",
+                "ModelSoftware",
+                "ModelProjectID",
+                "ModelSiteID",
+                "ModelBuildingID",
+                "LinearUnits",
+                "AreaUnits",
+                "Phase",
+            ],
+            "colours": "ppppreeeeesss",
+            "sort": [{"name": "Name", "order": "ASC"}],
+        },
+        "Storeys": {
+            "headers": [
+                "Name",
+                "Category",
+                "AuthorOrganizationName",
+                "AuthorDate",
+                "ModelSoftware",
+                "ModelObject",
+                "ModelID",
+                "Elevation",
+            ],
+            "colours": "ppreeees",
+            "sort": [{"name": "Elevation", "order": "ASC"}, {"name": "Name", "order": "ASC"}],
+        },
+        "Spaces": {
+            "headers": [
+                "Name",
+                "Description",
+                "Category",
+                "LevelName",
+                "AuthorOrganizationName",
+                "AuthorDate",
+                "ModelSoftware",
+                "ModelID",
+                "AreaGross",
+                "AreaNet",
+            ],
+            "colours": "ppprreeess",
+            "sort": [{"name": "LevelName", "order": "ASC"}, {"name": "Name", "order": "ASC"}],
+        },
+        "Zones": {
+            "headers": ["Name", "SpaceName", "AuthorOrganizationName", "AuthorDate", "ModelSoftware", "ModelID"],
+            "colours": "prreee",
+            "sort": [{"name": "Name", "order": "ASC"}],
+        },
+        "ElementTypes": {
+            "headers": [
+                "Name",
+                "Description",
+                "Category",
+                "AuthorOrganizationName",
+                "AuthorDate",
+                "ModelSoftware",
+                "ModelObject",
+                "ModelID",
+                "ModelTag",
+                "Manufacturer",
+                "ModelReference",
+                "ModelLabel",
+                "PointOfContact",
+                "WarrantyPeriod",
+            ],
+            "colours": "pppreeeeesssss",
+            "sort": [{"name": "ModelObject", "order": "ASC"}, {"name": "Name", "order": "ASC"}],
+        },
+        "Elements": {
+            "headers": [
+                "Name",
+                "TypeName",
+                "SpaceName",
+                "SystemName",
+                "AuthorOrganizationName",
+                "AuthorDate",
+                "ModelSoftware",
+                "ModelObject",
+                "ModelID",
+                "ModelTag",
+                "SerialNumber",
+                "BarCode",
+                "BatchReference",
+                "TagNumber",
+                "AssetIdentifier",
+                "InstallationDate",
+                "WarrantyStartDate",
+            ],
+            "colours": "prrrreeeeesssssss",
+            "sort": [{"name": "TypeName", "order": "ASC"}, {"name": "Name", "order": "ASC"}],
+        },
+        "Systems": {
+            "headers": [
+                "Name",
+                "Description",
+                "Category",
+                "AuthorOrganizationName",
+                "AuthorDate",
+                "ModelSoftware",
+                "ModelID",
+            ],
+            "colours": "pppreee",
+            "sort": [{"name": "Name", "order": "ASC"}],
+        },
     },
 }

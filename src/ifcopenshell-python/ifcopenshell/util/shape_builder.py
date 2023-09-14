@@ -22,6 +22,7 @@ import ifcopenshell.api
 from math import cos, sin, pi, tan, radians, degrees, atan, sqrt, ceil
 from mathutils import Vector, Matrix
 from itertools import chain
+from typing import List
 
 V = lambda *x: Vector([float(i) for i in x])
 sign = lambda x: x and (1, -1)[x < 0]
@@ -48,9 +49,25 @@ class ShapeBuilder:
     def __init__(self, ifc_file):
         self.file = ifc_file
 
-    def polyline(self, points, closed=False, position_offset=None, arc_points=[]):
-        # > points - list of points formatted like ( (x0, y0), (x1, y1) )
-        # < IfcIndexedPolyCurve
+    def polyline(
+        self, points: List[Vector], closed: bool = False, position_offset: Vector = None, arc_points: List[int] = []
+    ):
+        """
+        Generate an IfcIndexedPolyCurve based on the provided points.
+
+        :param points: List of points formatted as ( (x0, y0), (x1, y1) )
+        :type: List[Vector]
+        :param closed: Whether polyline should be closed. Default is False.
+        :type: bool, optional
+        :param position_offset: Optional offset to be applied to all points.
+        :type: Optional[Vector]
+        :param arc_points: Indices of the middle points for arcs. For creating an arc segment,
+        provide 3 points: `arc_start`, `arc_middle` and `arc_end` and add the `arc_middle`
+        point's index to this list.
+        :type: List[int]
+
+        :return: IfcIndexedPolyCurve
+        """
 
         if arc_points and self.file.schema == "IFC2X3":
             raise Exception("Arcs are not supported for IFC2X3.")
@@ -624,17 +641,36 @@ class ShapeBuilder:
         return ifcopenshell.util.element.copy_deep(self.file, element)
 
     # UTILITIES
-    def extrude_by_y_kwargs(self):
-        """Shortcut to get kwargs for `ShapeBuilder.extrude` to extrude by Y axis.
+    def extrude_kwargs(self, axis):
+        """Shortcut to get kwargs for `ShapeBuilder.extrude` to extrude by some axis.
 
-        It assumes you have 2D profile in XZ plane and trying to extrude it by Y axis.
+        It assumes you have 2D profile in:
+            XZ plane for Y axis extrusion, \n
+            YZ plane for X axis extrusion, \n
+            XY plane for Z axis extrusion, \n
 
-        Extruding by Y using other kwargs might break ValidExtrusionDirection."""
-        return {
-            "position_x_axis": Vector((1, 0, 0)),
-            "position_z_axis": Vector((0, -1, 0)),
-            "extrusion_vector": Vector((0, 0, -1)),
-        }
+        Extruding by X/Y using other kwargs might break ValidExtrusionDirection."""
+
+        axis = axis.upper()
+
+        if axis == "Y":
+            return {
+                "position_x_axis": Vector((1, 0, 0)),
+                "position_z_axis": Vector((0, -1, 0)),
+                "extrusion_vector": Vector((0, 0, -1)),
+            }
+        elif axis == "X":
+            return {
+                "position_x_axis": Vector((0, 1, 0)),
+                "position_z_axis": Vector((1, 0, 0)),
+                "extrusion_vector": Vector((0, 0, 1)),
+            }
+        elif axis == "Z":
+            return {
+                "position_x_axis": Vector((1, 0, 0)),
+                "position_z_axis": Vector((0, 0, 1)),
+                "extrusion_vector": Vector((0, 0, 1)),
+            }
 
     def rotate_extrusion_kwargs_by_z(self, kwargs, angle, counter_clockwise=False):
         """shortcut to rotate extrusion kwargs by z axis
@@ -1321,6 +1357,7 @@ class ShapeBuilder:
         # TODO: test with 0 radius
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         profile = get_profile(segment)
+        is_circular_profile = profile.is_a("IfcCircleProfileDef")
         profile_dim = get_dim(profile, start_length)
 
         rounded_offset = round_vector_to_precision(profile_offset, si_conversion)
@@ -1334,48 +1371,89 @@ class ShapeBuilder:
         # bend circle center
         O = V(0, 0, 0)
         O[lateral_axis] = (radius + profile_dim[lateral_axis]) * lateral_sign
-
         theta = angle
 
-        def get_circle_extrusion():
-            # get as much segment_length segments as possible
-            segment_length = pi / 20
-            num_segments = ceil(theta / segment_length)
-            theta_segments = [i * segment_length for i in range(num_segments)]
-            if not is_x(theta_segments[-1], theta):
-                theta_segments.append(theta)
+        def get_circle_point(angle, radius):
+            point = V(0, 0, 0)
+            angle -= pi / 2
+            # fmt: off
+            point.z             = z_sign       * cos(angle) * radius
+            point[lateral_axis] = lateral_sign * sin(angle) * radius
+            # fmt: on
+            return point
 
-            inner_points, outer_points = [], []
+        def get_circle_tangent(angle):
+            tangent = V(0, 0, 0)
+            tangent.z = cos(angle) * z_sign
+            tangent[lateral_axis] = sin(angle) * lateral_sign
+            return tangent
+
+        def get_bend_representation_item():
             r = radius
+            theta_segments = [0, theta / 2, theta]
+            if is_circular_profile:
+                r += profile_dim[lateral_axis]
+                points = [get_circle_point(cur_theta, r) for cur_theta in theta_segments]
+                arc_points = (1,)
+            else:
+                outer_r = r + 2 * profile_dim[lateral_axis]
+                inner_points = [get_circle_point(cur_theta, r) for cur_theta in theta_segments]
+                outer_points = [get_circle_point(cur_theta, outer_r) for cur_theta in theta_segments[::-1]]
+                points = inner_points + outer_points
+                arc_points = (1, 4)
 
-            for cur_theta in theta_segments:
-                cur_theta -= pi / 2
-                inner = V(0, 0, 0)
-                # fmt: off
-                inner.z             = z_sign       * cos(cur_theta) * r
-                inner[lateral_axis] = lateral_sign * sin(cur_theta) * r
-                inner_points.append(inner)
-
-                outer = V(0, 0, 0)
-                outer.z             = z_sign       * cos(cur_theta) * (r + 2 * profile_dim[lateral_axis])
-                outer[lateral_axis] = lateral_sign * sin(cur_theta) * (r + 2 * profile_dim[lateral_axis])
-                outer_points.append(outer)
-                # fmt: on
-
-            points = inner_points + outer_points[::-1]
             points = [p + O for p in points]
             offset = V(0, 0, 0)
-            offset[non_lateral_axis] = -profile_dim[non_lateral_axis]
-            extrusion_vector = V(0, 0, 0)
-            extrusion_vector[non_lateral_axis] = 1
-            extrusion = self.extrude_face_set(
-                points, magnitude=profile_dim[non_lateral_axis] * 2, offset=offset, extrusion_vector=extrusion_vector
-            )
-            return extrusion
+            offset.z = z_sign * start_length
 
-        rep_items.append(get_circle_extrusion())
+            if is_circular_profile:
+                bend_path = self.polyline(points, closed=False, arc_points=arc_points, position_offset=offset)
+                bend = self.create_swept_disk_solid(bend_path, profile_dim[lateral_axis])
+            else:
+                main_axes = lambda v: getattr(v, "xy"[lateral_axis] + "z")
+                offset[non_lateral_axis] = -profile_dim[non_lateral_axis]
+
+                extrusion_kwargs = self.extrude_kwargs("XY"[non_lateral_axis])
+                profile_curve = self.polyline([main_axes(p) for p in points], arc_points=arc_points, closed=True)
+                bend = self.extrude(
+                    self.profile(profile_curve), profile_dim[non_lateral_axis] * 2, position=offset, **extrusion_kwargs
+                )
+            return bend
+
+        rep_items.append(get_bend_representation_item())
+        if start_length:
+            rep_items.append(self.extrude(profile, start_length, extrusion_vector=V(0, 0, z_sign)))
+        if end_length:
+            end_position = O + get_circle_point(theta, radius + profile_dim[lateral_axis])
+            end_position.z += start_length * z_sign
+
+            # define extrusion space for the segment after the bend
+            z_axis = get_circle_tangent(theta)
+            extrude_kwargs = {
+                "position_z_axis": z_axis,
+                "extrusion_vector": Vector((0, 0, 1)),
+            }
+            # since we are sure that tangent involves only two axis
+            # it's safe to assume that non lateral axis is untouched
+            if lateral_axis == 0:
+                x_axis = z_axis.cross(Vector((0, 1, 0)))
+            else:
+                x_axis = Vector((1, 0, 0))
+            extrude_kwargs["position_x_axis"] = x_axis
+
+            rep_items.append(self.extrude(profile, end_length, end_position, **extrude_kwargs))
+
         body = ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW")
         rep = self.get_representation(body, rep_items)
 
-        bend_data = {"start_length": start_length, "end_length": end_length, "radius": radius, "angle": degrees(theta)}
+        bend_data = {
+            "start_length": start_length,
+            "end_length": end_length,
+            "radius": radius,
+            "angle": degrees(theta),
+            "lateral_axis": lateral_axis,
+            "lateral_sign": lateral_sign,
+            "flip_z_axis": flip_z_axis,
+            "main_profile_dimension": profile_dim[lateral_axis],
+        }
         return rep, bend_data

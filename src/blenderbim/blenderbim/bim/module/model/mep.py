@@ -366,6 +366,7 @@ class MEPGenerator:
         ifc_file = tool.Ifc.get()
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
         precision = VTX_PRECISION / si_conversion
+        angle_precision = degrees(precision)
 
         segments_data = []
         for segment, port in zip(segments, ports, strict=True):
@@ -388,8 +389,9 @@ class MEPGenerator:
             for key in bbim_data:
                 requested_value = bbim_data[key]
                 fitting_value = fitting_bbim_data[key]
+
                 if isinstance(requested_value, float):
-                    compare_precision = None if key == "angle" else precision
+                    compare_precision = angle_precision if key == "angle" else precision
                     compare = tool.Cad.is_x(requested_value, fitting_value, compare_precision)
                 elif isinstance(fitting_value, list):
                     compare = tool.Cad.are_vectors_equal(requested_value, Vector(fitting_value), precision)
@@ -882,12 +884,6 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
         ifc_file = tool.Ifc.get()
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
 
-        self.start_length, self.end_length = 0, 0
-
-        if not (self.start_length == 0 and self.end_length == 0):
-            self.report({"ERROR"}, f"Only zero lengths are now supported.")
-            return {"CANCELLED"}
-
         if self.start_segment_id and self.end_segment_id:
             start_element = ifc_file.by_id(self.start_segment_id)
             end_element = ifc_file.by_id(self.end_segment_id)
@@ -940,19 +936,16 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
         if not types_check():
             self.report(
                 {"ERROR"},
-                "Segments types do not match " "or one of the segments doesn't have type which is required for a bend.",
+                "Segments types do not match or one of the segments doesn't have type which is required for a bend.",
             )
             return {"CANCELLED"}
 
-        # TODO: support circular profiles
         profile = tool.Model.get_flow_segment_profile(start_element)
-        if not profile.is_a("IfcRectangleProfileDef"):
+        if not profile.is_a("IfcRectangleProfileDef") and not profile.is_a("IfcCircleProfileDef"):
             self.report(
-                {
-                    "ERROR",
-                    "For now Only IfcRectangleProfileDef profiles supported for a bend, "
-                    f"the segments are {profile.is_a()}",
-                }
+                {"ERROR"},
+                "For now Only IfcRectangleProfileDef/IfcCircleProfileDef profiles supported for a bend, "
+                f"the segments are {profile.is_a()}",
             )
             return {"CANCELLED"}
 
@@ -974,7 +967,7 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
             end_segment_data["end_point"]: end_segment_data["end_port"],
         }
 
-        get_z_basis = lambda o: o.matrix_world.col[2].normalized().to_3d()
+        get_z_basis = lambda o: tool.Cad.get_basis_vector(o, 2)
         segments_intersection_ws = tool.Cad.intersect_edges(
             (start_object.location, start_object.location + get_z_basis(start_object)),
             (end_object.location, end_object.location + get_z_basis(end_object)),
@@ -1042,7 +1035,9 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
             return {"CANCELLED"}
 
         O = V(0, 0, 0)
-        angle = tool.Cad.angle_edges((get_z_basis(start_object), O), (get_z_basis(end_object), O))
+        angle = pi - tool.Cad.angle_edges(
+            (get_z_basis(start_object) * start_segment_sign, O), (get_z_basis(end_object) * end_segment_sign, O)
+        )
 
         lateral_sign = tool.Cad.sign(profile_offset[lateral_axis])
         radial_offset = V(0, 0, 0)
@@ -1061,8 +1056,8 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
             current_start_offset = segments_intersection.length
             current_end_offset = (segments_intersection - profile_offset).length
 
-            start_extend = current_start_offset - required_offset
-            end_extend = current_end_offset - required_offset
+            start_extend = current_start_offset - (required_offset + self.start_length)
+            end_extend = current_end_offset - (required_offset + self.end_length)
 
             return start_extend, end_extend
 
@@ -1121,13 +1116,42 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
 
         bpy.ops.bim.create_shape_from_step_id(step_id=rep.id(), should_include_curves=True)
 
+        parametric_data = {
+            "start_length": self.start_length / si_conversion,
+            "end_length": self.end_length / si_conversion,
+            "radius": self.radius / si_conversion,
+            "angle": degrees(angle),
+            "main_profile_dimension": profile_dim[lateral_axis] / si_conversion,
+        }
         # find the compatible fitting type
         fitting_data = MEPGenerator().get_compatible_fitting_type(
-            [start_element, end_element], [start_port, end_port], "BEND"
+            [start_element, end_element], [start_port, end_port], "BEND", bbim_data=parametric_data
         )
         bend_type = fitting_data["fitting_type"] if fitting_data else None
         start_port_match = fitting_data["start_port_match"] if fitting_data else True
+
+        rotate_lateral_axis = None
+        flip_z_axis_type = None
         if bend_type:
+            bend_obj = tool.Ifc.get_object(bend_type)
+            bbim_data = tool.Model.get_modeling_bbim_pset_data(bend_obj, "BBIM_Fitting")["data_dict"]
+            lateral_axis_type, lateral_sign_type = bbim_data["lateral_axis"], bbim_data["lateral_sign"]
+            flip_z_axis_type = bbim_data["flip_z_axis"]
+
+            # if the lateral axis of the compatible fitting type doesn't match
+            # with the current lateral bend lateral axis, we'll adjust the rotation
+            if (lateral_axis_type != lateral_axis) or (lateral_sign_type != lateral_sign):
+                m = Matrix.Identity(3)
+                current_lateral_axis = m[lateral_axis] * lateral_sign
+                type_lateral_axis = m[lateral_axis_type] * lateral_sign_type
+                if lateral_axis_type == lateral_axis:
+                    rotation_axis = m[2]  # just V(0,0,1)
+                else:
+                    rotation_axis = type_lateral_axis.cross(current_lateral_axis)
+                rotation_angle = current_lateral_axis.angle(type_lateral_axis)
+                # rotation axis is always Z but need to consider the rotation direction
+                rotate_lateral_axis = Matrix.Rotation(rotation_angle, 4, rotation_axis)
+
             # TODO: handle the case without creating a representation in the first place?
             ifcopenshell.api.run("geometry.remove_representation", ifc_file, representation=rep)
         else:  # create new fitting type if nothing is compatible
@@ -1166,10 +1190,13 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
         # direction can be different depending on:
         # - order of the current segments
         # - order of the segments that were used with the same fitting type before
-        direction_match = tool.Cad.are_vectors_equal(get_z_basis(start_object), get_z_basis(fitting_obj))
+
+        direction_match = True if flip_z_axis_type is None else (flip_z_axis_type == (start_segment_sign == -1))
         # if there are no mismatches or everything matches up we don't need to flip the transition
         if start_port_match != direction_match:
-            fitting_obj.matrix_world = start_object.matrix_world @ Matrix.Rotation(radians(180), 4, "X")
+            fitting_obj.matrix_world = start_object.matrix_world @ Matrix.Rotation(radians(180), 4, "XY"[lateral_axis])
+        if rotate_lateral_axis:
+            fitting_obj.matrix_world = fitting_obj.matrix_world @ rotate_lateral_axis
         fitting_obj.location = start_segment_extend_point if start_port_match else end_segment_extend_point
 
         # add ports and connect them
