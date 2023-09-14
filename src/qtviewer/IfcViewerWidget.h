@@ -54,7 +54,9 @@ private:
     osgGA::EventQueue* getEventQueue() const;
     unsigned int getMouseButtonNum(QMouseEvent* event);
 
-    void prepareSceneWithGeometry(osg::ref_ptr<osg::Geode> geode);
+    void setupViewController();
+
+    void orientScene(osg::ref_ptr<osg::Geode> geode);
 };
 
 #endif // IFCVIEWERWIDGET_H
