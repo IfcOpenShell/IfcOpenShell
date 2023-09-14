@@ -34,8 +34,8 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrimmedCurve* inst) {
 	tc->basis = map(inst->BasisCurve());
 	
 	bool trim_cartesian = inst->MasterRepresentation() != IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER;
-	aggregate_of_instance::ptr trims1 = inst->Trim1();
-	aggregate_of_instance::ptr trims2 = inst->Trim2();
+	auto trims1 = inst->Trim1();
+	auto trims2 = inst->Trim2();
 	
 	// reversed orientation handling happens in geometry kernel
 	unsigned sense_agreement = 0;
@@ -46,8 +46,8 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrimmedCurve* inst) {
 	
 	tc->orientation = inst->SenseAgreement();
 
-	for ( aggregate_of_instance::it it = trims1->begin(); it != trims1->end(); it ++ ) {
-		IfcUtil::IfcBaseClass* i = *it;
+	for (auto it = trims1->begin(); it != trims1->end(); it ++) {
+		auto i = *it;
 		if ( i->declaration().is(IfcSchema::IfcCartesianPoint::Class()) ) {
 			pnts[sense_agreement] = taxonomy::cast<taxonomy::point3>(map(i));
 			has_pnts[sense_agreement] = true;
@@ -58,8 +58,8 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrimmedCurve* inst) {
 		}
 	}
 
-	for ( aggregate_of_instance::it it = trims2->begin(); it != trims2->end(); it ++ ) {
-		IfcUtil::IfcBaseClass* i = *it;
+	for (auto it = trims2->begin(); it != trims2->end(); it ++) {
+		auto i = *it;
 		if ( i->declaration().is(IfcSchema::IfcCartesianPoint::Class()) ) {
 			pnts[1 - sense_agreement] = taxonomy::cast<taxonomy::point3>(map(i));
 			has_pnts[1-sense_agreement] = true;

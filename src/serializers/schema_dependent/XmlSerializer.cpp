@@ -746,8 +746,8 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 	}
 
 	// Write all assigned units as XML nodes.
-	aggregate_of_instance::ptr unit_assignments = project->UnitsInContext()->Units();
-	for (aggregate_of_instance::it it = unit_assignments->begin(); it != unit_assignments->end(); ++it) {
+	auto unit_assignments = project->UnitsInContext()->Units();
+	for (auto it = unit_assignments->begin(); it != unit_assignments->end(); ++it) {
 		if ((*it)->declaration().is(IfcSchema::IfcNamedUnit::Class())) {
 			IfcSchema::IfcNamedUnit* named_unit = (*it)->as<IfcSchema::IfcNamedUnit>();
 			ptree* node = format_entity_instance(mapping_, named_unit, units);
