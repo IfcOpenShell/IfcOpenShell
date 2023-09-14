@@ -99,7 +99,6 @@ class Writer:
         else:
             self.config = getattr(self.parser.preset, "config")
 
-
     def write(self, null="N/A", empty="-", bool_true="YES", bool_false="NO"):
         self.categories = {}
         null = self.config.get("null", null)
