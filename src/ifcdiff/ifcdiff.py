@@ -190,19 +190,20 @@ class IfcDiff:
             shape = iterator.get()
             element = ifc.by_id(shape.id)
             geometry = shape.geometry
-            shapes[element.GlobalId] = {
-                "total_verts": len(geometry.verts),
-                "sum_verts": sum(geometry.verts),
-                "min_vert": min(geometry.verts),
-                "max_vert": max(geometry.verts),
-                "matrix": tuple(shape.transformation.matrix.data),
-                "openings": sorted(
-                    [o.RelatedOpeningElement.GlobalId for o in getattr(element, "HasOpenings", []) or []]
-                ),
-                "projections": sorted(
-                    [o.RelatedFeatureElement.GlobalId for o in getattr(element, "HasProjections", []) or []]
-                ),
-            }
+            if geometry.verts:
+                shapes[element.GlobalId] = {
+                    "total_verts": len(geometry.verts),
+                    "sum_verts": sum(geometry.verts),
+                    "min_vert": min(geometry.verts),
+                    "max_vert": max(geometry.verts),
+                    "matrix": tuple(shape.transformation.matrix.data),
+                    "openings": sorted(
+                        [o.RelatedOpeningElement.GlobalId for o in getattr(element, "HasOpenings", []) or []]
+                    ),
+                    "projections": sorted(
+                        [o.RelatedFeatureElement.GlobalId for o in getattr(element, "HasProjections", []) or []]
+                    ),
+                }
             if not iterator.next():
                 break
         return shapes
