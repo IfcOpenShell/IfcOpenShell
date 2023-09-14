@@ -26,8 +26,6 @@ void ifcopenshell::geometry::CgalShape::Triangulate(const IfcGeom::IteratorSetti
 		}
 	}
 
-	std::wcout << "Triangulating " << std::distance(s.facets_begin(), s.facets_end()) << std::endl;
-
 	if (!std::all_of(s.facets_begin(), s.facets_end(), [](auto f) { return f.is_triangle(); })) {
 
 		if (!s.is_valid()) {
