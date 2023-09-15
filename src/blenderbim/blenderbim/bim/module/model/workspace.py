@@ -24,7 +24,7 @@ import blenderbim.tool as tool
 import blenderbim.bim.module.type.prop as type_prop
 from blenderbim.bim.helper import prop_with_search, close_operator_panel
 from bpy.types import WorkSpaceTool
-from blenderbim.bim.module.model.data import AuthoringData, RailingData, RoofData
+from blenderbim.bim.module.model.data import AuthoringData
 from blenderbim.bim.module.drawing.data import DecoratorData
 from blenderbim.bim.module.model.prop import get_ifc_class
 
@@ -358,9 +358,7 @@ class BimToolUI:
             row.operator("bim.extend_profile", icon="X", text="").join_type = ""
 
         elif (
-            (RailingData.is_loaded or not RailingData.load())
-            and RailingData.data["pset_data"]
-            and not context.active_object.BIMRailingProperties.is_editing_path
+            tool.Model.is_parametric_railing_active() and not context.active_object.BIMRailingProperties.is_editing_path
         ):
             # NOTE: should be above "active_representation_type" = "SweptSolid" check
             # because it could be a SweptSolid too
@@ -369,7 +367,8 @@ class BimToolUI:
             row.operator("bim.enable_editing_railing_path", text="Edit Railing Path")
 
         elif AuthoringData.data["active_representation_type"] == "SweptSolid":
-            add_layout_hotkey_operator(cls.layout, "Edit Profile", "S_E", "")
+            if not tool.Model.is_parametric_window_active() and not tool.Model.is_parametric_door_active():
+                add_layout_hotkey_operator(cls.layout, "Edit Profile", "S_E", "")
 
         elif AuthoringData.data["active_class"] in (
             "IfcWindow",
@@ -390,11 +389,7 @@ class BimToolUI:
         elif AuthoringData.data["active_class"] in ("IfcSpace",):
             add_layout_hotkey_operator(cls.layout, "Regen", "S_G", bpy.ops.bim.generate_space.__doc__)
 
-        elif (
-            (RoofData.is_loaded or not RoofData.load())
-            and RoofData.data["pset_data"]
-            and not context.active_object.BIMRoofProperties.is_editing_path
-        ):
+        elif tool.Model.is_parametric_roof_active() and not context.active_object.BIMRoofProperties.is_editing_path:
             row = cls.layout.row(align=True)
             row.label(text="", icon=f"EVENT_TAB")
             row.operator("bim.enable_editing_roof_path", text="Edit Roof Path")
@@ -585,20 +580,18 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         # NOTE: placing it before the other operations because railing can also be SweptSolid
         # and it might conflict with one of the conditions below
         if (
-            (RailingData.is_loaded or not RailingData.load())
-            and RailingData.data["pset_data"]
+            tool.Model.is_parametric_railing_active()
             and not bpy.context.active_object.BIMRailingProperties.is_editing_path
         ):
             bpy.ops.bim.enable_editing_railing_path()
             return
 
-        elif (
-            (RoofData.is_loaded or not RoofData.load())
-            and RoofData.data["pset_data"]
-            and not bpy.context.active_object.BIMRoofProperties.is_editing_path
-        ):
+        elif tool.Model.is_parametric_roof_active() and not bpy.context.active_object.BIMRoofProperties.is_editing_path:
             # undo the unselection done above because roof has no usage type
             bpy.ops.bim.enable_editing_roof_path()
+            return
+
+        elif tool.Model.is_parametric_window_active() or tool.Model.is_parametric_door_active():
             return
 
         selected_usages = {}
