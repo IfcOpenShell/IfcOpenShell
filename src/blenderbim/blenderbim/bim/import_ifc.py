@@ -21,9 +21,7 @@ import re
 import bpy
 import time
 import bmesh
-import shutil
 import logging
-import threading
 import mathutils
 import numpy as np
 import multiprocessing
@@ -31,22 +29,11 @@ import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
-import ifcopenshell.util.selector
 import ifcopenshell.util.geolocation
 import blenderbim.tool as tool
 from itertools import chain, accumulate
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.drawing.prop import ANNOTATION_TYPES_DATA
-
-
-class FileCopy(threading.Thread):
-    def __init__(self, file_path, destination):
-        threading.Thread.__init__(self)
-        self.file_path = file_path
-        self.destination = destination
-
-    def run(self):
-        shutil.copy(self.file_path, self.destination)
 
 
 class MaterialCreator:

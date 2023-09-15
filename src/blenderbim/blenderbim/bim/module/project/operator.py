@@ -355,8 +355,8 @@ class AppendEntireLibrary(bpy.types.Operator):
         self.file = IfcStore.get_file()
         self.library = IfcStore.library_file
 
-        lib_elements = ifcopenshell.util.selector.Selector().parse(
-            self.library, ".IfcTypeProduct | .IfcMaterial | .IfcCostSchedule| .IfcProfileDef"
+        lib_elements = ifcopenshell.util.selector.filter_elements(
+            self.library, "IfcTypeProduct, IfcMaterial, IfcCostSchedule, IfcProfileDef"
         )
         for element in lib_elements:
             bpy.ops.bim.append_library_element(definition=element.id())
@@ -768,12 +768,12 @@ class LoadProjectElements(bpy.types.Operator):
         return elements
 
     def get_whitelist_elements(self):
-        selector = ifcopenshell.util.selector.Selector()
-        return set(selector.parse(self.file, self.props.filter_query))
+        return set(ifcopenshell.util.selector.filter_elements(self.file, self.props.filter_query))
 
     def get_blacklist_elements(self):
-        selector = ifcopenshell.util.selector.Selector()
-        return set(self.file.by_type("IfcElement")) - set(selector.parse(self.file, self.props.filter_query))
+        return set(self.file.by_type("IfcElement")) - set(
+            ifcopenshell.util.selector.filter_elements(self.file, self.props.filter_query)
+        )
 
 
 class ToggleFilterCategories(bpy.types.Operator):
@@ -895,6 +895,7 @@ class ReloadLink(bpy.types.Operator):
                 for c in bpy.data.collections
                 if "IfcProject" in c.name and c.library and os.path.basename(c.library.filepath) == selected_filename
             ]
+
         for library in get_linked_ifcs() or []:
             library.reload()
         return {"FINISHED"}
@@ -920,7 +921,9 @@ class ToggleLinkSelectability(bpy.types.Operator):
 
     def get_linked_collections(self):
         return [
-            c for c in bpy.data.collections if "IfcProject" in c.name and c.library and c.library.filepath == self.filepath
+            c
+            for c in bpy.data.collections
+            if "IfcProject" in c.name and c.library and c.library.filepath == self.filepath
         ]
 
 
@@ -974,7 +977,9 @@ class ToggleLinkVisibility(bpy.types.Operator):
 
     def get_linked_collections(self):
         return [
-            c for c in bpy.data.collections if "IfcProject" in c.name and c.library and c.library.filepath == self.filepath
+            c
+            for c in bpy.data.collections
+            if "IfcProject" in c.name and c.library and c.library.filepath == self.filepath
         ]
 
 
