@@ -28,8 +28,8 @@ import blenderbim.core.geometry as geometry
 from mathutils import Matrix, Vector
 from blenderbim.bim import import_ifc
 from blenderbim.bim.module.geometry.helper import Helper
+from blenderbim.bim.module.model.data import AuthoringData, RailingData, RoofData, WindowData, DoorData
 import collections
-from blenderbim.bim.module.model.data import AuthoringData
 import json
 
 
@@ -805,3 +805,19 @@ class Model(blenderbim.core.tool.Model):
                 is_global=True,
                 should_sync_changes_first=False,
             )
+
+    @classmethod
+    def is_parametric_roof_active(cls):
+        return (RoofData.is_loaded or not RoofData.load()) and RoofData.data["pset_data"]
+
+    @classmethod
+    def is_parametric_railing_active(cls):
+        return (RailingData.is_loaded or not RailingData.load()) and RailingData.data["pset_data"]
+
+    @classmethod
+    def is_parametric_window_active(cls):
+        return (WindowData.is_loaded or not WindowData.load()) and WindowData.data["pset_data"]
+
+    @classmethod
+    def is_parametric_door_active(cls):
+        return (DoorData.is_loaded or not DoorData.load()) and DoorData.data["pset_data"]
