@@ -367,6 +367,7 @@ class MEPGenerator:
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
         precision = VTX_PRECISION / si_conversion
         angle_precision = degrees(precision)
+        start_port_match = True
 
         segments_data = []
         for segment, port in zip(segments, ports, strict=True):
@@ -376,8 +377,9 @@ class MEPGenerator:
                 return
             segments_data.append((segment_type, port.PredefinedType, port.SystemType))
 
-        # TODO: test it with flipped transition where start length != end length
         def compatible_with_bbim_data(fitting_type):
+            nonlocal start_port_match
+            start_port_match = True
             if not bbim_data:
                 return True
             fitting_type_obj = tool.Ifc.get_object(fitting_type)
@@ -386,16 +388,39 @@ class MEPGenerator:
                 return False
 
             fitting_bbim_data = fitting_bbim_data["data_dict"]
-            for key in bbim_data:
+
+            def compare_value(key, second_key=None):
+                second_key = second_key or key
                 requested_value = bbim_data[key]
-                fitting_value = fitting_bbim_data[key]
+                fitting_value = fitting_bbim_data[second_key]
 
                 if isinstance(requested_value, float):
                     compare_precision = angle_precision if key == "angle" else precision
                     compare = tool.Cad.is_x(requested_value, fitting_value, compare_precision)
                 elif isinstance(fitting_value, list):
                     compare = tool.Cad.are_vectors_equal(requested_value, Vector(fitting_value), precision)
-                if not compare:
+                return compare
+
+            ignore_keys = []
+            if predefined_type == "BEND":
+                ignore_keys.extend(("start_length", "end_length"))
+                # for bends there is a special case when lengths might not match
+                # but fitting is still compatible if we flip it
+                # since bend connects segments of the same type
+                default_lengths_match = compare_value("start_length") and compare_value("end_length")
+                if not default_lengths_match:
+                    switched_lengths_match = compare_value("start_length", "end_length") and compare_value(
+                        "end_length", "start_length"
+                    )
+                    if switched_lengths_match:
+                        start_port_match = False
+                    else:
+                        return False
+
+            for key in bbim_data:
+                if key in ignore_keys:
+                    continue
+                if not compare_value(key):
                     return False
             return True
 
@@ -450,7 +475,7 @@ class MEPGenerator:
             connected_port = tool.System.get_connected_port(start_port)
             connected_element = tool.System.get_port_relating_element(connected_port)
             element_type = ifcopenshell.util.element.get_type(connected_element)
-            packed_data["start_port_match"] = element_type == segments_data[0][0]
+            packed_data["start_port_match"] = element_type == segments_data[0][0] and start_port_match
 
             return packed_data
 
@@ -1031,11 +1056,17 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
         if error_msg:
             self.report({"ERROR"}, error_msg)
             return {"CANCELLED"}
+        non_lateral_axis = 0 if lateral_axis == 1 else 1
 
-        O = V(0, 0, 0)
-        angle = pi - tool.Cad.angle_edges(
-            (get_z_basis(start_object) * start_segment_sign, O), (get_z_basis(end_object) * end_segment_sign, O)
-        )
+        def get_bend_rotation():
+            O = V(0, 0, 0)
+            edge1 = (get_z_basis(start_object) * start_segment_sign, O)
+            edge2 = (get_z_basis(end_object) * end_segment_sign, O)
+            angle = pi - tool.Cad.angle_edges(edge1, edge2)
+            axis = (edge2[1] - edge2[0]).cross(edge1[1] - edge1[0])
+            return angle, axis
+
+        angle, rotation_axis = get_bend_rotation()
 
         lateral_sign = tool.Cad.sign(profile_offset[lateral_axis])
         radial_offset = V(0, 0, 0)
@@ -1126,27 +1157,20 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
         bend_type = fitting_data["fitting_type"] if fitting_data else None
         start_port_match = fitting_data["start_port_match"] if fitting_data else True
 
-        rotate_lateral_axis = None
-        flip_z_axis_type = None
+        # use current segments axes if no fitting type found
+        lateral_axis_type = lateral_axis
+        lateral_sign_type = lateral_sign
+        z_sign_type = start_segment_sign
+        non_lateral_axis_type = non_lateral_axis
         if bend_type:
             bend_obj = tool.Ifc.get_object(bend_type)
             bbim_data = tool.Model.get_modeling_bbim_pset_data(bend_obj, "BBIM_Fitting")["data_dict"]
             lateral_axis_type, lateral_sign_type = bbim_data["lateral_axis"], bbim_data["lateral_sign"]
-            flip_z_axis_type = bbim_data["flip_z_axis"]
-
-            # if the lateral axis of the compatible fitting type doesn't match
-            # with the current lateral bend lateral axis, we'll adjust the rotation
-            if (lateral_axis_type != lateral_axis) or (lateral_sign_type != lateral_sign):
-                m = Matrix.Identity(3)
-                current_lateral_axis = m[lateral_axis] * lateral_sign
-                type_lateral_axis = m[lateral_axis_type] * lateral_sign_type
-                if lateral_axis_type == lateral_axis:
-                    rotation_axis = m[2]  # just V(0,0,1)
-                else:
-                    rotation_axis = type_lateral_axis.cross(current_lateral_axis)
-                rotation_angle = current_lateral_axis.angle(type_lateral_axis)
-                # rotation axis is always Z but need to consider the rotation direction
-                rotate_lateral_axis = Matrix.Rotation(rotation_angle, 4, rotation_axis)
+            non_lateral_axis_type = 0 if lateral_axis_type == 1 else 1
+            z_sign_type = bbim_data.get("z_axis_sign", None)
+            # TODO: drop flip_z_axis a bit later
+            if z_sign_type is None:
+                z_sign_type = -1 if bbim_data["flip_z_axis"] else 1
 
             # TODO: handle the case without creating a representation in the first place?
             ifcopenshell.api.run("geometry.remove_representation", ifc_file, representation=rep)
@@ -1182,18 +1206,36 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
         fitting_obj.matrix_world = start_object.matrix_world
         context.view_layer.update()
 
-        # depending on fitting direction we may need to flip it or attach it's origin to end segment
-        # direction can be different depending on:
-        # - order of the current segments
-        # - order of the segments that were used with the same fitting type before
+        # depending on bend direction we may need to rotate it to match
+        # we just calculate the matrix basises - it's simpler than describing all possible conditions
+        def get_fitting_matrix():
+            matrix = Matrix.Identity(3)
+            start_object_z_basis = tool.Cad.get_basis_vector(start_object, 2)
+            start_object_lateral_basis = tool.Cad.get_basis_vector(start_object, lateral_axis)
 
-        direction_match = True if flip_z_axis_type is None else (flip_z_axis_type == (start_segment_sign == -1))
-        # if there are no mismatches or everything matches up we don't need to flip the transition
-        if start_port_match != direction_match:
-            fitting_obj.matrix_world = start_object.matrix_world @ Matrix.Rotation(radians(180), 4, "XY"[lateral_axis])
-        if rotate_lateral_axis:
-            fitting_obj.matrix_world = fitting_obj.matrix_world @ rotate_lateral_axis
-        fitting_obj.location = start_segment_extend_point if start_port_match else end_segment_extend_point
+            def axis_direction(current_axis_sign, type_axis_sign):
+                return -1 if current_axis_sign != type_axis_sign else 1
+
+            matrix.col[2] = start_object_z_basis * axis_direction(start_segment_sign, z_sign_type)
+            matrix.col[lateral_axis_type] = start_object_lateral_basis * axis_direction(lateral_sign, lateral_sign_type)
+            if not start_port_match:
+                matrix.col[2] *= -1
+
+            if non_lateral_axis_type == 0:
+                non_lateral_axis = matrix.col[lateral_axis_type].cross(matrix.col[2])
+            else:
+                non_lateral_axis = matrix.col[2].cross(matrix.col[lateral_axis_type])
+            matrix.col[non_lateral_axis_type] = non_lateral_axis
+
+            if not start_port_match:
+                angle_sign = np.sign(rotation_axis.dot(non_lateral_axis))
+                matrix = matrix @ Matrix.Rotation(angle * angle_sign, 3, "XY"[non_lateral_axis_type])
+
+            matrix = matrix.to_4x4()
+            matrix.translation = start_segment_extend_point if start_port_match else end_segment_extend_point
+            return matrix
+
+        fitting_obj.matrix_world = get_fitting_matrix()
 
         # add ports and connect them
         ports = tool.System.add_ports(fitting_obj, offset_end_port=start_object_rotation @ (radial_offset * V(1, 1, 0)))

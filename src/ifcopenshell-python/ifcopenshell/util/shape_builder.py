@@ -1456,7 +1456,7 @@ class ShapeBuilder:
             "angle": degrees(theta),
             "lateral_axis": lateral_axis,
             "lateral_sign": lateral_sign,
-            "flip_z_axis": flip_z_axis,
+            "z_axis_sign": -1 if flip_z_axis else 1,
             "main_profile_dimension": profile_dim[lateral_axis],
         }
         return rep, bend_data
