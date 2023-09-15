@@ -106,6 +106,7 @@ classes = (
     slab.SetArcIndex,
     space.GenerateSpace,
     space.GenerateSpacesFromWalls,
+    space.GenerateFlooringCoveringsFromWalls,
     space.ToggleSpaceVisibility,
     mep.FitFlowSegments,
     mep.RegenerateDistributionElement,

@@ -810,6 +810,19 @@ class Spatial:
     def set_active_object(cls, obj): pass
     def set_relative_object_matrix(cls, target_obj, relative_to_obj, matrix): pass
     def show_scene_objects(cls): pass
+    #HERE STARTS SPATIAL TOOL
+    def get_container_and_active_obj(cls): pass
+    def get_union_shape_from_selected_objects(cls, selected_objects): pass
+    def get_boundary_elements(cls, selected_objects): pass
+    def get_polygons(cls, boundary_elements): pass
+    def get_obj_base_points(cls, obj): pass
+    def get_converted_tolerance(cls, tolerance): pass
+    def get_purged_inner_holes_poly(cls, union_geom, min_area): pass
+    def get_poly_valid_interior_list(cls, poly, min_area, interiors_list): pass
+    def get_buffered_poly_from_linear_ring(cls, linear_ring): pass
+    def get_bmesh_from_polygon(cls, poly, mat, h): pass
+    def set_obj_origin_to_bboxcenter(cls, obj): pass
+    def toggle_spaces_visibility_wired_and_textured(cls, spaces): pass
 
 
 @interface
