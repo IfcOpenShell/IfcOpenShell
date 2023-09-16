@@ -31,49 +31,47 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 	IfcSchema::IfcCompositeCurveSegment::list::ptr segments = inst->Segments();
 #endif
 	
-	for (auto& segment_ : *segments) {
-		if (!(segment_)->declaration().is(IfcSchema::IfcCompositeCurveSegment::Class())) {
-			Logger::Error("Not implemented", segment_);
-			return nullptr;
-		}
-		
-		auto segment = (IfcSchema::IfcCompositeCurveSegment*) segment_;
-
-		IfcSchema::IfcCurve* curve = segment->ParentCurve();
-
-		if (curve->as<IfcSchema::IfcLine>()) {
+	for (auto& segment : *segments) {
+		if (segment->as<IfcSchema::IfcCompositeCurveSegment>() && segment->as<IfcSchema::IfcCompositeCurveSegment>()->ParentCurve()->as<IfcSchema::IfcLine>()) {
 			Logger::Notice("Infinite IfcLine used as ParentCurve of segment, treating as a segment", segment);
 			double u0 = 0.0;
-			double u1 = curve->as<IfcSchema::IfcLine>()->Dir()->Magnitude() * length_unit_;
+			double u1 = segment->as<IfcSchema::IfcCompositeCurveSegment>()->ParentCurve()->as<IfcSchema::IfcLine>()->Dir()->Magnitude() * length_unit_;
 			if (u1 < conv_settings_.getValue(ConversionSettings::GV_PRECISION)) {
 				Logger::Warning("Segment length below tolerance", segment);
 			}
 
 			auto e = taxonomy::make<taxonomy::edge>();
-			e->basis = map(curve);
+			e->basis = map(segment->as<IfcSchema::IfcCompositeCurveSegment>()->ParentCurve());
 			e->start = u0;
 			e->end = u1;
-			e->orientation_2.reset(segment->SameSense());
+			e->orientation_2.reset(segment->as<IfcSchema::IfcCompositeCurveSegment>()->SameSense());
 
 			loop->children.push_back(e);
-		} else {
-			auto crv = map(segment->ParentCurve());
+		} else if (segment->as<IfcSchema::IfcCompositeCurveSegment>()) {
+			auto crv = map(segment->as<IfcSchema::IfcCompositeCurveSegment>()->ParentCurve());
 			if (crv) {
 				if (crv->kind() == taxonomy::EDGE) {
 					auto ecrv = taxonomy::cast<taxonomy::edge>(crv);
-					ecrv->orientation_2.reset(segment->SameSense());
+					ecrv->orientation_2.reset(segment->as<IfcSchema::IfcCompositeCurveSegment>()->SameSense());
 					loop->children.push_back(ecrv);
 				} else if (crv->kind() == taxonomy::LOOP) {
-					if (!segment->SameSense()) {
+					if (!segment->as<IfcSchema::IfcCompositeCurveSegment>()->SameSense()) {
 						crv->reverse();
 					}
 					for (auto& s : taxonomy::cast<taxonomy::loop>(crv)->children) {
 						loop->children.push_back(s);
 					}
-					// @todo delete crv without children
 				}
 			}
 		}
+#ifdef SCHEMA_HAS_IfcCurveSegment
+		else if (segment->as<IfcSchema::IfcCurveSegment>()) {
+			auto crv = map(segment->as<IfcSchema::IfcCompositeCurveSegment>()->ParentCurve());
+			for (auto& s : taxonomy::cast<taxonomy::loop>(crv)->children) {
+				loop->children.push_back(s);
+			}
+		}
+#endif
 	}
 
 	aggregate_of_instance::ptr profile = inst->data().getInverse(&IfcSchema::IfcProfileDef::Class(), -1);

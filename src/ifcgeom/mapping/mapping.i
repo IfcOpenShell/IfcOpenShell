@@ -147,3 +147,7 @@ BIND(IfcVector);
 // BIND(IfcColourRgb);
 BIND(IfcMaterial); // -> style
 BIND(IfcStyledItem); // -> style
+
+#ifdef SCHEMA_HAS_IfcCurveSegment
+BIND(IfcCurveSegment);
+#endif
