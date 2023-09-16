@@ -178,6 +178,9 @@ namespace IfcGeom {
 			for (auto& task : reps) {
 				geometry_conversion_result res;
 				res.item = converter_->mapping()->map(task.representation);
+				if (!res.item) {
+					continue;
+				}
 				std::transform(task.products->begin(), task.products->end(), std::back_inserter(res.products), [this, &res](IfcUtil::IfcBaseClass* prod) {
 					auto prod_item = converter_->mapping()->map(prod);
 					return std::make_pair(prod->as<IfcUtil::IfcBaseEntity>(), taxonomy::cast<taxonomy::geom_item>(prod_item)->matrix);
