@@ -17,7 +17,7 @@
 # along with Ifc4D.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
-from datetime import timedelta
+from datetime import timedelta, date
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.date
@@ -110,31 +110,73 @@ class MSP2Ifc:
         for calendar in project.find("pr:Calendars", self.ns).findall("pr:Calendar", self.ns):
             calendar_id = calendar.find("pr:UID", self.ns).text
             week_days = []
+            exceptions = {}
             week_days_element = calendar.find("pr:WeekDays", self.ns)
             week_day_elements = week_days_element.findall("pr:WeekDay", self.ns) if week_days_element else []
             for week_day in week_day_elements:
-                working_times = []
                 if week_day.find("pr:WorkingTimes", self.ns):
-                    for working_time in week_day.find("pr:WorkingTimes", self.ns).findall("pr:WorkingTime", self.ns):
-                        if working_time.find("pr:FromTime", self.ns) is None:
-                            continue
-                        working_times.append(
+                    working_times = []
+                    if week_day.find("pr:DayType", self.ns).text == "0":
+                        d = datetime.datetime.fromisoformat(
+                            week_day.find("pr:TimePeriod", self.ns).find("pr:FromDate", self.ns).text
+                        ).date()
+                        month = exceptions.setdefault(d.year, {}).setdefault(d.month, {})
+                        month.setdefault("FullDay", [])
+                        month.setdefault("WorkTime", [])
+                        for working_time in week_day.find("pr:WorkingTimes", self.ns).findall(
+                            "pr:WorkingTime", self.ns
+                        ):
+                            if working_time.find("pr:FromTime", self.ns) is None:
+                                continue
+                            working_times.append(
+                                {
+                                    "Start": datetime.time.fromisoformat(
+                                        working_time.find("pr:FromTime", self.ns).text
+                                    ),
+                                    "Finish": datetime.time.fromisoformat(working_time.find("pr:ToTime", self.ns).text),
+                                    "ifc": None,
+                                }
+                            )
+                        if working_times:
+                            exceptions[d.year][d.month]["WorkTime"].append(
+                                {
+                                    "Day": d.day,
+                                    "FromDate": datetime.datetime.fromisoformat(
+                                        week_day.find("pr:TimePeriod", self.ns).find("pr:FromDate", self.ns).text
+                                    ),
+                                    "ToDate": datetime.datetime.fromisoformat(
+                                        week_day.find("pr:TimePeriod", self.ns).find("pr:ToDate", self.ns).text
+                                    ),
+                                    "WorkingTimes": working_times,
+                                    "ifc": None,
+                                }
+                            )
+                    else:
+                        for working_time in week_day.find("pr:WorkingTimes", self.ns).findall(
+                            "pr:WorkingTime", self.ns
+                        ):
+                            if working_time.find("pr:FromTime", self.ns) is None:
+                                continue
+                            working_times.append(
+                                {
+                                    "Start": datetime.time.fromisoformat(
+                                        working_time.find("pr:FromTime", self.ns).text
+                                    ),
+                                    "Finish": datetime.time.fromisoformat(working_time.find("pr:ToTime", self.ns).text),
+                                }
+                            )
+                        week_days.append(
                             {
-                                "Start": datetime.time.fromisoformat(working_time.find("pr:FromTime", self.ns).text),
-                                "Finish": datetime.time.fromisoformat(working_time.find("pr:ToTime", self.ns).text),
+                                "DayType": week_day.find("pr:DayType", self.ns).text,
+                                "WorkingTimes": working_times,
+                                "ifc": None,
                             }
                         )
-                    week_days.append(
-                        {
-                            "DayType": week_day.find("pr:DayType", self.ns).text,
-                            "WorkingTimes": working_times,
-                            "ifc": None,
-                        }
-                    )
-            exceptions = {}
+
             self.calendars[calendar_id] = {
                 "Name": calendar.find("pr:Name", self.ns).text,
                 "StandardWorkWeek": week_days,
+                "HolidayOrExceptions": exceptions,
             }
 
     def create_ifc(self):
@@ -166,6 +208,7 @@ class MSP2Ifc:
         for calendar in self.calendars.values():
             calendar["ifc"] = ifcopenshell.api.run("sequence.add_work_calendar", self.file, name=calendar["Name"])
             self.process_working_week(calendar["StandardWorkWeek"], calendar["ifc"])
+            self.process_exceptions(calendar["HolidayOrExceptions"], calendar["ifc"])
 
     def create_task(self, task, work_schedule=None, parent_task=None):
         task["ifc"] = ifcopenshell.api.run(
@@ -218,13 +261,14 @@ class MSP2Ifc:
 
     def process_working_week(self, week, calendar):
         day_map = {
-            "1": 7, # Sunday
-            "2": 1, # Monday
-            "3": 2, # Tuesday
-            "4": 3, # Wednesday
-            "5": 4, # Thursday
-            "6": 5, # Friday
-            "7": 6, # Saturday
+            "1": 7,  # Sunday
+            "2": 1,  # Monday
+            "3": 2,  # Tuesday
+            "4": 3,  # Wednesday
+            "5": 4,  # Thursday
+            "6": 5,  # Friday
+            "7": 6,  # Saturday
+            "0": 0,  # Exception
         }
         for day in week:
             if day["ifc"]:
@@ -297,14 +341,12 @@ class MSP2Ifc:
     def parse_resources_xml(self, project):
         resources_lst = project.find("pr:Resources", self.ns)
         resources = resources_lst.findall("pr:Resource", self.ns)
-        # print("Resource text", resources[4].find("pr:Name", self.ns).text)
         for resource in resources:
             name = resource.find("pr:Name", self.ns)
             id = resource.find("pr:ID", self.ns).text
             if name is not None:
                 name = name.text
             else:
-                # print("- No Name")
                 name = None
             self.resources[id] = {
                 "Name": name,
@@ -314,4 +356,59 @@ class MSP2Ifc:
                 "ifc": None,
                 "rel": None,
             }
-        print("Resource found", self.resources)
+
+    def process_exceptions(self, exceptions, calendar):
+        if exceptions:
+            for year, year_data in exceptions.items():
+                for month, month_data in year_data.items():
+                    if month_data["WorkTime"]:
+                        self.process_work_time_exceptions(year, month, month_data, calendar)
+
+    def process_work_time_exceptions(self, year, month, month_data, calendar):
+        for day in month_data["WorkTime"]:
+            if day["ifc"]:
+                continue
+
+            day["ifc"] = ifcopenshell.api.run(
+                "sequence.add_work_time", self.file, work_calendar=calendar, time_type="ExceptionTimes"
+            )
+
+            day_component = [day["Day"]]
+            for day2 in month_data["WorkTime"]:
+                if day["Day"] == day2["Day"]:
+                    continue
+                if day["WorkingTimes"] == day2["WorkingTimes"]:
+                    day_component.append(day2["Day"])
+                    # Don't process the next day, as we can group it
+                    day2["ifc"] = day["ifc"]
+
+            ifcopenshell.api.run(
+                "sequence.edit_work_time",
+                self.file,
+                work_time=day["ifc"],
+                attributes={
+                    "Name": "{}-{}-{}".format(year, month, ", ".join([str(d) for d in day_component])),
+                    "Start": ifcopenshell.util.date.datetime2ifc(day["FromDate"], "IfcDate"),
+                    "Finish": ifcopenshell.util.date.datetime2ifc(day["ToDate"], "IfcDate"),
+                },
+            )
+            recurrence = ifcopenshell.api.run(
+                "sequence.assign_recurrence_pattern",
+                self.file,
+                parent=day["ifc"],
+                recurrence_type="YEARLY_BY_DAY_OF_MONTH",
+            )
+            ifcopenshell.api.run(
+                "sequence.edit_recurrence_pattern",
+                self.file,
+                recurrence_pattern=recurrence,
+                attributes={"DayComponent": day_component, "MonthComponent": [month]},
+            )
+            for work_time in day["WorkingTimes"]:
+                ifcopenshell.api.run(
+                    "sequence.add_time_period",
+                    self.file,
+                    recurrence_pattern=recurrence,
+                    start_time=work_time["Start"],
+                    end_time=work_time["Finish"],
+                )
