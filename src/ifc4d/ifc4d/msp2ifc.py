@@ -107,71 +107,74 @@ class MSP2Ifc:
             }
 
     def parse_calendar_xml(self, project):
+        def parse_working_times(day):
+            working_times = []
+            if day.find("pr:WorkingTimes", self.ns):
+                for working_time in day.find("pr:WorkingTimes", self.ns).findall("pr:WorkingTime", self.ns):
+                    if working_time.find("pr:FromTime", self.ns) is None:
+                        continue
+                    working_times.append(
+                        {
+                            "Start": datetime.time.fromisoformat(working_time.find("pr:FromTime", self.ns).text),
+                            "Finish": datetime.time.fromisoformat(working_time.find("pr:ToTime", self.ns).text),
+                        }
+                    )
+            return working_times
+
+        def parse_exception(exception):
+            work_times = parse_working_times(exception)
+            time_period = exception.find("pr:TimePeriod", self.ns)
+            data = {
+                "Name": exception.find("pr:Name", self.ns).text
+                if exception.find("pr:Name", self.ns) is not None
+                else None,
+                "FromDate": datetime.datetime.fromisoformat(time_period.find("pr:FromDate", self.ns).text)
+                if time_period is not None
+                else None,
+                "ToDate": datetime.datetime.fromisoformat(time_period.find("pr:ToDate", self.ns).text)
+                if time_period is not None
+                else None,
+                "Occurrences": int(exception.find("pr:Occurrences", self.ns).text)
+                if exception.find("pr:Occurrences", self.ns) is not None
+                else None,
+                "Month": exception.find("pr:Month", self.ns).text
+                if exception.find("pr:Month", self.ns) is not None
+                else None,
+                "MonthDay": exception.find("pr:MonthDay", self.ns).text
+                if exception.find("pr:MonthDay", self.ns) is not None
+                else None,
+                "Type": exception.find("pr:Type", self.ns).text
+                if exception.find("pr:Type", self.ns) is not None
+                else None,
+                "WorkingTimes": work_times,
+                "ifc": None,
+            }
+            return data
+
         for calendar in project.find("pr:Calendars", self.ns).findall("pr:Calendar", self.ns):
             calendar_id = calendar.find("pr:UID", self.ns).text
             week_days = []
-            exceptions = {}
+            exceptions = []
             week_days_element = calendar.find("pr:WeekDays", self.ns)
             week_day_elements = week_days_element.findall("pr:WeekDay", self.ns) if week_days_element else []
             for week_day in week_day_elements:
                 if week_day.find("pr:WorkingTimes", self.ns):
-                    working_times = []
                     if week_day.find("pr:DayType", self.ns).text == "0":
-                        d = datetime.datetime.fromisoformat(
-                            week_day.find("pr:TimePeriod", self.ns).find("pr:FromDate", self.ns).text
-                        ).date()
-                        month = exceptions.setdefault(d.year, {}).setdefault(d.month, {})
-                        month.setdefault("FullDay", [])
-                        month.setdefault("WorkTime", [])
-                        for working_time in week_day.find("pr:WorkingTimes", self.ns).findall(
-                            "pr:WorkingTime", self.ns
-                        ):
-                            if working_time.find("pr:FromTime", self.ns) is None:
-                                continue
-                            working_times.append(
-                                {
-                                    "Start": datetime.time.fromisoformat(
-                                        working_time.find("pr:FromTime", self.ns).text
-                                    ),
-                                    "Finish": datetime.time.fromisoformat(working_time.find("pr:ToTime", self.ns).text),
-                                    "ifc": None,
-                                }
-                            )
-                        if working_times:
-                            exceptions[d.year][d.month]["WorkTime"].append(
-                                {
-                                    "Day": d.day,
-                                    "FromDate": datetime.datetime.fromisoformat(
-                                        week_day.find("pr:TimePeriod", self.ns).find("pr:FromDate", self.ns).text
-                                    ),
-                                    "ToDate": datetime.datetime.fromisoformat(
-                                        week_day.find("pr:TimePeriod", self.ns).find("pr:ToDate", self.ns).text
-                                    ),
-                                    "WorkingTimes": working_times,
-                                    "ifc": None,
-                                }
-                            )
+                        data = parse_exception(week_day)
+                        data["Type"] = "2"
+                        exceptions.append(data)
                     else:
-                        for working_time in week_day.find("pr:WorkingTimes", self.ns).findall(
-                            "pr:WorkingTime", self.ns
-                        ):
-                            if working_time.find("pr:FromTime", self.ns) is None:
-                                continue
-                            working_times.append(
-                                {
-                                    "Start": datetime.time.fromisoformat(
-                                        working_time.find("pr:FromTime", self.ns).text
-                                    ),
-                                    "Finish": datetime.time.fromisoformat(working_time.find("pr:ToTime", self.ns).text),
-                                }
-                            )
                         week_days.append(
                             {
                                 "DayType": week_day.find("pr:DayType", self.ns).text,
-                                "WorkingTimes": working_times,
+                                "WorkingTimes": parse_working_times(week_day),
                                 "ifc": None,
                             }
                         )
+            exceptions_element = calendar.find("pr:Exceptions", self.ns)
+            for exception in exceptions_element.findall("pr:Exception", self.ns) if exceptions_element else []:
+                data = parse_exception(exception)
+                exceptions.append(data)
 
             self.calendars[calendar_id] = {
                 "Name": calendar.find("pr:Name", self.ns).text,
@@ -205,7 +208,12 @@ class MSP2Ifc:
         )
 
     def create_calendars(self):
+        def has_work_or_exceptions(calendar):
+            return calendar["StandardWorkWeek"] or calendar["HolidayOrExceptions"]
+
         for calendar in self.calendars.values():
+            if not has_work_or_exceptions(calendar):
+                continue
             calendar["ifc"] = ifcopenshell.api.run("sequence.add_work_calendar", self.file, name=calendar["Name"])
             self.process_working_week(calendar["StandardWorkWeek"], calendar["ifc"])
             self.process_exceptions(calendar["HolidayOrExceptions"], calendar["ifc"])
@@ -358,57 +366,60 @@ class MSP2Ifc:
             }
 
     def process_exceptions(self, exceptions, calendar):
-        if exceptions:
-            for year, year_data in exceptions.items():
-                for month, month_data in year_data.items():
-                    if month_data["WorkTime"]:
-                        self.process_work_time_exceptions(year, month, month_data, calendar)
+        for exception in exceptions or []:
+            self.process_exception(exception, calendar)
 
-    def process_work_time_exceptions(self, year, month, month_data, calendar):
-        for day in month_data["WorkTime"]:
-            if day["ifc"]:
-                continue
-
-            day["ifc"] = ifcopenshell.api.run(
-                "sequence.add_work_time", self.file, work_calendar=calendar, time_type="ExceptionTimes"
-            )
-
-            day_component = [day["Day"]]
-            for day2 in month_data["WorkTime"]:
-                if day["Day"] == day2["Day"]:
-                    continue
-                if day["WorkingTimes"] == day2["WorkingTimes"]:
-                    day_component.append(day2["Day"])
-                    # Don't process the next day, as we can group it
-                    day2["ifc"] = day["ifc"]
-
+    def process_exception(self, exception, calendar):
+        if exception["ifc"] or not exception["FromDate"]:
+            return
+        exception["ifc"] = ifcopenshell.api.run(
+            "sequence.add_work_time", self.file, work_calendar=calendar, time_type="ExceptionTimes"
+        )
+        ifcopenshell.api.run(
+            "sequence.edit_work_time",
+            self.file,
+            work_time=exception["ifc"],
+            attributes={
+                "Name": exception["Name"],
+                "Start": ifcopenshell.util.date.datetime2ifc(exception["FromDate"], "IfcDate"),
+                "Finish": ifcopenshell.util.date.datetime2ifc(exception["ToDate"], "IfcDate"),
+            },
+        )
+        # BIG assumptions due to missing types enumeration in docs https://learn.microsoft.com/en-us/office-project/xml-data-interchange/exception-element?view=project-client-2016
+        recurrence_type = None
+        if exception["Type"] == "1":
+            recurrence_type = "DAILY"
+            attributes = {
+                "Occurrences": int(exception["Occurrences"]) if exception["Occurrences"] else None,
+            }
+        elif exception["Type"] == "2":
+            recurrence_type = "YEARLY_BY_DAY_OF_MONTH"
+            month_component = [int(exception["Month"]) + 1] if exception["Month"] else None
+            day_component = [int(exception["MonthDay"])] if exception["MonthDay"] else None
+            if month_component is None and (exception["FromDate"].date().day == exception["ToDate"].date().day):
+                month_component = [exception["FromDate"].date().month]
+                day_component = [exception["FromDate"].date().day]
+            attributes = {
+                "MonthComponent": month_component,
+                "DayComponent": day_component,
+                "Occurrences": int(exception["Occurrences"]) if exception["Occurrences"] else None,
+            }
+        else:
+            return
+        recurrence = ifcopenshell.api.run(
+            "sequence.assign_recurrence_pattern",
+            self.file,
+            parent=exception["ifc"],
+            recurrence_type=recurrence_type,
+        )
+        ifcopenshell.api.run(
+            "sequence.edit_recurrence_pattern", self.file, recurrence_pattern=recurrence, attributes=attributes
+        )
+        for work_time in exception["WorkingTimes"] or []:
             ifcopenshell.api.run(
-                "sequence.edit_work_time",
-                self.file,
-                work_time=day["ifc"],
-                attributes={
-                    "Name": "{}-{}-{}".format(year, month, ", ".join([str(d) for d in day_component])),
-                    "Start": ifcopenshell.util.date.datetime2ifc(day["FromDate"], "IfcDate"),
-                    "Finish": ifcopenshell.util.date.datetime2ifc(day["ToDate"], "IfcDate"),
-                },
-            )
-            recurrence = ifcopenshell.api.run(
-                "sequence.assign_recurrence_pattern",
-                self.file,
-                parent=day["ifc"],
-                recurrence_type="YEARLY_BY_DAY_OF_MONTH",
-            )
-            ifcopenshell.api.run(
-                "sequence.edit_recurrence_pattern",
+                "sequence.add_time_period",
                 self.file,
                 recurrence_pattern=recurrence,
-                attributes={"DayComponent": day_component, "MonthComponent": [month]},
+                start_time=work_time["Start"],
+                end_time=work_time["Finish"],
             )
-            for work_time in day["WorkingTimes"]:
-                ifcopenshell.api.run(
-                    "sequence.add_time_period",
-                    self.file,
-                    recurrence_pattern=recurrence,
-                    start_time=work_time["Start"],
-                    end_time=work_time["Finish"],
-                )
