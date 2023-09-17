@@ -4,9 +4,7 @@ ColumnLimit: 0 # we do not enforce column lenght, please format responsibly
 IndentWidth: 4
 ---
 Language: Cpp
-AllowShortBlocksOnASingleLine: Never
 AllowShortEnumsOnASingleLine: false
-AllowShortIfStatementsOnASingleLine: Never
 AlwaysBreakTemplateDeclarations: Yes
 BinPackArguments: false
 BinPackParameters: false
