@@ -20,81 +20,90 @@
 #ifndef IFCENTITYINSTANCEDATA_H
 #define IFCENTITYINSTANCEDATA_H
 
-#include "../ifcparse/ArgumentType.h"
+#include "ArgumentType.h"
 
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
-
 #include <vector>
 
 class Argument;
 class aggregate_of_instance;
 namespace IfcParse {
-	class IfcFile;
+class IfcFile;
 }
 
 class IFC_PARSE_API IfcEntityInstanceData {
-public:
-	// Public for backwards compatibility
-	IfcParse::IfcFile* file;
-protected:
-	unsigned id_;
-	const IfcParse::declaration* type_;
-	mutable Argument** attributes_;
-	unsigned offset_in_file_;
+  public:
+    // Public for backwards compatibility
+    IfcParse::IfcFile* file;
 
-public:
-	IfcEntityInstanceData(const IfcParse::declaration* type, IfcParse::IfcFile* file_, unsigned id = 0, unsigned offset_in_file = 0)
-		: file(file_), id_(id), type_(type), attributes_(0), offset_in_file_(offset_in_file)
-	{}
+  protected:
+    unsigned id_;
+    const IfcParse::declaration* type_;
+    mutable Argument** attributes_;
+    unsigned offset_in_file_;
 
-   IfcEntityInstanceData(IfcParse::IfcFile* file_, size_t size)
-      : file(file_), id_(0), type_(0), attributes_(new Argument*[size] {0}), offset_in_file_(0)
-	{}
+  public:
+    IfcEntityInstanceData(const IfcParse::declaration* type, IfcParse::IfcFile* file_, unsigned id = 0, unsigned offset_in_file = 0)
+        : file(file_),
+          id_(id),
+          type_(type),
+          attributes_(0),
+          offset_in_file_(offset_in_file) {}
 
-   IfcEntityInstanceData(const IfcParse::declaration* type)
-      : file(0), id_(0), type_(type), attributes_(new Argument*[getArgumentCount()]{ 0 }), offset_in_file_(0)
-   {}
+    IfcEntityInstanceData(IfcParse::IfcFile* file_, size_t size)
+        : file(file_),
+          id_(0),
+          type_(0),
+          attributes_(new Argument* [size] { 0 }),
+          offset_in_file_(0) {}
 
-	void load() const;
+    IfcEntityInstanceData(const IfcParse::declaration* type)
+        : file(0),
+          id_(0),
+          type_(type),
+          attributes_(new Argument* [getArgumentCount()] { 0 }),
+          offset_in_file_(0) {}
 
-	IfcEntityInstanceData(const IfcEntityInstanceData& e);
+    void load() const;
 
-	virtual ~IfcEntityInstanceData();
+    IfcEntityInstanceData(const IfcEntityInstanceData& e);
 
-	boost::shared_ptr<aggregate_of_instance> getInverse (const IfcParse::declaration* type, int attribute_index) const;
+    virtual ~IfcEntityInstanceData();
 
-	Argument* getArgument(size_t i) const;
+    boost::shared_ptr<aggregate_of_instance> getInverse(const IfcParse::declaration* type, int attribute_index) const;
 
-	// NB: This makes a copy of the argument if make_copy is set
-	void setArgument(size_t i, Argument* a, IfcUtil::ArgumentType attr_type = IfcUtil::Argument_UNKNOWN, bool make_copy = false);
+    Argument* getArgument(size_t i) const;
 
-	virtual size_t getArgumentCount() const {
-		if (type_ == 0) {
-			return 0;
-		}
-		if (type_->as_entity()) {
-			return type_->as_entity()->attribute_count();
-		} else {
-			return 1;
-		}
-	}
+    // NB: This makes a copy of the argument if make_copy is set
+    void setArgument(size_t i, Argument* a, IfcUtil::ArgumentType attr_type = IfcUtil::Argument_UNKNOWN, bool make_copy = false);
 
-	void clearArguments();
+    virtual size_t getArgumentCount() const {
+        if (type_ == 0) {
+            return 0;
+        }
+        if (type_->as_entity()) {
+            return type_->as_entity()->attribute_count();
+        } else {
+            return 1;
+        }
+    }
 
-	const IfcParse::declaration* type() const {
-		return type_;
-	}
+    void clearArguments();
 
-	std::string toString(bool upper = false) const;
+    const IfcParse::declaration* type() const {
+        return type_;
+    }
 
-	unsigned int id() const { return id_; }
-	unsigned int offset_in_file() const { return offset_in_file_; }
+    std::string toString(bool upper = false) const;
 
-	// NB: const ommitted for lazy loading
-	Argument**& attributes() const { return attributes_; }
+    unsigned int id() const { return id_; }
+    unsigned int offset_in_file() const { return offset_in_file_; }
 
-	unsigned set_id(boost::optional<unsigned> i = boost::none);
+    // NB: const ommitted for lazy loading
+    Argument**& attributes() const { return attributes_; }
+
+    unsigned set_id(boost::optional<unsigned> i = boost::none);
 };
 
 #endif
