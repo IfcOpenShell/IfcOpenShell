@@ -1,11 +1,12 @@
-# We'll use defaults from the LLVM style, but with 4 columns indentation.
+# We'll use defaults from the LLVM style with modifications
 BasedOnStyle: LLVM
+ColumnLimit: 0 # we do not enforce column lenght, please format responsibly
 IndentWidth: 4
 ---
 Language: Cpp
-AllowShortBlocksOnASingleLine: Always
+AllowShortBlocksOnASingleLine: Never
 AllowShortEnumsOnASingleLine: false
-AllowShortIfStatementsOnASingleLine: OnlyFirstIf
+AllowShortIfStatementsOnASingleLine: Never
 AlwaysBreakTemplateDeclarations: Yes
 BinPackArguments: false
 BinPackParameters: false
@@ -14,9 +15,9 @@ BraceWrapping:
     SplitEmptyRecord: false
     SplitEmptyNamespace: false
 IncludeBlocks: Regroup
+InsertBraces: true
 InsertNewlineAtEOF: true
 PackConstructorInitializers: CurrentLine
-PenaltyReturnTypeOnItsOwnLine: 120
 PointerAlignment: Left
 ReflowComments: false # keep licenze comment blocks
 SortIncludes: CaseInsensitive
