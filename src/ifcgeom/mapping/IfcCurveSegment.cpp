@@ -63,14 +63,10 @@ public:
 
 #ifdef SCHEMA_HAS_IfcClothoid
 	// Then initialize Function(double) -> Vector3, by means of IfcCurve subtypes
-	void operator()(boost::type<IfcSchema::IfcClothoid>) {
-		if (!curve_->as<IfcSchema::IfcClothoid>()) {
-			return;
-		}		
-
+	void operator()(IfcSchema::IfcClothoid* c) {
 		// @todo verify
 		auto L = start_ + length_;
-		auto A = curve_->as<IfcSchema::IfcClothoid>()->ClothoidConstant();
+		auto A = c->ClothoidConstant();
 		auto R = A * A / L;
 		auto RL = R * L;
 
@@ -93,11 +89,16 @@ public:
 #endif
 
 	// Another IfcCurve subtype
-	void operator()(boost::type<IfcSchema::IfcLine>) {
-		if (!curve_->as<IfcSchema::IfcLine>()) {
-			return;
-		}
+	void operator()(IfcSchema::IfcLine*) {
 		throw std::runtime_error("not implemented");
+	}
+
+	// Take the boost::type value from mpl::for_each and test it against our curve instance
+	template <typename T>
+	void operator()(boost::type<T>) {
+		if (curve_->as<T>()) {
+			(*this)(curve_->as<T>());
+		}
 	}
 
 	// Then, with function populated based on IfcCurve subtype, we can evaluate to points
