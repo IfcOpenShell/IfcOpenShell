@@ -16,16 +16,18 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.         *
  *                                                                              *
  ********************************************************************************/
- 
+
 /*********************************************************************************
  *                                                                               *
  * Reads a file and provides functions to access its                             *
  * contents randomly and character by character                                  *
  *                                                                               *
  ********************************************************************************/
- 
+
 #ifndef IFCSPFSTREAM_H
 #define IFCSPFSTREAM_H
+
+#include "ifc_parse_api.h"
 
 #include <fstream>
 #include <string>
@@ -34,49 +36,48 @@
 #include <boost/iostreams/device/mapped_file.hpp>
 #endif
 
-#include "ifc_parse_api.h"
-
 namespace IfcParse {
-	/// The IfcSpfStream class represents a ISO 10303-21 IFC-SPF file in memory.
-	/// The file is interpreted as a sequence of tokens which are lazily
-	/// interpreted only when requested.
-	class IFC_PARSE_API IfcSpfStream {
-	private:
+/// The IfcSpfStream class represents a ISO 10303-21 IFC-SPF file in memory.
+/// The file is interpreted as a sequence of tokens which are lazily
+/// interpreted only when requested.
+class IFC_PARSE_API IfcSpfStream {
+  private:
 #ifdef USE_MMAP
-		boost::iostreams::mapped_file_source mfs;
+    boost::iostreams::mapped_file_source mfs;
 #endif
-		FILE* stream;
-		const char* buffer;
-		unsigned int ptr;
-		unsigned int len;
-	public:
-		bool valid;
-		bool eof;
-		unsigned int size;
-#ifdef USE_MMAP
-		IfcSpfStream(const std::string& fn, bool mmap=false);
-#else
-		IfcSpfStream(const std::string& fn);
-#endif
-		IfcSpfStream(std::istream& f, int len);
-		IfcSpfStream(void* data, int len);
-		~IfcSpfStream();
-		/// Returns the character at the cursor 
-		char Peek();
-		/// Returns the character at specified offset
-		char Read(unsigned int offset);
-		/// Increment the file cursor and reads new page if necessary
-		void Inc();
-		void Close();
-		/// Moves the file cursor to an arbitrary offset in the file
-		void Seek(unsigned int offset);
-		/// Returns the cursor position
-		unsigned int Tell();
+    FILE* stream;
+    const char* buffer;
+    unsigned int ptr;
+    unsigned int len;
 
-		bool is_eof_at(unsigned int);
-		void increment_at(unsigned int&);
-		char peek_at(unsigned int);
-	};
-}
+  public:
+    bool valid;
+    bool eof;
+    unsigned int size;
+#ifdef USE_MMAP
+    IfcSpfStream(const std::string& fn, bool mmap = false);
+#else
+    IfcSpfStream(const std::string& fn);
+#endif
+    IfcSpfStream(std::istream& f, int len);
+    IfcSpfStream(void* data, int len);
+    ~IfcSpfStream();
+    /// Returns the character at the cursor
+    char Peek();
+    /// Returns the character at specified offset
+    char Read(unsigned int offset);
+    /// Increment the file cursor and reads new page if necessary
+    void Inc();
+    void Close();
+    /// Moves the file cursor to an arbitrary offset in the file
+    void Seek(unsigned int offset);
+    /// Returns the cursor position
+    unsigned int Tell();
+
+    bool is_eof_at(unsigned int);
+    void increment_at(unsigned int&);
+    char peek_at(unsigned int);
+};
+} // namespace IfcParse
 
 #endif

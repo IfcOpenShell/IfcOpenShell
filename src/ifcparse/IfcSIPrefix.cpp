@@ -20,85 +20,103 @@
 #include "IfcSIPrefix.h"
 
 #ifdef HAS_SCHEMA_2x3
-#include "../ifcparse/Ifc2x3.h"
+#include "Ifc2x3.h"
 #endif
 #ifdef HAS_SCHEMA_4
-#include "../ifcparse/Ifc4.h"
+#include "Ifc4.h"
 #endif
 #ifdef HAS_SCHEMA_4x1
-#include "../ifcparse/Ifc4x1.h"
+#include "Ifc4x1.h"
 #endif
 #ifdef HAS_SCHEMA_4x2
-#include "../ifcparse/Ifc4x2.h"
+#include "Ifc4x2.h"
 #endif
 #ifdef HAS_SCHEMA_4x3_rc1
-#include "../ifcparse/Ifc4x3_rc1.h"
+#include "Ifc4x3_rc1.h"
 #endif
 #ifdef HAS_SCHEMA_4x3_rc2
-#include "../ifcparse/Ifc4x3_rc2.h"
+#include "Ifc4x3_rc2.h"
 #endif
 #ifdef HAS_SCHEMA_4x3_rc3
-#include "../ifcparse/Ifc4x3_rc3.h"
+#include "Ifc4x3_rc3.h"
 #endif
 #ifdef HAS_SCHEMA_4x3_rc4
-#include "../ifcparse/Ifc4x3_rc4.h"
+#include "Ifc4x3_rc4.h"
 #endif
 #ifdef HAS_SCHEMA_4x3
-#include "../ifcparse/Ifc4x3.h"
+#include "Ifc4x3.h"
 #endif
 #ifdef HAS_SCHEMA_4x3_tc1
-#include "../ifcparse/Ifc4x3_tc1.h"
+#include "Ifc4x3_tc1.h"
 #endif
 #ifdef HAS_SCHEMA_4x3_add1
-#include "../ifcparse/Ifc4x3_add1.h"
+#include "Ifc4x3_add1.h"
 #endif
 
 double IfcParse::IfcSIPrefixToValue(const std::string& v) {
-	if      ( v == "EXA"   ) return 1.e18;
-	else if ( v == "PETA"  ) return 1.e15;
-	else if ( v == "TERA"  ) return 1.e12;
-	else if ( v == "GIGA"  ) return 1.e9;
-	else if ( v == "MEGA"  ) return 1.e6;
-	else if ( v == "KILO"  ) return 1.e3;
-	else if ( v == "HECTO" ) return 1.e2;
-	else if ( v == "DECA"  ) return 1.e1;
-	else if ( v == "DECI"  ) return 1.e-1;
-	else if ( v == "CENTI" ) return 1.e-2;
-	else if ( v == "MILLI" ) return 1.e-3;
-	else if ( v == "MICRO" ) return 1.e-6;
-	else if ( v == "NANO"  ) return 1.e-9;
-	else if ( v == "PICO"  ) return 1.e-12;
-	else if ( v == "FEMTO" ) return 1.e-15;
-	else if ( v == "ATTO"  ) return 1.e-18;
-	else return 1.;
+    if (v == "EXA") {
+        return 1.e18;
+    } else if (v == "PETA") {
+        return 1.e15;
+    } else if (v == "TERA") {
+        return 1.e12;
+    } else if (v == "GIGA") {
+        return 1.e9;
+    } else if (v == "MEGA") {
+        return 1.e6;
+    } else if (v == "KILO") {
+        return 1.e3;
+    } else if (v == "HECTO") {
+        return 1.e2;
+    } else if (v == "DECA") {
+        return 1.e1;
+    } else if (v == "DECI") {
+        return 1.e-1;
+    } else if (v == "CENTI") {
+        return 1.e-2;
+    } else if (v == "MILLI") {
+        return 1.e-3;
+    } else if (v == "MICRO") {
+        return 1.e-6;
+    } else if (v == "NANO") {
+        return 1.e-9;
+    } else if (v == "PICO") {
+        return 1.e-12;
+    } else if (v == "FEMTO") {
+        return 1.e-15;
+    } else if (v == "ATTO") {
+        return 1.e-18;
+    } else {
+        return 1.;
+    }
 }
 
 template <typename Schema>
 double IfcParse::get_SI_equivalent(typename Schema::IfcNamedUnit* named_unit) {
-	double scale =  1.;
-	typename Schema::IfcSIUnit* si_unit = 0;
+    double scale = 1.;
+    typename Schema::IfcSIUnit* si_unit = 0;
 
-	if (named_unit->declaration().is(Schema::IfcConversionBasedUnit::Class())) {
-		typename Schema::IfcConversionBasedUnit* conv_unit = named_unit->template as<typename Schema::IfcConversionBasedUnit>();
-		typename Schema::IfcMeasureWithUnit* factor = conv_unit->ConversionFactor();
-		typename Schema::IfcUnit* component = factor->UnitComponent();
-		if (component->declaration().is(Schema::IfcSIUnit::Class())) {
-			si_unit = component->template as<typename Schema::IfcSIUnit>();
-			typename Schema::IfcValue* v = factor->ValueComponent();
-			scale = *v->data().getArgument(0);
-		}
-	} else if (named_unit->declaration().is(Schema::IfcSIUnit::Class())) {
-		si_unit = named_unit->template as<typename Schema::IfcSIUnit>();
-	}
-	if (si_unit) {
-		if (si_unit->Prefix()) {
-			scale *= IfcSIPrefixToValue(Schema::IfcSIPrefix::ToString(*si_unit->Prefix()));
-		}
-	} else {
-		scale = 0.;
-	}
+    if (named_unit->declaration().is(Schema::IfcConversionBasedUnit::Class())) {
+        typename Schema::IfcConversionBasedUnit* conv_unit = named_unit->template as<typename Schema::IfcConversionBasedUnit>();
+        typename Schema::IfcMeasureWithUnit* factor = conv_unit->ConversionFactor();
+        typename Schema::IfcUnit* component = factor->UnitComponent();
+        if (component->declaration().is(Schema::IfcSIUnit::Class())) {
+            si_unit = component->template as<typename Schema::IfcSIUnit>();
+            typename Schema::IfcValue* v = factor->ValueComponent();
+            scale = *v->data().getArgument(0);
+        }
+    } else if (named_unit->declaration().is(Schema::IfcSIUnit::Class())) {
+        si_unit = named_unit->template as<typename Schema::IfcSIUnit>();
+    }
+    if (si_unit) {
+        if (si_unit->Prefix()) {
+            scale *= IfcSIPrefixToValue(Schema::IfcSIPrefix::ToString(*si_unit->Prefix()));
+        }
+    } else {
+        scale = 0.;
+    }
 
-	return scale;
+    return scale;
 }
 
 #if defined(_MSC_VER) && _MSC_VER < 1900

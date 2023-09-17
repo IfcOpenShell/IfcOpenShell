@@ -20,319 +20,323 @@
 #ifndef IFCFILE_H
 #define IFCFILE_H
 
-#include <map>
-#include <set>
-#include <iterator>
+#include "ifc_parse_api.h"
+#include "IfcParse.h"
+#include "IfcSchema.h"
+#include "IfcSpfHeader.h"
 
-#include <boost/unordered_map.hpp>
-#include <boost/multi_index_container.hpp>
-#include <boost/multi_index/sequenced_index.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/random_access_index.hpp>
-
-#include "ifc_parse_api.h"
-
-#include "../ifcparse/IfcParse.h"
-#include "../ifcparse/IfcSpfHeader.h"
-#include "../ifcparse/IfcSchema.h"
+#include <boost/multi_index/sequenced_index.hpp>
+#include <boost/multi_index_container.hpp>
+#include <boost/unordered_map.hpp>
+#include <iterator>
+#include <map>
+#include <set>
 
 namespace IfcParse {
 
 class IFC_PARSE_API file_open_status {
-public:
-	enum file_open_enum {
-		SUCCESS,
-		READ_ERROR,
-		NO_HEADER,
-		UNSUPPORTED_SCHEMA
-	};
+  public:
+    enum file_open_enum {
+        SUCCESS,
+        READ_ERROR,
+        NO_HEADER,
+        UNSUPPORTED_SCHEMA
+    };
 
-private:
-	file_open_enum error_;
+  private:
+    file_open_enum error_;
 
-public:
-	file_open_status(file_open_enum error)
-		: error_(error)
-	{}
+  public:
+    file_open_status(file_open_enum error)
+        : error_(error) {}
 
-	operator file_open_enum() const {
-		return error_;
-	}
+    operator file_open_enum() const {
+        return error_;
+    }
 
-	file_open_enum value() const {
-		return error_;
-	}
+    file_open_enum value() const {
+        return error_;
+    }
 
-	operator bool() const {
-		return error_ == SUCCESS;
-	}
+    operator bool() const {
+        return error_ == SUCCESS;
+    }
 };
 
 /// This class provides several static convenience functions and variables
 /// and provide access to the entities in an IFC file
 class IFC_PARSE_API IfcFile {
-public:
-	typedef std::map<const IfcParse::declaration*, aggregate_of_instance::ptr> entities_by_type_t;
-	typedef boost::unordered_map<unsigned int, IfcUtil::IfcBaseClass*> entity_by_id_t;
-	typedef boost::unordered_map<uint32_t, IfcUtil::IfcBaseClass*> entity_by_iden_t;
-	typedef std::map<std::string, IfcUtil::IfcBaseClass*> entity_by_guid_t;
-	typedef std::tuple<int, int, int> inverse_attr_record;
-	enum INVERSE_ATTR { INSTANCE_ID, INSTANCE_TYPE, ATTRIBUTE_INDEX };
-	typedef std::map<inverse_attr_record, std::vector<int> > entities_by_ref_t;
-	typedef std::map<int, std::vector<int> > entities_by_ref_excl_t;
-	typedef std::map<unsigned int, aggregate_of_instance::ptr> ref_map_t;
-	typedef entity_by_id_t::const_iterator const_iterator;
+  public:
+    typedef std::map<const IfcParse::declaration*, aggregate_of_instance::ptr> entities_by_type_t;
+    typedef boost::unordered_map<unsigned int, IfcUtil::IfcBaseClass*> entity_by_id_t;
+    typedef boost::unordered_map<uint32_t, IfcUtil::IfcBaseClass*> entity_by_iden_t;
+    typedef std::map<std::string, IfcUtil::IfcBaseClass*> entity_by_guid_t;
+    typedef std::tuple<int, int, int> inverse_attr_record;
+    enum INVERSE_ATTR {
+        INSTANCE_ID,
+        INSTANCE_TYPE,
+        ATTRIBUTE_INDEX
+    };
+    typedef std::map<inverse_attr_record, std::vector<int>> entities_by_ref_t;
+    typedef std::map<int, std::vector<int>> entities_by_ref_excl_t;
+    typedef std::map<unsigned int, aggregate_of_instance::ptr> ref_map_t;
+    typedef entity_by_id_t::const_iterator const_iterator;
 
-	class type_iterator : private entities_by_type_t::const_iterator {
-	public:
-		type_iterator() : entities_by_type_t::const_iterator() {};
+    class type_iterator : private entities_by_type_t::const_iterator {
+      public:
+        type_iterator() : entities_by_type_t::const_iterator(){};
 
-		type_iterator(const entities_by_type_t::const_iterator& it)
-			: entities_by_type_t::const_iterator(it)
-		{};
+        type_iterator(const entities_by_type_t::const_iterator& it)
+            : entities_by_type_t::const_iterator(it){};
 
-		entities_by_type_t::key_type const * operator->() const {
-			return &entities_by_type_t::const_iterator::operator->()->first;
-		}
+        entities_by_type_t::key_type const* operator->() const {
+            return &entities_by_type_t::const_iterator::operator->()->first;
+        }
 
-		entities_by_type_t::key_type const & operator*() const {
-			return entities_by_type_t::const_iterator::operator*().first;
-		}
+        entities_by_type_t::key_type const& operator*() const {
+            return entities_by_type_t::const_iterator::operator*().first;
+        }
 
-		type_iterator& operator++() { 
-			entities_by_type_t::const_iterator::operator++(); return *this; 
-		}
+        type_iterator& operator++() {
+            entities_by_type_t::const_iterator::operator++();
+            return *this;
+        }
 
-		type_iterator operator++(int) { 
-			type_iterator tmp(*this); operator++(); return tmp; 
-		}
+        type_iterator operator++(int) {
+            type_iterator tmp(*this);
+            operator++();
+            return tmp;
+        }
 
-		bool operator!=(const type_iterator& other) const {
-			const entities_by_type_t::const_iterator& self_ = *this;
-			const entities_by_type_t::const_iterator& other_ = other;
-			return self_ != other_;
-		}
-	};
+        bool operator!=(const type_iterator& other) const {
+            const entities_by_type_t::const_iterator& self_ = *this;
+            const entities_by_type_t::const_iterator& other_ = other;
+            return self_ != other_;
+        }
+    };
 
-	static bool lazy_load_;
-	static bool lazy_load() { return lazy_load_; }
-	static void lazy_load(bool b) { lazy_load_ = b; }
+    static bool lazy_load_;
+    static bool lazy_load() { return lazy_load_; }
+    static void lazy_load(bool b) { lazy_load_ = b; }
 
-	static bool guid_map_;
-	static bool guid_map() { return guid_map_; }
-	static void guid_map(bool b) { guid_map_ = b; }
+    static bool guid_map_;
+    static bool guid_map() { return guid_map_; }
+    static void guid_map(bool b) { guid_map_ = b; }
 
-private:
-	typedef std::map<uint32_t, IfcUtil::IfcBaseClass*> entity_entity_map_t;
+  private:
+    typedef std::map<uint32_t, IfcUtil::IfcBaseClass*> entity_entity_map_t;
 
-	bool parsing_complete_;
-	file_open_status good_ = file_open_status::SUCCESS;
+    bool parsing_complete_;
+    file_open_status good_ = file_open_status::SUCCESS;
 
-	const IfcParse::schema_definition* schema_;
-	const IfcParse::declaration* ifcroot_type_;
+    const IfcParse::schema_definition* schema_;
+    const IfcParse::declaration* ifcroot_type_;
 
-	std::vector<Argument*> internal_attribute_vector_, internal_attribute_vector_simple_type_;
+    std::vector<Argument*> internal_attribute_vector_, internal_attribute_vector_simple_type_;
 
-	entity_by_id_t byid;
-	// this is for simple types
-	entity_by_iden_t byidentity;
-	entities_by_type_t bytype;
-	entities_by_type_t bytype_excl;
-	entities_by_ref_t byref;
-	entities_by_ref_excl_t byref_excl;
-	entity_by_guid_t byguid;
-	entity_entity_map_t entity_file_map;
+    entity_by_id_t byid;
+    // this is for simple types
+    entity_by_iden_t byidentity;
+    entities_by_type_t bytype;
+    entities_by_type_t bytype_excl;
+    entities_by_ref_t byref;
+    entities_by_ref_excl_t byref_excl;
+    entity_by_guid_t byguid;
+    entity_entity_map_t entity_file_map;
 
-	unsigned int MaxId;
+    unsigned int MaxId;
 
-	IfcSpfHeader _header;
+    IfcSpfHeader _header;
 
-	void setDefaultHeaderValues();
+    void setDefaultHeaderValues();
 
-	void initialize_(IfcParse::IfcSpfStream* f);
+    void initialize_(IfcParse::IfcSpfStream* f);
 
-	void build_inverses_(IfcUtil::IfcBaseClass*);
+    void build_inverses_(IfcUtil::IfcBaseClass*);
 
-	typedef boost::multi_index_container<
-		int,
-		boost::multi_index::indexed_by<
-			boost::multi_index::sequenced<>,
-			boost::multi_index::ordered_unique<
-				boost::multi_index::identity<int>
-			>
-		>
-	> batch_deletion_ids_t;
-	batch_deletion_ids_t batch_deletion_ids_;
-	bool batch_mode_ = false;
-	void process_deletion_();
+    typedef boost::multi_index_container<
+        int,
+        boost::multi_index::indexed_by<
+            boost::multi_index::sequenced<>,
+            boost::multi_index::ordered_unique<
+                boost::multi_index::identity<int>>>>
+        batch_deletion_ids_t;
+    batch_deletion_ids_t batch_deletion_ids_;
+    bool batch_mode_ = false;
+    void process_deletion_();
 
-public:
-	IfcParse::IfcSpfLexer* tokens;
-	IfcParse::IfcSpfStream* stream;
-	
+  public:
+    IfcParse::IfcSpfLexer* tokens;
+    IfcParse::IfcSpfStream* stream;
+
 #ifdef USE_MMAP
-	IfcFile(const std::string& fn, bool mmap = false);
+    IfcFile(const std::string& fn, bool mmap = false);
 #else
-	IfcFile(const std::string& fn);
+    IfcFile(const std::string& fn);
 #endif
-	IfcFile(std::istream& fn, int len);
-	IfcFile(void* data, int len);
-	IfcFile(IfcParse::IfcSpfStream* f);
-	IfcFile(const IfcParse::schema_definition* schema = IfcParse::schema_by_name("IFC4"));
+    IfcFile(std::istream& fn, int len);
+    IfcFile(void* data, int len);
+    IfcFile(IfcParse::IfcSpfStream* f);
+    IfcFile(const IfcParse::schema_definition* schema = IfcParse::schema_by_name("IFC4"));
 
-	/// Deleting the file will also delete all new instances that were added to the file (via memory allocation)
-	virtual ~IfcFile();
+    /// Deleting the file will also delete all new instances that were added to the file (via memory allocation)
+    virtual ~IfcFile();
 
-	file_open_status good() const { return good_; }
-	
-	/// Returns the first entity in the file, this probably is the entity
-	/// with the lowest id (EXPRESS ENTITY_INSTANCE_NAME)
-	const_iterator begin() const;
-	/// Returns the last entity in the file, this probably is the entity
-	/// with the highest id (EXPRESS ENTITY_INSTANCE_NAME)
-	const_iterator end() const;
+    file_open_status good() const { return good_; }
 
-	type_iterator types_begin() const;
-	type_iterator types_end() const;
+    /// Returns the first entity in the file, this probably is the entity
+    /// with the lowest id (EXPRESS ENTITY_INSTANCE_NAME)
+    const_iterator begin() const;
+    /// Returns the last entity in the file, this probably is the entity
+    /// with the highest id (EXPRESS ENTITY_INSTANCE_NAME)
+    const_iterator end() const;
 
-	type_iterator types_incl_super_begin() const;
-	type_iterator types_incl_super_end() const;
+    type_iterator types_begin() const;
+    type_iterator types_end() const;
 
-	/// Returns all entities in the file that match the template argument.
-	/// NOTE: This also returns subtypes of the requested type, for example:
-	/// IfcWall will also return IfcWallStandardCase entities
-	template <class T>
-	typename T::list::ptr instances_by_type() {
-		aggregate_of_instance::ptr untyped_list = instances_by_type(&T::Class());
-		if (untyped_list) {
-			return untyped_list->as<T>();
-		} else {
-			return typename T::list::ptr(new typename T::list);
-		}
-	}
+    type_iterator types_incl_super_begin() const;
+    type_iterator types_incl_super_end() const;
 
-	template <class T>
-	typename T::list::ptr instances_by_type_excl_subtypes() {
-		aggregate_of_instance::ptr untyped_list = instances_by_type_excl_subtypes(&T::Class());
-		if (untyped_list) {
-			return untyped_list->as<T>();
-		} else {
-			return typename T::list::ptr(new typename T::list);
-		}
-	}
+    /// Returns all entities in the file that match the template argument.
+    /// NOTE: This also returns subtypes of the requested type, for example:
+    /// IfcWall will also return IfcWallStandardCase entities
+    template <class T>
+    typename T::list::ptr instances_by_type() {
+        aggregate_of_instance::ptr untyped_list = instances_by_type(&T::Class());
+        if (untyped_list) {
+            return untyped_list->as<T>();
+        } else {
+            return typename T::list::ptr(new typename T::list);
+        }
+    }
 
-	/// Returns all entities in the file that match the positional argument.
-	/// NOTE: This also returns subtypes of the requested type, for example:
-	/// IfcWall will also return IfcWallStandardCase entities
-	aggregate_of_instance::ptr instances_by_type(const IfcParse::declaration*);
+    template <class T>
+    typename T::list::ptr instances_by_type_excl_subtypes() {
+        aggregate_of_instance::ptr untyped_list = instances_by_type_excl_subtypes(&T::Class());
+        if (untyped_list) {
+            return untyped_list->as<T>();
+        } else {
+            return typename T::list::ptr(new typename T::list);
+        }
+    }
 
-	/// Returns all entities in the file that match the positional argument.
-	aggregate_of_instance::ptr instances_by_type_excl_subtypes(const IfcParse::declaration*);
+    /// Returns all entities in the file that match the positional argument.
+    /// NOTE: This also returns subtypes of the requested type, for example:
+    /// IfcWall will also return IfcWallStandardCase entities
+    aggregate_of_instance::ptr instances_by_type(const IfcParse::declaration*);
 
-	/// Returns all entities in the file that match the positional argument.
-	/// NOTE: This also returns subtypes of the requested type, for example:
-	/// IfcWall will also return IfcWallStandardCase entities
-	aggregate_of_instance::ptr instances_by_type(const std::string& t);
+    /// Returns all entities in the file that match the positional argument.
+    aggregate_of_instance::ptr instances_by_type_excl_subtypes(const IfcParse::declaration*);
 
-	/// Returns all entities in the file that match the positional argument.
-	aggregate_of_instance::ptr instances_by_type_excl_subtypes(const std::string& t);
-	
-	/// Returns all entities in the file that reference the id
-	aggregate_of_instance::ptr instances_by_reference(int id);
+    /// Returns all entities in the file that match the positional argument.
+    /// NOTE: This also returns subtypes of the requested type, for example:
+    /// IfcWall will also return IfcWallStandardCase entities
+    aggregate_of_instance::ptr instances_by_type(const std::string& t);
 
-	/// Returns the entity with the specified id
-	IfcUtil::IfcBaseClass* instance_by_id(int id);
+    /// Returns all entities in the file that match the positional argument.
+    aggregate_of_instance::ptr instances_by_type_excl_subtypes(const std::string& t);
 
-	/// Returns the entity with the specified GlobalId
-	IfcUtil::IfcBaseClass* instance_by_guid(const std::string& guid);
+    /// Returns all entities in the file that reference the id
+    aggregate_of_instance::ptr instances_by_reference(int id);
 
-	/// Performs a depth-first traversal, returning all entity instance
-	/// attributes as a flat list. NB: includes the root instance specified
-	/// in the first function argument.
-	aggregate_of_instance::ptr traverse(IfcUtil::IfcBaseClass* instance, int max_level=-1);
+    /// Returns the entity with the specified id
+    IfcUtil::IfcBaseClass* instance_by_id(int id);
 
-	/// Same as traverse() but maintains topological order by using a
-	/// breadth-first search
-	aggregate_of_instance::ptr traverse_breadth_first(IfcUtil::IfcBaseClass* instance, int max_level=-1);
+    /// Returns the entity with the specified GlobalId
+    IfcUtil::IfcBaseClass* instance_by_guid(const std::string& guid);
 
-	/// Get the attribute indices corresponding to the list of entity instances
-	/// returned by getInverse().
-	std::vector<int> get_inverse_indices(int instance_id);
+    /// Performs a depth-first traversal, returning all entity instance
+    /// attributes as a flat list. NB: includes the root instance specified
+    /// in the first function argument.
+    aggregate_of_instance::ptr traverse(IfcUtil::IfcBaseClass* instance, int max_level = -1);
 
-	aggregate_of_instance::ptr getInverse(int instance_id, const IfcParse::declaration* type, int attribute_index);
-	
-	int getTotalInverses(int instance_id);
+    /// Same as traverse() but maintains topological order by using a
+    /// breadth-first search
+    aggregate_of_instance::ptr traverse_breadth_first(IfcUtil::IfcBaseClass* instance, int max_level = -1);
 
-	template <typename T>
-	typename T::list::ptr getInverse(int instance_id, int attribute_index) {
-		return getInverse(instance_id, &T::Class(), attribute_index)->template as<T>();
-	}
+    /// Get the attribute indices corresponding to the list of entity instances
+    /// returned by getInverse().
+    std::vector<int> get_inverse_indices(int instance_id);
 
-	unsigned int FreshId() { return ++MaxId; }
+    aggregate_of_instance::ptr getInverse(int instance_id, const IfcParse::declaration* type, int attribute_index);
 
-	unsigned int getMaxId() const { return MaxId; }
+    int getTotalInverses(int instance_id);
 
-	const IfcParse::declaration* ifcroot_type() const { return ifcroot_type_; }
+    template <typename T>
+    typename T::list::ptr getInverse(int instance_id, int attribute_index) {
+        return getInverse(instance_id, &T::Class(), attribute_index)->template as<T>();
+    }
 
-	void recalculate_id_counter();
+    unsigned int FreshId() { return ++MaxId; }
 
-	IfcUtil::IfcBaseClass* addEntity(IfcUtil::IfcBaseClass* entity, int id=-1);
-	void addEntities(aggregate_of_instance::ptr es);
+    unsigned int getMaxId() const { return MaxId; }
 
-	void batch() { batch_mode_ = true; }
-	void unbatch() { process_deletion_(); batch_mode_ = false; 	}
+    const IfcParse::declaration* ifcroot_type() const { return ifcroot_type_; }
 
-	/// Removes entity instance from file and unsets references.
-	///
-	/// Attention when running removeEntity inside a loop over a list of entities to be removed. 
-	/// This invalidates the iterator. A workaround is to reverse the loop:
-	/// boost::shared_ptr<aggregate_of_instance> entities = ...;
-	/// for (auto it = entities->end() - 1; it >= entities->begin(); --it) {
-	///    IfcUtil::IfcBaseClass *const inst = *it;
-	///    model->removeEntity(inst);
-	/// }
-	void removeEntity(IfcUtil::IfcBaseClass* entity);
+    void recalculate_id_counter();
 
-	const IfcSpfHeader& header() const { return _header; }
-	IfcSpfHeader& header() { return _header; }
+    IfcUtil::IfcBaseClass* addEntity(IfcUtil::IfcBaseClass* entity, int id = -1);
+    void addEntities(aggregate_of_instance::ptr es);
 
-	std::string createTimestamp() const;
+    void batch() { batch_mode_ = true; }
+    void unbatch() {
+        process_deletion_();
+        batch_mode_ = false;
+    }
 
-	size_t load(unsigned entity_instance_name, const IfcParse::entity* entity, Argument**& attributes, size_t num_attributes, int attribute_index=-1);
-	void seek_to(const IfcEntityInstanceData& data);
-	void try_read_semicolon();
+    /// Removes entity instance from file and unsets references.
+    ///
+    /// Attention when running removeEntity inside a loop over a list of entities to be removed.
+    /// This invalidates the iterator. A workaround is to reverse the loop:
+    /// boost::shared_ptr<aggregate_of_instance> entities = ...;
+    /// for (auto it = entities->end() - 1; it >= entities->begin(); --it) {
+    ///    IfcUtil::IfcBaseClass *const inst = *it;
+    ///    model->removeEntity(inst);
+    /// }
+    void removeEntity(IfcUtil::IfcBaseClass* entity);
 
-	void register_inverse(unsigned, const IfcParse::entity* from_entity, Token, int attribute_index);
-	void register_inverse(unsigned, const IfcParse::entity* from_entity, IfcUtil::IfcBaseClass*, int attribute_index);
-	void unregister_inverse(unsigned, const IfcParse::entity* from_entity, IfcUtil::IfcBaseClass*, int attribute_index);
-    
-	const IfcParse::schema_definition* schema() const { return schema_; }
+    const IfcSpfHeader& header() const { return _header; }
+    IfcSpfHeader& header() { return _header; }
 
-	std::pair<IfcUtil::IfcBaseClass*, double> getUnit(const std::string& unit_type);
+    std::string createTimestamp() const;
 
-	bool parsing_complete() const { return parsing_complete_; }
-	bool& parsing_complete() { return parsing_complete_; }
+    size_t load(unsigned entity_instance_name, const IfcParse::entity* entity, Argument**& attributes, size_t num_attributes, int attribute_index = -1);
+    void seek_to(const IfcEntityInstanceData& data);
+    void try_read_semicolon();
 
-	void build_inverses();
+    void register_inverse(unsigned, const IfcParse::entity* from_entity, Token, int attribute_index);
+    void register_inverse(unsigned, const IfcParse::entity* from_entity, IfcUtil::IfcBaseClass*, int attribute_index);
+    void unregister_inverse(unsigned, const IfcParse::entity* from_entity, IfcUtil::IfcBaseClass*, int attribute_index);
 
-	entity_by_guid_t& internal_guid_map() { return byguid; };
+    const IfcParse::schema_definition* schema() const { return schema_; }
+
+    std::pair<IfcUtil::IfcBaseClass*, double> getUnit(const std::string& unit_type);
+
+    bool parsing_complete() const { return parsing_complete_; }
+    bool& parsing_complete() { return parsing_complete_; }
+
+    void build_inverses();
+
+    entity_by_guid_t& internal_guid_map() { return byguid; };
 };
 
 #ifdef WITH_IFCXML
 IFC_PARSE_API IfcFile* parse_ifcxml(const std::string& filename);
 #endif
 
-}
+} // namespace IfcParse
 
 namespace std {
-	template <>
-	struct iterator_traits<IfcParse::IfcFile::type_iterator> {
-		typedef ptrdiff_t difference_type;
-		typedef const IfcParse::declaration* value_type;
-		typedef const IfcParse::declaration*& reference;
-		typedef const IfcParse::declaration** pointer;
-		typedef std::forward_iterator_tag iterator_category;
-	};
-}
+template <>
+struct iterator_traits<IfcParse::IfcFile::type_iterator> {
+    typedef ptrdiff_t difference_type;
+    typedef const IfcParse::declaration* value_type;
+    typedef const IfcParse::declaration*& reference;
+    typedef const IfcParse::declaration** pointer;
+    typedef std::forward_iterator_tag iterator_category;
+};
+} // namespace std
 
 #endif
