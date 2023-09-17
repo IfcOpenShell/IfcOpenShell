@@ -23,7 +23,6 @@
 #include "ifc_parse_api.h"
 
 #include <boost/lexical_cast.hpp>
-
 #include <exception>
 #include <string>
 
@@ -35,51 +34,46 @@
 #endif
 
 namespace IfcParse {
-	class IFC_PARSE_API IfcException : public std::exception {
-	private:
-		std::string message;
-	public:
-		IfcException(const std::string& m)
-			 : message(m) {}
-		virtual ~IfcException () throw () {}
-		virtual const char* what() const throw() {
-			return message.c_str(); 
-		}
-	};
+class IFC_PARSE_API IfcException : public std::exception {
+  private:
+    std::string message;
 
-	class IFC_PARSE_API IfcAttributeOutOfRangeException : public IfcException {
-	public:
-		IfcAttributeOutOfRangeException(const std::string& e)
-			: IfcException(e) {}
-		~IfcAttributeOutOfRangeException () throw () {}
-	};
+  public:
+    IfcException(const std::string& m)
+        : message(m) {}
+    virtual ~IfcException() throw() {}
+    virtual const char* what() const throw() {
+        return message.c_str();
+    }
+};
 
-	class IFC_PARSE_API IfcInvalidTokenException : public IfcException {
-	public:
-		IfcInvalidTokenException(
-			int token_start,
-			const std::string& token_string,
-			const std::string& expected_type
-		)
-			: IfcException(
-				std::string("Token ") + token_string + " at offset " + 
-				boost::lexical_cast<std::string>(token_start) + 
-				" invalid " + expected_type
-			)
-		{}
-		IfcInvalidTokenException(
-			int token_start,
-			char c
-		)
-			: IfcException(
-				std::string("Unexpected '") + std::string(1, c) + "' at offset " +
-				boost::lexical_cast<std::string>(token_start)
-			)
-		{}
-		~IfcInvalidTokenException() throw () {}
-	};
+class IFC_PARSE_API IfcAttributeOutOfRangeException : public IfcException {
+  public:
+    IfcAttributeOutOfRangeException(const std::string& e)
+        : IfcException(e) {}
+    ~IfcAttributeOutOfRangeException() throw() {}
+};
 
-}
+class IFC_PARSE_API IfcInvalidTokenException : public IfcException {
+  public:
+    IfcInvalidTokenException(
+        int token_start,
+        const std::string& token_string,
+        const std::string& expected_type)
+        : IfcException(
+              std::string("Token ") + token_string + " at offset " +
+              boost::lexical_cast<std::string>(token_start) +
+              " invalid " + expected_type) {}
+    IfcInvalidTokenException(
+        int token_start,
+        char c)
+        : IfcException(
+              std::string("Unexpected '") + std::string(1, c) + "' at offset " +
+              boost::lexical_cast<std::string>(token_start)) {}
+    ~IfcInvalidTokenException() throw() {}
+};
+
+} // namespace IfcParse
 
 #ifdef _MSC_VER
 #pragma warning(pop)

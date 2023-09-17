@@ -28,148 +28,147 @@
 #ifndef IFCWRITE_H
 #define IFCWRITE_H
 
-#include <boost/variant.hpp>
-#include <boost/optional.hpp>
-#include <boost/dynamic_bitset.hpp>
-// #include <boost/logic/tribool.hpp>
+#include "ifc_parse_api.h"
+#include "IfcBaseClass.h"
+#include "IfcParse.h"
 
-#include <boost/utility/enable_if.hpp>
+#include <boost/dynamic_bitset.hpp>
+#include <boost/optional.hpp>
 #include <boost/type_traits/is_base_of.hpp>
 #include <boost/type_traits/remove_pointer.hpp>
-
-#include "ifc_parse_api.h"
-
-#include "../ifcparse/IfcBaseClass.h"
-#include "../ifcparse/IfcParse.h"
+#include <boost/utility/enable_if.hpp>
+#include <boost/variant.hpp>
+// #include <boost/logic/tribool.hpp>
 
 namespace IfcWrite {
 
-	/// This class is a writable container for attributes. A fundamental
-	/// difference with the attribute types counterparts defined in the 
-	/// IfcParse namespace is that this class has a Boost.Variant member
-	/// for storing its value, whereas the IfcParse classes only contain
-	/// lazy references to byte offsets in the IFC-SPF file.
-	class IFC_PARSE_API IfcWriteArgument : public Argument {
-	public:
-		class EnumerationReference {
-		public:
-			int data;
-			const char* enumeration_value;
-			EnumerationReference(int data, const char* enumeration_value)
-				: data(data), enumeration_value(enumeration_value) {}
-		};		
-		class Derived {};
-		class empty_aggregate_t {};
-		class empty_aggregate_of_aggregate_t {};
-	private:
-		boost::variant<
-			// A null argument, it will always serialize to $
-			boost::blank,
-			// A derived argument, it will always serialize to *
-			Derived,
-			// An integer argument, e.g. 123 
+/// This class is a writable container for attributes. A fundamental
+/// difference with the attribute types counterparts defined in the
+/// IfcParse namespace is that this class has a Boost.Variant member
+/// for storing its value, whereas the IfcParse classes only contain
+/// lazy references to byte offsets in the IFC-SPF file.
+class IFC_PARSE_API IfcWriteArgument : public Argument {
+  public:
+    class EnumerationReference {
+      public:
+        int data;
+        const char* enumeration_value;
+        EnumerationReference(int data, const char* enumeration_value)
+            : data(data),
+              enumeration_value(enumeration_value) {}
+    };
+    class Derived {};
+    class empty_aggregate_t {};
+    class empty_aggregate_of_aggregate_t {};
 
-			// SCALARS:
-			int, 
-			// A boolean argument, it will serialize to either .T. or .F.
-			bool, 
-			// A logical argument, it will serialize to either .T. or .F. or .U.
-			boost::logic::tribool,
-			// A floating point argument, e.g. 12.3
-			double,
-			// A character string argument, e.g. 'IfcOpenShell'
-			std::string,
-			// A binary argument, e.g. "092A" -> 100100101010
-			boost::dynamic_bitset<>,
-			// An enumeration argument, e.g. .USERDEFINED. 
-			// To initialize the argument a string representation
-			// has to be explicitly passed of the enumeration value
-			// which is stored internally as an integer. The argument
-			// itself does not keep track of what schema enumeration
-			// type is represented.
-			EnumerationReference,
-			// An entity instance argument. It will either serialize to
-			// e.g. #123 or datatype identifier for simple types, e.g. 
-			// IFCREAL(12.3)
-			IfcUtil::IfcBaseClass*,
+  private:
+    boost::variant<
+        // A null argument, it will always serialize to $
+        boost::blank,
+        // A derived argument, it will always serialize to *
+        Derived,
+        // An integer argument, e.g. 123
 
-			// AGGREGATES:
-			empty_aggregate_t,
-			// An aggregate of integers, e.g. (1,2,3)
-			std::vector<int>,
-			// An aggregate of floats, e.g. (12.3,4.) 
-			std::vector<double>,
-			// An aggregate of strings, e.g. ('Ifc','Open','Shell')
-			std::vector<std::string>,
-			// An aggregate of binaries, e.g. ("23B", "092A") -> (111011, 100100101010)
-			std::vector<boost::dynamic_bitset<> >,
-			// An aggregate of entity instances. It will either serialize to
-			// e.g. (#1,#2,#3) or datatype identifier for simple types,
-			// e.g. (IFCREAL(1.2),IFCINTEGER(3.))
-			aggregate_of_instance::ptr,
+        // SCALARS:
+        int,
+        // A boolean argument, it will serialize to either .T. or .F.
+        bool,
+        // A logical argument, it will serialize to either .T. or .F. or .U.
+        boost::logic::tribool,
+        // A floating point argument, e.g. 12.3
+        double,
+        // A character string argument, e.g. 'IfcOpenShell'
+        std::string,
+        // A binary argument, e.g. "092A" -> 100100101010
+        boost::dynamic_bitset<>,
+        // An enumeration argument, e.g. .USERDEFINED.
+        // To initialize the argument a string representation
+        // has to be explicitly passed of the enumeration value
+        // which is stored internally as an integer. The argument
+        // itself does not keep track of what schema enumeration
+        // type is represented.
+        EnumerationReference,
+        // An entity instance argument. It will either serialize to
+        // e.g. #123 or datatype identifier for simple types, e.g.
+        // IFCREAL(12.3)
+        IfcUtil::IfcBaseClass*,
 
-			// AGGREGATES OF AGGREGATES:
-			empty_aggregate_of_aggregate_t,
-			// An aggregate of an aggregate of ints. E.g. ((1, 2), (3))
-			std::vector< std::vector<int> >,
-			// An aggregate of an aggregate of floats. E.g. ((1., 2.3), (4.))
-			std::vector< std::vector<double> >,
-			// An aggregate of an aggregate of entities. E.g. ((#1, #2), (#3))
-			aggregate_of_aggregate_of_instance::ptr
-		> container;
-	public:
+        // AGGREGATES:
+        empty_aggregate_t,
+        // An aggregate of integers, e.g. (1,2,3)
+        std::vector<int>,
+        // An aggregate of floats, e.g. (12.3,4.)
+        std::vector<double>,
+        // An aggregate of strings, e.g. ('Ifc','Open','Shell')
+        std::vector<std::string>,
+        // An aggregate of binaries, e.g. ("23B", "092A") -> (111011, 100100101010)
+        std::vector<boost::dynamic_bitset<>>,
+        // An aggregate of entity instances. It will either serialize to
+        // e.g. (#1,#2,#3) or datatype identifier for simple types,
+        // e.g. (IFCREAL(1.2),IFCINTEGER(3.))
+        aggregate_of_instance::ptr,
 
-		template <typename T>
-		const T& as() const {
-			if (const T* val = boost::get<T>(&container)) {
-				return *val;
-			} else {
-				throw IfcParse::IfcException("Invalid cast");
-			}
-		}
+        // AGGREGATES OF AGGREGATES:
+        empty_aggregate_of_aggregate_t,
+        // An aggregate of an aggregate of ints. E.g. ((1, 2), (3))
+        std::vector<std::vector<int>>,
+        // An aggregate of an aggregate of floats. E.g. ((1., 2.3), (4.))
+        std::vector<std::vector<double>>,
+        // An aggregate of an aggregate of entities. E.g. ((#1, #2), (#3))
+        aggregate_of_aggregate_of_instance::ptr>
+        container;
 
-		template <typename T>
-		typename boost::disable_if<boost::is_base_of<IfcUtil::IfcBaseInterface, typename boost::remove_pointer<T>::type>, void>::type
-		set(const T& t) {
-			container = t;
-		}
+  public:
+    template <typename T>
+    const T& as() const {
+        if (const T* val = boost::get<T>(&container)) {
+            return *val;
+        } else {
+            throw IfcParse::IfcException("Invalid cast");
+        }
+    }
 
-		// Overload to detect null values
-		void set(const aggregate_of_instance::ptr& v);
+    template <typename T>
+    typename boost::disable_if<boost::is_base_of<IfcUtil::IfcBaseInterface, typename boost::remove_pointer<T>::type>, void>::type
+    set(const T& t) {
+        container = t;
+    }
 
-		// Overload to detect null values
-		void set(const aggregate_of_aggregate_of_instance::ptr& v);
+    // Overload to detect null values
+    void set(const aggregate_of_instance::ptr& v);
 
-		// Overload to detect null values
-		void set(IfcUtil::IfcBaseInterface*const & v);
-		
-		operator int() const;
-		operator bool() const;
-		operator boost::logic::tribool() const;
+    // Overload to detect null values
+    void set(const aggregate_of_aggregate_of_instance::ptr& v);
 
-		operator double() const;
-		operator std::string() const;
-		operator boost::dynamic_bitset<>() const;
-		operator IfcUtil::IfcBaseClass*() const;
+    // Overload to detect null values
+    void set(IfcUtil::IfcBaseInterface* const& v);
 
-		operator std::vector<int>() const;
-		operator std::vector<double>() const;
-		operator std::vector<std::string>() const;
-		operator std::vector<boost::dynamic_bitset<> >() const;
-		operator aggregate_of_instance::ptr() const;
+    operator int() const;
+    operator bool() const;
+    operator boost::logic::tribool() const;
 
-		operator std::vector< std::vector<int> >() const;
-		operator std::vector< std::vector<double> >() const;
-		operator aggregate_of_aggregate_of_instance::ptr() const;
+    operator double() const;
+    operator std::string() const;
+    operator boost::dynamic_bitset<>() const;
+    operator IfcUtil::IfcBaseClass*() const;
 
-		bool isNull() const;
-		Argument* operator [] (unsigned int i) const;
-		std::string toString(bool upper=false) const;
-		unsigned int size() const;
-		IfcUtil::ArgumentType type() const;
-	};
+    operator std::vector<int>() const;
+    operator std::vector<double>() const;
+    operator std::vector<std::string>() const;
+    operator std::vector<boost::dynamic_bitset<>>() const;
+    operator aggregate_of_instance::ptr() const;
 
-}
+    operator std::vector<std::vector<int>>() const;
+    operator std::vector<std::vector<double>>() const;
+    operator aggregate_of_aggregate_of_instance::ptr() const;
 
+    bool isNull() const;
+    Argument* operator[](unsigned int i) const;
+    std::string toString(bool upper = false) const;
+    unsigned int size() const;
+    IfcUtil::ArgumentType type() const;
+};
+
+} // namespace IfcWrite
 
 #endif
