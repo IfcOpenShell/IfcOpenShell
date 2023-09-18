@@ -42,7 +42,7 @@ from math import radians
 
 class SetTab(bpy.types.Operator):
     bl_idname = "bim.set_tab"
-    # NOTE: bl_label is set to empty string intentionally 
+    # NOTE: bl_label is set to empty string intentionally
     # to avoid showing the operator's name in the tooltips, see #3704
     bl_label = ""
     bl_options = {"REGISTER", "UNDO", "INTERNAL"}
@@ -197,12 +197,29 @@ class FileAssociate(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        if platform.system() == "Linux":
+        if platform.system() in ("Linux", "Windows"):
             return True
-        cls.poll_message_set("Option available only on Linux.")
-        # TODO Windows and Darwin
+        cls.poll_message_set("Option available only on Windows & Linux.")
+        # TODO Darwin
         # https://stackoverflow.com/questions/1082889/how-to-change-filetype-association-in-the-registry
         return False
+
+    def draw(self, context):
+        # NOTE: really weird thing on windows that typing this command in cmd works
+        # when even if you create .bat with the command below and run it as administrator it won't
+        # Haven't found a workaround yet to automate process completely.
+        command = "ASSOC .IFC=BLENDERBIM"
+        self.layout.label(text="On the next step to create file association ")
+        self.layout.label(text="the system console will be opened ")
+        self.layout.label(text=f"and you will be asked to type command")
+        self.layout.label(text=f'"{command}"')
+        self.layout.label(text="to create an association.")
+
+    def invoke(self, context, event):
+        if platform.system() == "Windows":
+            return context.window_manager.invoke_props_dialog(self)
+        else:
+            return self.execute(context)
 
     def execute(self, context):
         src_dir = os.path.join(os.path.dirname(__file__), "../libs/desktop")
@@ -210,7 +227,21 @@ class FileAssociate(bpy.types.Operator):
         if platform.system() == "Linux":
             destdir = os.path.join(os.environ["HOME"], ".local")
             self.install_desktop_linux(src_dir=src_dir, destdir=destdir, binary_path=binary_path)
+        elif platform.system() == "Windows":
+            self.install_desktop_windows(src_dir, binary_path)
+        self.report({"INFO"}, "Associations established.")
         return {"FINISHED"}
+
+    def install_desktop_windows(self, src_dir, binary_path):
+        # very important to clear this regitstry key before creating new association
+        # tried to do the regitsry change from powershell/cmd - but even admin rights are not enough
+        # this is why we're using .reg
+        reg_change_path = os.path.join(src_dir, "windows_bbim_association.reg")
+        subprocess.run(["cmd", "/c", reg_change_path])
+
+        ps_script_path = os.path.join(src_dir, "windows_bbim_association.ps1")
+        # NOTE: call powershell with RunAs to get admin rights from user
+        subprocess.run(["powershell", "-file", ps_script_path, binary_path], shell=True)
 
     def install_desktop_linux(self, src_dir=None, destdir="/tmp", binary_path="/usr/bin/blender"):
         """Creates linux file assocations and launcher icon"""
@@ -272,16 +303,28 @@ class FileUnassociate(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        if platform.system() == "Linux":
+        if platform.system() in ("Linux", "Windows"):
             return True
-        cls.poll_message_set("Option available only on Linux.")
+        cls.poll_message_set("Option available only on Windows & Linux.")
         return False
 
     def execute(self, context):
         if platform.system() == "Linux":
             destdir = os.path.join(os.environ["HOME"], ".local")
             self.uninstall_desktop_linux(destdir=destdir)
+        elif platform.system() == "Windows":
+            self.uninstall_desktop_windows()
         return {"FINISHED"}
+
+    def uninstall_desktop_windows(self):
+        # NOTE: call powershell with RunAs to get admin rights from user
+        cmd = [
+            "powershell",
+            "-Command",
+            "Start-Process -Verb RunAs -Wait cmd -ArgumentList '/c reg delete HKCR\\BLENDERBIM /f'",
+        ]
+        subprocess.run(cmd, check=True)
+        self.report({"INFO"}, "Association removed.")
 
     def uninstall_desktop_linux(self, destdir="/tmp"):
         """Removes linux file assocations and launcher icon"""
