@@ -345,8 +345,12 @@ class SheetBuilder:
     def build_drawings(self, root, sheet):
         for view in root.findall('{http://www.w3.org/2000/svg}g[@data-type="drawing"]'):
             drawing_id = int(view.attrib["data-id"])
-            reference = tool.Ifc.get().by_id(int(view.attrib["data-id"]))
-            drawing = tool.Ifc.get().by_id(view.attrib["data-drawing"])
+            try:
+                reference = tool.Ifc.get().by_id(int(view.attrib["data-id"]))
+                drawing = tool.Ifc.get().by_id(view.attrib["data-drawing"])
+            except:
+                # Perhaps the SVG has outdated content or is edited externally which we cannot control.
+                continue
 
             images = view.findall("{http://www.w3.org/2000/svg}image")
 
@@ -387,8 +391,12 @@ class SheetBuilder:
 
     def build_schedules(self, root, sheet):
         for view in root.findall('{http://www.w3.org/2000/svg}g[@data-type="schedule"]'):
-            reference = tool.Ifc.get().by_id(int(view.attrib["data-id"]))
-            schedule = tool.Ifc.get().by_id(int(view.attrib["data-schedule"]))
+            try:
+                reference = tool.Ifc.get().by_id(int(view.attrib["data-id"]))
+                schedule = tool.Ifc.get().by_id(int(view.attrib["data-schedule"]))
+            except:
+                # Perhaps the SVG has outdated content or is edited externally which we cannot control.
+                continue
 
             images = view.findall("{http://www.w3.org/2000/svg}image")
 
