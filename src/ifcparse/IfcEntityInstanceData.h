@@ -44,7 +44,10 @@ class IFC_PARSE_API IfcEntityInstanceData {
     unsigned offset_in_file_;
 
   public:
-    IfcEntityInstanceData(const IfcParse::declaration* type, IfcParse::IfcFile* file_, unsigned id = 0, unsigned offset_in_file = 0)
+    IfcEntityInstanceData(const IfcParse::declaration* type,
+                          IfcParse::IfcFile* file_,
+                          unsigned id = 0,
+                          unsigned offset_in_file = 0)
         : file(file_),
           id_(id),
           type_(type),

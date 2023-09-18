@@ -273,7 +273,12 @@ class IFC_PARSE_API inverse_attribute {
     const attribute* attribute_reference_;
 
   public:
-    inverse_attribute(const std::string& name, aggregate_type type_of_aggregation, int bound1, int bound2, const entity* entity_reference, const attribute* attribute_reference)
+    inverse_attribute(const std::string& name,
+                      aggregate_type type_of_aggregation,
+                      int bound1,
+                      int bound2,
+                      const entity* entity_reference,
+                      const attribute* attribute_reference)
         : name_(name),
           type_of_aggregation_(type_of_aggregation),
           bound1_(bound1),
