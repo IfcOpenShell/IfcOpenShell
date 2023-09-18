@@ -211,16 +211,19 @@ class Json(Reporter):
         requirements = []
         for requirement in specification.requirements:
             total_fail = len(requirement.failed_entities)
+            total_pass = total_applicable - total_fail
+            percent_pass = math.floor((total_pass / total_applicable) * 100) if total_applicable else "N/A"
             total_checks += total_applicable
-            total_checks_pass += total_applicable - total_fail
+            total_checks_pass += total_pass
             requirements.append(
                 {
                     "description": requirement.to_string("requirement"),
                     "status": requirement.status,
                     "failed_entities": self.report_failed_entities(requirement),
                     "total_applicable": total_applicable,
-                    "total_pass": total_applicable - total_fail,
+                    "total_pass": total_pass,
                     "total_fail": total_fail,
+                    "percent_pass": percent_pass,
                 }
             )
         total_applicable_pass = total_applicable - len(specification.failed_entities)
