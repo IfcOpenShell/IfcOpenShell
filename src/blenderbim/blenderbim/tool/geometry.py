@@ -115,6 +115,12 @@ class Geometry(blenderbim.core.tool.Geometry):
             for port in ifcopenshell.util.system.get_ports(element):
                 blenderbim.core.system.remove_port(tool.Ifc, tool.System, port=port)
             ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
+
+            if isinstance(obj.data, bpy.types.Mesh) and not tool.Ifc.get_entity_by_id(
+                obj.data.BIMMeshProperties.ifc_definition_id
+            ):
+                tool.Blender.remove_data_block(obj.data)
+
             if is_spatial:
                 blenderbim.core.spatial.load_container_manager(tool.Spatial)
         try:
