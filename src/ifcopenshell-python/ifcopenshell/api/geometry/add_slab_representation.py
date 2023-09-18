@@ -89,7 +89,7 @@ class Usecase:
                             )
                         ),
                         self.file.createIfcDirection((clipping[0][2], clipping[1][2], clipping[2][2])),
-                        self.file.createIfcDirection((clipping[0][0], clipping[1][0], clipping[2][0])),
+                        None,
                     )
                 ),
                 False,

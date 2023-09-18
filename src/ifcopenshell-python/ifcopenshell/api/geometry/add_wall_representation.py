@@ -112,7 +112,7 @@ class Usecase:
                                 )
                             ),
                             self.file.createIfcDirection((matrix[0][2], matrix[1][2], matrix[2][2])),
-                            self.file.createIfcDirection((matrix[0][0], matrix[1][0], matrix[2][0])),
+                            None,
                         )
                     ),
                     False,
