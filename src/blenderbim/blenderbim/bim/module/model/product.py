@@ -185,8 +185,13 @@ class AddConstrTypeInstance(bpy.types.Operator):
         collection_obj = collection.BIMCollectionProperties.obj
 
         bpy.ops.bim.assign_class(obj=obj.name, ifc_class=instance_class)
+        tool.Blender.remove_data_block(mesh) # Remove "Instance" mesh
+
+        mesh_data = obj.data
         element = tool.Ifc.get_entity(obj)
         blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
+        if obj.data != mesh_data: # remove orphaned mesh from "bim.assign_class"
+            tool.Blender.remove_data_block(mesh_data)
 
         # Update required as core.type.assign_type may change obj.data
         # TODO: This is inefficient. It literally creates a mesh, then potentially removes it.

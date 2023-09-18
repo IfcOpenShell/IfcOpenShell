@@ -847,6 +847,7 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
             )
             body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
             tool.Model.replace_object_ifc_representation(body, obj, rep)
+            tool.Blender.remove_data_block(mesh)
             pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=transition_type, name="BBIM_Fitting")
             ifcopenshell.api.run(
                 "pset.edit_pset",
@@ -1188,6 +1189,7 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
             )
             body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
             tool.Model.replace_object_ifc_representation(body, obj, rep)
+            tool.Blender.remove_data_block(mesh)
             pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=bend_type, name="BBIM_Fitting")
             ifcopenshell.api.run(
                 "pset.edit_pset",

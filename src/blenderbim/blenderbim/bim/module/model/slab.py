@@ -196,6 +196,7 @@ class DumbSlabGenerator:
             is_global=True,
             should_sync_changes_first=False,
         )
+        tool.Blender.remove_data_block(mesh)
 
         if self.footprint_context:
             extrusion = tool.Model.get_extrusion(representation)
