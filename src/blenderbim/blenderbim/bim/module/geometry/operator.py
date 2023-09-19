@@ -538,7 +538,7 @@ class OverrideOutlinerDelete(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return len(context.selected_ids) > 0
+        return len(getattr(context, "selected_ids", [])) > 0
 
     def execute(self, context):
         # In this override, we don't check self.hierarchy. This effectively
