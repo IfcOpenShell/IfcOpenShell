@@ -202,6 +202,7 @@ class BIM_OT_select_aggregate(bpy.types.Operator):
         aggregate_obj = tool.Ifc.get_object(aggregate)
         if aggregate_obj in context.selectable_objects:
             aggregate_obj.select_set(True)
+            bpy.context.view_layer.objects.active = aggregate_obj
         return {"FINISHED"}
 
 
