@@ -78,7 +78,7 @@ class SearchBSDDClassifications(bpy.types.Operator):
             new = props.classifications.add()
             new.name = result["name"]
             new.reference_code = result["referenceCode"]
-            new.description = result["description"]
+            new.description = result.get("description", "")
             new.namespace_uri = result["namespaceUri"]
             new.domain_name = result["domainName"]
             new.domain_namespace_uri = result["domainNamespaceUri"]
