@@ -21,7 +21,9 @@ from . import ui, prop, operator
 
 classes = (
     operator.AddClassification,
+    operator.AddClassificationFromBSDD,
     operator.AddClassificationReference,
+    operator.AddClassificationReferenceFromBSDD,
     operator.ChangeClassificationLevel,
     operator.DisableEditingClassification,
     operator.DisableEditingClassificationReference,

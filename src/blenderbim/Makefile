@@ -203,6 +203,8 @@ endif
 	cp -r dist/working/IfcOpenShell-0.7.0/src/ifcfm/ifcfm dist/blenderbim/libs/site/packages/
 	# Provides IFCCOBie functionality
 	cp -r dist/working/IfcOpenShell-0.7.0/src/ifccobie/* dist/blenderbim/libs/site/packages/
+	# Provides bSDD functionality
+	cp -r dist/working/IfcOpenShell-0.7.0/src/bsdd/* dist/blenderbim/libs/site/packages/
 	# Provides IFCDiff functionality
 	cp -r dist/working/IfcOpenShell-0.7.0/src/ifcdiff/* dist/blenderbim/libs/site/packages/
 	# Provides IFCCSV functionality

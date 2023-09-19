@@ -48,6 +48,15 @@ class ClassificationReference(PropertyGroup):
 
 
 class BIMClassificationProperties(PropertyGroup):
+    classification_source: EnumProperty(
+        items=[
+            ("FILE", "IFC File", ""),
+            ("BSDD", "buildingSMART Data Dictionary", ""),
+            ("MANUAL", "Manual Entry", ""),
+        ],
+        name="Classification Source",
+        default="FILE",
+    )
     available_classifications: EnumProperty(items=get_available_classifications, name="Available Classifications")
     classification_attributes: CollectionProperty(name="Classification Attributes", type=Attribute)
     active_classification_id: IntProperty(name="Active Classification Id")
