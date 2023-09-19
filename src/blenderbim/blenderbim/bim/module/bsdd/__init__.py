@@ -20,11 +20,13 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
+    operator.GetBSDDClassificationProperties,
     operator.LoadBSDDDomains,
     operator.SearchBSDDClassifications,
     operator.SetActiveBSDDDomain,
     prop.BSDDDomain,
     prop.BSDDClassification,
+    prop.BSDDPset,
     prop.BIMBSDDProperties,
     ui.BIM_UL_bsdd_domains,
     ui.BIM_UL_bsdd_classifications,

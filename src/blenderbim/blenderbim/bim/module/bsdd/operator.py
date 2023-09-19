@@ -19,6 +19,7 @@
 import os
 import bpy
 import bsdd
+import json
 import ifcopenshell
 import blenderbim.tool as tool
 
@@ -82,4 +83,50 @@ class SearchBSDDClassifications(bpy.types.Operator):
             new.namespace_uri = result["namespaceUri"]
             new.domain_name = result["domainName"]
             new.domain_namespace_uri = result["domainNamespaceUri"]
+        return {"FINISHED"}
+
+
+class GetBSDDClassificationProperties(bpy.types.Operator):
+    bl_idname = "bim.get_bsdd_classification_properties"
+    bl_label = "Search bSDD Classifications"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        bprops = context.scene.BIMBSDDProperties
+        bprops.classification_psets.clear()
+        bsdd_classification = bprops.classifications[bprops.active_classification_index]
+        client = bsdd.Client()
+        data = client.Classification(bsdd_classification.namespace_uri)
+
+        properties = data.get("classificationProperties", None)
+        if not properties:
+            return {"FINISHED"}
+
+        psets = {}
+
+        for prop in properties:
+            if prop.get("propertyDomainName") != "IFC":
+                continue
+            pset = prop.get("propertySet", None)
+            if not pset:
+                continue
+            psets.setdefault(pset, {})
+
+            predefined_value = prop.get("predefinedValue")
+            if predefined_value:
+                possible_values = [predefined_value]
+            else:
+                possible_values = prop.get("possibleValues", []) or []
+                possible_values = [v["value"] for v in possible_values]
+
+            psets[pset][prop["name"]] = possible_values
+
+        for pset_name, pset in psets.items():
+            new = bprops.classification_psets.add()
+            new.name = pset_name
+            for name, values in pset.items():
+                new2 = new.properties.add()
+                new2.name = name
+                new2.enum_items = json.dumps(values)
+                new2.data_type = "enum"
         return {"FINISHED"}
