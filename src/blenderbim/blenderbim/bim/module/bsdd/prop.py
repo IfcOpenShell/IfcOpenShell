@@ -18,6 +18,7 @@
 
 import bpy
 from bpy.types import PropertyGroup
+from blenderbim.bim.prop import Attribute, StrProperty
 from bpy.props import (
     PointerProperty,
     StringProperty,
@@ -48,6 +49,11 @@ class BSDDClassification(PropertyGroup):
     domain_namespace_uri: StringProperty(name="Domain Namespace URI")
 
 
+class BSDDPset(PropertyGroup):
+    name: StringProperty(name="Name")
+    properties: CollectionProperty(name="Properties", type=Attribute)
+
+
 class BIMBSDDProperties(PropertyGroup):
     active_domain: StringProperty(name="Active Domain")
     active_uri: StringProperty(name="Active URI")
@@ -57,3 +63,4 @@ class BIMBSDDProperties(PropertyGroup):
     active_classification_index: IntProperty(name="Active Classification Index")
     keyword: StringProperty(name="Keyword")
     should_filter_ifc_class: BoolProperty(name="Filter Active IFC Class", default=True)
+    classification_psets: CollectionProperty(name="Classification Psets", type=BSDDPset)
