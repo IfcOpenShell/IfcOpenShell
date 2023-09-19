@@ -206,15 +206,29 @@ class SelectArrayParent(bpy.types.Operator):
     bl_idname = "bim.select_array_parent"
     bl_label = "Select Array Parent"
     bl_options = {"REGISTER", "UNDO"}
-    parent: bpy.props.StringProperty(description="Parent Element GUID")
+
+    @classmethod
+    def poll(cls, context):
+        if not context.active_object:
+            cls.poll_message_set("No active object selected")
+            return False
+        return True
 
     def execute(self, context):
-        try:
-            element = tool.Ifc.get().by_guid(self.parent)
-        except:
-            self.report({"ERROR"}, f"Couldn't find array parent by guid '{self.parent}'")
+        object = context.active_object
+        element = tool.Ifc.get_entity(object)
+        array_pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+        if not array_pset:
+            self.report({"ERROR"}, f"Object is not part of an array.")
             return {"CANCELLED"}
-        obj = tool.Ifc.get_object(element)
+
+        try:
+            parent_element = tool.Ifc.get().by_guid(array_pset["Parent"])
+        except:
+            self.report({"ERROR"}, f"Couldn't find array parent by guid '{array_pset['Parent']}'")
+            return {"CANCELLED"}
+
+        obj = tool.Ifc.get_object(parent_element)
         if obj:
             tool.Blender.select_and_activate_single_object(context, active_object=obj)
         return {"FINISHED"}
@@ -224,13 +238,26 @@ class SelectAllArrayObjects(bpy.types.Operator):
     bl_idname = "bim.select_all_array_objects"
     bl_label = "Select All Array Objects"
     bl_options = {"REGISTER", "UNDO"}
-    parent: bpy.props.StringProperty(description="Parent Element GUID")
+
+    @classmethod
+    def poll(cls, context):
+        if not context.active_object:
+            cls.poll_message_set("No active object selected")
+            return False
+        return True
 
     def execute(self, context):
+        object = context.active_object
+        element = tool.Ifc.get_entity(object)
+        array_pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+        if not array_pset:
+            self.report({"ERROR"}, f"Object is not part of an array.")
+            return {"CANCELLED"}
+
         try:
-            parent_element = tool.Ifc.get().by_guid(self.parent)
+            parent_element = tool.Ifc.get().by_guid(array_pset["Parent"])
         except RuntimeError:
-            self.report({"ERROR"}, f"Couldn't find array parent by guid '{self.parent}'")
+            self.report({"ERROR"}, f"Couldn't find array parent by guid '{array_pset['Parent']}'")
             return {"CANCELLED"}
 
         array_objects = tool.Blender.Modifier.Array.get_all_objects(parent_element)
