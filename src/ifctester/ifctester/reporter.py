@@ -436,13 +436,16 @@ class Bcf(Json):
                     continue
                 for failure in requirement["failed_entities"]:
                     element = failure["element"]
-                    title_components = [
+                    title_components = []
+                    for title_component in [
                         element.is_a(),
-                        getattr(element, "Name", None) or "Unnamed",
+                        getattr(element, "Name", "") or "Unnamed",
                         failure.get("reason", "No reason"),
                         getattr(element, "GlobalId", ""),
                         getattr(element, "Tag", ""),
-                    ]
+                    ]:
+                        if title_component:
+                            title_components.append(title_component)
                     title = " - ".join(title_components)
                     description = f'{specification["name"]} - {requirement["description"]}'
                     topic = bcfxml.add_topic(title, description, "IfcTester")

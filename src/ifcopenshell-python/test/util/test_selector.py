@@ -34,12 +34,13 @@ class TestFormat():
         assert subject.format('title(\"fOo\")') == "Foo"
         assert subject.format('concat(\"fOo\", \"bar\")') == "fOobar"
         assert subject.format('upper(concat(\"fOo\", \"bar\"))') == "FOOBAR"
+        assert subject.format('substr(\"foobar\", 3)') == "bar"
         assert subject.format('substr(\"foobar\", 1, 2)') == "o"
         assert subject.format('substr(\"foobar\", 1, -1)') == "ooba"
 
     def test_number_formatting(self):
-        assert subject.format("round(123, 5)") == "125.0"
-        assert subject.format('round(\"123\", 5)') == "125.0"
+        assert subject.format("round(123, 5)") == "125"
+        assert subject.format('round(\"123\", 5)') == "125"
         assert subject.format('metric_length(123, 5, 2)') == "125.00"
         assert subject.format('metric_length(123.123, 0.1, 2)') == "123.10"
         assert subject.format('metric_length(\"123\", 5, 2)') == "125.00"
