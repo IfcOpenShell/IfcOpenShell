@@ -176,12 +176,20 @@ class ReferenceUI:
             row.label(text="No Search Results")
 
         if self.bprops.active_classification_index < len(self.bprops.classifications):
-            row = self.layout.row()
+            row = self.layout.row(align=True)
             op = row.operator(
                 "bim.add_classification_reference_from_bsdd", text="Add Classification Reference", icon="ADD"
             )
             op.obj = self.obj
             op.obj_type = self.obj_type
+            row.operator("bim.get_bsdd_classification_properties", text="", icon="COPY_ID")
+
+            if len(self.bprops.classification_psets):
+                for pset in self.bprops.classification_psets:
+                    box = self.layout.box()
+                    row = box.row()
+                    row.label(text=pset.name, icon="COPY_ID")
+                    blenderbim.bim.helper.draw_attributes(pset.properties, box)
 
     def draw_add_file_ui(self, context):
         if not self.data.data["active_classification_library"]:

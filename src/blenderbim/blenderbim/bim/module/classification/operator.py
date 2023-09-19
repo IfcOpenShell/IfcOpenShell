@@ -312,15 +312,29 @@ class AddClassificationReferenceFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
             ifc_definition_id = blenderbim.bim.helper.get_obj_ifc_definition_id(context, obj, self.obj_type)
             if not ifc_definition_id:
                 continue
+            element = tool.Ifc.get().by_id(ifc_definition_id)
             reference = ifcopenshell.api.run(
                 "classification.add_reference",
                 tool.Ifc.get(),
-                product=tool.Ifc.get().by_id(ifc_definition_id),
+                product=element,
                 classification=classification,
                 identification=bsdd_classification.reference_code,
                 name=bsdd_classification.name,
             )
             reference.Location = bsdd_classification.namespace_uri
+
+            for classification_pset in bprops.classification_psets:
+                pset = ifcopenshell.util.element.get_pset(element, classification_pset.name)
+                if pset:
+                    pset = tool.Ifc.get().by_id(pset["id"])
+                else:
+                    pset = ifcopenshell.api.run(
+                        "pset.add_pset", tool.Ifc.get(), product=element, name=classification_pset.name
+                    )
+                properties = {}
+                for prop in classification_pset.properties:
+                    properties[prop.name] = prop.get_value()
+                ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties=properties)
 
 
 class ChangeClassificationLevel(bpy.types.Operator):
