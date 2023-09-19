@@ -30,6 +30,7 @@ modules = {
     "project": None,
     "search": None,
     "bcf": None,
+    "bsdd": None,
     "root": None,
     "unit": None,
     "model": None,

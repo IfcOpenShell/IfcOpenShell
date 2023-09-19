@@ -445,7 +445,7 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def get_drawing_target_view(cls, drawing):
-        return ifcopenshell.util.element.get_psets(drawing)["EPset_Drawing"].get("TargetView", "MODEL_VIEW")
+        return ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {}).get("TargetView", "MODEL_VIEW")
 
     @classmethod
     def get_group_elements(cls, group):
