@@ -219,12 +219,15 @@ class DisconnectPort(bpy.types.Operator, Operator):
 class MEPConnectElements(bpy.types.Operator, Operator):
     bl_idname = "bim.mep_connect_elements"
     bl_label = "Connect MEP Elements"
-    bl_description = "Connects two selected elements if they have ports with matching location"
+    bl_description = "Connects two selected elements by their closest located ports and adjusts them"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
     def poll(cls, context):
-        return len(context.selected_objects) == 2
+        if not len(context.selected_objects) == 2:
+            cls.poll_message_set("Need to select 2 objects.")
+            return False
+        return True
 
     def _execute(self, context):
         obj1 = context.active_object
@@ -233,23 +236,32 @@ class MEPConnectElements(bpy.types.Operator, Operator):
         el1 = tool.Ifc.get_entity(obj1)
         el2 = tool.Ifc.get_entity(obj2)
 
+        connected_elements = ifcopenshell.util.system.get_connected_to(el1)
+        connected_elements += ifcopenshell.util.system.get_connected_to(el2)
+
+        if el2 in connected_elements:
+            self.report({"ERROR"}, "MEP elements are already connected to each other.")
+            return {"CANCELLED"}
+
         obj1_ports = [p for p in tool.System.get_ports(el1) if not tool.System.get_connected_port(p)]
         obj2_ports = [p for p in tool.System.get_ports(el2) if not tool.System.get_connected_port(p)]
 
         if not obj1_ports or not obj2_ports:
             self.report({"ERROR"}, "Couldn't find free ports to connect.")
-            return
+            return {"CANCELLED"}
 
+        ports_distance = dict()
         for port1 in obj1_ports:
             port1_location = tool.Model.get_element_matrix(port1).translation
             for port2 in obj2_ports:
                 port2_location = tool.Model.get_element_matrix(port2).translation
-                if tool.Cad.are_vectors_equal(port1_location, port2_location):
-                    core.connect_port(tool.Ifc, port1, port2)
-                    return {"FINISHED"}
+                distance = (port1_location - port2_location).length
+                ports_distance[(port1, port2)] = distance
 
-        self.report({"ERROR"}, "Couldn't find any matching ports to connect.")
-        return {"CANCELLED"}
+        closest_ports = min(ports_distance, key=lambda x: ports_distance[x])
+        core.connect_port(tool.Ifc, *closest_ports)
+        bpy.ops.bim.regenerate_distribution_element()
+        return {"FINISHED"}
 
 
 class SetFlowDirection(bpy.types.Operator, Operator):
