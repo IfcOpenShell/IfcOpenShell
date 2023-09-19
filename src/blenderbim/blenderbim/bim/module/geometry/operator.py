@@ -1180,22 +1180,26 @@ class RefreshAggregate(bpy.types.Operator):
             return new_entity
 
         if len(context.selected_objects) != 1:
+            self.report({"INFO"}, "Only 1 object need to be selected.")
             return {"FINISHED"}
 
         selected_root_obj = context.selected_objects[0]
         selected_root_entity = tool.Ifc.get_entity(selected_root_obj)
 
         if not selected_root_entity.is_a("IfcElementAssembly"):
+            self.report({"INFO"}, "Object is not IfcElementAssembly.")
             return {"FINISHED"}
 
         pset = ifcopenshell.util.element.get_pset(selected_root_entity, "BBIM_Aggregate_Data")
         if not pset:
+            self.report({"INFO"}, "Object is not part of an assembly aggregate.")
             return {"FINISHED"}
 
         pset_data = json.loads(pset["Data"])[0]
         instance_of = pset_data["instance_of"][0]
         original_root_entity = tool.Ifc.get().by_guid(instance_of)
         if original_root_entity == selected_root_entity:
+            self.report({"INFO"}, "Cannot refresh original assembly. Select an assembly instance.")
             return {"FINISHED"}
 
         parents = remove_objects(selected_root_entity)
