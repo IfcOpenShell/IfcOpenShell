@@ -637,7 +637,7 @@ class Property(Facet):
                     elif prop_entity.is_a("IfcPropertySingleValue"):
                         data_type = prop_entity.NominalValue.is_a()
 
-                        if data_type != self.datatype:
+                        if data_type.lower() != self.datatype.lower():
                             is_pass = False
                             reason = {"type": "DATATYPE", "actual": data_type}
                             break
@@ -656,7 +656,7 @@ class Property(Facet):
                         prop_schema = prop_entity.wrapped_data.declaration().as_entity()
                         data_type = prop_schema.attribute_by_index(3).type_of_attribute().declared_type().name()
 
-                        if data_type != self.datatype:
+                        if data_type.lower() != self.datatype.lower():
                             is_pass = False
                             reason = {"type": "DATATYPE", "actual": data_type}
                             break
@@ -676,7 +676,7 @@ class Property(Facet):
                             reason = {"type": "NOVALUE"}
                             break
                         data_type = prop_entity.EnumerationValues[0].is_a()
-                        if data_type != self.datatype:
+                        if data_type.lower() != self.datatype.lower():
                             is_pass = False
                             reason = {"type": "DATATYPE", "actual": data_type}
                             break
@@ -686,7 +686,7 @@ class Property(Facet):
                             reason = {"type": "NOVALUE"}
                             break
                         data_type = prop_entity.ListValues[0].is_a()
-                        if data_type != self.datatype:
+                        if data_type.lower() != self.datatype.lower():
                             is_pass = False
                             reason = {"type": "DATATYPE", "actual": data_type}
                             break
@@ -709,7 +709,7 @@ class Property(Facet):
                             if value is not None:
                                 data_type = value.is_a()
                                 values.append(value.wrappedValue)
-                        if data_type != self.datatype:
+                        if data_type.lower() != self.datatype.lower():
                             is_pass = False
                             reason = {"type": "DATATYPE", "actual": data_type}
                             break
@@ -734,7 +734,7 @@ class Property(Facet):
                             if not column_values:
                                 continue
                             data_type = column_values[0].is_a()
-                            if data_type == self.datatype:
+                            if data_type.lower() == self.datatype.lower():
                                 column_values = [v.wrappedValue for v in column_values]
                                 unit = units[f"{attribute}Unit"]
                                 if unit:
