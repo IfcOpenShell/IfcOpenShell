@@ -17,6 +17,14 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from __future__ import annotations
+from typing import Any, TypedDict
+from dataclasses import dataclass, asdict
+import warnings
+import ifcopenshell
+from ifcopenshell.util.unit import convert_si_to_unit
+
+
 def get_context(ifc_file, context, subcontext=None, target_view=None):
     if subcontext or target_view:
         elements = ifc_file.by_type("IfcGeometricRepresentationSubContext")
@@ -65,3 +73,61 @@ def resolve_representation(representation):
     if representation.Items and representation.Items[0].is_a("IfcMappedItem"):
         return resolve_representation(representation.Items[0].MappingSource.MappedRepresentation)
     return representation
+
+
+@dataclass(slots=True)
+class ClippingInfo:
+    location: tuple[float, float, float]
+    normal: tuple[float, float, float]
+    result_type: str = "IfcBooleanClippingResult"
+    operand_type: str = "IfcHalfSpaceSolid"
+    unit_scale: float = 1.
+
+    @classmethod
+    def typed_dict(cls) -> type:
+        return TypedDict(cls.__name__, **cls.__annotations__)
+
+    def asdict(self) -> ClippingInfo.typed_dict():
+        return asdict(self)
+
+    @classmethod
+    def parse(cls, raw_data: Any, unit_scale: float) -> ifcopenshell.entity_instance | ClippingInfo | None:
+        if isinstance(raw_data, ifcopenshell.entity_instance):
+            if not raw_data.is_a("IfcBooleanResult"):
+                warnings.warn(f"Ignoring clipping of unexpected IFC class: {raw_data}")
+                return
+            return raw_data
+        elif isinstance(raw_data, ClippingInfo):
+            return raw_data
+        elif isinstance(raw_data, dict):
+            try:
+                clipping_data = cls(**raw_data, unit_scale=unit_scale)
+            except TypeError:
+                warnings.warn(f"Ignoring clipping with unexpected arguments: {raw_data}")
+                return
+            else:
+                if clipping_data.result_type != "IfcBooleanClippingResult":
+                    warnings.warn(f"Ignoring clipping with unexpected result type '{clipping_data.result_type}'")
+                    return
+                if clipping_data.operand_type != "IfcHalfSpaceSolid":
+                    warnings.warn(f"Ignoring clipping with unexpected operand type '{clipping_data.operand_type}'")
+                    return
+                return clipping_data
+        else:
+            warnings.warn(f"Ignoring clipping of unexpected type: {raw_data}")
+
+    def apply(
+            self, file: ifcopenshell.file, first_operand: ifcopenshell.entity_instance
+    ) -> ifcopenshell.entity_instance:
+        second_operand = file.createIfcHalfSpaceSolid(
+            file.createIfcPlane(
+                file.createIfcAxis2Placement3D(
+                    file.createIfcCartesianPoint([convert_si_to_unit(self, coord) for coord in self.location]),
+                    file.createIfcDirection(self.normal),
+                    None,
+                )
+            ),
+            False,
+        )
+        first_operand = file.createIfcBooleanClippingResult("DIFFERENCE", first_operand, second_operand)
+        return first_operand

@@ -614,3 +614,11 @@ def format_length(
     elif unit_system == "metric":
         rounded_val = round(value / precision) * precision
         return f"{rounded_val:.{decimal_places}f}"
+
+
+def convert_si_to_unit(self, co):
+    return co / self.unit_scale
+
+
+def convert_unit_to_si(self, co):
+    return co * self.unit_scale
