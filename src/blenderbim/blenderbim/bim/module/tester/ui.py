@@ -115,17 +115,9 @@ class BIM_UL_tester_failed_entities(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         props = context.scene.IfcTesterProperties
         if item:
-            if props.should_load_from_memory:
-                ifc_file = tool.Ifc.get()
-                ifc_id = int(item.element[1 : item.element.find("=")])
-                entity = ifc_file.by_id(ifc_id)
-                report_entity = f"[#{ifc_id}][{entity.is_a()}] {entity.Name}"
-            else:
-                report_entity = item.element
-
             row = layout.row(align=True)
-            row.label(text=report_entity)
+            row.label(text=item.element)
             row.label(text=item.reason)
             if props.should_load_from_memory:
                 op = row.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF")
-                op.ifc_id = entity.id()
+                op.ifc_id = item.ifc_id

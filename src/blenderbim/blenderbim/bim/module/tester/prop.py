@@ -41,8 +41,9 @@ class Specification(PropertyGroup):
 
 
 class FailedEntities(PropertyGroup):
-    reason: StringProperty(name="Reason")
+    ifc_id: IntProperty(name="IFC ID")
     element: StringProperty(name="Element")
+    reason: StringProperty(name="Reason")
 
 
 class IfcTesterProperties(PropertyGroup):
