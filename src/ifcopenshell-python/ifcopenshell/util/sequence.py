@@ -62,6 +62,8 @@ def derive_calendar(task):
 
 def count_working_days(start, finish, calendar):
     result = 0
+    if start == finish:
+        return 0
     current_date = datetime.date(start.year, start.month, start.day)
     finish_date = datetime.date(finish.year, finish.month, finish.day)
     while current_date <= finish_date:
