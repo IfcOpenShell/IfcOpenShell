@@ -205,46 +205,50 @@ class DrawSystemArrows(bpy.types.Operator, Operator):
         return context.selected_objects and tool.Ifc.get()
 
     def _execute(self, context):
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        curve = bpy.data.objects.new("System Arrows", bpy.data.curves.new("System Arrows", "CURVE"))
-        curve.data.dimensions = "3D"
-        context.scene.collection.objects.link(curve)
+        sinks = []
+        sources = []
+
         for obj in bpy.context.selected_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
+
             element = tool.Ifc.get_entity(obj)
-            sources = []
-            sinks = []
-            for rel in getattr(element, "HasPorts", []) or []:
-                if rel.RelatingPort.FlowDirection == "SOURCE":
-                    sources.append(
-                        self.get_absolute_matrix(
-                            ifcopenshell.util.placement.get_local_placement(rel.RelatingPort.ObjectPlacement)
-                        )
-                    )
-                elif rel.RelatingPort.FlowDirection == "SINK":
-                    sinks.append(
-                        self.get_absolute_matrix(
-                            ifcopenshell.util.placement.get_local_placement(rel.RelatingPort.ObjectPlacement)
-                        )
-                    )
+            sources_current = []
+            sinks_current = []
+
+            for port in tool.System.get_ports(element):
+                local_placement = ifcopenshell.util.placement.get_local_placement(port.ObjectPlacement)
+                m = self.get_absolute_matrix(local_placement)
+                if port.FlowDirection == "SOURCE":
+                    sources_current.append(m)
+                elif port.FlowDirection == "SINK":
+                    sinks_current.append(m)
                 else:
-                    sources.append(
-                        self.get_absolute_matrix(
-                            ifcopenshell.util.placement.get_local_placement(rel.RelatingPort.ObjectPlacement)
-                        )
-                    )
-                    sinks.append(
-                        self.get_absolute_matrix(
-                            ifcopenshell.util.placement.get_local_placement(rel.RelatingPort.ObjectPlacement)
-                        )
-                    )
-            for sink in sinks:
-                for source in sources:
+                    sources_current.append(m)
+                    sinks_current.append(m)
+
+                if sinks_current or sources_current:
+                    sinks.append(sinks_current)
+                    sources.append(sources_current)
+
+        if not sinks:
+            self.report({"INFO"}, "No sinks/sources found for selected objects.")
+            return {"FINISHED"}
+
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        curve = bpy.data.objects.new("System Arrows", bpy.data.curves.new("System Arrows", "CURVE"))
+        curve.data.dimensions = "3D"
+        curve.show_in_front = True
+        context.scene.collection.objects.link(curve)
+
+        for i in range(len(sinks)):
+            for sink in sinks[i]:
+                for source in sources[i]:
                     polyline = curve.data.splines.new("POLY")
                     polyline.points.add(1)
                     polyline.points[0].co = (Matrix(sink).translation * unit_scale).to_4d()
                     polyline.points[1].co = (Matrix(source).translation * unit_scale).to_4d()
+        tool.Blender.select_and_activate_single_object(context, curve)
 
     def get_absolute_matrix(self, matrix):
         props = bpy.context.scene.BIMGeoreferenceProperties
