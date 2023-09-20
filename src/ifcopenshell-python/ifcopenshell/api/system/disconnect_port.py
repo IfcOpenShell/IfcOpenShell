@@ -70,8 +70,8 @@ class Usecase:
         }
 
     def execute(self):
-        rels = self.settings["port"].ConnectedTo or []
-        rels += self.settings["port"].ConnectedFrom or []
+        rels = self.settings["port"].ConnectedTo or ()
+        rels += self.settings["port"].ConnectedFrom or ()
 
         for rel in rels:
             rel.RelatingPort.FlowDirection = None
