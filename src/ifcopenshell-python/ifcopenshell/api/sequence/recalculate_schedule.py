@@ -148,7 +148,7 @@ class Usecase:
             [
                 (
                     rel.RelatingProcess.id(),
-                    rel.RelatedProcess.id(),
+                    task.id(),
                     {
                         "lag_time": 0
                         if not rel.TimeLag
@@ -158,11 +158,12 @@ class Usecase:
                         "type": self.sequence_type_map[rel.SequenceType],
                     },
                 )
-                for rel in task.IsSuccessorFrom or []
+                for rel in ifcopenshell.util.sequence.get_sequence_assignment(task, sequence="predecessor")
             ]
         )
-        predecessor_types = [rel.SequenceType for rel in task.IsSuccessorFrom]
-        successor_types = [rel.SequenceType for rel in task.IsPredecessorTo]
+
+        predecessor_types = [rel.SequenceType for rel in ifcopenshell.util.sequence.get_sequence_assignment(task, "predecessor")]
+        successor_types = [rel.SequenceType for rel in ifcopenshell.util.sequence.get_sequence_assignment(task, "successor")]
 
         if not predecessor_types:
             self.edges.append(("start", task.id(), {"lag_time": 0, "type": "FS"}))
@@ -170,6 +171,7 @@ class Usecase:
                 self.start_dates.append(
                     ifcopenshell.util.date.ifc2datetime(task.TaskTime.ScheduleStart)
                 )
+                self.g.nodes[task.id()]["early_start"] = ifcopenshell.util.date.ifc2datetime(task.TaskTime.ScheduleStart) # we assume this task is constrained to start on this date
         if not successor_types:
             self.edges.append((task.id(), "finish", {"lag_time": 0, "type": "FF"}))
 
@@ -223,6 +225,16 @@ class Usecase:
         else:
             finishes = []
             starts = []
+            if data.get("early_start") is not None:
+                data["early_finish"] = ifcopenshell.util.sequence.get_start_or_finish_date(
+                    data["early_start"],
+                    datetime.timedelta(days=data["duration"]),
+                    data["duration_type"],
+                    data["calendar"],
+                    date_type="FINISH",
+                )
+                return True  # we're done! We assume this task is constrained and finish processing it
+
             for predecessor in predecessors:
                 predecessor_data = self.g.nodes[predecessor]
                 edge = self.g[predecessor][node]
