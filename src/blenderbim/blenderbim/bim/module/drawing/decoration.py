@@ -1926,7 +1926,7 @@ class DecorationsHandler:
         if cls.installed:
             cls.uninstall()
         handler = cls()
-        # NOTE: we USE POST_PIXEL here so that we can draw use both 3D_POLYLINE_UNIFORM_COLOR
+        # NOTE: we USE POST_PIXEL here so that we can use both 3D_POLYLINE_UNIFORM_COLOR
         # and drawing text in the same handler. BUT this means that we supply coordinates in WINSPACE
         cls.installed = SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_PIXEL")
 
@@ -1944,6 +1944,7 @@ class DecorationsHandler:
             self.decorators[object_type] = self.decorators["FALL"]
 
     def get_objects_and_decorators(self, collection):
+        # TODO: do it in data instead of the handler for performance?
         results = []
 
         for obj in collection.all_objects:

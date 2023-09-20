@@ -101,6 +101,10 @@ class BIM_PT_object_systems(Panel):
         if not ObjectSystemData.is_loaded:
             ObjectSystemData.load()
         self.props = context.scene.BIMSystemProperties
+
+        row = self.layout.row(align=True)
+        row.prop(self.props, "should_draw_decorations")
+
         if self.props.is_editing:
             row = self.layout.row()
             row.alignment = "RIGHT"
