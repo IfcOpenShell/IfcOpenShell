@@ -120,7 +120,7 @@ class Usecase:
         for rel in self.settings["related_process"].IsSuccessorFrom or []:
             if rel.RelatingProcess == self.settings["relating_process"]:
                 return rel
-        return self.file.create_entity(
+        rel = self.file.create_entity(
             "IfcRelSequence",
             **{
                 "GlobalId": ifcopenshell.guid.new(),
@@ -132,3 +132,7 @@ class Usecase:
                 "SequenceType": self.settings["sequence_type"],
             }
         )
+        ifcopenshell.api.run(
+            "sequence.cascade_schedule", self.file, task=self.settings["relating_process"]
+        )
+        return rel
