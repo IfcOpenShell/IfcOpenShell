@@ -168,7 +168,8 @@ class Blender:
         """
         area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
         region = next(region for region in area.regions if region.type == "WINDOW")
-        context_override = {"area": area, "region": region}
+        space = next(space for space in area.spaces if space.type == "VIEW_3D")
+        context_override = {"area": area, "region": region, "space_data": space}
         return context_override
 
     @classmethod
