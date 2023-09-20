@@ -135,7 +135,9 @@ class Usecase:
         finishes = []
         starts = []
 
-        for rel in task.IsSuccessorFrom:
+        for rel in ifcopenshell.util.sequence.get_sequence_assignment(
+            task, "predecessor"
+        ):
             predecessor = rel.RelatingProcess
             predecessor_duration = (
                 ifcopenshell.util.date.ifc2datetime(
@@ -313,6 +315,12 @@ class Usecase:
 
         for rel in task.IsPredecessorTo:
             self.cascade_task(rel.RelatedProcess, task_sequence=task_sequence + [task])
+
+        for rel in task.IsNestedBy:
+            [
+                self.cascade_task(nested_task, task_sequence=task_sequence + [task])
+                for nested_task in rel.RelatedObjects or []
+            ]
 
     def get_lag_time_days(self, lag_time):
         return ifcopenshell.util.date.ifc2datetime(lag_time.LagValue.wrappedValue).days
