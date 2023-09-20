@@ -1186,9 +1186,16 @@ class RefreshAggregate(bpy.types.Operator):
         selected_root_obj = context.selected_objects[0]
         selected_root_entity = tool.Ifc.get_entity(selected_root_obj)
 
-        if not selected_root_entity.is_a("IfcElementAssembly"):
-            self.report({"INFO"}, "Object is not IfcElementAssembly.")
+        if selected_root_entity.is_a("IfcElementAssembly"):
+            return
+        elif selected_root_entity.Decomposes:
+            if selected_root_entity.Decomposes[0].RelatingObject.is_a("IfcElementAssembly"):
+                selected_root_entity = selected_root_entity.Decomposes[0].RelatingObject
+                selected_root_obj = tool.Ifc.get_object(selected_root_entity)
+        else:
+            self.report({"INFO"}, "Object is not part of a IfcElementAssembly.")
             return {"FINISHED"}
+
 
         pset = ifcopenshell.util.element.get_pset(selected_root_entity, "BBIM_Aggregate_Data")
         if not pset:
