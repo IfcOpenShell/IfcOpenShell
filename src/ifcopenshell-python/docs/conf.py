@@ -67,6 +67,7 @@ autoapi_type = 'python'
 
 # autoapi works by reading source code instead of importing modules
 autoapi_dirs = ['../ifcopenshell', '../../ifcdiff', '../../ifcpatch/ifcpatch']
+autoapi_dirs = ['../../ifcdiff', '../../ifcpatch/ifcpatch']
 
 # These are auto-generated based on the IFC schema, so exclude them
 autoapi_ignore = ['*ifcopenshell/express/rules*']

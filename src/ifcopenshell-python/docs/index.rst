@@ -22,16 +22,19 @@ IfcOpenShell is a suite of developer libraries and utilities to manipulate OpenB
    :maxdepth: 1
    :caption: Utilities:
 
+   bcf
    bimserver-plugin
    bimtester
+   bsdd
    ifc2ca
    ifc4d
    ifc5d
    ifccityjson
    ifcclash
-   ifccobie
    ifccsv
    ifcdiff
+   ifcfm
+   ifcmax
    ifcpatch
    ifcsverchok
    ifctester
