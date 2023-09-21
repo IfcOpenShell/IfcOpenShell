@@ -14,3 +14,6 @@
 [submodule "src/ifcconvert/cityjson"]
 	path = src/ifcconvert/cityjson
 	url = https://github.com/IfcOpenShell/ifc-to-cityjson
+[submodule "docs/assets/doxygen-awesome-css"]
+	path = docs/assets/doxygen-awesome-css
+	url = https://github.com/jothepro/doxygen-awesome-css.git
