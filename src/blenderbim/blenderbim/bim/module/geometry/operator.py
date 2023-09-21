@@ -1187,7 +1187,7 @@ class RefreshAggregate(bpy.types.Operator):
         selected_root_entity = tool.Ifc.get_entity(selected_root_obj)
 
         if selected_root_entity.is_a("IfcElementAssembly"):
-            return
+            pass
         elif selected_root_entity.Decomposes:
             if selected_root_entity.Decomposes[0].RelatingObject.is_a("IfcElementAssembly"):
                 selected_root_entity = selected_root_entity.Decomposes[0].RelatingObject
