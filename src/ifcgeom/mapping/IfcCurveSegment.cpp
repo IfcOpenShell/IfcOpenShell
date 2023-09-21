@@ -121,7 +121,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveSegment* inst) {
 
 	static int NUM_SEGMENTS = 64;
 	curve_segment_evaluator cse(length_unit_, inst->ParentCurve(), inst->SegmentStart(), inst->SegmentLength());
-	boost::mpl::for_each<curve_seg_types, boost::type<boost::mpl::_>>(cse);
+	boost::mpl::for_each<curve_seg_types, boost::type<boost::mpl::_>>(std::ref(cse));
 
 	std::vector<taxonomy::point3::ptr> polygon;
 
