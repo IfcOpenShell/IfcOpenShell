@@ -102,12 +102,13 @@ class PortData:
             "port_connected_object": cls.port_connected_object() if is_port else None,
             "port_relating_object": cls.port_relating_object() if is_port else None,
         }
+        # AFTER located_ports_data
+        cls.data["selected_objects_flow_direction"] = cls.selected_objects_flow_direction() if not is_port else None
         cls.is_loaded = True
 
     @classmethod
     def total_ports(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        return len(ifcopenshell.util.system.get_ports(element))
+        return len(ifcopenshell.util.system.get_ports(cls.element))
 
     @classmethod
     def is_port(cls):
@@ -127,20 +128,25 @@ class PortData:
 
     @classmethod
     def located_ports_data(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        ports = ifcopenshell.util.system.get_ports(element)
+        ports = ifcopenshell.util.system.get_ports(cls.element)
 
         data = []
         for port in ports:
             port_obj = tool.Ifc.get_object(port)
             connected_port = tool.System.get_connected_port(port)
             if connected_port:
-                connected_element = tool.Ifc.get_object(tool.System.get_port_relating_element(connected_port))
+                connected_obj = tool.Ifc.get_object(tool.System.get_port_relating_element(connected_port))
             else:
-                connected_element = None
+                connected_obj = None
 
-            data.append((port, port_obj, connected_element))
+            data.append((port, port_obj, connected_obj))
         return data
+
+    @classmethod
+    def selected_objects_flow_direction(cls):
+        for port, port_obj, connected_obj in cls.data["located_ports_data"]:
+            if connected_obj in bpy.context.selected_objects:
+                return port.FlowDirection
 
 
 class SystemDecorationData:

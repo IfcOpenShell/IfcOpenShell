@@ -270,12 +270,59 @@ class SetFlowDirection(bpy.types.Operator, Operator):
     bl_options = {"REGISTER", "UNDO"}
     direction: bpy.props.StringProperty()
 
+    @classmethod
+    def description(cls, context, operator):
+        if not PortData.is_loaded:
+            PortData.load()
+
+        port = PortData.data["is_port"]
+        if port:
+            return f"Set port flow direction to {operator.direction}"
+        else:
+            return f"Set flow direction to {operator.direction} for active element relatively to the selected"
+
+    @classmethod
+    def poll(cls, context):
+        if not PortData.is_loaded:
+            PortData.load()
+
+        port = PortData.data["is_port"]
+        if not port and not len(context.selected_objects) == 2:
+            cls.poll_message_set("Need to select port or 2 connected objects.")
+            return False
+        return True
+
     def _execute(self, context):
-        port = tool.Ifc.get_entity(context.active_object)
-        second_port = tool.System.get_connected_port(port)
-        if not second_port:
-            self.report({"ERROR"}, "To set flow direction port has to be connected to another one.")
-            return
-        core.set_flow_direction(
-            tool.Ifc, tool.System, port=tool.Ifc.get_entity(context.active_object), direction=self.direction
-        )
+        element = tool.Ifc.get_entity(context.active_object)
+
+        if element.is_a("IfcDistributionPort"):
+            second_port = tool.System.get_connected_port(element)
+            if not second_port:
+                self.report({"ERROR"}, "To set flow direction port has to be connected to another one.")
+                return
+            core.set_flow_direction(tool.Ifc, tool.System, port=element, direction=self.direction)
+            return {"FINISHED"}
+
+        selected_elements = [
+            entity
+            for entity in (tool.Ifc.get_entity(o) for o in context.selected_objects)
+            if entity and tool.System.is_mep_element(element)
+        ]
+
+        if len(selected_elements) != 2:
+            self.report({"ERROR"}, "To set flow direction selected two connected MEP elements or just 1 port.")
+            return {"CANCELLED"}
+
+        other_element = selected_elements[selected_elements[0] == element]
+        active_element_ports = tool.System.get_ports(element)
+        other_element_ports = tool.System.get_ports(other_element)
+
+        for port in active_element_ports:
+            connected_port = tool.System.get_connected_port(port)
+            if connected_port in other_element_ports:
+                core.set_flow_direction(tool.Ifc, tool.System, port=port, direction=self.direction)
+                tool.Blender.update_viewport()
+                return {"FINISHED"}
+
+        self.report({"ERROR"}, "Selected elements are not connected to set the flow direction")
+        return {"CANCELLED"}
