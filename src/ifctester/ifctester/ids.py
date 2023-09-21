@@ -247,7 +247,7 @@ class Specification:
             if self.failed_entities:
                 self.status = False
         elif self.maxOccurs == 0:
-            if (len(self.applicable_entities)) == 0:
+            if (len(self.applicable_entities)) > 0:
                 self.status = False
 
     def get_usage(self):
