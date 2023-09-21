@@ -437,4 +437,4 @@ class CalculateResourceUsage(bpy.types.Operator, tool.Ifc.Operator):
         return False
 
     def _execute(self, context):
-        core.calculate_resource_usage(tool.Ifc, tool.Resource, resource=tool.Ifc.get().by_id(tool.Resource.get_highlighted_resource()))
+        core.calculate_resource_usage(tool.Ifc, tool.Resource, resource=tool.Resource.get_highlighted_resource())
