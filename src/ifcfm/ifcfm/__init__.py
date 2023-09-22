@@ -41,27 +41,21 @@ class Parser:
         self.file = None
         self.preset = preset
         self.categories = {}
-        self.get_category_elements = {}
-        self.get_element_data = {}
+        self.config = None
         self.get_custom_element_data = {}
         self.duplicate_keys = []
 
         if isinstance(preset, str):
             module = importlib.import_module(f"ifcfm.{preset}")
-            self.get_category_elements = getattr(module, "get_category_elements")
-            self.get_element_data = getattr(module, "get_element_data")
-        elif isinstance(preset, dict):
-            self.get_category_elements = preset["get_category_elements"]
-            self.get_element_data = preset["get_element_data"]
+            self.config = getattr(module, "config")
         else:
-            self.get_category_elements = getattr(preset, "get_category_elements")
-            self.get_element_data = getattr(preset, "get_element_data")
+            self.config = preset
 
     def parse(self, ifc_file):
-        for category_name, get_category_elements in self.get_category_elements.items():
+        for category_name, category_config in self.config["categories"].items():
             self.categories.setdefault(category_name, {})
-            for element in get_category_elements(ifc_file):
-                get_element_data = self.get_element_data[category_name]
+            for element in category_config["get_category_elements"](ifc_file):
+                get_element_data = category_config["get_element_data"]
 
                 if isinstance(get_element_data, dict):
                     data = {}
@@ -71,7 +65,7 @@ class Parser:
                     data = get_element_data(ifc_file, element) or {}
 
                 get_custom_element_data = self.get_custom_element_data.get(category_name, lambda x, y: None)
-                if isinstance(get_element_data, dict):
+                if isinstance(get_custom_element_data, dict):
                     custom_data = {}
                     for key, query in get_custom_element_data.items():
                         custom_data[key] = ifcopenshell.util.selector.get_element_value(element, query)
@@ -86,6 +80,15 @@ class Parser:
                     if key in self.categories[category_name]:
                         self.duplicate_keys.append((self.categories[category_name][key], data))
                     self.categories[category_name][key] = data
+
+    def exclude_categories(self, names):
+        for name in names:
+            if name in self.config["categories"]:
+                del self.config["categories"][name]
+
+    def exclude_element_data(self, category, names):
+        headers = self.config["categories"][category]["headers"]
+        self.config["categories"][category]["headers"] = [h for h in headers if h not in names]
 
 
 class Writer:
@@ -105,8 +108,9 @@ class Writer:
         empty = self.config.get("empty", empty)
         bool_true = self.config.get("bool_true", bool_true)
         bool_false = self.config.get("bool_false", bool_false)
-        for category, data in self.parser.categories.items():
-            headers = self.config.get("categories", {}).get(category, {}).get("headers", [])
+        for category, config in self.config["categories"].items():
+            data = self.parser.categories.get(category, None)
+            headers = config["headers"]
 
             if not data:
                 self.categories[category] = {"headers": headers, "rows": []}
