@@ -228,26 +228,6 @@ def get_property(psets, pset_name, prop_name, decimals=None):
         return round(result, decimals)
 
 
-get_category_elements = {
-    "Facilities": get_facilities,
-    "Storeys": get_storeys,
-    "Spaces": get_spaces,
-    "Zones": get_zones,
-    "ElementTypes": get_element_types,
-    "Elements": get_elements,
-    "Systems": get_systems,
-}
-
-get_element_data = {
-    "Facilities": get_facility_data,
-    "Storeys": get_storey_data,
-    "Spaces": get_space_data,
-    "Zones": get_zone_data,
-    "ElementTypes": get_element_type_data,
-    "Elements": get_element_data,
-    "Systems": get_system_data,
-}
-
 config = {
     "colours": {
         "h": "dddddd",  # Header data
@@ -278,6 +258,8 @@ config = {
             ],
             "colours": "ppppreeeeesss",
             "sort": [{"name": "Name", "order": "ASC"}],
+            "get_category_elements": get_facilities,
+            "get_element_data": get_facility_data,
         },
         "Storeys": {
             "headers": [
@@ -292,6 +274,8 @@ config = {
             ],
             "colours": "ppreeees",
             "sort": [{"name": "Elevation", "order": "ASC"}, {"name": "Name", "order": "ASC"}],
+            "get_category_elements": get_storeys,
+            "get_element_data": get_storey_data,
         },
         "Spaces": {
             "headers": [
@@ -308,11 +292,15 @@ config = {
             ],
             "colours": "ppprreeess",
             "sort": [{"name": "LevelName", "order": "ASC"}, {"name": "Name", "order": "ASC"}],
+            "get_category_elements": get_spaces,
+            "get_element_data": get_space_data,
         },
         "Zones": {
             "headers": ["Name", "SpaceName", "AuthorOrganizationName", "AuthorDate", "ModelSoftware", "ModelID"],
             "colours": "prreee",
             "sort": [{"name": "Name", "order": "ASC"}],
+            "get_category_elements": get_zones,
+            "get_element_data": get_zone_data,
         },
         "ElementTypes": {
             "headers": [
@@ -333,6 +321,8 @@ config = {
             ],
             "colours": "pppreeeeesssss",
             "sort": [{"name": "ModelObject", "order": "ASC"}, {"name": "Name", "order": "ASC"}],
+            "get_category_elements": get_element_types,
+            "get_element_data": get_element_type_data,
         },
         "Elements": {
             "headers": [
@@ -356,6 +346,8 @@ config = {
             ],
             "colours": "prrrreeeeesssssss",
             "sort": [{"name": "TypeName", "order": "ASC"}, {"name": "Name", "order": "ASC"}],
+            "get_category_elements": get_elements,
+            "get_element_data": get_element_data,
         },
         "Systems": {
             "headers": [
@@ -369,6 +361,8 @@ config = {
             ],
             "colours": "pppreee",
             "sort": [{"name": "Name", "order": "ASC"}],
+            "get_category_elements": get_systems,
+            "get_element_data": get_system_data,
         },
     },
 }
