@@ -46,7 +46,6 @@ modules = {
     "aggregate": None,
     "geometry": None,
     "fm": None,
-    "cobie": None,
     "resource": None,
     "cost": None,
     "sequence": None,
