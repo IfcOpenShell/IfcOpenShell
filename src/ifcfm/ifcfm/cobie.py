@@ -30,6 +30,8 @@ import ifcopenshell.util.classification
 # https://github.com/opensourceBIM/COBie-plugins/tree/master/COBieShared/src/org/bimserver/cobie/shared/serialization/util
 # Some settings are also defined here:
 # https://github.com/opensourceBIM/COBie-plugins/blob/master/COBiePlugins/lib/IfcToCobieConfig.xml
+# Note that the following categories are not implemented in the BIMServer COBie-Plugins:
+# Impact, Coordinate, Issue, Picklist
 
 
 def get_contacts(ifc_file):
@@ -494,16 +496,16 @@ def get_type_data(ifc_file, element):
     pset_metadata = {}
     pset_mapping = {
         "manufacturer": {"Manufacturer"},
-        "model_number": {"ModelNumber", "ArticleNumber", "ModelLabel"},
+        "model_number": {"ModelNumber", "ArticleNumber", "ModelReference"},
         "warranty_guarantor_parts": {"WarrantyGuarantorParts", "PointOfContact"},
         "warranty_guarantor_labor": {"WarrantyGuarantorLabor", "PointOfContact"},
         "warranty_description": {"WarrantyDescription", "WarrantyIdentifier"},
         "replacement_cost": {"ReplacementCost", "Replacement Cost", "Replacement", "Cost"},
-        "nominal_length": {"NominalLength", "OverallLength"},
-        "nominal_width": {"NominalWidth", "Width"},
+        "nominal_length": {"NominalLength", "OverallLength", "Length"},
+        "nominal_width": {"NominalWidth", "OverallWidth", "Width"},
         # https://github.com/opensourceBIM/COBie-plugins/blob/master/COBiePlugins/lib/IfcToCobieConfig.xml#L104
         "nominal_height": {"NominalHeight", "Height"},  # Original has a typo "Heght"
-        "model_reference": {"ModelReference", "Reference"},
+        "model_reference": {"ModelLabel"},  # I believe this is what the intention was, not "ModelReference".
         "shape": {"Shape"},
         "size": {"Size"},
         "color": {"Color", "Colour"},
@@ -1139,52 +1141,6 @@ def get_sheet_name(element):
         return "Resource"
 
 
-get_category_elements = {
-    "Contact": get_contacts,
-    "Facility": get_facilities,
-    "Floor": get_floors,
-    "Space": get_spaces,
-    "Zone": get_zones,
-    "Type": get_types,
-    "Component": get_components,
-    "System": get_systems,
-    "Assembly": get_assemblies,
-    "Connection": get_connections,
-    "Spare": get_spares,
-    "Resource": get_resources,
-    "Job": get_jobs,
-    # "Impact": get_impacts, # Not implemented for some reason in BIMServer COBie-Plugins
-    "Document": get_documents,
-    "Attribute": get_attributes,
-    # Not implemented for some reason in BIMServer COBie-Plugins
-    # "Coordinate": get_coordinates,
-    # "Issue": get_issues,
-    # "Picklist": get_picklists,
-}
-
-get_element_data = {
-    "Contact": get_contact_data,
-    "Facility": get_facility_data,
-    "Floor": get_floor_data,
-    "Space": get_space_data,
-    "Zone": get_zone_data,
-    "Type": get_type_data,
-    "Component": get_component_data,
-    "System": get_system_data,
-    "Assembly": get_assembly_data,
-    "Connection": get_connection_data,
-    "Spare": get_spare_data,
-    "Resource": get_resource_data,
-    "Job": get_job_data,
-    # "Impact": get_impact_data,
-    "Document": get_document_data,
-    "Attribute": get_attribute_data,
-    # "Coordinate": get_coordinate_data,
-    # "Issue": get_issue_data,
-    # "Picklist": get_picklist_data,
-}
-
-
 config = {
     "colours": {
         "h": "c0c0c0",  # Header data
@@ -1225,6 +1181,8 @@ config = {
             ],
             "colours": "rrrrrreeeoooooooooo",
             "sort": [{"name": "Email", "order": "ASC"}],
+            "get_category_elements": get_contacts,
+            "get_element_data": get_contact_data,
         },
         "Facility": {
             "headers": [
@@ -1253,6 +1211,8 @@ config = {
             ],
             "colours": "ririrriiiireeeeeeeoooo",
             "sort": [{"name": "Name", "order": "ASC"}],
+            "get_category_elements": get_facilities,
+            "get_element_data": get_facility_data,
         },
         "Floor": {
             "headers": [
@@ -1269,6 +1229,8 @@ config = {
             ],
             "colours": "ririeeeooo",
             "sort": [{"name": "Elevation", "order": "ASC"}, {"name": "Name", "order": "ASC"}],
+            "get_category_elements": get_floors,
+            "get_element_data": get_floor_data,
         },
         "Space": {
             "headers": [
@@ -1288,6 +1250,8 @@ config = {
             ],
             "colours": "ririrreeeoooo",
             "sort": [{"name": "FloorName", "order": "ASC"}, {"name": "Name", "order": "ASC"}],
+            "get_category_elements": get_spaces,
+            "get_element_data": get_space_data,
         },
         "Zone": {
             "headers": [
@@ -1303,6 +1267,8 @@ config = {
             ],
             "colours": "ririreeeo",
             "sort": [{"name": "Name", "order": "ASC"}],
+            "get_category_elements": get_zones,
+            "get_element_data": get_zone_data,
         },
         "Type": {
             "headers": [
@@ -1344,6 +1310,8 @@ config = {
             ],
             "colours": "riririiriririeeeooiorrroooooooooooo",
             "sort": [{"name": "ExternalObject", "order": "ASC"}, {"name": "Name", "order": "ASC"}],
+            "get_category_elements": get_types,
+            "get_element_data": get_type_data,
         },
         "Component": {
             "headers": [
@@ -1369,6 +1337,8 @@ config = {
                 {"name": "TypeName", "order": "ASC"},
                 {"name": "Name", "order": "ASC"},
             ],
+            "get_category_elements": get_components,
+            "get_element_data": get_component_data,
         },
         "System": {
             "headers": [
@@ -1384,8 +1354,10 @@ config = {
             ],
             "colours": "ririieeeo",
             "sort": [{"name": "Name", "order": "ASC"}],
+            "get_category_elements": get_systems,
+            "get_element_data": get_system_data,
         },
-        "Assembly": {
+        "Assembly": {  # Note that this is technically "not required"
             "headers": [
                 "Name",
                 "CreatedBy",
@@ -1401,8 +1373,10 @@ config = {
             ],
             "colours": "ririiiieeeo",
             "sort": [{"name": "Name", "order": "ASC"}],
+            "get_category_elements": get_assemblies,
+            "get_element_data": get_assembly_data,
         },
-        "Connection": {
+        "Connection": {  # Note that this is technically "not required"
             "headers": [
                 "Name",
                 "CreatedBy",
@@ -1421,6 +1395,8 @@ config = {
             ],
             "colours": "ririiiiiiieeeo",
             "sort": [{"name": "Name", "order": "ASC"}],
+            "get_category_elements": get_connections,
+            "get_element_data": get_connection_data,
         },
         "Spare": {
             "headers": [
@@ -1439,6 +1415,8 @@ config = {
             ],
             "colours": "ririiieeeooo",
             "sort": [{"name": "Name", "order": "ASC"}],
+            "get_category_elements": get_spares,
+            "get_element_data": get_spare_data,
         },
         "Resource": {
             "headers": [
@@ -1453,6 +1431,8 @@ config = {
             ],
             "colours": "ririeeeo",
             "sort": [{"name": "Name", "order": "ASC"}],
+            "get_category_elements": get_resources,
+            "get_element_data": get_resource_data,
         },
         "Job": {
             "headers": [
@@ -1478,6 +1458,8 @@ config = {
             ],
             "colours": "ririiirriririeeeoii",
             "sort": [{"name": "TypeName", "order": "ASC"}, {"name": "TaskNumber", "order": "ASC"}],
+            "get_category_elements": get_jobs,
+            "get_element_data": get_job_data,
         },
         "Document": {
             "headers": [
@@ -1499,6 +1481,8 @@ config = {
             ],
             "colours": "ririiiiirreeeoo",
             "sort": [{"name": "Name", "order": "ASC"}],
+            "get_category_elements": get_documents,
+            "get_element_data": get_document_data,
         },
         "Attribute": {
             "headers": [
@@ -1518,6 +1502,8 @@ config = {
             ],
             "colours": "ririiirreeeoo",
             "sort": [{"name": "Category", "order": "ASC"}, {"name": "Name", "order": "ASC"}],
+            "get_category_elements": get_attributes,
+            "get_element_data": get_attribute_data,
         },
-    }
+    },
 }
