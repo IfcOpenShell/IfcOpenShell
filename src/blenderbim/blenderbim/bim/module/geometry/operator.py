@@ -499,6 +499,8 @@ class OverrideDelete(bpy.types.Operator):
     def _execute(self, context):
         if self.is_batch:
             ifcopenshell.util.element.batch_remove_deep2(tool.Ifc.get())
+
+        self.process_arrays(context)
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
             if element:
@@ -508,6 +510,7 @@ class OverrideDelete(bpy.types.Operator):
                 tool.Geometry.delete_ifc_object(obj)
             else:
                 bpy.data.objects.remove(obj)
+
         if self.is_batch:
             old_file = tool.Ifc.get()
             old_file.end_transaction()
@@ -528,6 +531,29 @@ class OverrideDelete(bpy.types.Operator):
         data["old_file"].redo()
         tool.Ifc.set(data["new_file"])
 
+    def process_arrays(self, context):
+        selected_objects = set(context.selected_objects)
+        array_parents = set()
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+            if not pset:
+                continue
+            array_parents.add(tool.Ifc.get().by_guid(pset["Parent"]))
+
+        for array_parent in array_parents:
+            array_parent_obj = tool.Ifc.get_object(array_parent)
+            data = [(i, data) for i, data in enumerate(tool.Blender.Modifier.Array.get_modifiers_data(array_parent))]
+            # NOTE: there is a way to remove arrays more precisely but it's more complex
+            for i, modifier_data in reversed(data):
+                children = set(tool.Blender.Modifier.Array.get_children_objects(modifier_data))
+                if children.issubset(selected_objects):
+                    with context.temp_override(active_object=array_parent_obj):
+                        bpy.ops.bim.remove_array(item=i)
+                else:
+                    break
 
 class OverrideOutlinerDelete(bpy.types.Operator):
     bl_idname = "bim.override_outliner_delete"
