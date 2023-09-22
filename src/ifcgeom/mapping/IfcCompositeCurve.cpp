@@ -66,7 +66,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 		}
 #ifdef SCHEMA_HAS_IfcCurveSegment
 		else if (segment->as<IfcSchema::IfcCurveSegment>()) {
-			auto crv = map(segment->as<IfcSchema::IfcCompositeCurveSegment>()->ParentCurve());
+			auto crv = map(segment->as<IfcSchema::IfcCurveSegment>()->ParentCurve());
 			for (auto& s : taxonomy::cast<taxonomy::loop>(crv)->children) {
 				loop->children.push_back(s);
 			}
