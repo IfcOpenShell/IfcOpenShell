@@ -553,7 +553,8 @@ class OverrideDelete(bpy.types.Operator):
                     with context.temp_override(active_object=array_parent_obj):
                         bpy.ops.bim.remove_array(item=i)
                 else:
-                    break
+                    break  # allows to remove only n last layers of an array
+
 
 class OverrideOutlinerDelete(bpy.types.Operator):
     bl_idname = "bim.override_outliner_delete"
@@ -702,11 +703,20 @@ class OverrideDuplicateMove(bpy.types.Operator):
         return {"FINISHED"}
 
     def _execute(self, context):
+        objects_to_duplicate = set(context.selected_objects)
+
+        # handle arrays
+        arrays_to_duplicate, array_children = self.process_arrays(context)
+        objects_to_duplicate -= array_children
+        for child in array_children:
+            child.select_set(False)
+
         self.new_active_obj = None
         # Track decompositions so they can be recreated after the operation
-        relationships = tool.Root.get_decomposition_relationships(context.selected_objects)
+        relationships = tool.Root.get_decomposition_relationships(objects_to_duplicate)
         old_to_new = {}
-        for obj in context.selected_objects:
+
+        for obj in objects_to_duplicate:
             element = tool.Ifc.get_entity(obj)
             if element and element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
                 continue  # For now, don't copy drawings until we stabilise a bit more. It's tricky.
@@ -737,14 +747,56 @@ class OverrideDuplicateMove(bpy.types.Operator):
                 tool.Blender.remove_data_block(temp_data)
 
             if new:
-                tool.Model.remove_array_from_element(new)
-                old_to_new[tool.Ifc.get_entity(obj)] = [new]
+                # TODO: handle array data for other cases of duplication
+                array_data = arrays_to_duplicate.get(obj, None)
+                tool.Model.handle_array_on_copied_element(new, array_data)
+                if array_data:
+                    for child in tool.Blender.Modifier.Array.get_all_children_objects(new):
+                        child.select_set(True)
+
+                # TODO: add new array children to recreate their decomposition too
+                old_to_new[element] = [new]
                 if new.is_a("IfcRelSpaceBoundary"):
                     tool.Boundary.decorate_boundary(new_obj)
+
         # Recreate decompositions
         tool.Root.recreate_decompositions(relationships, old_to_new)
         blenderbim.bim.handler.refresh_ui_data()
 
+    def process_arrays(self, context):
+        selected_objects = set(context.selected_objects)
+        array_parents = set()
+        arrays_to_create = dict()
+        array_children = set()  # will be ignored during the duplication
+
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+            if not pset:
+                continue
+            array_parents.add(tool.Ifc.get().by_guid(pset["Parent"]))
+
+        for array_parent in array_parents:
+            array_parent_obj = tool.Ifc.get_object(array_parent)
+            if array_parent_obj not in selected_objects:
+                continue
+
+            array_data = []
+            for modifier_data in tool.Blender.Modifier.Array.get_modifiers_data(array_parent):
+                children = set(tool.Blender.Modifier.Array.get_children_objects(modifier_data))
+                if children.issubset(selected_objects):
+                    modifier_data["children"] = []
+                    array_data.append(modifier_data)
+                    array_children.update(children)
+                else:
+                    break  # allows to duplicate only n first layers of an array
+
+            if array_data:
+                arrays_to_create[array_parent_obj] = array_data
+
+        return arrays_to_create, array_children
 
 class OverrideDuplicateMoveLinkedMacro(bpy.types.Macro):
     bl_idname = "bim.override_object_duplicate_move_linked_macro"
@@ -804,7 +856,7 @@ class OverrideDuplicateMoveLinked(bpy.types.Operator):
             # Copy the actual class
             new = blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
             if new:
-                tool.Model.remove_array_from_element(new)
+                tool.Model.handle_array_on_copied_element(new)
                 old_to_new[tool.Ifc.get_entity(obj)] = new
         # Recreate decompositions
         tool.Root.recreate_decompositions(relationships, old_to_new)
@@ -1048,7 +1100,7 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
             )
 
             if new_entity:
-                tool.Model.remove_array_from_element(new_entity)
+                tool.Model.handle_array_on_copied_element(new_entity)
                 blenderbim.core.aggregate.unassign_object(
                     tool.Ifc,
                     tool.Aggregate,
@@ -1176,7 +1228,7 @@ class RefreshAggregate(bpy.types.Operator):
             )
 
             if new_entity:
-                tool.Model.remove_array_from_element(new_entity)
+                tool.Model.handle_array_on_copied_element(new_entity)
                 blenderbim.core.aggregate.unassign_object(
                     tool.Ifc,
                     tool.Aggregate,
