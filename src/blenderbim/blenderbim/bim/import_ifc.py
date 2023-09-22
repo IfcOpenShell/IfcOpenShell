@@ -20,6 +20,7 @@ import os
 import re
 import bpy
 import time
+import json
 import bmesh
 import logging
 import mathutils
@@ -306,6 +307,7 @@ class IfcImporter:
         self.set_default_context()
         self.profile_code("Setting default context")
         self.setup_viewport_camera()
+        self.setup_arrays()
         self.update_progress(100)
         bpy.context.window_manager.progress_end()
 
@@ -1907,6 +1909,15 @@ class IfcImporter:
             bpy.ops.object.select_all(action="SELECT")
             bpy.ops.view3d.view_selected()
             bpy.ops.object.select_all(action="DESELECT")
+
+    def setup_arrays(self):
+        for element in self.file.by_type("IfcElement"):
+            pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+            if not pset_data["Data"]:  # skip array children
+                continue
+            for i in range(len(json.loads(pset_data["Data"]))):
+                tool.Blender.Modifier.Array.set_children_lock_state(element, i, True)
+                tool.Blender.Modifier.Array.constrain_children_to_parent(element)
 
 
 class IfcImportSettings:
