@@ -737,10 +737,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
                 tool.Blender.remove_data_block(temp_data)
 
             if new:
-                array_pset = ifcopenshell.util.element.get_pset(new, "BBIM_Array")
-                if array_pset:
-                    array_pset = tool.Ifc.get().by_id(array_pset["id"])
-                    ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=new, pset=array_pset)
+                tool.Model.remove_array_from_element(new)
                 old_to_new[tool.Ifc.get_entity(obj)] = [new]
                 if new.is_a("IfcRelSpaceBoundary"):
                     tool.Boundary.decorate_boundary(new_obj)
@@ -807,10 +804,7 @@ class OverrideDuplicateMoveLinked(bpy.types.Operator):
             # Copy the actual class
             new = blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
             if new:
-                array_pset = ifcopenshell.util.element.get_pset(new, "BBIM_Array")
-                if array_pset:
-                    array_pset = tool.Ifc.get().by_id(array_pset["id"])
-                    ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=new, pset=array_pset)
+                tool.Model.remove_array_from_element(new)
                 old_to_new[tool.Ifc.get_entity(obj)] = new
         # Recreate decompositions
         tool.Root.recreate_decompositions(relationships, old_to_new)
@@ -1054,12 +1048,7 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
             )
 
             if new_entity:
-                # Checks if the object belongs to an Ifc Array
-                array_pset = ifcopenshell.util.element.get_pset(new_entity, "BBIM_Array")
-                if array_pset:
-                    array_pset = tool.Ifc.get().by_id(array_pset["id"])
-                    ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=new_entity, pset=array_pset)
-
+                tool.Model.remove_array_from_element(new_entity)
                 blenderbim.core.aggregate.unassign_object(
                     tool.Ifc,
                     tool.Aggregate,
@@ -1187,12 +1176,7 @@ class RefreshAggregate(bpy.types.Operator):
             )
 
             if new_entity:
-                # Checks if the object belongs to an Ifc Array
-                array_pset = ifcopenshell.util.element.get_pset(new_entity, "BBIM_Array")
-                if array_pset:
-                    array_pset = tool.Ifc.get().by_id(array_pset["id"])
-                    ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=new_entity, pset=array_pset)
-
+                tool.Model.remove_array_from_element(new_entity)
                 blenderbim.core.aggregate.unassign_object(
                     tool.Ifc,
                     tool.Aggregate,

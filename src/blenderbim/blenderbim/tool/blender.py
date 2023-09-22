@@ -484,6 +484,13 @@ class Blender:
         if obj:
             return obj
 
+    @classmethod
+    def lock_transform(cls, obj, lock_state=True):
+        for prop in ("lock_location", "lock_rotation", "lock_scale"):
+            attr = getattr(obj, prop)
+            for axis_idx in range(3):
+                attr[axis_idx] = lock_state
+
     class Modifier:
         @classmethod
         def is_eligible_for_railing_modifier(cls, obj):
@@ -560,10 +567,7 @@ class Blender:
                 modifier_data = list(cls.get_modifiers_data(parent_element))[item]
                 children = cls.get_children_objects(modifier_data)
                 for child_obj in children:
-                    for prop in ("lock_location", "lock_rotation", "lock_scale"):
-                        attr = getattr(child_obj, prop)
-                        for axis_idx in range(3):
-                            attr[axis_idx] = lock_state
+                    Blender.lock_transform(child_obj, lock_state)
 
             @classmethod
             def remove_constraints(cls, parent_element):
