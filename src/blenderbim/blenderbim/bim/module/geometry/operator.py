@@ -1109,6 +1109,17 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
 
         recreate_data_structure(new_root_entity)
 
+        # Remove connections with old objects
+        for new in old_to_new.values():
+            for connection in new[0].ConnectedTo:
+                entity = connection.RelatedElement
+                if entity in old_to_new.keys():
+                    core.remove_connection(tool.Geometry, connection=connection)
+            for connection in new[0].ConnectedFrom:
+                entity = connection.RelatingElement
+                if entity in old_to_new.keys():
+                    core.remove_connection(tool.Geometry, connection=connection)
+
         old_objs = []
         for old, new in old_to_new.items():
             old_objs.append(tool.Ifc.get_object(old))
@@ -1254,6 +1265,18 @@ class RefreshAggregate(bpy.types.Operator):
 
         for parent in parents:
             duplicate_children(parent)
+
+        
+        # Remove connections with old objects
+        for new in old_to_new.values():
+            for connection in new[0].ConnectedTo:
+                entity = connection.RelatedElement
+                if entity in old_to_new.keys():
+                    core.remove_connection(tool.Geometry, connection=connection)
+            for connection in new[0].ConnectedFrom:
+                entity = connection.RelatingElement
+                if entity in old_to_new.keys():
+                    core.remove_connection(tool.Geometry, connection=connection)
 
         old_objs = []
         for old, new in old_to_new.items():
