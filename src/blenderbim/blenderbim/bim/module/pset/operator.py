@@ -223,7 +223,7 @@ class EnablePsetEditing(bpy.types.Operator):
                     new.is_selected = enum in selected_enum_items
             else:
                 if prop.is_a("IfcPropertySingleValue"):
-                    value = prop.NominalValue.wrappedValue
+                    value = prop.NominalValue.wrappedValue if prop.NominalValue else None
                 elif prop.is_a("IfcPhysicalSimpleQuantity"):
                     value = prop[3]
                 new_prop = self.props.properties.add()
