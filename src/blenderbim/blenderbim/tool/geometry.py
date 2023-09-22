@@ -641,3 +641,27 @@ class Geometry(blenderbim.core.tool.Geometry):
     @classmethod
     def get_model_representations(cls):
         return tool.Ifc.get().by_type("IfcShapeRepresentation")
+
+    @classmethod
+    def duplicate_move_operator_execute(cls, operator, context, linked=False):
+        # Deep magick from the dawn of time
+        if IfcStore.get_file():
+            IfcStore.execute_ifc_operator(operator, context)
+            if operator.new_active_obj:
+                context.view_layer.objects.active = operator.new_active_obj
+            return {"FINISHED"}
+
+        new_active_obj = None
+        for obj in context.selected_objects:
+            new_obj = obj.copy()
+            if linked and obj.data:
+                new_obj.data = obj.data.copy()
+            if obj == context.active_object:
+                new_active_obj = new_obj
+            for collection in obj.users_collection:
+                collection.objects.link(new_obj)
+            obj.select_set(False)
+            new_obj.select_set(True)
+        if new_active_obj:
+            context.view_layer.objects.active = new_active_obj
+        return {"FINISHED"}
