@@ -540,6 +540,24 @@ class Model(blenderbim.core.tool.Model):
         return axes
 
     @classmethod
+    def remove_array_from_element(cls, element):
+        array_pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+        if not array_pset:
+            return
+
+        array_pset_data = array_pset["Data"]
+        array_pset = tool.Ifc.get().by_id(array_pset["id"])
+        ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=array_pset)
+
+        # remove constraints
+        obj = tool.Ifc.get_object(element)
+        if not array_pset_data and (
+            constraint := next((c for c in obj.constraints if c.type == "CHILD_OF"), None)
+        ):  # skip array parents
+            obj.constraints.remove(constraint)
+            tool.Blender.lock_transform(obj, False)
+
+    @classmethod
     def regenerate_array(cls, parent, data, keep_objs=False):
         tool.Blender.Modifier.Array.remove_constraints(tool.Ifc.get_entity(parent))
 
