@@ -680,27 +680,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
         return len(context.selected_objects) > 0
 
     def execute(self, context):
-        # Deep magick from the dawn of time
-        if IfcStore.get_file():
-            IfcStore.execute_ifc_operator(self, context)
-            if self.new_active_obj:
-                context.view_layer.objects.active = self.new_active_obj
-            return {"FINISHED"}
-
-        new_active_obj = None
-        for obj in context.selected_objects:
-            new_obj = obj.copy()
-            if obj.data:
-                new_obj.data = obj.data.copy()
-            if obj == context.active_object:
-                new_active_obj = new_obj
-            for collection in obj.users_collection:
-                collection.objects.link(new_obj)
-            obj.select_set(False)
-            new_obj.select_set(True)
-        if new_active_obj:
-            context.view_layer.objects.active = new_active_obj
-        return {"FINISHED"}
+        return tool.Geometry.duplicate_move_operator_execute(self, context, linked=False)
 
     def _execute(self, context):
         objects_to_duplicate = set(context.selected_objects)
@@ -814,25 +794,7 @@ class OverrideDuplicateMoveLinked(bpy.types.Operator):
         return len(context.selected_objects) > 0
 
     def execute(self, context):
-        # Deep magick from the dawn of time
-        if IfcStore.get_file():
-            IfcStore.execute_ifc_operator(self, context)
-            if self.new_active_obj:
-                context.view_layer.objects.active = self.new_active_obj
-            return {"FINISHED"}
-
-        new_active_obj = None
-        for obj in context.selected_objects:
-            new_obj = obj.copy()
-            if obj == context.active_object:
-                new_active_obj = new_obj
-            for collection in obj.users_collection:
-                collection.objects.link(new_obj)
-            obj.select_set(False)
-            new_obj.select_set(True)
-        if new_active_obj:
-            context.view_layer.objects.active = new_active_obj
-        return {"FINISHED"}
+        return tool.Geometry.duplicate_move_operator_execute(self, context, linked=True)
 
     def _execute(self, context):
         self.new_active_obj = None
@@ -881,28 +843,7 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
         return len(context.selected_objects) > 0
 
     def execute(self, context):
-        # Deep magick from the dawn of time
-        if IfcStore.get_file():
-            IfcStore.execute_ifc_operator(self, context)
-            if self.new_active_obj:
-                context.view_layer.objects.active = self.new_active_obj
-            return {"FINISHED"}
-
-        new_active_obj = None
-
-        for obj in context.selected_objects:
-            new_obj = obj.copy()
-            if obj.data:
-                new_obj.data = obj.data.copy()
-            if obj == context.active_object:
-                new_active_obj = new_obj
-            for collection in obj.users_collection:
-                collection.objects.link(new_obj)
-            obj.select_set(False)
-            new_obj.select_set(True)
-        if new_active_obj:
-            context.view_layer.objects.active = new_active_obj
-        return {"FINISHED"}
+        return tool.Geometry.duplicate_move_operator_execute(self, context, linked=False)
 
     def _execute(self, context):
         self.new_active_obj = None
