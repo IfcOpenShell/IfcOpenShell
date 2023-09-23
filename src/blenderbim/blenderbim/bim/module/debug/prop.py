@@ -40,3 +40,13 @@ class BIMDebugProperties(PropertyGroup):
     inverse_attributes: CollectionProperty(name="Inverse Attributes", type=Attribute)
     inverse_references: CollectionProperty(name="Inverse References", type=Attribute)
     express_file: StringProperty(name="Express File")
+    display_type: EnumProperty(
+        items=[
+            ("BOUNDS", "Bounds", ""),
+            ("WIRE", "Wire", ""),
+            ("SOLID", "Solid", ""),
+            ("TEXTURED", "Textured", ""),
+        ],
+        name="Display Type",
+        default="BOUNDS",
+    )

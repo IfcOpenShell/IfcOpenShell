@@ -20,18 +20,19 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
+    operator.ConvertToBlender,
     operator.CopyDebugInformation,
     operator.CreateAllShapes,
     operator.CreateShapeFromStepId,
     operator.InspectFromObject,
     operator.InspectFromStepId,
+    operator.OverrideDisplayType,
     operator.ParseExpress,
     operator.PrintIfcFile,
     operator.PrintObjectPlacement,
     operator.ProfileImportIFC,
     operator.PurgeHdf5Cache,
     operator.PurgeIfcLinks,
-    operator.ConvertToBlender,
     operator.RewindInspector,
     operator.SelectExpressFile,
     operator.SelectHighPolygonMeshes,
