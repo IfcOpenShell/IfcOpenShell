@@ -83,6 +83,10 @@ class BIM_PT_debug(Panel):
         ).percentile = context.scene.BIMDebugProperties.percentile_of_polygons
         row.prop(props, "percentile_of_polygons", text="")
 
+        row = layout.split(factor=0.5, align=True)
+        row.prop(props, "display_type", text="")
+        row.operator("bim.override_display_type").display = context.scene.BIMDebugProperties.display_type
+
         if context.active_object and context.active_object.data:
             mprops = context.active_object.data.BIMMeshProperties
             row = layout.row()

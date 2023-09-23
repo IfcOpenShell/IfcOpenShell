@@ -443,3 +443,14 @@ class PurgeHdf5Cache(bpy.types.Operator):
     def execute(self, context):
         core.purge_hdf5_cache(tool.Debug)
         return {"FINISHED"}
+
+
+class OverrideDisplayType(bpy.types.Operator):
+    bl_idname = "bim.override_display_type"
+    bl_label = "Override Display Type"
+    display: bpy.props.StringProperty()
+
+    def execute(self, context):
+        for obj in context.selected_objects:
+            obj.display_type = self.display
+        return {"FINISHED"}
