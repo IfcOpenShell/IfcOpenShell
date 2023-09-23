@@ -235,26 +235,6 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
         # there must be selected walls
         core.generate_spaces_from_walls(tool.Ifc, tool.Spatial, tool.Collector)
 
-class GenerateFlooringCoveringsFromWalls(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.generate_flooring_coverings_from_walls"
-    bl_label = "Generate Flooring Coverings From Walls"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Generate flooring coverings from selected walls. The active object must be a wall"
-
-    @classmethod
-    def poll(cls, context):
-        active_obj = bpy.context.active_object
-        element = tool.Ifc.get_entity(active_obj)
-        if element:
-            return context.selected_objects and element.is_a("IfcWall")
-
-    def _execute(self, context):
-        # This only works based on a 2D plan only considering the standard
-        # walls (i.e. prismatic) in the active object storey.
-        # In order to run, the active object must be a wall and
-        # there must be selected walls
-        core.generate_flooring_coverings_from_walls(tool.Ifc, tool.Spatial, tool.Collector)
-
 class ToggleSpaceVisibility(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.toggle_space_visibility"
     bl_label = "Toggle Space Visibility"
