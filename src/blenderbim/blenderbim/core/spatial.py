@@ -18,7 +18,6 @@
 
 import blenderbim.core
 import bpy
-import ifcopenshell
 
 
 def reference_structure(ifc, spatial, structure=None, element=None):
@@ -126,7 +125,6 @@ def select_decomposed_elements(spatial):
 #HERE STARTS SPATIAL TOOL
 
 def generate_spaces_from_walls(ifc, spatial, collector):
-    #props = bpy.context.scene.BIMModelProperties
     container, active_obj = spatial.get_container_and_active_obj()
 
     if not active_obj:
@@ -175,9 +173,6 @@ def generate_spaces_from_walls(ifc, spatial, collector):
         blenderbim.core.spatial.assign_container(
             ifc, collector, spatial, structure_obj=container_obj, element_obj=obj
         )
-
-def generate_flooring_coverings_from_walls(ifc, spatial, collector):
-    pass
 
 def toggle_space_visibility(ifc, spatial):
     model = ifc.get()
