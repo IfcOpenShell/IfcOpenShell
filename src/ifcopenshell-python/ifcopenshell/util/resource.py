@@ -113,5 +113,32 @@ def get_resource_required_work(resource):
             iso_string = f"P{required_work}D"
         return iso_string
 
+
 def get_nested_resources(resource):
     return [object for rel in resource.IsNestedBy or [] for object in rel.RelatedObjects]
+
+
+def get_cost(resource):
+    total = 0
+    for cost_value in resource.BaseCosts or []:
+        total += cost_value.AppliedValue.wrappedValue if cost_value.AppliedValue else 0
+    return total
+
+
+def get_quantity(resource):
+    total = 0
+    if resource.BaseQuantity:
+        return resource.BaseQuantity[3]
+    if resource.Usage and resource.Usage.ScheduleWork:
+        # For now we assume either hourly or daily depending on how duration is stored
+        duration = ifcopenshell.util.date.ifc2datetime(resource.Usage.ScheduleWork)
+        if duration.days:
+            return duration.days
+        return duration.seconds / 60 / 60
+
+def get_parent_cost(resource):
+    if not resource.Nests:
+        return
+    else:
+        cost = get_cost(resource.Nests[0].RelatingObject)
+        return cost

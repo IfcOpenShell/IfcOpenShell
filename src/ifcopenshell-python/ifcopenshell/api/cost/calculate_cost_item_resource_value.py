@@ -18,6 +18,7 @@
 
 import ifcopenshell.api
 import ifcopenshell.util.date
+import ifcopenshell.util.resource
 
 
 class Usecase:
@@ -105,8 +106,10 @@ class Usecase:
 
         total_cost = 0
         for resource in resources:
-            cost = self.get_cost(resource)
-            quantity = self.get_quantity(resource)
+            cost = ifcopenshell.util.resource.get_cost(resource)
+            quantity = ifcopenshell.util.resource.get_quantity(resource)
+            if not cost:
+                cost = ifcopenshell.util.resource.get_parent_cost(resource) # Concept to standardise - Not defined in schema, but this makes manual scheduling of resources 10x faster and less duplicate data.
             if not cost or not quantity:
                 continue
             total_cost += cost * quantity
@@ -114,20 +117,3 @@ class Usecase:
         if total_cost:
             cost_value = ifcopenshell.api.run("cost.add_cost_value", self.file, parent=self.settings["cost_item"])
             cost_value.AppliedValue = self.file.createIfcMonetaryMeasure(total_cost)
-
-    def get_cost(self, resource):
-        total = 0
-        for cost_value in resource.BaseCosts or []:
-            total += cost_value.AppliedValue.wrappedValue if cost_value.AppliedValue else 0
-        return total
-
-    def get_quantity(self, resource):
-        total = 0
-        if resource.BaseQuantity:
-            return resource.BaseQuantity[3]
-        if resource.Usage and resource.Usage.ScheduleWork:
-            # For now we assume either hourly or daily depending on how duration is stored
-            duration = ifcopenshell.util.date.ifc2datetime(resource.Usage.ScheduleWork)
-            if duration.days:
-                return duration.days
-            return duration.seconds / 60 / 60
