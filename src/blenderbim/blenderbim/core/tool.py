@@ -811,7 +811,7 @@ class Spatial:
     def set_relative_object_matrix(cls, target_obj, relative_to_obj, matrix): pass
     def show_scene_objects(cls): pass
     #HERE STARTS SPATIAL TOOL
-    def get_container_and_active_obj(cls): pass
+#    def get_container_and_active_obj(cls): pass
     def get_union_shape_from_selected_objects(cls, selected_objects): pass
     def get_boundary_elements(cls, selected_objects): pass
     def get_polygons(cls, boundary_elements): pass
@@ -820,8 +820,17 @@ class Spatial:
     def get_purged_inner_holes_poly(cls, union_geom, min_area): pass
     def get_poly_valid_interior_list(cls, poly, min_area, interiors_list): pass
     def get_buffered_poly_from_linear_ring(cls, linear_ring): pass
-    def get_bmesh_from_polygon(cls, poly, mat, h): pass
+    def get_bmesh_from_polygon(cls, poly, h): pass
+    def get_named_obj_from_bmesh(cls, name, bmesh): pass
     def set_obj_origin_to_bboxcenter(cls, obj): pass
+    def get_active_obj_z(cls, obj): pass
+    def traslate_obj_to_z_location(cls, obj): pass
+    def link_obj_to_active_collection(cls, obj): pass
+    def get_2d_vertices_from_obj(cls, obj): pass
+    def assign_swept_area_outer_curve_from_2d_vertices(cls, obj, vertices): pass
+    def get_body_representation(cls, obj): pass
+    def assign_type_to_obj(cls, obj): pass
+    def regen_obj_representation(cls, ifc, geometry, obj, body): pass
     def toggle_spaces_visibility_wired_and_textured(cls, spaces): pass
 
 

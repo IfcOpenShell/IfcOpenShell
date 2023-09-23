@@ -23,6 +23,7 @@ import ifcopenshell
 import blenderbim.core.tool
 import blenderbim.core.root
 import blenderbim.core.spatial
+import blenderbim.core.geometry
 import blenderbim.tool as tool
 import json
 from math import pi
@@ -270,14 +271,8 @@ class Spatial(blenderbim.core.tool.Spatial):
 #HERE STARTS SPATIAL TOOL
 
     @classmethod
-    def get_container_and_active_obj(cls):
-        active_obj = bpy.context.active_object
-        element = tool.Ifc.get_entity(active_obj)
-        container = ifcopenshell.util.element.get_container(element)
-        return container, active_obj
-
-    @classmethod
-    def get_union_shape_from_selected_objects(cls, selected_objects):
+    def get_union_shape_from_selected_objects(cls):
+        selected_objects = bpy.context.selected_objects
         boundary_elements = cls.get_boundary_elements(selected_objects)
         polys = cls.get_polygons(boundary_elements)
         converted_tolerance = cls.get_converted_tolerance(tolerance=0.03)
@@ -373,7 +368,8 @@ class Spatial(blenderbim.core.tool.Spatial):
         return poly
 
     @classmethod
-    def get_bmesh_from_polygon(cls, poly, mat, h):
+    def get_bmesh_from_polygon(cls, poly, h):
+        mat = bpy.context.active_object.matrix_world
         bm = bmesh.new()
         bm.verts.index_update()
         bm.edges.index_update()
@@ -391,13 +387,24 @@ class Spatial(blenderbim.core.tool.Spatial):
         bmesh.ops.triangle_fill(bm, edges=bm.edges)
         bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 5, verts=bm.verts, edges=bm.edges)
 
-        extrusion = bmesh.ops.extrude_face_region(bm, geom=bm.faces)
-        extruded_verts = [g for g in extrusion["geom"] if isinstance(g, bmesh.types.BMVert)]
-        bmesh.ops.translate(bm, vec=[0.0, 0.0, h], verts=extruded_verts)
+        if h!=0:
+            extrusion = bmesh.ops.extrude_face_region(bm, geom=bm.faces)
+            extruded_verts = [g for g in extrusion["geom"] if isinstance(g, bmesh.types.BMVert)]
+            bmesh.ops.translate(bm, vec=[0.0, 0.0, h], verts=extruded_verts)
 
         bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
 
         return bm
+
+    @classmethod
+    def get_named_obj_from_bmesh(cls, name, bmesh):
+        mesh = bpy.data.meshes.new(name=name)
+        bmesh.to_mesh(mesh)
+        bmesh.free()
+        obj = bpy.data.objects.new(name, mesh)
+        mat = bpy.context.active_object.matrix_world
+        obj.matrix_world = mat
+        return obj
 
     @classmethod
     def set_obj_origin_to_bboxcenter(cls, obj):
@@ -414,6 +421,84 @@ class Spatial(blenderbim.core.tool.Spatial):
             aux_vector = aux_vector - diff
             vert.co = inverted @ aux_vector
         obj.location = newLoc
+
+    @classmethod
+    def get_active_obj_z(cls):
+        x, y, z = bpy.context.active_object.matrix_world.translation.xyz
+        return z
+
+    @classmethod
+    def traslate_obj_to_z_location(cls, obj, z):
+        if z != 0:
+            obj.location = obj.location + Vector((0, 0, z))
+
+    @classmethod
+    def link_obj_to_active_collection(cls, obj):
+        bpy.context.view_layer.active_layer_collection.collection.objects.link(obj)
+
+    @classmethod
+    def get_2d_vertices_from_obj(cls, obj):
+        points = []
+        vectors = [v.co for v in obj.data.vertices.values()]
+        for vector in vectors:
+            point = (vector[0], vector[1])
+            points.append(point)
+
+        points.append((vectors[0][0], vectors[0][1]))
+        return points
+
+    @classmethod
+    def assign_swept_area_outer_curve_from_2d_vertices(cls, obj, vertices):
+        body = cls.get_body_representation(obj)
+        model = tool.Ifc.get()
+        extrusion = tool.Model.get_extrusion(body)
+        area = extrusion.SweptArea
+        old_area = area.OuterCurve
+
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(model)
+        outer_curve = builder.polyline(vertices, closed = True)
+
+        area.OuterCurve = outer_curve
+        ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_area)
+
+    @classmethod
+    def get_body_representation(cls, obj):
+        element = tool.Ifc.get_entity(obj)
+        model = tool.Ifc.get()
+        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        return body
+
+    @classmethod
+    def assign_type_to_obj(cls, obj):
+        relating_type_id = bpy.context.scene.BIMModelProperties.relating_type_id
+        relating_type = tool.Ifc.get().by_id(int(relating_type_id))
+        ifc_class = relating_type.is_a()
+        instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, tool.Ifc.get().schema)[0]
+        bpy.ops.bim.assign_class(obj=obj.name, ifc_class=instance_class)
+        element = tool.Ifc.get_entity(obj)
+        blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
+
+    @classmethod
+    def assign_container_to_obj(cls, obj):
+        active_obj = bpy.context.active_object
+        element = tool.Ifc.get_entity(active_obj)
+        container = ifcopenshell.util.element.get_container(element)
+        container_obj = tool.Ifc.get_object(container)
+        blenderbim.core.spatial.assign_container(
+            tool.Ifc, tool.Collector, tool.Spatial, structure_obj=container_obj, element_obj=obj
+        )
+
+    @classmethod
+    def regen_obj_representation(cls, ifc, geometry, obj, body):
+        blenderbim.core.geometry.switch_representation(
+            ifc,
+            geometry,
+            obj=obj,
+            representation=body,
+            should_reload=True,
+            is_global=True,
+            should_sync_changes_first=False,
+        )
 
     @classmethod
     def toggle_spaces_visibility_wired_and_textured(cls, spaces):
