@@ -828,10 +828,10 @@ class DumbWallJoiner:
             return
 
         for rel in element1.ConnectedTo:
-            if rel.RelatingConnectionType in ["ATSTART", "ATEND"]:
+            if rel.is_a("IfcRelConnectsPathElements") and rel.RelatingConnectionType in ["ATSTART", "ATEND"]:
                 rel.RelatingConnectionType = "ATSTART" if rel.RelatingConnectionType == "ATEND" else "ATEND"
         for rel in element1.ConnectedFrom:
-            if rel.RelatedConnectionType in ["ATSTART", "ATEND"]:
+            if rel.is_a("IfcRelConnectsPathElements") and rel.RelatedConnectionType in ["ATSTART", "ATEND"]:
                 rel.RelatedConnectionType = "ATSTART" if rel.RelatedConnectionType == "ATEND" else "ATEND"
 
         layers1 = tool.Model.get_material_layer_parameters(element1)
