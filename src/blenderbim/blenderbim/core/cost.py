@@ -1,4 +1,4 @@
-def add_cost_schedule(ifc, name, predefined_type,object_type):
+def add_cost_schedule(ifc, name, predefined_type, object_type):
     ifc.run("cost.add_cost_schedule", name=name, predefined_type=predefined_type, object_type=object_type)
 
 
@@ -112,49 +112,63 @@ def assign_cost_item_quantity(ifc, cost, cost_item, related_object_type, prop_na
         ifc.run("cost.assign_cost_item_quantity", cost_item=cost_item, products=products, prop_name=prop_name)
         cost.load_cost_item_quantity_assignments(cost_item, related_object_type=related_object_type)
 
+
 def load_cost_item_quantities(cost):
     cost.load_cost_item_quantities()
+
 
 def load_cost_item_element_quantities(cost):
     cost_item = cost.get_highlighted_cost_item()
     cost.load_cost_item_quantity_assignments(cost_item, related_object_type="PRODUCT")
 
+
 def load_cost_item_task_quantities(cost):
     cost_item = cost.get_highlighted_cost_item()
     cost.load_cost_item_quantity_assignments(cost_item, related_object_type="PROCESS")
+
 
 def load_cost_item_resource_quantities(cost):
     cost_item = cost.get_highlighted_cost_item()
     cost.load_cost_item_quantity_assignments(cost_item, related_object_type="RESOURCE")
 
+
 def assign_cost_value(ifc, cost_item, cost_rate):
     ifc.run("cost.assign_cost_value", cost_item=cost_item, cost_rate=cost_rate)
 
+
 def load_schedule_of_rates(cost, schedule_of_rates):
     cost.load_schedule_of_rates_tree(schedule_of_rates)
+
 
 def unassign_cost_item_quantity(ifc, cost, cost_item, products):
     ifc.run("cost.unassign_cost_item_quantity", cost_item=cost_item, products=products)
     cost.load_cost_item_quantities()
 
+
 def enable_editing_cost_item_quantities(cost, cost_item):
     cost.enable_editing_cost_item_quantities(cost_item)
+
 
 def enable_editing_cost_item_values(cost, cost_item):
     cost.enable_editing_cost_item_values(cost_item)
 
+
 def add_cost_item_quantity(ifc, cost_item, ifc_class):
     ifc.run("cost.add_cost_item_quantity", cost_item=cost_item, ifc_class=ifc_class)
 
+
 def remove_cost_item_quantity(ifc, cost_item, physical_quantity):
     ifc.run("cost.remove_cost_item_quantity", cost_item=cost_item, physical_quantity=physical_quantity)
-    
+
+
 def enable_editing_cost_item_quantity(cost, physical_quantity):
     cost.load_cost_item_quantity_attributes(physical_quantity)
     cost.enable_editing_cost_item_quantity(physical_quantity)
 
+
 def disable_editing_cost_item_quantity(cost):
     cost.disable_editing_cost_item_quantity()
+
 
 def edit_cost_item_quantity(ifc, cost, physical_quantity):
     attributes = cost.get_cost_item_quantity_attributes()
@@ -162,19 +176,24 @@ def edit_cost_item_quantity(ifc, cost, physical_quantity):
     cost.disable_editing_cost_item_quantity()
     cost.load_cost_item_quantities()
 
+
 def add_cost_value(ifc, cost, parent, cost_type, cost_category):
     value = ifc.run("cost.add_cost_value", parent=parent)
     ifc.run(
         "cost.edit_cost_value",
         cost_value=value,
-        attributes=cost.get_attributes_for_cost_value(cost_type, cost_category))
+        attributes=cost.get_attributes_for_cost_value(cost_type, cost_category),
+    )
+
 
 def remove_cost_value(ifc, parent, cost_value):
     ifc.run("cost.remove_cost_value", parent=parent, cost_value=cost_value)
 
+
 def enable_editing_cost_item_value(cost, cost_value):
     cost.load_cost_item_value_attributes(cost_value)
     cost.enable_editing_cost_item_value(cost_value)
+
 
 def disable_editing_cost_item_value(cost):
     cost.disable_editing_cost_item_value()
@@ -195,7 +214,7 @@ def edit_cost_value(ifc, cost, cost_value):
     attributes = cost.get_cost_value_attributes()
     ifc.run("cost.edit_cost_value", cost_value=cost_value, attributes=attributes)
     cost.disable_editing_cost_item_value()
-    #cost.load_cost_item_values(cost.get_highlighted_cost_item())
+    # cost.load_cost_item_values(cost.get_highlighted_cost_item())
 
 
 def copy_cost_item_values(ifc, cost, source, destination):
@@ -275,10 +294,11 @@ def change_parent_cost_item(ifc, cost, new_parent):
     cost_item = cost.get_active_cost_item()
     if cost_item and cost.is_root_cost_item(cost_item):
         return "Cannot change root cost item"
-    if cost_item :
+    if cost_item:
         ifc.run("nest.change_nest", item=cost_item, new_parent=new_parent)
         cost.disable_editing_cost_item_parent()
         cost.load_cost_schedule_tree()
+
 
 def copy_cost_item(ifc, cost):
     cost_item = cost.get_highlighted_cost_item()
@@ -286,6 +306,7 @@ def copy_cost_item(ifc, cost):
         cost_item = ifc.run("cost.copy_cost_item", cost_item=cost_item)
         cost.disable_editing_cost_item_parent()
         cost.load_cost_schedule_tree()
+
 
 def add_currency(ifc, cost):
     unit = ifc.run("unit.add_monetary_unit")

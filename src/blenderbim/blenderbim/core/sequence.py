@@ -186,14 +186,14 @@ def enable_editing_task_time(ifc, sequence, task=None):
     sequence.enable_editing_task_time(task)
 
 
-def edit_task_time(ifc, sequence, task_time=None):
+def edit_task_time(ifc, sequence, resource, task_time=None):
     attributes = sequence.get_task_time_attributes()
     # TODO: nasty loop goes on when calendar props are messed up
     ifc.run("sequence.edit_task_time", task_time=task_time, attributes=attributes)
     task = sequence.get_active_task()
     sequence.load_task_properties(task=task)
     sequence.disable_editing_task_time()
-    sequence.load_resources()
+    resource.load_resource_properties()
 
 
 def assign_predecessor(ifc, sequence, task=None):
@@ -248,8 +248,8 @@ def unassign_input_products(ifc, sequence, spatial, task=None, products=None):
     sequence.load_task_inputs(inputs)
 
 
-def assign_resource(ifc, sequence, task=None):
-    resource = sequence.get_selected_resource()
+def assign_resource(ifc, sequence, resource_tool, task=None):
+    resource = resource_tool.get_highlighted_resource()
     sub_resource = ifc.run(
         "resource.add_resource",
         parent_resource=resource,
@@ -257,17 +257,15 @@ def assign_resource(ifc, sequence, task=None):
         name="{}/{}".format(resource.Name or "Unnamed", task.Name or ""),
     )
     ifc.run("sequence.assign_process", relating_process=task, related_object=sub_resource)
-    resources = sequence.get_task_resources(task)
-    sequence.load_task_resources(resources)
-    sequence.load_resources()
+    sequence.load_task_resources(task)
+    resource_tool.load_resources()
 
 
-def unassign_resource(ifc, sequence, task=None, resource=None):
+def unassign_resource(ifc, sequence, resource_tool, task=None, resource=None):
     ifc.run("sequence.unassign_process", relating_process=task, related_object=resource)
     ifc.run("resource.remove_resource", resource=resource)
-    resources = sequence.get_task_resources(task)
-    sequence.load_task_resources(resources)
-    sequence.load_resources()
+    sequence.load_task_resources(task)
+    resource_tool.load_resources()
 
 
 def remove_work_calendar(ifc, work_calendar=None):

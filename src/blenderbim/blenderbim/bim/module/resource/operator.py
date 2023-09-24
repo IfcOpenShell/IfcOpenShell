@@ -33,19 +33,6 @@ class LoadResources(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class LoadResourceProperties(bpy.types.Operator):
-    bl_idname = "bim.load_resource_properties"
-    bl_label = "Load Resource Properties"
-    bl_options = {"REGISTER", "UNDO"}
-    resource: bpy.props.IntProperty()
-
-    def execute(self, context):
-        core.load_resource_properties(
-            tool.Resource, resource=tool.Ifc.get().by_id(self.resource) if self.resource else None
-        )
-        return {"FINISHED"}
-
-
 class AddResource(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_resource"
     bl_label = "Add Resource"

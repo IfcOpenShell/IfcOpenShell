@@ -234,7 +234,6 @@ class Cost(blenderbim.core.tool.Cost):
 
     @classmethod
     def get_products(cls, related_object_type=None):
-        props = bpy.context.scene.BIMCostProperties
         if related_object_type == "PRODUCT":
             products = tool.Spatial.get_selected_products()
         elif related_object_type == "PROCESS":

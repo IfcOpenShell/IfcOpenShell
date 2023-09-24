@@ -372,6 +372,7 @@ class EditTaskTime(bpy.types.Operator, tool.Ifc.Operator):
         core.edit_task_time(
             tool.Ifc,
             tool.Sequence,
+            tool.Resource,
             task_time=tool.Ifc.get().by_id(context.scene.BIMWorkScheduleProperties.active_task_time_id),
         )
 
@@ -508,7 +509,7 @@ class AssignProcess(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         if self.related_object_type == "RESOURCE":
-            core.assign_resource(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task))
+            core.assign_resource(tool.Ifc, tool.Sequence, tool.Resource, task=tool.Ifc.get().by_id(self.task))
         elif self.related_object_type == "PRODUCT":
             if self.related_object:
                 core.assign_input_products(
@@ -541,6 +542,7 @@ class UnassignProcess(bpy.types.Operator):
             core.unassign_resource(
                 tool.Ifc,
                 tool.Sequence,
+                tool.Resource,
                 task=tool.Ifc.get().by_id(self.task),
                 resource=tool.Ifc.get().by_id(self.resource),
             )
