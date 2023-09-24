@@ -329,23 +329,23 @@ def get_saved_color_schemes(self, context):
 def updateAssignedResourceName(self, context):
     pass
 
+
 def updateAssignedResourceUsage(self, context):
-    if not bpy.context.scene.BIMResourceProperties.is_resource_update_enabled:
+    if not context.scene.BIMResourceProperties.is_resource_update_enabled:
         return
     if not self.schedule_usage:
         return
     resource = tool.Ifc.get().by_id(self.ifc_definition_id)
     if resource.Usage and resource.Usage.ScheduleUsage == self.schedule_usage:
         return
-    tool.Resource.run_edit_resource_time(resource, attributes={
-        "ScheduleUsage": self.schedule_usage
-    })
+    tool.Resource.run_edit_resource_time(resource, attributes={"ScheduleUsage": self.schedule_usage})
     tool.Sequence.load_task_properties()
     tool.Resource.load_resource_properties()
     tool.Sequence.refresh_task_resources()
     blenderbim.bim.module.resource.data.refresh()
     refresh_sequence_data()
     blenderbim.bim.module.pset.data.refresh()
+
 
 class Task(PropertyGroup):
     name: StringProperty(name="Name", update=updateTaskName)
