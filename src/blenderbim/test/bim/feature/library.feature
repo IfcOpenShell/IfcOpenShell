@@ -113,6 +113,7 @@ Scenario: Assign library reference
     And the variable "reference" is "{ifc}.by_type('IfcLibraryReference')[-1].id()"
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
@@ -128,6 +129,7 @@ Scenario: Unassign library reference
     And the variable "reference" is "{ifc}.by_type('IfcLibraryReference')[-1].id()"
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected

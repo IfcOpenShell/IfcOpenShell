@@ -274,6 +274,7 @@ Scenario: Calculate Resource Work
     And I press "bim.edit_task_time"
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
@@ -307,6 +308,7 @@ Scenario: Assign Resource
     And the variable "labor_resource" is "IfcStore.get_file().by_type('IfcLaborResource')[0].id()" 
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
@@ -322,6 +324,7 @@ Scenario: UnAssign Resource
     And the variable "labor_resource" is "IfcStore.get_file().by_type('IfcLaborResource')[0].id()" 
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
