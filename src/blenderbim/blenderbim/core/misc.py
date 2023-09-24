@@ -28,11 +28,3 @@ def resize_to_storey(misc, obj=None, total_storeys=None):
     misc.move_object_to_elevation(obj, misc.get_storey_elevation_in_si(storey))
     misc.scale_object_to_height(obj, height)
     misc.mark_object_as_edited(obj)
-
-
-def split_along_edge(misc, cutter=None, objs=None):
-    new_objs = misc.split_objects_with_cutter(objs, cutter)
-    for obj in new_objs:
-        misc.run_root_copy_class(obj=obj)
-    for obj in objs:
-        misc.mark_object_as_edited(obj)
