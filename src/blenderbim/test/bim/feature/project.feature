@@ -436,6 +436,7 @@ Scenario: Export IFC - with changed object scale synchronised
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
@@ -450,6 +451,7 @@ Scenario: Export IFC - with changed style colour synchronised
     And I add a cube
     And the object "Cube" is selected
     And I add a material
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
@@ -464,6 +466,7 @@ Scenario: Export IFC - with changed style element synchronised
     And I add a cube
     And the object "Cube" is selected
     And I add a material
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
