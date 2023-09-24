@@ -32,6 +32,21 @@ def object_menu(self, context):
     self.layout.menu("BIM_MT_object_set_origin", icon="PLUGIN")
 
 
+def edit_mesh_menu(self, context):
+    self.layout.separator()
+    self.layout.menu("BIM_MT_separate", icon="PLUGIN")
+
+
+class BIM_MT_separate(Menu):
+    bl_idname = "BIM_MT_separate"
+    bl_label = "IFC Separate"
+
+    def draw(self, context):
+        self.layout.operator("bim.override_mesh_separate", icon="PLUGIN", text="IFC Selection").type = "SELECTED"
+        self.layout.operator("bim.override_mesh_separate", icon="PLUGIN", text="IFC By Material").type = "MATERIAL"
+        self.layout.operator("bim.override_mesh_separate", icon="PLUGIN", text="IFC By Loose Parts").type = "LOOSE"
+
+
 class BIM_MT_object_set_origin(Menu):
     bl_idname = "BIM_MT_object_set_origin"
     bl_label = "IFC Set Origin"
