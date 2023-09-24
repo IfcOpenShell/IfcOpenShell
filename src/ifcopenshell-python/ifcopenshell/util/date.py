@@ -35,8 +35,7 @@ def timedelta2duration(timedelta):
     }
     if components["seconds"]:
         components["hours"], components["minutes"], components["seconds"] = [
-            int(i)
-            for i in str(datetime.timedelta(seconds=components["seconds"])).split(":")
+            int(i) for i in str(datetime.timedelta(seconds=components["seconds"])).split(":")
         ]
     return isodate.Duration(**components)
 
@@ -122,9 +121,7 @@ def datetime2ifc(dt, ifc_type):
         if isinstance(dt, datetime.datetime):
             return dt.isoformat()
         elif isinstance(dt, datetime.date):
-            return datetime.datetime.combine(
-                dt, datetime.datetime.min.time()
-            ).isoformat()
+            return datetime.datetime.combine(dt, datetime.datetime.min.time()).isoformat()
     elif ifc_type == "IfcDate":
         if isinstance(dt, datetime.datetime):
             return dt.date().isoformat()
@@ -180,9 +177,7 @@ def string_to_duration(duration_string):
     match = findall(r"(\d+\.?\d*)s", duration_string)
     if match:
         seconds = float(match[0])
-    return isodate.duration_isoformat(
-        datetime.timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
-    )
+    return isodate.duration_isoformat(datetime.timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds))
 
 
 def parse_duration(value):
@@ -192,9 +187,11 @@ def parse_duration(value):
         if "P" in value:
             try:
                 return isodate.parse_duration(value)
+            except ModuleNotFoundError:
+                print("Duration parsing not supported: isodate module not found")
             except:
-                print("error parsing ISO string duration")
-                return None
+                print("Error parsing ISO string duration")
+            return None
         else:
             try:
                 final_string = "P"
@@ -204,11 +201,7 @@ def parse_duration(value):
                         final_string += char
                     elif char == "D":
                         final_string += "D"
-                        if (
-                            "H" in value_upper
-                            or "S" in value_upper
-                            or "MIN" in value_upper
-                        ):
+                        if "H" in value_upper or "S" in value_upper or "MIN" in value_upper:
                             final_string += "T"
                     elif char == "W":
                         final_string += "W"
@@ -218,9 +211,7 @@ def parse_duration(value):
                         final_string += "Y"
                     elif char == "H":
                         final_string = (
-                            final_string[:1] + "T" + final_string[1:]
-                            if "T" not in final_string
-                            else final_string
+                            final_string[:1] + "T" + final_string[1:] if "T" not in final_string else final_string
                         )
                         final_string += "H"
                     elif char == "M":
@@ -229,9 +220,7 @@ def parse_duration(value):
                         final_string += "M"
                     elif char == "S":
                         final_string = (
-                            final_string[:1] + "T" + final_string[1:]
-                            if "T" not in final_string
-                            else final_string
+                            final_string[:1] + "T" + final_string[1:] if "T" not in final_string else final_string
                         )
                         final_string += "S"
                 return isodate.parse_duration(final_string)
