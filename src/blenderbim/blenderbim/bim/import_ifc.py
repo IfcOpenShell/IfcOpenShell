@@ -1939,7 +1939,7 @@ class IfcImporter:
     def setup_arrays(self):
         for element in self.file.by_type("IfcElement"):
             pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
-            if not pset_data["Data"]:  # skip array children
+            if pset_data or not pset_data.get("Data", None):  # skip array children
                 continue
             for i in range(len(json.loads(pset_data["Data"]))):
                 tool.Blender.Modifier.Array.set_children_lock_state(element, i, True)
