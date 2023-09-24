@@ -81,8 +81,7 @@ def update_active_resource_index(self, context):
 
 
 def updateResourceUsage(self, context):
-    props = context.scene.BIMResourceProperties
-    if not props.is_resource_update_enabled:
+    if not context.scene.BIMResourceProperties.is_resource_update_enabled:
         return
     if not self.schedule_usage:
         return

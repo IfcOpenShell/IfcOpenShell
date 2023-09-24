@@ -255,14 +255,6 @@ class Sequence(blenderbim.core.tool.Sequence):
         return tool.Ifc.get().by_id(bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id)
 
     @classmethod
-    def get_selected_resource(cls):
-        if bpy.context.scene.BIMResourceTreeProperties.resources:
-            selected_resource_id = bpy.context.scene.BIMResourceTreeProperties.resources[
-                bpy.context.scene.BIMResourceProperties.active_resource_index
-            ].ifc_definition_id
-            return tool.Ifc.get().by_id(selected_resource_id)
-
-    @classmethod
     def expand_task(cls, task):
         props = bpy.context.scene.BIMWorkScheduleProperties
         contracted_tasks = json.loads(props.contracted_tasks)
@@ -410,20 +402,16 @@ class Sequence(blenderbim.core.tool.Sequence):
 
     @classmethod
     def load_task_resources(cls, task):
-        resources = cls.get_task_resources(task)
         props = bpy.context.scene.BIMWorkScheduleProperties
+        rprops = bpy.context.scene.BIMResourceProperties
         props.task_resources.clear()
-        bpy.context.scene.BIMResourceProperties.is_resource_update_enabled = False
-        for resource in resources or []:
+        rprops.is_resource_update_enabled = False
+        for resource in cls.get_task_resources(task) or []:
             new = props.task_resources.add()
             new.ifc_definition_id = resource.id()
             new.name = resource.Name or "Unnamed"
             new.schedule_usage = resource.Usage.ScheduleUsage or 0 if resource.Usage else 0
-        bpy.context.scene.BIMResourceProperties.is_resource_update_enabled = True
-
-    @classmethod
-    def load_resources(cls):
-        blenderbim.core.resource.load_resources(tool.Resource)
+        rprops.is_resource_update_enabled = True
 
     @classmethod
     def get_task_inputs(cls, task):
@@ -449,6 +437,8 @@ class Sequence(blenderbim.core.tool.Sequence):
 
     @classmethod
     def get_task_resources(cls, task):
+        if not task:
+            return
         is_deep = bpy.context.scene.BIMWorkScheduleProperties.show_nested_resources
         return ifcopenshell.util.sequence.get_task_resources(task, is_deep)
 
