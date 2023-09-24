@@ -224,10 +224,8 @@ def updateTaskDuration(self, context):
     else:
         task_time = tool.Ifc.run("sequence.add_task_time", task=task)
     tool.Ifc.run("sequence.edit_task_time", task_time=task_time, attributes={"ScheduleDuration": duration})
-    SequenceData.load()
     blenderbim.core.sequence.load_task_properties(tool.Sequence)
-    bpy.ops.bim.load_task_properties()
-    tool.Sequence.load_resources()
+    tool.Sequence.refresh_task_resources()
 
 
 def get_schedule_predefined_types(self, context):
@@ -332,6 +330,8 @@ def updateAssignedResourceName(self, context):
     pass
 
 def updateAssignedResourceUsage(self, context):
+    if not bpy.context.scene.BIMResourceProperties.is_resource_update_enabled:
+        return
     if not self.schedule_usage:
         return
     resource = tool.Ifc.get().by_id(self.ifc_definition_id)
@@ -344,7 +344,7 @@ def updateAssignedResourceUsage(self, context):
     tool.Resource.load_resource_properties()
     tool.Sequence.refresh_task_resources()
     blenderbim.bim.module.resource.data.refresh()
-    blenderbim.bim.module.sequence.data.refresh()
+    refresh_sequence_data()
     blenderbim.bim.module.pset.data.refresh()
 
 class Task(PropertyGroup):

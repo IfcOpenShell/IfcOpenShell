@@ -409,19 +409,21 @@ class Sequence(blenderbim.core.tool.Sequence):
         return blenderbim.bim.helper.export_attributes(props.task_time_attributes, callback)
 
     @classmethod
-    def load_task_resources(cls, resources):
+    def load_task_resources(cls, task):
+        resources = cls.get_task_resources(task)
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.task_resources.clear()
+        bpy.context.scene.BIMResourceProperties.is_resource_update_enabled = False
         for resource in resources or []:
             new = props.task_resources.add()
             new.ifc_definition_id = resource.id()
             new.name = resource.Name or "Unnamed"
             new.schedule_usage = resource.Usage.ScheduleUsage or 0 if resource.Usage else 0
+        bpy.context.scene.BIMResourceProperties.is_resource_update_enabled = True
 
     @classmethod
     def load_resources(cls):
         blenderbim.core.resource.load_resources(tool.Resource)
-        cls.refresh_task_resources
 
     @classmethod
     def get_task_inputs(cls, task):
@@ -1664,17 +1666,16 @@ class Sequence(blenderbim.core.tool.Sequence):
             return
         inputs = cls.get_task_inputs(task)
         outputs = cls.get_task_outputs(task)
-        resources = cls.get_task_resources(task)
         cls.load_task_inputs(inputs)
         cls.load_task_outputs(outputs)
-        cls.load_task_resources(resources)
+        cls.load_task_resources(task)
 
     @classmethod
     def refresh_task_resources(cls):
         task = cls.get_highlighted_task()
         if not task:
             return
-        cls.load_task_resources(cls.get_task_resources(task))
+        cls.load_task_resources(task)
 
     @classmethod
     def has_duration(cls, task):
