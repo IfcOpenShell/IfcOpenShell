@@ -357,6 +357,7 @@ Scenario: Assign cost item quantity - count based
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     When I press "bim.assign_cost_item_quantity(cost_item={cost_item}, related_object_type='PRODUCT', prop_name='')"
@@ -371,6 +372,7 @@ Scenario: Assign cost item quantity - quantity based
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
@@ -388,6 +390,7 @@ Scenario: Unassign cost item quantity - selection based
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
@@ -404,6 +407,7 @@ Scenario: Unassign cost item quantity - explicit object
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
@@ -421,6 +425,7 @@ Scenario: Select cost item products
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
@@ -437,6 +442,7 @@ Scenario: Select Cost Schedule Products
     And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected

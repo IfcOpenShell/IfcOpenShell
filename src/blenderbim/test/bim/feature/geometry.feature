@@ -5,6 +5,7 @@ Scenario: Edit object placement
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
@@ -15,6 +16,7 @@ Scenario: Add representation
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
@@ -48,6 +50,7 @@ Scenario: Add representation - add a representation with a scale factor applied
     And the object "Cube" is selected
     When the object "Cube" is scaled to "2"
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     Then the object "IfcWall/Cube" has no scale
@@ -60,6 +63,7 @@ Scenario: Add representation - add a representation with a scale factor removed 
     And the object "Cube" is selected
     When the object "Cube" is scaled to "2"
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     Then the object "IfcWall/Cube" has no scale
@@ -69,6 +73,7 @@ Scenario: Switch representation
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     When the variable "representation" is "{ifc}.by_type('IfcShapeRepresentation')[0].id()"
@@ -79,6 +84,7 @@ Scenario: Switch representation - current edited representation is updated prior
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the variable "context" is "[c for c in {ifc}.by_type('IfcGeometricRepresentationSubContext') if c.ContextType == 'Plan' and c.ContextIdentifier=='Annotation'][0].id()"
@@ -96,6 +102,7 @@ Scenario: Switch representation - current edited representation is discarded if 
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     When the object "IfcWall/Cube" is scaled to "2"
@@ -111,6 +118,7 @@ Scenario: Switch representation - existing Blender modifiers must be purged
     And I add a cube
     And the object "Cube" is selected
     And I add an array modifier
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     When the variable "representation" is "{ifc}.by_type('IfcShapeRepresentation')[0].id()"
@@ -122,6 +130,7 @@ Scenario: Remove representation - remove an active representation
     And I add a cube
     And the object "Cube" is selected
     And I add an array modifier
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     When the variable "representation" is "{ifc}.by_type('IfcShapeRepresentation')[0].id()"
@@ -133,6 +142,7 @@ Scenario: Remove representation - remove an unloaded representation
     And I add a cube
     And the object "Cube" is selected
     And I add an array modifier
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     When the variable "representation" is "{ifc}.by_type('IfcShapeRepresentation')[1].id()"
@@ -182,6 +192,7 @@ Scenario: Update representation - updating a tessellation
     And I add a cube
     And the object "Cube" is selected
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And I press "bim.update_representation(obj='IfcWall/Cube')"
@@ -191,6 +202,7 @@ Scenario: Update representation - updating a layered extrusion
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
@@ -219,6 +231,7 @@ Scenario: Update representation - updating a profiled extrusion
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And I add an empty
@@ -242,6 +255,7 @@ Scenario: Get representation IFC parameters
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And I press "bim.update_representation(ifc_representation_class='IfcExtrudedAreaSolid/IfcRectangleProfileDef')"
@@ -252,6 +266,7 @@ Scenario: Copy representation
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And I add a cube
@@ -273,6 +288,7 @@ Scenario: Override delete - with active IFC data
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
@@ -297,6 +313,7 @@ Scenario: Override duplicate move - with active IFC data
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
@@ -315,6 +332,7 @@ Scenario: Override duplicate move - copying a coloured representation
     And I add a cube
     And the object "Cube" is selected
     And I add a material
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
@@ -347,6 +365,7 @@ Scenario: Override duplicate move - copying a layered extrusion
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And I add an empty
@@ -376,6 +395,7 @@ Scenario: Override duplicate move - copying a profiled extrusion
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And I add an empty
@@ -412,6 +432,7 @@ Scenario: Override duplicate move linked - with active IFC data
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
@@ -440,6 +461,7 @@ Scenario: Override paste buffer - with active IFC data
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
