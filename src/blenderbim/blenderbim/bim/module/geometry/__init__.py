@@ -32,6 +32,7 @@ classes = (
     operator.OverrideDuplicateMoveLinkedMacro,
     operator.OverrideDuplicateMoveMacro,
     operator.OverrideJoin,
+    operator.OverrideMeshSeparate,
     operator.OverrideModeSetEdit,
     operator.OverrideModeSetObject,
     operator.OverrideOriginSet,
@@ -53,6 +54,7 @@ classes = (
     ui.BIM_PT_mesh,
     ui.BIM_PT_workarounds,
     ui.BIM_MT_object_set_origin,
+    ui.BIM_MT_separate,
 )
 
 
@@ -73,6 +75,7 @@ def register():
     bpy.types.VIEW3D_MT_object.append(ui.object_menu)
     bpy.types.OUTLINER_MT_object.append(ui.outliner_menu)
     bpy.types.VIEW3D_MT_object_context_menu.append(ui.object_menu)
+    bpy.types.VIEW3D_MT_edit_mesh.append(ui.edit_mesh_menu)
     wm = bpy.context.window_manager
     if wm.keyconfigs.addon:
         km = wm.keyconfigs.addon.keymaps.new(name="Object Mode", space_type="EMPTY")
@@ -116,6 +119,7 @@ def unregister():
     bpy.types.OBJECT_PT_transform.remove(ui.BIM_PT_transform)
     bpy.types.OUTLINER_MT_object.remove(ui.outliner_menu)
     bpy.types.VIEW3D_MT_object_context_menu.remove(ui.outliner_menu)
+    bpy.types.VIEW3D_MT_edit_mesh.remove(ui.edit_mesh_menu)
     del bpy.types.Scene.BIMGeometryProperties
     del bpy.types.Object.BIMGeometryProperties
     wm = bpy.context.window_manager
