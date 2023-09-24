@@ -15,6 +15,7 @@ classifiers = [
 ]
 [project.optional-dependencies]
 geometry = ["mathutils"]
+date = ["isodate"]
 [project.urls]
 "Homepage" = "http://ifcopenshell.org"
 "Bug Tracker" = "https://github.com/ifcopenshell/ifcopenshell/issues"
