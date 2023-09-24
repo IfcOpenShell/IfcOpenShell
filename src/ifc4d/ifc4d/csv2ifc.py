@@ -20,6 +20,7 @@ import csv
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.unit
+import datetime
 
 
 class Csv2Ifc:
@@ -28,6 +29,14 @@ class Csv2Ifc:
         self.file = None
         self.resources = []
         self.units = {}
+        self.resource_map = {
+            "CREW": "IfcCrewResource",
+            "LABOR": "IfcLaborResource",
+            "EQUIPMENT": "IfcConstructionEquipmentResource",
+            "SUBCONTRACTOR": "IfcSubContractResource",
+            "MATERIAL": "IfcConstructionMaterialResource",
+            "PRODUCT": "IfcConstructionProductResource",
+        }
 
     def execute(self):
         self.parse_csv()
@@ -41,43 +50,46 @@ class Csv2Ifc:
             for row in reader:
                 if not row[0]:
                     continue
-                if row[0] == "Hierarchy":
+                if row[0] == "HIERARCHY":
                     for i, col in enumerate(row):
                         if not col:
                             continue
                         self.headers[col] = i
                     continue
-                cost_data = self.get_row_resource_data(row)
+                resource_data = self.get_row_resource_data(row)
                 hierarchy_key = int(row[0])
                 if hierarchy_key == 1:
-                    self.resources.append(cost_data)
+                    self.resources.append(resource_data)
                 else:
-                    self.parents[hierarchy_key - 1]["children"].append(cost_data)
-                self.parents[hierarchy_key] = cost_data
+                    self.parents[hierarchy_key - 1]["children"].append(resource_data)
+                self.parents[hierarchy_key] = resource_data
 
     def get_row_resource_data(self, row):
-        name = row[self.headers["Name"]]
-        identification = row[self.headers["Identification"]] if "Identification" in self.headers else None
+        name = row[self.headers["ACTIVITY/RESOURCE NAME"]]
+        resource_class = self.resource_map[row[self.headers["TYPE"]]]
+        base_cost_value = row[self.headers["COST"]]
+        productivity = {}
 
-        type = row[self.headers["Type"]]
-        base_cost_value = row[self.headers["BaseCostValue"]]
-        base_cost_quantity = row[self.headers["BaseCostQuantity"]]
-        base_cost_unit = row[self.headers["QuantityUnit"]]
+        if resource_class in ["IfcConstructionEquipmentResource", "IfcLaborResource"]:
+            output_ratio = row[self.headers["LABOR OUTPUT"]]
+            if not output_ratio:
+                output_ratio = row[self.headers["EQUIPMENT OUTPUT"]]
+            if output_ratio:
+                time_consumed = datetime.timedelta(minutes=float(output_ratio) * 60)
+                time_consumed = ifcopenshell.util.date.datetime2ifc(time_consumed, "IfcDuration")
 
-        productivity = {
-            "BaseQuantityConsumed": row[self.headers["BaseQuantityConsumed"]],
-            "BaseQuantityProducedName": row[self.headers["BaseQuantityProducedName"]],
-            "BaseQuantityProducedValue": row[self.headers["BaseQuantityProducedValue"]],
-        }
+                productivity = {
+                    "BaseQuantityConsumed": time_consumed,
+                    "BaseQuantityProducedName": row[self.headers["QUANTITY NAME"]],
+                    "BaseQuantityProducedValue": 1,
+                }
 
         return {
-            "Identification": str(identification).strip() if identification else None,
             "Name": str(name).strip() if name else None,
-            "Type": type,
+            "Description": row[self.headers["DESCRIPTION"]],
+            "class": resource_class,
             "BaseCostValue": float(base_cost_value) if base_cost_value else None,
-            "BaseCostQuantity": float(base_cost_quantity) if base_cost_quantity else None,
-            "Unit": str(base_cost_unit).strip() if base_cost_unit else None,
-            "Productivity": productivity if productivity["BaseQuantityProducedName"] else None,
+            "Productivity": productivity,
             "children": [],
         }
 
@@ -92,45 +104,25 @@ class Csv2Ifc:
 
     def create_resource(self, resource, parent):
         if parent is None:
-            resource["ifc"] = ifcopenshell.api.run("resource.add_resource", self.file, ifc_class=resource["Type"])
+            resource["ifc"] = ifcopenshell.api.run("resource.add_resource", self.file, ifc_class=resource["class"])
         else:
             resource["ifc"] = ifcopenshell.api.run(
-                "resource.add_resource", self.file, parent_resource=parent, ifc_class=resource["Type"]
+                "resource.add_resource", self.file, parent_resource=parent, ifc_class=resource["class"]
             )
         resource["ifc"].Name = resource["Name"]
-        resource["ifc"].Identification = resource["Identification"]
-        productivity = resource["Productivity"]
-        if productivity:
+        if resource.get("Description", None):
+            resource["ifc"].Description = resource.get("Description")
+        if resource["Productivity"]:
             pset = ifcopenshell.api.run("pset.add_pset", self.file, product=resource["ifc"], name="EPset_Productivity")
             ifcopenshell.api.run(
                 "pset.edit_pset",
                 self.file,
                 pset=pset,
-                properties=productivity,
+                properties=resource["Productivity"],
             )
         if resource["BaseCostValue"]:
             cost_value = ifcopenshell.api.run("cost.add_cost_value", self.file, parent=resource["ifc"])
             cost_value.AppliedValue = self.file.createIfcMonetaryMeasure(resource["BaseCostValue"])
-        if resource["Unit"]:
-            measure_class = ifcopenshell.util.unit.get_symbol_measure_class(resource["Unit"])
-            print(measure_class)
-            value_component = self.file.create_entity(measure_class, resource["BaseCostQuantity"])
-            print(value_component)
-            unit_component = None
-            if measure_class == "IfcNumericMeasure":
-                unit_component = self.create_unit(resource["Unit"])
-            else:
-                unit_type = ifcopenshell.util.unit.get_measure_unit_type(measure_class)
-                print(unit_type)
-                unit_assignment = ifcopenshell.util.unit.get_unit_assignment(self.file)
-                if unit_assignment:
-                    units = [u for u in unit_assignment.Units if getattr(u, "UnitType", None) == unit_type]
-                    if units:
-                        unit_component = units[0]
-                if not unit_component:
-                    unit_component = self.create_unit(resource["Unit"], unit_type)
-                    print(unit_component)
-            cost_value.UnitBasis = self.file.createIfcMeasureWithUnit(value_component, unit_component)
         self.create_resources(resource["children"], resource["ifc"])
 
     def create_unit(self, symbol, unit_type):
