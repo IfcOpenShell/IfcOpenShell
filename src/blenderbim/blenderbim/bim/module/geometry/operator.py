@@ -57,6 +57,39 @@ class EditObjectPlacement(bpy.types.Operator, Operator):
             core.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
 
+class OverrideMeshSeparate(bpy.types.Operator, Operator):
+    bl_idname = "bim.override_mesh_separate"
+    bl_label = "IFC Mesh Separate"
+    bl_options = {"REGISTER", "UNDO"}
+    obj: bpy.props.StringProperty()
+    type: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        obj = context.active_object
+
+        # You cannot separate meshes if the representation is mapped.
+        relating_type = tool.Root.get_element_type(tool.Ifc.get_entity(obj))
+        if relating_type and tool.Root.does_type_have_representations(relating_type):
+            # We toggle edit mode to ensure that once representations are
+            # unmapped, our Blender mesh only has a single user.
+            tool.Blender.toggle_edit_mode(context)
+            bpy.ops.bim.unassign_type(related_object=obj.name)
+            tool.Blender.toggle_edit_mode(context)
+
+        selected_objects = context.selected_objects
+        bpy.ops.mesh.separate(type=self.type)
+        bpy.ops.object.mode_set(mode="OBJECT", toggle=False)
+        new_objs = [obj]
+        for new_obj in context.selected_objects:
+            if new_obj == obj:
+                continue
+            # This is not very efficient, it needlessly copies the representations first.
+            blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
+            new_objs.append(new_obj)
+        for new_obj in new_objs:
+            bpy.ops.bim.update_representation(obj=new_obj.name)
+
+
 class OverrideOriginSet(bpy.types.Operator, Operator):
     bl_idname = "bim.override_origin_set"
     bl_label = "IFC Origin Set"
