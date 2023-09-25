@@ -180,10 +180,6 @@ def format_distance(
             frac = 0
             inches += 1
 
-        # Check values and compose string
-        if inches == 12:
-            feet += 1
-            inches = 0
 
         if not isArea:
             add_inches = bool(inches) or not suppress_zero_inches
