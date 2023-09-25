@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import blenderbim.core
+import bpy
 
 
 def reference_structure(ifc, spatial, structure=None, element=None):
@@ -120,3 +121,63 @@ def select_decomposed_elements(spatial):
     container = spatial.get_active_container()
     if container:
         spatial.select_products(spatial.get_decomposed_elements(container))
+
+#HERE STARTS SPATIAL TOOL
+
+def generate_spaces_from_walls(ifc, spatial, collector):
+    container, active_obj = spatial.get_container_and_active_obj()
+
+    if not active_obj:
+        self.report({"ERROR"}, "No active object. Please select a wall")
+        return
+
+    element = ifc.get_entity(active_obj)
+    if element and not element.is_a("IfcWall"):
+        return self.report({"ERROR"}, "The active object is not a wall. Please select a wall.")
+
+    if not container:
+        self.report({"ERROR"}, "The wall is not contained.")
+
+    if not bpy.context.selected_objects:
+        self.report({"ERROR"}, "No selected objects found. Please select walls.")
+        return
+
+    x, y, z = active_obj.matrix_world.translation.xyz
+    mat = active_obj.matrix_world
+    h = active_obj.dimensions.z
+    selected_objects = bpy.context.selected_objects
+
+    union = spatial.get_union_shape_from_selected_objects(selected_objects)
+
+    for i, linear_ring in enumerate(union.interiors):
+        poly = spatial.get_buffered_poly_from_linear_ring(linear_ring)
+
+        bm = spatial.get_bmesh_from_polygon(poly, mat, h)
+
+        name = "Space" + str(i)
+        mesh = bpy.data.meshes.new(name=name)
+        bm.to_mesh(mesh)
+        bm.free()
+
+        obj = bpy.data.objects.new(name, mesh)
+        obj.matrix_world = mat
+
+        spatial.set_obj_origin_to_bboxcenter(obj)
+
+        if z != 0:
+            obj.location = obj.location + Vector((0, 0, z))
+
+        bpy.context.view_layer.active_layer_collection.collection.objects.link(obj)
+        bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcSpace")
+        container_obj = ifc.get_object(container)
+        blenderbim.core.spatial.assign_container(
+            ifc, collector, spatial, structure_obj=container_obj, element_obj=obj
+        )
+
+def toggle_space_visibility(ifc, spatial):
+    model = ifc.get()
+    spaces = model.by_type("IfcSpace")
+    if not spaces:
+        return
+    spatial.toggle_spaces_visibility_wired_and_textured(spaces)
+

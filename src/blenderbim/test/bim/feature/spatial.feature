@@ -1,6 +1,6 @@
 @spatial
 Feature: Spatial
-    Covers spatial containment management.
+    Covers spatial containment management and spatial tool.
 
 Scenario: Enable editing container
     Given an empty IFC project
@@ -96,4 +96,41 @@ Scenario: Select similar container
     And the variable "site" is "tool.Ifc.get().by_type('IfcSite')[0].id()"
     And I press "bim.assign_container(structure={site})"
     When I press "bim.select_similar_container"
+    Then nothing happens
+
+#HERE STARTS TESTS FOR SPATIAL TOOL
+
+Scenario: Execute generate space from cursor position
+    Given an empty IFC project
+    When I press "bim.generate_space"
+    Then nothing happens
+
+Scenario: Execute generate spaces from walls
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcWallType') if e.Name == 'WAL100'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.add_constr_type_instance"
+    And the object "IfcWall/Wall" is selected
+    When I press "bim.generate_spaces_from_walls"
+    Then nothing happens
+
+Scenario: Execute generate flooring coverings from walls
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcWallType') if e.Name == 'WAL100'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.add_constr_type_instance"
+    And the object "IfcWall/Wall" is selected
+    When I press "bim.generate_flooring_coverings_from_walls"
+    Then nothing happens
+
+Scenario: Execute toggle space visibility
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I press "bim.assign_class(ifc_class='IfcSpace', predefined_type='SPACE')"
+    When I press "bim.toggle_space_visibility"
     Then nothing happens
