@@ -713,13 +713,41 @@ class OverrideDuplicateMove(bpy.types.Operator):
         return len(context.selected_objects) > 0
 
     def execute(self, context):
-        return tool.Geometry.duplicate_move_operator_execute(self, context, linked=False)
+        return OverrideDuplicateMove.execute_duplicate_operator(self, context, linked=False)
 
     def _execute(self, context):
+        return OverrideDuplicateMove.execute_ifc_duplicate_operator(self, context)
+
+    @staticmethod
+    def execute_duplicate_operator(self, context, linked=False):
+        # Deep magick from the dawn of time
+        if IfcStore.get_file():
+            IfcStore.execute_ifc_operator(self, context)
+            if self.new_active_obj:
+                context.view_layer.objects.active = self.new_active_obj
+            return {"FINISHED"}
+
+        new_active_obj = None
+        for obj in context.selected_objects:
+            new_obj = obj.copy()
+            if linked and obj.data:
+                new_obj.data = obj.data.copy()
+            if obj == context.active_object:
+                new_active_obj = new_obj
+            for collection in obj.users_collection:
+                collection.objects.link(new_obj)
+            obj.select_set(False)
+            new_obj.select_set(True)
+        if new_active_obj:
+            context.view_layer.objects.active = new_active_obj
+        return {"FINISHED"}
+
+    @staticmethod
+    def execute_ifc_duplicate_operator(self, context, linked=False):
         objects_to_duplicate = set(context.selected_objects)
 
         # handle arrays
-        arrays_to_duplicate, array_children = self.process_arrays(context)
+        arrays_to_duplicate, array_children = OverrideDuplicateMove.process_arrays(self, context)
         objects_to_duplicate -= array_children
         for child in array_children:
             child.select_set(False)
@@ -734,22 +762,30 @@ class OverrideDuplicateMove(bpy.types.Operator):
             if element and element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
                 continue  # For now, don't copy drawings until we stabilise a bit more. It's tricky.
 
+            linked_non_ifc_object = linked and not element
+
             # Prior to duplicating, sync the object placement to make decomposition recreation more stable.
             if tool.Ifc.is_moved(obj):
                 blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
             new_obj = obj.copy()
             temp_data = None
-            if obj.data:
+
+            if obj.data and not linked_non_ifc_object:
                 # assure root.copy_class won't replace the previous mesh globally
                 temp_data = obj.data.copy()
                 new_obj.data = temp_data
+
             if obj == context.active_object:
                 self.new_active_obj = new_obj
             for collection in obj.users_collection:
                 collection.objects.link(new_obj)
             obj.select_set(False)
             new_obj.select_set(True)
+
+            if linked_non_ifc_object:
+                continue
+
             # clear object's collection so it will be able to have it's own
             new_obj.BIMObjectProperties.collection = None
             # copy the actual class
@@ -776,6 +812,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
         tool.Root.recreate_decompositions(relationships, old_to_new)
         blenderbim.bim.handler.refresh_ui_data()
 
+    @staticmethod
     def process_arrays(self, context):
         selected_objects = set(context.selected_objects)
         array_parents = set()
@@ -811,6 +848,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
 
         return arrays_to_create, array_children
 
+
 class OverrideDuplicateMoveLinkedMacro(bpy.types.Macro):
     bl_idname = "bim.override_object_duplicate_move_linked_macro"
     bl_label = "IFC Duplicate Linked"
@@ -827,36 +865,10 @@ class OverrideDuplicateMoveLinked(bpy.types.Operator):
         return len(context.selected_objects) > 0
 
     def execute(self, context):
-        return tool.Geometry.duplicate_move_operator_execute(self, context, linked=True)
+        return OverrideDuplicateMove.execute_duplicate_operator(self, context, linked=True)
 
     def _execute(self, context):
-        self.new_active_obj = None
-        # Track decompositions so they can be recreated after the operation
-        relationships = tool.Root.get_decomposition_relationships(context.selected_objects)
-        old_to_new = {}
-        for obj in context.selected_objects:
-            # Prior to duplicating, sync the object placement to make decomposition recreation more stable.
-            if tool.Ifc.is_moved(obj):
-                blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
-
-            new_obj = obj.copy()
-            if obj.data:
-                new_obj.data = obj.data.copy()
-            if obj == context.active_object:
-                self.new_active_obj = new_obj
-            for collection in obj.users_collection:
-                collection.objects.link(new_obj)
-            obj.select_set(False)
-            new_obj.select_set(True)
-            # Copy the actual class
-            new = blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
-            if new:
-                tool.Model.handle_array_on_copied_element(new)
-                old_to_new[tool.Ifc.get_entity(obj)] = new
-        # Recreate decompositions
-        tool.Root.recreate_decompositions(relationships, old_to_new)
-        blenderbim.bim.handler.refresh_ui_data()
-        return {"FINISHED"}
+        return OverrideDuplicateMove.execute_ifc_duplicate_operator(self, context, linked=True)
 
 
 class OverrideDuplicateMoveAggregateMacro(bpy.types.Macro):
@@ -876,7 +888,7 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
         return len(context.selected_objects) > 0
 
     def execute(self, context):
-        return tool.Geometry.duplicate_move_operator_execute(self, context, linked=False)
+        return OverrideDuplicateMove.execute_duplicate_operator(self, context, linked=False)
 
     def _execute(self, context):
         self.new_active_obj = None
