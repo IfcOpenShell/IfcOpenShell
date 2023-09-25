@@ -21,7 +21,9 @@ Scenario: Assign container
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I press "bim.assign_class(ifc_class='IfcWall', predefined_type='SOLIDWALL')"
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
     And I press "bim.enable_editing_container"
     And the variable "site" is "tool.Ifc.get().by_type('IfcSite')[0].id()"
@@ -32,7 +34,9 @@ Scenario: Copy to container
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I press "bim.assign_class(ifc_class='IfcWall', predefined_type='SOLIDWALL')"
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
     And I press "bim.enable_editing_container"
     When I set "scene.BIMSpatialProperties.containers[0].is_selected" to "True"
@@ -43,7 +47,9 @@ Scenario: Reference structure
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I press "bim.assign_class(ifc_class='IfcWall', predefined_type='SOLIDWALL')"
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
     And I press "bim.enable_editing_container"
     When I set "scene.BIMSpatialProperties.containers[0].is_selected" to "True"
@@ -54,7 +60,9 @@ Scenario: Dereference structure
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I press "bim.assign_class(ifc_class='IfcWall', predefined_type='SOLIDWALL')"
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
     And I press "bim.enable_editing_container"
     When I set "scene.BIMSpatialProperties.containers[0].is_selected" to "True"
@@ -66,7 +74,9 @@ Scenario: Select container
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I press "bim.assign_class(ifc_class='IfcWall', predefined_type='SOLIDWALL')"
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
     And I press "bim.enable_editing_container"
     And the variable "site" is "tool.Ifc.get().by_type('IfcSite')[0].id()"
@@ -78,7 +88,9 @@ Scenario: Select similar container
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I press "bim.assign_class(ifc_class='IfcWall', predefined_type='SOLIDWALL')"
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
     And I press "bim.enable_editing_container"
     And the variable "site" is "tool.Ifc.get().by_type('IfcSite')[0].id()"

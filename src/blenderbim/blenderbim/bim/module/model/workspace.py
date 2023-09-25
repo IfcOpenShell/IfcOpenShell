@@ -347,14 +347,21 @@ class BimToolUI:
                 "IfcDuctSegment",
                 "IfcPipeSegment",
             ):
-                add_layout_hotkey_operator(cls.layout, "Extend", "S_E", "")
                 add_layout_hotkey_operator(cls.layout, "Add Fitting", "S_F", "")
+                add_layout_hotkey_operator(
+                    cls.layout, "Regen MEP", "S_G", bpy.ops.bim.regenerate_distribution_element.__doc__
+                )
+                if context.region.type != "TOOL_HEADER":
+                    cls.layout.operator("bim.mep_add_bend")
+                    cls.layout.operator("bim.mep_add_transition")
+                    cls.layout.operator("bim.mep_add_obstruction")
+                    cls.layout.operator("bim.mep_connect_elements")
             else:
                 add_layout_hotkey_operator(cls.layout, "Edit Axis", "A_E", "")
                 add_layout_hotkey_operator(cls.layout, "Butt", "S_T", "")
                 add_layout_hotkey_operator(cls.layout, "Mitre", "S_Y", "")
                 add_layout_hotkey_operator(cls.layout, "Rotate 90", "S_R", bpy.ops.bim.rotate_90.__doc__)
-            add_layout_hotkey_operator(cls.layout, "Regen", "S_G", bpy.ops.bim.recalculate_profile.__doc__)
+                add_layout_hotkey_operator(cls.layout, "Regen", "S_G", bpy.ops.bim.recalculate_profile.__doc__)
             row.operator("bim.extend_profile", icon="X", text="").join_type = ""
 
         elif (
@@ -426,6 +433,11 @@ class BimToolUI:
         cls.layout.row(align=True).label(text="Mode")
         add_layout_hotkey_operator(cls.layout, "Void", "A_O", "Toggle openings")
         add_layout_hotkey_operator(cls.layout, "Decomposition", "A_D", "Select decomposition")
+
+        cls.layout.separator()
+        add_layout_hotkey_operator(
+            cls.layout, "Calculate All Quantities", "S_Q", bpy.ops.bim.calculate_all_quantities.__doc__
+        )
 
     @classmethod
     def draw_header_interface(cls):
@@ -667,7 +679,15 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         if self.active_material_usage == "LAYER2":
             bpy.ops.bim.recalculate_wall()
         elif self.active_material_usage == "PROFILE":
-            bpy.ops.bim.recalculate_profile()
+            if self.active_class in (
+                "IfcCableCarrierSegment",
+                "IfcCableSegment",
+                "IfcDuctSegment",
+                "IfcPipeSegment",
+            ):
+                bpy.ops.bim.regenerate_distribution_element()
+            else:
+                bpy.ops.bim.recalculate_profile()
         elif self.active_class in ("IfcWindow", "IfcWindowStandardCase", "IfcDoor", "IfcDoorStandardCase"):
             bpy.ops.bim.recalculate_fill()
         elif self.active_class in ("IfcSpace"):

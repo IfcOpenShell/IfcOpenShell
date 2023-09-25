@@ -182,3 +182,80 @@ class System(blenderbim.core.tool.System):
     @classmethod
     def set_active_system(cls, system):
         bpy.context.scene.BIMSystemProperties.active_system_id = system.id()
+
+    @classmethod
+    def get_decoration_data(cls):
+        all_vertices = []
+        preview_edges = []
+        special_vertices = []
+        selected_edges = []
+        selected_vertices = []
+
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        start_vert_i = 0
+
+        if bpy.context.active_object and (active_element := tool.Ifc.get_entity(bpy.context.active_object)):
+            selected_elements = cls.get_connected_elements(active_element)
+        else:
+            selected_elements = set()
+
+        # TODO: get only objects visible in viewport
+        objects = set(bpy.data.objects) - set(bpy.data.collections["Types"].objects)
+        for obj in objects:
+            start_vert_i = len(all_vertices)
+            if obj.hide_get():
+                continue
+
+            if not isinstance(obj.data, bpy.types.Mesh):
+                continue
+
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+
+            if not cls.is_mep_element(element):
+                continue
+
+            ports = tool.System.get_ports(element)
+
+            for port in ports:
+                position = tool.Model.get_element_matrix(port).translation * si_conversion
+                all_vertices.append(position)
+
+            verts = range(start_vert_i, start_vert_i + len(ports))
+            edges = [(i, i + 1) for i in range(start_vert_i, start_vert_i + len(ports) - 1)]
+            if element in selected_elements:
+                selected_vertices.extend(verts)
+                selected_edges.extend(edges)
+            else:
+                special_vertices.extend(verts)
+                preview_edges.extend(edges)
+
+        decoration_data = {
+            "all_vertices": all_vertices,
+            "preview_edges": preview_edges,
+            "special_vertices": [all_vertices[i] for i in special_vertices],
+            "selected_edges": selected_edges,
+            "selected_vertices": [all_vertices[i] for i in selected_vertices],
+        }
+        return decoration_data
+
+    @classmethod
+    def get_connected_elements(cls, element, elements=None):
+        if elements is None:
+            elements = set((element,))
+
+        connected_elements = ifcopenshell.util.system.get_connected_from(element)
+        connected_elements += ifcopenshell.util.system.get_connected_to(element)
+
+        for element in connected_elements:
+            if element in elements:
+                continue
+            elements.add(element)
+            cls.get_connected_elements(element, elements)
+
+        return elements
+
+    @classmethod
+    def is_mep_element(cls, element):
+        return element.is_a("IfcFlowSegment") or element.is_a("IfcFlowFitting")

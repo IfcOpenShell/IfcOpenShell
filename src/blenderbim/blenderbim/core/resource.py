@@ -21,15 +21,11 @@
 
 def load_resources(resource):
     resource.load_resources()
-    resource.load_resource_properties()
+
 
 def add_resource(tool_ifc, resource_tool, ifc_class, parent_resource=None):
     tool_ifc.run("resource.add_resource", ifc_class=ifc_class, parent_resource=parent_resource)
-    load_resources(resource_tool)
-
-
-def load_resource_properties(resource_tool, resource=None):
-    resource_tool.load_resource_properties()
+    resource_tool.load_resources()
 
 
 def disable_editing_resource(resource_tool):
@@ -54,7 +50,7 @@ def edit_resource(ifc, resource_tool, resource):
 
 def remove_resource(ifc, resource_tool, resource=None):
     ifc.run("resource.remove_resource", resource=resource)
-    load_resources(resource_tool)
+    resource_tool.load_resources()
 
 
 def enable_editing_resource_time(ifc_tool, resource_tool, resource):
@@ -82,7 +78,7 @@ def calculate_resource_work(ifc, resource_tool, resource):
         nested_resources = resource_tool.get_nested_resources(resource)
         for nested_resource in nested_resources or []:
             ifc.run("resource.calculate_resource_work", resource=nested_resource)
-    load_resources(resource_tool)
+    resource_tool.load_resources()
 
 
 def enable_editing_resource_costs(resource_tool, resource):
@@ -143,17 +139,17 @@ def edit_resource_quantity(resource_tool, ifc, physical_quantity=None):
 
 def import_resources(resource_tool, file_path):
     resource_tool.import_resources(file_path)
-    load_resources(resource_tool)
+    resource_tool.load_resources()
 
 
 def expand_resource(resource_tool, resource):
     resource_tool.expand_resource(resource)
-    load_resources(resource_tool)
+    resource_tool.load_resources()
 
 
 def contract_resource(resource_tool, resource):
     resource_tool.contract_resource(resource)
-    load_resources(resource_tool)
+    resource_tool.load_resources()
 
 
 def assign_resource(ifc, spatial, resource=None, products=None):
@@ -213,9 +209,11 @@ def remove_usage_constraint(ifc, resource_tool, resource, reference_path):
                 ifc.run("constraint.unassign_constraint", product=resource, constraint=constraint)
                 ifc.run("constraint.remove_constraint", constraint=constraint)
 
+
 def go_to_resource(resource_tool, resource):
     resource_tool.go_to_resource(resource)
 
+
 def calculate_resource_usage(ifc, resource_tool, resource):
     ifc.run("resource.calculate_resource_usage", resource=resource)
-    load_resources(resource_tool)
+    resource_tool.load_resources()

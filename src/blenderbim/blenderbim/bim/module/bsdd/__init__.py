@@ -1,5 +1,5 @@
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2023 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -17,22 +17,26 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from bpy.types import PropertyGroup
-from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
-    BoolProperty,
-    IntProperty,
-    FloatProperty,
-    FloatVectorProperty,
-    CollectionProperty,
+from . import ui, prop, operator
+
+classes = (
+    operator.GetBSDDClassificationProperties,
+    operator.LoadBSDDDomains,
+    operator.SearchBSDDClassifications,
+    operator.SetActiveBSDDDomain,
+    prop.BSDDDomain,
+    prop.BSDDClassification,
+    prop.BSDDPset,
+    prop.BIMBSDDProperties,
+    ui.BIM_UL_bsdd_domains,
+    ui.BIM_UL_bsdd_classifications,
+    ui.BIM_PT_bsdd,
 )
 
 
-class COBieProperties(PropertyGroup):
-    cobie_ifc_file: StringProperty(default="", name="COBie IFC File")
-    cobie_types: StringProperty(default=".COBieType", name="COBie Types")
-    cobie_components: StringProperty(default=".COBie", name="COBie Components")
-    cobie_json_file: StringProperty(default="", name="COBie JSON File")
-    should_load_from_memory: BoolProperty(default=False, name="Load from Memory")
+def register():
+    bpy.types.Scene.BIMBSDDProperties = bpy.props.PointerProperty(type=prop.BIMBSDDProperties)
+
+
+def unregister():
+    del bpy.types.Scene.BIMBSDDProperties

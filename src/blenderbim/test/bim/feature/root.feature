@@ -5,6 +5,7 @@ Scenario: Reassign class
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class(ifc_class='IfcWall', predefined_type='SOLIDWALL')"
     And I press "object.duplicate_move"
@@ -20,6 +21,7 @@ Scenario: Unlink object
     And I add a cube
     And the object "Cube" is selected
     And I add a material
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And I press "bim.add_material"
@@ -32,6 +34,7 @@ Scenario: Copy class
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     When I press "bim.copy_class(obj='IfcWall/Cube')"
@@ -41,6 +44,7 @@ Scenario: Assign a class to a cube
     Given an empty IFC project
     And I add a cube
     When the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     Then the object "IfcWall/Cube" is an "IfcWall"
@@ -87,6 +91,7 @@ Scenario: Assign a class to a cube in a collection
     And I add a cube
     When the object "Cube" is selected
     And the object "Cube" is placed in the collection "IfcBuildingStorey/My Storey"
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     Then the object "IfcWall/Cube" is contained in "My Storey"
@@ -95,6 +100,7 @@ Scenario: Copy a wall
     Given an empty IFC project
     And I add a cube
     When the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And I duplicate the selected objects
