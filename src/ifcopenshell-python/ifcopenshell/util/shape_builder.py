@@ -1075,7 +1075,7 @@ class ShapeBuilder:
 
             transition_items.append(self.extrude_face_set(first_profile_points, start_length, end_cap=False))
             transition_items.append(
-                self.extrude_face_set(second_profile_points, end_length, end_extrusion_offset, start_cap=False)
+                self.extrude_face_set(second_profile_points, end_length, offset=end_extrusion_offset, start_cap=False)
             )
 
             first_profile_points = [p + start_offset for p in first_profile_points]
@@ -1105,7 +1105,7 @@ class ShapeBuilder:
 
             transition_items.append(self.extrude_face_set(start_points, start_length, end_cap=False))
             transition_items.append(
-                self.extrude_face_set(end_points, end_length, end_extrusion_offset, start_cap=False)
+                self.extrude_face_set(end_points, end_length, offset=end_extrusion_offset, start_cap=False)
             )
 
             # offset verts

@@ -42,11 +42,21 @@ class BIM_PT_search(Panel):
             row = self.layout.row(align=True)
             row.operator("bim.search", text="Search", icon="VIEWZOOM")
 
-        return  # Temporary for now whilst searching is being upgraded.
+        return
 
+
+class BIM_PT_filter(Panel):
+    bl_label = "Filter Selection"
+    bl_idname = "BIM_PT_filter"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_grouping_and_filtering"
+
+    def draw(self, context):
         row = self.layout.row(align=True)
         row.operator("bim.activate_ifc_class_filter", icon="FILTER")
-        row.operator("bim.activate_ifc_building_storey_filter", icon="FILTER")
+        row.operator("bim.activate_ifc_container_filter", icon="FILTER")
 
 
 class BIM_PT_colour_by_property(Panel):

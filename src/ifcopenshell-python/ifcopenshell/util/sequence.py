@@ -62,6 +62,8 @@ def derive_calendar(task):
 
 def count_working_days(start, finish, calendar):
     result = 0
+    if start == finish:
+        return 0
     current_date = datetime.date(start.year, start.month, start.day)
     finish_date = datetime.date(finish.year, finish.month, finish.day)
     while current_date <= finish_date:
@@ -426,3 +428,23 @@ def get_tasks_for_product(product, schedule=None):
         ]
 
     return inputs, outputs
+
+
+def get_sequence_assignment(task, sequence="successor"):
+    if sequence == "successor":
+        relationship_attr = "IsPredecessorTo"
+    elif sequence == "predecessor":
+        relationship_attr = "IsSuccessorFrom"
+    else:
+        return []
+
+    relationship = getattr(task, relationship_attr, None)
+    if relationship:
+        return relationship
+
+    for rel in task.Nests or []:
+        result = get_sequence_assignment(rel.RelatingObject, sequence)
+        if result:
+            return result
+
+    return []

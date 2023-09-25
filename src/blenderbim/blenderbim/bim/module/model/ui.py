@@ -188,10 +188,8 @@ class BIM_PT_array(bpy.types.Panel):
         if ArrayData.data["parameters"]:
             row = self.layout.row(align=True)
             row.label(text=ArrayData.data["parameters"]["parent_name"], icon="CON_CHILDOF")
-            op = row.operator("bim.select_array_parent", icon="OBJECT_DATA", text="")
-            op.parent = ArrayData.data["parameters"]["Parent"]
-            op = row.operator("bim.select_all_array_objects", icon="RESTRICT_SELECT_OFF", text="")
-            op.parent = ArrayData.data["parameters"]["Parent"]
+            row.operator("bim.select_array_parent", icon="OBJECT_DATA", text="")
+            row.operator("bim.select_all_array_objects", icon="RESTRICT_SELECT_OFF", text="")
 
             if ArrayData.data["parameters"]["data_dict"]:
                 row.operator("bim.add_array", icon="ADD", text="")

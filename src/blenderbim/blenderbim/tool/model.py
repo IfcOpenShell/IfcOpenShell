@@ -540,11 +540,56 @@ class Model(blenderbim.core.tool.Model):
         return axes
 
     @classmethod
-    def regenerate_array(cls, parent, data, keep_objs=False):
-        tool.Blender.Modifier.Array.remove_constraints(tool.Ifc.get_entity(parent))
+    def handle_array_on_copied_element(cls, element, array_data=None):
+        """if no `array_data` is provided then an array will be removed from the element"""
+
+        if array_data is None:
+            array_pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+            if not array_pset:
+                return
+
+            array_pset_data = array_pset["Data"]
+            array_pset = tool.Ifc.get().by_id(array_pset["id"])
+            ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=array_pset)
+
+            # remove constraints
+            obj = tool.Ifc.get_object(element)
+            if not array_pset_data:  # skip array parents
+                constraint = next((c for c in obj.constraints if c.type == "CHILD_OF"), None)
+                if constraint:
+                    matrix = obj.matrix_world.copy()
+                    obj.constraints.remove(constraint)
+                    # keep the matrix before the constraint
+                    # otherwise object will jump to some previous position
+                    obj.matrix_world = matrix
+                tool.Blender.lock_transform(obj, False)
+
+        else:
+            obj = tool.Ifc.get_object(element)
+            array_pset = tool.Pset.get_element_pset(element, "BBIM_Array")
+            default_data = '[{"children": []}]'
+            ifcopenshell.api.run(
+                "pset.edit_pset",
+                tool.Ifc.get(),
+                pset=array_pset,
+                properties={"Parent": element.GlobalId, "Data": default_data},
+            )
+
+            tool.Model.regenerate_array(obj, array_data)
+
+            json_data = json.dumps(array_data)
+            ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=array_pset, properties={"Data": json_data})
+
+            for i in range(len(array_data)):
+                tool.Blender.Modifier.Array.set_children_lock_state(element, i, True)
+            tool.Blender.Modifier.Array.constrain_children_to_parent(element)
+
+    @classmethod
+    def regenerate_array(cls, parent_obj, data, keep_objs=False):
+        tool.Blender.Modifier.Array.remove_constraints(tool.Ifc.get_entity(parent_obj))
 
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        obj_stack = [parent]
+        obj_stack = [parent_obj]
 
         for array in data:
             if array["sync_children"]:

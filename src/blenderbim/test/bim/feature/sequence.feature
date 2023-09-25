@@ -349,6 +349,8 @@ Scenario: Animate the construction of a wall
     And I press "bim.edit_task_time"
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
@@ -385,6 +387,7 @@ Scenario: Animate the demolition of a wall
     And I press "bim.edit_task_time"
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
@@ -424,6 +427,7 @@ Scenario: Animate the operation of a wall
     And I press "bim.edit_task_time"
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
@@ -458,6 +462,7 @@ Scenario: Animate the movement of a wall
     And I add a cube
     And I rename the object "Cube" to "ToObject"
     And the object "ToObject" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/ToObject" is selected
@@ -508,6 +513,7 @@ Scenario: Animate the consumption of a wall
     And I press "bim.edit_task_time"
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
@@ -549,6 +555,7 @@ Scenario: Clear Previous Animation
     And I press "bim.edit_task_time"
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
@@ -758,6 +765,7 @@ Scenario: Assign Product Output
     And the variable "task" is "IfcStore.get_file().by_type('IfcTask')[0].id()"
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class(ifc_class='IfcWall', predefined_type='SOLIDWALL')"
     And the object "IfcWall/Cube" is selected
@@ -773,10 +781,11 @@ Scenario: Assign Product Input
     And the variable "task" is "IfcStore.get_file().by_type('IfcTask')[0].id()"
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class(ifc_class='IfcWall', predefined_type='SOLIDWALL')"
     And the object "IfcWall/Cube" is selected
-    And I press "bim.assign_process(task={task}, related_object_type='PRODUCT')"
+    And I press "bim.assign_process(task={task},related_object=0, related_object_type='PRODUCT')"
     Then nothing happens
 
 Scenario: Select Assigned Outputs
@@ -788,9 +797,9 @@ Scenario: Select Assigned Outputs
     And the variable "task" is "IfcStore.get_file().by_type('IfcTask')[0].id()"
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class(ifc_class='IfcWall', predefined_type='SOLIDWALL')"
-    And I press "object.select_all(action='DESELECT')"
+    And I press "bim.assign_class()"
     And I press "bim.assign_product(task={task})"
     When I press "bim.select_task_related_products(task={task})"
     Then nothing happens
@@ -804,9 +813,10 @@ Scenario: Select Assigned Inputs
     And the variable "task" is "IfcStore.get_file().by_type('IfcTask')[0].id()"
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class(ifc_class='IfcWall', predefined_type='SOLIDWALL')"
-    And I press "object.select_all(action='DESELECT')"
+    And I press "bim.assign_class()"
+    And the object "IfcWall/Cube" is selected
     And I press "bim.assign_process(task={task}, related_object_type='PRODUCT')"
     When I press "bim.select_task_related_products(task={task})"
     Then nothing happens
@@ -849,6 +859,7 @@ Scenario: Add Animation Camera
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And I press "bim.add_animation_camera"

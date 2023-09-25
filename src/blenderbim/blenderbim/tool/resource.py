@@ -61,6 +61,7 @@ class Resource(blenderbim.core.tool.Resource):
                 continue
             create_new_resource_li(resource, 0)
         cls.load_productivity_data()
+        cls.load_resource_properties()
         props.is_resource_update_enabled = True
         props.is_editing = True
 
@@ -425,7 +426,7 @@ class Resource(blenderbim.core.tool.Resource):
                 contracted_resources.remove(ancestor)
         bpy.context.scene.BIMResourceProperties.contracted_resources = json.dumps(contracted_resources)
         cls.load_resources()
-        cls.load_resource_properties()
+
 
         resource_props = bpy.context.scene.BIMResourceTreeProperties
         expanded_resources = [item.ifc_definition_id for item in resource_props.resources]

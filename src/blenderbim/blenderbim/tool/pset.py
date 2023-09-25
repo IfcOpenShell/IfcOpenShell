@@ -66,3 +66,10 @@ class Pset(blenderbim.core.tool.Pset):
             if value is not None:
                 return False
         return True
+
+    @classmethod
+    def enable_pset_editing(cls, pset_id=None, pset_name=None, pset_type=None, obj=None, obj_type=None):
+        #TODO REFACTOR ONCE toll/CORE functions are available
+        bpy.ops.bim.enable_pset_editing(
+            pset_id=0, pset_name=tool.Pset.get_pset_name(obj, obj_type), pset_type="PSET", obj=obj, obj_type=obj_type
+        )

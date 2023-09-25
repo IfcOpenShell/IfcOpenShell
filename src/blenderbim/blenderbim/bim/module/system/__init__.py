@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import ui, prop, operator
+from . import ui, prop, operator, decorator
 
 classes = (
     operator.AddPort,
@@ -51,7 +51,9 @@ classes = (
 
 def register():
     bpy.types.Scene.BIMSystemProperties = bpy.props.PointerProperty(type=prop.BIMSystemProperties)
+    bpy.app.handlers.load_post.append(decorator.toggle_decorations_on_load)
 
 
 def unregister():
     del bpy.types.Scene.BIMSystemProperties
+    bpy.app.handlers.load_post.remove(decorator.toggle_decorations_on_load)

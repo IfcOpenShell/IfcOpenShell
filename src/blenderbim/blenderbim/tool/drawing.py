@@ -249,17 +249,7 @@ class Drawing(blenderbim.core.tool.Drawing):
                 obj_data = obj.data
                 bpy.data.objects.remove(obj)
                 if obj_data and obj_data.users == 0:  # in case we have drawing element types
-                    cls.remove_object_data(obj_data)
-
-    @classmethod
-    def remove_object_data(cls, data):
-        """also removes all related objects"""
-        if isinstance(data, bpy.types.Camera):
-            bpy.data.cameras.remove(data)
-        elif isinstance(data, bpy.types.Mesh):
-            bpy.data.meshes.remove(data)
-        elif isinstance(data, bpy.types.Curve):
-            bpy.data.curves.remove(data)
+                    tool.Blender.remove_data_block(obj_data)
 
     @classmethod
     def delete_object(cls, obj):
@@ -445,7 +435,7 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def get_drawing_target_view(cls, drawing):
-        return ifcopenshell.util.element.get_psets(drawing)["EPset_Drawing"].get("TargetView", "MODEL_VIEW")
+        return ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {}).get("TargetView", "MODEL_VIEW")
 
     @classmethod
     def get_group_elements(cls, group):

@@ -20,6 +20,7 @@ import os
 import re
 import bpy
 import time
+import json
 import bmesh
 import logging
 import mathutils
@@ -145,12 +146,15 @@ class MaterialCreator:
         faces_remap = None
         texture_map = None
         if coordinates.is_a("IfcIndexedPolygonalTextureMap"):
-            faces_remap = [[coordinates_remap[i-1] for i in tex_coord_index.TexCoordsOf.CoordIndex]
-                        for tex_coord_index in coordinates.TexCoordIndices]
+            faces_remap = [
+                [coordinates_remap[i - 1] for i in tex_coord_index.TexCoordsOf.CoordIndex]
+                for tex_coord_index in coordinates.TexCoordIndices
+            ]
             texture_map = [tex_coord_index.TexCoordIndex for tex_coord_index in coordinates.TexCoordIndices]
         elif coordinates.is_a("IfcIndexedTriangleTextureMap"):
-            faces_remap = [[coordinates_remap[i-1] for i in triangle_face]
-                        for triangle_face in coordinates.MappedTo.CoordIndex]
+            faces_remap = [
+                [coordinates_remap[i - 1] for i in triangle_face] for triangle_face in coordinates.MappedTo.CoordIndex
+            ]
             texture_map = coordinates.TexCoordIndex
 
         # apply uv to each face
@@ -165,7 +169,7 @@ class MaterialCreator:
             )
             # apply uv to each loop
             for loop, i in zip(bface.loops, texCoordIndex):
-                loop[uv_layer].uv = coordinates.TexCoords.TexCoordsList[i-1]
+                loop[uv_layer].uv = coordinates.TexCoords.TexCoordsList[i - 1]
 
         # Finish up, write the bmesh back to the mesh
         bm.to_mesh(self.mesh)
@@ -262,6 +266,8 @@ class IfcImporter:
         self.profile_code("Calculate unit scale")
         self.calculate_model_offset()
         self.profile_code("Calculate model offset")
+        self.predict_dense_mesh()
+        self.profile_code("Predict dense mesh")
         self.set_units()
         self.profile_code("Set units")
         self.create_project()
@@ -306,6 +312,7 @@ class IfcImporter:
         self.set_default_context()
         self.profile_code("Setting default context")
         self.setup_viewport_camera()
+        self.setup_arrays()
         self.update_progress(100)
         bpy.context.window_manager.progress_end()
 
@@ -346,6 +353,7 @@ class IfcImporter:
             )
         if self.body_contexts:
             self.settings.set_context_ids(self.body_contexts)
+            self.settings_body_2d.set_context_ids(self.body_contexts)
         # Annotation ContextType is to accommodate broken Revit files
         # See https://github.com/Autodesk/revit-ifc/issues/187
         self.plan_contexts = [
@@ -495,6 +503,26 @@ class IfcImporter:
                     if inverse_element.is_a("IfcShapeRepresentation"):
                         products.extend(self.get_products_from_shape_representation(inverse_element))
         return products
+
+    def predict_dense_mesh(self):
+        threshold = 10000  # Just from experience.
+
+        faces = [len(e.CfsFaces) for e in self.file.by_type("IfcClosedShell")]
+        if faces and max(faces) > threshold:
+            self.ifc_import_settings.should_use_native_meshes = True
+            return
+
+        if self.file.schema == "IFC2X3":
+            return
+
+        faces = [len(e.Faces) for e in self.file.by_type("IfcPolygonalFaceSet")]
+        if faces and max(faces) > threshold:
+            self.ifc_import_settings.should_use_native_meshes = True
+            return
+
+        faces = [len(e.CoordIndex) for e in self.file.by_type("IfcTriangulatedFaceSet")]
+        if faces and max(faces) > threshold:
+            self.ifc_import_settings.should_use_native_meshes = True
 
     def calculate_model_offset(self):
         props = bpy.context.scene.BIMGeoreferenceProperties
@@ -1907,6 +1935,15 @@ class IfcImporter:
             bpy.ops.object.select_all(action="SELECT")
             bpy.ops.view3d.view_selected()
             bpy.ops.object.select_all(action="DESELECT")
+
+    def setup_arrays(self):
+        for element in self.file.by_type("IfcElement"):
+            pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+            if not pset_data or not pset_data.get("Data", None):  # skip array children
+                continue
+            for i in range(len(json.loads(pset_data["Data"]))):
+                tool.Blender.Modifier.Array.set_children_lock_state(element, i, True)
+                tool.Blender.Modifier.Array.constrain_children_to_parent(element)
 
 
 class IfcImportSettings:

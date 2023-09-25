@@ -637,6 +637,7 @@ class DumbWallGenerator:
             is_global=True,
             should_sync_changes_first=False,
         )
+        tool.Blender.remove_data_block(mesh)
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbLayer2"})
         obj.select_set(True)
@@ -827,10 +828,10 @@ class DumbWallJoiner:
             return
 
         for rel in element1.ConnectedTo:
-            if rel.RelatingConnectionType in ["ATSTART", "ATEND"]:
+            if rel.is_a("IfcRelConnectsPathElements") and rel.RelatingConnectionType in ["ATSTART", "ATEND"]:
                 rel.RelatingConnectionType = "ATSTART" if rel.RelatingConnectionType == "ATEND" else "ATEND"
         for rel in element1.ConnectedFrom:
-            if rel.RelatedConnectionType in ["ATSTART", "ATEND"]:
+            if rel.is_a("IfcRelConnectsPathElements") and rel.RelatedConnectionType in ["ATSTART", "ATEND"]:
                 rel.RelatedConnectionType = "ATSTART" if rel.RelatedConnectionType == "ATEND" else "ATEND"
 
         layers1 = tool.Model.get_material_layer_parameters(element1)

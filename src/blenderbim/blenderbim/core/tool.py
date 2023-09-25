@@ -726,7 +726,6 @@ class Sequence:
     def get_recurrence_pattern_attributes(cls, recurrence_pattern): pass
     def get_recurrence_pattern_times(cls): pass
     def get_rel_sequence_attributes(cls): pass
-    def get_selected_resource(cls): pass
     def get_start_date(cls): pass
     def get_task_attribute_value(cls, attribute_name): pass
     def get_task_attributes(cls): pass
@@ -758,7 +757,7 @@ class Sequence:
     def load_task_inputs(cls, inputs): pass
     def load_task_outputs(cls, outputs): pass
     def load_task_properties(cls, task): pass
-    def load_task_resources(cls,resources): pass
+    def load_task_resources(cls, task): pass
     def load_task_time_attributes(cls, task_time): pass
     def load_task_tree(cls, work_schedule): pass
     def load_work_calendar_attributes(cls, work_calendar): pass

@@ -362,12 +362,18 @@ def get_property_unit(prop, ifc_file):
     if not unit_assignment:
         return
     entity = prop.wrapped_data.declaration().as_entity()
+    measure_class = None
     if prop.is_a("IfcPhysicalSimpleQuantity"):
         measure_class = entity.attribute_by_index(3).type_of_attribute().declared_type().name()
     elif prop.is_a("IfcPropertySingleValue") and prop.NominalValue:
         measure_class = prop.NominalValue.is_a()
-    elif prop.is_a("IfcPropertyEnumeratedValue") and prop.EnumerationValues:
-        measure_class = prop.EnumerationValues[0].is_a()
+    elif prop.is_a("IfcPropertyEnumeratedValue"):
+        if prop.EnumerationReference:
+            unit = getattr(prop.EnumerationReference, "Unit", None)
+            if unit:
+                return unit
+        if prop.EnumerationValues:
+            measure_class = prop.EnumerationValues[0].is_a()
     elif prop.is_a("IfcPropertyListValue") and prop.ListValues:
         measure_class = prop.ListValues[0].is_a()
     elif prop.is_a("IfcPropertyBoundedValue"):
@@ -393,6 +399,8 @@ def get_property_unit(prop, ifc_file):
             else:
                 table_units[f"{attribute}Unit"] = None
         return table_units
+    if measure_class is None:
+        return
     unit_type = get_measure_unit_type(measure_class)
     units = [u for u in unit_assignment.Units if getattr(u, "UnitType", None) == unit_type]
     if units:

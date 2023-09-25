@@ -173,8 +173,8 @@ class Specification:
         self.minOccurs = ids_dict["@minOccurs"]
         self.maxOccurs = ids_dict["@maxOccurs"]
         self.ifcVersion = ids_dict["@ifcVersion"]
-        self.applicability = self.parse_clause(ids_dict["applicability"]) if "applicability" in ids_dict else []
-        self.requirements = self.parse_clause(ids_dict["requirements"]) if "requirements" in ids_dict else []
+        self.applicability = self.parse_clause(ids_dict["applicability"]) if ids_dict.get("applicability") is not None else []
+        self.requirements = self.parse_clause(ids_dict["requirements"]) if ids_dict.get("requirements") is not None else []
         return self
 
     def parse_clause(self, clause):
@@ -247,9 +247,7 @@ class Specification:
             if self.failed_entities:
                 self.status = False
         elif self.maxOccurs == 0:
-            if (len(self.applicable_entities)) > 0 and len(self.requirements) == 0:
-                self.status = False
-            if (len(self.applicable_entities)) > 0 and (len(self.applicable_entities) - len(self.failed_entities)) > 0:
+            if (len(self.applicable_entities)) > 0:
                 self.status = False
 
     def get_usage(self):

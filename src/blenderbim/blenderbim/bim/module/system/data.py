@@ -27,6 +27,7 @@ def refresh():
     SystemData.is_loaded = False
     ObjectSystemData.is_loaded = False
     PortData.is_loaded = False
+    SystemDecorationData.is_loaded = False
 
 
 class SystemData:
@@ -140,3 +141,19 @@ class PortData:
 
             data.append((port, port_obj, connected_element))
         return data
+
+
+class SystemDecorationData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {
+            "decoration_data": cls.decoration_data(),
+        }
+        cls.is_loaded = True
+
+    @classmethod
+    def decoration_data(cls):
+        return tool.System.get_decoration_data()

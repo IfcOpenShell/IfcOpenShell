@@ -49,7 +49,6 @@ classes = (
     operator.ExpandResource,
     operator.GoToResource,
     operator.ImportResources,
-    operator.LoadResourceProperties,
     operator.LoadResources,
     operator.RemoveResource,
     operator.RemoveResourceQuantity,
