@@ -201,8 +201,6 @@ endif
 	cp -r dist/working/IfcOpenShell-0.7.0/src/ifctester/ifctester dist/blenderbim/libs/site/packages/
 	# Provides IFCFM functionality
 	cp -r dist/working/IfcOpenShell-0.7.0/src/ifcfm/ifcfm dist/blenderbim/libs/site/packages/
-	# Provides IFCCOBie functionality
-	cp -r dist/working/IfcOpenShell-0.7.0/src/ifccobie/* dist/blenderbim/libs/site/packages/
 	# Provides bSDD functionality
 	cp -r dist/working/IfcOpenShell-0.7.0/src/bsdd/* dist/blenderbim/libs/site/packages/
 	# Provides IFCDiff functionality
@@ -594,14 +592,6 @@ endif
 	cd dist/working && wget https://files.pythonhosted.org/packages/2e/79/81bebd1b0446d46733db99d74543b4bb80646ef4c988584bae0862e706bc/parse_type-0.5.2.tar.gz
 	cd dist/working && tar -xzvf parse_type*
 	cd dist/working/parse_type-0.5.2/ && cp -r parse_type ../../blenderbim/libs/site/packages/
-	rm -rf dist/working
-
-	# Required by IFCCOBie for XLSX support
-	# TODO: see if we can replace this with openpyxl which does both read/write
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/0c/bc/82d6783f83f65f56d8b77d052773c4a2f952fa86385f0cd54e1e006658d7/XlsxWriter-1.2.9.tar.gz
-	cd dist/working && tar -xzvf XlsxWriter*
-	cd dist/working/XlsxWriter-1.2.9/ && cp -r xlsxwriter ../../blenderbim/libs/site/packages/
 	rm -rf dist/working
 
 	# Required by augin
