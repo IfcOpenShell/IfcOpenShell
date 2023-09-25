@@ -121,8 +121,15 @@ class AddRepresentation(bpy.types.Operator, Operator):
     bl_options = {"REGISTER", "UNDO"}
     representation_conversion_method: bpy.props.EnumProperty(
         items=[
-            ("OUTLINE", "Trace Outline", ""),
-            ("BOX", "Bounding Box", ""),
+            ("OUTLINE", "Trace Outline", "Traces outline by local XY axes, for Profile - by local XZ axes."),
+            (
+                "BOX",
+                "Bounding Box",
+                "Creates a bounding box representation.\n"
+                "For Plan context - 2D bounding box by local XY axes,\n"
+                "for Profile - 2D bounding box by local XZ axes.\n"
+                "For other contexts - bounding box is 3d.",
+            ),
             ("PROJECT", "Full Representation", ""),
         ],
         name="Representation Conversion Method",
