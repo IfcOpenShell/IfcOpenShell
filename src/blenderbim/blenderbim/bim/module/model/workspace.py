@@ -434,6 +434,11 @@ class BimToolUI:
         add_layout_hotkey_operator(cls.layout, "Void", "A_O", "Toggle openings")
         add_layout_hotkey_operator(cls.layout, "Decomposition", "A_D", "Select decomposition")
 
+        cls.layout.separator()
+        add_layout_hotkey_operator(
+            cls.layout, "Calculate All Quantities", "S_Q", bpy.ops.bim.calculate_all_quantities.__doc__
+        )
+
     @classmethod
     def draw_header_interface(cls):
         cls.draw_type_selection_interface()
