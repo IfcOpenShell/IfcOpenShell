@@ -556,7 +556,7 @@ class BIM_PT_animation_tools(Panel):
 
         row = self.layout.row(align=True)
         row.alignment = "RIGHT"
-        if self.animation_props.saved_color_schemes:
+        if AnimationColorSchemeData.data["saved_color_schemes"]:
             row.prop(self.animation_props, "saved_color_schemes", text="Color Scheme", icon="SEQUENCE_COLOR_04")
         else:
             row.label(text="No Color Scheme Saved", icon="INFO")
