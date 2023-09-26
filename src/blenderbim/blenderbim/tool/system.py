@@ -22,6 +22,7 @@ import blenderbim.core.tool
 import blenderbim.tool as tool
 from blenderbim.bim import import_ifc
 import re
+from math import pi, cos, sin
 from mathutils import Matrix, Vector
 
 
@@ -191,6 +192,15 @@ class System(blenderbim.core.tool.System):
         selected_edges = []
         selected_vertices = []
 
+        view3d_space = tool.Blender.get_viewport_context()["space_data"].region_3d
+        viewport_matrix = view3d_space.view_matrix.inverted()
+        viewport_y_axis = viewport_matrix.col[1].to_3d().normalized()
+        camera_pos = viewport_matrix.translation
+        dir_to_camera = lambda x: (camera_pos - x).normalized()
+
+        def most_aligned_vector(a, vectors):
+            return max(vectors, key=lambda v: abs(a.dot(v)))
+
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         start_vert_i = 0
 
@@ -216,15 +226,76 @@ class System(blenderbim.core.tool.System):
             if not cls.is_mep_element(element):
                 continue
 
+            selected_element = element in selected_elements
             ports = tool.System.get_ports(element)
+            verts_pos = []
 
             for port in ports:
                 position = tool.Model.get_element_matrix(port).translation * si_conversion
-                all_vertices.append(position)
+                verts_pos.append(position)
 
             verts = range(start_vert_i, start_vert_i + len(ports))
             edges = [(i, i + 1) for i in range(start_vert_i, start_vert_i + len(ports) - 1)]
-            if element in selected_elements:
+
+            def get_flow_direction(ports):
+                # diagram - https://i.imgur.com/ioYL7bZ.png
+                flow_dirs = [p.FlowDirection for p in ports]
+                unique = set(flow_dirs)
+                if len(unique) == 1:
+                    return 0
+                elif flow_dirs[0] == "SOURCE":
+                    return -1
+                elif flow_dirs[0] == "SINK":
+                    return 1
+                elif flow_dirs[1] == "SOURCE":
+                    return 1
+                elif flow_dirs[1] == "SINK":
+                    return -1
+                return 0
+
+            if len(ports) == 2 and selected_element and (flow_direction := get_flow_direction(ports)):
+                edge_verts = verts_pos.copy()
+                edge_verts = edge_verts[::flow_direction]
+
+                # create direction lines
+                direction_lines_offset = 0.4
+                direction_lines_width = 0.05
+                base_vert = edge_verts[0]
+                edge = edge_verts[1] - edge_verts[0]
+                edge_length = edge.length
+                edge_dir = edge.normalized()
+                # edge_ortho = most_aligned_vector(
+                #     viewport_y_axis, (
+                #         obj.matrix_world.col[0].to_3d().normalized(),
+                #         obj.matrix_world.col[1].to_3d().normalized(),
+                # ))
+
+                # for now it's hardcoded to local Y axis to avoid using viewport data
+                # for performance reasons
+                edge_ortho = obj.matrix_world.col[1].to_3d().normalized()
+                second_ortho = edge_dir.cross(edge_ortho)
+                edge_ortho = second_ortho.cross(edge_dir)
+
+                # direction lines should be around the edge center
+                n_direction_lines, start_offset = divmod(edge_length, direction_lines_offset)
+                n_direction_lines = int(n_direction_lines) + 1
+                start_offset /= 2
+                start_offset = edge_dir * start_offset + base_vert
+                cur_vert_index = start_vert_i + len(ports)
+
+                for i in range(n_direction_lines):
+                    cur_offset = start_offset + edge_dir * i * direction_lines_offset
+                    arrow_base = cur_offset - edge_dir * direction_lines_width
+                    verts_pos.append(arrow_base + edge_ortho * direction_lines_width)
+                    verts_pos.append(cur_offset)
+                    verts_pos.append(arrow_base - edge_ortho * direction_lines_width)
+                    edges.append((cur_vert_index, cur_vert_index + 1))
+                    edges.append((cur_vert_index + 1, cur_vert_index + 2))
+                    cur_vert_index += 3
+
+            all_vertices.extend(verts_pos)
+
+            if selected_element:
                 selected_vertices.extend(verts)
                 selected_edges.extend(edges)
             else:
