@@ -1303,6 +1303,9 @@ class Sequence(blenderbim.core.tool.Sequence):
         for obj in bpy.data.objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
+            if tool.Ifc.get().by_id(obj.BIMObjectProperties.ifc_definition_id).is_a("IfcSpace"):
+                cls.hide_object(obj)
+                continue
             cls.earliest_frame = None
             product_frames = frames.get(obj.BIMObjectProperties.ifc_definition_id, [])
             for product_frame in product_frames:
