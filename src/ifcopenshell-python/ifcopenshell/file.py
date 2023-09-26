@@ -251,6 +251,7 @@ class file(object):
         self.history = []
         self.future = []
         self.transaction = None
+        self._strict_validation: bool = False
 
         # Temporarily commented out until bot builds are available and tested to prevent user bugs.
         # file_dict[self.file_pointer()] = self
@@ -276,6 +277,13 @@ class file(object):
         if self.transaction:
             self.transaction.rollback()
         self.transaction = None
+
+    def set_strict_validation(self, status: bool) -> None:
+        self._strict_validation = status
+
+    @property
+    def strict_validation(self) -> bool:
+        return self._strict_validation
 
     def undo(self):
         if not self.history:

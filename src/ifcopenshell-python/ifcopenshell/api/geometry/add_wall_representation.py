@@ -43,7 +43,8 @@ class Usecase:
 
     def execute(self) -> ifcopenshell.entity_instance:
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
-        self.validate_attrs()
+        if self.file.strict_validation:
+            self.validate_attrs()
         return self.file.createIfcShapeRepresentation(
             self.context,
             self.context.ContextIdentifier,
