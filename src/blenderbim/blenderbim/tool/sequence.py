@@ -1700,3 +1700,8 @@ class Sequence(blenderbim.core.tool.Sequence):
         if task_id in task_bars:
             task_bars.remove(task_id)
             bpy.context.scene.BIMWorkScheduleProperties.task_bars = json.dumps(task_bars)
+
+    @classmethod
+    def get_animation_color_scheme(cls):
+        if len(bpy.context.scene.BIMAnimationProperties.saved_color_schemes) > 0:
+            return tool.Ifc.get().by_id(int(bpy.context.scene.BIMAnimationProperties.saved_color_schemes))

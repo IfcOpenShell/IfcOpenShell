@@ -513,6 +513,7 @@ def visualise_work_schedule_date_range(sequence, work_schedule=None):
         product_frames = sequence.get_animation_product_frames(work_schedule, settings)
         if not sequence.has_animation_colors():
             sequence.load_default_animation_color_scheme()
+        load_animation_color_scheme(sequence, scheme=sequence.get_animation_color_scheme())
         sequence.animate_objects(settings, product_frames, "date_range")
         sequence.add_text_animation_handler(settings)
         add_task_bars(sequence)
