@@ -81,7 +81,9 @@ class FacetDocGenerator:
         # Create an IDS with the applicability selecting exactly
         # the entity type passed to us in `inst`.
         specs = ids.Ids(title=name)
-        spec = ids.Specification(name=name, minOccurs=1)
+
+        # todo: to resume IFC2X3 we need to ensure that entities and attributes are consistent with that schema in order to pass audit
+        spec = ids.Specification(name=name, minOccurs=1, ifcVersion=["IFC4"]) 
         spec.applicability.append(ids.Entity(name=inst.is_a().upper()))
         spec.requirements.append(facet)
         specs.specifications.append(spec)

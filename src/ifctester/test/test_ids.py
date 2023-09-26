@@ -159,7 +159,7 @@ class TestIds:
         run("Prohibited specifications fail if at least one entity passes all requirements 1/3", specs, model, True)
         model = ifcopenshell.file()
         wall = model.createIfcWall(Name="Wally")
-        run("Prohibited specifications fail if at least one entity passes all requirements 2/3", specs, model, True, [wall], [wall])
+        run("Prohibited specifications fail if at least one entity passes all requirements 2/3", specs, model, False, [wall], [wall])
         model = ifcopenshell.file()
         wall = model.createIfcWall(Name="Waldo")
         run("Prohibited specifications fail if at least one entity passes all requirements 3/3", specs, model, False, [wall])
