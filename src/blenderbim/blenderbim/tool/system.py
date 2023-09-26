@@ -24,6 +24,8 @@ from blenderbim.bim import import_ifc
 import re
 from math import pi, cos, sin
 from mathutils import Matrix, Vector
+from blenderbim.bim.module.system.data import ObjectSystemData, SystemDecorationData
+from blenderbim.bim.module.drawing.decoration import profile_consequential
 
 
 class System(blenderbim.core.tool.System):
@@ -204,13 +206,16 @@ class System(blenderbim.core.tool.System):
         def most_aligned_vector(a, vectors):
             return max(vectors, key=lambda v: abs(a.dot(v)))
 
-        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         start_vert_i = 0
 
-        if bpy.context.active_object and (active_element := tool.Ifc.get_entity(bpy.context.active_object)):
-            selected_elements = cls.get_connected_elements(active_element)
-        else:
-            selected_elements = set()
+        if not ObjectSystemData.is_loaded:
+            ObjectSystemData.load()
+
+        if not SystemDecorationData.is_loaded:
+            SystemDecorationData.load()
+
+        object_system_data = ObjectSystemData.data
+        selected_elements = object_system_data["connected_elements"]
 
         # TODO: get only objects visible in viewport
         objects = set(bpy.data.objects) - set(bpy.data.collections["Types"].objects)
@@ -230,19 +235,17 @@ class System(blenderbim.core.tool.System):
                 continue
 
             selected_element = element in selected_elements
-            ports = tool.System.get_ports(element)
             verts_pos = []
 
-            for port in ports:
-                position = tool.Model.get_element_matrix(port).translation * si_conversion
-                verts_pos.append(position)
+            port_data = SystemDecorationData.get_element_ports_data(element)
+            verts_pos.extend([obj.matrix_world @ data["position"] for data in port_data])
 
-            verts = range(start_vert_i, start_vert_i + len(ports))
-            edges = [(i, i + 1) for i in range(start_vert_i, start_vert_i + len(ports) - 1)]
+            verts = range(start_vert_i, start_vert_i + len(port_data))
+            edges = [(i, i + 1) for i in range(start_vert_i, start_vert_i + len(port_data) - 1)]
 
-            def get_flow_direction(ports):
+            def get_flow_direction(port_data):
                 # diagram - https://i.imgur.com/ioYL7bZ.png
-                flow_dirs = [p.FlowDirection for p in ports]
+                flow_dirs = [p["flow_direction"] for p in port_data]
                 unique = set(flow_dirs)
                 if len(unique) == 1:
                     return 0
@@ -256,7 +259,7 @@ class System(blenderbim.core.tool.System):
                     return -1
                 return 0
 
-            if len(ports) == 2 and selected_element and (flow_direction := get_flow_direction(ports)):
+            if len(port_data) == 2 and selected_element and (flow_direction := get_flow_direction(port_data)):
                 edge_verts = verts_pos.copy()
                 edge_verts = edge_verts[::flow_direction]
 
@@ -284,7 +287,7 @@ class System(blenderbim.core.tool.System):
                 n_direction_lines = int(n_direction_lines) + 1
                 start_offset /= 2
                 start_offset = edge_dir * start_offset + base_vert
-                cur_vert_index = start_vert_i + len(ports)
+                cur_vert_index = start_vert_i + len(port_data)
 
                 for i in range(n_direction_lines):
                     cur_offset = start_offset + edge_dir * i * direction_lines_offset

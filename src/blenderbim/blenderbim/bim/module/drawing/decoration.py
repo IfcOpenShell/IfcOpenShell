@@ -52,15 +52,20 @@ class profile_consequential:
         cls.test_name = test_name
 
     @classmethod
-    def log(cls):
+    def log(cls, args=[]):
         if cls.start_time is not None:
-            cls.lines.append(f"{cls.test_name}\t{timer() - cls.start_time:.10f}")
+            args = "" if not args else "\t" + "\t".join(args)
+            cls.lines.append(f"{cls.test_name}\t{timer() - cls.start_time:.10f}{args}")
 
     @classmethod
     def stop(cls):
         cls.log()
         cls.start_time = None
-        print("\n".join(cls.lines))
+        lines = "\n".join(cls.lines)
+        print(lines)
+        import pyperclip
+
+        pyperclip.copy(lines)
         cls.lines = []
 
 
