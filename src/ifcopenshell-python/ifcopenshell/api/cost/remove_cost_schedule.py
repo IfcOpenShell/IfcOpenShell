@@ -48,7 +48,7 @@ class Usecase:
             if inverse.is_a("IfcRelAssignsToControl"):
                 [
                     ifcopenshell.api.run(
-                        "sequence.remove_cost_item", self.file, task=related_object
+                        "cost.remove_cost_item", self.file, cost_item=related_object
                     )
                     for related_object in inverse.RelatedObjects
                     if related_object.is_a("IfcCostItem")
