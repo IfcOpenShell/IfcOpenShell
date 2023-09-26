@@ -586,6 +586,8 @@ class MEPGenerator:
         obstruction_obj.matrix_world = segment_matrix
 
         profile_joiner.set_depth(obstruction_obj, length)
+        # NOTE: we add ports to the obstruction occurence and not to the type
+        # since it's material profile based like segments
         obstruction_port = tool.System.add_ports(
             obstruction_obj,
             add_start_port=not at_segment_start,
@@ -855,6 +857,7 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
                 pset=pset,
                 properties={"Data": json.dumps(transition_data, default=list)},
             )
+            tool.System.add_ports(obj, offset_end_port=profile_offset_ws)
 
         # NOTE: at this point we loose current blender objects selection
         # create transition element
@@ -878,7 +881,7 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
         transition_obj.location = start_segment_extend_point if start_port_match else end_segment_extend_point
 
         # add ports and connect them
-        ports = tool.System.add_ports(transition_obj, offset_end_port=profile_offset_ws)
+        ports = tool.System.get_ports(tool.Ifc.get_entity(transition_obj))
         if not start_port_match:
             start_port, end_port = end_port, start_port
         tool.Ifc.run("system.connect_port", port1=ports[0], port2=start_port, direction="NOTDEFINED")
@@ -1197,6 +1200,7 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
                 pset=pset,
                 properties={"Data": json.dumps(bend_data, default=list)},
             )
+            tool.System.add_ports(obj, offset_end_port=start_object_rotation @ (radial_offset * V(1, 1, 0)))
 
         # NOTE: at this point we loose current blender objects selection
         # create transition element
@@ -1240,7 +1244,7 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
         fitting_obj.matrix_world = get_fitting_matrix()
 
         # add ports and connect them
-        ports = tool.System.add_ports(fitting_obj, offset_end_port=start_object_rotation @ (radial_offset * V(1, 1, 0)))
+        ports = tool.System.get_ports(tool.Ifc.get_entity(fitting_obj))
         if not start_port_match:
             start_port, end_port = end_port, start_port
         tool.Ifc.run("system.connect_port", port1=ports[0], port2=start_port, direction="NOTDEFINED")
