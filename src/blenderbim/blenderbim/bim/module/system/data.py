@@ -68,22 +68,30 @@ class ObjectSystemData:
         cls.data = {
             "systems": cls.systems(),
             "total_systems": cls.total_systems(),
+            # AFTER SYSTEMS
+            "connected_elements": cls.connected_elements(),
         }
         cls.is_loaded = True
 
     @classmethod
     def systems(cls):
         results = []
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        if not element:
+        cls.element = tool.Ifc.get_entity(bpy.context.active_object)
+        if not cls.element:
             return results
-        for system in ifcopenshell.util.system.get_element_systems(element):
+        for system in ifcopenshell.util.system.get_element_systems(cls.element):
             results.append({"id": system.id(), "name": system.Name or "Unnamed", "ifc_class": system.is_a()})
         return results
 
     @classmethod
     def total_systems(cls):
         return len(tool.Ifc.get().by_type("IfcSystem"))
+
+    @classmethod
+    def connected_elements(cls):
+        if not cls.element:
+            return set()
+        return tool.System.get_connected_elements(cls.element)
 
 
 class PortData:
@@ -151,15 +159,34 @@ class PortData:
 
 class SystemDecorationData:
     data = {}
+    elements_ports_positions = {}
     is_loaded = False
 
     @classmethod
     def load(cls):
-        cls.data = {
-            "decoration_data": cls.decoration_data(),
-        }
+        cls.data = {}
         cls.is_loaded = True
+        cls.elements_ports_positions = {}
 
     @classmethod
-    def decoration_data(cls):
-        return tool.System.get_decoration_data()
+    def get_element_ports_data(cls, element):
+        """returns element's port data, caches the data until UI update
+
+        Port data includes:
+            - local port position in SI units
+            - port flow direction
+
+        """
+        if element not in cls.elements_ports_positions:
+            ports = tool.System.get_ports(element)
+            si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            ports_data = []
+            for port in ports:
+                position = tool.Model.get_element_matrix(port, keep_local=True).translation * si_conversion
+                port_data = {
+                    "position": position,
+                    "flow_direction": port.FlowDirection,
+                }
+                ports_data.append(port_data)
+            cls.elements_ports_positions[element] = ports_data
+        return cls.elements_ports_positions[element]

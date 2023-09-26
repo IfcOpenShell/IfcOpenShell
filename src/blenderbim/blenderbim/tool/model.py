@@ -31,6 +31,7 @@ from blenderbim.bim.module.geometry.helper import Helper
 from blenderbim.bim.module.model.data import AuthoringData, RailingData, RoofData, WindowData, DoorData
 import collections
 import json
+import numpy as np
 
 
 class Model(blenderbim.core.tool.Model):
@@ -815,8 +816,12 @@ class Model(blenderbim.core.tool.Model):
         tool.Ifc.run("geometry.edit_object_placement", product=element, matrix=matrix, is_si=True)
 
     @classmethod
-    def get_element_matrix(cls, element):
-        placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+    def get_element_matrix(cls, element, keep_local=False):
+        placement = element.ObjectPlacement
+        if keep_local:
+            placement = ifcopenshell.util.placement.get_axis2placement(placement.RelativePlacement)
+        else:
+            placement = ifcopenshell.util.placement.get_local_placement(placement)
         return Matrix(placement)
 
     @classmethod
