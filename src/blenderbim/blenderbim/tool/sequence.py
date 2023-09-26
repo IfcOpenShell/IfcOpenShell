@@ -191,12 +191,14 @@ class Sequence(blenderbim.core.tool.Sequence):
 
         props = bpy.context.scene.BIMWorkScheduleProperties
         task_props = bpy.context.scene.BIMTaskTreeProperties
+        tasks_with_visual_bar = cls.get_task_bar_list()
         props.is_task_update_enabled = False
 
         for item in task_props.tasks:
             task = tool.Ifc.get().by_id(item.ifc_definition_id)
             item.name = task.Name or "Unnamed"
             item.identification = task.Identification or "XXX"
+            item.has_bar_visual = item.ifc_definition_id in tasks_with_visual_bar
             if props.highlighted_task_id:
                 item.is_predecessor = props.highlighted_task_id in [
                     rel.RelatedProcess.id() for rel in task.IsPredecessorTo
@@ -796,10 +798,9 @@ class Sequence(blenderbim.core.tool.Sequence):
     @classmethod
     def get_animation_bar_tasks(cls):
         return [
-            tool.Ifc.get().by_id(item.ifc_definition_id)
-            for item in bpy.context.scene.BIMTaskTreeProperties.tasks
-            if item.has_bar_visual
-        ] or []
+            tool.Ifc.get().by_id(task_id)
+            for task_id in cls.get_task_bar_list()
+        ]
 
     @classmethod
     def create_bars(cls, tasks):
@@ -1290,6 +1291,12 @@ class Sequence(blenderbim.core.tool.Sequence):
             obj.hide_render = False
 
     @classmethod
+    def hide_object(cls, obj):
+        if obj.visible_get():
+            obj.hide_viewport = True
+            obj.hide_render = True
+
+    @classmethod
     def clear_objects_animation(cls, include_blender_objects=True):
         for obj in bpy.data.objects:
             if not include_blender_objects and not obj.BIMObjectProperties.ifc_definition_id:
@@ -1676,3 +1683,20 @@ class Sequence(blenderbim.core.tool.Sequence):
         if task.TaskTime and task.TaskTime.ScheduleDuration:
             return True
         return False
+
+    @classmethod
+    def get_task_bar_list(cls):
+        return json.loads(bpy.context.scene.BIMWorkScheduleProperties.task_bars)
+
+    @classmethod
+    def add_task_bar(cls, task_id):
+        task_bars = cls.get_task_bar_list()
+        task_bars.append(task_id)
+        bpy.context.scene.BIMWorkScheduleProperties.task_bars = json.dumps(task_bars)
+
+    @classmethod
+    def remove_task_bar(cls, task_id):
+        task_bars = cls.get_task_bar_list()
+        if task_id in task_bars:
+            task_bars.remove(task_id)
+            bpy.context.scene.BIMWorkScheduleProperties.task_bars = json.dumps(task_bars)
