@@ -106,7 +106,10 @@ class System(blenderbim.core.tool.System):
     @classmethod
     def get_port_predefined_type(cls, mep_element):
         split_camel_case = lambda x: re.findall("[A-Z][^A-Z]*", x)
-        class_name = "".join(split_camel_case(mep_element.is_a())[1:-1]).upper()
+        mep_class = mep_element.is_a()
+        if mep_class.endswith("Type"):
+            mep_class = mep_class[:-4]
+        class_name = "".join(split_camel_case(mep_class)[1:-1]).upper()
         if class_name == "CONVEYOR":
             return "NOTDEFINED"
         return class_name
