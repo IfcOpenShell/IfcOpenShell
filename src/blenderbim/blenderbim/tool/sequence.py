@@ -1070,9 +1070,9 @@ class Sequence(blenderbim.core.tool.Sequence):
             for predefined_type in data["PredefinedType"]:
                 if group in ["CREATION", "OPERATION", "MOVEMENT_TO"]:
                     predefined_type_item = props.task_output_colors.add()
-                elif group in ["MOVEMENT_FROM", "DESTRUCTION"]:
+                elif group in ["MOVEMENT_FROM"]:
                     predefined_type_item = props.task_input_colors.add()
-                elif group == "USERDEFINED":
+                elif group in ["USERDEFINED", "DESTRUCTION"]:
                     predefined_type_item = props.task_input_colors.add()
                     predefined_type_item2 = props.task_output_colors.add()
                     predefined_type_item2.name = predefined_type
@@ -1299,19 +1299,17 @@ class Sequence(blenderbim.core.tool.Sequence):
             cls.display_object(obj)
 
     @classmethod
-    def animate_objects(cls, settings, frames, clear_previous=True, animation_type=""):
+    def animate_objects(cls, settings, frames, animation_type=""):
         for obj in bpy.data.objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
-            if clear_previous:
-                cls.clear_object_animation(obj)
             cls.earliest_frame = None
             product_frames = frames.get(obj.BIMObjectProperties.ifc_definition_id, [])
             for product_frame in product_frames:
                 if product_frame["relationship"] == "input":
                     cls.animate_input(obj, settings["start_frame"], product_frame, animation_type)
                 elif product_frame["relationship"] == "output":
-                    cls.animate_output(obj, settings["start_frame"], product_frame)
+                    cls.animate_output(obj, settings["start_frame"], product_frame, animation_type)
         area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
         area.spaces[0].shading.color_type = "OBJECT"
         bpy.context.scene.frame_start = settings["start_frame"]
@@ -1321,14 +1319,19 @@ class Sequence(blenderbim.core.tool.Sequence):
     def animate_input(cls, obj, start_frame, product_frame, animation_type):
         props = bpy.context.scene.BIMAnimationProperties
         color = props.task_input_colors[product_frame["type"]].color
-        cls.animate_destruction(obj, start_frame, product_frame, color, animation_type)
+        if product_frame["type"] in ["LOGISTIC", "MOVE", "DISPOSAL"]:
+            cls.animate_destruction(obj, start_frame, product_frame, color, animation_type)
+        else:
+            cls.animate_consumption(obj, start_frame, product_frame, color, animation_type)
 
     @classmethod
-    def animate_output(cls, obj, start_frame, product_frame):
+    def animate_output(cls, obj, start_frame, product_frame, animation_type):
         props = bpy.context.scene.BIMAnimationProperties
         color = props.task_output_colors[product_frame["type"]].color
         if product_frame["type"] in ["CONSTRUCTION", "INSTALLATION", "NOTDEFINED"]:
             cls.animate_creation(obj, start_frame, product_frame, color)
+        elif product_frame["type"] in ["DEMOLITION", "DISMANTLE", "DISPOSAL", "REMOVAL"]:
+            cls.animate_destruction(obj, start_frame, product_frame, color, animation_type)
         elif product_frame["type"] in ["ATTENDANCE", "MAINTENANCE", "OPERATION", "RENOVATION"]:
             cls.animate_operation(obj, start_frame, product_frame, color)
         elif product_frame["type"] in ["LOGISTIC", "MOVE"]:
