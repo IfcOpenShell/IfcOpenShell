@@ -111,10 +111,12 @@ class SystemDecorator:
         roof_angle_edges = []
         preview_edges = []
 
+        # NOTE: using .data here doesn't allow having live viewport orientation for the calculations
+        # but not using .data seems to be performance heavy
         if not SystemDecorationData.is_loaded:
             SystemDecorationData.load()
-
         decoration_data = SystemDecorationData.data["decoration_data"]
+
         all_vertices = decoration_data["all_vertices"]
         preview_edges = decoration_data["preview_edges"]
         special_vertices = decoration_data["special_vertices"]
