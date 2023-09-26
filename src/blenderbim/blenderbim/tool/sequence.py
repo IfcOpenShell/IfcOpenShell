@@ -205,10 +205,8 @@ class Sequence(blenderbim.core.tool.Sequence):
                     rel.RelatingProcess.id() for rel in task.IsSuccessorFrom
                 ]
             calendar = ifcopenshell.util.sequence.derive_calendar(task)
-            if task.HasAssignments:
-                for rel in task.HasAssignments:
-                    if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a("IfcWorkCalendar"):
-                        item.calendar = calendar.Name or "Unnamed" if calendar else ""
+            if ifcopenshell.util.sequence.get_calendar(task):
+                item.calendar = calendar.Name or "Unnamed" if calendar else ""
             else:
                 item.calendar = ""
                 item.derived_calendar = calendar.Name or "Unnamed" if calendar else ""
