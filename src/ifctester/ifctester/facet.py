@@ -21,6 +21,7 @@ import builtins
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.classification
+from functools import lru_cache
 from xmlschema.validators import identities
 
 
@@ -39,6 +40,16 @@ def cast_to_value(from_value, to_value):
         return builtins.__dict__[target_type](from_value)
     except ValueError:
         pass
+
+
+@lru_cache
+def get_pset(element, pset):
+    return ifcopenshell.util.element.get_pset(element, pset)
+
+
+@lru_cache
+def get_psets(element, pset):
+    return ifcopenshell.util.element.get_psets(element)
 
 
 class Facet:
@@ -591,10 +602,10 @@ class Property(Facet):
             return PropertyResult(True)
 
         if isinstance(self.propertySet, str):
-            pset = ifcopenshell.util.element.get_pset(inst, self.propertySet)
+            pset = get_pset(inst, self.propertySet)
             psets = {self.propertySet: pset} if pset else {}
         else:
-            all_psets = ifcopenshell.util.element.get_psets(inst)
+            all_psets = get_psets(inst)
             psets = {k: v for k, v in all_psets.items() if k == self.propertySet}
 
         is_pass = bool(psets)
