@@ -286,7 +286,7 @@ class Attribute(Facet):
 
 
 class Classification(Facet):
-    def __init__(self, value=None, system=None, uri=None, minOccurs=None, maxOccurs=None, instructions=None):
+    def __init__(self, value=None, system=None, uri=None, minOccurs=None, maxOccurs="unbounded", instructions=None):
         self.parameters = ["value", "system", "@uri", "@minOccurs", "@maxOccurs", "@instructions"]
         self.applicability_templates = [
             "Data having a {system} reference of {value}",
@@ -347,7 +347,7 @@ class PartOf(Facet):
         predefinedType=None,
         relation=None,
         minOccurs=None,
-        maxOccurs=None,
+        maxOccurs="unbounded",
         instructions=None,
     ):
         self.parameters = ["entity", "predefinedType", "@relation", "@minOccurs", "@maxOccurs", "@instructions"]
@@ -552,7 +552,7 @@ class Property(Facet):
         datatype=None,
         uri=None,
         minOccurs=None,
-        maxOccurs=None,
+        maxOccurs="unbounded",
         instructions=None,
     ):
         self.parameters = [
@@ -824,7 +824,7 @@ class Property(Facet):
 
 
 class Material(Facet):
-    def __init__(self, value=None, uri=None, minOccurs=None, maxOccurs=None, instructions=None):
+    def __init__(self, value=None, uri=None, minOccurs=None, maxOccurs="unbounded", instructions=None):
         self.parameters = ["value", "@uri", "@minOccurs", "@maxOccurs", "@instructions"]
         self.applicability_templates = [
             "All data with a {value} material",
