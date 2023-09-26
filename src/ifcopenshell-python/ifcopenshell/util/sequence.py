@@ -48,6 +48,14 @@ def derive_date(task, attribute_name, date=None, is_earliest=False, is_latest=Fa
 
 
 def derive_calendar(task):
+    calendar = get_calendar(task)
+    if calendar:
+        return calendar
+    for rel in task.Nests or []:
+        return derive_calendar(rel.RelatingObject)
+
+
+def get_calendar(task):
     calendar = [
         rel.RelatingControl
         for rel in task.HasAssignments or []
@@ -56,8 +64,6 @@ def derive_calendar(task):
     ]
     if calendar:
         return calendar[0]
-    for rel in task.Nests or []:
-        return derive_calendar(rel.RelatingObject)
 
 
 def count_working_days(start, finish, calendar):
@@ -250,7 +256,7 @@ def get_task_work_schedule(task):
 
 
 def get_nested_tasks(task):
-    return [object for rel in task.IsNestedBy  or [] for object in rel.RelatedObjects]
+    return [object for rel in task.IsNestedBy or [] for object in rel.RelatedObjects]
 
 
 def get_parent_task(task):
