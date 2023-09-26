@@ -21,7 +21,7 @@ import datetime
 from xmlschema import XMLSchema
 from xmlschema import etree_tostring
 from xml.etree import ElementTree as ET
-from .facet import Entity, Attribute, Classification, Property, PartOf, Material, Restriction
+from .facet import Entity, Attribute, Classification, Property, PartOf, Material, Restriction, get_pset, get_psets
 
 
 cwd = os.path.dirname(os.path.realpath(__file__))
@@ -113,6 +113,8 @@ class Ids:
         return get_schema().is_valid(filepath)
 
     def validate(self, ifc_file, filter_version=False):
+        get_pset.cache_clear()
+        get_psets.cache_clear()
         for specification in self.specifications:
             specification.reset_status()
             specification.validate(ifc_file, filter_version=filter_version)
