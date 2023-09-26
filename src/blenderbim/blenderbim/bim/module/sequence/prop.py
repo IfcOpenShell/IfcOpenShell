@@ -347,6 +347,14 @@ def updateAssignedResourceUsage(self, context):
     blenderbim.bim.module.pset.data.refresh()
 
 
+def update_task_bar_list(self, context):
+    if not context.scene.BIMWorkScheduleProperties.is_task_update_enabled:
+        return
+    if self.has_bar_visual:
+        tool.Sequence.add_task_bar(self.ifc_definition_id)
+    else:
+        tool.Sequence.remove_task_bar(self.ifc_definition_id)
+
 class Task(PropertyGroup):
     name: StringProperty(name="Name", update=updateTaskName)
     identification: StringProperty(name="Identification", update=updateTaskIdentification)
@@ -354,7 +362,7 @@ class Task(PropertyGroup):
     has_children: BoolProperty(name="Has Children")
     is_selected: BoolProperty(name="Is Selected")
     is_expanded: BoolProperty(name="Is Expanded")
-    has_bar_visual: BoolProperty(name="Show Task Bar Animation", default=False)
+    has_bar_visual: BoolProperty(name="Show Task Bar Animation", default=False, update=update_task_bar_list)
     level_index: IntProperty(name="Level Index")
     duration: StringProperty(name="Duration", update=updateTaskDuration)
     start: StringProperty(name="Start", update=updateTaskTimeStart)
@@ -456,6 +464,7 @@ class BIMWorkScheduleProperties(PropertyGroup):
     active_task_time_id: IntProperty(name="Active Task Time Id")
     task_time_attributes: CollectionProperty(name="Task Time Attributes", type=Attribute)
     contracted_tasks: StringProperty(name="Contracted Task Items", default="[]")
+    task_bars: StringProperty(name="Checked Task Items", default="[]")
     is_task_update_enabled: BoolProperty(name="Is Task Update Enabled", default=True)
     editing_sequence_type: StringProperty(name="Editing Sequence Type")
     active_sequence_id: IntProperty(name="Active Sequence Id")
