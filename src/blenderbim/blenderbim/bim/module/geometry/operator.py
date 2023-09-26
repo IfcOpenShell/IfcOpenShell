@@ -1202,9 +1202,64 @@ class RefreshAggregate(bpy.types.Operator):
             else:
                 parts = ifcopenshell.util.element.get_parts(instance_entity)
                 for part in parts:
+                    pset = ifcopenshell.util.element.get_pset(part, "BBIM_Aggregate_Data")
+                    if part.is_a("IfcElementAssembly"):
+                        if not pset:
+                            data_children = {
+                                "children": [],
+                                "instance_of": [part.GlobalId],
+                            }
+                            data = [data_children]
+                            
+                            pset = ifcopenshell.api.run(
+                                                "pset.add_pset", tool.Ifc.get(), product=part, name="BBIM_Aggregate_Data"
+                                            )
+                            ifcopenshell.api.run(
+                                "pset.edit_pset",
+                                tool.Ifc.get(),
+                                pset=pset,
+                                properties={"Parent": instance_entity.GlobalId, "Data": json.dumps(data)},
+                            )
+                            
+                            part_obj = tool.Ifc.get_object(part)
+                            new_part = duplicate_objects(part_obj)
+                            
+                            blenderbim.core.aggregate.assign_object(
+                                tool.Ifc,
+                                tool.Aggregate,
+                                tool.Collector,
+                                relating_obj=tool.Ifc.get_object(entity),
+                                related_obj=tool.Ifc.get_object(new_part),
+                            )
+                            duplicate_children(new_part)
+                            
+                for part in parts:
+                    pset = ifcopenshell.util.element.get_pset(part, "BBIM_Aggregate_Data")
                     if part.is_a("IfcElementAssembly"):
                         pass
+                        
                     else:
+                        if not pset:
+                            pset = ifcopenshell.api.run(
+                                                "pset.add_pset", tool.Ifc.get(), product=part, name="BBIM_Aggregate_Data"
+                                            )
+                        else:
+                            pset = ifcopenshell.util.element.get_pset(part, "BBIM_Aggregate_Data")
+                            pset = tool.Ifc.get().by_id(pset["id"])
+                        
+                        data_children = {
+                            "children": [],
+                            "instance_of": [],
+                        }
+                        data = [data_children]
+                    
+                        ifcopenshell.api.run(
+                            "pset.edit_pset",
+                            tool.Ifc.get(),
+                            pset=pset,
+                            properties={"Parent": instance_entity.GlobalId, "Data": json.dumps(data)},
+                        )
+                        
                         part_obj = tool.Ifc.get_object(part)
                         new_part = duplicate_objects(part_obj)
                         blenderbim.core.aggregate.assign_object(
@@ -1225,6 +1280,10 @@ class RefreshAggregate(bpy.types.Operator):
                 collection.objects.link(new_obj)
             obj.select_set(False)
             new_obj.select_set(True)
+            
+            # This is needed to make sure the new object gets unlink from
+            # the old object assembly collection
+            new_obj.BIMObjectProperties.collection = None
 
             # Copy the actual class
             new_entity = blenderbim.core.root.copy_class(
@@ -1233,7 +1292,9 @@ class RefreshAggregate(bpy.types.Operator):
 
             if new_entity:
                 tool.Model.handle_array_on_copied_element(new_entity)
-                blenderbim.core.aggregate.unassign_object(
+                
+                if not new_entity.is_a("IfcElementAssembly"):
+                    blenderbim.core.aggregate.unassign_object(
                     tool.Ifc,
                     tool.Aggregate,
                     tool.Collector,
