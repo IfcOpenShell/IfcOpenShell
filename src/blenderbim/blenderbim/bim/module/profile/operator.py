@@ -223,7 +223,9 @@ class PurgeUnusedProfiles(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMProfileProperties
-        core.purge_unused_profiles(tool.Ifc, tool.Profile)
+        purged_profiles = core.purge_unused_profiles(tool.Ifc, tool.Profile)
+        self.report({"INFO"}, f"{purged_profiles} profiles were purged.")
+
         if props.is_editing:
             refresh()
             bpy.ops.bim.load_profiles()

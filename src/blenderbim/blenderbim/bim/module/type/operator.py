@@ -530,4 +530,5 @@ class PurgeUnusedTypes(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.purge_unused_types(tool.Ifc, tool.Type)
+        purged_types = core.purge_unused_types(tool.Ifc, tool.Type)
+        self.report({"INFO"}, f"{purged_types} types were purged.")
