@@ -256,7 +256,8 @@ class PurgeUnusedRepresentations(bpy.types.Operator, Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.purge_unused_representations(tool.Ifc, tool.Geometry)
+        purged_representations = core.purge_unused_representations(tool.Ifc, tool.Geometry)
+        self.report({"INFO"}, f"{purged_representations} representations were purged.")
 
 
 class UpdateRepresentation(bpy.types.Operator, Operator):
