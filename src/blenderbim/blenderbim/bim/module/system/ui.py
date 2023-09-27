@@ -24,10 +24,10 @@ from blenderbim.bim.module.system.data import SystemData, ObjectSystemData, Port
 
 
 FLOW_DIRECTION_TO_ICON = {
-    "SOURCE": "FORWARD",
-    "SINK": "BACK",
+    "SOURCE": "REMOVE",
+    "SINK": "ADD",
     "SOURCEANDSINK": "ARROW_LEFTRIGHT",
-    "NOTDEFINED": "RESTRICT_INSTANCED_ON",
+    "NOTDEFINED": "CHECKBOX_DEHLT",
 }
 
 
@@ -101,6 +101,10 @@ class BIM_PT_object_systems(Panel):
         if not ObjectSystemData.is_loaded:
             ObjectSystemData.load()
         self.props = context.scene.BIMSystemProperties
+
+        row = self.layout.row(align=True)
+        row.prop(self.props, "should_draw_decorations")
+
         if self.props.is_editing:
             row = self.layout.row()
             row.alignment = "RIGHT"
@@ -174,6 +178,19 @@ class BIM_PT_ports(Panel):
 
         if total_ports == 0:
             return
+
+        row = self.layout.row(align=True)
+        row.label(text="Change Flow Direction:")
+
+        current_flow_direction = PortData.data["selected_objects_flow_direction"]
+        for flow_direction in FLOW_DIRECTION_TO_ICON.keys():
+            row.operator(
+                "bim.set_flow_direction",
+                icon=FLOW_DIRECTION_TO_ICON[flow_direction],
+                depress=flow_direction == current_flow_direction,
+                text="",
+            ).direction = flow_direction
+        row.enabled = len(context.selected_objects) == 2
 
         row = self.layout.row(align=True)
         row.label(text="Ports located on object and connected objects:")
@@ -266,16 +283,15 @@ class BIM_PT_port(Panel):
         else:
             row.label(text="Port is not connected to any element")
 
-        # TODO: replace with enum property?
         row = layout.row(align=True)
         row.label(text="Change Flow Direction:")
         for flow_direction in FLOW_DIRECTION_TO_ICON.keys():
-            row = layout.row()
             row.operator(
-                "bim.set_flow_direction", icon=FLOW_DIRECTION_TO_ICON[flow_direction], text=flow_direction
+                "bim.set_flow_direction",
+                icon=FLOW_DIRECTION_TO_ICON[flow_direction],
+                depress=flow_direction == current_flow_direction,
+                text="",
             ).direction = flow_direction
-            if flow_direction == current_flow_direction:
-                row.enabled = False
 
 
 class BIM_UL_systems(UIList):

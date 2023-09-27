@@ -159,8 +159,8 @@ namespace IfcGeom {
 				, _normals(normals)
 				, uvs_(uvs)
 				, _material_ids(material_ids)
-				, styles_(styles)
 				, _item_ids(item_ids)
+				, styles_(styles)
 			{
 				for (auto& s : styles_) {
 					_materials.push_back(IfcGeom::Material(s));

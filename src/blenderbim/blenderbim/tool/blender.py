@@ -167,7 +167,9 @@ class Blender:
         when in real life you can have a couple of those but should work for the most cases.
         """
         area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
-        context_override = {"area": area}
+        region = next(region for region in area.regions if region.type == "WINDOW")
+        space = next(space for space in area.spaces if space.type == "VIEW_3D")
+        context_override = {"area": area, "region": region, "space_data": space}
         return context_override
 
     @classmethod
@@ -387,6 +389,11 @@ class Blender:
             getattr(data_to, data_block_type).append(name)
         return {"data_block": getattr(data_to, data_block_type)[0], "msg": ""}
 
+    @classmethod
+    def remove_data_block(cls, data_block):
+        collection_name = repr(data_block).split(".", 2)[-1].split("[", 1)[0]
+        getattr(bpy.data, collection_name).remove(data_block)
+
     ## BMESH UTILS ##
     @classmethod
     def apply_bmesh(cls, mesh, bm, obj=None):
@@ -477,6 +484,13 @@ class Blender:
         if obj:
             return obj
 
+    @classmethod
+    def lock_transform(cls, obj, lock_state=True):
+        for prop in ("lock_location", "lock_rotation", "lock_scale"):
+            attr = getattr(obj, prop)
+            for axis_idx in range(3):
+                attr[axis_idx] = lock_state
+
     class Modifier:
         @classmethod
         def is_eligible_for_railing_modifier(cls, obj):
@@ -553,10 +567,7 @@ class Blender:
                 modifier_data = list(cls.get_modifiers_data(parent_element))[item]
                 children = cls.get_children_objects(modifier_data)
                 for child_obj in children:
-                    for prop in ("lock_location", "lock_rotation", "lock_scale"):
-                        attr = getattr(child_obj, prop)
-                        for axis_idx in range(3):
-                            attr[axis_idx] = lock_state
+                    Blender.lock_transform(child_obj, lock_state)
 
             @classmethod
             def remove_constraints(cls, parent_element):

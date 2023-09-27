@@ -59,10 +59,8 @@ def create_ifc_window_frame_simple(
         return builder.extrude(
             profile,
             size.y,
-            position_x_axis=V(1, 0, 0),
-            position_z_axis=V(0, -1, 0),
-            extrusion_vector=V(0, 0, -1),
             position=position,
+            **builder.extrude_kwargs("Y")
         )
 
     # if all lining sides are present then we can just use two rectangles
@@ -212,10 +210,8 @@ def create_ifc_window(
     glass = builder.extrude(
         glass_rect,
         glass_thickness,
-        position_x_axis=V(1, 0, 0),
-        position_z_axis=V(0, -1, 0),
-        extrusion_vector=V(0, 0, -1),
         position=glass_position,
+        **builder.extrude_kwargs("Y")
     )
 
     output_items = [lining_items, frame_extruded_items, [glass]]

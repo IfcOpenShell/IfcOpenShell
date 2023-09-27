@@ -1084,11 +1084,9 @@ bool IfcGeom::Kernel::convert_layerset(const IfcSchema::IfcProduct* product, std
 
 		TopExp_Explorer exp(axis_shape, TopAbs_EDGE);
 		TopoDS_Edge axis_edge;
-		int edge_count = 0;
 
 		if (exp.More()) {
 			axis_edge = TopoDS::Edge(exp.Current());
-			++ edge_count;
 		} else {
 			Logger::Message(Logger::LOG_WARNING, "No edge found in axis representation:", product);
 			return false;

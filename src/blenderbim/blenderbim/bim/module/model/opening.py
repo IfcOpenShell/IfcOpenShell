@@ -274,9 +274,7 @@ class FilledOpeningGenerator:
                 get_curve_2d_from_3d(profile),
                 magnitude=thickness / unit_scale,
                 position=Vector([0.0, -thickness * 0.5 / unit_scale, 0.0]),
-                position_x_axis=Vector((1, 0, 0)),
-                position_z_axis=Vector((0, -1, 0)),
-                extrusion_vector=Vector((0, 0, -1)),
+                **shape_builder.extrude_kwargs("Y")
             )
             return shape_builder.get_representation(context, [extrusion])
 
@@ -309,9 +307,7 @@ class FilledOpeningGenerator:
             shape_builder.rectangle(size=opening_size),
             magnitude=thickness / unit_scale,
             position=opening_position,
-            position_z_axis=Vector((0.0, -1.0, 0.0)),
-            position_x_axis=Vector((1.0, 0.0, 0.0)),
-            extrusion_vector=Vector((0.0, 0.0, -1.0)),
+            **shape_builder.extrude_kwargs("Y")
         )
 
         return shape_builder.get_representation(context, [extrusion])

@@ -22,7 +22,10 @@ import ifcopenshell.util
 import ifcopenshell.util.fm
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
+import ifcopenshell.util.geolocation
 import ifcopenshell.util.classification
+from decimal import Decimal
 
 
 filter_elements_grammar = lark.Lark(
@@ -51,7 +54,7 @@ filter_elements_grammar = lark.Lark(
     ifc_class: /Ifc\\w+/
 
     value: special | quoted_string | regex_string | unquoted_string
-    unquoted_string: /[^.=\\s]+/
+    unquoted_string: /[^,.=\\s]+/
     regex_string: "/" /[^\\/]+/ "/"
     quoted_string: ESCAPED_STRING
 
@@ -115,16 +118,17 @@ get_element_grammar = lark.Lark(
 format_grammar = lark.Lark(
     """start: function
 
-    function: round | format_length | lower | upper | title | concat | ESCAPED_STRING | NUMBER
+    function: round | format_length | lower | upper | title | concat | substr | ESCAPED_STRING | NUMBER
 
     round: "round(" function "," NUMBER ")"
     format_length: metric_length | imperial_length
     metric_length: "metric_length(" function "," NUMBER "," NUMBER ")"
-    imperial_length: "imperial_length(" function "," NUMBER ["," ESCAPED_STRING] ")"
+    imperial_length: "imperial_length(" function "," NUMBER ["," ESCAPED_STRING "," ESCAPED_STRING] ")"
     lower: "lower(" function ")"
     upper: "upper(" function ")"
     title: "title(" function ")"
     concat: "concat(" function ("," function)* ")"
+    substr: "substr(" function "," SIGNED_INT ["," SIGNED_INT] ")"
 
     // Embed common.lark for packaging
     DIGIT: "0".."9"
@@ -181,8 +185,21 @@ class FormatTransformer(lark.Transformer):
     def concat(self, args):
         return "".join(args)
 
+    def substr(self, args):
+        if len(args) == 3:
+            if args[2] is None:
+                return str(args[0])[int(args[1]) :]
+            return str(args[0])[int(args[1]) : int(args[2])]
+        elif len(args) == 2:
+            return str(args[0])[int(args[1]) :]
+
     def round(self, args):
-        return str(round(float(args[0]) / float(args[1])) * float(args[1]))
+        value = Decimal(args[0] or 0.0)
+        nearest = Decimal(args[1])
+        result = round(value / nearest) * nearest
+        if nearest % 1 == 0:
+            return str(int(result))
+        return str(result)
 
     def format_length(self, args):
         return args[0]
@@ -195,17 +212,15 @@ class FormatTransformer(lark.Transformer):
 
     def imperial_length(self, args):
         if len(args) == 2:
-            imperial_unit = "foot"
+            input_unit = "foot"
             value, precision = args
         else:
-            value, precision, imperial_unit = args
-            if imperial_unit == "inch":
-                imperial_unit = "inch"
-            else:
-                imperial_unit = "foot"
+            value, precision, input_unit, output_unit = args
+            input_unit = "inch" if input_unit == "inch" else "foot"
+            output_unit = "inch" if output_unit == "inch" else "foot"
 
         return ifcopenshell.util.unit.format_length(
-            float(value), int(precision), unit_system="imperial", imperial_unit=imperial_unit
+            float(value), int(precision), unit_system="imperial", input_unit=input_unit, output_unit=output_unit
         )
 
 
@@ -257,8 +272,6 @@ def set_element_value(ifc_file, element, query, value):
         keys = GetElementTransformer().transform(get_element_grammar.parse(query))
 
     for i, key in enumerate(keys):
-        if isinstance(key, str):
-            key = key.strip()
         if element is None:
             return
         if key == "type":
@@ -290,6 +303,8 @@ def set_element_value(ifc_file, element, query, value):
             if element.is_a().lower() != value.lower():
                 return ifcopenshell.util.schema.reassign_class(ifc_file, element, value)
         elif key == "id":
+            return
+        elif key in ("x", "y", "z", "easting", "northing", "elevation") and hasattr(element, "ObjectPlacement"):
             return
         elif isinstance(element, ifcopenshell.entity_instance):
             if key == "Name" and element.is_a("IfcMaterialLayerSet"):
@@ -772,8 +787,6 @@ class Selector:
     def get_element_value(cls, element, keys):
         value = element
         for key in keys:
-            if isinstance(key, str):
-                key = key.strip()
             if value is None:
                 return
             if key == "type":
@@ -816,12 +829,23 @@ class Selector:
                 value = ifcopenshell.util.element.get_predefined_type(value)
             elif key == "id":
                 value = value.id()
+            elif key in ("x", "y", "z", "easting", "northing", "elevation") and hasattr(value, "ObjectPlacement"):
+                if getattr(value, "ObjectPlacement", None):
+                    matrix = ifcopenshell.util.placement.get_local_placement(value.ObjectPlacement)
+                    xyz = matrix[:, 3][:3]
+                    if key in ("x", "y", "z"):
+                        value = xyz["xyz".index(key)]
+                    else:
+                        enh = ifcopenshell.util.geolocation.auto_xyz2enh(element.wrapped_data.file, *xyz)
+                        value = enh[("easting", "northing", "elevation").index(key)]
+                else:
+                    value = None
             elif isinstance(value, ifcopenshell.entity_instance):
                 if key == "Name" and value.is_a("IfcMaterialLayerSet"):
                     key = "LayerSetName"  # This oddity in the IFC spec is annoying so we account for it.
 
                 if isinstance(key, re.Pattern):
-                    attribute = None # Should we support regex attributes? Probably not for now.
+                    attribute = None  # Should we support regex attributes? Probably not for now.
                 else:
                     attribute = getattr(value, key, None)
 

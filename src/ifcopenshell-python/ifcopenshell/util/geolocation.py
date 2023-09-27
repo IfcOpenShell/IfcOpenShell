@@ -75,6 +75,34 @@ def xyz2enh_ifc4x3(
     return (eastings, northings, height)
 
 
+def auto_xyz2enh(ifc_file, x, y, z):
+    try:
+        conversion = ifc_file.by_type("IfcMapConversion")
+    except:
+        return (x, y, z)
+    if not conversion:
+        return (x, y, z)
+    conversion = conversion[0]
+    e = conversion.Eastings or 0
+    n = conversion.Northings or 0
+    h = conversion.OrthogonalHeight or 0
+    xaa = conversion.XAxisAbscissa or 0
+    xao = conversion.XAxisOrdinate or 0
+    scale = conversion.Scale or 0
+    map_unit = conversion.TargetCRS.MapUnit
+    if map_unit:
+        # Warning! This definition has changed in IFC4X3 such that map_unit no
+        # longer affects unit conversion, only the Scale attribute affects unit
+        # conversion. TODO: consolidate once IFC4X3 confirmed.
+        project_unit = ifcopenshell.util.unit.get_project_unit(ifc_file, "LENGTHUNIT")
+        map_prefix = getattr(map_unit, "Prefix", None)
+        project_prefix = getattr(project_unit, "Prefix", None)
+        e = ifcopenshell.util.unit.convert(e, map_prefix, map_unit.Name, project_prefix, project_unit.Name)
+        n = ifcopenshell.util.unit.convert(n, map_prefix, map_unit.Name, project_prefix, project_unit.Name)
+        h = ifcopenshell.util.unit.convert(h, map_prefix, map_unit.Name, project_prefix, project_unit.Name)
+    return xyz2enh(x, y, z, e, n, h, xaa, xao, scale)
+
+
 def auto_z2e(ifc_file, z):
     """Convert a Z coordinate to an elevation using model georeferencing data
 

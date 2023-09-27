@@ -272,7 +272,7 @@ public:
 
 	unsigned int getMaxId() const { return MaxId; }
 
-	const IfcParse::declaration* const ifcroot_type() const { return ifcroot_type_; }
+	const IfcParse::declaration* ifcroot_type() const { return ifcroot_type_; }
 
 	void recalculate_id_counter();
 

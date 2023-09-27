@@ -26,7 +26,7 @@ class Usecase:
         self.settings = {
             "context": None,  # IfcGeometricRepresentationContext
             "depth": 0.2,
-            "x_angle": 0, # Radians
+            "x_angle": 0,  # Radians
             # Planes are defined as a matrix. The XY plane is the clipping boundary and +Z is removed.
             "clippings": [],  # A list of planes that define clipping half space solids
         }
@@ -55,9 +55,19 @@ class Usecase:
             )
         else:
             extrusion_direction = self.file.createIfcDirection((0.0, 0.0, 1.0))
+
+        position = None
+        # default position for IFC2X3 where .Position is not optional
+        if self.file.schema == "IFC2X3":
+            position = self.file.createIfcAxis2Placement3D(
+                self.file.createIfcCartesianPoint((0.0, 0.0, 0.0)),
+                self.file.createIfcDirection((0.0, 0.0, 1.0)),
+                self.file.createIfcDirection((1.0, 0.0, 0.0)),
+            )
+
         extrusion = self.file.createIfcExtrudedAreaSolid(
             self.file.createIfcArbitraryClosedProfileDef("AREA", None, curve),
-            None,
+            position,
             extrusion_direction,
             self.convert_si_to_unit(self.settings["depth"]) * 1 / cos(self.settings["x_angle"]),
         )

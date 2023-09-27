@@ -163,3 +163,13 @@ class Unit(blenderbim.core.tool.Unit):
         unit = cls.get_project_currency_unit()
         if unit:
             return unit.Currency
+
+    @classmethod
+    def blender_format_unit(cls, value):
+        return bpy.utils.units.to_string(
+            bpy.context.scene.unit_settings.system,
+            "LENGTH",
+            value,
+            precision=4,
+            split_unit=bpy.context.scene.unit_settings.system == "IMPERIAL",
+        )

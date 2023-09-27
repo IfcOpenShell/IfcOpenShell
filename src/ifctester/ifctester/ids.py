@@ -21,7 +21,7 @@ import datetime
 from xmlschema import XMLSchema
 from xmlschema import etree_tostring
 from xml.etree import ElementTree as ET
-from .facet import Entity, Attribute, Classification, Property, PartOf, Material, Restriction
+from .facet import Entity, Attribute, Classification, Property, PartOf, Material, Restriction, get_pset, get_psets
 
 
 cwd = os.path.dirname(os.path.realpath(__file__))
@@ -81,7 +81,7 @@ class Ids:
             "@xmlns": "http://standards.buildingsmart.org/IDS",
             "@xmlns:xs": "http://www.w3.org/2001/XMLSchema",
             "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS/ids_09.xsd",
+            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/0.9.6/ids.xsd",
             "info": self.info,
             "specifications": {"specification": []},
         }
@@ -113,6 +113,8 @@ class Ids:
         return get_schema().is_valid(filepath)
 
     def validate(self, ifc_file, filter_version=False):
+        get_pset.cache_clear()
+        get_psets.cache_clear()
         for specification in self.specifications:
             specification.reset_status()
             specification.validate(ifc_file, filter_version=filter_version)
@@ -173,8 +175,8 @@ class Specification:
         self.minOccurs = ids_dict["@minOccurs"]
         self.maxOccurs = ids_dict["@maxOccurs"]
         self.ifcVersion = ids_dict["@ifcVersion"]
-        self.applicability = self.parse_clause(ids_dict["applicability"]) if "applicability" in ids_dict else []
-        self.requirements = self.parse_clause(ids_dict["requirements"]) if "requirements" in ids_dict else []
+        self.applicability = self.parse_clause(ids_dict["applicability"]) if ids_dict.get("applicability") is not None else []
+        self.requirements = self.parse_clause(ids_dict["requirements"]) if ids_dict.get("requirements") is not None else []
         return self
 
     def parse_clause(self, clause):
@@ -247,9 +249,7 @@ class Specification:
             if self.failed_entities:
                 self.status = False
         elif self.maxOccurs == 0:
-            if (len(self.applicable_entities)) > 0 and len(self.requirements) == 0:
-                self.status = False
-            if (len(self.applicable_entities)) > 0 and (len(self.applicable_entities) - len(self.failed_entities)) > 0:
+            if (len(self.applicable_entities)) > 0:
                 self.status = False
 
     def get_usage(self):

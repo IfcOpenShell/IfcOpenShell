@@ -70,6 +70,7 @@ addon_keymaps = []
 def register():
     bpy.types.Scene.BIMProjectProperties = bpy.props.PointerProperty(type=prop.BIMProjectProperties)
     bpy.types.TOPBAR_MT_file.prepend(ui.file_menu)
+    bpy.types.TOPBAR_MT_file_context_menu.prepend(ui.file_menu)
     wm = bpy.context.window_manager
     if wm.keyconfigs.addon:
         km = wm.keyconfigs.addon.keymaps.get("Window")
@@ -87,6 +88,7 @@ def register():
 
 def unregister():
     bpy.types.TOPBAR_MT_file.remove(ui.file_menu)
+    bpy.types.TOPBAR_MT_file_context_menu.remove(ui.file_menu)
     del bpy.types.Scene.BIMProjectProperties
 
     wm = bpy.context.window_manager

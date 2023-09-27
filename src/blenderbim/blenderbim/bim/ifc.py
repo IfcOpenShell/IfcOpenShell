@@ -220,7 +220,6 @@ class IfcStore:
         if isinstance(obj, bpy.types.Material):
             blenderbim.bim.handler.subscribe_to(obj, "diffuse_color", blenderbim.bim.handler.color_callback)
         elif isinstance(obj, bpy.types.Object):
-            blenderbim.bim.handler.subscribe_to(obj, "mode", blenderbim.bim.handler.mode_callback)
             blenderbim.bim.handler.subscribe_to(
                 obj, "active_material_index", blenderbim.bim.handler.active_material_index_callback
             )
@@ -249,7 +248,6 @@ class IfcStore:
         if isinstance(obj, bpy.types.Material):
             blenderbim.bim.handler.subscribe_to(obj, "diffuse_color", blenderbim.bim.handler.color_callback)
         elif isinstance(obj, bpy.types.Object):
-            blenderbim.bim.handler.subscribe_to(obj, "mode", blenderbim.bim.handler.mode_callback)
             blenderbim.bim.handler.subscribe_to(
                 obj, "active_material_index", blenderbim.bim.handler.active_material_index_callback
             )

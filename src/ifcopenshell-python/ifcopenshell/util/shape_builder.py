@@ -1,5 +1,5 @@
 # IfcOpenShell - IFC toolkit and geometry engine
-# Copyright (C) 2022 @Andrej730
+# Copyright (C) 2022, 2023 @Andrej730
 #
 # This file is part of IfcOpenShell.
 #
@@ -19,14 +19,22 @@
 import collections
 import ifcopenshell
 import ifcopenshell.api
-from math import cos, sin, pi, tan, radians, degrees, atan, sqrt
+from math import cos, sin, pi, tan, radians, degrees, atan, sqrt, ceil
 from mathutils import Vector, Matrix
 from itertools import chain
+from typing import List
 
 V = lambda *x: Vector([float(i) for i in x])
 sign = lambda x: x and (1, -1)[x < 0]
 PRECISION = 1.0e-5
-is_x = lambda value, x: (x + PRECISION) > value > (x - PRECISION)
+
+
+def is_x(value, x, si_conversion=None):
+    if si_conversion:
+        value = value * si_conversion
+    return (x + PRECISION) > value > (x - PRECISION)
+
+
 round_to_precision = lambda x, si_conversion: round(x * si_conversion, 5) / si_conversion
 round_vector_to_precision = lambda v, si_conversion: Vector([round_to_precision(i, si_conversion) for i in v])
 
@@ -41,9 +49,25 @@ class ShapeBuilder:
     def __init__(self, ifc_file):
         self.file = ifc_file
 
-    def polyline(self, points, closed=False, position_offset=None, arc_points=[]):
-        # > points - list of points formatted like ( (x0, y0), (x1, y1) )
-        # < IfcIndexedPolyCurve
+    def polyline(
+        self, points: List[Vector], closed: bool = False, position_offset: Vector = None, arc_points: List[int] = []
+    ):
+        """
+        Generate an IfcIndexedPolyCurve based on the provided points.
+
+        :param points: List of points formatted as ( (x0, y0), (x1, y1) )
+        :type: List[Vector]
+        :param closed: Whether polyline should be closed. Default is False.
+        :type: bool, optional
+        :param position_offset: Optional offset to be applied to all points.
+        :type: Optional[Vector]
+        :param arc_points: Indices of the middle points for arcs. For creating an arc segment,
+        provide 3 points: `arc_start`, `arc_middle` and `arc_end` and add the `arc_middle`
+        point's index to this list.
+        :type: List[int]
+
+        :return: IfcIndexedPolyCurve
+        """
 
         if arc_points and self.file.schema == "IFC2X3":
             raise Exception("Arcs are not supported for IFC2X3.")
@@ -101,7 +125,7 @@ class ShapeBuilder:
             if len(segment) == 3:
                 ifc_segments.append(self.file.createIfcArcIndex(segment))
 
-        # NOTE: IfcIndexPolyCurve support only consequtive segments
+        # NOTE: IfcIndexPolyCurve support only consecutive segments
         ifc_curve = self.file.createIfcIndexedPolyCurve(Points=ifc_points, Segments=ifc_segments)
         return ifc_curve
 
@@ -534,6 +558,9 @@ class ShapeBuilder:
 
         Position and position axes are in world space, extrusion vector in placement space defined by
         position_x_axis/position_y_axis/position_z_axis
+
+        NOTE: changing position also changes the resulting geometry origin.
+
         """
         # > profile_or_curve
         # > extrusion vector - as defined in coordinate system position_x_axis+position_z_axis
@@ -575,9 +602,9 @@ class ShapeBuilder:
         disk_solid = self.file.createIfcSweptDiskSolid(Directrix=path_curve, Radius=radius)
         return disk_solid
 
-    def get_representation(self, context, items, representation_type:str = None):
+    def get_representation(self, context, items, representation_type: str = None):
         """Create IFC representation for the specified context and items.
-        
+
         :param context: IfcGeometricRepresentationSubContext
         :param items: could be a list or single curve/IfcExtrudedAreaSolid
         :param representation_type: Explicitly specified RepresentationType, defaults to `None`.
@@ -614,14 +641,36 @@ class ShapeBuilder:
         return ifcopenshell.util.element.copy_deep(self.file, element)
 
     # UTILITIES
-    def extrude_by_y_kwargs(self):
-        """shortcut for `ShapeBuilder.extrude` to extrude by y axis.
-        it assumes you have 2d profile in xz plane and trying to extrude it by y axis"""
-        return {
-            "position_x_axis": Vector((1, 0, 0)),
-            "position_z_axis": Vector((0, -1, 0)),
-            "extrusion_vector": Vector((0, 0, -1)),
-        }
+    def extrude_kwargs(self, axis):
+        """Shortcut to get kwargs for `ShapeBuilder.extrude` to extrude by some axis.
+
+        It assumes you have 2D profile in:
+            XZ plane for Y axis extrusion, \n
+            YZ plane for X axis extrusion, \n
+            XY plane for Z axis extrusion, \n
+
+        Extruding by X/Y using other kwargs might break ValidExtrusionDirection."""
+
+        axis = axis.upper()
+
+        if axis == "Y":
+            return {
+                "position_x_axis": Vector((1, 0, 0)),
+                "position_z_axis": Vector((0, -1, 0)),
+                "extrusion_vector": Vector((0, 0, -1)),
+            }
+        elif axis == "X":
+            return {
+                "position_x_axis": Vector((0, 1, 0)),
+                "position_z_axis": Vector((1, 0, 0)),
+                "extrusion_vector": Vector((0, 0, 1)),
+            }
+        elif axis == "Z":
+            return {
+                "position_x_axis": Vector((1, 0, 0)),
+                "position_z_axis": Vector((0, 0, 1)),
+                "extrusion_vector": Vector((0, 0, 1)),
+            }
 
     def rotate_extrusion_kwargs_by_z(self, kwargs, angle, counter_clockwise=False):
         """shortcut to rotate extrusion kwargs by z axis
@@ -856,8 +905,55 @@ class ShapeBuilder:
 
         return face_set
 
+    def extrude_face_set(
+        self, points, magnitude: float, extrusion_vector=V(0, 0, 1).freeze(), offset=None, start_cap=True, end_cap=True
+    ):
+        """
+        Method to extrude by creating face sets rather than creating IfcExtrudedAreaSolid.
+
+        Useful if your representation is already using face sets and you need to avoid using SweptSolid
+        to assure CorrectItemsForType.
+
+        :param points: list of points, assuming they form consecutive closed polyline.
+        :param magnitude: extrusion magnitude
+        :param type: float
+        :param extrusion_vector: extrusion direction, by default it's extruding by Z+ axis
+        :param type: Vector, optional
+        :param offset: offset from the points
+        :param type: Vector, optional
+        :param start_cap: if True, create start cap, by default it's True
+        :param type: bool, optional
+        :param end_cap: if True, create end cap, by default it's True
+        :param type: bool, optional
+
+        :return: IfcPolygonalFaceSet
+        """
+
+        # prevent mutating arguments, deepcopy doesn't work
+        start_points = [p.copy() if not offset else (p + offset) for p in points]
+        extrusion_offset = magnitude * extrusion_vector
+        end_points = [p + extrusion_offset for p in start_points]
+
+        points = start_points + end_points
+        faces = []
+        n_verts = len(start_points)
+        last_vert_i = n_verts - 1
+        for i in range(last_vert_i):
+            face = (i, i + 1, n_verts + i + 1, n_verts + i)
+            faces.append(face)
+        faces.append((last_vert_i, 0, n_verts + 0, n_verts + last_vert_i))  # close the loop
+
+        if end_cap:
+            faces.append(tuple(range(n_verts, n_verts * 2)))
+        if start_cap:
+            faces.append(tuple(reversed(range(n_verts))))
+
+        face_set = self.polygonal_face_set(points, faces)
+        return face_set
+
+    # TODO: move MEP to separate shape builder sub module
     def mep_transition_shape(
-        self, start_segment, end_segment, start_length, end_length, angle=30.0, profile_offset=None
+        self, start_segment, end_segment, start_length, end_length, angle=30.0, profile_offset=V(0, 0).freeze()
     ):
         """
         returns tuple of Model/Body/MODEL_VIEW IfcRepresentation and transition shape data
@@ -899,32 +995,6 @@ class ShapeBuilder:
                 return V(profile.Radius, profile.Radius, depth)
             return None
 
-        def get_profile_faceset(points, length, offset=None):
-            # prevent mutating arguments, deepcopy doesn't work
-            start_points = [p.copy() if not offset else (p + offset) for p in points]
-            end_points = [p.copy() for p in start_points]
-            for p in end_points:
-                p.z += length
-
-            points = start_points + end_points
-            faces = []
-            n_verts = len(start_points)
-            last_vert_i = n_verts - 1
-            for i in range(last_vert_i):
-                face = (i, i + 1, n_verts + i + 1, n_verts + i)
-                faces.append(face)
-            faces.append((last_vert_i, 0, n_verts + 0, n_verts + last_vert_i))  # close the loop
-
-            # if there is offset we put a cap at the end
-            # otherwise at the start
-            if offset:
-                faces.append(tuple(range(n_verts, n_verts * 2)))
-            else:
-                faces.append(tuple(reversed(range(n_verts))))
-
-            face_set = self.polygonal_face_set(points, faces)
-            return face_set
-
         start_profile = get_profile(start_segment)
         end_profile = get_profile(end_segment)
 
@@ -945,8 +1015,7 @@ class ShapeBuilder:
 
         faces = []
         end_extrusion_offset.z += transition_length
-        if profile_offset:
-            end_extrusion_offset.xy += profile_offset
+        end_extrusion_offset.xy += profile_offset
 
         if start_profile.is_a("IfcRectangleProfileDef") and end_profile.is_a("IfcRectangleProfileDef"):
             # no transitions for exactly the same profiles
@@ -1004,8 +1073,10 @@ class ShapeBuilder:
                 face = [i, next_i, next_i + n_segments, i + n_segments]
                 faces.append(face)
 
-            transition_items.append(get_profile_faceset(first_profile_points, start_length))
-            transition_items.append(get_profile_faceset(second_profile_points, end_length, end_extrusion_offset))
+            transition_items.append(self.extrude_face_set(first_profile_points, start_length, end_cap=False))
+            transition_items.append(
+                self.extrude_face_set(second_profile_points, end_length, offset=end_extrusion_offset, start_cap=False)
+            )
 
             first_profile_points = [p + start_offset for p in first_profile_points]
             second_profile_points = [p + end_extrusion_offset for p in second_profile_points]
@@ -1032,8 +1103,10 @@ class ShapeBuilder:
             else:
                 start_points, end_points = rect_points, circle_points
 
-            transition_items.append(get_profile_faceset(start_points, start_length))
-            transition_items.append(get_profile_faceset(end_points, end_length, end_extrusion_offset))
+            transition_items.append(self.extrude_face_set(start_points, start_length, end_cap=False))
+            transition_items.append(
+                self.extrude_face_set(end_points, end_length, offset=end_extrusion_offset, start_cap=False)
+            )
 
             # offset verts
             if starting_with_circle:
@@ -1077,10 +1150,12 @@ class ShapeBuilder:
 
         body = ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW")
         representation = self.get_representation(body, transition_items, "Tesselation")
+
         transition_data = {
             "start_length": start_length,
             "end_length": end_length,
             "angle": angle,
+            "profile_offset": profile_offset,
             "transition_length": transition_length,
             "full_transition_length": start_length + transition_length + end_length,
         }
@@ -1089,7 +1164,7 @@ class ShapeBuilder:
 
     # TODO: move to separate shape_builder method
     # so we could check transition length without creating representation
-    def mep_transition_length(self, start_half_dim, end_half_dim, angle, profile_offset=None, verbose=True):
+    def mep_transition_length(self, start_half_dim, end_half_dim, angle, profile_offset=V(0, 0).freeze(), verbose=True):
         """get the final transition length for two profiles dimensions, angle and XY offset between them,
 
         the difference from `calculate_transition` - `get_transition_length` is making sure
@@ -1100,7 +1175,7 @@ class ShapeBuilder:
         # offsets tend to have bunch of float point garbage
         # that can result in errors when we're calculating value for square root below
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(self.file)
-        offset = V(0, 0) if profile_offset is None else round_vector_to_precision(profile_offset, si_conversion)
+        offset = round_vector_to_precision(profile_offset, si_conversion)
         diff = start_half_dim.xy - end_half_dim.xy
         diff = Vector([abs(i) for i in diff])
 
@@ -1237,3 +1312,151 @@ class ShapeBuilder:
                 else:
                     angle = degrees(atan(offset.x / h))
             return angle
+
+    def mep_bend_shape(
+        self,
+        segment,
+        start_length: float,
+        end_length: float,
+        angle: float,
+        radius: float,
+        profile_offset: Vector,
+        flip_z_axis: bool,
+    ):
+        """
+
+        :param segment: IfcFlowSegment for a bend.
+        Note that for a bend start and end segments types should match.
+
+        :param angle: bend angle, in radians
+        :param type: float
+        :param radius: bend radius
+        :param type: float
+        :param profile_offset: offset between start and end segments in local space of start segment
+            used mainly to determine the seconn bend axis and it's direction.
+        :param type: Vector
+        :param flip_z_axis: since we cannot determine z axis direction from the profile offset,
+        there is an option to flip it if bend is going by start segment Z- axis.
+        :param type: bool
+
+        :return: tuple of Model/Body/MODEL_VIEW IfcRepresentation and transition shape data
+        """
+
+        def get_profile(element):
+            material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+            if material and material.is_a("IfcMaterialProfileSet") and len(material.MaterialProfiles) == 1:
+                return material.MaterialProfiles[0].Profile
+
+        def get_dim(profile, depth):
+            if profile.is_a("IfcRectangleProfileDef"):
+                return V(profile.XDim / 2, profile.YDim / 2, depth)
+            elif profile.is_a("IfcCircleProfileDef"):
+                return V(profile.Radius, profile.Radius, depth)
+            return None
+
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(self.file)
+        profile = get_profile(segment)
+        is_circular_profile = profile.is_a("IfcCircleProfileDef")
+        profile_dim = get_dim(profile, start_length)
+
+        rounded_offset = round_vector_to_precision(profile_offset, si_conversion)
+        lateral_axis = next(i for i in range(2) if not is_x(rounded_offset[i], 0))
+        non_lateral_axis = 1 if lateral_axis == 0 else 0
+        lateral_sign = sign(profile_offset[lateral_axis])
+        z_sign = -1 if flip_z_axis else 1
+
+        rep_items = []
+
+        # bend circle center
+        O = V(0, 0, 0)
+        O[lateral_axis] = (radius + profile_dim[lateral_axis]) * lateral_sign
+        theta = angle
+
+        def get_circle_point(angle, radius):
+            point = V(0, 0, 0)
+            angle -= pi / 2
+            # fmt: off
+            point.z             = z_sign       * cos(angle) * radius
+            point[lateral_axis] = lateral_sign * sin(angle) * radius
+            # fmt: on
+            return point
+
+        def get_circle_tangent(angle):
+            tangent = V(0, 0, 0)
+            tangent.z = cos(angle) * z_sign
+            tangent[lateral_axis] = sin(angle) * lateral_sign
+            return tangent
+
+        def get_bend_representation_item():
+            r = radius
+            theta_segments = [0, theta / 2, theta]
+            if is_circular_profile:
+                r += profile_dim[lateral_axis]
+                points = [get_circle_point(cur_theta, r) for cur_theta in theta_segments]
+                arc_points = (1,)
+            else:
+                outer_r = r + 2 * profile_dim[lateral_axis]
+                outer_points = [get_circle_point(cur_theta, outer_r) for cur_theta in theta_segments[::-1]]
+                if is_x(r, 0):
+                    points = [get_circle_point(theta, r)] + outer_points
+                    arc_points = (2,)
+                else:
+                    inner_points = [get_circle_point(cur_theta, r) for cur_theta in theta_segments]
+                    points = inner_points + outer_points
+                    arc_points = (1, 4)
+
+            points = [p + O for p in points]
+            offset = V(0, 0, 0)
+            offset.z = z_sign * start_length
+
+            if is_circular_profile:
+                bend_path = self.polyline(points, closed=False, arc_points=arc_points, position_offset=offset)
+                bend = self.create_swept_disk_solid(bend_path, profile_dim[lateral_axis])
+            else:
+                main_axes = lambda v: getattr(v, "xy"[lateral_axis] + "z")
+                offset[non_lateral_axis] = -profile_dim[non_lateral_axis]
+
+                extrusion_kwargs = self.extrude_kwargs("XY"[non_lateral_axis])
+                profile_curve = self.polyline([main_axes(p) for p in points], arc_points=arc_points, closed=True)
+                bend = self.extrude(
+                    self.profile(profile_curve), profile_dim[non_lateral_axis] * 2, position=offset, **extrusion_kwargs
+                )
+            return bend
+
+        rep_items.append(get_bend_representation_item())
+        if start_length:
+            rep_items.append(self.extrude(profile, start_length, extrusion_vector=V(0, 0, z_sign)))
+        if end_length:
+            end_position = O + get_circle_point(theta, radius + profile_dim[lateral_axis])
+            end_position.z += start_length * z_sign
+
+            # define extrusion space for the segment after the bend
+            z_axis = get_circle_tangent(theta)
+            extrude_kwargs = {
+                "position_z_axis": z_axis,
+                "extrusion_vector": Vector((0, 0, 1)),
+            }
+            # since we are sure that tangent involves only two axis
+            # it's safe to assume that non lateral axis is untouched
+            if lateral_axis == 0:
+                x_axis = z_axis.cross(Vector((0, 1, 0)))
+            else:
+                x_axis = Vector((1, 0, 0))
+            extrude_kwargs["position_x_axis"] = x_axis
+
+            rep_items.append(self.extrude(profile, end_length, end_position, **extrude_kwargs))
+
+        body = ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW")
+        rep = self.get_representation(body, rep_items)
+
+        bend_data = {
+            "start_length": start_length,
+            "end_length": end_length,
+            "radius": radius,
+            "angle": degrees(theta),
+            "lateral_axis": lateral_axis,
+            "lateral_sign": lateral_sign,
+            "z_axis_sign": -1 if flip_z_axis else 1,
+            "main_profile_dimension": profile_dim[lateral_axis],
+        }
+        return rep, bend_data

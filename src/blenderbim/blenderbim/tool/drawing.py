@@ -26,9 +26,9 @@ import bmesh
 import shutil
 import logging
 import shapely
+import platform
 from shapely.ops import unary_union
 import mathutils
-import webbrowser
 import subprocess
 import numpy as np
 import blenderbim.core.tool
@@ -249,17 +249,7 @@ class Drawing(blenderbim.core.tool.Drawing):
                 obj_data = obj.data
                 bpy.data.objects.remove(obj)
                 if obj_data and obj_data.users == 0:  # in case we have drawing element types
-                    cls.remove_object_data(obj_data)
-
-    @classmethod
-    def remove_object_data(cls, data):
-        """also removes all related objects"""
-        if isinstance(data, bpy.types.Camera):
-            bpy.data.cameras.remove(data)
-        elif isinstance(data, bpy.types.Mesh):
-            bpy.data.meshes.remove(data)
-        elif isinstance(data, bpy.types.Curve):
-            bpy.data.curves.remove(data)
+                    tool.Blender.remove_data_block(obj_data)
 
     @classmethod
     def delete_object(cls, obj):
@@ -445,7 +435,7 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def get_drawing_target_view(cls, drawing):
-        return ifcopenshell.util.element.get_psets(drawing)["EPset_Drawing"].get("TargetView", "MODEL_VIEW")
+        return ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {}).get("TargetView", "MODEL_VIEW")
 
     @classmethod
     def get_group_elements(cls, group):
@@ -844,7 +834,12 @@ class Drawing(blenderbim.core.tool.Drawing):
                 command[0] = shutil.which(command[0]) or command[0]
                 subprocess.Popen([replacements.get(c, c) for c in command])
         else:
-            webbrowser.open("file://" + path)
+            if platform.system() == "Darwin":
+                subprocess.call(("open", path))
+            elif platform.system() == "Windows":
+                os.startfile(path)
+            else:
+                subprocess.call(("xdg-open", path))
 
     @classmethod
     def open_spreadsheet(cls, uri):
@@ -895,7 +890,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         literals = cls.get_text_literal(obj, return_list=True)
         cls.import_text_attributes(obj)
         for i, literal in enumerate(literals):
-            product = cls.get_assigned_product(tool.Ifc.get_entity(obj))
+            product = cls.get_assigned_product(tool.Ifc.get_entity(obj)) or tool.Ifc.get_entity(obj)
             props.literals[i].value = cls.replace_text_literal_variables(literal.Literal, product)
 
     @classmethod
@@ -1391,8 +1386,9 @@ class Drawing(blenderbim.core.tool.Drawing):
             original_command = command
             for variable in re.findall("{{.*?}}", command):
                 value = ifcopenshell.util.selector.get_element_value(product, variable[2:-2])
-                command = command.replace(variable, repr(value))
-            text = text.replace(original_command, str(eval(command[2:-2])))
+                value = '"' + str(value).replace('"', '\\"') + '"'
+                command = command.replace(variable, value)
+            text = text.replace(original_command, ifcopenshell.util.selector.format(command[2:-2]))
 
         for variable in re.findall("{{.*?}}", text):
             value = ifcopenshell.util.selector.get_element_value(product, variable[2:-2])
@@ -1509,7 +1505,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         elements = cls.get_elements_in_camera_view(tool.Ifc.get_object(drawing), bpy.data.objects)
         include = pset.get("Include", None)
         if include:
-            elements = ifcopenshell.util.selector.filter_elements(ifc_file, include, elements=elements)
+            elements = ifcopenshell.util.selector.filter_elements(ifc_file, include)
         else:
             if tool.Ifc.get_schema() == "IFC2X3":
                 base_elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialStructureElement"))

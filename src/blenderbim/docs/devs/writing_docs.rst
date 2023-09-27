@@ -13,6 +13,14 @@ All documentation is written in ReStructured Text and is available in the
 `BlenderBIM Add-on docs directory
 <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/blenderbim/docs>`_.
 
+You can link to `external websites
+<https://docs.readthedocs.io/en/stable/guides/cross-referencing-with-sphinx.html>`_.
+You can also link to sections on the same page, like `Writing technical
+documentation`_. You can link to other pages, like :doc:`Hello
+World<hello_world>` or sections within other pages, like
+:ref:`devs/installation:unstable installation`. We have ``autosectionlabel``
+enabled so it is not necessary to manually create labels.
+
 The following colours and annotation styles should be used for annotating
 images. All stroke widths are 3px with a corner radius of 3px.  Horizontal
 underlines are 5px with a corner radius of 2px. The dark green is ``39b54a`` and
@@ -42,6 +50,16 @@ download.
 .. container:: blockbutton
 
     `Visit critical link <https://blenderbim.org>`__
+
+You can use bulleted lists:
+
+- Like.
+- This.
+
+Or ordered lists:
+
+1. Like.
+2. This.
 
 .. note::
 

@@ -11,9 +11,10 @@ packages**. If you aren't a programmer, go for the **BlenderBIM Add-on**.
 4. **Docker** is recommended for developers using Docker.
 5. **AWS Lambda** is recommended for developers using AWS Lambda functions.
 6. **Google Colab** is recommended for developers using Google Colab.
-7. **Using the BlenderBIM Add-on** is recommended for non-developers wanting a graphical interface.
-8. **From source with precompiled binaries** is recommended for developers actively working with the Python code.
-9. **Compiling from source** is recommended for developers actively working with the C++ core.
+7. **Web Assembly** is recommended for developers experimenting with IfcOpenShell on the web.
+8. **Using the BlenderBIM Add-on** is recommended for non-developers wanting a graphical interface.
+9. **From source with precompiled binaries** is recommended for developers actively working with the Python code.
+10. **Compiling from source** is recommended for developers actively working with the C++ core.
 
 Pre-built packages
 ------------------
@@ -196,6 +197,17 @@ local system.
 `Click here
 <https://colab.research.google.com/drive/1S9uZQvqXRpF1z6JTiKk79M1Ln63rHHIZ?usp=sharing>`__
 to launch a simple notebook.
+
+Web Assembly
+------------
+
+IfcOpenShell is available as technology preview to be run using WASM. This
+allows you to run IfcOpenShell in a browser using pyodide. This implementation
+is incredibly heavy and will incur a long load time, but once loaded, will give
+you full access to the entire IfcOpenShell API.
+
+`Click here <https://github.com/IfcOpenShell/wasm-preview>`__ to learn how to
+use WASM.
 
 Using the BlenderBIM Add-on
 ---------------------------

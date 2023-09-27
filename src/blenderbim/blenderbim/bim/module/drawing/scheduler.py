@@ -402,12 +402,27 @@ class Scheduler:
         else:
             wrapped_lines = text_lines
 
-        for line_number, text_line in enumerate(wrapped_lines[::-1]):
+        if box_alignment.startswith("top"):
+            dy_dir = 1
+            line_number = 0
+        elif box_alignment.startswith("bot"):
+            dy_dir = -1
+            line_number = 0
+        else:  # middle row
+            # the idea is that the middle row should always stay in the center
+            # e.g. dy offset for 3 lines is: 1, 0, -1
+            #                for 2 lines:    0.5, -0.5
+            dy_dir = -1
+            line_number = (len(wrapped_lines) - 1) / 2
+
+        for text_line in wrapped_lines[::dy_dir]:
             # position has to be inserted at tspan to avoid x offset between tspans
             tspan = self.svg.tspan(text_line, insert=(x, y), **text_params)
             # doing it here and not in tspan constructor because constructor adds unnecessary spaces
-            tspan.update({"dy": f"-{line_number}em"})
+            tspan.update({"dy": f"{line_number}em"})
             text_tag.add(tspan)
+            line_number += dy_dir
+
         self.svg.add(text_tag)
 
     def convert_to_mm(self, value):

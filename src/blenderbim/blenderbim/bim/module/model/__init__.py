@@ -28,6 +28,7 @@ from . import (
     roof,
     slab,
     space,
+    covering,
     stair,
     window,
     opening,
@@ -106,6 +107,7 @@ classes = (
     slab.SetArcIndex,
     space.GenerateSpace,
     space.GenerateSpacesFromWalls,
+    covering.AddInstanceFlooringCoveringsFromWalls,
     space.ToggleSpaceVisibility,
     mep.FitFlowSegments,
     mep.RegenerateDistributionElement,
@@ -179,6 +181,7 @@ classes = (
     roof.SetGableRoofEdgeAngle,
     mep.MEPAddObstruction,
     mep.MEPAddTransition,
+    mep.MEPAddBend,
 )
 
 addon_keymaps = []

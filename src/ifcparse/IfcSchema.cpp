@@ -13,8 +13,8 @@ bool IfcParse::declaration::is(const std::string& name) const {
 
 	if (name_upper_ == *name_ptr) return true;
 
-	if (this->as_entity()) {
-		return this->as_entity()->is(name);
+	if (this->as_entity() && this->as_entity()->supertype()) {
+		return this->as_entity()->supertype()->is(name);
 	} else if (this->as_type_declaration()) {
 		const IfcParse::named_type* nt = this->as_type_declaration()->declared_type()->as_named_type();
 		if (nt) return nt->is(name);
@@ -26,8 +26,8 @@ bool IfcParse::declaration::is(const std::string& name) const {
 bool IfcParse::declaration::is(const IfcParse::declaration& decl) const {
 	if (this == &decl) return true;
 
-	if (this->as_entity()) {
-		return this->as_entity()->is(decl);
+	if (this->as_entity() && this->as_entity()->supertype()) {
+		return this->as_entity()->supertype()->is(decl);
 	} else if (this->as_type_declaration()) {
 		const IfcParse::named_type* nt = this->as_type_declaration()->declared_type()->as_named_type();
 		if (nt) return nt->is(decl);

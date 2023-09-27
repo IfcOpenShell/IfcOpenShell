@@ -22,6 +22,7 @@ import ifcopenshell
 import blenderbim.bim.handler
 import blenderbim.tool as tool
 import blenderbim.core.misc as core
+import blenderbim.core.geometry as core_geometry
 from blenderbim.bim.ifc import IfcStore
 from mathutils import Vector, Matrix, Euler
 
@@ -140,7 +141,51 @@ class SplitAlongEdge(bpy.types.Operator, Operator):
         return context.selected_objects and tool.Ifc.get()
 
     def _execute(self, context):
-        core.split_along_edge(tool.Misc, cutter=context.active_object, objs=context.selected_objects)
+        cutter = context.active_object
+        objs = [o for o in context.selected_objects if o != cutter]
+
+        # Splitting only works on meshes
+        for obj in objs:
+            # You cannot split meshes if the representation is mapped.
+            element = tool.Ifc.get_entity(obj)
+            if element:
+                relating_type = tool.Root.get_element_type(element)
+                if relating_type and tool.Root.does_type_have_representations(relating_type):
+                    bpy.ops.bim.unassign_type(related_object=obj.name)
+
+            representation = tool.Geometry.get_active_representation(obj)
+            core_geometry.switch_representation(
+                tool.Ifc,
+                tool.Geometry,
+                obj=obj,
+                representation=representation,
+                should_reload=True,
+                is_global=True,
+                should_sync_changes_first=False,
+                apply_openings=False,
+            )
+
+            if not tool.Geometry.is_meshlike(representation):
+                bpy.ops.bim.update_representation(obj=obj.name, ifc_representation_class="IfcTessellatedFaceSet")
+
+        new_objs = tool.Misc.split_objects_with_cutter(objs, cutter)
+        for obj in new_objs:
+            blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=obj)
+            bpy.ops.bim.update_representation(obj=obj.name)
+        for obj in objs:
+            bpy.ops.bim.update_representation(obj=obj.name)
+
+            representation = tool.Geometry.get_active_representation(obj)
+            core_geometry.switch_representation(
+                tool.Ifc,
+                tool.Geometry,
+                obj=obj,
+                representation=representation,
+                should_reload=True,
+                is_global=True,
+                should_sync_changes_first=False,
+                apply_openings=True,
+            )
 
 
 class GetConnectedSystemElements(bpy.types.Operator, Operator):
@@ -205,46 +250,50 @@ class DrawSystemArrows(bpy.types.Operator, Operator):
         return context.selected_objects and tool.Ifc.get()
 
     def _execute(self, context):
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        curve = bpy.data.objects.new("System Arrows", bpy.data.curves.new("System Arrows", "CURVE"))
-        curve.data.dimensions = "3D"
-        context.scene.collection.objects.link(curve)
+        sinks = []
+        sources = []
+
         for obj in bpy.context.selected_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
+
             element = tool.Ifc.get_entity(obj)
-            sources = []
-            sinks = []
-            for rel in getattr(element, "HasPorts", []) or []:
-                if rel.RelatingPort.FlowDirection == "SOURCE":
-                    sources.append(
-                        self.get_absolute_matrix(
-                            ifcopenshell.util.placement.get_local_placement(rel.RelatingPort.ObjectPlacement)
-                        )
-                    )
-                elif rel.RelatingPort.FlowDirection == "SINK":
-                    sinks.append(
-                        self.get_absolute_matrix(
-                            ifcopenshell.util.placement.get_local_placement(rel.RelatingPort.ObjectPlacement)
-                        )
-                    )
+            sources_current = []
+            sinks_current = []
+
+            for port in tool.System.get_ports(element):
+                local_placement = ifcopenshell.util.placement.get_local_placement(port.ObjectPlacement)
+                m = self.get_absolute_matrix(local_placement)
+                if port.FlowDirection == "SOURCE":
+                    sources_current.append(m)
+                elif port.FlowDirection == "SINK":
+                    sinks_current.append(m)
                 else:
-                    sources.append(
-                        self.get_absolute_matrix(
-                            ifcopenshell.util.placement.get_local_placement(rel.RelatingPort.ObjectPlacement)
-                        )
-                    )
-                    sinks.append(
-                        self.get_absolute_matrix(
-                            ifcopenshell.util.placement.get_local_placement(rel.RelatingPort.ObjectPlacement)
-                        )
-                    )
-            for sink in sinks:
-                for source in sources:
+                    sources_current.append(m)
+                    sinks_current.append(m)
+
+                if sinks_current or sources_current:
+                    sinks.append(sinks_current)
+                    sources.append(sources_current)
+
+        if not sinks:
+            self.report({"INFO"}, "No sinks/sources found for selected objects.")
+            return {"FINISHED"}
+
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        curve = bpy.data.objects.new("System Arrows", bpy.data.curves.new("System Arrows", "CURVE"))
+        curve.data.dimensions = "3D"
+        curve.show_in_front = True
+        context.scene.collection.objects.link(curve)
+
+        for i in range(len(sinks)):
+            for sink in sinks[i]:
+                for source in sources[i]:
                     polyline = curve.data.splines.new("POLY")
                     polyline.points.add(1)
                     polyline.points[0].co = (Matrix(sink).translation * unit_scale).to_4d()
                     polyline.points[1].co = (Matrix(source).translation * unit_scale).to_4d()
+        tool.Blender.select_and_activate_single_object(context, curve)
 
     def get_absolute_matrix(self, matrix):
         props = bpy.context.scene.BIMGeoreferenceProperties

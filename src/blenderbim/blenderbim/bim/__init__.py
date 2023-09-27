@@ -30,6 +30,7 @@ modules = {
     "project": None,
     "search": None,
     "bcf": None,
+    "bsdd": None,
     "root": None,
     "unit": None,
     "model": None,
@@ -44,7 +45,7 @@ modules = {
     "void": None,
     "aggregate": None,
     "geometry": None,
-    "cobie": None,
+    "fm": None,
     "resource": None,
     "cost": None,
     "sequence": None,
@@ -77,6 +78,7 @@ modules = {
     "augin": None,
     "debug": None,
     "ifcgit": None,
+    "covering": None,
     # Uncomment this line to enable loading of the demo module. Happy hacking!
     # The name "demo" must correlate to a folder name in `bim/module/`.
     # "demo": None,

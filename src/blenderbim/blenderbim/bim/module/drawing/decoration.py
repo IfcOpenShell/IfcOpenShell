@@ -52,15 +52,20 @@ class profile_consequential:
         cls.test_name = test_name
 
     @classmethod
-    def log(cls):
+    def log(cls, args=[]):
         if cls.start_time is not None:
-            cls.lines.append(f"{cls.test_name}\t{timer() - cls.start_time:.10f}")
+            args = "" if not args else "\t" + "\t".join(args)
+            cls.lines.append(f"{cls.test_name}\t{timer() - cls.start_time:.10f}{args}")
 
     @classmethod
     def stop(cls):
         cls.log()
         cls.start_time = None
-        print("\n".join(cls.lines))
+        lines = "\n".join(cls.lines)
+        print(lines)
+        import pyperclip
+
+        pyperclip.copy(lines)
         cls.lines = []
 
 
@@ -1926,7 +1931,7 @@ class DecorationsHandler:
         if cls.installed:
             cls.uninstall()
         handler = cls()
-        # NOTE: we USE POST_PIXEL here so that we can draw use both 3D_POLYLINE_UNIFORM_COLOR
+        # NOTE: we USE POST_PIXEL here so that we can use both 3D_POLYLINE_UNIFORM_COLOR
         # and drawing text in the same handler. BUT this means that we supply coordinates in WINSPACE
         cls.installed = SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_PIXEL")
 
@@ -1944,6 +1949,7 @@ class DecorationsHandler:
             self.decorators[object_type] = self.decorators["FALL"]
 
     def get_objects_and_decorators(self, collection):
+        # TODO: do it in data instead of the handler for performance?
         results = []
 
         for obj in collection.all_objects:

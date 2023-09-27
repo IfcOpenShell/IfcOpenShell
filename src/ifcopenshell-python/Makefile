@@ -38,7 +38,7 @@ PYNUMBER:=311
 endif
 
 ifeq ($(PLATFORM), linux)
-PLATFORMTAG:=manylinux1_x86_64
+PLATFORMTAG:=manylinux_2_31_x86_64
 endif
 ifeq ($(PLATFORM), macos)
 PLATFORMTAG:=macosx_10_15_x86_64

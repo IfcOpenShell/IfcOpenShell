@@ -87,6 +87,15 @@ class Ifc(blenderbim.core.tool.Ifc):
                 pass
 
     @classmethod
+    def get_entity_by_id(cls, entity_id):
+        """useful to check whether entity_id is still exists in IFC"""
+        ifc_file = tool.Ifc.get()
+        try:
+            return ifc_file.by_id(entity_id)
+        except RuntimeError:
+            return None
+
+    @classmethod
     def get_object(cls, element):
         return IfcStore.get_element(element.id())
 
@@ -120,7 +129,6 @@ class Ifc(blenderbim.core.tool.Ifc):
                 IfcStore.guid_map[global_id] = obj
 
             blenderbim.bim.handler.subscribe_to(obj, "name", blenderbim.bim.handler.name_callback)
-            blenderbim.bim.handler.subscribe_to(obj, "mode", blenderbim.bim.handler.mode_callback)
             blenderbim.bim.handler.subscribe_to(
                 obj, "active_material_index", blenderbim.bim.handler.active_material_index_callback
             )

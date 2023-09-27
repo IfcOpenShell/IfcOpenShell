@@ -33,10 +33,6 @@ from bpy.props import (
 )
 
 
-def purge():
-    pass
-
-
 def get_ifc_predefined_types(self, context):
     if not IfcClassData.is_loaded:
         IfcClassData.load()

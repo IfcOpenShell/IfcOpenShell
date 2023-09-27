@@ -293,18 +293,6 @@ namespace IfcParse {
 
 		virtual ~entity();
 
-		bool is(const std::string& name) const {
-			if (name == name_) return true;
-			else if (supertype_) return supertype_->is(name);
-			else return false;
-		}
-
-		bool is(const IfcParse::declaration& decl) const {
-			if (this == &decl) return true;
-			else if (supertype_) return supertype_->is(decl);
-			else return false;
-		}
-
 		bool is_abstract() const { return is_abstract_; }
 
 		void set_subtypes(const std::vector<const entity*>& subtypes) {
