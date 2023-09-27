@@ -18,7 +18,10 @@
 
 
 def purge_unused_profiles(ifc, profile):
+    purged_profiles = 0
     for element_profile in profile.get_model_profiles():
         if ifc.get().get_total_inverses(element_profile) > 0:
             continue
         ifc.run("profile.remove_profile", profile=element_profile)
+        purged_profiles += 1
+    return purged_profiles
