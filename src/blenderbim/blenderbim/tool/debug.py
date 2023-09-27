@@ -20,6 +20,7 @@ import os
 import bpy
 import ifcopenshell.express
 import blenderbim.core.tool
+import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -48,3 +49,42 @@ class Debug(blenderbim.core.tool.Debug):
         obj = bpy.data.objects.new(name, mesh)
         bpy.context.scene.collection.objects.link(obj)
         return obj
+
+    @classmethod
+    def remove_unused_elements(cls, elements):
+        ifc_file = tool.Ifc.get()
+        for element in elements:
+            ifcopenshell.util.element.remove_deep2(ifc_file, element)
+
+    @classmethod
+    def print_unused_elements_stats(cls, requested_ifc_class="", ignore_classes=tuple()):
+        ifc_file = tool.Ifc.get()
+
+        # get list of ifc classes used in model
+        classes = set()
+        requested_ifc_classes = set()
+        for el in ifc_file:
+            if any(el.is_a(i) for i in ignore_classes):
+                continue
+            classes.add(el.is_a())
+            if requested_ifc_class and el.is_a(requested_ifc_class):
+                requested_ifc_classes.add(el.is_a())
+
+        # count unused elements for each class
+        unused = dict()
+        for c in classes:
+            uses = [i for i in ifc_file.by_type(c) if ifc_file.get_total_inverses(i) == 0]
+            if not uses:
+                continue
+            unused[c] = len(uses)
+
+        # print classes and their unsued elements in ascending order
+        if unused:
+            print("Unused elements by classes:")
+            for ifc_class in sorted(unused.keys(), key=lambda x: unused[x]):
+                class_string = ifc_class
+                if ifc_class in requested_ifc_classes:
+                    class_string = "---> " + class_string
+                print(f"{class_string: <50} {unused[ifc_class]: >5}")
+
+        return sum(unused.values())
