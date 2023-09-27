@@ -36,7 +36,7 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 
 project = "IfcOpenShell"
-copyright = "2020-2022, IfcOpenShell Contributors"
+copyright = "2011-2023, IfcOpenShell Contributors"
 author = "IfcOpenShell Contributors"
 
 # The full version, including alpha/beta/rc tags
