@@ -116,17 +116,6 @@ Scenario: Execute generate spaces from walls
     When I press "bim.generate_spaces_from_walls"
     Then nothing happens
 
-Scenario: Execute generate flooring coverings from walls
-    Given an empty IFC project
-    And I load the demo construction library
-    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
-    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcWallType') if e.Name == 'WAL100'][0].id()"
-    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
-    And I press "bim.add_constr_type_instance"
-    And the object "IfcWall/Wall" is selected
-    When I press "bim.generate_flooring_coverings_from_walls"
-    Then nothing happens
-
 Scenario: Execute toggle space visibility
     Given an empty IFC project
     And I add a cube

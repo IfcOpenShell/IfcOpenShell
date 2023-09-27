@@ -68,6 +68,13 @@ class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
             bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
             return
 
+#       core.generate_space(tool.Ifc, tool.Spatial)
+
+
+
+
+
+
         active_obj = bpy.context.active_object
         element = None
         if bpy.context.selected_objects and active_obj:
@@ -233,6 +240,26 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
         # walls (i.e. prismatic) in the active object storey.
         # In order to run, the active object must be a wall and
         # there must be selected walls
+
+        active_obj = bpy.context.active_object
+        element = tool.Ifc.get_entity(active_obj)
+        container = tool.Spatial.get_container(element)
+
+        if not active_obj:
+            self.report({"ERROR"}, "No active object. Please select a wall")
+            return
+
+        element = tool.Ifc.get_entity(active_obj)
+        if element and not element.is_a("IfcWall"):
+            return self.report({"ERROR"}, "The active object is not a wall. Please select a wall.")
+
+        if not container:
+            self.report({"ERROR"}, "The wall is not contained.")
+
+        if not bpy.context.selected_objects:
+            self.report({"ERROR"}, "No selected objects found. Please select walls.")
+            return
+
         core.generate_spaces_from_walls(tool.Ifc, tool.Spatial, tool.Collector)
 
 class ToggleSpaceVisibility(bpy.types.Operator, tool.Ifc.Operator):
