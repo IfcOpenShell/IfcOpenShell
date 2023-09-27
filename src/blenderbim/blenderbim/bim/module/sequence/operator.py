@@ -23,7 +23,6 @@ import time
 import calendar
 import isodate
 import pystache
-import webbrowser
 import blenderbim.core.sequence as core
 import blenderbim.tool as tool
 import blenderbim.bim.module.sequence.helper as helper
