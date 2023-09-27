@@ -41,7 +41,7 @@ class BIMFMProperties(PropertyGroup):
             ("cobie3", "COBie 3", ""),
         ],
         name="Engine",
-        default="cobie",
+        default="cobie24",
     )
     format: EnumProperty(
         items=[
