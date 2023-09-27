@@ -19,6 +19,7 @@
 import ifcopenshell
 import ifcopenshell.util.attribute
 
+# COBie actually uses an exclusion list, but this inclusion list is equivalent.
 cobie_type_classes = [
     "IfcDoorStyle",
     "IfcBuildingElementProxyType",
