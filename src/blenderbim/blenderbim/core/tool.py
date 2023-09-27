@@ -821,12 +821,14 @@ class Spatial:
     def get_bmesh_from_polygon(cls, poly, h): pass
     def get_named_obj_from_bmesh(cls, name, bmesh): pass
     def set_obj_origin_to_bboxcenter(cls, obj): pass
-    def get_active_obj_z(cls, obj): pass
+    def get_active_obj_z(cls): pass
+    def get_active_obj_height(cls): pass
     def traslate_obj_to_z_location(cls, obj): pass
     def link_obj_to_active_collection(cls, obj): pass
     def get_2d_vertices_from_obj(cls, obj): pass
     def assign_swept_area_outer_curve_from_2d_vertices(cls, obj, vertices): pass
     def get_body_representation(cls, obj): pass
+    def assign_ifcspace_class_to_obj(cls, obj): pass
     def assign_type_to_obj(cls, obj): pass
     def regen_obj_representation(cls, ifc, geometry, obj, body): pass
     def toggle_spaces_visibility_wired_and_textured(cls, spaces): pass
