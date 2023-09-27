@@ -38,6 +38,8 @@ classes = (
     operator.SelectHighPolygonMeshes,
     operator.SelectHighestPolygonMeshes,
     operator.ValidateIfcFile,
+    operator.PrintUnusedElementStats,
+    operator.PurgeUnusedElementsByClass,
     prop.BIMDebugProperties,
     ui.BIM_PT_debug,
 )
