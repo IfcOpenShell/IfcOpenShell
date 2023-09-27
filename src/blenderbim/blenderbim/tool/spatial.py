@@ -428,6 +428,11 @@ class Spatial(blenderbim.core.tool.Spatial):
         return z
 
     @classmethod
+    def get_active_obj_height(cls):
+        height = bpy.context.active_object.dimensions.z
+        return height
+
+    @classmethod
     def traslate_obj_to_z_location(cls, obj, z):
         if z != 0:
             obj.location = obj.location + Vector((0, 0, z))
@@ -467,6 +472,10 @@ class Spatial(blenderbim.core.tool.Spatial):
         model = tool.Ifc.get()
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         return body
+
+    @classmethod
+    def assign_ifcspace_class_to_obj(cls, obj):
+        bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcSpace")
 
     @classmethod
     def assign_type_to_obj(cls, obj):
