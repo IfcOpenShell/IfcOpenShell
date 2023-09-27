@@ -36,6 +36,12 @@ except:
     pass  # No ODF support
 
 
+try:
+    import pandas as pd
+except:
+    pass  # No Pandas support
+
+
 class Parser:
     def __init__(self, preset="basic"):
         self.file = None
@@ -239,3 +245,9 @@ class Writer:
                 r += 1
 
         workbook.save(output)
+
+    def write_pd(self):
+        results = {}
+        for category, data in self.categories.items():
+            results[category] = pd.DataFrame(data["rows"], columns=data["headers"])
+        return results
