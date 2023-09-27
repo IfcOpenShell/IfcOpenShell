@@ -810,8 +810,7 @@ class Spatial:
     def set_relative_object_matrix(cls, target_obj, relative_to_obj, matrix): pass
     def show_scene_objects(cls): pass
     #HERE STARTS SPATIAL TOOL
-#    def get_container_and_active_obj(cls): pass
-    def get_union_shape_from_selected_objects(cls, selected_objects): pass
+    def get_union_shape_from_selected_objects(cls): pass
     def get_boundary_elements(cls, selected_objects): pass
     def get_polygons(cls, boundary_elements): pass
     def get_obj_base_points(cls, obj): pass
