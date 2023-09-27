@@ -454,3 +454,44 @@ class OverrideDisplayType(bpy.types.Operator):
         for obj in context.selected_objects:
             obj.display_type = self.display
         return {"FINISHED"}
+
+
+class PrintUnusedElementStats(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.print_unused_elements_stats"
+    bl_label = "Purge Unused Elements Stats"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = (
+        "Print all unused elements in current IFC project in system console, not limited to the selected class"
+    )
+
+    ignore_contexts: bpy.props.BoolProperty(name="Ignore Contexts", default=True)
+    ignore_relationships: bpy.props.BoolProperty(name="Ignore Relationships", default=True)
+    ignore_types: bpy.props.BoolProperty(name="Ignore Types", default=True)
+
+    def _execute(self, context):
+        props = context.scene.BIMDebugProperties
+        # ignore some classes that could have zero 0 inverse references by their nature
+        ignore_classes = []
+        if self.ignore_contexts:
+            ignore_classes += ["IfcRepresentationContext"]
+        if self.ignore_relationships:
+            ignore_classes += ["IfcRelationship"]
+        if self.ignore_types:
+            ignore_classes += ["IfcTypeProduct"]
+
+        unused_elements = tool.Debug.print_unused_elements_stats(props.ifc_class_purge, ignore_classes)
+        self.report({"INFO"}, f"{unused_elements} unused elements found, check the system console for the details.")
+
+
+class PurgeUnusedElementsByClass(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.purge_unused_elements_by_class"
+    bl_label = "Purge Unused Elements By Class"
+    bl_description = (
+        "Will find all elements of class that have no inverse refernces and will remove them, use very carefully."
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = context.scene.BIMDebugProperties
+        purged_elements = core.purge_unused_elements(tool.Ifc, tool.Debug, props.ifc_class_purge)
+        self.report({"INFO"}, f"{purged_elements} unused elements found and removed.")

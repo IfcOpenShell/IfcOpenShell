@@ -23,3 +23,11 @@ def parse_express(debug, filename):
 
 def purge_hdf5_cache(debug):
     debug.purge_hdf5_cache()
+
+
+def purge_unused_elements(ifc, debug, ifc_class):
+    ifc_file = ifc.get()
+    unused_elements = [i for i in ifc_file.by_type(ifc_class) if ifc_file.get_total_inverses(i) == 0]
+    unused_elements_amount = len(unused_elements)
+    debug.remove_unused_elements(unused_elements)
+    return unused_elements_amount
