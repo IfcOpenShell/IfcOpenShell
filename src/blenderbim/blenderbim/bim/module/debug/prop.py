@@ -50,3 +50,4 @@ class BIMDebugProperties(PropertyGroup):
         name="Display Type",
         default="BOUNDS",
     )
+    ifc_class_purge: StringProperty(name="Unused Elements IFC Class", default="")
