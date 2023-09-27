@@ -37,7 +37,7 @@ class BIMFMProperties(PropertyGroup):
         items=[
             ("aohbsem", "AOH-BSEM", ""),
             ("basic", "Basic", ""),
-            ("cobie", "COBie 2.4", ""),
+            ("cobie24", "COBie 2.4", ""),
             ("cobie3", "COBie 3", ""),
         ],
         name="Engine",
