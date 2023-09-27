@@ -22,11 +22,10 @@ import json
 import ifccsv
 import logging
 import tempfile
-import webbrowser
 import ifcopenshell
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.handler import purge_module_data
+from blenderbim.bim.handler import refresh_ui_data
 
 
 class AddCsvAttribute(bpy.types.Operator):
@@ -205,6 +204,7 @@ class ExportIfcCsv(bpy.types.Operator):
             delimiter=sep,
             include_global_id=props.include_global_id,
             null=props.null_value,
+            empty=props.empty_value,
             bool_true=props.true_value,
             bool_false=props.false_value,
             sort=sort,
@@ -244,12 +244,13 @@ class ImportIfcCsv(bpy.types.Operator):
             attributes=attributes,
             delimiter=sep,
             null=props.null_value,
+            empty=props.empty_value,
             bool_true=props.true_value,
             bool_false=props.false_value,
         )
         if not props.should_load_from_memory:
             ifc_file.write(props.csv_ifc_file)
-        purge_module_data()
+        refresh_ui_data()
         return {"FINISHED"}
 
 

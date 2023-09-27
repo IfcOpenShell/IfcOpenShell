@@ -52,7 +52,7 @@ class BIM_PT_status(Panel):
             return
 
         row = self.layout.row(align=True)
-        row.operator("bim.activate_status_filters", icon="TIME")
+        row.label(text="Statuses found in the project:")
         row.operator("bim.disable_status_filters", icon="CANCEL", text="")
 
         for status in self.props.statuses:
@@ -556,7 +556,7 @@ class BIM_PT_animation_tools(Panel):
 
         row = self.layout.row(align=True)
         row.alignment = "RIGHT"
-        if self.animation_props.saved_color_schemes:
+        if AnimationColorSchemeData.data["saved_color_schemes"]:
             row.prop(self.animation_props, "saved_color_schemes", text="Color Scheme", icon="SEQUENCE_COLOR_04")
         else:
             row.label(text="No Color Scheme Saved", icon="INFO")
@@ -727,7 +727,11 @@ class BIM_PT_task_icom(Panel):
         if total_task_outputs:
             op = row2.operator("bim.unassign_product", icon="REMOVE", text="")
             op.task = task.ifc_definition_id
-            if not context.selected_objects and self.props.active_task_output_index < total_task_outputs:
+            if (
+                total_task_outputs
+                and not context.selected_objects
+                and self.props.active_task_output_index < total_task_outputs
+            ):
                 output_id = self.props.task_outputs[self.props.active_task_output_index].ifc_definition_id
                 op.relating_product = output_id
 
@@ -769,6 +773,7 @@ class BIM_UL_task_resources(UIList):
             row.operator("bim.go_to_resource", text="", icon="STYLUS_PRESSURE").resource = item.ifc_definition_id
             row.prop(item, "name", emboss=False, text="")
             row.prop(item, "schedule_usage", emboss=False, text="")
+
 
 class BIM_UL_animation_colors(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):

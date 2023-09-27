@@ -362,12 +362,18 @@ def get_property_unit(prop, ifc_file):
     if not unit_assignment:
         return
     entity = prop.wrapped_data.declaration().as_entity()
+    measure_class = None
     if prop.is_a("IfcPhysicalSimpleQuantity"):
         measure_class = entity.attribute_by_index(3).type_of_attribute().declared_type().name()
     elif prop.is_a("IfcPropertySingleValue") and prop.NominalValue:
         measure_class = prop.NominalValue.is_a()
-    elif prop.is_a("IfcPropertyEnumeratedValue") and prop.EnumerationValues:
-        measure_class = prop.EnumerationValues[0].is_a()
+    elif prop.is_a("IfcPropertyEnumeratedValue"):
+        if prop.EnumerationReference:
+            unit = getattr(prop.EnumerationReference, "Unit", None)
+            if unit:
+                return unit
+        if prop.EnumerationValues:
+            measure_class = prop.EnumerationValues[0].is_a()
     elif prop.is_a("IfcPropertyListValue") and prop.ListValues:
         measure_class = prop.ListValues[0].is_a()
     elif prop.is_a("IfcPropertyBoundedValue"):
@@ -393,6 +399,8 @@ def get_property_unit(prop, ifc_file):
             else:
                 table_units[f"{attribute}Unit"] = None
         return table_units
+    if measure_class is None:
+        return
     unit_type = get_measure_unit_type(measure_class)
     units = [u for u in unit_assignment.Units if getattr(u, "UnitType", None) == unit_type]
     if units:
@@ -548,12 +556,18 @@ def calculate_unit_scale(ifc_file):
 
 
 def format_length(
-    value, precision, decimal_places=2, suppress_zero_inches=True, unit_system="imperial", imperial_unit="foot"
+    value,
+    precision,
+    decimal_places=2,
+    suppress_zero_inches=True,
+    unit_system="imperial",
+    input_unit="foot",
+    output_unit="foot",
 ):
     """Formats a length for readability and imperial formatting
 
     :param value: The value in meters if metric, or either decimal feet or
-        inches if imperial depending on imperial_unit.
+        inches if imperial depending on input_unit.
     :type value: float
     :param precision: How precise the format should be. I.e. round to nearest.
         For imperial, it is 1/Nth. E.g. 12 means to the nearest 1/12th of an
@@ -566,18 +580,20 @@ def format_length(
     :type suppress_zero_inches: bool
     :param unit_system: Choose whether your value is "metric" or "imperial"
     :type unit_system: str
-    :param imperial_unit: If imperial, specify whether your value is "foot" or
+    :param input_unit: If imperial, specify whether your value is "foot" or
         "inch".
-    :type imperial_unit: str
+    :type input_unit: str
+    :param output_unit: If imperial, specify whether your value is "foot" to
+        format as both feet and inches, or "inch" if only inches should be
+        shown.
     """
     if unit_system == "imperial":
-        if imperial_unit == "foot":
+        if input_unit == "foot":
             feet = int(value)
             inches = (value - feet) * 12
-
-        elif imperial_unit == "inch":
-            inches = value * 12
-
+        elif input_unit == "inch":
+            inches = value % 12
+            feet = int(round((value - inches) / 12))
 
         # Round to the nearest 1/N
         nearest = round(inches * precision)
@@ -587,22 +603,22 @@ def format_length(
 
         # If fraction is a whole number, format it accordingly
         if frac.denominator == 1:
-            if imperial_unit == "inch":
-                return f"{round(inches)}\""
-            if suppress_zero_inches:
-                if imperial_unit == "foot":
-                    return f"{round(value)}'"
-            elif not suppress_zero_inches:
-                if imperial_unit == "foot":
-                    return f"{round(value)}' - 0\"" 
-        if frac.numerator > frac.denominator and not frac.denominator == 0:
+            if suppress_zero_inches and frac.numerator == 0:
+                if output_unit == "foot":
+                    return f"{feet}'"
+                return f'{feet * 12}"'
+            if output_unit == "foot":
+                return f"{feet}' - {frac.numerator}\""
+            return f'{(feet * 12) + frac.numerator}"'
+        if frac.numerator > frac.denominator:
             remainder = frac.numerator % frac.denominator
             whole = int((frac.numerator - remainder) / frac.denominator)
-            if imperial_unit == "foot":
+            if output_unit == "foot":
                 return f"{feet}' - {whole} {remainder}/{frac.denominator}\""
-            elif imperial_unit == "inch":
-                return f"{whole} {remainder}/{frac.denominator}\""
-
+            return f'{(feet * 12) + whole} {remainder}/{frac.denominator}"'
+        if output_unit == "foot":
+            return f"{feet}' - {frac.numerator}/{frac.denominator}\""
+        return f'{feet * 12} {frac.numerator}/{frac.denominator}"'
     elif unit_system == "metric":
         rounded_val = round(value / precision) * precision
         return f"{rounded_val:.{decimal_places}f}"

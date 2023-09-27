@@ -52,7 +52,7 @@ class Client:
         headers = {}
         if is_auth_required:
             headers = {"Authorization": "Bearer " + self.get_access_token()}
-        return requests.get(f"{self.baseurl}{endpoint}", headers=headers, params=params or None).json()
+        return requests.get(f"{self.baseurl}{endpoint}", timeout=10, headers=headers, params=params or None).json()
 
     def post(self):
         pass  # TODO
@@ -118,6 +118,20 @@ class Client:
                 "namespaceUri": namespaceUri,
                 "languageCode": languageCode,
                 "includeChildClassificationReferences": includeChildClassificationReferences,
+            },
+        )
+
+    def ClassificationSearchOpen(self, SearchText, version="v1", DomainNamespaceUris=None, RelatedIfcEntities=None):
+        if DomainNamespaceUris is None:
+            DomainNamespaceUris = []
+        if RelatedIfcEntities is None:
+            RelatedIfcEntities = []
+        return self.get(
+            f"api/ClassificationSearchOpen/{version}",
+            {
+                "SearchText": SearchText,
+                "DomainNamespaceUris": DomainNamespaceUris,
+                "RelatedIfcEntities": RelatedIfcEntities,
             },
         )
 

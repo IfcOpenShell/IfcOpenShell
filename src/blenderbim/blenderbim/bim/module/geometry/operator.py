@@ -57,6 +57,39 @@ class EditObjectPlacement(bpy.types.Operator, Operator):
             core.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
 
+class OverrideMeshSeparate(bpy.types.Operator, Operator):
+    bl_idname = "bim.override_mesh_separate"
+    bl_label = "IFC Mesh Separate"
+    bl_options = {"REGISTER", "UNDO"}
+    obj: bpy.props.StringProperty()
+    type: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        obj = context.active_object
+
+        # You cannot separate meshes if the representation is mapped.
+        relating_type = tool.Root.get_element_type(tool.Ifc.get_entity(obj))
+        if relating_type and tool.Root.does_type_have_representations(relating_type):
+            # We toggle edit mode to ensure that once representations are
+            # unmapped, our Blender mesh only has a single user.
+            tool.Blender.toggle_edit_mode(context)
+            bpy.ops.bim.unassign_type(related_object=obj.name)
+            tool.Blender.toggle_edit_mode(context)
+
+        selected_objects = context.selected_objects
+        bpy.ops.mesh.separate(type=self.type)
+        bpy.ops.object.mode_set(mode="OBJECT", toggle=False)
+        new_objs = [obj]
+        for new_obj in context.selected_objects:
+            if new_obj == obj:
+                continue
+            # This is not very efficient, it needlessly copies the representations first.
+            blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
+            new_objs.append(new_obj)
+        for new_obj in new_objs:
+            bpy.ops.bim.update_representation(obj=new_obj.name)
+
+
 class OverrideOriginSet(bpy.types.Operator, Operator):
     bl_idname = "bim.override_origin_set"
     bl_label = "IFC Origin Set"
@@ -88,8 +121,15 @@ class AddRepresentation(bpy.types.Operator, Operator):
     bl_options = {"REGISTER", "UNDO"}
     representation_conversion_method: bpy.props.EnumProperty(
         items=[
-            ("OUTLINE", "Trace Outline", ""),
-            ("BOX", "Bounding Box", ""),
+            ("OUTLINE", "Trace Outline", "Traces outline by local XY axes, for Profile - by local XZ axes."),
+            (
+                "BOX",
+                "Bounding Box",
+                "Creates a bounding box representation.\n"
+                "For Plan context - 2D bounding box by local XY axes,\n"
+                "for Profile - 2D bounding box by local XZ axes.\n"
+                "For other contexts - bounding box is 3d.",
+            ),
             ("PROJECT", "Full Representation", ""),
         ],
         name="Representation Conversion Method",
@@ -216,7 +256,8 @@ class PurgeUnusedRepresentations(bpy.types.Operator, Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.purge_unused_representations(tool.Ifc, tool.Geometry)
+        purged_representations = core.purge_unused_representations(tool.Ifc, tool.Geometry)
+        self.report({"INFO"}, f"{purged_representations} representations were purged.")
 
 
 class UpdateRepresentation(bpy.types.Operator, Operator):
@@ -272,7 +313,8 @@ class UpdateRepresentation(bpy.types.Operator, Operator):
             if self.ifc_representation_class == "IfcTessellatedFaceSet":
                 # We are explicitly casting to a tessellation, so remove all parametric materials.
                 element_type = ifcopenshell.util.element.get_type(product)
-                ifcopenshell.api.run("material.unassign_material", tool.Ifc.get(), product=element_type)
+                if element_type:  # Some invalid IFCs use material sets without a type.
+                    ifcopenshell.api.run("material.unassign_material", tool.Ifc.get(), product=element_type)
                 ifcopenshell.api.run("material.unassign_material", tool.Ifc.get(), product=product)
             else:
                 # These objects are parametrically based on an axis and should not be modified as a mesh
@@ -498,6 +540,8 @@ class OverrideDelete(bpy.types.Operator):
     def _execute(self, context):
         if self.is_batch:
             ifcopenshell.util.element.batch_remove_deep2(tool.Ifc.get())
+
+        self.process_arrays(context)
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
             if element:
@@ -507,6 +551,7 @@ class OverrideDelete(bpy.types.Operator):
                 tool.Geometry.delete_ifc_object(obj)
             else:
                 bpy.data.objects.remove(obj)
+
         if self.is_batch:
             old_file = tool.Ifc.get()
             old_file.end_transaction()
@@ -527,6 +572,30 @@ class OverrideDelete(bpy.types.Operator):
         data["old_file"].redo()
         tool.Ifc.set(data["new_file"])
 
+    def process_arrays(self, context):
+        selected_objects = set(context.selected_objects)
+        array_parents = set()
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+            if not pset:
+                continue
+            array_parents.add(tool.Ifc.get().by_guid(pset["Parent"]))
+
+        for array_parent in array_parents:
+            array_parent_obj = tool.Ifc.get_object(array_parent)
+            data = [(i, data) for i, data in enumerate(tool.Blender.Modifier.Array.get_modifiers_data(array_parent))]
+            # NOTE: there is a way to remove arrays more precisely but it's more complex
+            for i, modifier_data in reversed(data):
+                children = set(tool.Blender.Modifier.Array.get_children_objects(modifier_data))
+                if children.issubset(selected_objects):
+                    with context.temp_override(active_object=array_parent_obj):
+                        bpy.ops.bim.remove_array(item=i)
+                else:
+                    break  # allows to remove only n last layers of an array
+
 
 class OverrideOutlinerDelete(bpy.types.Operator):
     bl_idname = "bim.override_outliner_delete"
@@ -537,7 +606,7 @@ class OverrideOutlinerDelete(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return len(context.selected_ids) > 0
+        return len(getattr(context, "selected_ids", [])) > 0
 
     def execute(self, context):
         # In this override, we don't check self.hierarchy. This effectively
@@ -652,6 +721,13 @@ class OverrideDuplicateMove(bpy.types.Operator):
         return len(context.selected_objects) > 0
 
     def execute(self, context):
+        return OverrideDuplicateMove.execute_duplicate_operator(self, context, linked=False)
+
+    def _execute(self, context):
+        return OverrideDuplicateMove.execute_ifc_duplicate_operator(self, context)
+
+    @staticmethod
+    def execute_duplicate_operator(self, context, linked=False):
         # Deep magick from the dawn of time
         if IfcStore.get_file():
             IfcStore.execute_ifc_operator(self, context)
@@ -662,7 +738,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
         new_active_obj = None
         for obj in context.selected_objects:
             new_obj = obj.copy()
-            if obj.data:
+            if linked and obj.data:
                 new_obj.data = obj.data.copy()
             if obj == context.active_object:
                 new_active_obj = new_obj
@@ -674,44 +750,111 @@ class OverrideDuplicateMove(bpy.types.Operator):
             context.view_layer.objects.active = new_active_obj
         return {"FINISHED"}
 
-    def _execute(self, context):
+    @staticmethod
+    def execute_ifc_duplicate_operator(self, context, linked=False):
+        objects_to_duplicate = set(context.selected_objects)
+
+        # handle arrays
+        arrays_to_duplicate, array_children = OverrideDuplicateMove.process_arrays(self, context)
+        objects_to_duplicate -= array_children
+        for child in array_children:
+            child.select_set(False)
+
         self.new_active_obj = None
         # Track decompositions so they can be recreated after the operation
-        relationships = tool.Root.get_decomposition_relationships(context.selected_objects)
+        relationships = tool.Root.get_decomposition_relationships(objects_to_duplicate)
         old_to_new = {}
-        for obj in context.selected_objects:
+
+        for obj in objects_to_duplicate:
             element = tool.Ifc.get_entity(obj)
             if element and element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
                 continue  # For now, don't copy drawings until we stabilise a bit more. It's tricky.
+
+            linked_non_ifc_object = linked and not element
 
             # Prior to duplicating, sync the object placement to make decomposition recreation more stable.
             if tool.Ifc.is_moved(obj):
                 blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
             new_obj = obj.copy()
-            if obj.data:
-                new_obj.data = obj.data.copy()
+            temp_data = None
+
+            if obj.data and not linked_non_ifc_object:
+                # assure root.copy_class won't replace the previous mesh globally
+                temp_data = obj.data.copy()
+                new_obj.data = temp_data
+
             if obj == context.active_object:
                 self.new_active_obj = new_obj
             for collection in obj.users_collection:
                 collection.objects.link(new_obj)
             obj.select_set(False)
             new_obj.select_set(True)
+
+            if linked_non_ifc_object:
+                continue
+
             # clear object's collection so it will be able to have it's own
             new_obj.BIMObjectProperties.collection = None
-            # Copy the actual class
+            # copy the actual class
             new = blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
+
+            # clean up the orphaned mesh with ifc id of the original object to avoid confusion
+            if new and temp_data:
+                tool.Blender.remove_data_block(temp_data)
+
             if new:
-                array_pset = ifcopenshell.util.element.get_pset(new, "BBIM_Array")
-                if array_pset:
-                    array_pset = tool.Ifc.get().by_id(array_pset["id"])
-                    ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=new, pset=array_pset)
-                old_to_new[tool.Ifc.get_entity(obj)] = [new]
+                # TODO: handle array data for other cases of duplication
+                array_data = arrays_to_duplicate.get(obj, None)
+                tool.Model.handle_array_on_copied_element(new, array_data)
+                if array_data:
+                    for child in tool.Blender.Modifier.Array.get_all_children_objects(new):
+                        child.select_set(True)
+
+                # TODO: add new array children to recreate their decomposition too
+                old_to_new[element] = [new]
                 if new.is_a("IfcRelSpaceBoundary"):
                     tool.Boundary.decorate_boundary(new_obj)
+
         # Recreate decompositions
         tool.Root.recreate_decompositions(relationships, old_to_new)
-        blenderbim.bim.handler.purge_module_data()
+        blenderbim.bim.handler.refresh_ui_data()
+
+    @staticmethod
+    def process_arrays(self, context):
+        selected_objects = set(context.selected_objects)
+        array_parents = set()
+        arrays_to_create = dict()
+        array_children = set()  # will be ignored during the duplication
+
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+            if not pset:
+                continue
+            array_parents.add(tool.Ifc.get().by_guid(pset["Parent"]))
+
+        for array_parent in array_parents:
+            array_parent_obj = tool.Ifc.get_object(array_parent)
+            if array_parent_obj not in selected_objects:
+                continue
+
+            array_data = []
+            for modifier_data in tool.Blender.Modifier.Array.get_modifiers_data(array_parent):
+                children = set(tool.Blender.Modifier.Array.get_children_objects(modifier_data))
+                if children.issubset(selected_objects):
+                    modifier_data["children"] = []
+                    array_data.append(modifier_data)
+                    array_children.update(children)
+                else:
+                    break  # allows to duplicate only n first layers of an array
+
+            if array_data:
+                arrays_to_create[array_parent_obj] = array_data
+
+        return arrays_to_create, array_children
 
 
 class OverrideDuplicateMoveLinkedMacro(bpy.types.Macro):
@@ -730,57 +873,10 @@ class OverrideDuplicateMoveLinked(bpy.types.Operator):
         return len(context.selected_objects) > 0
 
     def execute(self, context):
-        # Deep magick from the dawn of time
-        if IfcStore.get_file():
-            IfcStore.execute_ifc_operator(self, context)
-            if self.new_active_obj:
-                context.view_layer.objects.active = self.new_active_obj
-            return {"FINISHED"}
-
-        new_active_obj = None
-        for obj in context.selected_objects:
-            new_obj = obj.copy()
-            if obj == context.active_object:
-                new_active_obj = new_obj
-            for collection in obj.users_collection:
-                collection.objects.link(new_obj)
-            obj.select_set(False)
-            new_obj.select_set(True)
-        if new_active_obj:
-            context.view_layer.objects.active = new_active_obj
-        return {"FINISHED"}
+        return OverrideDuplicateMove.execute_duplicate_operator(self, context, linked=True)
 
     def _execute(self, context):
-        self.new_active_obj = None
-        # Track decompositions so they can be recreated after the operation
-        relationships = tool.Root.get_decomposition_relationships(context.selected_objects)
-        old_to_new = {}
-        for obj in context.selected_objects:
-            # Prior to duplicating, sync the object placement to make decomposition recreation more stable.
-            if tool.Ifc.is_moved(obj):
-                blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
-
-            new_obj = obj.copy()
-            if obj.data:
-                new_obj.data = obj.data.copy()
-            if obj == context.active_object:
-                self.new_active_obj = new_obj
-            for collection in obj.users_collection:
-                collection.objects.link(new_obj)
-            obj.select_set(False)
-            new_obj.select_set(True)
-            # Copy the actual class
-            new = blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
-            if new:
-                array_pset = ifcopenshell.util.element.get_pset(new, "BBIM_Array")
-                if array_pset:
-                    array_pset = tool.Ifc.get().by_id(array_pset["id"])
-                    ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=new, pset=array_pset)
-                old_to_new[tool.Ifc.get_entity(obj)] = new
-        # Recreate decompositions
-        tool.Root.recreate_decompositions(relationships, old_to_new)
-        blenderbim.bim.handler.purge_module_data()
-        return {"FINISHED"}
+        return OverrideDuplicateMove.execute_ifc_duplicate_operator(self, context, linked=True)
 
 
 class OverrideDuplicateMoveAggregateMacro(bpy.types.Macro):
@@ -800,28 +896,7 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
         return len(context.selected_objects) > 0
 
     def execute(self, context):
-        # Deep magick from the dawn of time
-        if IfcStore.get_file():
-            IfcStore.execute_ifc_operator(self, context)
-            if self.new_active_obj:
-                context.view_layer.objects.active = self.new_active_obj
-            return {"FINISHED"}
-
-        new_active_obj = None
-
-        for obj in context.selected_objects:
-            new_obj = obj.copy()
-            if obj.data:
-                new_obj.data = obj.data.copy()
-            if obj == context.active_object:
-                new_active_obj = new_obj
-            for collection in obj.users_collection:
-                collection.objects.link(new_obj)
-            obj.select_set(False)
-            new_obj.select_set(True)
-        if new_active_obj:
-            context.view_layer.objects.active = new_active_obj
-        return {"FINISHED"}
+        return OverrideDuplicateMove.execute_duplicate_operator(self, context, linked=False)
 
     def _execute(self, context):
         self.new_active_obj = None
@@ -1019,12 +1094,7 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
             )
 
             if new_entity:
-                # Checks if the object belongs to an Ifc Array
-                array_pset = ifcopenshell.util.element.get_pset(new_entity, "BBIM_Array")
-                if array_pset:
-                    array_pset = tool.Ifc.get().by_id(array_pset["id"])
-                    ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=new_entity, pset=array_pset)
-
+                tool.Model.handle_array_on_copied_element(new_entity)
                 blenderbim.core.aggregate.unassign_object(
                     tool.Ifc,
                     tool.Aggregate,
@@ -1059,6 +1129,17 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
 
         recreate_data_structure(new_root_entity)
 
+        # Remove connections with old objects
+        for new in old_to_new.values():
+            for connection in new[0].ConnectedTo:
+                entity = connection.RelatedElement
+                if entity in old_to_new.keys():
+                    core.remove_connection(tool.Geometry, connection=connection)
+            for connection in new[0].ConnectedFrom:
+                entity = connection.RelatingElement
+                if entity in old_to_new.keys():
+                    core.remove_connection(tool.Geometry, connection=connection)
+
         old_objs = []
         for old, new in old_to_new.items():
             old_objs.append(tool.Ifc.get_object(old))
@@ -1067,7 +1148,7 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
 
         tool.Root.recreate_decompositions(relationships, old_to_new)
 
-        blenderbim.bim.handler.purge_module_data()
+        blenderbim.bim.handler.refresh_ui_data()
 
         return {"FINISHED"}
 
@@ -1152,12 +1233,7 @@ class RefreshAggregate(bpy.types.Operator):
             )
 
             if new_entity:
-                # Checks if the object belongs to an Ifc Array
-                array_pset = ifcopenshell.util.element.get_pset(new_entity, "BBIM_Array")
-                if array_pset:
-                    array_pset = tool.Ifc.get().by_id(array_pset["id"])
-                    ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=new_entity, pset=array_pset)
-
+                tool.Model.handle_array_on_copied_element(new_entity)
                 blenderbim.core.aggregate.unassign_object(
                     tool.Ifc,
                     tool.Aggregate,
@@ -1171,22 +1247,33 @@ class RefreshAggregate(bpy.types.Operator):
             return new_entity
 
         if len(context.selected_objects) != 1:
+            self.report({"INFO"}, "Only 1 object need to be selected.")
             return {"FINISHED"}
 
         selected_root_obj = context.selected_objects[0]
         selected_root_entity = tool.Ifc.get_entity(selected_root_obj)
 
-        if not selected_root_entity.is_a("IfcElementAssembly"):
+        if selected_root_entity.is_a("IfcElementAssembly"):
+            pass
+        elif selected_root_entity.Decomposes:
+            if selected_root_entity.Decomposes[0].RelatingObject.is_a("IfcElementAssembly"):
+                selected_root_entity = selected_root_entity.Decomposes[0].RelatingObject
+                selected_root_obj = tool.Ifc.get_object(selected_root_entity)
+        else:
+            self.report({"INFO"}, "Object is not part of a IfcElementAssembly.")
             return {"FINISHED"}
+
 
         pset = ifcopenshell.util.element.get_pset(selected_root_entity, "BBIM_Aggregate_Data")
         if not pset:
+            self.report({"INFO"}, "Object is not part of an assembly aggregate.")
             return {"FINISHED"}
 
         pset_data = json.loads(pset["Data"])[0]
         instance_of = pset_data["instance_of"][0]
         original_root_entity = tool.Ifc.get().by_guid(instance_of)
         if original_root_entity == selected_root_entity:
+            self.report({"INFO"}, "Cannot refresh original assembly. Select an assembly instance.")
             return {"FINISHED"}
 
         parents = remove_objects(selected_root_entity)
@@ -1199,13 +1286,25 @@ class RefreshAggregate(bpy.types.Operator):
         for parent in parents:
             duplicate_children(parent)
 
+        
+        # Remove connections with old objects
+        for new in old_to_new.values():
+            for connection in new[0].ConnectedTo:
+                entity = connection.RelatedElement
+                if entity in old_to_new.keys():
+                    core.remove_connection(tool.Geometry, connection=connection)
+            for connection in new[0].ConnectedFrom:
+                entity = connection.RelatingElement
+                if entity in old_to_new.keys():
+                    core.remove_connection(tool.Geometry, connection=connection)
+
         old_objs = []
         for old, new in old_to_new.items():
             old_objs.append(tool.Ifc.get_object(old))
 
             new_obj = tool.Ifc.get_object(new[0])
 
-            matrix_diff = new_obj.matrix_world @ original_matrix
+            matrix_diff =  Matrix.inverted(original_matrix) @ new_obj.matrix_world
             new_matrix = selected_matrix @ matrix_diff
 
             new_obj.matrix_world = new_matrix
@@ -1214,7 +1313,7 @@ class RefreshAggregate(bpy.types.Operator):
 
         tool.Root.recreate_decompositions(relationships, old_to_new)
 
-        blenderbim.bim.handler.purge_module_data()
+        blenderbim.bim.handler.refresh_ui_data()
 
         return {"FINISHED"}
 
@@ -1407,6 +1506,7 @@ class OverrideModeSetEdit(bpy.types.Operator):
                     continue
 
             if tool.Geometry.is_meshlike(representation):
+                tool.Ifc.edit(obj)
                 if getattr(element, "HasOpenings", None):
                     # Mesh elements with openings must disable openings
                     # so that you can edit the original topology.
@@ -1425,7 +1525,9 @@ class OverrideModeSetEdit(bpy.types.Operator):
             else:
                 obj.select_set(False)
                 continue
-        if len(selected_objs) > 1 and (not context.selected_objects or len(context.selected_objects) != len(selected_objs)):
+        if len(selected_objs) > 1 and (
+            not context.selected_objects or len(context.selected_objects) != len(selected_objs)
+        ):
             # We are trying to edit at least one non-mesh-like object : Display a hint to the user
             self.report({"INFO"}, "Only mesh-compatible representations may be edited concurrently in edit mode.")
 
@@ -1537,6 +1639,9 @@ class OverrideModeSetObject(bpy.types.Operator):
                     bpy.ops.bim.finish_editing_roof_path()
                 elif tool.Model.get_usage_type(element) == "PROFILE":
                     bpy.ops.bim.edit_extrusion_axis()
+                # if in the process of editing arbitrary profile
+                elif context.scene.BIMProfileProperties.active_arbitrary_profile_id:
+                    bpy.ops.bim.edit_arbitrary_profile()
                 else:
                     bpy.ops.bim.edit_extrusion_profile()
                 return self.execute(context)
@@ -1551,6 +1656,8 @@ class OverrideModeSetObject(bpy.types.Operator):
                     self.edited_objs.append(obj)
                 elif getattr(element, "HasOpenings", None):
                     self.unchanged_objs_with_openings.append(obj)
+                else:
+                    tool.Ifc.finish_edit(obj)
 
         if self.edited_objs:
             return context.window_manager.invoke_props_dialog(self)

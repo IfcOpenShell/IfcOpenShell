@@ -54,6 +54,25 @@ class AddClassification(bpy.types.Operator, tool.Ifc.Operator):
         )
 
 
+class AddClassificationFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_classification_from_bsdd"
+    bl_label = "Add Classification From bSDD"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = context.scene.BIMBSDDProperties
+        domain = [d for d in props.domains if d.name == props.active_domain][0]
+        for element in tool.Ifc.get().by_type("IfcClassification"):
+            if element.Name == props.active_domain or element.Location == domain.namespace_uri:
+                return
+        classification = ifcopenshell.api.run(
+            "classification.add_classification", tool.Ifc.get(), classification=props.active_domain
+        )
+        classification.Source = domain.organization_name_owner
+        classification.Location = domain.namespace_uri
+        classification.Edition = domain.version
+
+
 class EnableEditingClassification(bpy.types.Operator):
     bl_idname = "bim.enable_editing_classification"
     bl_label = "Enable Editing Classification"
@@ -252,6 +271,70 @@ class AddClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
                 product=tool.Ifc.get().by_id(ifc_definition_id),
                 classification=classification,
             )
+
+
+class AddClassificationReferenceFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_classification_reference_from_bsdd"
+    bl_label = "Add Classification Reference From bSDD"
+    bl_options = {"REGISTER", "UNDO"}
+    obj: bpy.props.StringProperty()
+    obj_type: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        if self.obj_type == "Object":
+            if context.selected_objects:
+                objects = [o.name for o in context.selected_objects]
+            else:
+                objects = [context.active_object.name]
+        else:
+            objects = [self.obj]
+        props = context.scene.BIMClassificationProperties
+        bprops = context.scene.BIMBSDDProperties
+
+        bsdd_classification = bprops.classifications[bprops.active_classification_index]
+
+        classification = None
+        for element in tool.Ifc.get().by_type("IfcClassification"):
+            if (
+                element.Name == bsdd_classification.domain_name
+                or element.Location == bsdd_classification.domain_namespace_uri
+            ):
+                classification = element
+                break
+
+        if not classification:
+            classification = ifcopenshell.api.run(
+                "classification.add_classification", tool.Ifc.get(), classification=bsdd_classification.domain_name
+            )
+            classification.Location = bsdd_classification.domain_namespace_uri
+
+        for obj in objects:
+            ifc_definition_id = blenderbim.bim.helper.get_obj_ifc_definition_id(context, obj, self.obj_type)
+            if not ifc_definition_id:
+                continue
+            element = tool.Ifc.get().by_id(ifc_definition_id)
+            reference = ifcopenshell.api.run(
+                "classification.add_reference",
+                tool.Ifc.get(),
+                product=element,
+                classification=classification,
+                identification=bsdd_classification.reference_code,
+                name=bsdd_classification.name,
+            )
+            reference.Location = bsdd_classification.namespace_uri
+
+            for classification_pset in bprops.classification_psets:
+                pset = ifcopenshell.util.element.get_pset(element, classification_pset.name)
+                if pset:
+                    pset = tool.Ifc.get().by_id(pset["id"])
+                else:
+                    pset = ifcopenshell.api.run(
+                        "pset.add_pset", tool.Ifc.get(), product=element, name=classification_pset.name
+                    )
+                properties = {}
+                for prop in classification_pset.properties:
+                    properties[prop.name] = prop.get_value()
+                ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties=properties)
 
 
 class ChangeClassificationLevel(bpy.types.Operator):

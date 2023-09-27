@@ -133,9 +133,10 @@ FAQ
 1. **I get an error similar to "ImportError: IfcOpenShell not built for 'linux/64bit/python3.7'"**
 
    Check which BlenderBIM Add-on build you are using. The zip will have either
-   ``py37``, ``py39``, or ``py310`` in the name. See the instructions in the
-   **Unstable installation** section to check that you have installed the
-   correct version.
+   ``py39`` or ``py310`` in the name. If you are using a Mac, also make sure
+   you are using the M1 version if you have a newer Mac. See the instructions
+   in the :ref:`devs/installation:unstable installation` section to check that
+   you have installed the correct version.
 
 2. **I am on Ubuntu and get an error similar to "ImportError:
    /lib/x86_64-linux-gnu/libm.so.6: version GLIBC_2.29 not found"**

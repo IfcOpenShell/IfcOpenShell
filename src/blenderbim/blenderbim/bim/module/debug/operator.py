@@ -116,7 +116,7 @@ class PurgeIfcLinks(bpy.types.Operator):
         context.scene.BIMProperties.ifc_file = ""
         context.scene.BIMDebugProperties.attributes.clear()
         IfcStore.purge()
-        blenderbim.bim.handler.purge_module_data()
+        blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
 
@@ -136,7 +136,7 @@ class ConvertToBlender(bpy.types.Operator):
             m.BIMMaterialProperties.ifc_style_id = False
         bpy.context.scene.BIMProperties.ifc_file = ""
         IfcStore.purge()
-        blenderbim.bim.handler.purge_module_data()
+        blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
 
@@ -443,3 +443,55 @@ class PurgeHdf5Cache(bpy.types.Operator):
     def execute(self, context):
         core.purge_hdf5_cache(tool.Debug)
         return {"FINISHED"}
+
+
+class OverrideDisplayType(bpy.types.Operator):
+    bl_idname = "bim.override_display_type"
+    bl_label = "Override Display Type"
+    display: bpy.props.StringProperty()
+
+    def execute(self, context):
+        for obj in context.selected_objects:
+            obj.display_type = self.display
+        return {"FINISHED"}
+
+
+class PrintUnusedElementStats(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.print_unused_elements_stats"
+    bl_label = "Purge Unused Elements Stats"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = (
+        "Print all unused elements in current IFC project in system console, not limited to the selected class"
+    )
+
+    ignore_contexts: bpy.props.BoolProperty(name="Ignore Contexts", default=True)
+    ignore_relationships: bpy.props.BoolProperty(name="Ignore Relationships", default=True)
+    ignore_types: bpy.props.BoolProperty(name="Ignore Types", default=True)
+
+    def _execute(self, context):
+        props = context.scene.BIMDebugProperties
+        # ignore some classes that could have zero 0 inverse references by their nature
+        ignore_classes = []
+        if self.ignore_contexts:
+            ignore_classes += ["IfcRepresentationContext"]
+        if self.ignore_relationships:
+            ignore_classes += ["IfcRelationship"]
+        if self.ignore_types:
+            ignore_classes += ["IfcTypeProduct"]
+
+        unused_elements = tool.Debug.print_unused_elements_stats(props.ifc_class_purge, ignore_classes)
+        self.report({"INFO"}, f"{unused_elements} unused elements found, check the system console for the details.")
+
+
+class PurgeUnusedElementsByClass(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.purge_unused_elements_by_class"
+    bl_label = "Purge Unused Elements By Class"
+    bl_description = (
+        "Will find all elements of class that have no inverse refernces and will remove them, use very carefully."
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = context.scene.BIMDebugProperties
+        purged_elements = core.purge_unused_elements(tool.Ifc, tool.Debug, props.ifc_class_purge)
+        self.report({"INFO"}, f"{purged_elements} unused elements found and removed.")

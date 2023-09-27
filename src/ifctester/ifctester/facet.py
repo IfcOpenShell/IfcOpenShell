@@ -21,6 +21,7 @@ import builtins
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.classification
+from functools import lru_cache
 from xmlschema.validators import identities
 
 
@@ -39,6 +40,16 @@ def cast_to_value(from_value, to_value):
         return builtins.__dict__[target_type](from_value)
     except ValueError:
         pass
+
+
+@lru_cache
+def get_pset(element, pset):
+    return ifcopenshell.util.element.get_pset(element, pset)
+
+
+@lru_cache
+def get_psets(element, pset):
+    return ifcopenshell.util.element.get_psets(element)
 
 
 class Facet:
@@ -286,7 +297,7 @@ class Attribute(Facet):
 
 
 class Classification(Facet):
-    def __init__(self, value=None, system=None, uri=None, minOccurs=None, maxOccurs=None, instructions=None):
+    def __init__(self, value=None, system=None, uri=None, minOccurs=None, maxOccurs="unbounded", instructions=None):
         self.parameters = ["value", "system", "@uri", "@minOccurs", "@maxOccurs", "@instructions"]
         self.applicability_templates = [
             "Data having a {system} reference of {value}",
@@ -347,7 +358,7 @@ class PartOf(Facet):
         predefinedType=None,
         relation=None,
         minOccurs=None,
-        maxOccurs=None,
+        maxOccurs="unbounded",
         instructions=None,
     ):
         self.parameters = ["entity", "predefinedType", "@relation", "@minOccurs", "@maxOccurs", "@instructions"]
@@ -552,7 +563,7 @@ class Property(Facet):
         datatype=None,
         uri=None,
         minOccurs=None,
-        maxOccurs=None,
+        maxOccurs="unbounded",
         instructions=None,
     ):
         self.parameters = [
@@ -591,10 +602,10 @@ class Property(Facet):
             return PropertyResult(True)
 
         if isinstance(self.propertySet, str):
-            pset = ifcopenshell.util.element.get_pset(inst, self.propertySet)
+            pset = get_pset(inst, self.propertySet)
             psets = {self.propertySet: pset} if pset else {}
         else:
-            all_psets = ifcopenshell.util.element.get_psets(inst)
+            all_psets = get_psets(inst)
             psets = {k: v for k, v in all_psets.items() if k == self.propertySet}
 
         is_pass = bool(psets)
@@ -637,7 +648,7 @@ class Property(Facet):
                     elif prop_entity.is_a("IfcPropertySingleValue"):
                         data_type = prop_entity.NominalValue.is_a()
 
-                        if data_type != self.datatype:
+                        if data_type.lower() != self.datatype.lower():
                             is_pass = False
                             reason = {"type": "DATATYPE", "actual": data_type}
                             break
@@ -656,7 +667,7 @@ class Property(Facet):
                         prop_schema = prop_entity.wrapped_data.declaration().as_entity()
                         data_type = prop_schema.attribute_by_index(3).type_of_attribute().declared_type().name()
 
-                        if data_type != self.datatype:
+                        if data_type.lower() != self.datatype.lower():
                             is_pass = False
                             reason = {"type": "DATATYPE", "actual": data_type}
                             break
@@ -676,7 +687,7 @@ class Property(Facet):
                             reason = {"type": "NOVALUE"}
                             break
                         data_type = prop_entity.EnumerationValues[0].is_a()
-                        if data_type != self.datatype:
+                        if data_type.lower() != self.datatype.lower():
                             is_pass = False
                             reason = {"type": "DATATYPE", "actual": data_type}
                             break
@@ -686,7 +697,7 @@ class Property(Facet):
                             reason = {"type": "NOVALUE"}
                             break
                         data_type = prop_entity.ListValues[0].is_a()
-                        if data_type != self.datatype:
+                        if data_type.lower() != self.datatype.lower():
                             is_pass = False
                             reason = {"type": "DATATYPE", "actual": data_type}
                             break
@@ -709,7 +720,7 @@ class Property(Facet):
                             if value is not None:
                                 data_type = value.is_a()
                                 values.append(value.wrappedValue)
-                        if data_type != self.datatype:
+                        if data_type.lower() != self.datatype.lower():
                             is_pass = False
                             reason = {"type": "DATATYPE", "actual": data_type}
                             break
@@ -734,7 +745,7 @@ class Property(Facet):
                             if not column_values:
                                 continue
                             data_type = column_values[0].is_a()
-                            if data_type == self.datatype:
+                            if data_type.lower() == self.datatype.lower():
                                 column_values = [v.wrappedValue for v in column_values]
                                 unit = units[f"{attribute}Unit"]
                                 if unit:
@@ -824,7 +835,7 @@ class Property(Facet):
 
 
 class Material(Facet):
-    def __init__(self, value=None, uri=None, minOccurs=None, maxOccurs=None, instructions=None):
+    def __init__(self, value=None, uri=None, minOccurs=None, maxOccurs="unbounded", instructions=None):
         self.parameters = ["value", "@uri", "@minOccurs", "@maxOccurs", "@instructions"]
         self.applicability_templates = [
             "All data with a {value} material",

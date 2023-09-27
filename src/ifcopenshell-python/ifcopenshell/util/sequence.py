@@ -48,6 +48,14 @@ def derive_date(task, attribute_name, date=None, is_earliest=False, is_latest=Fa
 
 
 def derive_calendar(task):
+    calendar = get_calendar(task)
+    if calendar:
+        return calendar
+    for rel in task.Nests or []:
+        return derive_calendar(rel.RelatingObject)
+
+
+def get_calendar(task):
     calendar = [
         rel.RelatingControl
         for rel in task.HasAssignments or []
@@ -56,12 +64,12 @@ def derive_calendar(task):
     ]
     if calendar:
         return calendar[0]
-    for rel in task.Nests or []:
-        return derive_calendar(rel.RelatingObject)
 
 
 def count_working_days(start, finish, calendar):
     result = 0
+    if start == finish:
+        return 0
     current_date = datetime.date(start.year, start.month, start.day)
     finish_date = datetime.date(finish.year, finish.month, finish.day)
     while current_date <= finish_date:
@@ -248,7 +256,7 @@ def get_task_work_schedule(task):
 
 
 def get_nested_tasks(task):
-    return [object for rel in task.IsNestedBy  or [] for object in rel.RelatedObjects]
+    return [object for rel in task.IsNestedBy or [] for object in rel.RelatedObjects]
 
 
 def get_parent_task(task):
@@ -426,3 +434,23 @@ def get_tasks_for_product(product, schedule=None):
         ]
 
     return inputs, outputs
+
+
+def get_sequence_assignment(task, sequence="successor"):
+    if sequence == "successor":
+        relationship_attr = "IsPredecessorTo"
+    elif sequence == "predecessor":
+        relationship_attr = "IsSuccessorFrom"
+    else:
+        return []
+
+    relationship = getattr(task, relationship_attr, None)
+    if relationship:
+        return relationship
+
+    for rel in task.Nests or []:
+        result = get_sequence_assignment(rel.RelatingObject, sequence)
+        if result:
+            return result
+
+    return []

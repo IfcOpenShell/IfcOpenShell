@@ -22,7 +22,10 @@ import blenderbim.core.tool
 import blenderbim.tool as tool
 from blenderbim.bim import import_ifc
 import re
+from math import pi, cos, sin
 from mathutils import Matrix, Vector
+from blenderbim.bim.module.system.data import ObjectSystemData, SystemDecorationData
+from blenderbim.bim.module.drawing.decoration import profile_consequential
 
 
 class System(blenderbim.core.tool.System):
@@ -42,7 +45,8 @@ class System(blenderbim.core.tool.System):
             blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
         mep_element = tool.Ifc.get_entity(obj)
-        length = obj.dimensions.z
+        bbox = tool.Blender.get_object_bounding_box(obj)
+        length = bbox["min_z"] if tool.Cad.is_x(bbox["max_z"], 0) else bbox["max_z"]
         ports = []
         if add_start_port:
             ports.append(add_port(mep_element, obj.matrix_world @ Matrix()))
@@ -104,7 +108,10 @@ class System(blenderbim.core.tool.System):
     @classmethod
     def get_port_predefined_type(cls, mep_element):
         split_camel_case = lambda x: re.findall("[A-Z][^A-Z]*", x)
-        class_name = "".join(split_camel_case(mep_element.is_a())[1:-1]).upper()
+        mep_class = mep_element.is_a()
+        if mep_class.endswith("Type"):
+            mep_class = mep_class[:-4]
+        class_name = "".join(split_camel_case(mep_class)[1:-1]).upper()
         if class_name == "CONVEYOR":
             return "NOTDEFINED"
         return class_name
@@ -181,3 +188,151 @@ class System(blenderbim.core.tool.System):
     @classmethod
     def set_active_system(cls, system):
         bpy.context.scene.BIMSystemProperties.active_system_id = system.id()
+
+    @classmethod
+    def get_decoration_data(cls):
+        all_vertices = []
+        preview_edges = []
+        special_vertices = []
+        selected_edges = []
+        selected_vertices = []
+
+        view3d_space = tool.Blender.get_viewport_context()["space_data"].region_3d
+        viewport_matrix = view3d_space.view_matrix.inverted()
+        viewport_y_axis = viewport_matrix.col[1].to_3d().normalized()
+        camera_pos = viewport_matrix.translation
+        dir_to_camera = lambda x: (camera_pos - x).normalized()
+
+        def most_aligned_vector(a, vectors):
+            return max(vectors, key=lambda v: abs(a.dot(v)))
+
+        start_vert_i = 0
+
+        if not ObjectSystemData.is_loaded:
+            ObjectSystemData.load()
+
+        if not SystemDecorationData.is_loaded:
+            SystemDecorationData.load()
+
+        object_system_data = ObjectSystemData.data
+        selected_elements = object_system_data["connected_elements"]
+
+        # TODO: get only objects visible in viewport
+        objects = set(bpy.data.objects) - set(bpy.data.collections["Types"].objects)
+        for obj in objects:
+            start_vert_i = len(all_vertices)
+            if obj.hide_get():
+                continue
+
+            if not isinstance(obj.data, bpy.types.Mesh):
+                continue
+
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+
+            if not cls.is_mep_element(element):
+                continue
+
+            selected_element = element in selected_elements
+            verts_pos = []
+
+            port_data = SystemDecorationData.get_element_ports_data(element)
+            verts_pos.extend([obj.matrix_world @ data["position"] for data in port_data])
+
+            verts = range(start_vert_i, start_vert_i + len(port_data))
+            edges = [(i, i + 1) for i in range(start_vert_i, start_vert_i + len(port_data) - 1)]
+
+            def get_flow_direction(port_data):
+                # diagram - https://i.imgur.com/ioYL7bZ.png
+                flow_dirs = [p["flow_direction"] for p in port_data]
+                unique = set(flow_dirs)
+                if len(unique) == 1:
+                    return 0
+                elif flow_dirs[0] == "SOURCE":
+                    return -1
+                elif flow_dirs[0] == "SINK":
+                    return 1
+                elif flow_dirs[1] == "SOURCE":
+                    return 1
+                elif flow_dirs[1] == "SINK":
+                    return -1
+                return 0
+
+            if len(port_data) == 2 and selected_element and (flow_direction := get_flow_direction(port_data)):
+                edge_verts = verts_pos.copy()
+                edge_verts = edge_verts[::flow_direction]
+
+                # create direction lines
+                direction_lines_offset = 0.4
+                direction_lines_width = 0.05
+                base_vert = edge_verts[0]
+                edge = edge_verts[1] - edge_verts[0]
+                edge_length = edge.length
+                edge_dir = edge.normalized()
+                # edge_ortho = most_aligned_vector(
+                #     viewport_y_axis, (
+                #         obj.matrix_world.col[0].to_3d().normalized(),
+                #         obj.matrix_world.col[1].to_3d().normalized(),
+                # ))
+
+                # for now it's hardcoded to local Y axis to avoid using viewport data
+                # for performance reasons
+                edge_ortho = obj.matrix_world.col[1].to_3d().normalized()
+                second_ortho = edge_dir.cross(edge_ortho)
+                edge_ortho = second_ortho.cross(edge_dir)
+
+                # direction lines should be around the edge center
+                n_direction_lines, start_offset = divmod(edge_length, direction_lines_offset)
+                n_direction_lines = int(n_direction_lines) + 1
+                start_offset /= 2
+                start_offset = edge_dir * start_offset + base_vert
+                cur_vert_index = start_vert_i + len(port_data)
+
+                for i in range(n_direction_lines):
+                    cur_offset = start_offset + edge_dir * i * direction_lines_offset
+                    arrow_base = cur_offset - edge_dir * direction_lines_width
+                    verts_pos.append(arrow_base + edge_ortho * direction_lines_width)
+                    verts_pos.append(cur_offset)
+                    verts_pos.append(arrow_base - edge_ortho * direction_lines_width)
+                    edges.append((cur_vert_index, cur_vert_index + 1))
+                    edges.append((cur_vert_index + 1, cur_vert_index + 2))
+                    cur_vert_index += 3
+
+            all_vertices.extend(verts_pos)
+
+            if selected_element:
+                selected_vertices.extend(verts)
+                selected_edges.extend(edges)
+            else:
+                special_vertices.extend(verts)
+                preview_edges.extend(edges)
+
+        decoration_data = {
+            "all_vertices": all_vertices,
+            "preview_edges": preview_edges,
+            "special_vertices": [all_vertices[i] for i in special_vertices],
+            "selected_edges": selected_edges,
+            "selected_vertices": [all_vertices[i] for i in selected_vertices],
+        }
+        return decoration_data
+
+    @classmethod
+    def get_connected_elements(cls, element, elements=None):
+        if elements is None:
+            elements = set((element,))
+
+        connected_elements = ifcopenshell.util.system.get_connected_from(element)
+        connected_elements += ifcopenshell.util.system.get_connected_to(element)
+
+        for element in connected_elements:
+            if element in elements:
+                continue
+            elements.add(element)
+            cls.get_connected_elements(element, elements)
+
+        return elements
+
+    @classmethod
+    def is_mep_element(cls, element):
+        return element.is_a("IfcFlowSegment") or element.is_a("IfcFlowFitting")

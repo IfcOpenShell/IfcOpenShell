@@ -39,11 +39,3 @@ class TestResizeToStorey:
         misc.get_object_storey("obj").should_be_called().will_return("storey")
         misc.get_storey_height_in_si("storey", 1).should_be_called().will_return(None)
         subject.resize_to_storey(misc, obj="obj", total_storeys=1)
-
-
-class TestSplitAlongEdge:
-    def test_run(self, misc):
-        misc.split_objects_with_cutter(["obj"], "cutter").should_be_called().will_return(["new_obj"])
-        misc.run_root_copy_class(obj="new_obj").should_be_called()
-        misc.mark_object_as_edited("obj").should_be_called()
-        subject.split_along_edge(misc, cutter="cutter", objs=["obj"])

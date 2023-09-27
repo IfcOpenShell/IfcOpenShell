@@ -223,7 +223,7 @@ class EnablePsetEditing(bpy.types.Operator):
                     new.is_selected = enum in selected_enum_items
             else:
                 if prop.is_a("IfcPropertySingleValue"):
-                    value = prop.NominalValue.wrappedValue
+                    value = prop.NominalValue.wrappedValue if prop.NominalValue else None
                 elif prop.is_a("IfcPhysicalSimpleQuantity"):
                     value = prop[3]
                 new_prop = self.props.properties.add()
@@ -356,24 +356,7 @@ class AddPset(bpy.types.Operator, Operator):
     obj_type: bpy.props.StringProperty()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        pset_name = get_pset_props(context, self.obj, self.obj_type).pset_name
-        if self.obj_type == "Object":
-            if context.selected_objects:
-                objects = [o.name for o in tool.Blender.get_selected_objects()]
-            else:
-                objects = [context.active_object.name]
-        else:
-            objects = [self.obj]
-        for obj in objects:
-            ifc_definition_id = blenderbim.bim.helper.get_obj_ifc_definition_id(context, obj, self.obj_type)
-            if not ifc_definition_id:
-                continue
-            element = tool.Ifc.get().by_id(ifc_definition_id)
-            if pset_name in blenderbim.bim.schema.ifc.psetqto.get_applicable_names(element.is_a(), pset_only=True):
-                bpy.ops.bim.enable_pset_editing(
-                    pset_id=0, pset_name=pset_name, pset_type="PSET", obj=obj, obj_type=self.obj_type
-                )
+        core.add_pset(tool.Ifc, tool.Pset, tool.Blender, obj_name=self.obj, obj_type=self.obj_type)
 
 
 class AddQto(bpy.types.Operator, Operator):

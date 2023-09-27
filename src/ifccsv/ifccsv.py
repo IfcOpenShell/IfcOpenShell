@@ -70,6 +70,7 @@ class IfcCsv:
         include_global_id=True,
         delimiter=",",
         null="-",
+        empty="",
         bool_true="YES",
         bool_false="NO",
         sort=None,
@@ -96,6 +97,8 @@ class IfcCsv:
                 value = ifcopenshell.util.selector.get_element_value(element, attribute)
                 if value is None:
                     value = null
+                elif value == "":
+                    value = empty
                 elif value is True:
                     value = bool_true
                 elif value is False:
@@ -237,18 +240,18 @@ class IfcCsv:
             for index, format_query in formatting_indices.items():
                 if row[index] == null:
                     continue
-                if not isinstance(row[index], str):
-                    row[index] = '"' + str(row[index]) + '"'
+                row[index] = '"' + str(row[index]).replace('"', '\\"') + '"'
                 row[index] = ifcopenshell.util.selector.format(format_query.replace("{{value}}", row[index]))
 
     def sort_results(self, sort, attributes, include_global_id):
         if not self.results:
             return
         if sort:
+
             def natural_sort(value):
                 if isinstance(value, str):
                     convert = lambda text: int(text) if text.isdigit() else text.lower()
-                    return [convert(c) for c in re.split('([0-9]+)', value)]
+                    return [convert(c) for c in re.split("([0-9]+)", value)]
                 return value
 
             # Sort least important keys first, then more important keys.
@@ -368,17 +371,21 @@ class IfcCsv:
                 results.update([p.Name for p in element.Quantities])
         return ["{}.{}".format(pset_qto_name, n) for n in results]
 
-    def Import(self, ifc_file, table, attributes=None, delimiter=",", null="-", bool_true="YES", bool_false="NO"):
+    def Import(
+        self, ifc_file, table, attributes=None, delimiter=",", null="-", empty="", bool_true="YES", bool_false="NO"
+    ):
         ext = table.split(".")[-1].lower()
 
         if ext == "csv":
-            self.import_csv(ifc_file, table, attributes, delimiter, null, bool_true, bool_false)
+            self.import_csv(ifc_file, table, attributes, delimiter, null, empty, bool_true, bool_false)
         elif ext == "ods":
-            self.import_ods(ifc_file, table, attributes, null, bool_true, bool_false)
+            self.import_ods(ifc_file, table, attributes, null, empty, bool_true, bool_false)
         elif ext == "xlsx":
-            self.import_xlsx(ifc_file, table, attributes, null, bool_true, bool_false)
+            self.import_xlsx(ifc_file, table, attributes, null, empty, bool_true, bool_false)
 
-    def import_csv(self, ifc_file, table, attributes=None, delimiter=",", null="-", bool_true="YES", bool_false="NO"):
+    def import_csv(
+        self, ifc_file, table, attributes=None, delimiter=",", null="-", empty="", bool_true="YES", bool_false="NO"
+    ):
         with open(table, newline="", encoding="utf-8") as f:
             reader = csv.reader(f, delimiter=delimiter)
             headers = []
@@ -390,17 +397,17 @@ class IfcCsv:
                     elif len(attributes) == len(headers) - 1:
                         attributes.insert(0, "")  # The GlobalId column
                     continue
-                self.process_row(ifc_file, row, headers, attributes, null, bool_true, bool_false)
+                self.process_row(ifc_file, row, headers, attributes, null, empty, bool_true, bool_false)
 
-    def import_xlsx(self, ifc_file, table, attributes, null, bool_true, bool_false):
+    def import_xlsx(self, ifc_file, table, attributes, null, empty, bool_true, bool_false):
         df = pd.read_excel(table)
-        self.import_pd(ifc_file, df, attributes, null, bool_true, bool_false)
+        self.import_pd(ifc_file, df, attributes, null, empty, bool_true, bool_false)
 
-    def import_ods(self, ifc_file, table, attributes, null, bool_true, bool_false):
+    def import_ods(self, ifc_file, table, attributes, null, empty, bool_true, bool_false):
         df = pd.read_excel(table, engine="odf")
-        self.import_pd(ifc_file, df, attributes, null, bool_true, bool_false)
+        self.import_pd(ifc_file, df, attributes, null, empty, bool_true, bool_false)
 
-    def import_pd(self, ifc_file, df, attributes=None, null="-", bool_true="YES", bool_false="NO"):
+    def import_pd(self, ifc_file, df, attributes=None, null="-", empty="", bool_true="YES", bool_false="NO"):
         headers = df.columns.tolist()
 
         if not attributes:
@@ -409,9 +416,9 @@ class IfcCsv:
             attributes.insert(0, "")  # The GlobalId column
 
         for _, row in df.iterrows():
-            self.process_row(ifc_file, row.tolist(), headers, attributes, null, bool_true, bool_false)
+            self.process_row(ifc_file, row.tolist(), headers, attributes, null, empty, bool_true, bool_false)
 
-    def process_row(self, ifc_file, row, headers, attributes, null, bool_true, bool_false):
+    def process_row(self, ifc_file, row, headers, attributes, null, empty, bool_true, bool_false):
         try:
             element = ifc_file.by_guid(row[0])
         except:
@@ -422,6 +429,8 @@ class IfcCsv:
                 continue  # Skip GlobalId
             if value == null:
                 value = None
+            elif value == empty:
+                value = ""
             elif value == bool_true:
                 value = True
             elif value == bool_false:
@@ -437,7 +446,10 @@ if __name__ == "__main__":
     parser.add_argument("-f", "--format", type=str, default="csv", help="The format, chosen from csv, ods, or xlsx")
     parser.add_argument("-d", "--delimiter", type=str, default=",", help="The delimiter in CSV. Defaults to a comma.")
     parser.add_argument(
-        "-n", "--null", type=str, default="-", help="How to represent null values. Defaults to a hyphen."
+        "-n", "--null", type=str, default="N/A", help="How to represent null values. Defaults to N/A."
+    )
+    parser.add_argument(
+        "-e", "--empty", type=str, default="-", help="How to represent empty strings. Defaults to a hyphen."
     )
     parser.add_argument("--bool_true", type=str, default="YES", help="How to represent true values. Defaults to YES.")
     parser.add_argument("--bool_false", type=str, default="NO", help="How to represent false values. Defaults to NO.")
@@ -448,9 +460,7 @@ if __name__ == "__main__":
         nargs="+",
         help="Specify attributes that are part of the extract, using the IfcQuery syntax such as 'class', 'Name' or 'Pset_Foo.Bar'",
     )
-    parser.add_argument(
-        "-h", "--headers", nargs="+", help="Specify human readable headers that correlate to each attribute."
-    )
+    parser.add_argument("--headers", nargs="+", help="Specify human readable headers that correlate to each attribute.")
     parser.add_argument("--sort", nargs="+", help="Specify one or more attributes to sort by.")
     parser.add_argument("--order", nargs="+", help="Choose the sort order from ASC or DESC for each sorted attribute.")
     parser.add_argument("--export", action="store_true", help="Export from IFC to the desired format.")
@@ -473,6 +483,7 @@ if __name__ == "__main__":
             format=args.format,
             delimiter=args.delimiter,
             null=args.null,
+            empty=args.empty,
             bool_true=args.bool_true,
             bool_false=args.bool_false,
             sort=sort,
@@ -481,6 +492,11 @@ if __name__ == "__main__":
         ifc_csv = IfcCsv()
         ifc_file = ifcopenshell.open(args.ifc)
         ifc_csv.Import(
-            ifc_file, args.spreadsheet, attributes=args.attributes or [], delimiter=args.delimiter, null=args.null
+            ifc_file,
+            args.spreadsheet,
+            attributes=args.attributes or [],
+            delimiter=args.delimiter,
+            null=args.null,
+            empty=args.empty,
         )
         ifc_file.write(args.ifc)

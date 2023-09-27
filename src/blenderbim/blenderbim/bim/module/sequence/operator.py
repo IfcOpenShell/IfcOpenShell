@@ -23,7 +23,6 @@ import time
 import calendar
 import isodate
 import pystache
-import webbrowser
 import blenderbim.core.sequence as core
 import blenderbim.tool as tool
 import blenderbim.bim.module.sequence.helper as helper
@@ -51,7 +50,7 @@ class EnableStatusFilters(bpy.types.Operator):
                 pset = element.PartOfPset[0]
                 if pset.Name.startswith("Pset_") and pset.Name.endswith("Common"):
                     statuses.update(element.EnumerationValues)
-                elif pset.Name == "EPset_Status": # Our secret sauce
+                elif pset.Name == "EPset_Status":  # Our secret sauce
                     statuses.update(element.EnumerationValues)
             elif element.Name == "UserDefinedStatus":
                 statuses.add(element.NominalValue)
@@ -67,6 +66,7 @@ class EnableStatusFilters(bpy.types.Operator):
 class DisableStatusFilters(bpy.types.Operator):
     bl_idname = "bim.disable_status_filters"
     bl_label = "Disable Status Filters"
+    bl_description = "Deactivate status filters panel.\nCan be used to refresh the displayed statuses"
 
     def execute(self, context):
         props = context.scene.BIMStatusProperties
@@ -77,6 +77,7 @@ class DisableStatusFilters(bpy.types.Operator):
 class ActivateStatusFilters(bpy.types.Operator):
     bl_idname = "bim.activate_status_filters"
     bl_label = "Activate Status Filters"
+    bl_description = "Filter and display objects based on currently selected IFC statuses"
 
     def execute(self, context):
         props = context.scene.BIMStatusProperties
@@ -92,6 +93,7 @@ class ActivateStatusFilters(bpy.types.Operator):
         query = " + ".join(query)
 
         if not query:
+            self.report({"INFO"}, "No statuses selected.")
             return {"FINISHED"}
 
         visible_elements = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query)
@@ -107,6 +109,7 @@ class ActivateStatusFilters(bpy.types.Operator):
 class SelectStatusFilter(bpy.types.Operator):
     bl_idname = "bim.select_status_filter"
     bl_label = "Select Status Filter"
+    bl_description = "Select elements with currently selected status"
     name: bpy.props.StringProperty()
 
     def execute(self, context):
@@ -368,6 +371,7 @@ class EditTaskTime(bpy.types.Operator, tool.Ifc.Operator):
         core.edit_task_time(
             tool.Ifc,
             tool.Sequence,
+            tool.Resource,
             task_time=tool.Ifc.get().by_id(context.scene.BIMWorkScheduleProperties.active_task_time_id),
         )
 
@@ -504,7 +508,7 @@ class AssignProcess(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         if self.related_object_type == "RESOURCE":
-            core.assign_resource(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task))
+            core.assign_resource(tool.Ifc, tool.Sequence, tool.Resource, task=tool.Ifc.get().by_id(self.task))
         elif self.related_object_type == "PRODUCT":
             if self.related_object:
                 core.assign_input_products(
@@ -537,6 +541,7 @@ class UnassignProcess(bpy.types.Operator):
             core.unassign_resource(
                 tool.Ifc,
                 tool.Sequence,
+                tool.Resource,
                 task=tool.Ifc.get().by_id(self.task),
                 resource=tool.Ifc.get().by_id(self.resource),
             )

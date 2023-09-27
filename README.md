@@ -55,7 +55,6 @@ Those marked with an asterisk are part of IfcOpenShell.
 | ifcblender                | Historic Blender IFC import add-on                                    | LGPL-3.0-or-later\* |
 | ifccityjson               | Convert CityJSON to IFC                                               | LGPL-3.0-or-later   |
 | ifcclash                  | Clash detection library and CLI app                                   | LGPL-3.0-or-later   |
-| ifccobie                  | Extract IFC data for COBie handover requirements                      | LGPL-3.0-or-later   |
 | ifcconvert                | CLI app to convert IFC to many other formats                          | LGPL-3.0-or-later\* |
 | ifccsv                    | Library and CLI app to export and import schedules from IFC           | LGPL-3.0-or-later   |
 | ifcdiff                   | Compare changes between IFC models                                    | LGPL-3.0-or-later   |
