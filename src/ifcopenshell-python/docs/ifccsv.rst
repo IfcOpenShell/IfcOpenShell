@@ -66,8 +66,8 @@ utility:
 ::
 
     $ python -m ifccsv -h
-    usage: ifccsv.py [-h] -i IFC [-s SPREADSHEET] [-f FORMAT] [-d DELIMITER] [-n NULL] [--bool_true BOOL_TRUE] [--bool_false BOOL_FALSE] [-q QUERY] [-a ATTRIBUTES [ATTRIBUTES ...]] [--headers HEADERS [HEADERS ...]] [--sort SORT [SORT ...]]
-                     [--order ORDER [ORDER ...]] [--export] [--import]
+    usage: ifccsv.py [-h] -i IFC [-s SPREADSHEET] [-f FORMAT] [-d DELIMITER] [-n NULL] [-e EMPTY] [--bool_true BOOL_TRUE] [--bool_false BOOL_FALSE] [-q QUERY] [-a ATTRIBUTES [ATTRIBUTES ...]] [--headers HEADERS [HEADERS ...]]
+                     [--sort SORT [SORT ...]] [--order ORDER [ORDER ...]] [--export] [--import]
 
     Exports IFC data to and from CSV
 
@@ -80,7 +80,9 @@ utility:
                             The format, chosen from csv, ods, or xlsx
       -d DELIMITER, --delimiter DELIMITER
                             The delimiter in CSV. Defaults to a comma.
-      -n NULL, --null NULL  How to represent null values. Defaults to a hyphen.
+      -n NULL, --null NULL  How to represent null values. Defaults to N/A.
+      -e EMPTY, --empty EMPTY
+                            How to represent empty strings. Defaults to a hyphen.
       --bool_true BOOL_TRUE
                             How to represent true values. Defaults to YES.
       --bool_false BOOL_FALSE
