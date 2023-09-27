@@ -93,8 +93,32 @@ class CoveringToolUI:
             row.label(text="", icon="EVENT_A")
             active_obj = bpy.context.active_object
             element = tool.Ifc.get_entity(active_obj)
-            if element and bpy.context.selected_objects and element.is_a("IfcWall"):
-                op = row.operator("bim.add_instance_flooring_coverings_from_walls")
+
+            if AuthoringData.data["predefined_type"] == "FLOORING":
+                if element and bpy.context.selected_objects and element.is_a("IfcWall"):
+                    op = row.operator("bim.add_instance_flooring_coverings_from_walls")
+#                elif element and bpy.context.selected_objects and element.is_a("IfcSpace"):
+#                    op. = row.operator("bim.add_istance_flooring_from_spaces"):
+                else:
+#                    op = row.operator("bim.add_instance_flooring_from_cursor")
+                    op = row.operator("bim.add_constr_type_instance", text="Add")
+                    op.from_invoke = True
+                    if cls.props.relating_type_id.isnumeric():
+                        op.relating_type_id = int(cls.props.relating_type_id)
+
+#            elif AuthoringData.data["predefined_type"] == "CEILING":
+#                row = cls.layout.row(align=True)
+#                row.prop(data=cls.props, property="ceiling_height", text="ceiling height")
+#                if element and bpy.context.selected_objects and element.is_a("IfcWall"):
+#                    op = row.operator("bim.add_instance_ceiling_coverings_from_walls")
+#                elif element and bpy.context.selected_objects and element.is_a("IfcSpace"):
+#                    op. = row.operator("bim.add_istance_flooring_from_spaces"):
+#                else:
+#                    op = row.operator("bim.add_instance_ceiling_from_cursor")
+#                    op = row.operator("bim.add_constr_type_instance", text="Add")
+#                    op.from_invoke = True
+#                    if cls.props.relating_type_id.isnumeric():
+#                        op.relating_type_id = int(cls.props.relating_type_id)
             else:
                 op = row.operator("bim.add_constr_type_instance", text="Add")
                 op.from_invoke = True
