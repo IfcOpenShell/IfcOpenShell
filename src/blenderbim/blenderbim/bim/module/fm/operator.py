@@ -21,7 +21,6 @@ import bpy
 import json
 import logging
 import tempfile
-import webbrowser
 import ifcopenshell
 import blenderbim.tool as tool
 
