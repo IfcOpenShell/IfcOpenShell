@@ -53,6 +53,7 @@ class AuthoringData:
         cls.data["ifc_element_type"] = cls.ifc_element_type
         cls.data["ifc_classes"] = cls.ifc_classes()
         cls.data["relating_type_id"] = cls.relating_type_id()  # only after .ifc_classes()
+        cls.data["predefined_type"] = cls.predefined_type()
         cls.data["type_class"] = cls.type_class()
 
         # only after .type_class()
@@ -246,6 +247,13 @@ class AuthoringData:
             results.extend(elements)
             return [(str(e.id()), e.Name or "Unnamed", e.Description or "") for e in results]
         return []
+
+    @classmethod
+    def predefined_type(cls):
+        relating_type_id = cls.props.relating_type_id
+        relating_type = tool.Ifc.get().by_id(int(relating_type_id))
+        predefined_type = relating_type.PredefinedType
+        return predefined_type
 
     @classmethod
     def selected_material_usages(cls):
