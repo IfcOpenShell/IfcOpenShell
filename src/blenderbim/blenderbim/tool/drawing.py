@@ -26,9 +26,9 @@ import bmesh
 import shutil
 import logging
 import shapely
+import platform
 from shapely.ops import unary_union
 import mathutils
-import webbrowser
 import subprocess
 import numpy as np
 import blenderbim.core.tool
@@ -834,7 +834,12 @@ class Drawing(blenderbim.core.tool.Drawing):
                 command[0] = shutil.which(command[0]) or command[0]
                 subprocess.Popen([replacements.get(c, c) for c in command])
         else:
-            webbrowser.open("file://" + path)
+            if platform.system() == "Darwin":
+                subprocess.call(("open", path))
+            elif platform.system() == "Windows":
+                os.startfile(path)
+            else:
+                subprocess.call(("xdg-open", path))
 
     @classmethod
     def open_spreadsheet(cls, uri):

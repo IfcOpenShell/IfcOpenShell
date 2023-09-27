@@ -26,7 +26,6 @@ import shutil
 import hashlib
 import shapely
 import subprocess
-import webbrowser
 import numpy as np
 import multiprocessing
 import ifcopenshell

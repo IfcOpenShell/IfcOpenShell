@@ -22,7 +22,6 @@ import json
 import ifccsv
 import logging
 import tempfile
-import webbrowser
 import ifcopenshell
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
