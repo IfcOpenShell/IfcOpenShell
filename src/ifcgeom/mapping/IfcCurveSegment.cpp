@@ -28,10 +28,38 @@ using namespace ifcopenshell::geometry;
 #include <boost/mpl/vector.hpp>
 #include <boost/mpl/for_each.hpp>
 
+// @todo use std::numbers::pi when upgrading to C++ 20
+#define PI 3.1415926535897932384626433832795
+
+
+namespace
+{
+	// trapezoid rule integration
+	// @todo is there a well established math library we can use instead of
+	// creating our own integrator?
+	double integrate(double a, double b, unsigned n, std::function<double(double)> fn)
+	{
+		double area = 0;
+		double h = (b - a) / (n + 1);
+		for (auto i = 0; i < n; i++)
+		{
+			auto x1 = a + h * i;
+			auto x2 = a + h * (i + 1);
+			auto f1 = fn(x1);
+			auto f2 = fn(x2);
+			area += h * (f1 + f2) / 2.0;
+		}
+		return area;
+	}
+}
+
 typedef boost::mpl::vector<
 	IfcSchema::IfcLine
 #ifdef SCHEMA_HAS_IfcClothoid
 	, IfcSchema::IfcClothoid
+#endif
+#if defined SCHEMA_HAS_IfcSecondOrderPolynomialSpiral
+	, IfcSchema::IfcSecondOrderPolynomialSpiral
 #endif
 	, IfcSchema::IfcPolyline
 	, IfcSchema::IfcCircle
@@ -63,24 +91,80 @@ public:
 		length_ = *le->as<IfcSchema::IfcLengthMeasure>() * length_unit;
 	}
 
-#ifdef SCHEMA_HAS_IfcClothoid
-	// Then initialize Function(double) -> Vector3, by means of IfcCurve subtypes
-	void operator()(IfcSchema::IfcClothoid* c) {
-		// @todo verify
-		auto sign = [](double v)->int{return v < 0 ? -1 : (0 < v ? 1 : 0); };
-		auto sign_s = sign(start_);
-		auto sign_l = sign(length_);
+// Clothoid using Taylor Series approximation
+//#ifdef SCHEMA_HAS_IfcClothoid
+//	// Then initialize Function(double) -> Vector3, by means of IfcCurve subtypes
+//	void operator()(IfcSchema::IfcClothoid* c) {
+//		// @todo verify
+//		auto sign = [](double v)->int{return v < 0 ? -1 : (0 < v ? 1 : 0); };
+//		auto sign_s = sign(start_);
+//		auto sign_l = sign(length_);
+//		double L = 0;
+//		if (sign_s == 0) L = fabs(length_);
+//		else if (sign_s == sign_l) L = fabs(start_ + length_);
+//		else L = fabs(start_);
+//
+//		auto A = c->ClothoidConstant();
+//		auto R = A * A / L;
+//		auto RL = (A < 0 ? -1.0 : 1.0) * R * L;
+//
+//		auto position = c->Position();
+//		auto placement = position->as<IfcSchema::IfcAxis2Placement2D>();
+//		auto ref_direction = placement->RefDirection();
+//		double theta = 0.0; // angle the circle's placement X-axis makes with respect to global X axis
+//		if (ref_direction)
+//		{
+//			auto dr = ref_direction->DirectionRatios();
+//			auto dx = dr[0];
+//			auto dy = dr[1];
+//			theta = atan2(dy, dx);
+//		}
+//
+//		auto C = placement->Location();
+//		if (!C->as<IfcSchema::IfcCartesianPoint>())
+//		{
+//			throw std::runtime_error("Only IfcCartesianPoint is supported for center of IfcCircle");
+//			// @todo add support for other IfcPoint subtypes
+//		}
+//		auto Cx = C->as<IfcSchema::IfcCartesianPoint>()->Coordinates()[0];
+//		auto Cy = C->as<IfcSchema::IfcCartesianPoint>()->Coordinates()[1];
+//
+//		eval_ = [RL,Cx,Cy,theta](double u) {
+//			// coordinate along clothoid is local coordinates
+//			auto xterm_1 = u;
+//			auto xterm_2 = std::pow(u, 5) / (40 * std::pow(RL, 2));
+//			auto xterm_3 = std::pow(u, 9) / (3456 * std::pow(RL, 4));
+//			auto xterm_4 = std::pow(u, 13) / (599040 * std::pow(RL, 6));
+//			auto xl = xterm_1 - xterm_2 + xterm_3 - xterm_4;
+//
+//			auto yterm_1 = std::pow(u, 3) / (6 * RL);
+//			auto yterm_2 = std::pow(u, 7) / (336 * std::pow(RL, 3));
+//			auto yterm_3 = std::pow(u, 11) / (42240 * std::pow(RL, 5));
+//			auto yterm_4 = std::pow(u, 15) / (9676800 * std::pow(RL, 7));
+//			auto yl = yterm_1 - yterm_2 + yterm_3 - yterm_4;
+//
+//			// transform point into clothoid's coodinate system
+//			auto x = xl * cos(theta) - yl * sin(theta) + Cx;
+//			auto y = xl * sin(theta) + yl * cos(theta) + Cy;
+//			return Eigen::Vector3d(x, y, 0.0);
+//		};
+//	}
+//#endif
+
+	void set_spiral_functor(IfcSchema::IfcSpiral* s, std::function<double(double)> signX,std::function<double(double)> fnX, std::function<double(double)> signY, std::function<double(double)> fnY)
+	{
+		// determine the length of the spiral from the local origin to the end point
+		auto binary_sign = [](double v)->int {return v < 0 ? -1 : (0 < v ? 1 : 0); }; // returns -1, 0, or 1
+		auto sign_s = binary_sign(start_);
+		auto sign_l = binary_sign(length_);
 		double L = 0;
-		if (sign_s == 0) L = fabs(length_);
-		else if (sign_s == sign_l) L = fabs(start_ + length_);
-		else L = fabs(start_);
+		if (sign_s == 0) L = fabs(length_); // start_ is at zero so length_ is the L
+		else if (sign_s == sign_l) L = fabs(start_ + length_); // start_ and length_ are additive
+		else L = fabs(start_); // start_ and length_ are in opposite directions so start_ is furthest from the origin
 
-		auto A = c->ClothoidConstant();
-		auto R = A * A / L;
-		auto RL = (A < 0 ? -1.0 : 1.0) * R * L;
-
-		auto position = c->Position();
-		auto placement = position->as<IfcSchema::IfcAxis2Placement2D>();
+		auto position = s->Position();
+		auto placement = position->as<IfcSchema::IfcAxis2Placement2D>(); // @todo Update, this could be IfcAxis2Placement2D or IfcAxisPlacement3D
+		if (!placement) { throw std::runtime_error("Only IfcAxis2Placement2D is supported right now"); }
 		auto ref_direction = placement->RefDirection();
 		double theta = 0.0; // angle the circle's placement X-axis makes with respect to global X axis
 		if (ref_direction)
@@ -94,31 +178,78 @@ public:
 		auto C = placement->Location();
 		if (!C->as<IfcSchema::IfcCartesianPoint>())
 		{
-			throw std::runtime_error("Only IfcCartesianPoint is supported for center of IfcCircle");
+			throw std::runtime_error("Only IfcCartesianPoint is supported right now");
 			// @todo add support for other IfcPoint subtypes
 		}
 		auto Cx = C->as<IfcSchema::IfcCartesianPoint>()->Coordinates()[0];
 		auto Cy = C->as<IfcSchema::IfcCartesianPoint>()->Coordinates()[1];
 
-		eval_ = [RL,Cx,Cy,theta](double u) {
-			// coordinate along clothoid is local coordinates
-			auto xterm_1 = u;
-			auto xterm_2 = std::pow(u, 5) / (40 * std::pow(RL, 2));
-			auto xterm_3 = std::pow(u, 9) / (3456 * std::pow(RL, 4));
-			auto xterm_4 = std::pow(u, 13) / (599040 * std::pow(RL, 6));
-			auto xl = xterm_1 - xterm_2 + xterm_3 - xterm_4;
+		eval_ = [L, Cx, Cy, theta, signX, fnX, signY, fnY](double u) {
+			// integration limits, integrate from a to b
+			// from 8.9.3.19.1, integration limits are 0.0 to u where u is a normalized parameter
+			auto a = 0.0;
+			auto b = fabs(u / L);
 
-			auto yterm_1 = std::pow(u, 3) / (6 * RL);
-			auto yterm_2 = std::pow(u, 7) / (336 * std::pow(RL, 3));
-			auto yterm_3 = std::pow(u, 11) / (42240 * std::pow(RL, 5));
-			auto yterm_4 = std::pow(u, 15) / (9676800 * std::pow(RL, 7));
-			auto yl = yterm_1 - yterm_2 + yterm_3 - yterm_4;
+			auto n = 10; // use 10 steps in the numeric integration
+
+			auto xl = signX(u)*integrate(a, b, n, fnX);
+			auto yl = signY(u)*integrate(a, b, n, fnY);
 
 			// transform point into clothoid's coodinate system
 			auto x = xl * cos(theta) - yl * sin(theta) + Cx;
 			auto y = xl * sin(theta) + yl * cos(theta) + Cy;
 			return Eigen::Vector3d(x, y, 0.0);
-		};
+			};
+	}
+
+// Clothoid using numerical integration
+#ifdef SCHEMA_HAS_IfcClothoid
+// Then initialize Function(double) -> Vector3, by means of IfcCurve subtypes
+	void operator()(IfcSchema::IfcClothoid* c) {
+
+		auto A = c->ClothoidConstant();
+
+		// the integration is for the +X, +Y quadrant - need to adjust the signs of the resulting X and Y values
+		// so that the results are in the correct quadrant.
+		// A > 0 and u > 0 -> +X, +Y
+		// A < 0 and u > 0 -> +X, -Y
+		// A > 0 and u < 0 -> -X, -Y
+		// A < 0 and u < 0 -> -X, +Y
+		// X depends only on u, Y depends on u and A.
+		auto sign = [](double v)->int {return v < 0 ? -1 : 1; }; // returns -1 or 1
+		auto sign_x = [sign](double t) {return sign(t); };
+		auto sign_y = [sign, A](double t) {return sign(t) == sign(A) ? 1.0 : -1.0; };
+		auto fn_x = [A](double t)->double {return A * sqrt(PI) * cos(PI * A * t * t / (2 * fabs(A))); };
+		auto fn_y = [A](double t)->double {return A * sqrt(PI) * sin(PI * A * t * t / (2 * fabs(A))); };
+		
+		set_spiral_functor(c->as<IfcSchema::IfcSpiral>(), sign_x, fn_x, sign_y, fn_y);
+	}
+#endif
+
+#ifdef SCHEMA_HAS_IfcSecondOrderPolynomialSpiral
+	void operator()(IfcSchema::IfcSecondOrderPolynomialSpiral* s)
+	{
+		// @todo verify - this is an example implementation of a different kind of spiral - lots of clean up needed
+		auto A0 = s->ConstantTerm();
+		auto A1 = s->LinearTerm();
+		auto A2 = s->QuadraticTerm();
+
+		auto theta = [A0, A1, A2](double t)
+			{
+				auto a0 = A0.has_value() ? t / A0.value() : 0.0;
+				auto a1 = A1.has_value() ? A1.value() * std::pow(t, 2) / (2 * fabs(std::pow(A1.value(), 3))) : 0.0;
+				auto a2 = std::pow(t, 3) / (3 * std::pow(A2, 3));
+				return a0 + a1 + a2;
+			};
+
+		auto sign = [](double v)->int {return v < 0 ? -1 : 1; }; // returns -1 or 1
+		auto sign_x = [sign](double t) {return sign(t); };
+		auto sign_y = [sign](double t) {return sign(t); }; // @todo fix - not sure about sign_y yet, need to find some plots of this spiral
+
+		auto fn_x = [theta](double t)->double {return cos(theta(t)); };
+		auto fn_y = [theta](double t)->double {return sin(theta(t)); };
+
+		set_spiral_functor(s->as<IfcSchema::IfcSpiral>(), sign_x, fn_x, sign_y, fn_y);
 	}
 #endif
 
