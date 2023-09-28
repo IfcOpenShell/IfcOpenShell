@@ -416,17 +416,9 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveSegment* inst) {
 
 	std::vector<taxonomy::point3::ptr> polygon;
 
-	auto placement = inst->Placement();
-	auto location = placement->Location();
-	auto Cx = location->as<IfcSchema::IfcCartesianPoint>()->Coordinates()[0];
-	auto Cy = location->as<IfcSchema::IfcCartesianPoint>()->Coordinates()[1];
-	auto ref_dir = placement->as<IfcSchema::IfcAxis2Placement2D>()->RefDirection();
-	auto dx = ref_dir->DirectionRatios()[0];
-	auto dy = ref_dir->DirectionRatios()[1];
-	auto angle = atan2(dy, dx);
-
-	auto cos_angle = cos(angle);
-	auto sin_angle = sin(angle);
+	// @todo - for some reason this isn't working, the matrix gets all messed up
+	//const auto& transformation_matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Placement()))->ccomponents();
+	auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Placement()))->ccomponents();
 
 	auto length = cse.length();
 	if (0.001 < fabs(length))
@@ -435,14 +427,8 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveSegment* inst) {
 			auto u = length * i / NUM_SEGMENTS;
 		
 			auto p = cse(u);
-			auto xl = p(0);
-			auto yl = p(1);
-			auto z = p(2);
-
-			auto x = xl * cos_angle - yl * sin_angle + Cx;
-			auto y = xl * sin_angle + yl * cos_angle + Cy;
-
-			polygon.push_back(taxonomy::make<taxonomy::point3>(x,y,z));
+			auto result =  transformation_matrix * Eigen::Vector4d(p(0),p(1),p(2), 1.);
+			polygon.push_back(taxonomy::make<taxonomy::point3>(result(0),result(1),result(2)));
 		}
 	}
 
