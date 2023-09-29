@@ -41,13 +41,16 @@ namespace
 	{
 		double area = 0;
 		double h = (b - a) / n;
+		auto x1 = a;
+		auto f1 = fn(x1);
 		for (auto i = 1; i <= n; i++)
 		{
-			auto x1 = a + h * (i - 1);
 			auto x2 = a + h * i;
-			auto f1 = fn(x1);
 			auto f2 = fn(x2);
 			area += h * (f1 + f2) / 2.0;
+
+			x1 = x2;
+			f1 = f2;
 		}
 		return area;
 	}
