@@ -261,6 +261,8 @@ public:
 
 	void operator()(IfcSchema::IfcPolyline* pl)
 	{
+		auto points = taxonomy::cast<taxonomy::loop>(mapping_->map_impl(pl));
+
 		struct Range
 		{
 			double u_start;
@@ -271,29 +273,23 @@ public:
 		using Function = std::function<std::pair<double, double>(double u)>;
 		std::map<Range, Function> fns;
 
-		auto p = pl->Points();
-		if (p->size() < 2)
-		{
-			throw std::runtime_error("invalid polyline - must have at least 2 points"); // this should never happen, but just in case it does
-		}
-
 		auto std_compare = [](double u_start, double u, double u_end) {return u_start <= u && u < u_end; };
 		auto end_compare = [](double u_start, double u, double u_end) {return u_start <= u && u <= (u_end+0.001); };
 
-		auto iter = p->begin();
-		auto end = p->end();
+		auto iter = points->children.begin();
+		auto end = points->children.end();
 		auto last = std::prev(end);
-		auto p1 = *(iter++);
 		auto u = 0.0;
 		for (; iter != end; iter++)
 		{
-			auto p2 = *iter;
+			auto edge(*iter);
+			auto& start_point = boost::get<taxonomy::point3::ptr>(edge->start);
+			auto p1x = start_point->components_->x();
+			auto p1y = start_point->components_->y();
 
-			auto p1x = p1->Coordinates()[0];
-			auto p1y = p1->Coordinates()[1];
-
-			auto p2x = p2->Coordinates()[0];
-			auto p2y = p2->Coordinates()[1];
+			auto& end_point = boost::get<taxonomy::point3::ptr>(edge->end);
+			auto p2x = end_point->components_->x();
+			auto p2y = end_point->components_->y();
 
 			auto dx = p2x - p1x;
 			auto dy = p2y - p1y;
@@ -311,7 +307,6 @@ public:
 
 			fns.insert(std::make_pair(Range{ u, u + l,iter == last ? end_compare : std_compare }, fn));
 
-			p1 = p2;
 			u = u + l;
 		}
 
