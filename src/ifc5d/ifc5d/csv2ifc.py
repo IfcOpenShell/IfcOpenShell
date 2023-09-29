@@ -69,10 +69,16 @@ class Csv2Ifc:
         identification = row[self.headers["Identification"]] if "Identification" in self.headers else None
         quantity = row[self.headers["Quantity"]]
         unit = row[self.headers["Unit"]]
-        assignments = {
-            "PropertyName": row[self.headers["Property"]],
-            "Query": row[self.headers["Query"]],
-        }
+        if not self.is_schedule_of_rates:
+            assignments = {
+                "PropertyName": row[self.headers["Property"]],
+                "Query": row[self.headers["Query"]],
+            }
+        else:
+            assignments = {
+                "PropertyName": None,
+                "Query": None,
+            }
         if self.has_categories:
             cost_values = {
                 k: locale.atof(row[v])
