@@ -37,11 +37,15 @@ class Geometry(blenderbim.core.tool.Geometry):
     @classmethod
     def change_object_data(cls, obj, data, is_global=False):
         if is_global:
-            if obj.mode == "EDIT":
-                raise Exception("user_remap is not supported in EDIT mode")
-            obj.data.user_remap(data)
+            cls.replace_object_data_globally(obj.data, data)
         else:
             obj.data = data
+
+    @classmethod
+    def replace_object_data_globally(cls, old_data, new_data):
+        if old_data.is_editmode:
+            raise Exception("user_remap is not supported for meshes in EDIT mode")
+        old_data.user_remap(new_data)
 
     @classmethod
     def clear_cache(cls, element):
@@ -296,6 +300,24 @@ class Geometry(blenderbim.core.tool.Geometry):
     def get_active_representation(cls, obj):
         if obj.data and hasattr(obj.data, "BIMMeshProperties") and obj.data.BIMMeshProperties.ifc_definition_id:
             return tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+
+    @classmethod
+    def get_active_representation_context(cls, obj):
+        active_representation = tool.Geometry.get_active_representation(obj)
+        if active_representation:
+            return active_representation.ContextOfItems
+        return ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+
+    @classmethod
+    def get_representation_by_context(cls, element, context):
+        if element.is_a("IfcProduct") and element.Representation:
+            for r in element.Representation.Representations:
+                if r.ContextOfItems == context:
+                    return r
+        elif element.is_a("IfcTypeProduct") and element.RepresentationMaps:
+            for r in element.RepresentationMaps:
+                if r.MappedRepresentation.ContextOfItems == context:
+                    return r.MappedRepresentation
 
     @classmethod
     def get_cartesian_point_coordinate_offset(cls, obj):
