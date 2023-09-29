@@ -61,7 +61,6 @@ def get_systems(ifc_file):
 
 def get_facility_data(ifc_file, element):
     return {
-        "key": element.Name,
         "Name": element.Name,
         "ProjectName": ifc_file.by_type("IfcProject")[0].Name,
         "SiteName": getattr(get_facility_parent(element, "IfcSite"), "Name", None),
@@ -80,7 +79,6 @@ def get_facility_data(ifc_file, element):
 
 def get_storey_data(ifc_file, element):
     return {
-        "key": element.Name,
         "Name": element.Name,
         "Category": "Level",
         "AuthorOrganizationName": get_owner_name(element),
@@ -95,7 +93,6 @@ def get_storey_data(ifc_file, element):
 def get_space_data(ifc_file, element):
     psets = ifcopenshell.util.element.get_psets(element)
     return {
-        "key": element.Name,
         "Name": element.Name,
         "Description": element.LongName,
         "Category": get_classification(element),
@@ -112,7 +109,6 @@ def get_space_data(ifc_file, element):
 def get_zone_data(ifc_file, element):
     zone, space = element
     return {
-        "key": (zone.Name or "Unnamed") + (space.Name or "Unnamed"),
         "Name": zone.Name,
         "SpaceName": space.Name,
         "AuthorOrganizationName": get_owner_name(zone),
@@ -125,7 +121,6 @@ def get_zone_data(ifc_file, element):
 def get_element_type_data(ifc_file, element):
     psets = ifcopenshell.util.element.get_psets(element)
     return {
-        "key": element.Name,
         "Name": element.Name,
         "Description": element.Description,
         "Category": get_classification(element),
@@ -150,7 +145,6 @@ def get_element_data(ifc_file, element):
     system = systems[0].Name if systems else None
     psets = ifcopenshell.util.element.get_psets(element)
     return {
-        "key": element.Name,
         "Name": element.Name,
         "TypeName": ifcopenshell.util.element.get_type(element).Name,
         "SpaceName": space_name,
@@ -173,7 +167,6 @@ def get_element_data(ifc_file, element):
 
 def get_system_data(ifc_file, element):
     return {
-        "key": element.Name,
         "Name": element.Name,
         "Description": element.Description,
         "Category": get_classification(element),
@@ -241,6 +234,7 @@ config = {
     },
     "categories": {
         "Facilities": {
+            "keys": ["Name"],
             "headers": [
                 "Name",
                 "ProjectName",
@@ -262,6 +256,7 @@ config = {
             "get_element_data": get_facility_data,
         },
         "Storeys": {
+            "keys": ["Name"],
             "headers": [
                 "Name",
                 "Category",
@@ -278,6 +273,7 @@ config = {
             "get_element_data": get_storey_data,
         },
         "Spaces": {
+            "keys": ["Name"],
             "headers": [
                 "Name",
                 "Description",
@@ -296,6 +292,7 @@ config = {
             "get_element_data": get_space_data,
         },
         "Zones": {
+            "keys": ["Name", "SpaceName"],
             "headers": ["Name", "SpaceName", "AuthorOrganizationName", "AuthorDate", "ModelSoftware", "ModelID"],
             "colours": "prreee",
             "sort": [{"name": "Name", "order": "ASC"}],
@@ -303,6 +300,7 @@ config = {
             "get_element_data": get_zone_data,
         },
         "ElementTypes": {
+            "keys": ["Name"],
             "headers": [
                 "Name",
                 "Description",
@@ -325,6 +323,7 @@ config = {
             "get_element_data": get_element_type_data,
         },
         "Elements": {
+            "keys": ["Name"],
             "headers": [
                 "Name",
                 "TypeName",
@@ -350,6 +349,7 @@ config = {
             "get_element_data": get_element_data,
         },
         "Systems": {
+            "keys": ["Name"],
             "headers": [
                 "Name",
                 "Description",
