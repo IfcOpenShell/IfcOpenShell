@@ -1022,7 +1022,13 @@ def copy_deep(ifc_file, element, exclude=None, exclude_callback=None, copied_ent
             elif exclude_callback and exclude_callback(attribute):
                 pass
             else:
-                attribute = copy_deep(ifc_file, attribute, exclude=exclude, copied_entities=copied_entities)
+                attribute = copy_deep(
+                    ifc_file,
+                    attribute,
+                    exclude=exclude,
+                    copied_entities=copied_entities,
+                    exclude_callback=exclude_callback,
+                )
         elif isinstance(attribute, tuple) and attribute and isinstance(attribute[0], ifcopenshell.entity_instance):
             if exclude and any([attribute[0].is_a(e) for e in exclude]):
                 pass
