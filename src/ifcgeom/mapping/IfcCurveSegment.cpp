@@ -27,31 +27,10 @@ using namespace ifcopenshell::geometry;
 
 #include <boost/mpl/vector.hpp>
 #include <boost/mpl/for_each.hpp>
+#include <boost/math/quadrature/trapezoidal.hpp>
 
 // @todo use std::numbers::pi when upgrading to C++ 20
 #define PI 3.1415926535897932384626433832795
-
-
-namespace
-{
-	// trapezoid rule integration
-	// @todo is there a well established math library we can use instead of
-	// creating our own integrator?
-	double integrate(double a, double b, unsigned n, std::function<double(double)> fn)
-	{
-		double area = 0;
-		double h = (b - a) / n;
-		for (auto i = 1; i <= n; i++)
-		{
-			auto x1 = a + h * (i - 1);
-			auto x2 = a + h * i;
-			auto f1 = fn(x1);
-			auto f2 = fn(x2);
-			area += h * (f1 + f2) / 2.0;
-		}
-		return area;
-	}
-}
 
 typedef boost::mpl::vector<
 	IfcSchema::IfcLine
@@ -65,19 +44,25 @@ typedef boost::mpl::vector<
 	, IfcSchema::IfcCircle
 > curve_seg_types;
 
+enum segment_type_t {
+	ST_HORIZONTAL, ST_VERTICAL, ST_CANT
+};
+
 class curve_segment_evaluator {
 private:
 	double length_unit_;
 	double start_;
 	double length_;
+	segment_type_t segment_type_;
 	IfcSchema::IfcCurve* curve_;
 
-	std::optional<std::function<Eigen::Vector3d(double)>> eval_;
+	std::optional<std::function<Eigen::VectorXd(double)>> eval_;
 
 public:
 	// First constructor, takes parameters from IfcCurveSegment
-	curve_segment_evaluator(double length_unit, IfcSchema::IfcCurve* curve, IfcSchema::IfcCurveMeasureSelect* st, IfcSchema::IfcCurveMeasureSelect* le)
+	curve_segment_evaluator(double length_unit, segment_type_t segment_type, IfcSchema::IfcCurve* curve, IfcSchema::IfcCurveMeasureSelect* st, IfcSchema::IfcCurveMeasureSelect* le)
 		: length_unit_(length_unit)
+		, segment_type_(segment_type)
 		, curve_(curve)
 	{
 		// @todo in IFC4X3_ADD2 this needs to be length measure
@@ -146,7 +131,7 @@ public:
 //			// transform point into clothoid's coodinate system
 //			auto x = xl * cos(theta) - yl * sin(theta) + Cx;
 //			auto y = xl * sin(theta) + yl * cos(theta) + Cy;
-//			return Eigen::Vector3d(x, y, 0.0);
+//			return Eigen::VectorXd(x, y, 0.0);
 //		};
 //	}
 //#endif
@@ -185,21 +170,26 @@ public:
 		auto Cy = C->as<IfcSchema::IfcCartesianPoint>()->Coordinates()[1];
 
 		eval_ = [L, Cx, Cy, theta, signX, fnX, signY, fnY](double u) {
+			using boost::math::quadrature::trapezoidal;
+
 			// integration limits, integrate from a to b
 			// from 8.9.3.19.1, integration limits are 0.0 to u where u is a normalized parameter
 			auto a = 0.0;
 			auto b = fabs(u / L);
 
-			auto n = 10; // use 10 steps in the numeric integration
+			// @todo where to plug this in?
+			// auto n = 10; // use 10 steps in the numeric integration
 
-			auto xl = signX(u)*integrate(a, b, n, fnX);
-			auto yl = signY(u)*integrate(a, b, n, fnY);
+			auto xl = signX(u)*trapezoidal(fnX, a, b);
+			auto yl = signY(u)*trapezoidal(fnY, a, b);
 
 			// transform point into clothoid's coodinate system
 			auto x = xl * cos(theta) - yl * sin(theta) + Cx;
 			auto y = xl * sin(theta) + yl * cos(theta) + Cy;
-			return Eigen::Vector3d(x, y, 0.0);
-			};
+			Eigen::VectorXd vec(3);
+			vec << x, y, 0.0;
+			return vec;
+		};
 	}
 
 // Clothoid using numerical integration
@@ -290,8 +280,10 @@ public:
 				// transform point into circle's coodinate system
 				auto x = xl * cos(theta) - yl * sin(theta) + Cx;
 				auto y = xl * sin(theta) + yl * cos(theta) + Cy;
-				return Eigen::Vector3d(x, y, 0.0);
-			};
+				Eigen::VectorXd vec;
+				vec << x, y, 0.0;
+				return vec;
+		};
 	}
 
 	void operator()(IfcSchema::IfcPolyline* pl)
@@ -361,8 +353,10 @@ public:
 			
 			auto [u_start, u_end, compare] = iter->first;
 			auto [x,y] = (iter->second)(u - u_start); // (u - u_start) is distance from start of this segment of the polyline
-			return Eigen::Vector3d(x, y, 0);
-			};
+			Eigen::VectorXd vec;
+			vec << x, y, 0;
+			return vec;
+		};
 	}
 
 	void operator()(IfcSchema::IfcLine* l) {
@@ -376,11 +370,27 @@ public:
 		auto dx = dr[0] / m;
 		auto dy = dr[1] / m;
 
-		eval_ = [px, py, dx, dy](double u) {
-			auto x = px + u * dx;
-			auto y = py + u * dy;
-			return Eigen::Vector3d(x, y, 0);
+		if (segment_type_ == ST_HORIZONTAL) {
+
+			eval_ = [px, py, dx, dy](double u) {
+				auto x = px + u * dx;
+				auto y = py + u * dy;
+				Eigen::VectorXd vec;
+				vec << x, y, 0;
+				return vec;
 			};
+
+		} else if (segment_type_ == ST_VERTICAL) {
+			
+			eval_ = [px, py, dx, dy](double u) {
+				// @todo this can't be correct
+				auto z = u * dy;
+				Eigen::VectorXd vec;
+				vec << z;
+				return vec;
+			};
+
+		}
 	}
 
 	// Take the boost::type value from mpl::for_each and test it against our curve instance
@@ -392,7 +402,7 @@ public:
 	}
 
 	// Then, with function populated based on IfcCurve subtype, we can evaluate to points
-	Eigen::Vector3d operator()(double u) {
+	Eigen::VectorXd operator()(double u) {
 		if (eval_) {
 			return (*eval_)((u + start_) * length_unit_);
 		} else {
@@ -403,22 +413,64 @@ public:
 	double length() const {
 		return length_;
 	}
+
+	const std::optional<std::function<Eigen::VectorXd(double)>>& evaluation_function() const {
+		return eval_;
+	}
 };
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveSegment* inst) {
-	// @todo fixed number of segments or fixed interval?
-	// @todo placement
 	// @todo figure out what to do with the zero length segments at the end of compound curves
 
-	static int NUM_SEGMENTS = 64;
-	curve_segment_evaluator cse(length_unit_, inst->ParentCurve(), inst->SegmentStart(), inst->SegmentLength());
+	bool is_horizontal = false;
+	bool is_vertical = false;
+	bool is_cant = false;
+
+	{
+		aggregate_of_instance::ptr segment_owners = inst->data().getInverse(&IfcSchema::IfcCompositeCurve::Class(), 0);
+		if (segment_owners) {
+			for (auto& cc : *segment_owners) {
+				if (cc->as<IfcSchema::IfcSegmentedReferenceCurve>()) {
+					is_cant = true;
+				} else if (cc->as<IfcSchema::IfcGradientCurve>()) {
+					is_vertical = true;
+				} else {
+					is_horizontal = true;
+				}
+			}
+		}
+	}
+
+	if ((is_horizontal + is_vertical + is_cant) != 1) {
+		// We have to choose the correct functor based on usage. We can't 
+		// support multiple, because we don't know the caller at this point.
+		return nullptr;
+	}
+
+	auto segment_type = is_horizontal ? ST_HORIZONTAL : is_vertical ? ST_VERTICAL : ST_CANT;
+
+	curve_segment_evaluator cse(length_unit_, segment_type, inst->ParentCurve(), inst->SegmentStart(), inst->SegmentLength());
 	boost::mpl::for_each<curve_seg_types, boost::type<boost::mpl::_>>(std::ref(cse));
-
-	std::vector<taxonomy::point3::ptr> polygon;
-
+	
+	auto fn = *cse.evaluation_function();
+	auto length = cse.length();
+	
 	// @todo - for some reason this isn't working, the matrix gets all messed up
 	//const auto& transformation_matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Placement()))->ccomponents();
 	auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Placement()))->ccomponents();
+
+	auto fn_transformed = [fn, transformation_matrix](double u) {
+		return transformation_matrix * fn(u);
+	};
+
+	// @todo it might be suboptimal that we no longer have the spans now
+	auto pwf = taxonomy::make<taxonomy::piecewise_function>();
+	pwf->spans.push_back({ length, fn_transformed });
+	return pwf;
+
+	/*
+	static int NUM_SEGMENTS = 64;
+	std::vector<taxonomy::point3::ptr> polygon;
 
 	auto length = cse.length();
 	if (0.001 < fabs(length))
@@ -433,6 +485,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveSegment* inst) {
 	}
 
 	return polygon_from_points(polygon);
+	*/
 }
 
 #endif
