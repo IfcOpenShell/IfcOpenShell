@@ -465,7 +465,7 @@ class CopyRepresentation(bpy.types.Operator, Operator):
                 if not element:
                     continue
                 bm.to_mesh(obj.data)
-                old_rep = self.get_representation_by_context(element, geometric_context)
+                old_rep = tool.Geometry.get_representation_by_context(element, geometric_context)
                 if old_rep:
                     ifcopenshell.api.run(
                         "geometry.unassign_representation", tool.Ifc.get(), product=element, representation=old_rep
@@ -481,16 +481,6 @@ class CopyRepresentation(bpy.types.Operator, Operator):
                     ifc_representation_class=None,
                     profile_set_usage=None,
                 )
-
-    def get_representation_by_context(self, element, context):
-        if element.is_a("IfcProduct") and element.Representation:
-            for r in element.Representation.Representations:
-                if r.ContextOfItems == context:
-                    return r
-        elif element.is_a("IfcTypeProduct") and element.RepresentationMaps:
-            for r in element.RepresentationMaps:
-                if r.MappedRepresentation.ContextOfItems == context:
-                    return r.MappedRepresentation
 
 
 class OverrideDelete(bpy.types.Operator):
