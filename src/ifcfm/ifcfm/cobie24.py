@@ -245,7 +245,6 @@ def get_attributes(ifc_file):
                         allowed_values = get_property_unit(props["id"], name)
 
                     data = {
-                        "key": str(val(name)) + str(sheet_name) + str(val(element.Name)),
                         "Name": val(name),
                         "CreatedBy": pset_created_by,
                         "CreatedOn": pset_created_on,
@@ -294,7 +293,6 @@ def get_contact_data(ifc_file, element):
                 roles.add(role.Role)
 
     return {
-        "key": email,
         "Email": email,
         "CreatedBy": get_created_by(element),
         "CreatedOn": get_created_on(element),
@@ -342,7 +340,6 @@ def get_facility_data(ifc_file, element):
         name = val(site.Name) or val(site.LongName)
 
     return {
-        "key": name,
         "Name": name,
         "CreatedBy": get_created_by(element),
         "CreatedOn": get_created_on(element),
@@ -398,7 +395,6 @@ def get_floor_data(ifc_file, element):
     elevation = "" if elevation is None else str(elevation)
 
     return {
-        "key": val(element.Name),
         "Name": val(element.Name),
         "CreatedBy": get_created_by(element),
         "CreatedOn": get_created_on(element),
@@ -438,7 +434,6 @@ def get_space_data(ifc_file, element):
                 net_area = str(value)
 
     return {
-        "key": val(element.Name),
         "Name": val(element.Name),
         "CreatedBy": get_created_by(element),
         "CreatedOn": get_created_on(element),
@@ -462,7 +457,6 @@ def get_zone_data(ifc_file, element):
         name, category = zone
         history = get_history(ifc_file)
         return {
-            "key": "-".join([str(name), str(category), str(space)]),
             "Name": name,
             "CreatedBy": get_email_from_history(history) if history else None,
             "CreatedOn": ifcopenshell.util.date.ifc2datetime(history.CreationDate).isoformat() if history else None,
@@ -483,7 +477,6 @@ def get_zone_data(ifc_file, element):
     space_name = val(space.Name) if space else None
 
     return {
-        "key": "-".join([str(name), str(category), str(space_name)]),
         "Name": name,
         "CreatedBy": get_created_by(zone),
         "CreatedOn": get_created_on(zone),
@@ -592,7 +585,6 @@ def get_type_data(ifc_file, element):
         asset_type = "Moveable"
 
     return {
-        "key": val(element.Name),
         "Name": val(element.Name),
         "CreatedBy": get_created_by(element),
         "CreatedOn": get_created_on(element),
@@ -668,7 +660,6 @@ def get_component_data(ifc_file, element):
                 asset_identifier = str(value)
 
     return {
-        "key": element.Name,
         "Name": element.Name,
         "CreatedBy": get_created_by(element),
         "CreatedOn": get_created_on(element),
@@ -692,7 +683,6 @@ def get_system_data(ifc_file, element):
     category = get_category(system)
     component_name = val(component.Name)
     return {
-        "key": str(val(system.Name)) + str(category) + str(component_name),
         "Name": val(system.Name),
         "CreatedBy": get_created_by(system),
         "CreatedOn": get_created_on(system),
@@ -727,7 +717,6 @@ def get_assembly_data(ifc_file, element):
     history = get_history(ifc_file)
 
     return {
-        "key": str(name) + str(sheet_name) + str(parent_name),
         "Name": name,
         "CreatedBy": get_email_from_history(history) if history else None,
         "CreatedOn": ifcopenshell.util.date.ifc2datetime(history.CreationDate).isoformat() if history else None,
@@ -753,7 +742,6 @@ def get_connection_data(ifc_file, element):
     row_name1 = val(ifcopenshell.util.system.get_port_element(element.RelatingPort).Name)
     row_name2 = val(ifcopenshell.util.system.get_port_element(element.RelatedPort).Name)
     return {
-        "key": str(name) + str(connection_type) + str(row_name1) + str(row_name2),
         "Name": name,
         "CreatedBy": get_created_by(element),
         "CreatedOn": get_created_on(element),
@@ -791,7 +779,6 @@ def get_spare_data(ifc_file, element):
                 part_number = str(value)
 
     return {
-        "key": val(element),
         "Name": val(element.Name),
         "CreatedBy": get_created_by(element),
         "CreatedOn": get_created_on(element),
@@ -809,7 +796,6 @@ def get_spare_data(ifc_file, element):
 
 def get_resource_data(ifc_file, element):
     return {
-        "key": val(element.Name),
         "Name": val(element.Name),
         "CreatedBy": get_created_by(element),
         "CreatedOn": get_created_on(element),
@@ -870,7 +856,6 @@ def get_job_data(ifc_file, element):
     priors = ",".join(priors) if priors else task_number
 
     return {
-        "key": str(val(element.Name)) + str(type_name) + str(task_number),
         "Name": val(element.Name),
         "CreatedBy": get_created_by(element),
         "CreatedOn": get_created_on(element),
@@ -912,7 +897,6 @@ def get_document_data(ifc_file, element):
     sheet_name = get_sheet_name(related_object)
     row_name = val(related_object.Name)
     return {
-        "key": str(name) + str(stage) + str(sheet_name) + str(row_name),
         "Name": name,
         "CreatedBy": get_created_by(rel),
         "CreatedOn": get_created_on(rel),
@@ -1159,6 +1143,7 @@ config = {
     "bool_false": "No",
     "categories": {
         "Contact": {
+            "keys": ["Email"],
             "headers": [
                 "Email",
                 "CreatedBy",
@@ -1186,6 +1171,7 @@ config = {
             "get_element_data": get_contact_data,
         },
         "Facility": {
+            "keys": ["Name"],
             "headers": [
                 "Name",
                 "CreatedBy",
@@ -1216,6 +1202,7 @@ config = {
             "get_element_data": get_facility_data,
         },
         "Floor": {
+            "keys": ["Name"],
             "headers": [
                 "Name",
                 "CreatedBy",
@@ -1234,6 +1221,7 @@ config = {
             "get_element_data": get_floor_data,
         },
         "Space": {
+            "keys": ["Name"],
             "headers": [
                 "Name",
                 "CreatedBy",
@@ -1255,6 +1243,7 @@ config = {
             "get_element_data": get_space_data,
         },
         "Zone": {
+            "keys": ["Name", "Category", "SpaceNames"],
             "headers": [
                 "Name",
                 "CreatedBy",
@@ -1272,6 +1261,7 @@ config = {
             "get_element_data": get_zone_data,
         },
         "Type": {
+            "keys": ["Name"],
             "headers": [
                 "Name",
                 "CreatedBy",
@@ -1315,6 +1305,7 @@ config = {
             "get_element_data": get_type_data,
         },
         "Component": {
+            "keys": ["Name"],
             "headers": [
                 "Name",
                 "CreatedBy",
@@ -1342,6 +1333,7 @@ config = {
             "get_element_data": get_component_data,
         },
         "System": {
+            "keys": ["Name", "Category", "ComponentNames"],
             "headers": [
                 "Name",
                 "CreatedBy",
@@ -1359,6 +1351,7 @@ config = {
             "get_element_data": get_system_data,
         },
         "Assembly": {  # Note that this is technically "not required"
+            "keys": ["Name", "SheetName", "ParentName"],
             "headers": [
                 "Name",
                 "CreatedBy",
@@ -1378,6 +1371,7 @@ config = {
             "get_element_data": get_assembly_data,
         },
         "Connection": {  # Note that this is technically "not required"
+            "keys": ["Name", "ConnectionType", "RowName1", "RowName2"],
             "headers": [
                 "Name",
                 "CreatedBy",
@@ -1400,6 +1394,7 @@ config = {
             "get_element_data": get_connection_data,
         },
         "Spare": {
+            "keys": ["Name"],
             "headers": [
                 "Name",
                 "CreatedBy",
@@ -1420,6 +1415,7 @@ config = {
             "get_element_data": get_spare_data,
         },
         "Resource": {
+            "keys": ["Name"],
             "headers": [
                 "Name",
                 "CreatedBy",
@@ -1436,6 +1432,7 @@ config = {
             "get_element_data": get_resource_data,
         },
         "Job": {
+            "keys": ["Name", "TypeName", "TaskNumber"],
             "headers": [
                 "Name",
                 "CreatedBy",
@@ -1463,6 +1460,7 @@ config = {
             "get_element_data": get_job_data,
         },
         "Document": {
+            "keys": ["Name", "Stage", "SheetName", "RowName"],
             "headers": [
                 "Name",
                 "CreatedBy",
@@ -1486,6 +1484,7 @@ config = {
             "get_element_data": get_document_data,
         },
         "Attribute": {
+            "keys": ["Name", "SheetName", "RowName"],
             "headers": [
                 "Name",
                 "CreatedBy",

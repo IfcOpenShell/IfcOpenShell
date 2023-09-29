@@ -1158,6 +1158,7 @@ config = {
     "bool_false": "No",
     "categories": {
         "Contact": {
+            "keys": ["Email"],
             "headers": [
                 "Email",
                 "CreatedBy",
@@ -1185,6 +1186,7 @@ config = {
             "get_element_data": get_contact_data,
         },
         "Facility": {
+            "keys": ["Name"],
             "headers": [
                 "Name",
                 "CreatedBy",
@@ -1215,6 +1217,7 @@ config = {
             "get_element_data": get_facility_data,
         },
         "Floor": {
+            "keys": ["Name"],
             "headers": [
                 "Name",
                 "CreatedBy",
@@ -1233,6 +1236,7 @@ config = {
             "get_element_data": get_floor_data,
         },
         "Space": {
+            "keys": ["Name"],
             "headers": [
                 "Name",
                 "CreatedBy",
@@ -1254,6 +1258,7 @@ config = {
             "get_element_data": get_space_data,
         },
         "Zone": {
+            "keys": ["Name", "Category", "SpaceNames"],
             "headers": [
                 "Name",
                 "CreatedBy",
@@ -1271,6 +1276,7 @@ config = {
             "get_element_data": get_zone_data,
         },
         "Type": {
+            "keys": ["Name"],
             "headers": [
                 "Name",
                 "CreatedBy",
@@ -1314,6 +1320,7 @@ config = {
             "get_element_data": get_type_data,
         },
         "Component": {
+            "keys": ["Name"],
             "headers": [
                 "Name",
                 "CreatedBy",
@@ -1341,6 +1348,7 @@ config = {
             "get_element_data": get_component_data,
         },
         "System": {
+            "keys": ["Name", "Category", "ComponentNames"],
             "headers": [
                 "Name",
                 "CreatedBy",
@@ -1358,6 +1366,7 @@ config = {
             "get_element_data": get_system_data,
         },
         "Assembly": {  # Note that this is technically "not required"
+            "keys": ["Name", "SheetName", "ParentName"],
             "headers": [
                 "Name",
                 "CreatedBy",
@@ -1377,6 +1386,7 @@ config = {
             "get_element_data": get_assembly_data,
         },
         "Connection": {  # Note that this is technically "not required"
+            "keys": ["Name", "ConnectionType", "RowName1", "RowName2"],
             "headers": [
                 "Name",
                 "CreatedBy",
@@ -1399,6 +1409,7 @@ config = {
             "get_element_data": get_connection_data,
         },
         "Spare": {
+            "keys": ["Name"],
             "headers": [
                 "Name",
                 "CreatedBy",
@@ -1419,6 +1430,7 @@ config = {
             "get_element_data": get_spare_data,
         },
         "Resource": {
+            "keys": ["Name"],
             "headers": [
                 "Name",
                 "CreatedBy",
@@ -1435,6 +1447,7 @@ config = {
             "get_element_data": get_resource_data,
         },
         "Job": {
+            "keys": ["Name", "TypeName", "TaskNumber"],
             "headers": [
                 "Name",
                 "CreatedBy",
@@ -1462,6 +1475,7 @@ config = {
             "get_element_data": get_job_data,
         },
         "Document": {
+            "keys": ["Name", "Stage", "SheetName", "RowName"],
             "headers": [
                 "Name",
                 "CreatedBy",
@@ -1485,6 +1499,7 @@ config = {
             "get_element_data": get_document_data,
         },
         "Attribute": {
+            "keys": ["Name", "SheetName", "RowName"],
             "headers": [
                 "Name",
                 "CreatedBy",
