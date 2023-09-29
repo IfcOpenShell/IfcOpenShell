@@ -212,7 +212,7 @@ class FileAssociate(bpy.types.Operator):
         self.layout.label(text="On the next step to create file association ")
         self.layout.label(text="the system console will be opened ")
         self.layout.label(text=f"and you will be asked to type command")
-        self.layout.label(text=f'"{command}"')
+        self.layout.label(text=f"{command}")
         self.layout.label(text="to create an association.")
 
     def invoke(self, context, event):
@@ -241,7 +241,7 @@ class FileAssociate(bpy.types.Operator):
 
         ps_script_path = os.path.join(src_dir, "windows_bbim_association.ps1")
         # NOTE: call powershell with RunAs to get admin rights from user
-        subprocess.run(["powershell", "-file", ps_script_path, binary_path], shell=True)
+        subprocess.run(["powershell", "-ExecutionPolicy", "Bypass", "-File", ps_script_path, binary_path], shell=True)
 
     def install_desktop_linux(self, src_dir=None, destdir="/tmp", binary_path="/usr/bin/blender"):
         """Creates linux file assocations and launcher icon"""
