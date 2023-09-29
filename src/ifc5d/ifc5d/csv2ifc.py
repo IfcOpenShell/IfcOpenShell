@@ -20,6 +20,8 @@ import csv
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.unit
+import ifcopenshell.util.selector
+import ifcopenshell.util.element
 import locale
 
 
@@ -67,11 +69,15 @@ class Csv2Ifc:
         identification = row[self.headers["Identification"]] if "Identification" in self.headers else None
         quantity = row[self.headers["Quantity"]]
         unit = row[self.headers["Unit"]]
+        assignments = {
+            "PropertyName": row[self.headers["Property"]],
+            "Query": row[self.headers["Query"]],
+        }
         if self.has_categories:
             cost_values = {
                 k: locale.atof(row[v])
                 for k, v in self.headers.items()
-                if k not in ["Hierarchy", "Identification", "Name", "Quantity", "Unit", "Subtotal"] and row[v]
+                if k not in ["Hierarchy", "Identification", "Name", "Quantity", "Unit", "Subtotal", "Property", "Query"] and row[v]
             }
         else:
             cost_values = row[self.headers["Value"]]
@@ -82,6 +88,7 @@ class Csv2Ifc:
             "Quantity": float(quantity) if quantity else None,
             "Unit": str(unit) if unit else None,
             "CostValues": cost_values,
+            "assignments": assignments,
             "children": [],
         }
 
@@ -107,7 +114,7 @@ class Csv2Ifc:
         cost_item["ifc"].Name = cost_item["Name"]
         cost_item["ifc"].Identification = cost_item["Identification"]
 
-        if not cost_item["CostValues"]:
+        if not cost_item["CostValues"] and cost_item["children"]:
             if not self.is_schedule_of_rates:
                 cost_value = ifcopenshell.api.run("cost.add_cost_value", self.file, parent=cost_item["ifc"])
                 cost_value.Category = "*"
@@ -115,7 +122,11 @@ class Csv2Ifc:
             for category, value in cost_item["CostValues"].items():
                 cost_value = ifcopenshell.api.run("cost.add_cost_value", self.file, parent=cost_item["ifc"])
                 cost_value.AppliedValue = self.file.createIfcMonetaryMeasure(value)
-                cost_value.Category = category
+                if category != "Rate" or category != "Price":
+                    if "Rate" in category or"Price" in category:
+                        category = category.replace("Rate","")
+                        category = category.strip()
+                    cost_value.Category = category
         else:
             cost_value = ifcopenshell.api.run("cost.add_cost_value", self.file, parent=cost_item["ifc"])
             cost_value.AppliedValue = self.file.createIfcMonetaryMeasure(cost_item["CostValues"])
@@ -144,6 +155,15 @@ class Csv2Ifc:
                 "cost.add_cost_item_quantity", self.file, cost_item=cost_item["ifc"], ifc_class=quantity_class
             )
             quantity[3] = cost_item["Quantity"]
+            
+        if cost_item["assignments"]["PropertyName"] and cost_item["assignments"]["Query"]:
+            print("for query",cost_item["assignments"]["Query"])
+            results = ifcopenshell.util.selector.filter_elements(self.file, cost_item["assignments"]["Query"])
+    
+            results = [r for r in results if has_property(self.file, r, cost_item["assignments"]["PropertyName"])]
+            if results:
+                ifcopenshell.api.run("cost.assign_cost_item_quantity",  self.file, cost_item=cost_item["ifc"], products=results, prop_name=cost_item["assignments"]["PropertyName"])
+
         self.create_cost_items(cost_item["children"], cost_item["ifc"])
 
     def create_unit(self, symbol):
@@ -158,3 +178,11 @@ class Csv2Ifc:
 
     def create_boilerplate_ifc(self):
         self.file = ifcopenshell.file(schema="IFC4")
+
+def has_property(self, product, property_name):
+    qtos = ifcopenshell.util.element.get_psets(product, qtos_only=True)
+    for qset, quantities in qtos.items():
+        for quantity, value in quantities.items():
+            if quantity == property_name:
+                return True
+    return False
