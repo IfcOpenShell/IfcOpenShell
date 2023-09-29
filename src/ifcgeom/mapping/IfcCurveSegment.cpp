@@ -53,6 +53,7 @@ namespace
 	}
 }
 
+// types of entities that can be IfcCurveSegment.ParentCurve
 typedef boost::mpl::vector<
 	IfcSchema::IfcLine
 #ifdef SCHEMA_HAS_IfcClothoid
@@ -67,6 +68,7 @@ typedef boost::mpl::vector<
 
 class curve_segment_evaluator {
 private:
+	mapping* mapping_;
 	double length_unit_;
 	double start_;
 	double length_;
@@ -76,8 +78,9 @@ private:
 
 public:
 	// First constructor, takes parameters from IfcCurveSegment
-	curve_segment_evaluator(double length_unit, IfcSchema::IfcCurve* curve, IfcSchema::IfcCurveMeasureSelect* st, IfcSchema::IfcCurveMeasureSelect* le)
-		: length_unit_(length_unit)
+	curve_segment_evaluator(mapping* mapping,double length_unit, IfcSchema::IfcCurve* curve, IfcSchema::IfcCurveMeasureSelect* st, IfcSchema::IfcCurveMeasureSelect* le)
+		: mapping_(mapping)
+		, length_unit_(length_unit)
 		, curve_(curve)
 	{
 		// @todo in IFC4X3_ADD2 this needs to be length measure
@@ -151,7 +154,7 @@ public:
 //	}
 //#endif
 
-	void set_spiral_functor(IfcSchema::IfcSpiral* s, std::function<double(double)> signX,std::function<double(double)> fnX, std::function<double(double)> signY, std::function<double(double)> fnY)
+	void set_spiral_functor(mapping* mapping,IfcSchema::IfcSpiral* s, std::function<double(double)> signX,std::function<double(double)> fnX, std::function<double(double)> signY, std::function<double(double)> fnY)
 	{
 		// determine the length of the spiral from the local origin to the end point
 		auto binary_sign = [](double v)->int {return v < 0 ? -1 : (0 < v ? 1 : 0); }; // returns -1, 0, or 1
@@ -162,29 +165,10 @@ public:
 		else if (sign_s == sign_l) L = fabs(start_ + length_); // start_ and length_ are additive
 		else L = fabs(start_); // start_ and length_ are in opposite directions so start_ is furthest from the origin
 
-		auto position = s->Position();
-		auto placement = position->as<IfcSchema::IfcAxis2Placement2D>(); // @todo Update, this could be IfcAxis2Placement2D or IfcAxisPlacement3D
-		if (!placement) { throw std::runtime_error("Only IfcAxis2Placement2D is supported right now"); }
-		auto ref_direction = placement->RefDirection();
-		double theta = 0.0; // angle the circle's placement X-axis makes with respect to global X axis
-		if (ref_direction)
-		{
-			auto dr = ref_direction->DirectionRatios();
-			auto dx = dr[0];
-			auto dy = dr[1];
-			theta = atan2(dy, dx);
-		}
+		//const auto& transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping->map(s->Position()))->ccomponents();
+		auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping->map(s->Position()))->ccomponents();
 
-		auto C = placement->Location();
-		if (!C->as<IfcSchema::IfcCartesianPoint>())
-		{
-			throw std::runtime_error("Only IfcCartesianPoint is supported right now");
-			// @todo add support for other IfcPoint subtypes
-		}
-		auto Cx = C->as<IfcSchema::IfcCartesianPoint>()->Coordinates()[0];
-		auto Cy = C->as<IfcSchema::IfcCartesianPoint>()->Coordinates()[1];
-
-		eval_ = [L, Cx, Cy, theta, signX, fnX, signY, fnY](double u) {
+		eval_ = [L, transformation_matrix, signX, fnX, signY, fnY](double u) {
 			// integration limits, integrate from a to b
 			// from 8.9.3.19.1, integration limits are 0.0 to u where u is a normalized parameter
 			auto a = 0.0;
@@ -192,13 +176,12 @@ public:
 
 			auto n = 10; // use 10 steps in the numeric integration
 
-			auto xl = signX(u)*integrate(a, b, n, fnX);
-			auto yl = signY(u)*integrate(a, b, n, fnY);
+			auto x = signX(u)*integrate(a, b, n, fnX);
+			auto y = signY(u)*integrate(a, b, n, fnY);
 
 			// transform point into clothoid's coodinate system
-			auto x = xl * cos(theta) - yl * sin(theta) + Cx;
-			auto y = xl * sin(theta) + yl * cos(theta) + Cy;
-			return Eigen::Vector3d(x, y, 0.0);
+			auto result = transformation_matrix * Eigen::Vector4d(x, y, 0.0, 1.0);
+			return Eigen::Vector3d(result(0),result(1),result(2));
 			};
 	}
 
@@ -222,7 +205,7 @@ public:
 		auto fn_x = [A](double t)->double {return A * sqrt(PI) * cos(PI * A * t * t / (2 * fabs(A))); };
 		auto fn_y = [A](double t)->double {return A * sqrt(PI) * sin(PI * A * t * t / (2 * fabs(A))); };
 		
-		set_spiral_functor(c->as<IfcSchema::IfcSpiral>(), sign_x, fn_x, sign_y, fn_y);
+		set_spiral_functor(mapping_,c->as<IfcSchema::IfcSpiral>(), sign_x, fn_x, sign_y, fn_y);
 	}
 #endif
 
@@ -249,48 +232,27 @@ public:
 		auto fn_x = [theta](double t)->double {return cos(theta(t)); };
 		auto fn_y = [theta](double t)->double {return sin(theta(t)); };
 
-		set_spiral_functor(s->as<IfcSchema::IfcSpiral>(), sign_x, fn_x, sign_y, fn_y);
+		set_spiral_functor(mapping_, s->as<IfcSchema::IfcSpiral>(), sign_x, fn_x, sign_y, fn_y);
 	}
 #endif
 
 	void operator()(IfcSchema::IfcCircle* c)
 	{
 		auto R = c->Radius();
+		//const auto& transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(c->Position()))->ccomponents();
+		auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(c->Position()))->ccomponents();
 
-		auto position = c->Position();
-		auto placement = position->as<IfcSchema::IfcAxis2Placement2D>();
-		auto ref_direction = placement->RefDirection();
-		double theta = 0.0; // angle the circle's placement X-axis makes with respect to global X axis
-		if (ref_direction)
-			{
-			auto dr = ref_direction->DirectionRatios();
-			auto dx = dr[0];
-			auto dy = dr[1];
-			theta = atan2(dy, dx);
-		}
-
-		// center of circle location
-		auto C = placement->Location();
-		if (!C->as<IfcSchema::IfcCartesianPoint>())
-		{
-			throw std::runtime_error("Only IfcCartesianPoint is supported for center of IfcCircle");
-			// @todo add support for other IfcPoint subtypes
-		}
-		auto Cx = C->as<IfcSchema::IfcCartesianPoint>()->Coordinates()[0];
-		auto Cy = C->as<IfcSchema::IfcCartesianPoint>()->Coordinates()[1];
-
-		eval_ = [R, Cx, Cy, theta](double u)
+		eval_ = [R, transformation_matrix](double u)
 			{
 				auto angle = u / R; // angle subtended by arc length u
 
 				// compute point on circle centered at (0,0) with x-axis horizontal and y-axis vertical
-				auto xl = R * cos(angle);
-				auto yl = R * sin(angle);
+				auto x = R * cos(angle);
+				auto y = R * sin(angle);
 
 				// transform point into circle's coodinate system
-				auto x = xl * cos(theta) - yl * sin(theta) + Cx;
-				auto y = xl * sin(theta) + yl * cos(theta) + Cy;
-				return Eigen::Vector3d(x, y, 0.0);
+				auto result = transformation_matrix * Eigen::Vector4d(x, y, 0.0, 1.0);
+				return Eigen::Vector3d(result(0), result(1), result(2));
 			};
 	}
 
@@ -411,7 +373,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveSegment* inst) {
 	// @todo figure out what to do with the zero length segments at the end of compound curves
 
 	static int NUM_SEGMENTS = 64;
-	curve_segment_evaluator cse(length_unit_, inst->ParentCurve(), inst->SegmentStart(), inst->SegmentLength());
+	curve_segment_evaluator cse(this, length_unit_, inst->ParentCurve(), inst->SegmentStart(), inst->SegmentLength());
 	boost::mpl::for_each<curve_seg_types, boost::type<boost::mpl::_>>(std::ref(cse));
 
 	std::vector<taxonomy::point3::ptr> polygon;
@@ -420,6 +382,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveSegment* inst) {
 	//const auto& transformation_matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Placement()))->ccomponents();
 	auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Placement()))->ccomponents();
 
+	// @todo - is there a better way to deal with tolerance and "nearly zero" values?
 	auto length = cse.length();
 	if (0.001 < fabs(length))
 	{
