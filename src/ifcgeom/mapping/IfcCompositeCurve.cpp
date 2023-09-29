@@ -67,9 +67,22 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 #ifdef SCHEMA_HAS_IfcCurveSegment
 		else if (segment->as<IfcSchema::IfcCurveSegment>()) {
 			auto crv = map(segment->as<IfcSchema::IfcCurveSegment>());
-			for (auto& s : taxonomy::cast<taxonomy::loop>(crv)->children) {
-				loop->children.push_back(s);
+			auto crv_as_loop = taxonomy::cast<taxonomy::loop>(crv);
+
+			// The end of the previous segment must be at the same location as the start of this segment
+			// @todo - need to apply some tolerancing
+			if (!loop->children.empty() and !crv_as_loop->children.empty() 
+				 and 
+				boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>(loop->children.back()->end)->components() != boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>(crv_as_loop->children.front()->start)->components())
+			{
+				std::ostringstream os;
+				auto& prev = boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>(loop->children.back()->end)->components();
+				auto& next = boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>(crv_as_loop->children.front()->start)->components();
+				os << "Common points are not continuous: (" << prev.x() << ", " << prev.y() << ", " << prev.z() << ")" << "  " << "(" << next.x() << ", " << next.y() << ", " << next.z() << ")" << std::endl;
+				Logger::Notice(os.str());
 			}
+
+			loop->children.insert(loop->children.end(), crv_as_loop->children.begin(), crv_as_loop->children.end());
 		}
 #endif
 	}
