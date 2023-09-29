@@ -35,7 +35,7 @@ import ifcopenshell.util.classification
 
 
 def get_contacts(ifc_file):
-    return ifc_file.by_type("IfcActor")
+    return ifc_file.by_type("IfcPersonAndOrganization")
 
 
 def get_facilities(ifc_file):
@@ -265,55 +265,51 @@ def get_attributes(ifc_file):
 
 
 def get_contact_data(ifc_file, element):
-    the_actor = element.Theactor
+    email = get_email_from_pao(element)
 
-    if the_actor.is_a("IfcPerson"):
-        pao = None
-        person = the_actor
-        organization = None
-    elif the_actor.is_a("IfcOrganization"):
-        pao = None
-        person = None
-        organization = the_actor
-    elif the_actor.is_a("IfcPersonAndOrganization"):
-        pao = the_actor
-        person = the_actor.ThePerson
-        organization = the_actor.TheOrganization
+    history = get_history(ifc_file)
 
-    email = get_email_from_pao(person, organization)
-
-    roles = set()
-    for actor in [pao, person, organization]:
-        if not actor:
-            continue
+    roles = []
+    for actor in [element, element.ThePerson, element.TheOrganization]:
         for role in actor.Roles or []:
             if role.Role == "USERDEFINED":
                 if role.UserDefinedRole:
-                    roles.add(role.UserDefinedRole)
+                    roles.append(role.UserDefinedRole)
             else:
-                roles.add(role.Role)
+                roles.append(role.Role)
+
+    organization = element.TheOrganization
+    person = element.ThePerson
+
+    department = get_pao_address(element, "InternalLocation")
+    if not department:
+        for rel in organization.Relates:
+            for org in rel.RelatedOrganizations:
+                if val(org.Name):
+                    department = org.Name
 
     return {
         "key": email,
         "Email": email,
-        "CreatedBy": get_created_by(element),
-        "CreatedOn": get_created_on(element),
+        "CreatedBy": get_email_from_history(history) if history else None,
+        "CreatedOn": ifcopenshell.util.date.ifc2datetime(history.CreationDate).isoformat() if history else None,
         "Category": ",".join(roles),
         "Company": getattr(organization, "Name", None),
-        "Phone": get_pao_address(person, organisation, "TelephoneNumbers"),
-        "ExternalSystem": get_external_system(element),
+        "Phone": get_pao_address(element, "TelephoneNumbers"),
+        "ExternalSystem": history.OwningApplication.ApplicationFullName if history else None,
         "ExternalObject": element.is_a(),
-        "ExternalIdentifier": element.GlobalId,
-        "Department": get_pao_address(person, organisation, "InternalLocation"),
-        "OrganizationCode": getattr(organization, "Id", getattr(organization, "Identification", None)),
+        "ExternalIdentifier": email,
+        "Department": department,
+        "OrganizationCode": getattr(organization, "Id", getattr(organization, "Identification", None))
+        or organization.Name,
         "GivenName": getattr(person, "GivenName", None),
         "FamilyName": getattr(person, "FamilyName", None),
-        "Street": get_pao_address(person, organisation, "AddressLines"),
-        "PostalBox": get_pao_address(person, organisation, "PostalBox"),
-        "Town": get_pao_address(person, organisation, "Town"),
-        "StateRegion": get_pao_address(person, organisation, "Region"),
-        "PostalCode": get_pao_address(person, organisation, "PostalCode"),
-        "Country": get_pao_address(person, organisation, "Country"),
+        "Street": get_pao_address(element, "AddressLines"),
+        "PostalBox": get_pao_address(element, "PostalBox"),
+        "Town": get_pao_address(element, "Town"),
+        "StateRegion": get_pao_address(element, "Region"),
+        "PostalCode": get_pao_address(element, "PostalCode"),
+        "Country": get_pao_address(element, "Country"),
     }
 
 
@@ -965,23 +961,28 @@ def get_created_by(element):
 def get_email_from_history(element):
     pao = element.OwningUser
     if pao.is_a("IfcPersonAndOrganization"):
-        return get_email_from_pao(pao.ThePerson, pao.TheOrganization)
-    elif pao.is_a("IfcPerson"):
-        return get_email_from_pao(pao, None)
-    elif pao.is_a("IfcOrganization"):
-        return get_email_from_pao(None, pao)
+        return get_email_from_pao(pao)
 
 
-def get_email_from_pao(person, organization):
-    if organization:
-        for address in organization.Addresses or []:
-            if address.is_a("IfcTelecomAddress") and address.ElectronicMailAddresses:
-                return address.ElectronicMailAddresses[0]
+def get_email_from_pao(pao):
+    for address in pao.ThePerson.Addresses or []:
+        if address.is_a("IfcTelecomAddress") and address.ElectronicMailAddresses:
+            return address.ElectronicMailAddresses[0]
 
-    if person:
-        for address in person.Addresses or []:
-            if address.is_a("IfcTelecomAddress") and address.ElectronicMailAddresses:
-                return address.ElectronicMailAddresses[0]
+    for address in pao.TheOrganization.Addresses or []:
+        if address.is_a("IfcTelecomAddress") and address.ElectronicMailAddresses:
+            return address.ElectronicMailAddresses[0]
+
+    person_id = getattr(pao.ThePerson, "Identification", getattr(pao.ThePerson, "Id", None))
+    if person_id:
+        return person_id
+
+    organization_id = getattr(pao.TheOrganization, "Identification", getattr(pao.TheOrganization, "Id", None))
+    if organization_id:
+        return organization_id
+
+    if pao.ThePerson.GivenName and pao.ThePerson.FamilyName and pao.TheOrganization.Name:
+        return pao.ThePerson.GivenName + pao.ThePerson.FamilyName + "@" + pao.TheOrganization.Name + ".com"
 
 
 def get_owner_name(element):
@@ -1075,10 +1076,8 @@ def get_category(element):
     return val(getattr(element, "ObjectType", None))
 
 
-def get_pao_address(person, organization, name):
-    for actor in [organization, person]:
-        if not actor:
-            continue
+def get_pao_address(element, name):
+    for actor in [element.ThePerson, element.TheOrganization]:
         for address in actor.Addresses or []:
             if hasattr(address, name) and getattr(address, name, None):
                 result = getattr(address, name)
