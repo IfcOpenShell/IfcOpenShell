@@ -7,34 +7,26 @@
 
 # output directories
 /cmake/out/
-/docs/out/
 /src/examples/out/
 /src/ifcmax/out/
 /src/ifcwrap/out/
 /src/qtviewer/out/
 
-
 /win/BuildDepsCache*.txt
-# IfcExpressParser residue
-/src/ifcexpressparser/express_parser.py
+
 # General Python residue
 __pycache__
 *.py.bak
+
 # Visual Studio Code files
 .vscode
 .vs
+
 # PyCharm files
 .idea
 
-#Virtual Env Files
-Pipfile
-Pipfile.lock
-
 # Docs
-/docs/output
-/docs/rst_files
-/docs/doxygen
-/src/ifcblenderexport/docs/_build
+/docs/cpp-api/output
 
 # gettext binary translation files
 *.mo
