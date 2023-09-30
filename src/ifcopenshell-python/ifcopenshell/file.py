@@ -612,19 +612,23 @@ class file(object):
                 return ifcopenshell.api.run(f"{self.module}.{self.action}", *args, **kwargs)
 
             def update_signature(self) -> None:
-                python_module: ModuleType = importlib.import_module(f"ifcopenshell.api.{self.module}.{self.action}")
-                api_signature: inspect.Signature = inspect.signature(python_module.Usecase.__init__)
-                parameters: list[inspect.Parameter] = list(api_signature.parameters.values())
-                if parameters:
-                    parameters = parameters[1:]  # discarding self from the signature
-                if parameters and parameters[0].name == "file":
-                    parameters = parameters[1:]  # discarding file from the signature
+                try:
+                    python_module: ModuleType = importlib.import_module(f"ifcopenshell.api.{self.module}.{self.action}")
+                except ModuleNotFoundError:
+                    return
                 else:
-                    self._file_as_arg = False
-                return_annotation: Any = api_signature.return_annotation
-                self.__signature__ = inspect.signature(self).replace(
-                    parameters=parameters, return_annotation=return_annotation
-                )
+                    api_signature: inspect.Signature = inspect.signature(python_module.Usecase.__init__)
+                    parameters: list[inspect.Parameter] = list(api_signature.parameters.values())
+                    if parameters:
+                        parameters = parameters[1:]  # discarding self from the signature
+                    if parameters and parameters[0].name == "file":
+                        parameters = parameters[1:]  # discarding file from the signature
+                    else:
+                        self._file_as_arg = False
+                    return_annotation: Any = api_signature.return_annotation
+                    self.__signature__ = inspect.signature(self).replace(
+                        parameters=parameters, return_annotation=return_annotation
+                    )
 
         api_calls: DefaultDict[str, list[str]] = defaultdict(list)
         ios_dir = Path(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
