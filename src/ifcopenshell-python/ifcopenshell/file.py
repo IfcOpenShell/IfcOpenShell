@@ -20,6 +20,7 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+from __future__ import annotations
 
 import os
 import re
@@ -27,6 +28,12 @@ import numbers
 import zipfile
 import functools
 from pathlib import Path
+import importlib
+import inspect
+from types import ModuleType
+from typing import Any, DefaultDict
+from dataclasses import dataclass, field
+from collections import defaultdict
 
 import ifcopenshell.util.element
 import ifcopenshell.util.file
@@ -564,3 +571,72 @@ class file(object):
     @staticmethod
     def from_pointer(v):
         return file_dict.get(v)
+
+    def patch_api(self) -> None:
+        """Monkey-patches ifcopenshell.api.run calls as methods of a file instance"""
+
+        actions_to_exclude: list[str] = ["__init__", "settings"]
+
+        @dataclass
+        class ApiModule:
+            _module: str
+
+            def __post_init__(self):
+                self.__name__ = self._module
+                self.__qualname__ = self._module
+
+            def __repr__(self) -> str:
+                return f"<class 'ifcopenshell.file.{self._module}'> (patched)"
+
+        @dataclass(slots=True)
+        class ApiAction:
+            file: ifcopenshell.file
+            module: str
+            action: str
+            _file_as_arg: bool = field(init=False, default=True)
+            __name__: str = ""
+            __qualname__: str = ""
+            __signature__: inspect.Signature = field(init=False)
+
+            def __post_init__(self):
+                self.__name__ = self.action
+                self.__qualname__ = f"{self.module}.{self.action}"
+                self.update_signature()
+
+            def __repr__(self) -> str:
+                return f"<class 'ifcopenshell.file.{self.module}.{self.action}'> (patched)"
+
+            def __call__(self, *args, **kwargs) -> Any:
+                if self._file_as_arg:
+                    args = [self.file, *args]
+                return ifcopenshell.api.run(f"{self.module}.{self.action}", *args, **kwargs)
+
+            def update_signature(self) -> None:
+                python_module: ModuleType = importlib.import_module(f"ifcopenshell.api.{self.module}.{self.action}")
+                api_signature: inspect.Signature = inspect.signature(python_module.Usecase.__init__)
+                parameters: list[inspect.Parameter] = list(api_signature.parameters.values())
+                if parameters:
+                    parameters = parameters[1:]  # discarding self from the signature
+                if parameters and parameters[0].name == "file":
+                    parameters = parameters[1:]  # discarding file from the signature
+                else:
+                    self._file_as_arg = False
+                return_annotation: Any = api_signature.return_annotation
+                self.__signature__ = inspect.signature(self).replace(
+                    parameters=parameters, return_annotation=return_annotation
+                )
+
+        api_calls: DefaultDict[str, list[str]] = defaultdict(list)
+        ios_dir = Path(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
+
+        for path in (ios_dir / "api").glob("*/*.py"):
+            if (action := path.stem) in actions_to_exclude:
+                continue
+            module = path.parent.name
+            api_calls[module].append(action)
+
+        for module, actions in api_calls.items():
+            action_functors: dict[str, ApiAction] = {
+                action: ApiAction(file=self, module=module, action=action) for action in actions
+            }
+            setattr(self, module, type(module, (ApiModule,), {"_module": module} | action_functors))
