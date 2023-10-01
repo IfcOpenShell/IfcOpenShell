@@ -152,11 +152,11 @@ struct piecewise_function : public item {
 
 	Eigen::VectorXd evaluate(double u) const {
 		// @todo optimize, assume monotonic evaluation and store last evaluated segment?
-		for (auto& s : spans) {
-			if (u < s.first) {
-				return s.second(u);
+		for (auto& [length, fn] : spans) {
+			if (u < length) {
+				return fn(u);
 			}
-			u -= s.first;
+			u -= length;
 		}
 	}
 };
