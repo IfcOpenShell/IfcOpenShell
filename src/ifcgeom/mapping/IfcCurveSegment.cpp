@@ -30,7 +30,7 @@ using namespace ifcopenshell::geometry;
 #include <boost/math/quadrature/trapezoidal.hpp>
 
 // @todo use std::numbers::pi when upgrading to C++ 20
-#define PI 3.1415926535897932384626433832795
+static const double PI = boost::math::constants::pi<double>();
 
 typedef boost::mpl::vector<
 	IfcSchema::IfcLine
