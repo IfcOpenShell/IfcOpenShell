@@ -383,8 +383,7 @@ public:
 		} else if (segment_type_ == ST_VERTICAL) {
 			
 			eval_ = [px, py, dx, dy](double u) {
-				// @todo this can't be correct
-				auto z = u * dy;
+				auto z = py + u * dy;
 				Eigen::VectorXd vec;
 				vec << z;
 				return vec;
