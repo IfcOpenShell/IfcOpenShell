@@ -131,7 +131,7 @@ struct implicit_item : public item {
 	virtual item::ptr evaluate() const = 0;
 };
 
-struct piecewise_function : public item {
+struct piecewise_function : public implicit_item {
 	DECLARE_PTR(piecewise_function)
 
 	std::vector<std::pair<double, std::function<Eigen::VectorXd(double u)>>> spans;
