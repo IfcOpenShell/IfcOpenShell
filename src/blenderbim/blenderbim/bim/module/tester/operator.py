@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
+import os 
 import bpy
 import time
 import tempfile
@@ -72,8 +72,10 @@ class ExecuteIfcTester(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Tester.report = report
             props.specifications.clear()
             for spec in report:
+                print(spec)
                 new_spec = props.specifications.add()
                 new_spec.name = spec["name"]
+                new_spec.description = spec["description"]
                 new_spec.status = spec["status"]
 
         blenderbim.bim.handler.refresh_ui_data()
