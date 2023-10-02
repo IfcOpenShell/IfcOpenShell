@@ -42,13 +42,14 @@ class CoveringTool(WorkSpaceTool):
     bl_description = "Create and edit coverings"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.covering")
     bl_widget = None
+    ifc_element_type = "IfcCoveringType"
     bl_keymap = tool.Blender.get_default_selection_keypmap() + (
         ("bim.covering_hotkey", {"type": "A", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_A")]}),
     )
 
     @classmethod
     def draw_settings(cls, context, layout, ws_tool):
-        CoveringToolUI.draw(context, layout, ifc_element_type="IfcCoveringType")
+        CoveringToolUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 def add_layout_hotkey(layout, text, hotkey, description):
     args = ["covering", layout, text, hotkey, description]
@@ -70,7 +71,6 @@ class CoveringToolUI:
             AuthoringData.load(ifc_element_type)
         elif AuthoringData.data["ifc_element_type"] != ifc_element_type:
             AuthoringData.load(ifc_element_type)
-
 
         if context.region.type == "TOOL_HEADER":
             cls.draw_header_interface()
@@ -97,6 +97,7 @@ class CoveringToolUI:
             if AuthoringData.data["predefined_type"] == "FLOORING":
                 if element and bpy.context.selected_objects and element.is_a("IfcWall"):
                     op = row.operator("bim.add_instance_flooring_coverings_from_walls")
+#               PLEASE KEEP COMMENTS AS A REMINDER
 #                elif element and bpy.context.selected_objects and element.is_a("IfcSpace"):
 #                    op. = row.operator("bim.add_istance_flooring_from_spaces"):
                 else:
@@ -183,8 +184,11 @@ class Hotkey(bpy.types.Operator, Operator):
     def hotkey_S_A(self):
         active_obj = bpy.context.active_object
         element = tool.Ifc.get_entity(active_obj)
-        if element and bpy.context.selected_objects and element.is_a("IfcWall"):
-            bpy.ops.bim.add_instance_flooring_coverings_from_walls()
+        if AuthoringData.data["predefined_type"] == "FLOORING":
+            if element and bpy.context.selected_objects and element.is_a("IfcWall"):
+                bpy.ops.bim.add_instance_flooring_coverings_from_walls()
+            else:
+                bpy.ops.bim.add_constr_type_instance()
         else:
             bpy.ops.bim.add_constr_type_instance()
 
