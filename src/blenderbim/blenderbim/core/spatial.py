@@ -16,9 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import blenderbim.core
-import bpy
-
+import blenderbim.core.type
 
 def reference_structure(ifc, spatial, structure=None, element=None):
     if spatial.can_reference(structure, element):
@@ -123,8 +121,51 @@ def select_decomposed_elements(spatial):
         spatial.select_products(spatial.get_decomposed_elements(container))
 
 #HERE STARTS SPATIAL TOOL
-def generate_space(ifc, spatial):
-    pass
+def generate_space(ifc, spatial, model):
+    active_obj = spatial.get_active_obj()
+    selected_objects = spatial.get_selected_objects()
+    element = None
+    relating_type_id = spatial.get_relating_type_id()
+
+    relating_type = None
+    if relating_type_id:
+        relating_type = ifc.get().by_id(int(relating_type_id))
+        if not relating_type.is_a("IfcSpaceType"):
+            relating_type = None
+
+    if selected_objects and active_obj:
+        x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_active_obj(active_obj) ##mat
+        element = ifc.get_entity(active_obj)
+
+    else:
+        x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_cursor() ##mat
+
+    space_polygon = spatial.get_space_polygon_from_context_visible_objects(x, y)
+
+    if not space_polygon:
+        return
+
+    bm = spatial.get_bmesh_from_polygon(space_polygon, h=h) ##mat
+
+    mesh = spatial.get_named_mesh_from_bmesh(name = "Space", bmesh = bm)
+
+    if element and element.is_a("IfcSpace"):
+        spatial.edit_active_space_obj_from_mesh(mesh)
+    else:
+        if relating_type:
+            name = model.generate_occurrence_name(relating_type, "IfcSpace")
+        else:
+            name = "Space"
+
+        obj = spatial.get_named_obj_from_mesh(name, mesh) ##mat
+        spatial.set_obj_origin_to_cursor_position(obj)
+        spatial.link_obj_to_active_collection(obj)
+        spatial.assign_ifcspace_class_to_obj(obj)
+
+        element = ifc.get_entity(obj)
+
+        if relating_type:
+            blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
 
 
 def generate_spaces_from_walls(ifc, spatial, collector):

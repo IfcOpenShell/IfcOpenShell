@@ -79,6 +79,7 @@ def update_type_class(self, context):
 def update_relating_type_id(self, context):
     AuthoringData.data["relating_type_id"] = AuthoringData.relating_type_id()
     AuthoringData.data["type_thumbnail"] = AuthoringData.type_thumbnail()
+    AuthoringData.data["predefined_type"] = AuthoringData.predefined_type()
 
 
 def update_type_page(self, context):

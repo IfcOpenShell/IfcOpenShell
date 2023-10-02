@@ -810,6 +810,13 @@ class Spatial:
     def set_relative_object_matrix(cls, target_obj, relative_to_obj, matrix): pass
     def show_scene_objects(cls): pass
     #HERE STARTS SPATIAL TOOL
+    def is_bounding_class(cls, visible_element): pass
+    def get_space_polygon_from_context_visible_objects(cls, x, y): pass
+    def get_boundary_lines_from_context_visible_objects(cls, visible_objects): pass
+    def get_gross_mesh_from_element(cls, visible_element): pass
+    def create_mesh_from_shape(cls, shape): pass
+    def get_x_y_z_h_mat_from_active_obj(cls, active_obj): pass
+    def get_x_y_z_h_mat_from_cursor(cls): pass
     def get_union_shape_from_selected_objects(cls): pass
     def get_boundary_elements(cls, selected_objects): pass
     def get_polygons(cls, boundary_elements): pass
@@ -820,9 +827,16 @@ class Spatial:
     def get_buffered_poly_from_linear_ring(cls, linear_ring): pass
     def get_bmesh_from_polygon(cls, poly, h): pass
     def get_named_obj_from_bmesh(cls, name, bmesh): pass
+    def get_named_obj_from_mesh(cls, name, mesh): pass
+    def get_named_mesh_from_bmesh(cls, name, bmesh): pass
+    def edit_active_space_obj_from_mesh(cls, mesh): pass
     def set_obj_origin_to_bboxcenter(cls, obj): pass
+    def set_obj_origin_to_cursor_position(cls, obj): pass
+    def get_selected_objects(cls): pass
+    def get_active_obj(cls): pass
     def get_active_obj_z(cls): pass
     def get_active_obj_height(cls): pass
+    def get_relating_type_id(cls): pass
     def traslate_obj_to_z_location(cls, obj): pass
     def link_obj_to_active_collection(cls, obj): pass
     def get_2d_vertices_from_obj(cls, obj): pass
