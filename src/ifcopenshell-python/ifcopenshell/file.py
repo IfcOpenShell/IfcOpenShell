@@ -584,6 +584,7 @@ class file(object):
             def __post_init__(self):
                 self.__name__ = self._module
                 self.__qualname__ = self._module
+                self.__doc__ = f"IfcOpenShell API module {self._module}"
 
             def __repr__(self) -> str:
                 return f"<class 'ifcopenshell.file.{self._module}'> (patched)"
@@ -597,6 +598,7 @@ class file(object):
             __name__: str = ""
             __qualname__: str = ""
             __signature__: inspect.Signature = field(init=False)
+            __doc__: str = ""
 
             def __post_init__(self):
                 self.__name__ = self.action
@@ -617,6 +619,7 @@ class file(object):
                 except ModuleNotFoundError:
                     return
                 else:
+                    self.__doc__ = python_module.Usecase.__init__.__doc__
                     api_signature: inspect.Signature = inspect.signature(python_module.Usecase.__init__)
                     parameters: list[inspect.Parameter] = list(api_signature.parameters.values())
                     if parameters:
