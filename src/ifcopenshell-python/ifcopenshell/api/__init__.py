@@ -19,6 +19,14 @@
 """High level user-oriented IFC authoring capabilities"""
 
 import json
+import os
+from pathlib import Path
+import importlib
+import inspect
+from types import ModuleType
+from typing import Any, Optional, DefaultDict
+from dataclasses import dataclass, field
+from collections import defaultdict
 import numpy
 import importlib
 import ifcopenshell
@@ -167,3 +175,86 @@ def extract_docs(module, usecase):
     node_data["description"] = description.strip()
     node_data["inputs"] = inputs
     return node_data
+
+
+class ApiCaller:
+    """Object containing ifcopenshell.api.run module / action calls, including source signatures and docstrings"""
+
+    def __init__(self):
+        self.patch_api()
+
+    def patch_api(self) -> None:
+        """Monkey-patches ifcopenshell.api.run calls"""
+
+        actions_to_exclude: list[str] = ["__init__", "settings"]
+
+        @dataclass
+        class ApiModule:
+            _module: str
+
+            def __post_init__(self):
+                self.__name__ = self._module
+                self.__qualname__ = self._module
+                self.__doc__ = f"IfcOpenShell API module {self._module}"
+
+            def __repr__(self) -> str:
+                return f"<class 'ifcopenshell.file.{self._module}'> (patched)"
+
+        @dataclass(slots=True)
+        class ApiAction:
+            file: ifcopenshell.file
+            module: str
+            action: str
+            __name__: str = ""
+            __qualname__: str = ""
+            __signature__: inspect.Signature = field(init=False)
+            __doc__: str = ""
+
+            def __post_init__(self):
+                self.__name__ = self.action
+                self.__qualname__ = f"{self.module}.{self.action}"
+                self.update_signature()
+
+            def __repr__(self) -> str:
+                return f"<class 'ifcopenshell.file.{self.module}.{self.action}'> (patched)"
+
+            def __call__(self, *args, **kwargs) -> Any:
+                return ifcopenshell.api.run(f"{self.module}.{self.action}", *args, **kwargs)
+
+            def update_signature(self) -> None:
+                try:
+                    python_module: ModuleType = importlib.import_module(f"ifcopenshell.api.{self.module}.{self.action}")
+                except ModuleNotFoundError:
+                    return
+                else:
+                    self.__doc__ = python_module.Usecase.__init__.__doc__
+                    api_signature: inspect.Signature = inspect.signature(python_module.Usecase.__init__)
+                    parameters: list[inspect.Parameter] = list(api_signature.parameters.values())
+                    if parameters:
+                        parameters = parameters[1:]  # discarding self from the signature
+                    return_annotation: Any = api_signature.return_annotation
+                    self.__signature__ = inspect.signature(self).replace(
+                        parameters=parameters, return_annotation=return_annotation
+                    )
+
+        api_calls: DefaultDict[str, list[str]] = defaultdict(list)
+        ios_dir = Path(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
+
+        for path in ios_dir.glob("*/*.py"):
+            if (action := path.stem) in actions_to_exclude:
+                continue
+            module = path.parent.name
+            api_calls[module].append(action)
+
+        for module, actions in api_calls.items():
+            action_functors: dict[str, ApiAction] = {
+                action: ApiAction(file=self, module=module, action=action) for action in actions
+            }
+            api_module = ApiModule(_module=module)
+            for action, functor in action_functors.items():
+                setattr(api_module, action, functor)
+            setattr(self, module, api_module)
+
+
+if "ifc" not in globals() or not isinstance(globals()["ifc"], ApiCaller):
+    ifc = ApiCaller()
