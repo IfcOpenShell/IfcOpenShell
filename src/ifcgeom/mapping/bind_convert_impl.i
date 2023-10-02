@@ -5,7 +5,7 @@
 #define BIND(T) \
 	if (inst->as<IfcSchema::T>()) { \
 		try { \
-			taxonomy::ptr item = map_impl(inst->as<IfcSchema::T>()); \
+			item = map_impl(inst->as<IfcSchema::T>()); \
 			if (item != nullptr) { \
 				item->instance = inst; \
 				try { \
@@ -24,11 +24,9 @@
 			} else {\
 				Logger::Message(Logger::LOG_ERROR,"Failed to convert:", inst);\
 			} \
-			return item; \
 		} catch (const std::exception& e) { \
 			Logger::Message(Logger::LOG_ERROR, std::string(e.what()) + "\nFailed to convert:", inst); \
 		} \
-		return nullptr; \
 	}
 
 #include "mapping.i"

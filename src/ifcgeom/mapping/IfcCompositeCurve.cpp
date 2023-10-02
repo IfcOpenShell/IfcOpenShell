@@ -23,6 +23,7 @@ using namespace ifcopenshell::geometry;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 	auto loop = taxonomy::make<taxonomy::loop>();
+	auto pwf = taxonomy::make<taxonomy::piecewise_function>();
 
 #ifdef SCHEMA_HAS_IfcSegment
 	// 4x3
@@ -30,7 +31,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 #else
 	IfcSchema::IfcCompositeCurveSegment::list::ptr segments = inst->Segments();
 #endif
-	
+
 	for (auto& segment : *segments) {
 		if (segment->as<IfcSchema::IfcCompositeCurveSegment>() && segment->as<IfcSchema::IfcCompositeCurveSegment>()->ParentCurve()->as<IfcSchema::IfcLine>()) {
 			Logger::Notice("Infinite IfcLine used as ParentCurve of segment, treating as a segment", segment);
@@ -47,14 +48,16 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 			e->orientation_2.reset(segment->as<IfcSchema::IfcCompositeCurveSegment>()->SameSense());
 
 			loop->children.push_back(e);
-		} else if (segment->as<IfcSchema::IfcCompositeCurveSegment>()) {
+		}
+		else if (segment->as<IfcSchema::IfcCompositeCurveSegment>()) {
 			auto crv = map(segment->as<IfcSchema::IfcCompositeCurveSegment>()->ParentCurve());
 			if (crv) {
 				if (crv->kind() == taxonomy::EDGE) {
 					auto ecrv = taxonomy::cast<taxonomy::edge>(crv);
 					ecrv->orientation_2.reset(segment->as<IfcSchema::IfcCompositeCurveSegment>()->SameSense());
 					loop->children.push_back(ecrv);
-				} else if (crv->kind() == taxonomy::LOOP) {
+				}
+				else if (crv->kind() == taxonomy::LOOP) {
 					if (!segment->as<IfcSchema::IfcCompositeCurveSegment>()->SameSense()) {
 						crv->reverse();
 					}
@@ -66,31 +69,30 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 		}
 #ifdef SCHEMA_HAS_IfcCurveSegment
 		else if (segment->as<IfcSchema::IfcCurveSegment>()) {
+			// @todo check that we don't get a mixture of implicit and explicit definitions
 			auto crv = map(segment->as<IfcSchema::IfcCurveSegment>());
-			auto crv_as_loop = taxonomy::cast<taxonomy::loop>(crv);
-
-			// The end of the previous segment must be at the same location as the start of this segment
-			// @todo - need to apply some tolerancing
-			if (!loop->children.empty() and !crv_as_loop->children.empty() 
-				 and 
-				boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>(loop->children.back()->end)->components() != boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>(crv_as_loop->children.front()->start)->components())
-			{
-				std::ostringstream os;
-				auto& prev = boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>(loop->children.back()->end)->components();
-				auto& next = boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>(crv_as_loop->children.front()->start)->components();
-				os << "Common points are not continuous: (" << prev.x() << ", " << prev.y() << ", " << prev.z() << ")" << "  " << "(" << next.x() << ", " << next.y() << ", " << next.z() << ")" << std::endl;
-				Logger::Notice(os.str());
+			if (crv->kind() == taxonomy::LOOP) {
+				for (auto& s : taxonomy::cast<taxonomy::loop>(crv)->children) {
+					loop->children.push_back(s);
+				}
 			}
-
-			loop->children.insert(loop->children.end(), crv_as_loop->children.begin(), crv_as_loop->children.end());
+			else if (crv->kind() == taxonomy::PIECEWISE_FUNCTION) {
+				auto seg = taxonomy::cast<taxonomy::piecewise_function>(crv);
+				pwf->spans.insert(pwf->spans.end(), seg->spans.begin(), seg->spans.end());
+			}
 		}
 #endif
 	}
 
-	aggregate_of_instance::ptr profile = inst->data().getInverse(&IfcSchema::IfcProfileDef::Class(), -1);
-	const bool force_close = profile && profile->size() > 0;
-	loop->closed = force_close;
-	return loop;
+	if (pwf->spans.empty()) {
+		aggregate_of_instance::ptr profile = inst->data().getInverse(&IfcSchema::IfcProfileDef::Class(), -1);
+		const bool force_close = profile && profile->size() > 0;
+		loop->closed = force_close;
+		return loop;
+	}
+	else {
+		return pwf;
+	}
 }
 
 /*
@@ -110,7 +112,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wi
 
 
 	TopTools_ListOfShape converted_segments;
-	
+
 	for (auto it = segments->begin(); it != segments->end(); ++it) {
 
 		if (!(*it)->declaration().is(IfcSchema::IfcCompositeCurveSegment::Class())) {
@@ -121,7 +123,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wi
 		IfcSchema::IfcCurve* curve = ((IfcSchema::IfcCompositeCurveSegment*)(*it))->ParentCurve();
 
 		// The type of ParentCurve is IfcCurve, but the documentation says:
-		// ParentCurve: The *bounded curve* which defines the geometry of the segment. 
+		// ParentCurve: The *bounded curve* which defines the geometry of the segment.
 		// At least let's exclude IfcLine as an infinite linear segment
 		// definitely does not make any sense.
 		TopoDS_Wire segment;
