@@ -52,8 +52,8 @@ class Usecase:
             # Create 2 ports, one for either end of both the duct and fitting.
             duct_port1 = ifcopenshell.api.run("system.add_port", model, element=duct)
             duct_port2 = ifcopenshell.api.run("system.add_port", model, element=duct)
-            fitting_port1 = ifcopenshell.api.run("system.add_port", model, element=duct)
-            fitting_port2 = ifcopenshell.api.run("system.add_port", model, element=duct)
+            fitting_port1 = ifcopenshell.api.run("system.add_port", model, element=fitting)
+            fitting_port2 = ifcopenshell.api.run("system.add_port", model, element=fitting)
 
             # Connect the duct and fitting together. At this point, we have not
             # yet determined the direction of the flow, so we leave direction as
