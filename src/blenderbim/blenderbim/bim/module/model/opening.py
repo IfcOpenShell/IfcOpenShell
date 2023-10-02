@@ -748,7 +748,6 @@ class EditOpenings(Operator, tool.Ifc.Operator):
         building_objs = set()
         model = tool.Ifc.get()
         all_openings = model.by_type("IfcOpeningElement")
-        similar_openings = []
 
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
@@ -756,9 +755,7 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                 continue
             openings = [r.RelatedOpeningElement for r in element.HasOpenings]
             for opening in openings:
-                for all_opening in all_openings:
-                    if all_opening.ObjectPlacement == opening.ObjectPlacement:
-                        similar_openings.append(all_opening)
+                similar_openings = [o for o in all_openings if o.ObjectPlacement == opening.ObjectPlacement]
                 opening_obj = tool.Ifc.get_object(opening)
                 if opening_obj:
                     if tool.Ifc.is_edited(opening_obj):
