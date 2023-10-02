@@ -81,8 +81,9 @@ def update_simple_openings(element, opening_width, opening_height):
         has_replaced_opening_representation = True
 
     tool.Model.reload_body_representation(voided_objs)
-    with bpy.context.temp_override(selected_objects=[tool.Ifc.get_object(f) for f in fillings]):
-        bpy.ops.bim.recalculate_fill()
+    if fillings:
+        with bpy.context.temp_override(selected_objects=[tool.Ifc.get_object(f) for f in fillings]):
+            bpy.ops.bim.recalculate_fill()
 
 
 def update_window_modifier_representation(context, obj):
