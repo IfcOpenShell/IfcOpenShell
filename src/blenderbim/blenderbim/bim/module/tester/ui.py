@@ -107,8 +107,9 @@ class BIM_PT_tester(Panel):
 class BIM_UL_tester_specifications(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
-            row = layout.row(align=True)
+            row = layout.split(factor=0.3, align=True)
             row.label(text=item.name, icon="CHECKMARK" if item.status else "CANCEL")
+            row.label(text=item.description)
 
 
 class BIM_UL_tester_failed_entities(UIList):
