@@ -73,6 +73,8 @@ def file_menu(self, context):
     op = self.layout.operator("export_ifc.bim", text="Save IFC Project As...")
     op.should_save_as = True
     self.layout.separator()
+    self.layout.operator("bim.revert_project")
+    self.layout.separator()
 
 
 class BIM_PT_project(Panel):
