@@ -37,6 +37,7 @@ def update_active_specification_index(self, context):
 
 class Specification(PropertyGroup):
     name: StringProperty(name="Name")
+    description: StringProperty(name="Description")
     status: BoolProperty(default=False, name="Status")
 
 
