@@ -416,7 +416,7 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def get_drawing_group(cls, drawing):
         for rel in drawing.HasAssignments or []:
-            if rel.is_a("IfcRelAssignsToGroup"):
+            if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.ObjectType == "DRAWING":
                 return rel.RelatingGroup
 
     @classmethod
