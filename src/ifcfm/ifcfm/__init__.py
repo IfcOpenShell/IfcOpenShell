@@ -57,7 +57,7 @@ class Parser:
         else:
             self.config = preset
 
-    def parse(self, ifc_file):
+    def parse(self, ifc_file, name=None):
         for category_name, category_config in self.config["categories"].items():
             self.categories.setdefault(category_name, {})
             for element in category_config["get_category_elements"](ifc_file):
@@ -81,11 +81,28 @@ class Parser:
                 data.update(custom_data)
 
                 if data:
-                    key = data["key"]
-                    del data["key"]
+                    key = "-".join([str(data[k]) for k in category_config["keys"]])
                     if key in self.categories[category_name]:
                         self.duplicate_keys.append((self.categories[category_name][key], data))
                     self.categories[category_name][key] = data
+
+    def federate(self, paths):
+        for path in paths:
+            spreadsheet = pd.ExcelFile(path)
+            sheet_names = spreadsheet.sheet_names
+
+            for category_name, category_config in self.config["categories"].items():
+                self.categories.setdefault(category_name, {})
+                if category_name not in sheet_names:
+                    continue
+
+                self.categories.setdefault(category_name, {})
+                df = pd.read_excel(spreadsheet, sheet_name=category_name, keep_default_na=False)
+                for _, row in df.iterrows():
+                    key = "-".join([str(row[k]) for k in category_config["keys"]])
+                    if key in self.categories[category_name]:
+                        continue
+                    self.categories[category_name][key] = row.to_dict()
 
     def exclude_categories(self, names):
         for name in names:
@@ -148,7 +165,7 @@ class Writer:
                     if isinstance(value, str):
                         convert = lambda text: int(text) if text.isdigit() else text.lower()
                         return [convert(c) for c in re.split("([0-9]+)", value)]
-                    return value
+                    return [str(value)]
 
                 # Sort least important keys first, then more important keys.
                 # https://stackoverflow.com/questions/11476371/sort-by-multiple-keys-using-different-orderings

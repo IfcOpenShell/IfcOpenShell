@@ -125,7 +125,9 @@ def select_decomposed_elements(spatial):
 #HERE STARTS SPATIAL TOOL
 
 def generate_spaces_from_walls(ifc, spatial, collector):
-    container, active_obj = spatial.get_container_and_active_obj()
+    active_obj = bpy.context.active_object
+    element = ifc.get_entity(active_obj)
+    container = spatial.get_container(element)
 
     if not active_obj:
         self.report({"ERROR"}, "No active object. Please select a wall")
@@ -147,12 +149,12 @@ def generate_spaces_from_walls(ifc, spatial, collector):
     h = active_obj.dimensions.z
     selected_objects = bpy.context.selected_objects
 
-    union = spatial.get_union_shape_from_selected_objects(selected_objects)
+    union = spatial.get_union_shape_from_selected_objects()
 
     for i, linear_ring in enumerate(union.interiors):
         poly = spatial.get_buffered_poly_from_linear_ring(linear_ring)
 
-        bm = spatial.get_bmesh_from_polygon(poly, mat, h)
+        bm = spatial.get_bmesh_from_polygon(poly, h)
 
         name = "Space" + str(i)
         mesh = bpy.data.meshes.new(name=name)
