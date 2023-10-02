@@ -643,4 +643,7 @@ class file(object):
             action_functors: dict[str, ApiAction] = {
                 action: ApiAction(file=self, module=module, action=action) for action in actions
             }
-            setattr(self, module, type(module, (ApiModule,), {"_module": module} | action_functors))
+            api_module = ApiModule(_module=module)
+            for action, functor in action_functors.items():
+                setattr(api_module, action, functor)
+            setattr(self, module, api_module)
