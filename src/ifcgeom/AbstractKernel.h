@@ -54,6 +54,7 @@ namespace ifcopenshell { namespace geometry { namespace kernels {
 		virtual bool convert_impl(const taxonomy::surface_curve_sweep::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
 		virtual bool convert_impl(const taxonomy::loft::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
 		virtual bool convert_impl(const taxonomy::collection::ptr, IfcGeom::ConversionResults&);
+		virtual bool convert_impl(const taxonomy::piecewise_function::ptr item, IfcGeom::ConversionResults& cs) { return convert(item->evaluate(), cs); }
 
 		/*
 		virtual void set_offset(const std::array<double, 3> &p_offset);

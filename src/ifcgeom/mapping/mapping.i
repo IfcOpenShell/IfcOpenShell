@@ -113,6 +113,9 @@ BIND(IfcEdge);
 BIND(IfcEdgeLoop);
 BIND(IfcPolyline);
 BIND(IfcPolyLoop);
+#ifdef SCHEMA_HAS_IfcGradientCurve
+BIND(IfcGradientCurve);
+#endif
 BIND(IfcCompositeCurve);
 BIND(IfcTrimmedCurve);
 BIND(IfcArbitraryOpenProfileDef);
