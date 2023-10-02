@@ -691,6 +691,7 @@ class RevertProject(bpy.types.Operator, IFCFileSelector):
 
     def execute(self, context):
         bpy.ops.bim.load_project(should_start_fresh_session=True, filepath=context.scene.BIMProperties.ifc_file)
+        return {"FINISHED"}
 
 
 class LoadProjectElements(bpy.types.Operator):
