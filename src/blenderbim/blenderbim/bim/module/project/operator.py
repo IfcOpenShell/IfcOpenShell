@@ -676,6 +676,23 @@ class UnloadProject(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class RevertProject(bpy.types.Operator, IFCFileSelector):
+    bl_idname = "bim.revert_project"
+    bl_label = "Revert IFC Project"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Reload currently opened IFC project discarding all unsaved changes"
+
+    @classmethod
+    def poll(cls, context):
+        if not context.scene.BIMProperties.ifc_file:
+            cls.poll_message_set("IFC project need to be loaded and saved on the disk.")
+            return False
+        return True
+
+    def execute(self, context):
+        bpy.ops.bim.load_project(should_start_fresh_session=True, filepath=context.scene.BIMProperties.ifc_file)
+
+
 class LoadProjectElements(bpy.types.Operator):
     bl_idname = "bim.load_project_elements"
     bl_label = "Load Project Elements"
