@@ -69,6 +69,12 @@ inline namespace settings {
 		static constexpr bool defaultvalue = false;
 	};
 
+	struct WriteGltfEcef : public SettingBase<WriteGltfEcef, bool> {
+		static constexpr const char* const name = "ecef";
+		static constexpr const char* const description = "Write glTF in Earth-Centered Earth-Fixed coordinates. Requires PROJ.";
+		static constexpr bool defaultvalue = false;
+	};
+
 	struct FloatingPointDigits : public SettingBase<FloatingPointDigits, int> {
 		static constexpr const char* const name = "digits";
 		static constexpr const char* const description = "Sets the precision to be used to format floating-point values, 15 by default. "
