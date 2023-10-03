@@ -58,6 +58,7 @@ option(BUILD_PACKAGE "" OFF)
 option(COLLADA_SUPPORT "Build IfcConvert with COLLADA support (requires OpenCOLLADA)." ON)
 option(GLTF_SUPPORT "Build IfcConvert with glTF support (requires json.hpp)." OFF)
 option(HDF5_SUPPORT "Enable HDF5 support (requires HDF5, zlib)" ON)
+option(WITH_PROJ "Enable output of Earth-Centered Earth-Fixed glTF output using the PROJ library" OFF)
 option(IFCXML_SUPPORT "Build IfcParse with ifcXML support (requires libxml2)." ON)
 option(USD_SUPPORT "Build IfcConvert with USD support (requires pixar's USD library)." OFF)
 
@@ -933,6 +934,17 @@ if(BUILD_CONVERT OR BUILD_IFCPYTHON)
 
     add_library(Serializers ${SERIALIZERS_FILES})
     set_target_properties(Serializers PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS" VERSION "${PROJECT_VERSION}" SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
+
+	message(STATUS "WITH_PROJ ${WITH_PROJ}")
+
+	if (WITH_PROJ)
+		target_compile_definitions(Serializers PRIVATE "WITH_PROJ")
+		if (PROJ_STATIC)
+			target_compile_definitions(Serializers PRIVATE "PROJ_DLL=")
+		endif()
+		target_include_directories(Serializers PRIVATE ${PROJ_INCLUDE_DIR} ${SQLITE_INCLUDE_DIR})
+		target_link_libraries(Serializers ${PROJ_LIBRARIES})
+	endif()
 
     target_link_libraries(Serializers ${SERIALIZER_SCHEMA_LIBRARIES} ${OPENCOLLADA_LIBRARIES} ${USD_LIBRARIES})
 

@@ -36,8 +36,8 @@ private:
 	std::ofstream fstream_, tmp_fstream1_, tmp_fstream2_;
 	std::map<std::string, int> materials_, meshes_;
 	json json_, node_array_;
+	boost::optional<json> ecef_transform_, north_rotation_;
 	int bufferViewId;
-
 
 	int writeMaterial(const IfcGeom::Material& style);
 public:
@@ -50,7 +50,7 @@ public:
 	void finalize();
 	bool isTesselated() const { return true; }
 	void setUnitNameAndMagnitude(const std::string& /*name*/, float /*magnitude*/) {}
-	void setFile(IfcParse::IfcFile*) {}
+	void setFile(IfcParse::IfcFile*);
 };
 
 #endif
