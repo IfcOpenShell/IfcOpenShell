@@ -237,7 +237,7 @@ class FileAssociate(bpy.types.Operator):
         # tried to do the regitsry change from powershell/cmd - but even admin rights are not enough
         # this is why we're using .reg
         reg_change_path = os.path.join(src_dir, "windows_bbim_association.reg")
-        subprocess.run(["cmd", "/c", reg_change_path])
+        subprocess.run(["cmd", "/c", "call", reg_change_path])
 
         ps_script_path = os.path.join(src_dir, "windows_bbim_association.ps1")
         # NOTE: call powershell with RunAs to get admin rights from user
