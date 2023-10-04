@@ -358,6 +358,7 @@ class BimToolUI:
                     cls.layout.operator("bim.mep_connect_elements")
             else:
                 add_layout_hotkey_operator(cls.layout, "Edit Axis", "A_E", "")
+                add_layout_hotkey_operator(cls.layout, "Flip", "S_F", bpy.ops.bim.flip_object.__doc__)
                 add_layout_hotkey_operator(cls.layout, "Butt", "S_T", "")
                 add_layout_hotkey_operator(cls.layout, "Mitre", "S_Y", "")
                 add_layout_hotkey_operator(cls.layout, "Rotate 90", "S_R", bpy.ops.bim.rotate_90.__doc__)
@@ -668,6 +669,8 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.flip_wall()
         elif self.active_class in ("IfcWindow", "IfcWindowStandardCase", "IfcDoor", "IfcDoorStandardCase"):
             bpy.ops.bim.flip_fill()
+        elif self.active_class in ("IfcBeam", "IfcColumn"):
+            bpy.ops.bim.flip_object(flip_local_axes="XZ")
         elif self.active_class in ("IfcDuctSegment", "IfcPipeSegment", "IfcCableCarrierSegment", "IfcCableSegment"):
             bpy.ops.bim.fit_flow_segments()
 
