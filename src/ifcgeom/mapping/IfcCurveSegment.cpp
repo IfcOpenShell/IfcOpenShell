@@ -42,6 +42,7 @@ typedef boost::mpl::vector<
 #endif
 	, IfcSchema::IfcPolyline
 	, IfcSchema::IfcCircle
+	, IfcSchema::IfcPolynomialCurve
 > curve_seg_types;
 
 enum segment_type_t {
@@ -338,6 +339,38 @@ public:
 		}
 	}
 
+	void operator()(IfcSchema::IfcPolynomialCurve* p) {
+
+		if (segment_type_ == ST_HORIZONTAL) {
+			auto coeffX = p->CoefficientsX();
+			auto coeffY = p->CoefficientsY();
+			eval_ = [coeffX,coeffY](double u) {
+
+				Eigen::VectorXd vec(4);
+				vec << 0.0, 0.0, 0.0, 1.0;
+				return vec;
+				};
+
+		}
+		else if (segment_type_ == ST_VERTICAL) {
+			auto coeffY = p->CoefficientsY();
+
+			eval_ = [coeffY](double u) {
+				const auto& coeffs = coeffY.get();
+				auto exp = coeffs.size() - 1;
+				auto z = 0.0;
+				for (auto c : coeffs)
+				{
+					z += c * pow(u, exp--);
+				}
+				Eigen::VectorXd vec(4);
+				vec << 0.0, 0.0, z, 1.0;
+				return vec;
+				};
+
+		}
+	}
+
 	// Take the boost::type value from mpl::for_each and test it against our curve instance
 	template <typename T>
 	void operator()(boost::type<T>) {
@@ -399,16 +432,24 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveSegment* inst) {
 
 	curve_segment_evaluator cse(this,length_unit_, segment_type, inst->ParentCurve(), inst->SegmentStart(), inst->SegmentLength());
 	boost::mpl::for_each<curve_seg_types, boost::type<boost::mpl::_>>(std::ref(cse));
-
-	auto fn = *cse.evaluation_function();
+	
+	auto eval_fn = cse.evaluation_function();
+	if(!eval_fn) throw std::runtime_error(inst->ParentCurve()->declaration().name() + " not implemented");
+	auto fn = *eval_fn;
 	auto length = fabs(cse.length());
 
 	// @todo - for some reason this isn't working, the matrix gets all messed up
 	//const auto& transformation_matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Placement()))->ccomponents();
 	auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Placement()))->ccomponents();
 
-	auto fn_transformed = [fn, transformation_matrix](double u) {
-		return transformation_matrix * fn(u);
+	auto fn_transformed = [fn, transformation_matrix](double u)->Eigen::VectorXd {
+		auto result = fn(u);
+		Eigen::Vector4d v(result.x(), result.y(), result.z(), 1.0);
+		// return transformation_matrix * fn(u);
+		auto r = transformation_matrix * v;
+		Eigen::VectorXd d(4);
+		d << r(0), r(1), r(2), r(3);
+		return d;
 		};
 
 	// @todo it might be suboptimal that we no longer have the spans now
