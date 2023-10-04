@@ -393,18 +393,7 @@ class FlipFill(bpy.types.Operator, tool.Ifc.Operator):
             element = tool.Ifc.get_entity(obj)
             if not element or not element.FillsVoids:
                 continue
-
-            flip_matrix = Matrix.Rotation(pi, 4, "Z")
-
-            bottom_left = obj.matrix_world @ Vector(obj.bound_box[0])
-            top_right = obj.matrix_world @ Vector(obj.bound_box[6])
-            center = obj.matrix_world.translation.copy()
-            center_offset = center - bottom_left
-            flipped_center = top_right - center_offset
-
-            obj.matrix_world = obj.matrix_world @ flip_matrix
-            obj.matrix_world.translation.xy = flipped_center.xy
-            bpy.context.view_layer.update()
+            tool.Geometry.flip_object(obj, "XY")
         return {"FINISHED"}
 
 

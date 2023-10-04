@@ -1723,3 +1723,19 @@ class OverrideModeSetObject(bpy.types.Operator):
         if self.edited_objs:
             return context.window_manager.invoke_props_dialog(self)
         return self.execute(context)
+
+
+class FlipObject(bpy.types.Operator):
+    bl_idname = "bim.flip_object"
+    bl_label = "Flip Object"
+    bl_description = "Flip object's local axes, keep the position"
+    bl_options = {"REGISTER", "UNDO"}
+
+    flip_local_axes: bpy.props.EnumProperty(
+        name="Flip Local Axes", items=(("XY", "XY", ""), ("YZ", "YZ", ""), ("XZ", "XZ", "")), default="XY"
+    )
+
+    def execute(self, context):
+        for obj in context.selected_objects:
+            tool.Geometry.flip_object(obj, self.flip_local_axes)
+        return {"FINISHED"}

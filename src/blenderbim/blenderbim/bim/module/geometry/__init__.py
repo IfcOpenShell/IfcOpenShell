@@ -23,6 +23,7 @@ classes = (
     operator.AddRepresentation,
     operator.CopyRepresentation,
     operator.EditObjectPlacement,
+    operator.FlipObject,
     operator.GetRepresentationIfcParameters,
     operator.OverrideDelete,
     operator.OverrideDuplicateMove,
