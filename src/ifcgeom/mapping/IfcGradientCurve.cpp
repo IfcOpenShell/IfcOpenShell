@@ -47,11 +47,11 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcGradientCurve* inst) {
 	}
 
 	// @todo does this really make sense?
-	auto composition = [horizontal, vertical](double u) {
+	auto composition = [horizontal, vertical](double u)->Eigen::VectorXd {
 		auto xy = horizontal->evaluate(u);
 		auto z = vertical->evaluate(u);
 		Eigen::VectorXd vec(3);
-		vec << xy(0), xy(1), z(0);
+		vec << xy(0), xy(1), z(2);
 		return vec;
 	};
 
@@ -69,7 +69,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcGradientCurve* inst) {
 	}
 
 	auto pwf = taxonomy::make<taxonomy::piecewise_function>();
-	pwf->spans.push_back({ min_length, composition });
+	pwf->spans.emplace_back( min_length, composition );
 	return pwf;
 }
 
