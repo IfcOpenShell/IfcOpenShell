@@ -123,6 +123,8 @@ class DrawingsData:
                 [(str(s.id()), s.Name or "Unnamed", "") for s in tool.Ifc.get().by_type("IfcBuildingStorey")]
             )
             return results
+        elif bpy.context.scene.DocProperties.target_view in ["MODEL_VIEW"]:
+            return [(h.upper(), h, "") for h in ["Orthographic", "Perspective"]]
         return [(h.upper(), h, "") for h in ["North", "South", "East", "West"]]
 
     @classmethod
