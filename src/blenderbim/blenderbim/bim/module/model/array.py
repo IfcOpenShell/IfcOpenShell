@@ -169,7 +169,6 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
 
         pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
         data = json.loads(pset["Data"])
-        data[self.item]["count"] = 1
 
         if (self.keep_objs) & (self.item < (len(data) - 1)):
             self.report(
@@ -188,6 +187,8 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
             tool.Blender.Modifier.Array.bake_children_transform(element, self.item)
             tool.Blender.Modifier.Array.set_children_lock_state(element, self.item, False)
 
+        if not self.keep_objs:
+            data[self.item]["count"] = 1
         tool.Model.regenerate_array(parent, data, self.keep_objs)
 
         pset = tool.Ifc.get().by_id(pset["id"])
