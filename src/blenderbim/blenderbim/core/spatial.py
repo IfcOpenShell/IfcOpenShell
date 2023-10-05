@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import blenderbim.core.type
 
 def reference_structure(ifc, spatial, structure=None, element=None):
     if spatial.can_reference(structure, element):
@@ -121,7 +120,7 @@ def select_decomposed_elements(spatial):
         spatial.select_products(spatial.get_decomposed_elements(container))
 
 #HERE STARTS SPATIAL TOOL
-def generate_space(ifc, spatial, model):
+def generate_space(ifc, spatial, model, Type):
     active_obj = spatial.get_active_obj()
     selected_objects = spatial.get_selected_objects()
     element = None
@@ -165,8 +164,7 @@ def generate_space(ifc, spatial, model):
         element = ifc.get_entity(obj)
 
         if relating_type:
-            blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
-
+            spatial.assign_relating_type_to_element(ifc, Type, element, relating_type)
 
 def generate_spaces_from_walls(ifc, spatial, collector):
     z = spatial.get_active_obj_z()

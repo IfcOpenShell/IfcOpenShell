@@ -20,6 +20,7 @@ import bpy
 import bmesh
 import shapely
 import ifcopenshell
+import blenderbim.core.type
 import blenderbim.core.tool
 import blenderbim.core.root
 import blenderbim.core.spatial
@@ -660,6 +661,10 @@ class Spatial(blenderbim.core.tool.Spatial):
         bpy.ops.bim.assign_class(obj=obj.name, ifc_class=instance_class)
         element = tool.Ifc.get_entity(obj)
         blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
+
+    @classmethod
+    def assign_relating_type_to_element(cls, ifc, Type, element, relating_type):
+        blenderbim.core.type.assign_type(ifc, Type, element=element, type=relating_type)
 
     @classmethod
     def assign_container_to_obj(cls, obj):
