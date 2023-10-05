@@ -1262,8 +1262,13 @@ class DumbWallJoiner:
                     results["is_sloped"] = True
                 results["height"] = (item.Depth * self.unit_scale) / (1 / cos(results["x_angle"]))
                 break
-            elif item.is_a("IfcBooleanClippingResult"):
+            elif item.is_a("IfcBooleanClippingResult"):  # should be before IfcBooleanResult check
                 item = item.FirstOperand
+            elif item.is_a("IfcBooleanResult"):
+                if item.FirstOperand.is_a("IfcExtrudedAreaSolid") or item.FirstOperand.is_a("IfcBooleanResult"):
+                    item = item.FirstOperand
+                else:
+                    item = item.SecondOperand
             else:
                 break
         return results
