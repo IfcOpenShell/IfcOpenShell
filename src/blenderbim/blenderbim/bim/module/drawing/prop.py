@@ -312,7 +312,6 @@ class DocProperties(PropertyGroup):
     should_use_underlay_cache: BoolProperty(name="Use Underlay Cache", default=False)
     should_use_linework_cache: BoolProperty(name="Use Linework Cache", default=False)
     should_use_annotation_cache: BoolProperty(name="Use Annotation Cache", default=False)
-    should_extract: BoolProperty(name="Should Extract", default=True)
     is_editing_drawings: BoolProperty(name="Is Editing Drawings", default=False)
     is_editing_schedules: BoolProperty(name="Is Editing Schedules", default=False)
     is_editing_references: BoolProperty(name="Is Editing References", default=False)
@@ -375,6 +374,9 @@ class BIMCameraProperties(PropertyGroup):
     custom_scale_denominator: bpy.props.StringProperty(default="100", update=update_diagram_scale)
     raster_x: IntProperty(name="Raster X", default=1000)
     raster_y: IntProperty(name="Raster Y", default=1000)
+    dpi: IntProperty(name="DPI", default=75)
+    width: FloatProperty(name="Width", default=50, subtype="DISTANCE")
+    height: FloatProperty(name="Height", default=50, subtype="DISTANCE")
     is_nts: BoolProperty(name="Is NTS", update=update_is_nts)
     active_drawing_style_index: IntProperty(name="Active Drawing Style Index")
 
