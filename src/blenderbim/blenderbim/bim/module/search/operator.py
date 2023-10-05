@@ -822,10 +822,13 @@ class SelectSimilar(Operator, tool.Ifc.Operator):
         props = context.scene.BIMSearchProperties
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
-        value = ifcopenshell.util.selector.get_element_value(element, props.element_key)
+        key = props.element_key
+        if props.element_key == "PredefinedType":
+            key = "predefined_type"
+        value = ifcopenshell.util.selector.get_element_value(element, key)
         for obj in context.visible_objects:
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
-            if ifcopenshell.util.selector.get_element_value(element, props.element_key) == value:
+            if ifcopenshell.util.selector.get_element_value(element, key) == value:
                 obj.select_set(True)
