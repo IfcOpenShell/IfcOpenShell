@@ -993,6 +993,7 @@ def get_owner_name(element):
 def get_created_on(element):
     if getattr(element, "OwnerHistory", None):
         return ifcopenshell.util.date.ifc2datetime(element.OwnerHistory.CreationDate).isoformat()
+    return "1900-12-31T23:59:59"  # Yes, really
 
 
 def get_external_system(element):
