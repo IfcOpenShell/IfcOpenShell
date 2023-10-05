@@ -17,12 +17,12 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 """High level user-oriented IFC authoring capabilities"""
-
 import json
 import numpy
 import importlib
 import ifcopenshell
 import ifcopenshell.api
+from ifcopenshell.util.schema import add_schema_attributes_listener
 
 
 pre_listeners = {}
@@ -167,3 +167,6 @@ def extract_docs(module, usecase):
     node_data["description"] = description.strip()
     node_data["inputs"] = inputs
     return node_data
+
+
+add_schema_attributes_listener("material.add_layer", add_pre_listener)
