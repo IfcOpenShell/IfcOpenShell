@@ -17,7 +17,6 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import blenderbim.core
-import bpy
 
 
 def reference_structure(ifc, spatial, structure=None, element=None):
@@ -98,33 +97,43 @@ def select_similar_container(ifc, spatial, obj=None):
 def select_product(spatial, product):
     spatial.select_products([product])
 
+
 def load_container_manager(spatial):
     spatial.load_container_manager()
+
 
 def edit_container_attributes(spatial, entity=None):
     spatial.edit_container_attributes(entity)
     spatial.load_container_manager()
 
+
 def contract_container(spatial, container=None):
     spatial.contract_container(container)
     spatial.load_container_manager()
+
 
 def expand_container(spatial, container=None):
     spatial.expand_container(container)
     spatial.load_container_manager()
 
+
 def delete_container(ifc, spatial, geometry, container=None):
     geometry.delete_ifc_object(ifc.get_object(container))
     spatial.load_container_manager()
+
 
 def select_decomposed_elements(spatial):
     container = spatial.get_active_container()
     if container:
         spatial.select_products(spatial.get_decomposed_elements(container))
 
-#HERE STARTS SPATIAL TOOL
+
+# HERE STARTS SPATIAL TOOL
+
 
 def generate_spaces_from_walls(ifc, spatial, collector):
+    import bpy
+
     active_obj = bpy.context.active_object
     element = ifc.get_entity(active_obj)
     container = spatial.get_container(element)
@@ -172,9 +181,8 @@ def generate_spaces_from_walls(ifc, spatial, collector):
         bpy.context.view_layer.active_layer_collection.collection.objects.link(obj)
         bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcSpace")
         container_obj = ifc.get_object(container)
-        blenderbim.core.spatial.assign_container(
-            ifc, collector, spatial, structure_obj=container_obj, element_obj=obj
-        )
+        blenderbim.core.spatial.assign_container(ifc, collector, spatial, structure_obj=container_obj, element_obj=obj)
+
 
 def toggle_space_visibility(ifc, spatial):
     model = ifc.get()
@@ -182,4 +190,3 @@ def toggle_space_visibility(ifc, spatial):
     if not spaces:
         return
     spatial.toggle_spaces_visibility_wired_and_textured(spaces)
-

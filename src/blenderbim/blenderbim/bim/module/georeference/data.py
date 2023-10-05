@@ -56,7 +56,12 @@ class GeoreferenceData:
     @classmethod
     def map_conversion(cls):
         if tool.Ifc.get_schema() == "IFC2X3":
-            return {}
+            project = tool.Ifc.get().by_type("IfcProject")[0]
+            map_conversion = ifcopenshell.util.element.get_pset(project, "ePSet_MapConversion")
+            if not map_conversion:
+                return {}
+            del map_conversion["id"]
+            return map_conversion
 
         for context in tool.Ifc.get().by_type("IfcGeometricRepresentationContext", include_subtypes=False):
             if context.HasCoordinateOperation:
@@ -72,8 +77,8 @@ class GeoreferenceData:
     def map_derived_angle(cls):
         if (
             cls.data["map_conversion"]
-            and cls.data["map_conversion"]["XAxisAbscissa"] is not None
-            and cls.data["map_conversion"]["XAxisOrdinate"] is not None
+            and cls.data["map_conversion"].get("XAxisAbscissa", None) is not None
+            and cls.data["map_conversion"].get("XAxisOrdinate", None) is not None
         ):
             return str(
                 round(
@@ -88,7 +93,12 @@ class GeoreferenceData:
     @classmethod
     def projected_crs(cls):
         if tool.Ifc.get_schema() == "IFC2X3":
-            return {}
+            project = tool.Ifc.get().by_type("IfcProject")[0]
+            projected_crs = ifcopenshell.util.element.get_pset(project, "ePSet_ProjectedCRS")
+            if not projected_crs:
+                return {}
+            del projected_crs["id"]
+            return projected_crs
 
         for context in tool.Ifc.get().by_type("IfcGeometricRepresentationContext", include_subtypes=False):
             if context.HasCoordinateOperation:
