@@ -247,25 +247,21 @@ class TestSetBlenderTrueNorth(NewFile):
         assert round(math.degrees(bpy.context.scene.sun_pos_properties.north_offset)) == 45
 
 
-class TestGetMapConversion(NewFile):
-    def test_run(self):
-        ifc = ifcopenshell.file()
-        tool.Ifc.set(ifc)
-        ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
-        ifcopenshell.api.run("context.add_context", ifc, context_type="Model")
-        ifcopenshell.api.run("georeference.add_georeferencing", ifc)
-        assert subject.get_map_conversion().is_a("IfcMapConversion")
-
-
 class TestXyz2Enh(NewFile):
     def test_run(self):
-        assert subject.xyz2enh([0.0, 0.0, 0.0], None) == [0.0, 0.0, 0.0]
+        ifc = ifcopenshell.file()
+        ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
+        tool.Ifc.set(ifc)
+        assert subject.xyz2enh([0.0, 0.0, 0.0]) == (0.0, 0.0, 0.0)
 
     def test_using_the_blender_offset(self):
+        ifc = ifcopenshell.file()
+        ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
+        tool.Ifc.set(ifc)
         props = bpy.context.scene.BIMGeoreferenceProperties
         props.has_blender_offset = True
         props.blender_eastings = "1.0"
-        assert subject.xyz2enh([0.0, 0.0, 0.0], None) == (1.0, 0.0, 0.0)
+        assert subject.xyz2enh([0.0, 0.0, 0.0]) == (1.0, 0.0, 0.0)
 
     def test_using_the_map_conversion(self):
         ifc = ifcopenshell.file()
@@ -275,7 +271,7 @@ class TestXyz2Enh(NewFile):
         ifcopenshell.api.run("georeference.add_georeferencing", ifc)
         map_conversion = ifc.by_type("IfcMapConversion")[0]
         map_conversion.Eastings = 1.0
-        assert subject.xyz2enh([0.0, 0.0, 0.0], map_conversion) == (1.0, 0.0, 0.0)
+        assert subject.xyz2enh([0.0, 0.0, 0.0]) == (1.0, 0.0, 0.0)
 
     def test_applying_both_blender_offset_and_map_conversion(self):
         props = bpy.context.scene.BIMGeoreferenceProperties
@@ -288,18 +284,24 @@ class TestXyz2Enh(NewFile):
         ifcopenshell.api.run("georeference.add_georeferencing", ifc)
         map_conversion = ifc.by_type("IfcMapConversion")[0]
         map_conversion.Northings = 1.0
-        assert subject.xyz2enh([0.0, 0.0, 0.0], map_conversion) == (1.0, 1.0, 0.0)
+        assert subject.xyz2enh([0.0, 0.0, 0.0]) == (1.0, 1.0, 0.0)
 
 
 class TestEnh2Xyz(NewFile):
     def test_run(self):
-        assert subject.enh2xyz([0.0, 0.0, 0.0], None) == [0.0, 0.0, 0.0]
+        ifc = ifcopenshell.file()
+        ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
+        tool.Ifc.set(ifc)
+        assert subject.enh2xyz([0.0, 0.0, 0.0]) == (0.0, 0.0, 0.0)
 
     def test_using_the_blender_offset(self):
+        ifc = ifcopenshell.file()
+        ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
+        tool.Ifc.set(ifc)
         props = bpy.context.scene.BIMGeoreferenceProperties
         props.has_blender_offset = True
         props.blender_eastings = "1.0"
-        assert subject.enh2xyz([0.0, 0.0, 0.0], None) == (-1.0, 0.0, 0.0)
+        assert subject.enh2xyz([0.0, 0.0, 0.0]) == (-1.0, 0.0, 0.0)
 
     def test_using_the_map_conversion(self):
         ifc = ifcopenshell.file()
@@ -309,7 +311,7 @@ class TestEnh2Xyz(NewFile):
         ifcopenshell.api.run("georeference.add_georeferencing", ifc)
         map_conversion = ifc.by_type("IfcMapConversion")[0]
         map_conversion.Eastings = 1.0
-        assert subject.enh2xyz([0.0, 0.0, 0.0], map_conversion) == (-1.0, 0.0, 0.0)
+        assert subject.enh2xyz([0.0, 0.0, 0.0]) == (-1.0, 0.0, 0.0)
 
     def test_applying_both_blender_offset_and_map_conversion(self):
         props = bpy.context.scene.BIMGeoreferenceProperties
@@ -322,7 +324,7 @@ class TestEnh2Xyz(NewFile):
         ifcopenshell.api.run("georeference.add_georeferencing", ifc)
         map_conversion = ifc.by_type("IfcMapConversion")[0]
         map_conversion.Northings = 1.0
-        assert subject.enh2xyz([0.0, 0.0, 0.0], map_conversion) == (-1.0, -1.0, 0.0)
+        assert subject.enh2xyz([0.0, 0.0, 0.0]) == (-1.0, -1.0, 0.0)
 
 
 class TestSetIfcGridNorth(NewFile):
