@@ -629,6 +629,66 @@ class BIM_PT_tab_styles(Panel):
         pass
 
 
+class BIM_PT_tab_sheets(Panel):
+    bl_label = "Sheets"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_order = 1
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "DRAWINGS") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_drawings(Panel):
+    bl_label = "Drawings"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_order = 1
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "DRAWINGS") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_schedules(Panel):
+    bl_label = "Schedules"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_order = 1
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "DRAWINGS") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_references(Panel):
+    bl_label = "References"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_order = 1
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "DRAWINGS") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
 class BIM_PT_tab_services_object(Panel):
     bl_label = "Services"
     bl_space_type = "PROPERTIES"
