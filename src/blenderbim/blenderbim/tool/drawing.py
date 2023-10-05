@@ -633,16 +633,11 @@ class Drawing(blenderbim.core.tool.Drawing):
         camera.show_limits = True
 
         if camera_type == "ORTHO":
-            camera.ortho_scale = width if width > height else height
             camera.clip_start = 0.002  # Technically 0, but Blender doesn't allow this, so 2mm it is!
             camera.clip_end = depth
 
-            if width > height:
-                camera.BIMCameraProperties.raster_x = 1000
-                camera.BIMCameraProperties.raster_y = round(1000 * (height / width))
-            else:
-                camera.BIMCameraProperties.raster_x = round(1000 * (width / height))
-                camera.BIMCameraProperties.raster_y = 1000
+            camera.BIMCameraProperties.width = width
+            camera.BIMCameraProperties.height = height
         elif camera_type == "PERSP":
             abs_min_z = abs(min(z))
             abs_max_z = abs(max(z))
@@ -650,14 +645,13 @@ class Drawing(blenderbim.core.tool.Drawing):
             camera.clip_end = abs_min_z
             max_res = 1000
 
+            camera.BIMCameraProperties.width = width
+            camera.BIMCameraProperties.height = height
+
             if width > height:
                 fov = 2 * math.atan(width / (2 * abs_min_z))
-                camera.BIMCameraProperties.raster_x = max_res
-                camera.BIMCameraProperties.raster_y = int(max_res / (width / height))
             else:
                 fov = 2 * math.atan(height / (2 * abs_min_z))
-                camera.BIMCameraProperties.raster_y = max_res
-                camera.BIMCameraProperties.raster_x = int(max_res * (width / height))
 
             camera.angle = fov
 

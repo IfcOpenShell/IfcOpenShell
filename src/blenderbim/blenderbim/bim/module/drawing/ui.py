@@ -39,21 +39,20 @@ class BIM_PT_camera(Panel):
     bl_parent_id = "BIM_PT_tab_drawings"
 
     def draw(self, context):
-        if not (context.scene.camera and hasattr(context.active_object.data, "BIMCameraProperties")):
+        if not (context.scene.camera and hasattr(context.scene.camera.data, "BIMCameraProperties")):
             row = self.layout.row()
             row.label(text="No Active Drawing", icon="ERROR")
-
-        layout = self.layout
-
-        if "/" not in context.active_object.name:
-            layout.label(text="This is not a BIM camera.")
             return
 
-        layout.use_property_split = True
-        dprops = context.scene.DocProperties
-        props = context.active_object.data.BIMCameraProperties
+        if "/" not in context.scene.camera.name:
+            self.layout.label(text="This is not a BIM camera.")
+            return
 
-        col = layout.column(align=True)
+        self.layout.use_property_split = True
+        dprops = context.scene.DocProperties
+        props = context.scene.camera.data.BIMCameraProperties
+
+        col = self.layout.column(align=True)
         row = col.row(align=True)
         row.prop(props, "has_underlay", icon="OUTLINER_OB_IMAGE")
         row.prop(dprops, "should_use_underlay_cache", text="", icon="FILE_REFRESH")
@@ -64,32 +63,36 @@ class BIM_PT_camera(Panel):
         row.prop(props, "has_annotation", icon="MOD_EDGESPLIT")
         row.prop(dprops, "should_use_annotation_cache", text="", icon="FILE_REFRESH")
 
-        row = layout.row()
+        row = self.layout.row()
         row.prop(props, "calculate_shapely_surfaces")
-        row = layout.row()
+        row = self.layout.row()
         row.prop(props, "calculate_svgfill_surfaces")
 
-        row = layout.row()
-        row.prop(dprops, "should_extract")
+        row = self.layout.row()
+        row.prop(props, "width")
+        row = self.layout.row()
+        row.prop(props, "height")
 
-        row = layout.row()
-        row.prop(props, "raster_x")
-        row = layout.row()
-        row.prop(props, "raster_y")
+        row = self.layout.row()
+        row.prop(context.scene.camera.data, "clip_end", text="Depth")
 
-        row = layout.row(align=True)
-        row.prop(props, "diagram_scale")
+        row = self.layout.row(align=True)
+        row.prop(props, "diagram_scale", text="Scale")
         row.prop(props, "is_nts", text="", icon="MOD_EDGESPLIT")
 
         if props.diagram_scale == "CUSTOM":
-            row = layout.row(align=True)
+            row = self.layout.row(align=True)
             row.prop(props, "custom_scale_numerator", text="Custom Scale")
             row.prop(props, "custom_scale_denominator", text="")
 
-        row = layout.row(align=True)
+        if props.has_underlay:
+            row = self.layout.row()
+            row.prop(props, "dpi")
+
+        row = self.layout.row(align=True)
         row.operator("bim.create_drawing", text="Create Drawing", icon="OUTPUT")
         op = row.operator("bim.open_drawing", icon="URL", text="")
-        op.view = context.active_object.name.split("/")[1]
+        op.view = context.scene.camera.name.split("/")[1]
 
 
 class BIM_PT_drawing_underlay(Panel):
