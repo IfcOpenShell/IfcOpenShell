@@ -24,4 +24,4 @@ dependencies = [
 include = ["ifctester"]
 exclude = ["test*"]
 [tool.setuptools.package-data]
-ifctester = ["*.xsd"]
+ifctester = ["*.xsd", "templates/*.html"]
