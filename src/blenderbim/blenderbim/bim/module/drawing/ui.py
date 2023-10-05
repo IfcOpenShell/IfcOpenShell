@@ -31,17 +31,18 @@ from blenderbim.bim.module.drawing.prop import ANNOTATION_TYPES_DATA
 
 
 class BIM_PT_camera(Panel):
-    bl_label = "Drawing Generation"
+    bl_label = "Active Drawing"
     bl_idname = "BIM_PT_camera"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "data"
-
-    @classmethod
-    def poll(cls, context):
-        return context.camera and hasattr(context.active_object.data, "BIMCameraProperties")
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_drawings"
 
     def draw(self, context):
+        if not (context.scene.camera and hasattr(context.active_object.data, "BIMCameraProperties")):
+            row = self.layout.row()
+            row.label(text="No Active Drawing", icon="ERROR")
+
         layout = self.layout
 
         if "/" not in context.active_object.name:
@@ -97,12 +98,12 @@ class BIM_PT_drawing_underlay(Panel):
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "data"
+    bl_context = "scene"
     bl_parent_id = "BIM_PT_camera"
 
     @classmethod
     def poll(cls, context):
-        return context.camera and hasattr(context.active_object.data, "BIMCameraProperties")
+        return context.scene.camera and hasattr(context.active_object.data, "BIMCameraProperties")
 
     def draw(self, context):
         layout = self.layout
@@ -164,10 +165,8 @@ class BIM_PT_drawings(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-
-    @classmethod
-    def poll(cls, context):
-        return tool.Blender.is_tab(context, "DRAWINGS") and tool.Ifc.get()
+    bl_parent_id = "BIM_PT_tab_drawings"
+    bl_options = {"HIDE_HEADER"}
 
     def draw(self, context):
         if not DrawingsData.is_loaded:
@@ -245,10 +244,8 @@ class BIM_PT_schedules(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-
-    @classmethod
-    def poll(cls, context):
-        return tool.Blender.is_tab(context, "DRAWINGS") and tool.Ifc.get()
+    bl_parent_id = "BIM_PT_tab_schedules"
+    bl_options = {"HIDE_HEADER"}
 
     def draw(self, context):
         if not DocumentsData.is_loaded:
@@ -297,10 +294,8 @@ class BIM_PT_references(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-
-    @classmethod
-    def poll(cls, context):
-        return tool.Blender.is_tab(context, "DRAWINGS") and tool.Ifc.get()
+    bl_parent_id = "BIM_PT_tab_references"
+    bl_options = {"HIDE_HEADER"}
 
     def draw(self, context):
         if not DocumentsData.is_loaded:
@@ -341,10 +336,8 @@ class BIM_PT_sheets(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-
-    @classmethod
-    def poll(cls, context):
-        return tool.Blender.is_tab(context, "DRAWINGS") and tool.Ifc.get()
+    bl_parent_id = "BIM_PT_tab_sheets"
+    bl_options = {"HIDE_HEADER"}
 
     def draw(self, context):
         if not SheetsData.is_loaded:

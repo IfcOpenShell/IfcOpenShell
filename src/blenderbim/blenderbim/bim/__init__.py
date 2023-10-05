@@ -142,6 +142,10 @@ classes = [
     ui.BIM_PT_tab_materials,
     ui.BIM_PT_tab_styles,
     # Drawings and documents
+    ui.BIM_PT_tab_sheets,
+    ui.BIM_PT_tab_drawings,
+    ui.BIM_PT_tab_schedules,
+    ui.BIM_PT_tab_references,
     # Services and systems
     ui.BIM_PT_tab_services,
     ui.BIM_PT_tab_services_object,
