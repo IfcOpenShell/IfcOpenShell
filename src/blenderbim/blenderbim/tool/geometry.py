@@ -28,7 +28,7 @@ import blenderbim.core.style
 import blenderbim.core.spatial
 import blenderbim.tool as tool
 import blenderbim.bim.import_ifc
-from math import radians
+from math import radians, pi
 from mathutils import Vector, Matrix
 from blenderbim.bim.ifc import IfcStore
 
@@ -641,3 +641,25 @@ class Geometry(blenderbim.core.tool.Geometry):
     @classmethod
     def get_model_representations(cls):
         return tool.Ifc.get().by_type("IfcShapeRepresentation")
+
+    @classmethod
+    def flip_object(cls, obj, flip_local_axes):
+        assert len(flip_local_axes) == 2, "flip_local_axes must be two axes to flip"
+        rotation_axis = next(i for i in "XYZ" if i not in flip_local_axes)
+        rotation_axis_i = "XYZ".index(rotation_axis)
+
+        bb_data = tool.Blender.get_object_bounding_box(obj)
+        # min max points of rotated plane of origin based bounding box
+        min_point = Vector([min(i, 0) for i in bb_data["min_point"]])
+        max_point = Vector([max(i, 0) for i in bb_data["max_point"]])
+        # keep it in rotated plane only
+        max_point[rotation_axis_i] = min_point[rotation_axis_i]
+
+        # to compensate for flipped two axes
+        # we adjust new max point to match previous min point (or vice versa)
+        original_min_point = obj.matrix_world @ min_point
+        obj.matrix_world = obj.matrix_world @ Matrix.Rotation(pi, 4, rotation_axis)
+        new_max_point = obj.matrix_world @ max_point
+        obj.matrix_world.translation += original_min_point - new_max_point
+
+        bpy.context.view_layer.update()

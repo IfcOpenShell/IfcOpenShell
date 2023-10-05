@@ -48,7 +48,7 @@ def get_pset(element, pset):
 
 
 @lru_cache
-def get_psets(element, pset):
+def get_psets(element):
     return ifcopenshell.util.element.get_psets(element)
 
 
