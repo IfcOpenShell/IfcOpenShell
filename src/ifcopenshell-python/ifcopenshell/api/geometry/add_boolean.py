@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.util.unit
+import numpy as np
 
 
 class Usecase:
@@ -44,7 +45,6 @@ class Usecase:
         elif self.settings["type"] == "Mesh":
             if self.settings["blender_obj"]:
                 result = self.create_blender_mesh()
-        representation_type = "Clipping"
         items = []
         for item in self.settings["representation"].Items:
             # For now, we don't use IfcBooleanClippingResult.
@@ -56,23 +56,13 @@ class Usecase:
         self.settings["representation"].Items = items
 
     def create_half_space_solid(self):
-        clipping = self.settings["matrix"]
-        return self.file.createIfcHalfSpaceSolid(
-            self.file.createIfcPlane(
-                self.file.createIfcAxis2Placement3D(
-                    self.file.createIfcCartesianPoint(
-                        (
-                            self.convert_si_to_unit(clipping[0][3]),
-                            self.convert_si_to_unit(clipping[1][3]),
-                            self.convert_si_to_unit(clipping[2][3]),
-                        )
-                    ),
-                    self.file.createIfcDirection((clipping[0][2], clipping[1][2], clipping[2][2])),
-                    self.file.createIfcDirection((clipping[0][0], clipping[1][0], clipping[2][0])),
-                )
-            ),
-            False,
-        )
+        clipping = np.array(self.settings["matrix"])[:3]
+        local_z = self.file.createIfcDirection(clipping[:, 2].tolist())
+        local_x = self.file.createIfcDirection(clipping[:, 0].tolist())
+        point = self.file.createIfcCartesianPoint(self.convert_si_to_unit(clipping[:, 3]).tolist())
+        placement = self.file.createIfcAxis2Placement3D(point, local_z, local_x)
+        plane = self.file.createIfcPlane(placement)
+        return self.file.createIfcHalfSpaceSolid(plane, AgreementFlag=False)
 
     def create_blender_mesh(self):
         self.ifc_vertices = []
