@@ -99,7 +99,7 @@ class DeleteSverchokGraph(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
     def draw(self, context):
-        self.layout.label(text="WARNING. The graph will be removed permamently.")
+        self.layout.label(text="WARNING. The graph will be removed permanently.")
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)

@@ -320,27 +320,21 @@ def get_facility_data(ifc_file, element):
     site_name = None
     site_description = None
     if site:
-        site_name = val(site.Name) or val(site.LongName) or site.GlobalId
-        site_description = val(site.Description) or val(site.LongName) or val(site.Name)
+        site_name = val(site.Name)
+        site_description = val(site.Description)
 
     project = None
     project_name = None
     project_description = None
     try:
         project = ifc_file.by_type("IfcProject")[0]
-        project_name = val(project.Name) or val(project.LongName) or project.GlobalId
-        project_description = val(project.Description) or val(project.LongName) or val(project.Name)
+        project_name = val(project.Name)
+        project_description = val(project.Description)
     except:
         pass
 
-    name = val(element.Name) or val(element.LongName)
-    if not name:
-        name = val(project.Name) or val(project.LongName)
-    if not name and site:
-        name = val(site.Name) or val(site.LongName)
-
     return {
-        "Name": name,
+        "Name": val(element.Name),
         "CreatedBy": get_created_by(element),
         "CreatedOn": get_created_on(element),
         "Category": get_category(element),
@@ -353,12 +347,12 @@ def get_facility_data(ifc_file, element):
         "AreaMeasurement": get_area_measurement(element),
         "ExternalSystem": get_external_system(element),
         "ExternalProjectObject": "IfcProject",
-        "ExternalProjectIdentifier": project.GlobalId if project else ifcopenshell.guid.new(),
+        "ExternalProjectIdentifier": project.GlobalId if project else None,
         "ExternalSiteObject": "IfcSite",
-        "ExternalSiteIdentifier": site.GlobalId if site else ifcopenshell.guid.new(),
+        "ExternalSiteIdentifier": site.GlobalId if site else None,
         "ExternalFacilityObject": "IfcBuilding",
         "ExternalFacilityIdentifier": element.GlobalId,
-        "Description": val(element.Description) or val(element.LongName) or val(element.Name),
+        "Description": val(element.Description),
         "ProjectDescription": project_description,
         "SiteDescription": site_description,
         "Phase": val(project.Phase) if project else None,
@@ -366,10 +360,6 @@ def get_facility_data(ifc_file, element):
 
 
 def get_floor_data(ifc_file, element):
-    external_object = element.is_a()
-    if element.ObjectType and element.ObjectType.lower() in ("site", "ifcsite"):
-        external_object = "IfcSite"
-
     height_names = {
         "Height",
         "NetHeight",
@@ -400,9 +390,9 @@ def get_floor_data(ifc_file, element):
         "CreatedOn": get_created_on(element),
         "Category": get_category(element),
         "ExternalSystem": get_external_system(element),
-        "ExternalObject": external_object,
+        "ExternalObject": element.is_a(),
         "ExternalIdentifier": element.GlobalId,
-        "Description": val(element.Description) or val(element.LongName) or val(element.Name),
+        "Description": val(element.Description),
         "Elevation": val(elevation),
         "Height": height,
     }
@@ -439,7 +429,7 @@ def get_space_data(ifc_file, element):
         "CreatedOn": get_created_on(element),
         "Category": get_category(element),
         "FloorName": floor_name,
-        "Description": val(element.Description) or val(element.LongName) or val(element.Name),
+        "Description": val(element.Description),
         "ExternalSystem": get_external_system(element),
         "ExternalObject": element.is_a(),
         "ExternalIdentifier": element.GlobalId,
@@ -976,6 +966,7 @@ def get_owner_name(element):
 def get_created_on(element):
     if getattr(element, "OwnerHistory", None):
         return ifcopenshell.util.date.ifc2datetime(element.OwnerHistory.CreationDate).isoformat()
+    return "1900-12-31T23:59:59"  # Yes, really
 
 
 def get_external_system(element):
@@ -1009,13 +1000,20 @@ def get_area_measurement(element):
             if result:
                 return result
 
+    psets = ifcopenshell.util.element.get_psets(element)
+    if psets:
+        for _, props in psets.items():
+            for name, value in props.items():
+                if name == "MethodOfMeasurement":
+                    return value
+
 
 def get_category(element):
     references = list(ifcopenshell.util.classification.get_references(element))
     results = []
     for reference in references:
         if reference.is_a("IfcClassification"):
-            results.append(reference.Name)
+            continue
         elif reference.is_a("IfcClassificationReference"):
             identification = val(getattr(reference, "Identification", getattr(reference, "ItemReference", None)))
             if val(reference.Name) and identification and val(reference.Name) != identification:
@@ -1024,39 +1022,8 @@ def get_category(element):
                 results.append(reference.Name)
             elif identification:
                 results.append(identification)
-            elif reference.ReferencedSource and val(reference.ReferencedSource.Name):
-                results.append(reference.ReferencedSource.Name)
-            elif val(reference.Location):
-                results.append(reference.Location)
     if results:
         return ",".join(results)
-
-    category_props = [
-        ("Assembly Code", "Assembly Description"),
-        ("Category Code", "Category Description"),
-        ("Classification Code", "Classification Description"),
-        ("OmniClass Number", "OmniClass Title"),
-        ("Uniclass Code", "Uniclass Description"),
-    ]
-
-    psets = ifcopenshell.util.element.get_psets(element)
-    properties = {}
-    if psets:
-        for _, props in psets.items():
-            properties.update(props)
-
-    for code, description in category_props:
-        code = val(properties.get(code, None))
-        if code:
-            description = val(properties.get(description, None))
-            if code and description:
-                results.append(code + " : " + description)
-            else:
-                results.append(code)
-    if results:
-        return ",".join(results)
-
-    return val(getattr(element, "ObjectType", None))
 
 
 def get_pao_address(person, organization, name):

@@ -95,29 +95,36 @@ def select_similar_container(ifc, spatial, obj=None):
 def select_product(spatial, product):
     spatial.select_products([product])
 
+
 def load_container_manager(spatial):
     spatial.load_container_manager()
+
 
 def edit_container_attributes(spatial, entity=None):
     spatial.edit_container_attributes(entity)
     spatial.load_container_manager()
 
+
 def contract_container(spatial, container=None):
     spatial.contract_container(container)
     spatial.load_container_manager()
+
 
 def expand_container(spatial, container=None):
     spatial.expand_container(container)
     spatial.load_container_manager()
 
+
 def delete_container(ifc, spatial, geometry, container=None):
     geometry.delete_ifc_object(ifc.get_object(container))
     spatial.load_container_manager()
+
 
 def select_decomposed_elements(spatial):
     container = spatial.get_active_container()
     if container:
         spatial.select_products(spatial.get_decomposed_elements(container))
+
 
 #HERE STARTS SPATIAL TOOL
 def generate_space(ifc, spatial, model, Type):
@@ -138,6 +145,7 @@ def generate_space(ifc, spatial, model, Type):
 
     else:
         x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_cursor() ##mat
+
 
     space_polygon = spatial.get_space_polygon_from_context_visible_objects(x, y)
 
@@ -188,6 +196,7 @@ def generate_spaces_from_walls(ifc, spatial, collector):
         spatial.assign_ifcspace_class_to_obj(obj)
 
         spatial.assign_container_to_obj(obj)
+        
 
 def toggle_space_visibility(ifc, spatial):
     model = ifc.get()
@@ -195,4 +204,3 @@ def toggle_space_visibility(ifc, spatial):
     if not spaces:
         return
     spatial.toggle_spaces_visibility_wired_and_textured(spaces)
-
