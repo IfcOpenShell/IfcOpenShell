@@ -62,7 +62,7 @@ class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
             bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
             return
 
-        core.generate_space(tool.Ifc, tool.Spatial, tool.Model)
+        core.generate_space(tool.Ifc, tool.Spatial, tool.Model, tool.Type)
 
 
 class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
