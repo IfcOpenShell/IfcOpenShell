@@ -253,7 +253,7 @@ class Drawing:
     def copy_representation(cls, source, dest): pass
     def create_annotation_context(cls, target_view, object_type=None): pass
     def create_annotation_object(cls, drawing, object_type): pass
-    def create_camera(cls, name, matrix): pass
+    def create_camera(cls, name, matrix, location_hint): pass
     def create_svg_schedule(cls, schedule): pass
     def create_svg_sheet(cls, document, titleblock): pass
     def delete_collection(cls, collection): pass

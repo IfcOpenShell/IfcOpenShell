@@ -205,11 +205,14 @@ class Drawing(blenderbim.core.tool.Drawing):
         return rep
 
     @classmethod
-    def create_camera(cls, name, matrix):
+    def create_camera(cls, name, matrix, location_hint):
         camera = bpy.data.objects.new(name, bpy.data.cameras.new(name))
         camera.location = (0, 0, 1.5)  # The view shall be 1.5m above the origin
         camera.data.show_limits = True
-        camera.data.type = "ORTHO"
+        if location_hint == "PERSPECTIVE":
+            camera.data.type = "PERSP"
+        else:
+            camera.data.type = "ORTHO"
         camera.data.ortho_scale = 50  # The default of 6m is too small
         camera.data.clip_start = 0.002  # 2mm is close to zero but allows any GPU-drawn lines to be visible.
         camera.data.clip_end = 10  # A slightly more reasonable default
@@ -487,6 +490,8 @@ class Drawing(blenderbim.core.tool.Drawing):
                 return mathutils.Matrix(((0, 0, -1, x), (-1, 0, 0, y), (0, 1, 0, z), (0, 0, 0, 1)))
             elif location_hint == "WEST":
                 return mathutils.Matrix(((0, 0, 1, x), (1, 0, 0, y), (0, 1, 0, z), (0, 0, 0, 1)))
+        elif target_view == "MODEL_VIEW":
+            return mathutils.Matrix(((1, 0, 0, x), (0, 1, 0, y), (0, 0, 1, z), (0, 0, 0, 1)))
         return mathutils.Matrix()
 
     @classmethod
@@ -954,6 +959,8 @@ class Drawing(blenderbim.core.tool.Drawing):
             return (location.Name or "UNNAMED").upper() + " " + target_view.split("_")[0]
         elif target_view in ("SECTION_VIEW", "ELEVATION_VIEW") and location_hint:
             return location_hint + " " + target_view.split("_")[0]
+        elif target_view == "MODEL_VIEW" and location_hint:
+            return location_hint
         return target_view
 
     @classmethod
