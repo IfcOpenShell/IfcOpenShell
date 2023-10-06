@@ -226,7 +226,6 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
-goto :Successful
 
 :mpir
 set DEPENDENCY_NAME=mpir
