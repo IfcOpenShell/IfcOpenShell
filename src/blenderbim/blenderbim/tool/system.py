@@ -31,7 +31,7 @@ from enum import Enum
 
 class System(blenderbim.core.tool.System):
     @classmethod
-    def add_ports(cls, obj, add_start_port=True, add_end_port=True, offset_end_port=None):
+    def add_ports(cls, obj, add_start_port=True, add_end_port=True, end_port_pos=None, offset_end_port=None):
         def add_port(mep_element, matrix):
             port = tool.Ifc.run("system.add_port", element=mep_element)
             port.FlowDirection = "NOTDEFINED"
@@ -52,9 +52,13 @@ class System(blenderbim.core.tool.System):
         if add_start_port:
             ports.append(add_port(mep_element, obj.matrix_world @ Matrix()))
         if add_end_port:
-            m = obj.matrix_world @ Matrix.Translation((0, 0, length))
-            if offset_end_port:
-                m.translation += offset_end_port
+            m = obj.matrix_world
+            if end_port_pos:
+                m.translation = end_port_pos
+            else:
+                m = m @ Matrix.Translation((0, 0, length))
+                if offset_end_port:
+                    m.translation += offset_end_port
             ports.append(add_port(mep_element, m))
         return ports
 

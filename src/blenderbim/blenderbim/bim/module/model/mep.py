@@ -767,7 +767,8 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
                 profile_offset *= V(1, -1)
 
         # world space profile offset
-        profile_offset_ws = start_object_rotation @ (profile_offset * si_conversion).to_3d()
+        profile_offset_si = (profile_offset * si_conversion).to_3d()
+        profile_offset_ws = start_object_rotation @ profile_offset_si
 
         def get_segments_length():
             start_dir = (start_point - first_segment_start).normalized()
@@ -857,7 +858,7 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
                 pset=pset,
                 properties={"Data": json.dumps(transition_data, default=list)},
             )
-            tool.System.add_ports(obj, offset_end_port=profile_offset_ws)
+            tool.System.add_ports(obj, offset_end_port=profile_offset_si)
 
         # NOTE: at this point we loose current blender objects selection
         # create transition element
@@ -1022,6 +1023,7 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
         # TODO: profile offset may need to be flipped (check transition code)
         to_start_object_space = start_object_rotation.inverted()
         profile_offset = (to_start_object_space @ end_point) - (to_start_object_space @ start_point)
+        z_axis_end_object_local = to_start_object_space @ tool.Cad.get_basis_vector(end_object, 2)
 
         def check_for_double_bends():
             # The theory is To avoid double bends, the profile offset should occur along only two axes:
@@ -1035,8 +1037,6 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
             # NOTE: some double bends are only possible for square profiles:
             # https://i.imgur.com/ZhdGbEp.png
 
-            z_axis_end_object = end_object.matrix_world.col[2].normalized().to_3d()
-            z_axis_end_object_local = to_start_object_space @ z_axis_end_object
             lateral_axes = [i for i in range(2) if not tool.Cad.is_x(z_axis_end_object_local[i], 0)]
 
             if len(lateral_axes) != 1:
@@ -1077,6 +1077,8 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
         ref_point_radius = self.radius + profile_dim[lateral_axis]
         radial_offset[lateral_axis] = ref_point_radius * (1 - cos(angle)) * lateral_sign
         radial_offset.z = ref_point_radius * sin(angle)
+        second_object_offset = radial_offset + V(0, 0, self.start_length)
+        second_object_offset += z_axis_end_object_local * (self.end_length * -end_segment_sign)
 
         def get_segments_extend():
             segments_intersection = segments_intersection_ws - start_point
@@ -1200,7 +1202,7 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
                 pset=pset,
                 properties={"Data": json.dumps(bend_data, default=list)},
             )
-            tool.System.add_ports(obj, offset_end_port=start_object_rotation @ (radial_offset * V(1, 1, 0)))
+            tool.System.add_ports(obj, end_port_pos=second_object_offset)
 
         # NOTE: at this point we loose current blender objects selection
         # create transition element
