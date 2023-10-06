@@ -173,6 +173,8 @@ class ObjectMaterialData:
                 items = cls.material.MaterialProfiles
             elif cls.material.is_a("IfcMaterialConstituentSet"):
                 items = cls.material.MaterialConstituents
+            elif cls.material.is_a("IfcMaterialList"):
+                items = cls.material.Materials
 
             icon = "LAYER_ACTIVE"
             if "Layer" in cls.material.is_a():
@@ -191,7 +193,9 @@ class ObjectMaterialData:
                         data["name"] = "No Profile"
                 if item.is_a("IfcMaterialLayer"):
                     data["name"] += f" ({item.LayerThickness})"
-                if not item.is_a("IfcMaterialList"):
+                if item.is_a("IfcMaterial"):
+                    data["material"] = item.Name or "Unnamed"
+                else:
                     data["material"] = item.Material.Name or "Unnamed"
                 results.append(data)
         return results
