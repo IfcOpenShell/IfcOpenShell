@@ -552,6 +552,21 @@ class BIM_PT_tab_object_metadata(Panel):
         pass
 
 
+class BIM_PT_tab_placement(Panel):
+    bl_label = "Placement"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_order = 1
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "GEOMETRY") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
 class BIM_PT_tab_representations(Panel):
     bl_label = "Representations"
     bl_space_type = "PROPERTIES"

@@ -23,7 +23,8 @@ from mathutils import Vector
 
 
 def refresh():
-    DerivedPlacementsData.is_loaded = False
+    PlacementData.is_loaded = False
+    DerivedCoordinatesData.is_loaded = False
     RepresentationsData.is_loaded = False
     ConnectionsData.is_loaded = False
 
@@ -184,7 +185,7 @@ class ConnectionsData:
         return results
 
 
-class DerivedPlacementsData:
+class DerivedCoordinatesData:
     data = {}
     is_loaded = False
 
@@ -263,6 +264,25 @@ class DerivedPlacementsData:
         for i, storey in enumerate(storeys):
             if storey[0] != element:
                 continue
-            if i >= len(storeys):
+            if i >= len(storeys) - 1:
                 return "N/A"
             return "{0:.3f}".format(round(storeys[i + 1][1] - storey[1], 3))
+
+
+class PlacementData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {
+            "has_placement": cls.has_placement(),
+        }
+        cls.is_loaded = True
+
+    @classmethod
+    def has_placement(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if element and hasattr(element, "ObjectPlacement"):
+            return True
+        return False
