@@ -136,6 +136,7 @@ classes = [
     ui.BIM_PT_tab_object_metadata,
     ui.BIM_PT_tab_misc,
     # Geometry and materials
+    ui.BIM_PT_tab_placement,
     ui.BIM_PT_tab_representations,
     ui.BIM_PT_tab_geometric_relationships,
     ui.BIM_PT_tab_parametric_geometry,
