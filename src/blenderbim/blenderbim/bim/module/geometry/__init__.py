@@ -49,10 +49,11 @@ classes = (
     operator.UpdateRepresentation,
     prop.BIMObjectGeometryProperties,
     prop.BIMGeometryProperties,
-    ui.BIM_PT_derived_placements,
+    ui.BIM_PT_placement,
     ui.BIM_PT_representations,
     ui.BIM_PT_connections,
     ui.BIM_PT_mesh,
+    ui.BIM_PT_derived_coordinates,
     ui.BIM_PT_workarounds,
     ui.BIM_MT_object_set_origin,
     ui.BIM_MT_separate,
@@ -72,7 +73,6 @@ def register():
 
     bpy.types.Object.BIMGeometryProperties = bpy.props.PointerProperty(type=prop.BIMObjectGeometryProperties)
     bpy.types.Scene.BIMGeometryProperties = bpy.props.PointerProperty(type=prop.BIMGeometryProperties)
-    bpy.types.OBJECT_PT_transform.append(ui.BIM_PT_transform)
     bpy.types.VIEW3D_MT_object.append(ui.object_menu)
     bpy.types.OUTLINER_MT_object.append(ui.outliner_menu)
     bpy.types.VIEW3D_MT_object_context_menu.append(ui.object_menu)
@@ -117,7 +117,6 @@ def register():
 
 def unregister():
     bpy.types.VIEW3D_MT_object.remove(ui.object_menu)
-    bpy.types.OBJECT_PT_transform.remove(ui.BIM_PT_transform)
     bpy.types.OUTLINER_MT_object.remove(ui.outliner_menu)
     bpy.types.VIEW3D_MT_object_context_menu.remove(ui.outliner_menu)
     bpy.types.VIEW3D_MT_edit_mesh.remove(ui.edit_mesh_menu)

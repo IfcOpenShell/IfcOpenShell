@@ -21,7 +21,12 @@ import blenderbim.tool as tool
 from bpy.types import Panel, Menu
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import prop_with_search
-from blenderbim.bim.module.geometry.data import RepresentationsData, ConnectionsData, DerivedPlacementsData
+from blenderbim.bim.module.geometry.data import (
+    RepresentationsData,
+    ConnectionsData,
+    PlacementData,
+    DerivedCoordinatesData,
+)
 
 
 def object_menu(self, context):
@@ -251,49 +256,89 @@ class BIM_PT_mesh(Panel):
         op.ifc_representation_class = "IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids"
 
 
-def BIM_PT_transform(self, context):
-    if context.active_object and context.active_object.BIMObjectProperties.ifc_definition_id:
-        row = self.layout.row(align=True)
-        row.label(text="Blender Offset")
-        row.label(text=context.active_object.BIMObjectProperties.blender_offset_type)
 
-        row = self.layout.row()
-        row.operator("bim.edit_object_placement")
-
-
-class BIM_PT_derived_placements(Panel):
-    bl_label = "Derived Placements"
-    bl_idname = "BIM_PT_derived_placements"
-    bl_options = {"DEFAULT_CLOSED"}
+class BIM_PT_placement(Panel):
+    bl_label = "Placement"
+    bl_idname = "BIM_PT_placement"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "object"
+    bl_context = "scene"
     bl_order = 1
-    bl_parent_id = "OBJECT_PT_transform"
+    bl_parent_id = "BIM_PT_tab_placement"
+    bl_options = {"HIDE_HEADER"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object and context.active_object.BIMObjectProperties.ifc_definition_id
 
     def draw(self, context):
-        if not DerivedPlacementsData.is_loaded:
-            DerivedPlacementsData.load()
+        if not PlacementData.is_loaded:
+            PlacementData.load()
+
+        if PlacementData.data["has_placement"]:
+            row = self.layout.row()
+            row.prop(context.active_object, "location", text="Location")
+            row = self.layout.row()
+            row.prop(context.active_object, "rotation_euler", text="Rotation")
+        else:
+            row = self.layout.row()
+            row.label(text="No Object Placement Found")
+
+        if context.active_object.BIMObjectProperties.blender_offset_type != "NONE":
+            row = self.layout.row(align=True)
+            row.label(text="Blender Offset", icon="TRACKING_REFINE_FORWARDS")
+            row.label(text=context.active_object.BIMObjectProperties.blender_offset_type)
+
+
+class BIM_PT_derived_coordinates(Panel):
+    bl_label = "Derived Coordinates"
+    bl_idname = "BIM_PT_derived_coordinates"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_order = 3
+    bl_parent_id = "BIM_PT_tab_placement"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object is not None
+
+    def draw(self, context):
+        if not DerivedCoordinatesData.is_loaded:
+            DerivedCoordinatesData.load()
+
+        row = self.layout.row()
+        row.operator("bim.edit_object_placement", icon="EXPORT")
+
+        row = self.layout.row()
+        row.label(text="XYZ Dimensions")
+
+        row = self.layout.row(align=True)
+        row.enabled=False
+        row.prop(context.active_object, "dimensions", text="X", index=0, slider=True)
+        row.prop(context.active_object, "dimensions", text="Y", index=1, slider=True)
+        row.prop(context.active_object, "dimensions", text="Z", index=2, slider=True)
 
         row = self.layout.row(align=True)
         row.label(text="Min Global Z")
-        row.label(text=DerivedPlacementsData.data["min_global_z"])
+        row.label(text=DerivedCoordinatesData.data["min_global_z"])
         row = self.layout.row(align=True)
         row.label(text="Max Global Z")
-        row.label(text=DerivedPlacementsData.data["max_global_z"])
+        row.label(text=DerivedCoordinatesData.data["max_global_z"])
 
-        if DerivedPlacementsData.data["has_collection"]:
+        if DerivedCoordinatesData.data["has_collection"]:
             row = self.layout.row(align=True)
             row.label(text="Min Decomposed Z")
-            row.label(text=DerivedPlacementsData.data["min_decomposed_z"])
+            row.label(text=DerivedCoordinatesData.data["min_decomposed_z"])
             row = self.layout.row(align=True)
             row.label(text="Max Decomposed Z")
-            row.label(text=DerivedPlacementsData.data["max_decomposed_z"])
+            row.label(text=DerivedCoordinatesData.data["max_decomposed_z"])
 
-        if DerivedPlacementsData.data["is_storey"]:
+        if DerivedCoordinatesData.data["is_storey"]:
             row = self.layout.row(align=True)
             row.label(text="Storey Height")
-            row.label(text=DerivedPlacementsData.data["storey_height"])
+            row.label(text=DerivedCoordinatesData.data["storey_height"])
 
 
 class BIM_PT_workarounds(Panel):
