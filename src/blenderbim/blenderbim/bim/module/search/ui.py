@@ -87,9 +87,12 @@ class BIM_PT_colour_by_property(Panel):
         row = self.layout.row(align=True)
         row.operator("bim.colour_by_property", icon="BRUSH_DATA")
         row.operator("bim.reset_object_colours")
+        row.operator("bim.select_by_property", icon="RESTRICT_SELECT_OFF", text="")
 
         if len(props.colourscheme):
-            self.layout.template_list("BIM_UL_colourscheme", "", props, "colourscheme", props, "active_colourscheme_index")
+            self.layout.template_list(
+                "BIM_UL_colourscheme", "", props, "colourscheme", props, "active_colourscheme_index"
+            )
 
 
 class BIM_PT_select_similar(Panel):
