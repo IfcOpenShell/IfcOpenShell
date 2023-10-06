@@ -284,9 +284,11 @@ class BIM_PT_object_material(Panel):
             setattr(op, f"{ObjectMaterialData.data['set_item_name']}_index", index)
 
     def draw_read_only_set_ui(self):
-        row = self.layout.row(align=True)
-        row.label(text="Name")
-        row.label(text=ObjectMaterialData.data["set"]["name"])
+        if ObjectMaterialData.data["material_class"] != "IfcMaterialList":
+            row = self.layout.row(align=True)
+            row.label(text="Name")
+            row.label(text=ObjectMaterialData.data["set"]["name"])
+
         if ObjectMaterialData.data["set"]["description"]:
             row = self.layout.row(align=True)
             row.label(text="Description")

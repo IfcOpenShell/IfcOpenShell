@@ -174,7 +174,7 @@ class AssignMaterial(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         objects = [bpy.data.objects.get(self.obj)] if self.obj else tool.Blender.get_selected_objects()
-        core.assign_material(tool.Ifc, tool.Material, material_type= self.material_type , objects=objects )
+        core.assign_material(tool.Ifc, tool.Material, material_type=self.material_type, objects=objects)
 
 
 class UnassignMaterial(bpy.types.Operator, tool.Ifc.Operator):
@@ -185,7 +185,7 @@ class UnassignMaterial(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         objects = [bpy.data.objects.get(self.obj)] if self.obj else tool.Blender.get_selected_objects()
-        core.unassign_material(tool.Ifc, tool.Material, objects=objects )
+        core.unassign_material(tool.Ifc, tool.Material, objects=objects)
 
 
 class AddConstituent(bpy.types.Operator, tool.Ifc.Operator):
@@ -350,10 +350,8 @@ class AddListItem(bpy.types.Operator, tool.Ifc.Operator):
         ifcopenshell.api.run(
             "material.add_list_item",
             self.file,
-            **{
-                "material_list": self.file.by_id(self.list_item_set),
-                "material": self.file.by_id(int(obj.BIMObjectMaterialProperties.material)),
-            },
+            material_list=self.file.by_id(self.list_item_set),
+            material=self.file.by_id(int(obj.BIMObjectMaterialProperties.material)),
         )
 
 
