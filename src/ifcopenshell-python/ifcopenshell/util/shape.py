@@ -188,7 +188,10 @@ def get_area(geometry):
     return get_area_vf(vertices, faces)
 
 
-def get_side_area(geometry, axis="Y"):
+def get_side_area(geometry, axis="Y", direction=None):
+    if direction is None:
+        direction = {"X": (1.0, 0.0, 0.0), "Y": (0.0, 1.0, 0.0), "Z": (0.0, 0.0, 1.0)}[axis]
+
     verts = geometry.verts
     faces = geometry.faces
     vertices = np.array([[verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)])
@@ -201,15 +204,21 @@ def get_side_area(geometry, axis="Y"):
 
     # Normalize the normal vectors
     triangle_normals = triangle_normals / np.linalg.norm(triangle_normals, axis=1)[:, np.newaxis]
+    direction = np.array(direction) / np.linalg.norm(direction)
 
     # Find the faces with a normal vector pointing in the desired +Y normal direction
-    axis = {"X": 0, "Y": 1, "Z": 2}[axis]
-    filtered_face_indices = np.where(triangle_normals[:, axis] > tol)[0]
+    # normal_tol < 0 is pointing away, = 0 is perpendicular, and > 0 is pointing towards.
+    normal_tol = 0.01  # Close to perpendicular, but with a fuzz for numerical tolerance
+    dot_products = np.dot(triangle_normals, direction)
+    filtered_face_indices = np.where(dot_products > normal_tol)[0]
     filtered_faces = faces[filtered_face_indices]
     return get_area_vf(vertices, filtered_faces)
 
 
-def get_footprint_area(geometry):
+def get_footprint_area(geometry, axis="Z", direction=None):
+    if direction is None:
+        direction = {"X": (1.0, 0.0, 0.0), "Y": (0.0, 1.0, 0.0), "Z": (0.0, 0.0, 1.0)}[axis]
+
     verts = geometry.verts
     faces = geometry.faces
     vertices = np.array([[verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)])
@@ -222,10 +231,19 @@ def get_footprint_area(geometry):
 
     # Normalize the normal vectors
     triangle_normals = triangle_normals / np.linalg.norm(triangle_normals, axis=1)[:, np.newaxis]
+    direction = np.array(direction) / np.linalg.norm(direction)
 
-    # Find the faces with a normal vector pointing in the desired +Z normal direction
-    filtered_face_indices = np.where(triangle_normals[:, 2] > tol)[0]
+    # Find the faces with a normal vector pointing in the desired direction using dot product
+    # normal_tol < 0 is pointing away, = 0 is perpendicular, and > 0 is pointing towards.
+    normal_tol = 0.01  # Close to perpendicular, but with a fuzz for numerical tolerance
+    dot_products = np.dot(triangle_normals, direction)
+    filtered_face_indices = np.where(dot_products > normal_tol)[0]
     filtered_faces = faces[filtered_face_indices]
+
+    # Flatten vertices along the direction
+    for idx in range(len(vertices)):
+        vertices[idx] = vertices[idx] - np.dot(vertices[idx], direction) * direction
+
     return get_area_vf(vertices, filtered_faces)
 
 
