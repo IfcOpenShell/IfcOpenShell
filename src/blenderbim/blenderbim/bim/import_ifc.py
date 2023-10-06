@@ -311,7 +311,8 @@ class IfcImporter:
             self.profile_code("Merging by colour")
         self.set_default_context()
         self.profile_code("Setting default context")
-        self.setup_viewport_camera()
+        if self.ifc_import_settings.should_setup_viewport_camera:
+            self.setup_viewport_camera()
         self.setup_arrays()
         self.update_progress(100)
         bpy.context.window_manager.progress_end()
@@ -1967,6 +1968,7 @@ class IfcImportSettings:
         self.element_limit = 30000
         self.has_filter = None
         self.should_filter_spatial_elements = True
+        self.should_setup_viewport_camera = True
         self.elements = set()
         self.collection_mode = "DECOMPOSITION"
 
