@@ -24,8 +24,8 @@ from blenderbim.bim.module.system.data import SystemData, ObjectSystemData, Port
 
 
 FLOW_DIRECTION_TO_ICON = {
-    "SOURCE": "REMOVE",
-    "SINK": "ADD",
+    "SOURCE": "FORWARD",
+    "SINK": "BACK",
     "SOURCEANDSINK": "ARROW_LEFTRIGHT",
     "NOTDEFINED": "CHECKBOX_DEHLT",
 }
