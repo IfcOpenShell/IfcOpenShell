@@ -107,7 +107,7 @@ def switch_representation(
 
     # doesn't resolve mapped representations in case if it's going to have openings
     # otherwise we would also add openings to the type and other occurences mesh data
-    has_openings = apply_openings and entity.HasOpenings
+    has_openings = apply_openings and getattr(entity, "HasOpenings", None)
     if not has_openings:
         representation = geometry.resolve_mapped_representation(representation)
 
