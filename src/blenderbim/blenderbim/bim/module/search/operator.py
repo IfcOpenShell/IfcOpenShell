@@ -333,6 +333,36 @@ class ColourByProperty(Operator):
             data["area"].spaces[0].shading.color_type = "OBJECT"
 
 
+class SelectByProperty(Operator):
+    bl_idname = "bim.select_by_property"
+    bl_label = "Select by Property"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.BIMSearchProperties
+        return props.active_colourscheme_index < len(props.colourscheme)
+
+    def execute(self, context):
+        props = context.scene.BIMSearchProperties
+        query = props.colourscheme_query
+
+        if not query:
+            self.report({"ERROR"}, "No Query Provided")
+            return {"CANCELLED"}
+
+        active_value = props.colourscheme[props.active_colourscheme_index].name
+
+        for obj in context.visible_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            value = str(ifcopenshell.util.selector.get_element_value(element, query))
+            if value == active_value:
+                obj.select_set(True)
+        return {"FINISHED"}
+
+
 class SaveColourscheme(Operator, tool.Ifc.Operator):
     bl_idname = "bim.save_colourscheme"
     bl_label = "Save Colourscheme"
@@ -356,7 +386,9 @@ class SaveColourscheme(Operator, tool.Ifc.Operator):
             description["colourscheme_query"] = query
             group.Description = json.dumps(description)
         else:
-            description = json.dumps({"type": "BBIM_Search", "colourscheme": coulour_scheme,"colourscheme_query": query})
+            description = json.dumps(
+                {"type": "BBIM_Search", "colourscheme": coulour_scheme, "colourscheme_query": query}
+            )
             group = ifcopenshell.api.run("group.add_group", tool.Ifc.get(), Name=self.name, Description=description)
 
     def invoke(self, context, event):

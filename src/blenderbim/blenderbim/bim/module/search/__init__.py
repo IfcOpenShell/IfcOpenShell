@@ -40,6 +40,7 @@ classes = (
     operator.SaveSearch,
     operator.SaveSelectorQuery,
     operator.Search,
+    operator.SelectByProperty,
     operator.SelectFilterElements,
     operator.SelectGlobalId,
     operator.SelectIfcClass,
