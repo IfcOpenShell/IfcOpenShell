@@ -160,7 +160,10 @@ class FilledOpeningGenerator:
 
         for voided_obj in voided_objs:
             if voided_obj.data:
-                representation = tool.Ifc.get().by_id(voided_obj.data.BIMMeshProperties.ifc_definition_id)
+                voided_element = tool.Ifc.get_entity(voided_obj)
+                context = tool.Geometry.get_active_representation_context(voided_obj)
+                representation = tool.Geometry.get_representation_by_context(voided_element, context)
+
                 blenderbim.core.geometry.switch_representation(
                     tool.Ifc,
                     tool.Geometry,
