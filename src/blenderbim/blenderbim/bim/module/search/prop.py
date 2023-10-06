@@ -17,9 +17,9 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import blenderbim.tool as tool
 from ifcopenshell import util
 from ifcopenshell.util.selector import Selector
-import blenderbim.tool as tool
 from blenderbim.bim.prop import ObjProperty, StrProperty
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.search.data import SearchData, ColourByPropertyData, SelectSimilarData
