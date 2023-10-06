@@ -26,6 +26,7 @@ from math import pi, cos, sin
 from mathutils import Matrix, Vector
 from blenderbim.bim.module.system.data import ObjectSystemData, SystemDecorationData
 from blenderbim.bim.module.drawing.decoration import profile_consequential
+from enum import Enum
 
 
 class System(blenderbim.core.tool.System):
@@ -217,6 +218,12 @@ class System(blenderbim.core.tool.System):
         object_system_data = ObjectSystemData.data
         selected_elements = object_system_data["connected_elements"]
 
+        class FlowDirection(Enum):
+            BACKWARD = -1
+            FORWARD = 1
+            BOTH = 2
+            AMBIGUOUS = 0
+
         # TODO: get only objects visible in viewport
         objects = set(bpy.data.objects) - set(bpy.data.collections["Types"].objects)
         for obj in objects:
@@ -248,20 +255,29 @@ class System(blenderbim.core.tool.System):
                 flow_dirs = [p["flow_direction"] for p in port_data]
                 unique = set(flow_dirs)
                 if len(unique) == 1:
-                    return 0
+                    if unique == {"SOURCEANDSINK"}:
+                        return FlowDirection.BOTH
+                    return FlowDirection.AMBIGUOUS
                 elif flow_dirs[0] == "SOURCE":
-                    return -1
+                    return FlowDirection.BACKWARD
                 elif flow_dirs[0] == "SINK":
-                    return 1
+                    return FlowDirection.FORWARD
                 elif flow_dirs[1] == "SOURCE":
-                    return 1
+                    return FlowDirection.FORWARD
                 elif flow_dirs[1] == "SINK":
-                    return -1
-                return 0
+                    return FlowDirection.BACKWARD
+                return FlowDirection.AMBIGUOUS
 
-            if len(port_data) == 2 and selected_element and (flow_direction := get_flow_direction(port_data)):
+            if (
+                len(port_data) == 2
+                and selected_element
+                and (flow_direction := get_flow_direction(port_data)) != FlowDirection.AMBIGUOUS
+            ):
                 edge_verts = verts_pos.copy()
-                edge_verts = edge_verts[::flow_direction]
+
+                both_directions = flow_direction == FlowDirection.BOTH
+                if not both_directions:
+                    edge_verts = edge_verts[:: flow_direction.value]
 
                 # create direction lines
                 direction_lines_offset = 0.4
@@ -291,13 +307,19 @@ class System(blenderbim.core.tool.System):
 
                 for i in range(n_direction_lines):
                     cur_offset = start_offset + edge_dir * i * direction_lines_offset
-                    arrow_base = cur_offset - edge_dir * direction_lines_width
-                    verts_pos.append(arrow_base + edge_ortho * direction_lines_width)
-                    verts_pos.append(cur_offset)
-                    verts_pos.append(arrow_base - edge_ortho * direction_lines_width)
-                    edges.append((cur_vert_index, cur_vert_index + 1))
-                    edges.append((cur_vert_index + 1, cur_vert_index + 2))
-                    cur_vert_index += 3
+                    if both_directions:
+                        verts_pos.append(cur_offset + edge_ortho * direction_lines_width)
+                        verts_pos.append(cur_offset - edge_ortho * direction_lines_width)
+                        edges.append((cur_vert_index, cur_vert_index + 1))
+                        cur_vert_index += 2
+                    else:
+                        arrow_base = cur_offset - edge_dir * direction_lines_width
+                        verts_pos.append(arrow_base + edge_ortho * direction_lines_width)
+                        verts_pos.append(cur_offset)
+                        verts_pos.append(arrow_base - edge_ortho * direction_lines_width)
+                        edges.append((cur_vert_index, cur_vert_index + 1))
+                        edges.append((cur_vert_index + 1, cur_vert_index + 2))
+                        cur_vert_index += 3
 
             all_vertices.extend(verts_pos)
 
