@@ -66,9 +66,12 @@ related information in ``shape.geometry``:
     verts = shape.geometry.verts
 
     # Indices of vertices per edge e.g. [e1v1, e1v2, e2v1, e2v2, ...]
+    # If the geometry is mesh-like, edges contain the original edges.
+    # These may be quads or ngons and not necessarily triangles.
     edges = shape.geometry.edges
 
     # Indices of vertices per triangle face e.g. [f1v1, f1v2, f1v3, f2v1, f2v2, f2v3, ...]
+    # Note that faces are always triangles.
     faces = shape.geometry.faces
 
     # Since the lists are flattened, you may prefer to group them like so depending on your geometry kernel

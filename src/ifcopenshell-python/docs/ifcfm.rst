@@ -44,6 +44,11 @@ with this data structure that IfcFM supports:
   finishes. It is published by the U.S. Army Corps of Engineers, National
   Building Information Model (NBIMS-US) standard, version 2, chapter 2.4, and
   in British Standard BS 1192-4:2014.
+- **COBie 2.4 Legacy**: During the original development of **COBie 2.4**, a
+  mapping to IFC was developed as part of the now unmaintained `COBie-plugins
+  <https://github.com/opensourceBIM/COBie-plugins>`__ and loosely defined in
+  Annex A with a number of ambiguities and oddities to accommodate the poor
+  state of BIM vendors at the time. This preserves the original implementation.
 - **COBie 3.0**: an update to **COBie 2.4** published by the National Building
   Information Model (NBIMS-US) standard. Unlike **COBie 2.4**, it is not a
   British Standard nor developed by the U.S. Army Corps of Engineers.
