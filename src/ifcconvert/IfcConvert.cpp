@@ -273,6 +273,9 @@ int main(int argc, char** argv) {
 #ifdef IFOPSH_WITH_OPENCASCADE
 	default_kernel = "opencascade";
 #endif
+
+	// none, convex-decomposition, minkowski-triangles or halfspace-snapping
+	std::string exterior_only_algo;
     
 	po::options_description geom_options("Geometry options");
 	geom_options.add_options()
@@ -384,7 +387,9 @@ int main(int argc, char** argv) {
 		("validate", "Checks whether geometrical output conforms to the included explicit quantities.")
 		("no-wire-intersection-check", "Skip wire intersection check.")
 		("no-wire-intersection-tolerance", "Set wire intersection tolerance to 0.")
-		("exterior-only", "Uses the same geometric procedures for writing CityJSON but then for applied geometry formats.")
+		("exterior-only",
+			po::value<std::string>(&exterior_only_algo)->default_value("none")->implicit_value("minkowski-triangles"),
+			"Export only the exterior shell of the building found by geometric analysis. convex-decomposition, minkowski-triangles or halfspace-snapping")
 		("strict-tolerance", "Use exact tolerance from model. Default is a 10 "
 						 "times increase for more permissive edge curves and fewer artifacts after "
 						 "boolean operations at the expense of geometric detail "
@@ -796,7 +801,25 @@ int main(int argc, char** argv) {
 		return exit_code;
 	}
 #ifdef IFOPSH_WITH_CGAL
-	else if ((output_extension == CITY_JSON || output_extension == OBJ || output_extension == DAE || output_extension == GLB) && vmap.count("exterior-only")) {
+	else if ((output_extension == CITY_JSON || output_extension == OBJ || output_extension == DAE || output_extension == GLB) && vmap.count("exterior-only") && exterior_only_algo != "none") {
+
+		// none, convex-decomposition, minkowski-triangles or halfspace-snapping
+		boost::to_lower(exterior_only_algo);
+
+		if (exterior_only_algo == "halfspace-snapping") {
+			cerr_ << "[Error] halfspace-snapping not implemented yet" << std::endl;
+			print_usage();
+			return EXIT_FAILURE;
+		} else if (exterior_only_algo == "minkowski-triangles") {
+			// 
+		} else if (exterior_only_algo == "convex-decomposition") {
+			// 
+		} else {
+			cerr_ << "[Error] --exterior-only should be convex-decomposition|minkowski-triangles|halfspace-snapping" << std::endl;
+			print_usage();
+			return EXIT_FAILURE;
+		}
+
 		geobim_settings settings;
 		settings.input_filenames = { IfcUtil::path::to_utf8(input_filename) };
 		settings.file = { new IfcParse::IfcFile(IfcUtil::path::to_utf8(input_filename)) };
@@ -819,7 +842,7 @@ int main(int argc, char** argv) {
 		settings.apply_openings_posthoc = true;
 		settings.debug = false;
 		settings.exact_segmentation = true;
-		settings.minkowski_triangles = false;
+		settings.minkowski_triangles = exterior_only_algo == "minkowski-triangles";
 		settings.no_erosion = false;
 		settings.spherical_padding = false;
 		if (num_threads != 1) {

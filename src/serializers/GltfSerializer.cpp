@@ -246,7 +246,9 @@ void GltfSerializer::write(const IfcGeom::TriangulationElement* o) {
 					primitive["attributes"]["NORMAL"] = write_accessor<3U>(json_, tmp_fstream2_, nf.begin(), nf.end());
 				}
 				
-				primitive["material"] = writeMaterial(o->geometry().materials()[*mid0]);
+				if (*mid0 >= 0) {
+					primitive["material"] = writeMaterial(o->geometry().materials()[*mid0]);
+				}
 				primitive["mode"] = primitive_type;
 				
 				mesh["primitives"].push_back(primitive);
