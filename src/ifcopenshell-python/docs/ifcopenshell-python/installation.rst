@@ -20,7 +20,9 @@ Pre-built packages
 ------------------
 
 Pre-built packages are prepared sporadically depending on whether there are
-changes in the IfcOpenShell C++ core.
+changes in the IfcOpenShell C++ core. This will give you the latest available
+C++ bindings, but may potentially contain outdated pure Python modules, such as
+the API.
 
 1. Choose which version to download based on your operating system, Python
    version, and computer architecture.
@@ -94,9 +96,10 @@ changes in the IfcOpenShell C++ core.
 PyPI
 ----
 
-PyPI releases are automatically performed once a month.
+PyPI releases are automatically performed once a month and contain the latest
+Python code that point in time.
 
-Releases on PyPI may potentially ship slightly outdated precompiled binaires of
+Releases on PyPI may potentially ship slightly outdated precompiled binaries of
 the C++ core. This is because the binaries typically go through a period of
 manual testing prior in case of high-risk changes.
 
