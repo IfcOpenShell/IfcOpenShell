@@ -1,4 +1,5 @@
 #include "taxonomy.h"
+#include "profile_helper.h"
 
 using namespace ifcopenshell::geometry::taxonomy;
 
@@ -142,6 +143,10 @@ namespace {
 	}
 
 	bool compare(const surface_curve_sweep&, const surface_curve_sweep&) {
+		throw std::runtime_error("not implemented");
+	}
+
+	bool compare(const piecewise_function&, const piecewise_function&) {
 		throw std::runtime_error("not implemented");
 	}
 	
@@ -434,6 +439,25 @@ ifcopenshell::geometry::taxonomy::solid::ptr ifcopenshell::geometry::create_box(
 	return solid;
 }
 
+ifcopenshell::geometry::taxonomy::item::ptr ifcopenshell::geometry::taxonomy::piecewise_function::evaluate() const {
+	// @todo configure resolution
+	double length = 0.;
+	static const double resolution = 0.5;
+	for (auto& s : spans) {
+		length += s.first;
+	}
+	std::vector<taxonomy::point3::ptr> polygon;
+
+	int num_steps = std::ceil(length / resolution);
+	for (int i = 0; i < num_steps; ++i) {
+		auto u = resolution * i;
+		auto p = evaluate(u);
+		polygon.push_back(taxonomy::make<taxonomy::point3>(p(0), p(1), p(2)));
+	}
+
+	return polygon_from_points(polygon);
+}
+
 ifcopenshell::geometry::taxonomy::collection::ptr ifcopenshell::geometry::flatten(taxonomy::collection::ptr deep) {
 	auto flat = make<taxonomy::collection>();
 	ifcopenshell::geometry::visit<taxonomy::collection>(deep, [&flat](taxonomy::ptr i) {
@@ -446,7 +470,7 @@ const std::string& ifcopenshell::geometry::taxonomy::kind_to_string(kinds k) {
 	using namespace std::string_literals;
 
 	static std::string values[] = {
-		"matrix4"s, "point3"s, "direction3"s, "line"s, "circle"s, "ellipse"s, "bspline_curve"s, "offset_curve"s, "plane"s, "cylinder"s, "bspline_surface"s, "edge"s, "loop"s, "face"s, "shell"s, "solid"s, "loft"s, "extrusion"s, "revolve"s, "surface_curve_sweep"s, "node"s, "collection"s, "boolean_result"s
+		"matrix4"s, "point3"s, "direction3"s, "line"s, "circle"s, "ellipse"s, "bspline_curve"s, "offset_curve"s, "plane"s, "cylinder"s, "bspline_surface"s, "edge"s, "loop"s, "face"s, "shell"s, "solid"s, "loft"s, "extrusion"s, "revolve"s, "surface_curve_sweep"s, "node"s, "collection"s, "boolean_result"s, "piecewise_function"s, "colour"s, "style"s,
 	};
 
 	return values[k];

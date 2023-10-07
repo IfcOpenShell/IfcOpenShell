@@ -23,6 +23,7 @@ using namespace ifcopenshell::geometry;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 	auto loop = taxonomy::make<taxonomy::loop>();
+	auto pwf = taxonomy::make<taxonomy::piecewise_function>();
 
 #ifdef SCHEMA_HAS_IfcSegment
 	// 4x3
@@ -66,18 +67,28 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 		}
 #ifdef SCHEMA_HAS_IfcCurveSegment
 		else if (segment->as<IfcSchema::IfcCurveSegment>()) {
+			// @todo check that we don't get a mixture of implicit and explicit definitions
 			auto crv = map(segment->as<IfcSchema::IfcCurveSegment>());
-			for (auto& s : taxonomy::cast<taxonomy::loop>(crv)->children) {
-				loop->children.push_back(s);
+			if (crv->kind() == taxonomy::LOOP) {
+				for (auto& s : taxonomy::cast<taxonomy::loop>(crv)->children) {
+					loop->children.push_back(s);
+				}
+			} else if (crv->kind() == taxonomy::PIECEWISE_FUNCTION) {
+				auto seg = taxonomy::cast<taxonomy::piecewise_function>(crv);
+				pwf->spans.insert(pwf->spans.end(), seg->spans.begin(), seg->spans.end());
 			}
 		}
 #endif
 	}
 
-	aggregate_of_instance::ptr profile = inst->data().getInverse(&IfcSchema::IfcProfileDef::Class(), -1);
-	const bool force_close = profile && profile->size() > 0;
-	loop->closed = force_close;
-	return loop;
+	if (pwf->spans.empty()) {
+		aggregate_of_instance::ptr profile = inst->data().getInverse(&IfcSchema::IfcProfileDef::Class(), -1);
+		const bool force_close = profile && profile->size() > 0;
+		loop->closed = force_close;
+		return loop;
+	} else {
+		return pwf;
+	}
 }
 
 /*

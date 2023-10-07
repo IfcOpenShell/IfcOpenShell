@@ -86,7 +86,7 @@ public:
 	topology_error(const char* const s) : std::runtime_error(s) {}
 };
 
-enum kinds { MATRIX4, POINT3, DIRECTION3, LINE, CIRCLE, ELLIPSE, BSPLINE_CURVE, OFFSET_CURVE, PLANE, CYLINDER, BSPLINE_SURFACE, EDGE, LOOP, FACE, SHELL, SOLID, LOFT, EXTRUSION, REVOLVE, SURFACE_CURVE_SWEEP, NODE, COLLECTION, BOOLEAN_RESULT, COLOUR, STYLE };
+enum kinds { MATRIX4, POINT3, DIRECTION3, LINE, CIRCLE, ELLIPSE, BSPLINE_CURVE, OFFSET_CURVE, PLANE, CYLINDER, BSPLINE_SURFACE, EDGE, LOOP, FACE, SHELL, SOLID, LOFT, EXTRUSION, REVOLVE, SURFACE_CURVE_SWEEP, NODE, COLLECTION, BOOLEAN_RESULT, PIECEWISE_FUNCTION, COLOUR, STYLE};
 
 const std::string& kind_to_string(kinds k);
 
@@ -125,6 +125,41 @@ public:
 	uint32_t identity() const { return identity_; }
 };
 
+struct implicit_item : public item {
+	DECLARE_PTR(implicit_item)
+	
+	virtual item::ptr evaluate() const = 0;
+};
+
+struct piecewise_function : public implicit_item {
+	DECLARE_PTR(piecewise_function)
+
+	std::vector<std::pair<double, std::function<Eigen::VectorXd(double u)>>> spans;
+
+	void print(std::ostream& o, int indent = 0) const {
+		o << "piecewise_function" << std::endl;
+	}
+
+	virtual piecewise_function* clone_() const { return new piecewise_function(*this); }
+	virtual kinds kind() const { return PIECEWISE_FUNCTION; }
+
+	virtual size_t calc_hash() const {
+		auto v = std::make_tuple(static_cast<size_t>(PIECEWISE_FUNCTION), 0);
+		return boost::hash<decltype(v)>{}(v);
+	}
+
+	virtual item::ptr evaluate() const;
+
+	Eigen::VectorXd evaluate(double u) const {
+		// @todo optimize, assume monotonic evaluation and store last evaluated segment?
+		for (auto& [length, fn] : spans) {
+			if (u < length) {
+				return fn(u);
+			}
+			u -= length;
+		}
+	}
+};
 
 #ifdef TAXONOMY_USE_SHARED_PTR
 typedef std::shared_ptr<item> ptr;
@@ -983,7 +1018,7 @@ struct boolean_result : public collection_base<geom_item> {
 };
 
 namespace impl {
-	typedef std::tuple<matrix4, point3, direction3, line, circle, ellipse, bspline_curve, offset_curve, plane, cylinder, bspline_surface, edge, loop, face, shell, solid, loft, extrusion, revolve, surface_curve_sweep, node, collection, boolean_result> KindsTuple;
+	typedef std::tuple<matrix4, point3, direction3, line, circle, ellipse, bspline_curve, offset_curve, plane, cylinder, bspline_surface, edge, loop, face, shell, solid, loft, extrusion, revolve, surface_curve_sweep, node, collection, boolean_result, piecewise_function> KindsTuple;
 	typedef std::tuple<line, circle, ellipse, bspline_curve, offset_curve, loop, edge> CurvesTuple;
 	typedef std::tuple<plane, cylinder, bspline_surface> SurfacesTuple;
 }

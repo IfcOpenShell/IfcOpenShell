@@ -22,6 +22,8 @@ namespace geometry {
 		double length_unit_, angle_unit_;
 		std::string length_unit_name_;
 
+		std::map<uint32_t, ifcopenshell::geometry::taxonomy::ptr> cache_;
+
 		const IfcParse::declaration* placement_rel_to_type_;
 		const IfcUtil::IfcBaseEntity* placement_rel_to_instance_;
 		
