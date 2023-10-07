@@ -25,7 +25,7 @@ import blenderbim.core.covering as core
 
 class AddInstanceFlooringCoveringsFromWalls(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_instance_flooring_coverings_from_walls"
-    bl_label = "Add Typed Covering From Walls"
+    bl_label = "Add Flooring From Walls"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Add instance flooring coverings from selected walls. The active object must be a wall and layered vertically"
 
