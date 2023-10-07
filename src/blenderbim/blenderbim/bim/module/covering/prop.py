@@ -38,3 +38,4 @@ import ifcopenshell
 class BIMCoveringProperties(PropertyGroup):
     pass
 #    depth: bpy.props.FloatProperty(name="Depth", default=0.1, subtype="DISTANCE", description="Flooring depth")
+    depth: bpy.props.FloatProperty(name="ceiling_height", default=2.7, subtype="DISTANCE", description="Ceiling height")
