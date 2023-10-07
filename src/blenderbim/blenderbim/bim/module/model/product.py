@@ -80,9 +80,13 @@ class AddDefaultType(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMModelProperties
+        ifc_file = tool.Ifc.get()
         props.type_class = self.ifc_element_type
         if self.ifc_element_type == "IfcWallType":
-            props.type_predefined_type = "SOLIDWALL"
+            if ifc_file.schema == "IFC2X3":
+                props.type_predefined_type = "STANDARD"
+            else:
+                props.type_predefined_type = "SOLIDWALL"
             props.type_template = "LAYERSET_AXIS2"
         elif self.ifc_element_type == "IfcSlabType":
             props.type_predefined_type = "FLOOR"
