@@ -30,6 +30,8 @@ from collections import namedtuple
 import ifcopenshell
 import ifcopenshell.express.rule_executor
 
+from type_checker import parse_datetime, validate_datetime
+
 named_type = ifcopenshell.ifcopenshell_wrapper.named_type
 aggregation_type = ifcopenshell.ifcopenshell_wrapper.aggregation_type
 simple_type = ifcopenshell.ifcopenshell_wrapper.simple_type
@@ -365,6 +367,36 @@ def validate(f, logger, express_rules=False):
 
         if not has_invalid_value:
             for i, (attr, val, is_derived) in enumerate(zip(attrs, values, entity.derived())):
+                try:
+                    type_of_attribute = attr.type_of_attribute()
+                    declared_type = type_of_attribute.declared_type()
+                    type_name = declared_type.name()
+
+                    if type_name == "IfcDateTime" and val:
+                        parsing = parse_datetime(val)
+                        if parsing["status"] != -1:
+                            if validate_datetime(parsing["msg"]) != 1:
+                                logger.error(
+                                    "For instance:\n    %s\n    %s\nInvalid attribute value %s for %s.%s",
+                                    inst,
+                                    annotate_inst_attr_pos(inst, i),
+                                    f"({validate_datetime(parsing['msg'])})",
+                                    entity,
+                                    attrs[i],
+                                )
+                        else:
+                          logger.error(
+                                    "For instance:\n    %s\n    %s\nInvalid attribute value %s for %s.%s",
+                                    inst,
+                                    annotate_inst_attr_pos(inst, i),
+                                    "syntax not conform to ISO",
+                                    entity,
+                                    attrs[i],
+                                )
+                                
+                except Exception as e:
+                    #todo: handle aggregations
+                    pass
 
                 if is_derived and not isinstance(val, ifcopenshell.ifcopenshell_wrapper.attribute_value_derived):
                     if hasattr(logger, "set_state"):
