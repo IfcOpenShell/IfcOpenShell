@@ -34,6 +34,7 @@ from bpy.props import (
 class BIMFMProperties(PropertyGroup):
     ifc_file: StringProperty(default="", name="IFC File")
     ifc_files: CollectionProperty(name="IFC Files", type=StrProperty)
+    spreadsheet_files: CollectionProperty(name="Spreadsheets", type=StrProperty)
     should_load_from_memory: BoolProperty(default=False, name="Load from Memory")
     engine: EnumProperty(
         items=[
