@@ -340,6 +340,15 @@ class Migrator:
         return self.default_entities.get(attribute.name(), None)
 
 
+def pascal_to_snake(txt: str) -> str:
+    txt = "".join([f"_{char.lower()}" if char.isupper() else char for char in txt]).lstrip("_")
+    return txt[1:] if txt[0] == "_" else txt
+
+
+def snake_to_pascal(txt: str) -> str:
+    return txt.replace("_", " ").title().replace(" ", "")
+
+
 @dataclass(slots=True)
 class AttrsFromSchema:
     """Parses IFC Schema attributes and patches them into an API Usecase, decorated with <with_schema_attrs>"""
@@ -389,12 +398,13 @@ class AttrsFromSchema:
         return [param for group in (first, second, third) for param in parameters if param.kind in group]
 
     def parse_attribute(self, attribute: wrapper.attribute) -> Optional[inspect.Parameter]:
-        name: str = attribute.name()
+        name_pascal: str = attribute.name()
+        name: str = pascal_to_snake(name_pascal)
         if name in self.exclude:
             return
         optional: bool = attribute.optional()
         kind = inspect.Parameter.VAR_KEYWORD if optional else inspect.Parameter.KEYWORD_ONLY
-        default = self.defaults[name] if name in self.defaults else inspect.Parameter.empty
+        default = self.defaults[name_pascal] if name_pascal in self.defaults else inspect.Parameter.empty
         type_of_attribute = attribute.type_of_attribute()
         if isinstance(type_of_attribute, wrapper.simple_type):
             annotation = self.parse_simple_type(type_of_attribute)
@@ -505,7 +515,9 @@ def with_schema_attrs(
             field_keys = [field.name for field in fields(self)]
             ordinary_keys = list(self.__dict__.keys())
             keys = set(field_keys + ordinary_keys)
-            return {key: getattr(self, key) for key in keys if key in self.__schema_attr_keys__[ifc_class]}
+            return {
+                snake_to_pascal(key): getattr(self, key) for key in keys if key in self.__schema_attr_keys__[ifc_class]
+            }
 
         usecase.__init__ = __init__
         usecase.__init__.__doc__ = usecase.__doc__

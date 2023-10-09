@@ -23,7 +23,7 @@ import ifcopenshell
 from ifcopenshell.util.schema import with_schema_attrs
 
 
-@with_schema_attrs(ifc_class="IfcMaterialLayer", exclude=["Material"], defaults={"LayerThickness": 1.})
+@with_schema_attrs(ifc_class="IfcMaterialLayer", defaults={"LayerThickness": 1.})
 @dataclass
 class Usecase:
     """Adds a new layer to a layer set
@@ -87,11 +87,10 @@ class Usecase:
     """
     file: ifcopenshell.file
     layer_set: ifcopenshell.entity_instance
-    material: Optional[ifcopenshell.entity_instance] = None
 
     def execute(self):
         layers = list(self.layer_set.MaterialLayers or [])
-        layer = self.file.create_entity("IfcMaterialLayer", Material=self.material, **self.schema_attrs())
+        layer = self.file.create_entity("IfcMaterialLayer", **self.schema_attrs())
         layers.append(layer)
         self.layer_set.MaterialLayers = layers
         return layer
