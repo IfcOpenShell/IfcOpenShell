@@ -19,6 +19,7 @@
 import os
 import bpy
 import json
+import ifcfm
 import logging
 import tempfile
 import ifcopenshell
@@ -49,7 +50,6 @@ class SelectFMIfcFile(bpy.types.Operator):
         return {"RUNNING_MODAL"}
 
 
-
 class ExecuteIfcFM(bpy.types.Operator):
     bl_idname = "bim.execute_ifcfm"
     bl_label = "Execute IfcFM"
@@ -70,8 +70,6 @@ class ExecuteIfcFM(bpy.types.Operator):
         return {"RUNNING_MODAL"}
 
     def execute(self, context):
-        import ifcfm
-
         props = context.scene.BIMFMProperties
         ifc_file = tool.Ifc.get()
         filepaths = []
@@ -97,9 +95,63 @@ class ExecuteIfcFM(bpy.types.Operator):
             writer = ifcfm.Writer(parser)
             writer.write()
             if props.format == "csv":
-                writer.write_csv('tmp/')
+                writer.write_csv("tmp/")
             elif props.format == "ods":
                 writer.write_ods(filepath)
             elif props.format == "xlsx":
                 writer.write_xlsx(filepath)
+        return {"FINISHED"}
+
+
+class SelectFMSpreadsheetFiles(bpy.types.Operator):
+    bl_idname = "bim.select_fm_spreadsheet_files"
+    bl_label = "Select FM Spreadsheet Files"
+    bl_options = {"REGISTER", "UNDO"}
+    filter_glob: bpy.props.StringProperty(default="*.ods;*.xlsx", options={"HIDDEN"})
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    files: bpy.props.CollectionProperty(name="File Path", type=bpy.types.OperatorFileListElement)
+
+    def execute(self, context):
+        props = context.scene.BIMFMProperties
+        props.spreadsheet_files.clear()
+        dirname = os.path.dirname(self.filepath)
+        for f in self.files:
+            new = props.spreadsheet_files.add()
+            new.name = os.path.join(dirname, f.name)
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+
+class ExecuteIfcFMFederate(bpy.types.Operator):
+    bl_idname = "bim.execute_ifcfm_federate"
+    bl_label = "Execute IfcFM"
+    file_format: bpy.props.StringProperty()
+    filter_glob: bpy.props.StringProperty(default="*.ods;*.xlsx", options={"HIDDEN"})
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.BIMFMProperties
+        return props.spreadsheet_files
+
+    def invoke(self, context, event):
+        props = context.scene.BIMFMProperties
+        self.filepath = bpy.path.ensure_ext(bpy.data.filepath, f".{props.format}")
+        WindowManager = context.window_manager
+        WindowManager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, context):
+        props = context.scene.BIMFMProperties
+        parser = ifcfm.Parser(preset=props.engine)
+        parser.federate([f.name for f in props.spreadsheet_files])
+        writer = ifcfm.Writer(parser)
+        writer.write()
+        if props.format == "ods":
+            writer.write_ods(self.filepath)
+        elif props.format == "xlsx":
+            writer.write_xlsx(self.filepath)
         return {"FINISHED"}
