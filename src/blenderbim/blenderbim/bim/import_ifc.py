@@ -214,20 +214,8 @@ class IfcImporter:
         self.ifc_import_settings = ifc_import_settings
         self.diff = None
         self.file = None
-        self.settings = ifcopenshell.geom.settings()
-        self.settings.set_deflection_tolerance(self.ifc_import_settings.deflection_tolerance)
-        self.settings.set_angular_tolerance(self.ifc_import_settings.angular_tolerance)
-        self.settings.set(self.settings.STRICT_TOLERANCE, True)
-        self.settings_body_2d = ifcopenshell.geom.settings()
-        self.settings_body_2d.set_deflection_tolerance(self.ifc_import_settings.deflection_tolerance)
-        self.settings_body_2d.set_angular_tolerance(self.ifc_import_settings.angular_tolerance)
-        self.settings_body_2d.set(self.settings_body_2d.STRICT_TOLERANCE, True)
-        self.settings_body_2d.set(self.settings_body_2d.INCLUDE_CURVES, True)
-        self.settings_native = ifcopenshell.geom.settings()
-        self.settings_native.set(self.settings_native.INCLUDE_CURVES, True)
-        self.settings_plan_2d = ifcopenshell.geom.settings()
-        self.settings_plan_2d.set(self.settings_plan_2d.INCLUDE_CURVES, True)
-        self.settings_plan_2d.set(self.settings_plan_2d.STRICT_TOLERANCE, True)
+        self.context_settings = []
+        self.contexts = []
         self.project = None
         self.has_existing_project = False
         self.collections = {}
@@ -336,34 +324,83 @@ class IfcImporter:
         return abs(coords[0]) > limit or abs(coords[1]) > limit or abs(coords[2]) > limit
 
     def process_context_filter(self):
-        # Facetation is to accommodate broken Revit files
-        # See https://forums.buildingsmart.org/t/suggestions-on-how-to-improve-clarity-of-representation-context-usage-in-documentation/3663/6?u=moult
-        self.body_contexts = [
-            c.id()
-            for c in self.file.by_type("IfcGeometricRepresentationSubContext")
-            if c.ContextIdentifier in ["Body", "Facetation"]
-        ]
-        # Ideally, all representations should be in a subcontext, but some BIM programs don't do this correctly
-        if not self.body_contexts:
-            self.body_contexts.extend(
-                [
-                    c.id()
-                    for c in self.file.by_type("IfcGeometricRepresentationContext", include_subtypes=False)
-                    if c.ContextType == "Model"
-                ]
-            )
-        if self.body_contexts:
-            self.settings.set_context_ids(self.body_contexts)
-            self.settings_body_2d.set_context_ids(self.body_contexts)
         # Annotation ContextType is to accommodate broken Revit files
         # See https://github.com/Autodesk/revit-ifc/issues/187
-        self.plan_contexts = [
-            c.id()
-            for c in self.file.by_type("IfcGeometricRepresentationContext")
-            if c.ContextType in ["Plan", "Annotation"] or c.ContextIdentifier == "Annotation"
+        type_priority = ["Model", "Plan", "Annotation"]
+        identifier_priority = [
+            "Body",
+            "Body-FallBack",
+            "Facetation",
+            "FootPrint",
+            "Profile",
+            "Surface",
+            "Reference",
+            "Axis",
+            "Clearance",
+            "Box",
+            "Lighting",
+            "Annotation",
+            "CoG",
         ]
-        if self.plan_contexts:
-            self.settings_plan_2d.set_context_ids(self.plan_contexts)
+        target_view_priority = [
+            "MODEL_VIEW",
+            "PLAN_VIEW",
+            "REFLECTED_PLAN_VIEW",
+            "ELEVATION_VIEW",
+            "SECTION_VIEW",
+            "GRAPH_VIEW",
+            "SKETCH_VIEW",
+            "USERDEFINED",
+            "NOTDEFINED",
+        ]
+
+        def sort_context(context):
+            priority = []
+            if context.ContextType in type_priority:
+                priority.append(len(type_priority) - type_priority.index(context.ContextType))
+            else:
+                priority.append(0)
+            return tuple(priority)
+
+        def sort_subcontext(context):
+            priority = []
+
+            if context.ContextType in type_priority:
+                priority.append(len(type_priority) - type_priority.index(context.ContextType))
+            else:
+                priority.append(0)
+
+            if context.ContextIdentifier in identifier_priority:
+                priority.append(len(identifier_priority) - identifier_priority.index(context.ContextIdentifier))
+            else:
+                priority.append(0)
+
+            if context.TargetView in target_view_priority:
+                priority.append(len(target_view_priority) - target_view_priority.index(context.TargetView))
+            else:
+                priority.append(0)
+
+            priority.append(context.TargetScale or 0)  # Big then small
+
+            return tuple(priority)
+
+        # Ideally, all representations should be in a subcontext, but some BIM programs don't do this correctly
+        self.contexts = sorted(
+            self.file.by_type("IfcGeometricRepresentationSubContext"), key=sort_subcontext, reverse=True
+        ) + sorted(
+            self.file.by_type("IfcGeometricRepresentationContext", include_subtypes=False),
+            key=sort_context,
+            reverse=True,
+        )
+
+        for context in self.contexts:
+            settings = ifcopenshell.geom.settings()
+            settings.set_deflection_tolerance(self.ifc_import_settings.deflection_tolerance)
+            settings.set_angular_tolerance(self.ifc_import_settings.angular_tolerance)
+            settings.set(settings.STRICT_TOLERANCE, True)
+            settings.set(settings.INCLUDE_CURVES, True)
+            settings.set_context_ids([context.id()])
+            self.context_settings.append(settings)
 
     def process_element_filter(self):
         offset = self.ifc_import_settings.element_offset
@@ -591,13 +628,9 @@ class IfcImporter:
                 return
             if not self.does_element_likely_have_geometry_far_away(element):
                 continue
-            try:
-                shape = ifcopenshell.geom.create_shape(self.settings, element)
-            except:
-                try:
-                    shape = ifcopenshell.geom.create_shape(self.settings_body_2d, element)
-                except:
-                    continue
+            shape = self.create_generic_shape(element)
+            if not shape:
+                continue
             m = shape.transformation.matrix.data
             mat = np.array(
                 ([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1])
@@ -669,7 +702,7 @@ class IfcImporter:
                 self.ifc_import_settings.logger.error("An invalid grid was found %s", grid)
                 continue
             if grid.Representation:
-                shape = ifcopenshell.geom.create_shape(self.settings_plan_2d, grid)
+                shape = self.create_generic_shape(grid)
             grid_obj = self.create_product(grid, shape)
             if bpy.context.preferences.addons["blenderbim"].preferences.lock_grids_on_import:
                 grid_obj.lock_location = (True, True, True)
@@ -688,7 +721,7 @@ class IfcImporter:
 
     def create_grid_axes(self, axes, grid_collection, grid_obj):
         for axis in axes:
-            shape = ifcopenshell.geom.create_shape(self.settings_plan_2d, axis.AxisCurve)
+            shape = self.create_generic_shape(axis.AxisCurve)
             mesh = self.create_mesh(axis, shape)
             obj = bpy.data.objects.new(f"IfcGridAxis/{axis.AxisTag}", mesh)
             if bpy.context.preferences.addons["blenderbim"].preferences.lock_grids_on_import:
@@ -708,27 +741,21 @@ class IfcImporter:
         self.ifc_import_settings.logger.info("Creating object %s", element)
         mesh = None
         if self.ifc_import_settings.should_load_geometry:
-            representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-            if not representation:
-                representation = ifcopenshell.util.representation.get_representation(element, "Plan", "Annotation")
-            if not representation:
-                representation = ifcopenshell.util.representation.get_representation(element, "Model", "Annotation")
-            if representation:
+            for context in self.contexts:
+                representation = ifcopenshell.util.representation.get_representation(element, context)
+                if not representation:
+                    continue
                 mesh_name = "{}/{}".format(representation.ContextOfItems.id(), representation.id())
                 mesh = self.meshes.get(mesh_name)
                 if mesh is None:
-                    shape = None
-                    try:
-                        shape = ifcopenshell.geom.create_shape(self.settings, representation)
-                    except:
-                        try:
-                            shape = ifcopenshell.geom.create_shape(self.settings_plan_2d, representation)
-                        except:
-                            self.ifc_import_settings.logger.error("Failed to generate shape for %s", element)
+                    shape = self.create_generic_shape(representation)
                     if shape:
                         mesh = self.create_mesh(element, shape)
                         tool.Loader.link_mesh(shape, mesh)
                         self.meshes[mesh_name] = mesh
+                    else:
+                        self.ifc_import_settings.logger.error("Failed to generate shape for %s", element)
+                break
         obj = bpy.data.objects.new(tool.Loader.get_name(element), mesh)
         self.link_element(element, obj)
         self.material_creator.create(element, obj, mesh)
@@ -777,21 +804,25 @@ class IfcImporter:
     def create_elements(self):
         self.create_generic_elements(self.elements)
 
+    def create_generic_shape(self, element):
+        for settings in self.context_settings:
+            try:
+                result = ifcopenshell.geom.create_shape(settings, element)
+                if result:
+                    return result
+            except:
+                pass
+
     def create_generic_elements(self, elements):
         if isinstance(self.file, ifcopenshell.sqlite):
             return self.create_generic_sqlite_elements(elements)
 
-        # Based on my experience in viewing BIM models, representations are prioritised as follows:
-        # 1. 3D Body, 2. 2D Body, 3. 2D Plans / annotations, 4. Point clouds, 5. No representation
-        # If an element has a representation that doesn't follow 1, 2, 3, or 4, it will not show by default.
-        # The user can load them later if they want to view them.
         if self.ifc_import_settings.should_load_geometry:
-            products = self.create_products(elements)
-            elements -= products
-            products = self.create_products(elements, settings=self.settings_body_2d)
-            elements -= products
-            products = self.create_products(elements, settings=self.settings_plan_2d)
-            elements -= products
+            for settings in self.context_settings:
+                if not elements:
+                    break
+                products = self.create_products(elements, settings=settings)
+                elements -= products
             products = self.create_pointclouds(elements)
             elements -= products
 
@@ -849,9 +880,6 @@ class IfcImporter:
             self.create_product(element, mesh=mesh)
 
     def create_products(self, products, settings=None):
-        if settings is None:
-            settings = self.settings
-
         results = set()
         if not products:
             return results
@@ -888,16 +916,8 @@ class IfcImporter:
             shape = iterator.get()
             if shape:
                 product = self.file.by_id(shape.id)
-                if self.body_contexts:
-                    self.create_product(product, shape)
-                    results.add(product)
-                else:
-                    if shape.context not in ["Body", "Facetation"] and IfcStore.get_element(shape.id):
-                        # We only load a single context, and we prioritise the Body context. See #1290.
-                        pass
-                    else:
-                        self.create_product(product, shape)
-                        results.add(product)
+                self.create_product(product, shape)
+                results.add(product)
             if not iterator.next():
                 break
         print("Done creating geometry")
@@ -925,10 +945,10 @@ class IfcImporter:
         self.structural_collection.children.link(self.structural_connection_collection)
         self.project["blender"].children.link(self.structural_collection)
 
-        self.create_products(self.file.by_type("IfcStructuralCurveMember"), settings=self.settings_plan_2d)
-        self.create_products(self.file.by_type("IfcStructuralCurveConnection"), settings=self.settings_plan_2d)
-        self.create_products(self.file.by_type("IfcStructuralSurfaceMember"), settings=self.settings_plan_2d)
-        self.create_products(self.file.by_type("IfcStructuralSurfaceConnection"), settings=self.settings_plan_2d)
+        self.create_generic_elements(set(self.file.by_type("IfcStructuralCurveMember")))
+        self.create_generic_elements(set(self.file.by_type("IfcStructuralCurveConnection")))
+        self.create_generic_elements(set(self.file.by_type("IfcStructuralSurfaceMember")))
+        self.create_generic_elements(set(self.file.by_type("IfcStructuralSurfaceConnection")))
         self.create_structural_point_connections()
 
     def create_structural_point_connections(self):
@@ -1259,7 +1279,7 @@ class IfcImporter:
         for representation in self.native_data[element.GlobalId]["representations"]:
             for item in representation["raw"].Items:
                 # TODO: support inner radius, start param, and end param
-                geometry = ifcopenshell.geom.create_shape(self.settings_native, item.Directrix)
+                geometry = self.create_generic_shape(item.Directrix)
                 e = geometry.edges
                 v = geometry.verts
                 vertices = [[v[i], v[i + 1], v[i + 2], 1] for i in range(0, len(v), 3)]
@@ -1288,7 +1308,7 @@ class IfcImporter:
         for representation in self.native_data[element.GlobalId]["representations"]:
             for item in representation["raw"].Items:
                 # TODO: support inner radius, start param, and end param
-                geometry = ifcopenshell.geom.create_shape(self.settings_native, item.Directrix)
+                geometry = self.create_generic_shape(item.Directrix)
                 e = geometry.edges
                 v = geometry.verts
                 vertices = [[v[i], v[i + 1], v[i + 2], 1] for i in range(0, len(v), 3)]
