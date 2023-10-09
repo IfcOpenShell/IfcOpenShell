@@ -42,7 +42,7 @@ class BIM_PT_fm(Panel):
 
         if not IfcStore.get_file() or not props.should_load_from_memory:
             row = layout.row(align=True)
-            if props.ifc_files:
+            if len(props.ifc_files) > 1:
                 row.label(text=f"{len(props.ifc_files)} Files Selected")
             else:
                 row.prop(props, "ifc_file")
@@ -55,3 +55,10 @@ class BIM_PT_fm(Panel):
 
         row = layout.row()
         op = row.operator("bim.execute_ifcfm", text="Convert To Spreadsheet")
+
+        row = layout.row(align=True)
+        row.label(text=f"{len(props.spreadsheet_files)} Spreadsheets Selected")
+        row.operator("bim.select_fm_spreadsheet_files", icon="FILE_FOLDER", text="")
+
+        row = layout.row()
+        op = row.operator("bim.execute_ifcfm_federate", text="Merge Spreadsheets")
