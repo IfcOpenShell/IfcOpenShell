@@ -20,6 +20,20 @@ import numpy as np
 
 
 def a2p(o, z, x):
+    """Converts a location, X, and Z axis vector to a 4x4 transformation matrix
+
+    IFC uses a right-handed coordinate system, so it is not necessary to
+    provide the Y axis.
+
+    :param o: The origin (i.e. location) of the matrix
+    :type o: iterable[float]
+    :param z: The +Z vector / axis of the matrix
+    :type z: iterable[float]
+    :param x: The +X vector / axis of the matrix
+    :type x: iterable[float]
+    :return: A 4x4 numpy matrix
+    :rtype: np.array[np.array[float]]
+    """
     x = x / np.linalg.norm(x)
     z = z / np.linalg.norm(z)
     y = np.cross(z, x)
@@ -30,33 +44,79 @@ def a2p(o, z, x):
     return r.T
 
 
-def get_axis2placement(plc):
-    if plc.is_a("IfcAxis2Placement3D"):
-        z = np.array(plc.Axis.DirectionRatios if plc.Axis else (0, 0, 1))
-        x = np.array(plc.RefDirection.DirectionRatios if plc.RefDirection else (1, 0, 0))
-        o = plc.Location.Coordinates
-    elif plc.is_a("IfcAxis2Placement2D"):
+def get_axis2placement(placement):
+    """Parses an IfcAxis2Placement (2D or 3D) to a 4x4 transformation matrix
+
+    Note that this function only parses a single placement axis. If you want to
+    get the placement of an element instead, element placements often are made
+    out of multiple placement axes or other alternative placement methods. You
+    should use ``get_local_placement`` instead.
+
+    :param placement: The IfcLocalPlacement enitity
+    :type placement: ifcopenshell.entity_instance.entity_instance
+    :return: A 4x4 numpy matrix
+    :rtype: np.array[np.array[float]]
+    """
+    if placement.is_a("IfcAxis2Placement3D"):
+        z = np.array(placement.Axis.DirectionRatios if placement.Axis else (0, 0, 1))
+        x = np.array(placement.RefDirection.DirectionRatios if placement.RefDirection else (1, 0, 0))
+        o = placement.Location.Coordinates
+    elif placement.is_a("IfcAxis2Placement2D"):
         z = np.array((0, 0, 1))
-        if plc.RefDirection:
-            x = np.array(plc.RefDirection.DirectionRatios)
+        if placement.RefDirection:
+            x = np.array(placement.RefDirection.DirectionRatios)
             x.resize(3)
         else:
             x = np.array((1, 0, 0))
-        o = (*plc.Location.Coordinates, 0.0)
+        o = (*placement.Location.Coordinates, 0.0)
     return a2p(o, z, x)
 
 
-def get_local_placement(plc):
-    if plc is None:
+def get_local_placement(placement):
+    """Parse a local placement into a 4x4 transformation matrix
+
+    This is typically used to find the location and rotation of an element. The
+    transformation matrix takes the form of:
+
+    .. code::
+
+        [ [ x_x, y_x, z_x, x   ]
+          [ x_y, y_y, z_y, y   ]
+          [ x_z, y_z, z_z, z   ]
+          [ 0.0, 0.0, 0.0, 1.0 ] ]
+
+    Example:
+
+    .. code:: python
+
+        element = file.by_type("IfcBeam")[0]
+        matrix = ifcopenshell.util.placement.get_local_placement(element)
+
+    :param placement: The IfcLocalPlacement enitity
+    :type placement: ifcopenshell.entity_instance.entity_instance
+    :return: A 4x4 numpy matrix
+    :rtype: np.array[np.array[float]]
+    """
+    if placement is None:
         return np.eye(4)
-    if plc.PlacementRelTo is None:
+    if placement.PlacementRelTo is None:
         parent = np.eye(4)
     else:
-        parent = get_local_placement(plc.PlacementRelTo)
-    return np.dot(parent, get_axis2placement(plc.RelativePlacement))
+        parent = get_local_placement(placement.PlacementRelTo)
+    return np.dot(parent, get_axis2placement(placement.RelativePlacement))
 
 
 def get_cartesiantransformationoperator3d(inst):
+    """Parses an IfcCartesianTransformationOperator into a 4x4 transformation matrix
+
+    Note that in general you will not need to call this directly. See
+    ``get_mappeditem_transformation`` instead.
+
+    :param item: The IfcCartesianTransformationOperator entity
+    :type item: ifcopenshell.entity_instance.entity_instance
+    :return: A 4x4 numpy transformation matrix
+    :rtype: np.array[np.array[float]]
+    """
     origin = np.array(inst.LocalOrigin.Coordinates)
     axis1 = np.array((1., 0., 0.))
     axis2 = np.array((0., 1., 0.))
@@ -92,11 +152,32 @@ def get_cartesiantransformationoperator3d(inst):
 
 
 def get_mappeditem_transformation(item):
+    """Parse an IfcMappedItem into a 4x4 transformation matrix
+
+    Mapped items take a representation with an origin and transform them with a
+    cartesian transformation operation. This function returns the final
+    transformation matrix.
+
+    :param item: The IfcMappedItem entity
+    :type item: ifcopenshell.entity_instance.entity_instance
+    :return: A 4x4 numpy transformation matrix
+    :rtype: np.array[np.array[float]]
+    """
     m4 = ifcopenshell.util.placement.get_axis2placement(item.MappingSource.MappingOrigin)
     return get_cartesiantransformationoperator(item.MappingTarget) @ m4
 
 
 def get_storey_elevation(storey):
+    """Get the Z elevation in project units of a buildling storey
+
+    Building storeys store elevation in two possible locations: the Z value of
+    its placement, or as a fallback the ``Elevation`` attribute.
+
+    :param storey: The IfcBuildingStorey entity
+    :type storey: ifcopenshell.entity_instance.entity_instance
+    :return: The elevation in project units
+    :rtype: float
+    """
     if storey.ObjectPlacement:
         matrix = get_local_placement(storey.ObjectPlacement)
         return matrix[2][3]
@@ -104,6 +185,18 @@ def get_storey_elevation(storey):
 
 
 def rotation(angle, axis, is_degrees=True):
+    """Create a 4x4 numpy matrix representing an euler rotation
+
+    :param angle: The angle of rotation
+    :type angle: float
+    :param axis: The axis to rotate around, either X, Y, or Z.
+    :type axis: str
+    :param is_degrees: Whether or not the angle is specified in degrees or
+        radians. Defaults to true (i.e. degrees).
+    :type is_degrees: bool
+    :return: A 4x4 numpy rotation matrix
+    :rtype: np.array[np.array[float]]
+    """
     theta = np.radians(angle) if is_degrees else angle
     cos, sin = np.cos(theta), np.sin(theta)
 
