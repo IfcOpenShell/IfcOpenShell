@@ -17,7 +17,10 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import json
 import bmesh
+import collections
+import numpy as np
 import ifcopenshell
 import ifcopenshell.util.unit
 import ifcopenshell.util.placement
@@ -29,9 +32,6 @@ from mathutils import Matrix, Vector
 from blenderbim.bim import import_ifc
 from blenderbim.bim.module.geometry.helper import Helper
 from blenderbim.bim.module.model.data import AuthoringData, RailingData, RoofData, WindowData, DoorData
-import collections
-import json
-import numpy as np
 
 
 class Model(blenderbim.core.tool.Model):
@@ -483,6 +483,10 @@ class Model(blenderbim.core.tool.Model):
 
     @classmethod
     def get_manual_booleans(cls, element):
+        pset = ifcopenshell.util.element.get_pset(element, "BBIM_Boolean")
+        if not pset:
+            return []
+        boolean_ids = json.loads(pset["Data"])
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         if not body:
             return []
@@ -490,10 +494,9 @@ class Model(blenderbim.core.tool.Model):
         items = list(body.Items)
         while items:
             item = items.pop()
-            if item.is_a() == "IfcBooleanResult":
-                booleans.append(item)
-                items.append(item.FirstOperand)
-            elif item.is_a("IfcBooleanClippingResult"):
+            if item.is_a("IfcBooleanResult"):
+                if item.id() in boolean_ids:
+                    booleans.append(item)
                 items.append(item.FirstOperand)
         return booleans
 
