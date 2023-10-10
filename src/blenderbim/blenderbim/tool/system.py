@@ -149,16 +149,11 @@ class System(blenderbim.core.tool.System):
         ifc_importer.file = tool.Ifc.get()
         ifc_importer.calculate_unit_scale()
         ifc_importer.process_context_filter()
-        ports = set(ports)
-        ports -= ifc_importer.create_products(ports)
-        for port in ports or []:
-            if tool.Ifc.get_object(port):
-                continue
-            port_obj = ifc_importer.create_product(port)
-            if obj:
-                port_obj.parent = obj
-                port_obj.matrix_parent_inverse = obj.matrix_world.inverted()
+        ifc_importer.create_generic_elements(set(ports))
         ifc_importer.place_objects_in_collections()
+        for port_obj in ifc_importer.added_data.values():
+            port_obj.parent = obj
+            port_obj.matrix_parent_inverse = obj.matrix_world.inverted()
 
     @classmethod
     def run_geometry_edit_object_placement(cls, obj=None):
