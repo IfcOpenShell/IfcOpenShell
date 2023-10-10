@@ -351,8 +351,8 @@ class TestSelector(test.bootstrap.IFC4):
         pset_2 = ifcopenshell.api.run("pset.add_pset", self.file, product=element_2, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset_1, properties={"Foo": "Bar"})
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset_2, properties={"Foo": "BOO"})
-        assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo != "Bar"]') == [element_2]
-        assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo != "BOO"]') == [element_1]
+        assert subject.Selector.parse(self.file, '.IfcElement["Foo_Bar"."Foo" != "Bar"]') == [element_2]
+        assert subject.Selector.parse(self.file, '.IfcElement["Foo_Bar"."Foo" != "BOO"]') == [element_1]
 
     def test_selecting_when_attribute_is_none(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
