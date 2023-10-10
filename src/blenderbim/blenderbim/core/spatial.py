@@ -196,7 +196,7 @@ def generate_spaces_from_walls(ifc, spatial, collector):
         spatial.assign_ifcspace_class_to_obj(obj)
 
         spatial.assign_container_to_obj(obj)
-        
+
 
 def toggle_space_visibility(ifc, spatial):
     model = ifc.get()
