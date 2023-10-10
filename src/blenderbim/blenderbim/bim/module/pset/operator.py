@@ -206,6 +206,7 @@ class EnablePsetEditing(bpy.types.Operator):
         for prop in props:
             if prop.is_a("IfcPropertyEnumeratedValue"):
                 simple_prop = self.props.properties.add()
+                simple_prop.name = prop.Name
                 simple_prop.value_type = "IfcPropertyEnumeratedValue"
                 metadata = simple_prop.metadata
                 metadata.name = prop.Name
@@ -227,6 +228,7 @@ class EnablePsetEditing(bpy.types.Operator):
                 elif prop.is_a("IfcPhysicalSimpleQuantity"):
                     value = prop[3]
                 new_prop = self.props.properties.add()
+                new_prop.name = prop.Name
                 metadata = new_prop.metadata
                 metadata.set_value(value)
                 metadata.name = prop.Name
