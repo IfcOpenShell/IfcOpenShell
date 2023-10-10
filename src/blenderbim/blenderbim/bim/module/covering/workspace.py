@@ -45,6 +45,7 @@ class CoveringTool(WorkSpaceTool):
     ifc_element_type = "IfcCoveringType"
     bl_keymap = tool.Blender.get_default_selection_keypmap() + (
         ("bim.covering_hotkey", {"type": "A", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_A")]}),
+        ("bim.covering_hotkey", {"type": "G", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_G")]}),
     )
 
     @classmethod
@@ -93,6 +94,8 @@ class CoveringToolUI:
             row.label(text="", icon="EVENT_A")
             active_obj = bpy.context.active_object
             element = tool.Ifc.get_entity(active_obj)
+            collection = bpy.context.view_layer.active_layer_collection.collection
+            collection_obj = collection.BIMCollectionProperties.obj
 
             if AuthoringData.data["predefined_type"] == "FLOORING":
                 if element and bpy.context.selected_objects and element.is_a("IfcWall"):
@@ -100,12 +103,14 @@ class CoveringToolUI:
 #               PLEASE KEEP COMMENTS AS A REMINDER
 #                elif element and bpy.context.selected_objects and element.is_a("IfcSpace"):
 #                    op. = row.operator("bim.add_istance_flooring_from_spaces"):
+                elif tool.Ifc.get_entity(collection_obj):
+                    op = row.operator("bim.add_instance_flooring_covering_from_cursor")
                 else:
-#                    op = row.operator("bim.add_instance_flooring_from_cursor")
                     op = row.operator("bim.add_constr_type_instance", text="Add")
                     op.from_invoke = True
                     if cls.props.relating_type_id.isnumeric():
                         op.relating_type_id = int(cls.props.relating_type_id)
+
 
 #            elif AuthoringData.data["predefined_type"] == "CEILING":
 #                row = cls.layout.row(align=True)
@@ -125,6 +130,12 @@ class CoveringToolUI:
                 op.from_invoke = True
                 if cls.props.relating_type_id.isnumeric():
                     op.relating_type_id = int(cls.props.relating_type_id)
+
+            if element and bpy.context.selected_objects and element.is_a("IfcCovering") and AuthoringData.data["predefined_type"] == "FLOORING":
+                row = cls.layout.row(align=True)
+                row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="", icon="EVENT_G")
+                op = row.operator("bim.regen_selected_flooring_object")
 
     @classmethod
     def draw_type_selection_interface(cls):
@@ -184,11 +195,23 @@ class Hotkey(bpy.types.Operator, Operator):
     def hotkey_S_A(self):
         active_obj = bpy.context.active_object
         element = tool.Ifc.get_entity(active_obj)
+        collection = bpy.context.view_layer.active_layer_collection.collection
+        collection_obj = collection.BIMCollectionProperties.obj
+
         if AuthoringData.data["predefined_type"] == "FLOORING":
             if element and bpy.context.selected_objects and element.is_a("IfcWall"):
                 bpy.ops.bim.add_instance_flooring_coverings_from_walls()
+            elif tool.Ifc.get_entity(collection_obj):
+                bpy.ops.bim.add_instance_flooring_covering_from_cursor()
             else:
                 bpy.ops.bim.add_constr_type_instance()
         else:
             bpy.ops.bim.add_constr_type_instance()
 
+    def hotkey_S_G(self):
+        active_obj = bpy.context.active_object
+        element = tool.Ifc.get_entity(active_obj)
+
+        if AuthoringData.data["predefined_type"] == "FLOORING":
+            if element and bpy.context.selected_objects and element.is_a("IfcCovering"):
+                bpy.ops.bim.regen_selected_flooring_object()
