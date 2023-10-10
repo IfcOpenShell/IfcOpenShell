@@ -438,17 +438,9 @@ class Model(blenderbim.core.tool.Model):
         ifc_importer.calculate_unit_scale()
         ifc_importer.process_context_filter()
         ifc_importer.material_creator.load_existing_materials()
-        openings = set(openings)
-        openings -= ifc_importer.create_products(openings)
-        for opening in openings or []:
-            if tool.Ifc.get_object(opening):
-                continue
-            opening_obj = ifc_importer.create_product(opening)
-            if obj:
-                opening_obj.parent = obj
-                opening_obj.matrix_parent_inverse = obj.matrix_world.inverted()
-        for obj in ifc_importer.added_data.values():
-            bpy.context.scene.collection.objects.link(obj)
+        ifc_importer.create_generic_elements(set(openings))
+        for opening_obj in ifc_importer.added_data.values():
+            bpy.context.scene.collection.objects.link(opening_obj)
         return ifc_importer.added_data.values()
 
     @classmethod
