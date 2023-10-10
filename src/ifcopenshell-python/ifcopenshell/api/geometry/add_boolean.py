@@ -47,13 +47,21 @@ class Usecase:
                 result = self.create_blender_mesh()
         items = []
         for item in self.settings["representation"].Items:
-            # For now, we don't use IfcBooleanClippingResult.
-            # This is unofficial but we assume that clipping results are part
-            # of automated clips, whereas IfcBooleanResults are manual bools.
-            # This is really terrible, but until we find a better solution...
-            items.append(self.file.createIfcBooleanResult(self.settings["operator"], item, result))
+            if (
+                self.settings["operator"] == "DIFFERENCE"
+                and result.is_a("IfcHalfSpaceSolid")
+                and (
+                    item.is_a("IfcSweptAreaSolid")
+                    or item.is_a("IfcSweptDiskSolid")
+                    or item.is_a("IfcBooleanClippingResult")
+                )
+            ):
+                items.append(self.file.createIfcBooleanClippingResult(self.settings["operator"], item, result))
+            else:
+                items.append(self.file.createIfcBooleanResult(self.settings["operator"], item, result))
         self.settings["representation"].RepresentationType = "CSG"
         self.settings["representation"].Items = items
+        return items
 
     def create_half_space_solid(self):
         clipping = np.array(self.settings["matrix"])[:3]

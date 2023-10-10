@@ -18,6 +18,7 @@
 
 import bpy
 import gpu
+import json
 import bmesh
 import shapely
 import logging
@@ -523,9 +524,20 @@ class AddBoolean(Operator, tool.Ifc.Operator):
         elif obj2.data:
             mesh_data = {"type": "Mesh", "blender_obj": obj1, "blender_void": obj2}
 
-        ifcopenshell.api.run(
+        booleans = ifcopenshell.api.run(
             "geometry.add_boolean", tool.Ifc.get(), representation=representation, operator="DIFFERENCE", **mesh_data
         )
+
+        pset = ifcopenshell.util.element.get_pset(element1, "BBIM_Boolean")
+        if pset:
+            pset = tool.Ifc.get().by_id(pset["id"])
+            data = json.loads(pset["Data"])
+            data.extend([b.id() for b in booleans])
+            data = list(set(data))
+        else:
+            pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element1, name="BBIM_Boolean")
+            data = [b.id() for b in booleans]
+        ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": json.dumps(data)})
 
         tool.Model.clear_scene_openings()
 
@@ -647,6 +659,7 @@ class RemoveBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
 
     def _execute(self, context):
         upstream_obj = None
+        bbim_boolean_updates = {}
         for obj in context.selected_objects:
             if (
                 not obj.data
@@ -655,13 +668,21 @@ class RemoveBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
             ):
                 continue
             try:
-                boolean = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_boolean_id)
+                item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_boolean_id)
             except:
                 continue
-            ifcopenshell.api.run("geometry.remove_boolean", tool.Ifc.get(), item=boolean)
+
+            boolean_id = None
+            for inverse in tool.Ifc.get().get_inverse(item):
+                if inverse.is_a("IfcBooleanResult"):
+                    boolean_id = inverse.id()
+                    break
+            ifcopenshell.api.run("geometry.remove_boolean", tool.Ifc.get(), item=item)
+
             if obj.data.BIMMeshProperties.obj:
                 upstream_obj = obj.data.BIMMeshProperties.obj
                 element = tool.Ifc.get_entity(upstream_obj)
+                bbim_boolean_updates.setdefault(element, []).append(boolean_id)
                 body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
                 if body:
                     blenderbim.core.geometry.switch_representation(
@@ -674,7 +695,20 @@ class RemoveBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
                         should_sync_changes_first=False,
                     )
             bpy.data.objects.remove(obj)
-        
+
+        for element, boolean_ids in bbim_boolean_updates.items():
+            pset = ifcopenshell.util.element.get_pset(element, "BBIM_Boolean")
+            if not pset:
+                continue
+            data = set(json.loads(pset["Data"]))
+            data -= set(boolean_ids)
+            data = list(data)
+            pset = tool.Ifc.get().by_id(pset["id"])
+            if data:
+                ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": json.dumps(data)})
+            else:
+                ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
+
         tool.Blender.set_active_object(upstream_obj)
         return {"FINISHED"}
 
@@ -782,6 +816,7 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                             results.add(obj)
         return results
 
+
 class CloneOpening(Operator, tool.Ifc.Operator):
     bl_idname = "bim.clone_opening"
     bl_label = "Clone Opening"
@@ -805,11 +840,14 @@ class CloneOpening(Operator, tool.Ifc.Operator):
 
         new_opening = ifcopenshell.api.run("root.create_entity", tool.Ifc.get(), ifc_class="IfcOpeningElement")
         for representation in opening_representations:
-            ifcopenshell.api.run("geometry.assign_representation", tool.Ifc.get(), product = new_opening, representation = representation)
+            ifcopenshell.api.run(
+                "geometry.assign_representation", tool.Ifc.get(), product=new_opening, representation=representation
+            )
 
-        ifcopenshell.api.run("void.add_opening", tool.Ifc.get(), opening = new_opening, element = wall)
+        ifcopenshell.api.run("void.add_opening", tool.Ifc.get(), opening=new_opening, element=wall)
         new_opening.ObjectPlacement = opening_placement
         return {"FINISHED"}
+
 
 # TODO: merge with ProfileDecorator?
 class DecorationsHandler:
