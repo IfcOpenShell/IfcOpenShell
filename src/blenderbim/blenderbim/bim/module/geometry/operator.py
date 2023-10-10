@@ -1201,20 +1201,20 @@ class RefreshAggregate(bpy.types.Operator):
                                 "instance_of": [part.GlobalId],
                             }
                             data = [data_children]
-                            
+
                             pset = ifcopenshell.api.run(
-                                                "pset.add_pset", tool.Ifc.get(), product=part, name="BBIM_Aggregate_Data"
-                                            )
+                                "pset.add_pset", tool.Ifc.get(), product=part, name="BBIM_Aggregate_Data"
+                            )
                             ifcopenshell.api.run(
                                 "pset.edit_pset",
                                 tool.Ifc.get(),
                                 pset=pset,
                                 properties={"Parent": instance_entity.GlobalId, "Data": json.dumps(data)},
                             )
-                            
+
                             part_obj = tool.Ifc.get_object(part)
                             new_part = duplicate_objects(part_obj)
-                            
+
                             blenderbim.core.aggregate.assign_object(
                                 tool.Ifc,
                                 tool.Aggregate,
@@ -1223,34 +1223,34 @@ class RefreshAggregate(bpy.types.Operator):
                                 related_obj=tool.Ifc.get_object(new_part),
                             )
                             duplicate_children(new_part)
-                            
+
                 for part in parts:
                     pset = ifcopenshell.util.element.get_pset(part, "BBIM_Aggregate_Data")
                     if part.is_a("IfcElementAssembly"):
                         pass
-                        
+
                     else:
                         if not pset:
                             pset = ifcopenshell.api.run(
-                                                "pset.add_pset", tool.Ifc.get(), product=part, name="BBIM_Aggregate_Data"
-                                            )
+                                "pset.add_pset", tool.Ifc.get(), product=part, name="BBIM_Aggregate_Data"
+                            )
                         else:
                             pset = ifcopenshell.util.element.get_pset(part, "BBIM_Aggregate_Data")
                             pset = tool.Ifc.get().by_id(pset["id"])
-                        
+
                         data_children = {
                             "children": [],
                             "instance_of": [],
                         }
                         data = [data_children]
-                    
+
                         ifcopenshell.api.run(
                             "pset.edit_pset",
                             tool.Ifc.get(),
                             pset=pset,
                             properties={"Parent": instance_entity.GlobalId, "Data": json.dumps(data)},
                         )
-                        
+
                         part_obj = tool.Ifc.get_object(part)
                         new_part = duplicate_objects(part_obj)
                         blenderbim.core.aggregate.assign_object(
@@ -1271,7 +1271,7 @@ class RefreshAggregate(bpy.types.Operator):
                 collection.objects.link(new_obj)
             obj.select_set(False)
             new_obj.select_set(True)
-            
+
             # This is needed to make sure the new object gets unlink from
             # the old object assembly collection
             new_obj.BIMObjectProperties.collection = None
@@ -1283,15 +1283,15 @@ class RefreshAggregate(bpy.types.Operator):
 
             if new_entity:
                 tool.Model.handle_array_on_copied_element(new_entity)
-                
+
                 if not new_entity.is_a("IfcElementAssembly"):
                     blenderbim.core.aggregate.unassign_object(
-                    tool.Ifc,
-                    tool.Aggregate,
-                    tool.Collector,
-                    relating_obj=obj,
-                    related_obj=tool.Ifc.get_object(new_entity),
-                )
+                        tool.Ifc,
+                        tool.Aggregate,
+                        tool.Collector,
+                        relating_obj=obj,
+                        related_obj=tool.Ifc.get_object(new_entity),
+                    )
 
                 old_to_new[tool.Ifc.get_entity(obj)] = [new_entity]
 
@@ -1313,7 +1313,6 @@ class RefreshAggregate(bpy.types.Operator):
         else:
             self.report({"INFO"}, "Object is not part of a IfcElementAssembly.")
             return {"FINISHED"}
-
 
         pset = ifcopenshell.util.element.get_pset(selected_root_entity, "BBIM_Aggregate_Data")
         if not pset:
@@ -1337,7 +1336,6 @@ class RefreshAggregate(bpy.types.Operator):
         for parent in parents:
             duplicate_children(parent)
 
-        
         # Remove connections with old objects
         for new in old_to_new.values():
             for connection in new[0].ConnectedTo:
@@ -1355,7 +1353,7 @@ class RefreshAggregate(bpy.types.Operator):
 
             new_obj = tool.Ifc.get_object(new[0])
 
-            matrix_diff =  Matrix.inverted(original_matrix) @ new_obj.matrix_world
+            matrix_diff = Matrix.inverted(original_matrix) @ new_obj.matrix_world
             new_matrix = selected_matrix @ matrix_diff
 
             new_obj.matrix_world = new_matrix
