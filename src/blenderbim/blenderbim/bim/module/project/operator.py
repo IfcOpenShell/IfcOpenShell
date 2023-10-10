@@ -809,9 +809,9 @@ class ToggleFilterCategories(bpy.types.Operator):
 
 class LinkIfc(bpy.types.Operator):
     bl_idname = "bim.link_ifc"
-    bl_label = "Link IFC"
+    bl_label = "Link Blend/IFC File"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Link a Blender file"
+    bl_description = "This will link the Blender file that is synced with the IFC file"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     files: bpy.props.CollectionProperty(name="Files", type=bpy.types.OperatorFileListElement)
     directory: bpy.props.StringProperty(subtype="DIR_PATH")
