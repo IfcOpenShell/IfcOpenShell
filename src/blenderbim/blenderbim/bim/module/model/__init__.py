@@ -108,6 +108,8 @@ classes = (
     space.GenerateSpace,
     space.GenerateSpacesFromWalls,
     covering.AddInstanceFlooringCoveringsFromWalls,
+    covering.AddInstanceFlooringCoveringFromCursor,
+    covering.RegenSelectedFlooringObject,
     space.ToggleSpaceVisibility,
     mep.FitFlowSegments,
     mep.RegenerateDistributionElement,

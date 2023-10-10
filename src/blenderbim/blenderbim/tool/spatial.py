@@ -299,8 +299,6 @@ class Spatial(blenderbim.core.tool.Spatial):
         boundary_lines = []
 
         for obj in bpy.context.visible_objects:
-
-
             visible_element = tool.Ifc.get_entity(obj)
 
             if (

@@ -18,16 +18,11 @@
 
 
 import bpy
-import bmesh
-import shapely
 import ifcopenshell
 import ifcopenshell.util.element
 import blenderbim.tool as tool
 import blenderbim.core.spatial as core
 import blenderbim.core.type
-from math import pi
-from mathutils import Vector, Matrix
-from shapely import Polygon, MultiPolygon
 
 
 class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
