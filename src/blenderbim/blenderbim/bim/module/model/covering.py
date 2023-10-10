@@ -22,6 +22,60 @@ import ifcopenshell
 import blenderbim.tool as tool
 import blenderbim.core.covering as core
 
+class AddInstanceFlooringCoveringFromCursor(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_instance_flooring_covering_from_cursor"
+    bl_label = "Add Flooring From Cursor"
+    bl_options = {"REGISTER"}
+    bl_description = "Add a typed instance flooring covering from cursor position. Move the cursor position into the desired position, select the right space collection and run the operator"
+
+    @classmethod
+    def poll(cls, context):
+        collection = context.view_layer.active_layer_collection.collection
+        collection_obj = collection.BIMCollectionProperties.obj
+        return tool.Ifc.get_entity(collection_obj)
+
+    def _execute(self, context):
+
+        def msg(self, context):
+            self.layout.label(text="NO ACTIVE STOREY")
+
+        collection = context.view_layer.active_layer_collection.collection
+        collection_obj = collection.BIMCollectionProperties.obj
+        if not collection_obj:
+            bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
+            return
+        spatial_element = tool.Ifc.get_entity(collection_obj)
+        if not spatial_element:
+            bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
+            return
+
+        core.add_instance_flooring_covering_from_cursor(tool.Ifc, tool.Spatial, tool.Model, tool.Type, tool.Geometry)
+
+class RegenSelectedFlooringObject(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.regen_selected_flooring_object"
+    bl_label = "Regen Flooring"
+    bl_options = {"REGISTER"}
+    bl_description = "Regen selected flooring object"
+
+    @classmethod
+    def poll(cls, context):
+        active_obj = bpy.context.active_object
+        element = tool.Ifc.get_entity(active_obj)
+        return element.is_a("IfcCovering")
+
+    def _execute(self, context):
+
+        def msg(self, context):
+            self.layout.label(text="NO ACTIVE STOREY")
+
+        active_obj = bpy.context.active_object
+        element = tool.Ifc.get_entity(active_obj)
+        if not  element.is_a("IfcCovering"):
+            bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
+            return
+
+        core.regen_selected_flooring_object(tool.Ifc, tool.Spatial, tool.Model, tool.Type, tool.Geometry)
+
 
 class AddInstanceFlooringCoveringsFromWalls(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_instance_flooring_coverings_from_walls"
