@@ -472,6 +472,7 @@ class AppendLibraryElement(bpy.types.Operator):
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = self.file
         ifc_importer.type_collection = type_collection
+        ifc_importer.process_context_filter()
         ifc_importer.material_creator.load_existing_materials()
         self.import_materials(element, ifc_importer)
         self.import_styles(element, ifc_importer)
