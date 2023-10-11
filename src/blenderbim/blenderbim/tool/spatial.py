@@ -525,9 +525,6 @@ class Spatial(blenderbim.core.tool.Spatial):
     @classmethod
     def get_named_obj_from_mesh(cls, name, mesh):
         obj = bpy.data.objects.new(name, mesh)
-        if bpy.context.active_object:
-            mat = bpy.context.active_object.matrix_world
-            obj.matrix_world = mat
         return obj
 
     @classmethod
@@ -565,7 +562,6 @@ class Spatial(blenderbim.core.tool.Spatial):
     def set_obj_origin_to_cursor_position(cls, obj):
         mat = obj.matrix_world
         inverted = mat.inverted()
-
 
         collection = bpy.context.view_layer.active_layer_collection.collection
         collection_obj = collection.BIMCollectionProperties.obj
