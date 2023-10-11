@@ -164,7 +164,7 @@ def generate_space(ifc, spatial, model, Type):
         else:
             name = "Space"
 
-        obj = spatial.get_named_obj_from_mesh(name, mesh) ##mat
+        obj = spatial.get_named_obj_from_mesh(name, mesh)
         spatial.set_obj_origin_to_cursor_position(obj)
         spatial.link_obj_to_active_collection(obj)
         spatial.assign_ifcspace_class_to_obj(obj)
