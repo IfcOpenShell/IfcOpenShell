@@ -22,7 +22,9 @@ from . import ui, prop, operator
 classes = (
     operator.AddRepresentation,
     operator.CopyRepresentation,
+    operator.DisableEditingRepresentationItems,
     operator.EditObjectPlacement,
+    operator.EnableEditingRepresentationItems,
     operator.FlipObject,
     operator.GetRepresentationIfcParameters,
     operator.OverrideDelete,
@@ -47,16 +49,19 @@ classes = (
     operator.SwitchRepresentation,
     operator.UpdateParametricRepresentation,
     operator.UpdateRepresentation,
+    prop.RepresentationItem,
     prop.BIMObjectGeometryProperties,
     prop.BIMGeometryProperties,
     ui.BIM_PT_placement,
     ui.BIM_PT_representations,
+    ui.BIM_PT_representation_items,
     ui.BIM_PT_connections,
     ui.BIM_PT_mesh,
     ui.BIM_PT_derived_coordinates,
     ui.BIM_PT_workarounds,
     ui.BIM_MT_object_set_origin,
     ui.BIM_MT_separate,
+    ui.BIM_UL_representation_items,
 )
 
 

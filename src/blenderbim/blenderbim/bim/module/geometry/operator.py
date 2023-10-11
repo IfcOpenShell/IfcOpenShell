@@ -1727,3 +1727,53 @@ class FlipObject(bpy.types.Operator):
         for obj in context.selected_objects:
             tool.Geometry.flip_object(obj, self.flip_local_axes)
         return {"FINISHED"}
+
+
+class EnableEditingRepresentationItems(bpy.types.Operator, Operator):
+    bl_idname = "bim.enable_editing_representation_items"
+    bl_label = "Enable Editing Representation Items"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        obj = context.active_object
+
+        props = obj.BIMGeometryProperties
+        props.is_editing = True
+
+        props.items.clear()
+
+        if bpy.context.active_object.data and hasattr(bpy.context.active_object.data, "BIMMeshProperties"):
+            active_representation_id = bpy.context.active_object.data.BIMMeshProperties.ifc_definition_id
+            element = tool.Ifc.get().by_id(active_representation_id)
+            if not element.is_a("IfcShapeRepresentation"):
+                return
+            queue = list(element.Items)
+            while queue:
+                item = queue.pop()
+                if item.is_a("IfcMappedItem"):
+                    queue.extend(item.MappingSource.MappedRepresentation.Items)
+                else:
+                    new = props.items.add()
+                    new.name = item.is_a()
+                    new.ifc_definition_id = item.id()
+
+                    styles = []
+                    for inverse in tool.Ifc.get().get_inverse(item):
+                        if inverse.is_a("IfcStyledItem"):
+                            styles = inverse.Styles
+                            if styles and styles[0].is_a("IfcPresentationStyleAssignment"):
+                                styles = styles[0].Styles
+                            for style in styles:
+                                if style.is_a("IfcSurfaceStyle"):
+                                    new.surface_style = style.Name or "Unnamed"
+                                    break
+
+
+class DisableEditingRepresentationItems(bpy.types.Operator, Operator):
+    bl_idname = "bim.disable_editing_representation_items"
+    bl_label = "Disable Editing Representation Items"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        obj = context.active_object
+        obj.BIMGeometryProperties.is_editing = False
