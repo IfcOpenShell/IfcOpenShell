@@ -18,11 +18,12 @@
 
 import bpy
 import blenderbim.tool as tool
-from bpy.types import Panel, Menu
+from bpy.types import Panel, Menu, UIList
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import prop_with_search
 from blenderbim.bim.module.geometry.data import (
     RepresentationsData,
+    RepresentationItemsData,
     ConnectionsData,
     PlacementData,
     DerivedCoordinatesData,
@@ -127,6 +128,41 @@ class BIM_PT_representations(Panel):
             op.ifc_definition_id = representation["id"]
             op.disable_opening_subtractions = False
             row.operator("bim.remove_representation", icon="X", text="").representation_id = representation["id"]
+
+
+class BIM_PT_representation_items(Panel):
+    bl_label = "Representation Items"
+    bl_idname = "BIM_PT_representation_items"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_order = 1
+    bl_parent_id = "BIM_PT_tab_representations"
+
+    @classmethod
+    def poll(cls, context):
+        if not context.active_object:
+            return False
+        if not IfcStore.get_element(context.active_object.BIMObjectProperties.ifc_definition_id):
+            return False
+        return IfcStore.get_file()
+
+    def draw(self, context):
+        if not RepresentationItemsData.is_loaded:
+            RepresentationItemsData.load()
+
+        props = context.active_object.BIMGeometryProperties
+
+        row = self.layout.row(align=True)
+        row.label(text=f"{RepresentationItemsData.data['total_items']} Items Found")
+
+        if props.is_editing:
+            row.operator("bim.disable_editing_representation_items", icon="CANCEL", text="")
+        else:
+            row.operator("bim.enable_editing_representation_items", icon="IMPORT", text="")
+            return
+
+        self.layout.template_list("BIM_UL_representation_items", "", props, "items", props, "active_item_index")
 
 
 class BIM_PT_connections(Panel):
@@ -267,7 +303,7 @@ class BIM_PT_mesh(Panel):
                 row.prop(ifc_parameter, "name", text="")
                 row.prop(ifc_parameter, "value", text="")
                 row.operator("bim.update_parametric_representation", icon="FILE_REFRESH", text="").index = index
-        
+
 
 class BIM_PT_placement(Panel):
     bl_label = "Placement"
@@ -327,7 +363,7 @@ class BIM_PT_derived_coordinates(Panel):
         row.label(text="XYZ Dimensions")
 
         row = self.layout.row(align=True)
-        row.enabled=False
+        row.enabled = False
         row.prop(context.active_object, "dimensions", text="X", index=0, slider=True)
         row.prop(context.active_object, "dimensions", text="Y", index=1, slider=True)
         row.prop(context.active_object, "dimensions", text="Z", index=2, slider=True)
@@ -379,3 +415,13 @@ class BIM_PT_workarounds(Panel):
         row.prop(props, "should_force_triangulation")
         row = self.layout.row()
         row.prop(props, "should_use_presentation_style_assignment")
+
+
+class BIM_UL_representation_items(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item:
+            icon = "MATERIAL" if item.surface_style else "MESH_UVSPHERE"
+            row = layout.row(align=True)
+            row.label(text=item.name, icon=icon)
+            if item.surface_style:
+                row.label(text=item.surface_style)

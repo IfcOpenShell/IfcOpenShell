@@ -26,6 +26,7 @@ def refresh():
     PlacementData.is_loaded = False
     DerivedCoordinatesData.is_loaded = False
     RepresentationsData.is_loaded = False
+    RepresentationItemsData.is_loaded = False
     ConnectionsData.is_loaded = False
 
 
@@ -90,6 +91,34 @@ class RepresentationsData:
                 )
             )
         return results
+
+
+class RepresentationItemsData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {"total_items": cls.total_items()}
+        cls.is_loaded = True
+
+    @classmethod
+    def total_items(cls):
+        active_representation_id = None
+        result = 0
+        if bpy.context.active_object.data and hasattr(bpy.context.active_object.data, "BIMMeshProperties"):
+            active_representation_id = bpy.context.active_object.data.BIMMeshProperties.ifc_definition_id
+            element = tool.Ifc.get().by_id(active_representation_id)
+            if not element.is_a("IfcShapeRepresentation"):
+                return 0
+            queue = list(element.Items)
+            while queue:
+                item = queue.pop()
+                if item.is_a("IfcMappedItem"):
+                    queue.extend(item.MappingSource.MappedRepresentation.Items)
+                else:
+                    result += 1
+        return result
 
 
 class ConnectionsData:
