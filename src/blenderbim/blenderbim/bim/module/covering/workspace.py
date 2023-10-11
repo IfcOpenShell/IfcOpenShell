@@ -19,6 +19,7 @@
 
 import os
 import bpy
+import ifcopenshell
 import blenderbim.tool as tool
 from blenderbim.bim.helper import prop_with_search
 from blenderbim.bim.module.model.data import AuthoringData
@@ -63,6 +64,7 @@ class CoveringToolUI:
         cls.props = context.scene.BIMModelProperties
         cls.covering_props = context.scene.BIMCoveringProperties
 
+
         row = cls.layout.row(align=True)
         if not tool.Ifc.get():
             row.label(text="No IFC Project", icon="ERROR")
@@ -88,28 +90,54 @@ class CoveringToolUI:
 
     @classmethod
     def draw_default_interface(cls):
+        row = cls.layout.row(align=True)
+        row.prop(data=cls.props, property="rl3", text="RL")
         if AuthoringData.data["ifc_classes"]:
-            row = cls.layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_A")
             active_obj = bpy.context.active_object
             element = tool.Ifc.get_entity(active_obj)
             collection = bpy.context.view_layer.active_layer_collection.collection
             collection_obj = collection.BIMCollectionProperties.obj
 
-            if AuthoringData.data["predefined_type"] == "FLOORING":
-                if element and bpy.context.selected_objects and element.is_a("IfcWall"):
-                    op = row.operator("bim.add_instance_flooring_coverings_from_walls")
+            relating_type_id = int(cls.props.relating_type_id)
+            type_material_usage = ifcopenshell.util.element.get_material(tool.Ifc.get().by_id(relating_type_id)).is_a()
+
+            if (AuthoringData.data["predefined_type"] == "FLOORING" and
+                type_material_usage == "IfcMaterialLayerSet" and
+                not bpy.context.selected_objects):
+                row = cls.layout.row(align=True)
+                row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="", icon="EVENT_A")
 #               PLEASE KEEP COMMENTS AS A REMINDER
 #                elif element and bpy.context.selected_objects and element.is_a("IfcSpace"):
 #                    op. = row.operator("bim.add_istance_flooring_from_spaces"):
-                elif tool.Ifc.get_entity(collection_obj):
+                if tool.Ifc.get_entity(collection_obj):
                     op = row.operator("bim.add_instance_flooring_covering_from_cursor")
                 else:
                     op = row.operator("bim.add_constr_type_instance", text="Add")
                     op.from_invoke = True
                     if cls.props.relating_type_id.isnumeric():
                         op.relating_type_id = int(cls.props.relating_type_id)
+
+            elif (AuthoringData.data["predefined_type"] == "FLOORING" and
+                type_material_usage == "IfcMaterialLayerSet" and
+                element and
+                bpy.context.selected_objects and
+                element.is_a("IfcWall")):
+                    row = cls.layout.row(align=True)
+                    row.label(text="", icon="EVENT_SHIFT")
+                    row.label(text="", icon="EVENT_A")
+                    op = row.operator("bim.add_instance_flooring_coverings_from_walls")
+
+            elif (element and
+                  bpy.context.selected_objects and
+                  element.is_a("IfcCovering") and
+                  AuthoringData.data["predefined_type"] == "FLOORING" and
+                  AuthoringData.data["active_material_usage"] == "LAYER3"):
+                row = cls.layout.row(align=True)
+                row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="", icon="EVENT_G")
+                op = row.operator("bim.regen_selected_flooring_object")
+
 
 
 #            elif AuthoringData.data["predefined_type"] == "CEILING":
@@ -126,16 +154,13 @@ class CoveringToolUI:
 #                    if cls.props.relating_type_id.isnumeric():
 #                        op.relating_type_id = int(cls.props.relating_type_id)
             else:
+                row = cls.layout.row(align=True)
+                row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="", icon="EVENT_A")
                 op = row.operator("bim.add_constr_type_instance", text="Add")
                 op.from_invoke = True
                 if cls.props.relating_type_id.isnumeric():
                     op.relating_type_id = int(cls.props.relating_type_id)
-
-            if element and bpy.context.selected_objects and element.is_a("IfcCovering") and AuthoringData.data["predefined_type"] == "FLOORING":
-                row = cls.layout.row(align=True)
-                row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="", icon="EVENT_G")
-                op = row.operator("bim.regen_selected_flooring_object")
 
     @classmethod
     def draw_type_selection_interface(cls):
