@@ -577,7 +577,7 @@ def get_elements_by_layer(ifc_file, layer):
     :rtype: list[ifcopenshell.entity_instance.entity_instance]
     """
     results = set()
-    for item in layer.AssignedItems:
+    for item in layer.AssignedItems or []:
         if item.is_a("IfcShapeRepresentation"):
             results.update(get_elements_by_representation(ifc_file, item))
         elif item.is_a("IfcRepresentationItem"):
