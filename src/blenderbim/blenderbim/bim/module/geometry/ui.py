@@ -164,6 +164,18 @@ class BIM_PT_representation_items(Panel):
 
         self.layout.template_list("BIM_UL_representation_items", "", props, "items", props, "active_item_index")
 
+        row = self.layout.row()
+        if RepresentationItemsData.data["active_surface_style"]:
+            row.label(text=RepresentationItemsData.data["active_surface_style"], icon="MATERIAL")
+        else:
+            row.label(text="No Surface Style", icon="MESH_UVSPHERE")
+
+        row = self.layout.row()
+        if RepresentationItemsData.data["active_layer"]:
+            row.label(text=RepresentationItemsData.data["active_layer"], icon="STICKY_UVS_LOC")
+        else:
+            row.label(text="No Presentation Layer", icon="STICKY_UVS_LOC")
+
 
 class BIM_PT_connections(Panel):
     bl_label = "Connections"
@@ -423,5 +435,5 @@ class BIM_UL_representation_items(UIList):
             icon = "MATERIAL" if item.surface_style else "MESH_UVSPHERE"
             row = layout.row(align=True)
             row.label(text=item.name, icon=icon)
-            if item.surface_style:
-                row.label(text=item.surface_style)
+            if item.layer:
+                row.label(text="", icon="STICKY_UVS_LOC")
