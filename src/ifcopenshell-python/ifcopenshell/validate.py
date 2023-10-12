@@ -328,7 +328,7 @@ def validate(f, logger, express_rules=False):
 
         log_internal_cpp_errors(filename, logger)
 
-    schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(f.schema)
+    schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(f.schema_identifier)
     for inst in f:
         if hasattr(logger, "set_state"):
             logger.set_state('instance', inst)
