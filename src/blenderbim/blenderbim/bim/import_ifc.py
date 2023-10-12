@@ -96,7 +96,9 @@ class MaterialCreator:
                     has_parsed = True
         elif hasattr(element, "RepresentationMaps"):
             for representation_map in element.RepresentationMaps:
-                if self.parse_representation(representation_map.MappedRepresentation):
+                if not representation_map.MappedRepresentation:
+                    has_parsed = True  # Accommodate invalid IFC data from Revit
+                elif self.parse_representation(representation_map.MappedRepresentation):
                     has_parsed = True
         return has_parsed
 
