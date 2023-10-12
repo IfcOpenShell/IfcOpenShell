@@ -490,10 +490,26 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcStyledItem* inst) {
 
 
 taxonomy::ptr mapping::map(const IfcBaseInterface* inst) {
-	// std::wcout << inst->data().toString().c_str() << std::endl;
+	auto iden = inst->as<IfcUtil::IfcBaseClass>()->identity();
+	auto it = cache_.find(iden);
+	if (it != cache_.end()) {
+		return it->second;
+	}
+	taxonomy::ptr item = nullptr;
+
+	// @todo we should check whether there is a notice performance impact on the large sequence
+	// of if-statements and whether a switch on e.g inst->declaration()->index_in_schema()
+	// isn't more efficient (which would disable inheritance though).
+
 #include "bind_convert_impl.i"
-	Logger::Message(Logger::LOG_ERROR, "No operation defined for:", inst);
-	return nullptr;
+
+	if (item) {
+		cache_.insert({ iden, item });
+	}
+	else {
+		Logger::Message(Logger::LOG_ERROR, "No operation defined for:", inst);
+	}
+	return item;
 }
 
 namespace {
