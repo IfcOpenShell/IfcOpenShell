@@ -1766,7 +1766,8 @@ class EnableEditingRepresentationItems(bpy.types.Operator, Operator):
                             for style in styles:
                                 if style.is_a("IfcSurfaceStyle"):
                                     new.surface_style = style.Name or "Unnamed"
-                                    break
+                        elif inverse.is_a("IfcPresentationLayerAssignment"):
+                            new.layer = inverse.Name or "Unnamed"
 
 
 class DisableEditingRepresentationItems(bpy.types.Operator, Operator):
