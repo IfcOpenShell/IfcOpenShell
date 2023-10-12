@@ -66,22 +66,6 @@ def get_zones(ifc_file):
                 has_space = True
         if not has_space:
             results.append((zone, None))
-    if zones:
-        return results
-
-    zone_spaces = {}
-    for space in ifc_file.by_type("IfcSpace"):
-        for _, props in ifcopenshell.util.element.get_psets(space).items():
-            for name, value in props.items():
-                if "ZoneName" in name:
-                    zone_name = val(value)
-                    space_name = val(space.Name)
-                    category = name
-                    zone_key = str(name) + "," + str(category)
-                    zone_spaces.setdefault(zone_key, [])
-                    if space_name not in zone_spaces[zone_key]:
-                        zone_spaces[zone_key].append(space_name)
-                        results.append(((zone_name, category), space_name))
     return results
 
 
@@ -443,21 +427,6 @@ def get_space_data(ifc_file, element):
 def get_zone_data(ifc_file, element):
     zone, space = element
 
-    if isinstance(zone, tuple):
-        name, category = zone
-        history = get_history(ifc_file)
-        return {
-            "Name": name,
-            "CreatedBy": get_email_from_history(history) if history else None,
-            "CreatedOn": ifcopenshell.util.date.ifc2datetime(history.CreationDate).isoformat() if history else None,
-            "Category": category,
-            "SpaceNames": space,
-            "ExternalSystem": history.OwningApplication.ApplicationFullName if history else None,
-            "ExternalObject": "IfcPropertySingleValue",
-            "ExternalIdentifier": None,
-            "Description": val(name) or val(category),
-        }
-
     name = zone.Name
     parent = ifcopenshell.util.element.get_aggregate(zone)
     if parent and val(parent.Name):
@@ -480,136 +449,106 @@ def get_zone_data(ifc_file, element):
 
 
 def get_type_data(ifc_file, element):
-    pset_metadata = {}
-    pset_mapping = {
-        "manufacturer": {"Manufacturer"},
-        "model_number": {"ModelNumber", "ArticleNumber", "ModelReference"},
-        "warranty_guarantor_parts": {"WarrantyGuarantorParts", "PointOfContact"},
-        "warranty_guarantor_labor": {"WarrantyGuarantorLabor", "PointOfContact"},
-        "warranty_description": {"WarrantyDescription", "WarrantyIdentifier"},
-        "replacement_cost": {"ReplacementCost", "Replacement Cost", "Replacement", "Cost"},
-        "nominal_length": {"NominalLength", "OverallLength", "Length"},
-        "nominal_width": {"NominalWidth", "OverallWidth", "Width"},
-        # https://github.com/opensourceBIM/COBie-plugins/blob/master/COBiePlugins/lib/IfcToCobieConfig.xml#L104
-        "nominal_height": {"NominalHeight", "Height"},  # Original has a typo "Heght"
-        "model_reference": {"ModelLabel"},  # I believe this is what the intention was, not "ModelReference".
-        "shape": {"Shape"},
-        "size": {"Size"},
-        "color": {"Color", "Colour"},
-        "finish": {"Finish"},
-        "grade": {"Grade"},
-        "material": {"Material"},
-        "constituents": {"Constituents", "Parts"},
-        "features": {"Features"},
-        "accessibility_performance": {"AccessibilityPerformance", "Access"},
-        "code_performance": {"CodePerformance", "Regulation"},
-        "sustainability_performance": {"SustainabilityPerformance", "Environmental"},
-    }
     asset_type = None
-    asset_type_names = {"AssetType", "AssetAccountingType"}
+    manufacturer = None
+    model_number = None
     warranty_duration_parts = None
-    warranty_duration_parts_names = {"WarrantyDurationParts", "WarrantyPeriod"}
     warranty_duration_labor = None
-    warranty_duration_labor_names = {"WarrantyDurationLabor", "WarrantyPeriod"}
     warranty_duration_unit = None
+    replacement_cost = None
     expected_life = None
-    expected_life_names = {"ExpectedLife", "Expected Life", "ServiceLifeDuration", "Expected"}
     duration_unit = None
+    warranty_description = None
+    nominal_length = None
+    nominal_width = None
+    nominal_height = None
+    model_reference = None
+    shape = None
+    size = None
+    color = None
+    finish = None
+    grade = None
+    material = None
+    constituents = None
+    features = None
+    accessibility_performance = None
+    code_performance = None
+    sustainability_performance = None
 
     for pset_name, props in ifcopenshell.util.element.get_psets(element).items():
         pset_warranty_type = None
-        if pset_name == "Pset_Warranty":
-            if "parts" in (props.get("WarrantyIdentifier", "") or "").lower():
-                pset_warranty_type = "parts"
-            elif "labor" in (props.get("WarrantyIdentifier", "") or "").lower():
-                pset_warranty_type = "labor"
-
-        pset = ifc_file.by_id(props["id"])
-
-        for name, value in props.items():
-            for key, prop_names in pset_mapping.items():
-                if not pset_metadata.get(key, None) and name in prop_names and val(value):
-                    pset_metadata[key] = str(value)
-
-            if not asset_type and name in asset_type_names and val(value):
-                value = value.strip().lower()
-                if value in ("moveable", "nonfixed"):
-                    asset_type = "Moveable"
-                elif value == "fixed":
-                    asset_type = "Fixed"
-            if not warranty_duration_parts and name in warranty_duration_parts_names and val(value):
-                warranty_duration_parts = str(value)
-                if not warranty_duration_unit:
-                    warranty_duration_unit = get_property_unit(pset, name)
-            if not warranty_duration_labor and name in warranty_duration_labor_names and val(value):
-                warranty_duration_labor = str(value)
-                if not warranty_duration_unit:
-                    warranty_duration_unit = get_property_unit(pset, name)
-            if not expected_life and name in expected_life_names and val(value):
-                expected_life = str(value)
-                if not duration_unit:
-                    duration_unit = get_property_unit(pset, name)
-
-            if pset_warranty_type == "parts" and val(value):
-                if name == "PointOfContact":
-                    # https://github.com/buildingSMART/IFC4.3.x-development/issues/698
-                    warranty_guarantor_parts = str(value)
-                elif name == "WarrantyPeriod":
-                    warranty_duration_parts = str(value)
-                    unit = get_property_unit(pset, name)
-                    warranty_duration_unit = unit or warranty_duration_unit
-            elif pset_warranty_type == "labor" and val(value):
-                if name == "PointOfContact":
-                    # https://github.com/buildingSMART/IFC4.3.x-development/issues/698
-                    warranty_guarantor_labor = str(value)
-                elif name == "WarrantyPeriod":
-                    warranty_duration_labor = str(value)
-                    unit = get_property_unit(pset, name)
-                    warranty_duration_unit = unit or warranty_duration_unit
-
-    if warranty_duration_parts or warranty_duration_labor:
-        if not warranty_duration_unit:
-            warranty_duration_unit = get_unit_type_name(ifc_file, "TIMEUNIT")
-
-    if not asset_type and element.is_a("IfcFurnitureType"):
-        asset_type = "Moveable"
+        if pset_name == "COBie_Warranty":
+            warranty_guarantor_parts = props.get("WarrantyGuarantorParts", None)
+            warranty_guarantor_labor = props.get("WarrantyGuarantorLabor", None)
+            warranty_duration_parts = props.get("WarrantyDurationParts", None)
+            warranty_duration_labor = props.get("WarrantyDurationLabor", None)
+            warranty_duration_unit = props.get("WarrantyDurationUnit", None)
+            warranty_description = props.get("WarrantyDescription", None)
+        elif pset_name == "COBie_Asset":
+            asset_type = props.get("AssetType", None)
+        elif pset_name == "COBie_EconomicImpactValues":
+            replacement_cost = props.get("ReplacementCost", None)
+        elif pset_name == "COBie_ServiceLife":
+            duration_unit = props.get("DurationUnit", None)
+            duration_unit = props.get("ServiceLifeDuration", props.get("ExpectedLife", None))
+        elif pset_name == "COBie_Specification":
+            nominal_length = props.get("NominalLength", None)
+            nominal_width = props.get("NominalWidth", None)
+            nominal_height = props.get("NominalHeight", None)
+            shape = props.get("Shape", None)
+            size = props.get("Size", None)
+            color = props.get("Color", None)
+            finish = props.get("Finish", None)
+            grade = props.get("Grade", None)
+            material = props.get("Material", None)
+            constituents = props.get("Constituents", None)
+            features = props.get("Features", None)
+            accessibility_performance = props.get("AccessibilityPerformance", None)
+            code_performance = props.get("CodePerformance", None)
+            sustainability_performance = props.get("SustainabilityPerformance", None)
+        elif pset_name == "Pset_ServiceLife":
+            duration_unit = props.get("ServiceLifeDuration", None)
+        elif pset_name == "Pset_ManufacturerTypeInformation":
+            manufacturer = props.get("Manufacturer", None)
+            model_number = props.get("ModelLabel", None)
+            model_reference = props.get("ModelReference", None)
 
     return {
         "Name": val(element.Name),
         "CreatedBy": get_created_by(element),
         "CreatedOn": get_created_on(element),
         "Category": get_category(element),
-        "Description": val(element.Description) or val(element.Name),
+        "Description": val(element.Description),
         "AssetType": asset_type,
-        "Manufacturer": pset_metadata.get("manufacturer", None),
-        "ModelNumber": pset_metadata.get("model_number", None),
-        "WarrantyGuarantorParts": pset_metadata.get("warranty_guarantor_parts", None),
+        "Manufacturer": manufacturer,
+        "ModelNumber": model_number,
+        "WarrantyGuarantorParts": warranty_guarantor_parts,
         "WarrantyDurationParts": warranty_duration_parts,
-        "WarrantyGuarantorLabor": pset_metadata.get("warranty_guarantor_labor", None),
+        "WarrantyGuarantorLabor": warranty_guarantor_labor,
         "WarrantyDurationLabor": warranty_duration_labor,
         "WarrantyDurationUnit": warranty_duration_unit,
         "ExternalSystem": get_external_system(element),
         "ExternalObject": element.is_a(),
         "ExternalIdentifier": element.GlobalId,
-        "ReplacementCost": pset_metadata.get("replacement_cost", None),
+        "ReplacementCost": replacement_cost,
         "ExpectedLife": expected_life,
         "DurationUnit": duration_unit,
-        "WarrantyDescription": pset_metadata.get("warranty_description", None),
-        "NominalLength": pset_metadata.get("nominal_length", None),
-        "NominalWidth": pset_metadata.get("nominal_width", None),
-        "NominalHeight": pset_metadata.get("nominal_height", None),
-        "ModelReference": pset_metadata.get("model_reference", None),
-        "Shape": pset_metadata.get("shape", None),
-        "Size": pset_metadata.get("size", None),
-        "Color": pset_metadata.get("color", None),
-        "Finish": pset_metadata.get("finish", None),
-        "Grade": pset_metadata.get("grade", None),
-        "Material": pset_metadata.get("material", None),
-        "Constituents": pset_metadata.get("constituents", None),
-        "Features": pset_metadata.get("features", None),
-        "AccessibilityPerformance": pset_metadata.get("accessibility_performance", None),
-        "CodePerformance": pset_metadata.get("code_performance", None),
-        "SustainabilityPerformance": pset_metadata.get("sustainability_performance", None),
+        "WarrantyDescription": warranty_description,
+        "NominalLength": nominal_length,
+        "NominalWidth": nominal_width,
+        "NominalHeight": nominal_height,
+        "ModelReference": model_reference,
+        "Shape": shape,
+        "Size": size,
+        "Color": color,
+        "Finish": finish,
+        "Grade": grade,
+        "Material": material,
+        "Constituents": constituents,
+        "Features": features,
+        "AccessibilityPerformance": accessibility_performance,
+        "CodePerformance": code_performance,
+        "SustainabilityPerformance": sustainability_performance,
     }
 
 
