@@ -41,6 +41,7 @@ def get_contexts(self, context):
 class RepresentationItem(PropertyGroup):
     name: StringProperty(name="Name")
     surface_style: StringProperty(name="Surface Style")
+    layer: StringProperty(name="Layer")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
 
