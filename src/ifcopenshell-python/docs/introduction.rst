@@ -33,9 +33,9 @@ What makes IfcOpenShell special?
 IfcOpenShell has a huge amount of unique features and capabilities not found in any other technology.
 
 - IfcOpenShell is the oldest and most mature open source IFC library available. It's developed since 2011 by a community of hundreds of developers and trusted to deliver many AEC technologies that power our industry. IfcOpenShell is also taught in numerous universities and cited in hundreds of academic publications.
-- Lots of platforms and package management options are available: Windows, Mac, Mac ARM (M1, M2), Linux, Web Assembly (WASM), Docker, AWS Lambda, Google Colab, and more.
+- Lots of platforms and package management options are available: Windows, Mac Intel, Mac Silicon (M1, M2), Linux, Web Assembly (WASM), Docker, AWS Lambda, Google Colab, and more.
 - Develop in C++, Python, or JavaScript via Pyodide.
-- All tools can be used either as a developer library, through a command line interface, or using a rich graphical interface. Whether you're deploy headless server tools for your own pipeline, writing your own apps, or an end-user, there's something for you.
+- All tools can be used either as a developer library, through a command line interface, or using a rich graphical interface. Whether you're deploying headless server tools for your own pipeline, writing your own apps, or an end-user, there's something for you.
 - Supports IFC2X3, IFC4, and IFC4.3. Custom schemas (such as experimental or draft schemas) may be loaded at run-time instead of having to recompile.
 - Built-in IFC validation is possible from basic syntax validation to more detailed "Where Rule" checks. This is the same validation that powers the official buildingSMART validation engine.
 - Read and write IFC-SPF, IFCJSON, IFCXML, IFCHDF5, MySQL, and SQLite.
@@ -57,7 +57,7 @@ IfcOpenShell is a modular ecosystem of tools that work together, where each tool
     "**IfcOpenShell**", "The core library for C++ developers. The library includes the ability to parse schemas, tessellate and process implicit geometry."
     "**IfcOpenShell-Python**", "Python bindings to the core IfcOpenShell C++ system, as well as high level analysis and authoring functions."
     "**IfcConvert**", "A command-line application for converting IFC geometry into file formats such as OBJ, DAE, GLB, STP, IGS, XML, SVG, H5, and IFC itself."
-    "**BlenderBIM Add-on**", "A graphical add-on that lets you analyse, author, and modify IFC with Blender."
+    "**BlenderBIM Add-on**", "A graphical add-on that lets you analyse, author, and modify IFC with Blender. Graphically create BIM models from scratch!"
     "**BCF**", "BIM Collaboration Format (BCF) is a standard to manage and exchange coordination topics between disciplines collaborating on a project by changing XML files or querying an API."
     "**BIMServer-Plugin**", "A plugin to the open source BIMServer CDE to allow you to use IfcOpenShell to parse, view, and audit models."
     "**BIMTester**", "A utility that allows you to write Gherkin-based tests for models."

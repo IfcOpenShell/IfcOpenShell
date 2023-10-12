@@ -496,7 +496,7 @@ def get_type_data(ifc_file, element):
     pset_metadata = {}
     pset_mapping = {
         "manufacturer": {"Manufacturer"},
-        "model_number": {"ModelNumber", "ArticleNumber", "ModelReference"},
+        "model_number": {"ModelNumber", "ArticleNumber", "ModelLabel"},
         "warranty_guarantor_parts": {"WarrantyGuarantorParts", "PointOfContact"},
         "warranty_guarantor_labor": {"WarrantyGuarantorLabor", "PointOfContact"},
         "warranty_description": {"WarrantyDescription", "WarrantyIdentifier"},
@@ -505,7 +505,7 @@ def get_type_data(ifc_file, element):
         "nominal_width": {"NominalWidth", "OverallWidth", "Width"},
         # https://github.com/opensourceBIM/COBie-plugins/blob/master/COBiePlugins/lib/IfcToCobieConfig.xml#L104
         "nominal_height": {"NominalHeight", "Height"},  # Original has a typo "Heght"
-        "model_reference": {"ModelLabel"},  # I believe this is what the intention was, not "ModelReference".
+        "model_reference": {"ModelReference"},
         "shape": {"Shape"},
         "size": {"Size"},
         "color": {"Color", "Colour"},
