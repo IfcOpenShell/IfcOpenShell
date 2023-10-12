@@ -27,6 +27,9 @@ import numbers
 import itertools
 import operator
 import functools
+import subprocess
+import sys
+import time
 
 from . import ifcopenshell_wrapper
 from . import settings
