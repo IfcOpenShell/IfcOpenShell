@@ -63,7 +63,7 @@ class EnableEditingLayer(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMLayerProperties
         props.layer_attributes.clear()
-        blenderbim.bim.helper.import_attributes(tool.Ifc.get().by_id(self.layer), props.layer_attributes)
+        blenderbim.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.layer), props.layer_attributes)
         props.active_layer_id = self.layer
         return {"FINISHED"}
 
