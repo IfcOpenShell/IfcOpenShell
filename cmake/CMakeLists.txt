@@ -739,7 +739,7 @@ if(NOT SCHEMA_VERSIONS)
         # super arbitrarily try to keep size down at least a little bit
         set(SCHEMA_VERSIONS "2x3" "4")
     else()
-        set(SCHEMA_VERSIONS "2x3" "4" "4x1" "4x2" "4x3_rc1" "4x3_rc2" "4x3_rc3" "4x3_rc4" "4x3" "4x3_tc1" "4x3_add1")
+        set(SCHEMA_VERSIONS "2x3" "4" "4x1" "4x2" "4x3_rc1" "4x3_rc2" "4x3_rc3" "4x3_rc4" "4x3" "4x3_tc1" "4x3_add1" "4x3_add2")
     endif()
 endif()
 
@@ -934,8 +934,6 @@ if(BUILD_CONVERT OR BUILD_IFCPYTHON)
 
     add_library(Serializers ${SERIALIZERS_FILES})
     set_target_properties(Serializers PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS" VERSION "${PROJECT_VERSION}" SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
-
-	message(STATUS "WITH_PROJ ${WITH_PROJ}")
 
 	if (WITH_PROJ)
 		target_compile_definitions(Serializers PRIVATE "WITH_PROJ")
