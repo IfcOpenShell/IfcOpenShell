@@ -28,11 +28,11 @@ from blenderbim.bim.module.material.data import MaterialsData, ObjectMaterialDat
 class BIM_PT_materials(Panel):
     bl_label = "Materials"
     bl_idname = "BIM_PT_materials"
-    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_geometry"
+    bl_parent_id = "BIM_PT_tab_materials"
+    bl_options = {"HIDE_HEADER"}
 
     @classmethod
     def poll(cls, context):
@@ -45,11 +45,10 @@ class BIM_PT_materials(Panel):
         self.props = context.scene.BIMMaterialProperties
 
         row = self.layout.row(align=True)
-        row.label(text="{} Materials Found".format(MaterialsData.data["total_materials"]), icon="MATERIAL")
+        row.label(text="{} Materials".format(MaterialsData.data["total_materials"]), icon="NODE_MATERIAL")
         if self.props.is_editing:
             row.operator("bim.disable_editing_materials", text="", icon="CANCEL")
         else:
-            row = self.layout.row(align=True)
             prop_with_search(row, self.props, "material_type", text="")
             row.operator("bim.load_materials", text="", icon="IMPORT")
             return
