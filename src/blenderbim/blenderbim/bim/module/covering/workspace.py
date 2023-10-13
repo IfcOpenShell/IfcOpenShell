@@ -131,7 +131,7 @@ class CoveringToolUI:
             elif (element and
                   bpy.context.selected_objects and
                   element.is_a("IfcCovering") and
-                  AuthoringData.data["predefined_type"] == "FLOORING" and
+#                  AuthoringData.data["predefined_type"] == "FLOORING" and
                   AuthoringData.data["active_material_usage"] == "LAYER3"):
                 row = cls.layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
