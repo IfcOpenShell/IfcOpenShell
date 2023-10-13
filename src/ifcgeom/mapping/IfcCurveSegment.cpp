@@ -32,6 +32,12 @@ using namespace ifcopenshell::geometry;
 // @todo use std::numbers::pi when upgrading to C++ 20
 static const double PI = boost::math::constants::pi<double>();
 
+namespace {
+// @todo is there a common math library these functions can be moved to?
+auto sign = [](double v) -> int { return v < 0 ? -1 : 1; };                      // returns -1 or 1
+auto binary_sign = [](double v) -> int { return v < 0 ? -1 : (0 < v ? 1 : 0); }; // returns -1, 0, or 1
+} // namespace
+
 typedef boost::mpl::vector<
 	IfcSchema::IfcLine
 #ifdef SCHEMA_HAS_IfcClothoid
@@ -82,7 +88,6 @@ public:
 	void set_spiral_functor(mapping* mapping_,IfcSchema::IfcSpiral* s, std::function<double(double)> signX, std::function<double(double)> fnX, std::function<double(double)> signY, std::function<double(double)> fnY)
 	{
 		// determine the length of the spiral from the local origin to the end point
-		auto binary_sign = [](double v)->int {return v < 0 ? -1 : (0 < v ? 1 : 0); }; // returns -1, 0, or 1
 		auto sign_s = binary_sign(start_);
 		auto sign_l = binary_sign(length_);
 		double L = 0;
@@ -121,9 +126,8 @@ public:
 	// Then initialize Function(double) -> Vector3, by means of IfcCurve subtypes
 	void operator()(IfcSchema::IfcClothoid* c) {
 		// @todo verify
-		auto sign = [](double v)->int {return v < 0 ? -1 : (0 < v ? 1 : 0); };
-		auto sign_s = sign(start_);
-		auto sign_l = sign(length_);
+		auto sign_s = binary_sign(start_);
+		auto sign_l = binary_sign(length_);
 		double L = 0;
 		if (sign_s == 0) L = fabs(length_);
 		else if (sign_s == sign_l) L = fabs(start_ + length_);
@@ -131,13 +135,16 @@ public:
 
 		auto A = c->ClothoidConstant();
 		auto R = A * A / L;
-		auto RL = (A < 0 ? -1.0 : 1.0) * R * L;
+		auto RL = sign(A) * R * L;
 
 		//const auto& transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(c->Position()))->ccomponents();
 		auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(c->Position()))->ccomponents();
 
-		eval_ = [RL, transformation_matrix](double u) {
+		auto start = start_;
+		eval_ = [RL, transformation_matrix, start](double u) {
 			// coordinate along clothoid is local coordinates
+			u += start;
+
 			auto xterm_1 = u;
 			auto xterm_2 = std::pow(u, 5) / (40 * std::pow(RL, 2));
 			auto xterm_3 = std::pow(u, 9) / (3456 * std::pow(RL, 4));
@@ -179,7 +186,7 @@ public:
 //		auto fn_x = [A](double t)->double {return A * sqrt(PI) * cos(PI * A * t * t / (2 * fabs(A))); };
 //		auto fn_y = [A](double t)->double {return A * sqrt(PI) * sin(PI * A * t * t / (2 * fabs(A))); };
 //
-//		set_spiral_functor(mapping_,c->as<IfcSchema::IfcSpiral>(), sign_x, fn_x, sign_y, fn_y);
+//		set_spiral_functor(mapping_, c, sign_x, fn_x, sign_y, fn_y);
 //	}
 //#endif
 
@@ -199,30 +206,33 @@ public:
 				return a0 + a1 + a2;
 			};
 
-		auto sign = [](double v)->int {return v < 0 ? -1 : 1; }; // returns -1 or 1
-		auto sign_x = [sign](double t) {return sign(t); };
-		auto sign_y = [sign](double t) {return sign(t); }; // @todo fix - not sure about sign_y yet, need to find some plots of this spiral
+		auto sign_x = [](double t) {return sign(t); };
+		auto sign_y = [](double t) {return sign(t); }; // @todo fix - not sure about sign_y yet, need to find some plots of this spiral
 
 		auto fn_x = [theta](double t)->double {return cos(theta(t)); };
 		auto fn_y = [theta](double t)->double {return sin(theta(t)); };
 
-		set_spiral_functor(mapping_,s->as<IfcSchema::IfcSpiral>(), sign_x, fn_x, sign_y, fn_y);
+		set_spiral_functor(mapping_, s, sign_x, fn_x, sign_y, fn_y);
 	}
 #endif
 
 	void operator()(IfcSchema::IfcCircle* c)
 	{
 		auto R = c->Radius();
+
+		auto sign_x = 1.0;
+      auto sign_y = sign(length_);
+
 		//const auto& transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(c->Position()))->ccomponents();
 		auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(c->Position()))->ccomponents();
 
-		eval_ = [R, transformation_matrix](double u)
+		eval_ = [R, transformation_matrix, sign_x, sign_y](double u)
 			{
 				auto angle = u / R; // angle subtended by arc length u
 
 				// compute point on circle centered at (0,0) with x-axis horizontal and y-axis vertical
-				auto x = R * cos(angle);
-				auto y = R * sin(angle);
+				auto x = sign_x * R * cos(angle);
+				auto y = sign_y * R * sin(angle);
 
 				// transform point into circle's coodinate system
 				auto result = transformation_matrix * Eigen::Vector4d(x, y, 0.0, 1.0);
@@ -340,35 +350,28 @@ public:
 	}
 
 	void operator()(IfcSchema::IfcPolynomialCurve* p) {
+		// see https://forums.buildingsmart.org/t/ifcpolynomialcurve-clarification/4716 for discussion on IfcPolynomialCurve
+		auto coeffX = p->CoefficientsX().get_value_or(std::vector<double>());
+      auto coeffY = p->CoefficientsY().get_value_or(std::vector<double>());
+      auto coeffZ = p->CoefficientsZ().get_value_or(std::vector<double>());
 
-		if (segment_type_ == ST_HORIZONTAL) {
-			auto coeffX = p->CoefficientsX();
-			auto coeffY = p->CoefficientsY();
-			eval_ = [coeffX,coeffY](double u) {
+		auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(p->Position()))->ccomponents();
 
-				Eigen::VectorXd vec(4);
-				vec << 0.0, 0.0, 0.0, 1.0;
-				return vec;
-				};
+      eval_ = [coeffX, coeffY, coeffZ,transformation_matrix](double u) {
+         std::array<const std::vector<double>*, 3> coefficients{&coeffX, &coeffY, &coeffZ}; // don't copy
+         std::array<double, 3> values{0.0, 0.0, 0.0}; // @todo, use Eigen::VectorXd - I'm sure there is a way to do this with Eigen, but this is what I know
+         for (int i = 0; i < 3; i++) {
+               for (auto iter = coefficients[i]->cbegin(); iter != coefficients[i]->cend(); iter++) {
+                  auto exp = std::distance(coefficients[i]->cbegin(), iter);
+                  values[i] += (*iter) * pow(u, exp);
+               }
+         }
 
-		}
-		else if (segment_type_ == ST_VERTICAL) {
-			auto coeffY = p->CoefficientsY();
-
-			eval_ = [coeffY](double u) {
-				const auto& coeffs = coeffY.get();
-				auto exp = coeffs.size() - 1;
-				auto z = 0.0;
-				for (auto c : coeffs)
-				{
-					z += c * pow(u, exp--);
-				}
-				Eigen::VectorXd vec(4);
-				vec << 0.0, 0.0, z, 1.0;
-				return vec;
-				};
-
-		}
+   		auto result = transformation_matrix * Eigen::Vector4d(values[0], values[1], values[2], 1.0);
+         Eigen::VectorXd vec(4);
+         vec << result(0), result(1), result(2), 1.0;
+         return vec;
+      };
 	}
 
 	// Take the boost::type value from mpl::for_each and test it against our curve instance
@@ -445,7 +448,6 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveSegment* inst) {
 	auto fn_transformed = [fn, transformation_matrix](double u)->Eigen::VectorXd {
 		auto result = fn(u);
 		Eigen::Vector4d v(result.x(), result.y(), result.z(), 1.0);
-		// return transformation_matrix * fn(u);
 		auto r = transformation_matrix * v;
 		Eigen::VectorXd d(4);
 		d << r(0), r(1), r(2), r(3);
@@ -457,25 +459,6 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveSegment* inst) {
 	pwf->spans.push_back({ length, fn_transformed });
 	pwf->instance = inst;
 	return pwf;
-
-	/*
-	static int NUM_SEGMENTS = 64;
-	std::vector<taxonomy::point3::ptr> polygon;
-
-	auto length = cse.length();
-	if (0.001 < fabs(length))
-	{
-		for (int i = 0; i <= NUM_SEGMENTS; ++i) {
-			auto u = length * i / NUM_SEGMENTS;
-
-			auto p = cse(u);
-			auto result =  transformation_matrix * Eigen::Vector4d(p(0),p(1),p(2), 1.);
-			polygon.push_back(taxonomy::make<taxonomy::point3>(result(0),result(1),result(2)));
-		}
-	}
-
-	return polygon_from_points(polygon);
-	*/
 }
 
 #endif

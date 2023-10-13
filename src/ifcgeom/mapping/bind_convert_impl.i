@@ -3,7 +3,7 @@
 #endif
 
 #define BIND(T) \
-	if (inst->as<IfcSchema::T>()) { \
+	if (!item && inst->as<IfcSchema::T>()) { \
 		try { \
 			item = map_impl(inst->as<IfcSchema::T>()); \
 			if (item != nullptr) { \
