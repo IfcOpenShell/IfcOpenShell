@@ -485,11 +485,7 @@ class Spatial(blenderbim.core.tool.Spatial):
 
     @classmethod
     def get_bmesh_from_polygon(cls, poly, h):
-        if bpy.context.selected_objects and bpy.context.active_object:
-            mat = bpy.context.active_object.matrix_world
-        else:
-            mat = Matrix()
-
+        mat = Matrix()
         bm = bmesh.new()
         bm.verts.index_update()
         bm.edges.index_update()
@@ -532,6 +528,15 @@ class Spatial(blenderbim.core.tool.Spatial):
         mesh = bpy.data.meshes.new(name=name)
         bmesh.to_mesh(mesh)
         bmesh.free()
+        return mesh
+
+    @classmethod
+    def get_transformed_mesh_from_local_to_global(cls, mesh):
+        active_obj = cls.get_active_obj()
+        element = tool.Ifc.get_entity(active_obj)
+        mat = active_obj.matrix_world
+        mesh.transform(mat.inverted())
+        mesh.update()
         return mesh
 
     @classmethod

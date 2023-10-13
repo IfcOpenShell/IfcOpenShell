@@ -157,6 +157,7 @@ def generate_space(ifc, spatial, model, Type):
     mesh = spatial.get_named_mesh_from_bmesh(name = "Space", bmesh = bm)
 
     if element and element.is_a("IfcSpace"):
+        mesh = spatial.get_transformed_mesh_from_local_to_global(mesh)
         spatial.edit_active_space_obj_from_mesh(mesh)
     else:
         if relating_type:

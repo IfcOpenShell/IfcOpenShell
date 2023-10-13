@@ -80,6 +80,7 @@ def regen_selected_flooring_object(ifc, spatial, model, Type, geometry):
 
     name = "Aux"
     mesh = spatial.get_named_mesh_from_bmesh(name = name, bmesh = bm)
+    mesh = spatial.get_transformed_mesh_from_local_to_global(mesh)
     obj = spatial.get_named_obj_from_mesh(name, mesh)
 
     points = spatial.get_2d_vertices_from_obj(obj)

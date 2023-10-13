@@ -828,6 +828,7 @@ class Spatial:
     def get_named_obj_from_bmesh(cls, name, bmesh): pass
     def get_named_obj_from_mesh(cls, name, mesh): pass
     def get_named_mesh_from_bmesh(cls, name, bmesh): pass
+    def get_transformed_mesh_from_local_to_global(cls, mesh): pass
     def edit_active_space_obj_from_mesh(cls, mesh): pass
     def set_obj_origin_to_bboxcenter(cls, obj): pass
     def set_obj_origin_to_cursor_position(cls, obj): pass
