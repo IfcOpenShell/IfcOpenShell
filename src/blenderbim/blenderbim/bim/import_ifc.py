@@ -1158,6 +1158,7 @@ class IfcImporter:
         mesh.polygons.add(self.mesh_data["total_polygons"])
         mesh.polygons.foreach_set("loop_start", self.mesh_data["loop_start"])
         mesh.polygons.foreach_set("loop_total", self.mesh_data["loop_total"])
+        mesh.polygons.foreach_set("use_smooth", [0] * self.mesh_data["total_polygons"])
         mesh.update()
 
         mesh["ios_materials"] = self.mesh_data["materials"]
