@@ -454,13 +454,12 @@ ifcopenshell::geometry::taxonomy::solid::ptr ifcopenshell::geometry::create_box(
 
 ifcopenshell::geometry::taxonomy::item::ptr ifcopenshell::geometry::taxonomy::piecewise_function::evaluate() const {
 	// @todo configure resolution
-	//double length = std::accumulate(spans.begin(), spans.end(), 0.0); // don't know why this doesn't compile
 	double length = 0.0;
 	for (auto& s : spans)
 		length += s.first;
 
 	static const double resolution = 0.5;
-	std::vector<taxonomy::point3::ptr> polygon;
+   std::vector<taxonomy::point3::ptr> polygon;
 
 	int num_steps = std::ceil(length / resolution);
 	for (int i = 0; i < num_steps; ++i) {
