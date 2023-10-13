@@ -473,13 +473,51 @@ class IfcImporter:
             or getattr(element, "HasOpenings", None)
         ):
             return
-        representations = self.get_transformed_body_representations(element.Representation.Representations)
+
+        representation = None
+        representation_priority = None
+        context = None
+
+        for rep in element.Representation.Representations:
+            if rep.ContextOfItems in self.contexts:
+                rep_priority = self.contexts.index(rep.ContextOfItems)
+                if representation is None or rep_priority < representation_priority:
+                    representation = rep
+                    representation_priority = rep_priority
+                    context = rep.ContextOfItems
+
+        if not representation:
+            return
+
+        matrix = np.eye(4)
+        representation_id = None
+
+        rep = representation
+        while True:
+            if rep.Items and rep.Items[0].is_a("IfcMappedItem"):
+                rep_matrix = ifcopenshell.util.placement.get_mappeditem_transformation(rep.Items[0])
+                if not np.allclose(rep_matrix, np.eye(4)):
+                    matrix = rep_matrix @ matrix
+                    if representation_id is None:
+                        representation_id = rep.id()
+                rep = rep.Items[0].MappingSource.MappedRepresentation
+            else:
+                if representation_id is None:
+                    representation_id = rep.id()
+                break
+        resolved_representation = ifcopenshell.util.representation.resolve_representation(representation)
+
+        matrix[0][3] *= self.unit_scale
+        matrix[1][3] *= self.unit_scale
+        matrix[2][3] *= self.unit_scale
 
         # Single swept disk solids (e.g. rebar) are better natively represented as beveled curves
-        if self.is_native_swept_disk_solid(element, representations):
+        if self.is_native_swept_disk_solid(element, resolved_representation):
             self.native_data[element.GlobalId] = {
-                "representations": representations,
-                "representation": self.get_body_representation(element.Representation.Representations),
+                "matrix": matrix,
+                "context": context,
+                "geometry_id": representation_id,
+                "representation": resolved_representation,
                 "type": "IfcSweptDiskSolid",
             }
             return True
@@ -488,51 +526,52 @@ class IfcImporter:
             return False  # Performance improvements only occur on edge cases currently
 
         # FacetedBreps (without voids) are meshes. See #841.
-        if self.is_native_faceted_brep(representations):
+        if self.is_native_faceted_brep(resolved_representation):
             self.native_data[element.GlobalId] = {
-                "representations": representations,
-                "representation": self.get_body_representation(element.Representation.Representations),
+                "matrix": matrix,
+                "context": context,
+                "geometry_id": representation_id,
+                "representation": resolved_representation,
                 "type": "IfcFacetedBrep",
             }
             return True
 
-        if self.is_native_face_based_surface_model(representations):
+        if self.is_native_face_based_surface_model(resolved_representation):
             self.native_data[element.GlobalId] = {
-                "representations": representations,
-                "representation": self.get_body_representation(element.Representation.Representations),
+                "matrix": matrix,
+                "context": context,
+                "geometry_id": representation_id,
+                "representation": resolved_representation,
                 "type": "IfcFaceBasedSurfaceModel",
             }
             return True
 
-    def is_native_swept_disk_solid(self, element, representations):
-        for representation in representations:
-            items = representation["raw"].Items or []  # Be forgiving of invalid IFCs because Revit :(
-            if len(items) == 1 and items[0].is_a("IfcSweptDiskSolid"):
-                if tool.Blender.Modifier.is_railing(element):
-                    return False
-                return True
-            elif len(items) and (  # See #2508 why we accommodate for invalid IFCs here
-                items[0].is_a("IfcSweptDiskSolid")
-                and len({i.is_a() for i in items}) == 1
-                and len({i.Radius for i in items}) == 1
-            ):
-                if tool.Blender.Modifier.is_railing(element):
-                    return False
-                return True
+    def is_native_swept_disk_solid(self, element, representation):
+        items = representation.Items or []  # Be forgiving of invalid IFCs because Revit :(
+        if len(items) == 1 and items[0].is_a("IfcSweptDiskSolid"):
+            if tool.Blender.Modifier.is_railing(element):
+                return False
+            return True
+        elif len(items) and (  # See #2508 why we accommodate for invalid IFCs here
+            items[0].is_a("IfcSweptDiskSolid")
+            and len({i.is_a() for i in items}) == 1
+            and len({i.Radius for i in items}) == 1
+        ):
+            if tool.Blender.Modifier.is_railing(element):
+                return False
+            return True
         return False
 
-    def is_native_faceted_brep(self, representations):
-        for representation in representations:
-            for i in representation["raw"].Items:
-                if i.is_a() != "IfcFacetedBrep":
-                    return False
+    def is_native_faceted_brep(self, representation):
+        for i in representation.Items:
+            if i.is_a() != "IfcFacetedBrep":
+                return False
         return True
 
-    def is_native_face_based_surface_model(self, representations):
-        for representation in representations:
-            for i in representation["raw"].Items:
-                if i.is_a() != "IfcFaceBasedSurfaceModel":
-                    return False
+    def is_native_face_based_surface_model(self, representation):
+        for i in representation.Items:
+            if i.is_a() != "IfcFaceBasedSurfaceModel":
+                return False
         return True
 
     def get_products_from_shape_representation(self, element):
@@ -781,20 +820,16 @@ class IfcImporter:
                 checkpoint = time.time()
                 self.incrementally_merge_objects()
             native_data = self.native_data[element.GlobalId]
-            representation = native_data["representation"]
-            if not representation:
-                continue
-            context_id = representation.ContextOfItems.id() if hasattr(representation, "ContextOfItems") else 0
-            mesh_name = f"{context_id}/{representation.id()}"
+            mesh_name = f"{native_data['context'].id()}/{native_data['geometry_id']}"
             mesh = self.meshes.get(mesh_name)
             if mesh is None:
                 if native_data["type"] == "IfcSweptDiskSolid":
-                    mesh = self.create_native_swept_disk_solid(element, mesh_name)
+                    mesh = self.create_native_swept_disk_solid(element, mesh_name, native_data)
                 elif native_data["type"] == "IfcFacetedBrep":
-                    mesh = self.create_native_faceted_brep(element, mesh_name)
+                    mesh = self.create_native_faceted_brep(element, mesh_name, native_data)
                 elif native_data["type"] == "IfcFaceBasedSurfaceModel":
-                    mesh = self.create_native_faceted_brep(element, mesh_name)
-                tool.Ifc.link(representation, mesh)
+                    mesh = self.create_native_faceted_brep(element, mesh_name, native_data)
+                tool.Ifc.link(tool.Ifc.get().by_id(native_data["geometry_id"]), mesh)
                 mesh.name = mesh_name
                 self.meshes[mesh_name] = mesh
             self.create_product(element, mesh=mesh)
@@ -1099,7 +1134,7 @@ class IfcImporter:
             elif style.is_a("IfcPresentationStyleAssignment"):
                 styles.extend(style.Styles)
 
-    def create_native_faceted_brep(self, element, mesh_name):
+    def create_native_faceted_brep(self, element, mesh_name, native_data):
         # TODO: georeferencing?
         # co [x y z x y z x y z ...]
         # vertex_index [i i i i i ...]
@@ -1116,10 +1151,11 @@ class IfcImporter:
             "material_ids": [],
         }
 
-        for representation in element.Representation.Representations:
-            if representation.ContextOfItems.id() not in self.body_contexts:
-                continue
-            self.convert_representation(representation)
+        for item in native_data["representation"].Items:
+            if item.is_a() == "IfcFacetedBrep":
+                self.convert_representation_item_faceted_brep(item)
+            elif item.is_a() == "IfcFaceBasedSurfaceModel":
+                self.convert_representation_item_face_based_surface_model(item)
 
         mesh = bpy.data.meshes.new("Native")
 
@@ -1136,19 +1172,33 @@ class IfcImporter:
             )
             verts = [None] * len(self.mesh_data["co"])
             for i in range(0, len(self.mesh_data["co"]), 3):
-                verts[i], verts[i + 1], verts[i + 2] = ifcopenshell.util.geolocation.enh2xyz(
-                    self.mesh_data["co"][i] * self.unit_scale,
-                    self.mesh_data["co"][i + 1] * self.unit_scale,
-                    self.mesh_data["co"][i + 2] * self.unit_scale,
-                    offset_point[0] * self.unit_scale,
-                    offset_point[1] * self.unit_scale,
-                    offset_point[2] * self.unit_scale,
-                    float(props.blender_x_axis_abscissa),
-                    float(props.blender_x_axis_ordinate),
+                verts[i], verts[i + 1], verts[i + 2], _ = native_data["matrix"] @ mathutils.Vector(
+                    (
+                        *ifcopenshell.util.geolocation.enh2xyz(
+                            self.mesh_data["co"][i] * self.unit_scale,
+                            self.mesh_data["co"][i + 1] * self.unit_scale,
+                            self.mesh_data["co"][i + 2] * self.unit_scale,
+                            offset_point[0] * self.unit_scale,
+                            offset_point[1] * self.unit_scale,
+                            offset_point[2] * self.unit_scale,
+                            float(props.blender_x_axis_abscissa),
+                            float(props.blender_x_axis_ordinate),
+                        ),
+                        1,
+                    )
                 )
             mesh["has_cartesian_point_offset"] = True
         else:
-            verts = [c * self.unit_scale for c in self.mesh_data["co"]]
+            verts = [None] * len(self.mesh_data["co"])
+            for i in range(0, len(self.mesh_data["co"]), 3):
+                verts[i], verts[i + 1], verts[i + 2], _ = native_data["matrix"] @ mathutils.Vector(
+                    (
+                        self.mesh_data["co"][i] * self.unit_scale,
+                        self.mesh_data["co"][i + 1] * self.unit_scale,
+                        self.mesh_data["co"][i + 2] * self.unit_scale,
+                        1,
+                    )
+                )
             mesh["has_cartesian_point_offset"] = False
 
         mesh.vertices.add(self.mesh_data["total_verts"])
@@ -1164,19 +1214,6 @@ class IfcImporter:
         mesh["ios_materials"] = self.mesh_data["materials"]
         mesh["ios_material_ids"] = self.mesh_data["material_ids"]
         return mesh
-
-    def convert_representation(self, representation):
-        for item in representation.Items:
-            self.convert_representation_item(item)
-
-    def convert_representation_item(self, item):
-        if item.is_a("IfcMappedItem"):
-            # mapping_target = matrix
-            self.convert_representation(item.MappingSource.MappedRepresentation)
-        elif item.is_a() == "IfcFacetedBrep":
-            self.convert_representation_item_faceted_brep(item)
-        elif item.is_a() == "IfcFaceBasedSurfaceModel":
-            self.convert_representation_item_face_based_surface_model(item)
 
     def convert_representation_item_face_based_surface_model(self, item):
         mesh = item.get_info_2(recursive=True)
@@ -1272,61 +1309,32 @@ class IfcImporter:
         self.mesh_data["loop_start"].extend(loop_start)
         # list(di1.keys())
 
-    def create_native_swept_disk_solid(self, element, mesh_name):
+    def create_native_swept_disk_solid(self, element, mesh_name, native_data):
         # TODO: georeferencing?
         curve = bpy.data.curves.new(mesh_name, type="CURVE")
         curve.dimensions = "3D"
         curve.resolution_u = 2
         polyline = curve.splines.new("POLY")
 
-        for representation in self.native_data[element.GlobalId]["representations"]:
-            for item in representation["raw"].Items:
-                # TODO: support inner radius, start param, and end param
-                geometry = self.create_generic_shape(item.Directrix)
-                e = geometry.edges
-                v = geometry.verts
-                vertices = [[v[i], v[i + 1], v[i + 2], 1] for i in range(0, len(v), 3)]
-                edges = [[e[i], e[i + 1]] for i in range(0, len(e), 2)]
-                v2 = None
-                for edge in edges:
-                    v1 = vertices[edge[0]]
-                    if v1 != v2:
-                        polyline = curve.splines.new("POLY")
-                        polyline.points[-1].co = representation["matrix"] @ mathutils.Vector(v1)
-                    v2 = vertices[edge[1]]
-                    polyline.points.add(1)
-                    polyline.points[-1].co = representation["matrix"] @ mathutils.Vector(v2)
+        for item in native_data["representation"].Items:
+            # TODO: support inner radius, start param, and end param
+            geometry = self.create_generic_shape(item.Directrix)
+            e = geometry.edges
+            v = geometry.verts
+            vertices = [[v[i], v[i + 1], v[i + 2], 1] for i in range(0, len(v), 3)]
+            edges = [[e[i], e[i + 1]] for i in range(0, len(e), 2)]
+            v2 = None
+            for edge in edges:
+                v1 = vertices[edge[0]]
+                if v1 != v2:
+                    polyline = curve.splines.new("POLY")
+                    polyline.points[-1].co = native_data["matrix"] @ mathutils.Vector(v1)
+                v2 = vertices[edge[1]]
+                polyline.points.add(1)
+                polyline.points[-1].co = native_data["matrix"] @ mathutils.Vector(v2)
 
         curve.bevel_depth = self.unit_scale * item.Radius
         curve.use_fill_caps = True
-        return curve
-
-    def create_native_annotation(self, element, mesh_name):
-        # TODO: georeferencing?
-        curve = bpy.data.curves.new(mesh_name, type="CURVE")
-        curve.dimensions = "3D"
-        curve.resolution_u = 2
-        polyline = curve.splines.new("POLY")
-
-        for representation in self.native_data[element.GlobalId]["representations"]:
-            for item in representation["raw"].Items:
-                # TODO: support inner radius, start param, and end param
-                geometry = self.create_generic_shape(item.Directrix)
-                e = geometry.edges
-                v = geometry.verts
-                vertices = [[v[i], v[i + 1], v[i + 2], 1] for i in range(0, len(v), 3)]
-                edges = [[e[i], e[i + 1]] for i in range(0, len(e), 2)]
-                v2 = None
-                for edge in edges:
-                    v1 = vertices[edge[0]]
-                    if v1 != v2:
-                        polyline = curve.splines.new("POLY")
-                        polyline.points[-1].co = representation["matrix"] @ mathutils.Vector(v1)
-                    v2 = vertices[edge[1]]
-                    polyline.points.add(1)
-                    polyline.points[-1].co = representation["matrix"] @ mathutils.Vector(v2)
-
-        curve.bevel_depth = self.unit_scale * item.Radius
         return curve
 
     def merge_by_class(self):
@@ -1729,41 +1737,6 @@ class IfcImporter:
         result[1][3] *= self.unit_scale
         result[2][3] *= self.unit_scale
         return result
-
-    def get_body_representation(self, representations):
-        for representation in representations:
-            if (
-                representation.RepresentationIdentifier == "Body"
-                and representation.RepresentationType == "MappedRepresentation"
-            ):
-                if len(representation.Items) > 1:
-                    return representation
-                return self.get_body_representation([representation.Items[0].MappingSource.MappedRepresentation])
-            elif representation.RepresentationIdentifier == "Body":
-                return representation
-
-    def get_transformed_body_representations(self, representations, matrix=None):
-        if matrix is None:
-            matrix = mathutils.Matrix()
-        results = []
-        for representation in representations:
-            if (
-                representation.RepresentationIdentifier == "Body"
-                and representation.RepresentationType == "MappedRepresentation"
-            ):
-                for item in representation.Items:
-                    # TODO: Confirm if this transformation is right
-                    transform = self.get_axis2placement(item.MappingSource.MappingOrigin)
-                    if item.MappingTarget:
-                        transform = transform @ self.get_cartesiantransformationoperator(item.MappingTarget)
-                    results.extend(
-                        self.get_transformed_body_representations(
-                            [item.MappingSource.MappedRepresentation], transform @ matrix
-                        )
-                    )
-            elif representation.RepresentationIdentifier == "Body":
-                results.append({"raw": representation, "matrix": self.scale_matrix(matrix)})
-        return results
 
     def scale_matrix(self, matrix):
         matrix[0][3] *= self.unit_scale
