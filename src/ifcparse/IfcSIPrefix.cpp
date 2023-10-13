@@ -52,6 +52,9 @@
 #ifdef HAS_SCHEMA_4x3_add1
 #include "../ifcparse/Ifc4x3_add1.h"
 #endif
+#ifdef HAS_SCHEMA_4x3_add2
+#include "../ifcparse/Ifc4x3_add2.h"
+#endif
 
 double IfcParse::IfcSIPrefixToValue(const std::string& v) {
 	if      ( v == "EXA"   ) return 1.e18;
@@ -133,6 +136,9 @@ template double IFC_PARSE_API IfcParse::get_SI_equivalent<Ifc4x3>(Ifc4x3::IfcNam
 #ifdef HAS_SCHEMA_4x3_add1
 template double IFC_PARSE_API IfcParse::get_SI_equivalent<Ifc4x3_add1>(Ifc4x3_add1::IfcNamedUnit* named_unit);
 #endif
+#ifdef HAS_SCHEMA_4x3_add2
+template double IFC_PARSE_API IfcParse::get_SI_equivalent<Ifc4x3_add2>(Ifc4x3_add2::IfcNamedUnit* named_unit);
+#endif
 
 #else
 
@@ -168,6 +174,9 @@ template double IFC_PARSE_API IfcParse::get_SI_equivalent<Ifc4x3_tc1>(typename I
 #endif
 #ifdef HAS_SCHEMA_4x3_add1
 template double IFC_PARSE_API IfcParse::get_SI_equivalent<Ifc4x3_add1>(typename Ifc4x3_add1::IfcNamedUnit* named_unit);
+#endif
+#ifdef HAS_SCHEMA_4x3_add2
+template double IFC_PARSE_API IfcParse::get_SI_equivalent<Ifc4x3_add2>(typename Ifc4x3_add2::IfcNamedUnit* named_unit);
 #endif
 
 #endif

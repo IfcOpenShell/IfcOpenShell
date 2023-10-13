@@ -185,6 +185,11 @@ namespace {
 	GET_RELATINGOBJECT_IFC4_VARIANT(Ifc4x3_add1);
 	CREATE_GET_DECOMPOSING_ENTITY(Ifc4x3_add1);
 #endif
+
+#ifdef HAS_SCHEMA_4x3_add2
+	GET_RELATINGOBJECT_IFC4_VARIANT(Ifc4x3_add2);
+	CREATE_GET_DECOMPOSING_ENTITY(Ifc4x3_add2);
+#endif
 }
 
 // Declares the schema-based IfcProduct check:

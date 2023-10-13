@@ -119,6 +119,10 @@
 #ifdef HAS_SCHEMA_4x3_add1
 #include "../ifcparse/Ifc4x3_add1.h"
 #endif
+#ifdef HAS_SCHEMA_4x3_add2
+#include "../ifcparse/Ifc4x3_add2.h"
+#endif
+
 
 	#include "../ifcparse/IfcBaseClass.h"
 	#include "../ifcparse/IfcFile.h"
@@ -182,6 +186,9 @@
 #endif
 #ifdef HAS_SCHEMA_4x3_add1
 	#include "../ifcparse/Ifc4x3_add1.h"
+#endif
+#ifdef HAS_SCHEMA_4x3_add2
+	#include "../ifcparse/Ifc4x3_add2.h"
 #endif
 
 	#include "../ifcparse/IfcBaseClass.h"
