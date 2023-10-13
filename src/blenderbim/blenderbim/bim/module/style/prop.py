@@ -44,6 +44,11 @@ class Style(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     total_elements: IntProperty(name="Total Elements")
+    style_classes: CollectionProperty(name="Style Classes", type=StrProperty)
+    has_surface_colour: BoolProperty(name="Has Surface Colour", default=False)
+    surface_colour: bpy.props.FloatVectorProperty(
+        name="Surface Colour", subtype="COLOR", default=(1, 1, 1), min=0.0, max=1.0, size=3
+    )
 
 
 STYLE_TYPES = [
@@ -60,8 +65,32 @@ def update_shading_styles(self, context):
 
 
 class BIMStylesProperties(PropertyGroup):
+    is_adding: BoolProperty(name="Is Adding")
     is_editing: BoolProperty(name="Is Editing")
-    style_type: EnumProperty(items=get_style_types, name="Style Type")
+    is_editing_style: IntProperty(name="Is Editing Style")
+    is_editing_class: StringProperty(name="Is Editing Class")
+    attributes: CollectionProperty(name="Attributes", type=Attribute)
+    style_type: EnumProperty(items=get_style_types, default=2, name="Style Type")
+    style_name: StringProperty(name="Style Name")
+    surface_style_class: EnumProperty(
+        items=[
+            (x, x, "")
+            for x in (
+                "IfcSurfaceStyleShading",
+                "IfcSurfaceStyleRendering",
+                "IfcSurfaceStyleWithTextures",
+                "IfcSurfaceStyleLighting",
+                "IfcSurfaceStyleRefraction",
+                "IfcExternallyDefinedSurfaceStyle",
+            )
+        ],
+        name="Surface Style Class",
+        default="IfcSurfaceStyleShading",
+    )
+    surface_colour: bpy.props.FloatVectorProperty(
+        name="Surface Colour", subtype="COLOR", default=(1, 1, 1), min=0.0, max=1.0, size=3
+    )
+    transparency: bpy.props.FloatProperty(name="Transparency", default=0.0, min=0.0, max=1.0)
     styles: CollectionProperty(name="Styles", type=Style)
     active_style_index: IntProperty(name="Active Style Index")
     active_style_type: EnumProperty(
