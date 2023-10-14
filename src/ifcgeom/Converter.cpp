@@ -356,6 +356,21 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 	);
 }
 
+IfcGeom::ConversionResults ifcopenshell::geometry::Converter::convert(IfcUtil::IfcBaseClass * item)
+{
+	std::clock_t map_start = std::clock();
+	auto geom_item = mapping_->map(item);
+	IfcGeom::ConversionResults results;
+	if (geom_item) {
+		std::clock_t geom_start = std::clock();
+		kernel_->convert(geom_item, results);
+		std::clock_t geom_end = std::clock();
+		total_map_time += (geom_start - map_start) / (double) CLOCKS_PER_SEC;
+		total_geom_time += (geom_end - geom_start) / (double) CLOCKS_PER_SEC;
+	}
+	return results;
+}
+
 //#include "../../ifcparse/Ifc2x3.h"
 //#include "../../ifcparse/Ifc4.h"
 //
