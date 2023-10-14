@@ -241,3 +241,17 @@ bool OpenCascadeKernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wir
 
 	return true;
 }
+
+bool OpenCascadeKernel::convert_impl(const taxonomy::loop::ptr loop, IfcGeom::ConversionResults& results) {
+	TopoDS_Wire shape;
+	if (!convert(loop, shape)) {
+		return false;
+	}
+
+	results.emplace_back(ConversionResult(
+		loop->instance->data().id(),
+		new OpenCascadeShape(shape),
+		loop->surface_style
+	));
+	return true;
+}

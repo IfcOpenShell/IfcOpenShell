@@ -88,9 +88,11 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 		aggregate_of_instance::ptr profile = inst->data().getInverse(&IfcSchema::IfcProfileDef::Class(), -1);
 		const bool force_close = profile && profile->size() > 0;
 		loop->closed = force_close;
+		loop->instance = inst;
 		return loop;
 	}
 	else {
+		pwf->instance = inst;
 		return pwf;
 	}
 }
