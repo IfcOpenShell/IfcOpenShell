@@ -8,6 +8,8 @@ try:
 except:
     print("Warning: GitPython not available.")
 import bpy
+import logging
+from blenderbim.bim import import_ifc
 from blenderbim.bim.ifc import IfcStore
 import blenderbim.tool as tool
 
@@ -220,7 +222,16 @@ class IfcGit:
 
         bpy.data.orphans_purge(do_recursive=True)
 
-        bpy.ops.bim.load_project(filepath=path_ifc, should_start_fresh_session=False)
+        settings = import_ifc.IfcImportSettings.factory(
+            bpy.context, bpy.context.scene.BIMProperties.ifc_file, logging.getLogger("ImportIFC")
+        )
+        settings.should_setup_viewport_camera = False
+        ifc_importer = import_ifc.IfcImporter(settings)
+        ifc_importer.execute()
+        tool.Project.load_pset_templates()
+        tool.Project.load_default_thumbnails()
+        tool.Project.set_default_context()
+        tool.Project.set_default_modeling_dimensions()
         bpy.ops.object.select_all(action="DESELECT")
 
     @classmethod
