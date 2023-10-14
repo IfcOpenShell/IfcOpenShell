@@ -31,6 +31,11 @@ class TestGetPsetIFC4(test.bootstrap.IFC4):
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"a": "b"})
         assert subject.get_pset(element, "name") == {"a": "b", "id": pset.id()}
         assert subject.get_pset(element, "name", "a") == "b"
+        assert subject.get_pset(element, "name", "a", verbose=True) == {
+            "id": 4,
+            "class": "IfcPropertySingleValue",
+            "value": "b",
+        }
 
     def test_getting_the_psets_of_a_product_type_as_a_dictionary(self):
         type_element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
@@ -38,6 +43,14 @@ class TestGetPsetIFC4(test.bootstrap.IFC4):
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=type_element, name="name")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"x": "y"})
         assert subject.get_pset(type_element, "name") == {"x": "y", "id": pset.id()}
+        assert subject.get_pset(type_element, "name", verbose=True) == {
+            "x": {
+                "id": 3,
+                "class": "IfcPropertySingleValue",
+                "value": "y",
+            },
+            "id": pset.id(),
+        }
 
     def test_getting_inherited_psets(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
@@ -401,34 +414,55 @@ class TestGetStyles(test.bootstrap.IFC4):
         assert subject.get_styles(element) == []
 
         model = ifcopenshell.api.run("context.add_context", self.file, context_type="Model")
-        body = ifcopenshell.api.run("context.add_context", self.file,
-            context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model)
+        body = ifcopenshell.api.run(
+            "context.add_context",
+            self.file,
+            context_type="Model",
+            context_identifier="Body",
+            target_view="MODEL_VIEW",
+            parent=model,
+        )
 
         material = ifcopenshell.api.run("material.add_material", self.file)
         ifcopenshell.api.run("material.assign_material", self.file, product=element, material=material)
 
         style = ifcopenshell.api.run("style.add_style", self.file)
-        ifcopenshell.api.run("style.add_surface_style", self.file,
-            style=style, ifc_class="IfcSurfaceStyleShading", attributes={
-                "SurfaceColour": { "Name": None, "Red": 1.0, "Green": 0.8, "Blue": 0.8 },
-                "Transparency": 0., # 0 is opaque, 1 is transparent
-            })
+        ifcopenshell.api.run(
+            "style.add_surface_style",
+            self.file,
+            style=style,
+            ifc_class="IfcSurfaceStyleShading",
+            attributes={
+                "SurfaceColour": {"Name": None, "Red": 1.0, "Green": 0.8, "Blue": 0.8},
+                "Transparency": 0.0,  # 0 is opaque, 1 is transparent
+            },
+        )
         ifcopenshell.api.run("style.assign_material_style", self.file, material=material, style=style, context=body)
 
         assert subject.get_styles(element) == [style]
 
         style2 = ifcopenshell.api.run("style.add_style", self.file)
-        ifcopenshell.api.run("style.add_surface_style", self.file,
-            style=style2, ifc_class="IfcSurfaceStyleShading", attributes={
-                "SurfaceColour": { "Name": None, "Red": 1.0, "Green": 0.8, "Blue": 0.8 },
-                "Transparency": 0., # 0 is opaque, 1 is transparent
-            })
+        ifcopenshell.api.run(
+            "style.add_surface_style",
+            self.file,
+            style=style2,
+            ifc_class="IfcSurfaceStyleShading",
+            attributes={
+                "SurfaceColour": {"Name": None, "Red": 1.0, "Green": 0.8, "Blue": 0.8},
+                "Transparency": 0.0,  # 0 is opaque, 1 is transparent
+            },
+        )
 
-        representation = ifcopenshell.api.run("geometry.add_wall_representation", self.file,
-            context=body, length=5, height=3, thickness=0.118)
+        representation = ifcopenshell.api.run(
+            "geometry.add_wall_representation", self.file, context=body, length=5, height=3, thickness=0.118
+        )
 
-        ifcopenshell.api.run("geometry.assign_representation", self.file, product=element, representation=representation)
-        ifcopenshell.api.run("style.assign_representation_styles", self.file, shape_representation=representation, styles=[style2])
+        ifcopenshell.api.run(
+            "geometry.assign_representation", self.file, product=element, representation=representation
+        )
+        ifcopenshell.api.run(
+            "style.assign_representation_styles", self.file, shape_representation=representation, styles=[style2]
+        )
 
         assert subject.get_styles(element) == [style, style2]
 
