@@ -151,7 +151,7 @@ class Txt(Console):
         print(self.text)
 
     def to_file(self, filepath):
-        with open(filepath, "w") as outfile:
+        with open(filepath, "w", encoding="utf-8") as outfile:
             return outfile.write(self.text)
 
 
@@ -273,8 +273,8 @@ class Json(Reporter):
     def to_file(self, filepath):
         import json
 
-        with open(filepath, "w") as outfile:
-            return json.dump(self.results, outfile)
+        with open(filepath, "w", encoding="utf-8") as outfile:
+            return json.dump(self.results, outfile, ensure_ascii=False)
 
 
 class Html(Json):
@@ -303,7 +303,7 @@ class Html(Json):
         import pystache
 
         with open(os.path.join(cwd, "templates", "report.html"), "r") as file:
-            with open(filepath, "w") as outfile:
+            with open(filepath, "w", encoding="utf-8") as outfile:
                 return outfile.write(pystache.render(file.read(), self.results))
 
 
