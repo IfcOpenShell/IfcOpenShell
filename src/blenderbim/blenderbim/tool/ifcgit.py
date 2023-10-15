@@ -222,9 +222,7 @@ class IfcGit:
 
         bpy.data.orphans_purge(do_recursive=True)
 
-        settings = import_ifc.IfcImportSettings.factory(
-            bpy.context, bpy.context.scene.BIMProperties.ifc_file, logging.getLogger("ImportIFC")
-        )
+        settings = import_ifc.IfcImportSettings.factory(bpy.context, path_ifc, logging.getLogger("ImportIFC"))
         settings.should_setup_viewport_camera = False
         ifc_importer = import_ifc.IfcImporter(settings)
         ifc_importer.execute()
