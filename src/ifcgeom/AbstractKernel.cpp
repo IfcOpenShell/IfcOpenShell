@@ -75,3 +75,9 @@ bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonom
 	}
 	return r.size() > s;
 }
+
+bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::piecewise_function::ptr item, IfcGeom::ConversionResults& cs) {
+	auto expl = item->evaluate();
+	expl->instance = item->instance;
+	return convert(expl, cs);
+}
