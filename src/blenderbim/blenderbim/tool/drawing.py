@@ -1661,12 +1661,9 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def get_elements_in_camera_view(cls, camera, objs):
-        if bpy.context.scene.render.resolution_x > bpy.context.scene.render.resolution_y:
-            x = camera.data.ortho_scale / 2
-            y = (camera.data.BIMCameraProperties.raster_y / camera.data.BIMCameraProperties.raster_x) * x
-        else:
-            y = camera.data.ortho_scale / 2
-            x = (camera.data.BIMCameraProperties.raster_x / camera.data.BIMCameraProperties.raster_y) * y
+        props = camera.data.BIMCameraProperties
+        x = props.width
+        y = props.height
 
         camera_inverse_matrix = camera.matrix_world.inverted()
         return set(
