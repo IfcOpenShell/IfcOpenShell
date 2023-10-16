@@ -849,6 +849,10 @@ class Drawing(blenderbim.core.tool.Drawing):
         cls.open_with_user_command(bpy.context.preferences.addons["blenderbim"].preferences.svg_command, uri)
 
     @classmethod
+    def open_layout_svg(cls, uri):
+        cls.open_with_user_command(bpy.context.preferences.addons["blenderbim"].preferences.layout_svg_command, uri)
+
+    @classmethod
     def run_root_assign_class(
         cls,
         obj=None,

@@ -132,6 +132,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         description='E.g. [["inkscape", "svg", "-o", "eps"], ["pstoedit", "-dt", "-f", "dxf:-polyaslines -mm", "eps", "dxf", "-psarg", "-dNOSAFER"]]',
     )
     svg_command: StringProperty(name="SVG Command", description='E.g. [["firefox", "path"]]')
+    layout_svg_command: StringProperty(name="Layout SVG Command", description='E.g. [["firefox", "path"]]')
     pdf_command: StringProperty(name="PDF Command", description='E.g. [["firefox", "path"]]')
     spreadsheet_command: StringProperty(name="Spreadsheet Command", description='E.g. [["libreoffice", "path"]]')
     openlca_port: IntProperty(name="OpenLCA IPC Port", default=8080)
@@ -204,6 +205,8 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.prop(self, "svg2dxf_command")
         row = layout.row()
         row.prop(self, "svg_command")
+        row = layout.row()
+        row.prop(self, "layout_svg_command")
         row = layout.row()
         row.prop(self, "pdf_command")
         row = layout.row()
