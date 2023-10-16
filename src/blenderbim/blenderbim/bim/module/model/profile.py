@@ -449,6 +449,16 @@ class DumbProfileJoiner:
                     "geometry.assign_representation", tool.Ifc.get(), product=element, representation=new_axis
                 )
 
+        def get_placement_axes(body_representation):
+            if not body_representation:
+                return None, None
+            extrusion = tool.Model.get_extrusion(body_representation)
+            if not extrusion:
+                return None, None
+            position = extrusion.Position
+            return (position.Axis.DirectionRatios, position.RefDirection.DirectionRatios)
+
+        old_body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         new_body = ifcopenshell.api.run(
             "geometry.add_profile_representation",
             tool.Ifc.get(),
@@ -457,9 +467,9 @@ class DumbProfileJoiner:
             depth=depth,
             cardinal_point=usage.CardinalPoint if usage else None,
             clippings=self.clippings,
+            placement_zx_axes=get_placement_axes(old_body),
         )
 
-        old_body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         if old_body:
             for inverse in tool.Ifc.get().get_inverse(old_body):
                 ifcopenshell.util.element.replace_attribute(inverse, old_body, new_body)

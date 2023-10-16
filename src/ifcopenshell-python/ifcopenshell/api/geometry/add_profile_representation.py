@@ -31,6 +31,7 @@ class Usecase:
             # Planes are defined as a matrix. The XY plane is the clipping boundary and +Z is removed.
             # [{"type": "IfcBooleanClippingResult", "operand_type": "IfcHalfSpaceSolid", "matrix": [...]}, {...}]
             "clippings": [],  # A list of planes that define clipping half space solids
+            "placement_zx_axes": (None, None),
         }
         for key, value in settings.items():
             self.settings[key] = value
@@ -46,13 +47,14 @@ class Usecase:
 
     def create_item(self):
         point = self.get_point()
+        placement = self.file.createIfcAxis2Placement3D(
+            point,
+            self.file.createIfcDirection(self.settings["placement_zx_axes"][0] or (0.0, 0.0, 1.0)),
+            self.file.createIfcDirection(self.settings["placement_zx_axes"][1] or (1.0, 0.0, 0.0)),
+        )
         extrusion = self.file.createIfcExtrudedAreaSolid(
             self.settings["profile"],
-            self.file.createIfcAxis2Placement3D(
-                point,
-                self.file.createIfcDirection((0.0, 0.0, 1.0)),
-                self.file.createIfcDirection((1.0, 0.0, 0.0)),
-            ),
+            placement,
             self.file.createIfcDirection((0.0, 0.0, 1.0)),
             self.convert_si_to_unit(self.settings["depth"]),
         )
