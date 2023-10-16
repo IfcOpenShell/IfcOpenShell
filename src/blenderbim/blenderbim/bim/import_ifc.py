@@ -1920,7 +1920,7 @@ class IfcImporter:
 
     def link_element(self, element, obj):
         self.added_data[element.id()] = obj
-        IfcStore.link_element(element, obj)
+        tool.Ifc.link(element, obj)
 
     def set_matrix_world(self, obj, matrix_world):
         obj.matrix_world = matrix_world
