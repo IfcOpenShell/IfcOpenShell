@@ -220,21 +220,19 @@ public:
 	{
 		auto R = c->Radius();
 
-		auto sign_x = 1.0;
-      auto sign_y = sign(length_);
+      auto sign_l = sign(length_);
+		auto start = start_;
 
 		//const auto& transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(c->Position()))->ccomponents();
 		auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(c->Position()))->ccomponents();
 
-		eval_ = [R, transformation_matrix, sign_x, sign_y](double u)
+		eval_ = [R, transformation_matrix, start, sign_l](double u)
 			{
-				auto angle = u / R; // angle subtended by arc length u
+				auto angle = start + sign_l * u / R;
 
-				// compute point on circle centered at (0,0) with x-axis horizontal and y-axis vertical
-				auto x = sign_x * R * cos(angle);
-				auto y = sign_y * R * sin(angle);
+				auto x = R * cos(angle);
+				auto y = R * sin(angle);
 
-				// transform point into circle's coodinate system
 				auto result = transformation_matrix * Eigen::Vector4d(x, y, 0.0, 1.0);
 				Eigen::VectorXd vec(4);
 				vec << result(0), result(1), 0.0, 1.0;
@@ -342,7 +340,7 @@ public:
 			eval_ = [py, dy](double u) {
 				auto z = py + u * dy;
 				Eigen::VectorXd vec(4);
-				vec << 0.0, 0.0, z, 1.0;
+				vec << 0.0, z, 0.0, 1.0;
 				return vec;
 				};
 
@@ -361,8 +359,10 @@ public:
          std::array<const std::vector<double>*, 3> coefficients{&coeffX, &coeffY, &coeffZ}; // don't copy
          std::array<double, 3> values{0.0, 0.0, 0.0}; // @todo, use Eigen::VectorXd - I'm sure there is a way to do this with Eigen, but this is what I know
          for (int i = 0; i < 3; i++) {
-               for (auto iter = coefficients[i]->cbegin(); iter != coefficients[i]->cend(); iter++) {
-                  auto exp = std::distance(coefficients[i]->cbegin(), iter);
+             auto begin = coefficients[i]->cbegin();
+             auto end = coefficients[i]->cend();
+               for (auto iter = begin; iter != end; iter++) {
+                  auto exp = std::distance(begin, iter);
                   values[i] += (*iter) * pow(u, exp);
                }
          }
