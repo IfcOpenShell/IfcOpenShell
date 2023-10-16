@@ -130,7 +130,7 @@ class Usecase:
             elif inverse.is_a("IfcRelVoidsElement") and inverse.RelatingBuildingElement == from_element:
                 opening = inverse.RelatedOpeningElement
                 # We don't copy filled openings, since there is no guarantee the filling is also copied
-                if not opening.HasFillings:
+                if not opening.is_a("IfcOpeningElement") or not opening.HasFillings:
                     new_opening = ifcopenshell.api.run("root.copy_class", self.file, product=opening)
                     new_opening.VoidsElements[0].RelatingBuildingElement = to_element
                     if new_opening.ObjectPlacement and new_opening.ObjectPlacement.is_a("IfcLocalPlacement"):
