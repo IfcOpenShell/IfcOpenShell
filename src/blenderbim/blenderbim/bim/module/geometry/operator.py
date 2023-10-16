@@ -811,6 +811,9 @@ class OverrideDuplicateMove(bpy.types.Operator):
             if old.is_a("IfcElementAssembly"):            
                 OverrideDuplicateMove.recreate_assembly(old_to_new)
 
+        # Remove connections with old objects
+        OverrideDuplicateMove.remove_old_connections(old_to_new)
+
         # Recreate decompositions
         tool.Root.recreate_decompositions(relationships, old_to_new)
         blenderbim.bim.handler.refresh_ui_data()
@@ -866,6 +869,17 @@ class OverrideDuplicateMove(bpy.types.Operator):
                                             relating_obj=tool.Ifc.get_object(new_parent[0]),
                                             related_obj=tool.Ifc.get_object(new_element[0]),
                                         )
+
+    def remove_old_connections(old_to_new):
+        for new in old_to_new.values():
+            for connection in new[0].ConnectedTo:
+                entity = connection.RelatedElement
+                if entity in old_to_new.keys():
+                    core.remove_connection(tool.Geometry, connection=connection)
+            for connection in new[0].ConnectedFrom:
+                entity = connection.RelatingElement
+                if entity in old_to_new.keys():
+                    core.remove_connection(tool.Geometry, connection=connection)
 
 
 class OverrideDuplicateMoveLinkedMacro(bpy.types.Macro):
