@@ -156,8 +156,8 @@ aggregate_of_instance::ptr mapping::find_openings(const IfcUtil::IfcBaseEntity* 
 	auto product = inst->as<IfcSchema::IfcProduct>();
 
 	aggregate_of_instance::ptr openings(new aggregate_of_instance);
-	if (product->declaration().is(IfcSchema::IfcElement::Class()) && !product->declaration().is(IfcSchema::IfcOpeningElement::Class())) {
-		IfcSchema::IfcElement* element = (IfcSchema::IfcElement*)product;
+	if (product->as<IfcSchema::IfcElement>() && !product->as<IfcSchema::IfcFeatureElementSubtraction>()) {
+		const IfcSchema::IfcElement* element = product->as<IfcSchema::IfcElement>();
 		auto rels = element->HasOpenings();
 		for (auto& rel : *rels) {
 			openings->push(rel->RelatedOpeningElement());
@@ -170,8 +170,8 @@ aggregate_of_instance::ptr mapping::find_openings(const IfcUtil::IfcBaseEntity* 
 		auto decomposes = obdef->Decomposes()->generalize();
 		if (decomposes->size() != 1) break;
 		IfcSchema::IfcObjectDefinition* rel_obdef = (*decomposes->begin())->as<IfcSchema::IfcRelAggregates>()->RelatingObject();
-		if (rel_obdef->declaration().is(IfcSchema::IfcElement::Class()) && !rel_obdef->declaration().is(IfcSchema::IfcOpeningElement::Class())) {
-			IfcSchema::IfcElement* element = (IfcSchema::IfcElement*)rel_obdef;
+		if (rel_obdef->as<IfcSchema::IfcElement>() && !rel_obdef->as<IfcSchema::IfcFeatureElementSubtraction>()) {
+			IfcSchema::IfcElement* element = rel_obdef->as<IfcSchema::IfcElement>();
 			auto rels = element->HasOpenings();
 			for (auto& rel : *rels) {
 				openings->push(rel->RelatedOpeningElement());
