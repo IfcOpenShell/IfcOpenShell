@@ -18,12 +18,10 @@
 
 import bpy
 import ifcopenshell.api
-import blenderbim.core.spatial
 import blenderbim.tool as tool
 from bpy.types import Operator
 from bpy.props import FloatProperty, IntProperty
 from mathutils import Vector
-from blenderbim.bim.ifc import IfcStore
 
 
 def add_object(self, context):
@@ -66,7 +64,7 @@ def add_object(self, context):
             tool.Ifc.get(),
             **{"axis_tag": tag, "uvw_axes": "UAxes", "grid": grid},
         )
-        IfcStore.link_element(result, obj)
+        tool.Ifc.link(result, obj)
         ifcopenshell.api.run("grid.create_axis_curve", tool.Ifc.get(), **{"axis_curve": obj, "grid_axis": result})
         obj.BIMObjectProperties.ifc_definition_id = result.id()
 
@@ -91,7 +89,7 @@ def add_object(self, context):
             tool.Ifc.get(),
             **{"axis_tag": tag, "uvw_axes": "VAxes", "grid": grid},
         )
-        IfcStore.link_element(result, obj)
+        tool.Ifc.link(result, obj)
         ifcopenshell.api.run("grid.create_axis_curve", tool.Ifc.get(), **{"axis_curve": obj, "grid_axis": result})
         obj.BIMObjectProperties.ifc_definition_id = result.id()
 
