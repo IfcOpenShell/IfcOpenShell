@@ -801,7 +801,7 @@ class EditOpenings(Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
     def get_all_building_objects_of_similar_openings(self, opening):
-        if not opening.HasFillings:
+        if not opening.is_a("IfcOpeningElement") or not opening.HasFillings:
             return []
         results = set()
         for rel in opening.HasFillings:
