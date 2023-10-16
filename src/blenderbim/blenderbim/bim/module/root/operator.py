@@ -107,7 +107,7 @@ class ReassignClass(bpy.types.Operator):
                 },
             )
             obj.name = "{}/{}".format(product.is_a(), getattr(product, "Name", "None"))
-            IfcStore.link_element(product, obj)
+            tool.Ifc.link(product, obj)
             obj.BIMObjectProperties.is_reassigning_class = False
         return {"FINISHED"}
 
@@ -180,7 +180,7 @@ class UnlinkObject(bpy.types.Operator):
                     obj = obj_copy
                 if obj in IfcStore.edited_objs:
                     IfcStore.edited_objs.remove(obj)
-                IfcStore.unlink_element(obj=obj)
+                tool.Ifc.unlink_element(obj=obj)
                 if obj.data:
                     obj.data = obj.data.copy()
             for material_slot in obj.material_slots:

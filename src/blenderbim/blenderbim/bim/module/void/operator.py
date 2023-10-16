@@ -137,7 +137,7 @@ class RemoveOpening(bpy.types.Operator, tool.Ifc.Operator):
 
         if opening_obj:
             opening_obj.name = "/".join(opening_obj.name.split("/")[1:])
-            IfcStore.unlink_element(obj=opening_obj)
+            tool.Ifc.unlink(obj=opening_obj)
 
         ifcopenshell.api.run("void.remove_opening", tool.Ifc.get(), opening=opening)
 
