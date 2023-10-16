@@ -140,7 +140,7 @@ class Usecase:
             settings = ifcopenshell.geom.settings()
             settings.set(settings.INCLUDE_CURVES, True)
             shape = ifcopenshell.geom.create_shape(settings, self.settings["profile"])
-            x = [verts[i] for i in range(0, len(shape.verts), 3)]
+            x = [shape.verts[i] for i in range(0, len(shape.verts), 3)]
             return self.convert_si_to_unit(max(x) - min(x))
         return 0.0
 
@@ -169,6 +169,6 @@ class Usecase:
             settings = ifcopenshell.geom.settings()
             settings.set(settings.INCLUDE_CURVES, True)
             shape = ifcopenshell.geom.create_shape(settings, self.settings["profile"])
-            y = [verts[i + 1] for i in range(0, len(shape.verts), 3)]
+            y = [shape.verts[i + 1] for i in range(0, len(shape.verts), 3)]
             return self.convert_si_to_unit(max(y) - min(y))
         return 0.0
