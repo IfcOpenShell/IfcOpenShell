@@ -90,7 +90,7 @@ def add_sheet(ifc, drawing, titleblock=None):
 
 
 def open_sheet(drawing, sheet=None):
-    drawing.open_svg(drawing.get_document_uri(sheet, "LAYOUT"))
+    drawing.open_layout_svg(drawing.get_document_uri(sheet, "LAYOUT"))
 
 
 def remove_sheet(ifc, drawing, sheet=None):
