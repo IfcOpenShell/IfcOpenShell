@@ -50,6 +50,7 @@ class Usecase:
     def execute(self):
         for rel in self.settings["opening"].VoidsElements:
             self.file.remove(rel)
-        for rel in self.settings["opening"].HasFillings:
-            self.file.remove(rel)
+        if self.settings["opening"].is_a("IfcOpeningElement"):
+            for rel in self.settings["opening"].HasFillings:
+                self.file.remove(rel)
         ifcopenshell.api.run("root.remove_product", self.file, product=self.settings["opening"])
