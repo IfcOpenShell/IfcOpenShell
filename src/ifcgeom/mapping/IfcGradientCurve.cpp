@@ -51,7 +51,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcGradientCurve* inst) {
 		auto xy = horizontal->evaluate(u);
 		auto z = vertical->evaluate(u);
 		Eigen::VectorXd vec(3);
-		vec << xy(0), xy(1), z(2);
+		vec << xy(0), xy(1), z(1);
 		return vec;
 	};
 
