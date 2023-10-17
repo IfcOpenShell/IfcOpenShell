@@ -452,6 +452,8 @@ def get_type_data(ifc_file, element):
     asset_type = None
     manufacturer = None
     model_number = None
+    warranty_guarantor_parts = None
+    warranty_guarantor_labor = None
     warranty_duration_parts = None
     warranty_duration_labor = None
     warranty_duration_unit = None
