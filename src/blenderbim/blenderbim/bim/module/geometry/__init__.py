@@ -24,10 +24,10 @@ classes = (
     operator.CopyRepresentation,
     operator.EditObjectPlacement,
     operator.GetRepresentationIfcParameters,
+    operator.DuplicateMoveLinkedAggregate,
+    operator.DuplicateMoveLinkedAggregateMacro,
     operator.OverrideDelete,
     operator.OverrideDuplicateMove,
-    operator.OverrideDuplicateMoveAggregate,
-    operator.OverrideDuplicateMoveAggregateMacro,
     operator.OverrideDuplicateMoveLinked,
     operator.OverrideDuplicateMoveLinkedMacro,
     operator.OverrideDuplicateMoveMacro,
@@ -66,8 +66,8 @@ def register():
     operator.OverrideDuplicateMoveMacro.define("TRANSFORM_OT_translate")
     operator.OverrideDuplicateMoveLinkedMacro.define("BIM_OT_override_object_duplicate_move_linked")
     operator.OverrideDuplicateMoveLinkedMacro.define("TRANSFORM_OT_translate")
-    operator.OverrideDuplicateMoveAggregateMacro.define("BIM_OT_override_object_duplicate_move_aggregate")
-    operator.OverrideDuplicateMoveAggregateMacro.define("TRANSFORM_OT_translate")
+    operator.DuplicateMoveLinkedAggregateMacro.define("BIM_OT_object_duplicate_move_linked_aggregate")
+    operator.DuplicateMoveLinkedAggregateMacro.define("TRANSFORM_OT_translate")
 
     bpy.types.Object.BIMGeometryProperties = bpy.props.PointerProperty(type=prop.BIMObjectGeometryProperties)
     bpy.types.Scene.BIMGeometryProperties = bpy.props.PointerProperty(type=prop.BIMGeometryProperties)
@@ -85,7 +85,7 @@ def register():
         addon_keymaps.append((km, kmi))
         kmi = km.keymap_items.new("bim.override_object_duplicate_move_linked_macro", "D", "PRESS", alt=True)
         addon_keymaps.append((km, kmi))
-        kmi = km.keymap_items.new("bim.override_object_duplicate_move_aggregate_macro", "D", "PRESS", ctrl=True, shift=True)
+        kmi = km.keymap_items.new("bim.object_duplicate_move_linked_aggregate_macro", "D", "PRESS", ctrl=True, shift=True)
         addon_keymaps.append((km, kmi))
         kmi = km.keymap_items.new("bim.override_paste_buffer", "V", "PRESS", ctrl=True)
         addon_keymaps.append((km, kmi))

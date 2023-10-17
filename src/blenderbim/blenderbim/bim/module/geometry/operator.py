@@ -880,15 +880,15 @@ class OverrideDuplicateMoveLinked(bpy.types.Operator):
         return OverrideDuplicateMove.execute_ifc_duplicate_operator(self, context, linked=True)
 
 
-class OverrideDuplicateMoveAggregateMacro(bpy.types.Macro):
-    bl_idname = "bim.override_object_duplicate_move_aggregate_macro"
-    bl_label = "IFC Duplicate Objects Aggregate"
+class DuplicateMoveLinkedAggregateMacro(bpy.types.Macro):
+    bl_idname = "bim.object_duplicate_move_linked_aggregate_macro"
+    bl_label = "IFC Duplicate Linked Aggregate"
     bl_options = {"REGISTER", "UNDO"}
 
 
-class OverrideDuplicateMoveAggregate(bpy.types.Operator):
-    bl_idname = "bim.override_object_duplicate_move_aggregate"
-    bl_label = "IFC Duplicate Objects Aggregate"
+class DuplicateMoveLinkedAggregate(bpy.types.Operator):
+    bl_idname = "bim.object_duplicate_move_linked_aggregate"
+    bl_label = "IFC Duplicate Linked Aggregate"
     bl_options = {"REGISTER", "UNDO"}
     is_interactive: bpy.props.BoolProperty(name="Is Interactive", default=True)
 
