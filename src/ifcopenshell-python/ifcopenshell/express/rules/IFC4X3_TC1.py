@@ -5118,7 +5118,7 @@ class IfcBoxAlignment_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (self in ['top-left', 'top-middle', 'top-right', 'middle-left', 'center', 'middle-right', 'bottom-left', 'bottom-middle', 'bottom-right']) is not False
+        assert (getattr(self, 'lower', INDETERMINATE)() in ['top-left', 'top-middle', 'top-right', 'middle-left', 'center', 'middle-right', 'bottom-left', 'bottom-middle', 'bottom-right']) is not False
 
 class IfcCardinalPointReference_GreaterThanZero:
     SCOPE = 'type'
@@ -5199,7 +5199,7 @@ class IfcFontStyle_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (self in ['normal', 'italic', 'oblique']) is not False
+        assert (getattr(self, 'lower', INDETERMINATE)() in ['normal', 'italic', 'oblique']) is not False
 
 class IfcFontVariant_WR1:
     SCOPE = 'type'
@@ -5208,7 +5208,7 @@ class IfcFontVariant_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (self in ['normal', 'small-caps']) is not False
+        assert (getattr(self, 'lower', INDETERMINATE)() in ['normal', 'small-caps']) is not False
 
 class IfcFontWeight_WR1:
     SCOPE = 'type'
@@ -5217,7 +5217,7 @@ class IfcFontWeight_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (self in ['normal', 'small-caps', '100', '200', '300', '400', '500', '600', '700', '800', '900']) is not False
+        assert (getattr(self, 'lower', INDETERMINATE)() in ['normal', 'small-caps', '100', '200', '300', '400', '500', '600', '700', '800', '900']) is not False
 
 class IfcHeatingValueMeasure_WR1:
     SCOPE = 'type'
@@ -5316,7 +5316,7 @@ class IfcTextAlignment_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (self in ['left', 'right', 'center', 'justify']) is not False
+        assert (getattr(self, 'lower', INDETERMINATE)() in ['left', 'right', 'center', 'justify']) is not False
 
 class IfcTextDecoration_WR1:
     SCOPE = 'type'
@@ -5325,7 +5325,7 @@ class IfcTextDecoration_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (self in ['none', 'underline', 'overline', 'line-through', 'blink']) is not False
+        assert (getattr(self, 'lower', INDETERMINATE)() in ['none', 'underline', 'overline', 'line-through', 'blink']) is not False
 
 class IfcTextTransformation_WR1:
     SCOPE = 'type'
@@ -5334,7 +5334,7 @@ class IfcTextTransformation_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (self in ['capitalize', 'uppercase', 'lowercase', 'none']) is not False
+        assert (getattr(self, 'lower', INDETERMINATE)() in ['capitalize', 'uppercase', 'lowercase', 'none']) is not False
 
 class IfcActorRole_WR1:
     SCOPE = 'entity'
@@ -6061,7 +6061,7 @@ class IfcBlobTexture_SupportedRasterFormat:
 
     @staticmethod
     def __call__(self):
-        assert (getattr(self, 'RasterFormat', INDETERMINATE) in ['bmp', 'jpg', 'gif', 'png']) is not False
+        assert (getattr(getattr(self, 'RasterFormat', INDETERMINATE), 'lower', INDETERMINATE)() in ['bmp', 'jpg', 'gif', 'png']) is not False
 
 class IfcBoiler_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7638,7 +7638,7 @@ class IfcDraughtingPreDefinedColour_PreDefinedColourNames:
 
     @staticmethod
     def __call__(self):
-        assert (getattr(self, 'Name', INDETERMINATE) in ['black', 'red', 'green', 'blue', 'yellow', 'magenta', 'cyan', 'white', 'bylayer']) is not False
+        assert (getattr(getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['black', 'red', 'green', 'blue', 'yellow', 'magenta', 'cyan', 'white', 'bylayer']) is not False
 
 class IfcDraughtingPreDefinedCurveFont_PreDefinedCurveFontNames:
     SCOPE = 'entity'
@@ -7647,7 +7647,7 @@ class IfcDraughtingPreDefinedCurveFont_PreDefinedCurveFontNames:
 
     @staticmethod
     def __call__(self):
-        assert (getattr(self, 'Name', INDETERMINATE) in ['continuous', 'chain', 'chaindoubledash', 'dashed', 'dotted', 'bylayer']) is not False
+        assert (getattr(getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['continuous', 'chain', 'chaindoubledash', 'dashed', 'dotted', 'bylayer']) is not False
 
 class IfcDuctFitting_CorrectPredefinedType:
     SCOPE = 'entity'

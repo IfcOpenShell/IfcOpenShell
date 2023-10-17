@@ -84,7 +84,7 @@ class LateBoundSchemaInstantiator:
         for attr_name, decl_type, optional in attribute_definitions:
             attributes.append(w.attribute(attr_name, decl_type, optional))
         self.declarations[str(name)].set_attributes(attributes, is_derived)
-        self.cache.append(attributes)
+        self.cache.extend(attributes)
 
     def inverse_attributes(self, name, inv_attrs):
         attributes = []
@@ -100,6 +100,7 @@ class LateBoundSchemaInstantiator:
                     en.attributes()[attribute_entity_index],
                 )
             )
+        self.cache.extend(attributes)
         self.declarations[str(name)].set_inverse_attributes(attributes)
 
     def entity_subtypes(self, name, tys):
@@ -110,10 +111,13 @@ class LateBoundSchemaInstantiator:
             override_schema_name or self.schema_name, list(self.declarations.values()), None
         )
 
+    def disown(self):
+        for elem in self.cache + list(self.declarations.values()):
+            elem.this.disown()
+
 
 class EarlyBoundCodeWriter:
     def __init__(self, schema_name):
-        self.strings = []
         self.schema_name = schema_name
         self.schema_name_title = schema_name.capitalize()
 
@@ -127,14 +131,6 @@ class EarlyBoundCodeWriter:
         ]
 
         self.names = []
-        
-    def make_string(self, s):
-        try:
-            i = self.strings.index(s)
-        except ValueError:
-            self.strings.append(s)
-            i = len(self.strings) - 1
-        return "strings[%d]" % i
 
     def aggregation_type(self, aggr_type, bound1, bound2, decl_type):
         return (
@@ -157,9 +153,6 @@ class EarlyBoundCodeWriter:
         self.names.sort(key=str.lower)
 
         self.statements.append("{factory_placeholder}")
-        
-        self.statements.append("using namespace std::string_literals;")
-        self.statements.append("{strings_placeholder}")
 
         self.statements.append(
             """
@@ -176,109 +169,107 @@ __attribute__((optnone))
         self.statements.append("IfcParse::schema_definition* %s_populate_schema() {" % self.schema_name)
 
     def typedef(self, name, declared_type):
-        name_string = self.make_string(name)
         schema_name = self.schema_name
         index_in_schema = self.names.index(name)
         self.statements.append(
-            '    %(schema_name)s_%(name)s_type = new type_declaration(%(name_string)s, %(index_in_schema)d, %(declared_type)s);'
+            '    %(schema_name)s_%(name)s_type = new type_declaration("%(name)s", %(index_in_schema)d, %(declared_type)s);'
             % locals()
         )
 
     def enumeration(self, name, enum):
         schema_name = self.schema_name
         index_in_schema = self.names.index(name)
-        name_string = self.make_string(name)
-        # @tfk we don't sort for correspondence with header file
-        # values = sorted(enum.values)
-        values = enum.values
+        self.statements.append("    {")
+        self.statements.append("        std::vector<std::string> items; items.reserve(%d);" % len(enum.values))
+        self.statements.extend(map(lambda v: '        items.push_back("%s");' % v, sorted(enum.values)))
         self.statements.append(
-            '    %(schema_name)s_%(name)s_type = new enumeration_type(%(name_string)s, %(index_in_schema)d, {'
+            '        %(schema_name)s_%(name)s_type = new enumeration_type("%(name)s", %(index_in_schema)d, items);'
             % locals()
         )
-        self.statements.extend(map(lambda v: '        %s%s' % (self.make_string(v), '' if v == values[-1] else ','), values))
-        self.statements.append('    });')
+        self.statements.append("    }")
 
     def entity(self, name, type):
         schema_name = self.schema_name
         index_in_schema = self.names.index(name)
-        name_string = self.make_string(name)
         supertype = "0" if len(type.supertypes) == 0 else "%s_%s_type" % (self.schema_name, type.supertypes[0])
         is_abstract = "true" if type.abstract else "false"
         self.statements.append(
-            '    %(schema_name)s_%(name)s_type = new entity(%(name_string)s, %(is_abstract)s, %(index_in_schema)d, %(supertype)s);'
+            '    %(schema_name)s_%(name)s_type = new entity("%(name)s", %(is_abstract)s, %(index_in_schema)d, %(supertype)s);'
             % locals()
         )
 
     def select(self, name, type):
         schema_name = self.schema_name
         index_in_schema = self.names.index(name)
-        name_string = self.make_string(name)
-        values = sorted(map(str, type.values))
+        self.statements.append("    {")
+        self.statements.append("        std::vector<const declaration*> items; items.reserve(%d);" % len(type.values))
+        self.statements.extend(
+            map(lambda v: "        items.push_back(%s_%s_type);" % (self.schema_name, v), sorted(map(str, type.values)))
+        )
         self.statements.append(
-            '    %(schema_name)s_%(name)s_type = new select_type(%(name_string)s, %(index_in_schema)d, {'
+            '        %(schema_name)s_%(name)s_type = new select_type("%(name)s", %(index_in_schema)d, items);'
             % locals()
         )
-        self.statements.extend(
-            map(lambda v: "        %s_%s_type%s" % (self.schema_name, v, '' if v == values[-1] else ','), values)
-        )
-        self.statements.append("    });")
+        self.statements.append("    }")
 
     def entity_attributes(self, name, attribute_definitions, is_derived):
         schema_name = self.schema_name
-
-        self.statements.append("    %(schema_name)s_%(name)s_type->set_attributes({" % locals())
+        self.statements.append("    {")
+        self.statements.append(
+            "        std::vector<const attribute*> attributes; attributes.reserve(%d);" % len(attribute_definitions)
+        )
         for attr_name, decl_type, optional in attribute_definitions:
-            name_string = self.make_string(attr_name)
             optional_cpp = str(optional).lower()
-            tail = '' if attr_name == attribute_definitions[-1][0] else ','
             self.statements.append(
-                '            new attribute(%(name_string)s, %(decl_type)s, %(optional_cpp)s)%(tail)s'
+                '        attributes.push_back(new attribute("%(attr_name)s", %(decl_type)s, %(optional_cpp)s));'
                 % locals()
             )
-        self.statements.append("    },{")
+        self.statements.append("        std::vector<bool> derived; derived.reserve(%d);" % len(is_derived))
         self.statements.append(
-            "            " + " ".join(map(lambda i, b: "%s%s" % (str(b).lower(), '' if i == len(is_derived) - 1 else ','), range(len(is_derived)), is_derived))
+            "        " + " ".join(map(lambda b: "derived.push_back(%s);" % str(b).lower(), is_derived))
         )
-        self.statements.append("    });")
-        
+        self.statements.append("        %(schema_name)s_%(name)s_type->set_attributes(attributes, derived);" % locals())
+        self.statements.append("    }")
+
     def inverse_attributes(self, name, inv_attrs):
         schema_name = self.schema_name
-        self.statements.append("    %(schema_name)s_%(name)s_type->set_inverse_attributes({" % locals())
+        self.statements.append("    {")
+        self.statements.append(
+            "        std::vector<const inverse_attribute*> attributes; attributes.reserve(%d);" % len(inv_attrs)
+        )
         for attr_name, aggr_type, bound1, bound2, entity_ref, attribute_entity, attribute_entity_index in inv_attrs:
-            name_string = self.make_string(attr_name)
-            tail = '' if attr_name == inv_attrs[-1][0] else ','
             self.statements.append(
-                '            new inverse_attribute(%(name_string)s, inverse_attribute::%(aggr_type)s_type, %(bound1)d, %(bound2)d, %(schema_name)s_%(entity_ref)s_type, %(schema_name)s_%(attribute_entity)s_type->attributes()[%(attribute_entity_index)d])%(tail)s'
+                '        attributes.push_back(new inverse_attribute("%(attr_name)s", inverse_attribute::%(aggr_type)s_type, %(bound1)d, %(bound2)d, %(schema_name)s_%(entity_ref)s_type, %(schema_name)s_%(attribute_entity)s_type->attributes()[%(attribute_entity_index)d]));'
                 % locals()
             )
-        self.statements.append("    });")
+        self.statements.append("        %(schema_name)s_%(name)s_type->set_inverse_attributes(attributes);" % locals())
+        self.statements.append("    }")
 
     def entity_subtypes(self, name, tys):
         schema_name = self.schema_name
-        self.statements.append("    %(schema_name)s_%(name)s_type->set_subtypes({" % locals())
+        self.statements.append("    {")
+        self.statements.append("        std::vector<const entity*> defs; defs.reserve(%d);" % len(tys))
         self.statements.append(
-            ("        " + "".join(map(lambda t: ("%%(schema_name)s_%s_type%s" % (t, '' if t == tys[-1] else ',')), tys))) % locals()
-        )        
-        self.statements.append("    });")
+            ("        " + "".join(map(lambda t: ("defs.push_back(%%(schema_name)s_%s_type);" % t), tys))) % locals()
+        )
+        self.statements.append("        %(schema_name)s_%(name)s_type->set_subtypes(defs);" % locals())
+        self.statements.append("    }")
 
     def finalize(self, can_be_instantiated_set):
         schema_name = self.schema_name
-        schema_name_string = self.make_string(self.schema_name)
         schema_name_title = self.schema_name.capitalize()
 
         num_declarations = len(self.names)
 
         self.statements.append("")
         self.statements.append(
-            "    std::vector<const declaration*> declarations= {"
+            "    std::vector<const declaration*> declarations; declarations.reserve(%(num_declarations)d);" % locals()
         )
         for type_name in self.names:
-            tail = '' if type_name == self.names[-1] else ','
-            self.statements.append("    %(schema_name)s_%(type_name)s_type%(tail)s" % locals())
-        self.statements.append("        };")
+            self.statements.append("    declarations.push_back(%(schema_name)s_%(type_name)s_type);" % locals())
 
         self.statements.append(
-            '    return new schema_definition(%(schema_name_string)s, declarations, new %(schema_name)s_instance_factory());'
+            '    return new schema_definition("%(schema_name)s", declarations, new %(schema_name)s_instance_factory());'
             % locals()
         )
 
@@ -343,12 +334,6 @@ class %(schema_name)s_instance_factory : public IfcParse::instance_factory {
 };
 """
             % locals()
-        )
-
-        strings_list = ",\n".join('"%s"s' % s for s in self.strings)
-        
-        self.statements[self.statements.index("{strings_placeholder}")] = (
-            "static std::string strings[] = {%s};" % strings_list
         )
 
     def __str__(self):

@@ -147,37 +147,37 @@ verbal = getattr(IfcActionRequestTypeEnum, 'VERBAL', INDETERMINATE)
 userdefined = getattr(IfcActionRequestTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcActionRequestTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcActionSourceTypeEnum = enum_namespace()
-dead_load_g = getattr(IfcActionSourceTypeEnum, 'DEAD_LOAD_G', INDETERMINATE)
-completion_g1 = getattr(IfcActionSourceTypeEnum, 'COMPLETION_G1', INDETERMINATE)
-live_load_q = getattr(IfcActionSourceTypeEnum, 'LIVE_LOAD_Q', INDETERMINATE)
-snow_s = getattr(IfcActionSourceTypeEnum, 'SNOW_S', INDETERMINATE)
-wind_w = getattr(IfcActionSourceTypeEnum, 'WIND_W', INDETERMINATE)
-prestressing_p = getattr(IfcActionSourceTypeEnum, 'PRESTRESSING_P', INDETERMINATE)
-settlement_u = getattr(IfcActionSourceTypeEnum, 'SETTLEMENT_U', INDETERMINATE)
-temperature_t = getattr(IfcActionSourceTypeEnum, 'TEMPERATURE_T', INDETERMINATE)
-earthquake_e = getattr(IfcActionSourceTypeEnum, 'EARTHQUAKE_E', INDETERMINATE)
-fire = getattr(IfcActionSourceTypeEnum, 'FIRE', INDETERMINATE)
-impulse = getattr(IfcActionSourceTypeEnum, 'IMPULSE', INDETERMINATE)
-impact = getattr(IfcActionSourceTypeEnum, 'IMPACT', INDETERMINATE)
-transport = getattr(IfcActionSourceTypeEnum, 'TRANSPORT', INDETERMINATE)
-erection = getattr(IfcActionSourceTypeEnum, 'ERECTION', INDETERMINATE)
-propping = getattr(IfcActionSourceTypeEnum, 'PROPPING', INDETERMINATE)
-system_imperfection = getattr(IfcActionSourceTypeEnum, 'SYSTEM_IMPERFECTION', INDETERMINATE)
-shrinkage = getattr(IfcActionSourceTypeEnum, 'SHRINKAGE', INDETERMINATE)
-creep = getattr(IfcActionSourceTypeEnum, 'CREEP', INDETERMINATE)
-lack_of_fit = getattr(IfcActionSourceTypeEnum, 'LACK_OF_FIT', INDETERMINATE)
-buoyancy = getattr(IfcActionSourceTypeEnum, 'BUOYANCY', INDETERMINATE)
-ice = getattr(IfcActionSourceTypeEnum, 'ICE', INDETERMINATE)
-current = getattr(IfcActionSourceTypeEnum, 'CURRENT', INDETERMINATE)
-wave = getattr(IfcActionSourceTypeEnum, 'WAVE', INDETERMINATE)
-rain = getattr(IfcActionSourceTypeEnum, 'RAIN', INDETERMINATE)
 brakes = getattr(IfcActionSourceTypeEnum, 'BRAKES', INDETERMINATE)
+buoyancy = getattr(IfcActionSourceTypeEnum, 'BUOYANCY', INDETERMINATE)
+completion_g1 = getattr(IfcActionSourceTypeEnum, 'COMPLETION_G1', INDETERMINATE)
+creep = getattr(IfcActionSourceTypeEnum, 'CREEP', INDETERMINATE)
+current = getattr(IfcActionSourceTypeEnum, 'CURRENT', INDETERMINATE)
+dead_load_g = getattr(IfcActionSourceTypeEnum, 'DEAD_LOAD_G', INDETERMINATE)
+earthquake_e = getattr(IfcActionSourceTypeEnum, 'EARTHQUAKE_E', INDETERMINATE)
+erection = getattr(IfcActionSourceTypeEnum, 'ERECTION', INDETERMINATE)
+fire = getattr(IfcActionSourceTypeEnum, 'FIRE', INDETERMINATE)
+ice = getattr(IfcActionSourceTypeEnum, 'ICE', INDETERMINATE)
+impact = getattr(IfcActionSourceTypeEnum, 'IMPACT', INDETERMINATE)
+impulse = getattr(IfcActionSourceTypeEnum, 'IMPULSE', INDETERMINATE)
+lack_of_fit = getattr(IfcActionSourceTypeEnum, 'LACK_OF_FIT', INDETERMINATE)
+live_load_q = getattr(IfcActionSourceTypeEnum, 'LIVE_LOAD_Q', INDETERMINATE)
+prestressing_p = getattr(IfcActionSourceTypeEnum, 'PRESTRESSING_P', INDETERMINATE)
+propping = getattr(IfcActionSourceTypeEnum, 'PROPPING', INDETERMINATE)
+rain = getattr(IfcActionSourceTypeEnum, 'RAIN', INDETERMINATE)
+settlement_u = getattr(IfcActionSourceTypeEnum, 'SETTLEMENT_U', INDETERMINATE)
+shrinkage = getattr(IfcActionSourceTypeEnum, 'SHRINKAGE', INDETERMINATE)
+snow_s = getattr(IfcActionSourceTypeEnum, 'SNOW_S', INDETERMINATE)
+system_imperfection = getattr(IfcActionSourceTypeEnum, 'SYSTEM_IMPERFECTION', INDETERMINATE)
+temperature_t = getattr(IfcActionSourceTypeEnum, 'TEMPERATURE_T', INDETERMINATE)
+transport = getattr(IfcActionSourceTypeEnum, 'TRANSPORT', INDETERMINATE)
+wave = getattr(IfcActionSourceTypeEnum, 'WAVE', INDETERMINATE)
+wind_w = getattr(IfcActionSourceTypeEnum, 'WIND_W', INDETERMINATE)
 userdefined = getattr(IfcActionSourceTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcActionSourceTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcActionTypeEnum = enum_namespace()
+extraordinary_a = getattr(IfcActionTypeEnum, 'EXTRAORDINARY_A', INDETERMINATE)
 permanent_g = getattr(IfcActionTypeEnum, 'PERMANENT_G', INDETERMINATE)
 variable_q = getattr(IfcActionTypeEnum, 'VARIABLE_Q', INDETERMINATE)
-extraordinary_a = getattr(IfcActionTypeEnum, 'EXTRAORDINARY_A', INDETERMINATE)
 userdefined = getattr(IfcActionTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcActionTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcActuatorTypeEnum = enum_namespace()
@@ -189,10 +189,10 @@ thermostaticactuator = getattr(IfcActuatorTypeEnum, 'THERMOSTATICACTUATOR', INDE
 userdefined = getattr(IfcActuatorTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcActuatorTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcAddressTypeEnum = enum_namespace()
+distributionpoint = getattr(IfcAddressTypeEnum, 'DISTRIBUTIONPOINT', INDETERMINATE)
+home = getattr(IfcAddressTypeEnum, 'HOME', INDETERMINATE)
 office = getattr(IfcAddressTypeEnum, 'OFFICE', INDETERMINATE)
 site = getattr(IfcAddressTypeEnum, 'SITE', INDETERMINATE)
-home = getattr(IfcAddressTypeEnum, 'HOME', INDETERMINATE)
-distributionpoint = getattr(IfcAddressTypeEnum, 'DISTRIBUTIONPOINT', INDETERMINATE)
 userdefined = getattr(IfcAddressTypeEnum, 'USERDEFINED', INDETERMINATE)
 IfcAirTerminalBoxTypeEnum = enum_namespace()
 constantflow = getattr(IfcAirTerminalBoxTypeEnum, 'CONSTANTFLOW', INDETERMINATE)
@@ -211,12 +211,12 @@ IfcAirToAirHeatRecoveryTypeEnum = enum_namespace()
 fixedplatecounterflowexchanger = getattr(IfcAirToAirHeatRecoveryTypeEnum, 'FIXEDPLATECOUNTERFLOWEXCHANGER', INDETERMINATE)
 fixedplatecrossflowexchanger = getattr(IfcAirToAirHeatRecoveryTypeEnum, 'FIXEDPLATECROSSFLOWEXCHANGER', INDETERMINATE)
 fixedplateparallelflowexchanger = getattr(IfcAirToAirHeatRecoveryTypeEnum, 'FIXEDPLATEPARALLELFLOWEXCHANGER', INDETERMINATE)
+heatpipe = getattr(IfcAirToAirHeatRecoveryTypeEnum, 'HEATPIPE', INDETERMINATE)
 rotarywheel = getattr(IfcAirToAirHeatRecoveryTypeEnum, 'ROTARYWHEEL', INDETERMINATE)
 runaroundcoilloop = getattr(IfcAirToAirHeatRecoveryTypeEnum, 'RUNAROUNDCOILLOOP', INDETERMINATE)
-heatpipe = getattr(IfcAirToAirHeatRecoveryTypeEnum, 'HEATPIPE', INDETERMINATE)
-twintowerenthalpyrecoveryloops = getattr(IfcAirToAirHeatRecoveryTypeEnum, 'TWINTOWERENTHALPYRECOVERYLOOPS', INDETERMINATE)
-thermosiphonsealedtubeheatexchangers = getattr(IfcAirToAirHeatRecoveryTypeEnum, 'THERMOSIPHONSEALEDTUBEHEATEXCHANGERS', INDETERMINATE)
 thermosiphoncoiltypeheatexchangers = getattr(IfcAirToAirHeatRecoveryTypeEnum, 'THERMOSIPHONCOILTYPEHEATEXCHANGERS', INDETERMINATE)
+thermosiphonsealedtubeheatexchangers = getattr(IfcAirToAirHeatRecoveryTypeEnum, 'THERMOSIPHONSEALEDTUBEHEATEXCHANGERS', INDETERMINATE)
+twintowerenthalpyrecoveryloops = getattr(IfcAirToAirHeatRecoveryTypeEnum, 'TWINTOWERENTHALPYRECOVERYLOOPS', INDETERMINATE)
 userdefined = getattr(IfcAirToAirHeatRecoveryTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcAirToAirHeatRecoveryTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcAlarmTypeEnum = enum_namespace()
@@ -224,10 +224,10 @@ bell = getattr(IfcAlarmTypeEnum, 'BELL', INDETERMINATE)
 breakglassbutton = getattr(IfcAlarmTypeEnum, 'BREAKGLASSBUTTON', INDETERMINATE)
 light = getattr(IfcAlarmTypeEnum, 'LIGHT', INDETERMINATE)
 manualpullbox = getattr(IfcAlarmTypeEnum, 'MANUALPULLBOX', INDETERMINATE)
-siren = getattr(IfcAlarmTypeEnum, 'SIREN', INDETERMINATE)
-whistle = getattr(IfcAlarmTypeEnum, 'WHISTLE', INDETERMINATE)
 railwaycrocodile = getattr(IfcAlarmTypeEnum, 'RAILWAYCROCODILE', INDETERMINATE)
 railwaydetonator = getattr(IfcAlarmTypeEnum, 'RAILWAYDETONATOR', INDETERMINATE)
+siren = getattr(IfcAlarmTypeEnum, 'SIREN', INDETERMINATE)
+whistle = getattr(IfcAlarmTypeEnum, 'WHISTLE', INDETERMINATE)
 userdefined = getattr(IfcAlarmTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcAlarmTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcAlignmentCantSegmentTypeEnum = enum_namespace()
@@ -239,144 +239,139 @@ lineartransition = getattr(IfcAlignmentCantSegmentTypeEnum, 'LINEARTRANSITION', 
 sinecurve = getattr(IfcAlignmentCantSegmentTypeEnum, 'SINECURVE', INDETERMINATE)
 viennesebend = getattr(IfcAlignmentCantSegmentTypeEnum, 'VIENNESEBEND', INDETERMINATE)
 IfcAlignmentHorizontalSegmentTypeEnum = enum_namespace()
-line = getattr(IfcAlignmentHorizontalSegmentTypeEnum, 'LINE', INDETERMINATE)
+blosscurve = getattr(IfcAlignmentHorizontalSegmentTypeEnum, 'BLOSSCURVE', INDETERMINATE)
 circulararc = getattr(IfcAlignmentHorizontalSegmentTypeEnum, 'CIRCULARARC', INDETERMINATE)
 clothoid = getattr(IfcAlignmentHorizontalSegmentTypeEnum, 'CLOTHOID', INDETERMINATE)
+cosinecurve = getattr(IfcAlignmentHorizontalSegmentTypeEnum, 'COSINECURVE', INDETERMINATE)
 cubic = getattr(IfcAlignmentHorizontalSegmentTypeEnum, 'CUBIC', INDETERMINATE)
 helmertcurve = getattr(IfcAlignmentHorizontalSegmentTypeEnum, 'HELMERTCURVE', INDETERMINATE)
-blosscurve = getattr(IfcAlignmentHorizontalSegmentTypeEnum, 'BLOSSCURVE', INDETERMINATE)
-cosinecurve = getattr(IfcAlignmentHorizontalSegmentTypeEnum, 'COSINECURVE', INDETERMINATE)
+line = getattr(IfcAlignmentHorizontalSegmentTypeEnum, 'LINE', INDETERMINATE)
 sinecurve = getattr(IfcAlignmentHorizontalSegmentTypeEnum, 'SINECURVE', INDETERMINATE)
 viennesebend = getattr(IfcAlignmentHorizontalSegmentTypeEnum, 'VIENNESEBEND', INDETERMINATE)
 IfcAlignmentTypeEnum = enum_namespace()
 userdefined = getattr(IfcAlignmentTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcAlignmentTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcAlignmentVerticalSegmentTypeEnum = enum_namespace()
-constantgradient = getattr(IfcAlignmentVerticalSegmentTypeEnum, 'CONSTANTGRADIENT', INDETERMINATE)
 circulararc = getattr(IfcAlignmentVerticalSegmentTypeEnum, 'CIRCULARARC', INDETERMINATE)
-parabolicarc = getattr(IfcAlignmentVerticalSegmentTypeEnum, 'PARABOLICARC', INDETERMINATE)
 clothoid = getattr(IfcAlignmentVerticalSegmentTypeEnum, 'CLOTHOID', INDETERMINATE)
+constantgradient = getattr(IfcAlignmentVerticalSegmentTypeEnum, 'CONSTANTGRADIENT', INDETERMINATE)
+parabolicarc = getattr(IfcAlignmentVerticalSegmentTypeEnum, 'PARABOLICARC', INDETERMINATE)
 IfcAnalysisModelTypeEnum = enum_namespace()
 in_plane_loading_2d = getattr(IfcAnalysisModelTypeEnum, 'IN_PLANE_LOADING_2D', INDETERMINATE)
-out_plane_loading_2d = getattr(IfcAnalysisModelTypeEnum, 'OUT_PLANE_LOADING_2D', INDETERMINATE)
 loading_3d = getattr(IfcAnalysisModelTypeEnum, 'LOADING_3D', INDETERMINATE)
+out_plane_loading_2d = getattr(IfcAnalysisModelTypeEnum, 'OUT_PLANE_LOADING_2D', INDETERMINATE)
 userdefined = getattr(IfcAnalysisModelTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcAnalysisModelTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcAnalysisTheoryTypeEnum = enum_namespace()
 first_order_theory = getattr(IfcAnalysisTheoryTypeEnum, 'FIRST_ORDER_THEORY', INDETERMINATE)
+full_nonlinear_theory = getattr(IfcAnalysisTheoryTypeEnum, 'FULL_NONLINEAR_THEORY', INDETERMINATE)
 second_order_theory = getattr(IfcAnalysisTheoryTypeEnum, 'SECOND_ORDER_THEORY', INDETERMINATE)
 third_order_theory = getattr(IfcAnalysisTheoryTypeEnum, 'THIRD_ORDER_THEORY', INDETERMINATE)
-full_nonlinear_theory = getattr(IfcAnalysisTheoryTypeEnum, 'FULL_NONLINEAR_THEORY', INDETERMINATE)
 userdefined = getattr(IfcAnalysisTheoryTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcAnalysisTheoryTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcAnnotationTypeEnum = enum_namespace()
-assumedpoint = getattr(IfcAnnotationTypeEnum, 'ASSUMEDPOINT', INDETERMINATE)
-asbuiltarea = getattr(IfcAnnotationTypeEnum, 'ASBUILTAREA', INDETERMINATE)
-asbuiltline = getattr(IfcAnnotationTypeEnum, 'ASBUILTLINE', INDETERMINATE)
-non_physical_signal = getattr(IfcAnnotationTypeEnum, 'NON_PHYSICAL_SIGNAL', INDETERMINATE)
-assumedline = getattr(IfcAnnotationTypeEnum, 'ASSUMEDLINE', INDETERMINATE)
-widthevent = getattr(IfcAnnotationTypeEnum, 'WIDTHEVENT', INDETERMINATE)
-assumedarea = getattr(IfcAnnotationTypeEnum, 'ASSUMEDAREA', INDETERMINATE)
-superelevationevent = getattr(IfcAnnotationTypeEnum, 'SUPERELEVATIONEVENT', INDETERMINATE)
-asbuiltpoint = getattr(IfcAnnotationTypeEnum, 'ASBUILTPOINT', INDETERMINATE)
+contourline = getattr(IfcAnnotationTypeEnum, 'CONTOURLINE', INDETERMINATE)
+dimension = getattr(IfcAnnotationTypeEnum, 'DIMENSION', INDETERMINATE)
+isobar = getattr(IfcAnnotationTypeEnum, 'ISOBAR', INDETERMINATE)
+isolux = getattr(IfcAnnotationTypeEnum, 'ISOLUX', INDETERMINATE)
+isotherm = getattr(IfcAnnotationTypeEnum, 'ISOTHERM', INDETERMINATE)
+leader = getattr(IfcAnnotationTypeEnum, 'LEADER', INDETERMINATE)
+survey = getattr(IfcAnnotationTypeEnum, 'SURVEY', INDETERMINATE)
+symbol = getattr(IfcAnnotationTypeEnum, 'SYMBOL', INDETERMINATE)
+text = getattr(IfcAnnotationTypeEnum, 'TEXT', INDETERMINATE)
 userdefined = getattr(IfcAnnotationTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcAnnotationTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcArithmeticOperatorEnum = enum_namespace()
 add = getattr(IfcArithmeticOperatorEnum, 'ADD', INDETERMINATE)
 divide = getattr(IfcArithmeticOperatorEnum, 'DIVIDE', INDETERMINATE)
+modulo = getattr(IfcArithmeticOperatorEnum, 'MODULO', INDETERMINATE)
 multiply = getattr(IfcArithmeticOperatorEnum, 'MULTIPLY', INDETERMINATE)
 subtract = getattr(IfcArithmeticOperatorEnum, 'SUBTRACT', INDETERMINATE)
 IfcAssemblyPlaceEnum = enum_namespace()
-site = getattr(IfcAssemblyPlaceEnum, 'SITE', INDETERMINATE)
 factory = getattr(IfcAssemblyPlaceEnum, 'FACTORY', INDETERMINATE)
+site = getattr(IfcAssemblyPlaceEnum, 'SITE', INDETERMINATE)
 notdefined = getattr(IfcAssemblyPlaceEnum, 'NOTDEFINED', INDETERMINATE)
 IfcAudioVisualApplianceTypeEnum = enum_namespace()
 amplifier = getattr(IfcAudioVisualApplianceTypeEnum, 'AMPLIFIER', INDETERMINATE)
 camera = getattr(IfcAudioVisualApplianceTypeEnum, 'CAMERA', INDETERMINATE)
+communicationterminal = getattr(IfcAudioVisualApplianceTypeEnum, 'COMMUNICATIONTERMINAL', INDETERMINATE)
 display = getattr(IfcAudioVisualApplianceTypeEnum, 'DISPLAY', INDETERMINATE)
 microphone = getattr(IfcAudioVisualApplianceTypeEnum, 'MICROPHONE', INDETERMINATE)
 player = getattr(IfcAudioVisualApplianceTypeEnum, 'PLAYER', INDETERMINATE)
 projector = getattr(IfcAudioVisualApplianceTypeEnum, 'PROJECTOR', INDETERMINATE)
 receiver = getattr(IfcAudioVisualApplianceTypeEnum, 'RECEIVER', INDETERMINATE)
+recordingequipment = getattr(IfcAudioVisualApplianceTypeEnum, 'RECORDINGEQUIPMENT', INDETERMINATE)
 speaker = getattr(IfcAudioVisualApplianceTypeEnum, 'SPEAKER', INDETERMINATE)
 switcher = getattr(IfcAudioVisualApplianceTypeEnum, 'SWITCHER', INDETERMINATE)
 telephone = getattr(IfcAudioVisualApplianceTypeEnum, 'TELEPHONE', INDETERMINATE)
 tuner = getattr(IfcAudioVisualApplianceTypeEnum, 'TUNER', INDETERMINATE)
-communicationterminal = getattr(IfcAudioVisualApplianceTypeEnum, 'COMMUNICATIONTERMINAL', INDETERMINATE)
-recordingequipment = getattr(IfcAudioVisualApplianceTypeEnum, 'RECORDINGEQUIPMENT', INDETERMINATE)
 userdefined = getattr(IfcAudioVisualApplianceTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcAudioVisualApplianceTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcBSplineCurveForm = enum_namespace()
-polyline_form = getattr(IfcBSplineCurveForm, 'POLYLINE_FORM', INDETERMINATE)
 circular_arc = getattr(IfcBSplineCurveForm, 'CIRCULAR_ARC', INDETERMINATE)
 elliptic_arc = getattr(IfcBSplineCurveForm, 'ELLIPTIC_ARC', INDETERMINATE)
-parabolic_arc = getattr(IfcBSplineCurveForm, 'PARABOLIC_ARC', INDETERMINATE)
 hyperbolic_arc = getattr(IfcBSplineCurveForm, 'HYPERBOLIC_ARC', INDETERMINATE)
+parabolic_arc = getattr(IfcBSplineCurveForm, 'PARABOLIC_ARC', INDETERMINATE)
+polyline_form = getattr(IfcBSplineCurveForm, 'POLYLINE_FORM', INDETERMINATE)
 unspecified = getattr(IfcBSplineCurveForm, 'UNSPECIFIED', INDETERMINATE)
 IfcBSplineSurfaceForm = enum_namespace()
-plane_surf = getattr(IfcBSplineSurfaceForm, 'PLANE_SURF', INDETERMINATE)
-cylindrical_surf = getattr(IfcBSplineSurfaceForm, 'CYLINDRICAL_SURF', INDETERMINATE)
 conical_surf = getattr(IfcBSplineSurfaceForm, 'CONICAL_SURF', INDETERMINATE)
-spherical_surf = getattr(IfcBSplineSurfaceForm, 'SPHERICAL_SURF', INDETERMINATE)
-toroidal_surf = getattr(IfcBSplineSurfaceForm, 'TOROIDAL_SURF', INDETERMINATE)
-surf_of_revolution = getattr(IfcBSplineSurfaceForm, 'SURF_OF_REVOLUTION', INDETERMINATE)
-ruled_surf = getattr(IfcBSplineSurfaceForm, 'RULED_SURF', INDETERMINATE)
+cylindrical_surf = getattr(IfcBSplineSurfaceForm, 'CYLINDRICAL_SURF', INDETERMINATE)
 generalised_cone = getattr(IfcBSplineSurfaceForm, 'GENERALISED_CONE', INDETERMINATE)
+plane_surf = getattr(IfcBSplineSurfaceForm, 'PLANE_SURF', INDETERMINATE)
 quadric_surf = getattr(IfcBSplineSurfaceForm, 'QUADRIC_SURF', INDETERMINATE)
+ruled_surf = getattr(IfcBSplineSurfaceForm, 'RULED_SURF', INDETERMINATE)
+spherical_surf = getattr(IfcBSplineSurfaceForm, 'SPHERICAL_SURF', INDETERMINATE)
 surf_of_linear_extrusion = getattr(IfcBSplineSurfaceForm, 'SURF_OF_LINEAR_EXTRUSION', INDETERMINATE)
+surf_of_revolution = getattr(IfcBSplineSurfaceForm, 'SURF_OF_REVOLUTION', INDETERMINATE)
+toroidal_surf = getattr(IfcBSplineSurfaceForm, 'TOROIDAL_SURF', INDETERMINATE)
 unspecified = getattr(IfcBSplineSurfaceForm, 'UNSPECIFIED', INDETERMINATE)
 IfcBeamTypeEnum = enum_namespace()
 beam = getattr(IfcBeamTypeEnum, 'BEAM', INDETERMINATE)
-joist = getattr(IfcBeamTypeEnum, 'JOIST', INDETERMINATE)
+cornice = getattr(IfcBeamTypeEnum, 'CORNICE', INDETERMINATE)
+diaphragm = getattr(IfcBeamTypeEnum, 'DIAPHRAGM', INDETERMINATE)
+edgebeam = getattr(IfcBeamTypeEnum, 'EDGEBEAM', INDETERMINATE)
+girder_segment = getattr(IfcBeamTypeEnum, 'GIRDER_SEGMENT', INDETERMINATE)
+hatstone = getattr(IfcBeamTypeEnum, 'HATSTONE', INDETERMINATE)
 hollowcore = getattr(IfcBeamTypeEnum, 'HOLLOWCORE', INDETERMINATE)
+joist = getattr(IfcBeamTypeEnum, 'JOIST', INDETERMINATE)
 lintel = getattr(IfcBeamTypeEnum, 'LINTEL', INDETERMINATE)
+piercap = getattr(IfcBeamTypeEnum, 'PIERCAP', INDETERMINATE)
 spandrel = getattr(IfcBeamTypeEnum, 'SPANDREL', INDETERMINATE)
 t_beam = getattr(IfcBeamTypeEnum, 'T_BEAM', INDETERMINATE)
-girder_segment = getattr(IfcBeamTypeEnum, 'GIRDER_SEGMENT', INDETERMINATE)
-diaphragm = getattr(IfcBeamTypeEnum, 'DIAPHRAGM', INDETERMINATE)
-piercap = getattr(IfcBeamTypeEnum, 'PIERCAP', INDETERMINATE)
-hatstone = getattr(IfcBeamTypeEnum, 'HATSTONE', INDETERMINATE)
-cornice = getattr(IfcBeamTypeEnum, 'CORNICE', INDETERMINATE)
-edgebeam = getattr(IfcBeamTypeEnum, 'EDGEBEAM', INDETERMINATE)
 userdefined = getattr(IfcBeamTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcBeamTypeEnum, 'NOTDEFINED', INDETERMINATE)
-IfcBearingTypeDisplacementEnum = enum_namespace()
-fixed_movement = getattr(IfcBearingTypeDisplacementEnum, 'FIXED_MOVEMENT', INDETERMINATE)
-guided_longitudinal = getattr(IfcBearingTypeDisplacementEnum, 'GUIDED_LONGITUDINAL', INDETERMINATE)
-guided_transversal = getattr(IfcBearingTypeDisplacementEnum, 'GUIDED_TRANSVERSAL', INDETERMINATE)
-free_movement = getattr(IfcBearingTypeDisplacementEnum, 'FREE_MOVEMENT', INDETERMINATE)
-notdefined = getattr(IfcBearingTypeDisplacementEnum, 'NOTDEFINED', INDETERMINATE)
 IfcBearingTypeEnum = enum_namespace()
 cylindrical = getattr(IfcBearingTypeEnum, 'CYLINDRICAL', INDETERMINATE)
-spherical = getattr(IfcBearingTypeEnum, 'SPHERICAL', INDETERMINATE)
+disk = getattr(IfcBearingTypeEnum, 'DISK', INDETERMINATE)
 elastomeric = getattr(IfcBearingTypeEnum, 'ELASTOMERIC', INDETERMINATE)
-pot = getattr(IfcBearingTypeEnum, 'POT', INDETERMINATE)
 guide = getattr(IfcBearingTypeEnum, 'GUIDE', INDETERMINATE)
+pot = getattr(IfcBearingTypeEnum, 'POT', INDETERMINATE)
 rocker = getattr(IfcBearingTypeEnum, 'ROCKER', INDETERMINATE)
 roller = getattr(IfcBearingTypeEnum, 'ROLLER', INDETERMINATE)
-disk = getattr(IfcBearingTypeEnum, 'DISK', INDETERMINATE)
+spherical = getattr(IfcBearingTypeEnum, 'SPHERICAL', INDETERMINATE)
 userdefined = getattr(IfcBearingTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcBearingTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcBenchmarkEnum = enum_namespace()
+equalto = getattr(IfcBenchmarkEnum, 'EQUALTO', INDETERMINATE)
 greaterthan = getattr(IfcBenchmarkEnum, 'GREATERTHAN', INDETERMINATE)
 greaterthanorequalto = getattr(IfcBenchmarkEnum, 'GREATERTHANOREQUALTO', INDETERMINATE)
+includedin = getattr(IfcBenchmarkEnum, 'INCLUDEDIN', INDETERMINATE)
+includes = getattr(IfcBenchmarkEnum, 'INCLUDES', INDETERMINATE)
 lessthan = getattr(IfcBenchmarkEnum, 'LESSTHAN', INDETERMINATE)
 lessthanorequalto = getattr(IfcBenchmarkEnum, 'LESSTHANOREQUALTO', INDETERMINATE)
-equalto = getattr(IfcBenchmarkEnum, 'EQUALTO', INDETERMINATE)
 notequalto = getattr(IfcBenchmarkEnum, 'NOTEQUALTO', INDETERMINATE)
-includes = getattr(IfcBenchmarkEnum, 'INCLUDES', INDETERMINATE)
-notincludes = getattr(IfcBenchmarkEnum, 'NOTINCLUDES', INDETERMINATE)
-includedin = getattr(IfcBenchmarkEnum, 'INCLUDEDIN', INDETERMINATE)
 notincludedin = getattr(IfcBenchmarkEnum, 'NOTINCLUDEDIN', INDETERMINATE)
+notincludes = getattr(IfcBenchmarkEnum, 'NOTINCLUDES', INDETERMINATE)
 IfcBoilerTypeEnum = enum_namespace()
-water = getattr(IfcBoilerTypeEnum, 'WATER', INDETERMINATE)
 steam = getattr(IfcBoilerTypeEnum, 'STEAM', INDETERMINATE)
+water = getattr(IfcBoilerTypeEnum, 'WATER', INDETERMINATE)
 userdefined = getattr(IfcBoilerTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcBoilerTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcBooleanOperator = enum_namespace()
-union = getattr(IfcBooleanOperator, 'UNION', INDETERMINATE)
-intersection = getattr(IfcBooleanOperator, 'INTERSECTION', INDETERMINATE)
 difference = getattr(IfcBooleanOperator, 'DIFFERENCE', INDETERMINATE)
+intersection = getattr(IfcBooleanOperator, 'INTERSECTION', INDETERMINATE)
+union = getattr(IfcBooleanOperator, 'UNION', INDETERMINATE)
 IfcBridgePartTypeEnum = enum_namespace()
 abutment = getattr(IfcBridgePartTypeEnum, 'ABUTMENT', INDETERMINATE)
 deck = getattr(IfcBridgePartTypeEnum, 'DECK', INDETERMINATE)
@@ -402,10 +397,10 @@ truss = getattr(IfcBridgeTypeEnum, 'TRUSS', INDETERMINATE)
 userdefined = getattr(IfcBridgeTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcBridgeTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcBuildingElementPartTypeEnum = enum_namespace()
-insulation = getattr(IfcBuildingElementPartTypeEnum, 'INSULATION', INDETERMINATE)
-precastpanel = getattr(IfcBuildingElementPartTypeEnum, 'PRECASTPANEL', INDETERMINATE)
 apron = getattr(IfcBuildingElementPartTypeEnum, 'APRON', INDETERMINATE)
 armourunit = getattr(IfcBuildingElementPartTypeEnum, 'ARMOURUNIT', INDETERMINATE)
+insulation = getattr(IfcBuildingElementPartTypeEnum, 'INSULATION', INDETERMINATE)
+precastpanel = getattr(IfcBuildingElementPartTypeEnum, 'PRECASTPANEL', INDETERMINATE)
 safetycage = getattr(IfcBuildingElementPartTypeEnum, 'SAFETYCAGE', INDETERMINATE)
 userdefined = getattr(IfcBuildingElementPartTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcBuildingElementPartTypeEnum, 'NOTDEFINED', INDETERMINATE)
@@ -413,8 +408,8 @@ IfcBuildingElementProxyTypeEnum = enum_namespace()
 complex = getattr(IfcBuildingElementProxyTypeEnum, 'COMPLEX', INDETERMINATE)
 element = getattr(IfcBuildingElementProxyTypeEnum, 'ELEMENT', INDETERMINATE)
 partial = getattr(IfcBuildingElementProxyTypeEnum, 'PARTIAL', INDETERMINATE)
-provisionforvoid = getattr(IfcBuildingElementProxyTypeEnum, 'PROVISIONFORVOID', INDETERMINATE)
 provisionforspace = getattr(IfcBuildingElementProxyTypeEnum, 'PROVISIONFORSPACE', INDETERMINATE)
+provisionforvoid = getattr(IfcBuildingElementProxyTypeEnum, 'PROVISIONFORVOID', INDETERMINATE)
 userdefined = getattr(IfcBuildingElementProxyTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcBuildingElementProxyTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcBuildingSystemTypeEnum = enum_namespace()
@@ -424,23 +419,22 @@ loadbearing = getattr(IfcBuildingSystemTypeEnum, 'LOADBEARING', INDETERMINATE)
 outershell = getattr(IfcBuildingSystemTypeEnum, 'OUTERSHELL', INDETERMINATE)
 shading = getattr(IfcBuildingSystemTypeEnum, 'SHADING', INDETERMINATE)
 transport = getattr(IfcBuildingSystemTypeEnum, 'TRANSPORT', INDETERMINATE)
-reinforcing = getattr(IfcBuildingSystemTypeEnum, 'REINFORCING', INDETERMINATE)
-prestressing = getattr(IfcBuildingSystemTypeEnum, 'PRESTRESSING', INDETERMINATE)
-erosionprevention = getattr(IfcBuildingSystemTypeEnum, 'EROSIONPREVENTION', INDETERMINATE)
 userdefined = getattr(IfcBuildingSystemTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcBuildingSystemTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcBuiltSystemTypeEnum = enum_namespace()
-reinforcing = getattr(IfcBuiltSystemTypeEnum, 'REINFORCING', INDETERMINATE)
-mooring = getattr(IfcBuiltSystemTypeEnum, 'MOORING', INDETERMINATE)
-outershell = getattr(IfcBuiltSystemTypeEnum, 'OUTERSHELL', INDETERMINATE)
-trackcircuit = getattr(IfcBuiltSystemTypeEnum, 'TRACKCIRCUIT', INDETERMINATE)
 erosionprevention = getattr(IfcBuiltSystemTypeEnum, 'EROSIONPREVENTION', INDETERMINATE)
+fenestration = getattr(IfcBuiltSystemTypeEnum, 'FENESTRATION', INDETERMINATE)
 foundation = getattr(IfcBuiltSystemTypeEnum, 'FOUNDATION', INDETERMINATE)
 loadbearing = getattr(IfcBuiltSystemTypeEnum, 'LOADBEARING', INDETERMINATE)
-shading = getattr(IfcBuiltSystemTypeEnum, 'SHADING', INDETERMINATE)
-fenestration = getattr(IfcBuiltSystemTypeEnum, 'FENESTRATION', INDETERMINATE)
-transport = getattr(IfcBuiltSystemTypeEnum, 'TRANSPORT', INDETERMINATE)
+mooring = getattr(IfcBuiltSystemTypeEnum, 'MOORING', INDETERMINATE)
+outershell = getattr(IfcBuiltSystemTypeEnum, 'OUTERSHELL', INDETERMINATE)
 prestressing = getattr(IfcBuiltSystemTypeEnum, 'PRESTRESSING', INDETERMINATE)
+railwayline = getattr(IfcBuiltSystemTypeEnum, 'RAILWAYLINE', INDETERMINATE)
+railwaytrack = getattr(IfcBuiltSystemTypeEnum, 'RAILWAYTRACK', INDETERMINATE)
+reinforcing = getattr(IfcBuiltSystemTypeEnum, 'REINFORCING', INDETERMINATE)
+shading = getattr(IfcBuiltSystemTypeEnum, 'SHADING', INDETERMINATE)
+trackcircuit = getattr(IfcBuiltSystemTypeEnum, 'TRACKCIRCUIT', INDETERMINATE)
+transport = getattr(IfcBuiltSystemTypeEnum, 'TRANSPORT', INDETERMINATE)
 userdefined = getattr(IfcBuiltSystemTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcBuiltSystemTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcBurnerTypeEnum = enum_namespace()
@@ -448,18 +442,21 @@ userdefined = getattr(IfcBurnerTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcBurnerTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcCableCarrierFittingTypeEnum = enum_namespace()
 bend = getattr(IfcCableCarrierFittingTypeEnum, 'BEND', INDETERMINATE)
+connector = getattr(IfcCableCarrierFittingTypeEnum, 'CONNECTOR', INDETERMINATE)
 cross = getattr(IfcCableCarrierFittingTypeEnum, 'CROSS', INDETERMINATE)
+junction = getattr(IfcCableCarrierFittingTypeEnum, 'JUNCTION', INDETERMINATE)
 reducer = getattr(IfcCableCarrierFittingTypeEnum, 'REDUCER', INDETERMINATE)
 tee = getattr(IfcCableCarrierFittingTypeEnum, 'TEE', INDETERMINATE)
+transition = getattr(IfcCableCarrierFittingTypeEnum, 'TRANSITION', INDETERMINATE)
 userdefined = getattr(IfcCableCarrierFittingTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcCableCarrierFittingTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcCableCarrierSegmentTypeEnum = enum_namespace()
+cablebracket = getattr(IfcCableCarrierSegmentTypeEnum, 'CABLEBRACKET', INDETERMINATE)
 cableladdersegment = getattr(IfcCableCarrierSegmentTypeEnum, 'CABLELADDERSEGMENT', INDETERMINATE)
 cabletraysegment = getattr(IfcCableCarrierSegmentTypeEnum, 'CABLETRAYSEGMENT', INDETERMINATE)
 cabletrunkingsegment = getattr(IfcCableCarrierSegmentTypeEnum, 'CABLETRUNKINGSEGMENT', INDETERMINATE)
-conduitsegment = getattr(IfcCableCarrierSegmentTypeEnum, 'CONDUITSEGMENT', INDETERMINATE)
-cablebracket = getattr(IfcCableCarrierSegmentTypeEnum, 'CABLEBRACKET', INDETERMINATE)
 catenarywire = getattr(IfcCableCarrierSegmentTypeEnum, 'CATENARYWIRE', INDETERMINATE)
+conduitsegment = getattr(IfcCableCarrierSegmentTypeEnum, 'CONDUITSEGMENT', INDETERMINATE)
 dropper = getattr(IfcCableCarrierSegmentTypeEnum, 'DROPPER', INDETERMINATE)
 userdefined = getattr(IfcCableCarrierSegmentTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcCableCarrierSegmentTypeEnum, 'NOTDEFINED', INDETERMINATE)
@@ -467,17 +464,17 @@ IfcCableFittingTypeEnum = enum_namespace()
 connector = getattr(IfcCableFittingTypeEnum, 'CONNECTOR', INDETERMINATE)
 entry = getattr(IfcCableFittingTypeEnum, 'ENTRY', INDETERMINATE)
 exit = getattr(IfcCableFittingTypeEnum, 'EXIT', INDETERMINATE)
+fanout = getattr(IfcCableFittingTypeEnum, 'FANOUT', INDETERMINATE)
 junction = getattr(IfcCableFittingTypeEnum, 'JUNCTION', INDETERMINATE)
 transition = getattr(IfcCableFittingTypeEnum, 'TRANSITION', INDETERMINATE)
-fanout = getattr(IfcCableFittingTypeEnum, 'FANOUT', INDETERMINATE)
 userdefined = getattr(IfcCableFittingTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcCableFittingTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcCableSegmentTypeEnum = enum_namespace()
 busbarsegment = getattr(IfcCableSegmentTypeEnum, 'BUSBARSEGMENT', INDETERMINATE)
 cablesegment = getattr(IfcCableSegmentTypeEnum, 'CABLESEGMENT', INDETERMINATE)
 conductorsegment = getattr(IfcCableSegmentTypeEnum, 'CONDUCTORSEGMENT', INDETERMINATE)
-coresegment = getattr(IfcCableSegmentTypeEnum, 'CORESEGMENT', INDETERMINATE)
 contactwiresegment = getattr(IfcCableSegmentTypeEnum, 'CONTACTWIRESEGMENT', INDETERMINATE)
+coresegment = getattr(IfcCableSegmentTypeEnum, 'CORESEGMENT', INDETERMINATE)
 fibersegment = getattr(IfcCableSegmentTypeEnum, 'FIBERSEGMENT', INDETERMINATE)
 fibertube = getattr(IfcCableSegmentTypeEnum, 'FIBERTUBE', INDETERMINATE)
 opticalcablesegment = getattr(IfcCableSegmentTypeEnum, 'OPTICALCABLESEGMENT', INDETERMINATE)
@@ -486,20 +483,20 @@ wirepairsegment = getattr(IfcCableSegmentTypeEnum, 'WIREPAIRSEGMENT', INDETERMIN
 userdefined = getattr(IfcCableSegmentTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcCableSegmentTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcCaissonFoundationTypeEnum = enum_namespace()
-well = getattr(IfcCaissonFoundationTypeEnum, 'WELL', INDETERMINATE)
 caisson = getattr(IfcCaissonFoundationTypeEnum, 'CAISSON', INDETERMINATE)
+well = getattr(IfcCaissonFoundationTypeEnum, 'WELL', INDETERMINATE)
 userdefined = getattr(IfcCaissonFoundationTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcCaissonFoundationTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcChangeActionEnum = enum_namespace()
-nochange = getattr(IfcChangeActionEnum, 'NOCHANGE', INDETERMINATE)
-modified = getattr(IfcChangeActionEnum, 'MODIFIED', INDETERMINATE)
 added = getattr(IfcChangeActionEnum, 'ADDED', INDETERMINATE)
 deleted = getattr(IfcChangeActionEnum, 'DELETED', INDETERMINATE)
+modified = getattr(IfcChangeActionEnum, 'MODIFIED', INDETERMINATE)
+nochange = getattr(IfcChangeActionEnum, 'NOCHANGE', INDETERMINATE)
 notdefined = getattr(IfcChangeActionEnum, 'NOTDEFINED', INDETERMINATE)
 IfcChillerTypeEnum = enum_namespace()
 aircooled = getattr(IfcChillerTypeEnum, 'AIRCOOLED', INDETERMINATE)
-watercooled = getattr(IfcChillerTypeEnum, 'WATERCOOLED', INDETERMINATE)
 heatrecovery = getattr(IfcChillerTypeEnum, 'HEATRECOVERY', INDETERMINATE)
+watercooled = getattr(IfcChillerTypeEnum, 'WATERCOOLED', INDETERMINATE)
 userdefined = getattr(IfcChillerTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcChillerTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcChimneyTypeEnum = enum_namespace()
@@ -517,58 +514,58 @@ userdefined = getattr(IfcCoilTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcCoilTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcColumnTypeEnum = enum_namespace()
 column = getattr(IfcColumnTypeEnum, 'COLUMN', INDETERMINATE)
-pilaster = getattr(IfcColumnTypeEnum, 'PILASTER', INDETERMINATE)
 pierstem = getattr(IfcColumnTypeEnum, 'PIERSTEM', INDETERMINATE)
 pierstem_segment = getattr(IfcColumnTypeEnum, 'PIERSTEM_SEGMENT', INDETERMINATE)
+pilaster = getattr(IfcColumnTypeEnum, 'PILASTER', INDETERMINATE)
 standcolumn = getattr(IfcColumnTypeEnum, 'STANDCOLUMN', INDETERMINATE)
 userdefined = getattr(IfcColumnTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcColumnTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcCommunicationsApplianceTypeEnum = enum_namespace()
 antenna = getattr(IfcCommunicationsApplianceTypeEnum, 'ANTENNA', INDETERMINATE)
+automaton = getattr(IfcCommunicationsApplianceTypeEnum, 'AUTOMATON', INDETERMINATE)
 computer = getattr(IfcCommunicationsApplianceTypeEnum, 'COMPUTER', INDETERMINATE)
 fax = getattr(IfcCommunicationsApplianceTypeEnum, 'FAX', INDETERMINATE)
 gateway = getattr(IfcCommunicationsApplianceTypeEnum, 'GATEWAY', INDETERMINATE)
+intelligentperipheral = getattr(IfcCommunicationsApplianceTypeEnum, 'INTELLIGENTPERIPHERAL', INDETERMINATE)
+ipnetworkequipment = getattr(IfcCommunicationsApplianceTypeEnum, 'IPNETWORKEQUIPMENT', INDETERMINATE)
+linesideelectronicunit = getattr(IfcCommunicationsApplianceTypeEnum, 'LINESIDEELECTRONICUNIT', INDETERMINATE)
 modem = getattr(IfcCommunicationsApplianceTypeEnum, 'MODEM', INDETERMINATE)
 networkappliance = getattr(IfcCommunicationsApplianceTypeEnum, 'NETWORKAPPLIANCE', INDETERMINATE)
 networkbridge = getattr(IfcCommunicationsApplianceTypeEnum, 'NETWORKBRIDGE', INDETERMINATE)
 networkhub = getattr(IfcCommunicationsApplianceTypeEnum, 'NETWORKHUB', INDETERMINATE)
+opticallineterminal = getattr(IfcCommunicationsApplianceTypeEnum, 'OPTICALLINETERMINAL', INDETERMINATE)
+opticalnetworkunit = getattr(IfcCommunicationsApplianceTypeEnum, 'OPTICALNETWORKUNIT', INDETERMINATE)
 printer = getattr(IfcCommunicationsApplianceTypeEnum, 'PRINTER', INDETERMINATE)
+radioblockcenter = getattr(IfcCommunicationsApplianceTypeEnum, 'RADIOBLOCKCENTER', INDETERMINATE)
 repeater = getattr(IfcCommunicationsApplianceTypeEnum, 'REPEATER', INDETERMINATE)
 router = getattr(IfcCommunicationsApplianceTypeEnum, 'ROUTER', INDETERMINATE)
 scanner = getattr(IfcCommunicationsApplianceTypeEnum, 'SCANNER', INDETERMINATE)
-automaton = getattr(IfcCommunicationsApplianceTypeEnum, 'AUTOMATON', INDETERMINATE)
-intelligentperipheral = getattr(IfcCommunicationsApplianceTypeEnum, 'INTELLIGENTPERIPHERAL', INDETERMINATE)
-ipnetworkequipment = getattr(IfcCommunicationsApplianceTypeEnum, 'IPNETWORKEQUIPMENT', INDETERMINATE)
-opticalnetworkunit = getattr(IfcCommunicationsApplianceTypeEnum, 'OPTICALNETWORKUNIT', INDETERMINATE)
 telecommand = getattr(IfcCommunicationsApplianceTypeEnum, 'TELECOMMAND', INDETERMINATE)
 telephonyexchange = getattr(IfcCommunicationsApplianceTypeEnum, 'TELEPHONYEXCHANGE', INDETERMINATE)
 transitioncomponent = getattr(IfcCommunicationsApplianceTypeEnum, 'TRANSITIONCOMPONENT', INDETERMINATE)
 transponder = getattr(IfcCommunicationsApplianceTypeEnum, 'TRANSPONDER', INDETERMINATE)
 transportequipment = getattr(IfcCommunicationsApplianceTypeEnum, 'TRANSPORTEQUIPMENT', INDETERMINATE)
-opticallineterminal = getattr(IfcCommunicationsApplianceTypeEnum, 'OPTICALLINETERMINAL', INDETERMINATE)
-linesideelectronicunit = getattr(IfcCommunicationsApplianceTypeEnum, 'LINESIDEELECTRONICUNIT', INDETERMINATE)
-radioblockcenter = getattr(IfcCommunicationsApplianceTypeEnum, 'RADIOBLOCKCENTER', INDETERMINATE)
 userdefined = getattr(IfcCommunicationsApplianceTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcCommunicationsApplianceTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcComplexPropertyTemplateTypeEnum = enum_namespace()
 p_complex = getattr(IfcComplexPropertyTemplateTypeEnum, 'P_COMPLEX', INDETERMINATE)
 q_complex = getattr(IfcComplexPropertyTemplateTypeEnum, 'Q_COMPLEX', INDETERMINATE)
 IfcCompressorTypeEnum = enum_namespace()
-dynamic = getattr(IfcCompressorTypeEnum, 'DYNAMIC', INDETERMINATE)
-reciprocating = getattr(IfcCompressorTypeEnum, 'RECIPROCATING', INDETERMINATE)
-rotary = getattr(IfcCompressorTypeEnum, 'ROTARY', INDETERMINATE)
-scroll = getattr(IfcCompressorTypeEnum, 'SCROLL', INDETERMINATE)
-trochoidal = getattr(IfcCompressorTypeEnum, 'TROCHOIDAL', INDETERMINATE)
-singlestage = getattr(IfcCompressorTypeEnum, 'SINGLESTAGE', INDETERMINATE)
 booster = getattr(IfcCompressorTypeEnum, 'BOOSTER', INDETERMINATE)
-opentype = getattr(IfcCompressorTypeEnum, 'OPENTYPE', INDETERMINATE)
+dynamic = getattr(IfcCompressorTypeEnum, 'DYNAMIC', INDETERMINATE)
 hermetic = getattr(IfcCompressorTypeEnum, 'HERMETIC', INDETERMINATE)
-semihermetic = getattr(IfcCompressorTypeEnum, 'SEMIHERMETIC', INDETERMINATE)
-weldedshellhermetic = getattr(IfcCompressorTypeEnum, 'WELDEDSHELLHERMETIC', INDETERMINATE)
+opentype = getattr(IfcCompressorTypeEnum, 'OPENTYPE', INDETERMINATE)
+reciprocating = getattr(IfcCompressorTypeEnum, 'RECIPROCATING', INDETERMINATE)
 rollingpiston = getattr(IfcCompressorTypeEnum, 'ROLLINGPISTON', INDETERMINATE)
+rotary = getattr(IfcCompressorTypeEnum, 'ROTARY', INDETERMINATE)
 rotaryvane = getattr(IfcCompressorTypeEnum, 'ROTARYVANE', INDETERMINATE)
+scroll = getattr(IfcCompressorTypeEnum, 'SCROLL', INDETERMINATE)
+semihermetic = getattr(IfcCompressorTypeEnum, 'SEMIHERMETIC', INDETERMINATE)
 singlescrew = getattr(IfcCompressorTypeEnum, 'SINGLESCREW', INDETERMINATE)
+singlestage = getattr(IfcCompressorTypeEnum, 'SINGLESTAGE', INDETERMINATE)
+trochoidal = getattr(IfcCompressorTypeEnum, 'TROCHOIDAL', INDETERMINATE)
 twinscrew = getattr(IfcCompressorTypeEnum, 'TWINSCREW', INDETERMINATE)
+weldedshellhermetic = getattr(IfcCompressorTypeEnum, 'WELDEDSHELLHERMETIC', INDETERMINATE)
 userdefined = getattr(IfcCompressorTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcCompressorTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcCondenserTypeEnum = enum_namespace()
@@ -582,14 +579,14 @@ watercooledtubeintube = getattr(IfcCondenserTypeEnum, 'WATERCOOLEDTUBEINTUBE', I
 userdefined = getattr(IfcCondenserTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcCondenserTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcConnectionTypeEnum = enum_namespace()
+atend = getattr(IfcConnectionTypeEnum, 'ATEND', INDETERMINATE)
 atpath = getattr(IfcConnectionTypeEnum, 'ATPATH', INDETERMINATE)
 atstart = getattr(IfcConnectionTypeEnum, 'ATSTART', INDETERMINATE)
-atend = getattr(IfcConnectionTypeEnum, 'ATEND', INDETERMINATE)
 notdefined = getattr(IfcConnectionTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcConstraintEnum = enum_namespace()
+advisory = getattr(IfcConstraintEnum, 'ADVISORY', INDETERMINATE)
 hard = getattr(IfcConstraintEnum, 'HARD', INDETERMINATE)
 soft = getattr(IfcConstraintEnum, 'SOFT', INDETERMINATE)
-advisory = getattr(IfcConstraintEnum, 'ADVISORY', INDETERMINATE)
 userdefined = getattr(IfcConstraintEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcConstraintEnum, 'NOTDEFINED', INDETERMINATE)
 IfcConstructionEquipmentResourceTypeEnum = enum_namespace()
@@ -613,8 +610,8 @@ masonry = getattr(IfcConstructionMaterialResourceTypeEnum, 'MASONRY', INDETERMIN
 metal = getattr(IfcConstructionMaterialResourceTypeEnum, 'METAL', INDETERMINATE)
 plastic = getattr(IfcConstructionMaterialResourceTypeEnum, 'PLASTIC', INDETERMINATE)
 wood = getattr(IfcConstructionMaterialResourceTypeEnum, 'WOOD', INDETERMINATE)
-notdefined = getattr(IfcConstructionMaterialResourceTypeEnum, 'NOTDEFINED', INDETERMINATE)
 userdefined = getattr(IfcConstructionMaterialResourceTypeEnum, 'USERDEFINED', INDETERMINATE)
+notdefined = getattr(IfcConstructionMaterialResourceTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcConstructionProductResourceTypeEnum = enum_namespace()
 assembly = getattr(IfcConstructionProductResourceTypeEnum, 'ASSEMBLY', INDETERMINATE)
 formwork = getattr(IfcConstructionProductResourceTypeEnum, 'FORMWORK', INDETERMINATE)
@@ -622,17 +619,17 @@ userdefined = getattr(IfcConstructionProductResourceTypeEnum, 'USERDEFINED', IND
 notdefined = getattr(IfcConstructionProductResourceTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcControllerTypeEnum = enum_namespace()
 floating = getattr(IfcControllerTypeEnum, 'FLOATING', INDETERMINATE)
+multiposition = getattr(IfcControllerTypeEnum, 'MULTIPOSITION', INDETERMINATE)
 programmable = getattr(IfcControllerTypeEnum, 'PROGRAMMABLE', INDETERMINATE)
 proportional = getattr(IfcControllerTypeEnum, 'PROPORTIONAL', INDETERMINATE)
-multiposition = getattr(IfcControllerTypeEnum, 'MULTIPOSITION', INDETERMINATE)
 twoposition = getattr(IfcControllerTypeEnum, 'TWOPOSITION', INDETERMINATE)
 userdefined = getattr(IfcControllerTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcControllerTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcConveyorSegmentTypeEnum = enum_namespace()
-chuteconveyor = getattr(IfcConveyorSegmentTypeEnum, 'CHUTECONVEYOR', INDETERMINATE)
 beltconveyor = getattr(IfcConveyorSegmentTypeEnum, 'BELTCONVEYOR', INDETERMINATE)
-screwconveyor = getattr(IfcConveyorSegmentTypeEnum, 'SCREWCONVEYOR', INDETERMINATE)
 bucketconveyor = getattr(IfcConveyorSegmentTypeEnum, 'BUCKETCONVEYOR', INDETERMINATE)
+chuteconveyor = getattr(IfcConveyorSegmentTypeEnum, 'CHUTECONVEYOR', INDETERMINATE)
+screwconveyor = getattr(IfcConveyorSegmentTypeEnum, 'SCREWCONVEYOR', INDETERMINATE)
 userdefined = getattr(IfcConveyorSegmentTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcConveyorSegmentTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcCooledBeamTypeEnum = enum_namespace()
@@ -641,9 +638,9 @@ passive = getattr(IfcCooledBeamTypeEnum, 'PASSIVE', INDETERMINATE)
 userdefined = getattr(IfcCooledBeamTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcCooledBeamTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcCoolingTowerTypeEnum = enum_namespace()
-naturaldraft = getattr(IfcCoolingTowerTypeEnum, 'NATURALDRAFT', INDETERMINATE)
-mechanicalinduceddraft = getattr(IfcCoolingTowerTypeEnum, 'MECHANICALINDUCEDDRAFT', INDETERMINATE)
 mechanicalforceddraft = getattr(IfcCoolingTowerTypeEnum, 'MECHANICALFORCEDDRAFT', INDETERMINATE)
+mechanicalinduceddraft = getattr(IfcCoolingTowerTypeEnum, 'MECHANICALINDUCEDDRAFT', INDETERMINATE)
+naturaldraft = getattr(IfcCoolingTowerTypeEnum, 'NATURALDRAFT', INDETERMINATE)
 userdefined = getattr(IfcCoolingTowerTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcCoolingTowerTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcCostItemTypeEnum = enum_namespace()
@@ -653,33 +650,34 @@ IfcCostScheduleTypeEnum = enum_namespace()
 budget = getattr(IfcCostScheduleTypeEnum, 'BUDGET', INDETERMINATE)
 costplan = getattr(IfcCostScheduleTypeEnum, 'COSTPLAN', INDETERMINATE)
 estimate = getattr(IfcCostScheduleTypeEnum, 'ESTIMATE', INDETERMINATE)
-tender = getattr(IfcCostScheduleTypeEnum, 'TENDER', INDETERMINATE)
 pricedbillofquantities = getattr(IfcCostScheduleTypeEnum, 'PRICEDBILLOFQUANTITIES', INDETERMINATE)
-unpricedbillofquantities = getattr(IfcCostScheduleTypeEnum, 'UNPRICEDBILLOFQUANTITIES', INDETERMINATE)
 scheduleofrates = getattr(IfcCostScheduleTypeEnum, 'SCHEDULEOFRATES', INDETERMINATE)
+tender = getattr(IfcCostScheduleTypeEnum, 'TENDER', INDETERMINATE)
+unpricedbillofquantities = getattr(IfcCostScheduleTypeEnum, 'UNPRICEDBILLOFQUANTITIES', INDETERMINATE)
 userdefined = getattr(IfcCostScheduleTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcCostScheduleTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcCourseTypeEnum = enum_namespace()
 armour = getattr(IfcCourseTypeEnum, 'ARMOUR', INDETERMINATE)
-filter = getattr(IfcCourseTypeEnum, 'FILTER', INDETERMINATE)
 ballastbed = getattr(IfcCourseTypeEnum, 'BALLASTBED', INDETERMINATE)
 core = getattr(IfcCourseTypeEnum, 'CORE', INDETERMINATE)
+filter = getattr(IfcCourseTypeEnum, 'FILTER', INDETERMINATE)
 pavement = getattr(IfcCourseTypeEnum, 'PAVEMENT', INDETERMINATE)
 protection = getattr(IfcCourseTypeEnum, 'PROTECTION', INDETERMINATE)
 userdefined = getattr(IfcCourseTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcCourseTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcCoveringTypeEnum = enum_namespace()
 ceiling = getattr(IfcCoveringTypeEnum, 'CEILING', INDETERMINATE)
-flooring = getattr(IfcCoveringTypeEnum, 'FLOORING', INDETERMINATE)
 cladding = getattr(IfcCoveringTypeEnum, 'CLADDING', INDETERMINATE)
-roofing = getattr(IfcCoveringTypeEnum, 'ROOFING', INDETERMINATE)
-molding = getattr(IfcCoveringTypeEnum, 'MOLDING', INDETERMINATE)
-skirtingboard = getattr(IfcCoveringTypeEnum, 'SKIRTINGBOARD', INDETERMINATE)
+coping = getattr(IfcCoveringTypeEnum, 'COPING', INDETERMINATE)
+flooring = getattr(IfcCoveringTypeEnum, 'FLOORING', INDETERMINATE)
 insulation = getattr(IfcCoveringTypeEnum, 'INSULATION', INDETERMINATE)
 membrane = getattr(IfcCoveringTypeEnum, 'MEMBRANE', INDETERMINATE)
+molding = getattr(IfcCoveringTypeEnum, 'MOLDING', INDETERMINATE)
+roofing = getattr(IfcCoveringTypeEnum, 'ROOFING', INDETERMINATE)
+skirtingboard = getattr(IfcCoveringTypeEnum, 'SKIRTINGBOARD', INDETERMINATE)
 sleeving = getattr(IfcCoveringTypeEnum, 'SLEEVING', INDETERMINATE)
+topping = getattr(IfcCoveringTypeEnum, 'TOPPING', INDETERMINATE)
 wrapping = getattr(IfcCoveringTypeEnum, 'WRAPPING', INDETERMINATE)
-coping = getattr(IfcCoveringTypeEnum, 'COPING', INDETERMINATE)
 userdefined = getattr(IfcCoveringTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcCoveringTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcCrewResourceTypeEnum = enum_namespace()
@@ -716,91 +714,93 @@ simulated = getattr(IfcDataOriginEnum, 'SIMULATED', INDETERMINATE)
 userdefined = getattr(IfcDataOriginEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcDataOriginEnum, 'NOTDEFINED', INDETERMINATE)
 IfcDerivedUnitEnum = enum_namespace()
+accelerationunit = getattr(IfcDerivedUnitEnum, 'ACCELERATIONUNIT', INDETERMINATE)
 angularvelocityunit = getattr(IfcDerivedUnitEnum, 'ANGULARVELOCITYUNIT', INDETERMINATE)
 areadensityunit = getattr(IfcDerivedUnitEnum, 'AREADENSITYUNIT', INDETERMINATE)
 compoundplaneangleunit = getattr(IfcDerivedUnitEnum, 'COMPOUNDPLANEANGLEUNIT', INDETERMINATE)
+curvatureunit = getattr(IfcDerivedUnitEnum, 'CURVATUREUNIT', INDETERMINATE)
 dynamicviscosityunit = getattr(IfcDerivedUnitEnum, 'DYNAMICVISCOSITYUNIT', INDETERMINATE)
 heatfluxdensityunit = getattr(IfcDerivedUnitEnum, 'HEATFLUXDENSITYUNIT', INDETERMINATE)
+heatingvalueunit = getattr(IfcDerivedUnitEnum, 'HEATINGVALUEUNIT', INDETERMINATE)
 integercountrateunit = getattr(IfcDerivedUnitEnum, 'INTEGERCOUNTRATEUNIT', INDETERMINATE)
+ionconcentrationunit = getattr(IfcDerivedUnitEnum, 'IONCONCENTRATIONUNIT', INDETERMINATE)
 isothermalmoisturecapacityunit = getattr(IfcDerivedUnitEnum, 'ISOTHERMALMOISTURECAPACITYUNIT', INDETERMINATE)
 kinematicviscosityunit = getattr(IfcDerivedUnitEnum, 'KINEMATICVISCOSITYUNIT', INDETERMINATE)
+linearforceunit = getattr(IfcDerivedUnitEnum, 'LINEARFORCEUNIT', INDETERMINATE)
+linearmomentunit = getattr(IfcDerivedUnitEnum, 'LINEARMOMENTUNIT', INDETERMINATE)
+linearstiffnessunit = getattr(IfcDerivedUnitEnum, 'LINEARSTIFFNESSUNIT', INDETERMINATE)
 linearvelocityunit = getattr(IfcDerivedUnitEnum, 'LINEARVELOCITYUNIT', INDETERMINATE)
+luminousintensitydistributionunit = getattr(IfcDerivedUnitEnum, 'LUMINOUSINTENSITYDISTRIBUTIONUNIT', INDETERMINATE)
 massdensityunit = getattr(IfcDerivedUnitEnum, 'MASSDENSITYUNIT', INDETERMINATE)
 massflowrateunit = getattr(IfcDerivedUnitEnum, 'MASSFLOWRATEUNIT', INDETERMINATE)
-moisturediffusivityunit = getattr(IfcDerivedUnitEnum, 'MOISTUREDIFFUSIVITYUNIT', INDETERMINATE)
-molecularweightunit = getattr(IfcDerivedUnitEnum, 'MOLECULARWEIGHTUNIT', INDETERMINATE)
-specificheatcapacityunit = getattr(IfcDerivedUnitEnum, 'SPECIFICHEATCAPACITYUNIT', INDETERMINATE)
-thermaladmittanceunit = getattr(IfcDerivedUnitEnum, 'THERMALADMITTANCEUNIT', INDETERMINATE)
-thermalconductanceunit = getattr(IfcDerivedUnitEnum, 'THERMALCONDUCTANCEUNIT', INDETERMINATE)
-thermalresistanceunit = getattr(IfcDerivedUnitEnum, 'THERMALRESISTANCEUNIT', INDETERMINATE)
-thermaltransmittanceunit = getattr(IfcDerivedUnitEnum, 'THERMALTRANSMITTANCEUNIT', INDETERMINATE)
-vaporpermeabilityunit = getattr(IfcDerivedUnitEnum, 'VAPORPERMEABILITYUNIT', INDETERMINATE)
-volumetricflowrateunit = getattr(IfcDerivedUnitEnum, 'VOLUMETRICFLOWRATEUNIT', INDETERMINATE)
-rotationalfrequencyunit = getattr(IfcDerivedUnitEnum, 'ROTATIONALFREQUENCYUNIT', INDETERMINATE)
-torqueunit = getattr(IfcDerivedUnitEnum, 'TORQUEUNIT', INDETERMINATE)
-momentofinertiaunit = getattr(IfcDerivedUnitEnum, 'MOMENTOFINERTIAUNIT', INDETERMINATE)
-linearmomentunit = getattr(IfcDerivedUnitEnum, 'LINEARMOMENTUNIT', INDETERMINATE)
-linearforceunit = getattr(IfcDerivedUnitEnum, 'LINEARFORCEUNIT', INDETERMINATE)
-planarforceunit = getattr(IfcDerivedUnitEnum, 'PLANARFORCEUNIT', INDETERMINATE)
-modulusofelasticityunit = getattr(IfcDerivedUnitEnum, 'MODULUSOFELASTICITYUNIT', INDETERMINATE)
-shearmodulusunit = getattr(IfcDerivedUnitEnum, 'SHEARMODULUSUNIT', INDETERMINATE)
-linearstiffnessunit = getattr(IfcDerivedUnitEnum, 'LINEARSTIFFNESSUNIT', INDETERMINATE)
-rotationalstiffnessunit = getattr(IfcDerivedUnitEnum, 'ROTATIONALSTIFFNESSUNIT', INDETERMINATE)
-modulusofsubgradereactionunit = getattr(IfcDerivedUnitEnum, 'MODULUSOFSUBGRADEREACTIONUNIT', INDETERMINATE)
-accelerationunit = getattr(IfcDerivedUnitEnum, 'ACCELERATIONUNIT', INDETERMINATE)
-curvatureunit = getattr(IfcDerivedUnitEnum, 'CURVATUREUNIT', INDETERMINATE)
-heatingvalueunit = getattr(IfcDerivedUnitEnum, 'HEATINGVALUEUNIT', INDETERMINATE)
-ionconcentrationunit = getattr(IfcDerivedUnitEnum, 'IONCONCENTRATIONUNIT', INDETERMINATE)
-luminousintensitydistributionunit = getattr(IfcDerivedUnitEnum, 'LUMINOUSINTENSITYDISTRIBUTIONUNIT', INDETERMINATE)
 massperlengthunit = getattr(IfcDerivedUnitEnum, 'MASSPERLENGTHUNIT', INDETERMINATE)
+modulusofelasticityunit = getattr(IfcDerivedUnitEnum, 'MODULUSOFELASTICITYUNIT', INDETERMINATE)
 modulusoflinearsubgradereactionunit = getattr(IfcDerivedUnitEnum, 'MODULUSOFLINEARSUBGRADEREACTIONUNIT', INDETERMINATE)
 modulusofrotationalsubgradereactionunit = getattr(IfcDerivedUnitEnum, 'MODULUSOFROTATIONALSUBGRADEREACTIONUNIT', INDETERMINATE)
+modulusofsubgradereactionunit = getattr(IfcDerivedUnitEnum, 'MODULUSOFSUBGRADEREACTIONUNIT', INDETERMINATE)
+moisturediffusivityunit = getattr(IfcDerivedUnitEnum, 'MOISTUREDIFFUSIVITYUNIT', INDETERMINATE)
+molecularweightunit = getattr(IfcDerivedUnitEnum, 'MOLECULARWEIGHTUNIT', INDETERMINATE)
+momentofinertiaunit = getattr(IfcDerivedUnitEnum, 'MOMENTOFINERTIAUNIT', INDETERMINATE)
 phunit = getattr(IfcDerivedUnitEnum, 'PHUNIT', INDETERMINATE)
+planarforceunit = getattr(IfcDerivedUnitEnum, 'PLANARFORCEUNIT', INDETERMINATE)
+rotationalfrequencyunit = getattr(IfcDerivedUnitEnum, 'ROTATIONALFREQUENCYUNIT', INDETERMINATE)
 rotationalmassunit = getattr(IfcDerivedUnitEnum, 'ROTATIONALMASSUNIT', INDETERMINATE)
+rotationalstiffnessunit = getattr(IfcDerivedUnitEnum, 'ROTATIONALSTIFFNESSUNIT', INDETERMINATE)
 sectionareaintegralunit = getattr(IfcDerivedUnitEnum, 'SECTIONAREAINTEGRALUNIT', INDETERMINATE)
 sectionmodulusunit = getattr(IfcDerivedUnitEnum, 'SECTIONMODULUSUNIT', INDETERMINATE)
+shearmodulusunit = getattr(IfcDerivedUnitEnum, 'SHEARMODULUSUNIT', INDETERMINATE)
 soundpowerlevelunit = getattr(IfcDerivedUnitEnum, 'SOUNDPOWERLEVELUNIT', INDETERMINATE)
 soundpowerunit = getattr(IfcDerivedUnitEnum, 'SOUNDPOWERUNIT', INDETERMINATE)
 soundpressurelevelunit = getattr(IfcDerivedUnitEnum, 'SOUNDPRESSURELEVELUNIT', INDETERMINATE)
 soundpressureunit = getattr(IfcDerivedUnitEnum, 'SOUNDPRESSUREUNIT', INDETERMINATE)
+specificheatcapacityunit = getattr(IfcDerivedUnitEnum, 'SPECIFICHEATCAPACITYUNIT', INDETERMINATE)
 temperaturegradientunit = getattr(IfcDerivedUnitEnum, 'TEMPERATUREGRADIENTUNIT', INDETERMINATE)
 temperaturerateofchangeunit = getattr(IfcDerivedUnitEnum, 'TEMPERATURERATEOFCHANGEUNIT', INDETERMINATE)
+thermaladmittanceunit = getattr(IfcDerivedUnitEnum, 'THERMALADMITTANCEUNIT', INDETERMINATE)
+thermalconductanceunit = getattr(IfcDerivedUnitEnum, 'THERMALCONDUCTANCEUNIT', INDETERMINATE)
 thermalexpansioncoefficientunit = getattr(IfcDerivedUnitEnum, 'THERMALEXPANSIONCOEFFICIENTUNIT', INDETERMINATE)
+thermalresistanceunit = getattr(IfcDerivedUnitEnum, 'THERMALRESISTANCEUNIT', INDETERMINATE)
+thermaltransmittanceunit = getattr(IfcDerivedUnitEnum, 'THERMALTRANSMITTANCEUNIT', INDETERMINATE)
+torqueunit = getattr(IfcDerivedUnitEnum, 'TORQUEUNIT', INDETERMINATE)
+vaporpermeabilityunit = getattr(IfcDerivedUnitEnum, 'VAPORPERMEABILITYUNIT', INDETERMINATE)
+volumetricflowrateunit = getattr(IfcDerivedUnitEnum, 'VOLUMETRICFLOWRATEUNIT', INDETERMINATE)
 warpingconstantunit = getattr(IfcDerivedUnitEnum, 'WARPINGCONSTANTUNIT', INDETERMINATE)
 warpingmomentunit = getattr(IfcDerivedUnitEnum, 'WARPINGMOMENTUNIT', INDETERMINATE)
 userdefined = getattr(IfcDerivedUnitEnum, 'USERDEFINED', INDETERMINATE)
 IfcDirectionSenseEnum = enum_namespace()
-positive = getattr(IfcDirectionSenseEnum, 'POSITIVE', INDETERMINATE)
 negative = getattr(IfcDirectionSenseEnum, 'NEGATIVE', INDETERMINATE)
+positive = getattr(IfcDirectionSenseEnum, 'POSITIVE', INDETERMINATE)
 IfcDiscreteAccessoryTypeEnum = enum_namespace()
 anchorplate = getattr(IfcDiscreteAccessoryTypeEnum, 'ANCHORPLATE', INDETERMINATE)
+birdprotection = getattr(IfcDiscreteAccessoryTypeEnum, 'BIRDPROTECTION', INDETERMINATE)
 bracket = getattr(IfcDiscreteAccessoryTypeEnum, 'BRACKET', INDETERMINATE)
-shoe = getattr(IfcDiscreteAccessoryTypeEnum, 'SHOE', INDETERMINATE)
-expansion_joint_device = getattr(IfcDiscreteAccessoryTypeEnum, 'EXPANSION_JOINT_DEVICE', INDETERMINATE)
 cablearranger = getattr(IfcDiscreteAccessoryTypeEnum, 'CABLEARRANGER', INDETERMINATE)
+elastic_cushion = getattr(IfcDiscreteAccessoryTypeEnum, 'ELASTIC_CUSHION', INDETERMINATE)
+expansion_joint_device = getattr(IfcDiscreteAccessoryTypeEnum, 'EXPANSION_JOINT_DEVICE', INDETERMINATE)
+filler = getattr(IfcDiscreteAccessoryTypeEnum, 'FILLER', INDETERMINATE)
+flashing = getattr(IfcDiscreteAccessoryTypeEnum, 'FLASHING', INDETERMINATE)
 insulator = getattr(IfcDiscreteAccessoryTypeEnum, 'INSULATOR', INDETERMINATE)
 lock = getattr(IfcDiscreteAccessoryTypeEnum, 'LOCK', INDETERMINATE)
-tensioningequipment = getattr(IfcDiscreteAccessoryTypeEnum, 'TENSIONINGEQUIPMENT', INDETERMINATE)
-railpad = getattr(IfcDiscreteAccessoryTypeEnum, 'RAILPAD', INDETERMINATE)
-slidingchair = getattr(IfcDiscreteAccessoryTypeEnum, 'SLIDINGCHAIR', INDETERMINATE)
-rail_lubrication = getattr(IfcDiscreteAccessoryTypeEnum, 'RAIL_LUBRICATION', INDETERMINATE)
 panel_strengthening = getattr(IfcDiscreteAccessoryTypeEnum, 'PANEL_STRENGTHENING', INDETERMINATE)
-railbrace = getattr(IfcDiscreteAccessoryTypeEnum, 'RAILBRACE', INDETERMINATE)
-elastic_cushion = getattr(IfcDiscreteAccessoryTypeEnum, 'ELASTIC_CUSHION', INDETERMINATE)
-soundabsorption = getattr(IfcDiscreteAccessoryTypeEnum, 'SOUNDABSORPTION', INDETERMINATE)
 pointmachinemountingdevice = getattr(IfcDiscreteAccessoryTypeEnum, 'POINTMACHINEMOUNTINGDEVICE', INDETERMINATE)
 point_machine_locking_device = getattr(IfcDiscreteAccessoryTypeEnum, 'POINT_MACHINE_LOCKING_DEVICE', INDETERMINATE)
+railbrace = getattr(IfcDiscreteAccessoryTypeEnum, 'RAILBRACE', INDETERMINATE)
+railpad = getattr(IfcDiscreteAccessoryTypeEnum, 'RAILPAD', INDETERMINATE)
+rail_lubrication = getattr(IfcDiscreteAccessoryTypeEnum, 'RAIL_LUBRICATION', INDETERMINATE)
 rail_mechanical_equipment = getattr(IfcDiscreteAccessoryTypeEnum, 'RAIL_MECHANICAL_EQUIPMENT', INDETERMINATE)
-birdprotection = getattr(IfcDiscreteAccessoryTypeEnum, 'BIRDPROTECTION', INDETERMINATE)
+shoe = getattr(IfcDiscreteAccessoryTypeEnum, 'SHOE', INDETERMINATE)
+slidingchair = getattr(IfcDiscreteAccessoryTypeEnum, 'SLIDINGCHAIR', INDETERMINATE)
+soundabsorption = getattr(IfcDiscreteAccessoryTypeEnum, 'SOUNDABSORPTION', INDETERMINATE)
+tensioningequipment = getattr(IfcDiscreteAccessoryTypeEnum, 'TENSIONINGEQUIPMENT', INDETERMINATE)
 userdefined = getattr(IfcDiscreteAccessoryTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcDiscreteAccessoryTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcDistributionBoardTypeEnum = enum_namespace()
-switchboard = getattr(IfcDistributionBoardTypeEnum, 'SWITCHBOARD', INDETERMINATE)
 consumerunit = getattr(IfcDistributionBoardTypeEnum, 'CONSUMERUNIT', INDETERMINATE)
-motorcontrolcentre = getattr(IfcDistributionBoardTypeEnum, 'MOTORCONTROLCENTRE', INDETERMINATE)
-distributionframe = getattr(IfcDistributionBoardTypeEnum, 'DISTRIBUTIONFRAME', INDETERMINATE)
-distributionboard = getattr(IfcDistributionBoardTypeEnum, 'DISTRIBUTIONBOARD', INDETERMINATE)
 dispatchingboard = getattr(IfcDistributionBoardTypeEnum, 'DISPATCHINGBOARD', INDETERMINATE)
+distributionboard = getattr(IfcDistributionBoardTypeEnum, 'DISTRIBUTIONBOARD', INDETERMINATE)
+distributionframe = getattr(IfcDistributionBoardTypeEnum, 'DISTRIBUTIONFRAME', INDETERMINATE)
+motorcontrolcentre = getattr(IfcDistributionBoardTypeEnum, 'MOTORCONTROLCENTRE', INDETERMINATE)
+switchboard = getattr(IfcDistributionBoardTypeEnum, 'SWITCHBOARD', INDETERMINATE)
 userdefined = getattr(IfcDistributionBoardTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcDistributionBoardTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcDistributionChamberElementTypeEnum = enum_namespace()
@@ -825,6 +825,7 @@ notdefined = getattr(IfcDistributionPortTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcDistributionSystemEnum = enum_namespace()
 airconditioning = getattr(IfcDistributionSystemEnum, 'AIRCONDITIONING', INDETERMINATE)
 audiovisual = getattr(IfcDistributionSystemEnum, 'AUDIOVISUAL', INDETERMINATE)
+catenary_system = getattr(IfcDistributionSystemEnum, 'CATENARY_SYSTEM', INDETERMINATE)
 chemical = getattr(IfcDistributionSystemEnum, 'CHEMICAL', INDETERMINATE)
 chilledwater = getattr(IfcDistributionSystemEnum, 'CHILLEDWATER', INDETERMINATE)
 communication = getattr(IfcDistributionSystemEnum, 'COMMUNICATION', INDETERMINATE)
@@ -842,18 +843,24 @@ electrical = getattr(IfcDistributionSystemEnum, 'ELECTRICAL', INDETERMINATE)
 electroacoustic = getattr(IfcDistributionSystemEnum, 'ELECTROACOUSTIC', INDETERMINATE)
 exhaust = getattr(IfcDistributionSystemEnum, 'EXHAUST', INDETERMINATE)
 fireprotection = getattr(IfcDistributionSystemEnum, 'FIREPROTECTION', INDETERMINATE)
+fixedtransmissionnetwork = getattr(IfcDistributionSystemEnum, 'FIXEDTRANSMISSIONNETWORK', INDETERMINATE)
 fuel = getattr(IfcDistributionSystemEnum, 'FUEL', INDETERMINATE)
 gas = getattr(IfcDistributionSystemEnum, 'GAS', INDETERMINATE)
 hazardous = getattr(IfcDistributionSystemEnum, 'HAZARDOUS', INDETERMINATE)
 heating = getattr(IfcDistributionSystemEnum, 'HEATING', INDETERMINATE)
 lighting = getattr(IfcDistributionSystemEnum, 'LIGHTING', INDETERMINATE)
 lightningprotection = getattr(IfcDistributionSystemEnum, 'LIGHTNINGPROTECTION', INDETERMINATE)
+mobilenetwork = getattr(IfcDistributionSystemEnum, 'MOBILENETWORK', INDETERMINATE)
+monitoringsystem = getattr(IfcDistributionSystemEnum, 'MONITORINGSYSTEM', INDETERMINATE)
 municipalsolidwaste = getattr(IfcDistributionSystemEnum, 'MUNICIPALSOLIDWASTE', INDETERMINATE)
 oil = getattr(IfcDistributionSystemEnum, 'OIL', INDETERMINATE)
 operational = getattr(IfcDistributionSystemEnum, 'OPERATIONAL', INDETERMINATE)
+operationaltelephonysystem = getattr(IfcDistributionSystemEnum, 'OPERATIONALTELEPHONYSYSTEM', INDETERMINATE)
+overhead_contactline_system = getattr(IfcDistributionSystemEnum, 'OVERHEAD_CONTACTLINE_SYSTEM', INDETERMINATE)
 powergeneration = getattr(IfcDistributionSystemEnum, 'POWERGENERATION', INDETERMINATE)
 rainwater = getattr(IfcDistributionSystemEnum, 'RAINWATER', INDETERMINATE)
 refrigeration = getattr(IfcDistributionSystemEnum, 'REFRIGERATION', INDETERMINATE)
+return_circuit = getattr(IfcDistributionSystemEnum, 'RETURN_CIRCUIT', INDETERMINATE)
 security = getattr(IfcDistributionSystemEnum, 'SECURITY', INDETERMINATE)
 sewage = getattr(IfcDistributionSystemEnum, 'SEWAGE', INDETERMINATE)
 signal = getattr(IfcDistributionSystemEnum, 'SIGNAL', INDETERMINATE)
@@ -865,36 +872,29 @@ vent = getattr(IfcDistributionSystemEnum, 'VENT', INDETERMINATE)
 ventilation = getattr(IfcDistributionSystemEnum, 'VENTILATION', INDETERMINATE)
 wastewater = getattr(IfcDistributionSystemEnum, 'WASTEWATER', INDETERMINATE)
 watersupply = getattr(IfcDistributionSystemEnum, 'WATERSUPPLY', INDETERMINATE)
-catenary_system = getattr(IfcDistributionSystemEnum, 'CATENARY_SYSTEM', INDETERMINATE)
-overhead_contactline_system = getattr(IfcDistributionSystemEnum, 'OVERHEAD_CONTACTLINE_SYSTEM', INDETERMINATE)
-return_circuit = getattr(IfcDistributionSystemEnum, 'RETURN_CIRCUIT', INDETERMINATE)
-fixedtransmissionnetwork = getattr(IfcDistributionSystemEnum, 'FIXEDTRANSMISSIONNETWORK', INDETERMINATE)
-operationaltelephonysystem = getattr(IfcDistributionSystemEnum, 'OPERATIONALTELEPHONYSYSTEM', INDETERMINATE)
-mobilenetwork = getattr(IfcDistributionSystemEnum, 'MOBILENETWORK', INDETERMINATE)
-monitoringsystem = getattr(IfcDistributionSystemEnum, 'MONITORINGSYSTEM', INDETERMINATE)
 userdefined = getattr(IfcDistributionSystemEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcDistributionSystemEnum, 'NOTDEFINED', INDETERMINATE)
 IfcDocumentConfidentialityEnum = enum_namespace()
-public = getattr(IfcDocumentConfidentialityEnum, 'PUBLIC', INDETERMINATE)
-restricted = getattr(IfcDocumentConfidentialityEnum, 'RESTRICTED', INDETERMINATE)
 confidential = getattr(IfcDocumentConfidentialityEnum, 'CONFIDENTIAL', INDETERMINATE)
 personal = getattr(IfcDocumentConfidentialityEnum, 'PERSONAL', INDETERMINATE)
+public = getattr(IfcDocumentConfidentialityEnum, 'PUBLIC', INDETERMINATE)
+restricted = getattr(IfcDocumentConfidentialityEnum, 'RESTRICTED', INDETERMINATE)
 userdefined = getattr(IfcDocumentConfidentialityEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcDocumentConfidentialityEnum, 'NOTDEFINED', INDETERMINATE)
 IfcDocumentStatusEnum = enum_namespace()
 draft = getattr(IfcDocumentStatusEnum, 'DRAFT', INDETERMINATE)
-finaldraft = getattr(IfcDocumentStatusEnum, 'FINALDRAFT', INDETERMINATE)
 final = getattr(IfcDocumentStatusEnum, 'FINAL', INDETERMINATE)
+finaldraft = getattr(IfcDocumentStatusEnum, 'FINALDRAFT', INDETERMINATE)
 revision = getattr(IfcDocumentStatusEnum, 'REVISION', INDETERMINATE)
 notdefined = getattr(IfcDocumentStatusEnum, 'NOTDEFINED', INDETERMINATE)
 IfcDoorPanelOperationEnum = enum_namespace()
-swinging = getattr(IfcDoorPanelOperationEnum, 'SWINGING', INDETERMINATE)
 double_acting = getattr(IfcDoorPanelOperationEnum, 'DOUBLE_ACTING', INDETERMINATE)
-sliding = getattr(IfcDoorPanelOperationEnum, 'SLIDING', INDETERMINATE)
+fixedpanel = getattr(IfcDoorPanelOperationEnum, 'FIXEDPANEL', INDETERMINATE)
 folding = getattr(IfcDoorPanelOperationEnum, 'FOLDING', INDETERMINATE)
 revolving = getattr(IfcDoorPanelOperationEnum, 'REVOLVING', INDETERMINATE)
 rollingup = getattr(IfcDoorPanelOperationEnum, 'ROLLINGUP', INDETERMINATE)
-fixedpanel = getattr(IfcDoorPanelOperationEnum, 'FIXEDPANEL', INDETERMINATE)
+sliding = getattr(IfcDoorPanelOperationEnum, 'SLIDING', INDETERMINATE)
+swinging = getattr(IfcDoorPanelOperationEnum, 'SWINGING', INDETERMINATE)
 userdefined = getattr(IfcDoorPanelOperationEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcDoorPanelOperationEnum, 'NOTDEFINED', INDETERMINATE)
 IfcDoorPanelPositionEnum = enum_namespace()
@@ -902,67 +902,38 @@ left = getattr(IfcDoorPanelPositionEnum, 'LEFT', INDETERMINATE)
 middle = getattr(IfcDoorPanelPositionEnum, 'MIDDLE', INDETERMINATE)
 right = getattr(IfcDoorPanelPositionEnum, 'RIGHT', INDETERMINATE)
 notdefined = getattr(IfcDoorPanelPositionEnum, 'NOTDEFINED', INDETERMINATE)
-IfcDoorStyleConstructionEnum = enum_namespace()
-aluminium = getattr(IfcDoorStyleConstructionEnum, 'ALUMINIUM', INDETERMINATE)
-high_grade_steel = getattr(IfcDoorStyleConstructionEnum, 'HIGH_GRADE_STEEL', INDETERMINATE)
-steel = getattr(IfcDoorStyleConstructionEnum, 'STEEL', INDETERMINATE)
-wood = getattr(IfcDoorStyleConstructionEnum, 'WOOD', INDETERMINATE)
-aluminium_wood = getattr(IfcDoorStyleConstructionEnum, 'ALUMINIUM_WOOD', INDETERMINATE)
-aluminium_plastic = getattr(IfcDoorStyleConstructionEnum, 'ALUMINIUM_PLASTIC', INDETERMINATE)
-plastic = getattr(IfcDoorStyleConstructionEnum, 'PLASTIC', INDETERMINATE)
-userdefined = getattr(IfcDoorStyleConstructionEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcDoorStyleConstructionEnum, 'NOTDEFINED', INDETERMINATE)
-IfcDoorStyleOperationEnum = enum_namespace()
-single_swing_left = getattr(IfcDoorStyleOperationEnum, 'SINGLE_SWING_LEFT', INDETERMINATE)
-single_swing_right = getattr(IfcDoorStyleOperationEnum, 'SINGLE_SWING_RIGHT', INDETERMINATE)
-double_door_single_swing = getattr(IfcDoorStyleOperationEnum, 'DOUBLE_DOOR_SINGLE_SWING', INDETERMINATE)
-double_door_single_swing_opposite_left = getattr(IfcDoorStyleOperationEnum, 'DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_LEFT', INDETERMINATE)
-double_door_single_swing_opposite_right = getattr(IfcDoorStyleOperationEnum, 'DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_RIGHT', INDETERMINATE)
-double_swing_left = getattr(IfcDoorStyleOperationEnum, 'DOUBLE_SWING_LEFT', INDETERMINATE)
-double_swing_right = getattr(IfcDoorStyleOperationEnum, 'DOUBLE_SWING_RIGHT', INDETERMINATE)
-double_door_double_swing = getattr(IfcDoorStyleOperationEnum, 'DOUBLE_DOOR_DOUBLE_SWING', INDETERMINATE)
-sliding_to_left = getattr(IfcDoorStyleOperationEnum, 'SLIDING_TO_LEFT', INDETERMINATE)
-sliding_to_right = getattr(IfcDoorStyleOperationEnum, 'SLIDING_TO_RIGHT', INDETERMINATE)
-double_door_sliding = getattr(IfcDoorStyleOperationEnum, 'DOUBLE_DOOR_SLIDING', INDETERMINATE)
-folding_to_left = getattr(IfcDoorStyleOperationEnum, 'FOLDING_TO_LEFT', INDETERMINATE)
-folding_to_right = getattr(IfcDoorStyleOperationEnum, 'FOLDING_TO_RIGHT', INDETERMINATE)
-double_door_folding = getattr(IfcDoorStyleOperationEnum, 'DOUBLE_DOOR_FOLDING', INDETERMINATE)
-revolving = getattr(IfcDoorStyleOperationEnum, 'REVOLVING', INDETERMINATE)
-rollingup = getattr(IfcDoorStyleOperationEnum, 'ROLLINGUP', INDETERMINATE)
-userdefined = getattr(IfcDoorStyleOperationEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcDoorStyleOperationEnum, 'NOTDEFINED', INDETERMINATE)
 IfcDoorTypeEnum = enum_namespace()
+boom_barrier = getattr(IfcDoorTypeEnum, 'BOOM_BARRIER', INDETERMINATE)
 door = getattr(IfcDoorTypeEnum, 'DOOR', INDETERMINATE)
 gate = getattr(IfcDoorTypeEnum, 'GATE', INDETERMINATE)
 trapdoor = getattr(IfcDoorTypeEnum, 'TRAPDOOR', INDETERMINATE)
-boom_barrier = getattr(IfcDoorTypeEnum, 'BOOM_BARRIER', INDETERMINATE)
 turnstile = getattr(IfcDoorTypeEnum, 'TURNSTILE', INDETERMINATE)
 userdefined = getattr(IfcDoorTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcDoorTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcDoorTypeOperationEnum = enum_namespace()
-single_swing_left = getattr(IfcDoorTypeOperationEnum, 'SINGLE_SWING_LEFT', INDETERMINATE)
-single_swing_right = getattr(IfcDoorTypeOperationEnum, 'SINGLE_SWING_RIGHT', INDETERMINATE)
-double_panel_single_swing = getattr(IfcDoorTypeOperationEnum, 'DOUBLE_PANEL_SINGLE_SWING', INDETERMINATE)
-double_panel_single_swing_opposite_left = getattr(IfcDoorTypeOperationEnum, 'DOUBLE_PANEL_SINGLE_SWING_OPPOSITE_LEFT', INDETERMINATE)
-double_panel_single_swing_opposite_right = getattr(IfcDoorTypeOperationEnum, 'DOUBLE_PANEL_SINGLE_SWING_OPPOSITE_RIGHT', INDETERMINATE)
+double_door_double_swing = getattr(IfcDoorTypeOperationEnum, 'DOUBLE_DOOR_DOUBLE_SWING', INDETERMINATE)
+double_door_folding = getattr(IfcDoorTypeOperationEnum, 'DOUBLE_DOOR_FOLDING', INDETERMINATE)
+double_door_lifting_vertical = getattr(IfcDoorTypeOperationEnum, 'DOUBLE_DOOR_LIFTING_VERTICAL', INDETERMINATE)
+double_door_single_swing = getattr(IfcDoorTypeOperationEnum, 'DOUBLE_DOOR_SINGLE_SWING', INDETERMINATE)
+double_door_single_swing_opposite_left = getattr(IfcDoorTypeOperationEnum, 'DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_LEFT', INDETERMINATE)
+double_door_single_swing_opposite_right = getattr(IfcDoorTypeOperationEnum, 'DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_RIGHT', INDETERMINATE)
+double_door_sliding = getattr(IfcDoorTypeOperationEnum, 'DOUBLE_DOOR_SLIDING', INDETERMINATE)
 double_swing_left = getattr(IfcDoorTypeOperationEnum, 'DOUBLE_SWING_LEFT', INDETERMINATE)
 double_swing_right = getattr(IfcDoorTypeOperationEnum, 'DOUBLE_SWING_RIGHT', INDETERMINATE)
-double_panel_double_swing = getattr(IfcDoorTypeOperationEnum, 'DOUBLE_PANEL_DOUBLE_SWING', INDETERMINATE)
-sliding_to_left = getattr(IfcDoorTypeOperationEnum, 'SLIDING_TO_LEFT', INDETERMINATE)
-sliding_to_right = getattr(IfcDoorTypeOperationEnum, 'SLIDING_TO_RIGHT', INDETERMINATE)
-double_panel_sliding = getattr(IfcDoorTypeOperationEnum, 'DOUBLE_PANEL_SLIDING', INDETERMINATE)
 folding_to_left = getattr(IfcDoorTypeOperationEnum, 'FOLDING_TO_LEFT', INDETERMINATE)
 folding_to_right = getattr(IfcDoorTypeOperationEnum, 'FOLDING_TO_RIGHT', INDETERMINATE)
-double_panel_folding = getattr(IfcDoorTypeOperationEnum, 'DOUBLE_PANEL_FOLDING', INDETERMINATE)
-revolving_horizontal = getattr(IfcDoorTypeOperationEnum, 'REVOLVING_HORIZONTAL', INDETERMINATE)
-rollingup = getattr(IfcDoorTypeOperationEnum, 'ROLLINGUP', INDETERMINATE)
-swing_fixed_left = getattr(IfcDoorTypeOperationEnum, 'SWING_FIXED_LEFT', INDETERMINATE)
-swing_fixed_right = getattr(IfcDoorTypeOperationEnum, 'SWING_FIXED_RIGHT', INDETERMINATE)
-double_panel_lifting_vertical = getattr(IfcDoorTypeOperationEnum, 'DOUBLE_PANEL_LIFTING_VERTICAL', INDETERMINATE)
 lifting_horizontal = getattr(IfcDoorTypeOperationEnum, 'LIFTING_HORIZONTAL', INDETERMINATE)
 lifting_vertical_left = getattr(IfcDoorTypeOperationEnum, 'LIFTING_VERTICAL_LEFT', INDETERMINATE)
 lifting_vertical_right = getattr(IfcDoorTypeOperationEnum, 'LIFTING_VERTICAL_RIGHT', INDETERMINATE)
+revolving = getattr(IfcDoorTypeOperationEnum, 'REVOLVING', INDETERMINATE)
 revolving_vertical = getattr(IfcDoorTypeOperationEnum, 'REVOLVING_VERTICAL', INDETERMINATE)
+rollingup = getattr(IfcDoorTypeOperationEnum, 'ROLLINGUP', INDETERMINATE)
+single_swing_left = getattr(IfcDoorTypeOperationEnum, 'SINGLE_SWING_LEFT', INDETERMINATE)
+single_swing_right = getattr(IfcDoorTypeOperationEnum, 'SINGLE_SWING_RIGHT', INDETERMINATE)
+sliding_to_left = getattr(IfcDoorTypeOperationEnum, 'SLIDING_TO_LEFT', INDETERMINATE)
+sliding_to_right = getattr(IfcDoorTypeOperationEnum, 'SLIDING_TO_RIGHT', INDETERMINATE)
+swing_fixed_left = getattr(IfcDoorTypeOperationEnum, 'SWING_FIXED_LEFT', INDETERMINATE)
+swing_fixed_right = getattr(IfcDoorTypeOperationEnum, 'SWING_FIXED_RIGHT', INDETERMINATE)
 userdefined = getattr(IfcDoorTypeOperationEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcDoorTypeOperationEnum, 'NOTDEFINED', INDETERMINATE)
 IfcDuctFittingTypeEnum = enum_namespace()
@@ -976,8 +947,8 @@ transition = getattr(IfcDuctFittingTypeEnum, 'TRANSITION', INDETERMINATE)
 userdefined = getattr(IfcDuctFittingTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcDuctFittingTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcDuctSegmentTypeEnum = enum_namespace()
-rigidsegment = getattr(IfcDuctSegmentTypeEnum, 'RIGIDSEGMENT', INDETERMINATE)
 flexiblesegment = getattr(IfcDuctSegmentTypeEnum, 'FLEXIBLESEGMENT', INDETERMINATE)
+rigidsegment = getattr(IfcDuctSegmentTypeEnum, 'RIGIDSEGMENT', INDETERMINATE)
 userdefined = getattr(IfcDuctSegmentTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcDuctSegmentTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcDuctSilencerTypeEnum = enum_namespace()
@@ -987,25 +958,25 @@ round = getattr(IfcDuctSilencerTypeEnum, 'ROUND', INDETERMINATE)
 userdefined = getattr(IfcDuctSilencerTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcDuctSilencerTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcEarthworksCutTypeEnum = enum_namespace()
-trench = getattr(IfcEarthworksCutTypeEnum, 'TRENCH', INDETERMINATE)
+base_excavation = getattr(IfcEarthworksCutTypeEnum, 'BASE_EXCAVATION', INDETERMINATE)
+cut = getattr(IfcEarthworksCutTypeEnum, 'CUT', INDETERMINATE)
 dredging = getattr(IfcEarthworksCutTypeEnum, 'DREDGING', INDETERMINATE)
 excavation = getattr(IfcEarthworksCutTypeEnum, 'EXCAVATION', INDETERMINATE)
 overexcavation = getattr(IfcEarthworksCutTypeEnum, 'OVEREXCAVATION', INDETERMINATE)
-topsoilremoval = getattr(IfcEarthworksCutTypeEnum, 'TOPSOILREMOVAL', INDETERMINATE)
-stepexcavation = getattr(IfcEarthworksCutTypeEnum, 'STEPEXCAVATION', INDETERMINATE)
 pavementmilling = getattr(IfcEarthworksCutTypeEnum, 'PAVEMENTMILLING', INDETERMINATE)
-cut = getattr(IfcEarthworksCutTypeEnum, 'CUT', INDETERMINATE)
-base_excavation = getattr(IfcEarthworksCutTypeEnum, 'BASE_EXCAVATION', INDETERMINATE)
+stepexcavation = getattr(IfcEarthworksCutTypeEnum, 'STEPEXCAVATION', INDETERMINATE)
+topsoilremoval = getattr(IfcEarthworksCutTypeEnum, 'TOPSOILREMOVAL', INDETERMINATE)
+trench = getattr(IfcEarthworksCutTypeEnum, 'TRENCH', INDETERMINATE)
 userdefined = getattr(IfcEarthworksCutTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcEarthworksCutTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcEarthworksFillTypeEnum = enum_namespace()
 backfill = getattr(IfcEarthworksFillTypeEnum, 'BACKFILL', INDETERMINATE)
 counterweight = getattr(IfcEarthworksFillTypeEnum, 'COUNTERWEIGHT', INDETERMINATE)
-subgrade = getattr(IfcEarthworksFillTypeEnum, 'SUBGRADE', INDETERMINATE)
 embankment = getattr(IfcEarthworksFillTypeEnum, 'EMBANKMENT', INDETERMINATE)
-transitionsection = getattr(IfcEarthworksFillTypeEnum, 'TRANSITIONSECTION', INDETERMINATE)
-subgradebed = getattr(IfcEarthworksFillTypeEnum, 'SUBGRADEBED', INDETERMINATE)
 slopefill = getattr(IfcEarthworksFillTypeEnum, 'SLOPEFILL', INDETERMINATE)
+subgrade = getattr(IfcEarthworksFillTypeEnum, 'SUBGRADE', INDETERMINATE)
+subgradebed = getattr(IfcEarthworksFillTypeEnum, 'SUBGRADEBED', INDETERMINATE)
+transitionsection = getattr(IfcEarthworksFillTypeEnum, 'TRANSITIONSECTION', INDETERMINATE)
 userdefined = getattr(IfcEarthworksFillTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcEarthworksFillTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcElectricApplianceTypeEnum = enum_namespace()
@@ -1013,8 +984,8 @@ dishwasher = getattr(IfcElectricApplianceTypeEnum, 'DISHWASHER', INDETERMINATE)
 electriccooker = getattr(IfcElectricApplianceTypeEnum, 'ELECTRICCOOKER', INDETERMINATE)
 freestandingelectricheater = getattr(IfcElectricApplianceTypeEnum, 'FREESTANDINGELECTRICHEATER', INDETERMINATE)
 freestandingfan = getattr(IfcElectricApplianceTypeEnum, 'FREESTANDINGFAN', INDETERMINATE)
-freestandingwaterheater = getattr(IfcElectricApplianceTypeEnum, 'FREESTANDINGWATERHEATER', INDETERMINATE)
 freestandingwatercooler = getattr(IfcElectricApplianceTypeEnum, 'FREESTANDINGWATERCOOLER', INDETERMINATE)
+freestandingwaterheater = getattr(IfcElectricApplianceTypeEnum, 'FREESTANDINGWATERHEATER', INDETERMINATE)
 freezer = getattr(IfcElectricApplianceTypeEnum, 'FREEZER', INDETERMINATE)
 fridge_freezer = getattr(IfcElectricApplianceTypeEnum, 'FRIDGE_FREEZER', INDETERMINATE)
 handdryer = getattr(IfcElectricApplianceTypeEnum, 'HANDDRYER', INDETERMINATE)
@@ -1036,14 +1007,14 @@ userdefined = getattr(IfcElectricDistributionBoardTypeEnum, 'USERDEFINED', INDET
 notdefined = getattr(IfcElectricDistributionBoardTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcElectricFlowStorageDeviceTypeEnum = enum_namespace()
 battery = getattr(IfcElectricFlowStorageDeviceTypeEnum, 'BATTERY', INDETERMINATE)
-capacitorbank = getattr(IfcElectricFlowStorageDeviceTypeEnum, 'CAPACITORBANK', INDETERMINATE)
-harmonicfilter = getattr(IfcElectricFlowStorageDeviceTypeEnum, 'HARMONICFILTER', INDETERMINATE)
-inductorbank = getattr(IfcElectricFlowStorageDeviceTypeEnum, 'INDUCTORBANK', INDETERMINATE)
-ups = getattr(IfcElectricFlowStorageDeviceTypeEnum, 'UPS', INDETERMINATE)
 capacitor = getattr(IfcElectricFlowStorageDeviceTypeEnum, 'CAPACITOR', INDETERMINATE)
+capacitorbank = getattr(IfcElectricFlowStorageDeviceTypeEnum, 'CAPACITORBANK', INDETERMINATE)
 compensator = getattr(IfcElectricFlowStorageDeviceTypeEnum, 'COMPENSATOR', INDETERMINATE)
+harmonicfilter = getattr(IfcElectricFlowStorageDeviceTypeEnum, 'HARMONICFILTER', INDETERMINATE)
 inductor = getattr(IfcElectricFlowStorageDeviceTypeEnum, 'INDUCTOR', INDETERMINATE)
+inductorbank = getattr(IfcElectricFlowStorageDeviceTypeEnum, 'INDUCTORBANK', INDETERMINATE)
 recharger = getattr(IfcElectricFlowStorageDeviceTypeEnum, 'RECHARGER', INDETERMINATE)
+ups = getattr(IfcElectricFlowStorageDeviceTypeEnum, 'UPS', INDETERMINATE)
 userdefined = getattr(IfcElectricFlowStorageDeviceTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcElectricFlowStorageDeviceTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcElectricFlowTreatmentDeviceTypeEnum = enum_namespace()
@@ -1065,40 +1036,40 @@ synchronous = getattr(IfcElectricMotorTypeEnum, 'SYNCHRONOUS', INDETERMINATE)
 userdefined = getattr(IfcElectricMotorTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcElectricMotorTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcElectricTimeControlTypeEnum = enum_namespace()
+relay = getattr(IfcElectricTimeControlTypeEnum, 'RELAY', INDETERMINATE)
 timeclock = getattr(IfcElectricTimeControlTypeEnum, 'TIMECLOCK', INDETERMINATE)
 timedelay = getattr(IfcElectricTimeControlTypeEnum, 'TIMEDELAY', INDETERMINATE)
-relay = getattr(IfcElectricTimeControlTypeEnum, 'RELAY', INDETERMINATE)
 userdefined = getattr(IfcElectricTimeControlTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcElectricTimeControlTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcElementAssemblyTypeEnum = enum_namespace()
+abutment = getattr(IfcElementAssemblyTypeEnum, 'ABUTMENT', INDETERMINATE)
 accessory_assembly = getattr(IfcElementAssemblyTypeEnum, 'ACCESSORY_ASSEMBLY', INDETERMINATE)
 arch = getattr(IfcElementAssemblyTypeEnum, 'ARCH', INDETERMINATE)
 beam_grid = getattr(IfcElementAssemblyTypeEnum, 'BEAM_GRID', INDETERMINATE)
 braced_frame = getattr(IfcElementAssemblyTypeEnum, 'BRACED_FRAME', INDETERMINATE)
-girder = getattr(IfcElementAssemblyTypeEnum, 'GIRDER', INDETERMINATE)
-reinforcement_unit = getattr(IfcElementAssemblyTypeEnum, 'REINFORCEMENT_UNIT', INDETERMINATE)
-rigid_frame = getattr(IfcElementAssemblyTypeEnum, 'RIGID_FRAME', INDETERMINATE)
-slab_field = getattr(IfcElementAssemblyTypeEnum, 'SLAB_FIELD', INDETERMINATE)
-truss = getattr(IfcElementAssemblyTypeEnum, 'TRUSS', INDETERMINATE)
-abutment = getattr(IfcElementAssemblyTypeEnum, 'ABUTMENT', INDETERMINATE)
-pier = getattr(IfcElementAssemblyTypeEnum, 'PIER', INDETERMINATE)
-pylon = getattr(IfcElementAssemblyTypeEnum, 'PYLON', INDETERMINATE)
 cross_bracing = getattr(IfcElementAssemblyTypeEnum, 'CROSS_BRACING', INDETERMINATE)
 deck = getattr(IfcElementAssemblyTypeEnum, 'DECK', INDETERMINATE)
-mast = getattr(IfcElementAssemblyTypeEnum, 'MAST', INDETERMINATE)
-signalassembly = getattr(IfcElementAssemblyTypeEnum, 'SIGNALASSEMBLY', INDETERMINATE)
+dilatationpanel = getattr(IfcElementAssemblyTypeEnum, 'DILATATIONPANEL', INDETERMINATE)
+entranceworks = getattr(IfcElementAssemblyTypeEnum, 'ENTRANCEWORKS', INDETERMINATE)
+girder = getattr(IfcElementAssemblyTypeEnum, 'GIRDER', INDETERMINATE)
 grid = getattr(IfcElementAssemblyTypeEnum, 'GRID', INDETERMINATE)
+mast = getattr(IfcElementAssemblyTypeEnum, 'MAST', INDETERMINATE)
+pier = getattr(IfcElementAssemblyTypeEnum, 'PIER', INDETERMINATE)
+pylon = getattr(IfcElementAssemblyTypeEnum, 'PYLON', INDETERMINATE)
+rail_mechanical_equipment_assembly = getattr(IfcElementAssemblyTypeEnum, 'RAIL_MECHANICAL_EQUIPMENT_ASSEMBLY', INDETERMINATE)
+reinforcement_unit = getattr(IfcElementAssemblyTypeEnum, 'REINFORCEMENT_UNIT', INDETERMINATE)
+rigid_frame = getattr(IfcElementAssemblyTypeEnum, 'RIGID_FRAME', INDETERMINATE)
 shelter = getattr(IfcElementAssemblyTypeEnum, 'SHELTER', INDETERMINATE)
+signalassembly = getattr(IfcElementAssemblyTypeEnum, 'SIGNALASSEMBLY', INDETERMINATE)
+slab_field = getattr(IfcElementAssemblyTypeEnum, 'SLAB_FIELD', INDETERMINATE)
+sumpbuster = getattr(IfcElementAssemblyTypeEnum, 'SUMPBUSTER', INDETERMINATE)
 supportingassembly = getattr(IfcElementAssemblyTypeEnum, 'SUPPORTINGASSEMBLY', INDETERMINATE)
 suspensionassembly = getattr(IfcElementAssemblyTypeEnum, 'SUSPENSIONASSEMBLY', INDETERMINATE)
-traction_switching_assembly = getattr(IfcElementAssemblyTypeEnum, 'TRACTION_SWITCHING_ASSEMBLY', INDETERMINATE)
 trackpanel = getattr(IfcElementAssemblyTypeEnum, 'TRACKPANEL', INDETERMINATE)
-turnoutpanel = getattr(IfcElementAssemblyTypeEnum, 'TURNOUTPANEL', INDETERMINATE)
-dilatationpanel = getattr(IfcElementAssemblyTypeEnum, 'DILATATIONPANEL', INDETERMINATE)
-rail_mechanical_equipment_assembly = getattr(IfcElementAssemblyTypeEnum, 'RAIL_MECHANICAL_EQUIPMENT_ASSEMBLY', INDETERMINATE)
-entranceworks = getattr(IfcElementAssemblyTypeEnum, 'ENTRANCEWORKS', INDETERMINATE)
-sumpbuster = getattr(IfcElementAssemblyTypeEnum, 'SUMPBUSTER', INDETERMINATE)
+traction_switching_assembly = getattr(IfcElementAssemblyTypeEnum, 'TRACTION_SWITCHING_ASSEMBLY', INDETERMINATE)
 traffic_calming_device = getattr(IfcElementAssemblyTypeEnum, 'TRAFFIC_CALMING_DEVICE', INDETERMINATE)
+truss = getattr(IfcElementAssemblyTypeEnum, 'TRUSS', INDETERMINATE)
+turnoutpanel = getattr(IfcElementAssemblyTypeEnum, 'TURNOUTPANEL', INDETERMINATE)
 userdefined = getattr(IfcElementAssemblyTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcElementAssemblyTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcElementCompositionEnum = enum_namespace()
@@ -1111,72 +1082,72 @@ internalcombustion = getattr(IfcEngineTypeEnum, 'INTERNALCOMBUSTION', INDETERMIN
 userdefined = getattr(IfcEngineTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcEngineTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcEvaporativeCoolerTypeEnum = enum_namespace()
+directevaporativeairwasher = getattr(IfcEvaporativeCoolerTypeEnum, 'DIRECTEVAPORATIVEAIRWASHER', INDETERMINATE)
+directevaporativepackagedrotaryaircooler = getattr(IfcEvaporativeCoolerTypeEnum, 'DIRECTEVAPORATIVEPACKAGEDROTARYAIRCOOLER', INDETERMINATE)
 directevaporativerandommediaaircooler = getattr(IfcEvaporativeCoolerTypeEnum, 'DIRECTEVAPORATIVERANDOMMEDIAAIRCOOLER', INDETERMINATE)
 directevaporativerigidmediaaircooler = getattr(IfcEvaporativeCoolerTypeEnum, 'DIRECTEVAPORATIVERIGIDMEDIAAIRCOOLER', INDETERMINATE)
 directevaporativeslingerspackagedaircooler = getattr(IfcEvaporativeCoolerTypeEnum, 'DIRECTEVAPORATIVESLINGERSPACKAGEDAIRCOOLER', INDETERMINATE)
-directevaporativepackagedrotaryaircooler = getattr(IfcEvaporativeCoolerTypeEnum, 'DIRECTEVAPORATIVEPACKAGEDROTARYAIRCOOLER', INDETERMINATE)
-directevaporativeairwasher = getattr(IfcEvaporativeCoolerTypeEnum, 'DIRECTEVAPORATIVEAIRWASHER', INDETERMINATE)
+indirectdirectcombination = getattr(IfcEvaporativeCoolerTypeEnum, 'INDIRECTDIRECTCOMBINATION', INDETERMINATE)
+indirectevaporativecoolingtowerorcoilcooler = getattr(IfcEvaporativeCoolerTypeEnum, 'INDIRECTEVAPORATIVECOOLINGTOWERORCOILCOOLER', INDETERMINATE)
 indirectevaporativepackageaircooler = getattr(IfcEvaporativeCoolerTypeEnum, 'INDIRECTEVAPORATIVEPACKAGEAIRCOOLER', INDETERMINATE)
 indirectevaporativewetcoil = getattr(IfcEvaporativeCoolerTypeEnum, 'INDIRECTEVAPORATIVEWETCOIL', INDETERMINATE)
-indirectevaporativecoolingtowerorcoilcooler = getattr(IfcEvaporativeCoolerTypeEnum, 'INDIRECTEVAPORATIVECOOLINGTOWERORCOILCOOLER', INDETERMINATE)
-indirectdirectcombination = getattr(IfcEvaporativeCoolerTypeEnum, 'INDIRECTDIRECTCOMBINATION', INDETERMINATE)
 userdefined = getattr(IfcEvaporativeCoolerTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcEvaporativeCoolerTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcEvaporatorTypeEnum = enum_namespace()
 directexpansion = getattr(IfcEvaporatorTypeEnum, 'DIRECTEXPANSION', INDETERMINATE)
+directexpansionbrazedplate = getattr(IfcEvaporatorTypeEnum, 'DIRECTEXPANSIONBRAZEDPLATE', INDETERMINATE)
 directexpansionshellandtube = getattr(IfcEvaporatorTypeEnum, 'DIRECTEXPANSIONSHELLANDTUBE', INDETERMINATE)
 directexpansiontubeintube = getattr(IfcEvaporatorTypeEnum, 'DIRECTEXPANSIONTUBEINTUBE', INDETERMINATE)
-directexpansionbrazedplate = getattr(IfcEvaporatorTypeEnum, 'DIRECTEXPANSIONBRAZEDPLATE', INDETERMINATE)
 floodedshellandtube = getattr(IfcEvaporatorTypeEnum, 'FLOODEDSHELLANDTUBE', INDETERMINATE)
 shellandcoil = getattr(IfcEvaporatorTypeEnum, 'SHELLANDCOIL', INDETERMINATE)
 userdefined = getattr(IfcEvaporatorTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcEvaporatorTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcEventTriggerTypeEnum = enum_namespace()
-eventrule = getattr(IfcEventTriggerTypeEnum, 'EVENTRULE', INDETERMINATE)
-eventmessage = getattr(IfcEventTriggerTypeEnum, 'EVENTMESSAGE', INDETERMINATE)
-eventtime = getattr(IfcEventTriggerTypeEnum, 'EVENTTIME', INDETERMINATE)
 eventcomplex = getattr(IfcEventTriggerTypeEnum, 'EVENTCOMPLEX', INDETERMINATE)
+eventmessage = getattr(IfcEventTriggerTypeEnum, 'EVENTMESSAGE', INDETERMINATE)
+eventrule = getattr(IfcEventTriggerTypeEnum, 'EVENTRULE', INDETERMINATE)
+eventtime = getattr(IfcEventTriggerTypeEnum, 'EVENTTIME', INDETERMINATE)
 userdefined = getattr(IfcEventTriggerTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcEventTriggerTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcEventTypeEnum = enum_namespace()
-startevent = getattr(IfcEventTypeEnum, 'STARTEVENT', INDETERMINATE)
 endevent = getattr(IfcEventTypeEnum, 'ENDEVENT', INDETERMINATE)
 intermediateevent = getattr(IfcEventTypeEnum, 'INTERMEDIATEEVENT', INDETERMINATE)
+startevent = getattr(IfcEventTypeEnum, 'STARTEVENT', INDETERMINATE)
 userdefined = getattr(IfcEventTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcEventTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcExternalSpatialElementTypeEnum = enum_namespace()
 external = getattr(IfcExternalSpatialElementTypeEnum, 'EXTERNAL', INDETERMINATE)
 external_earth = getattr(IfcExternalSpatialElementTypeEnum, 'EXTERNAL_EARTH', INDETERMINATE)
-external_water = getattr(IfcExternalSpatialElementTypeEnum, 'EXTERNAL_WATER', INDETERMINATE)
 external_fire = getattr(IfcExternalSpatialElementTypeEnum, 'EXTERNAL_FIRE', INDETERMINATE)
+external_water = getattr(IfcExternalSpatialElementTypeEnum, 'EXTERNAL_WATER', INDETERMINATE)
 userdefined = getattr(IfcExternalSpatialElementTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcExternalSpatialElementTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcFacilityPartCommonTypeEnum = enum_namespace()
-segment = getattr(IfcFacilityPartCommonTypeEnum, 'SEGMENT', INDETERMINATE)
 aboveground = getattr(IfcFacilityPartCommonTypeEnum, 'ABOVEGROUND', INDETERMINATE)
+belowground = getattr(IfcFacilityPartCommonTypeEnum, 'BELOWGROUND', INDETERMINATE)
 junction = getattr(IfcFacilityPartCommonTypeEnum, 'JUNCTION', INDETERMINATE)
 levelcrossing = getattr(IfcFacilityPartCommonTypeEnum, 'LEVELCROSSING', INDETERMINATE)
-belowground = getattr(IfcFacilityPartCommonTypeEnum, 'BELOWGROUND', INDETERMINATE)
+segment = getattr(IfcFacilityPartCommonTypeEnum, 'SEGMENT', INDETERMINATE)
 substructure = getattr(IfcFacilityPartCommonTypeEnum, 'SUBSTRUCTURE', INDETERMINATE)
-terminal = getattr(IfcFacilityPartCommonTypeEnum, 'TERMINAL', INDETERMINATE)
 superstructure = getattr(IfcFacilityPartCommonTypeEnum, 'SUPERSTRUCTURE', INDETERMINATE)
+terminal = getattr(IfcFacilityPartCommonTypeEnum, 'TERMINAL', INDETERMINATE)
 userdefined = getattr(IfcFacilityPartCommonTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcFacilityPartCommonTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcFacilityUsageEnum = enum_namespace()
 lateral = getattr(IfcFacilityUsageEnum, 'LATERAL', INDETERMINATE)
+longitudinal = getattr(IfcFacilityUsageEnum, 'LONGITUDINAL', INDETERMINATE)
 region = getattr(IfcFacilityUsageEnum, 'REGION', INDETERMINATE)
 vertical = getattr(IfcFacilityUsageEnum, 'VERTICAL', INDETERMINATE)
-longitudinal = getattr(IfcFacilityUsageEnum, 'LONGITUDINAL', INDETERMINATE)
 userdefined = getattr(IfcFacilityUsageEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcFacilityUsageEnum, 'NOTDEFINED', INDETERMINATE)
 IfcFanTypeEnum = enum_namespace()
+centrifugalairfoil = getattr(IfcFanTypeEnum, 'CENTRIFUGALAIRFOIL', INDETERMINATE)
+centrifugalbackwardinclinedcurved = getattr(IfcFanTypeEnum, 'CENTRIFUGALBACKWARDINCLINEDCURVED', INDETERMINATE)
 centrifugalforwardcurved = getattr(IfcFanTypeEnum, 'CENTRIFUGALFORWARDCURVED', INDETERMINATE)
 centrifugalradial = getattr(IfcFanTypeEnum, 'CENTRIFUGALRADIAL', INDETERMINATE)
-centrifugalbackwardinclinedcurved = getattr(IfcFanTypeEnum, 'CENTRIFUGALBACKWARDINCLINEDCURVED', INDETERMINATE)
-centrifugalairfoil = getattr(IfcFanTypeEnum, 'CENTRIFUGALAIRFOIL', INDETERMINATE)
+propelloraxial = getattr(IfcFanTypeEnum, 'PROPELLORAXIAL', INDETERMINATE)
 tubeaxial = getattr(IfcFanTypeEnum, 'TUBEAXIAL', INDETERMINATE)
 vaneaxial = getattr(IfcFanTypeEnum, 'VANEAXIAL', INDETERMINATE)
-propelloraxial = getattr(IfcFanTypeEnum, 'PROPELLORAXIAL', INDETERMINATE)
 userdefined = getattr(IfcFanTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcFanTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcFastenerTypeEnum = enum_namespace()
@@ -1197,28 +1168,28 @@ notdefined = getattr(IfcFilterTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcFireSuppressionTerminalTypeEnum = enum_namespace()
 breechinginlet = getattr(IfcFireSuppressionTerminalTypeEnum, 'BREECHINGINLET', INDETERMINATE)
 firehydrant = getattr(IfcFireSuppressionTerminalTypeEnum, 'FIREHYDRANT', INDETERMINATE)
+firemonitor = getattr(IfcFireSuppressionTerminalTypeEnum, 'FIREMONITOR', INDETERMINATE)
 hosereel = getattr(IfcFireSuppressionTerminalTypeEnum, 'HOSEREEL', INDETERMINATE)
 sprinkler = getattr(IfcFireSuppressionTerminalTypeEnum, 'SPRINKLER', INDETERMINATE)
 sprinklerdeflector = getattr(IfcFireSuppressionTerminalTypeEnum, 'SPRINKLERDEFLECTOR', INDETERMINATE)
-firemonitor = getattr(IfcFireSuppressionTerminalTypeEnum, 'FIREMONITOR', INDETERMINATE)
 userdefined = getattr(IfcFireSuppressionTerminalTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcFireSuppressionTerminalTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcFlowDirectionEnum = enum_namespace()
-source = getattr(IfcFlowDirectionEnum, 'SOURCE', INDETERMINATE)
 sink = getattr(IfcFlowDirectionEnum, 'SINK', INDETERMINATE)
+source = getattr(IfcFlowDirectionEnum, 'SOURCE', INDETERMINATE)
 sourceandsink = getattr(IfcFlowDirectionEnum, 'SOURCEANDSINK', INDETERMINATE)
 notdefined = getattr(IfcFlowDirectionEnum, 'NOTDEFINED', INDETERMINATE)
 IfcFlowInstrumentTypeEnum = enum_namespace()
+ammeter = getattr(IfcFlowInstrumentTypeEnum, 'AMMETER', INDETERMINATE)
+combined = getattr(IfcFlowInstrumentTypeEnum, 'COMBINED', INDETERMINATE)
+frequencymeter = getattr(IfcFlowInstrumentTypeEnum, 'FREQUENCYMETER', INDETERMINATE)
+phaseanglemeter = getattr(IfcFlowInstrumentTypeEnum, 'PHASEANGLEMETER', INDETERMINATE)
+powerfactormeter = getattr(IfcFlowInstrumentTypeEnum, 'POWERFACTORMETER', INDETERMINATE)
 pressuregauge = getattr(IfcFlowInstrumentTypeEnum, 'PRESSUREGAUGE', INDETERMINATE)
 thermometer = getattr(IfcFlowInstrumentTypeEnum, 'THERMOMETER', INDETERMINATE)
-ammeter = getattr(IfcFlowInstrumentTypeEnum, 'AMMETER', INDETERMINATE)
-frequencymeter = getattr(IfcFlowInstrumentTypeEnum, 'FREQUENCYMETER', INDETERMINATE)
-powerfactormeter = getattr(IfcFlowInstrumentTypeEnum, 'POWERFACTORMETER', INDETERMINATE)
-phaseanglemeter = getattr(IfcFlowInstrumentTypeEnum, 'PHASEANGLEMETER', INDETERMINATE)
+voltmeter = getattr(IfcFlowInstrumentTypeEnum, 'VOLTMETER', INDETERMINATE)
 voltmeter_peak = getattr(IfcFlowInstrumentTypeEnum, 'VOLTMETER_PEAK', INDETERMINATE)
 voltmeter_rms = getattr(IfcFlowInstrumentTypeEnum, 'VOLTMETER_RMS', INDETERMINATE)
-combined = getattr(IfcFlowInstrumentTypeEnum, 'COMBINED', INDETERMINATE)
-voltmeter = getattr(IfcFlowInstrumentTypeEnum, 'VOLTMETER', INDETERMINATE)
 userdefined = getattr(IfcFlowInstrumentTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcFlowInstrumentTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcFlowMeterTypeEnum = enum_namespace()
@@ -1237,39 +1208,46 @@ strip_footing = getattr(IfcFootingTypeEnum, 'STRIP_FOOTING', INDETERMINATE)
 userdefined = getattr(IfcFootingTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcFootingTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcFurnitureTypeEnum = enum_namespace()
-chair = getattr(IfcFurnitureTypeEnum, 'CHAIR', INDETERMINATE)
-table = getattr(IfcFurnitureTypeEnum, 'TABLE', INDETERMINATE)
-desk = getattr(IfcFurnitureTypeEnum, 'DESK', INDETERMINATE)
 bed = getattr(IfcFurnitureTypeEnum, 'BED', INDETERMINATE)
+chair = getattr(IfcFurnitureTypeEnum, 'CHAIR', INDETERMINATE)
+desk = getattr(IfcFurnitureTypeEnum, 'DESK', INDETERMINATE)
 filecabinet = getattr(IfcFurnitureTypeEnum, 'FILECABINET', INDETERMINATE)
 shelf = getattr(IfcFurnitureTypeEnum, 'SHELF', INDETERMINATE)
 sofa = getattr(IfcFurnitureTypeEnum, 'SOFA', INDETERMINATE)
+table = getattr(IfcFurnitureTypeEnum, 'TABLE', INDETERMINATE)
 technicalcabinet = getattr(IfcFurnitureTypeEnum, 'TECHNICALCABINET', INDETERMINATE)
 userdefined = getattr(IfcFurnitureTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcFurnitureTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcGeographicElementTypeEnum = enum_namespace()
-terrain = getattr(IfcGeographicElementTypeEnum, 'TERRAIN', INDETERMINATE)
 soil_boring_point = getattr(IfcGeographicElementTypeEnum, 'SOIL_BORING_POINT', INDETERMINATE)
+terrain = getattr(IfcGeographicElementTypeEnum, 'TERRAIN', INDETERMINATE)
+vegetation = getattr(IfcGeographicElementTypeEnum, 'VEGETATION', INDETERMINATE)
 userdefined = getattr(IfcGeographicElementTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcGeographicElementTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcGeometricProjectionEnum = enum_namespace()
+elevation_view = getattr(IfcGeometricProjectionEnum, 'ELEVATION_VIEW', INDETERMINATE)
 graph_view = getattr(IfcGeometricProjectionEnum, 'GRAPH_VIEW', INDETERMINATE)
-sketch_view = getattr(IfcGeometricProjectionEnum, 'SKETCH_VIEW', INDETERMINATE)
 model_view = getattr(IfcGeometricProjectionEnum, 'MODEL_VIEW', INDETERMINATE)
 plan_view = getattr(IfcGeometricProjectionEnum, 'PLAN_VIEW', INDETERMINATE)
 reflected_plan_view = getattr(IfcGeometricProjectionEnum, 'REFLECTED_PLAN_VIEW', INDETERMINATE)
 section_view = getattr(IfcGeometricProjectionEnum, 'SECTION_VIEW', INDETERMINATE)
-elevation_view = getattr(IfcGeometricProjectionEnum, 'ELEVATION_VIEW', INDETERMINATE)
+sketch_view = getattr(IfcGeometricProjectionEnum, 'SKETCH_VIEW', INDETERMINATE)
 userdefined = getattr(IfcGeometricProjectionEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcGeometricProjectionEnum, 'NOTDEFINED', INDETERMINATE)
+IfcGeotechnicalStratumTypeEnum = enum_namespace()
+solid = getattr(IfcGeotechnicalStratumTypeEnum, 'SOLID', INDETERMINATE)
+void = getattr(IfcGeotechnicalStratumTypeEnum, 'VOID', INDETERMINATE)
+water = getattr(IfcGeotechnicalStratumTypeEnum, 'WATER', INDETERMINATE)
+userdefined = getattr(IfcGeotechnicalStratumTypeEnum, 'USERDEFINED', INDETERMINATE)
+notdefined = getattr(IfcGeotechnicalStratumTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcGlobalOrLocalEnum = enum_namespace()
 global_coords = getattr(IfcGlobalOrLocalEnum, 'GLOBAL_COORDS', INDETERMINATE)
 local_coords = getattr(IfcGlobalOrLocalEnum, 'LOCAL_COORDS', INDETERMINATE)
 IfcGridTypeEnum = enum_namespace()
-rectangular = getattr(IfcGridTypeEnum, 'RECTANGULAR', INDETERMINATE)
-radial = getattr(IfcGridTypeEnum, 'RADIAL', INDETERMINATE)
-triangular = getattr(IfcGridTypeEnum, 'TRIANGULAR', INDETERMINATE)
 irregular = getattr(IfcGridTypeEnum, 'IRREGULAR', INDETERMINATE)
+radial = getattr(IfcGridTypeEnum, 'RADIAL', INDETERMINATE)
+rectangular = getattr(IfcGridTypeEnum, 'RECTANGULAR', INDETERMINATE)
+triangular = getattr(IfcGridTypeEnum, 'TRIANGULAR', INDETERMINATE)
 userdefined = getattr(IfcGridTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcGridTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcHeatExchangerTypeEnum = enum_namespace()
@@ -1279,26 +1257,26 @@ turnoutheating = getattr(IfcHeatExchangerTypeEnum, 'TURNOUTHEATING', INDETERMINA
 userdefined = getattr(IfcHeatExchangerTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcHeatExchangerTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcHumidifierTypeEnum = enum_namespace()
-steaminjection = getattr(IfcHumidifierTypeEnum, 'STEAMINJECTION', INDETERMINATE)
 adiabaticairwasher = getattr(IfcHumidifierTypeEnum, 'ADIABATICAIRWASHER', INDETERMINATE)
-adiabaticpan = getattr(IfcHumidifierTypeEnum, 'ADIABATICPAN', INDETERMINATE)
-adiabaticwettedelement = getattr(IfcHumidifierTypeEnum, 'ADIABATICWETTEDELEMENT', INDETERMINATE)
 adiabaticatomizing = getattr(IfcHumidifierTypeEnum, 'ADIABATICATOMIZING', INDETERMINATE)
-adiabaticultrasonic = getattr(IfcHumidifierTypeEnum, 'ADIABATICULTRASONIC', INDETERMINATE)
-adiabaticrigidmedia = getattr(IfcHumidifierTypeEnum, 'ADIABATICRIGIDMEDIA', INDETERMINATE)
 adiabaticcompressedairnozzle = getattr(IfcHumidifierTypeEnum, 'ADIABATICCOMPRESSEDAIRNOZZLE', INDETERMINATE)
+adiabaticpan = getattr(IfcHumidifierTypeEnum, 'ADIABATICPAN', INDETERMINATE)
+adiabaticrigidmedia = getattr(IfcHumidifierTypeEnum, 'ADIABATICRIGIDMEDIA', INDETERMINATE)
+adiabaticultrasonic = getattr(IfcHumidifierTypeEnum, 'ADIABATICULTRASONIC', INDETERMINATE)
+adiabaticwettedelement = getattr(IfcHumidifierTypeEnum, 'ADIABATICWETTEDELEMENT', INDETERMINATE)
+assistedbutane = getattr(IfcHumidifierTypeEnum, 'ASSISTEDBUTANE', INDETERMINATE)
 assistedelectric = getattr(IfcHumidifierTypeEnum, 'ASSISTEDELECTRIC', INDETERMINATE)
 assistednaturalgas = getattr(IfcHumidifierTypeEnum, 'ASSISTEDNATURALGAS', INDETERMINATE)
 assistedpropane = getattr(IfcHumidifierTypeEnum, 'ASSISTEDPROPANE', INDETERMINATE)
-assistedbutane = getattr(IfcHumidifierTypeEnum, 'ASSISTEDBUTANE', INDETERMINATE)
 assistedsteam = getattr(IfcHumidifierTypeEnum, 'ASSISTEDSTEAM', INDETERMINATE)
+steaminjection = getattr(IfcHumidifierTypeEnum, 'STEAMINJECTION', INDETERMINATE)
 userdefined = getattr(IfcHumidifierTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcHumidifierTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcImpactProtectionDeviceTypeEnum = enum_namespace()
+bumper = getattr(IfcImpactProtectionDeviceTypeEnum, 'BUMPER', INDETERMINATE)
 crashcushion = getattr(IfcImpactProtectionDeviceTypeEnum, 'CRASHCUSHION', INDETERMINATE)
 dampingsystem = getattr(IfcImpactProtectionDeviceTypeEnum, 'DAMPINGSYSTEM', INDETERMINATE)
 fender = getattr(IfcImpactProtectionDeviceTypeEnum, 'FENDER', INDETERMINATE)
-bumper = getattr(IfcImpactProtectionDeviceTypeEnum, 'BUMPER', INDETERMINATE)
 userdefined = getattr(IfcImpactProtectionDeviceTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcImpactProtectionDeviceTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcInterceptorTypeEnum = enum_namespace()
@@ -1309,16 +1287,16 @@ petrol = getattr(IfcInterceptorTypeEnum, 'PETROL', INDETERMINATE)
 userdefined = getattr(IfcInterceptorTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcInterceptorTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcInternalOrExternalEnum = enum_namespace()
-internal = getattr(IfcInternalOrExternalEnum, 'INTERNAL', INDETERMINATE)
 external = getattr(IfcInternalOrExternalEnum, 'EXTERNAL', INDETERMINATE)
 external_earth = getattr(IfcInternalOrExternalEnum, 'EXTERNAL_EARTH', INDETERMINATE)
-external_water = getattr(IfcInternalOrExternalEnum, 'EXTERNAL_WATER', INDETERMINATE)
 external_fire = getattr(IfcInternalOrExternalEnum, 'EXTERNAL_FIRE', INDETERMINATE)
+external_water = getattr(IfcInternalOrExternalEnum, 'EXTERNAL_WATER', INDETERMINATE)
+internal = getattr(IfcInternalOrExternalEnum, 'INTERNAL', INDETERMINATE)
 notdefined = getattr(IfcInternalOrExternalEnum, 'NOTDEFINED', INDETERMINATE)
 IfcInventoryTypeEnum = enum_namespace()
 assetinventory = getattr(IfcInventoryTypeEnum, 'ASSETINVENTORY', INDETERMINATE)
-spaceinventory = getattr(IfcInventoryTypeEnum, 'SPACEINVENTORY', INDETERMINATE)
 furnitureinventory = getattr(IfcInventoryTypeEnum, 'FURNITUREINVENTORY', INDETERMINATE)
+spaceinventory = getattr(IfcInventoryTypeEnum, 'SPACEINVENTORY', INDETERMINATE)
 userdefined = getattr(IfcInventoryTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcInventoryTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcJunctionBoxTypeEnum = enum_namespace()
@@ -1326,10 +1304,13 @@ data = getattr(IfcJunctionBoxTypeEnum, 'DATA', INDETERMINATE)
 power = getattr(IfcJunctionBoxTypeEnum, 'POWER', INDETERMINATE)
 userdefined = getattr(IfcJunctionBoxTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcJunctionBoxTypeEnum, 'NOTDEFINED', INDETERMINATE)
+IfcKerbTypeEnum = enum_namespace()
+userdefined = getattr(IfcKerbTypeEnum, 'USERDEFINED', INDETERMINATE)
+notdefined = getattr(IfcKerbTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcKnotType = enum_namespace()
-uniform_knots = getattr(IfcKnotType, 'UNIFORM_KNOTS', INDETERMINATE)
-quasi_uniform_knots = getattr(IfcKnotType, 'QUASI_UNIFORM_KNOTS', INDETERMINATE)
 piecewise_bezier_knots = getattr(IfcKnotType, 'PIECEWISE_BEZIER_KNOTS', INDETERMINATE)
+quasi_uniform_knots = getattr(IfcKnotType, 'QUASI_UNIFORM_KNOTS', INDETERMINATE)
+uniform_knots = getattr(IfcKnotType, 'UNIFORM_KNOTS', INDETERMINATE)
 unspecified = getattr(IfcKnotType, 'UNSPECIFIED', INDETERMINATE)
 IfcLaborResourceTypeEnum = enum_namespace()
 administration = getattr(IfcLaborResourceTypeEnum, 'ADMINISTRATION', INDETERMINATE)
@@ -1387,93 +1368,93 @@ metalhalide = getattr(IfcLightEmissionSourceEnum, 'METALHALIDE', INDETERMINATE)
 tungstenfilament = getattr(IfcLightEmissionSourceEnum, 'TUNGSTENFILAMENT', INDETERMINATE)
 notdefined = getattr(IfcLightEmissionSourceEnum, 'NOTDEFINED', INDETERMINATE)
 IfcLightFixtureTypeEnum = enum_namespace()
-pointsource = getattr(IfcLightFixtureTypeEnum, 'POINTSOURCE', INDETERMINATE)
 directionsource = getattr(IfcLightFixtureTypeEnum, 'DIRECTIONSOURCE', INDETERMINATE)
+pointsource = getattr(IfcLightFixtureTypeEnum, 'POINTSOURCE', INDETERMINATE)
 securitylighting = getattr(IfcLightFixtureTypeEnum, 'SECURITYLIGHTING', INDETERMINATE)
 userdefined = getattr(IfcLightFixtureTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcLightFixtureTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcLiquidTerminalTypeEnum = enum_namespace()
-loadingarm = getattr(IfcLiquidTerminalTypeEnum, 'LOADINGARM', INDETERMINATE)
 hosereel = getattr(IfcLiquidTerminalTypeEnum, 'HOSEREEL', INDETERMINATE)
+loadingarm = getattr(IfcLiquidTerminalTypeEnum, 'LOADINGARM', INDETERMINATE)
 userdefined = getattr(IfcLiquidTerminalTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcLiquidTerminalTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcLoadGroupTypeEnum = enum_namespace()
-load_group = getattr(IfcLoadGroupTypeEnum, 'LOAD_GROUP', INDETERMINATE)
 load_case = getattr(IfcLoadGroupTypeEnum, 'LOAD_CASE', INDETERMINATE)
 load_combination = getattr(IfcLoadGroupTypeEnum, 'LOAD_COMBINATION', INDETERMINATE)
+load_group = getattr(IfcLoadGroupTypeEnum, 'LOAD_GROUP', INDETERMINATE)
 userdefined = getattr(IfcLoadGroupTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcLoadGroupTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcLogicalOperatorEnum = enum_namespace()
 logicaland = getattr(IfcLogicalOperatorEnum, 'LOGICALAND', INDETERMINATE)
-logicalor = getattr(IfcLogicalOperatorEnum, 'LOGICALOR', INDETERMINATE)
-logicalxor = getattr(IfcLogicalOperatorEnum, 'LOGICALXOR', INDETERMINATE)
 logicalnotand = getattr(IfcLogicalOperatorEnum, 'LOGICALNOTAND', INDETERMINATE)
 logicalnotor = getattr(IfcLogicalOperatorEnum, 'LOGICALNOTOR', INDETERMINATE)
+logicalor = getattr(IfcLogicalOperatorEnum, 'LOGICALOR', INDETERMINATE)
+logicalxor = getattr(IfcLogicalOperatorEnum, 'LOGICALXOR', INDETERMINATE)
 IfcMarineFacilityTypeEnum = enum_namespace()
+barrierbeach = getattr(IfcMarineFacilityTypeEnum, 'BARRIERBEACH', INDETERMINATE)
+breakwater = getattr(IfcMarineFacilityTypeEnum, 'BREAKWATER', INDETERMINATE)
 canal = getattr(IfcMarineFacilityTypeEnum, 'CANAL', INDETERMINATE)
-waterwayshiplift = getattr(IfcMarineFacilityTypeEnum, 'WATERWAYSHIPLIFT', INDETERMINATE)
-revetment = getattr(IfcMarineFacilityTypeEnum, 'REVETMENT', INDETERMINATE)
+drydock = getattr(IfcMarineFacilityTypeEnum, 'DRYDOCK', INDETERMINATE)
+floatingdock = getattr(IfcMarineFacilityTypeEnum, 'FLOATINGDOCK', INDETERMINATE)
+hydrolift = getattr(IfcMarineFacilityTypeEnum, 'HYDROLIFT', INDETERMINATE)
+jetty = getattr(IfcMarineFacilityTypeEnum, 'JETTY', INDETERMINATE)
 launchrecovery = getattr(IfcMarineFacilityTypeEnum, 'LAUNCHRECOVERY', INDETERMINATE)
 marinedefence = getattr(IfcMarineFacilityTypeEnum, 'MARINEDEFENCE', INDETERMINATE)
-hydrolift = getattr(IfcMarineFacilityTypeEnum, 'HYDROLIFT', INDETERMINATE)
-shipyard = getattr(IfcMarineFacilityTypeEnum, 'SHIPYARD', INDETERMINATE)
-shiplift = getattr(IfcMarineFacilityTypeEnum, 'SHIPLIFT', INDETERMINATE)
+navigationalchannel = getattr(IfcMarineFacilityTypeEnum, 'NAVIGATIONALCHANNEL', INDETERMINATE)
 port = getattr(IfcMarineFacilityTypeEnum, 'PORT', INDETERMINATE)
 quay = getattr(IfcMarineFacilityTypeEnum, 'QUAY', INDETERMINATE)
-floatingdock = getattr(IfcMarineFacilityTypeEnum, 'FLOATINGDOCK', INDETERMINATE)
-navigationalchannel = getattr(IfcMarineFacilityTypeEnum, 'NAVIGATIONALCHANNEL', INDETERMINATE)
-breakwater = getattr(IfcMarineFacilityTypeEnum, 'BREAKWATER', INDETERMINATE)
-drydock = getattr(IfcMarineFacilityTypeEnum, 'DRYDOCK', INDETERMINATE)
-jetty = getattr(IfcMarineFacilityTypeEnum, 'JETTY', INDETERMINATE)
+revetment = getattr(IfcMarineFacilityTypeEnum, 'REVETMENT', INDETERMINATE)
+shiplift = getattr(IfcMarineFacilityTypeEnum, 'SHIPLIFT', INDETERMINATE)
 shiplock = getattr(IfcMarineFacilityTypeEnum, 'SHIPLOCK', INDETERMINATE)
-barrierbeach = getattr(IfcMarineFacilityTypeEnum, 'BARRIERBEACH', INDETERMINATE)
+shipyard = getattr(IfcMarineFacilityTypeEnum, 'SHIPYARD', INDETERMINATE)
 slipway = getattr(IfcMarineFacilityTypeEnum, 'SLIPWAY', INDETERMINATE)
 waterway = getattr(IfcMarineFacilityTypeEnum, 'WATERWAY', INDETERMINATE)
+waterwayshiplift = getattr(IfcMarineFacilityTypeEnum, 'WATERWAYSHIPLIFT', INDETERMINATE)
 userdefined = getattr(IfcMarineFacilityTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcMarineFacilityTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcMarinePartTypeEnum = enum_namespace()
-crest = getattr(IfcMarinePartTypeEnum, 'CREST', INDETERMINATE)
-manufacturing = getattr(IfcMarinePartTypeEnum, 'MANUFACTURING', INDETERMINATE)
-lowwaterline = getattr(IfcMarinePartTypeEnum, 'LOWWATERLINE', INDETERMINATE)
-core = getattr(IfcMarinePartTypeEnum, 'CORE', INDETERMINATE)
-waterfield = getattr(IfcMarinePartTypeEnum, 'WATERFIELD', INDETERMINATE)
-cill_level = getattr(IfcMarinePartTypeEnum, 'CILL_LEVEL', INDETERMINATE)
-berthingstructure = getattr(IfcMarinePartTypeEnum, 'BERTHINGSTRUCTURE', INDETERMINATE)
-copelevel = getattr(IfcMarinePartTypeEnum, 'COPELEVEL', INDETERMINATE)
-chamber = getattr(IfcMarinePartTypeEnum, 'CHAMBER', INDETERMINATE)
-storagearea = getattr(IfcMarinePartTypeEnum, 'STORAGEAREA', INDETERMINATE)
-approachchannel = getattr(IfcMarinePartTypeEnum, 'APPROACHCHANNEL', INDETERMINATE)
-vehicleservicing = getattr(IfcMarinePartTypeEnum, 'VEHICLESERVICING', INDETERMINATE)
-shiptransfer = getattr(IfcMarinePartTypeEnum, 'SHIPTRANSFER', INDETERMINATE)
-gatehead = getattr(IfcMarinePartTypeEnum, 'GATEHEAD', INDETERMINATE)
-gudingstructure = getattr(IfcMarinePartTypeEnum, 'GUDINGSTRUCTURE', INDETERMINATE)
-belowwaterline = getattr(IfcMarinePartTypeEnum, 'BELOWWATERLINE', INDETERMINATE)
-weatherside = getattr(IfcMarinePartTypeEnum, 'WEATHERSIDE', INDETERMINATE)
-landfield = getattr(IfcMarinePartTypeEnum, 'LANDFIELD', INDETERMINATE)
-protection = getattr(IfcMarinePartTypeEnum, 'PROTECTION', INDETERMINATE)
-leewardside = getattr(IfcMarinePartTypeEnum, 'LEEWARDSIDE', INDETERMINATE)
 abovewaterline = getattr(IfcMarinePartTypeEnum, 'ABOVEWATERLINE', INDETERMINATE)
 anchorage = getattr(IfcMarinePartTypeEnum, 'ANCHORAGE', INDETERMINATE)
-navigationalarea = getattr(IfcMarinePartTypeEnum, 'NAVIGATIONALAREA', INDETERMINATE)
+approachchannel = getattr(IfcMarinePartTypeEnum, 'APPROACHCHANNEL', INDETERMINATE)
+belowwaterline = getattr(IfcMarinePartTypeEnum, 'BELOWWATERLINE', INDETERMINATE)
+berthingstructure = getattr(IfcMarinePartTypeEnum, 'BERTHINGSTRUCTURE', INDETERMINATE)
+chamber = getattr(IfcMarinePartTypeEnum, 'CHAMBER', INDETERMINATE)
+cill_level = getattr(IfcMarinePartTypeEnum, 'CILL_LEVEL', INDETERMINATE)
+copelevel = getattr(IfcMarinePartTypeEnum, 'COPELEVEL', INDETERMINATE)
+core = getattr(IfcMarinePartTypeEnum, 'CORE', INDETERMINATE)
+crest = getattr(IfcMarinePartTypeEnum, 'CREST', INDETERMINATE)
+gatehead = getattr(IfcMarinePartTypeEnum, 'GATEHEAD', INDETERMINATE)
+gudingstructure = getattr(IfcMarinePartTypeEnum, 'GUDINGSTRUCTURE', INDETERMINATE)
 highwaterline = getattr(IfcMarinePartTypeEnum, 'HIGHWATERLINE', INDETERMINATE)
+landfield = getattr(IfcMarinePartTypeEnum, 'LANDFIELD', INDETERMINATE)
+leewardside = getattr(IfcMarinePartTypeEnum, 'LEEWARDSIDE', INDETERMINATE)
+lowwaterline = getattr(IfcMarinePartTypeEnum, 'LOWWATERLINE', INDETERMINATE)
+manufacturing = getattr(IfcMarinePartTypeEnum, 'MANUFACTURING', INDETERMINATE)
+navigationalarea = getattr(IfcMarinePartTypeEnum, 'NAVIGATIONALAREA', INDETERMINATE)
+protection = getattr(IfcMarinePartTypeEnum, 'PROTECTION', INDETERMINATE)
+shiptransfer = getattr(IfcMarinePartTypeEnum, 'SHIPTRANSFER', INDETERMINATE)
+storagearea = getattr(IfcMarinePartTypeEnum, 'STORAGEAREA', INDETERMINATE)
+vehicleservicing = getattr(IfcMarinePartTypeEnum, 'VEHICLESERVICING', INDETERMINATE)
+waterfield = getattr(IfcMarinePartTypeEnum, 'WATERFIELD', INDETERMINATE)
+weatherside = getattr(IfcMarinePartTypeEnum, 'WEATHERSIDE', INDETERMINATE)
 userdefined = getattr(IfcMarinePartTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcMarinePartTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcMechanicalFastenerTypeEnum = enum_namespace()
 anchorbolt = getattr(IfcMechanicalFastenerTypeEnum, 'ANCHORBOLT', INDETERMINATE)
 bolt = getattr(IfcMechanicalFastenerTypeEnum, 'BOLT', INDETERMINATE)
+chain = getattr(IfcMechanicalFastenerTypeEnum, 'CHAIN', INDETERMINATE)
+coupler = getattr(IfcMechanicalFastenerTypeEnum, 'COUPLER', INDETERMINATE)
 dowel = getattr(IfcMechanicalFastenerTypeEnum, 'DOWEL', INDETERMINATE)
 nail = getattr(IfcMechanicalFastenerTypeEnum, 'NAIL', INDETERMINATE)
 nailplate = getattr(IfcMechanicalFastenerTypeEnum, 'NAILPLATE', INDETERMINATE)
+railfastening = getattr(IfcMechanicalFastenerTypeEnum, 'RAILFASTENING', INDETERMINATE)
+railjoint = getattr(IfcMechanicalFastenerTypeEnum, 'RAILJOINT', INDETERMINATE)
 rivet = getattr(IfcMechanicalFastenerTypeEnum, 'RIVET', INDETERMINATE)
+rope = getattr(IfcMechanicalFastenerTypeEnum, 'ROPE', INDETERMINATE)
 screw = getattr(IfcMechanicalFastenerTypeEnum, 'SCREW', INDETERMINATE)
 shearconnector = getattr(IfcMechanicalFastenerTypeEnum, 'SHEARCONNECTOR', INDETERMINATE)
 staple = getattr(IfcMechanicalFastenerTypeEnum, 'STAPLE', INDETERMINATE)
 studshearconnector = getattr(IfcMechanicalFastenerTypeEnum, 'STUDSHEARCONNECTOR', INDETERMINATE)
-coupler = getattr(IfcMechanicalFastenerTypeEnum, 'COUPLER', INDETERMINATE)
-railjoint = getattr(IfcMechanicalFastenerTypeEnum, 'RAILJOINT', INDETERMINATE)
-railfastening = getattr(IfcMechanicalFastenerTypeEnum, 'RAILFASTENING', INDETERMINATE)
-chain = getattr(IfcMechanicalFastenerTypeEnum, 'CHAIN', INDETERMINATE)
-rope = getattr(IfcMechanicalFastenerTypeEnum, 'ROPE', INDETERMINATE)
 userdefined = getattr(IfcMechanicalFastenerTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcMechanicalFastenerTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcMedicalDeviceTypeEnum = enum_namespace()
@@ -1485,6 +1466,7 @@ vacuumstation = getattr(IfcMedicalDeviceTypeEnum, 'VACUUMSTATION', INDETERMINATE
 userdefined = getattr(IfcMedicalDeviceTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcMedicalDeviceTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcMemberTypeEnum = enum_namespace()
+arch_segment = getattr(IfcMemberTypeEnum, 'ARCH_SEGMENT', INDETERMINATE)
 brace = getattr(IfcMemberTypeEnum, 'BRACE', INDETERMINATE)
 chord = getattr(IfcMemberTypeEnum, 'CHORD', INDETERMINATE)
 collar = getattr(IfcMemberTypeEnum, 'COLLAR', INDETERMINATE)
@@ -1494,40 +1476,39 @@ plate = getattr(IfcMemberTypeEnum, 'PLATE', INDETERMINATE)
 post = getattr(IfcMemberTypeEnum, 'POST', INDETERMINATE)
 purlin = getattr(IfcMemberTypeEnum, 'PURLIN', INDETERMINATE)
 rafter = getattr(IfcMemberTypeEnum, 'RAFTER', INDETERMINATE)
+stay_cable = getattr(IfcMemberTypeEnum, 'STAY_CABLE', INDETERMINATE)
+stiffening_rib = getattr(IfcMemberTypeEnum, 'STIFFENING_RIB', INDETERMINATE)
 stringer = getattr(IfcMemberTypeEnum, 'STRINGER', INDETERMINATE)
+structuralcable = getattr(IfcMemberTypeEnum, 'STRUCTURALCABLE', INDETERMINATE)
 strut = getattr(IfcMemberTypeEnum, 'STRUT', INDETERMINATE)
 stud = getattr(IfcMemberTypeEnum, 'STUD', INDETERMINATE)
-stiffening_rib = getattr(IfcMemberTypeEnum, 'STIFFENING_RIB', INDETERMINATE)
-arch_segment = getattr(IfcMemberTypeEnum, 'ARCH_SEGMENT', INDETERMINATE)
-suspension_cable = getattr(IfcMemberTypeEnum, 'SUSPENSION_CABLE', INDETERMINATE)
 suspender = getattr(IfcMemberTypeEnum, 'SUSPENDER', INDETERMINATE)
-stay_cable = getattr(IfcMemberTypeEnum, 'STAY_CABLE', INDETERMINATE)
-structuralcable = getattr(IfcMemberTypeEnum, 'STRUCTURALCABLE', INDETERMINATE)
+suspension_cable = getattr(IfcMemberTypeEnum, 'SUSPENSION_CABLE', INDETERMINATE)
 tiebar = getattr(IfcMemberTypeEnum, 'TIEBAR', INDETERMINATE)
 userdefined = getattr(IfcMemberTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcMemberTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcMobileTelecommunicationsApplianceTypeEnum = enum_namespace()
-e_utran_node_b = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'E_UTRAN_NODE_B', INDETERMINATE)
-remoteradiounit = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'REMOTERADIOUNIT', INDETERMINATE)
 accesspoint = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'ACCESSPOINT', INDETERMINATE)
-basetransceiverstation = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'BASETRANSCEIVERSTATION', INDETERMINATE)
-remoteunit = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'REMOTEUNIT', INDETERMINATE)
 basebandunit = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'BASEBANDUNIT', INDETERMINATE)
-masterunit = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'MASTERUNIT', INDETERMINATE)
+basetransceiverstation = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'BASETRANSCEIVERSTATION', INDETERMINATE)
+e_utran_node_b = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'E_UTRAN_NODE_B', INDETERMINATE)
 gateway_gprs_support_node = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'GATEWAY_GPRS_SUPPORT_NODE', INDETERMINATE)
-subscriberserver = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'SUBSCRIBERSERVER', INDETERMINATE)
+masterunit = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'MASTERUNIT', INDETERMINATE)
 mobileswitchingcenter = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'MOBILESWITCHINGCENTER', INDETERMINATE)
 mscserver = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'MSCSERVER', INDETERMINATE)
 packetcontrolunit = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'PACKETCONTROLUNIT', INDETERMINATE)
+remoteradiounit = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'REMOTERADIOUNIT', INDETERMINATE)
+remoteunit = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'REMOTEUNIT', INDETERMINATE)
 service_gprs_support_node = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'SERVICE_GPRS_SUPPORT_NODE', INDETERMINATE)
+subscriberserver = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'SUBSCRIBERSERVER', INDETERMINATE)
 userdefined = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcMooringDeviceTypeEnum = enum_namespace()
+bollard = getattr(IfcMooringDeviceTypeEnum, 'BOLLARD', INDETERMINATE)
 linetensioner = getattr(IfcMooringDeviceTypeEnum, 'LINETENSIONER', INDETERMINATE)
 magneticdevice = getattr(IfcMooringDeviceTypeEnum, 'MAGNETICDEVICE', INDETERMINATE)
 mooringhooks = getattr(IfcMooringDeviceTypeEnum, 'MOORINGHOOKS', INDETERMINATE)
 vacuumdevice = getattr(IfcMooringDeviceTypeEnum, 'VACUUMDEVICE', INDETERMINATE)
-bollard = getattr(IfcMooringDeviceTypeEnum, 'BOLLARD', INDETERMINATE)
 userdefined = getattr(IfcMooringDeviceTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcMooringDeviceTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcMotorConnectionTypeEnum = enum_namespace()
@@ -1541,15 +1522,6 @@ beacon = getattr(IfcNavigationElementTypeEnum, 'BEACON', INDETERMINATE)
 buoy = getattr(IfcNavigationElementTypeEnum, 'BUOY', INDETERMINATE)
 userdefined = getattr(IfcNavigationElementTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcNavigationElementTypeEnum, 'NOTDEFINED', INDETERMINATE)
-IfcObjectTypeEnum = enum_namespace()
-product = getattr(IfcObjectTypeEnum, 'PRODUCT', INDETERMINATE)
-process = getattr(IfcObjectTypeEnum, 'PROCESS', INDETERMINATE)
-control = getattr(IfcObjectTypeEnum, 'CONTROL', INDETERMINATE)
-resource = getattr(IfcObjectTypeEnum, 'RESOURCE', INDETERMINATE)
-actor = getattr(IfcObjectTypeEnum, 'ACTOR', INDETERMINATE)
-group = getattr(IfcObjectTypeEnum, 'GROUP', INDETERMINATE)
-project = getattr(IfcObjectTypeEnum, 'PROJECT', INDETERMINATE)
-notdefined = getattr(IfcObjectTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcObjectiveEnum = enum_namespace()
 codecompliance = getattr(IfcObjectiveEnum, 'CODECOMPLIANCE', INDETERMINATE)
 codewaiver = getattr(IfcObjectiveEnum, 'CODEWAIVER', INDETERMINATE)
@@ -1582,8 +1554,8 @@ notdefined = getattr(IfcOpeningElementTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcOutletTypeEnum = enum_namespace()
 audiovisualoutlet = getattr(IfcOutletTypeEnum, 'AUDIOVISUALOUTLET', INDETERMINATE)
 communicationsoutlet = getattr(IfcOutletTypeEnum, 'COMMUNICATIONSOUTLET', INDETERMINATE)
-poweroutlet = getattr(IfcOutletTypeEnum, 'POWEROUTLET', INDETERMINATE)
 dataoutlet = getattr(IfcOutletTypeEnum, 'DATAOUTLET', INDETERMINATE)
+poweroutlet = getattr(IfcOutletTypeEnum, 'POWEROUTLET', INDETERMINATE)
 telephoneoutlet = getattr(IfcOutletTypeEnum, 'TELEPHONEOUTLET', INDETERMINATE)
 userdefined = getattr(IfcOutletTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcOutletTypeEnum, 'NOTDEFINED', INDETERMINATE)
@@ -1620,10 +1592,10 @@ userdefined = getattr(IfcPileConstructionEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcPileConstructionEnum, 'NOTDEFINED', INDETERMINATE)
 IfcPileTypeEnum = enum_namespace()
 bored = getattr(IfcPileTypeEnum, 'BORED', INDETERMINATE)
-driven = getattr(IfcPileTypeEnum, 'DRIVEN', INDETERMINATE)
-jetgrouting = getattr(IfcPileTypeEnum, 'JETGROUTING', INDETERMINATE)
 cohesion = getattr(IfcPileTypeEnum, 'COHESION', INDETERMINATE)
+driven = getattr(IfcPileTypeEnum, 'DRIVEN', INDETERMINATE)
 friction = getattr(IfcPileTypeEnum, 'FRICTION', INDETERMINATE)
+jetgrouting = getattr(IfcPileTypeEnum, 'JETGROUTING', INDETERMINATE)
 support = getattr(IfcPileTypeEnum, 'SUPPORT', INDETERMINATE)
 userdefined = getattr(IfcPileTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcPileTypeEnum, 'NOTDEFINED', INDETERMINATE)
@@ -1640,21 +1612,21 @@ notdefined = getattr(IfcPipeFittingTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcPipeSegmentTypeEnum = enum_namespace()
 culvert = getattr(IfcPipeSegmentTypeEnum, 'CULVERT', INDETERMINATE)
 flexiblesegment = getattr(IfcPipeSegmentTypeEnum, 'FLEXIBLESEGMENT', INDETERMINATE)
-rigidsegment = getattr(IfcPipeSegmentTypeEnum, 'RIGIDSEGMENT', INDETERMINATE)
 gutter = getattr(IfcPipeSegmentTypeEnum, 'GUTTER', INDETERMINATE)
+rigidsegment = getattr(IfcPipeSegmentTypeEnum, 'RIGIDSEGMENT', INDETERMINATE)
 spool = getattr(IfcPipeSegmentTypeEnum, 'SPOOL', INDETERMINATE)
 userdefined = getattr(IfcPipeSegmentTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcPipeSegmentTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcPlateTypeEnum = enum_namespace()
-curtain_panel = getattr(IfcPlateTypeEnum, 'CURTAIN_PANEL', INDETERMINATE)
-sheet = getattr(IfcPlateTypeEnum, 'SHEET', INDETERMINATE)
-flange_plate = getattr(IfcPlateTypeEnum, 'FLANGE_PLATE', INDETERMINATE)
-web_plate = getattr(IfcPlateTypeEnum, 'WEB_PLATE', INDETERMINATE)
-stiffener_plate = getattr(IfcPlateTypeEnum, 'STIFFENER_PLATE', INDETERMINATE)
-gusset_plate = getattr(IfcPlateTypeEnum, 'GUSSET_PLATE', INDETERMINATE)
-cover_plate = getattr(IfcPlateTypeEnum, 'COVER_PLATE', INDETERMINATE)
-splice_plate = getattr(IfcPlateTypeEnum, 'SPLICE_PLATE', INDETERMINATE)
 base_plate = getattr(IfcPlateTypeEnum, 'BASE_PLATE', INDETERMINATE)
+cover_plate = getattr(IfcPlateTypeEnum, 'COVER_PLATE', INDETERMINATE)
+curtain_panel = getattr(IfcPlateTypeEnum, 'CURTAIN_PANEL', INDETERMINATE)
+flange_plate = getattr(IfcPlateTypeEnum, 'FLANGE_PLATE', INDETERMINATE)
+gusset_plate = getattr(IfcPlateTypeEnum, 'GUSSET_PLATE', INDETERMINATE)
+sheet = getattr(IfcPlateTypeEnum, 'SHEET', INDETERMINATE)
+splice_plate = getattr(IfcPlateTypeEnum, 'SPLICE_PLATE', INDETERMINATE)
+stiffener_plate = getattr(IfcPlateTypeEnum, 'STIFFENER_PLATE', INDETERMINATE)
+web_plate = getattr(IfcPlateTypeEnum, 'WEB_PLATE', INDETERMINATE)
 userdefined = getattr(IfcPlateTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcPlateTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcPreferredSurfaceCurveRepresentation = enum_namespace()
@@ -1672,8 +1644,8 @@ startup = getattr(IfcProcedureTypeEnum, 'STARTUP', INDETERMINATE)
 userdefined = getattr(IfcProcedureTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcProcedureTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcProfileTypeEnum = enum_namespace()
-curve = getattr(IfcProfileTypeEnum, 'CURVE', INDETERMINATE)
 area = getattr(IfcProfileTypeEnum, 'AREA', INDETERMINATE)
+curve = getattr(IfcProfileTypeEnum, 'CURVE', INDETERMINATE)
 IfcProjectOrderTypeEnum = enum_namespace()
 changeorder = getattr(IfcProjectOrderTypeEnum, 'CHANGEORDER', INDETERMINATE)
 maintenanceworkorder = getattr(IfcProjectOrderTypeEnum, 'MAINTENANCEWORKORDER', INDETERMINATE)
@@ -1691,31 +1663,33 @@ deviator = getattr(IfcProjectionElementTypeEnum, 'DEVIATOR', INDETERMINATE)
 userdefined = getattr(IfcProjectionElementTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcProjectionElementTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcPropertySetTemplateTypeEnum = enum_namespace()
-pset_typedrivenonly = getattr(IfcPropertySetTemplateTypeEnum, 'PSET_TYPEDRIVENONLY', INDETERMINATE)
-pset_typedrivenoverride = getattr(IfcPropertySetTemplateTypeEnum, 'PSET_TYPEDRIVENOVERRIDE', INDETERMINATE)
+pset_materialdriven = getattr(IfcPropertySetTemplateTypeEnum, 'PSET_MATERIALDRIVEN', INDETERMINATE)
 pset_occurrencedriven = getattr(IfcPropertySetTemplateTypeEnum, 'PSET_OCCURRENCEDRIVEN', INDETERMINATE)
 pset_performancedriven = getattr(IfcPropertySetTemplateTypeEnum, 'PSET_PERFORMANCEDRIVEN', INDETERMINATE)
+pset_profiledriven = getattr(IfcPropertySetTemplateTypeEnum, 'PSET_PROFILEDRIVEN', INDETERMINATE)
+pset_typedrivenonly = getattr(IfcPropertySetTemplateTypeEnum, 'PSET_TYPEDRIVENONLY', INDETERMINATE)
+pset_typedrivenoverride = getattr(IfcPropertySetTemplateTypeEnum, 'PSET_TYPEDRIVENOVERRIDE', INDETERMINATE)
+qto_occurrencedriven = getattr(IfcPropertySetTemplateTypeEnum, 'QTO_OCCURRENCEDRIVEN', INDETERMINATE)
 qto_typedrivenonly = getattr(IfcPropertySetTemplateTypeEnum, 'QTO_TYPEDRIVENONLY', INDETERMINATE)
 qto_typedrivenoverride = getattr(IfcPropertySetTemplateTypeEnum, 'QTO_TYPEDRIVENOVERRIDE', INDETERMINATE)
-qto_occurrencedriven = getattr(IfcPropertySetTemplateTypeEnum, 'QTO_OCCURRENCEDRIVEN', INDETERMINATE)
 notdefined = getattr(IfcPropertySetTemplateTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcProtectiveDeviceTrippingUnitTypeEnum = enum_namespace()
-electronic = getattr(IfcProtectiveDeviceTrippingUnitTypeEnum, 'ELECTRONIC', INDETERMINATE)
 electromagnetic = getattr(IfcProtectiveDeviceTrippingUnitTypeEnum, 'ELECTROMAGNETIC', INDETERMINATE)
+electronic = getattr(IfcProtectiveDeviceTrippingUnitTypeEnum, 'ELECTRONIC', INDETERMINATE)
 residualcurrent = getattr(IfcProtectiveDeviceTrippingUnitTypeEnum, 'RESIDUALCURRENT', INDETERMINATE)
 thermal = getattr(IfcProtectiveDeviceTrippingUnitTypeEnum, 'THERMAL', INDETERMINATE)
 userdefined = getattr(IfcProtectiveDeviceTrippingUnitTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcProtectiveDeviceTrippingUnitTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcProtectiveDeviceTypeEnum = enum_namespace()
+anti_arcing_device = getattr(IfcProtectiveDeviceTypeEnum, 'ANTI_ARCING_DEVICE', INDETERMINATE)
 circuitbreaker = getattr(IfcProtectiveDeviceTypeEnum, 'CIRCUITBREAKER', INDETERMINATE)
-earthleakagecircuitbreaker = getattr(IfcProtectiveDeviceTypeEnum, 'EARTHLEAKAGECIRCUITBREAKER', INDETERMINATE)
 earthingswitch = getattr(IfcProtectiveDeviceTypeEnum, 'EARTHINGSWITCH', INDETERMINATE)
+earthleakagecircuitbreaker = getattr(IfcProtectiveDeviceTypeEnum, 'EARTHLEAKAGECIRCUITBREAKER', INDETERMINATE)
 fusedisconnector = getattr(IfcProtectiveDeviceTypeEnum, 'FUSEDISCONNECTOR', INDETERMINATE)
 residualcurrentcircuitbreaker = getattr(IfcProtectiveDeviceTypeEnum, 'RESIDUALCURRENTCIRCUITBREAKER', INDETERMINATE)
 residualcurrentswitch = getattr(IfcProtectiveDeviceTypeEnum, 'RESIDUALCURRENTSWITCH', INDETERMINATE)
-varistor = getattr(IfcProtectiveDeviceTypeEnum, 'VARISTOR', INDETERMINATE)
-anti_arcing_device = getattr(IfcProtectiveDeviceTypeEnum, 'ANTI_ARCING_DEVICE', INDETERMINATE)
 sparkgap = getattr(IfcProtectiveDeviceTypeEnum, 'SPARKGAP', INDETERMINATE)
+varistor = getattr(IfcProtectiveDeviceTypeEnum, 'VARISTOR', INDETERMINATE)
 voltagelimiter = getattr(IfcProtectiveDeviceTypeEnum, 'VOLTAGELIMITER', INDETERMINATE)
 userdefined = getattr(IfcProtectiveDeviceTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcProtectiveDeviceTypeEnum, 'NOTDEFINED', INDETERMINATE)
@@ -1730,67 +1704,70 @@ verticalturbine = getattr(IfcPumpTypeEnum, 'VERTICALTURBINE', INDETERMINATE)
 userdefined = getattr(IfcPumpTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcPumpTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcRailTypeEnum = enum_namespace()
-rackrail = getattr(IfcRailTypeEnum, 'RACKRAIL', INDETERMINATE)
 blade = getattr(IfcRailTypeEnum, 'BLADE', INDETERMINATE)
-guardrail = getattr(IfcRailTypeEnum, 'GUARDRAIL', INDETERMINATE)
-stockrail = getattr(IfcRailTypeEnum, 'STOCKRAIL', INDETERMINATE)
 checkrail = getattr(IfcRailTypeEnum, 'CHECKRAIL', INDETERMINATE)
+guardrail = getattr(IfcRailTypeEnum, 'GUARDRAIL', INDETERMINATE)
+rackrail = getattr(IfcRailTypeEnum, 'RACKRAIL', INDETERMINATE)
 rail = getattr(IfcRailTypeEnum, 'RAIL', INDETERMINATE)
+stockrail = getattr(IfcRailTypeEnum, 'STOCKRAIL', INDETERMINATE)
 userdefined = getattr(IfcRailTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcRailTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcRailingTypeEnum = enum_namespace()
-handrail = getattr(IfcRailingTypeEnum, 'HANDRAIL', INDETERMINATE)
-guardrail = getattr(IfcRailingTypeEnum, 'GUARDRAIL', INDETERMINATE)
 balustrade = getattr(IfcRailingTypeEnum, 'BALUSTRADE', INDETERMINATE)
 fence = getattr(IfcRailingTypeEnum, 'FENCE', INDETERMINATE)
+guardrail = getattr(IfcRailingTypeEnum, 'GUARDRAIL', INDETERMINATE)
+handrail = getattr(IfcRailingTypeEnum, 'HANDRAIL', INDETERMINATE)
 userdefined = getattr(IfcRailingTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcRailingTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcRailwayPartTypeEnum = enum_namespace()
-trackstructure = getattr(IfcRailwayPartTypeEnum, 'TRACKSTRUCTURE', INDETERMINATE)
-trackstructurepart = getattr(IfcRailwayPartTypeEnum, 'TRACKSTRUCTUREPART', INDETERMINATE)
-linesidestructurepart = getattr(IfcRailwayPartTypeEnum, 'LINESIDESTRUCTUREPART', INDETERMINATE)
-dilatationsuperstructure = getattr(IfcRailwayPartTypeEnum, 'DILATATIONSUPERSTRUCTURE', INDETERMINATE)
-plaintracksupestructure = getattr(IfcRailwayPartTypeEnum, 'PLAINTRACKSUPESTRUCTURE', INDETERMINATE)
-linesidestructure = getattr(IfcRailwayPartTypeEnum, 'LINESIDESTRUCTURE', INDETERMINATE)
-superstructure = getattr(IfcRailwayPartTypeEnum, 'SUPERSTRUCTURE', INDETERMINATE)
-turnoutsuperstructure = getattr(IfcRailwayPartTypeEnum, 'TURNOUTSUPERSTRUCTURE', INDETERMINATE)
+abovetrack = getattr(IfcRailwayPartTypeEnum, 'ABOVETRACK', INDETERMINATE)
+dilationtrack = getattr(IfcRailwayPartTypeEnum, 'DILATIONTRACK', INDETERMINATE)
+lineside = getattr(IfcRailwayPartTypeEnum, 'LINESIDE', INDETERMINATE)
+linesidepart = getattr(IfcRailwayPartTypeEnum, 'LINESIDEPART', INDETERMINATE)
+plaintrack = getattr(IfcRailwayPartTypeEnum, 'PLAINTRACK', INDETERMINATE)
+substructure = getattr(IfcRailwayPartTypeEnum, 'SUBSTRUCTURE', INDETERMINATE)
+track = getattr(IfcRailwayPartTypeEnum, 'TRACK', INDETERMINATE)
+trackpart = getattr(IfcRailwayPartTypeEnum, 'TRACKPART', INDETERMINATE)
+turnouttrack = getattr(IfcRailwayPartTypeEnum, 'TURNOUTTRACK', INDETERMINATE)
 userdefined = getattr(IfcRailwayPartTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcRailwayPartTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcRailwayTypeEnum = enum_namespace()
 userdefined = getattr(IfcRailwayTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcRailwayTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcRampFlightTypeEnum = enum_namespace()
-straight = getattr(IfcRampFlightTypeEnum, 'STRAIGHT', INDETERMINATE)
 spiral = getattr(IfcRampFlightTypeEnum, 'SPIRAL', INDETERMINATE)
+straight = getattr(IfcRampFlightTypeEnum, 'STRAIGHT', INDETERMINATE)
 userdefined = getattr(IfcRampFlightTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcRampFlightTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcRampTypeEnum = enum_namespace()
-straight_run_ramp = getattr(IfcRampTypeEnum, 'STRAIGHT_RUN_RAMP', INDETERMINATE)
-two_straight_run_ramp = getattr(IfcRampTypeEnum, 'TWO_STRAIGHT_RUN_RAMP', INDETERMINATE)
-quarter_turn_ramp = getattr(IfcRampTypeEnum, 'QUARTER_TURN_RAMP', INDETERMINATE)
-two_quarter_turn_ramp = getattr(IfcRampTypeEnum, 'TWO_QUARTER_TURN_RAMP', INDETERMINATE)
 half_turn_ramp = getattr(IfcRampTypeEnum, 'HALF_TURN_RAMP', INDETERMINATE)
+quarter_turn_ramp = getattr(IfcRampTypeEnum, 'QUARTER_TURN_RAMP', INDETERMINATE)
 spiral_ramp = getattr(IfcRampTypeEnum, 'SPIRAL_RAMP', INDETERMINATE)
+straight_run_ramp = getattr(IfcRampTypeEnum, 'STRAIGHT_RUN_RAMP', INDETERMINATE)
+two_quarter_turn_ramp = getattr(IfcRampTypeEnum, 'TWO_QUARTER_TURN_RAMP', INDETERMINATE)
+two_straight_run_ramp = getattr(IfcRampTypeEnum, 'TWO_STRAIGHT_RUN_RAMP', INDETERMINATE)
 userdefined = getattr(IfcRampTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcRampTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcRecurrenceTypeEnum = enum_namespace()
-daily = getattr(IfcRecurrenceTypeEnum, 'DAILY', INDETERMINATE)
-weekly = getattr(IfcRecurrenceTypeEnum, 'WEEKLY', INDETERMINATE)
-monthly_by_day_of_month = getattr(IfcRecurrenceTypeEnum, 'MONTHLY_BY_DAY_OF_MONTH', INDETERMINATE)
-monthly_by_position = getattr(IfcRecurrenceTypeEnum, 'MONTHLY_BY_POSITION', INDETERMINATE)
 by_day_count = getattr(IfcRecurrenceTypeEnum, 'BY_DAY_COUNT', INDETERMINATE)
 by_weekday_count = getattr(IfcRecurrenceTypeEnum, 'BY_WEEKDAY_COUNT', INDETERMINATE)
+daily = getattr(IfcRecurrenceTypeEnum, 'DAILY', INDETERMINATE)
+monthly_by_day_of_month = getattr(IfcRecurrenceTypeEnum, 'MONTHLY_BY_DAY_OF_MONTH', INDETERMINATE)
+monthly_by_position = getattr(IfcRecurrenceTypeEnum, 'MONTHLY_BY_POSITION', INDETERMINATE)
+weekly = getattr(IfcRecurrenceTypeEnum, 'WEEKLY', INDETERMINATE)
 yearly_by_day_of_month = getattr(IfcRecurrenceTypeEnum, 'YEARLY_BY_DAY_OF_MONTH', INDETERMINATE)
 yearly_by_position = getattr(IfcRecurrenceTypeEnum, 'YEARLY_BY_POSITION', INDETERMINATE)
 IfcReferentTypeEnum = enum_namespace()
-kilopoint = getattr(IfcReferentTypeEnum, 'KILOPOINT', INDETERMINATE)
-milepoint = getattr(IfcReferentTypeEnum, 'MILEPOINT', INDETERMINATE)
-station = getattr(IfcReferentTypeEnum, 'STATION', INDETERMINATE)
-referencemarker = getattr(IfcReferentTypeEnum, 'REFERENCEMARKER', INDETERMINATE)
-landmark = getattr(IfcReferentTypeEnum, 'LANDMARK', INDETERMINATE)
 boundary = getattr(IfcReferentTypeEnum, 'BOUNDARY', INDETERMINATE)
 intersection = getattr(IfcReferentTypeEnum, 'INTERSECTION', INDETERMINATE)
+kilopoint = getattr(IfcReferentTypeEnum, 'KILOPOINT', INDETERMINATE)
+landmark = getattr(IfcReferentTypeEnum, 'LANDMARK', INDETERMINATE)
+milepoint = getattr(IfcReferentTypeEnum, 'MILEPOINT', INDETERMINATE)
 position = getattr(IfcReferentTypeEnum, 'POSITION', INDETERMINATE)
+referencemarker = getattr(IfcReferentTypeEnum, 'REFERENCEMARKER', INDETERMINATE)
+station = getattr(IfcReferentTypeEnum, 'STATION', INDETERMINATE)
+superelevationevent = getattr(IfcReferentTypeEnum, 'SUPERELEVATIONEVENT', INDETERMINATE)
+widthevent = getattr(IfcReferentTypeEnum, 'WIDTHEVENT', INDETERMINATE)
 userdefined = getattr(IfcReferentTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcReferentTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcReflectanceMethodEnum = enum_namespace()
@@ -1801,27 +1778,28 @@ matt = getattr(IfcReflectanceMethodEnum, 'MATT', INDETERMINATE)
 metal = getattr(IfcReflectanceMethodEnum, 'METAL', INDETERMINATE)
 mirror = getattr(IfcReflectanceMethodEnum, 'MIRROR', INDETERMINATE)
 phong = getattr(IfcReflectanceMethodEnum, 'PHONG', INDETERMINATE)
+physical = getattr(IfcReflectanceMethodEnum, 'PHYSICAL', INDETERMINATE)
 plastic = getattr(IfcReflectanceMethodEnum, 'PLASTIC', INDETERMINATE)
 strauss = getattr(IfcReflectanceMethodEnum, 'STRAUSS', INDETERMINATE)
 notdefined = getattr(IfcReflectanceMethodEnum, 'NOTDEFINED', INDETERMINATE)
 IfcReinforcedSoilTypeEnum = enum_namespace()
-surchargepreloaded = getattr(IfcReinforcedSoilTypeEnum, 'SURCHARGEPRELOADED', INDETERMINATE)
-verticallydrained = getattr(IfcReinforcedSoilTypeEnum, 'VERTICALLYDRAINED', INDETERMINATE)
 dynamicallycompacted = getattr(IfcReinforcedSoilTypeEnum, 'DYNAMICALLYCOMPACTED', INDETERMINATE)
+grouted = getattr(IfcReinforcedSoilTypeEnum, 'GROUTED', INDETERMINATE)
 replaced = getattr(IfcReinforcedSoilTypeEnum, 'REPLACED', INDETERMINATE)
 rollercompacted = getattr(IfcReinforcedSoilTypeEnum, 'ROLLERCOMPACTED', INDETERMINATE)
-grouted = getattr(IfcReinforcedSoilTypeEnum, 'GROUTED', INDETERMINATE)
+surchargepreloaded = getattr(IfcReinforcedSoilTypeEnum, 'SURCHARGEPRELOADED', INDETERMINATE)
+verticallydrained = getattr(IfcReinforcedSoilTypeEnum, 'VERTICALLYDRAINED', INDETERMINATE)
 userdefined = getattr(IfcReinforcedSoilTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcReinforcedSoilTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcReinforcingBarRoleEnum = enum_namespace()
-main = getattr(IfcReinforcingBarRoleEnum, 'MAIN', INDETERMINATE)
-shear = getattr(IfcReinforcingBarRoleEnum, 'SHEAR', INDETERMINATE)
-ligature = getattr(IfcReinforcingBarRoleEnum, 'LIGATURE', INDETERMINATE)
-stud = getattr(IfcReinforcingBarRoleEnum, 'STUD', INDETERMINATE)
-punching = getattr(IfcReinforcingBarRoleEnum, 'PUNCHING', INDETERMINATE)
-edge = getattr(IfcReinforcingBarRoleEnum, 'EDGE', INDETERMINATE)
-ring = getattr(IfcReinforcingBarRoleEnum, 'RING', INDETERMINATE)
 anchoring = getattr(IfcReinforcingBarRoleEnum, 'ANCHORING', INDETERMINATE)
+edge = getattr(IfcReinforcingBarRoleEnum, 'EDGE', INDETERMINATE)
+ligature = getattr(IfcReinforcingBarRoleEnum, 'LIGATURE', INDETERMINATE)
+main = getattr(IfcReinforcingBarRoleEnum, 'MAIN', INDETERMINATE)
+punching = getattr(IfcReinforcingBarRoleEnum, 'PUNCHING', INDETERMINATE)
+ring = getattr(IfcReinforcingBarRoleEnum, 'RING', INDETERMINATE)
+shear = getattr(IfcReinforcingBarRoleEnum, 'SHEAR', INDETERMINATE)
+stud = getattr(IfcReinforcingBarRoleEnum, 'STUD', INDETERMINATE)
 userdefined = getattr(IfcReinforcingBarRoleEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcReinforcingBarRoleEnum, 'NOTDEFINED', INDETERMINATE)
 IfcReinforcingBarSurfaceEnum = enum_namespace()
@@ -1835,100 +1813,100 @@ main = getattr(IfcReinforcingBarTypeEnum, 'MAIN', INDETERMINATE)
 punching = getattr(IfcReinforcingBarTypeEnum, 'PUNCHING', INDETERMINATE)
 ring = getattr(IfcReinforcingBarTypeEnum, 'RING', INDETERMINATE)
 shear = getattr(IfcReinforcingBarTypeEnum, 'SHEAR', INDETERMINATE)
-stud = getattr(IfcReinforcingBarTypeEnum, 'STUD', INDETERMINATE)
 spacebar = getattr(IfcReinforcingBarTypeEnum, 'SPACEBAR', INDETERMINATE)
+stud = getattr(IfcReinforcingBarTypeEnum, 'STUD', INDETERMINATE)
 userdefined = getattr(IfcReinforcingBarTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcReinforcingBarTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcReinforcingMeshTypeEnum = enum_namespace()
 userdefined = getattr(IfcReinforcingMeshTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcReinforcingMeshTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcRoadPartTypeEnum = enum_namespace()
-roadsidepart = getattr(IfcRoadPartTypeEnum, 'ROADSIDEPART', INDETERMINATE)
+bicyclecrossing = getattr(IfcRoadPartTypeEnum, 'BICYCLECROSSING', INDETERMINATE)
 bus_stop = getattr(IfcRoadPartTypeEnum, 'BUS_STOP', INDETERMINATE)
+carriageway = getattr(IfcRoadPartTypeEnum, 'CARRIAGEWAY', INDETERMINATE)
+centralisland = getattr(IfcRoadPartTypeEnum, 'CENTRALISLAND', INDETERMINATE)
+centralreserve = getattr(IfcRoadPartTypeEnum, 'CENTRALRESERVE', INDETERMINATE)
 hardshoulder = getattr(IfcRoadPartTypeEnum, 'HARDSHOULDER', INDETERMINATE)
 intersection = getattr(IfcRoadPartTypeEnum, 'INTERSECTION', INDETERMINATE)
-passingbay = getattr(IfcRoadPartTypeEnum, 'PASSINGBAY', INDETERMINATE)
-roadwayplateau = getattr(IfcRoadPartTypeEnum, 'ROADWAYPLATEAU', INDETERMINATE)
-roadside = getattr(IfcRoadPartTypeEnum, 'ROADSIDE', INDETERMINATE)
-refugeisland = getattr(IfcRoadPartTypeEnum, 'REFUGEISLAND', INDETERMINATE)
-tollplaza = getattr(IfcRoadPartTypeEnum, 'TOLLPLAZA', INDETERMINATE)
-centralreserve = getattr(IfcRoadPartTypeEnum, 'CENTRALRESERVE', INDETERMINATE)
-sidewalk = getattr(IfcRoadPartTypeEnum, 'SIDEWALK', INDETERMINATE)
-parkingbay = getattr(IfcRoadPartTypeEnum, 'PARKINGBAY', INDETERMINATE)
-railwaycrossing = getattr(IfcRoadPartTypeEnum, 'RAILWAYCROSSING', INDETERMINATE)
-pedestrian_crossing = getattr(IfcRoadPartTypeEnum, 'PEDESTRIAN_CROSSING', INDETERMINATE)
-softshoulder = getattr(IfcRoadPartTypeEnum, 'SOFTSHOULDER', INDETERMINATE)
-bicyclecrossing = getattr(IfcRoadPartTypeEnum, 'BICYCLECROSSING', INDETERMINATE)
-centralisland = getattr(IfcRoadPartTypeEnum, 'CENTRALISLAND', INDETERMINATE)
-shoulder = getattr(IfcRoadPartTypeEnum, 'SHOULDER', INDETERMINATE)
-trafficlane = getattr(IfcRoadPartTypeEnum, 'TRAFFICLANE', INDETERMINATE)
-roadsegment = getattr(IfcRoadPartTypeEnum, 'ROADSEGMENT', INDETERMINATE)
-roundabout = getattr(IfcRoadPartTypeEnum, 'ROUNDABOUT', INDETERMINATE)
 layby = getattr(IfcRoadPartTypeEnum, 'LAYBY', INDETERMINATE)
-carriageway = getattr(IfcRoadPartTypeEnum, 'CARRIAGEWAY', INDETERMINATE)
+parkingbay = getattr(IfcRoadPartTypeEnum, 'PARKINGBAY', INDETERMINATE)
+passingbay = getattr(IfcRoadPartTypeEnum, 'PASSINGBAY', INDETERMINATE)
+pedestrian_crossing = getattr(IfcRoadPartTypeEnum, 'PEDESTRIAN_CROSSING', INDETERMINATE)
+railwaycrossing = getattr(IfcRoadPartTypeEnum, 'RAILWAYCROSSING', INDETERMINATE)
+refugeisland = getattr(IfcRoadPartTypeEnum, 'REFUGEISLAND', INDETERMINATE)
+roadsegment = getattr(IfcRoadPartTypeEnum, 'ROADSEGMENT', INDETERMINATE)
+roadside = getattr(IfcRoadPartTypeEnum, 'ROADSIDE', INDETERMINATE)
+roadsidepart = getattr(IfcRoadPartTypeEnum, 'ROADSIDEPART', INDETERMINATE)
+roadwayplateau = getattr(IfcRoadPartTypeEnum, 'ROADWAYPLATEAU', INDETERMINATE)
+roundabout = getattr(IfcRoadPartTypeEnum, 'ROUNDABOUT', INDETERMINATE)
+shoulder = getattr(IfcRoadPartTypeEnum, 'SHOULDER', INDETERMINATE)
+sidewalk = getattr(IfcRoadPartTypeEnum, 'SIDEWALK', INDETERMINATE)
+softshoulder = getattr(IfcRoadPartTypeEnum, 'SOFTSHOULDER', INDETERMINATE)
+tollplaza = getattr(IfcRoadPartTypeEnum, 'TOLLPLAZA', INDETERMINATE)
 trafficisland = getattr(IfcRoadPartTypeEnum, 'TRAFFICISLAND', INDETERMINATE)
+trafficlane = getattr(IfcRoadPartTypeEnum, 'TRAFFICLANE', INDETERMINATE)
 userdefined = getattr(IfcRoadPartTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcRoadPartTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcRoadTypeEnum = enum_namespace()
 userdefined = getattr(IfcRoadTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcRoadTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcRoleEnum = enum_namespace()
-supplier = getattr(IfcRoleEnum, 'SUPPLIER', INDETERMINATE)
-manufacturer = getattr(IfcRoleEnum, 'MANUFACTURER', INDETERMINATE)
-contractor = getattr(IfcRoleEnum, 'CONTRACTOR', INDETERMINATE)
-subcontractor = getattr(IfcRoleEnum, 'SUBCONTRACTOR', INDETERMINATE)
 architect = getattr(IfcRoleEnum, 'ARCHITECT', INDETERMINATE)
-structuralengineer = getattr(IfcRoleEnum, 'STRUCTURALENGINEER', INDETERMINATE)
-costengineer = getattr(IfcRoleEnum, 'COSTENGINEER', INDETERMINATE)
-client = getattr(IfcRoleEnum, 'CLIENT', INDETERMINATE)
-buildingowner = getattr(IfcRoleEnum, 'BUILDINGOWNER', INDETERMINATE)
 buildingoperator = getattr(IfcRoleEnum, 'BUILDINGOPERATOR', INDETERMINATE)
-mechanicalengineer = getattr(IfcRoleEnum, 'MECHANICALENGINEER', INDETERMINATE)
-electricalengineer = getattr(IfcRoleEnum, 'ELECTRICALENGINEER', INDETERMINATE)
-projectmanager = getattr(IfcRoleEnum, 'PROJECTMANAGER', INDETERMINATE)
-facilitiesmanager = getattr(IfcRoleEnum, 'FACILITIESMANAGER', INDETERMINATE)
+buildingowner = getattr(IfcRoleEnum, 'BUILDINGOWNER', INDETERMINATE)
 civilengineer = getattr(IfcRoleEnum, 'CIVILENGINEER', INDETERMINATE)
+client = getattr(IfcRoleEnum, 'CLIENT', INDETERMINATE)
 commissioningengineer = getattr(IfcRoleEnum, 'COMMISSIONINGENGINEER', INDETERMINATE)
-engineer = getattr(IfcRoleEnum, 'ENGINEER', INDETERMINATE)
-owner = getattr(IfcRoleEnum, 'OWNER', INDETERMINATE)
-consultant = getattr(IfcRoleEnum, 'CONSULTANT', INDETERMINATE)
 constructionmanager = getattr(IfcRoleEnum, 'CONSTRUCTIONMANAGER', INDETERMINATE)
+consultant = getattr(IfcRoleEnum, 'CONSULTANT', INDETERMINATE)
+contractor = getattr(IfcRoleEnum, 'CONTRACTOR', INDETERMINATE)
+costengineer = getattr(IfcRoleEnum, 'COSTENGINEER', INDETERMINATE)
+electricalengineer = getattr(IfcRoleEnum, 'ELECTRICALENGINEER', INDETERMINATE)
+engineer = getattr(IfcRoleEnum, 'ENGINEER', INDETERMINATE)
+facilitiesmanager = getattr(IfcRoleEnum, 'FACILITIESMANAGER', INDETERMINATE)
 fieldconstructionmanager = getattr(IfcRoleEnum, 'FIELDCONSTRUCTIONMANAGER', INDETERMINATE)
+manufacturer = getattr(IfcRoleEnum, 'MANUFACTURER', INDETERMINATE)
+mechanicalengineer = getattr(IfcRoleEnum, 'MECHANICALENGINEER', INDETERMINATE)
+owner = getattr(IfcRoleEnum, 'OWNER', INDETERMINATE)
+projectmanager = getattr(IfcRoleEnum, 'PROJECTMANAGER', INDETERMINATE)
 reseller = getattr(IfcRoleEnum, 'RESELLER', INDETERMINATE)
+structuralengineer = getattr(IfcRoleEnum, 'STRUCTURALENGINEER', INDETERMINATE)
+subcontractor = getattr(IfcRoleEnum, 'SUBCONTRACTOR', INDETERMINATE)
+supplier = getattr(IfcRoleEnum, 'SUPPLIER', INDETERMINATE)
 userdefined = getattr(IfcRoleEnum, 'USERDEFINED', INDETERMINATE)
 IfcRoofTypeEnum = enum_namespace()
-flat_roof = getattr(IfcRoofTypeEnum, 'FLAT_ROOF', INDETERMINATE)
-shed_roof = getattr(IfcRoofTypeEnum, 'SHED_ROOF', INDETERMINATE)
-gable_roof = getattr(IfcRoofTypeEnum, 'GABLE_ROOF', INDETERMINATE)
-hip_roof = getattr(IfcRoofTypeEnum, 'HIP_ROOF', INDETERMINATE)
-hipped_gable_roof = getattr(IfcRoofTypeEnum, 'HIPPED_GABLE_ROOF', INDETERMINATE)
-gambrel_roof = getattr(IfcRoofTypeEnum, 'GAMBREL_ROOF', INDETERMINATE)
-mansard_roof = getattr(IfcRoofTypeEnum, 'MANSARD_ROOF', INDETERMINATE)
 barrel_roof = getattr(IfcRoofTypeEnum, 'BARREL_ROOF', INDETERMINATE)
-rainbow_roof = getattr(IfcRoofTypeEnum, 'RAINBOW_ROOF', INDETERMINATE)
 butterfly_roof = getattr(IfcRoofTypeEnum, 'BUTTERFLY_ROOF', INDETERMINATE)
-pavilion_roof = getattr(IfcRoofTypeEnum, 'PAVILION_ROOF', INDETERMINATE)
 dome_roof = getattr(IfcRoofTypeEnum, 'DOME_ROOF', INDETERMINATE)
+flat_roof = getattr(IfcRoofTypeEnum, 'FLAT_ROOF', INDETERMINATE)
 freeform = getattr(IfcRoofTypeEnum, 'FREEFORM', INDETERMINATE)
+gable_roof = getattr(IfcRoofTypeEnum, 'GABLE_ROOF', INDETERMINATE)
+gambrel_roof = getattr(IfcRoofTypeEnum, 'GAMBREL_ROOF', INDETERMINATE)
+hipped_gable_roof = getattr(IfcRoofTypeEnum, 'HIPPED_GABLE_ROOF', INDETERMINATE)
+hip_roof = getattr(IfcRoofTypeEnum, 'HIP_ROOF', INDETERMINATE)
+mansard_roof = getattr(IfcRoofTypeEnum, 'MANSARD_ROOF', INDETERMINATE)
+pavilion_roof = getattr(IfcRoofTypeEnum, 'PAVILION_ROOF', INDETERMINATE)
+rainbow_roof = getattr(IfcRoofTypeEnum, 'RAINBOW_ROOF', INDETERMINATE)
+shed_roof = getattr(IfcRoofTypeEnum, 'SHED_ROOF', INDETERMINATE)
 userdefined = getattr(IfcRoofTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcRoofTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcSIPrefix = enum_namespace()
-exa = getattr(IfcSIPrefix, 'EXA', INDETERMINATE)
-peta = getattr(IfcSIPrefix, 'PETA', INDETERMINATE)
-tera = getattr(IfcSIPrefix, 'TERA', INDETERMINATE)
-giga = getattr(IfcSIPrefix, 'GIGA', INDETERMINATE)
-mega = getattr(IfcSIPrefix, 'MEGA', INDETERMINATE)
-kilo = getattr(IfcSIPrefix, 'KILO', INDETERMINATE)
-hecto = getattr(IfcSIPrefix, 'HECTO', INDETERMINATE)
+atto = getattr(IfcSIPrefix, 'ATTO', INDETERMINATE)
+centi = getattr(IfcSIPrefix, 'CENTI', INDETERMINATE)
 deca = getattr(IfcSIPrefix, 'DECA', INDETERMINATE)
 deci = getattr(IfcSIPrefix, 'DECI', INDETERMINATE)
-centi = getattr(IfcSIPrefix, 'CENTI', INDETERMINATE)
-milli = getattr(IfcSIPrefix, 'MILLI', INDETERMINATE)
-micro = getattr(IfcSIPrefix, 'MICRO', INDETERMINATE)
-nano = getattr(IfcSIPrefix, 'NANO', INDETERMINATE)
-pico = getattr(IfcSIPrefix, 'PICO', INDETERMINATE)
+exa = getattr(IfcSIPrefix, 'EXA', INDETERMINATE)
 femto = getattr(IfcSIPrefix, 'FEMTO', INDETERMINATE)
-atto = getattr(IfcSIPrefix, 'ATTO', INDETERMINATE)
+giga = getattr(IfcSIPrefix, 'GIGA', INDETERMINATE)
+hecto = getattr(IfcSIPrefix, 'HECTO', INDETERMINATE)
+kilo = getattr(IfcSIPrefix, 'KILO', INDETERMINATE)
+mega = getattr(IfcSIPrefix, 'MEGA', INDETERMINATE)
+micro = getattr(IfcSIPrefix, 'MICRO', INDETERMINATE)
+milli = getattr(IfcSIPrefix, 'MILLI', INDETERMINATE)
+nano = getattr(IfcSIPrefix, 'NANO', INDETERMINATE)
+peta = getattr(IfcSIPrefix, 'PETA', INDETERMINATE)
+pico = getattr(IfcSIPrefix, 'PICO', INDETERMINATE)
+tera = getattr(IfcSIPrefix, 'TERA', INDETERMINATE)
 IfcSIUnitName = enum_namespace()
 ampere = getattr(IfcSIUnitName, 'AMPERE', INDETERMINATE)
 becquerel = getattr(IfcSIUnitName, 'BECQUEREL', INDETERMINATE)
@@ -1964,9 +1942,9 @@ IfcSanitaryTerminalTypeEnum = enum_namespace()
 bath = getattr(IfcSanitaryTerminalTypeEnum, 'BATH', INDETERMINATE)
 bidet = getattr(IfcSanitaryTerminalTypeEnum, 'BIDET', INDETERMINATE)
 cistern = getattr(IfcSanitaryTerminalTypeEnum, 'CISTERN', INDETERMINATE)
+sanitaryfountain = getattr(IfcSanitaryTerminalTypeEnum, 'SANITARYFOUNTAIN', INDETERMINATE)
 shower = getattr(IfcSanitaryTerminalTypeEnum, 'SHOWER', INDETERMINATE)
 sink = getattr(IfcSanitaryTerminalTypeEnum, 'SINK', INDETERMINATE)
-sanitaryfountain = getattr(IfcSanitaryTerminalTypeEnum, 'SANITARYFOUNTAIN', INDETERMINATE)
 toiletpan = getattr(IfcSanitaryTerminalTypeEnum, 'TOILETPAN', INDETERMINATE)
 urinal = getattr(IfcSanitaryTerminalTypeEnum, 'URINAL', INDETERMINATE)
 washhandbasin = getattr(IfcSanitaryTerminalTypeEnum, 'WASHHANDBASIN', INDETERMINATE)
@@ -1974,15 +1952,17 @@ wcseat = getattr(IfcSanitaryTerminalTypeEnum, 'WCSEAT', INDETERMINATE)
 userdefined = getattr(IfcSanitaryTerminalTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcSanitaryTerminalTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcSectionTypeEnum = enum_namespace()
-uniform = getattr(IfcSectionTypeEnum, 'UNIFORM', INDETERMINATE)
 tapered = getattr(IfcSectionTypeEnum, 'TAPERED', INDETERMINATE)
+uniform = getattr(IfcSectionTypeEnum, 'UNIFORM', INDETERMINATE)
 IfcSensorTypeEnum = enum_namespace()
-cosensor = getattr(IfcSensorTypeEnum, 'COSENSOR', INDETERMINATE)
 co2sensor = getattr(IfcSensorTypeEnum, 'CO2SENSOR', INDETERMINATE)
 conductancesensor = getattr(IfcSensorTypeEnum, 'CONDUCTANCESENSOR', INDETERMINATE)
 contactsensor = getattr(IfcSensorTypeEnum, 'CONTACTSENSOR', INDETERMINATE)
+cosensor = getattr(IfcSensorTypeEnum, 'COSENSOR', INDETERMINATE)
+earthquakesensor = getattr(IfcSensorTypeEnum, 'EARTHQUAKESENSOR', INDETERMINATE)
 firesensor = getattr(IfcSensorTypeEnum, 'FIRESENSOR', INDETERMINATE)
 flowsensor = getattr(IfcSensorTypeEnum, 'FLOWSENSOR', INDETERMINATE)
+foreignobjectdetectionsensor = getattr(IfcSensorTypeEnum, 'FOREIGNOBJECTDETECTIONSENSOR', INDETERMINATE)
 frostsensor = getattr(IfcSensorTypeEnum, 'FROSTSENSOR', INDETERMINATE)
 gassensor = getattr(IfcSensorTypeEnum, 'GASSENSOR', INDETERMINATE)
 heatsensor = getattr(IfcSensorTypeEnum, 'HEATSENSOR', INDETERMINATE)
@@ -1993,72 +1973,71 @@ levelsensor = getattr(IfcSensorTypeEnum, 'LEVELSENSOR', INDETERMINATE)
 lightsensor = getattr(IfcSensorTypeEnum, 'LIGHTSENSOR', INDETERMINATE)
 moisturesensor = getattr(IfcSensorTypeEnum, 'MOISTURESENSOR', INDETERMINATE)
 movementsensor = getattr(IfcSensorTypeEnum, 'MOVEMENTSENSOR', INDETERMINATE)
+obstaclesensor = getattr(IfcSensorTypeEnum, 'OBSTACLESENSOR', INDETERMINATE)
 phsensor = getattr(IfcSensorTypeEnum, 'PHSENSOR', INDETERMINATE)
 pressuresensor = getattr(IfcSensorTypeEnum, 'PRESSURESENSOR', INDETERMINATE)
 radiationsensor = getattr(IfcSensorTypeEnum, 'RADIATIONSENSOR', INDETERMINATE)
 radioactivitysensor = getattr(IfcSensorTypeEnum, 'RADIOACTIVITYSENSOR', INDETERMINATE)
+rainsensor = getattr(IfcSensorTypeEnum, 'RAINSENSOR', INDETERMINATE)
 smokesensor = getattr(IfcSensorTypeEnum, 'SMOKESENSOR', INDETERMINATE)
+snowdepthsensor = getattr(IfcSensorTypeEnum, 'SNOWDEPTHSENSOR', INDETERMINATE)
 soundsensor = getattr(IfcSensorTypeEnum, 'SOUNDSENSOR', INDETERMINATE)
 temperaturesensor = getattr(IfcSensorTypeEnum, 'TEMPERATURESENSOR', INDETERMINATE)
-windsensor = getattr(IfcSensorTypeEnum, 'WINDSENSOR', INDETERMINATE)
-earthquakesensor = getattr(IfcSensorTypeEnum, 'EARTHQUAKESENSOR', INDETERMINATE)
-foreignobjectdetectionsensor = getattr(IfcSensorTypeEnum, 'FOREIGNOBJECTDETECTIONSENSOR', INDETERMINATE)
-obstaclesensor = getattr(IfcSensorTypeEnum, 'OBSTACLESENSOR', INDETERMINATE)
-rainsensor = getattr(IfcSensorTypeEnum, 'RAINSENSOR', INDETERMINATE)
-snowdepthsensor = getattr(IfcSensorTypeEnum, 'SNOWDEPTHSENSOR', INDETERMINATE)
 trainsensor = getattr(IfcSensorTypeEnum, 'TRAINSENSOR', INDETERMINATE)
 turnoutclosuresensor = getattr(IfcSensorTypeEnum, 'TURNOUTCLOSURESENSOR', INDETERMINATE)
 wheelsensor = getattr(IfcSensorTypeEnum, 'WHEELSENSOR', INDETERMINATE)
+windsensor = getattr(IfcSensorTypeEnum, 'WINDSENSOR', INDETERMINATE)
 userdefined = getattr(IfcSensorTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcSensorTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcSequenceEnum = enum_namespace()
-start_start = getattr(IfcSequenceEnum, 'START_START', INDETERMINATE)
-start_finish = getattr(IfcSequenceEnum, 'START_FINISH', INDETERMINATE)
-finish_start = getattr(IfcSequenceEnum, 'FINISH_START', INDETERMINATE)
 finish_finish = getattr(IfcSequenceEnum, 'FINISH_FINISH', INDETERMINATE)
+finish_start = getattr(IfcSequenceEnum, 'FINISH_START', INDETERMINATE)
+start_finish = getattr(IfcSequenceEnum, 'START_FINISH', INDETERMINATE)
+start_start = getattr(IfcSequenceEnum, 'START_START', INDETERMINATE)
 userdefined = getattr(IfcSequenceEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcSequenceEnum, 'NOTDEFINED', INDETERMINATE)
 IfcShadingDeviceTypeEnum = enum_namespace()
+awning = getattr(IfcShadingDeviceTypeEnum, 'AWNING', INDETERMINATE)
 jalousie = getattr(IfcShadingDeviceTypeEnum, 'JALOUSIE', INDETERMINATE)
 shutter = getattr(IfcShadingDeviceTypeEnum, 'SHUTTER', INDETERMINATE)
-awning = getattr(IfcShadingDeviceTypeEnum, 'AWNING', INDETERMINATE)
 userdefined = getattr(IfcShadingDeviceTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcShadingDeviceTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcSignTypeEnum = enum_namespace()
 marker = getattr(IfcSignTypeEnum, 'MARKER', INDETERMINATE)
-pictoral = getattr(IfcSignTypeEnum, 'PICTORAL', INDETERMINATE)
 mirror = getattr(IfcSignTypeEnum, 'MIRROR', INDETERMINATE)
+pictoral = getattr(IfcSignTypeEnum, 'PICTORAL', INDETERMINATE)
 userdefined = getattr(IfcSignTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcSignTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcSignalTypeEnum = enum_namespace()
-visual = getattr(IfcSignalTypeEnum, 'VISUAL', INDETERMINATE)
 audio = getattr(IfcSignalTypeEnum, 'AUDIO', INDETERMINATE)
 mixed = getattr(IfcSignalTypeEnum, 'MIXED', INDETERMINATE)
+visual = getattr(IfcSignalTypeEnum, 'VISUAL', INDETERMINATE)
 userdefined = getattr(IfcSignalTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcSignalTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcSimplePropertyTemplateTypeEnum = enum_namespace()
-p_singlevalue = getattr(IfcSimplePropertyTemplateTypeEnum, 'P_SINGLEVALUE', INDETERMINATE)
-p_enumeratedvalue = getattr(IfcSimplePropertyTemplateTypeEnum, 'P_ENUMERATEDVALUE', INDETERMINATE)
 p_boundedvalue = getattr(IfcSimplePropertyTemplateTypeEnum, 'P_BOUNDEDVALUE', INDETERMINATE)
+p_enumeratedvalue = getattr(IfcSimplePropertyTemplateTypeEnum, 'P_ENUMERATEDVALUE', INDETERMINATE)
 p_listvalue = getattr(IfcSimplePropertyTemplateTypeEnum, 'P_LISTVALUE', INDETERMINATE)
-p_tablevalue = getattr(IfcSimplePropertyTemplateTypeEnum, 'P_TABLEVALUE', INDETERMINATE)
 p_referencevalue = getattr(IfcSimplePropertyTemplateTypeEnum, 'P_REFERENCEVALUE', INDETERMINATE)
-q_length = getattr(IfcSimplePropertyTemplateTypeEnum, 'Q_LENGTH', INDETERMINATE)
+p_singlevalue = getattr(IfcSimplePropertyTemplateTypeEnum, 'P_SINGLEVALUE', INDETERMINATE)
+p_tablevalue = getattr(IfcSimplePropertyTemplateTypeEnum, 'P_TABLEVALUE', INDETERMINATE)
 q_area = getattr(IfcSimplePropertyTemplateTypeEnum, 'Q_AREA', INDETERMINATE)
-q_volume = getattr(IfcSimplePropertyTemplateTypeEnum, 'Q_VOLUME', INDETERMINATE)
 q_count = getattr(IfcSimplePropertyTemplateTypeEnum, 'Q_COUNT', INDETERMINATE)
-q_weight = getattr(IfcSimplePropertyTemplateTypeEnum, 'Q_WEIGHT', INDETERMINATE)
+q_length = getattr(IfcSimplePropertyTemplateTypeEnum, 'Q_LENGTH', INDETERMINATE)
+q_number = getattr(IfcSimplePropertyTemplateTypeEnum, 'Q_NUMBER', INDETERMINATE)
 q_time = getattr(IfcSimplePropertyTemplateTypeEnum, 'Q_TIME', INDETERMINATE)
+q_volume = getattr(IfcSimplePropertyTemplateTypeEnum, 'Q_VOLUME', INDETERMINATE)
+q_weight = getattr(IfcSimplePropertyTemplateTypeEnum, 'Q_WEIGHT', INDETERMINATE)
 IfcSlabTypeEnum = enum_namespace()
-floor = getattr(IfcSlabTypeEnum, 'FLOOR', INDETERMINATE)
-roof = getattr(IfcSlabTypeEnum, 'ROOF', INDETERMINATE)
-landing = getattr(IfcSlabTypeEnum, 'LANDING', INDETERMINATE)
-baseslab = getattr(IfcSlabTypeEnum, 'BASESLAB', INDETERMINATE)
 approach_slab = getattr(IfcSlabTypeEnum, 'APPROACH_SLAB', INDETERMINATE)
+baseslab = getattr(IfcSlabTypeEnum, 'BASESLAB', INDETERMINATE)
+floor = getattr(IfcSlabTypeEnum, 'FLOOR', INDETERMINATE)
+landing = getattr(IfcSlabTypeEnum, 'LANDING', INDETERMINATE)
 paving = getattr(IfcSlabTypeEnum, 'PAVING', INDETERMINATE)
-wearing = getattr(IfcSlabTypeEnum, 'WEARING', INDETERMINATE)
+roof = getattr(IfcSlabTypeEnum, 'ROOF', INDETERMINATE)
 sidewalk = getattr(IfcSlabTypeEnum, 'SIDEWALK', INDETERMINATE)
 trackslab = getattr(IfcSlabTypeEnum, 'TRACKSLAB', INDETERMINATE)
+wearing = getattr(IfcSlabTypeEnum, 'WEARING', INDETERMINATE)
 userdefined = getattr(IfcSlabTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcSlabTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcSolarDeviceTypeEnum = enum_namespace()
@@ -2072,25 +2051,25 @@ radiator = getattr(IfcSpaceHeaterTypeEnum, 'RADIATOR', INDETERMINATE)
 userdefined = getattr(IfcSpaceHeaterTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcSpaceHeaterTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcSpaceTypeEnum = enum_namespace()
-space = getattr(IfcSpaceTypeEnum, 'SPACE', INDETERMINATE)
-parking = getattr(IfcSpaceTypeEnum, 'PARKING', INDETERMINATE)
+berth = getattr(IfcSpaceTypeEnum, 'BERTH', INDETERMINATE)
+external = getattr(IfcSpaceTypeEnum, 'EXTERNAL', INDETERMINATE)
 gfa = getattr(IfcSpaceTypeEnum, 'GFA', INDETERMINATE)
 internal = getattr(IfcSpaceTypeEnum, 'INTERNAL', INDETERMINATE)
-external = getattr(IfcSpaceTypeEnum, 'EXTERNAL', INDETERMINATE)
-berth = getattr(IfcSpaceTypeEnum, 'BERTH', INDETERMINATE)
+parking = getattr(IfcSpaceTypeEnum, 'PARKING', INDETERMINATE)
+space = getattr(IfcSpaceTypeEnum, 'SPACE', INDETERMINATE)
 userdefined = getattr(IfcSpaceTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcSpaceTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcSpatialZoneTypeEnum = enum_namespace()
 construction = getattr(IfcSpatialZoneTypeEnum, 'CONSTRUCTION', INDETERMINATE)
 firesafety = getattr(IfcSpatialZoneTypeEnum, 'FIRESAFETY', INDETERMINATE)
+interference = getattr(IfcSpatialZoneTypeEnum, 'INTERFERENCE', INDETERMINATE)
 lighting = getattr(IfcSpatialZoneTypeEnum, 'LIGHTING', INDETERMINATE)
 occupancy = getattr(IfcSpatialZoneTypeEnum, 'OCCUPANCY', INDETERMINATE)
+reservation = getattr(IfcSpatialZoneTypeEnum, 'RESERVATION', INDETERMINATE)
 security = getattr(IfcSpatialZoneTypeEnum, 'SECURITY', INDETERMINATE)
 thermal = getattr(IfcSpatialZoneTypeEnum, 'THERMAL', INDETERMINATE)
 transport = getattr(IfcSpatialZoneTypeEnum, 'TRANSPORT', INDETERMINATE)
 ventilation = getattr(IfcSpatialZoneTypeEnum, 'VENTILATION', INDETERMINATE)
-reservation = getattr(IfcSpatialZoneTypeEnum, 'RESERVATION', INDETERMINATE)
-interference = getattr(IfcSpatialZoneTypeEnum, 'INTERFERENCE', INDETERMINATE)
 userdefined = getattr(IfcSpatialZoneTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcSpatialZoneTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcStackTerminalTypeEnum = enum_namespace()
@@ -2100,58 +2079,58 @@ rainwaterhopper = getattr(IfcStackTerminalTypeEnum, 'RAINWATERHOPPER', INDETERMI
 userdefined = getattr(IfcStackTerminalTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcStackTerminalTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcStairFlightTypeEnum = enum_namespace()
-straight = getattr(IfcStairFlightTypeEnum, 'STRAIGHT', INDETERMINATE)
-winder = getattr(IfcStairFlightTypeEnum, 'WINDER', INDETERMINATE)
-spiral = getattr(IfcStairFlightTypeEnum, 'SPIRAL', INDETERMINATE)
 curved = getattr(IfcStairFlightTypeEnum, 'CURVED', INDETERMINATE)
 freeform = getattr(IfcStairFlightTypeEnum, 'FREEFORM', INDETERMINATE)
+spiral = getattr(IfcStairFlightTypeEnum, 'SPIRAL', INDETERMINATE)
+straight = getattr(IfcStairFlightTypeEnum, 'STRAIGHT', INDETERMINATE)
+winder = getattr(IfcStairFlightTypeEnum, 'WINDER', INDETERMINATE)
 userdefined = getattr(IfcStairFlightTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcStairFlightTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcStairTypeEnum = enum_namespace()
-straight_run_stair = getattr(IfcStairTypeEnum, 'STRAIGHT_RUN_STAIR', INDETERMINATE)
-two_straight_run_stair = getattr(IfcStairTypeEnum, 'TWO_STRAIGHT_RUN_STAIR', INDETERMINATE)
-quarter_winding_stair = getattr(IfcStairTypeEnum, 'QUARTER_WINDING_STAIR', INDETERMINATE)
-quarter_turn_stair = getattr(IfcStairTypeEnum, 'QUARTER_TURN_STAIR', INDETERMINATE)
-half_winding_stair = getattr(IfcStairTypeEnum, 'HALF_WINDING_STAIR', INDETERMINATE)
-half_turn_stair = getattr(IfcStairTypeEnum, 'HALF_TURN_STAIR', INDETERMINATE)
-two_quarter_winding_stair = getattr(IfcStairTypeEnum, 'TWO_QUARTER_WINDING_STAIR', INDETERMINATE)
-two_quarter_turn_stair = getattr(IfcStairTypeEnum, 'TWO_QUARTER_TURN_STAIR', INDETERMINATE)
-three_quarter_winding_stair = getattr(IfcStairTypeEnum, 'THREE_QUARTER_WINDING_STAIR', INDETERMINATE)
-three_quarter_turn_stair = getattr(IfcStairTypeEnum, 'THREE_QUARTER_TURN_STAIR', INDETERMINATE)
-spiral_stair = getattr(IfcStairTypeEnum, 'SPIRAL_STAIR', INDETERMINATE)
-double_return_stair = getattr(IfcStairTypeEnum, 'DOUBLE_RETURN_STAIR', INDETERMINATE)
 curved_run_stair = getattr(IfcStairTypeEnum, 'CURVED_RUN_STAIR', INDETERMINATE)
-two_curved_run_stair = getattr(IfcStairTypeEnum, 'TWO_CURVED_RUN_STAIR', INDETERMINATE)
+double_return_stair = getattr(IfcStairTypeEnum, 'DOUBLE_RETURN_STAIR', INDETERMINATE)
+half_turn_stair = getattr(IfcStairTypeEnum, 'HALF_TURN_STAIR', INDETERMINATE)
+half_winding_stair = getattr(IfcStairTypeEnum, 'HALF_WINDING_STAIR', INDETERMINATE)
 ladder = getattr(IfcStairTypeEnum, 'LADDER', INDETERMINATE)
+quarter_turn_stair = getattr(IfcStairTypeEnum, 'QUARTER_TURN_STAIR', INDETERMINATE)
+quarter_winding_stair = getattr(IfcStairTypeEnum, 'QUARTER_WINDING_STAIR', INDETERMINATE)
+spiral_stair = getattr(IfcStairTypeEnum, 'SPIRAL_STAIR', INDETERMINATE)
+straight_run_stair = getattr(IfcStairTypeEnum, 'STRAIGHT_RUN_STAIR', INDETERMINATE)
+three_quarter_turn_stair = getattr(IfcStairTypeEnum, 'THREE_QUARTER_TURN_STAIR', INDETERMINATE)
+three_quarter_winding_stair = getattr(IfcStairTypeEnum, 'THREE_QUARTER_WINDING_STAIR', INDETERMINATE)
+two_curved_run_stair = getattr(IfcStairTypeEnum, 'TWO_CURVED_RUN_STAIR', INDETERMINATE)
+two_quarter_turn_stair = getattr(IfcStairTypeEnum, 'TWO_QUARTER_TURN_STAIR', INDETERMINATE)
+two_quarter_winding_stair = getattr(IfcStairTypeEnum, 'TWO_QUARTER_WINDING_STAIR', INDETERMINATE)
+two_straight_run_stair = getattr(IfcStairTypeEnum, 'TWO_STRAIGHT_RUN_STAIR', INDETERMINATE)
 userdefined = getattr(IfcStairTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcStairTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcStateEnum = enum_namespace()
-readwrite = getattr(IfcStateEnum, 'READWRITE', INDETERMINATE)
-readonly = getattr(IfcStateEnum, 'READONLY', INDETERMINATE)
 locked = getattr(IfcStateEnum, 'LOCKED', INDETERMINATE)
-readwritelocked = getattr(IfcStateEnum, 'READWRITELOCKED', INDETERMINATE)
+readonly = getattr(IfcStateEnum, 'READONLY', INDETERMINATE)
 readonlylocked = getattr(IfcStateEnum, 'READONLYLOCKED', INDETERMINATE)
+readwrite = getattr(IfcStateEnum, 'READWRITE', INDETERMINATE)
+readwritelocked = getattr(IfcStateEnum, 'READWRITELOCKED', INDETERMINATE)
 IfcStructuralCurveActivityTypeEnum = enum_namespace()
 const = getattr(IfcStructuralCurveActivityTypeEnum, 'CONST', INDETERMINATE)
-linear = getattr(IfcStructuralCurveActivityTypeEnum, 'LINEAR', INDETERMINATE)
-polygonal = getattr(IfcStructuralCurveActivityTypeEnum, 'POLYGONAL', INDETERMINATE)
-equidistant = getattr(IfcStructuralCurveActivityTypeEnum, 'EQUIDISTANT', INDETERMINATE)
-sinus = getattr(IfcStructuralCurveActivityTypeEnum, 'SINUS', INDETERMINATE)
-parabola = getattr(IfcStructuralCurveActivityTypeEnum, 'PARABOLA', INDETERMINATE)
 discrete = getattr(IfcStructuralCurveActivityTypeEnum, 'DISCRETE', INDETERMINATE)
+equidistant = getattr(IfcStructuralCurveActivityTypeEnum, 'EQUIDISTANT', INDETERMINATE)
+linear = getattr(IfcStructuralCurveActivityTypeEnum, 'LINEAR', INDETERMINATE)
+parabola = getattr(IfcStructuralCurveActivityTypeEnum, 'PARABOLA', INDETERMINATE)
+polygonal = getattr(IfcStructuralCurveActivityTypeEnum, 'POLYGONAL', INDETERMINATE)
+sinus = getattr(IfcStructuralCurveActivityTypeEnum, 'SINUS', INDETERMINATE)
 userdefined = getattr(IfcStructuralCurveActivityTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcStructuralCurveActivityTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcStructuralCurveMemberTypeEnum = enum_namespace()
-rigid_joined_member = getattr(IfcStructuralCurveMemberTypeEnum, 'RIGID_JOINED_MEMBER', INDETERMINATE)
-pin_joined_member = getattr(IfcStructuralCurveMemberTypeEnum, 'PIN_JOINED_MEMBER', INDETERMINATE)
 cable = getattr(IfcStructuralCurveMemberTypeEnum, 'CABLE', INDETERMINATE)
-tension_member = getattr(IfcStructuralCurveMemberTypeEnum, 'TENSION_MEMBER', INDETERMINATE)
 compression_member = getattr(IfcStructuralCurveMemberTypeEnum, 'COMPRESSION_MEMBER', INDETERMINATE)
+pin_joined_member = getattr(IfcStructuralCurveMemberTypeEnum, 'PIN_JOINED_MEMBER', INDETERMINATE)
+rigid_joined_member = getattr(IfcStructuralCurveMemberTypeEnum, 'RIGID_JOINED_MEMBER', INDETERMINATE)
+tension_member = getattr(IfcStructuralCurveMemberTypeEnum, 'TENSION_MEMBER', INDETERMINATE)
 userdefined = getattr(IfcStructuralCurveMemberTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcStructuralCurveMemberTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcStructuralSurfaceActivityTypeEnum = enum_namespace()
-const = getattr(IfcStructuralSurfaceActivityTypeEnum, 'CONST', INDETERMINATE)
 bilinear = getattr(IfcStructuralSurfaceActivityTypeEnum, 'BILINEAR', INDETERMINATE)
+const = getattr(IfcStructuralSurfaceActivityTypeEnum, 'CONST', INDETERMINATE)
 discrete = getattr(IfcStructuralSurfaceActivityTypeEnum, 'DISCRETE', INDETERMINATE)
 isocontour = getattr(IfcStructuralSurfaceActivityTypeEnum, 'ISOCONTOUR', INDETERMINATE)
 userdefined = getattr(IfcStructuralSurfaceActivityTypeEnum, 'USERDEFINED', INDETERMINATE)
@@ -2168,41 +2147,41 @@ work = getattr(IfcSubContractResourceTypeEnum, 'WORK', INDETERMINATE)
 userdefined = getattr(IfcSubContractResourceTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcSubContractResourceTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcSurfaceFeatureTypeEnum = enum_namespace()
-mark = getattr(IfcSurfaceFeatureTypeEnum, 'MARK', INDETERMINATE)
-tag = getattr(IfcSurfaceFeatureTypeEnum, 'TAG', INDETERMINATE)
-treatment = getattr(IfcSurfaceFeatureTypeEnum, 'TREATMENT', INDETERMINATE)
 defect = getattr(IfcSurfaceFeatureTypeEnum, 'DEFECT', INDETERMINATE)
 hatchmarking = getattr(IfcSurfaceFeatureTypeEnum, 'HATCHMARKING', INDETERMINATE)
 linemarking = getattr(IfcSurfaceFeatureTypeEnum, 'LINEMARKING', INDETERMINATE)
-pavementsurfacemarking = getattr(IfcSurfaceFeatureTypeEnum, 'PAVEMENTSURFACEMARKING', INDETERMINATE)
-symbolmarking = getattr(IfcSurfaceFeatureTypeEnum, 'SYMBOLMARKING', INDETERMINATE)
+mark = getattr(IfcSurfaceFeatureTypeEnum, 'MARK', INDETERMINATE)
 nonskidsurfacing = getattr(IfcSurfaceFeatureTypeEnum, 'NONSKIDSURFACING', INDETERMINATE)
+pavementsurfacemarking = getattr(IfcSurfaceFeatureTypeEnum, 'PAVEMENTSURFACEMARKING', INDETERMINATE)
 rumblestrip = getattr(IfcSurfaceFeatureTypeEnum, 'RUMBLESTRIP', INDETERMINATE)
+symbolmarking = getattr(IfcSurfaceFeatureTypeEnum, 'SYMBOLMARKING', INDETERMINATE)
+tag = getattr(IfcSurfaceFeatureTypeEnum, 'TAG', INDETERMINATE)
 transverserumblestrip = getattr(IfcSurfaceFeatureTypeEnum, 'TRANSVERSERUMBLESTRIP', INDETERMINATE)
+treatment = getattr(IfcSurfaceFeatureTypeEnum, 'TREATMENT', INDETERMINATE)
 userdefined = getattr(IfcSurfaceFeatureTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcSurfaceFeatureTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcSurfaceSide = enum_namespace()
-positive = getattr(IfcSurfaceSide, 'POSITIVE', INDETERMINATE)
-negative = getattr(IfcSurfaceSide, 'NEGATIVE', INDETERMINATE)
 both = getattr(IfcSurfaceSide, 'BOTH', INDETERMINATE)
+negative = getattr(IfcSurfaceSide, 'NEGATIVE', INDETERMINATE)
+positive = getattr(IfcSurfaceSide, 'POSITIVE', INDETERMINATE)
 IfcSwitchingDeviceTypeEnum = enum_namespace()
 contactor = getattr(IfcSwitchingDeviceTypeEnum, 'CONTACTOR', INDETERMINATE)
 dimmerswitch = getattr(IfcSwitchingDeviceTypeEnum, 'DIMMERSWITCH', INDETERMINATE)
 emergencystop = getattr(IfcSwitchingDeviceTypeEnum, 'EMERGENCYSTOP', INDETERMINATE)
 keypad = getattr(IfcSwitchingDeviceTypeEnum, 'KEYPAD', INDETERMINATE)
 momentaryswitch = getattr(IfcSwitchingDeviceTypeEnum, 'MOMENTARYSWITCH', INDETERMINATE)
+relay = getattr(IfcSwitchingDeviceTypeEnum, 'RELAY', INDETERMINATE)
 selectorswitch = getattr(IfcSwitchingDeviceTypeEnum, 'SELECTORSWITCH', INDETERMINATE)
 starter = getattr(IfcSwitchingDeviceTypeEnum, 'STARTER', INDETERMINATE)
+start_and_stop_equipment = getattr(IfcSwitchingDeviceTypeEnum, 'START_AND_STOP_EQUIPMENT', INDETERMINATE)
 switchdisconnector = getattr(IfcSwitchingDeviceTypeEnum, 'SWITCHDISCONNECTOR', INDETERMINATE)
 toggleswitch = getattr(IfcSwitchingDeviceTypeEnum, 'TOGGLESWITCH', INDETERMINATE)
-relay = getattr(IfcSwitchingDeviceTypeEnum, 'RELAY', INDETERMINATE)
-start_and_stop_equipment = getattr(IfcSwitchingDeviceTypeEnum, 'START_AND_STOP_EQUIPMENT', INDETERMINATE)
 userdefined = getattr(IfcSwitchingDeviceTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcSwitchingDeviceTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcSystemFurnitureElementTypeEnum = enum_namespace()
 panel = getattr(IfcSystemFurnitureElementTypeEnum, 'PANEL', INDETERMINATE)
-worksurface = getattr(IfcSystemFurnitureElementTypeEnum, 'WORKSURFACE', INDETERMINATE)
 subrack = getattr(IfcSystemFurnitureElementTypeEnum, 'SUBRACK', INDETERMINATE)
+worksurface = getattr(IfcSystemFurnitureElementTypeEnum, 'WORKSURFACE', INDETERMINATE)
 userdefined = getattr(IfcSystemFurnitureElementTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcSystemFurnitureElementTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcTankTypeEnum = enum_namespace()
@@ -2210,10 +2189,10 @@ basin = getattr(IfcTankTypeEnum, 'BASIN', INDETERMINATE)
 breakpressure = getattr(IfcTankTypeEnum, 'BREAKPRESSURE', INDETERMINATE)
 expansion = getattr(IfcTankTypeEnum, 'EXPANSION', INDETERMINATE)
 feedandexpansion = getattr(IfcTankTypeEnum, 'FEEDANDEXPANSION', INDETERMINATE)
+oilretentiontray = getattr(IfcTankTypeEnum, 'OILRETENTIONTRAY', INDETERMINATE)
 pressurevessel = getattr(IfcTankTypeEnum, 'PRESSUREVESSEL', INDETERMINATE)
 storage = getattr(IfcTankTypeEnum, 'STORAGE', INDETERMINATE)
 vessel = getattr(IfcTankTypeEnum, 'VESSEL', INDETERMINATE)
-oilretentiontray = getattr(IfcTankTypeEnum, 'OILRETENTIONTRAY', INDETERMINATE)
 userdefined = getattr(IfcTankTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcTankTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcTaskDurationEnum = enum_namespace()
@@ -2221,11 +2200,15 @@ elapsedtime = getattr(IfcTaskDurationEnum, 'ELAPSEDTIME', INDETERMINATE)
 worktime = getattr(IfcTaskDurationEnum, 'WORKTIME', INDETERMINATE)
 notdefined = getattr(IfcTaskDurationEnum, 'NOTDEFINED', INDETERMINATE)
 IfcTaskTypeEnum = enum_namespace()
+adjustment = getattr(IfcTaskTypeEnum, 'ADJUSTMENT', INDETERMINATE)
 attendance = getattr(IfcTaskTypeEnum, 'ATTENDANCE', INDETERMINATE)
+calibration = getattr(IfcTaskTypeEnum, 'CALIBRATION', INDETERMINATE)
 construction = getattr(IfcTaskTypeEnum, 'CONSTRUCTION', INDETERMINATE)
 demolition = getattr(IfcTaskTypeEnum, 'DEMOLITION', INDETERMINATE)
 dismantle = getattr(IfcTaskTypeEnum, 'DISMANTLE', INDETERMINATE)
 disposal = getattr(IfcTaskTypeEnum, 'DISPOSAL', INDETERMINATE)
+emergency = getattr(IfcTaskTypeEnum, 'EMERGENCY', INDETERMINATE)
+inspection = getattr(IfcTaskTypeEnum, 'INSPECTION', INDETERMINATE)
 installation = getattr(IfcTaskTypeEnum, 'INSTALLATION', INDETERMINATE)
 logistic = getattr(IfcTaskTypeEnum, 'LOGISTIC', INDETERMINATE)
 maintenance = getattr(IfcTaskTypeEnum, 'MAINTENANCE', INDETERMINATE)
@@ -2233,6 +2216,11 @@ move = getattr(IfcTaskTypeEnum, 'MOVE', INDETERMINATE)
 operation = getattr(IfcTaskTypeEnum, 'OPERATION', INDETERMINATE)
 removal = getattr(IfcTaskTypeEnum, 'REMOVAL', INDETERMINATE)
 renovation = getattr(IfcTaskTypeEnum, 'RENOVATION', INDETERMINATE)
+safety = getattr(IfcTaskTypeEnum, 'SAFETY', INDETERMINATE)
+shutdown = getattr(IfcTaskTypeEnum, 'SHUTDOWN', INDETERMINATE)
+startup = getattr(IfcTaskTypeEnum, 'STARTUP', INDETERMINATE)
+testing = getattr(IfcTaskTypeEnum, 'TESTING', INDETERMINATE)
+troubleshooting = getattr(IfcTaskTypeEnum, 'TROUBLESHOOTING', INDETERMINATE)
 userdefined = getattr(IfcTaskTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcTaskTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcTendonAnchorTypeEnum = enum_namespace()
@@ -2242,11 +2230,11 @@ tensioning_end = getattr(IfcTendonAnchorTypeEnum, 'TENSIONING_END', INDETERMINAT
 userdefined = getattr(IfcTendonAnchorTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcTendonAnchorTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcTendonConduitTypeEnum = enum_namespace()
-duct = getattr(IfcTendonConduitTypeEnum, 'DUCT', INDETERMINATE)
 coupler = getattr(IfcTendonConduitTypeEnum, 'COUPLER', INDETERMINATE)
+diabolo = getattr(IfcTendonConduitTypeEnum, 'DIABOLO', INDETERMINATE)
+duct = getattr(IfcTendonConduitTypeEnum, 'DUCT', INDETERMINATE)
 grouting_duct = getattr(IfcTendonConduitTypeEnum, 'GROUTING_DUCT', INDETERMINATE)
 trumpet = getattr(IfcTendonConduitTypeEnum, 'TRUMPET', INDETERMINATE)
-diabolo = getattr(IfcTendonConduitTypeEnum, 'DIABOLO', INDETERMINATE)
 userdefined = getattr(IfcTendonConduitTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcTendonConduitTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcTendonTypeEnum = enum_namespace()
@@ -2257,10 +2245,10 @@ wire = getattr(IfcTendonTypeEnum, 'WIRE', INDETERMINATE)
 userdefined = getattr(IfcTendonTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcTendonTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcTextPath = enum_namespace()
+down = getattr(IfcTextPath, 'DOWN', INDETERMINATE)
 left = getattr(IfcTextPath, 'LEFT', INDETERMINATE)
 right = getattr(IfcTextPath, 'RIGHT', INDETERMINATE)
 up = getattr(IfcTextPath, 'UP', INDETERMINATE)
-down = getattr(IfcTextPath, 'DOWN', INDETERMINATE)
 IfcTimeSeriesDataTypeEnum = enum_namespace()
 continuous = getattr(IfcTimeSeriesDataTypeEnum, 'CONTINUOUS', INDETERMINATE)
 discrete = getattr(IfcTimeSeriesDataTypeEnum, 'DISCRETE', INDETERMINATE)
@@ -2270,50 +2258,40 @@ piecewiseconstant = getattr(IfcTimeSeriesDataTypeEnum, 'PIECEWISECONSTANT', INDE
 piecewisecontinuous = getattr(IfcTimeSeriesDataTypeEnum, 'PIECEWISECONTINUOUS', INDETERMINATE)
 notdefined = getattr(IfcTimeSeriesDataTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcTrackElementTypeEnum = enum_namespace()
-trackendofalignment = getattr(IfcTrackElementTypeEnum, 'TRACKENDOFALIGNMENT', INDETERMINATE)
 blockingdevice = getattr(IfcTrackElementTypeEnum, 'BLOCKINGDEVICE', INDETERMINATE)
-vehiclestop = getattr(IfcTrackElementTypeEnum, 'VEHICLESTOP', INDETERMINATE)
-sleeper = getattr(IfcTrackElementTypeEnum, 'SLEEPER', INDETERMINATE)
-half_set_of_blades = getattr(IfcTrackElementTypeEnum, 'HALF_SET_OF_BLADES', INDETERMINATE)
-speedregulator = getattr(IfcTrackElementTypeEnum, 'SPEEDREGULATOR', INDETERMINATE)
 derailer = getattr(IfcTrackElementTypeEnum, 'DERAILER', INDETERMINATE)
 frog = getattr(IfcTrackElementTypeEnum, 'FROG', INDETERMINATE)
+half_set_of_blades = getattr(IfcTrackElementTypeEnum, 'HALF_SET_OF_BLADES', INDETERMINATE)
+sleeper = getattr(IfcTrackElementTypeEnum, 'SLEEPER', INDETERMINATE)
+speedregulator = getattr(IfcTrackElementTypeEnum, 'SPEEDREGULATOR', INDETERMINATE)
+trackendofalignment = getattr(IfcTrackElementTypeEnum, 'TRACKENDOFALIGNMENT', INDETERMINATE)
+vehiclestop = getattr(IfcTrackElementTypeEnum, 'VEHICLESTOP', INDETERMINATE)
 userdefined = getattr(IfcTrackElementTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcTrackElementTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcTransformerTypeEnum = enum_namespace()
+chopper = getattr(IfcTransformerTypeEnum, 'CHOPPER', INDETERMINATE)
+combined = getattr(IfcTransformerTypeEnum, 'COMBINED', INDETERMINATE)
 current = getattr(IfcTransformerTypeEnum, 'CURRENT', INDETERMINATE)
 frequency = getattr(IfcTransformerTypeEnum, 'FREQUENCY', INDETERMINATE)
 inverter = getattr(IfcTransformerTypeEnum, 'INVERTER', INDETERMINATE)
 rectifier = getattr(IfcTransformerTypeEnum, 'RECTIFIER', INDETERMINATE)
 voltage = getattr(IfcTransformerTypeEnum, 'VOLTAGE', INDETERMINATE)
-chopper = getattr(IfcTransformerTypeEnum, 'CHOPPER', INDETERMINATE)
-combined = getattr(IfcTransformerTypeEnum, 'COMBINED', INDETERMINATE)
 userdefined = getattr(IfcTransformerTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcTransformerTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcTransitionCode = enum_namespace()
-discontinuous = getattr(IfcTransitionCode, 'DISCONTINUOUS', INDETERMINATE)
 continuous = getattr(IfcTransitionCode, 'CONTINUOUS', INDETERMINATE)
 contsamegradient = getattr(IfcTransitionCode, 'CONTSAMEGRADIENT', INDETERMINATE)
 contsamegradientsamecurvature = getattr(IfcTransitionCode, 'CONTSAMEGRADIENTSAMECURVATURE', INDETERMINATE)
-IfcTransportElementFixedTypeEnum = enum_namespace()
-elevator = getattr(IfcTransportElementFixedTypeEnum, 'ELEVATOR', INDETERMINATE)
-escalator = getattr(IfcTransportElementFixedTypeEnum, 'ESCALATOR', INDETERMINATE)
-movingwalkway = getattr(IfcTransportElementFixedTypeEnum, 'MOVINGWALKWAY', INDETERMINATE)
-craneway = getattr(IfcTransportElementFixedTypeEnum, 'CRANEWAY', INDETERMINATE)
-liftinggear = getattr(IfcTransportElementFixedTypeEnum, 'LIFTINGGEAR', INDETERMINATE)
-haulinggear = getattr(IfcTransportElementFixedTypeEnum, 'HAULINGGEAR', INDETERMINATE)
-userdefined = getattr(IfcTransportElementFixedTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcTransportElementFixedTypeEnum, 'NOTDEFINED', INDETERMINATE)
-IfcTransportElementNonFixedTypeEnum = enum_namespace()
-vehicle = getattr(IfcTransportElementNonFixedTypeEnum, 'VEHICLE', INDETERMINATE)
-vehicletracked = getattr(IfcTransportElementNonFixedTypeEnum, 'VEHICLETRACKED', INDETERMINATE)
-rollingstock = getattr(IfcTransportElementNonFixedTypeEnum, 'ROLLINGSTOCK', INDETERMINATE)
-vehiclewheeled = getattr(IfcTransportElementNonFixedTypeEnum, 'VEHICLEWHEELED', INDETERMINATE)
-vehicleair = getattr(IfcTransportElementNonFixedTypeEnum, 'VEHICLEAIR', INDETERMINATE)
-cargo = getattr(IfcTransportElementNonFixedTypeEnum, 'CARGO', INDETERMINATE)
-vehiclemarine = getattr(IfcTransportElementNonFixedTypeEnum, 'VEHICLEMARINE', INDETERMINATE)
-userdefined = getattr(IfcTransportElementNonFixedTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcTransportElementNonFixedTypeEnum, 'NOTDEFINED', INDETERMINATE)
+discontinuous = getattr(IfcTransitionCode, 'DISCONTINUOUS', INDETERMINATE)
+IfcTransportElementTypeEnum = enum_namespace()
+craneway = getattr(IfcTransportElementTypeEnum, 'CRANEWAY', INDETERMINATE)
+elevator = getattr(IfcTransportElementTypeEnum, 'ELEVATOR', INDETERMINATE)
+escalator = getattr(IfcTransportElementTypeEnum, 'ESCALATOR', INDETERMINATE)
+haulinggear = getattr(IfcTransportElementTypeEnum, 'HAULINGGEAR', INDETERMINATE)
+liftinggear = getattr(IfcTransportElementTypeEnum, 'LIFTINGGEAR', INDETERMINATE)
+movingwalkway = getattr(IfcTransportElementTypeEnum, 'MOVINGWALKWAY', INDETERMINATE)
+userdefined = getattr(IfcTransportElementTypeEnum, 'USERDEFINED', INDETERMINATE)
+notdefined = getattr(IfcTransportElementTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcTrimmingPreference = enum_namespace()
 cartesian = getattr(IfcTrimmingPreference, 'CARTESIAN', INDETERMINATE)
 parameter = getattr(IfcTrimmingPreference, 'PARAMETER', INDETERMINATE)
@@ -2355,23 +2333,23 @@ volumeunit = getattr(IfcUnitEnum, 'VOLUMEUNIT', INDETERMINATE)
 userdefined = getattr(IfcUnitEnum, 'USERDEFINED', INDETERMINATE)
 IfcUnitaryControlElementTypeEnum = enum_namespace()
 alarmpanel = getattr(IfcUnitaryControlElementTypeEnum, 'ALARMPANEL', INDETERMINATE)
+basestationcontroller = getattr(IfcUnitaryControlElementTypeEnum, 'BASESTATIONCONTROLLER', INDETERMINATE)
+combined = getattr(IfcUnitaryControlElementTypeEnum, 'COMBINED', INDETERMINATE)
 controlpanel = getattr(IfcUnitaryControlElementTypeEnum, 'CONTROLPANEL', INDETERMINATE)
 gasdetectionpanel = getattr(IfcUnitaryControlElementTypeEnum, 'GASDETECTIONPANEL', INDETERMINATE)
+humidistat = getattr(IfcUnitaryControlElementTypeEnum, 'HUMIDISTAT', INDETERMINATE)
 indicatorpanel = getattr(IfcUnitaryControlElementTypeEnum, 'INDICATORPANEL', INDETERMINATE)
 mimicpanel = getattr(IfcUnitaryControlElementTypeEnum, 'MIMICPANEL', INDETERMINATE)
-humidistat = getattr(IfcUnitaryControlElementTypeEnum, 'HUMIDISTAT', INDETERMINATE)
 thermostat = getattr(IfcUnitaryControlElementTypeEnum, 'THERMOSTAT', INDETERMINATE)
 weatherstation = getattr(IfcUnitaryControlElementTypeEnum, 'WEATHERSTATION', INDETERMINATE)
-combined = getattr(IfcUnitaryControlElementTypeEnum, 'COMBINED', INDETERMINATE)
-basestationcontroller = getattr(IfcUnitaryControlElementTypeEnum, 'BASESTATIONCONTROLLER', INDETERMINATE)
 userdefined = getattr(IfcUnitaryControlElementTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcUnitaryControlElementTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcUnitaryEquipmentTypeEnum = enum_namespace()
-airhandler = getattr(IfcUnitaryEquipmentTypeEnum, 'AIRHANDLER', INDETERMINATE)
 airconditioningunit = getattr(IfcUnitaryEquipmentTypeEnum, 'AIRCONDITIONINGUNIT', INDETERMINATE)
+airhandler = getattr(IfcUnitaryEquipmentTypeEnum, 'AIRHANDLER', INDETERMINATE)
 dehumidifier = getattr(IfcUnitaryEquipmentTypeEnum, 'DEHUMIDIFIER', INDETERMINATE)
-splitsystem = getattr(IfcUnitaryEquipmentTypeEnum, 'SPLITSYSTEM', INDETERMINATE)
 rooftopunit = getattr(IfcUnitaryEquipmentTypeEnum, 'ROOFTOPUNIT', INDETERMINATE)
+splitsystem = getattr(IfcUnitaryEquipmentTypeEnum, 'SPLITSYSTEM', INDETERMINATE)
 userdefined = getattr(IfcUnitaryEquipmentTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcUnitaryEquipmentTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcValveTypeEnum = enum_namespace()
@@ -2381,9 +2359,9 @@ changeover = getattr(IfcValveTypeEnum, 'CHANGEOVER', INDETERMINATE)
 check = getattr(IfcValveTypeEnum, 'CHECK', INDETERMINATE)
 commissioning = getattr(IfcValveTypeEnum, 'COMMISSIONING', INDETERMINATE)
 diverting = getattr(IfcValveTypeEnum, 'DIVERTING', INDETERMINATE)
-drawoffcock = getattr(IfcValveTypeEnum, 'DRAWOFFCOCK', INDETERMINATE)
 doublecheck = getattr(IfcValveTypeEnum, 'DOUBLECHECK', INDETERMINATE)
 doubleregulating = getattr(IfcValveTypeEnum, 'DOUBLEREGULATING', INDETERMINATE)
+drawoffcock = getattr(IfcValveTypeEnum, 'DRAWOFFCOCK', INDETERMINATE)
 faucet = getattr(IfcValveTypeEnum, 'FAUCET', INDETERMINATE)
 flushing = getattr(IfcValveTypeEnum, 'FLUSHING', INDETERMINATE)
 gascock = getattr(IfcValveTypeEnum, 'GASCOCK', INDETERMINATE)
@@ -2398,41 +2376,57 @@ steamtrap = getattr(IfcValveTypeEnum, 'STEAMTRAP', INDETERMINATE)
 stopcock = getattr(IfcValveTypeEnum, 'STOPCOCK', INDETERMINATE)
 userdefined = getattr(IfcValveTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcValveTypeEnum, 'NOTDEFINED', INDETERMINATE)
+IfcVehicleTypeEnum = enum_namespace()
+cargo = getattr(IfcVehicleTypeEnum, 'CARGO', INDETERMINATE)
+rollingstock = getattr(IfcVehicleTypeEnum, 'ROLLINGSTOCK', INDETERMINATE)
+vehicle = getattr(IfcVehicleTypeEnum, 'VEHICLE', INDETERMINATE)
+vehicleair = getattr(IfcVehicleTypeEnum, 'VEHICLEAIR', INDETERMINATE)
+vehiclemarine = getattr(IfcVehicleTypeEnum, 'VEHICLEMARINE', INDETERMINATE)
+vehicletracked = getattr(IfcVehicleTypeEnum, 'VEHICLETRACKED', INDETERMINATE)
+vehiclewheeled = getattr(IfcVehicleTypeEnum, 'VEHICLEWHEELED', INDETERMINATE)
+userdefined = getattr(IfcVehicleTypeEnum, 'USERDEFINED', INDETERMINATE)
+notdefined = getattr(IfcVehicleTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcVibrationDamperTypeEnum = enum_namespace()
-bending_yield = getattr(IfcVibrationDamperTypeEnum, 'BENDING_YIELD', INDETERMINATE)
-shear_yield = getattr(IfcVibrationDamperTypeEnum, 'SHEAR_YIELD', INDETERMINATE)
 axial_yield = getattr(IfcVibrationDamperTypeEnum, 'AXIAL_YIELD', INDETERMINATE)
+bending_yield = getattr(IfcVibrationDamperTypeEnum, 'BENDING_YIELD', INDETERMINATE)
 friction = getattr(IfcVibrationDamperTypeEnum, 'FRICTION', INDETERMINATE)
-viscous = getattr(IfcVibrationDamperTypeEnum, 'VISCOUS', INDETERMINATE)
 rubber = getattr(IfcVibrationDamperTypeEnum, 'RUBBER', INDETERMINATE)
+shear_yield = getattr(IfcVibrationDamperTypeEnum, 'SHEAR_YIELD', INDETERMINATE)
+viscous = getattr(IfcVibrationDamperTypeEnum, 'VISCOUS', INDETERMINATE)
 userdefined = getattr(IfcVibrationDamperTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcVibrationDamperTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcVibrationIsolatorTypeEnum = enum_namespace()
+base = getattr(IfcVibrationIsolatorTypeEnum, 'BASE', INDETERMINATE)
 compression = getattr(IfcVibrationIsolatorTypeEnum, 'COMPRESSION', INDETERMINATE)
 spring = getattr(IfcVibrationIsolatorTypeEnum, 'SPRING', INDETERMINATE)
-base = getattr(IfcVibrationIsolatorTypeEnum, 'BASE', INDETERMINATE)
 userdefined = getattr(IfcVibrationIsolatorTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcVibrationIsolatorTypeEnum, 'NOTDEFINED', INDETERMINATE)
+IfcVirtualElementTypeEnum = enum_namespace()
+boundary = getattr(IfcVirtualElementTypeEnum, 'BOUNDARY', INDETERMINATE)
+clearance = getattr(IfcVirtualElementTypeEnum, 'CLEARANCE', INDETERMINATE)
+provisionforvoid = getattr(IfcVirtualElementTypeEnum, 'PROVISIONFORVOID', INDETERMINATE)
+userdefined = getattr(IfcVirtualElementTypeEnum, 'USERDEFINED', INDETERMINATE)
+notdefined = getattr(IfcVirtualElementTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcVoidingFeatureTypeEnum = enum_namespace()
+chamfer = getattr(IfcVoidingFeatureTypeEnum, 'CHAMFER', INDETERMINATE)
 cutout = getattr(IfcVoidingFeatureTypeEnum, 'CUTOUT', INDETERMINATE)
-notch = getattr(IfcVoidingFeatureTypeEnum, 'NOTCH', INDETERMINATE)
+edge = getattr(IfcVoidingFeatureTypeEnum, 'EDGE', INDETERMINATE)
 hole = getattr(IfcVoidingFeatureTypeEnum, 'HOLE', INDETERMINATE)
 miter = getattr(IfcVoidingFeatureTypeEnum, 'MITER', INDETERMINATE)
-chamfer = getattr(IfcVoidingFeatureTypeEnum, 'CHAMFER', INDETERMINATE)
-edge = getattr(IfcVoidingFeatureTypeEnum, 'EDGE', INDETERMINATE)
+notch = getattr(IfcVoidingFeatureTypeEnum, 'NOTCH', INDETERMINATE)
 userdefined = getattr(IfcVoidingFeatureTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcVoidingFeatureTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcWallTypeEnum = enum_namespace()
+elementedwall = getattr(IfcWallTypeEnum, 'ELEMENTEDWALL', INDETERMINATE)
 movable = getattr(IfcWallTypeEnum, 'MOVABLE', INDETERMINATE)
 parapet = getattr(IfcWallTypeEnum, 'PARAPET', INDETERMINATE)
 partitioning = getattr(IfcWallTypeEnum, 'PARTITIONING', INDETERMINATE)
 plumbingwall = getattr(IfcWallTypeEnum, 'PLUMBINGWALL', INDETERMINATE)
+polygonal = getattr(IfcWallTypeEnum, 'POLYGONAL', INDETERMINATE)
+retainingwall = getattr(IfcWallTypeEnum, 'RETAININGWALL', INDETERMINATE)
 shear = getattr(IfcWallTypeEnum, 'SHEAR', INDETERMINATE)
 solidwall = getattr(IfcWallTypeEnum, 'SOLIDWALL', INDETERMINATE)
 standard = getattr(IfcWallTypeEnum, 'STANDARD', INDETERMINATE)
-polygonal = getattr(IfcWallTypeEnum, 'POLYGONAL', INDETERMINATE)
-elementedwall = getattr(IfcWallTypeEnum, 'ELEMENTEDWALL', INDETERMINATE)
-retainingwall = getattr(IfcWallTypeEnum, 'RETAININGWALL', INDETERMINATE)
 wavewall = getattr(IfcWallTypeEnum, 'WAVEWALL', INDETERMINATE)
 userdefined = getattr(IfcWallTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcWallTypeEnum, 'NOTDEFINED', INDETERMINATE)
@@ -2447,64 +2441,43 @@ wastetrap = getattr(IfcWasteTerminalTypeEnum, 'WASTETRAP', INDETERMINATE)
 userdefined = getattr(IfcWasteTerminalTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcWasteTerminalTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcWindowPanelOperationEnum = enum_namespace()
-sidehungrighthand = getattr(IfcWindowPanelOperationEnum, 'SIDEHUNGRIGHTHAND', INDETERMINATE)
-sidehunglefthand = getattr(IfcWindowPanelOperationEnum, 'SIDEHUNGLEFTHAND', INDETERMINATE)
-tiltandturnrighthand = getattr(IfcWindowPanelOperationEnum, 'TILTANDTURNRIGHTHAND', INDETERMINATE)
-tiltandturnlefthand = getattr(IfcWindowPanelOperationEnum, 'TILTANDTURNLEFTHAND', INDETERMINATE)
-tophung = getattr(IfcWindowPanelOperationEnum, 'TOPHUNG', INDETERMINATE)
 bottomhung = getattr(IfcWindowPanelOperationEnum, 'BOTTOMHUNG', INDETERMINATE)
-pivothorizontal = getattr(IfcWindowPanelOperationEnum, 'PIVOTHORIZONTAL', INDETERMINATE)
-pivotvertical = getattr(IfcWindowPanelOperationEnum, 'PIVOTVERTICAL', INDETERMINATE)
-slidinghorizontal = getattr(IfcWindowPanelOperationEnum, 'SLIDINGHORIZONTAL', INDETERMINATE)
-slidingvertical = getattr(IfcWindowPanelOperationEnum, 'SLIDINGVERTICAL', INDETERMINATE)
-removablecasement = getattr(IfcWindowPanelOperationEnum, 'REMOVABLECASEMENT', INDETERMINATE)
 fixedcasement = getattr(IfcWindowPanelOperationEnum, 'FIXEDCASEMENT', INDETERMINATE)
 otheroperation = getattr(IfcWindowPanelOperationEnum, 'OTHEROPERATION', INDETERMINATE)
+pivothorizontal = getattr(IfcWindowPanelOperationEnum, 'PIVOTHORIZONTAL', INDETERMINATE)
+pivotvertical = getattr(IfcWindowPanelOperationEnum, 'PIVOTVERTICAL', INDETERMINATE)
+removablecasement = getattr(IfcWindowPanelOperationEnum, 'REMOVABLECASEMENT', INDETERMINATE)
+sidehunglefthand = getattr(IfcWindowPanelOperationEnum, 'SIDEHUNGLEFTHAND', INDETERMINATE)
+sidehungrighthand = getattr(IfcWindowPanelOperationEnum, 'SIDEHUNGRIGHTHAND', INDETERMINATE)
+slidinghorizontal = getattr(IfcWindowPanelOperationEnum, 'SLIDINGHORIZONTAL', INDETERMINATE)
+slidingvertical = getattr(IfcWindowPanelOperationEnum, 'SLIDINGVERTICAL', INDETERMINATE)
+tiltandturnlefthand = getattr(IfcWindowPanelOperationEnum, 'TILTANDTURNLEFTHAND', INDETERMINATE)
+tiltandturnrighthand = getattr(IfcWindowPanelOperationEnum, 'TILTANDTURNRIGHTHAND', INDETERMINATE)
+tophung = getattr(IfcWindowPanelOperationEnum, 'TOPHUNG', INDETERMINATE)
 notdefined = getattr(IfcWindowPanelOperationEnum, 'NOTDEFINED', INDETERMINATE)
 IfcWindowPanelPositionEnum = enum_namespace()
+bottom = getattr(IfcWindowPanelPositionEnum, 'BOTTOM', INDETERMINATE)
 left = getattr(IfcWindowPanelPositionEnum, 'LEFT', INDETERMINATE)
 middle = getattr(IfcWindowPanelPositionEnum, 'MIDDLE', INDETERMINATE)
 right = getattr(IfcWindowPanelPositionEnum, 'RIGHT', INDETERMINATE)
-bottom = getattr(IfcWindowPanelPositionEnum, 'BOTTOM', INDETERMINATE)
 top = getattr(IfcWindowPanelPositionEnum, 'TOP', INDETERMINATE)
 notdefined = getattr(IfcWindowPanelPositionEnum, 'NOTDEFINED', INDETERMINATE)
-IfcWindowStyleConstructionEnum = enum_namespace()
-aluminium = getattr(IfcWindowStyleConstructionEnum, 'ALUMINIUM', INDETERMINATE)
-high_grade_steel = getattr(IfcWindowStyleConstructionEnum, 'HIGH_GRADE_STEEL', INDETERMINATE)
-steel = getattr(IfcWindowStyleConstructionEnum, 'STEEL', INDETERMINATE)
-wood = getattr(IfcWindowStyleConstructionEnum, 'WOOD', INDETERMINATE)
-aluminium_wood = getattr(IfcWindowStyleConstructionEnum, 'ALUMINIUM_WOOD', INDETERMINATE)
-plastic = getattr(IfcWindowStyleConstructionEnum, 'PLASTIC', INDETERMINATE)
-other_construction = getattr(IfcWindowStyleConstructionEnum, 'OTHER_CONSTRUCTION', INDETERMINATE)
-notdefined = getattr(IfcWindowStyleConstructionEnum, 'NOTDEFINED', INDETERMINATE)
-IfcWindowStyleOperationEnum = enum_namespace()
-single_panel = getattr(IfcWindowStyleOperationEnum, 'SINGLE_PANEL', INDETERMINATE)
-double_panel_vertical = getattr(IfcWindowStyleOperationEnum, 'DOUBLE_PANEL_VERTICAL', INDETERMINATE)
-double_panel_horizontal = getattr(IfcWindowStyleOperationEnum, 'DOUBLE_PANEL_HORIZONTAL', INDETERMINATE)
-triple_panel_vertical = getattr(IfcWindowStyleOperationEnum, 'TRIPLE_PANEL_VERTICAL', INDETERMINATE)
-triple_panel_bottom = getattr(IfcWindowStyleOperationEnum, 'TRIPLE_PANEL_BOTTOM', INDETERMINATE)
-triple_panel_top = getattr(IfcWindowStyleOperationEnum, 'TRIPLE_PANEL_TOP', INDETERMINATE)
-triple_panel_left = getattr(IfcWindowStyleOperationEnum, 'TRIPLE_PANEL_LEFT', INDETERMINATE)
-triple_panel_right = getattr(IfcWindowStyleOperationEnum, 'TRIPLE_PANEL_RIGHT', INDETERMINATE)
-triple_panel_horizontal = getattr(IfcWindowStyleOperationEnum, 'TRIPLE_PANEL_HORIZONTAL', INDETERMINATE)
-userdefined = getattr(IfcWindowStyleOperationEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcWindowStyleOperationEnum, 'NOTDEFINED', INDETERMINATE)
 IfcWindowTypeEnum = enum_namespace()
-window = getattr(IfcWindowTypeEnum, 'WINDOW', INDETERMINATE)
-skylight = getattr(IfcWindowTypeEnum, 'SKYLIGHT', INDETERMINATE)
 lightdome = getattr(IfcWindowTypeEnum, 'LIGHTDOME', INDETERMINATE)
+skylight = getattr(IfcWindowTypeEnum, 'SKYLIGHT', INDETERMINATE)
+window = getattr(IfcWindowTypeEnum, 'WINDOW', INDETERMINATE)
 userdefined = getattr(IfcWindowTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcWindowTypeEnum, 'NOTDEFINED', INDETERMINATE)
 IfcWindowTypePartitioningEnum = enum_namespace()
-single_panel = getattr(IfcWindowTypePartitioningEnum, 'SINGLE_PANEL', INDETERMINATE)
-double_panel_vertical = getattr(IfcWindowTypePartitioningEnum, 'DOUBLE_PANEL_VERTICAL', INDETERMINATE)
 double_panel_horizontal = getattr(IfcWindowTypePartitioningEnum, 'DOUBLE_PANEL_HORIZONTAL', INDETERMINATE)
-triple_panel_vertical = getattr(IfcWindowTypePartitioningEnum, 'TRIPLE_PANEL_VERTICAL', INDETERMINATE)
+double_panel_vertical = getattr(IfcWindowTypePartitioningEnum, 'DOUBLE_PANEL_VERTICAL', INDETERMINATE)
+single_panel = getattr(IfcWindowTypePartitioningEnum, 'SINGLE_PANEL', INDETERMINATE)
 triple_panel_bottom = getattr(IfcWindowTypePartitioningEnum, 'TRIPLE_PANEL_BOTTOM', INDETERMINATE)
-triple_panel_top = getattr(IfcWindowTypePartitioningEnum, 'TRIPLE_PANEL_TOP', INDETERMINATE)
+triple_panel_horizontal = getattr(IfcWindowTypePartitioningEnum, 'TRIPLE_PANEL_HORIZONTAL', INDETERMINATE)
 triple_panel_left = getattr(IfcWindowTypePartitioningEnum, 'TRIPLE_PANEL_LEFT', INDETERMINATE)
 triple_panel_right = getattr(IfcWindowTypePartitioningEnum, 'TRIPLE_PANEL_RIGHT', INDETERMINATE)
-triple_panel_horizontal = getattr(IfcWindowTypePartitioningEnum, 'TRIPLE_PANEL_HORIZONTAL', INDETERMINATE)
+triple_panel_top = getattr(IfcWindowTypePartitioningEnum, 'TRIPLE_PANEL_TOP', INDETERMINATE)
+triple_panel_vertical = getattr(IfcWindowTypePartitioningEnum, 'TRIPLE_PANEL_VERTICAL', INDETERMINATE)
 userdefined = getattr(IfcWindowTypePartitioningEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcWindowTypePartitioningEnum, 'NOTDEFINED', INDETERMINATE)
 IfcWorkCalendarTypeEnum = enum_namespace()
@@ -2527,2632 +2500,2632 @@ userdefined = getattr(IfcWorkScheduleTypeEnum, 'USERDEFINED', INDETERMINATE)
 notdefined = getattr(IfcWorkScheduleTypeEnum, 'NOTDEFINED', INDETERMINATE)
 
 def IfcActionRequest(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcActionRequest', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcActionRequest', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcActor(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcActor', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcActor', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcActorRole(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcActorRole', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcActorRole', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcActuator(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcActuator', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcActuator', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcActuatorType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcActuatorType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcActuatorType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcAddress(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcAddress', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAddress', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcAdvancedBrep(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcAdvancedBrep', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAdvancedBrep', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcAdvancedBrepWithVoids(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcAdvancedBrepWithVoids', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAdvancedBrepWithVoids', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcAdvancedFace(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcAdvancedFace', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAdvancedFace', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcAirTerminal(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcAirTerminal', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAirTerminal', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcAirTerminalBox(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcAirTerminalBox', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAirTerminalBox', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcAirTerminalBoxType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcAirTerminalBoxType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAirTerminalBoxType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcAirTerminalType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcAirTerminalType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAirTerminalType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcAirToAirHeatRecovery(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcAirToAirHeatRecovery', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAirToAirHeatRecovery', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcAirToAirHeatRecoveryType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcAirToAirHeatRecoveryType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAirToAirHeatRecoveryType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcAlarm(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcAlarm', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAlarm', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcAlarmType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcAlarmType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAlarmType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcAlignment(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcAlignment', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAlignment', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcAlignmentCant(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcAlignmentCant', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAlignmentCant', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcAlignmentCantSegment(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcAlignmentCantSegment', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAlignmentCantSegment', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcAlignmentHorizontal(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcAlignmentHorizontal', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAlignmentHorizontal', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcAlignmentHorizontalSegment(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcAlignmentHorizontalSegment', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAlignmentHorizontalSegment', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcAlignmentParameterSegment(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcAlignmentParameterSegment', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAlignmentParameterSegment', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcAlignmentSegment(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcAlignmentSegment', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAlignmentSegment', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcAlignmentVertical(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcAlignmentVertical', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAlignmentVertical', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcAlignmentVerticalSegment(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcAlignmentVerticalSegment', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAlignmentVerticalSegment', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcAnnotation(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcAnnotation', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAnnotation', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcAnnotationFillArea(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcAnnotationFillArea', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAnnotationFillArea', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcApplication(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcApplication', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcApplication', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcAppliedValue(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcAppliedValue', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAppliedValue', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcApproval(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcApproval', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcApproval', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcApprovalRelationship(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcApprovalRelationship', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcApprovalRelationship', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcArbitraryClosedProfileDef(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcArbitraryClosedProfileDef', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcArbitraryClosedProfileDef', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcArbitraryOpenProfileDef(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcArbitraryOpenProfileDef', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcArbitraryOpenProfileDef', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcArbitraryProfileDefWithVoids(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcArbitraryProfileDefWithVoids', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcArbitraryProfileDefWithVoids', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcAsset(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcAsset', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAsset', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcAsymmetricIShapeProfileDef(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcAsymmetricIShapeProfileDef', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAsymmetricIShapeProfileDef', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcAudioVisualAppliance(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcAudioVisualAppliance', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAudioVisualAppliance', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcAudioVisualApplianceType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcAudioVisualApplianceType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAudioVisualApplianceType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcAxis1Placement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcAxis1Placement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAxis1Placement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcAxis2Placement2D(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcAxis2Placement2D', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAxis2Placement2D', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcAxis2Placement3D(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcAxis2Placement3D', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAxis2Placement3D', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcAxis2PlacementLinear(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcAxis2PlacementLinear', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAxis2PlacementLinear', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBSplineCurve(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBSplineCurve', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBSplineCurve', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBSplineCurveWithKnots(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBSplineCurveWithKnots', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBSplineCurveWithKnots', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBSplineSurface(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBSplineSurface', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBSplineSurface', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBSplineSurfaceWithKnots(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBSplineSurfaceWithKnots', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBSplineSurfaceWithKnots', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBeam(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBeam', 'IFC4X3_RC4', *args, **kwargs)
-
-def IfcBeamStandardCase(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBeamStandardCase', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBeam', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBeamType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBeamType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBeamType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBearing(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBearing', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBearing', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBearingType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBearingType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBearingType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBlobTexture(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBlobTexture', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBlobTexture', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBlock(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBlock', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBlock', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBoiler(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBoiler', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBoiler', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBoilerType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBoilerType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBoilerType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBooleanClippingResult(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBooleanClippingResult', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBooleanClippingResult', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBooleanResult(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBooleanResult', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBooleanResult', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBorehole(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBorehole', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBorehole', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBoundaryCondition(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBoundaryCondition', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBoundaryCondition', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBoundaryCurve(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBoundaryCurve', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBoundaryCurve', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBoundaryEdgeCondition(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBoundaryEdgeCondition', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBoundaryEdgeCondition', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBoundaryFaceCondition(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBoundaryFaceCondition', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBoundaryFaceCondition', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBoundaryNodeCondition(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBoundaryNodeCondition', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBoundaryNodeCondition', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBoundaryNodeConditionWarping(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBoundaryNodeConditionWarping', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBoundaryNodeConditionWarping', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBoundedCurve(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBoundedCurve', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBoundedCurve', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBoundedSurface(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBoundedSurface', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBoundedSurface', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBoundingBox(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBoundingBox', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBoundingBox', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBoxedHalfSpace(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBoxedHalfSpace', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBoxedHalfSpace', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBridge(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBridge', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBridge', 'IFC4X3_ADD2', *args, **kwargs)
+
+def IfcBridgePart(*args, **kwargs):
+    return ifcopenshell.create_entity('IfcBridgePart', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBuilding(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBuilding', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBuilding', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBuildingElementPart(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBuildingElementPart', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBuildingElementPart', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBuildingElementPartType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBuildingElementPartType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBuildingElementPartType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBuildingElementProxy(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBuildingElementProxy', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBuildingElementProxy', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBuildingElementProxyType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBuildingElementProxyType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBuildingElementProxyType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBuildingStorey(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBuildingStorey', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBuildingStorey', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBuildingSystem(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBuildingSystem', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBuildingSystem', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBuiltElement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBuiltElement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBuiltElement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBuiltElementType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBuiltElementType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBuiltElementType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBuiltSystem(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBuiltSystem', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBuiltSystem', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBurner(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBurner', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBurner', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcBurnerType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcBurnerType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBurnerType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCShapeProfileDef(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCShapeProfileDef', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCShapeProfileDef', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCableCarrierFitting(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCableCarrierFitting', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCableCarrierFitting', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCableCarrierFittingType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCableCarrierFittingType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCableCarrierFittingType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCableCarrierSegment(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCableCarrierSegment', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCableCarrierSegment', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCableCarrierSegmentType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCableCarrierSegmentType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCableCarrierSegmentType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCableFitting(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCableFitting', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCableFitting', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCableFittingType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCableFittingType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCableFittingType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCableSegment(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCableSegment', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCableSegment', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCableSegmentType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCableSegmentType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCableSegmentType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCaissonFoundation(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCaissonFoundation', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCaissonFoundation', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCaissonFoundationType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCaissonFoundationType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCaissonFoundationType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCartesianPoint(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCartesianPoint', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCartesianPoint', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCartesianPointList(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCartesianPointList', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCartesianPointList', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCartesianPointList2D(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCartesianPointList2D', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCartesianPointList2D', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCartesianPointList3D(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCartesianPointList3D', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCartesianPointList3D', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCartesianTransformationOperator(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCartesianTransformationOperator', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCartesianTransformationOperator', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCartesianTransformationOperator2D(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCartesianTransformationOperator2D', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCartesianTransformationOperator2D', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCartesianTransformationOperator2DnonUniform(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCartesianTransformationOperator2DnonUniform', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCartesianTransformationOperator2DnonUniform', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCartesianTransformationOperator3D(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCartesianTransformationOperator3D', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCartesianTransformationOperator3D', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCartesianTransformationOperator3DnonUniform(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCartesianTransformationOperator3DnonUniform', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCartesianTransformationOperator3DnonUniform', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCenterLineProfileDef(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCenterLineProfileDef', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCenterLineProfileDef', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcChiller(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcChiller', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcChiller', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcChillerType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcChillerType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcChillerType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcChimney(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcChimney', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcChimney', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcChimneyType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcChimneyType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcChimneyType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCircle(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCircle', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCircle', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCircleHollowProfileDef(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCircleHollowProfileDef', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCircleHollowProfileDef', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCircleProfileDef(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCircleProfileDef', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCircleProfileDef', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCivilElement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCivilElement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCivilElement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCivilElementType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCivilElementType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCivilElementType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcClassification(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcClassification', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcClassification', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcClassificationReference(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcClassificationReference', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcClassificationReference', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcClosedShell(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcClosedShell', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcClosedShell', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcClothoid(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcClothoid', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcClothoid', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCoil(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCoil', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCoil', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCoilType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCoilType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCoilType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcColourRgb(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcColourRgb', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcColourRgb', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcColourRgbList(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcColourRgbList', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcColourRgbList', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcColourSpecification(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcColourSpecification', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcColourSpecification', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcColumn(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcColumn', 'IFC4X3_RC4', *args, **kwargs)
-
-def IfcColumnStandardCase(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcColumnStandardCase', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcColumn', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcColumnType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcColumnType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcColumnType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCommunicationsAppliance(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCommunicationsAppliance', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCommunicationsAppliance', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCommunicationsApplianceType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCommunicationsApplianceType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCommunicationsApplianceType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcComplexProperty(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcComplexProperty', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcComplexProperty', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcComplexPropertyTemplate(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcComplexPropertyTemplate', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcComplexPropertyTemplate', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCompositeCurve(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCompositeCurve', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCompositeCurve', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCompositeCurveOnSurface(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCompositeCurveOnSurface', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCompositeCurveOnSurface', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCompositeCurveSegment(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCompositeCurveSegment', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCompositeCurveSegment', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCompositeProfileDef(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCompositeProfileDef', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCompositeProfileDef', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCompressor(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCompressor', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCompressor', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCompressorType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCompressorType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCompressorType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCondenser(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCondenser', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCondenser', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCondenserType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCondenserType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCondenserType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcConic(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcConic', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConic', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcConnectedFaceSet(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcConnectedFaceSet', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConnectedFaceSet', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcConnectionCurveGeometry(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcConnectionCurveGeometry', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConnectionCurveGeometry', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcConnectionGeometry(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcConnectionGeometry', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConnectionGeometry', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcConnectionPointEccentricity(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcConnectionPointEccentricity', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConnectionPointEccentricity', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcConnectionPointGeometry(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcConnectionPointGeometry', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConnectionPointGeometry', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcConnectionSurfaceGeometry(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcConnectionSurfaceGeometry', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConnectionSurfaceGeometry', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcConnectionVolumeGeometry(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcConnectionVolumeGeometry', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConnectionVolumeGeometry', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcConstraint(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcConstraint', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConstraint', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcConstructionEquipmentResource(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcConstructionEquipmentResource', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConstructionEquipmentResource', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcConstructionEquipmentResourceType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcConstructionEquipmentResourceType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConstructionEquipmentResourceType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcConstructionMaterialResource(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcConstructionMaterialResource', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConstructionMaterialResource', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcConstructionMaterialResourceType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcConstructionMaterialResourceType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConstructionMaterialResourceType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcConstructionProductResource(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcConstructionProductResource', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConstructionProductResource', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcConstructionProductResourceType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcConstructionProductResourceType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConstructionProductResourceType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcConstructionResource(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcConstructionResource', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConstructionResource', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcConstructionResourceType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcConstructionResourceType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConstructionResourceType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcContext(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcContext', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcContext', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcContextDependentUnit(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcContextDependentUnit', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcContextDependentUnit', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcControl(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcControl', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcControl', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcController(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcController', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcController', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcControllerType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcControllerType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcControllerType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcConversionBasedUnit(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcConversionBasedUnit', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConversionBasedUnit', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcConversionBasedUnitWithOffset(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcConversionBasedUnitWithOffset', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConversionBasedUnitWithOffset', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcConveyorSegment(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcConveyorSegment', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConveyorSegment', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcConveyorSegmentType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcConveyorSegmentType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConveyorSegmentType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCooledBeam(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCooledBeam', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCooledBeam', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCooledBeamType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCooledBeamType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCooledBeamType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCoolingTower(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCoolingTower', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCoolingTower', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCoolingTowerType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCoolingTowerType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCoolingTowerType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCoordinateOperation(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCoordinateOperation', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCoordinateOperation', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCoordinateReferenceSystem(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCoordinateReferenceSystem', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCoordinateReferenceSystem', 'IFC4X3_ADD2', *args, **kwargs)
 
-def IfcCosine(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCosine', 'IFC4X3_RC4', *args, **kwargs)
+def IfcCosineSpiral(*args, **kwargs):
+    return ifcopenshell.create_entity('IfcCosineSpiral', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCostItem(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCostItem', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCostItem', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCostSchedule(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCostSchedule', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCostSchedule', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCostValue(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCostValue', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCostValue', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCourse(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCourse', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCourse', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCourseType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCourseType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCourseType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCovering(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCovering', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCovering', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCoveringType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCoveringType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCoveringType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCrewResource(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCrewResource', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCrewResource', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCrewResourceType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCrewResourceType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCrewResourceType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCsgPrimitive3D(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCsgPrimitive3D', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCsgPrimitive3D', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCsgSolid(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCsgSolid', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCsgSolid', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCurrencyRelationship(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCurrencyRelationship', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCurrencyRelationship', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCurtainWall(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCurtainWall', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCurtainWall', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCurtainWallType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCurtainWallType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCurtainWallType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCurve(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCurve', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCurve', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCurveBoundedPlane(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCurveBoundedPlane', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCurveBoundedPlane', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCurveBoundedSurface(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCurveBoundedSurface', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCurveBoundedSurface', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCurveSegment(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCurveSegment', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCurveSegment', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCurveStyle(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCurveStyle', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCurveStyle', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCurveStyleFont(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCurveStyleFont', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCurveStyleFont', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCurveStyleFontAndScaling(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCurveStyleFontAndScaling', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCurveStyleFontAndScaling', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCurveStyleFontPattern(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCurveStyleFontPattern', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCurveStyleFontPattern', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcCylindricalSurface(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcCylindricalSurface', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCylindricalSurface', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDamper(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDamper', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDamper', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDamperType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDamperType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDamperType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDeepFoundation(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDeepFoundation', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDeepFoundation', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDeepFoundationType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDeepFoundationType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDeepFoundationType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDerivedProfileDef(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDerivedProfileDef', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDerivedProfileDef', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDerivedUnit(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDerivedUnit', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDerivedUnit', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDerivedUnitElement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDerivedUnitElement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDerivedUnitElement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDimensionalExponents(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDimensionalExponents', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDimensionalExponents', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDirection(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDirection', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDirection', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDirectrixCurveSweptAreaSolid(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDirectrixCurveSweptAreaSolid', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDirectrixCurveSweptAreaSolid', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDirectrixDerivedReferenceSweptAreaSolid(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDirectrixDerivedReferenceSweptAreaSolid', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDirectrixDerivedReferenceSweptAreaSolid', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDiscreteAccessory(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDiscreteAccessory', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDiscreteAccessory', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDiscreteAccessoryType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDiscreteAccessoryType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDiscreteAccessoryType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDistributionBoard(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDistributionBoard', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDistributionBoard', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDistributionBoardType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDistributionBoardType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDistributionBoardType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDistributionChamberElement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDistributionChamberElement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDistributionChamberElement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDistributionChamberElementType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDistributionChamberElementType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDistributionChamberElementType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDistributionCircuit(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDistributionCircuit', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDistributionCircuit', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDistributionControlElement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDistributionControlElement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDistributionControlElement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDistributionControlElementType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDistributionControlElementType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDistributionControlElementType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDistributionElement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDistributionElement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDistributionElement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDistributionElementType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDistributionElementType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDistributionElementType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDistributionFlowElement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDistributionFlowElement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDistributionFlowElement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDistributionFlowElementType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDistributionFlowElementType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDistributionFlowElementType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDistributionPort(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDistributionPort', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDistributionPort', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDistributionSystem(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDistributionSystem', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDistributionSystem', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDocumentInformation(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDocumentInformation', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDocumentInformation', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDocumentInformationRelationship(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDocumentInformationRelationship', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDocumentInformationRelationship', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDocumentReference(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDocumentReference', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDocumentReference', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDoor(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDoor', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDoor', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDoorLiningProperties(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDoorLiningProperties', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDoorLiningProperties', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDoorPanelProperties(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDoorPanelProperties', 'IFC4X3_RC4', *args, **kwargs)
-
-def IfcDoorStandardCase(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDoorStandardCase', 'IFC4X3_RC4', *args, **kwargs)
-
-def IfcDoorStyle(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDoorStyle', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDoorPanelProperties', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDoorType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDoorType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDoorType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDraughtingPreDefinedColour(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDraughtingPreDefinedColour', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDraughtingPreDefinedColour', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDraughtingPreDefinedCurveFont(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDraughtingPreDefinedCurveFont', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDraughtingPreDefinedCurveFont', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDuctFitting(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDuctFitting', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDuctFitting', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDuctFittingType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDuctFittingType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDuctFittingType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDuctSegment(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDuctSegment', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDuctSegment', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDuctSegmentType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDuctSegmentType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDuctSegmentType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDuctSilencer(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDuctSilencer', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDuctSilencer', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcDuctSilencerType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcDuctSilencerType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDuctSilencerType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcEarthworksCut(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcEarthworksCut', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEarthworksCut', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcEarthworksElement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcEarthworksElement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEarthworksElement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcEarthworksFill(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcEarthworksFill', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEarthworksFill', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcEdge(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcEdge', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEdge', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcEdgeCurve(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcEdgeCurve', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEdgeCurve', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcEdgeLoop(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcEdgeLoop', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEdgeLoop', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcElectricAppliance(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcElectricAppliance', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElectricAppliance', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcElectricApplianceType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcElectricApplianceType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElectricApplianceType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcElectricDistributionBoard(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcElectricDistributionBoard', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElectricDistributionBoard', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcElectricDistributionBoardType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcElectricDistributionBoardType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElectricDistributionBoardType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcElectricFlowStorageDevice(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcElectricFlowStorageDevice', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElectricFlowStorageDevice', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcElectricFlowStorageDeviceType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcElectricFlowStorageDeviceType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElectricFlowStorageDeviceType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcElectricFlowTreatmentDevice(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcElectricFlowTreatmentDevice', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElectricFlowTreatmentDevice', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcElectricFlowTreatmentDeviceType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcElectricFlowTreatmentDeviceType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElectricFlowTreatmentDeviceType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcElectricGenerator(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcElectricGenerator', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElectricGenerator', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcElectricGeneratorType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcElectricGeneratorType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElectricGeneratorType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcElectricMotor(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcElectricMotor', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElectricMotor', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcElectricMotorType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcElectricMotorType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElectricMotorType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcElectricTimeControl(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcElectricTimeControl', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElectricTimeControl', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcElectricTimeControlType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcElectricTimeControlType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElectricTimeControlType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcElement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcElement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcElementAssembly(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcElementAssembly', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElementAssembly', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcElementAssemblyType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcElementAssemblyType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElementAssemblyType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcElementComponent(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcElementComponent', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElementComponent', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcElementComponentType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcElementComponentType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElementComponentType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcElementQuantity(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcElementQuantity', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElementQuantity', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcElementType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcElementType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElementType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcElementarySurface(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcElementarySurface', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElementarySurface', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcEllipse(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcEllipse', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEllipse', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcEllipseProfileDef(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcEllipseProfileDef', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEllipseProfileDef', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcEnergyConversionDevice(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcEnergyConversionDevice', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEnergyConversionDevice', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcEnergyConversionDeviceType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcEnergyConversionDeviceType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEnergyConversionDeviceType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcEngine(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcEngine', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEngine', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcEngineType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcEngineType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEngineType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcEvaporativeCooler(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcEvaporativeCooler', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEvaporativeCooler', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcEvaporativeCoolerType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcEvaporativeCoolerType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEvaporativeCoolerType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcEvaporator(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcEvaporator', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEvaporator', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcEvaporatorType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcEvaporatorType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEvaporatorType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcEvent(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcEvent', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEvent', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcEventTime(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcEventTime', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEventTime', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcEventType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcEventType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEventType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcExtendedProperties(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcExtendedProperties', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcExtendedProperties', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcExternalInformation(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcExternalInformation', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcExternalInformation', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcExternalReference(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcExternalReference', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcExternalReference', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcExternalReferenceRelationship(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcExternalReferenceRelationship', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcExternalReferenceRelationship', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcExternalSpatialElement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcExternalSpatialElement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcExternalSpatialElement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcExternalSpatialStructureElement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcExternalSpatialStructureElement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcExternalSpatialStructureElement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcExternallyDefinedHatchStyle(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcExternallyDefinedHatchStyle', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcExternallyDefinedHatchStyle', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcExternallyDefinedSurfaceStyle(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcExternallyDefinedSurfaceStyle', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcExternallyDefinedSurfaceStyle', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcExternallyDefinedTextFont(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcExternallyDefinedTextFont', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcExternallyDefinedTextFont', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcExtrudedAreaSolid(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcExtrudedAreaSolid', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcExtrudedAreaSolid', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcExtrudedAreaSolidTapered(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcExtrudedAreaSolidTapered', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcExtrudedAreaSolidTapered', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFace(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFace', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFace', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFaceBasedSurfaceModel(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFaceBasedSurfaceModel', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFaceBasedSurfaceModel', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFaceBound(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFaceBound', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFaceBound', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFaceOuterBound(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFaceOuterBound', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFaceOuterBound', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFaceSurface(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFaceSurface', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFaceSurface', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFacetedBrep(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFacetedBrep', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFacetedBrep', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFacetedBrepWithVoids(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFacetedBrepWithVoids', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFacetedBrepWithVoids', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFacility(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFacility', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFacility', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFacilityPart(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFacilityPart', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFacilityPart', 'IFC4X3_ADD2', *args, **kwargs)
+
+def IfcFacilityPartCommon(*args, **kwargs):
+    return ifcopenshell.create_entity('IfcFacilityPartCommon', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFailureConnectionCondition(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFailureConnectionCondition', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFailureConnectionCondition', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFan(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFan', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFan', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFanType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFanType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFanType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFastener(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFastener', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFastener', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFastenerType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFastenerType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFastenerType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFeatureElement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFeatureElement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFeatureElement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFeatureElementAddition(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFeatureElementAddition', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFeatureElementAddition', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFeatureElementSubtraction(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFeatureElementSubtraction', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFeatureElementSubtraction', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFillAreaStyle(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFillAreaStyle', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFillAreaStyle', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFillAreaStyleHatching(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFillAreaStyleHatching', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFillAreaStyleHatching', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFillAreaStyleTiles(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFillAreaStyleTiles', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFillAreaStyleTiles', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFilter(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFilter', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFilter', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFilterType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFilterType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFilterType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFireSuppressionTerminal(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFireSuppressionTerminal', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFireSuppressionTerminal', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFireSuppressionTerminalType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFireSuppressionTerminalType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFireSuppressionTerminalType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFixedReferenceSweptAreaSolid(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFixedReferenceSweptAreaSolid', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFixedReferenceSweptAreaSolid', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFlowController(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFlowController', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowController', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFlowControllerType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFlowControllerType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowControllerType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFlowFitting(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFlowFitting', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowFitting', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFlowFittingType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFlowFittingType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowFittingType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFlowInstrument(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFlowInstrument', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowInstrument', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFlowInstrumentType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFlowInstrumentType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowInstrumentType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFlowMeter(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFlowMeter', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowMeter', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFlowMeterType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFlowMeterType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowMeterType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFlowMovingDevice(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFlowMovingDevice', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowMovingDevice', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFlowMovingDeviceType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFlowMovingDeviceType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowMovingDeviceType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFlowSegment(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFlowSegment', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowSegment', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFlowSegmentType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFlowSegmentType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowSegmentType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFlowStorageDevice(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFlowStorageDevice', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowStorageDevice', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFlowStorageDeviceType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFlowStorageDeviceType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowStorageDeviceType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFlowTerminal(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFlowTerminal', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowTerminal', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFlowTerminalType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFlowTerminalType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowTerminalType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFlowTreatmentDevice(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFlowTreatmentDevice', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowTreatmentDevice', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFlowTreatmentDeviceType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFlowTreatmentDeviceType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowTreatmentDeviceType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFooting(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFooting', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFooting', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFootingType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFootingType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFootingType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFurnishingElement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFurnishingElement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFurnishingElement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFurnishingElementType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFurnishingElementType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFurnishingElementType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFurniture(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFurniture', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFurniture', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcFurnitureType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcFurnitureType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFurnitureType', 'IFC4X3_ADD2', *args, **kwargs)
+
+def IfcGeographicCRS(*args, **kwargs):
+    return ifcopenshell.create_entity('IfcGeographicCRS', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcGeographicElement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcGeographicElement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcGeographicElement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcGeographicElementType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcGeographicElementType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcGeographicElementType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcGeometricCurveSet(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcGeometricCurveSet', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcGeometricCurveSet', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcGeometricRepresentationContext(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcGeometricRepresentationContext', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcGeometricRepresentationContext', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcGeometricRepresentationItem(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcGeometricRepresentationItem', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcGeometricRepresentationItem', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcGeometricRepresentationSubContext(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcGeometricRepresentationSubContext', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcGeometricRepresentationSubContext', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcGeometricSet(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcGeometricSet', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcGeometricSet', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcGeomodel(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcGeomodel', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcGeomodel', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcGeoslice(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcGeoslice', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcGeoslice', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcGeotechnicalAssembly(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcGeotechnicalAssembly', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcGeotechnicalAssembly', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcGeotechnicalElement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcGeotechnicalElement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcGeotechnicalElement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcGeotechnicalStratum(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcGeotechnicalStratum', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcGeotechnicalStratum', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcGradientCurve(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcGradientCurve', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcGradientCurve', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcGrid(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcGrid', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcGrid', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcGridAxis(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcGridAxis', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcGridAxis', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcGridPlacement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcGridPlacement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcGridPlacement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcGroup(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcGroup', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcGroup', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcHalfSpaceSolid(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcHalfSpaceSolid', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcHalfSpaceSolid', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcHeatExchanger(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcHeatExchanger', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcHeatExchanger', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcHeatExchangerType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcHeatExchangerType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcHeatExchangerType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcHumidifier(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcHumidifier', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcHumidifier', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcHumidifierType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcHumidifierType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcHumidifierType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcIShapeProfileDef(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcIShapeProfileDef', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcIShapeProfileDef', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcImageTexture(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcImageTexture', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcImageTexture', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcImpactProtectionDevice(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcImpactProtectionDevice', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcImpactProtectionDevice', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcImpactProtectionDeviceType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcImpactProtectionDeviceType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcImpactProtectionDeviceType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcIndexedColourMap(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcIndexedColourMap', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcIndexedColourMap', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcIndexedPolyCurve(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcIndexedPolyCurve', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcIndexedPolyCurve', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcIndexedPolygonalFace(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcIndexedPolygonalFace', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcIndexedPolygonalFace', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcIndexedPolygonalFaceWithVoids(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcIndexedPolygonalFaceWithVoids', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcIndexedPolygonalFaceWithVoids', 'IFC4X3_ADD2', *args, **kwargs)
+
+def IfcIndexedPolygonalTextureMap(*args, **kwargs):
+    return ifcopenshell.create_entity('IfcIndexedPolygonalTextureMap', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcIndexedTextureMap(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcIndexedTextureMap', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcIndexedTextureMap', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcIndexedTriangleTextureMap(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcIndexedTriangleTextureMap', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcIndexedTriangleTextureMap', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcInterceptor(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcInterceptor', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcInterceptor', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcInterceptorType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcInterceptorType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcInterceptorType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcIntersectionCurve(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcIntersectionCurve', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcIntersectionCurve', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcInventory(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcInventory', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcInventory', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcIrregularTimeSeries(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcIrregularTimeSeries', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcIrregularTimeSeries', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcIrregularTimeSeriesValue(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcIrregularTimeSeriesValue', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcIrregularTimeSeriesValue', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcJunctionBox(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcJunctionBox', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcJunctionBox', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcJunctionBoxType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcJunctionBoxType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcJunctionBoxType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcKerb(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcKerb', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcKerb', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcKerbType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcKerbType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcKerbType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcLShapeProfileDef(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcLShapeProfileDef', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLShapeProfileDef', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcLaborResource(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcLaborResource', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLaborResource', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcLaborResourceType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcLaborResourceType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLaborResourceType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcLagTime(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcLagTime', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLagTime', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcLamp(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcLamp', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLamp', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcLampType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcLampType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLampType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcLibraryInformation(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcLibraryInformation', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLibraryInformation', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcLibraryReference(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcLibraryReference', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLibraryReference', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcLightDistributionData(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcLightDistributionData', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLightDistributionData', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcLightFixture(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcLightFixture', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLightFixture', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcLightFixtureType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcLightFixtureType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLightFixtureType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcLightIntensityDistribution(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcLightIntensityDistribution', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLightIntensityDistribution', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcLightSource(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcLightSource', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLightSource', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcLightSourceAmbient(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcLightSourceAmbient', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLightSourceAmbient', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcLightSourceDirectional(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcLightSourceDirectional', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLightSourceDirectional', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcLightSourceGoniometric(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcLightSourceGoniometric', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLightSourceGoniometric', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcLightSourcePositional(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcLightSourcePositional', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLightSourcePositional', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcLightSourceSpot(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcLightSourceSpot', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLightSourceSpot', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcLine(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcLine', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLine', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcLinearElement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcLinearElement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLinearElement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcLinearPlacement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcLinearPlacement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLinearPlacement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcLinearPositioningElement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcLinearPositioningElement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLinearPositioningElement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcLiquidTerminal(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcLiquidTerminal', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLiquidTerminal', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcLiquidTerminalType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcLiquidTerminalType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLiquidTerminalType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcLocalPlacement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcLocalPlacement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLocalPlacement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcLoop(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcLoop', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLoop', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcManifoldSolidBrep(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcManifoldSolidBrep', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcManifoldSolidBrep', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMapConversion(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMapConversion', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMapConversion', 'IFC4X3_ADD2', *args, **kwargs)
+
+def IfcMapConversionScaled(*args, **kwargs):
+    return ifcopenshell.create_entity('IfcMapConversionScaled', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMappedItem(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMappedItem', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMappedItem', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMarineFacility(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMarineFacility', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMarineFacility', 'IFC4X3_ADD2', *args, **kwargs)
+
+def IfcMarinePart(*args, **kwargs):
+    return ifcopenshell.create_entity('IfcMarinePart', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMaterial(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMaterial', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterial', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMaterialClassificationRelationship(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMaterialClassificationRelationship', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialClassificationRelationship', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMaterialConstituent(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMaterialConstituent', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialConstituent', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMaterialConstituentSet(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMaterialConstituentSet', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialConstituentSet', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMaterialDefinition(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMaterialDefinition', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialDefinition', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMaterialDefinitionRepresentation(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMaterialDefinitionRepresentation', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialDefinitionRepresentation', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMaterialLayer(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMaterialLayer', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialLayer', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMaterialLayerSet(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMaterialLayerSet', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialLayerSet', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMaterialLayerSetUsage(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMaterialLayerSetUsage', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialLayerSetUsage', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMaterialLayerWithOffsets(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMaterialLayerWithOffsets', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialLayerWithOffsets', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMaterialList(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMaterialList', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialList', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMaterialProfile(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMaterialProfile', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialProfile', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMaterialProfileSet(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMaterialProfileSet', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialProfileSet', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMaterialProfileSetUsage(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMaterialProfileSetUsage', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialProfileSetUsage', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMaterialProfileSetUsageTapering(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMaterialProfileSetUsageTapering', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialProfileSetUsageTapering', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMaterialProfileWithOffsets(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMaterialProfileWithOffsets', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialProfileWithOffsets', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMaterialProperties(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMaterialProperties', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialProperties', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMaterialRelationship(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMaterialRelationship', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialRelationship', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMaterialUsageDefinition(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMaterialUsageDefinition', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialUsageDefinition', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMeasureWithUnit(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMeasureWithUnit', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMeasureWithUnit', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMechanicalFastener(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMechanicalFastener', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMechanicalFastener', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMechanicalFastenerType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMechanicalFastenerType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMechanicalFastenerType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMedicalDevice(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMedicalDevice', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMedicalDevice', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMedicalDeviceType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMedicalDeviceType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMedicalDeviceType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMember(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMember', 'IFC4X3_RC4', *args, **kwargs)
-
-def IfcMemberStandardCase(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMemberStandardCase', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMember', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMemberType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMemberType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMemberType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMetric(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMetric', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMetric', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMirroredProfileDef(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMirroredProfileDef', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMirroredProfileDef', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMobileTelecommunicationsAppliance(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMobileTelecommunicationsAppliance', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMobileTelecommunicationsAppliance', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMobileTelecommunicationsApplianceType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMobileTelecommunicationsApplianceType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMobileTelecommunicationsApplianceType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMonetaryUnit(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMonetaryUnit', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMonetaryUnit', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMooringDevice(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMooringDevice', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMooringDevice', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMooringDeviceType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMooringDeviceType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMooringDeviceType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMotorConnection(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMotorConnection', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMotorConnection', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcMotorConnectionType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcMotorConnectionType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMotorConnectionType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcNamedUnit(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcNamedUnit', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcNamedUnit', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcNavigationElement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcNavigationElement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcNavigationElement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcNavigationElementType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcNavigationElementType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcNavigationElementType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcObject(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcObject', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcObject', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcObjectDefinition(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcObjectDefinition', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcObjectDefinition', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcObjectPlacement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcObjectPlacement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcObjectPlacement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcObjective(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcObjective', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcObjective', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcOccupant(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcOccupant', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcOccupant', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcOffsetCurve(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcOffsetCurve', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcOffsetCurve', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcOffsetCurve2D(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcOffsetCurve2D', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcOffsetCurve2D', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcOffsetCurve3D(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcOffsetCurve3D', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcOffsetCurve3D', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcOffsetCurveByDistances(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcOffsetCurveByDistances', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcOffsetCurveByDistances', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcOpenCrossProfileDef(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcOpenCrossProfileDef', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcOpenCrossProfileDef', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcOpenShell(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcOpenShell', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcOpenShell', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcOpeningElement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcOpeningElement', 'IFC4X3_RC4', *args, **kwargs)
-
-def IfcOpeningStandardCase(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcOpeningStandardCase', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcOpeningElement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcOrganization(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcOrganization', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcOrganization', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcOrganizationRelationship(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcOrganizationRelationship', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcOrganizationRelationship', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcOrientedEdge(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcOrientedEdge', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcOrientedEdge', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcOuterBoundaryCurve(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcOuterBoundaryCurve', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcOuterBoundaryCurve', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcOutlet(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcOutlet', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcOutlet', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcOutletType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcOutletType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcOutletType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcOwnerHistory(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcOwnerHistory', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcOwnerHistory', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcParameterizedProfileDef(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcParameterizedProfileDef', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcParameterizedProfileDef', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPath(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPath', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPath', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPavement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPavement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPavement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPavementType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPavementType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPavementType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPcurve(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPcurve', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPcurve', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPerformanceHistory(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPerformanceHistory', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPerformanceHistory', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPermeableCoveringProperties(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPermeableCoveringProperties', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPermeableCoveringProperties', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPermit(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPermit', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPermit', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPerson(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPerson', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPerson', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPersonAndOrganization(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPersonAndOrganization', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPersonAndOrganization', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPhysicalComplexQuantity(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPhysicalComplexQuantity', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPhysicalComplexQuantity', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPhysicalQuantity(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPhysicalQuantity', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPhysicalQuantity', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPhysicalSimpleQuantity(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPhysicalSimpleQuantity', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPhysicalSimpleQuantity', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPile(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPile', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPile', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPileType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPileType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPileType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPipeFitting(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPipeFitting', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPipeFitting', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPipeFittingType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPipeFittingType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPipeFittingType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPipeSegment(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPipeSegment', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPipeSegment', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPipeSegmentType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPipeSegmentType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPipeSegmentType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPixelTexture(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPixelTexture', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPixelTexture', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPlacement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPlacement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPlacement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPlanarBox(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPlanarBox', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPlanarBox', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPlanarExtent(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPlanarExtent', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPlanarExtent', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPlane(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPlane', 'IFC4X3_RC4', *args, **kwargs)
-
-def IfcPlant(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPlant', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPlane', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPlate(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPlate', 'IFC4X3_RC4', *args, **kwargs)
-
-def IfcPlateStandardCase(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPlateStandardCase', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPlate', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPlateType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPlateType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPlateType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPoint(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPoint', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPoint', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPointByDistanceExpression(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPointByDistanceExpression', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPointByDistanceExpression', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPointOnCurve(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPointOnCurve', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPointOnCurve', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPointOnSurface(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPointOnSurface', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPointOnSurface', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPolyLoop(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPolyLoop', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPolyLoop', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPolygonalBoundedHalfSpace(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPolygonalBoundedHalfSpace', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPolygonalBoundedHalfSpace', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPolygonalFaceSet(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPolygonalFaceSet', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPolygonalFaceSet', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPolyline(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPolyline', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPolyline', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPolynomialCurve(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPolynomialCurve', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPolynomialCurve', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPort(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPort', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPort', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPositioningElement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPositioningElement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPositioningElement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPostalAddress(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPostalAddress', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPostalAddress', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPreDefinedColour(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPreDefinedColour', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPreDefinedColour', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPreDefinedCurveFont(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPreDefinedCurveFont', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPreDefinedCurveFont', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPreDefinedItem(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPreDefinedItem', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPreDefinedItem', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPreDefinedProperties(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPreDefinedProperties', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPreDefinedProperties', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPreDefinedPropertySet(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPreDefinedPropertySet', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPreDefinedPropertySet', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPreDefinedTextFont(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPreDefinedTextFont', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPreDefinedTextFont', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPresentationItem(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPresentationItem', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPresentationItem', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPresentationLayerAssignment(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPresentationLayerAssignment', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPresentationLayerAssignment', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPresentationLayerWithStyle(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPresentationLayerWithStyle', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPresentationLayerWithStyle', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPresentationStyle(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPresentationStyle', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPresentationStyle', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcProcedure(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcProcedure', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProcedure', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcProcedureType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcProcedureType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProcedureType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcProcess(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcProcess', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProcess', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcProduct(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcProduct', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProduct', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcProductDefinitionShape(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcProductDefinitionShape', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProductDefinitionShape', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcProductRepresentation(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcProductRepresentation', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProductRepresentation', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcProfileDef(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcProfileDef', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProfileDef', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcProfileProperties(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcProfileProperties', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProfileProperties', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcProject(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcProject', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProject', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcProjectLibrary(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcProjectLibrary', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProjectLibrary', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcProjectOrder(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcProjectOrder', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProjectOrder', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcProjectedCRS(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcProjectedCRS', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProjectedCRS', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcProjectionElement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcProjectionElement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProjectionElement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcProperty(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcProperty', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProperty', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPropertyAbstraction(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPropertyAbstraction', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPropertyAbstraction', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPropertyBoundedValue(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPropertyBoundedValue', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPropertyBoundedValue', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPropertyDefinition(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPropertyDefinition', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPropertyDefinition', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPropertyDependencyRelationship(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPropertyDependencyRelationship', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPropertyDependencyRelationship', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPropertyEnumeratedValue(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPropertyEnumeratedValue', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPropertyEnumeratedValue', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPropertyEnumeration(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPropertyEnumeration', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPropertyEnumeration', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPropertyListValue(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPropertyListValue', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPropertyListValue', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPropertyReferenceValue(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPropertyReferenceValue', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPropertyReferenceValue', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPropertySet(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPropertySet', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPropertySet', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPropertySetDefinition(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPropertySetDefinition', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPropertySetDefinition', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPropertySetTemplate(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPropertySetTemplate', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPropertySetTemplate', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPropertySingleValue(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPropertySingleValue', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPropertySingleValue', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPropertyTableValue(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPropertyTableValue', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPropertyTableValue', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPropertyTemplate(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPropertyTemplate', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPropertyTemplate', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPropertyTemplateDefinition(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPropertyTemplateDefinition', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPropertyTemplateDefinition', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcProtectiveDevice(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcProtectiveDevice', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProtectiveDevice', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcProtectiveDeviceTrippingUnit(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcProtectiveDeviceTrippingUnit', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProtectiveDeviceTrippingUnit', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcProtectiveDeviceTrippingUnitType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcProtectiveDeviceTrippingUnitType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProtectiveDeviceTrippingUnitType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcProtectiveDeviceType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcProtectiveDeviceType', 'IFC4X3_RC4', *args, **kwargs)
-
-def IfcProxy(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcProxy', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProtectiveDeviceType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPump(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPump', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPump', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcPumpType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcPumpType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPumpType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcQuantityArea(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcQuantityArea', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcQuantityArea', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcQuantityCount(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcQuantityCount', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcQuantityCount', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcQuantityLength(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcQuantityLength', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcQuantityLength', 'IFC4X3_ADD2', *args, **kwargs)
+
+def IfcQuantityNumber(*args, **kwargs):
+    return ifcopenshell.create_entity('IfcQuantityNumber', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcQuantitySet(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcQuantitySet', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcQuantitySet', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcQuantityTime(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcQuantityTime', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcQuantityTime', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcQuantityVolume(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcQuantityVolume', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcQuantityVolume', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcQuantityWeight(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcQuantityWeight', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcQuantityWeight', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRail(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRail', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRail', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRailType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRailType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRailType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRailing(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRailing', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRailing', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRailingType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRailingType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRailingType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRailway(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRailway', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRailway', 'IFC4X3_ADD2', *args, **kwargs)
+
+def IfcRailwayPart(*args, **kwargs):
+    return ifcopenshell.create_entity('IfcRailwayPart', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRamp(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRamp', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRamp', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRampFlight(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRampFlight', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRampFlight', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRampFlightType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRampFlightType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRampFlightType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRampType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRampType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRampType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRationalBSplineCurveWithKnots(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRationalBSplineCurveWithKnots', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRationalBSplineCurveWithKnots', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRationalBSplineSurfaceWithKnots(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRationalBSplineSurfaceWithKnots', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRationalBSplineSurfaceWithKnots', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRectangleHollowProfileDef(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRectangleHollowProfileDef', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRectangleHollowProfileDef', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRectangleProfileDef(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRectangleProfileDef', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRectangleProfileDef', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRectangularPyramid(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRectangularPyramid', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRectangularPyramid', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRectangularTrimmedSurface(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRectangularTrimmedSurface', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRectangularTrimmedSurface', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRecurrencePattern(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRecurrencePattern', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRecurrencePattern', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcReference(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcReference', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcReference', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcReferent(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcReferent', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcReferent', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRegularTimeSeries(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRegularTimeSeries', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRegularTimeSeries', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcReinforcedSoil(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcReinforcedSoil', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcReinforcedSoil', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcReinforcementBarProperties(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcReinforcementBarProperties', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcReinforcementBarProperties', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcReinforcementDefinitionProperties(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcReinforcementDefinitionProperties', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcReinforcementDefinitionProperties', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcReinforcingBar(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcReinforcingBar', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcReinforcingBar', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcReinforcingBarType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcReinforcingBarType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcReinforcingBarType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcReinforcingElement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcReinforcingElement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcReinforcingElement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcReinforcingElementType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcReinforcingElementType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcReinforcingElementType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcReinforcingMesh(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcReinforcingMesh', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcReinforcingMesh', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcReinforcingMeshType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcReinforcingMeshType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcReinforcingMeshType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelAdheresToElement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelAdheresToElement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelAdheresToElement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelAggregates(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelAggregates', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelAggregates', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelAssigns(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelAssigns', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelAssigns', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelAssignsToActor(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelAssignsToActor', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelAssignsToActor', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelAssignsToControl(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelAssignsToControl', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelAssignsToControl', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelAssignsToGroup(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelAssignsToGroup', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelAssignsToGroup', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelAssignsToGroupByFactor(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelAssignsToGroupByFactor', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelAssignsToGroupByFactor', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelAssignsToProcess(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelAssignsToProcess', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelAssignsToProcess', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelAssignsToProduct(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelAssignsToProduct', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelAssignsToProduct', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelAssignsToResource(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelAssignsToResource', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelAssignsToResource', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelAssociates(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelAssociates', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelAssociates', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelAssociatesApproval(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelAssociatesApproval', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelAssociatesApproval', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelAssociatesClassification(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelAssociatesClassification', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelAssociatesClassification', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelAssociatesConstraint(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelAssociatesConstraint', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelAssociatesConstraint', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelAssociatesDocument(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelAssociatesDocument', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelAssociatesDocument', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelAssociatesLibrary(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelAssociatesLibrary', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelAssociatesLibrary', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelAssociatesMaterial(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelAssociatesMaterial', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelAssociatesMaterial', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelAssociatesProfileDef(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelAssociatesProfileDef', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelAssociatesProfileDef', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelConnects(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelConnects', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelConnects', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelConnectsElements(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelConnectsElements', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelConnectsElements', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelConnectsPathElements(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelConnectsPathElements', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelConnectsPathElements', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelConnectsPortToElement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelConnectsPortToElement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelConnectsPortToElement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelConnectsPorts(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelConnectsPorts', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelConnectsPorts', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelConnectsStructuralActivity(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelConnectsStructuralActivity', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelConnectsStructuralActivity', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelConnectsStructuralMember(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelConnectsStructuralMember', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelConnectsStructuralMember', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelConnectsWithEccentricity(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelConnectsWithEccentricity', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelConnectsWithEccentricity', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelConnectsWithRealizingElements(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelConnectsWithRealizingElements', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelConnectsWithRealizingElements', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelContainedInSpatialStructure(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelContainedInSpatialStructure', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelContainedInSpatialStructure', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelCoversBldgElements(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelCoversBldgElements', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelCoversBldgElements', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelCoversSpaces(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelCoversSpaces', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelCoversSpaces', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelDeclares(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelDeclares', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelDeclares', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelDecomposes(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelDecomposes', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelDecomposes', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelDefines(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelDefines', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelDefines', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelDefinesByObject(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelDefinesByObject', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelDefinesByObject', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelDefinesByProperties(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelDefinesByProperties', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelDefinesByProperties', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelDefinesByTemplate(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelDefinesByTemplate', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelDefinesByTemplate', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelDefinesByType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelDefinesByType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelDefinesByType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelFillsElement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelFillsElement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelFillsElement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelFlowControlElements(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelFlowControlElements', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelFlowControlElements', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelInterferesElements(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelInterferesElements', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelInterferesElements', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelNests(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelNests', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelNests', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelPositions(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelPositions', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelPositions', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelProjectsElement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelProjectsElement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelProjectsElement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelReferencedInSpatialStructure(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelReferencedInSpatialStructure', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelReferencedInSpatialStructure', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelSequence(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelSequence', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelSequence', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelServicesBuildings(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelServicesBuildings', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelServicesBuildings', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelSpaceBoundary(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelSpaceBoundary', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelSpaceBoundary', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelSpaceBoundary1stLevel(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelSpaceBoundary1stLevel', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelSpaceBoundary1stLevel', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelSpaceBoundary2ndLevel(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelSpaceBoundary2ndLevel', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelSpaceBoundary2ndLevel', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelVoidsElement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelVoidsElement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelVoidsElement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRelationship(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRelationship', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelationship', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcReparametrisedCompositeCurveSegment(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcReparametrisedCompositeCurveSegment', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcReparametrisedCompositeCurveSegment', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRepresentation(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRepresentation', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRepresentation', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRepresentationContext(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRepresentationContext', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRepresentationContext', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRepresentationItem(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRepresentationItem', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRepresentationItem', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRepresentationMap(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRepresentationMap', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRepresentationMap', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcResource(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcResource', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcResource', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcResourceApprovalRelationship(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcResourceApprovalRelationship', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcResourceApprovalRelationship', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcResourceConstraintRelationship(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcResourceConstraintRelationship', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcResourceConstraintRelationship', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcResourceLevelRelationship(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcResourceLevelRelationship', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcResourceLevelRelationship', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcResourceTime(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcResourceTime', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcResourceTime', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRevolvedAreaSolid(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRevolvedAreaSolid', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRevolvedAreaSolid', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRevolvedAreaSolidTapered(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRevolvedAreaSolidTapered', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRevolvedAreaSolidTapered', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRightCircularCone(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRightCircularCone', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRightCircularCone', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRightCircularCylinder(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRightCircularCylinder', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRightCircularCylinder', 'IFC4X3_ADD2', *args, **kwargs)
+
+def IfcRigidOperation(*args, **kwargs):
+    return ifcopenshell.create_entity('IfcRigidOperation', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRoad(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRoad', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRoad', 'IFC4X3_ADD2', *args, **kwargs)
+
+def IfcRoadPart(*args, **kwargs):
+    return ifcopenshell.create_entity('IfcRoadPart', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRoof(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRoof', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRoof', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRoofType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRoofType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRoofType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRoot(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRoot', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRoot', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcRoundedRectangleProfileDef(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcRoundedRectangleProfileDef', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRoundedRectangleProfileDef', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSIUnit(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSIUnit', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSIUnit', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSanitaryTerminal(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSanitaryTerminal', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSanitaryTerminal', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSanitaryTerminalType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSanitaryTerminalType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSanitaryTerminalType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSchedulingTime(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSchedulingTime', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSchedulingTime', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSeamCurve(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSeamCurve', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSeamCurve', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSecondOrderPolynomialSpiral(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSecondOrderPolynomialSpiral', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSecondOrderPolynomialSpiral', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSectionProperties(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSectionProperties', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSectionProperties', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSectionReinforcementProperties(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSectionReinforcementProperties', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSectionReinforcementProperties', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSectionedSolid(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSectionedSolid', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSectionedSolid', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSectionedSolidHorizontal(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSectionedSolidHorizontal', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSectionedSolidHorizontal', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSectionedSpine(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSectionedSpine', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSectionedSpine', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSectionedSurface(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSectionedSurface', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSectionedSurface', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSegment(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSegment', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSegment', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSegmentedReferenceCurve(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSegmentedReferenceCurve', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSegmentedReferenceCurve', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSensor(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSensor', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSensor', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSensorType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSensorType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSensorType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSeventhOrderPolynomialSpiral(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSeventhOrderPolynomialSpiral', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSeventhOrderPolynomialSpiral', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcShadingDevice(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcShadingDevice', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcShadingDevice', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcShadingDeviceType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcShadingDeviceType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcShadingDeviceType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcShapeAspect(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcShapeAspect', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcShapeAspect', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcShapeModel(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcShapeModel', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcShapeModel', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcShapeRepresentation(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcShapeRepresentation', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcShapeRepresentation', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcShellBasedSurfaceModel(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcShellBasedSurfaceModel', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcShellBasedSurfaceModel', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSign(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSign', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSign', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSignType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSignType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSignType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSignal(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSignal', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSignal', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSignalType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSignalType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSignalType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSimpleProperty(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSimpleProperty', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSimpleProperty', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSimplePropertyTemplate(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSimplePropertyTemplate', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSimplePropertyTemplate', 'IFC4X3_ADD2', *args, **kwargs)
 
-def IfcSine(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSine', 'IFC4X3_RC4', *args, **kwargs)
+def IfcSineSpiral(*args, **kwargs):
+    return ifcopenshell.create_entity('IfcSineSpiral', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSite(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSite', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSite', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSlab(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSlab', 'IFC4X3_RC4', *args, **kwargs)
-
-def IfcSlabElementedCase(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSlabElementedCase', 'IFC4X3_RC4', *args, **kwargs)
-
-def IfcSlabStandardCase(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSlabStandardCase', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSlab', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSlabType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSlabType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSlabType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSlippageConnectionCondition(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSlippageConnectionCondition', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSlippageConnectionCondition', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSolarDevice(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSolarDevice', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSolarDevice', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSolarDeviceType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSolarDeviceType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSolarDeviceType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSolidModel(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSolidModel', 'IFC4X3_RC4', *args, **kwargs)
-
-def IfcSolidStratum(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSolidStratum', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSolidModel', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSpace(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSpace', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSpace', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSpaceHeater(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSpaceHeater', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSpaceHeater', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSpaceHeaterType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSpaceHeaterType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSpaceHeaterType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSpaceType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSpaceType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSpaceType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSpatialElement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSpatialElement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSpatialElement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSpatialElementType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSpatialElementType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSpatialElementType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSpatialStructureElement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSpatialStructureElement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSpatialStructureElement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSpatialStructureElementType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSpatialStructureElementType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSpatialStructureElementType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSpatialZone(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSpatialZone', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSpatialZone', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSpatialZoneType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSpatialZoneType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSpatialZoneType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSphere(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSphere', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSphere', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSphericalSurface(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSphericalSurface', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSphericalSurface', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSpiral(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSpiral', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSpiral', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStackTerminal(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStackTerminal', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStackTerminal', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStackTerminalType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStackTerminalType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStackTerminalType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStair(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStair', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStair', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStairFlight(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStairFlight', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStairFlight', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStairFlightType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStairFlightType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStairFlightType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStairType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStairType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStairType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralAction(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralAction', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralAction', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralActivity(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralActivity', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralActivity', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralAnalysisModel(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralAnalysisModel', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralAnalysisModel', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralConnection(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralConnection', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralConnection', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralConnectionCondition(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralConnectionCondition', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralConnectionCondition', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralCurveAction(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralCurveAction', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralCurveAction', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralCurveConnection(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralCurveConnection', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralCurveConnection', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralCurveMember(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralCurveMember', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralCurveMember', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralCurveMemberVarying(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralCurveMemberVarying', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralCurveMemberVarying', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralCurveReaction(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralCurveReaction', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralCurveReaction', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralItem(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralItem', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralItem', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralLinearAction(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralLinearAction', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralLinearAction', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralLoad(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralLoad', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralLoad', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralLoadCase(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralLoadCase', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralLoadCase', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralLoadConfiguration(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralLoadConfiguration', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralLoadConfiguration', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralLoadGroup(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralLoadGroup', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralLoadGroup', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralLoadLinearForce(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralLoadLinearForce', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralLoadLinearForce', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralLoadOrResult(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralLoadOrResult', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralLoadOrResult', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralLoadPlanarForce(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralLoadPlanarForce', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralLoadPlanarForce', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralLoadSingleDisplacement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralLoadSingleDisplacement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralLoadSingleDisplacement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralLoadSingleDisplacementDistortion(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralLoadSingleDisplacementDistortion', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralLoadSingleDisplacementDistortion', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralLoadSingleForce(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralLoadSingleForce', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralLoadSingleForce', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralLoadSingleForceWarping(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralLoadSingleForceWarping', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralLoadSingleForceWarping', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralLoadStatic(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralLoadStatic', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralLoadStatic', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralLoadTemperature(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralLoadTemperature', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralLoadTemperature', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralMember(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralMember', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralMember', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralPlanarAction(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralPlanarAction', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralPlanarAction', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralPointAction(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralPointAction', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralPointAction', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralPointConnection(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralPointConnection', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralPointConnection', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralPointReaction(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralPointReaction', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralPointReaction', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralReaction(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralReaction', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralReaction', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralResultGroup(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralResultGroup', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralResultGroup', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralSurfaceAction(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralSurfaceAction', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralSurfaceAction', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralSurfaceConnection(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralSurfaceConnection', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralSurfaceConnection', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralSurfaceMember(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralSurfaceMember', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralSurfaceMember', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralSurfaceMemberVarying(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralSurfaceMemberVarying', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralSurfaceMemberVarying', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStructuralSurfaceReaction(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStructuralSurfaceReaction', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralSurfaceReaction', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStyleModel(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStyleModel', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStyleModel', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStyledItem(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStyledItem', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStyledItem', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcStyledRepresentation(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcStyledRepresentation', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStyledRepresentation', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSubContractResource(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSubContractResource', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSubContractResource', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSubContractResourceType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSubContractResourceType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSubContractResourceType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSubedge(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSubedge', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSubedge', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSurface(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSurface', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSurface', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSurfaceCurve(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSurfaceCurve', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSurfaceCurve', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSurfaceCurveSweptAreaSolid(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSurfaceCurveSweptAreaSolid', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSurfaceCurveSweptAreaSolid', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSurfaceFeature(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSurfaceFeature', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSurfaceFeature', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSurfaceOfLinearExtrusion(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSurfaceOfLinearExtrusion', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSurfaceOfLinearExtrusion', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSurfaceOfRevolution(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSurfaceOfRevolution', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSurfaceOfRevolution', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSurfaceReinforcementArea(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSurfaceReinforcementArea', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSurfaceReinforcementArea', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSurfaceStyle(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSurfaceStyle', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSurfaceStyle', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSurfaceStyleLighting(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSurfaceStyleLighting', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSurfaceStyleLighting', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSurfaceStyleRefraction(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSurfaceStyleRefraction', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSurfaceStyleRefraction', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSurfaceStyleRendering(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSurfaceStyleRendering', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSurfaceStyleRendering', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSurfaceStyleShading(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSurfaceStyleShading', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSurfaceStyleShading', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSurfaceStyleWithTextures(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSurfaceStyleWithTextures', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSurfaceStyleWithTextures', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSurfaceTexture(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSurfaceTexture', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSurfaceTexture', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSweptAreaSolid(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSweptAreaSolid', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSweptAreaSolid', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSweptDiskSolid(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSweptDiskSolid', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSweptDiskSolid', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSweptDiskSolidPolygonal(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSweptDiskSolidPolygonal', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSweptDiskSolidPolygonal', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSweptSurface(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSweptSurface', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSweptSurface', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSwitchingDevice(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSwitchingDevice', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSwitchingDevice', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSwitchingDeviceType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSwitchingDeviceType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSwitchingDeviceType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSystem(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSystem', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSystem', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSystemFurnitureElement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSystemFurnitureElement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSystemFurnitureElement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcSystemFurnitureElementType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcSystemFurnitureElementType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSystemFurnitureElementType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTShapeProfileDef(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTShapeProfileDef', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTShapeProfileDef', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTable(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTable', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTable', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTableColumn(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTableColumn', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTableColumn', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTableRow(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTableRow', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTableRow', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTank(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTank', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTank', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTankType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTankType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTankType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTask(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTask', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTask', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTaskTime(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTaskTime', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTaskTime', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTaskTimeRecurring(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTaskTimeRecurring', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTaskTimeRecurring', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTaskType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTaskType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTaskType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTelecomAddress(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTelecomAddress', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTelecomAddress', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTendon(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTendon', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTendon', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTendonAnchor(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTendonAnchor', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTendonAnchor', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTendonAnchorType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTendonAnchorType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTendonAnchorType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTendonConduit(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTendonConduit', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTendonConduit', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTendonConduitType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTendonConduitType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTendonConduitType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTendonType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTendonType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTendonType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTessellatedFaceSet(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTessellatedFaceSet', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTessellatedFaceSet', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTessellatedItem(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTessellatedItem', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTessellatedItem', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTextLiteral(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTextLiteral', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTextLiteral', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTextLiteralWithExtent(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTextLiteralWithExtent', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTextLiteralWithExtent', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTextStyle(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTextStyle', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTextStyle', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTextStyleFontModel(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTextStyleFontModel', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTextStyleFontModel', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTextStyleForDefinedFont(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTextStyleForDefinedFont', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTextStyleForDefinedFont', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTextStyleTextModel(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTextStyleTextModel', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTextStyleTextModel', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTextureCoordinate(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTextureCoordinate', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTextureCoordinate', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTextureCoordinateGenerator(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTextureCoordinateGenerator', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTextureCoordinateGenerator', 'IFC4X3_ADD2', *args, **kwargs)
+
+def IfcTextureCoordinateIndices(*args, **kwargs):
+    return ifcopenshell.create_entity('IfcTextureCoordinateIndices', 'IFC4X3_ADD2', *args, **kwargs)
+
+def IfcTextureCoordinateIndicesWithVoids(*args, **kwargs):
+    return ifcopenshell.create_entity('IfcTextureCoordinateIndicesWithVoids', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTextureMap(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTextureMap', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTextureMap', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTextureVertex(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTextureVertex', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTextureVertex', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTextureVertexList(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTextureVertexList', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTextureVertexList', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcThirdOrderPolynomialSpiral(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcThirdOrderPolynomialSpiral', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcThirdOrderPolynomialSpiral', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTimePeriod(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTimePeriod', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTimePeriod', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTimeSeries(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTimeSeries', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTimeSeries', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTimeSeriesValue(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTimeSeriesValue', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTimeSeriesValue', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTopologicalRepresentationItem(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTopologicalRepresentationItem', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTopologicalRepresentationItem', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTopologyRepresentation(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTopologyRepresentation', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTopologyRepresentation', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcToroidalSurface(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcToroidalSurface', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcToroidalSurface', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTrackElement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTrackElement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTrackElement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTrackElementType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTrackElementType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTrackElementType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTransformer(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTransformer', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTransformer', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTransformerType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTransformerType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTransformerType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTransportElement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTransportElement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTransportElement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTransportElementType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTransportElementType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTransportElementType', 'IFC4X3_ADD2', *args, **kwargs)
+
+def IfcTransportationDevice(*args, **kwargs):
+    return ifcopenshell.create_entity('IfcTransportationDevice', 'IFC4X3_ADD2', *args, **kwargs)
+
+def IfcTransportationDeviceType(*args, **kwargs):
+    return ifcopenshell.create_entity('IfcTransportationDeviceType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTrapeziumProfileDef(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTrapeziumProfileDef', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTrapeziumProfileDef', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTriangulatedFaceSet(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTriangulatedFaceSet', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTriangulatedFaceSet', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTriangulatedIrregularNetwork(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTriangulatedIrregularNetwork', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTriangulatedIrregularNetwork', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTrimmedCurve(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTrimmedCurve', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTrimmedCurve', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTubeBundle(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTubeBundle', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTubeBundle', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTubeBundleType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTubeBundleType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTubeBundleType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTypeObject(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTypeObject', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTypeObject', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTypeProcess(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTypeProcess', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTypeProcess', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTypeProduct(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTypeProduct', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTypeProduct', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcTypeResource(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcTypeResource', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTypeResource', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcUShapeProfileDef(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcUShapeProfileDef', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcUShapeProfileDef', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcUnitAssignment(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcUnitAssignment', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcUnitAssignment', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcUnitaryControlElement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcUnitaryControlElement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcUnitaryControlElement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcUnitaryControlElementType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcUnitaryControlElementType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcUnitaryControlElementType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcUnitaryEquipment(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcUnitaryEquipment', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcUnitaryEquipment', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcUnitaryEquipmentType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcUnitaryEquipmentType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcUnitaryEquipmentType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcValve(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcValve', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcValve', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcValveType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcValveType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcValveType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcVector(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcVector', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcVector', 'IFC4X3_ADD2', *args, **kwargs)
+
+def IfcVehicle(*args, **kwargs):
+    return ifcopenshell.create_entity('IfcVehicle', 'IFC4X3_ADD2', *args, **kwargs)
+
+def IfcVehicleType(*args, **kwargs):
+    return ifcopenshell.create_entity('IfcVehicleType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcVertex(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcVertex', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcVertex', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcVertexLoop(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcVertexLoop', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcVertexLoop', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcVertexPoint(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcVertexPoint', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcVertexPoint', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcVibrationDamper(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcVibrationDamper', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcVibrationDamper', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcVibrationDamperType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcVibrationDamperType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcVibrationDamperType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcVibrationIsolator(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcVibrationIsolator', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcVibrationIsolator', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcVibrationIsolatorType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcVibrationIsolatorType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcVibrationIsolatorType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcVirtualElement(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcVirtualElement', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcVirtualElement', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcVirtualGridIntersection(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcVirtualGridIntersection', 'IFC4X3_RC4', *args, **kwargs)
-
-def IfcVoidStratum(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcVoidStratum', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcVirtualGridIntersection', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcVoidingFeature(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcVoidingFeature', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcVoidingFeature', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcWall(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcWall', 'IFC4X3_RC4', *args, **kwargs)
-
-def IfcWallElementedCase(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcWallElementedCase', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcWall', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcWallStandardCase(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcWallStandardCase', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcWallStandardCase', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcWallType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcWallType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcWallType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcWasteTerminal(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcWasteTerminal', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcWasteTerminal', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcWasteTerminalType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcWasteTerminalType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcWasteTerminalType', 'IFC4X3_ADD2', *args, **kwargs)
 
-def IfcWaterStratum(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcWaterStratum', 'IFC4X3_RC4', *args, **kwargs)
+def IfcWellKnownText(*args, **kwargs):
+    return ifcopenshell.create_entity('IfcWellKnownText', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcWindow(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcWindow', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcWindow', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcWindowLiningProperties(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcWindowLiningProperties', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcWindowLiningProperties', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcWindowPanelProperties(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcWindowPanelProperties', 'IFC4X3_RC4', *args, **kwargs)
-
-def IfcWindowStandardCase(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcWindowStandardCase', 'IFC4X3_RC4', *args, **kwargs)
-
-def IfcWindowStyle(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcWindowStyle', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcWindowPanelProperties', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcWindowType(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcWindowType', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcWindowType', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcWorkCalendar(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcWorkCalendar', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcWorkCalendar', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcWorkControl(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcWorkControl', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcWorkControl', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcWorkPlan(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcWorkPlan', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcWorkPlan', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcWorkSchedule(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcWorkSchedule', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcWorkSchedule', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcWorkTime(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcWorkTime', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcWorkTime', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcZShapeProfileDef(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcZShapeProfileDef', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcZShapeProfileDef', 'IFC4X3_ADD2', *args, **kwargs)
 
 def IfcZone(*args, **kwargs):
-    return ifcopenshell.create_entity('IfcZone', 'IFC4X3_RC4', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcZone', 'IFC4X3_ADD2', *args, **kwargs)
 
 class IfcBoxAlignment_WR1:
     SCOPE = 'type'
@@ -5407,7 +5380,7 @@ class IfcActuator_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcactuatortype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcactuatortype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcActuatorType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -5436,7 +5409,7 @@ class IfcAdvancedBrep_HasAdvancedFaces:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([afs for afs in getattr(getattr(self, 'Outer', INDETERMINATE), 'CfsFaces', INDETERMINATE) if not 'ifc4x3_rc4.ifcadvancedface' in typeof(afs)]) == 0) is not False
+        assert (sizeof([afs for afs in getattr(getattr(self, 'Outer', INDETERMINATE), 'CfsFaces', INDETERMINATE) if not 'ifc4x3_add2.ifcadvancedface' in typeof(afs)]) == 0) is not False
 
 class IfcAdvancedBrepWithVoids_VoidsHaveAdvancedFaces:
     SCOPE = 'entity'
@@ -5446,25 +5419,7 @@ class IfcAdvancedBrepWithVoids_VoidsHaveAdvancedFaces:
     @staticmethod
     def __call__(self):
         voids = getattr(self, 'Voids', INDETERMINATE)
-        assert (sizeof([vsh for vsh in voids if sizeof([afs for afs in getattr(vsh, 'CfsFaces', INDETERMINATE) if not 'ifc4x3_rc4.ifcadvancedface' in typeof(afs)]) == 0]) == 0) is not False
-
-class IfcAdvancedFace_ApplicableSurface:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcAdvancedFace'
-    RULE_NAME = 'ApplicableSurface'
-
-    @staticmethod
-    def __call__(self):
-        assert (sizeof(['ifc4x3_rc4.ifcelementarysurface', 'ifc4x3_rc4.ifcsweptsurface', 'ifc4x3_rc4.ifcbsplinesurface'] * typeof(getattr(self, 'FaceSurface', INDETERMINATE))) == 1) is not False
-
-class IfcAdvancedFace_RequiresEdgeCurve:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcAdvancedFace'
-    RULE_NAME = 'RequiresEdgeCurve'
-
-    @staticmethod
-    def __call__(self):
-        assert (sizeof([elpfbnds for elpfbnds in [bnds for bnds in getattr(self, 'Bounds', INDETERMINATE) if 'ifc4x3_rc4.ifcedgeloop' in typeof(getattr(bnds, 'Bound', INDETERMINATE))] if not sizeof([oe for oe in getattr(getattr(elpfbnds, 'Bound', INDETERMINATE), 'EdgeList', INDETERMINATE) if not 'ifc4x3_rc4.ifcedgecurve' in typeof(getattr(oe, 'EdgeElement', INDETERMINATE))]) == 0]) == 0) is not False
+        assert (sizeof([vsh for vsh in voids if sizeof([afs for afs in getattr(vsh, 'CfsFaces', INDETERMINATE) if not 'ifc4x3_add2.ifcadvancedface' in typeof(afs)]) == 0]) == 0) is not False
 
 class IfcAdvancedFace_ApplicableEdgeCurves:
     SCOPE = 'entity'
@@ -5473,7 +5428,25 @@ class IfcAdvancedFace_ApplicableEdgeCurves:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([elpfbnds for elpfbnds in [bnds for bnds in getattr(self, 'Bounds', INDETERMINATE) if 'ifc4x3_rc4.ifcedgeloop' in typeof(getattr(bnds, 'Bound', INDETERMINATE))] if not sizeof([oe for oe in getattr(getattr(elpfbnds, 'Bound', INDETERMINATE), 'EdgeList', INDETERMINATE) if not sizeof(['ifc4x3_rc4.ifcline', 'ifc4x3_rc4.ifcconic', 'ifc4x3_rc4.ifcpolyline', 'ifc4x3_rc4.ifcbsplinecurve'] * typeof(getattr(getattr(oe, 'EdgeElement', INDETERMINATE), 'EdgeGeometry', INDETERMINATE))) == 1]) == 0]) == 0) is not False
+        assert (sizeof([elpfbnds for elpfbnds in [bnds for bnds in getattr(self, 'Bounds', INDETERMINATE) if 'ifc4x3_add2.ifcedgeloop' in typeof(getattr(bnds, 'Bound', INDETERMINATE))] if not sizeof([oe for oe in getattr(getattr(elpfbnds, 'Bound', INDETERMINATE), 'EdgeList', INDETERMINATE) if not sizeof(['ifc4x3_add2.ifcline', 'ifc4x3_add2.ifcconic', 'ifc4x3_add2.ifcpolyline', 'ifc4x3_add2.ifcbsplinecurve'] * typeof(getattr(getattr(oe, 'EdgeElement', INDETERMINATE), 'EdgeGeometry', INDETERMINATE))) == 1]) == 0]) == 0) is not False
+
+class IfcAdvancedFace_ApplicableSurface:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcAdvancedFace'
+    RULE_NAME = 'ApplicableSurface'
+
+    @staticmethod
+    def __call__(self):
+        assert (sizeof(['ifc4x3_add2.ifcelementarysurface', 'ifc4x3_add2.ifcsweptsurface', 'ifc4x3_add2.ifcbsplinesurface'] * typeof(getattr(self, 'FaceSurface', INDETERMINATE))) == 1) is not False
+
+class IfcAdvancedFace_RequiresEdgeCurve:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcAdvancedFace'
+    RULE_NAME = 'RequiresEdgeCurve'
+
+    @staticmethod
+    def __call__(self):
+        assert (sizeof([elpfbnds for elpfbnds in [bnds for bnds in getattr(self, 'Bounds', INDETERMINATE) if 'ifc4x3_add2.ifcedgeloop' in typeof(getattr(bnds, 'Bound', INDETERMINATE))] if not sizeof([oe for oe in getattr(getattr(elpfbnds, 'Bound', INDETERMINATE), 'EdgeList', INDETERMINATE) if not 'ifc4x3_add2.ifcedgecurve' in typeof(getattr(oe, 'EdgeElement', INDETERMINATE))]) == 0]) == 0) is not False
 
 class IfcAirTerminal_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -5493,7 +5466,7 @@ class IfcAirTerminal_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcairterminaltype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcairterminaltype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcAirTerminalBox_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -5513,7 +5486,7 @@ class IfcAirTerminalBox_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcairterminalboxtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcairterminalboxtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcAirTerminalBoxType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -5553,7 +5526,7 @@ class IfcAirToAirHeatRecovery_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcairtoairheatrecoverytype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcairtoairheatrecoverytype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcAirToAirHeatRecoveryType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -5583,7 +5556,7 @@ class IfcAlarm_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcalarmtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcalarmtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcAlarmType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -5624,7 +5597,7 @@ class IfcArbitraryClosedProfileDef_WR2:
     @staticmethod
     def __call__(self):
         outercurve = getattr(self, 'OuterCurve', INDETERMINATE)
-        assert (not 'ifc4x3_rc4.ifcline' in typeof(outercurve)) is not False
+        assert (not 'ifc4x3_add2.ifcline' in typeof(outercurve)) is not False
 
 class IfcArbitraryClosedProfileDef_WR3:
     SCOPE = 'entity'
@@ -5634,7 +5607,7 @@ class IfcArbitraryClosedProfileDef_WR3:
     @staticmethod
     def __call__(self):
         outercurve = getattr(self, 'OuterCurve', INDETERMINATE)
-        assert (not 'ifc4x3_rc4.ifcoffsetcurve2d' in typeof(outercurve)) is not False
+        assert (not 'ifc4x3_add2.ifcoffsetcurve2d' in typeof(outercurve)) is not False
 
 class IfcArbitraryOpenProfileDef_WR11:
     SCOPE = 'entity'
@@ -5643,7 +5616,7 @@ class IfcArbitraryOpenProfileDef_WR11:
 
     @staticmethod
     def __call__(self):
-        assert ('ifc4x3_rc4.ifccenterlineprofiledef' in typeof(self) or getattr(self, 'ProfileType', INDETERMINATE) == getattr(IfcProfileTypeEnum, 'CURVE', INDETERMINATE)) is not False
+        assert ('ifc4x3_add2.ifccenterlineprofiledef' in typeof(self) or getattr(self, 'ProfileType', INDETERMINATE) == getattr(IfcProfileTypeEnum, 'CURVE', INDETERMINATE)) is not False
 
 class IfcArbitraryOpenProfileDef_WR12:
     SCOPE = 'entity'
@@ -5682,31 +5655,7 @@ class IfcArbitraryProfileDefWithVoids_WR3:
     @staticmethod
     def __call__(self):
         innercurves = getattr(self, 'InnerCurves', INDETERMINATE)
-        assert (sizeof([temp for temp in innercurves if 'ifc4x3_rc4.ifcline' in typeof(temp)]) == 0) is not False
-
-class IfcAsymmetricIShapeProfileDef_ValidFlangeThickness:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcAsymmetricIShapeProfileDef'
-    RULE_NAME = 'ValidFlangeThickness'
-
-    @staticmethod
-    def __call__(self):
-        overalldepth = getattr(self, 'OverallDepth', INDETERMINATE)
-        bottomflangethickness = getattr(self, 'BottomFlangeThickness', INDETERMINATE)
-        topflangethickness = getattr(self, 'TopFlangeThickness', INDETERMINATE)
-        assert (not exists(topflangethickness) or bottomflangethickness + topflangethickness < overalldepth) is not False
-
-class IfcAsymmetricIShapeProfileDef_ValidWebThickness:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcAsymmetricIShapeProfileDef'
-    RULE_NAME = 'ValidWebThickness'
-
-    @staticmethod
-    def __call__(self):
-        bottomflangewidth = getattr(self, 'BottomFlangeWidth', INDETERMINATE)
-        webthickness = getattr(self, 'WebThickness', INDETERMINATE)
-        topflangewidth = getattr(self, 'TopFlangeWidth', INDETERMINATE)
-        assert (webthickness < bottomflangewidth and webthickness < topflangewidth) is not False
+        assert (sizeof([temp for temp in innercurves if 'ifc4x3_add2.ifcline' in typeof(temp)]) == 0) is not False
 
 class IfcAsymmetricIShapeProfileDef_ValidBottomFilletRadius:
     SCOPE = 'entity'
@@ -5720,6 +5669,18 @@ class IfcAsymmetricIShapeProfileDef_ValidBottomFilletRadius:
         bottomflangefilletradius = getattr(self, 'BottomFlangeFilletRadius', INDETERMINATE)
         assert (not exists(bottomflangefilletradius) or bottomflangefilletradius <= (bottomflangewidth - webthickness) / 2.0) is not False
 
+class IfcAsymmetricIShapeProfileDef_ValidFlangeThickness:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcAsymmetricIShapeProfileDef'
+    RULE_NAME = 'ValidFlangeThickness'
+
+    @staticmethod
+    def __call__(self):
+        overalldepth = getattr(self, 'OverallDepth', INDETERMINATE)
+        bottomflangethickness = getattr(self, 'BottomFlangeThickness', INDETERMINATE)
+        topflangethickness = getattr(self, 'TopFlangeThickness', INDETERMINATE)
+        assert (not exists(topflangethickness) or bottomflangethickness + topflangethickness < overalldepth) is not False
+
 class IfcAsymmetricIShapeProfileDef_ValidTopFilletRadius:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcAsymmetricIShapeProfileDef'
@@ -5731,6 +5692,18 @@ class IfcAsymmetricIShapeProfileDef_ValidTopFilletRadius:
         topflangewidth = getattr(self, 'TopFlangeWidth', INDETERMINATE)
         topflangefilletradius = getattr(self, 'TopFlangeFilletRadius', INDETERMINATE)
         assert (not exists(topflangefilletradius) or topflangefilletradius <= (topflangewidth - webthickness) / 2.0) is not False
+
+class IfcAsymmetricIShapeProfileDef_ValidWebThickness:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcAsymmetricIShapeProfileDef'
+    RULE_NAME = 'ValidWebThickness'
+
+    @staticmethod
+    def __call__(self):
+        bottomflangewidth = getattr(self, 'BottomFlangeWidth', INDETERMINATE)
+        webthickness = getattr(self, 'WebThickness', INDETERMINATE)
+        topflangewidth = getattr(self, 'TopFlangeWidth', INDETERMINATE)
+        assert (webthickness < bottomflangewidth and webthickness < topflangewidth) is not False
 
 class IfcAudioVisualAppliance_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -5750,7 +5723,7 @@ class IfcAudioVisualAppliance_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcaudiovisualappliancetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcaudiovisualappliancetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcAudioVisualApplianceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -5788,21 +5761,11 @@ class IfcAxis1Placement_LocationIsCP:
 
     @staticmethod
     def __call__(self):
-        assert ('ifc4x3_rc4.ifccartesianpoint' in typeof(getattr(self, 'Location', INDETERMINATE))) is not False
+        assert ('ifc4x3_add2.ifccartesianpoint' in typeof(getattr(self, 'Location', INDETERMINATE))) is not False
 
 def calc_IfcAxis1Placement_Z(self):
     axis = getattr(self, 'Axis', INDETERMINATE)
     return nvl(IfcNormalise(axis), IfcDirection(DirectionRatios=[0.0, 0.0, 1.0]))
-
-class IfcAxis2Placement2D_RefDirIs2D:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcAxis2Placement2D'
-    RULE_NAME = 'RefDirIs2D'
-
-    @staticmethod
-    def __call__(self):
-        refdirection = getattr(self, 'RefDirection', INDETERMINATE)
-        assert (not exists(refdirection) or getattr(refdirection, 'Dim', INDETERMINATE) == 2) is not False
 
 class IfcAxis2Placement2D_LocationIs2D:
     SCOPE = 'entity'
@@ -5820,51 +5783,21 @@ class IfcAxis2Placement2D_LocationIsCP:
 
     @staticmethod
     def __call__(self):
-        assert ('ifc4x3_rc4.ifccartesianpoint' in typeof(getattr(self, 'Location', INDETERMINATE))) is not False
+        assert ('ifc4x3_add2.ifccartesianpoint' in typeof(getattr(self, 'Location', INDETERMINATE))) is not False
+
+class IfcAxis2Placement2D_RefDirIs2D:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcAxis2Placement2D'
+    RULE_NAME = 'RefDirIs2D'
+
+    @staticmethod
+    def __call__(self):
+        refdirection = getattr(self, 'RefDirection', INDETERMINATE)
+        assert (not exists(refdirection) or getattr(refdirection, 'Dim', INDETERMINATE) == 2) is not False
 
 def calc_IfcAxis2Placement2D_P(self):
     refdirection = getattr(self, 'RefDirection', INDETERMINATE)
     return IfcBuild2Axes(refdirection)
-
-class IfcAxis2Placement3D_LocationIs3D:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcAxis2Placement3D'
-    RULE_NAME = 'LocationIs3D'
-
-    @staticmethod
-    def __call__(self):
-        assert (getattr(getattr(self, 'Location', INDETERMINATE), 'Dim', INDETERMINATE) == 3) is not False
-
-class IfcAxis2Placement3D_AxisIs3D:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcAxis2Placement3D'
-    RULE_NAME = 'AxisIs3D'
-
-    @staticmethod
-    def __call__(self):
-        axis = getattr(self, 'Axis', INDETERMINATE)
-        assert (not exists(axis) or getattr(axis, 'Dim', INDETERMINATE) == 3) is not False
-
-class IfcAxis2Placement3D_RefDirIs3D:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcAxis2Placement3D'
-    RULE_NAME = 'RefDirIs3D'
-
-    @staticmethod
-    def __call__(self):
-        refdirection = getattr(self, 'RefDirection', INDETERMINATE)
-        assert (not exists(refdirection) or getattr(refdirection, 'Dim', INDETERMINATE) == 3) is not False
-
-class IfcAxis2Placement3D_AxisToRefDirPosition:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcAxis2Placement3D'
-    RULE_NAME = 'AxisToRefDirPosition'
-
-    @staticmethod
-    def __call__(self):
-        axis = getattr(self, 'Axis', INDETERMINATE)
-        refdirection = getattr(self, 'RefDirection', INDETERMINATE)
-        assert (not exists(axis) or not exists(refdirection) or getattr(IfcCrossProduct(axis, refdirection), 'Magnitude', INDETERMINATE) > 0.0) is not False
 
 class IfcAxis2Placement3D_AxisAndRefDirProvision:
     SCOPE = 'entity'
@@ -5877,6 +5810,36 @@ class IfcAxis2Placement3D_AxisAndRefDirProvision:
         refdirection = getattr(self, 'RefDirection', INDETERMINATE)
         assert (not exists(axis) ^ exists(refdirection)) is not False
 
+class IfcAxis2Placement3D_AxisIs3D:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcAxis2Placement3D'
+    RULE_NAME = 'AxisIs3D'
+
+    @staticmethod
+    def __call__(self):
+        axis = getattr(self, 'Axis', INDETERMINATE)
+        assert (not exists(axis) or getattr(axis, 'Dim', INDETERMINATE) == 3) is not False
+
+class IfcAxis2Placement3D_AxisToRefDirPosition:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcAxis2Placement3D'
+    RULE_NAME = 'AxisToRefDirPosition'
+
+    @staticmethod
+    def __call__(self):
+        axis = getattr(self, 'Axis', INDETERMINATE)
+        refdirection = getattr(self, 'RefDirection', INDETERMINATE)
+        assert (not exists(axis) or not exists(refdirection) or getattr(IfcCrossProduct(axis, refdirection), 'Magnitude', INDETERMINATE) > 0.0) is not False
+
+class IfcAxis2Placement3D_LocationIs3D:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcAxis2Placement3D'
+    RULE_NAME = 'LocationIs3D'
+
+    @staticmethod
+    def __call__(self):
+        assert (getattr(getattr(self, 'Location', INDETERMINATE), 'Dim', INDETERMINATE) == 3) is not False
+
 class IfcAxis2Placement3D_LocationIsCP:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcAxis2Placement3D'
@@ -5884,7 +5847,17 @@ class IfcAxis2Placement3D_LocationIsCP:
 
     @staticmethod
     def __call__(self):
-        assert ('ifc4x3_rc4.ifccartesianpoint' in typeof(getattr(self, 'Location', INDETERMINATE))) is not False
+        assert ('ifc4x3_add2.ifccartesianpoint' in typeof(getattr(self, 'Location', INDETERMINATE))) is not False
+
+class IfcAxis2Placement3D_RefDirIs3D:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcAxis2Placement3D'
+    RULE_NAME = 'RefDirIs3D'
+
+    @staticmethod
+    def __call__(self):
+        refdirection = getattr(self, 'RefDirection', INDETERMINATE)
+        assert (not exists(refdirection) or getattr(refdirection, 'Dim', INDETERMINATE) == 3) is not False
 
 def calc_IfcAxis2Placement3D_P(self):
     axis = getattr(self, 'Axis', INDETERMINATE)
@@ -5898,7 +5871,7 @@ class IfcAxis2PlacementLinear_WR1:
 
     @staticmethod
     def __call__(self):
-        assert ('ifc4x3_rc4.ifcpointbydistanceexpression' in typeof(getattr(self, 'Location', INDETERMINATE))) is not False
+        assert ('ifc4x3_add2.ifcpointbydistanceexpression' in typeof(getattr(self, 'Location', INDETERMINATE))) is not False
 
 class IfcAxis2PlacementLinear_WR2:
     SCOPE = 'entity'
@@ -5973,6 +5946,28 @@ def calc_IfcBSplineSurface_ControlPoints(self):
     vupper = getattr(self, 'VUpper', INDETERMINATE)
     return IfcMakeArrayOfArray(controlpointslist, 0, uupper, 0, vupper)
 
+class IfcBSplineSurfaceWithKnots_CorrespondingULists:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcBSplineSurfaceWithKnots'
+    RULE_NAME = 'CorrespondingULists'
+
+    @staticmethod
+    def __call__(self):
+        umultiplicities = getattr(self, 'UMultiplicities', INDETERMINATE)
+        knotuupper = getattr(self, 'KnotUUpper', INDETERMINATE)
+        assert (sizeof(umultiplicities) == knotuupper) is not False
+
+class IfcBSplineSurfaceWithKnots_CorrespondingVLists:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcBSplineSurfaceWithKnots'
+    RULE_NAME = 'CorrespondingVLists'
+
+    @staticmethod
+    def __call__(self):
+        vmultiplicities = getattr(self, 'VMultiplicities', INDETERMINATE)
+        knotvupper = getattr(self, 'KnotVUpper', INDETERMINATE)
+        assert (sizeof(vmultiplicities) == knotvupper) is not False
+
 class IfcBSplineSurfaceWithKnots_UDirectionConstraints:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcBSplineSurfaceWithKnots'
@@ -5996,28 +5991,6 @@ class IfcBSplineSurfaceWithKnots_VDirectionConstraints:
         vknots = getattr(self, 'VKnots', INDETERMINATE)
         knotvupper = getattr(self, 'KnotVUpper', INDETERMINATE)
         assert IfcConstraintsParamBSpline(getattr(self, 'VDegree', INDETERMINATE), knotvupper, getattr(self, 'VUpper', INDETERMINATE), vmultiplicities, vknots) is not False
-
-class IfcBSplineSurfaceWithKnots_CorrespondingULists:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcBSplineSurfaceWithKnots'
-    RULE_NAME = 'CorrespondingULists'
-
-    @staticmethod
-    def __call__(self):
-        umultiplicities = getattr(self, 'UMultiplicities', INDETERMINATE)
-        knotuupper = getattr(self, 'KnotUUpper', INDETERMINATE)
-        assert (sizeof(umultiplicities) == knotuupper) is not False
-
-class IfcBSplineSurfaceWithKnots_CorrespondingVLists:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcBSplineSurfaceWithKnots'
-    RULE_NAME = 'CorrespondingVLists'
-
-    @staticmethod
-    def __call__(self):
-        vmultiplicities = getattr(self, 'VMultiplicities', INDETERMINATE)
-        knotvupper = getattr(self, 'KnotVUpper', INDETERMINATE)
-        assert (sizeof(vmultiplicities) == knotvupper) is not False
 
 def calc_IfcBSplineSurfaceWithKnots_KnotVUpper(self):
     vknots = getattr(self, 'VKnots', INDETERMINATE)
@@ -6045,16 +6018,7 @@ class IfcBeam_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcbeamtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
-
-class IfcBeamStandardCase_HasMaterialProfileSetUsage:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcBeamStandardCase'
-    RULE_NAME = 'HasMaterialProfileSetUsage'
-
-    @staticmethod
-    def __call__(self):
-        assert (sizeof([temp for temp in usedin(self, 'ifc4x3_rc4.ifcrelassociates.relatedobjects') if 'ifc4x3_rc4.ifcrelassociatesmaterial' in typeof(temp) and 'ifc4x3_rc4.ifcmaterialprofilesetusage' in typeof(getattr(temp, 'RelatingMaterial', INDETERMINATE))]) == 1) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcbeamtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcBeamType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6084,7 +6048,7 @@ class IfcBearing_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcbearingtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcbearingtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcBearingType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6096,15 +6060,6 @@ class IfcBearingType_CorrectPredefinedType:
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
         assert (predefinedtype != getattr(IfcBearingTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcBearingTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
-class IfcBlobTexture_SupportedRasterFormat:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcBlobTexture'
-    RULE_NAME = 'SupportedRasterFormat'
-
-    @staticmethod
-    def __call__(self):
-        assert (getattr(getattr(self, 'RasterFormat', INDETERMINATE), 'lower', INDETERMINATE)() in ['bmp', 'jpg', 'gif', 'png']) is not False
-
 class IfcBlobTexture_RasterCodeByteStream:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcBlobTexture'
@@ -6114,6 +6069,15 @@ class IfcBlobTexture_RasterCodeByteStream:
     def __call__(self):
         rastercode = getattr(self, 'RasterCode', INDETERMINATE)
         assert (blength(rastercode) % 8 == 0) is not False
+
+class IfcBlobTexture_SupportedRasterFormat:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcBlobTexture'
+    RULE_NAME = 'SupportedRasterFormat'
+
+    @staticmethod
+    def __call__(self):
+        assert (getattr(getattr(self, 'RasterFormat', INDETERMINATE), 'lower', INDETERMINATE)() in ['bmp', 'jpg', 'gif', 'png']) is not False
 
 class IfcBoiler_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6133,7 +6097,7 @@ class IfcBoiler_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcboilertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcboilertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcBoilerType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6153,17 +6117,7 @@ class IfcBooleanClippingResult_FirstOperandType:
     @staticmethod
     def __call__(self):
         firstoperand = getattr(self, 'FirstOperand', INDETERMINATE)
-        assert ('ifc4x3_rc4.ifcsweptareasolid' in typeof(firstoperand) or 'ifc4x3_rc4.ifcsweptdiscsolid' in typeof(firstoperand) or 'ifc4x3_rc4.ifcbooleanclippingresult' in typeof(firstoperand)) is not False
-
-class IfcBooleanClippingResult_SecondOperandType:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcBooleanClippingResult'
-    RULE_NAME = 'SecondOperandType'
-
-    @staticmethod
-    def __call__(self):
-        secondoperand = getattr(self, 'SecondOperand', INDETERMINATE)
-        assert ('ifc4x3_rc4.ifchalfspacesolid' in typeof(secondoperand)) is not False
+        assert ('ifc4x3_add2.ifcsweptareasolid' in typeof(firstoperand) or 'ifc4x3_add2.ifcsweptdiscsolid' in typeof(firstoperand) or 'ifc4x3_add2.ifcbooleanclippingresult' in typeof(firstoperand)) is not False
 
 class IfcBooleanClippingResult_OperatorType:
     SCOPE = 'entity'
@@ -6174,6 +6128,26 @@ class IfcBooleanClippingResult_OperatorType:
     def __call__(self):
         operator = getattr(self, 'Operator', INDETERMINATE)
         assert (operator == difference) is not False
+
+class IfcBooleanClippingResult_SecondOperandType:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcBooleanClippingResult'
+    RULE_NAME = 'SecondOperandType'
+
+    @staticmethod
+    def __call__(self):
+        secondoperand = getattr(self, 'SecondOperand', INDETERMINATE)
+        assert ('ifc4x3_add2.ifchalfspacesolid' in typeof(secondoperand)) is not False
+
+class IfcBooleanResult_FirstOperandClosed:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcBooleanResult'
+    RULE_NAME = 'FirstOperandClosed'
+
+    @staticmethod
+    def __call__(self):
+        firstoperand = getattr(self, 'FirstOperand', INDETERMINATE)
+        assert (not 'ifc4x3_add2.ifctessellatedfaceset' in typeof(firstoperand) or (exists(getattr(firstoperand, 'Closed', INDETERMINATE)) and getattr(firstoperand, 'Closed', INDETERMINATE))) is not False
 
 class IfcBooleanResult_SameDim:
     SCOPE = 'entity'
@@ -6186,16 +6160,6 @@ class IfcBooleanResult_SameDim:
         secondoperand = getattr(self, 'SecondOperand', INDETERMINATE)
         assert (getattr(firstoperand, 'Dim', INDETERMINATE) == getattr(secondoperand, 'Dim', INDETERMINATE)) is not False
 
-class IfcBooleanResult_FirstOperandClosed:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcBooleanResult'
-    RULE_NAME = 'FirstOperandClosed'
-
-    @staticmethod
-    def __call__(self):
-        firstoperand = getattr(self, 'FirstOperand', INDETERMINATE)
-        assert (not 'ifc4x3_rc4.ifctessellatedfaceset' in typeof(firstoperand) or (exists(getattr(firstoperand, 'Closed', INDETERMINATE)) and getattr(firstoperand, 'Closed', INDETERMINATE))) is not False
-
 class IfcBooleanResult_SecondOperandClosed:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcBooleanResult'
@@ -6204,7 +6168,7 @@ class IfcBooleanResult_SecondOperandClosed:
     @staticmethod
     def __call__(self):
         secondoperand = getattr(self, 'SecondOperand', INDETERMINATE)
-        assert (not 'ifc4x3_rc4.ifctessellatedfaceset' in typeof(secondoperand) or (exists(getattr(secondoperand, 'Closed', INDETERMINATE)) and getattr(secondoperand, 'Closed', INDETERMINATE))) is not False
+        assert (not 'ifc4x3_add2.ifctessellatedfaceset' in typeof(secondoperand) or (exists(getattr(secondoperand, 'Closed', INDETERMINATE)) and getattr(secondoperand, 'Closed', INDETERMINATE))) is not False
 
 def calc_IfcBooleanResult_Dim(self):
     firstoperand = getattr(self, 'FirstOperand', INDETERMINATE)
@@ -6229,7 +6193,7 @@ class IfcBoxedHalfSpace_UnboundedSurface:
 
     @staticmethod
     def __call__(self):
-        assert (not 'ifc4x3_rc4.ifccurveboundedplane' in typeof(getattr(self, 'BaseSurface', INDETERMINATE))) is not False
+        assert (not 'ifc4x3_add2.ifccurveboundedplane' in typeof(getattr(self, 'BaseSurface', INDETERMINATE))) is not False
 
 class IfcBridge_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6240,6 +6204,16 @@ class IfcBridge_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
         assert (not exists(predefinedtype) or predefinedtype != getattr(IfcBridgeTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcBridgeTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+
+class IfcBridgePart_CorrectPredefinedType:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcBridgePart'
+    RULE_NAME = 'CorrectPredefinedType'
+
+    @staticmethod
+    def __call__(self):
+        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcBridgePartTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcBridgePartTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcBuildingElementPart_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6259,7 +6233,7 @@ class IfcBuildingElementPart_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcbuildingelementparttype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcbuildingelementparttype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcBuildingElementPartType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6270,15 +6244,6 @@ class IfcBuildingElementPartType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
         assert (predefinedtype != getattr(IfcBuildingElementPartTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcBuildingElementPartTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
-
-class IfcBuildingElementProxy_HasObjectName:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcBuildingElementProxy'
-    RULE_NAME = 'HasObjectName'
-
-    @staticmethod
-    def __call__(self):
-        assert exists(getattr(self, 'Name', INDETERMINATE)) is not False
 
 class IfcBuildingElementProxy_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6298,7 +6263,16 @@ class IfcBuildingElementProxy_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcbuildingelementproxytype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcbuildingelementproxytype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+
+class IfcBuildingElementProxy_HasObjectName:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcBuildingElementProxy'
+    RULE_NAME = 'HasObjectName'
+
+    @staticmethod
+    def __call__(self):
+        assert exists(getattr(self, 'Name', INDETERMINATE)) is not False
 
 class IfcBuildingElementProxyType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6310,6 +6284,16 @@ class IfcBuildingElementProxyType_CorrectPredefinedType:
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
         assert (predefinedtype != getattr(IfcBuildingElementProxyTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcBuildingElementProxyTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
+class IfcBuildingSystem_CorrectPredefinedType:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcBuildingSystem'
+    RULE_NAME = 'CorrectPredefinedType'
+
+    @staticmethod
+    def __call__(self):
+        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcBuildingSystemTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcBuildingSystemTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+
 class IfcBuiltElement_MaxOneMaterialAssociation:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcBuiltElement'
@@ -6317,7 +6301,7 @@ class IfcBuiltElement_MaxOneMaterialAssociation:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in getattr(self, 'HasAssociations', INDETERMINATE) if 'ifc4x3_rc4.ifcrelassociatesmaterial' in typeof(temp)]) <= 1) is not False
+        assert (sizeof([temp for temp in getattr(self, 'HasAssociations', INDETERMINATE) if 'ifc4x3_add2.ifcrelassociatesmaterial' in typeof(temp)]) <= 1) is not False
 
 class IfcBuiltSystem_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6347,7 +6331,7 @@ class IfcBurner_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcburnertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcburnertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcBurnerType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6413,7 +6397,7 @@ class IfcCableCarrierFitting_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifccablecarrierfittingtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifccablecarrierfittingtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCableCarrierFittingType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6443,7 +6427,7 @@ class IfcCableCarrierSegment_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifccablecarriersegmenttype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifccablecarriersegmenttype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCableCarrierSegmentType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6473,7 +6457,7 @@ class IfcCableFitting_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifccablefittingtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifccablefittingtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCableFittingType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6503,7 +6487,7 @@ class IfcCableSegment_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifccablesegmenttype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifccablesegmenttype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCableSegmentType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6533,7 +6517,7 @@ class IfcCaissonFoundation_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifccaissonfoundationtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifccaissonfoundationtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCaissonFoundationType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6554,10 +6538,6 @@ class IfcCartesianPoint_CP2Dor3D:
     def __call__(self):
         coordinates = getattr(self, 'Coordinates', INDETERMINATE)
         assert (hiindex(coordinates) >= 2) is not False
-
-def calc_IfcCartesianPoint_Dim(self):
-    coordinates = getattr(self, 'Coordinates', INDETERMINATE)
-    return hiindex(coordinates)
 
 def calc_IfcCartesianPointList_Dim(self):
     return IfcPointListDim(self)
@@ -6580,15 +6560,6 @@ def calc_IfcCartesianTransformationOperator_Dim(self):
     localorigin = getattr(self, 'LocalOrigin', INDETERMINATE)
     return getattr(localorigin, 'Dim', INDETERMINATE)
 
-class IfcCartesianTransformationOperator2D_DimEqual2:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcCartesianTransformationOperator2D'
-    RULE_NAME = 'DimEqual2'
-
-    @staticmethod
-    def __call__(self):
-        assert (getattr(self, 'Dim', INDETERMINATE) == 2) is not False
-
 class IfcCartesianTransformationOperator2D_Axis1Is2D:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcCartesianTransformationOperator2D'
@@ -6607,6 +6578,15 @@ class IfcCartesianTransformationOperator2D_Axis2Is2D:
     def __call__(self):
         assert (not exists(getattr(self, 'Axis2', INDETERMINATE)) or getattr(getattr(self, 'Axis2', INDETERMINATE), 'Dim', INDETERMINATE) == 2) is not False
 
+class IfcCartesianTransformationOperator2D_DimEqual2:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcCartesianTransformationOperator2D'
+    RULE_NAME = 'DimEqual2'
+
+    @staticmethod
+    def __call__(self):
+        assert (getattr(self, 'Dim', INDETERMINATE) == 2) is not False
+
 def calc_IfcCartesianTransformationOperator2D_U(self):
     return IfcBaseAxis(2, getattr(self, 'Axis1', INDETERMINATE), getattr(self, 'Axis2', INDETERMINATE), None)
 
@@ -6623,15 +6603,6 @@ class IfcCartesianTransformationOperator2DnonUniform_Scale2GreaterZero:
 def calc_IfcCartesianTransformationOperator2DnonUniform_Scl2(self):
     scale2 = getattr(self, 'Scale2', INDETERMINATE)
     return nvl(scale2, getattr(self, 'Scl', INDETERMINATE))
-
-class IfcCartesianTransformationOperator3D_DimIs3D:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcCartesianTransformationOperator3D'
-    RULE_NAME = 'DimIs3D'
-
-    @staticmethod
-    def __call__(self):
-        assert (getattr(self, 'Dim', INDETERMINATE) == 3) is not False
 
 class IfcCartesianTransformationOperator3D_Axis1Is3D:
     SCOPE = 'entity'
@@ -6660,6 +6631,15 @@ class IfcCartesianTransformationOperator3D_Axis3Is3D:
     def __call__(self):
         axis3 = getattr(self, 'Axis3', INDETERMINATE)
         assert (not exists(axis3) or getattr(axis3, 'Dim', INDETERMINATE) == 3) is not False
+
+class IfcCartesianTransformationOperator3D_DimIs3D:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcCartesianTransformationOperator3D'
+    RULE_NAME = 'DimIs3D'
+
+    @staticmethod
+    def __call__(self):
+        assert (getattr(self, 'Dim', INDETERMINATE) == 3) is not False
 
 def calc_IfcCartesianTransformationOperator3D_U(self):
     axis3 = getattr(self, 'Axis3', INDETERMINATE)
@@ -6711,7 +6691,7 @@ class IfcChiller_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcchillertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcchillertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcChillerType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6741,7 +6721,7 @@ class IfcChimney_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcchimneytype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcchimneytype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcChimneyType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6781,7 +6761,7 @@ class IfcCoil_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifccoiltype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifccoiltype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCoilType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6811,16 +6791,7 @@ class IfcColumn_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifccolumntype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
-
-class IfcColumnStandardCase_HasMaterialProfileSetUsage:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcColumnStandardCase'
-    RULE_NAME = 'HasMaterialProfileSetUsage'
-
-    @staticmethod
-    def __call__(self):
-        assert (sizeof([temp for temp in usedin(self, 'ifc4x3_rc4.ifcrelassociates.relatedobjects') if 'ifc4x3_rc4.ifcrelassociatesmaterial' in typeof(temp) and 'ifc4x3_rc4.ifcmaterialprofilesetusage' in typeof(getattr(temp, 'RelatingMaterial', INDETERMINATE))]) == 1) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifccolumntype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcColumnType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6850,7 +6821,7 @@ class IfcCommunicationsAppliance_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifccommunicationsappliancetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifccommunicationsappliancetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCommunicationsApplianceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6882,16 +6853,6 @@ class IfcComplexProperty_WR22:
         hasproperties = getattr(self, 'HasProperties', INDETERMINATE)
         assert IfcUniquePropertyName(hasproperties) is not False
 
-class IfcComplexPropertyTemplate_UniquePropertyNames:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcComplexPropertyTemplate'
-    RULE_NAME = 'UniquePropertyNames'
-
-    @staticmethod
-    def __call__(self):
-        haspropertytemplates = getattr(self, 'HasPropertyTemplates', INDETERMINATE)
-        assert IfcUniquePropertyTemplateNames(haspropertytemplates) is not False
-
 class IfcComplexPropertyTemplate_NoSelfReference:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcComplexPropertyTemplate'
@@ -6901,6 +6862,16 @@ class IfcComplexPropertyTemplate_NoSelfReference:
     def __call__(self):
         haspropertytemplates = getattr(self, 'HasPropertyTemplates', INDETERMINATE)
         assert (sizeof([temp for temp in haspropertytemplates if self == temp]) == 0) is not False
+
+class IfcComplexPropertyTemplate_UniquePropertyNames:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcComplexPropertyTemplate'
+    RULE_NAME = 'UniquePropertyNames'
+
+    @staticmethod
+    def __call__(self):
+        haspropertytemplates = getattr(self, 'HasPropertyTemplates', INDETERMINATE)
+        assert IfcUniquePropertyTemplateNames(haspropertytemplates) is not False
 
 class IfcCompositeCurve_CurveContinuous:
     SCOPE = 'entity'
@@ -6953,11 +6924,7 @@ class IfcCompositeCurveSegment_ParentIsBoundedCurve:
     @staticmethod
     def __call__(self):
         parentcurve = getattr(self, 'ParentCurve', INDETERMINATE)
-        assert ('ifc4x3_rc4.ifcboundedcurve' in typeof(parentcurve)) is not False
-
-def calc_IfcCompositeCurveSegment_Dim(self):
-    parentcurve = getattr(self, 'ParentCurve', INDETERMINATE)
-    return getattr(parentcurve, 'Dim', INDETERMINATE)
+        assert ('ifc4x3_add2.ifcboundedcurve' in typeof(parentcurve)) is not False
 
 class IfcCompositeProfileDef_InvariantProfileType:
     SCOPE = 'entity'
@@ -6977,7 +6944,7 @@ class IfcCompositeProfileDef_NoRecursion:
     @staticmethod
     def __call__(self):
         profiles = getattr(self, 'Profiles', INDETERMINATE)
-        assert (sizeof([temp for temp in profiles if 'ifc4x3_rc4.ifccompositeprofiledef' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in profiles if 'ifc4x3_add2.ifccompositeprofiledef' in typeof(temp)]) == 0) is not False
 
 class IfcCompressor_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6997,7 +6964,7 @@ class IfcCompressor_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifccompressortype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifccompressortype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCompressorType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7027,7 +6994,7 @@ class IfcCondenser_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifccondensertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifccondensertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCondenserType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7127,7 +7094,7 @@ class IfcController_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifccontrollertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifccontrollertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcControllerType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7157,7 +7124,7 @@ class IfcConveyorSegment_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcconveyorsegmenttype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcconveyorsegmenttype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcConveyorSegmentType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7187,7 +7154,7 @@ class IfcCooledBeam_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifccooledbeamtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifccooledbeamtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCooledBeamType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7217,7 +7184,7 @@ class IfcCoolingTower_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifccoolingtowertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifccoolingtowertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCoolingTowerType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7228,6 +7195,17 @@ class IfcCoolingTowerType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
         assert (predefinedtype != getattr(IfcCoolingTowerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcCoolingTowerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+
+class IfcCoordinateReferenceSystem_NameOrWKT:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcCoordinateReferenceSystem'
+    RULE_NAME = 'NameOrWKT'
+
+    @staticmethod
+    def __call__(self):
+        name = getattr(self, 'Name', INDETERMINATE)
+        wellknowntext = getattr(self, 'WellKnownText', INDETERMINATE)
+        assert (hiindex(wellknowntext) == 1 or exists(name)) is not False
 
 class IfcCourse_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7247,7 +7225,7 @@ class IfcCourse_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifccoursetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifccoursetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCourseType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7277,7 +7255,7 @@ class IfcCovering_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifccoveringtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifccoveringtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCoveringType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7330,7 +7308,7 @@ class IfcCurtainWall_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifccurtainwalltype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifccurtainwalltype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCurtainWallType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7345,20 +7323,6 @@ class IfcCurtainWallType_CorrectPredefinedType:
 def calc_IfcCurve_Dim(self):
     return IfcCurveDim(self)
 
-def calc_IfcCurveSegment_Dim(self):
-    parentcurve = getattr(self, 'ParentCurve', INDETERMINATE)
-    return getattr(parentcurve, 'Dim', INDETERMINATE)
-
-class IfcCurveStyle_MeasureOfWidth:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcCurveStyle'
-    RULE_NAME = 'MeasureOfWidth'
-
-    @staticmethod
-    def __call__(self):
-        curvewidth = getattr(self, 'CurveWidth', INDETERMINATE)
-        assert (not exists(curvewidth) or 'ifc4x3_rc4.ifcpositivelengthmeasure' in typeof(curvewidth) or ('ifc4x3_rc4.ifcdescriptivemeasure' in typeof(curvewidth) and curvewidth == 'bylayer')) is not False
-
 class IfcCurveStyle_IdentifiableCurveStyle:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcCurveStyle'
@@ -7370,6 +7334,16 @@ class IfcCurveStyle_IdentifiableCurveStyle:
         curvewidth = getattr(self, 'CurveWidth', INDETERMINATE)
         curvecolour = getattr(self, 'CurveColour', INDETERMINATE)
         assert (exists(curvefont) or exists(curvewidth) or exists(curvecolour)) is not False
+
+class IfcCurveStyle_MeasureOfWidth:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcCurveStyle'
+    RULE_NAME = 'MeasureOfWidth'
+
+    @staticmethod
+    def __call__(self):
+        curvewidth = getattr(self, 'CurveWidth', INDETERMINATE)
+        assert (not exists(curvewidth) or 'ifc4x3_add2.ifcpositivelengthmeasure' in typeof(curvewidth) or ('ifc4x3_add2.ifcdescriptivemeasure' in typeof(curvewidth) and curvewidth == 'bylayer')) is not False
 
 class IfcCurveStyleFontPattern_VisibleLengthGreaterEqualZero:
     SCOPE = 'entity'
@@ -7399,7 +7373,7 @@ class IfcDamper_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcdampertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcdampertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcDamperType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7419,7 +7393,7 @@ class IfcDeepFoundation_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcdeepfoundationtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcdeepfoundationtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcDerivedProfileDef_InvariantProfileType:
     SCOPE = 'entity'
@@ -7479,7 +7453,7 @@ class IfcDirectrixCurveSweptAreaSolid_DirectrixBounded:
         directrix = getattr(self, 'Directrix', INDETERMINATE)
         startparam = getattr(self, 'StartParam', INDETERMINATE)
         endparam = getattr(self, 'EndParam', INDETERMINATE)
-        assert (exists(startparam) and exists(endparam) or sizeof(['ifc4x3_rc4.ifcconic', 'ifc4x3_rc4.ifcboundedcurve'] * typeof(directrix)) == 1) is not False
+        assert (exists(startparam) and exists(endparam) or sizeof(['ifc4x3_add2.ifcconic', 'ifc4x3_add2.ifcboundedcurve'] * typeof(directrix)) == 1) is not False
 
 class IfcDiscreteAccessory_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7499,7 +7473,7 @@ class IfcDiscreteAccessory_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcdiscreteaccessorytype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcdiscreteaccessorytype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcDiscreteAccessoryType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7529,7 +7503,7 @@ class IfcDistributionBoard_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcdistributionboardtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcdistributionboardtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcDistributionBoardType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7559,7 +7533,7 @@ class IfcDistributionChamberElement_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcdistributionchamberelementtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcdistributionchamberelementtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcDistributionChamberElementType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7592,16 +7566,6 @@ class IfcDocumentReference_WR1:
         referenceddocument = getattr(self, 'ReferencedDocument', INDETERMINATE)
         assert exists(name) ^ exists(referenceddocument) is not False
 
-class IfcDoor_CorrectStyleAssigned:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcDoor'
-    RULE_NAME = 'CorrectStyleAssigned'
-
-    @staticmethod
-    def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcdoortype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
-
 class IfcDoor_CorrectPredefinedType:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcDoor'
@@ -7620,7 +7584,7 @@ class IfcDoor_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcdoortype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcdoortype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcDoorLiningProperties_WR31:
     SCOPE = 'entity'
@@ -7673,7 +7637,7 @@ class IfcDoorLiningProperties_WR35:
 
     @staticmethod
     def __call__(self):
-        assert (exists(lambda : express_getitem(getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and ('ifc4x3_rc4.ifcdoortype' in typeof(express_getitem(getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) or 'ifc4x3_rc4.ifcdoorstyle' in typeof(express_getitem(getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)))) is not False
+        assert (exists(lambda : express_getitem(getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and 'ifc4x3_add2.ifcdoortype' in typeof(express_getitem(getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))) is not False
 
 class IfcDoorPanelProperties_ApplicableToType:
     SCOPE = 'entity'
@@ -7682,7 +7646,7 @@ class IfcDoorPanelProperties_ApplicableToType:
 
     @staticmethod
     def __call__(self):
-        assert (exists(lambda : express_getitem(getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and ('ifc4x3_rc4.ifcdoortype' in typeof(express_getitem(getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) or 'ifc4x3_rc4.ifcdoorstyle' in typeof(express_getitem(getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)))) is not False
+        assert (exists(lambda : express_getitem(getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and 'ifc4x3_add2.ifcdoortype' in typeof(express_getitem(getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))) is not False
 
 class IfcDoorType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7730,7 +7694,7 @@ class IfcDuctFitting_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcductfittingtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcductfittingtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcDuctFittingType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7760,7 +7724,7 @@ class IfcDuctSegment_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcductsegmenttype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcductsegmenttype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcDuctSegmentType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7790,7 +7754,7 @@ class IfcDuctSilencer_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcductsilencertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcductsilencertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcDuctSilencerType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7864,7 +7828,7 @@ class IfcElectricAppliance_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcelectricappliancetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcelectricappliancetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcElectricApplianceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7894,7 +7858,7 @@ class IfcElectricDistributionBoard_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcelectricdistributionboardtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcelectricdistributionboardtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcElectricDistributionBoardType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7924,7 +7888,7 @@ class IfcElectricFlowStorageDevice_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcelectricflowstoragedevicetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcelectricflowstoragedevicetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcElectricFlowStorageDeviceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7954,7 +7918,7 @@ class IfcElectricFlowTreatmentDevice_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcelectricflowtreatmentdevicetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcelectricflowtreatmentdevicetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcElectricFlowTreatmentDeviceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7984,7 +7948,7 @@ class IfcElectricGenerator_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcelectricgeneratortype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcelectricgeneratortype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcElectricGeneratorType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8014,7 +7978,7 @@ class IfcElectricMotor_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcelectricmotortype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcelectricmotortype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcElectricMotorType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8044,7 +8008,7 @@ class IfcElectricTimeControl_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcelectrictimecontroltype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcelectrictimecontroltype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcElectricTimeControlType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8074,7 +8038,7 @@ class IfcElementAssembly_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcelementassemblytype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcelementassemblytype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcElementAssemblyType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8114,7 +8078,7 @@ class IfcEngine_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcenginetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcenginetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcEngineType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8144,7 +8108,7 @@ class IfcEvaporativeCooler_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcevaporativecoolertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcevaporativecoolertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcEvaporativeCoolerType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8174,7 +8138,7 @@ class IfcEvaporator_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcevaporatortype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcevaporatortype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcEvaporatorType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8207,16 +8171,6 @@ class IfcEvent_CorrectTypeAssigned:
         userdefinedeventtriggertype = getattr(self, 'UserDefinedEventTriggerType', INDETERMINATE)
         assert (not exists(eventtriggertype) or eventtriggertype != getattr(IfcEventTriggerTypeEnum, 'USERDEFINED', INDETERMINATE) or (eventtriggertype == getattr(IfcEventTriggerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(userdefinedeventtriggertype))) is not False
 
-class IfcEventType_CorrectPredefinedType:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcEventType'
-    RULE_NAME = 'CorrectPredefinedType'
-
-    @staticmethod
-    def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcEventTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcEventTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ProcessType', INDETERMINATE)))) is not False
-
 class IfcEventType_CorrectEventTriggerType:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcEventType'
@@ -8227,6 +8181,16 @@ class IfcEventType_CorrectEventTriggerType:
         eventtriggertype = getattr(self, 'EventTriggerType', INDETERMINATE)
         userdefinedeventtriggertype = getattr(self, 'UserDefinedEventTriggerType', INDETERMINATE)
         assert (eventtriggertype != getattr(IfcEventTriggerTypeEnum, 'USERDEFINED', INDETERMINATE) or (eventtriggertype == getattr(IfcEventTriggerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(userdefinedeventtriggertype))) is not False
+
+class IfcEventType_CorrectPredefinedType:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcEventType'
+    RULE_NAME = 'CorrectPredefinedType'
+
+    @staticmethod
+    def __call__(self):
+        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != getattr(IfcEventTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcEventTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ProcessType', INDETERMINATE)))) is not False
 
 class IfcExternalReference_WR1:
     SCOPE = 'entity'
@@ -8266,20 +8230,20 @@ class IfcFace_HasOuterBound:
     @staticmethod
     def __call__(self):
         bounds = getattr(self, 'Bounds', INDETERMINATE)
-        assert (sizeof([temp for temp in bounds if 'ifc4x3_rc4.ifcfaceouterbound' in typeof(temp)]) <= 1) is not False
+        assert (sizeof([temp for temp in bounds if 'ifc4x3_add2.ifcfaceouterbound' in typeof(temp)]) <= 1) is not False
 
 def calc_IfcFaceBasedSurfaceModel_Dim(self):
     return 3
 
-class IfcFacilityPart_CorrectPredefinedType:
+class IfcFacilityPartCommon_CorrectPredefinedType:
     SCOPE = 'entity'
-    TYPE_NAME = 'IfcFacilityPart'
+    TYPE_NAME = 'IfcFacilityPartCommon'
     RULE_NAME = 'CorrectPredefinedType'
 
     @staticmethod
     def __call__(self):
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert ((predefinedtype != getattr(IfcBridgePartTypeEnum, 'USERDEFINED', INDETERMINATE) or predefinedtype != getattr(IfcRailwayPartTypeEnum, 'USERDEFINED', INDETERMINATE) or predefinedtype != getattr(IfcRoadPartTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype != getattr(IfcMarinePartTypeEnum, 'USERDEFINED', INDETERMINATE)) or (predefinedtype != getattr(IfcFacilityPartCommonTypeEnum, 'USERDEFINED', INDETERMINATE))) or ((predefinedtype == getattr(IfcBridgePartTypeEnum, 'USERDEFINED', INDETERMINATE) or predefinedtype == getattr(IfcRailwayPartTypeEnum, 'USERDEFINED', INDETERMINATE) or predefinedtype == getattr(IfcRoadPartTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcMarinePartTypeEnum, 'USERDEFINED', INDETERMINATE)) or (predefinedtype == getattr(IfcFacilityPartCommonTypeEnum, 'USERDEFINED', INDETERMINATE))) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcFacilityPartCommonTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcFacilityPartCommonTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcFan_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8299,7 +8263,7 @@ class IfcFan_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcfantype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcfantype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcFanType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8329,7 +8293,7 @@ class IfcFastener_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcfastenertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcfastenertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcFastenerType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8369,24 +8333,6 @@ class IfcFeatureElementSubtraction_IsNotFilling:
     def __call__(self):
         assert (sizeof(getattr(self, 'FillsVoids', INDETERMINATE)) == 0) is not False
 
-class IfcFillAreaStyle_MaxOneColour:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcFillAreaStyle'
-    RULE_NAME = 'MaxOneColour'
-
-    @staticmethod
-    def __call__(self):
-        assert (sizeof([style for style in getattr(self, 'FillStyles', INDETERMINATE) if 'ifc4x3_rc4.ifccolour' in typeof(style)]) <= 1) is not False
-
-class IfcFillAreaStyle_MaxOneExtHatchStyle:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcFillAreaStyle'
-    RULE_NAME = 'MaxOneExtHatchStyle'
-
-    @staticmethod
-    def __call__(self):
-        assert (sizeof([style for style in getattr(self, 'FillStyles', INDETERMINATE) if 'ifc4x3_rc4.ifcexternallydefinedhatchstyle' in typeof(style)]) <= 1) is not False
-
 class IfcFillAreaStyle_ConsistentHatchStyleDef:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcFillAreaStyle'
@@ -8395,6 +8341,24 @@ class IfcFillAreaStyle_ConsistentHatchStyleDef:
     @staticmethod
     def __call__(self):
         assert IfcCorrectFillAreaStyle(getattr(self, 'FillStyles', INDETERMINATE)) is not False
+
+class IfcFillAreaStyle_MaxOneColour:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcFillAreaStyle'
+    RULE_NAME = 'MaxOneColour'
+
+    @staticmethod
+    def __call__(self):
+        assert (sizeof([style for style in getattr(self, 'FillStyles', INDETERMINATE) if 'ifc4x3_add2.ifccolour' in typeof(style)]) <= 1) is not False
+
+class IfcFillAreaStyle_MaxOneExtHatchStyle:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcFillAreaStyle'
+    RULE_NAME = 'MaxOneExtHatchStyle'
+
+    @staticmethod
+    def __call__(self):
+        assert (sizeof([style for style in getattr(self, 'FillStyles', INDETERMINATE) if 'ifc4x3_add2.ifcexternallydefinedhatchstyle' in typeof(style)]) <= 1) is not False
 
 class IfcFillAreaStyleHatching_PatternStart2D:
     SCOPE = 'entity'
@@ -8434,7 +8398,7 @@ class IfcFilter_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcfiltertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcfiltertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcFilterType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8464,7 +8428,7 @@ class IfcFireSuppressionTerminal_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcfiresuppressionterminaltype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcfiresuppressionterminaltype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcFireSuppressionTerminalType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8494,7 +8458,7 @@ class IfcFlowInstrument_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcflowinstrumenttype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcflowinstrumenttype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcFlowInstrumentType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8524,7 +8488,7 @@ class IfcFlowMeter_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcflowmetertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcflowmetertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcFlowMeterType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8554,7 +8518,7 @@ class IfcFooting_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcfootingtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcfootingtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcFootingType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8584,7 +8548,7 @@ class IfcFurniture_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcfurnituretype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcfurnituretype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcFurnitureType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8594,7 +8558,25 @@ class IfcFurnitureType_CorrectPredefinedType:
     @staticmethod
     def __call__(self):
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcFurnitureTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcFurnitureTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcFurnitureTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcFurnitureTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+
+class IfcGeographicCRS_AngleUnitIsPlaneAngle:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcGeographicCRS'
+    RULE_NAME = 'AngleUnitIsPlaneAngle'
+
+    @staticmethod
+    def __call__(self):
+        assert (not exists(getattr(self, 'AngleUnit', INDETERMINATE)) or getattr(getattr(self, 'AngleUnit', INDETERMINATE), 'UnitType', INDETERMINATE) == getattr(IfcUnitEnum, 'PLANEANGLEUNIT', INDETERMINATE)) is not False
+
+class IfcGeographicCRS_HeightUnitIsLength:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcGeographicCRS'
+    RULE_NAME = 'HeightUnitIsLength'
+
+    @staticmethod
+    def __call__(self):
+        assert (not exists(getattr(self, 'HeightUnit', INDETERMINATE)) or getattr(getattr(self, 'HeightUnit', INDETERMINATE), 'UnitType', INDETERMINATE) == getattr(IfcUnitEnum, 'LENGTHUNIT', INDETERMINATE)) is not False
 
 class IfcGeographicElement_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8614,7 +8596,7 @@ class IfcGeographicElement_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcgeographicelementtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcgeographicelementtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcGeographicElementType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8633,7 +8615,7 @@ class IfcGeometricCurveSet_NoSurfaces:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in getattr(self, 'Elements', INDETERMINATE) if 'ifc4x3_rc4.ifcsurface' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in getattr(self, 'Elements', INDETERMINATE) if 'ifc4x3_add2.ifcsurface' in typeof(temp)]) == 0) is not False
 
 class IfcGeometricRepresentationContext_North2D:
     SCOPE = 'entity'
@@ -8645,6 +8627,15 @@ class IfcGeometricRepresentationContext_North2D:
         truenorth = getattr(self, 'TrueNorth', INDETERMINATE)
         assert (not exists(truenorth) or hiindex(getattr(truenorth, 'DirectionRatios', INDETERMINATE)) == 2) is not False
 
+class IfcGeometricRepresentationSubContext_NoCoordOperation:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcGeometricRepresentationSubContext'
+    RULE_NAME = 'NoCoordOperation'
+
+    @staticmethod
+    def __call__(self):
+        assert (sizeof(getattr(self, 'HasCoordinateOperation', INDETERMINATE)) == 0) is not False
+
 class IfcGeometricRepresentationSubContext_ParentNoSub:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcGeometricRepresentationSubContext'
@@ -8653,7 +8644,7 @@ class IfcGeometricRepresentationSubContext_ParentNoSub:
     @staticmethod
     def __call__(self):
         parentcontext = getattr(self, 'ParentContext', INDETERMINATE)
-        assert (not 'ifc4x3_rc4.ifcgeometricrepresentationsubcontext' in typeof(parentcontext)) is not False
+        assert (not 'ifc4x3_add2.ifcgeometricrepresentationsubcontext' in typeof(parentcontext)) is not False
 
 class IfcGeometricRepresentationSubContext_UserTargetProvided:
     SCOPE = 'entity'
@@ -8665,15 +8656,6 @@ class IfcGeometricRepresentationSubContext_UserTargetProvided:
         targetview = getattr(self, 'TargetView', INDETERMINATE)
         userdefinedtargetview = getattr(self, 'UserDefinedTargetView', INDETERMINATE)
         assert (targetview != getattr(IfcGeometricProjectionEnum, 'USERDEFINED', INDETERMINATE) or (targetview == getattr(IfcGeometricProjectionEnum, 'USERDEFINED', INDETERMINATE) and exists(userdefinedtargetview))) is not False
-
-class IfcGeometricRepresentationSubContext_NoCoordOperation:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcGeometricRepresentationSubContext'
-    RULE_NAME = 'NoCoordOperation'
-
-    @staticmethod
-    def __call__(self):
-        assert (sizeof(getattr(self, 'HasCoordinateOperation', INDETERMINATE)) == 0) is not False
 
 def calc_IfcGeometricRepresentationSubContext_WorldCoordinateSystem(self):
     parentcontext = getattr(self, 'ParentContext', INDETERMINATE)
@@ -8705,8 +8687,15 @@ def calc_IfcGeometricSet_Dim(self):
     elements = getattr(self, 'Elements', INDETERMINATE)
     return getattr(express_getitem(elements, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Dim', INDETERMINATE)
 
-def calc_IfcGradientCurve_RelativeElevation(self):
-    return IfcGradient(self)
+class IfcGeotechnicalStratum_CorrectPredefinedType:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcGeotechnicalStratum'
+    RULE_NAME = 'CorrectPredefinedType'
+
+    @staticmethod
+    def __call__(self):
+        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcGeotechnicalStratumTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcGeotechnicalStratumTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcGridAxis_WR1:
     SCOPE = 'entity'
@@ -8751,7 +8740,7 @@ class IfcHeatExchanger_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcheatexchangertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcheatexchangertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcHeatExchangerType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8781,7 +8770,7 @@ class IfcHumidifier_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifchumidifiertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifchumidifiertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcHumidifierType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8792,6 +8781,20 @@ class IfcHumidifierType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
         assert (predefinedtype != getattr(IfcHumidifierTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcHumidifierTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+
+class IfcIShapeProfileDef_ValidFilletRadius:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcIShapeProfileDef'
+    RULE_NAME = 'ValidFilletRadius'
+
+    @staticmethod
+    def __call__(self):
+        overallwidth = getattr(self, 'OverallWidth', INDETERMINATE)
+        overalldepth = getattr(self, 'OverallDepth', INDETERMINATE)
+        webthickness = getattr(self, 'WebThickness', INDETERMINATE)
+        flangethickness = getattr(self, 'FlangeThickness', INDETERMINATE)
+        filletradius = getattr(self, 'FilletRadius', INDETERMINATE)
+        assert (not exists(filletradius) or (filletradius <= (overallwidth - webthickness) / 2.0 and filletradius <= (overalldepth - 2.0 * flangethickness) / 2.0)) is not False
 
 class IfcIShapeProfileDef_ValidFlangeThickness:
     SCOPE = 'entity'
@@ -8815,20 +8818,6 @@ class IfcIShapeProfileDef_ValidWebThickness:
         webthickness = getattr(self, 'WebThickness', INDETERMINATE)
         assert (webthickness < overallwidth) is not False
 
-class IfcIShapeProfileDef_ValidFilletRadius:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcIShapeProfileDef'
-    RULE_NAME = 'ValidFilletRadius'
-
-    @staticmethod
-    def __call__(self):
-        overallwidth = getattr(self, 'OverallWidth', INDETERMINATE)
-        overalldepth = getattr(self, 'OverallDepth', INDETERMINATE)
-        webthickness = getattr(self, 'WebThickness', INDETERMINATE)
-        flangethickness = getattr(self, 'FlangeThickness', INDETERMINATE)
-        filletradius = getattr(self, 'FilletRadius', INDETERMINATE)
-        assert (not exists(filletradius) or (filletradius <= (overallwidth - webthickness) / 2.0 and filletradius <= (overalldepth - 2.0 * flangethickness) / 2.0)) is not False
-
 class IfcImpactProtectionDevice_CorrectPredefinedType:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcImpactProtectionDevice'
@@ -8837,7 +8826,7 @@ class IfcImpactProtectionDevice_CorrectPredefinedType:
     @staticmethod
     def __call__(self):
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or (predefinedtype != getattr(IfcImpactProtectionDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or predefinedtype != getattr(IfcVibrationDamperTypeEnum, 'USERDEFINED', INDETERMINATE) or predefinedtype != getattr(IfcVibrationIsolatorTypeEnum, 'USERDEFINED', INDETERMINATE)) or ((predefinedtype == getattr(IfcImpactProtectionDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or predefinedtype == getattr(IfcVibrationDamperTypeEnum, 'USERDEFINED', INDETERMINATE) or predefinedtype == getattr(IfcVibrationIsolatorTypeEnum, 'USERDEFINED', INDETERMINATE)) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcImpactProtectionDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcImpactProtectionDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcImpactProtectionDevice_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -8847,7 +8836,7 @@ class IfcImpactProtectionDevice_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcimpactprotectiondevicetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcimpactprotectiondevicetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcImpactProtectionDeviceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8857,7 +8846,7 @@ class IfcImpactProtectionDeviceType_CorrectPredefinedType:
     @staticmethod
     def __call__(self):
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert ((predefinedtype != getattr(IfcImpactProtectionDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or predefinedtype != getattr(IfcVibrationDamperTypeEnum, 'USERDEFINED', INDETERMINATE) or predefinedtype != getattr(IfcVibrationIsolatorTypeEnum, 'USERDEFINED', INDETERMINATE)) or ((predefinedtype == getattr(IfcImpactProtectionDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or predefinedtype == getattr(IfcVibrationDamperTypeEnum, 'USERDEFINED', INDETERMINATE) or predefinedtype == getattr(IfcVibrationIsolatorTypeEnum, 'USERDEFINED', INDETERMINATE)) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        assert (predefinedtype != getattr(IfcImpactProtectionDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcImpactProtectionDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcIndexedPolyCurve_Consecutive:
     SCOPE = 'entity'
@@ -8887,7 +8876,7 @@ class IfcInterceptor_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcinterceptortype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcinterceptortype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcInterceptorType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8899,15 +8888,6 @@ class IfcInterceptorType_CorrectPredefinedType:
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
         assert (predefinedtype != getattr(IfcInterceptorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcInterceptorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
-class IfcIntersectionCurve_TwoPCurves:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcIntersectionCurve'
-    RULE_NAME = 'TwoPCurves'
-
-    @staticmethod
-    def __call__(self):
-        assert (sizeof(getattr(self, 'AssociatedGeometry', INDETERMINATE)) == 2) is not False
-
 class IfcIntersectionCurve_DistinctSurfaces:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcIntersectionCurve'
@@ -8916,6 +8896,15 @@ class IfcIntersectionCurve_DistinctSurfaces:
     @staticmethod
     def __call__(self):
         assert (IfcAssociatedSurface(express_getitem(getattr(self, 'AssociatedGeometry', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) != IfcAssociatedSurface(express_getitem(getattr(self, 'AssociatedGeometry', INDETERMINATE), 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))) is not False
+
+class IfcIntersectionCurve_TwoPCurves:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcIntersectionCurve'
+    RULE_NAME = 'TwoPCurves'
+
+    @staticmethod
+    def __call__(self):
+        assert (sizeof(getattr(self, 'AssociatedGeometry', INDETERMINATE)) == 2) is not False
 
 class IfcJunctionBox_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8935,7 +8924,7 @@ class IfcJunctionBox_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcjunctionboxtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcjunctionboxtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcJunctionBoxType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8946,6 +8935,36 @@ class IfcJunctionBoxType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
         assert (predefinedtype != getattr(IfcJunctionBoxTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcJunctionBoxTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+
+class IfcKerb_CorrectPredefinedType:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcKerb'
+    RULE_NAME = 'CorrectPredefinedType'
+
+    @staticmethod
+    def __call__(self):
+        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcKerbTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcKerbTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+
+class IfcKerb_CorrectTypeAssigned:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcKerb'
+    RULE_NAME = 'CorrectTypeAssigned'
+
+    @staticmethod
+    def __call__(self):
+        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifckerbtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+
+class IfcKerbType_CorrectPredefinedType:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcKerbType'
+    RULE_NAME = 'CorrectPredefinedType'
+
+    @staticmethod
+    def __call__(self):
+        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != getattr(IfcKerbTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcKerbTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcLShapeProfileDef_ValidThickness:
     SCOPE = 'entity'
@@ -8997,7 +9016,7 @@ class IfcLamp_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifclamptype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifclamptype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcLampType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9027,7 +9046,7 @@ class IfcLightFixture_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifclightfixturetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifclightfixturetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcLightFixtureType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9068,7 +9087,7 @@ class IfcLiquidTerminal_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcliquidterminaltype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcliquidterminaltype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcLiquidTerminalType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9091,6 +9110,15 @@ class IfcLocalPlacement_WR21:
         relativeplacement = getattr(self, 'RelativePlacement', INDETERMINATE)
         assert IfcCorrectLocalPlacement(relativeplacement, placementrelto) is not False
 
+class IfcMapConversion_TargetCRSOnlyProjected:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcMapConversion'
+    RULE_NAME = 'TargetCRSOnlyProjected'
+
+    @staticmethod
+    def __call__(self):
+        assert ('ifc4x3_add2.ifcprojectedcrs' in typeof(getattr(self, 'TargetCRS', INDETERMINATE))) is not False
+
 class IfcMarineFacility_CorrectPredefinedType:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcMarineFacility'
@@ -9101,6 +9129,16 @@ class IfcMarineFacility_CorrectPredefinedType:
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
         assert (not exists(predefinedtype) or predefinedtype != getattr(IfcMarineFacilityTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcMarineFacilityTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
+class IfcMarinePart_CorrectPredefinedType:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcMarinePart'
+    RULE_NAME = 'CorrectPredefinedType'
+
+    @staticmethod
+    def __call__(self):
+        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcMarinePartTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcMarinePartTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+
 class IfcMaterialDefinitionRepresentation_OnlyStyledRepresentations:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcMaterialDefinitionRepresentation'
@@ -9109,7 +9147,7 @@ class IfcMaterialDefinitionRepresentation_OnlyStyledRepresentations:
     @staticmethod
     def __call__(self):
         representations = getattr(self, 'Representations', INDETERMINATE)
-        assert (sizeof([temp for temp in representations if not 'ifc4x3_rc4.ifcstyledrepresentation' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in representations if not 'ifc4x3_add2.ifcstyledrepresentation' in typeof(temp)]) == 0) is not False
 
 class IfcMaterialLayer_NormalizedPriority:
     SCOPE = 'entity'
@@ -9152,7 +9190,7 @@ class IfcMechanicalFastener_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcmechanicalfastenertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcmechanicalfastenertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcMechanicalFastenerType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9182,7 +9220,7 @@ class IfcMedicalDevice_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcmedicaldevicetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcmedicaldevicetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcMedicalDeviceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9212,16 +9250,7 @@ class IfcMember_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcmembertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
-
-class IfcMemberStandardCase_HasMaterialProfileSetUsage:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcMemberStandardCase'
-    RULE_NAME = 'HasMaterialProfileSetUsage'
-
-    @staticmethod
-    def __call__(self):
-        assert (sizeof([temp for temp in usedin(self, 'ifc4x3_rc4.ifcrelassociates.relatedobjects') if 'ifc4x3_rc4.ifcrelassociatesmaterial' in typeof(temp) and 'ifc4x3_rc4.ifcmaterialprofilesetusage' in typeof(getattr(temp, 'RelatingMaterial', INDETERMINATE))]) == 1) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcmembertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcMemberType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9254,7 +9283,7 @@ class IfcMobileTelecommunicationsAppliance_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcmobiletelecommunicationsappliancetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcmobiletelecommunicationsappliancetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcMobileTelecommunicationsApplianceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9284,7 +9313,7 @@ class IfcMooringDevice_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcmooringdevicetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcmooringdevicetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcMooringDeviceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9314,7 +9343,7 @@ class IfcMotorConnection_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcmotorconnectiontype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcmotorconnectiontype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcMotorConnectionType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9353,7 +9382,7 @@ class IfcNavigationElement_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcnavigationelementtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcnavigationelementtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcNavigationElementType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9464,7 +9493,7 @@ class IfcOrientedEdge_EdgeElementNotOriented:
     @staticmethod
     def __call__(self):
         edgeelement = getattr(self, 'EdgeElement', INDETERMINATE)
-        assert (not 'ifc4x3_rc4.ifcorientededge' in typeof(edgeelement)) is not False
+        assert (not 'ifc4x3_add2.ifcorientededge' in typeof(edgeelement)) is not False
 
 def calc_IfcOrientedEdge_EdgeStart(self):
     edgeelement = getattr(self, 'EdgeElement', INDETERMINATE)
@@ -9494,7 +9523,7 @@ class IfcOutlet_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcoutlettype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcoutlettype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcOutletType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9544,7 +9573,7 @@ class IfcPavement_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcpavementtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcpavementtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcPavementType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9628,7 +9657,7 @@ class IfcPile_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcpiletype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcpiletype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcPileType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9658,7 +9687,7 @@ class IfcPipeFitting_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcpipefittingtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcpipefittingtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcPipeFittingType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9688,7 +9717,7 @@ class IfcPipeSegment_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcpipesegmenttype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcpipesegmenttype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcPipeSegmentType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9730,6 +9759,16 @@ class IfcPixelTexture_NumberOfColours:
         colourcomponents = getattr(self, 'ColourComponents', INDETERMINATE)
         assert (1 <= colourcomponents <= 4) is not False
 
+class IfcPixelTexture_PixelAsByteAndSameLength:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcPixelTexture'
+    RULE_NAME = 'PixelAsByteAndSameLength'
+
+    @staticmethod
+    def __call__(self):
+        pixel = getattr(self, 'Pixel', INDETERMINATE)
+        assert (sizeof([temp for temp in pixel if blength(temp) % 8 == 0 and blength(temp) == blength(express_getitem(pixel, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))]) == sizeof(pixel)) is not False
+
 class IfcPixelTexture_SizeOfPixelList:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcPixelTexture'
@@ -9741,16 +9780,6 @@ class IfcPixelTexture_SizeOfPixelList:
         height = getattr(self, 'Height', INDETERMINATE)
         pixel = getattr(self, 'Pixel', INDETERMINATE)
         assert (sizeof(pixel) == width * height) is not False
-
-class IfcPixelTexture_PixelAsByteAndSameLength:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcPixelTexture'
-    RULE_NAME = 'PixelAsByteAndSameLength'
-
-    @staticmethod
-    def __call__(self):
-        pixel = getattr(self, 'Pixel', INDETERMINATE)
-        assert (sizeof([temp for temp in pixel if blength(temp) % 8 == 0 and blength(temp) == blength(express_getitem(pixel, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))]) == sizeof(pixel)) is not False
 
 def calc_IfcPlacement_Dim(self):
     location = getattr(self, 'Location', INDETERMINATE)
@@ -9774,16 +9803,7 @@ class IfcPlate_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcplatetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
-
-class IfcPlateStandardCase_HasMaterialLayerSetUsage:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcPlateStandardCase'
-    RULE_NAME = 'HasMaterialLayerSetUsage'
-
-    @staticmethod
-    def __call__(self):
-        assert (sizeof([temp for temp in usedin(self, 'ifc4x3_rc4.ifcrelassociates.relatedobjects') if 'ifc4x3_rc4.ifcrelassociatesmaterial' in typeof(temp) and 'ifc4x3_rc4.ifcmateriallayersetusage' in typeof(getattr(temp, 'RelatingMaterial', INDETERMINATE))]) == 1) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcplatetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcPlateType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9795,17 +9815,8 @@ class IfcPlateType_CorrectPredefinedType:
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
         assert (predefinedtype != getattr(IfcPlateTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcPlateTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
-def calc_IfcPointByDistanceExpression_Dim(self):
-    basiscurve = getattr(self, 'BasisCurve', INDETERMINATE)
-    return getattr(basiscurve, 'Dim', INDETERMINATE)
-
-def calc_IfcPointOnCurve_Dim(self):
-    basiscurve = getattr(self, 'BasisCurve', INDETERMINATE)
-    return getattr(basiscurve, 'Dim', INDETERMINATE)
-
-def calc_IfcPointOnSurface_Dim(self):
-    basissurface = getattr(self, 'BasisSurface', INDETERMINATE)
-    return getattr(basissurface, 'Dim', INDETERMINATE)
+def calc_IfcPoint_Dim(self):
+    return IfcPointDim(self)
 
 class IfcPolyLoop_AllPointsSameDim:
     SCOPE = 'entity'
@@ -9835,7 +9846,7 @@ class IfcPolygonalBoundedHalfSpace_BoundaryType:
     @staticmethod
     def __call__(self):
         polygonalboundary = getattr(self, 'PolygonalBoundary', INDETERMINATE)
-        assert (sizeof(typeof(polygonalboundary) * ['ifc4x3_rc4.ifcpolyline', 'ifc4x3_rc4.ifccompositecurve']) == 1) is not False
+        assert (sizeof(typeof(polygonalboundary) * ['ifc4x3_add2.ifcpolyline', 'ifc4x3_add2.ifccompositecurve', 'ifc4x3_add2.ifcindexedpolycurve']) == 1) is not False
 
 class IfcPolyline_SameDim:
     SCOPE = 'entity'
@@ -9846,6 +9857,17 @@ class IfcPolyline_SameDim:
     def __call__(self):
         points = getattr(self, 'Points', INDETERMINATE)
         assert (sizeof([temp for temp in points if getattr(temp, 'Dim', INDETERMINATE) != getattr(express_getitem(points, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Dim', INDETERMINATE)]) == 0) is not False
+
+class IfcPolynomialCurve_CorrectPositionDim:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcPolynomialCurve'
+    RULE_NAME = 'CorrectPositionDim'
+
+    @staticmethod
+    def __call__(self):
+        position = getattr(self, 'Position', INDETERMINATE)
+        coefficientsz = getattr(self, 'CoefficientsZ', INDETERMINATE)
+        assert (getattr(position, 'Dim', INDETERMINATE) == 2 and (not exists(coefficientsz)) or getattr(position, 'Dim', INDETERMINATE) == 3) is not False
 
 class IfcPolynomialCurve_ValidCoefficients:
     SCOPE = 'entity'
@@ -9858,17 +9880,6 @@ class IfcPolynomialCurve_ValidCoefficients:
         coefficientsy = getattr(self, 'CoefficientsY', INDETERMINATE)
         coefficientsz = getattr(self, 'CoefficientsZ', INDETERMINATE)
         assert (exists(coefficientsx) and exists(coefficientsy) or (exists(coefficientsx) and exists(coefficientsz)) or (exists(coefficientsy) and exists(coefficientsz)) or (exists(coefficientsx) and exists(coefficientsy) and exists(coefficientsz))) is not False
-
-class IfcPolynomialCurve_CorrectPositionDim:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcPolynomialCurve'
-    RULE_NAME = 'CorrectPositionDim'
-
-    @staticmethod
-    def __call__(self):
-        position = getattr(self, 'Position', INDETERMINATE)
-        coefficientsz = getattr(self, 'CoefficientsZ', INDETERMINATE)
-        assert (getattr(position, 'Dim', INDETERMINATE) == 2 and (not exists(coefficientsz)) or getattr(position, 'Dim', INDETERMINATE) == 3) is not False
 
 class IfcPositioningElement_HasPlacement:
     SCOPE = 'entity'
@@ -9903,7 +9914,7 @@ class IfcPresentationLayerAssignment_ApplicableItems:
     @staticmethod
     def __call__(self):
         assigneditems = getattr(self, 'AssignedItems', INDETERMINATE)
-        assert (sizeof([temp for temp in assigneditems if sizeof(typeof(temp) * ['ifc4x3_rc4.ifcshaperepresentation', 'ifc4x3_rc4.ifcgeometricrepresentationitem', 'ifc4x3_rc4.ifcmappeditem']) == 1]) == sizeof(assigneditems)) is not False
+        assert (sizeof([temp for temp in assigneditems if sizeof(typeof(temp) * ['ifc4x3_add2.ifcshaperepresentation', 'ifc4x3_add2.ifcgeometricrepresentationitem', 'ifc4x3_add2.ifcmappeditem']) == 1]) == sizeof(assigneditems)) is not False
 
 class IfcPresentationLayerWithStyle_ApplicableOnlyToItems:
     SCOPE = 'entity'
@@ -9913,16 +9924,7 @@ class IfcPresentationLayerWithStyle_ApplicableOnlyToItems:
     @staticmethod
     def __call__(self):
         assigneditems = getattr(self, 'AssignedItems', INDETERMINATE)
-        assert (sizeof([temp for temp in assigneditems if sizeof(typeof(temp) * ['ifc4x3_rc4.ifcgeometricrepresentationitem', 'ifc4x3_rc4.ifcmappeditem']) >= 1]) == sizeof(assigneditems)) is not False
-
-class IfcProcedure_HasName:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcProcedure'
-    RULE_NAME = 'HasName'
-
-    @staticmethod
-    def __call__(self):
-        assert exists(getattr(self, 'Name', INDETERMINATE)) is not False
+        assert (sizeof([temp for temp in assigneditems if sizeof(typeof(temp) * ['ifc4x3_add2.ifcgeometricrepresentationitem', 'ifc4x3_add2.ifcmappeditem']) >= 1]) == sizeof(assigneditems)) is not False
 
 class IfcProcedure_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9933,6 +9935,15 @@ class IfcProcedure_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
         assert (not exists(predefinedtype) or predefinedtype != getattr(IfcProcedureTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcProcedureTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+
+class IfcProcedure_HasName:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcProcedure'
+    RULE_NAME = 'HasName'
+
+    @staticmethod
+    def __call__(self):
+        assert exists(getattr(self, 'Name', INDETERMINATE)) is not False
 
 class IfcProcedureType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9953,7 +9964,7 @@ class IfcProduct_PlacementForShapeRepresentation:
     def __call__(self):
         objectplacement = getattr(self, 'ObjectPlacement', INDETERMINATE)
         representation = getattr(self, 'Representation', INDETERMINATE)
-        assert (exists(representation) and exists(objectplacement) or (exists(representation) and sizeof([temp for temp in getattr(representation, 'Representations', INDETERMINATE) if 'ifc4x3_rc4.ifcshaperepresentation' in typeof(temp)]) == 0) or (not exists(representation))) is not False
+        assert (exists(representation) and exists(objectplacement) or (exists(representation) and sizeof([temp for temp in getattr(representation, 'Representations', INDETERMINATE) if 'ifc4x3_add2.ifcshaperepresentation' in typeof(temp)]) == 0) or (not exists(representation))) is not False
 
 class IfcProductDefinitionShape_OnlyShapeModel:
     SCOPE = 'entity'
@@ -9963,7 +9974,16 @@ class IfcProductDefinitionShape_OnlyShapeModel:
     @staticmethod
     def __call__(self):
         representations = getattr(self, 'Representations', INDETERMINATE)
-        assert (sizeof([temp for temp in representations if not 'ifc4x3_rc4.ifcshapemodel' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in representations if not 'ifc4x3_add2.ifcshapemodel' in typeof(temp)]) == 0) is not False
+
+class IfcProject_CorrectContext:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcProject'
+    RULE_NAME = 'CorrectContext'
+
+    @staticmethod
+    def __call__(self):
+        assert (not exists(getattr(self, 'RepresentationContexts', INDETERMINATE)) or sizeof([temp for temp in getattr(self, 'RepresentationContexts', INDETERMINATE) if 'ifc4x3_add2.ifcgeometricrepresentationsubcontext' in typeof(temp)]) == 0) is not False
 
 class IfcProject_HasName:
     SCOPE = 'entity'
@@ -9974,15 +9994,6 @@ class IfcProject_HasName:
     def __call__(self):
         assert exists(getattr(self, 'Name', INDETERMINATE)) is not False
 
-class IfcProject_CorrectContext:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcProject'
-    RULE_NAME = 'CorrectContext'
-
-    @staticmethod
-    def __call__(self):
-        assert (not exists(getattr(self, 'RepresentationContexts', INDETERMINATE)) or sizeof([temp for temp in getattr(self, 'RepresentationContexts', INDETERMINATE) if 'ifc4x3_rc4.ifcgeometricrepresentationsubcontext' in typeof(temp)]) == 0) is not False
-
 class IfcProject_NoDecomposition:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcProject'
@@ -9992,15 +10003,14 @@ class IfcProject_NoDecomposition:
     def __call__(self):
         assert (sizeof(getattr(self, 'Decomposes', INDETERMINATE)) == 0) is not False
 
-class IfcProjectedCRS_IsLengthUnit:
+class IfcProjectedCRS_MapUnitIsLength:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcProjectedCRS'
-    RULE_NAME = 'IsLengthUnit'
+    RULE_NAME = 'MapUnitIsLength'
 
     @staticmethod
     def __call__(self):
-        mapunit = getattr(self, 'MapUnit', INDETERMINATE)
-        assert (not exists(mapunit) or getattr(mapunit, 'UnitType', INDETERMINATE) == getattr(IfcUnitEnum, 'LENGTHUNIT', INDETERMINATE)) is not False
+        assert (not exists(getattr(self, 'MapUnit', INDETERMINATE)) or getattr(getattr(self, 'MapUnit', INDETERMINATE), 'UnitType', INDETERMINATE) == getattr(IfcUnitEnum, 'LENGTHUNIT', INDETERMINATE)) is not False
 
 class IfcProjectionElement_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10011,6 +10021,17 @@ class IfcProjectionElement_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
         assert (not exists(predefinedtype) or predefinedtype != getattr(IfcProjectionElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcProjectionElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+
+class IfcPropertyBoundedValue_SameUnitLowerSet:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcPropertyBoundedValue'
+    RULE_NAME = 'SameUnitLowerSet'
+
+    @staticmethod
+    def __call__(self):
+        lowerboundvalue = getattr(self, 'LowerBoundValue', INDETERMINATE)
+        setpointvalue = getattr(self, 'SetPointValue', INDETERMINATE)
+        assert (not exists(lowerboundvalue) or not exists(setpointvalue) or typeof(lowerboundvalue) == typeof(setpointvalue)) is not False
 
 class IfcPropertyBoundedValue_SameUnitUpperLower:
     SCOPE = 'entity'
@@ -10033,17 +10054,6 @@ class IfcPropertyBoundedValue_SameUnitUpperSet:
         upperboundvalue = getattr(self, 'UpperBoundValue', INDETERMINATE)
         setpointvalue = getattr(self, 'SetPointValue', INDETERMINATE)
         assert (not exists(upperboundvalue) or not exists(setpointvalue) or typeof(upperboundvalue) == typeof(setpointvalue)) is not False
-
-class IfcPropertyBoundedValue_SameUnitLowerSet:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcPropertyBoundedValue'
-    RULE_NAME = 'SameUnitLowerSet'
-
-    @staticmethod
-    def __call__(self):
-        lowerboundvalue = getattr(self, 'LowerBoundValue', INDETERMINATE)
-        setpointvalue = getattr(self, 'SetPointValue', INDETERMINATE)
-        assert (not exists(lowerboundvalue) or not exists(setpointvalue) or typeof(lowerboundvalue) == typeof(setpointvalue)) is not False
 
 class IfcPropertyDependencyRelationship_NoSelfReference:
     SCOPE = 'entity'
@@ -10172,7 +10182,7 @@ class IfcProtectiveDevice_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcprotectivedevicetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcprotectivedevicetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcProtectiveDeviceTrippingUnit_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10192,7 +10202,7 @@ class IfcProtectiveDeviceTrippingUnit_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcprotectivedevicetrippingunittype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcprotectivedevicetrippingunittype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcProtectiveDeviceTrippingUnitType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10214,15 +10224,6 @@ class IfcProtectiveDeviceType_CorrectPredefinedType:
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
         assert (predefinedtype != getattr(IfcProtectiveDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcProtectiveDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
-class IfcProxy_WR1:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcProxy'
-    RULE_NAME = 'WR1'
-
-    @staticmethod
-    def __call__(self):
-        assert exists(getattr(self, 'Name', INDETERMINATE)) is not False
-
 class IfcPump_CorrectPredefinedType:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcPump'
@@ -10241,7 +10242,7 @@ class IfcPump_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcpumptype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcpumptype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcPumpType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10280,7 +10281,7 @@ class IfcQuantityCount_WR21:
     @staticmethod
     def __call__(self):
         countvalue = getattr(self, 'CountValue', INDETERMINATE)
-        assert (countvalue >= 0.0) is not False
+        assert (countvalue >= 0) is not False
 
 class IfcQuantityLength_WR21:
     SCOPE = 'entity'
@@ -10376,7 +10377,7 @@ class IfcRail_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcrailtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcrailtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcRailType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10406,7 +10407,7 @@ class IfcRailing_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcrailingtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcrailingtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcRailingType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10418,15 +10419,25 @@ class IfcRailingType_CorrectPredefinedType:
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
         assert (predefinedtype != getattr(IfcRailingTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcRailingTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
-class IfcRailway_HasObjectType:
+class IfcRailway_CorrectPredefinedType:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcRailway'
-    RULE_NAME = 'HasObjectType'
+    RULE_NAME = 'CorrectPredefinedType'
 
     @staticmethod
     def __call__(self):
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcRailwayTypeEnum, 'USERDEFINED', INDETERMINATE) or exists(getattr(self, 'ObjectType', INDETERMINATE))) is not False
+        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcRailwayTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcRailwayTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+
+class IfcRailwayPart_CorrectPredefinedType:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcRailwayPart'
+    RULE_NAME = 'CorrectPredefinedType'
+
+    @staticmethod
+    def __call__(self):
+        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcRailwayPartTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcRailwayPartTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcRamp_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10446,7 +10457,7 @@ class IfcRamp_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcramptype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcramptype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcRampFlight_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10466,7 +10477,7 @@ class IfcRampFlight_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcrampflighttype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcrampflighttype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcRampFlightType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10536,16 +10547,6 @@ def calc_IfcRationalBSplineSurfaceWithKnots_Weights(self):
     weightsdata = getattr(self, 'WeightsData', INDETERMINATE)
     return IfcMakeArrayOfArray(weightsdata, 0, uupper, 0, vupper)
 
-class IfcRectangleHollowProfileDef_ValidWallThickness:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcRectangleHollowProfileDef'
-    RULE_NAME = 'ValidWallThickness'
-
-    @staticmethod
-    def __call__(self):
-        wallthickness = getattr(self, 'WallThickness', INDETERMINATE)
-        assert (wallthickness < getattr(self, 'XDim', INDETERMINATE) / 2.0 and wallthickness < getattr(self, 'YDim', INDETERMINATE) / 2.0) is not False
-
 class IfcRectangleHollowProfileDef_ValidInnerRadius:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcRectangleHollowProfileDef'
@@ -10567,6 +10568,16 @@ class IfcRectangleHollowProfileDef_ValidOuterRadius:
         outerfilletradius = getattr(self, 'OuterFilletRadius', INDETERMINATE)
         assert (not exists(outerfilletradius) or (outerfilletradius <= getattr(self, 'XDim', INDETERMINATE) / 2.0 and outerfilletradius <= getattr(self, 'YDim', INDETERMINATE) / 2.0)) is not False
 
+class IfcRectangleHollowProfileDef_ValidWallThickness:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcRectangleHollowProfileDef'
+    RULE_NAME = 'ValidWallThickness'
+
+    @staticmethod
+    def __call__(self):
+        wallthickness = getattr(self, 'WallThickness', INDETERMINATE)
+        assert (wallthickness < getattr(self, 'XDim', INDETERMINATE) / 2.0 and wallthickness < getattr(self, 'YDim', INDETERMINATE) / 2.0) is not False
+
 class IfcRectangularTrimmedSurface_U1AndU2Different:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcRectangularTrimmedSurface'
@@ -10577,17 +10588,6 @@ class IfcRectangularTrimmedSurface_U1AndU2Different:
         u1 = getattr(self, 'U1', INDETERMINATE)
         u2 = getattr(self, 'U2', INDETERMINATE)
         assert (u1 != u2) is not False
-
-class IfcRectangularTrimmedSurface_V1AndV2Different:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcRectangularTrimmedSurface'
-    RULE_NAME = 'V1AndV2Different'
-
-    @staticmethod
-    def __call__(self):
-        v1 = getattr(self, 'V1', INDETERMINATE)
-        v2 = getattr(self, 'V2', INDETERMINATE)
-        assert (v1 != v2) is not False
 
 class IfcRectangularTrimmedSurface_UsenseCompatible:
     SCOPE = 'entity'
@@ -10600,7 +10600,18 @@ class IfcRectangularTrimmedSurface_UsenseCompatible:
         u1 = getattr(self, 'U1', INDETERMINATE)
         u2 = getattr(self, 'U2', INDETERMINATE)
         usense = getattr(self, 'Usense', INDETERMINATE)
-        assert ('ifc4x3_rc4.ifcelementarysurface' in typeof(basissurface) and (not 'ifc4x3_rc4.ifcplane' in typeof(basissurface)) or 'ifc4x3_rc4.ifcsurfaceofrevolution' in typeof(basissurface) or usense == (u2 > u1)) is not False
+        assert ('ifc4x3_add2.ifcelementarysurface' in typeof(basissurface) and (not 'ifc4x3_add2.ifcplane' in typeof(basissurface)) or 'ifc4x3_add2.ifcsurfaceofrevolution' in typeof(basissurface) or usense == (u2 > u1)) is not False
+
+class IfcRectangularTrimmedSurface_V1AndV2Different:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcRectangularTrimmedSurface'
+    RULE_NAME = 'V1AndV2Different'
+
+    @staticmethod
+    def __call__(self):
+        v1 = getattr(self, 'V1', INDETERMINATE)
+        v2 = getattr(self, 'V2', INDETERMINATE)
+        assert (v1 != v2) is not False
 
 class IfcRectangularTrimmedSurface_VsenseCompatible:
     SCOPE = 'entity'
@@ -10642,17 +10653,7 @@ class IfcReinforcingBar_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcreinforcingbartype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
-
-class IfcReinforcingBarType_CorrectPredefinedType:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcReinforcingBarType'
-    RULE_NAME = 'CorrectPredefinedType'
-
-    @staticmethod
-    def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcReinforcingBarTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcReinforcingBarTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcreinforcingbartype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcReinforcingBarType_BendingShapeCodeProvided:
     SCOPE = 'entity'
@@ -10664,6 +10665,16 @@ class IfcReinforcingBarType_BendingShapeCodeProvided:
         bendingshapecode = getattr(self, 'BendingShapeCode', INDETERMINATE)
         bendingparameters = getattr(self, 'BendingParameters', INDETERMINATE)
         assert (not exists(bendingparameters) or exists(bendingshapecode)) is not False
+
+class IfcReinforcingBarType_CorrectPredefinedType:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcReinforcingBarType'
+    RULE_NAME = 'CorrectPredefinedType'
+
+    @staticmethod
+    def __call__(self):
+        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != getattr(IfcReinforcingBarTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcReinforcingBarTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcReinforcingMesh_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10683,17 +10694,7 @@ class IfcReinforcingMesh_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcreinforcingmeshtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
-
-class IfcReinforcingMeshType_CorrectPredefinedType:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcReinforcingMeshType'
-    RULE_NAME = 'CorrectPredefinedType'
-
-    @staticmethod
-    def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcReinforcingMeshTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcReinforcingMeshTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcreinforcingmeshtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcReinforcingMeshType_BendingShapeCodeProvided:
     SCOPE = 'entity'
@@ -10706,6 +10707,16 @@ class IfcReinforcingMeshType_BendingShapeCodeProvided:
         bendingparameters = getattr(self, 'BendingParameters', INDETERMINATE)
         assert (not exists(bendingparameters) or exists(bendingshapecode)) is not False
 
+class IfcReinforcingMeshType_CorrectPredefinedType:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcReinforcingMeshType'
+    RULE_NAME = 'CorrectPredefinedType'
+
+    @staticmethod
+    def __call__(self):
+        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != getattr(IfcReinforcingMeshTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcReinforcingMeshTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+
 class IfcRelAggregates_NoSelfReference:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcRelAggregates'
@@ -10716,17 +10727,6 @@ class IfcRelAggregates_NoSelfReference:
         relatingobject = getattr(self, 'RelatingObject', INDETERMINATE)
         relatedobjects = getattr(self, 'RelatedObjects', INDETERMINATE)
         assert (sizeof([temp for temp in relatedobjects if relatingobject == temp]) == 0) is not False
-
-class IfcRelAssigns_WR1:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcRelAssigns'
-    RULE_NAME = 'WR1'
-
-    @staticmethod
-    def __call__(self):
-        relatedobjects = getattr(self, 'RelatedObjects', INDETERMINATE)
-        relatedobjectstype = getattr(self, 'RelatedObjectsType', INDETERMINATE)
-        assert IfcCorrectObjectAssignment(relatedobjectstype, relatedobjects) is not False
 
 class IfcRelAssignsToActor_NoSelfReference:
     SCOPE = 'entity'
@@ -10788,15 +10788,6 @@ class IfcRelAssignsToResource_NoSelfReference:
         relatingresource = getattr(self, 'RelatingResource', INDETERMINATE)
         assert (sizeof([temp for temp in getattr(self, 'RelatedObjects', INDETERMINATE) if relatingresource == temp]) == 0) is not False
 
-class IfcRelAssociatesMaterial_NoVoidElement:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcRelAssociatesMaterial'
-    RULE_NAME = 'NoVoidElement'
-
-    @staticmethod
-    def __call__(self):
-        assert (sizeof([temp for temp in getattr(self, 'RelatedObjects', INDETERMINATE) if 'ifc4x3_rc4.ifcfeatureelementsubtraction' in typeof(temp) or 'ifc4x3_rc4.ifcvirtualelement' in typeof(temp)]) == 0) is not False
-
 class IfcRelAssociatesMaterial_AllowedElements:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcRelAssociatesMaterial'
@@ -10804,7 +10795,16 @@ class IfcRelAssociatesMaterial_AllowedElements:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in getattr(self, 'RelatedObjects', INDETERMINATE) if sizeof(typeof(temp) * ['ifc4x3_rc4.ifcelement', 'ifc4x3_rc4.ifcelementtype', 'ifc4x3_rc4.ifcwindowstyle', 'ifc4x3_rc4.ifcdoorstyle', 'ifc4x3_rc4.ifcstructuralmember', 'ifc4x3_rc4.ifcport']) == 0]) == 0) is not False
+        assert (sizeof([temp for temp in getattr(self, 'RelatedObjects', INDETERMINATE) if sizeof(typeof(temp) * ['ifc4x3_add2.ifcelement', 'ifc4x3_add2.ifcelementtype', 'ifc4x3_add2.ifcstructuralmember', 'ifc4x3_add2.ifcport']) == 0]) == 0) is not False
+
+class IfcRelAssociatesMaterial_NoVoidElement:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcRelAssociatesMaterial'
+    RULE_NAME = 'NoVoidElement'
+
+    @staticmethod
+    def __call__(self):
+        assert (sizeof([temp for temp in getattr(self, 'RelatedObjects', INDETERMINATE) if 'ifc4x3_add2.ifcfeatureelementsubtraction' in typeof(temp) or 'ifc4x3_add2.ifcvirtualelement' in typeof(temp)]) == 0) is not False
 
 class IfcRelConnectsElements_NoSelfReference:
     SCOPE = 'entity'
@@ -10817,16 +10817,6 @@ class IfcRelConnectsElements_NoSelfReference:
         relatedelement = getattr(self, 'RelatedElement', INDETERMINATE)
         assert (relatingelement != relatedelement) is not False
 
-class IfcRelConnectsPathElements_NormalizedRelatingPriorities:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcRelConnectsPathElements'
-    RULE_NAME = 'NormalizedRelatingPriorities'
-
-    @staticmethod
-    def __call__(self):
-        relatingpriorities = getattr(self, 'RelatingPriorities', INDETERMINATE)
-        assert (sizeof(relatingpriorities) == 0 or sizeof([temp for temp in relatingpriorities if 0 <= temp <= 100]) == sizeof(relatingpriorities)) is not False
-
 class IfcRelConnectsPathElements_NormalizedRelatedPriorities:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcRelConnectsPathElements'
@@ -10836,6 +10826,16 @@ class IfcRelConnectsPathElements_NormalizedRelatedPriorities:
     def __call__(self):
         relatedpriorities = getattr(self, 'RelatedPriorities', INDETERMINATE)
         assert (sizeof(relatedpriorities) == 0 or sizeof([temp for temp in relatedpriorities if 0 <= temp <= 100]) == sizeof(relatedpriorities)) is not False
+
+class IfcRelConnectsPathElements_NormalizedRelatingPriorities:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcRelConnectsPathElements'
+    RULE_NAME = 'NormalizedRelatingPriorities'
+
+    @staticmethod
+    def __call__(self):
+        relatingpriorities = getattr(self, 'RelatingPriorities', INDETERMINATE)
+        assert (sizeof(relatingpriorities) == 0 or sizeof([temp for temp in relatingpriorities if 0 <= temp <= 100]) == sizeof(relatingpriorities)) is not False
 
 class IfcRelConnectsPorts_NoSelfReference:
     SCOPE = 'entity'
@@ -10856,7 +10856,7 @@ class IfcRelContainedInSpatialStructure_WR31:
     @staticmethod
     def __call__(self):
         relatedelements = getattr(self, 'RelatedElements', INDETERMINATE)
-        assert (sizeof([temp for temp in relatedelements if 'ifc4x3_rc4.ifcspatialstructureelement' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in relatedelements if 'ifc4x3_add2.ifcspatialstructureelement' in typeof(temp)]) == 0) is not False
 
 class IfcRelDeclares_NoSelfReference:
     SCOPE = 'entity'
@@ -10876,7 +10876,7 @@ class IfcRelDefinesByProperties_NoRelatedTypeObject:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([types for types in getattr(self, 'RelatedObjects', INDETERMINATE) if 'ifc4x3_rc4.ifctypeobject' in typeof(types)]) == 0) is not False
+        assert (sizeof([types for types in getattr(self, 'RelatedObjects', INDETERMINATE) if 'ifc4x3_add2.ifctypeobject' in typeof(types)]) == 0) is not False
 
 class IfcRelInterferesElements_NoSelfReference:
     SCOPE = 'entity'
@@ -10919,7 +10919,7 @@ class IfcRelReferencedInSpatialStructure_AllowedRelatedElements:
     @staticmethod
     def __call__(self):
         relatedelements = getattr(self, 'RelatedElements', INDETERMINATE)
-        assert (sizeof([temp for temp in relatedelements if 'ifc4x3_rc4.ifcspatialstructureelement' in typeof(temp) and (not 'ifc4x3_rc4.ifcspace' in typeof(temp))]) == 0) is not False
+        assert (sizeof([temp for temp in relatedelements if 'ifc4x3_add2.ifcspatialstructureelement' in typeof(temp) and (not 'ifc4x3_add2.ifcspace' in typeof(temp))]) == 0) is not False
 
 class IfcRelSequence_AvoidInconsistentSequence:
     SCOPE = 'entity'
@@ -10952,7 +10952,7 @@ class IfcRelSpaceBoundary_CorrectPhysOrVirt:
     def __call__(self):
         relatedbuildingelement = getattr(self, 'RelatedBuildingElement', INDETERMINATE)
         physicalorvirtualboundary = getattr(self, 'PhysicalOrVirtualBoundary', INDETERMINATE)
-        assert (physicalorvirtualboundary == getattr(IfcPhysicalOrVirtualEnum, 'Physical', INDETERMINATE) and (not 'ifc4x3_rc4.ifcvirtualelement' in typeof(relatedbuildingelement)) or (physicalorvirtualboundary == getattr(IfcPhysicalOrVirtualEnum, 'Virtual', INDETERMINATE) and ('ifc4x3_rc4.ifcvirtualelement' in typeof(relatedbuildingelement) or 'ifc4x3_rc4.ifcopeningelement' in typeof(relatedbuildingelement))) or physicalorvirtualboundary == getattr(IfcPhysicalOrVirtualEnum, 'NotDefined', INDETERMINATE)) is not False
+        assert (physicalorvirtualboundary == getattr(IfcPhysicalOrVirtualEnum, 'Physical', INDETERMINATE) and (not 'ifc4x3_add2.ifcvirtualelement' in typeof(relatedbuildingelement)) or (physicalorvirtualboundary == getattr(IfcPhysicalOrVirtualEnum, 'Virtual', INDETERMINATE) and ('ifc4x3_add2.ifcvirtualelement' in typeof(relatedbuildingelement) or 'ifc4x3_add2.ifcopeningelement' in typeof(relatedbuildingelement))) or physicalorvirtualboundary == getattr(IfcPhysicalOrVirtualEnum, 'NotDefined', INDETERMINATE)) is not False
 
 class IfcReparametrisedCompositeCurveSegment_PositiveLengthParameter:
     SCOPE = 'entity'
@@ -10972,17 +10972,7 @@ class IfcRepresentationMap_ApplicableMappedRepr:
     @staticmethod
     def __call__(self):
         mappedrepresentation = getattr(self, 'MappedRepresentation', INDETERMINATE)
-        assert ('ifc4x3_rc4.ifcshapemodel' in typeof(mappedrepresentation)) is not False
-
-class IfcRevolvedAreaSolid_AxisStartInXY:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcRevolvedAreaSolid'
-    RULE_NAME = 'AxisStartInXY'
-
-    @staticmethod
-    def __call__(self):
-        axis = getattr(self, 'Axis', INDETERMINATE)
-        assert (express_getitem(getattr(getattr(axis, 'Location', INDETERMINATE), 'Coordinates', INDETERMINATE), 3 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) == 0.0) is not False
+        assert ('ifc4x3_add2.ifcshapemodel' in typeof(mappedrepresentation)) is not False
 
 class IfcRevolvedAreaSolid_AxisDirectionInXY:
     SCOPE = 'entity'
@@ -10993,6 +10983,16 @@ class IfcRevolvedAreaSolid_AxisDirectionInXY:
     def __call__(self):
         axis = getattr(self, 'Axis', INDETERMINATE)
         assert (express_getitem(getattr(getattr(axis, 'Z', INDETERMINATE), 'DirectionRatios', INDETERMINATE), 3 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) == 0.0) is not False
+
+class IfcRevolvedAreaSolid_AxisStartInXY:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcRevolvedAreaSolid'
+    RULE_NAME = 'AxisStartInXY'
+
+    @staticmethod
+    def __call__(self):
+        axis = getattr(self, 'Axis', INDETERMINATE)
+        assert ('ifc4x3_add2.ifccartesianpoint' in typeof(getattr(axis, 'Location', INDETERMINATE)) and express_getitem(getattr(getattr(axis, 'Location', INDETERMINATE), 'Coordinates', INDETERMINATE), 3 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) == 0.0) is not False
 
 def calc_IfcRevolvedAreaSolid_AxisLine(self):
     axis = getattr(self, 'Axis', INDETERMINATE)
@@ -11007,15 +11007,36 @@ class IfcRevolvedAreaSolidTapered_CorrectProfileAssignment:
     def __call__(self):
         assert IfcTaperedSweptAreaProfiles(getattr(self, 'SweptArea', INDETERMINATE), getattr(self, 'EndSweptArea', INDETERMINATE)) is not False
 
-class IfcRoad_HasObjectType:
+class IfcRigidOperation_SameCoordinateType:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcRigidOperation'
+    RULE_NAME = 'SameCoordinateType'
+
+    @staticmethod
+    def __call__(self):
+        firstcoordinate = getattr(self, 'FirstCoordinate', INDETERMINATE)
+        secondcoordinate = getattr(self, 'SecondCoordinate', INDETERMINATE)
+        assert ('ifc4x3_add2.ifclengthmeasure' in typeof(firstcoordinate) and 'ifc4x3_add2.ifclengthmeasure' in typeof(secondcoordinate) or ('ifc4x3_add2.ifcplaneanglemeasure' in typeof(firstcoordinate) and 'ifc4x3_add2.ifcplaneanglemeasure' in typeof(secondcoordinate))) is not False
+
+class IfcRoad_CorrectPredefinedType:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcRoad'
-    RULE_NAME = 'HasObjectType'
+    RULE_NAME = 'CorrectPredefinedType'
 
     @staticmethod
     def __call__(self):
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcRoadTypeEnum, 'USERDEFINED', INDETERMINATE) or exists(getattr(self, 'ObjectType', INDETERMINATE))) is not False
+        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcRoadTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcRoadTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+
+class IfcRoadPart_CorrectPredefinedType:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcRoadPart'
+    RULE_NAME = 'CorrectPredefinedType'
+
+    @staticmethod
+    def __call__(self):
+        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcRoadPartTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcRoadPartTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcRoof_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11035,7 +11056,7 @@ class IfcRoof_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcrooftype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcrooftype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcRoofType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11058,7 +11079,7 @@ class IfcRoundedRectangleProfileDef_ValidRadius:
         assert (roundingradius <= getattr(self, 'XDim', INDETERMINATE) / 2.0 and roundingradius <= getattr(self, 'YDim', INDETERMINATE) / 2.0) is not False
 
 def calc_IfcSIUnit_Dimensions(self):
-    return IfcDimensionsForSiUnit(getattr(self, 'Name', INDETERMINATE))
+    return IfcDimensionsForSIUnit(getattr(self, 'Name', INDETERMINATE))
 
 class IfcSanitaryTerminal_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11078,7 +11099,7 @@ class IfcSanitaryTerminal_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcsanitaryterminaltype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcsanitaryterminaltype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcSanitaryTerminalType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11090,15 +11111,6 @@ class IfcSanitaryTerminalType_CorrectPredefinedType:
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
         assert (predefinedtype != getattr(IfcSanitaryTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcSanitaryTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
-class IfcSeamCurve_TwoPCurves:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcSeamCurve'
-    RULE_NAME = 'TwoPCurves'
-
-    @staticmethod
-    def __call__(self):
-        assert (sizeof(getattr(self, 'AssociatedGeometry', INDETERMINATE)) == 2) is not False
-
 class IfcSeamCurve_SameSurface:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcSeamCurve'
@@ -11108,15 +11120,14 @@ class IfcSeamCurve_SameSurface:
     def __call__(self):
         assert (IfcAssociatedSurface(express_getitem(getattr(self, 'AssociatedGeometry', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) == IfcAssociatedSurface(express_getitem(getattr(self, 'AssociatedGeometry', INDETERMINATE), 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))) is not False
 
-class IfcSectionedSolid_DirectrixIs3D:
+class IfcSeamCurve_TwoPCurves:
     SCOPE = 'entity'
-    TYPE_NAME = 'IfcSectionedSolid'
-    RULE_NAME = 'DirectrixIs3D'
+    TYPE_NAME = 'IfcSeamCurve'
+    RULE_NAME = 'TwoPCurves'
 
     @staticmethod
     def __call__(self):
-        directrix = getattr(self, 'Directrix', INDETERMINATE)
-        assert (getattr(directrix, 'Dim', INDETERMINATE) == 3) is not False
+        assert (sizeof(getattr(self, 'AssociatedGeometry', INDETERMINATE)) == 2) is not False
 
 class IfcSectionedSolid_ConsistentProfileTypes:
     SCOPE = 'entity'
@@ -11127,6 +11138,16 @@ class IfcSectionedSolid_ConsistentProfileTypes:
     def __call__(self):
         crosssections = getattr(self, 'CrossSections', INDETERMINATE)
         assert (sizeof([temp for temp in crosssections if getattr(express_getitem(crosssections, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'ProfileType', INDETERMINATE) != getattr(temp, 'ProfileType', INDETERMINATE)]) == 0) is not False
+
+class IfcSectionedSolid_DirectrixIs3D:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcSectionedSolid'
+    RULE_NAME = 'DirectrixIs3D'
+
+    @staticmethod
+    def __call__(self):
+        directrix = getattr(self, 'Directrix', INDETERMINATE)
+        assert (getattr(directrix, 'Dim', INDETERMINATE) == 3) is not False
 
 class IfcSectionedSolid_SectionsSameType:
     SCOPE = 'entity'
@@ -11159,6 +11180,16 @@ class IfcSectionedSolidHorizontal_NoLongitudinalOffsets:
         crosssectionpositions = getattr(self, 'CrossSectionPositions', INDETERMINATE)
         assert (sizeof([temp for temp in crosssectionpositions if exists(getattr(getattr(temp, 'Location', INDETERMINATE), 'OffsetLongitudinal', INDETERMINATE))]) == 0) is not False
 
+class IfcSectionedSpine_ConsistentProfileTypes:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcSectionedSpine'
+    RULE_NAME = 'ConsistentProfileTypes'
+
+    @staticmethod
+    def __call__(self):
+        crosssections = getattr(self, 'CrossSections', INDETERMINATE)
+        assert (sizeof([temp for temp in crosssections if getattr(express_getitem(crosssections, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'ProfileType', INDETERMINATE) != getattr(temp, 'ProfileType', INDETERMINATE)]) == 0) is not False
+
 class IfcSectionedSpine_CorrespondingSectionPositions:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcSectionedSpine'
@@ -11169,16 +11200,6 @@ class IfcSectionedSpine_CorrespondingSectionPositions:
         crosssections = getattr(self, 'CrossSections', INDETERMINATE)
         crosssectionpositions = getattr(self, 'CrossSectionPositions', INDETERMINATE)
         assert (sizeof(crosssections) == sizeof(crosssectionpositions)) is not False
-
-class IfcSectionedSpine_ConsistentProfileTypes:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcSectionedSpine'
-    RULE_NAME = 'ConsistentProfileTypes'
-
-    @staticmethod
-    def __call__(self):
-        crosssections = getattr(self, 'CrossSections', INDETERMINATE)
-        assert (sizeof([temp for temp in crosssections if getattr(express_getitem(crosssections, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'ProfileType', INDETERMINATE) != getattr(temp, 'ProfileType', INDETERMINATE)]) == 0) is not False
 
 class IfcSectionedSpine_SpineCurveDim:
     SCOPE = 'entity'
@@ -11192,6 +11213,60 @@ class IfcSectionedSpine_SpineCurveDim:
 
 def calc_IfcSectionedSpine_Dim(self):
     return 3
+
+class IfcSectionedSurface_AreaProfileTypes:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcSectionedSurface'
+    RULE_NAME = 'AreaProfileTypes'
+
+    @staticmethod
+    def __call__(self):
+        crosssections = getattr(self, 'CrossSections', INDETERMINATE)
+        assert (sizeof([temp for temp in crosssections if getattr(temp, 'ProfileType', INDETERMINATE) == getattr(IfcProfileTypeEnum, 'CURVE', INDETERMINATE)]) != 0) is not False
+
+class IfcSectionedSurface_CorrespondingSectionPositions:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcSectionedSurface'
+    RULE_NAME = 'CorrespondingSectionPositions'
+
+    @staticmethod
+    def __call__(self):
+        crosssectionpositions = getattr(self, 'CrossSectionPositions', INDETERMINATE)
+        crosssections = getattr(self, 'CrossSections', INDETERMINATE)
+        assert (sizeof(crosssections) == sizeof(crosssectionpositions)) is not False
+
+class IfcSectionedSurface_DirectrixIs3D:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcSectionedSurface'
+    RULE_NAME = 'DirectrixIs3D'
+
+    @staticmethod
+    def __call__(self):
+        directrix = getattr(self, 'Directrix', INDETERMINATE)
+        assert (getattr(directrix, 'Dim', INDETERMINATE) == 3) is not False
+
+class IfcSectionedSurface_NoOffsets:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcSectionedSurface'
+    RULE_NAME = 'NoOffsets'
+
+    @staticmethod
+    def __call__(self):
+        crosssectionpositions = getattr(self, 'CrossSectionPositions', INDETERMINATE)
+        assert (sizeof([temp for temp in crosssectionpositions if exists(getattr(getattr(temp, 'Location', INDETERMINATE), 'OffsetLateral', INDETERMINATE)) or exists(getattr(getattr(temp, 'Location', INDETERMINATE), 'OffsetVertical', INDETERMINATE)) or exists(getattr(getattr(temp, 'Location', INDETERMINATE), 'OffsetLongitudinal', INDETERMINATE))]) == 0) is not False
+
+class IfcSectionedSurface_SectionsSameType:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcSectionedSurface'
+    RULE_NAME = 'SectionsSameType'
+
+    @staticmethod
+    def __call__(self):
+        crosssections = getattr(self, 'CrossSections', INDETERMINATE)
+        assert (sizeof([temp for temp in crosssections if typeof(express_getitem(crosssections, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) != typeof(temp)]) == 0) is not False
+
+def calc_IfcSegment_Dim(self):
+    return IfcSegmentDim(self)
 
 class IfcSensor_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11211,7 +11286,7 @@ class IfcSensor_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcsensortype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcsensortype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcSensorType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11241,7 +11316,7 @@ class IfcShadingDevice_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcshadingdevicetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcshadingdevicetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcShadingDeviceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11270,26 +11345,16 @@ class IfcShapeRepresentation_CorrectContext:
 
     @staticmethod
     def __call__(self):
-        assert ('ifc4x3_rc4.ifcgeometricrepresentationcontext' in typeof(getattr(self, 'ContextOfItems', INDETERMINATE))) is not False
+        assert ('ifc4x3_add2.ifcgeometricrepresentationcontext' in typeof(getattr(self, 'ContextOfItems', INDETERMINATE))) is not False
 
-class IfcShapeRepresentation_NoTopologicalItem:
+class IfcShapeRepresentation_CorrectItemsForType:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcShapeRepresentation'
-    RULE_NAME = 'NoTopologicalItem'
+    RULE_NAME = 'CorrectItemsForType'
 
     @staticmethod
     def __call__(self):
-        items = getattr(self, 'Items', INDETERMINATE)
-        assert (sizeof([temp for temp in items if 'ifc4x3_rc4.ifctopologicalrepresentationitem' in typeof(temp) and (not sizeof(['ifc4x3_rc4.ifcvertexpoint', 'ifc4x3_rc4.ifcedgecurve', 'ifc4x3_rc4.ifcfacesurface'] * typeof(temp)) == 1)]) == 0) is not False
-
-class IfcShapeRepresentation_HasRepresentationType:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcShapeRepresentation'
-    RULE_NAME = 'HasRepresentationType'
-
-    @staticmethod
-    def __call__(self):
-        assert exists(getattr(self, 'RepresentationType', INDETERMINATE)) is not False
+        assert IfcShapeRepresentationTypes(getattr(self, 'RepresentationType', INDETERMINATE), getattr(self, 'Items', INDETERMINATE)) is not False
 
 class IfcShapeRepresentation_HasRepresentationIdentifier:
     SCOPE = 'entity'
@@ -11300,14 +11365,24 @@ class IfcShapeRepresentation_HasRepresentationIdentifier:
     def __call__(self):
         assert exists(getattr(self, 'RepresentationIdentifier', INDETERMINATE)) is not False
 
-class IfcShapeRepresentation_CorrectItemsForType:
+class IfcShapeRepresentation_HasRepresentationType:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcShapeRepresentation'
-    RULE_NAME = 'CorrectItemsForType'
+    RULE_NAME = 'HasRepresentationType'
 
     @staticmethod
     def __call__(self):
-        assert IfcShapeRepresentationTypes(getattr(self, 'RepresentationType', INDETERMINATE), getattr(self, 'Items', INDETERMINATE)) is not False
+        assert exists(getattr(self, 'RepresentationType', INDETERMINATE)) is not False
+
+class IfcShapeRepresentation_NoTopologicalItem:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcShapeRepresentation'
+    RULE_NAME = 'NoTopologicalItem'
+
+    @staticmethod
+    def __call__(self):
+        items = getattr(self, 'Items', INDETERMINATE)
+        assert (sizeof([temp for temp in items if 'ifc4x3_add2.ifctopologicalrepresentationitem' in typeof(temp) and (not sizeof(['ifc4x3_add2.ifcvertexpoint', 'ifc4x3_add2.ifcedgecurve', 'ifc4x3_add2.ifcfacesurface'] * typeof(temp)) == 1)]) == 0) is not False
 
 def calc_IfcShellBasedSurfaceModel_Dim(self):
     return 3
@@ -11330,7 +11405,7 @@ class IfcSign_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcsigntype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcsigntype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcSignType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11360,7 +11435,7 @@ class IfcSignal_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcsignaltype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcsignaltype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcSignalType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11390,25 +11465,7 @@ class IfcSlab_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcslabtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
-
-class IfcSlabElementedCase_HasDecomposition:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcSlabElementedCase'
-    RULE_NAME = 'HasDecomposition'
-
-    @staticmethod
-    def __call__(self):
-        assert (hiindex(getattr(self, 'IsDecomposedBy', INDETERMINATE)) > 0) is not False
-
-class IfcSlabStandardCase_HasMaterialLayerSetusage:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcSlabStandardCase'
-    RULE_NAME = 'HasMaterialLayerSetusage'
-
-    @staticmethod
-    def __call__(self):
-        assert (sizeof([temp for temp in usedin(self, 'ifc4x3_rc4.ifcrelassociates.relatedobjects') if 'ifc4x3_rc4.ifcrelassociatesmaterial' in typeof(temp) and 'ifc4x3_rc4.ifcmateriallayersetusage' in typeof(getattr(temp, 'RelatingMaterial', INDETERMINATE))]) == 1) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcslabtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcSlabType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11438,7 +11495,7 @@ class IfcSolarDevice_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcsolardevicetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcsolardevicetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcSolarDeviceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11471,7 +11528,7 @@ class IfcSpace_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcspacetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcspacetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcSpaceHeater_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11491,7 +11548,7 @@ class IfcSpaceHeater_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcspaceheatertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcspaceheatertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcSpaceHeaterType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11520,7 +11577,7 @@ class IfcSpatialStructureElement_WR41:
 
     @staticmethod
     def __call__(self):
-        assert (hiindex(getattr(self, 'Decomposes', INDETERMINATE)) == 1 and 'ifc4x3_rc4.ifcrelaggregates' in typeof(express_getitem(getattr(self, 'Decomposes', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and ('ifc4x3_rc4.ifcproject' in typeof(getattr(express_getitem(getattr(self, 'Decomposes', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingObject', INDETERMINATE)) or 'ifc4x3_rc4.ifcspatialstructureelement' in typeof(getattr(express_getitem(getattr(self, 'Decomposes', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingObject', INDETERMINATE)))) is not False
+        assert (hiindex(getattr(self, 'Decomposes', INDETERMINATE)) == 1 and 'ifc4x3_add2.ifcrelaggregates' in typeof(express_getitem(getattr(self, 'Decomposes', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and ('ifc4x3_add2.ifcproject' in typeof(getattr(express_getitem(getattr(self, 'Decomposes', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingObject', INDETERMINATE)) or 'ifc4x3_add2.ifcspatialstructureelement' in typeof(getattr(express_getitem(getattr(self, 'Decomposes', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingObject', INDETERMINATE)))) is not False
 
 class IfcSpatialZone_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11540,7 +11597,7 @@ class IfcSpatialZone_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcspatialzonetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcspatialzonetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcSpatialZoneType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11570,7 +11627,7 @@ class IfcStackTerminal_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcstackterminaltype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcstackterminaltype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcStackTerminalType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11600,7 +11657,7 @@ class IfcStair_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcstairtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcstairtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcStairFlight_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11620,7 +11677,7 @@ class IfcStairFlight_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcstairflighttype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcstairflighttype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcStairFlightType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11642,16 +11699,6 @@ class IfcStairType_CorrectPredefinedType:
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
         assert (predefinedtype != getattr(IfcStairTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcStairTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
-class IfcStructuralAnalysisModel_HasObjectType:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcStructuralAnalysisModel'
-    RULE_NAME = 'HasObjectType'
-
-    @staticmethod
-    def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcAnalysisModelTypeEnum, 'USERDEFINED', INDETERMINATE) or exists(getattr(self, 'ObjectType', INDETERMINATE))) is not False
-
 class IfcStructuralAnalysisModel_CorrectPredefinedType:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcStructuralAnalysisModel'
@@ -11660,17 +11707,7 @@ class IfcStructuralAnalysisModel_CorrectPredefinedType:
     @staticmethod
     def __call__(self):
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcAnalysisModelTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcAnalysisModelTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
-
-class IfcStructuralCurveAction_ProjectedIsGlobal:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcStructuralCurveAction'
-    RULE_NAME = 'ProjectedIsGlobal'
-
-    @staticmethod
-    def __call__(self):
-        projectedortrue = getattr(self, 'ProjectedOrTrue', INDETERMINATE)
-        assert (not exists(projectedortrue) or (projectedortrue != projected_length or getattr(self, 'GlobalOrLocal', INDETERMINATE) == global_coords)) is not False
+        assert (predefinedtype != getattr(IfcAnalysisModelTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcAnalysisModelTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcStructuralCurveAction_HasObjectType:
     SCOPE = 'entity'
@@ -11681,6 +11718,16 @@ class IfcStructuralCurveAction_HasObjectType:
     def __call__(self):
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
         assert (predefinedtype != getattr(IfcStructuralCurveActivityTypeEnum, 'USERDEFINED', INDETERMINATE) or exists(getattr(self, 'ObjectType', INDETERMINATE))) is not False
+
+class IfcStructuralCurveAction_ProjectedIsGlobal:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcStructuralCurveAction'
+    RULE_NAME = 'ProjectedIsGlobal'
+
+    @staticmethod
+    def __call__(self):
+        projectedortrue = getattr(self, 'ProjectedOrTrue', INDETERMINATE)
+        assert (not exists(projectedortrue) or (projectedortrue != projected_length or getattr(self, 'GlobalOrLocal', INDETERMINATE) == global_coords)) is not False
 
 class IfcStructuralCurveAction_SuitablePredefinedType:
     SCOPE = 'entity'
@@ -11722,15 +11769,6 @@ class IfcStructuralCurveReaction_SuitablePredefinedType:
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
         assert (predefinedtype != getattr(IfcStructuralCurveActivityTypeEnum, 'SINUS', INDETERMINATE) and predefinedtype != getattr(IfcStructuralCurveActivityTypeEnum, 'PARABOLA', INDETERMINATE)) is not False
 
-class IfcStructuralLinearAction_SuitableLoadType:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcStructuralLinearAction'
-    RULE_NAME = 'SuitableLoadType'
-
-    @staticmethod
-    def __call__(self):
-        assert (sizeof(['ifc4x3_rc4.ifcstructuralloadlinearforce', 'ifc4x3_rc4.ifcstructuralloadtemperature'] * typeof(getattr(self, 'AppliedLoad', INDETERMINATE))) == 1) is not False
-
 class IfcStructuralLinearAction_ConstPredefinedType:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcStructuralLinearAction'
@@ -11739,6 +11777,15 @@ class IfcStructuralLinearAction_ConstPredefinedType:
     @staticmethod
     def __call__(self):
         assert (getattr(self, 'PredefinedType', INDETERMINATE) == getattr(IfcStructuralCurveActivityTypeEnum, 'CONST', INDETERMINATE)) is not False
+
+class IfcStructuralLinearAction_SuitableLoadType:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcStructuralLinearAction'
+    RULE_NAME = 'SuitableLoadType'
+
+    @staticmethod
+    def __call__(self):
+        assert (sizeof(['ifc4x3_add2.ifcstructuralloadlinearforce', 'ifc4x3_add2.ifcstructuralloadtemperature'] * typeof(getattr(self, 'AppliedLoad', INDETERMINATE))) == 1) is not False
 
 class IfcStructuralLoadCase_IsLoadCasePredefinedType:
     SCOPE = 'entity'
@@ -11772,15 +11819,6 @@ class IfcStructuralLoadGroup_HasObjectType:
         actionsource = getattr(self, 'ActionSource', INDETERMINATE)
         assert (predefinedtype != getattr(IfcLoadGroupTypeEnum, 'USERDEFINED', INDETERMINATE) and actiontype != getattr(IfcActionTypeEnum, 'USERDEFINED', INDETERMINATE) and (actionsource != getattr(IfcActionSourceTypeEnum, 'USERDEFINED', INDETERMINATE)) or exists(getattr(self, 'ObjectType', INDETERMINATE))) is not False
 
-class IfcStructuralPlanarAction_SuitableLoadType:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcStructuralPlanarAction'
-    RULE_NAME = 'SuitableLoadType'
-
-    @staticmethod
-    def __call__(self):
-        assert (sizeof(['ifc4x3_rc4.ifcstructuralloadplanarforce', 'ifc4x3_rc4.ifcstructuralloadtemperature'] * typeof(getattr(self, 'AppliedLoad', INDETERMINATE))) == 1) is not False
-
 class IfcStructuralPlanarAction_ConstPredefinedType:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcStructuralPlanarAction'
@@ -11790,6 +11828,15 @@ class IfcStructuralPlanarAction_ConstPredefinedType:
     def __call__(self):
         assert (getattr(self, 'PredefinedType', INDETERMINATE) == getattr(IfcStructuralSurfaceActivityTypeEnum, 'CONST', INDETERMINATE)) is not False
 
+class IfcStructuralPlanarAction_SuitableLoadType:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcStructuralPlanarAction'
+    RULE_NAME = 'SuitableLoadType'
+
+    @staticmethod
+    def __call__(self):
+        assert (sizeof(['ifc4x3_add2.ifcstructuralloadplanarforce', 'ifc4x3_add2.ifcstructuralloadtemperature'] * typeof(getattr(self, 'AppliedLoad', INDETERMINATE))) == 1) is not False
+
 class IfcStructuralPointAction_SuitableLoadType:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcStructuralPointAction'
@@ -11797,7 +11844,7 @@ class IfcStructuralPointAction_SuitableLoadType:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof(['ifc4x3_rc4.ifcstructuralloadsingleforce', 'ifc4x3_rc4.ifcstructuralloadsingledisplacement'] * typeof(getattr(self, 'AppliedLoad', INDETERMINATE))) == 1) is not False
+        assert (sizeof(['ifc4x3_add2.ifcstructuralloadsingleforce', 'ifc4x3_add2.ifcstructuralloadsingledisplacement'] * typeof(getattr(self, 'AppliedLoad', INDETERMINATE))) == 1) is not False
 
 class IfcStructuralPointReaction_SuitableLoadType:
     SCOPE = 'entity'
@@ -11806,7 +11853,7 @@ class IfcStructuralPointReaction_SuitableLoadType:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof(['ifc4x3_rc4.ifcstructuralloadsingleforce', 'ifc4x3_rc4.ifcstructuralloadsingledisplacement'] * typeof(getattr(self, 'AppliedLoad', INDETERMINATE))) == 1) is not False
+        assert (sizeof(['ifc4x3_add2.ifcstructuralloadsingleforce', 'ifc4x3_add2.ifcstructuralloadsingledisplacement'] * typeof(getattr(self, 'AppliedLoad', INDETERMINATE))) == 1) is not False
 
 class IfcStructuralResultGroup_HasObjectType:
     SCOPE = 'entity'
@@ -11818,16 +11865,6 @@ class IfcStructuralResultGroup_HasObjectType:
         theorytype = getattr(self, 'TheoryType', INDETERMINATE)
         assert (theorytype != getattr(IfcAnalysisTheoryTypeEnum, 'USERDEFINED', INDETERMINATE) or exists(getattr(self, 'ObjectType', INDETERMINATE))) is not False
 
-class IfcStructuralSurfaceAction_ProjectedIsGlobal:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcStructuralSurfaceAction'
-    RULE_NAME = 'ProjectedIsGlobal'
-
-    @staticmethod
-    def __call__(self):
-        projectedortrue = getattr(self, 'ProjectedOrTrue', INDETERMINATE)
-        assert (not exists(projectedortrue) or (projectedortrue != projected_length or getattr(self, 'GlobalOrLocal', INDETERMINATE) == global_coords)) is not False
-
 class IfcStructuralSurfaceAction_HasObjectType:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcStructuralSurfaceAction'
@@ -11837,6 +11874,16 @@ class IfcStructuralSurfaceAction_HasObjectType:
     def __call__(self):
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
         assert (predefinedtype != getattr(IfcStructuralSurfaceActivityTypeEnum, 'USERDEFINED', INDETERMINATE) or exists(getattr(self, 'ObjectType', INDETERMINATE))) is not False
+
+class IfcStructuralSurfaceAction_ProjectedIsGlobal:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcStructuralSurfaceAction'
+    RULE_NAME = 'ProjectedIsGlobal'
+
+    @staticmethod
+    def __call__(self):
+        projectedortrue = getattr(self, 'ProjectedOrTrue', INDETERMINATE)
+        assert (not exists(projectedortrue) or (projectedortrue != projected_length or getattr(self, 'GlobalOrLocal', INDETERMINATE) == global_coords)) is not False
 
 class IfcStructuralSurfaceMember_HasObjectType:
     SCOPE = 'entity'
@@ -11866,7 +11913,7 @@ class IfcStyledItem_ApplicableItem:
     @staticmethod
     def __call__(self):
         item = getattr(self, 'Item', INDETERMINATE)
-        assert (not 'ifc4x3_rc4.ifcstyleditem' in typeof(item)) is not False
+        assert (not 'ifc4x3_add2.ifcstyleditem' in typeof(item)) is not False
 
 class IfcStyledRepresentation_OnlyStyledItems:
     SCOPE = 'entity'
@@ -11875,7 +11922,7 @@ class IfcStyledRepresentation_OnlyStyledItems:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in getattr(self, 'Items', INDETERMINATE) if not 'ifc4x3_rc4.ifcstyleditem' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in getattr(self, 'Items', INDETERMINATE) if not 'ifc4x3_add2.ifcstyleditem' in typeof(temp)]) == 0) is not False
 
 class IfcSubContractResource_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11918,20 +11965,20 @@ class IfcSurfaceCurve_CurveIsNotPcurve:
     @staticmethod
     def __call__(self):
         curve3d = getattr(self, 'Curve3D', INDETERMINATE)
-        assert (not 'ifc4x3_rc4.ifcpcurve' in typeof(curve3d)) is not False
+        assert (not 'ifc4x3_add2.ifcpcurve' in typeof(curve3d)) is not False
 
 def calc_IfcSurfaceCurve_BasisSurface(self):
     return IfcGetBasisSurface(self)
 
-class IfcSurfaceFeature_HasObjectType:
+class IfcSurfaceFeature_CorrectPredefinedType:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcSurfaceFeature'
-    RULE_NAME = 'HasObjectType'
+    RULE_NAME = 'CorrectPredefinedType'
 
     @staticmethod
     def __call__(self):
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcSurfaceFeatureTypeEnum, 'USERDEFINED', INDETERMINATE) or exists(getattr(self, 'ObjectType', INDETERMINATE))) is not False
+        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcSurfaceFeatureTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcSurfaceFeatureTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcSurfaceOfLinearExtrusion_DepthGreaterZero:
     SCOPE = 'entity'
@@ -11951,18 +11998,6 @@ def calc_IfcSurfaceOfLinearExtrusion_ExtrusionAxis(self):
 def calc_IfcSurfaceOfRevolution_AxisLine(self):
     axisposition = getattr(self, 'AxisPosition', INDETERMINATE)
     return IfcLine(Pnt=getattr(axisposition, 'Location', INDETERMINATE), Dir=IfcVector(Orientation=getattr(axisposition, 'Z', INDETERMINATE), Magnitude=1.0))
-
-class IfcSurfaceReinforcementArea_SurfaceAndOrShearAreaSpecified:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcSurfaceReinforcementArea'
-    RULE_NAME = 'SurfaceAndOrShearAreaSpecified'
-
-    @staticmethod
-    def __call__(self):
-        surfacereinforcement1 = getattr(self, 'SurfaceReinforcement1', INDETERMINATE)
-        surfacereinforcement2 = getattr(self, 'SurfaceReinforcement2', INDETERMINATE)
-        shearreinforcement = getattr(self, 'ShearReinforcement', INDETERMINATE)
-        assert (exists(surfacereinforcement1) or exists(surfacereinforcement2) or exists(shearreinforcement)) is not False
 
 class IfcSurfaceReinforcementArea_NonnegativeArea1:
     SCOPE = 'entity'
@@ -11994,41 +12029,17 @@ class IfcSurfaceReinforcementArea_NonnegativeArea3:
         shearreinforcement = getattr(self, 'ShearReinforcement', INDETERMINATE)
         assert (not exists(shearreinforcement) or shearreinforcement >= 0.0) is not False
 
-class IfcSurfaceStyle_MaxOneShading:
+class IfcSurfaceReinforcementArea_SurfaceAndOrShearAreaSpecified:
     SCOPE = 'entity'
-    TYPE_NAME = 'IfcSurfaceStyle'
-    RULE_NAME = 'MaxOneShading'
+    TYPE_NAME = 'IfcSurfaceReinforcementArea'
+    RULE_NAME = 'SurfaceAndOrShearAreaSpecified'
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([style for style in getattr(self, 'Styles', INDETERMINATE) if 'ifc4x3_rc4.ifcsurfacestyleshading' in typeof(style)]) <= 1) is not False
-
-class IfcSurfaceStyle_MaxOneLighting:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcSurfaceStyle'
-    RULE_NAME = 'MaxOneLighting'
-
-    @staticmethod
-    def __call__(self):
-        assert (sizeof([style for style in getattr(self, 'Styles', INDETERMINATE) if 'ifc4x3_rc4.ifcsurfacestylelighting' in typeof(style)]) <= 1) is not False
-
-class IfcSurfaceStyle_MaxOneRefraction:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcSurfaceStyle'
-    RULE_NAME = 'MaxOneRefraction'
-
-    @staticmethod
-    def __call__(self):
-        assert (sizeof([style for style in getattr(self, 'Styles', INDETERMINATE) if 'ifc4x3_rc4.ifcsurfacestylerefraction' in typeof(style)]) <= 1) is not False
-
-class IfcSurfaceStyle_MaxOneTextures:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcSurfaceStyle'
-    RULE_NAME = 'MaxOneTextures'
-
-    @staticmethod
-    def __call__(self):
-        assert (sizeof([style for style in getattr(self, 'Styles', INDETERMINATE) if 'ifc4x3_rc4.ifcsurfacestylewithtextures' in typeof(style)]) <= 1) is not False
+        surfacereinforcement1 = getattr(self, 'SurfaceReinforcement1', INDETERMINATE)
+        surfacereinforcement2 = getattr(self, 'SurfaceReinforcement2', INDETERMINATE)
+        shearreinforcement = getattr(self, 'ShearReinforcement', INDETERMINATE)
+        assert (exists(surfacereinforcement1) or exists(surfacereinforcement2) or exists(shearreinforcement)) is not False
 
 class IfcSurfaceStyle_MaxOneExtDefined:
     SCOPE = 'entity'
@@ -12037,7 +12048,43 @@ class IfcSurfaceStyle_MaxOneExtDefined:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([style for style in getattr(self, 'Styles', INDETERMINATE) if 'ifc4x3_rc4.ifcexternallydefinedsurfacestyle' in typeof(style)]) <= 1) is not False
+        assert (sizeof([style for style in getattr(self, 'Styles', INDETERMINATE) if 'ifc4x3_add2.ifcexternallydefinedsurfacestyle' in typeof(style)]) <= 1) is not False
+
+class IfcSurfaceStyle_MaxOneLighting:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcSurfaceStyle'
+    RULE_NAME = 'MaxOneLighting'
+
+    @staticmethod
+    def __call__(self):
+        assert (sizeof([style for style in getattr(self, 'Styles', INDETERMINATE) if 'ifc4x3_add2.ifcsurfacestylelighting' in typeof(style)]) <= 1) is not False
+
+class IfcSurfaceStyle_MaxOneRefraction:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcSurfaceStyle'
+    RULE_NAME = 'MaxOneRefraction'
+
+    @staticmethod
+    def __call__(self):
+        assert (sizeof([style for style in getattr(self, 'Styles', INDETERMINATE) if 'ifc4x3_add2.ifcsurfacestylerefraction' in typeof(style)]) <= 1) is not False
+
+class IfcSurfaceStyle_MaxOneShading:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcSurfaceStyle'
+    RULE_NAME = 'MaxOneShading'
+
+    @staticmethod
+    def __call__(self):
+        assert (sizeof([style for style in getattr(self, 'Styles', INDETERMINATE) if 'ifc4x3_add2.ifcsurfacestyleshading' in typeof(style)]) <= 1) is not False
+
+class IfcSurfaceStyle_MaxOneTextures:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcSurfaceStyle'
+    RULE_NAME = 'MaxOneTextures'
+
+    @staticmethod
+    def __call__(self):
+        assert (sizeof([style for style in getattr(self, 'Styles', INDETERMINATE) if 'ifc4x3_add2.ifcsurfacestylewithtextures' in typeof(style)]) <= 1) is not False
 
 class IfcSweptAreaSolid_SweptAreaType:
     SCOPE = 'entity'
@@ -12048,6 +12095,18 @@ class IfcSweptAreaSolid_SweptAreaType:
     def __call__(self):
         sweptarea = getattr(self, 'SweptArea', INDETERMINATE)
         assert (getattr(sweptarea, 'ProfileType', INDETERMINATE) == getattr(IfcProfileTypeEnum, 'Area', INDETERMINATE)) is not False
+
+class IfcSweptDiskSolid_DirectrixBounded:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcSweptDiskSolid'
+    RULE_NAME = 'DirectrixBounded'
+
+    @staticmethod
+    def __call__(self):
+        directrix = getattr(self, 'Directrix', INDETERMINATE)
+        startparam = getattr(self, 'StartParam', INDETERMINATE)
+        endparam = getattr(self, 'EndParam', INDETERMINATE)
+        assert (exists(startparam) and exists(endparam) or sizeof(['ifc4x3_add2.ifcconic', 'ifc4x3_add2.ifcboundedcurve'] * typeof(directrix)) == 1) is not False
 
 class IfcSweptDiskSolid_DirectrixDim:
     SCOPE = 'entity'
@@ -12070,18 +12129,6 @@ class IfcSweptDiskSolid_InnerRadiusSize:
         innerradius = getattr(self, 'InnerRadius', INDETERMINATE)
         assert (not exists(innerradius) or radius > innerradius) is not False
 
-class IfcSweptDiskSolid_DirectrixBounded:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcSweptDiskSolid'
-    RULE_NAME = 'DirectrixBounded'
-
-    @staticmethod
-    def __call__(self):
-        directrix = getattr(self, 'Directrix', INDETERMINATE)
-        startparam = getattr(self, 'StartParam', INDETERMINATE)
-        endparam = getattr(self, 'EndParam', INDETERMINATE)
-        assert (exists(startparam) and exists(endparam) or sizeof(['ifc4x3_rc4.ifcconic', 'ifc4x3_rc4.ifcboundedcurve'] * typeof(directrix)) == 1) is not False
-
 class IfcSweptDiskSolidPolygonal_CorrectRadii:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcSweptDiskSolidPolygonal'
@@ -12099,7 +12146,7 @@ class IfcSweptDiskSolidPolygonal_DirectrixIsPolyline:
 
     @staticmethod
     def __call__(self):
-        assert ('ifc4x3_rc4.ifcpolyline' in typeof(getattr(self, 'Directrix', INDETERMINATE)) or ('ifc4x3_rc4.ifcindexedpolycurve' in typeof(getattr(self, 'Directrix', INDETERMINATE)) and (not exists(getattr(getattr(self, 'Directrix', INDETERMINATE), 'Segments', INDETERMINATE))))) is not False
+        assert ('ifc4x3_add2.ifcpolyline' in typeof(getattr(self, 'Directrix', INDETERMINATE)) or ('ifc4x3_add2.ifcindexedpolycurve' in typeof(getattr(self, 'Directrix', INDETERMINATE)) and (not exists(getattr(getattr(self, 'Directrix', INDETERMINATE), 'Segments', INDETERMINATE))))) is not False
 
 class IfcSweptSurface_SweptCurveType:
     SCOPE = 'entity'
@@ -12129,7 +12176,7 @@ class IfcSwitchingDevice_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcswitchingdevicetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcswitchingdevicetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcSwitchingDeviceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12159,7 +12206,7 @@ class IfcSystemFurnitureElement_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcsystemfurnitureelementtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcsystemfurnitureelementtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcSystemFurnitureElementType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12169,7 +12216,7 @@ class IfcSystemFurnitureElementType_CorrectPredefinedType:
     @staticmethod
     def __call__(self):
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcSystemFurnitureElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcSystemFurnitureElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcSystemFurnitureElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcSystemFurnitureElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcTShapeProfileDef_ValidFlangeThickness:
     SCOPE = 'entity'
@@ -12243,7 +12290,7 @@ class IfcTank_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifctanktype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifctanktype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcTankType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12255,15 +12302,6 @@ class IfcTankType_CorrectPredefinedType:
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
         assert (predefinedtype != getattr(IfcTankTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcTankTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
-class IfcTask_HasName:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcTask'
-    RULE_NAME = 'HasName'
-
-    @staticmethod
-    def __call__(self):
-        assert exists(getattr(self, 'Name', INDETERMINATE)) is not False
-
 class IfcTask_CorrectPredefinedType:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcTask'
@@ -12273,6 +12311,15 @@ class IfcTask_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
         assert (not exists(predefinedtype) or predefinedtype != getattr(IfcTaskTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcTaskTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+
+class IfcTask_HasName:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcTask'
+    RULE_NAME = 'HasName'
+
+    @staticmethod
+    def __call__(self):
+        assert exists(getattr(self, 'Name', INDETERMINATE)) is not False
 
 class IfcTaskType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12317,7 +12364,7 @@ class IfcTendon_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifctendontype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifctendontype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcTendonAnchor_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12337,7 +12384,7 @@ class IfcTendonAnchor_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifctendonanchortype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifctendonanchortype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcTendonAnchorType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12367,7 +12414,7 @@ class IfcTendonConduit_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifctendonconduittype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifctendonconduittype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcTendonConduitType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12400,7 +12447,7 @@ class IfcTextLiteralWithExtent_WR31:
     @staticmethod
     def __call__(self):
         extent = getattr(self, 'Extent', INDETERMINATE)
-        assert (not 'ifc4x3_rc4.ifcplanarbox' in typeof(extent)) is not False
+        assert (not 'ifc4x3_add2.ifcplanarbox' in typeof(extent)) is not False
 
 class IfcTextStyleFontModel_MeasureOfFontSize:
     SCOPE = 'entity'
@@ -12409,7 +12456,7 @@ class IfcTextStyleFontModel_MeasureOfFontSize:
 
     @staticmethod
     def __call__(self):
-        assert ('ifc4x3_rc4.ifclengthmeasure' in typeof(getattr(self, 'FontSize', INDETERMINATE)) and getattr(self, 'FontSize', INDETERMINATE) > 0.0) is not False
+        assert ('ifc4x3_add2.ifclengthmeasure' in typeof(getattr(self, 'FontSize', INDETERMINATE)) and getattr(self, 'FontSize', INDETERMINATE) > 0.0) is not False
 
 class IfcTopologyRepresentation_WR21:
     SCOPE = 'entity'
@@ -12418,7 +12465,7 @@ class IfcTopologyRepresentation_WR21:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in getattr(self, 'Items', INDETERMINATE) if not 'ifc4x3_rc4.ifctopologicalrepresentationitem' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in getattr(self, 'Items', INDETERMINATE) if not 'ifc4x3_add2.ifctopologicalrepresentationitem' in typeof(temp)]) == 0) is not False
 
 class IfcTopologyRepresentation_WR22:
     SCOPE = 'entity'
@@ -12467,7 +12514,7 @@ class IfcTrackElement_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifctrackelementtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifctrackelementtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcTrackElementType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12497,7 +12544,7 @@ class IfcTransformer_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifctranformertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifctransformertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcTransformerType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12517,7 +12564,7 @@ class IfcTransportElement_CorrectPredefinedType:
     @staticmethod
     def __call__(self):
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or (predefinedtype != getattr(IfcTransportElementFixedTypeEnum, 'USERDEFINED', INDETERMINATE) and predefinedtype != getattr(IfcTransportElementNonFixedTypeEnum, 'USERDEFINED', INDETERMINATE)) or ((predefinedtype == getattr(IfcTransportElementFixedTypeEnum, 'USERDEFINED', INDETERMINATE) or predefinedtype == getattr(IfcTransportElementNonFixedTypeEnum, 'USERDEFINED', INDETERMINATE)) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcTransportElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcTransportElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcTransportElement_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -12527,7 +12574,7 @@ class IfcTransportElement_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifctransportelementtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifctransportelementtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcTransportElementType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12537,7 +12584,7 @@ class IfcTransportElementType_CorrectPredefinedType:
     @staticmethod
     def __call__(self):
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcTransportElementFixedTypeEnum, 'USERDEFINED', INDETERMINATE) and predefinedtype != getattr(IfcTransportElementNonFixedTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcTransportElementFixedTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcTransportElementNonFixedTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE))))) is not False
+        assert (predefinedtype != getattr(IfcTransportElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcTransportElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 def calc_IfcTriangulatedFaceSet_NumberOfTriangles(self):
     coordindex = getattr(self, 'CoordIndex', INDETERMINATE)
@@ -12551,6 +12598,16 @@ class IfcTriangulatedIrregularNetwork_NotClosed:
     @staticmethod
     def __call__(self):
         assert (getattr(self, 'Closed', INDETERMINATE) == False) is not False
+
+class IfcTrimmedCurve_NoTrimOfBoundedCurves:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcTrimmedCurve'
+    RULE_NAME = 'NoTrimOfBoundedCurves'
+
+    @staticmethod
+    def __call__(self):
+        basiscurve = getattr(self, 'BasisCurve', INDETERMINATE)
+        assert (not 'ifc4x3_add2.ifcboundedcurve' in typeof(basiscurve)) is not False
 
 class IfcTrimmedCurve_Trim1ValuesConsistent:
     SCOPE = 'entity'
@@ -12572,16 +12629,6 @@ class IfcTrimmedCurve_Trim2ValuesConsistent:
         trim2 = getattr(self, 'Trim2', INDETERMINATE)
         assert (hiindex(trim2) == 1 or typeof(express_getitem(trim2, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) != typeof(express_getitem(trim2, 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))) is not False
 
-class IfcTrimmedCurve_NoTrimOfBoundedCurves:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcTrimmedCurve'
-    RULE_NAME = 'NoTrimOfBoundedCurves'
-
-    @staticmethod
-    def __call__(self):
-        basiscurve = getattr(self, 'BasisCurve', INDETERMINATE)
-        assert (not 'ifc4x3_rc4.ifcboundedcurve' in typeof(basiscurve)) is not False
-
 class IfcTubeBundle_CorrectPredefinedType:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcTubeBundle'
@@ -12600,7 +12647,7 @@ class IfcTubeBundle_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifctubebundletype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifctubebundletype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcTubeBundleType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12638,7 +12685,7 @@ class IfcTypeProduct_ApplicableOccurrence:
 
     @staticmethod
     def __call__(self):
-        assert (not exists(lambda : express_getitem(getattr(self, 'Types', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) or sizeof([temp for temp in getattr(express_getitem(getattr(self, 'Types', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatedObjects', INDETERMINATE) if not 'ifc4x3_rc4.ifcproduct' in typeof(temp)]) == 0) is not False
+        assert (not exists(lambda : express_getitem(getattr(self, 'Types', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) or sizeof([temp for temp in getattr(express_getitem(getattr(self, 'Types', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatedObjects', INDETERMINATE) if not 'ifc4x3_add2.ifcproduct' in typeof(temp)]) == 0) is not False
 
 class IfcUShapeProfileDef_ValidFlangeThickness:
     SCOPE = 'entity'
@@ -12690,7 +12737,7 @@ class IfcUnitaryControlElement_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcunitarycontrolelementtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcunitarycontrolelementtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcUnitaryControlElementType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12720,7 +12767,7 @@ class IfcUnitaryEquipment_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcunitaryequipmenttype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcunitaryequipmenttype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcUnitaryEquipmentType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12750,7 +12797,7 @@ class IfcValve_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcvalvetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcvalvetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcValveType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12776,6 +12823,36 @@ def calc_IfcVector_Dim(self):
     orientation = getattr(self, 'Orientation', INDETERMINATE)
     return getattr(orientation, 'Dim', INDETERMINATE)
 
+class IfcVehicle_CorrectPredefinedType:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcVehicle'
+    RULE_NAME = 'CorrectPredefinedType'
+
+    @staticmethod
+    def __call__(self):
+        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcVehicleTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcVehicleTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+
+class IfcVehicle_CorrectTypeAssigned:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcVehicle'
+    RULE_NAME = 'CorrectTypeAssigned'
+
+    @staticmethod
+    def __call__(self):
+        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcvehicletype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+
+class IfcVehicleType_CorrectPredefinedType:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcVehicleType'
+    RULE_NAME = 'CorrectPredefinedType'
+
+    @staticmethod
+    def __call__(self):
+        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != getattr(IfcVehicleTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcVehicleTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+
 class IfcVibrationDamper_CorrectPredefinedType:
     SCOPE = 'entity'
     TYPE_NAME = 'IfcVibrationDamper'
@@ -12794,7 +12871,7 @@ class IfcVibrationDamper_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcvibrationdampertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcvibrationdampertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcVibrationDamperType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12824,7 +12901,7 @@ class IfcVibrationIsolator_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcvibrationisolatortype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcvibrationisolatortype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcVibrationIsolatorType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12836,15 +12913,25 @@ class IfcVibrationIsolatorType_CorrectPredefinedType:
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
         assert (predefinedtype != getattr(IfcVibrationIsolatorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcVibrationIsolatorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
-class IfcVoidingFeature_HasObjectType:
+class IfcVirtualElement_CorrectPredefinedType:
     SCOPE = 'entity'
-    TYPE_NAME = 'IfcVoidingFeature'
-    RULE_NAME = 'HasObjectType'
+    TYPE_NAME = 'IfcVirtualElement'
+    RULE_NAME = 'CorrectPredefinedType'
 
     @staticmethod
     def __call__(self):
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcVoidingFeatureTypeEnum, 'USERDEFINED', INDETERMINATE) or exists(getattr(self, 'ObjectType', INDETERMINATE))) is not False
+        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcVirtualElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcVirtualElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+
+class IfcVoidingFeature_CorrectPredefinedType:
+    SCOPE = 'entity'
+    TYPE_NAME = 'IfcVoidingFeature'
+    RULE_NAME = 'CorrectPredefinedType'
+
+    @staticmethod
+    def __call__(self):
+        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcVoidingFeatureTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcVoidingFeatureTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcWall_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12864,16 +12951,7 @@ class IfcWall_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcwalltype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
-
-class IfcWallElementedCase_HasDecomposition:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcWallElementedCase'
-    RULE_NAME = 'HasDecomposition'
-
-    @staticmethod
-    def __call__(self):
-        assert (hiindex(getattr(self, 'IsDecomposedBy', INDETERMINATE)) > 0) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcwalltype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcWallStandardCase_HasMaterialLayerSetUsage:
     SCOPE = 'entity'
@@ -12882,7 +12960,7 @@ class IfcWallStandardCase_HasMaterialLayerSetUsage:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in usedin(self, 'ifc4x3_rc4.ifcrelassociates.relatedobjects') if 'ifc4x3_rc4.ifcrelassociatesmaterial' in typeof(temp) and 'ifc4x3_rc4.ifcmateriallayersetusage' in typeof(getattr(temp, 'RelatingMaterial', INDETERMINATE))]) == 1) is not False
+        assert (sizeof([temp for temp in usedin(self, 'ifc4x3_add2.ifcrelassociates.relatedobjects') if 'ifc4x3_add2.ifcrelassociatesmaterial' in typeof(temp) and 'ifc4x3_add2.ifcmateriallayersetusage' in typeof(getattr(temp, 'RelatingMaterial', INDETERMINATE))]) == 1) is not False
 
 class IfcWallType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12912,7 +12990,7 @@ class IfcWasteTerminal_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcwasteterminaltype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcwasteterminaltype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcWasteTerminalType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12923,16 +13001,6 @@ class IfcWasteTerminalType_CorrectPredefinedType:
     def __call__(self):
         predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
         assert (predefinedtype != getattr(IfcWasteTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcWasteTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
-
-class IfcWindow_CorrectStyleAssigned:
-    SCOPE = 'entity'
-    TYPE_NAME = 'IfcWindow'
-    RULE_NAME = 'CorrectStyleAssigned'
-
-    @staticmethod
-    def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcwindowtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcWindow_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12952,7 +13020,7 @@ class IfcWindow_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc4.ifcwindowtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_add2.ifcwindowtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcWindowLiningProperties_WR31:
     SCOPE = 'entity'
@@ -12994,7 +13062,7 @@ class IfcWindowLiningProperties_WR34:
 
     @staticmethod
     def __call__(self):
-        assert (exists(lambda : express_getitem(getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and ('ifc4x3_rc4.ifcwindowtype' in typeof(express_getitem(getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) or 'ifc4x3_rc4.ifcwindowstyle' in typeof(express_getitem(getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)))) is not False
+        assert (exists(lambda : express_getitem(getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and 'ifc4x3_add2.ifcwindowtype' in typeof(express_getitem(getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))) is not False
 
 class IfcWindowPanelProperties_ApplicableToType:
     SCOPE = 'entity'
@@ -13003,7 +13071,7 @@ class IfcWindowPanelProperties_ApplicableToType:
 
     @staticmethod
     def __call__(self):
-        assert (exists(lambda : express_getitem(getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and ('ifc4x3_rc4.ifcwindowtype' in typeof(express_getitem(getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) or 'ifc4x3_rc4.ifcwindowstyle' in typeof(express_getitem(getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)))) is not False
+        assert (exists(lambda : express_getitem(getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and 'ifc4x3_add2.ifcwindowtype' in typeof(express_getitem(getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))) is not False
 
 class IfcWindowType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -13063,7 +13131,7 @@ class IfcZone_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof(getattr(self, 'IsGroupedBy', INDETERMINATE)) == 0 or sizeof([temp for temp in getattr(express_getitem(getattr(self, 'IsGroupedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatedObjects', INDETERMINATE) if not ('ifc4x3_rc4.ifczone' in typeof(temp) or 'ifc4x3_rc4.ifcspace' in typeof(temp) or 'ifc4x3_rc4.ifcspatialzone' in typeof(temp))]) == 0) is not False
+        assert (sizeof(getattr(self, 'IsGroupedBy', INDETERMINATE)) == 0 or sizeof([temp for temp in getattr(express_getitem(getattr(self, 'IsGroupedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatedObjects', INDETERMINATE) if not ('ifc4x3_add2.ifczone' in typeof(temp) or 'ifc4x3_add2.ifcspace' in typeof(temp) or 'ifc4x3_add2.ifcspatialzone' in typeof(temp))]) == 0) is not False
 
 class IfcRepresentationContextSameWCS:
     SCOPE = 'file'
@@ -13326,10 +13394,10 @@ def IfcCorrectFillAreaStyle(styles):
     tiles = 0
     colour = 0
     external = 0
-    external = sizeof([style for style in styles if 'ifc4x3_rc4.ifcexternallydefinedhatchstyle' in typeof(style)])
-    hatching = sizeof([style for style in styles if 'ifc4x3_rc4.ifcfillareastylehatching' in typeof(style)])
-    tiles = sizeof([style for style in styles if 'ifc4x3_rc4.ifcfillareastyletiles' in typeof(style)])
-    colour = sizeof([style for style in styles if 'ifc4x3_rc4.ifccolour' in typeof(style)])
+    external = sizeof([style for style in styles if 'ifc4x3_add2.ifcexternallydefinedhatchstyle' in typeof(style)])
+    hatching = sizeof([style for style in styles if 'ifc4x3_add2.ifcfillareastylehatching' in typeof(style)])
+    tiles = sizeof([style for style in styles if 'ifc4x3_add2.ifcfillareastyletiles' in typeof(style)])
+    colour = sizeof([style for style in styles if 'ifc4x3_add2.ifccolour' in typeof(style)])
     if external > 1:
         return False
     if external == 1 and (hatching > 0 or tiles > 0 or colour > 0):
@@ -13342,12 +13410,12 @@ def IfcCorrectFillAreaStyle(styles):
 
 def IfcCorrectLocalPlacement(axisplacement, relplacement):
     if exists(relplacement):
-        if 'ifc4x3_rc4.ifcgridplacement' in typeof(relplacement):
+        if 'ifc4x3_add2.ifcgridplacement' in typeof(relplacement):
             return None
-        if 'ifc4x3_rc4.ifclocalplacement' in typeof(relplacement):
-            if 'ifc4x3_rc4.ifcaxis2placement2d' in typeof(axisplacement):
+        if 'ifc4x3_add2.ifclocalplacement' in typeof(relplacement):
+            if 'ifc4x3_add2.ifcaxis2placement2d' in typeof(axisplacement):
                 return True
-            if 'ifc4x3_rc4.ifcaxis2placement3d' in typeof(axisplacement):
+            if 'ifc4x3_add2.ifcaxis2placement3d' in typeof(axisplacement):
                 if getattr(getattr(relplacement, 'RelativePlacement', INDETERMINATE), 'Dim', INDETERMINATE) == 3:
                     return True
                 else:
@@ -13355,49 +13423,19 @@ def IfcCorrectLocalPlacement(axisplacement, relplacement):
         return True
     return None
 
-def IfcCorrectObjectAssignment(constraint, objects):
-    count = 0
-    if not exists(constraint):
-        return True
-    if constraint == getattr(IfcObjectTypeEnum, 'NOTDEFINED', INDETERMINATE):
-        return True
-    elif constraint == getattr(IfcObjectTypeEnum, 'PRODUCT', INDETERMINATE):
-        count = sizeof([temp for temp in objects if not 'ifc4x3_rc4.ifcproduct' in typeof(temp)])
-        return count == 0
-    elif constraint == getattr(IfcObjectTypeEnum, 'PROCESS', INDETERMINATE):
-        count = sizeof([temp for temp in objects if not 'ifc4x3_rc4.ifcprocess' in typeof(temp)])
-        return count == 0
-    elif constraint == getattr(IfcObjectTypeEnum, 'CONTROL', INDETERMINATE):
-        count = sizeof([temp for temp in objects if not 'ifc4x3_rc4.ifccontrol' in typeof(temp)])
-        return count == 0
-    elif constraint == getattr(IfcObjectTypeEnum, 'RESOURCE', INDETERMINATE):
-        count = sizeof([temp for temp in objects if not 'ifc4x3_rc4.ifcresource' in typeof(temp)])
-        return count == 0
-    elif constraint == getattr(IfcObjectTypeEnum, 'ACTOR', INDETERMINATE):
-        count = sizeof([temp for temp in objects if not 'ifc4x3_rc4.ifcactor' in typeof(temp)])
-        return count == 0
-    elif constraint == getattr(IfcObjectTypeEnum, 'GROUP', INDETERMINATE):
-        count = sizeof([temp for temp in objects if not 'ifc4x3_rc4.ifcgroup' in typeof(temp)])
-        return count == 0
-    elif constraint == getattr(IfcObjectTypeEnum, 'PROJECT', INDETERMINATE):
-        count = sizeof([temp for temp in objects if not 'ifc4x3_rc4.ifcproject' in typeof(temp)])
-        return count == 0
-    else:
-        return None
-
 def IfcCorrectUnitAssignment(units):
     namedunitnumber = 0
     derivedunitnumber = 0
     monetaryunitnumber = 0
     namedunitnames = express_set([])
     derivedunitnames = express_set([])
-    namedunitnumber = sizeof([temp for temp in units if 'ifc4x3_rc4.ifcnamedunit' in typeof(temp) and (not getattr(temp, 'UnitType', INDETERMINATE) == getattr(IfcUnitEnum, 'USERDEFINED', INDETERMINATE))])
-    derivedunitnumber = sizeof([temp for temp in units if 'ifc4x3_rc4.ifcderivedunit' in typeof(temp) and (not getattr(temp, 'UnitType', INDETERMINATE) == getattr(IfcDerivedUnitEnum, 'USERDEFINED', INDETERMINATE))])
-    monetaryunitnumber = sizeof([temp for temp in units if 'ifc4x3_rc4.ifcmonetaryunit' in typeof(temp)])
+    namedunitnumber = sizeof([temp for temp in units if 'ifc4x3_add2.ifcnamedunit' in typeof(temp) and (not getattr(temp, 'UnitType', INDETERMINATE) == getattr(IfcUnitEnum, 'USERDEFINED', INDETERMINATE))])
+    derivedunitnumber = sizeof([temp for temp in units if 'ifc4x3_add2.ifcderivedunit' in typeof(temp) and (not getattr(temp, 'UnitType', INDETERMINATE) == getattr(IfcDerivedUnitEnum, 'USERDEFINED', INDETERMINATE))])
+    monetaryunitnumber = sizeof([temp for temp in units if 'ifc4x3_add2.ifcmonetaryunit' in typeof(temp)])
     for i in range(1, sizeof(units) + 1):
-        if 'ifc4x3_rc4.ifcnamedunit' in typeof(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and (not getattr(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'UnitType', INDETERMINATE) == getattr(IfcUnitEnum, 'USERDEFINED', INDETERMINATE)):
+        if 'ifc4x3_add2.ifcnamedunit' in typeof(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and (not getattr(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'UnitType', INDETERMINATE) == getattr(IfcUnitEnum, 'USERDEFINED', INDETERMINATE)):
             namedunitnames = namedunitnames + getattr(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'UnitType', INDETERMINATE)
-        if 'ifc4x3_rc4.ifcderivedunit' in typeof(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and (not getattr(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'UnitType', INDETERMINATE) == getattr(IfcDerivedUnitEnum, 'USERDEFINED', INDETERMINATE)):
+        if 'ifc4x3_add2.ifcderivedunit' in typeof(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and (not getattr(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'UnitType', INDETERMINATE) == getattr(IfcDerivedUnitEnum, 'USERDEFINED', INDETERMINATE)):
             derivedunitnames = derivedunitnames + getattr(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'UnitType', INDETERMINATE)
     return sizeof(namedunitnames) == namedunitnumber and sizeof(derivedunitnames) == derivedunitnumber and (monetaryunitnumber <= 1)
 
@@ -13418,38 +13456,40 @@ def IfcCrossProduct(arg1, arg2):
         return result
 
 def IfcCurveDim(curve):
-    if 'ifc4x3_rc4.ifcline' in typeof(curve):
+    if 'ifc4x3_add2.ifcline' in typeof(curve):
         return getattr(getattr(curve, 'Pnt', INDETERMINATE), 'Dim', INDETERMINATE)
-    if 'ifc4x3_rc4.ifcconic' in typeof(curve):
+    if 'ifc4x3_add2.ifcconic' in typeof(curve):
         return getattr(getattr(curve, 'Position', INDETERMINATE), 'Dim', INDETERMINATE)
-    if 'ifc4x3_rc4.ifcpolyline' in typeof(curve):
+    if 'ifc4x3_add2.ifcpolyline' in typeof(curve):
         return getattr(express_getitem(getattr(curve, 'Points', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Dim', INDETERMINATE)
-    if 'ifc4x3_rc4.ifctrimmedcurve' in typeof(curve):
+    if 'ifc4x3_add2.ifctrimmedcurve' in typeof(curve):
         return IfcCurveDim(getattr(curve, 'BasisCurve', INDETERMINATE))
-    if 'ifc4x3_rc4.ifcgradientcurve' in typeof(curve):
+    if 'ifc4x3_add2.ifcgradientcurve' in typeof(curve):
         return 3
-    if 'ifc4x3_rc4.ifcsegmentedreferencecurve' in typeof(curve):
+    if 'ifc4x3_add2.ifcsegmentedreferencecurve' in typeof(curve):
         return 3
-    if 'ifc4x3_rc4.ifccompositecurve' in typeof(curve):
+    if 'ifc4x3_add2.ifccompositecurve' in typeof(curve):
         return getattr(express_getitem(getattr(curve, 'Segments', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Dim', INDETERMINATE)
-    if 'ifc4x3_rc4.ifcbsplinecurve' in typeof(curve):
+    if 'ifc4x3_add2.ifcbsplinecurve' in typeof(curve):
         return getattr(express_getitem(getattr(curve, 'ControlPointsList', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Dim', INDETERMINATE)
-    if 'ifc4x3_rc4.ifcoffsetcurve2d' in typeof(curve):
+    if 'ifc4x3_add2.ifcoffsetcurve2d' in typeof(curve):
         return 2
-    if 'ifc4x3_rc4.ifcoffsetcurve3d' in typeof(curve):
+    if 'ifc4x3_add2.ifcoffsetcurve3d' in typeof(curve):
         return 3
-    if 'ifc4x3_rc4.ifcoffsetcurvebydistances' in typeof(curve):
+    if 'ifc4x3_add2.ifcoffsetcurvebydistances' in typeof(curve):
         return 3
-    if 'ifc4x3_rc4.ifccurvesegment2d' in typeof(curve):
+    if 'ifc4x3_add2.ifccurvesegment2d' in typeof(curve):
         return 2
-    if 'ifc4x3_rc4.ifcpolynomialcurve' in typeof(curve):
+    if 'ifc4x3_add2.ifcpolynomialcurve' in typeof(curve):
         if not exists(getattr(curve, 'CoefficientsZ', INDETERMINATE)) and getattr(getattr(curve, 'Position', INDETERMINATE), 'Dim', INDETERMINATE) == 2:
             return 2
         return 3
-    if 'ifc4x3_rc4.ifcpcurve' in typeof(curve):
+    if 'ifc4x3_add2.ifcpcurve' in typeof(curve):
         return 3
-    if 'ifc4x3_rc4.ifcindexedpolycurve' in typeof(curve):
+    if 'ifc4x3_add2.ifcindexedpolycurve' in typeof(curve):
         return getattr(getattr(curve, 'Points', INDETERMINATE), 'Dim', INDETERMINATE)
+    if 'ifc4x3_add2.ifcspiral' in typeof(curve):
+        return getattr(getattr(curve, 'Position', INDETERMINATE), 'Dim', INDETERMINATE)
     return None
 
 def IfcCurveWeightsPositive(b):
@@ -13472,7 +13512,7 @@ def IfcDeriveDimensionalExponents(unitelements):
         result.LuminousIntensityExponent = getattr(result, 'LuminousIntensityExponent', INDETERMINATE) + getattr(express_getitem(unitelements, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Exponent', INDETERMINATE) * getattr(getattr(getattr(express_getitem(unitelements, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Unit', INDETERMINATE), 'Dimensions', INDETERMINATE), 'LuminousIntensityExponent', INDETERMINATE)
     return result
 
-def IfcDimensionsForSiUnit(n):
+def IfcDimensionsForSIUnit(n):
     if n == metre:
         return IfcDimensionalExponents(1, 0, 0, 0, 0, 0, 0)
     elif n == square_metre:
@@ -13574,22 +13614,25 @@ def IfcFirstProjAxis(zaxis, arg):
 
 def IfcGetBasisSurface(c):
     surfs = []
-    if 'ifc4x3_rc4.ifcpcurve' in typeof(c):
+    if 'ifc4x3_add2.ifcpcurve' in typeof(c):
         surfs = [getattr(c, 'BasisSurface', INDETERMINATE)]
-    elif 'ifc4x3_rc4.ifcsurfacecurve' in typeof(c):
+    elif 'ifc4x3_add2.ifcsurfacecurve' in typeof(c):
         n = sizeof(getattr(c, 'AssociatedGeometry', INDETERMINATE))
         for i in range(1, n + 1):
             surfs = surfs + IfcAssociatedSurface(express_getitem(getattr(c, 'AssociatedGeometry', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))
-    if 'ifc4x3_rc4.ifccompositecurveonsurface' in typeof(c):
+    if 'ifc4x3_add2.ifccompositecurveonsurface' in typeof(c):
         n = sizeof(getattr(c, 'Segments', INDETERMINATE))
-        surfs = IfcGetBasisSurface(getattr(express_getitem(getattr(c, 'Segments', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'ParentCurve', INDETERMINATE))
+        if 'ifc4x3_add2.ifccurvesegment' in typeof(express_getitem(getattr(c, 'Segments', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)):
+            surfs = IfcGetBasisSurface(getattr(express_getitem(getattr(c, 'Segments', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'ParentCurve', INDETERMINATE))
+        if 'ifc4x3_add2.ifccompositecurvesegment' in typeof(express_getitem(getattr(c, 'Segments', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)):
+            surfs = IfcGetBasisSurface(getattr(express_getitem(getattr(c, 'Segments', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'ParentCurve', INDETERMINATE))
         if n > 1:
             for i in range(2, n + 1):
-                surfs = surfs * IfcGetBasisSurface(getattr(express_getitem(getattr(c, 'Segments', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'ParentCurve', INDETERMINATE))
+                if 'ifc4x3_add2.ifccurvesegment' in typeof(express_getitem(getattr(c, 'Segments', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)):
+                    surfs = surfs * IfcGetBasisSurface(getattr(express_getitem(getattr(c, 'Segments', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'ParentCurve', INDETERMINATE))
+                if 'ifc4x3_add2.ifccompositecurvesegment' in typeof(express_getitem(getattr(c, 'Segments', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)):
+                    surfs = surfs * IfcGetBasisSurface(getattr(express_getitem(getattr(c, 'Segments', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'ParentCurve', INDETERMINATE))
     return surfs
-
-def IfcGradient(gradientcurve):
-    return 1
 
 def IfcListToArray(lis, low, u):
     n = sizeof(lis)
@@ -13638,7 +13681,7 @@ def IfcNormalise(arg):
     if not exists(arg):
         return None
     else:
-        if 'ifc4x3_rc4.ifcvector' in typeof(arg):
+        if 'ifc4x3_add2.ifcvector' in typeof(arg):
             ndim = getattr(arg, 'Dim', INDETERMINATE)
             v.DirectionRatios = getattr(getattr(arg, 'Orientation', INDETERMINATE), 'DirectionRatios', INDETERMINATE)
             vec.Magnitude = getattr(arg, 'Magnitude', INDETERMINATE)
@@ -13659,7 +13702,7 @@ def IfcNormalise(arg):
                 temp = list(getattr(v, 'DirectionRatios', INDETERMINATE))
                 temp[i - EXPRESS_ONE_BASED_INDEXING] = express_getitem(getattr(v, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) / mag
                 v.DirectionRatios = temp
-            if 'ifc4x3_rc4.ifcvector' in typeof(arg):
+            if 'ifc4x3_add2.ifcvector' in typeof(arg):
                 vec.Orientation = v
                 result = vec
             else:
@@ -13683,15 +13726,26 @@ def IfcPathHeadToTail(apath):
         p = p and getattr(express_getitem(getattr(apath, 'EdgeList', INDETERMINATE), i - 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'EdgeEnd', INDETERMINATE) == getattr(express_getitem(getattr(apath, 'EdgeList', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'EdgeStart', INDETERMINATE)
     return p
 
+def IfcPointDim(point):
+    if 'ifc4x3_add2.ifccartesianpoint' in typeof(point):
+        return hiindex(getattr(point, 'Coordinates', INDETERMINATE))
+    if 'ifc4x3_add2.ifcpointbydistanceexpression' in typeof(point):
+        return getattr(getattr(point, 'BasisCurve', INDETERMINATE), 'Dim', INDETERMINATE)
+    if 'ifc4x3_add2.ifcpointoncurve' in typeof(point):
+        return getattr(getattr(point, 'BasisCurve', INDETERMINATE), 'Dim', INDETERMINATE)
+    if 'ifc4x3_add2.ifcpointonsurface' in typeof(point):
+        return getattr(getattr(point, 'BasisSurface', INDETERMINATE), 'Dim', INDETERMINATE)
+    return None
+
 def IfcPointListDim(pointlist):
-    if 'ifc4x3_rc4.ifccartesianpointlist2d' in typeof(pointlist):
+    if 'ifc4x3_add2.ifccartesianpointlist2d' in typeof(pointlist):
         return 2
-    if 'ifc4x3_rc4.ifccartesianpointlist3d' in typeof(pointlist):
+    if 'ifc4x3_add2.ifccartesianpointlist3d' in typeof(pointlist):
         return 3
     return None
 
 def IfcSameAxis2Placement(ap1, ap2, epsilon):
-    return IfcSameDirection(express_getitem(getattr(ap1, 'P', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), express_getitem(getattr(ap2, 'P', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), epsilon) and IfcSameDirection(express_getitem(getattr(ap1, 'P', INDETERMINATE), 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), express_getitem(getattr(ap2, 'P', INDETERMINATE), 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), epsilon) and IfcSameCartesianPoint(getattr(ap1, 'Location', INDETERMINATE), getattr(ap1, 'Location', INDETERMINATE), epsilon)
+    return IfcSameDirection(express_getitem(getattr(ap1, 'P', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), express_getitem(getattr(ap2, 'P', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), epsilon) and IfcSameDirection(express_getitem(getattr(ap1, 'P', INDETERMINATE), 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), express_getitem(getattr(ap2, 'P', INDETERMINATE), 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), epsilon) and IfcSameCartesianPoint(getattr(ap1, 'Location', INDETERMINATE), getattr(ap2, 'Location', INDETERMINATE), epsilon)
 
 def IfcSameCartesianPoint(cp1, cp2, epsilon):
     cp1x = express_getitem(getattr(cp1, 'Coordinates', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
@@ -13736,7 +13790,7 @@ def IfcScalarTimesVector(scalar, vec):
     if not exists(scalar) or not exists(vec):
         return None
     else:
-        if 'ifc4x3_rc4.ifcvector' in typeof(vec):
+        if 'ifc4x3_add2.ifcvector' in typeof(vec):
             v = getattr(vec, 'Orientation', INDETERMINATE)
             mag = scalar * getattr(vec, 'Magnitude', INDETERMINATE)
         else:
@@ -13763,70 +13817,81 @@ def IfcSecondProjAxis(zaxis, xaxis, arg):
     yaxis = IfcNormalise(yaxis)
     return getattr(yaxis, 'Orientation', INDETERMINATE)
 
+def IfcSegmentDim(segment):
+    if 'ifc4x3_add2.ifccurvesegment' in typeof(segment):
+        return getattr(getattr(segment, 'ParentCurve', INDETERMINATE), 'Dim', INDETERMINATE)
+    if 'ifc4x3_add2.ifccompositecurvesegment' in typeof(segment):
+        return getattr(getattr(segment, 'ParentCurve', INDETERMINATE), 'Dim', INDETERMINATE)
+    return None
+
 def IfcShapeRepresentationTypes(reptype, items):
     count = 0
     if getattr(reptype, 'lower', INDETERMINATE)() == 'point':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc4.ifcpoint' in typeof(temp)])
+        count = sizeof([temp for temp in items if 'ifc4x3_add2.ifcpoint' in typeof(temp) or 'ifc4x3_add2.ifccartesianpointlist' in typeof(temp)])
     elif getattr(reptype, 'lower', INDETERMINATE)() == 'pointcloud':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc4.ifccartesianpointlist3d' in typeof(temp)])
+        count = sizeof([temp for temp in items if 'ifc4x3_add2.ifccartesianpointlist3d' in typeof(temp)])
     elif getattr(reptype, 'lower', INDETERMINATE)() == 'curve':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc4.ifccurve' in typeof(temp)])
+        count = sizeof([temp for temp in items if 'ifc4x3_add2.ifccurve' in typeof(temp)])
     elif getattr(reptype, 'lower', INDETERMINATE)() == 'curve2d':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc4.ifccurve' in typeof(temp) and getattr(temp, 'Dim', INDETERMINATE) == 2])
+        count = sizeof([temp for temp in items if 'ifc4x3_add2.ifccurve' in typeof(temp) and getattr(temp, 'Dim', INDETERMINATE) == 2])
     elif getattr(reptype, 'lower', INDETERMINATE)() == 'curve3d':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc4.ifccurve' in typeof(temp) and getattr(temp, 'Dim', INDETERMINATE) == 3])
+        count = sizeof([temp for temp in items if 'ifc4x3_add2.ifccurve' in typeof(temp) and getattr(temp, 'Dim', INDETERMINATE) == 3])
+    elif getattr(reptype, 'lower', INDETERMINATE)() == 'segment':
+        count = sizeof([temp for temp in items if 'ifc4x3_add2.ifcsegment' in typeof(temp)])
     elif getattr(reptype, 'lower', INDETERMINATE)() == 'surface':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc4.ifcsurface' in typeof(temp)])
+        count = sizeof([temp for temp in items if 'ifc4x3_add2.ifcsurface' in typeof(temp)])
     elif getattr(reptype, 'lower', INDETERMINATE)() == 'surface2d':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc4.ifcsurface' in typeof(temp) and getattr(temp, 'Dim', INDETERMINATE) == 2])
+        count = sizeof([temp for temp in items if 'ifc4x3_add2.ifcsurface' in typeof(temp) and getattr(temp, 'Dim', INDETERMINATE) == 2])
     elif getattr(reptype, 'lower', INDETERMINATE)() == 'surface3d':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc4.ifcsurface' in typeof(temp) and getattr(temp, 'Dim', INDETERMINATE) == 3])
+        count = sizeof([temp for temp in items if 'ifc4x3_add2.ifcsurface' in typeof(temp) and getattr(temp, 'Dim', INDETERMINATE) == 3])
+    elif getattr(reptype, 'lower', INDETERMINATE)() == 'sectionedsurface':
+        count = sizeof([temp for temp in items if 'ifc4x3_add2.ifcsectionedsurface' in typeof(temp)])
     elif getattr(reptype, 'lower', INDETERMINATE)() == 'fillarea':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc4.ifcannotationfillarea' in typeof(temp)])
+        count = sizeof([temp for temp in items if 'ifc4x3_add2.ifcannotationfillarea' in typeof(temp)])
     elif getattr(reptype, 'lower', INDETERMINATE)() == 'text':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc4.ifctextliteral' in typeof(temp)])
+        count = sizeof([temp for temp in items if 'ifc4x3_add2.ifctextliteral' in typeof(temp)])
     elif getattr(reptype, 'lower', INDETERMINATE)() == 'advancedsurface':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc4.ifcbsplinesurface' in typeof(temp)])
+        count = sizeof([temp for temp in items if 'ifc4x3_add2.ifcbsplinesurface' in typeof(temp)])
     elif getattr(reptype, 'lower', INDETERMINATE)() == 'annotation2d':
-        count = sizeof([temp for temp in items if sizeof(typeof(temp) * ['ifc4x3_rc4.ifcpoint', 'ifc4x3_rc4.ifccurve', 'ifc4x3_rc4.ifcgeometriccurveset', 'ifc4x3_rc4.ifcannotationfillarea', 'ifc4x3_rc4.ifctextliteral']) == 1])
+        count = sizeof([temp for temp in items if sizeof(typeof(temp) * ['ifc4x3_add2.ifcpoint', 'ifc4x3_add2.ifccurve', 'ifc4x3_add2.ifcgeometriccurveset', 'ifc4x3_add2.ifcannotationfillarea', 'ifc4x3_add2.ifctextliteral']) == 1])
     elif getattr(reptype, 'lower', INDETERMINATE)() == 'geometricset':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc4.ifcgeometricset' in typeof(temp) or 'ifc4x3_rc4.ifcpoint' in typeof(temp) or 'ifc4x3_rc4.ifccurve' in typeof(temp) or ('ifc4x3_rc4.ifcsurface' in typeof(temp))])
+        count = sizeof([temp for temp in items if 'ifc4x3_add2.ifcgeometricset' in typeof(temp) or 'ifc4x3_add2.ifcpoint' in typeof(temp) or 'ifc4x3_add2.ifccurve' in typeof(temp) or ('ifc4x3_add2.ifcsurface' in typeof(temp))])
     elif getattr(reptype, 'lower', INDETERMINATE)() == 'geometriccurveset':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc4.ifcgeometriccurveset' in typeof(temp) or 'ifc4x3_rc4.ifcgeometricset' in typeof(temp) or 'ifc4x3_rc4.ifcpoint' in typeof(temp) or ('ifc4x3_rc4.ifccurve' in typeof(temp))])
+        count = sizeof([temp for temp in items if 'ifc4x3_add2.ifcgeometriccurveset' in typeof(temp) or 'ifc4x3_add2.ifcgeometricset' in typeof(temp) or 'ifc4x3_add2.ifcpoint' in typeof(temp) or ('ifc4x3_add2.ifccurve' in typeof(temp))])
         for i in range(1, hiindex(items) + 1):
-            if 'ifc4x3_rc4.ifcgeometricset' in typeof(express_getitem(items, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)):
-                if sizeof([temp for temp in getattr(express_getitem(items, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Elements', INDETERMINATE) if 'ifc4x3_rc4.ifcsurface' in typeof(temp)]) > 0:
+            if 'ifc4x3_add2.ifcgeometricset' in typeof(express_getitem(items, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)):
+                if sizeof([temp for temp in getattr(express_getitem(items, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Elements', INDETERMINATE) if 'ifc4x3_add2.ifcsurface' in typeof(temp)]) > 0:
                     count = count - 1
     elif getattr(reptype, 'lower', INDETERMINATE)() == 'tessellation':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc4.ifctessellateditem' in typeof(temp)])
+        count = sizeof([temp for temp in items if 'ifc4x3_add2.ifctessellateditem' in typeof(temp)])
     elif getattr(reptype, 'lower', INDETERMINATE)() == 'surfaceorsolidmodel':
-        count = sizeof([temp for temp in items if sizeof(['ifc4x3_rc4.ifctessellateditem', 'ifc4x3_rc4.ifcshellbasedsurfacemodel', 'ifc4x3_rc4.ifcfacebasedsurfacemodel', 'ifc4x3_rc4.ifcsolidmodel'] * typeof(temp)) >= 1])
+        count = sizeof([temp for temp in items if sizeof(['ifc4x3_add2.ifctessellateditem', 'ifc4x3_add2.ifcshellbasedsurfacemodel', 'ifc4x3_add2.ifcfacebasedsurfacemodel', 'ifc4x3_add2.ifcsolidmodel'] * typeof(temp)) >= 1])
     elif getattr(reptype, 'lower', INDETERMINATE)() == 'surfacemodel':
-        count = sizeof([temp for temp in items if sizeof(['ifc4x3_rc4.ifctessellateditem', 'ifc4x3_rc4.ifcshellbasedsurfacemodel', 'ifc4x3_rc4.ifcfacebasedsurfacemodel'] * typeof(temp)) >= 1])
+        count = sizeof([temp for temp in items if sizeof(['ifc4x3_add2.ifctessellateditem', 'ifc4x3_add2.ifcshellbasedsurfacemodel', 'ifc4x3_add2.ifcfacebasedsurfacemodel'] * typeof(temp)) >= 1])
     elif getattr(reptype, 'lower', INDETERMINATE)() == 'solidmodel':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc4.ifcsolidmodel' in typeof(temp)])
+        count = sizeof([temp for temp in items if 'ifc4x3_add2.ifcsolidmodel' in typeof(temp)])
     elif getattr(reptype, 'lower', INDETERMINATE)() == 'sweptsolid':
-        count = sizeof([temp for temp in items if sizeof(['ifc4x3_rc4.ifcextrudedareasolid', 'ifc4x3_rc4.ifcrevolvedareasolid'] * typeof(temp)) >= 1 and sizeof(['ifc4x3_rc4.ifcextrudedareasolidtapered', 'ifc4x3_rc4.ifcrevolvedareasolidtapered'] * typeof(temp)) == 0])
+        count = sizeof([temp for temp in items if sizeof(['ifc4x3_add2.ifcextrudedareasolid', 'ifc4x3_add2.ifcrevolvedareasolid'] * typeof(temp)) >= 1 and sizeof(['ifc4x3_add2.ifcextrudedareasolidtapered', 'ifc4x3_add2.ifcrevolvedareasolidtapered'] * typeof(temp)) == 0])
     elif getattr(reptype, 'lower', INDETERMINATE)() == 'advancedsweptsolid':
-        count = sizeof([temp for temp in items if sizeof(['ifc4x3_rc4.ifcsweptareasolid', 'ifc4x3_rc4.ifcsweptdisksolid', 'ifc4x3_rc4.ifcsectionedsolidhorizontal'] * typeof(temp)) >= 1])
+        count = sizeof([temp for temp in items if sizeof(['ifc4x3_add2.ifcsweptareasolid', 'ifc4x3_add2.ifcsweptdisksolid', 'ifc4x3_add2.ifcsectionedsolidhorizontal'] * typeof(temp)) >= 1])
     elif getattr(reptype, 'lower', INDETERMINATE)() == 'csg':
-        count = sizeof([temp for temp in items if sizeof(['ifc4x3_rc4.ifcbooleanresult', 'ifc4x3_rc4.ifccsgprimitive3d', 'ifc4x3_rc4.ifccsgsolid'] * typeof(temp)) >= 1])
+        count = sizeof([temp for temp in items if sizeof(['ifc4x3_add2.ifcbooleanresult', 'ifc4x3_add2.ifccsgprimitive3d', 'ifc4x3_add2.ifccsgsolid'] * typeof(temp)) >= 1])
     elif getattr(reptype, 'lower', INDETERMINATE)() == 'clipping':
-        count = sizeof([temp for temp in items if sizeof(['ifc4x3_rc4.ifccsgsolid', 'ifc4x3_rc4.ifcbooleanclippingresult'] * typeof(temp)) >= 1])
+        count = sizeof([temp for temp in items if sizeof(['ifc4x3_add2.ifccsgsolid', 'ifc4x3_add2.ifcbooleanclippingresult'] * typeof(temp)) >= 1])
     elif getattr(reptype, 'lower', INDETERMINATE)() == 'brep':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc4.ifcfacetedbrep' in typeof(temp)])
+        count = sizeof([temp for temp in items if 'ifc4x3_add2.ifcfacetedbrep' in typeof(temp)])
     elif getattr(reptype, 'lower', INDETERMINATE)() == 'advancedbrep':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc4.ifcmanifoldsolidbrep' in typeof(temp)])
+        count = sizeof([temp for temp in items if 'ifc4x3_add2.ifcmanifoldsolidbrep' in typeof(temp)])
     elif getattr(reptype, 'lower', INDETERMINATE)() == 'boundingbox':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc4.ifcboundingbox' in typeof(temp)])
+        count = sizeof([temp for temp in items if 'ifc4x3_add2.ifcboundingbox' in typeof(temp)])
         if sizeof(items) > 1:
             count = 0
     elif getattr(reptype, 'lower', INDETERMINATE)() == 'sectionedspine':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc4.ifcsectionedspine' in typeof(temp)])
+        count = sizeof([temp for temp in items if 'ifc4x3_add2.ifcsectionedspine' in typeof(temp)])
     elif getattr(reptype, 'lower', INDETERMINATE)() == 'lightsource':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc4.ifclightsource' in typeof(temp)])
+        count = sizeof([temp for temp in items if 'ifc4x3_add2.ifclightsource' in typeof(temp)])
     elif getattr(reptype, 'lower', INDETERMINATE)() == 'mappedrepresentation':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc4.ifcmappeditem' in typeof(temp)])
+        count = sizeof([temp for temp in items if 'ifc4x3_add2.ifcmappeditem' in typeof(temp)])
     else:
         return None
     return count == sizeof(items)
@@ -13843,12 +13908,12 @@ def IfcSurfaceWeightsPositive(b):
 
 def IfcTaperedSweptAreaProfiles(startarea, endarea):
     result = False
-    if 'ifc4x3_rc4.ifcparameterizedprofiledef' in typeof(startarea):
-        if 'ifc4x3_rc4.ifcderivedprofiledef' in typeof(endarea):
+    if 'ifc4x3_add2.ifcparameterizedprofiledef' in typeof(startarea):
+        if 'ifc4x3_add2.ifcderivedprofiledef' in typeof(endarea):
             result = startarea == getattr(endarea, 'ParentProfile', INDETERMINATE)
         else:
             result = typeof(startarea) == typeof(endarea)
-    elif 'ifc4x3_rc4.ifcderivedprofiledef' in typeof(endarea):
+    elif 'ifc4x3_add2.ifcderivedprofiledef' in typeof(endarea):
         result = startarea == getattr(endarea, 'ParentProfile', INDETERMINATE)
     else:
         result = False
@@ -13857,15 +13922,15 @@ def IfcTaperedSweptAreaProfiles(startarea, endarea):
 def IfcTopologyRepresentationTypes(reptype, items):
     count = 0
     if getattr(reptype, 'lower', INDETERMINATE)() == 'vertex':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc4.ifcvertex' in typeof(temp)])
+        count = sizeof([temp for temp in items if 'ifc4x3_add2.ifcvertex' in typeof(temp)])
     elif getattr(reptype, 'lower', INDETERMINATE)() == 'edge':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc4.ifcedge' in typeof(temp)])
+        count = sizeof([temp for temp in items if 'ifc4x3_add2.ifcedge' in typeof(temp)])
     elif getattr(reptype, 'lower', INDETERMINATE)() == 'path':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc4.ifcpath' in typeof(temp)])
+        count = sizeof([temp for temp in items if 'ifc4x3_add2.ifcpath' in typeof(temp)])
     elif getattr(reptype, 'lower', INDETERMINATE)() == 'face':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc4.ifcface' in typeof(temp)])
+        count = sizeof([temp for temp in items if 'ifc4x3_add2.ifcface' in typeof(temp)])
     elif getattr(reptype, 'lower', INDETERMINATE)() == 'shell':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc4.ifcopenshell' in typeof(temp) or 'ifc4x3_rc4.ifcclosedshell' in typeof(temp)])
+        count = sizeof([temp for temp in items if 'ifc4x3_add2.ifcopenshell' in typeof(temp) or 'ifc4x3_add2.ifcclosedshell' in typeof(temp)])
     elif getattr(reptype, 'lower', INDETERMINATE)() == 'undefined':
         return True
     else:
@@ -13878,9 +13943,9 @@ def IfcUniqueDefinitionNames(relations):
         return True
     for i in range(1, hiindex(relations) + 1):
         definition = getattr(express_getitem(relations, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingPropertyDefinition', INDETERMINATE)
-        if 'ifc4x3_rc4.ifcpropertysetdefinition' in typeof(definition):
+        if 'ifc4x3_add2.ifcpropertysetdefinition' in typeof(definition):
             properties = properties + definition
-        elif 'ifc4x3_rc4.ifcpropertysetdefinitionset' in typeof(definition):
+        elif 'ifc4x3_add2.ifcpropertysetdefinitionset' in typeof(definition):
             definitionset = definition
             for j in range(1, hiindex(definitionset) + 1):
                 properties = properties + express_getitem(definitionset, j - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
@@ -13897,7 +13962,7 @@ def IfcUniquePropertySetNames(properties):
     names = express_set([])
     unnamed = 0
     for i in range(1, hiindex(properties) + 1):
-        if 'ifc4x3_rc4.ifcpropertyset' in typeof(express_getitem(properties, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)):
+        if 'ifc4x3_add2.ifcpropertyset' in typeof(express_getitem(properties, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)):
             names = names + getattr(express_getitem(properties, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Name', INDETERMINATE)
         else:
             unnamed = unnamed + 1
@@ -13919,13 +13984,13 @@ def IfcVectorDifference(arg1, arg2):
     if (not exists(arg1) or not exists(arg2)) or getattr(arg1, 'Dim', INDETERMINATE) != getattr(arg2, 'Dim', INDETERMINATE):
         return None
     else:
-        if 'ifc4x3_rc4.ifcvector' in typeof(arg1):
+        if 'ifc4x3_add2.ifcvector' in typeof(arg1):
             mag1 = getattr(arg1, 'Magnitude', INDETERMINATE)
             vec1 = getattr(arg1, 'Orientation', INDETERMINATE)
         else:
             mag1 = 1.0
             vec1 = arg1
-        if 'ifc4x3_rc4.ifcvector' in typeof(arg2):
+        if 'ifc4x3_add2.ifcvector' in typeof(arg2):
             mag2 = getattr(arg2, 'Magnitude', INDETERMINATE)
             vec2 = getattr(arg2, 'Orientation', INDETERMINATE)
         else:
@@ -13951,13 +14016,13 @@ def IfcVectorSum(arg1, arg2):
     if (not exists(arg1) or not exists(arg2)) or getattr(arg1, 'Dim', INDETERMINATE) != getattr(arg2, 'Dim', INDETERMINATE):
         return None
     else:
-        if 'ifc4x3_rc4.ifcvector' in typeof(arg1):
+        if 'ifc4x3_add2.ifcvector' in typeof(arg1):
             mag1 = getattr(arg1, 'Magnitude', INDETERMINATE)
             vec1 = getattr(arg1, 'Orientation', INDETERMINATE)
         else:
             mag1 = 1.0
             vec1 = arg1
-        if 'ifc4x3_rc4.ifcvector' in typeof(arg2):
+        if 'ifc4x3_add2.ifcvector' in typeof(arg2):
             mag2 = getattr(arg2, 'Magnitude', INDETERMINATE)
             vec2 = getattr(arg2, 'Orientation', INDETERMINATE)
         else:
