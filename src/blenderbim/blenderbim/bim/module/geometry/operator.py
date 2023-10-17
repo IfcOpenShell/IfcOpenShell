@@ -34,6 +34,7 @@ import blenderbim.core.drawing
 import blenderbim.tool as tool
 import blenderbim.bim.handler
 from mathutils import Vector, Matrix
+from time import time
 from blenderbim.bim import import_ifc
 from blenderbim.bim.ifc import IfcStore
 
@@ -1161,6 +1162,7 @@ class RefreshAggregate(bpy.types.Operator):
         return {"FINISHED"}
 
     def _execute(self, context):
+        refresh_start_time = time()
         self.new_active_obj = None
         old_to_new = {}
 
@@ -1364,6 +1366,9 @@ class RefreshAggregate(bpy.types.Operator):
 
         blenderbim.bim.handler.refresh_ui_data()
 
+        operator_time = time() - refresh_start_time
+        if operator_time > 10:
+            self.report({"INFO"}, "Refresh Aggregate was finished in {:.2f} seconds".format(operator_time))
         return {"FINISHED"}
 
 
