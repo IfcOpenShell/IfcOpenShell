@@ -54,10 +54,20 @@ class TestGenerateOccurrenceName(NewFile):
 
 
 class TestGetManualBooleans(NewFile):
-    def test_run(self):
-        assert isinstance(subject(), blenderbim.core.tool.Model)
+    def test_get_manual_booleans(self):
+        clippings = [
+            {
+                "type": "IfcBooleanClippingResult",
+                "operand_type": "IfcHalfSpaceSolid",
+                "matrix": np.eye(4).tolist(),
+            },
+            {
+                "type": "IfcBooleanResult",
+                "operand_type": "IfcHalfSpaceSolid",
+                "matrix": np.eye(4).tolist(),
+            },
+        ]
 
-    def setup_profile_represntation(self, clippings=[]):
         ifc = ifcopenshell.file()
         self.ifc = ifc
         tool.Ifc.set(ifc)
@@ -89,21 +99,9 @@ class TestGetManualBooleans(NewFile):
             "geometry.add_profile_representation", ifc, context=body, profile=hea100, depth=5, clippings=clippings
         )
         ifcopenshell.api.run("geometry.assign_representation", ifc, product=element, representation=representation)
-        return element, representation
 
-    def test_manual_booleans(self):
-        element, representation = self.setup_profile_represntation()
-        matrix = np.eye(4)
-        ifcopenshell.api.run(
-            "geometry.add_boolean", self.ifc, representation=representation, type="IfcHalfSpaceSolid", matrix=matrix
-        )
-        assert len(subject.get_manual_booleans(element)) == 1
-
-    def test_automatic_booleans_ignored(self):
-        clipping = {
-            "type": "IfcBooleanClippingResult",
-            "operand_type": "IfcHalfSpaceSolid",
-            "matrix": np.eye(4).tolist(),
-        }
-        element, representation = self.setup_profile_represntation(clippings=[clipping])
+        booleans = subject.get_booleans(element)
+        assert len(booleans) == 2
         assert len(subject.get_manual_booleans(element)) == 0
+        subject.mark_manual_booleans(element, booleans)
+        assert len(subject.get_manual_booleans(element)) == 2

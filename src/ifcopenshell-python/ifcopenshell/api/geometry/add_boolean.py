@@ -57,9 +57,11 @@ class Usecase:
                 )
             ):
                 items.append(self.file.createIfcBooleanClippingResult(self.settings["operator"], item, result))
+                representation_type = "Clipping"
             else:
                 items.append(self.file.createIfcBooleanResult(self.settings["operator"], item, result))
-        self.settings["representation"].RepresentationType = "CSG"
+                representation_type = "CSG"
+        self.settings["representation"].RepresentationType = representation_type
         self.settings["representation"].Items = items
         return items
 
