@@ -85,7 +85,6 @@ class Implementation(codegen.Base):
 
                     def find_template(arg):
                         simple = mapping.schema.is_simpletype(arg["list_instance_type"])
-                        select = arg["list_instance_type"] == "IfcUtil::IfcBaseClass"
                         express = (
                             mapping.flatten_type_string(arg["list_instance_type"]) in mapping.express_to_cpp_typemapping
                         )
@@ -93,7 +92,7 @@ class Implementation(codegen.Base):
                             return templates.get_attr_stmt_enum
                         elif arg["is_nested"] and arg["is_templated_list"]:
                             return templates.get_attr_stmt_nested_array
-                        elif arg["is_templated_list"] and not (select or simple or express):
+                        elif arg["is_templated_list"] and not (simple or express):
                             return templates.get_attr_stmt_array
                         elif arg["non_optional_type"].endswith("*"):
                             return templates.get_attr_stmt_entity
