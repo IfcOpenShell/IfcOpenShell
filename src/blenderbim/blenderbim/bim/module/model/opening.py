@@ -528,17 +528,7 @@ class AddBoolean(Operator, tool.Ifc.Operator):
             "geometry.add_boolean", tool.Ifc.get(), representation=representation, operator="DIFFERENCE", **mesh_data
         )
 
-        pset = ifcopenshell.util.element.get_pset(element1, "BBIM_Boolean")
-        if pset:
-            pset = tool.Ifc.get().by_id(pset["id"])
-            data = json.loads(pset["Data"])
-            data.extend([b.id() for b in booleans])
-            data = list(set(data))
-        else:
-            pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element1, name="BBIM_Boolean")
-            data = [b.id() for b in booleans]
-        ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": json.dumps(data)})
-
+        tool.Model.mark_manual_booleans(element1, booleans)
         tool.Model.clear_scene_openings()
 
         blenderbim.core.geometry.switch_representation(
@@ -672,17 +662,17 @@ class RemoveBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
             except:
                 continue
 
-            boolean_id = None
+            boolean = None
             for inverse in tool.Ifc.get().get_inverse(item):
                 if inverse.is_a("IfcBooleanResult"):
-                    boolean_id = inverse.id()
+                    boolean = inverse
                     break
             ifcopenshell.api.run("geometry.remove_boolean", tool.Ifc.get(), item=item)
 
             if obj.data.BIMMeshProperties.obj:
                 upstream_obj = obj.data.BIMMeshProperties.obj
                 element = tool.Ifc.get_entity(upstream_obj)
-                bbim_boolean_updates.setdefault(element, []).append(boolean_id)
+                bbim_boolean_updates.setdefault(element, []).append(boolean)
                 body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
                 if body:
                     blenderbim.core.geometry.switch_representation(
@@ -696,18 +686,8 @@ class RemoveBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
                     )
             bpy.data.objects.remove(obj)
 
-        for element, boolean_ids in bbim_boolean_updates.items():
-            pset = ifcopenshell.util.element.get_pset(element, "BBIM_Boolean")
-            if not pset:
-                continue
-            data = set(json.loads(pset["Data"]))
-            data -= set(boolean_ids)
-            data = list(data)
-            pset = tool.Ifc.get().by_id(pset["id"])
-            if data:
-                ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": json.dumps(data)})
-            else:
-                ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
+        for element, booleans in bbim_boolean_updates.items():
+            tool.Model.unmark_manual_booleans(element, booleans)
 
         tool.Blender.set_active_object(upstream_obj)
         return {"FINISHED"}

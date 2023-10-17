@@ -474,11 +474,7 @@ class Model(blenderbim.core.tool.Model):
         return {"thickness": thickness, "offset": offset, "direction_sense": direction_sense}
 
     @classmethod
-    def get_manual_booleans(cls, element):
-        pset = ifcopenshell.util.element.get_pset(element, "BBIM_Boolean")
-        if not pset:
-            return []
-        boolean_ids = json.loads(pset["Data"])
+    def get_booleans(cls, element):
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         if not body:
             return []
@@ -487,10 +483,50 @@ class Model(blenderbim.core.tool.Model):
         while items:
             item = items.pop()
             if item.is_a("IfcBooleanResult"):
-                if item.id() in boolean_ids:
-                    booleans.append(item)
+                booleans.append(item)
                 items.append(item.FirstOperand)
         return booleans
+
+    @classmethod
+    def get_manual_booleans(cls, element):
+        pset = ifcopenshell.util.element.get_pset(element, "BBIM_Boolean")
+        if not pset:
+            return []
+        boolean_ids = json.loads(pset["Data"])
+        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        if not body:
+            return []
+        booleans = [b for b in cls.get_booleans(element) if b.id() in boolean_ids]
+        return booleans
+
+    @classmethod
+    def mark_manual_booleans(cls, element, booleans):
+        pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Boolean")
+        boolean_ids = [b.id() for b in booleans]
+        if pset_data:
+            pset = tool.Ifc.get().by_id(pset_data["id"])
+            data = json.loads(pset_data["Data"])
+            data.extend(boolean_ids)
+            data = list(set(data))
+        else:
+            pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="BBIM_Boolean")
+            data = boolean_ids
+        ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": json.dumps(data)})
+
+    @classmethod
+    def unmark_manual_booleans(cls, element, booleans):
+        pset = ifcopenshell.util.element.get_pset(element, "BBIM_Boolean")
+        if not pset:
+            return
+        boolean_ids = [b.id() for b in booleans]
+        data = set(json.loads(pset["Data"]))
+        data -= set(boolean_ids)
+        data = list(data)
+        pset = tool.Ifc.get().by_id(pset["id"])
+        if data:
+            ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": json.dumps(data)})
+        else:
+            ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
 
     @classmethod
     def get_flow_segment_axis(cls, obj):
