@@ -180,7 +180,7 @@ class UnlinkObject(bpy.types.Operator):
                     obj = obj_copy
                 if obj in IfcStore.edited_objs:
                     IfcStore.edited_objs.remove(obj)
-                tool.Ifc.unlink_element(obj=obj)
+                tool.Ifc.unlink(obj=obj)
                 if obj.data:
                     obj.data = obj.data.copy()
             for material_slot in obj.material_slots:
