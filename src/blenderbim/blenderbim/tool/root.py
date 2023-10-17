@@ -90,6 +90,26 @@ class Root(blenderbim.core.tool.Root):
         return relationships
 
     @classmethod
+    def get_connection_relationships(cls, objs):
+        relationships = {}
+        for obj in objs:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            if hasattr(element, "ConnectedTo") and element.ConnectedTo:
+                paths = [connection for connection in element.ConnectedTo if connection.is_a("IfcRelConnectsPathElements")]
+                for path in paths:
+                    relationships[element] = {"type": "path",
+                         "related_connection_type": path.RelatedConnectionType,
+                         "related_element": path.RelatedElement,
+                         "related_priorities": path.RelatedPriorities,
+                         "relating_connection_type": path.RelatingConnectionType,
+                         "relating_element": path.RelatingElement,
+                         "relating_priorities": path.RelatingPriorities,
+                    }
+        return relationships
+
+    @classmethod
     def get_element_representation(cls, element, context):
         if context.is_a("IfcGeometricRepresentationSubContext"):
             return ifcopenshell.util.representation.get_representation(
@@ -196,6 +216,21 @@ class Root(blenderbim.core.tool.Root):
                                 is_global=True,
                                 should_sync_changes_first=False,
                             )
+
+    @classmethod
+    def recreate_connections(cls, relationship, old_to_new):
+        for element, data in relationship.items():
+            new_relating_element = old_to_new.get(data["relating_element"])[0]
+            new_related_element = old_to_new.get(data["related_element"])[0]
+            ifcopenshell.api.run(
+                "geometry.connect_path",
+                tool.Ifc.get(),
+                relating_element=new_relating_element,
+                related_element=new_related_element,
+                relating_connection=data["relating_connection_type"],
+                related_connection=data["related_connection_type"],
+            )
+    
 
     @classmethod
     def run_geometry_add_representation(
