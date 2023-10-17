@@ -857,11 +857,9 @@ class OverrideDuplicateMove(bpy.types.Operator):
     @staticmethod
     def recreate_assembly(old_to_new):
         for old_element, new_element in old_to_new.items():
-            print(old_element, new_element)
             old_parent = ifcopenshell.util.element.get_aggregate(old_element)
             if old_parent:
                 new_parent = old_to_new[old_parent]
-                print(new_parent)
                 blenderbim.core.aggregate.assign_object(
                                             tool.Ifc,
                                             tool.Aggregate,
