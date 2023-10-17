@@ -19,11 +19,10 @@
 import test.bootstrap
 import ifcopenshell.api
 import numpy as np
-from ifcopenshell.util.shape_builder import ShapeBuilder
 
 
 class TestAddBoolean(test.bootstrap.IFC4):
-    def test_returning_ifc_boolean_result(self):
+    def test_returning_ifc_boolean_clipping_result(self):
         ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
         model = ifcopenshell.api.run("context.add_context", self.file, context_type="Model")
         body = ifcopenshell.api.run(
@@ -36,11 +35,21 @@ class TestAddBoolean(test.bootstrap.IFC4):
         )
         wall = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
 
-        builder = ShapeBuilder(self.file)
-        extrusion = builder.extrude(builder.rectangle())
-        rep = builder.get_representation(body, extrusion)
+        profile = self.file.create_entity(
+            "IfcIShapeProfileDef",
+            ProfileName="HEA100",
+            ProfileType="AREA",
+            OverallWidth=100,
+            OverallDepth=96,
+            WebThickness=5,
+            FlangeThickness=8,
+            FilletRadius=12,
+        )
+        rep = ifcopenshell.api.run(
+            "geometry.add_profile_representation", self.file, context=body, profile=profile, depth=5
+        )
         ifcopenshell.api.run("geometry.assign_representation", self.file, product=wall, representation=rep)
 
         ifcopenshell.api.run("geometry.add_boolean", self.file, representation=rep, matrix=np.eye(4))
-        assert rep.Items[0].is_a() == "IfcBooleanResult"
+        assert rep.Items[0].is_a() == "IfcBooleanClippingResult"
         assert rep.RepresentationType == "CSG"
