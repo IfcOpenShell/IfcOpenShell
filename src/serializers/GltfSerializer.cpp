@@ -184,7 +184,7 @@ void GltfSerializer::write(const IfcGeom::TriangulationElement* o) {
 	
 	// @todo check
 	std::array<double, 16> matrix_flat;
-	if (settings_.get<settings::WriteGltfEcef>().get()) {
+	if (settings_.get<ifcopenshell::geometry::settings::WriteGltfEcef>().get()) {
 		matrix_flat = {
 			m(0,0), m(1,0), m(2,0), m(3,0),
 			m(0,1), m(1,1), m(2,1), m(3,1),
@@ -435,7 +435,7 @@ namespace {
 }
 
 void GltfSerializer::setFile(IfcParse::IfcFile* f) {
-	if (!settings_.get(SerializerSettings::WRITE_GLTF_ECEF)) {
+	if (!settings_.get<ifcopenshell::geometry::settings::WriteGltfEcef>().get()) {
 		return;
 	}
 
