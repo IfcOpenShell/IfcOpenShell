@@ -61,7 +61,7 @@ class RegenSelectedFlooringObject(bpy.types.Operator, tool.Ifc.Operator):
     def poll(cls, context):
         active_obj = bpy.context.active_object
         element = tool.Ifc.get_entity(active_obj)
-        return element.is_a("IfcCovering")
+        return element and element.is_a("IfcCovering")
 
     def _execute(self, context):
 
