@@ -67,32 +67,39 @@ class VoidsData:
         return results
 
 
-
 class BooleansData:
     data = {}
     is_loaded = False
 
     @classmethod
     def load(cls):
-        cls.data = {"total_booleans": cls.total_booleans()}
+        cls.data = {}
+        cls.data["total_booleans"] = cls.booleans()
+        cls.data["manual_booleans"] = cls.manual_booleans()
         cls.is_loaded = True
 
     @classmethod
-    def total_booleans(cls):
+    def booleans(cls):
         obj = bpy.context.active_object
         if (
             not obj.data
             or not hasattr(obj.data, "BIMMeshProperties")
             or not obj.data.BIMMeshProperties.ifc_definition_id
         ):
-            return 0
+            return []
+
         representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-        total_booleans = 0
-        for item in representation.Items:
-            while True:
-                if item.is_a("IfcBooleanResult"):
-                    total_booleans += 1
-                    item = item.FirstOperand
-                else:
-                    break
-        return total_booleans
+        return tool.Model.get_booleans(representation=representation)
+
+    @classmethod
+    def manual_booleans(cls):
+        obj = bpy.context.active_object
+        if (
+            not obj.data
+            or not hasattr(obj.data, "BIMMeshProperties")
+            or not obj.data.BIMMeshProperties.ifc_definition_id
+        ):
+            return []
+
+        representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+        return tool.Model.get_manual_booleans(tool.Ifc.get_entity(obj), representation=representation)

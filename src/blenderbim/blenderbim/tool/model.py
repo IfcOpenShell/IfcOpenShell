@@ -474,12 +474,13 @@ class Model(blenderbim.core.tool.Model):
         return {"thickness": thickness, "offset": offset, "direction_sense": direction_sense}
 
     @classmethod
-    def get_booleans(cls, element):
-        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        if not body:
-            return []
+    def get_booleans(cls, element=None, representation=None):
+        if representation is None:
+            representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+            if not representation:
+                return []
         booleans = []
-        items = list(body.Items)
+        items = list(representation.Items)
         while items:
             item = items.pop()
             if item.is_a("IfcBooleanResult"):
@@ -488,14 +489,15 @@ class Model(blenderbim.core.tool.Model):
         return booleans
 
     @classmethod
-    def get_manual_booleans(cls, element):
+    def get_manual_booleans(cls, element, representation=None):
         pset = ifcopenshell.util.element.get_pset(element, "BBIM_Boolean")
         if not pset:
             return []
         boolean_ids = json.loads(pset["Data"])
-        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        if not body:
-            return []
+        if representation is None:
+            representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+            if not representation:
+                return []
         booleans = [b for b in cls.get_booleans(element) if b.id() in boolean_ids]
         return booleans
 
