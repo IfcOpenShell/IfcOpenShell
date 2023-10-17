@@ -142,6 +142,7 @@ select = """%(documentation)s
 class IFC_PARSE_API %(name)s : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
+    typedef aggregate_of< %(name)s > list;
 };
 """
 
@@ -199,11 +200,14 @@ const IfcParse::enumeration_type& %(schema_name)s::%(name)s::Class() { return *%
 }
 
 const char* %(schema_name)s::%(name)s::ToString(Value v) {
-    return %(schema_name_upper)s_%(name)s_type->lookup_enum_value((size_t) v);
+    if ( v < 0 || v >= %(max_id)d ) throw IfcException("Unable to find keyword in schema");
+    const char* names[] = { %(values)s };
+    return names[v];
 }
 
 %(schema_name)s::%(name)s::Value %(schema_name)s::%(name)s::FromString(const std::string& s) {
-    return (%(schema_name)s::%(name)s::Value) %(schema_name_upper)s_%(name)s_type->lookup_enum_offset(s);
+%(from_string_statements)s
+    throw IfcException("Unable to find keyword in schema: " + s);
 }
 
 %(schema_name)s::%(name)s::operator %(schema_name)s::%(name)s::Value() const {

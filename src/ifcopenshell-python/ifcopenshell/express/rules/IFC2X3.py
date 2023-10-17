@@ -3579,7 +3579,7 @@ class IfcBoxAlignment_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (self in ['top-left', 'top-middle', 'top-right', 'middle-left', 'center', 'middle-right', 'bottom-left', 'bottom-middle', 'bottom-right']) is not False
+        assert (getattr(self, 'lower', INDETERMINATE)() in ['top-left', 'top-middle', 'top-right', 'middle-left', 'center', 'middle-right', 'bottom-left', 'bottom-middle', 'bottom-right']) is not False
 
 class IfcCompoundPlaneAngleMeasure_WR1:
     SCOPE = 'type'
@@ -3642,7 +3642,7 @@ class IfcFontStyle_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (self in ['normal', 'italic', 'oblique']) is not False
+        assert (getattr(self, 'lower', INDETERMINATE)() in ['normal', 'italic', 'oblique']) is not False
 
 class IfcFontVariant_WR1:
     SCOPE = 'type'
@@ -3651,7 +3651,7 @@ class IfcFontVariant_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (self in ['normal', 'small-caps']) is not False
+        assert (getattr(self, 'lower', INDETERMINATE)() in ['normal', 'small-caps']) is not False
 
 class IfcFontWeight_WR1:
     SCOPE = 'type'
@@ -3660,7 +3660,7 @@ class IfcFontWeight_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (self in ['normal', 'small-caps', '100', '200', '300', '400', '500', '600', '700', '800', '900']) is not False
+        assert (getattr(self, 'lower', INDETERMINATE)() in ['normal', 'small-caps', '100', '200', '300', '400', '500', '600', '700', '800', '900']) is not False
 
 class IfcHeatingValueMeasure_WR1:
     SCOPE = 'type'
@@ -3768,7 +3768,7 @@ class IfcTextAlignment_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (self in ['left', 'right', 'center', 'justify']) is not False
+        assert (getattr(self, 'lower', INDETERMINATE)() in ['left', 'right', 'center', 'justify']) is not False
 
 class IfcTextDecoration_WR1:
     SCOPE = 'type'
@@ -3777,7 +3777,7 @@ class IfcTextDecoration_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (self in ['none', 'underline', 'overline', 'line-through', 'blink']) is not False
+        assert (getattr(self, 'lower', INDETERMINATE)() in ['none', 'underline', 'overline', 'line-through', 'blink']) is not False
 
 class IfcTextTransformation_WR1:
     SCOPE = 'type'
@@ -3786,7 +3786,7 @@ class IfcTextTransformation_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (self in ['capitalize', 'uppercase', 'lowercase', 'none']) is not False
+        assert (getattr(self, 'lower', INDETERMINATE)() in ['capitalize', 'uppercase', 'lowercase', 'none']) is not False
 
 class Ifc2DCompositeCurve_WR1:
     SCOPE = 'entity'
@@ -4137,7 +4137,7 @@ class IfcBlobTexture_WR11:
 
     @staticmethod
     def __call__(self):
-        assert (getattr(self, 'RasterFormat', INDETERMINATE) in ['bmp', 'jpg', 'gif', 'png']) is not False
+        assert (getattr(getattr(self, 'RasterFormat', INDETERMINATE), 'lower', INDETERMINATE)() in ['bmp', 'jpg', 'gif', 'png']) is not False
 
 class IfcBoilerType_WR1:
     SCOPE = 'entity'
@@ -4736,7 +4736,7 @@ class IfcDimensionCalloutRelationship_WR11:
 
     @staticmethod
     def __call__(self):
-        assert (getattr(self, 'Name', INDETERMINATE) in ['primary', 'secondary']) is not False
+        assert (getattr(getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['primary', 'secondary']) is not False
 
 class IfcDimensionCalloutRelationship_WR12:
     SCOPE = 'entity'
@@ -4819,7 +4819,7 @@ class IfcDimensionPair_WR11:
 
     @staticmethod
     def __call__(self):
-        assert (getattr(self, 'Name', INDETERMINATE) in ['chained', 'parallel']) is not False
+        assert (getattr(getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['chained', 'parallel']) is not False
 
 class IfcDimensionPair_WR12:
     SCOPE = 'entity'
@@ -4934,7 +4934,7 @@ class IfcDraughtingPreDefinedColour_WR31:
 
     @staticmethod
     def __call__(self):
-        assert (getattr(self, 'Name', INDETERMINATE) in ['black', 'red', 'green', 'blue', 'yellow', 'magenta', 'cyan', 'white', 'bylayer']) is not False
+        assert (getattr(getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['black', 'red', 'green', 'blue', 'yellow', 'magenta', 'cyan', 'white', 'bylayer']) is not False
 
 class IfcDraughtingPreDefinedCurveFont_WR31:
     SCOPE = 'entity'
@@ -4943,7 +4943,7 @@ class IfcDraughtingPreDefinedCurveFont_WR31:
 
     @staticmethod
     def __call__(self):
-        assert (getattr(self, 'Name', INDETERMINATE) in ['continuous', 'chain', 'chaindoubledash', 'dashed', 'dotted', 'bylayer']) is not False
+        assert (getattr(getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['continuous', 'chain', 'chaindoubledash', 'dashed', 'dotted', 'bylayer']) is not False
 
 class IfcDraughtingPreDefinedTextFont_WR31:
     SCOPE = 'entity'
@@ -4952,7 +4952,7 @@ class IfcDraughtingPreDefinedTextFont_WR31:
 
     @staticmethod
     def __call__(self):
-        assert (getattr(self, 'Name', INDETERMINATE) in ['iso3098-1fonta', 'iso3098-1fontb']) is not False
+        assert (getattr(getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['iso3098-1fonta', 'iso3098-1fontb']) is not False
 
 class IfcDuctFittingType_WR2:
     SCOPE = 'entity'
@@ -5782,7 +5782,7 @@ class IfcPreDefinedDimensionSymbol_WR31:
 
     @staticmethod
     def __call__(self):
-        assert (getattr(self, 'Name', INDETERMINATE) in ['arclength', 'conicaltaper', 'counterbore', 'countersink', 'depth', 'diameter', 'plusminus', 'radius', 'slope', 'sphericaldiameter', 'sphericalradius', 'square']) is not False
+        assert (getattr(getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['arclength', 'conicaltaper', 'counterbore', 'countersink', 'depth', 'diameter', 'plusminus', 'radius', 'slope', 'sphericaldiameter', 'sphericalradius', 'square']) is not False
 
 class IfcPreDefinedPointMarkerSymbol_WR31:
     SCOPE = 'entity'
@@ -5791,7 +5791,7 @@ class IfcPreDefinedPointMarkerSymbol_WR31:
 
     @staticmethod
     def __call__(self):
-        assert (getattr(self, 'Name', INDETERMINATE) in ['asterisk', 'circle', 'dot', 'plus', 'square', 'triangle', 'x']) is not False
+        assert (getattr(getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['asterisk', 'circle', 'dot', 'plus', 'square', 'triangle', 'x']) is not False
 
 class IfcPreDefinedTerminatorSymbol_WR31:
     SCOPE = 'entity'
@@ -5800,7 +5800,7 @@ class IfcPreDefinedTerminatorSymbol_WR31:
 
     @staticmethod
     def __call__(self):
-        assert (getattr(self, 'Name', INDETERMINATE) in ['blankedarrow', 'blankedbox', 'blankeddot', 'dimensionorigin', 'filledarrow', 'filledbox', 'filleddot', 'integralsymbol', 'openarrow', 'slash', 'unfilledarrow']) is not False
+        assert (getattr(getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['blankedarrow', 'blankedbox', 'blankeddot', 'dimensionorigin', 'filledarrow', 'filledbox', 'filleddot', 'integralsymbol', 'openarrow', 'slash', 'unfilledarrow']) is not False
 
 class IfcProcedure_WR1:
     SCOPE = 'entity'
@@ -6786,7 +6786,7 @@ class IfcStructuredDimensionCallout_WR31:
     @staticmethod
     def __call__(self):
         contents = getattr(self, 'Contents', INDETERMINATE)
-        assert (sizeof([ato for ato in [con for con in getattr(self, 'contents', INDETERMINATE) if 'ifc2x3.ifcannotationtextoccurrence' in typeof(con)] if not getattr(ato, 'Name', INDETERMINATE) in ['dimensionvalue', 'tolerancevalue', 'unittext', 'prefixtext', 'suffixtext']]) == 0) is not False
+        assert (sizeof([ato for ato in [con for con in getattr(self, 'contents', INDETERMINATE) if 'ifc2x3.ifcannotationtextoccurrence' in typeof(con)] if not getattr(getattr(ato, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['dimensionvalue', 'tolerancevalue', 'unittext', 'prefixtext', 'suffixtext']]) == 0) is not False
 
 class IfcStyledItem_WR11:
     SCOPE = 'entity'
