@@ -752,7 +752,8 @@ class OverrideDuplicateMove(bpy.types.Operator):
 
         self.new_active_obj = None
         # Track decompositions so they can be recreated after the operation
-        relationships = tool.Root.get_decomposition_relationships(objects_to_duplicate)
+        decomposition_relationships = tool.Root.get_decomposition_relationships(objects_to_duplicate)
+        connection_relationships = tool.Root.get_connection_relationships(objects_to_duplicate)
         old_to_new = {}
 
         for obj in objects_to_duplicate:
@@ -811,11 +812,12 @@ class OverrideDuplicateMove(bpy.types.Operator):
             if old.is_a("IfcElementAssembly"):            
                 OverrideDuplicateMove.recreate_assembly(old_to_new)
 
-        # Remove connections with old objects
+        # Remove connections with old objects and recreates paths
         OverrideDuplicateMove.remove_old_connections(old_to_new)
+        tool.Root.recreate_connections(connection_relationships, old_to_new)
 
         # Recreate decompositions
-        tool.Root.recreate_decompositions(relationships, old_to_new)
+        tool.Root.recreate_decompositions(decomposition_relationships, old_to_new)
         blenderbim.bim.handler.refresh_ui_data()
 
     @staticmethod
