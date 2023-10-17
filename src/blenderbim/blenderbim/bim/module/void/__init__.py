@@ -25,6 +25,7 @@ classes = (
     operator.RemoveFilling,
     operator.RemoveOpening,
     operator.SelectDecomposition,
+    operator.BooleansMarkAsManual,
     prop.VoidProperties,
     ui.BIM_PT_voids,
     ui.BIM_PT_booleans,
