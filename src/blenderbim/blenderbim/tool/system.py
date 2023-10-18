@@ -128,10 +128,16 @@ class System(blenderbim.core.tool.System):
         blenderbim.bim.helper.import_attributes2(system, props.system_attributes)
 
     @classmethod
+    def get_systems(cls):
+        if tool.Ifc.get_schema() == "IFC2X3":
+            return tool.Ifc.get().by_type("IfcSystem") + tool.Ifc.get().by_type("IfcZone")
+        return tool.Ifc.get().by_type("IfcSystem")
+
+    @classmethod
     def import_systems(cls):
         props = bpy.context.scene.BIMSystemProperties
         props.systems.clear()
-        for system in tool.Ifc.get().by_type("IfcSystem"):
+        for system in cls.get_systems():
             if system.is_a() in ["IfcStructuralAnalysisModel"]:
                 continue
             new = props.systems.add()

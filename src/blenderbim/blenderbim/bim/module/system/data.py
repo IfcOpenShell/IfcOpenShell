@@ -47,6 +47,9 @@ class SystemData:
         declaration = tool.Ifc.schema().declaration_by_name("IfcSystem")
         declarations = ifcopenshell.util.schema.get_subtypes(declaration)
         version = tool.Ifc.get_schema()
+        if version == "IFC2X3":
+            declarations += [tool.Ifc.schema().declaration_by_name("IfcZone")]
+
         # We're only interested in systems for services. Not sure why IFC groups these together.
         return [
             (c, c, get_entity_doc(version, c).get("description", ""))
@@ -56,7 +59,7 @@ class SystemData:
 
     @classmethod
     def total_systems(cls):
-        return len(tool.Ifc.get().by_type("IfcSystem"))
+        return len(tool.System.get_systems())
 
 
 class ObjectSystemData:
@@ -85,7 +88,7 @@ class ObjectSystemData:
 
     @classmethod
     def total_systems(cls):
-        return len(tool.Ifc.get().by_type("IfcSystem"))
+        return len(tool.System.get_systems())
 
     @classmethod
     def connected_elements(cls):
