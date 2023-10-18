@@ -256,7 +256,7 @@ class Writer:
                         cell_format = "n"
                     else:
                         cell_format = colours[c - 1]  # Adjusted the indexing
-                    cell = worksheet.cell(row=r, column=c, value=col)
+                    cell = worksheet.cell(row=r, column=c, value=str(col))
                     cell.fill = cell_formats[cell_format]
                     c += 1
                 r += 1
