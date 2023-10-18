@@ -309,6 +309,14 @@ class Geometry(blenderbim.core.tool.Geometry):
         return ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
 
     @classmethod
+    def get_subcontext_parameters(cls, subcontext):
+        return (
+            subcontext.ContextType,
+            subcontext.ContextIdentifier,
+            subcontext.TargetView,
+        )
+
+    @classmethod
     def get_representation_by_context(cls, element, context):
         if element.is_a("IfcProduct") and element.Representation:
             for r in element.Representation.Representations:

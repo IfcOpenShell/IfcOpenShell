@@ -1647,20 +1647,25 @@ class Drawing(blenderbim.core.tool.Drawing):
 
         for element in filtered_elements:
             obj = tool.Ifc.get_object(element)
+            subcontext = tool.Geometry.get_active_representation(obj).ContextOfItems
+            current_representation_subcontext = tool.Geometry.get_subcontext_parameters(subcontext)
+
             for subcontext in subcontexts:
+                # prioritize already active representation if it matches the subcontext
+                # (element could have multiple representations in the same subcontext)
+                if subcontext == current_representation_subcontext:
+                    break
                 priority_representation = ifcopenshell.util.representation.get_representation(element, *subcontext)
                 if priority_representation:
-                    current_representation = tool.Geometry.get_active_representation(obj)
-                    if current_representation != priority_representation:
-                        blenderbim.core.geometry.switch_representation(
-                            tool.Ifc,
-                            tool.Geometry,
-                            obj=obj,
-                            representation=priority_representation,
-                            should_reload=False,
-                            is_global=True,
-                            should_sync_changes_first=True,
-                        )
+                    blenderbim.core.geometry.switch_representation(
+                        tool.Ifc,
+                        tool.Geometry,
+                        obj=obj,
+                        representation=priority_representation,
+                        should_reload=False,
+                        is_global=True,
+                        should_sync_changes_first=True,
+                    )
                     break
 
     @classmethod
