@@ -904,13 +904,15 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
 
     def _execute(self, context):
         self.new_active_obj = None
+        self.group_name = "Linked Aggregate"
         old_to_new = {}
 
-        ### Adding the assembly data
-        def add_assembly_data(element, parent, data_to_add):
-            obj = tool.Ifc.get_object(element)
-            obj.select_set(True)
-            pset = ifcopenshell.util.element.get_pset(element, "BBIM_Aggregate_Data")
+        # TODO Maybe this will be unnecessary after Refresh refactor
+        def add_assembly_data(element):
+            
+            data_to_add = {
+                "instance_of": [element.GlobalId],
+            }
             data = [data_to_add]
 
             if pset:
@@ -1095,20 +1097,45 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
                 tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj
             )
 
-            if new_entity:
-                tool.Model.handle_array_on_copied_element(new_entity)
-                blenderbim.core.aggregate.unassign_object(
-                    tool.Ifc,
-                    tool.Aggregate,
-                    tool.Collector,
-                    relating_obj=tool.Ifc.get_object(selected_root_entity),
-                    related_obj=tool.Ifc.get_object(new_entity),
-                )
+            ifcopenshell.api.run(
+                "pset.edit_pset",
+                tool.Ifc.get(),
+                pset=pset,
+                properties={"Data": json.dumps(data)},
+            )
+        
+        def select_objects_and_add_data(element): 
+            pset = ifcopenshell.util.element.get_pset(selected_element, "BBIM_Linked_Aggregate_Data")
+            if not pset: # TODO Is this still necessary?
+                add_assembly_data(element)
+            
+            add_linked_aggregate_group(element)
+            obj = tool.Ifc.get_object(element)
+            obj.select_set(True)
+            parts = ifcopenshell.util.element.get_parts(element)
+            if parts:
+                for part in parts:
+                    if part.is_a("IfcElementAssembly"):
+                        select_objects_and_add_data(part)
+                    obj = tool.Ifc.get_object(part)
+                    obj.select_set(True)
 
-                old_to_new[tool.Ifc.get_entity(obj)] = [new_entity]
-
-            return new_entity
-
+        def add_linked_aggregate_group(element):
+            linked_aggregate_group = None
+            product_groups_name = [
+                r.RelatingGroup.Name
+                for r in getattr(element, "HasAssignments", []) or []
+                if r.is_a("IfcRelAssignsToGroup")
+            ]
+            if self.group_name in product_groups_name:
+                return
+                            
+            linked_aggregate_group = ifcopenshell.api.run("group.add_group", tool.Ifc.get(), Name="Linked Aggregate")
+            ifcopenshell.api.run(
+                "group.assign_group", tool.Ifc.get(), products=[element], group=linked_aggregate_group
+            )
+       
+             
         ### Check if only one element and it's assembly
         if len(context.selected_objects) != 1:
             return {"FINISHED"}
@@ -1126,18 +1153,15 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
             self.report({"INFO"}, "Object is not part of a IfcElementAssembly.")
             return {"FINISHED"}
 
-        pset = ifcopenshell.util.element.get_pset(selected_element, "BBIM_Aggregate_Data")
-        if not pset:
-            create_data_structure(selected_element)
+        select_objects_and_add_data(selected_element)
 
         old_to_new = OverrideDuplicateMove.execute_ifc_duplicate_operator(self, context, linked=True)
 
+        # TODO Test with a sub aggregate added later
         for old_element, new_element in old_to_new.items():
-            print(old_element, new_element)
             old_parent = ifcopenshell.util.element.get_aggregate(old_element)
             if old_parent:
                 new_parent = old_to_new[old_parent]
-                print(new_parent)
                 blenderbim.core.aggregate.assign_object(
                                             tool.Ifc,
                                             tool.Aggregate,
@@ -1151,9 +1175,9 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class RefreshAggregate(bpy.types.Operator):
-    bl_idname = "bim.refresh_aggregate"
-    bl_label = "IFC Refresh Aggregate"
+class RefreshLinkedAggregate(bpy.types.Operator):
+    bl_idname = "bim.refresh_linked_aggregate"
+    bl_label = "IFC Refresh Linked Aggregate"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
