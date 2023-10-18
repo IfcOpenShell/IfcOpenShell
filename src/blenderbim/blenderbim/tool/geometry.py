@@ -479,23 +479,19 @@ class Geometry(blenderbim.core.tool.Geometry):
         element = tool.Ifc.get_entity(obj)
         settings = ifcopenshell.geom.settings()
         settings.set(settings.WELD_VERTICES, True)
-
         context = representation.ContextOfItems
+        if element.is_a("IfcTypeProduct") or not apply_openings:
+            settings.set(settings.DISABLE_OPENING_SUBTRACTIONS, True)
+
         if context.ContextIdentifier == "Body" and context.TargetView == "MODEL_VIEW":
             try:
-                if element.is_a("IfcTypeProduct") or not apply_openings:
-                    shape = ifcopenshell.geom.create_shape(settings, representation)
-                else:
-                    shape = ifcopenshell.geom.create_shape(settings, element)
+                shape = ifcopenshell.geom.create_shape(settings, element, representation)
             except:
                 settings.set(settings.INCLUDE_CURVES, True)
-                if element.is_a("IfcTypeProduct") or not apply_openings:
-                    shape = ifcopenshell.geom.create_shape(settings, representation)
-                else:
-                    shape = ifcopenshell.geom.create_shape(settings, element)
+                shape = ifcopenshell.geom.create_shape(settings, element, representation)
         else:
             settings.set(settings.INCLUDE_CURVES, True)
-            shape = ifcopenshell.geom.create_shape(settings, representation)
+            shape = ifcopenshell.geom.create_shape(settings, element, representation)
 
         ifc_importer = blenderbim.bim.import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = tool.Ifc.get()
