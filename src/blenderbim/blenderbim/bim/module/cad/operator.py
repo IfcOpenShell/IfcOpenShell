@@ -24,6 +24,8 @@ import bpy_extras
 import blenderbim.tool as tool
 from mathutils import Vector, Matrix
 from math import pi, radians, sin, cos, sqrt
+import ifcopenshell.util.unit
+
 
 messages = {
     "SHARED_VERTEX": "Shared Vertex, no intersection possible",
@@ -140,6 +142,9 @@ class CadFillet(bpy.types.Operator):
             layout.prop(self, prop)
 
     def execute(self, context):
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        self.radius = self.radius * si_conversion
+        
         bpy.ops.object.mode_set(mode="OBJECT")
         bpy.ops.object.mode_set(mode="EDIT")
 
@@ -361,6 +366,10 @@ class CadOffset(bpy.types.Operator):
         # dialog that Mesh Tools has. Sverchok is 2D based, but has a weird side
         # effect of converting an unclosed loop into a closed loop which is also
         # not what users expect.
+
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        self.distance = self.distance * si_conversion
+        
         bpy.ops.object.mode_set(mode="OBJECT")
         bpy.ops.object.mode_set(mode="EDIT")
 
@@ -498,6 +507,8 @@ class CadOffset(bpy.types.Operator):
                     local_direction = (rotation_i @ direction).normalized()
                     normals.append(local_direction)
 
+
+
                 if len(normals) == 2:
                     # https://stackoverflow.com/a/54042831/9627415
                     new_normal = (normals[0].lerp(normals[1], 0.5)).normalized()
@@ -531,7 +542,7 @@ class CadOffset(bpy.types.Operator):
 class AddIfcCircle(bpy.types.Operator):
     bl_idname = "bim.add_ifccircle"
     bl_label = "Add IfcCircle"
-    radius: bpy.props.FloatProperty(name="Radius", default=0.1)
+    radius: bpy.props.FloatProperty(name="Radius", default=0.5)
 
     @classmethod
     def poll(cls, context):
@@ -539,6 +550,9 @@ class AddIfcCircle(bpy.types.Operator):
         return bool(obj) and obj.type == "MESH"
 
     def execute(self, context):
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        self.radius = self.radius * si_conversion
+
         if self.has_selected_existing_circle(context):
             self.change_radius(context)
         else:
@@ -622,6 +636,9 @@ class AddIfcArcIndexFillet(bpy.types.Operator):
             layout.prop(self, prop)
 
     def execute(self, context):
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        self.radius = self.radius * si_conversion
+        
         if self.has_selected_existing_arc(context):
             self.change_radius(context)
         else:
@@ -786,8 +803,8 @@ class AlignViewToProfile(bpy.types.Operator):
 class AddRectangle(bpy.types.Operator):
     bl_idname = "bim.add_rectangle"
     bl_label = "Add Rectangle"
-    x: bpy.props.FloatProperty(name="X", default=0.1)
-    y: bpy.props.FloatProperty(name="Y", default=0.1)
+    x: bpy.props.FloatProperty(name="X", default=1)
+    y: bpy.props.FloatProperty(name="Y", default=1)
 
     @classmethod
     def poll(cls, context):
@@ -795,6 +812,10 @@ class AddRectangle(bpy.types.Operator):
         return bool(obj) and obj.type == "MESH"
 
     def execute(self, context):
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        self.x = self.x * si_conversion
+        self.y = self.y * si_conversion        
+        
         obj = context.active_object
         bm = bmesh.from_edit_mesh(obj.data)
         cursor = obj.matrix_world.inverted() @ context.scene.cursor.location
