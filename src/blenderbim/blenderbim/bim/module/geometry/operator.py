@@ -211,18 +211,22 @@ class SwitchRepresentation(bpy.types.Operator, Operator):
     should_switch_all_meshes: bpy.props.BoolProperty()
 
     def _execute(self, context):
-        target = tool.Ifc.get().by_id(self.ifc_definition_id).ContextOfItems
+        target_representation = tool.Ifc.get().by_id(self.ifc_definition_id)
+        target = target_representation.ContextOfItems
         is_subcontext = target.is_a("IfcGeometricRepresentationSubContext")
         for obj in set(context.selected_objects + [context.active_object]):
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
-            if is_subcontext:
-                representation = ifcopenshell.util.representation.get_representation(
-                    element, target.ContextType, target.ContextIdentifier, target.TargetView
-                )
+            if obj == context.active_object:
+                representation = target_representation
             else:
-                representation = ifcopenshell.util.representation.get_representation(element, target.ContextType)
+                if is_subcontext:
+                    representation = ifcopenshell.util.representation.get_representation(
+                        element, target.ContextType, target.ContextIdentifier, target.TargetView
+                    )
+                else:
+                    representation = ifcopenshell.util.representation.get_representation(element, target.ContextType)
             if not representation:
                 continue
             core.switch_representation(
