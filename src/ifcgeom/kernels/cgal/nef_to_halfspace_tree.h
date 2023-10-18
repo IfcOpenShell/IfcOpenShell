@@ -69,7 +69,7 @@ struct PlaneLess {
 // Functor to hash Plane_3
 template <typename Kernel>
 struct PlaneHash {
-	size_t operator()(const CGAL::Plane_3<Kernel>& plane) const
+	size_t operator()(const CGAL::Plane_3<Kernel>& plane) const noexcept
 	{
 		// @todo why can I only get this to work on double?
 		std::hash<double> h;
