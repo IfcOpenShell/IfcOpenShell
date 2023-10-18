@@ -641,6 +641,14 @@ Ifc4x3_add1::IfcStyledItem* create_styled_item(Ifc4x3_add1::IfcRepresentationIte
 }
 #endif
 
+#ifdef HAS_SCHEMA_4x3_add2
+Ifc4x3_add2::IfcStyledItem* create_styled_item(Ifc4x3_add2::IfcRepresentationItem* item, Ifc4x3_add2::IfcPresentationStyle* style) {
+    boost::shared_ptr<aggregate_of<Ifc4x3_add2::IfcPresentationStyle>> styles(new aggregate_of<Ifc4x3_add2::IfcPresentationStyle>());
+    styles->push(style);
+    return new Ifc4x3_add2::IfcStyledItem(item, styles, boost::none);
+}
+#endif
+
 template <typename Schema>
 void setSurfaceColour_2x3(IfcHierarchyHelper<Schema>& file, typename Schema::IfcRepresentation* rep, typename Schema::IfcPresentationStyleAssignment* style_assignment) {
     typename Schema::IfcRepresentationItem::list::ptr items = rep->Items();
