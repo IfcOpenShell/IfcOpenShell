@@ -218,7 +218,7 @@ class CreateAllShapes(bpy.types.Operator):
                     len(shape.geometry.edges),
                     len(shape.geometry.faces),
                 )
-        print(f"Failures: {len(failures)}")
+        self.report({"INFO"}, f"Failed shapes: {len(failures)}, check the system console for details.")
         for failure in failures:
             print(failure)
         return {"FINISHED"}
