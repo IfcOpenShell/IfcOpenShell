@@ -65,6 +65,9 @@
 #ifdef HAS_SCHEMA_4x3_add1
 #include "Ifc4x3_add1.h"
 #endif
+#ifdef HAS_SCHEMA_4x3_add2
+#include "Ifc4x3_add2.h"
+#endif
 
 #include "IfcFile.h"
 #include "IfcGlobalId.h"
@@ -310,6 +313,28 @@ void set_children_of_relation(Ifc4x3_add1::IfcRelContainedInSpatialStructure* t,
 
 void set_children_of_relation(Ifc4x3_add1::IfcRelAggregates* t, aggregate_of_instance::ptr& cs) {
     t->setRelatedObjects(cs->as<Ifc4x3_add1::IfcObjectDefinition>());
+}
+#endif
+
+#ifdef HAS_SCHEMA_4x3_add2
+Ifc4x3_add2::IfcObjectDefinition* get_parent_of_relation(Ifc4x3_add2::IfcRelContainedInSpatialStructure* t) {
+    return t->RelatingStructure();
+}
+
+aggregate_of_instance::ptr get_children_of_relation(Ifc4x3_add2::IfcRelContainedInSpatialStructure* t) {
+    return t->RelatedElements()->generalize();
+}
+
+aggregate_of_instance::ptr get_children_of_relation(Ifc4x3_add2::IfcRelAggregates* t) {
+    return t->RelatedObjects()->generalize();
+}
+
+void set_children_of_relation(Ifc4x3_add2::IfcRelContainedInSpatialStructure* t, aggregate_of_instance::ptr& cs) {
+    t->setRelatedElements(cs->as<Ifc4x3_add2::IfcProduct>());
+}
+
+void set_children_of_relation(Ifc4x3_add2::IfcRelAggregates* t, aggregate_of_instance::ptr& cs) {
+    t->setRelatedObjects(cs->as<Ifc4x3_add2::IfcObjectDefinition>());
 }
 #endif
 
