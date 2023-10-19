@@ -39,7 +39,7 @@ classes = (
     operator.OverrideOutlinerDelete,
     operator.OverridePasteBuffer,
     operator.PurgeUnusedRepresentations,
-    operator.RefreshAggregate,
+    operator.RefreshLinkedAggregate,
     operator.RemoveConnection,
     operator.RemoveRepresentation,
     operator.SelectConnection,
