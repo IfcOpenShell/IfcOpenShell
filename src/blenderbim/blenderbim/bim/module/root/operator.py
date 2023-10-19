@@ -174,6 +174,13 @@ class UnlinkObject(bpy.types.Operator):
             if element:
                 if self.should_delete:
                     obj_copy = obj.copy()
+
+                    # copy object data, so it won't be removed by `delete_ifc_object`
+                    if obj.data:
+                        obj_copy.data = obj.data.copy()
+                        if obj.type == "MESH":
+                            obj_copy.data.BIMMeshProperties.ifc_definition_id = 0
+
                     for collection in obj.users_collection:
                         collection.objects.link(obj_copy)
                     tool.Geometry.delete_ifc_object(obj)
@@ -181,8 +188,7 @@ class UnlinkObject(bpy.types.Operator):
                 if obj in IfcStore.edited_objs:
                     IfcStore.edited_objs.remove(obj)
                 tool.Ifc.unlink(obj=obj)
-                if obj.data:
-                    obj.data = obj.data.copy()
+
             for material_slot in obj.material_slots:
                 if material_slot.material:
                     material_slot.material = material_slot.material.copy()
