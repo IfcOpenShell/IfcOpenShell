@@ -316,6 +316,7 @@ class Drawing:
     def is_drawing_active(cls): pass
     def is_editing_sheets(cls): pass
     def move_file(cls, src, dest): pass
+    def open_layout_svg(cls, uri): pass
     def open_spreadsheet(cls, uri): pass
     def open_svg(cls, filepath): pass
     def remove_literal_from_annotation(cls, obj, literal): pass
