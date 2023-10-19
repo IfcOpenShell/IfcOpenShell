@@ -61,6 +61,7 @@ Scenario: Assign system
     And I press "bim.enable_editing_system(system={system})"
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcPump"
     And I press "bim.assign_class"
     And the object "IfcPump/Cube" is selected
@@ -76,6 +77,7 @@ Scenario: Unassign system
     And I press "bim.enable_editing_system(system={system})"
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcPump"
     And I press "bim.assign_class"
     And the object "IfcPump/Cube" is selected
@@ -92,6 +94,7 @@ Scenario: Select system products
     And I press "bim.enable_editing_system(system={system})"
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcPump"
     And I press "bim.assign_class"
     And the object "IfcPump/Cube" is selected
