@@ -66,6 +66,7 @@ Scenario: Add Brick - from geometry without a Brick IFC library
     And I press "bim.new_brick_file"
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcChiller"
     And I press "bim.assign_class"
     And I press "bim.load_brick_project(filepath='{cwd}/test/files/spaces.ttl')"
@@ -79,6 +80,7 @@ Scenario: Add Brick - from geometry with a Brick IFC library
     And the Brickschema is stubbed
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcChiller"
     And I press "bim.assign_class"
     And I press "bim.load_brick_project(filepath='{cwd}/test/files/spaces.ttl')"
@@ -139,6 +141,7 @@ Scenario: Remove Brick - with a Brick IFC library reference
     And the Brickschema is stubbed
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcChiller"
     And I press "bim.assign_class"
     And I press "bim.load_brick_project(filepath='{cwd}/test/files/spaces.ttl')"
@@ -203,6 +206,7 @@ Scenario: Convert IFC to brick
     And I set "scene.BIMBrickProperties.namespace" to "https://example.org/digitaltwin#"
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcUnitaryEquipment"
     And I set "scene.BIMRootProperties.ifc_predefined_type" to "AIRHANDLER"
     And I press "bim.assign_class"
@@ -220,6 +224,7 @@ Scenario: Assign brick reference
     And I set "scene.BIMBrickProperties.active_brick_index" to "0"
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcChiller"
     And I press "bim.assign_class"
     And the object "IfcChiller/Cube" is selected
