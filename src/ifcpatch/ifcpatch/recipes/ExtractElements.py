@@ -22,7 +22,7 @@ import ifcopenshell.util.selector
 
 
 class Patcher:
-    def __init__(self, src, file, logger, query: str = ".IfcWall"):
+    def __init__(self, src, file, logger, query: str = "IfcWall"):
         """Extract certain elements into a new model
 
         Extract a subset of elements from an existing IFC data set and save it
