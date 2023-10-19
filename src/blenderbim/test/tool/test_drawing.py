@@ -319,6 +319,7 @@ class TestGetDrawingGroup(NewFile):
         tool.Ifc.set(ifc)
         element = ifc.createIfcAnnotation()
         group = ifcopenshell.api.run("group.add_group", ifc)
+        group.ObjectType = "DRAWING"
         ifcopenshell.api.run("group.assign_group", ifc, products=[element], group=group)
         assert subject.get_drawing_group(element) == group
 
