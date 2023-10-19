@@ -131,6 +131,55 @@ class BIM_PT_styles(Panel):
         row.prop(self.props, "surface_colour")
         row = self.layout.row()
         row.prop(self.props, "transparency")
+        row = self.layout.row()
+        row.prop(self.props, "reflectance_method")
+
+        row = self.layout.row(align=True)
+        row.label(text="Diffuse")
+        row.prop(self.props, "diffuse_colour_class", text="")
+        if self.props.diffuse_colour_class == "IfcColourRgb":
+            row.prop(self.props, "diffuse_colour", text="")
+        else:
+            row.prop(self.props, "diffuse_colour_ratio", text="")
+        row.prop(
+            self.props,
+            "is_diffuse_colour_null",
+            text="",
+            icon="RADIOBUT_OFF" if self.props.is_diffuse_colour_null else "RADIOBUT_ON",
+        )
+
+        row = self.layout.row(align=True)
+        if self.props.reflectance_method in ("PHYSICAL", "NOTDEFINED"):
+            row.label(text="Metallic")
+        else:
+            row.label(text="Specular")
+        row.prop(self.props, "specular_colour_class", text="")
+        if self.props.specular_colour_class == "IfcColourRgb":
+            row.prop(self.props, "specular_colour", text="")
+        else:
+            row.prop(self.props, "specular_colour_ratio", text="")
+        row.prop(
+            self.props,
+            "is_specular_colour_null",
+            text="",
+            icon="RADIOBUT_OFF" if self.props.is_specular_colour_null else "RADIOBUT_ON",
+        )
+
+        row = self.layout.row(align=True)
+        if self.props.reflectance_method in ("PHYSICAL", "NOTDEFINED"):
+            row.label(text="Roughness")
+        elif self.props.reflectance_method in ("PHONG"):
+            row.label(text="Shininess")
+        else:
+            row.label(text="Highlight")
+        row.prop(self.props, "specular_highlight", text="")
+        row.prop(
+            self.props,
+            "is_specular_highlight_null",
+            text="",
+            icon="RADIOBUT_OFF" if self.props.is_specular_highlight_null else "RADIOBUT_ON",
+        )
+
         row = self.layout.row(align=True)
         row.operator("bim.edit_surface_style", text="Save Rendering Style", icon="CHECKMARK")
         row.operator("bim.disable_editing_style", text="", icon="CANCEL")
@@ -285,9 +334,11 @@ class BIM_UL_styles(UIList):
             row = layout.row(align=True)
             row.label(text=item.name)
             if item.has_surface_colour:
-                row = row.row()
+                row = row.row(align=True)
                 row.enabled = False
                 row.prop(item, "surface_colour", text="")
+                if item.has_diffuse_colour:
+                    row.prop(item, "diffuse_colour", text="")
             row2 = row.row()
             row2.alignment = "RIGHT"
             row2.label(text=str(item.total_elements))
