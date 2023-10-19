@@ -477,6 +477,13 @@ class AddPresentationStyle(bpy.types.Operator, tool.Ifc.Operator):
                 )
                 if props.surface_style_class == "IfcSurfaceStyleRendering":
                     surface_style.ReflectanceMethod = "NOTDEFINED"
+            material = bpy.data.materials.new(style.Name)
+            tool.Ifc.link(style, material)
+            material.use_fake_user = True
+            if surface_style.is_a("IfcSurfaceStyleShading"):
+                tool.Loader.create_surface_style_shading(material, surface_style)
+            elif surface_style.is_a("IfcSurfaceStyleRendering"):
+                tool.Loader.create_surface_style_rendering(material, surface_style)
         props.is_adding = False
         core.load_styles(tool.Style, style_type=props.style_type)
 
@@ -580,6 +587,7 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
         core.load_styles(tool.Style, style_type=self.props.style_type)
 
     def edit_existing_style(self):
+        material = tool.Ifc.get_object(self.style)
         if self.surface_style.is_a() == "IfcSurfaceStyleShading":
             ifcopenshell.api.run(
                 "style.edit_surface_style",
@@ -590,6 +598,7 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
                     "Transparency": self.props.transparency or None,
                 },
             )
+            tool.Loader.create_surface_style_shading(material, self.surface_style)
         elif self.surface_style.is_a() == "IfcSurfaceStyleRendering":
             ifcopenshell.api.run(
                 "style.edit_surface_style",
@@ -597,24 +606,28 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
                 style=self.surface_style,
                 attributes=self.get_rendering_attributes(),
             )
+            tool.Loader.create_surface_style_rendering(material, self.surface_style)
 
     def add_new_style(self):
+        material = tool.Ifc.get_object(self.style)
         if self.props.is_editing_class == "IfcSurfaceStyleShading":
-            ifcopenshell.api.run(
+            surface_style = ifcopenshell.api.run(
                 "style.add_surface_style",
                 tool.Ifc.get(),
                 style=self.style,
                 ifc_class="IfcSurfaceStyleShading",
                 attributes=self.get_shading_attributes(),
             )
+            tool.Loader.create_surface_style_shading(material, surface_style)
         elif self.props.is_editing_class == "IfcSurfaceStyleRendering":
-            ifcopenshell.api.run(
+            surface_style = ifcopenshell.api.run(
                 "style.add_surface_style",
                 tool.Ifc.get(),
                 style=self.style,
                 ifc_class="IfcSurfaceStyleRendering",
                 attributes=self.get_rendering_attributes(),
             )
+            tool.Loader.create_surface_style_rendering(material, surface_style)
 
     def get_shading_attributes(self):
         return {
