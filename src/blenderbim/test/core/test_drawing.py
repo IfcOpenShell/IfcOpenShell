@@ -140,7 +140,7 @@ class TestAddSheet:
 class TestOpenSheet:
     def test_run(self, drawing):
         drawing.get_document_uri("sheet", "LAYOUT").should_be_called().will_return("uri")
-        drawing.open_svg("uri").should_be_called()
+        drawing.open_layout_svg("uri").should_be_called()
         subject.open_sheet(drawing, sheet="sheet")
 
 
