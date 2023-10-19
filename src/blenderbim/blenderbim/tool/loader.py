@@ -80,6 +80,7 @@ class Loader(blenderbim.core.tool.Loader):
         if transparency := surface_style.get("Transparency", None):
             alpha = 1 - transparency
         blender_material.diffuse_color = surface_style["SurfaceColour"][:3] + (alpha,)
+        blender_material.use_nodes = False
 
     @classmethod
     def restart_material_node_tree(cls, blender_material):
