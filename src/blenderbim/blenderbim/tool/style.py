@@ -432,7 +432,7 @@ class Style(blenderbim.core.tool.Style):
             new.ifc_definition_id = style.id()
             new.name = style.Name or "Unnamed"
             new.ifc_class = style.is_a()
-            for surface_style in getattr(style, "Styles", []):
+            for surface_style in getattr(style, "Styles", []) or []:
                 new2 = new.style_classes.add()
                 new2.name = surface_style.is_a()
                 if surface_style.is_a("IfcSurfaceStyleShading"):
