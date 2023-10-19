@@ -160,7 +160,8 @@ class SheetBuilder:
                 x = float(image.attrib["x"])
                 y = float(image.attrib["y"])
                 if image.attrib["data-type"] == "view-title":
-                    image.attrib["x"] = str(x - readjust.x)
+                    image.attrib["x"] = str(x + readjust.x)
+                    # negate y offset because view-title comes AFTER foreground
                     image.attrib["y"] = str(y - readjust.y)
                 else:
                     image.attrib["x"] = str(x + readjust.x)
