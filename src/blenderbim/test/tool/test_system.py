@@ -177,7 +177,11 @@ class TestLoadPorts(NewFile):
         ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
         ifcopenshell.api.run("unit.assign_unit", ifc)
         tool.Ifc().set(ifc)
+
         element = ifc.createIfcChiller()
+        obj = bpy.data.objects.new("Object", None)
+        tool.Ifc.link(element, obj)
+
         port = ifc.createIfcDistributionPort()
         subject.load_ports(element, [port])
         obj = tool.Ifc.get_object(port)
