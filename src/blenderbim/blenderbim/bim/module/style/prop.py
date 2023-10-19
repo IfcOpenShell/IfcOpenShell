@@ -40,6 +40,12 @@ def get_style_types(self, context):
     return StylesData.data["style_types"]
 
 
+def get_reflectance_methods(self, context):
+    if not StylesData.is_loaded:
+        StylesData.load()
+    return StylesData.data["reflectance_methods"]
+
+
 class Style(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
@@ -48,6 +54,10 @@ class Style(PropertyGroup):
     has_surface_colour: BoolProperty(name="Has Surface Colour", default=False)
     surface_colour: bpy.props.FloatVectorProperty(
         name="Surface Colour", subtype="COLOR", default=(1, 1, 1), min=0.0, max=1.0, size=3
+    )
+    has_diffuse_colour: BoolProperty(name="Has Diffuse Colour", default=False)
+    diffuse_colour: bpy.props.FloatVectorProperty(
+        name="Diffuse Colour", subtype="COLOR", default=(1, 1, 1), min=0.0, max=1.0, size=3
     )
 
 
@@ -91,6 +101,27 @@ class BIMStylesProperties(PropertyGroup):
         name="Surface Colour", subtype="COLOR", default=(1, 1, 1), min=0.0, max=1.0, size=3
     )
     transparency: bpy.props.FloatProperty(name="Transparency", default=0.0, min=0.0, max=1.0)
+    is_diffuse_colour_null: BoolProperty(name="Is Null")
+    diffuse_colour_class: EnumProperty(
+        items=[(x, x, "") for x in ("IfcColourRgb", "IfcNormalisedRatioMeasure")],
+        name="Diffuse Colour Class",
+    )
+    diffuse_colour: bpy.props.FloatVectorProperty(
+        name="Diffuse Colour", subtype="COLOR", default=(1, 1, 1), min=0.0, max=1.0, size=3
+    )
+    diffuse_colour_ratio: bpy.props.FloatProperty(name="Diffuse Ratio", default=0.0, min=0.0, max=1.0)
+    is_specular_colour_null: BoolProperty(name="Is Null")
+    specular_colour_class: EnumProperty(
+        items=[(x, x, "") for x in ("IfcColourRgb", "IfcNormalisedRatioMeasure")],
+        name="Specular Colour Class",
+    )
+    specular_colour: bpy.props.FloatVectorProperty(
+        name="Specular Colour", subtype="COLOR", default=(1, 1, 1), min=0.0, max=1.0, size=3
+    )
+    specular_colour_ratio: bpy.props.FloatProperty(name="Specular Ratio", default=0.0, min=0.0, max=1.0)
+    is_specular_highlight_null: BoolProperty(name="Is Null")
+    specular_highlight: bpy.props.FloatProperty(name="Specular Highlight", default=0.0, min=0.0, max=1.0)
+    reflectance_method: EnumProperty(name="Reflectance Method", items=get_reflectance_methods)
     styles: CollectionProperty(name="Styles", type=Style)
     active_style_index: IntProperty(name="Active Style Index")
     active_style_type: EnumProperty(
