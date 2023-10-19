@@ -53,10 +53,10 @@ class TestCreateAnnotationObject(NewFile):
 
 class TestCreateCamera(NewFile):
     def test_run(self):
-        obj = subject.create_camera("Name", mathutils.Matrix())
+        obj = subject.create_camera("Name", mathutils.Matrix(), "PERSPECTIVE")
         assert obj.name == "Name"
         assert obj.matrix_world == mathutils.Matrix()
-        assert obj.data.type == "ORTHO"
+        assert obj.data.type == "PERSP"
         assert obj.data.ortho_scale == 50
         assert obj.data.clip_end == 10
         assert obj.users_collection[0] == bpy.context.scene.collection
