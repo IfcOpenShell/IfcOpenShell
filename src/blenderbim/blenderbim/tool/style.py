@@ -423,6 +423,7 @@ class Style(blenderbim.core.tool.Style):
 
     @classmethod
     def import_presentation_styles(cls, style_type):
+        color_to_tuple = lambda x: (x.Red, x.Green, x.Blue)
         props = bpy.context.scene.BIMStylesProperties
         props.styles.clear()
         styles = sorted(tool.Ifc.get().by_type(style_type), key=lambda x: x.Name or "Unnamed")
@@ -435,9 +436,12 @@ class Style(blenderbim.core.tool.Style):
                 new2 = new.style_classes.add()
                 new2.name = surface_style.is_a()
                 if surface_style.is_a("IfcSurfaceStyleShading"):
-                    color_to_tuple = lambda x: (x.Red, x.Green, x.Blue)
                     new.has_surface_colour = True
                     new.surface_colour = color_to_tuple(surface_style.SurfaceColour)
+                if surface_style.is_a("IfcSurfaceStyleRendering"):
+                    if surface_style.DiffuseColour and surface_style.DiffuseColour.is_a("IfcColourRgb"):
+                        new.has_diffuse_colour = True
+                        new.diffuse_colour = color_to_tuple(surface_style.DiffuseColour)
             new.total_elements = len(ifcopenshell.util.element.get_elements_by_style(tool.Ifc.get(), style))
 
     @classmethod
