@@ -52,4 +52,4 @@ class TestAddBoolean(test.bootstrap.IFC4):
 
         ifcopenshell.api.run("geometry.add_boolean", self.file, representation=rep, matrix=np.eye(4))
         assert rep.Items[0].is_a() == "IfcBooleanClippingResult"
-        assert rep.RepresentationType == "CSG"
+        assert rep.RepresentationType == "Clipping"
