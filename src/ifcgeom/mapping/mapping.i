@@ -135,7 +135,13 @@ BIND(IfcSurfaceCurve);
 #endif
 
 BIND(IfcCartesianPoint);
+#ifdef SCHEMA_HAS_IfcPointByDistanceExpression
+BIND(IfcPointByDistanceExpression)
+#endif
 BIND(IfcDirection);
+#ifdef SCHEMA_HAS_IfcAxis2PlacementLinear
+BIND(IfcAxis2PlacementLinear)
+#endif
 BIND(IfcAxis2Placement2D);
 BIND(IfcAxis2Placement3D);
 BIND(IfcAxis1Placement);
@@ -145,6 +151,9 @@ BIND(IfcCartesianTransformationOperator2D);
 BIND(IfcCartesianTransformationOperator3D);
 // BIND(IfcObjectPlacement);
 BIND(IfcLocalPlacement); // -> matrix4
+#if defined SCHEMA_HAS_IfcLinearPlacement
+BIND(IfcLinearPlacement); // -> matrix4
+#endif
 BIND(IfcVector);
 
 // BIND(IfcColourRgb);

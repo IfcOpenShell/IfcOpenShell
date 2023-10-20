@@ -458,14 +458,15 @@ ifcopenshell::geometry::taxonomy::item::ptr ifcopenshell::geometry::taxonomy::pi
 	for (auto& s : spans)
 		length += s.first;
 
-	static const double resolution = 0.5;
    std::vector<taxonomy::point3::ptr> polygon;
 
-	int num_steps = std::ceil(length / resolution);
-	for (int i = 0; i < num_steps; ++i) {
+	static const double target_resolution = 0.5;
+	int num_steps = (int)std::ceil(length / target_resolution);
+   auto resolution = length / num_steps;
+	for (int i = 0; i <= num_steps; ++i) {
 		auto u = resolution * i;
-		auto p = evaluate(u);
-		polygon.push_back(taxonomy::make<taxonomy::point3>(p(0), p(1), p(2)));
+      Eigen::Matrix4d m = evaluate(u);
+      polygon.push_back(taxonomy::make<taxonomy::point3>(m.col(3)(0), m.col(3)(1), m.col(3)(2)));
 	}
 
 	return polygon_from_points(polygon);
