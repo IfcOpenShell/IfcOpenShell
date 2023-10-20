@@ -27,11 +27,11 @@ from blenderbim.bim.module.profile.prop import generate_thumbnail_for_active_pro
 class BIM_PT_profiles(Panel):
     bl_label = "Profiles"
     bl_idname = "BIM_PT_profiles"
-    bl_options = {"DEFAULT_CLOSED"}
+    bl_options = {"HIDE_HEADER"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_geometry"
+    bl_parent_id = "BIM_PT_tab_profiles"
 
     @classmethod
     def poll(cls, context):
@@ -58,11 +58,11 @@ class BIM_PT_profiles(Panel):
             box.template_icon(icon_value=preview_image.icon_id, scale=5)
 
         row = self.layout.row(align=True)
-        row.label(text=f"{ProfileData.data['total_profiles']} Named Profiles Found", icon="SNAP_GRID")
+        row.label(text=f"{ProfileData.data['total_profiles']} Named Profiles", icon="ITALIC")
         if self.props.is_editing:
             row.operator("bim.disable_profile_editing_ui", text="", icon="CANCEL")
         else:
-            row.operator("bim.load_profiles", text="", icon="GREASEPENCIL")
+            row.operator("bim.load_profiles", text="", icon="IMPORT")
 
         if not self.props.is_editing:
             return

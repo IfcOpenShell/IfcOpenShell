@@ -36,7 +36,7 @@ class BIM_PT_classifications(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_project_setup"
+    bl_parent_id = "BIM_PT_tab_project_setup"
 
     @classmethod
     def poll(cls, context):

@@ -29,7 +29,7 @@ class BIM_PT_context(bpy.types.Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_geometry"
+    bl_parent_id = "BIM_PT_tab_geometry"
 
     @classmethod
     def poll(cls, context):

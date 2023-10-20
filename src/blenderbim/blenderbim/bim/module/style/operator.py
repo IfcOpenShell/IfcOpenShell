@@ -431,8 +431,8 @@ class ClearTextureMapPath(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EnableAddPresentationStyle(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.enable_add_presentation_style"
+class EnableAddingPresentationStyle(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.enable_adding_presentation_style"
     bl_label = "Enable Add Presentation Style"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -441,8 +441,8 @@ class EnableAddPresentationStyle(bpy.types.Operator, tool.Ifc.Operator):
         props.is_adding = True
 
 
-class DisableAddPresentationStyle(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.disable_add_presentation_style"
+class DisableAddingPresentationStyle(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.disable_adding_presentation_style"
     bl_label = "Disable Add Presentation Style"
     bl_options = {"REGISTER", "UNDO"}
 

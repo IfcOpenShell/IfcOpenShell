@@ -160,7 +160,7 @@ class BIM_PT_Grids(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_project_setup"
+    bl_parent_id = "BIM_PT_tab_project_setup"
 
     def draw(self, context):
         self.layout.row().operator("mesh.add_grid", icon="ADD", text="Add Grids")

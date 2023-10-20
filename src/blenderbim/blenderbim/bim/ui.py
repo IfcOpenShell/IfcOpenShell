@@ -339,7 +339,7 @@ class BIM_PT_tabs(Panel):
         tab_entry.enabled = enabled
 
 
-class BIM_PT_project_info(Panel):
+class BIM_PT_tab_project_info(Panel):
     bl_label = "Project Info"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -353,8 +353,22 @@ class BIM_PT_project_info(Panel):
         pass
 
 
-class BIM_PT_project_setup(Panel):
+class BIM_PT_tab_project_setup(Panel):
     bl_label = "Project Setup"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "PROJECT")
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_stakeholders(Panel):
+    bl_label = "Stakeholders"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -362,7 +376,7 @@ class BIM_PT_project_setup(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "PROJECT")
+        return tool.Blender.is_tab(context, "PROJECT") and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -397,7 +411,7 @@ class BIM_PT_tab_grouping_and_filtering(Panel):
         pass
 
 
-class BIM_PT_geometry(Panel):
+class BIM_PT_tab_geometry(Panel):
     bl_label = "Geometry"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -648,6 +662,21 @@ class BIM_PT_tab_materials(Panel):
 
 class BIM_PT_tab_styles(Panel):
     bl_label = "Styles"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_order = 1
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "GEOMETRY") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_profiles(Panel):
+    bl_label = "Profiles"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"

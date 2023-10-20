@@ -97,7 +97,7 @@ class BIM_PT_systems(Panel):
             prop_with_search(row, self.props, "system_class", text="")
             row.operator("bim.add_system", text="", icon="ADD")
         else:
-            row.operator("bim.load_systems", text="", icon="GREASEPENCIL")
+            row.operator("bim.load_systems", text="", icon="IMPORT")
 
         if self.props.is_editing:
             self.layout.template_list(
@@ -293,7 +293,7 @@ class BIM_PT_zones(Panel):
         row = self.layout.row(align=True)
         row.label(text="{} Zones Found".format(ZonesData.data["total_zones"]), icon="SEQ_STRIP_META")
         if not self.props.is_loaded:
-            row.operator("bim.load_zones", text="", icon="GREASEPENCIL")
+            row.operator("bim.load_zones", text="", icon="IMPORT")
             return
 
         row.operator("bim.add_zone", text="", icon="ADD")

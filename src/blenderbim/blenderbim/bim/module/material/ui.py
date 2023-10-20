@@ -63,13 +63,19 @@ class BIM_PT_materials(Panel):
                 material = self.props.materials[self.props.active_material_index]
                 if material.ifc_definition_id:
                     if self.props.active_material_id:
-                        row.operator("bim.edit_material", text="", icon="CHECKMARK").material = material.ifc_definition_id
-                        row.operator("bim.disable_editing_material", text="", icon="CANCEL").material = material.ifc_definition_id
+                        row.operator(
+                            "bim.edit_material", text="", icon="CHECKMARK"
+                        ).material = material.ifc_definition_id
+                        row.operator(
+                            "bim.disable_editing_material", text="", icon="CANCEL"
+                        ).material = material.ifc_definition_id
                         self.draw_editable_material_attributes_ui()
                     else:
                         op = row.operator("bim.select_by_material", text="", icon="RESTRICT_SELECT_OFF")
                         op.material = material.ifc_definition_id
-                        row.operator("bim.enable_editing_material", text="", icon="GREASEPENCIL").material = material.ifc_definition_id
+                        row.operator(
+                            "bim.enable_editing_material", text="", icon="GREASEPENCIL"
+                        ).material = material.ifc_definition_id
                         row.operator("bim.remove_material", text="", icon="X").material = material.ifc_definition_id
         else:
             row.operator("bim.add_material_set", text="", icon="ADD").set_type = self.props.material_type
@@ -82,9 +88,9 @@ class BIM_PT_materials(Panel):
 
         self.layout.template_list("BIM_UL_materials", "", self.props, "materials", self.props, "active_material_index")
 
-
     def draw_editable_material_attributes_ui(self):
         blenderbim.bim.helper.draw_attributes(self.props.material_attributes, self.layout)
+
 
 class BIM_PT_material(Panel):
     bl_label = "Material"
@@ -219,9 +225,7 @@ class BIM_PT_object_material(Panel):
             elif self.props.active_material_set_item_id == set_item["id"]:
                 self.draw_editable_set_item_ui(set_item)
             else:
-                self.draw_read_only_set_item_ui(
-                    set_item, index, is_first=index == 0, is_last=index == total_items - 1
-                )
+                self.draw_read_only_set_item_ui(set_item, index, is_first=index == 0, is_last=index == total_items - 1)
 
     def draw_editable_set_item_profile_ui(self, set_item):
         box = self.layout.box()
@@ -267,7 +271,10 @@ class BIM_PT_object_material(Panel):
             op.old_index = index
             op.new_index = index + 1
             setattr(op, "material_set", ObjectMaterialData.data["set"]["id"])
-        if not self.props.active_material_set_item_id and ObjectMaterialData.data["material_class"] != "IfcMaterialList":
+        if (
+            not self.props.active_material_set_item_id
+            and ObjectMaterialData.data["material_class"] != "IfcMaterialList"
+        ):
             if "Profile" in ObjectMaterialData.data["material_class"]:
                 op = row.operator("bim.enable_editing_material_set_item_profile", icon="ITALIC", text="")
                 op.material_set_item = set_item["id"]

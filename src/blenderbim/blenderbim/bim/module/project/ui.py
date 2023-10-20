@@ -84,7 +84,7 @@ class BIM_PT_project(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_options = {"HIDE_HEADER"}
-    bl_parent_id = "BIM_PT_project_info"
+    bl_parent_id = "BIM_PT_tab_project_info"
 
     def draw(self, context):
         if not ProjectData.is_loaded:
@@ -244,7 +244,7 @@ class BIM_PT_project_library(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_project_setup"
+    bl_parent_id = "BIM_PT_tab_project_setup"
 
     def draw(self, context):
         self.layout.use_property_decorate = False
@@ -287,7 +287,7 @@ class BIM_PT_links(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_project_setup"
+    bl_parent_id = "BIM_PT_tab_project_setup"
 
     def draw(self, context):
         self.props = context.scene.BIMProjectProperties

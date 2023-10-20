@@ -125,13 +125,14 @@ classes = [
     ui.BIM_UL_generic,
     ui.BIM_UL_topics,
     ui.BIM_ADDON_preferences,
-    # Project overview
-    ui.BIM_PT_project_info,
-    ui.BIM_PT_project_setup,
-    ui.BIM_PT_geometry,
-    ui.BIM_PT_tab_grouping_and_filtering,
     # Tabs panel
     ui.BIM_PT_tabs,
+    # Project overview
+    ui.BIM_PT_tab_project_info,
+    ui.BIM_PT_tab_project_setup,
+    ui.BIM_PT_tab_geometry,
+    ui.BIM_PT_tab_stakeholders,
+    ui.BIM_PT_tab_grouping_and_filtering,
     # Object information
     ui.BIM_PT_tab_object_metadata,
     ui.BIM_PT_tab_misc,
@@ -140,6 +141,7 @@ classes = [
     ui.BIM_PT_tab_representations,
     ui.BIM_PT_tab_geometric_relationships,
     ui.BIM_PT_tab_parametric_geometry,
+    ui.BIM_PT_tab_profiles,
     ui.BIM_PT_tab_materials,
     ui.BIM_PT_tab_styles,
     # Drawings and documents
