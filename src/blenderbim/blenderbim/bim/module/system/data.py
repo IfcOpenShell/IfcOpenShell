@@ -70,7 +70,6 @@ class ObjectSystemData:
     def load(cls):
         cls.data = {
             "systems": cls.systems(),
-            "total_systems": cls.total_systems(),
             # AFTER SYSTEMS
             "connected_elements": cls.connected_elements(),
         }
@@ -85,10 +84,6 @@ class ObjectSystemData:
         for system in ifcopenshell.util.system.get_element_systems(cls.element):
             results.append({"id": system.id(), "name": system.Name or "Unnamed", "ifc_class": system.is_a()})
         return results
-
-    @classmethod
-    def total_systems(cls):
-        return len(tool.System.get_systems())
 
     @classmethod
     def connected_elements(cls):

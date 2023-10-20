@@ -50,13 +50,11 @@ classes = (
     prop.BIMSystemProperties,
     prop.BIMZoneProperties,
     ui.BIM_PT_systems,
-    ui.BIM_PT_object_systems,
     ui.BIM_PT_zones,
     ui.BIM_PT_active_object_zones,
     ui.BIM_PT_ports,
     ui.BIM_PT_port,
     ui.BIM_UL_systems,
-    ui.BIM_UL_object_systems,
     ui.BIM_UL_zones,
 )
 
