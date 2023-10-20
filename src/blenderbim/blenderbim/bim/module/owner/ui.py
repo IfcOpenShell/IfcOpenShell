@@ -83,7 +83,7 @@ class BIM_PT_people(bpy.types.Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_project_setup"
+    bl_parent_id = "BIM_PT_tab_stakeholders"
 
     @classmethod
     def poll(cls, context):
@@ -142,7 +142,7 @@ class BIM_PT_organisations(bpy.types.Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_project_setup"
+    bl_parent_id = "BIM_PT_tab_stakeholders"
 
     @classmethod
     def poll(cls, context):
@@ -189,7 +189,7 @@ class BIM_PT_owner(bpy.types.Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_project_setup"
+    bl_parent_id = "BIM_PT_tab_stakeholders"
 
     @classmethod
     def poll(cls, context):
@@ -240,7 +240,7 @@ class BIM_PT_actor(bpy.types.Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_project_setup"
+    bl_parent_id = "BIM_PT_tab_stakeholders"
 
     @classmethod
     def poll(cls, context):

@@ -48,7 +48,7 @@ class BIM_PT_styles(Panel):
             row = self.layout.row(align=True)
             row.label(text="{} {}s".format(len(self.props.styles), self.props.style_type), icon="SHADING_RENDERED")
             if not self.props.is_adding:
-                row.operator("bim.enable_add_presentation_style", text="", icon="ADD")
+                row.operator("bim.enable_adding_presentation_style", text="", icon="ADD")
             row.operator("bim.disable_editing_styles", text="", icon="CANCEL")
         else:
             row = self.layout.row(align=True)
@@ -69,7 +69,7 @@ class BIM_PT_styles(Panel):
                     row.prop(self.props, "surface_colour", text="Colour")
             row = box.row(align=True)
             row.operator("bim.add_presentation_style", text="Save New Style", icon="CHECKMARK")
-            row.operator("bim.disable_add_presentation_style", text="", icon="CANCEL")
+            row.operator("bim.disable_adding_presentation_style", text="", icon="CANCEL")
 
         if self.props.styles and self.props.active_style_index < len(self.props.styles):
             row = self.layout.row(align=True)
