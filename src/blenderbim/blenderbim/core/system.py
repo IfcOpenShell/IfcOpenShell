@@ -47,7 +47,7 @@ def remove_system(ifc, system_tool, system=None):
 
 def enable_editing_system(system_tool, system=None):
     system_tool.import_system_attributes(system)
-    system_tool.set_active_system(system)
+    system_tool.set_active_edited_system(system)
 
 
 def disable_editing_system(system):
@@ -64,6 +64,7 @@ def unassign_system(ifc, system=None, product=None):
 
 def select_system_products(system_tool, system=None):
     system_tool.select_system_products(system)
+    system_tool.set_active_system(system)
 
 
 def show_ports(ifc, system, spatial, element=None):
