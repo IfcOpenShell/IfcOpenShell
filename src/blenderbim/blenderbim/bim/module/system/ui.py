@@ -59,21 +59,34 @@ class BIM_PT_systems(Panel):
         if not ObjectSystemData.is_loaded:
             ObjectSystemData.load()
 
-        self.props = context.scene.BIMSystemProperties
+        def draw_system_ui(row, system_id, system_name, system_class):
+            row = self.layout.row(align=True)
+            row.label(text=system_name, icon=SYSTEM_ICONS[system_class])
+            op = row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF")
+            op.system = system_id
+            op = row.operator("bim.unassign_system", text="", icon="X")
+            op.system = system_id
 
+        self.props = context.scene.BIMSystemProperties
         row = self.layout.row(align=True)
         row.prop(self.props, "should_draw_decorations")
 
-        for system in ObjectSystemData.data["systems"]:
+        row = self.layout.row()
+        if active_system := tool.System.get_active_system():
+            row.label(text=f"Active system:")
             row = self.layout.row(align=True)
-            row.label(text=system["name"], icon=SYSTEM_ICONS[system["ifc_class"]])
-            op = row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF")
-            op.system = system["id"]
-            op = row.operator("bim.unassign_system", text="", icon="X")
-            op.system = system["id"]
+            draw_system_ui(row, active_system.id(), active_system.Name, active_system.is_a())
+        else:
+            row.label(text="No active system is selected")
 
-        if not ObjectSystemData.data["systems"]:
-            self.layout.label(text="No System associated with Active Object")
+        if ObjectSystemData.data["systems"]:
+            row = self.layout.row()
+            row.label(text="Active object systems:")
+            for system in ObjectSystemData.data["systems"]:
+                row = self.layout.row(align=True)
+                draw_system_ui(row, system["id"], system["name"], system["ifc_class"])
+        else:
+            self.layout.label(text="No System associated with active object")
 
         row = self.layout.row(align=True)
         row.label(text="{} Systems Found in Project".format(SystemData.data["total_systems"]), icon="OUTLINER")
@@ -96,7 +109,7 @@ class BIM_PT_systems(Panel):
                 "active_system_index",
             )
 
-        if self.props.active_system_id:
+        if self.props.edited_system_id:
             self.draw_editable_ui(context)
 
     def draw_editable_ui(self, context):
@@ -316,7 +329,6 @@ class BIM_PT_active_object_zones(Panel):
     def poll(cls, context):
         return tool.Ifc.get() and context.active_object and tool.Ifc.get_entity(context.active_object)
 
-
     def draw(self, context):
         if not ActiveObjectZonesData.is_loaded:
             ActiveObjectZonesData.load()
@@ -338,12 +350,12 @@ class BIM_UL_systems(UIList):
             row.label(text=item.name, icon=SYSTEM_ICONS[item.ifc_class])
             system_id = item.ifc_definition_id
             row.operator("bim.assign_system", text="", icon="ADD").system = item.ifc_definition_id
-            if context.scene.BIMSystemProperties.active_system_id == system_id:
+            if context.scene.BIMSystemProperties.edited_system_id == system_id:
                 op = row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF")
                 op.system = system_id
                 row.operator("bim.edit_system", text="", icon="CHECKMARK")
                 row.operator("bim.disable_editing_system", text="", icon="CANCEL")
-            elif context.scene.BIMSystemProperties.active_system_id:
+            elif context.scene.BIMSystemProperties.edited_system_id:
                 op = row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF")
                 op.system = system_id
                 op = row.operator("bim.remove_system", text="", icon="X")
