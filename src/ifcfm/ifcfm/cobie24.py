@@ -248,7 +248,7 @@ def get_attributes(ifc_file):
 
 
 def get_contact_data(ifc_file, element):
-    the_actor = element.Theactor
+    the_actor = element.TheActor
 
     if the_actor.is_a("IfcPerson"):
         pao = None
