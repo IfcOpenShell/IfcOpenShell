@@ -410,7 +410,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 obj=obj,
                 predefined_type=predefined_type,
                 ifc_class="IfcStairFlightType",
-                should_add_representation=True,
+                should_add_representation=False,
                 context=body,
             )
             tool.Blender.select_and_activate_single_object(context, obj)
