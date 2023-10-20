@@ -495,6 +495,20 @@ class BIM_PT_tab_services(Panel):
         pass
 
 
+class BIM_PT_tab_zones(Panel):
+    bl_label = "Zones"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "SERVICES") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
 class BIM_PT_tab_quality_control(Panel):
     bl_label = "Quality Control"
     bl_space_type = "PROPERTIES"

@@ -16,11 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-from blenderbim.bim.helper import prop_with_search
+import blenderbim.bim.helper
 import blenderbim.tool as tool
+from blenderbim.bim.helper import prop_with_search
 from bpy.types import Panel, UIList
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.system.data import SystemData, ObjectSystemData, PortData
+from blenderbim.bim.module.system.data import SystemData, ZonesData, ActiveObjectZonesData, ObjectSystemData, PortData
 
 
 FLOW_DIRECTION_TO_ICON = {
@@ -42,7 +42,7 @@ class BIM_PT_systems(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        return tool.Ifc.get()
 
     def draw(self, context):
         if not SystemData.is_loaded:
@@ -95,7 +95,7 @@ class BIM_PT_object_systems(Panel):
     def poll(cls, context):
         if not context.active_object:
             return False
-        return IfcStore.get_file() and context.active_object.BIMObjectProperties.ifc_definition_id
+        return tool.Ifc.get() and context.active_object.BIMObjectProperties.ifc_definition_id
 
     def draw(self, context):
         if not ObjectSystemData.is_loaded:
@@ -294,6 +294,78 @@ class BIM_PT_port(Panel):
             ).direction = flow_direction
 
 
+class BIM_PT_zones(Panel):
+    bl_label = "Zones"
+    bl_idname = "BIM_PT_zones"
+    bl_options = {"HIDE_HEADER"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_zones"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Ifc.get()
+
+    def draw(self, context):
+        if not ZonesData.is_loaded:
+            ZonesData.load()
+        self.props = context.scene.BIMZoneProperties
+
+        row = self.layout.row(align=True)
+        row.label(text="{} Zones Found".format(ZonesData.data["total_zones"]), icon="SEQ_STRIP_META")
+        if not self.props.is_loaded:
+            row.operator("bim.load_zones", text="", icon="GREASEPENCIL")
+            return
+
+        row.operator("bim.add_zone", text="", icon="ADD")
+        row.operator("bim.unload_zones", text="", icon="CANCEL")
+
+        if self.props.zones and self.props.active_zone_index < len(self.props.zones):
+            row = self.layout.row(align=True)
+            ifc_definition_id = self.props.zones[self.props.active_zone_index].ifc_definition_id
+            row.operator("bim.enable_editing_zone", text="Edit Zone", icon="GREASEPENCIL").zone = ifc_definition_id
+            row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF").system = ifc_definition_id
+            row.operator("bim.assign_system", text="", icon="KEYFRAME_HLT").system = ifc_definition_id
+            row.operator("bim.unassign_system", text="", icon="KEYFRAME").system = ifc_definition_id
+            row.operator("bim.remove_zone", text="", icon="X").zone = ifc_definition_id
+
+        self.layout.template_list("BIM_UL_zones", "", self.props, "zones", self.props, "active_zone_index")
+
+        if self.props.is_editing:
+            blenderbim.bim.helper.draw_attributes(self.props.attributes, self.layout)
+            row = self.layout.row(align=True)
+            row.operator("bim.edit_zone", icon="CHECKMARK")
+            row.operator("bim.disable_editing_zone", icon="CANCEL", text="")
+
+
+class BIM_PT_active_object_zones(Panel):
+    bl_label = "Active Object Zones"
+    bl_idname = "BIM_PT_active_object_zones"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_zones"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Ifc.get() and context.active_object and tool.Ifc.get_entity(context.active_object)
+
+
+    def draw(self, context):
+        if not ActiveObjectZonesData.is_loaded:
+            ActiveObjectZonesData.load()
+        self.props = context.scene.BIMZoneProperties
+
+        for zone in ActiveObjectZonesData.data["zones"]:
+            row = self.layout.row()
+            row.label(text=zone, icon="SEQ_STRIP_META")
+
+        if not ActiveObjectZonesData.data["zones"]:
+            row = self.layout.row()
+            row.label(text="Active Object Has No Zones")
+
+
 class BIM_UL_systems(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         system_icons = {
@@ -341,3 +413,10 @@ class BIM_UL_object_systems(UIList):
             row = layout.row(align=True)
             row.label(text=item.name, icon=system_icons[item.ifc_class])
             row.operator("bim.assign_system", text="", icon="ADD").system = item.ifc_definition_id
+
+
+class BIM_UL_zones(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item:
+            row = layout.row(align=True)
+            row.label(text=item.name)
