@@ -53,9 +53,9 @@ class TestDeleteElementObjects(NewFile):
 
 class TestDisableEditingSystem(NewFile):
     def test_run(self):
-        bpy.context.scene.BIMSystemProperties.active_system_id = 10
+        bpy.context.scene.BIMSystemProperties.edited_system_id = 10
         subject.disable_editing_system()
-        assert bpy.context.scene.BIMSystemProperties.active_system_id == 0
+        assert bpy.context.scene.BIMSystemProperties.edited_system_id == 0
 
 
 class TestDisableSystemEditingUI(NewFile):
@@ -219,5 +219,5 @@ class TestSetActiveSystem(NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc().set(ifc)
         system = ifcopenshell.api.run("system.add_system", ifc, ifc_class="IfcSystem")
-        subject.set_active_system(system)
-        assert bpy.context.scene.BIMSystemProperties.active_system_id == system.id()
+        subject.set_active_edited_system(system)
+        assert bpy.context.scene.BIMSystemProperties.edited_system_id == system.id()

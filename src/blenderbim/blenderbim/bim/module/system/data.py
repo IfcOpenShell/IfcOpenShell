@@ -162,7 +162,9 @@ class SystemDecorationData:
 
     @classmethod
     def load(cls):
-        cls.data = {}
+        cls.data = {
+            "decorated_elements": cls.decorated_elements(),
+        }
         cls.is_loaded = True
         cls.elements_ports_positions = {}
 
@@ -189,6 +191,29 @@ class SystemDecorationData:
             cls.elements_ports_positions[element] = ports_data
         return cls.elements_ports_positions[element]
 
+    @classmethod
+    def decorated_elements(cls):
+        if not ObjectSystemData.is_loaded:
+            ObjectSystemData.load()
+
+        # Priority:
+        # 1. currently selected systems
+        # 2. active system
+        # 3. if previous steps didn't worked - decorate connected elements
+
+        decorated_elements = set()
+        if ObjectSystemData.data["systems"]:
+            for system in ObjectSystemData.data["systems"]:
+                system = tool.Ifc.get().by_id(system["id"])
+                decorated_elements.update(ifcopenshell.util.system.get_system_elements(system))
+        elif active_system := tool.System.get_active_system():
+            decorated_elements = set(ifcopenshell.util.system.get_system_elements(active_system))
+
+        if not decorated_elements:
+            decorated_elements += ObjectSystemData.data["connected_elements"]
+
+        return decorated_elements
+
 
 class ZonesData:
     data = {}
@@ -196,7 +221,7 @@ class ZonesData:
 
     @classmethod
     def load(cls):
-        cls.data = { "total_zones": cls.total_zones() }
+        cls.data = {"total_zones": cls.total_zones()}
         cls.is_loaded = True
 
     @classmethod
@@ -210,7 +235,7 @@ class ActiveObjectZonesData:
 
     @classmethod
     def load(cls):
-        cls.data = { "zones": cls.zones() }
+        cls.data = {"zones": cls.zones()}
         cls.is_loaded = True
 
     @classmethod

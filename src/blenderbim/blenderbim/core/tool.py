@@ -916,6 +916,7 @@ class System:
     def run_geometry_edit_object_placement(cls, obj=None): pass
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
     def select_system_products(cls, system): pass
+    def set_active_edited_system(cls, system): pass
     def set_active_system(cls, system): pass
 
 

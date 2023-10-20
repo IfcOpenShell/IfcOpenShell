@@ -68,7 +68,7 @@ class EditSystem(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.edit_system(
-            tool.Ifc, tool.System, system=tool.Ifc.get().by_id(context.scene.BIMSystemProperties.active_system_id)
+            tool.Ifc, tool.System, system=tool.Ifc.get().by_id(context.scene.BIMSystemProperties.edited_system_id)
         )
 
 

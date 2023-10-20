@@ -80,7 +80,7 @@ class System(blenderbim.core.tool.System):
 
     @classmethod
     def disable_editing_system(cls):
-        bpy.context.scene.BIMSystemProperties.active_system_id = 0
+        bpy.context.scene.BIMSystemProperties.edited_system_id = 0
 
     @classmethod
     def disable_system_editing_ui(cls):
@@ -192,8 +192,17 @@ class System(blenderbim.core.tool.System):
         tool.Spatial.select_products(ifcopenshell.util.system.get_system_elements(system))
 
     @classmethod
+    def set_active_edited_system(cls, system):
+        bpy.context.scene.BIMSystemProperties.edited_system_id = system.id()
+
+    @classmethod
     def set_active_system(cls, system):
         bpy.context.scene.BIMSystemProperties.active_system_id = system.id()
+
+    @classmethod
+    def get_active_system(cls):
+        system_props = bpy.context.scene.BIMSystemProperties
+        return tool.Ifc.get_entity_by_id(system_props.active_system_id)
 
     @classmethod
     def get_decoration_data(cls):
@@ -220,33 +229,29 @@ class System(blenderbim.core.tool.System):
         if not SystemDecorationData.is_loaded:
             SystemDecorationData.load()
 
-        object_system_data = ObjectSystemData.data
-        selected_elements = object_system_data["connected_elements"]
-
         class FlowDirection(Enum):
             BACKWARD = -1
             FORWARD = 1
             BOTH = 2
             AMBIGUOUS = 0
 
-        # TODO: get only objects visible in viewport
-        objects = set(bpy.data.objects) - set(bpy.data.collections["Types"].objects)
-        for obj in objects:
+        connected_elements = ObjectSystemData.data["connected_elements"]
+
+        for element in SystemDecorationData.data["decorated_elements"]:
             start_vert_i = len(all_vertices)
+            obj = tool.Ifc.get_object(element)
+
+            # skip stuff without objects, like distribution ports
+            if not obj:
+                continue
+
             if obj.hide_get():
-                continue
-
-            if not isinstance(obj.data, bpy.types.Mesh):
-                continue
-
-            element = tool.Ifc.get_entity(obj)
-            if not element:
                 continue
 
             if not cls.is_mep_element(element):
                 continue
 
-            selected_element = element in selected_elements
+            selected_element = element in connected_elements
             verts_pos = []
 
             port_data = SystemDecorationData.get_element_ports_data(element)
