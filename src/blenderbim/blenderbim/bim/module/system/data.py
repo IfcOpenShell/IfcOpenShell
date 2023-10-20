@@ -25,6 +25,8 @@ import blenderbim.tool as tool
 
 def refresh():
     SystemData.is_loaded = False
+    ZonesData.is_loaded = False
+    ActiveObjectZonesData.is_loaded = False
     ObjectSystemData.is_loaded = False
     PortData.is_loaded = False
     SystemDecorationData.is_loaded = False
@@ -47,8 +49,6 @@ class SystemData:
         declaration = tool.Ifc.schema().declaration_by_name("IfcSystem")
         declarations = ifcopenshell.util.schema.get_subtypes(declaration)
         version = tool.Ifc.get_schema()
-        if version == "IFC2X3":
-            declarations += [tool.Ifc.schema().declaration_by_name("IfcZone")]
 
         # We're only interested in systems for services. Not sure why IFC groups these together.
         return [
@@ -193,3 +193,32 @@ class SystemDecorationData:
                 ports_data.append(port_data)
             cls.elements_ports_positions[element] = ports_data
         return cls.elements_ports_positions[element]
+
+
+class ZonesData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = { "total_zones": cls.total_zones() }
+        cls.is_loaded = True
+
+    @classmethod
+    def total_zones(cls):
+        return len(tool.Ifc.get().by_type("IfcZone"))
+
+
+class ActiveObjectZonesData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = { "zones": cls.zones() }
+        cls.is_loaded = True
+
+    @classmethod
+    def zones(cls):
+        systems = ifcopenshell.util.system.get_element_systems(tool.Ifc.get_entity(bpy.context.active_object))
+        return [s.Name or "Unnamed" for s in systems if s.is_a("IfcZone")]
