@@ -1115,8 +1115,8 @@ class ExportIFC(bpy.types.Operator):
     @classmethod
     def description(cls, context, properties):
         if properties.should_save_as:
-            return "Export the IFC project to a selected file"
-        return "Export the IFC project to this file"
+            return "Save the IFC file under a new name, or relocate file"
+        return "Save the IFC file.  Will save both .IFC/.BLEND files if synced together"
 
 
 class ImportIFC(bpy.types.Operator):
