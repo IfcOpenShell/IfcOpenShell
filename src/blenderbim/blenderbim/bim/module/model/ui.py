@@ -30,7 +30,7 @@ from blenderbim.bim.module.model.data import (
     RoofData,
 )
 from blenderbim.bim.module.model.prop import get_ifc_class
-from blenderbim.bim.module.model.stair import update_stair_modifier
+from blenderbim.bim.module.model.stair import regenerate_stair_mesh
 from blenderbim.bim.module.model.window import update_window_modifier_bmesh
 from blenderbim.bim.module.model.door import update_door_modifier_bmesh
 from blenderbim.bim.module.model.railing import update_railing_modifier_bmesh
@@ -267,7 +267,7 @@ class BIM_PT_stair(bpy.types.Panel):
                 row = self.layout.row(align=True)
                 for prop_name in props.get_props_kwargs():
                     self.layout.prop(props, prop_name)
-                update_stair_modifier(context)
+                regenerate_stair_mesh(context)
             else:
                 row.operator("bim.enable_editing_stair", icon="GREASEPENCIL", text="")
                 row.operator("bim.remove_stair", icon="X", text="")
