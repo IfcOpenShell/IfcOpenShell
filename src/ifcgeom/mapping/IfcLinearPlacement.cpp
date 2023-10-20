@@ -29,11 +29,15 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcLinearPlacement* inst) {
     // attributes was similar to IfcAxis2PlacementLinear. IFC 4.1 and IFC 4.2 have been withdrawn so I'm not going to try to implement linear placement for them.
     // For this reason the preprocessor skips this code if SCHEMA_HAS_IfcAxis2PlacementLinear is not defined
 #if defined SCHEMA_HAS_IfcAxis2PlacementLinear
-    // the following is taken from IfcLocalPlacement and tweaked a little
-    // assumes that PlacementRelTo is relative to another IfcLinearPlacement
-    IfcSchema::IfcLinearPlacement* current = (IfcSchema::IfcLinearPlacement*)inst;
-    auto m4 = taxonomy::make<taxonomy::matrix4>();
+	 // the following is taken from IfcLocalPlacement and tweaked a little
+	 // assumes that PlacementRelTo is relative to another IfcLinearPlacement
+	IfcSchema::IfcLinearPlacement* current = (IfcSchema::IfcLinearPlacement*)inst;
+	auto m4 = taxonomy::make<taxonomy::matrix4>();
 
+#if defined SCHEMA_HAS_IfcAxis2PlacementLinear
+	// IfcLinearPlacement was added in IFC 4.1 but it had an Orientation attribute of type IfcOrientationExpression, which when combined with other
+	// attributes was similar to IfcAxis2PlacementLinear. IFC 4.1 and IFC 4.2 have been withdrawn so I'm not going to try to implement linear placement for them.
+	// For this reason the preprocessor skips this code if SCHEMA_HAS_IfcAxix2PlacementLinear is not defined
 
 	for (;;) {
         IfcSchema::IfcAxis2PlacementLinear* relplacement = current->RelativePlacement();
@@ -80,10 +84,10 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcLinearPlacement* inst) {
         }
     }
 
-	 // @todo: rb - not sure what this means... it came from IfcLocalPlacement
-    // m4->components() = offset_and_rotation_ * m4->components();
+	// @todo: rb - not sure what this means... it came from IfcLocalPlacement
+	// m4->components() = offset_and_rotation_ * m4->components();
 
-    return m4;
+	return m4;
 
 #else
 	// The IFC specification does not provided a description of the optional
