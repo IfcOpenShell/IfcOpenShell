@@ -64,7 +64,7 @@ class BIMSystemProperties(PropertyGroup):
     is_adding: BoolProperty(name="Is Adding", default=False)
     systems: CollectionProperty(name="Systems", type=System)
     active_system_index: IntProperty(name="Active System Index")
-    active_system_id: IntProperty(name="Active System Id")
+    active_system_id: IntProperty(name="Active System Id", description="Id of the currrently edited system")
     system_class: EnumProperty(items=get_system_class, name="Class")
     should_draw_decorations: BoolProperty(
         name="Should Draw Decorations", description="Toggle system decorations", update=toggle_decorations
