@@ -900,6 +900,9 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
         return OverrideDuplicateMove.execute_duplicate_operator(self, context, linked=False)
 
     def _execute(self, context):
+        return DuplicateMoveLinkedAggregate.execute_ifc_duplicate_linked_aggregate_operator(self, context)
+
+    def execute_ifc_duplicate_linked_aggregate_operator(self, context):
         self.new_active_obj = None
         self.group_name = "Linked Aggregate"
         old_to_new = {}
@@ -989,7 +992,7 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
 
         blenderbim.bim.handler.refresh_ui_data()
 
-        return {"FINISHED"}
+        return old_to_new
 
 
 class RefreshLinkedAggregate(bpy.types.Operator):
@@ -1021,7 +1024,6 @@ class RefreshLinkedAggregate(bpy.types.Operator):
                     tool.Geometry.delete_ifc_object(tool.Ifc.get_object(part))
                     
             tool.Geometry.delete_ifc_object(tool.Ifc.get_object(element))
-            
         
         if len(context.selected_objects) != 1:
             return {"FINISHED"}
@@ -1051,21 +1053,33 @@ class RefreshLinkedAggregate(bpy.types.Operator):
         for element in elements:
             if element.GlobalId == selected_element.GlobalId:
                 continue
-            matrix = tool.Ifc.get_object(element).matrix_world
+            
+            selected_matrix = selected_obj.matrix_world
+            object_duplicate = tool.Ifc.get_object(element)
+            duplicate_matrix = object_duplicate.matrix_world.decompose()
+            
             delete_objects(element)
-        # tool.Spatial.select_products(elements)
+            
+            for obj in context.selected_objects:
+                obj.select_set(False)
+                
+            tool.Ifc.get_object(selected_element).select_set(True)
+            
+            old_to_new = DuplicateMoveLinkedAggregate.execute_ifc_duplicate_linked_aggregate_operator(self, context)
+            
+            for old, new in old_to_new.items():
+                # if new[0].is_a("IfcColumn"):
+                new_obj = tool.Ifc.get_object(new[0])
+                new_base_matrix = Matrix.LocRotScale(*duplicate_matrix)
+                matrix_diff = Matrix.inverted(selected_matrix) @ new_obj.matrix_world 
+                new_obj_matrix = new_base_matrix @ matrix_diff
+                new_obj.matrix_world = new_obj_matrix
 
-        # DONE Select all Objects
+        # TODO test with adding subaggregates to existing aggregates
 
-        # DONE Store matrix
+        # TODO test with ctrl+shift+d in a subaggregates
 
-        # DONE Delete Objects
-
-        # Call a Function from DuplicateMoveLinkedAggregate
-        # Refactor the code into a function to be called
-
-        # Old to New change matrix
-
+        # TODO think of more edge cases and issues already reported
 
         blenderbim.bim.handler.refresh_ui_data()
 
