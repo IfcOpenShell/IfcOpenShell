@@ -46,17 +46,19 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcGradientCurve* inst) {
 		}
 	}
 
-	// @todo does this really make sense?
-	auto composition = [horizontal, vertical](double u)->Eigen::VectorXd {
+	auto composition = [horizontal, vertical](double u)->Eigen::Matrix4d {
 		auto xy = horizontal->evaluate(u);
-		auto z = vertical->evaluate(u);
-		Eigen::VectorXd vec(3);
-		vec << xy(0), xy(1), z(1);
-		return vec;
+		auto uz = vertical->evaluate(u);
+		Eigen::Matrix4d m;
+      m = xy * uz;
+      return m;
 	};
 
-	// @todo where do we get the startdistalong from @civilx64's code?
 	std::array<taxonomy::piecewise_function::ptr, 2> both = { horizontal , vertical };
+	// @todo: rb - this constrains the range of u to the minimum of horizontal and vertical
+	// we discussed using the maximum for the range of us and then using std::numeric_limits<double>::NAN
+	// for values of u that horizontal or vertical cannot be computed.
+	// Review and decide what to do.
 	double min_length = std::numeric_limits<double>::infinity();
 	for (auto i = 0; i < 2; ++i) {
 		double l = 0;
