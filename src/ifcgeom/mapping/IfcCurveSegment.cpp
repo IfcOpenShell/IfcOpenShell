@@ -428,7 +428,7 @@ public:
 		}
 		else if (segment_type_ == ST_VERTICAL) {
 
-			eval_ = [px, py, dx, dy](double u) {
+			eval_ = [py, dx, dy](double u) {
 				// https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcGradientCurve.htm
 				// the parameter, u, is the parameter of the BaseCurve (u = plan view distance along base curve)
             
@@ -486,11 +486,9 @@ public:
 
 			auto x = position[0];
          auto y = position[1];
-         //auto z = position[2];
 
 			auto dx = slope[0];
          auto dy = slope[1];
-         //auto dz = slope[2];
 
          Eigen::Matrix4d m;
          if (segment_type == ST_HORIZONTAL) {
