@@ -103,7 +103,7 @@ class BIM_PT_SpatialManager(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
-    bl_parent_id = "BIM_PT_project_setup"
+    bl_parent_id = "BIM_PT_tab_project_setup"
 
     @classmethod
     def poll(cls, context):
