@@ -21,6 +21,7 @@ import ifcopenshell.api
 import blenderbim.tool as tool
 import blenderbim.core.system as core
 import blenderbim.bim.handler
+import blenderbim.bim.helper
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.system.data import PortData
 from mathutils import Matrix
@@ -326,3 +327,97 @@ class SetFlowDirection(bpy.types.Operator, Operator):
 
         self.report({"ERROR"}, "Selected elements are not connected to set the flow direction")
         return {"CANCELLED"}
+
+
+class LoadZones(bpy.types.Operator, Operator):
+    bl_idname = "bim.load_zones"
+    bl_label = "Load Zones"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = bpy.context.scene.BIMZoneProperties
+        props.zones.clear()
+        for zone in tool.Ifc.get().by_type("IfcZone"):
+            new = props.zones.add()
+            new.ifc_definition_id = zone.id()
+            new.name = zone.Name or "Unnamed"
+        props.is_loaded = True
+        props.is_editing = 0
+
+
+class UnloadZones(bpy.types.Operator, Operator):
+    bl_idname = "bim.unload_zones"
+    bl_label = "Unload Zones"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = bpy.context.scene.BIMZoneProperties
+        props.is_loaded = False
+
+
+class AddZone(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_zone"
+    bl_label = "Add Zone"
+    bl_options = {"REGISTER", "UNDO"}
+    name: bpy.props.StringProperty()
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        row = self.layout
+        row.prop(self, "name", text="Name")
+
+    def _execute(self, context):
+        element = ifcopenshell.api.run("system.add_system", tool.Ifc.get(), ifc_class="IfcZone")
+        if self.name:
+            element.Name = self.name
+        bpy.ops.bim.load_zones()
+
+
+class EnableEditingZone(bpy.types.Operator, Operator):
+    bl_idname = "bim.enable_editing_zone"
+    bl_label = "Enable Editing Zone"
+    bl_options = {"REGISTER", "UNDO"}
+    zone: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        props = bpy.context.scene.BIMZoneProperties
+        props.attributes.clear()
+        blenderbim.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.zone), props.attributes)
+        props.is_editing = self.zone
+
+
+class DisableEditingZone(bpy.types.Operator, Operator):
+    bl_idname = "bim.disable_editing_zone"
+    bl_label = "Disable Editing Zone"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = bpy.context.scene.BIMZoneProperties
+        props.is_editing = 0
+
+
+class EditZone(bpy.types.Operator, Operator):
+    bl_idname = "bim.edit_zone"
+    bl_label = "Edit Zone"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = bpy.context.scene.BIMZoneProperties
+        zone = tool.Ifc.get().by_id(props.is_editing)
+        attributes = blenderbim.bim.helper.export_attributes(props.attributes)
+        ifcopenshell.api.run("system.edit_system", tool.Ifc.get(), system=zone, attributes=attributes)
+        props.is_editing = 0
+        bpy.ops.bim.load_zones()
+
+
+class RemoveZone(bpy.types.Operator, Operator):
+    bl_idname = "bim.remove_zone"
+    bl_label = "Remove Zone"
+    bl_options = {"REGISTER", "UNDO"}
+    zone: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        ifcopenshell.api.run("system.remove_system", tool.Ifc.get(), system=tool.Ifc.get().by_id(self.zone))
+        bpy.ops.bim.load_zones()
