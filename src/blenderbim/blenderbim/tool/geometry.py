@@ -480,18 +480,27 @@ class Geometry(blenderbim.core.tool.Geometry):
         settings = ifcopenshell.geom.settings()
         settings.set(settings.WELD_VERTICES, True)
         context = representation.ContextOfItems
-        if element.is_a("IfcTypeProduct") or not apply_openings:
-            settings.set(settings.DISABLE_OPENING_SUBTRACTIONS, True)
 
-        if context.ContextIdentifier == "Body" and context.TargetView == "MODEL_VIEW":
+        if element.is_a("IfcTypeProduct"):
+            # You may only specify a single representation when creating shapes for types
             try:
-                shape = ifcopenshell.geom.create_shape(settings, element, representation)
+                shape = ifcopenshell.geom.create_shape(settings, representation)
             except:
                 settings.set(settings.INCLUDE_CURVES, True)
-                shape = ifcopenshell.geom.create_shape(settings, element, representation)
+                shape = ifcopenshell.geom.create_shape(settings, representation)
         else:
-            settings.set(settings.INCLUDE_CURVES, True)
-            shape = ifcopenshell.geom.create_shape(settings, element, representation)
+            if not apply_openings:
+                settings.set(settings.DISABLE_OPENING_SUBTRACTIONS, True)
+
+            if context.ContextIdentifier == "Body" and context.TargetView == "MODEL_VIEW":
+                try:
+                    shape = ifcopenshell.geom.create_shape(settings, element, representation)
+                except:
+                    settings.set(settings.INCLUDE_CURVES, True)
+                    shape = ifcopenshell.geom.create_shape(settings, element, representation)
+            else:
+                settings.set(settings.INCLUDE_CURVES, True)
+                shape = ifcopenshell.geom.create_shape(settings, element, representation)
 
         ifc_importer = blenderbim.bim.import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = tool.Ifc.get()
