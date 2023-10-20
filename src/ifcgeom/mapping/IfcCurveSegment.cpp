@@ -33,7 +33,7 @@ using namespace ifcopenshell::geometry;
 static const double PI = boost::math::constants::pi<double>();
 
 namespace {
-// @todo is there a common math library these functions can be moved to?
+// @todo: rb is there a common math library these functions can be moved to?
 auto sign = [](double v) -> int { return v < 0 ? -1 : 1; };                      // returns -1 or 1
 auto binary_sign = [](double v) -> int { return v < 0 ? -1 : (0 < v ? 1 : 0); }; // returns -1, 0, or 1
 } // namespace
@@ -64,7 +64,7 @@ private:
 	segment_type_t segment_type_;
 	IfcSchema::IfcCurve* curve_;
 
-	std::optional<std::function<Eigen::VectorXd(double)>> eval_;
+	std::optional<std::function<Eigen::Matrix4d(double)>> eval_;
 
 public:
 	// First constructor, takes parameters from IfcCurveSegment
@@ -85,7 +85,7 @@ public:
 		length_ = *le->as<IfcSchema::IfcLengthMeasure>() * length_unit;
 	}
 
-	void set_spiral_functor(mapping* mapping_,IfcSchema::IfcSpiral* s, std::function<double(double)> signX, std::function<double(double)> fnX, std::function<double(double)> signY, std::function<double(double)> fnY)
+	void set_spiral_functor(mapping* mapping_,IfcSchema::IfcSpiral* c, double s, std::function<double(double)> signX, std::function<double(double)> fnX, std::function<double(double)> signY, std::function<double(double)> fnY)
 	{
 		// determine the length of the spiral from the local origin to the end point
 		auto sign_s = binary_sign(start_);
@@ -95,108 +95,136 @@ public:
 		else if (sign_s == sign_l) L = fabs(start_ + length_); // start_ and length_ are additive
 		else L = fabs(start_); // start_ and length_ are in opposite directions so start_ is furthest from the origin
 
-		//const auto& transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(s->Position()))->ccomponents();
-		auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(s->Position()))->ccomponents();
+		auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(c->Position()))->ccomponents();
 
-		eval_ = [L, transformation_matrix, signX, fnX, signY, fnY](double u) {
-			using boost::math::quadrature::trapezoidal;
+		auto segment_type = segment_type_;
+		auto start = start_;
 
-			// integration limits, integrate from a to b
-			// from 8.9.3.19.1, integration limits are 0.0 to u where u is a normalized parameter
-			auto a = 0.0;
-			auto b = fabs(u / L);
+        eval_ = [L, start, s, signX, fnX, signY, fnY, transformation_matrix, segment_type](double u) {
+				using boost::math::quadrature::trapezoidal;
 
-			// @todo where to plug this in?
-			// auto n = 10; // use 10 steps in the numeric integration
+				u += start;
 
-			auto x = signX(u) * trapezoidal(fnX, a, b);
-			auto y = signY(u) * trapezoidal(fnY, a, b);
+				// integration limits, integrate from a to b
+				auto a = 0.0;
+				auto b = fabs(u / s);
 
-			// transform point into spiral's coodinate system
-			auto result = transformation_matrix * Eigen::Vector4d(x, y, 0.0, 1.0);
-			Eigen::VectorXd vec(4);
-			vec << result(0), result(1), 0.0, 1.0;
-			return vec;
+				auto x = signX(u) * trapezoidal(fnX, a, b);
+				auto y = signY(u) * trapezoidal(fnY, a, b);
+
+				// From https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcSpiral.htm, x = Integral(fnX du), y = Integral(fnY du)
+				// The tangent slope of a curve is the derivate of the curve, so the derivitive of an integral, is just the function
+				// Therefore, Dx/Du = fnX(u) and Dy/Du = fnY(u) which leads to du = Dx/fnX(u) and Dy = fnY(u)*Du = fnY(u)*Dx/fnX(u) so Dy/Dx = fnY(u)/fnX(u)
+				// However, Dx and Dy are not normalized. Recall that slope = rise/run
+				// If run = 1.0, then rise = Dy/Dx = fnY(u)/fnX(u) and l = sqrt((fnY(u)/fnX(u))^2 + 1.0^2)
+				// The direction ratios are dx = 1.0/l and dy = (fnY/fnX)/l;
+            auto rise = fnY(u) / fnX(u);
+            auto run = 1.0;
+            auto l = sqrt(run * run + rise * rise);
+            auto dx = run / l;
+            auto dy = rise / l;
+
+            Eigen::Matrix4d m;
+            if (segment_type == ST_HORIZONTAL) {
+                // rotate about the Z-axis
+                m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);  // vector tangent to the curve, in the direction of the curve
+                m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0); // vector perpendicular to the curve, towards the left when looking from start to end along the curve (this is used for IfcAxis2PlacementLinear.RefDirection when it is not provided)
+                m.col(2) = Eigen::Vector4d(0, 0, 1.0, 0);  // cross product of x and y and will always be up (this is used for IfcAxis2PlacementLinear.Axis when it is not provided)
+                m.col(3) = Eigen::Vector4d(x, y, 0.0, 1.0);
+            } else if (segment_type == ST_VERTICAL) {
+                // rotate about the Y-axis (slope along u is dx, slope vertically is dy, vertical position is y)
+                m.col(0) = Eigen::Vector4d(dx, 0, dy, 0);
+                m.col(1) = Eigen::Vector4d(0, 1, 0, 0);
+                m.col(2) = Eigen::Vector4d(-dy, 0, dx, 0);
+                m.col(3) = Eigen::Vector4d(0, 0, y, 1.0); // y is an elevation so store it as z
+            } else {
+                assert(segment_type == ST_CANT); // if it isn't cant, is there a new segment type?
+                assert(false);                   // not expecting cant
+            }
+
+				Eigen::Matrix4d result = transformation_matrix * m;
+            return result;
 			};
 	}
 
 
 	// Clothoid using Taylor Series approximation
-#ifdef SCHEMA_HAS_IfcClothoid
-	// Then initialize Function(double) -> Vector3, by means of IfcCurve subtypes
-	void operator()(IfcSchema::IfcClothoid* c) {
-		// @todo verify
-		auto sign_s = binary_sign(start_);
-		auto sign_l = binary_sign(length_);
-		double L = 0;
-		if (sign_s == 0) L = fabs(length_);
-		else if (sign_s == sign_l) L = fabs(start_ + length_);
-		else L = fabs(start_);
-
-		auto A = c->ClothoidConstant();
-		auto R = A * A / L;
-		auto RL = sign(A) * R * L;
-
-		//const auto& transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(c->Position()))->ccomponents();
-		auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(c->Position()))->ccomponents();
-
-		auto start = start_;
-		eval_ = [RL, transformation_matrix, start](double u) {
-			// coordinate along clothoid is local coordinates
-			u += start;
-
-			auto xterm_1 = u;
-			auto xterm_2 = std::pow(u, 5) / (40 * std::pow(RL, 2));
-			auto xterm_3 = std::pow(u, 9) / (3456 * std::pow(RL, 4));
-			auto xterm_4 = std::pow(u, 13) / (599040 * std::pow(RL, 6));
-			auto x = xterm_1 - xterm_2 + xterm_3 - xterm_4;
-
-			auto yterm_1 = std::pow(u, 3) / (6 * RL);
-			auto yterm_2 = std::pow(u, 7) / (336 * std::pow(RL, 3));
-			auto yterm_3 = std::pow(u, 11) / (42240 * std::pow(RL, 5));
-			auto yterm_4 = std::pow(u, 15) / (9676800 * std::pow(RL, 7));
-			auto y = yterm_1 - yterm_2 + yterm_3 - yterm_4;
-
-			// transform point into clothoid's coodinate system
-			auto result = transformation_matrix * Eigen::Vector4d(x, y, 0.0, 1.0);
-			Eigen::VectorXd vec(4);
-			vec << result(0), result(1), 0.0, 1.0;
-			return vec;			
-			};
-	}
-#endif
-
-	// Clothoid using numerical integration
 //#ifdef SCHEMA_HAS_IfcClothoid
-//// Then initialize Function(double) -> Vector3, by means of IfcCurve subtypes
+//	// Then initialize Function(double) -> Vector3, by means of IfcCurve subtypes
 //	void operator()(IfcSchema::IfcClothoid* c) {
+//		auto sign_s = binary_sign(start_);
+//		auto sign_l = binary_sign(length_);
+//		double L = 0;
+//		if (sign_s == 0) L = fabs(length_);
+//		else if (sign_s == sign_l) L = fabs(start_ + length_);
+//		else L = fabs(start_);
 //
 //		auto A = c->ClothoidConstant();
+//		auto R = A * A / L;
+//		auto RL = sign(A) * R * L;
 //
-//		// the integration is for the +X, +Y quadrant - need to adjust the signs of the resulting X and Y values
-//		// so that the results are in the correct quadrant.
-//		// A > 0 and u > 0 -> +X, +Y
-//		// A < 0 and u > 0 -> +X, -Y
-//		// A > 0 and u < 0 -> -X, -Y
-//		// A < 0 and u < 0 -> -X, +Y
-//		// X depends only on u, Y depends on u and A.
-//		auto sign = [](double v)->int {return v < 0 ? -1 : 1; }; // returns -1 or 1
-//		auto sign_x = [sign](double t) {return sign(t); };
-//		auto sign_y = [sign, A](double t) {return sign(t) == sign(A) ? 1.0 : -1.0; };
-//		auto fn_x = [A](double t)->double {return A * sqrt(PI) * cos(PI * A * t * t / (2 * fabs(A))); };
-//		auto fn_y = [A](double t)->double {return A * sqrt(PI) * sin(PI * A * t * t / (2 * fabs(A))); };
+//		//const auto& transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(c->Position()))->ccomponents();
+//		auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(c->Position()))->ccomponents();
 //
-//		set_spiral_functor(mapping_, c, sign_x, fn_x, sign_y, fn_y);
+//		auto start = start_;
+//		eval_ = [RL, transformation_matrix, start](double u) {
+//			// coordinate along clothoid is local coordinates
+//			u += start;
+//
+//			auto xterm_1 = u;
+//			auto xterm_2 = std::pow(u, 5) / (40 * std::pow(RL, 2));
+//			auto xterm_3 = std::pow(u, 9) / (3456 * std::pow(RL, 4));
+//			auto xterm_4 = std::pow(u, 13) / (599040 * std::pow(RL, 6));
+//			auto x = xterm_1 - xterm_2 + xterm_3 - xterm_4;
+//
+//			auto yterm_1 = std::pow(u, 3) / (6 * RL);
+//			auto yterm_2 = std::pow(u, 7) / (336 * std::pow(RL, 3));
+//			auto yterm_3 = std::pow(u, 11) / (42240 * std::pow(RL, 5));
+//			auto yterm_4 = std::pow(u, 15) / (9676800 * std::pow(RL, 7));
+//			auto y = yterm_1 - yterm_2 + yterm_3 - yterm_4;
+//
+//			// transform point into clothoid's coodinate system
+//			auto result = transformation_matrix * Eigen::Vector4d(x, y, 0.0, 1.0);
+//			Eigen::VectorXd vec(4);
+//			vec << result(0), result(1), 0.0, 1.0;
+//			return vec;			
+//			};
 //	}
 //#endif
 
+	// Clothoid using numerical integration
+#ifdef SCHEMA_HAS_IfcClothoid
+// Then initialize Function(double) -> Vector3, by means of IfcCurve subtypes
+	void operator()(IfcSchema::IfcClothoid* c) {
+		// see https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcClothoid.htm
+		// also see, https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/concepts/Partial_Templates/Geometry/Curve_Segment_Geometry/Clothoid_Transition_Segment/content.html,
+		// which defines the clothoid constant as sqrt(L) and L is the length measured from the inflection point
+		auto A = c->ClothoidConstant();
+      auto s = fabs(A * sqrt(PI));
+
+		// the integration is for the +X, +Y quadrant - need to adjust the signs of the resulting X and Y values
+		// so that the results are in the correct quadrant.
+		// A > 0 and u > 0 -> +X, +Y
+		// A < 0 and u > 0 -> +X, -Y
+		// A > 0 and u < 0 -> -X, -Y
+		// A < 0 and u < 0 -> -X, +Y
+		// X depends only on u, Y depends on u and A.
+		auto sign_x = [](double t) {return sign(t); };
+		auto sign_y = [A](double t) {return sign(t) == sign(A) ? 1.0 : -1.0; };
+		auto fn_x = [A,s](double t)->double {return s * cos(PI * fabs(A) * t * t / (2 * fabs(A))); };
+		auto fn_y = [A,s](double t)->double {return s * sin(PI * fabs(A) * t * t / (2 * fabs(A))); };
+
+		set_spiral_functor(mapping_, c, s, sign_x, fn_x, sign_y, fn_y);
+	}
+#endif
+
 #ifdef SCHEMA_HAS_IfcSecondOrderPolynomialSpiral
-	void operator()(IfcSchema::IfcSecondOrderPolynomialSpiral* s)
+	void operator()(IfcSchema::IfcSecondOrderPolynomialSpiral* c)
 	{
-		// @todo verify - this is an example implementation of a different kind of spiral - lots of clean up needed
-		auto A0 = s->ConstantTerm();
-		auto A1 = s->LinearTerm();
-		auto A2 = s->QuadraticTerm();
+		// @todo: rb verify - this is an example implementation of a different kind of spiral - lots of clean up needed
+		auto A0 = c->ConstantTerm();
+		auto A1 = c->LinearTerm();
+		auto A2 = c->QuadraticTerm();
 
 		auto theta = [A0, A1, A2](double t)
 			{
@@ -207,12 +235,13 @@ public:
 			};
 
 		auto sign_x = [](double t) {return sign(t); };
-		auto sign_y = [](double t) {return sign(t); }; // @todo fix - not sure about sign_y yet, need to find some plots of this spiral
+		auto sign_y = [](double t) {return sign(t); }; // @todo: rb - fix - not sure about sign_y yet, need to find some plots of this spiral
 
 		auto fn_x = [theta](double t)->double {return cos(theta(t)); };
 		auto fn_y = [theta](double t)->double {return sin(theta(t)); };
 
-		set_spiral_functor(mapping_, s, sign_x, fn_x, sign_y, fn_y);
+		double s = 1.0; // @todo: rb - this is supposed to be the curve length when the parametric value u = 1.0
+		set_spiral_functor(mapping_, c, s, sign_x, fn_x, sign_y, fn_y);
 	}
 #endif
 
@@ -226,17 +255,39 @@ public:
 		//const auto& transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(c->Position()))->ccomponents();
 		auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(c->Position()))->ccomponents();
 
-		eval_ = [R, transformation_matrix, start, sign_l](double u)
+		auto segment_type = segment_type_;
+
+		eval_ = [R, start, sign_l, transformation_matrix, segment_type](double u)
 			{
 				auto angle = start + sign_l * u / R;
 
-				auto x = R * cos(angle);
-				auto y = R * sin(angle);
+				auto dx = cos(angle);
+            auto dy = sin(angle);
+            auto dz = 1.0;
 
-				auto result = transformation_matrix * Eigen::Vector4d(x, y, 0.0, 1.0);
-				Eigen::VectorXd vec(4);
-				vec << result(0), result(1), 0.0, 1.0;
-				return vec;
+				auto x = R * dx;
+				auto y = R * dy;
+
+            Eigen::Matrix4d m;
+            if (segment_type == ST_HORIZONTAL) {
+                // rotate about the Z-axis
+                m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);  // vector tangent to the curve, in the direction of the curve
+                m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0); // vector perpendicular to the curve, towards the left when looking from start to end along the curve (this is used for IfcAxis2PlacementLinear.RefDirection when it is not provided)
+                m.col(2) = Eigen::Vector4d(0, 0, 1.0, 0);  // cross product of x and y and will always be up (this is used for IfcAxis2PlacementLinear.Axis when it is not provided)
+                m.col(3) = Eigen::Vector4d(x, y, 0.0, 1.0);
+            } else if (segment_type == ST_VERTICAL) {
+                // rotate about the Y-axis (slope along u is dx, slope vertically is dy, vertical position is y)
+                m.col(0) = Eigen::Vector4d(dx, 0, dy, 0);
+                m.col(1) = Eigen::Vector4d(0, 1, 0, 0);
+                m.col(2) = Eigen::Vector4d(-dy, 0, dx, 0);
+                m.col(3) = Eigen::Vector4d(0, 0, y, 1.0); // y is an elevation so store it as z
+            } else {
+                assert(segment_type == ST_CANT); // if it isn't cant, is there a new segment type?
+                assert(false);                   // not expecting cant
+            }
+
+            Eigen::Matrix4d result = transformation_matrix * m;
+            return result;
 			};
 	}
 
@@ -249,7 +300,8 @@ public:
 			std::function<bool(double, double, double)> compare;
 			bool operator<(const Range& r) const { return u_start < r.u_start; }
 		};
-		using Function = std::function<std::pair<double, double>(double u)>;
+
+		using Function = std::function<Eigen::Matrix4d(double u)>;
 		std::map<Range, Function> fns;
 
 		auto p = pl->Points();
@@ -265,7 +317,8 @@ public:
 		auto end = p->end();
 		auto last = std::prev(end);
 		auto p1 = *(iter++);
-		auto u = 0.0;
+      assert(p1->Coordinates().size() == 2); // expecting the polyline to be planar
+      auto u = 0.0;
 		for (; iter != end; iter++)
 		{
 			auto p2 = *iter;
@@ -281,14 +334,39 @@ public:
 			auto l = sqrt(dx * dx + dy * dy);
 			if (l == 0.0)
 			{
-				// @todo use closeness tolerance instead of absolute 0.0
+				// @todo: rb use closeness tolerance instead of absolute 0.0
 				throw std::runtime_error("invalid polyline - points must not be coincident");
 			}
 
 			dx /= l;
 			dy /= l;
 
-			auto fn = [p1x, p1y, dx, dy](double u) { return std::make_pair(p1x + u * dx, p1y + u * dy); };
+   		auto segment_type = segment_type_;
+
+         auto fn = [p1x, p1y, dx, dy, segment_type](double u) {
+                auto x = segment_type == ST_HORIZONTAL ? p1x + u * dx : u;
+                auto y = p1y + u * dy;
+
+                Eigen::Matrix4d m;
+                if (segment_type == ST_HORIZONTAL) {
+                    // rotate about the Z-axis
+                    m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);  // vector tangent to the curve, in the direction of the curve
+                    m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0); // vector perpendicular to the curve, towards the left when looking from start to end along the curve (this is used for IfcAxis2PlacementLinear.RefDirection when it is not provided)
+                    m.col(2) = Eigen::Vector4d(0, 0, 1.0, 0);  // cross product of x and y and will always be up (this is used for IfcAxis2PlacementLinear.Axis when it is not provided)
+                    m.col(3) = Eigen::Vector4d(x, y, 0.0, 1.0);
+                } else if (segment_type == ST_VERTICAL) {
+                    // rotate about the Y-axis (slope along u is dx, slope vertically is dy, vertical position is y)
+                    m.col(0) = Eigen::Vector4d(dx, 0, dy, 0);
+                    m.col(1) = Eigen::Vector4d(0, 1, 0, 0);
+                    m.col(2) = Eigen::Vector4d(-dy, 0, dx, 0);
+                    m.col(3) = Eigen::Vector4d(0, 0, y, 1.0); // y is an elevation so store it as z
+                } else {
+                    assert(segment_type == ST_CANT); // if it isn't cant, is there a new segment type?
+                    assert(false);                   // not expecting cant
+                }
+
+					 return m;
+				};
 
 			fns.insert(std::make_pair(Range{ u, u + l,iter == last ? end_compare : std_compare }, fn));
 
@@ -306,10 +384,8 @@ public:
 			if (iter == fns.end()) throw std::runtime_error("invalid distance from start"); // this should never happen, but just in case it does
 
 			auto [u_start, u_end, compare] = iter->first;
-			auto [x, y] = (iter->second)(u - u_start); // (u - u_start) is distance from start of this segment of the polyline
-			Eigen::VectorXd vec(4);
-			vec << x, y, 0.0, 1.0;
-			return vec;
+			auto m = (iter->second)(u - u_start); // (u - u_start) is distance from start of this segment of the polyline
+         return m;
 			};
 	}
 
@@ -329,22 +405,43 @@ public:
 			eval_ = [px, py, dx, dy](double u) {
 				auto x = px + u * dx;
 				auto y = py + u * dy;
-				Eigen::VectorXd vec(4);
-				vec << x, y, 0.0, 1.0;
-				return vec;
+
+            Eigen::Matrix4d m;
+            m.col(0) = Eigen::Vector4d(dx, dy, 0, 0); // vector tangent to the curve, in the direction of the curve
+            m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0); // vector perpendicular to the curve, towards the left when looking from start to end along the curve (this is used for IfcAxis2PlacementLinear.RefDirection when it is not provided)
+            m.col(2) = Eigen::Vector4d(0, 0, 1.0, 0);  // cross product of x and y and will always be up (this is used for IfcAxis2PlacementLinear.Axis when it is not provided)
+            m.col(3) = Eigen::Vector4d(x, y, 0.0, 1.0);
+            return m;
 				};
 
 		}
 		else if (segment_type_ == ST_VERTICAL) {
 
-			eval_ = [py, dy](double u) {
-				auto z = py + u * dy;
-				Eigen::VectorXd vec(4);
-				vec << 0.0, z, 0.0, 1.0;
-				return vec;
-				};
+			eval_ = [px, py, dx, dy](double u) {
+				// https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcGradientCurve.htm
+				// the parameter, u, is the parameter of the BaseCurve (u = plan view distance along base curve)
+				auto x = px + u;
+            
+				// dx and dy are normalized so u needs to be scaled by dy/dx
+				// Consider a 5% uphill grade defined by dr[0] = 1 and dr[1] = 0.05.
+				// We would normally compute y = py + 0.05*u. 
+				// However, m = sqrt(1*1 + 0.05*.0.05) = 1.0124922 we need to normalize the direction ratios as
+				// dx = dr[0]/m and dy = dr[1]/m which makes dy = 0.05/1.0124922 = 0.0499376
+				// y = py + u * dy/dx =  py + u * (dr[1]/m)*(m/dr[0]) = py + u * 0.05
+				auto y = py + u * dy/dx; 
 
-		}
+            Eigen::Matrix4d m;
+            m.col(0) = Eigen::Vector4d(dx, 0, dy, 0);
+            m.col(1) = Eigen::Vector4d(0, 1, 0, 0);
+            m.col(2) = Eigen::Vector4d(-dy, 0, dx, 0);
+            m.col(3) = Eigen::Vector4d(0, 0, y, 1.0); // y is an elevation so store it as z
+            return m;
+            };
+		} 
+		else {
+            assert(segment_type_ == ST_CANT); // if it isn't cant, is there a new segment type?
+            assert(false);                    // not expecting cant
+      }
 	}
 
 	void operator()(IfcSchema::IfcPolynomialCurve* p) {
@@ -352,25 +449,57 @@ public:
 		auto coeffX = p->CoefficientsX().get_value_or(std::vector<double>());
       auto coeffY = p->CoefficientsY().get_value_or(std::vector<double>());
       auto coeffZ = p->CoefficientsZ().get_value_or(std::vector<double>());
+      assert(coeffZ.size() == 0); // expecting the curve to by in the XY Plane (ST_HORIZONTAL) or the UZ Plane (ST_VERTICAL)
 
 		auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(p->Position()))->ccomponents();
 
-      eval_ = [coeffX, coeffY, coeffZ,transformation_matrix](double u) {
-         std::array<const std::vector<double>*, 3> coefficients{&coeffX, &coeffY, &coeffZ}; // don't copy
-         std::array<double, 3> values{0.0, 0.0, 0.0}; // @todo, use Eigen::VectorXd - I'm sure there is a way to do this with Eigen, but this is what I know
+		auto segment_type = segment_type_;
+
+      eval_ = [coeffX, coeffY, coeffZ,transformation_matrix,segment_type](double u) {
+         std::array<const std::vector<double>*, 3> coefficients{&coeffX, &coeffY, &coeffZ};
+         std::array<double, 3> position{0.0, 0.0, 0.0}; // @todo: rb, use Eigen::VectorXd - I'm sure there is a way to do this with Eigen, but this is what I know
+         std::array<double, 3> slope{0.0, 0.0, 0.0}; // slope is derivative of the curve = SUM( coeff*pos*u^(pos-1) )
          for (int i = 0; i < 3; i++) {
              auto begin = coefficients[i]->cbegin();
              auto end = coefficients[i]->cend();
                for (auto iter = begin; iter != end; iter++) {
                   auto exp = std::distance(begin, iter);
-                  values[i] += (*iter) * pow(u, exp);
+                  position[i] += (*iter) * pow(u, exp);
+
+						if (iter != begin) {
+                      slope[i] += (*iter) * exp * pow(u, exp - 1);
+                  }
                }
          }
 
-   		auto result = transformation_matrix * Eigen::Vector4d(values[0], values[1], values[2], 1.0);
-         Eigen::VectorXd vec(4);
-         vec << result(0), result(1), result(2), 1.0;
-         return vec;
+			auto x = position[0];
+         auto y = position[1];
+         //auto z = position[2];
+
+			auto dx = slope[0];
+         auto dy = slope[1];
+         //auto dz = slope[2];
+
+         Eigen::Matrix4d m;
+         if (segment_type == ST_HORIZONTAL) {
+				// rotate about the Z-axis
+            m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);  // vector tangent to the curve, in the direction of the curve
+            m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0); // vector perpendicular to the curve, towards the left when looking from start to end along the curve (this is used for IfcAxis2PlacementLinear.RefDirection when it is not provided)
+            m.col(2) = Eigen::Vector4d(0, 0, 1.0, 0);  // cross product of x and y and will always be up (this is used for IfcAxis2PlacementLinear.Axis when it is not provided)
+            m.col(3) = Eigen::Vector4d(x, y, 0.0, 1.0);
+         } else if (segment_type == ST_VERTICAL) {
+				// rotate about the Y-axis (slope along u is dx, slope vertically is dy, vertical position is y)
+            m.col(0) = Eigen::Vector4d(dx, 0, -dy, 0);
+            m.col(1) = Eigen::Vector4d(0, 1, 0, 0);
+            m.col(2) = Eigen::Vector4d(dy, 0, dx, 0);
+            m.col(3) = Eigen::Vector4d(0, 0, y, 1.0); // y is an elevation so store it as z
+         }
+			else
+			{
+            assert(segment_type == ST_CANT); // if it isn't cant, is there a new segment type?
+            assert(false); // not expecting cant
+			}
+         return m;
       };
 	}
 
@@ -382,27 +511,17 @@ public:
 		}
 	}
 
-	// Then, with function populated based on IfcCurve subtype, we can evaluate to points
-	Eigen::VectorXd operator()(double u) {
-		if (eval_) {
-			return (*eval_)((u + start_) * length_unit_);
-		}
-		else {
-			throw std::runtime_error(curve_->declaration().name() + " not implemented");
-		}
-	}
-
 	double length() const {
 		return length_;
 	}
 
-	const std::optional<std::function<Eigen::VectorXd(double)>>& evaluation_function() const {
+	const std::optional<std::function<Eigen::Matrix4d(double)>>& evaluation_function() const {
 		return eval_;
 	}
 };
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveSegment* inst) {
-	// @todo figure out what to do with the zero length segments at the end of compound curves
+	// @todo: rb figure out what to do with the zero length segments at the end of compound curves
 
 	bool is_horizontal = false;
 	bool is_vertical = false;
@@ -436,22 +555,17 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveSegment* inst) {
 	curve_segment_evaluator cse(this,length_unit_, segment_type, inst->ParentCurve(), inst->SegmentStart(), inst->SegmentLength());
 	boost::mpl::for_each<curve_seg_types, boost::type<boost::mpl::_>>(std::ref(cse));
 	
-	auto eval_fn = cse.evaluation_function();
+	auto& eval_fn = cse.evaluation_function();
 	if(!eval_fn) throw std::runtime_error(inst->ParentCurve()->declaration().name() + " not implemented");
 	auto fn = *eval_fn;
 	auto length = fabs(cse.length());
 
-	// @todo - for some reason this isn't working, the matrix gets all messed up
-	//const auto& transformation_matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Placement()))->ccomponents();
 	auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Placement()))->ccomponents();
 
-	auto fn_transformed = [fn, transformation_matrix](double u)->Eigen::VectorXd {
-		auto result = fn(u);
-		Eigen::Vector4d v(result.x(), result.y(), result.z(), 1.0);
-		auto r = transformation_matrix * v;
-		Eigen::VectorXd d(4);
-		d << r(0), r(1), r(2), r(3);
-		return d;
+	auto fn_transformed = [fn, transformation_matrix](double u)->Eigen::Matrix4d {
+        Eigen::Matrix4d f = fn(u);
+        Eigen::Matrix4d result = transformation_matrix * f;
+        return result;
 		};
 
 	// @todo it might be suboptimal that we no longer have the spans now

@@ -134,7 +134,8 @@ typedef item const* ptr;
 			struct piecewise_function : public implicit_item {
 				DECLARE_PTR(piecewise_function)
 
-				std::vector<std::pair<double, std::function<Eigen::VectorXd(double u)>>> spans;
+				// length of span, function to evaluate span
+				std::vector<std::pair<double, std::function<Eigen::Matrix4d(double u)>>> spans;
 
 				void print(std::ostream& o, int indent = 0) const {
 					o << "piecewise_function" << std::endl;
@@ -150,10 +151,10 @@ typedef item const* ptr;
 
 				virtual item::ptr evaluate() const;
 
-				Eigen::VectorXd evaluate(double u) const {
-					// @todo optimize, assume monotonic evaluation and store last evaluated segment?
+				Eigen::Matrix4d evaluate(double u) const {
+					// @todo: rb optimize, assume monotonic evaluation and store last evaluated segment?
 					for (auto& [length, fn] : spans) {
-						if (u < length) {
+						if (u < length+0.001) { // @todo: rb - need to use consistent tolerance
 							return fn(u);
 						}
 						u -= length;
