@@ -118,10 +118,18 @@ class AddMaterial(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Add Material"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
+    name: bpy.props.StringProperty(default="Default")
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        row = self.layout
+        row.prop(self, "name", text="Name")
 
     def _execute(self, context):
         obj = bpy.data.materials.get(self.obj) if self.obj else None
-        core.add_material(tool.Ifc, tool.Material, tool.Style, obj=obj)
+        core.add_material(tool.Ifc, tool.Material, tool.Style, obj=obj, name=self.name)
         material_prop_purge()
 
 

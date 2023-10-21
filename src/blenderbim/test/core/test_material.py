@@ -28,13 +28,13 @@ class TestUnlinkMaterial:
 
 class TestAddMaterial:
     def test_add_a_default_material(self, ifc, material, style):
-        material.add_default_material_object().should_be_called().will_return("obj")
+        material.add_default_material_object("name").should_be_called().will_return("obj")
         material.get_name("obj").should_be_called().will_return("name")
         ifc.run("material.add_material", name="name").should_be_called().will_return("material")
         ifc.link("material", "obj").should_be_called()
         style.get_style("obj").should_be_called().will_return(None)
         material.is_editing_materials().should_be_called().will_return(False)
-        assert subject.add_material(ifc, material, style) == "material"
+        assert subject.add_material(ifc, material, style, name="name") == "material"
 
     def test_add_a_material_to_a_blender_material_object(self, ifc, material, style):
         material.get_name("obj").should_be_called().will_return("name")

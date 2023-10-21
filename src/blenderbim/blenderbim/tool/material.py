@@ -27,8 +27,8 @@ import ifcopenshell.util.element
 
 class Material(blenderbim.core.tool.Material):
     @classmethod
-    def add_default_material_object(cls):
-        return bpy.data.materials.new("Default")
+    def add_default_material_object(cls, name):
+        return bpy.data.materials.new(name or "Default")
 
     @classmethod
     def delete_object(cls, obj):
