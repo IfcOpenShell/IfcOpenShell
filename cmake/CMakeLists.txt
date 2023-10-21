@@ -439,9 +439,13 @@ if(BUILD_IFCGEOM)
         if(WASM_BUILD)
             set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
         else()
-            # OPENCASCADE_LIBRARIES repeated N times below in order to fix cyclic dependencies - use --start-group ... --end-group instead?
+            # OPENCASCADE_LIBRARIES repeated N times below in order to fix cyclic dependencies
             # tfk: --start-group ... --end-group didn't work on the apple linker when last tested
-            set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+            if(APPLE)
+                set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+            else()
+                set(OPENCASCADE_LIBRARIES -Wl,--start-group ${OPENCASCADE_LIBRARIES} -Wl,--end-group ${CMAKE_THREAD_LIBS_INIT})
+            endif()
         endif()
         
         if (NOT APPLE AND NOT WIN32)
