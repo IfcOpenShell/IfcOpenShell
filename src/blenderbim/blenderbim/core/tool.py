@@ -446,7 +446,7 @@ class Loader:
 
 @interface
 class Material:
-    def add_default_material_object(cls): pass
+    def add_default_material_object(cls, name): pass
     def add_material_to_set(cls, material_set, material): pass
     def delete_object(cls, obj): pass
     def disable_editing_material(cls): pass
