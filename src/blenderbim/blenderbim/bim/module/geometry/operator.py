@@ -974,21 +974,32 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
             self.report({"INFO"}, "Object is not part of a IfcElementAssembly.")
             return {"FINISHED"}
 
+
         select_objects_and_add_data(selected_element)
 
         old_to_new = OverrideDuplicateMove.execute_ifc_duplicate_operator(self, context, linked=True)
 
+        # TODO check how this will interact with the new code from duplicate operator
         for old_element, new_element in old_to_new.items():
-            old_parent = ifcopenshell.util.element.get_aggregate(old_element)
-            if old_parent:
-                new_parent = old_to_new[old_parent]
-                blenderbim.core.aggregate.assign_object(
-                                            tool.Ifc,
-                                            tool.Aggregate,
-                                            tool.Collector,
-                                            relating_obj=tool.Ifc.get_object(new_parent[0]),
-                                            related_obj=tool.Ifc.get_object(new_element[0]),
-                                        )
+            old_aggregate = ifcopenshell.util.element.get_aggregate(old_element)
+            if old_aggregate:
+                if old_element.GlobalId == selected_element.GlobalId:
+                    blenderbim.core.aggregate.unassign_object(
+                                                tool.Ifc,
+                                                tool.Aggregate,
+                                                tool.Collector,
+                                                relating_obj=tool.Ifc.get_object(old_aggregate),
+                                                related_obj=tool.Ifc.get_object(new_element[0]),
+                                            )
+                else:
+                    new_aggregate = old_to_new[old_aggregate]
+                    blenderbim.core.aggregate.assign_object(
+                                                tool.Ifc,
+                                                tool.Aggregate,
+                                                tool.Collector,
+                                                relating_obj=tool.Ifc.get_object(new_aggregate[0]),
+                                                related_obj=tool.Ifc.get_object(new_element[0]),
+                                            )
 
         blenderbim.bim.handler.refresh_ui_data()
 
@@ -1053,6 +1064,8 @@ class RefreshLinkedAggregate(bpy.types.Operator):
         for element in elements:
             if element.GlobalId == selected_element.GlobalId:
                 continue
+
+            element_aggregate = ifcopenshell.util.element.get_aggregate(element)
             
             selected_matrix = selected_obj.matrix_world
             object_duplicate = tool.Ifc.get_object(element)
@@ -1066,24 +1079,35 @@ class RefreshLinkedAggregate(bpy.types.Operator):
             tool.Ifc.get_object(selected_element).select_set(True)
             
             old_to_new = DuplicateMoveLinkedAggregate.execute_ifc_duplicate_linked_aggregate_operator(self, context)
-            
             for old, new in old_to_new.items():
-                # if new[0].is_a("IfcColumn"):
+                
                 new_obj = tool.Ifc.get_object(new[0])
                 new_base_matrix = Matrix.LocRotScale(*duplicate_matrix)
                 matrix_diff = Matrix.inverted(selected_matrix) @ new_obj.matrix_world 
                 new_obj_matrix = new_base_matrix @ matrix_diff
                 new_obj.matrix_world = new_obj_matrix
 
-        # TODO test with adding subaggregates to existing aggregates
+                
+                if element_aggregate and new[0].is_a("IfcElementAssembly"):
+                    new_aggregate = ifcopenshell.util.element.get_aggregate(new[0])
+                    print("E-", element_aggregate)
+                    print("A-", new_aggregate)
+                    print("N-", new[0])
+                    if not new_aggregate:
+                        blenderbim.core.aggregate.assign_object(
+                                                    tool.Ifc,
+                                                    tool.Aggregate,
+                                                    tool.Collector,
+                                                    relating_obj=tool.Ifc.get_object(element_aggregate),
+                                                    related_obj=tool.Ifc.get_object(new[0]),
+                                                )                        
 
-        # TODO test with ctrl+shift+d in a subaggregates
-
+        
+        # TODO Add a "Mirror" option that treats the matrix differently
+        
         # TODO think of more edge cases and issues already reported
 
         blenderbim.bim.handler.refresh_ui_data()
-
-        return {"FINISHED"}
 
 
 class OverrideJoin(bpy.types.Operator, Operator):
