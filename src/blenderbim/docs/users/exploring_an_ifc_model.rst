@@ -21,16 +21,18 @@ use some creativity when reading the data :)
 Loading a model
 ---------------
 
-Blender's interface is divided into panels. The main **Viewport** panel shows 3D
-geometry.  The top right **Outliner** panel shows a tree of geometric objects.
-The bottom right **Properties** panel shows data and relationships.
+Blender's interface is divided into three panels. The left **Outliner** panel
+shows a tree of geometric objects. The centre main **Viewport** panel shows 3D
+geometry. The right **Properties** panel shows data and relationships.
 
 .. image:: blenderbim-layout.png
 
 The **Properties** panel has tabs to switch between different types of
-properties. Make sure you have the **Scene Properties** tab activated, and find
-the **IFC Project** subpanel. Click on **Load Project** and browse to your
-``.ifc`` file.
+properties.
+
+.. image:: properties-tabs.png
+
+Click on ``File > Open IFC Project`` and browse to your ``.ifc`` file.
 
 .. image:: properties-loadproject.png
 
@@ -38,12 +40,12 @@ After loading, you will see the model appear in the **Viewport** panel.
 
 .. image:: example-project.png
 
-Let's take a look at the **IFC Project** subpanel again. It shows the loaded
-filename, as well as the **IFC Schema**. There are two commonly seen **IFC
-Schema** versions: IFC2X3 and IFC4. Checking the **IFC Schema** is important
-because it has an impact on what BIM data may be stored. IFC4 is the newer
-version and it is recommended to use IFC4 models as it has significantly more
-BIM capabilities compared to IFC2X3. 
+Take a look at the **Project Info** subpanel. It shows the loaded filename, as
+well as the **IFC Schema**. There are two commonly seen **IFC Schema**
+versions: IFC2X3 and IFC4. Checking the **IFC Schema** is important because it
+has an impact on what BIM data may be stored. IFC4 is the newer version and it
+is recommended to use IFC4 models as it has significantly more BIM capabilities
+compared to IFC2X3. 
 
 .. tip::
 
@@ -180,8 +182,8 @@ properties and relationships it is allowed to have. For example, a Wall
    as you explore more.
 
 To view an object's class, click on an object in the **Viewport** or **Outliner**
-panel, then switch to the **Object Properties** tab in the **Properties** panel.
-You can see the **Class** name in the **IFC Class** subpanel.
+panel, then switch to the **Object Information** tab in the **Properties** panel.
+You can see the **Class** name in the **Object Metadata** subpanel.
 
 .. image:: element-class.png
 
@@ -240,7 +242,7 @@ Viewing attributes and properties
 You can view the **Attributes**, **Properties**, and **Quantities** of the
 selected object in the **Object Properties** tab.
 
-Let's focus on **Attributes** first. Scroll down to the **IFC Attributes**
+Let's focus on **Attributes** first. Scroll down to the **Attributes**
 subpanel. **Attributes** are a limited set of fundamental data (usually less
 than 10) associated with all IFC elements. These are fixed by the IFC standard.
 
@@ -273,7 +275,7 @@ have different **Properties** depending on what information they want to store.
 Each **Property** has a name and a value, and are grouped into **Property
 Sets**. Each **Property Set** also has a name. 
 
-You can find **Properties** in the **IFC Property Sets** subpanel.
+You can find **Properties** in the **Object Property Sets** subpanel.
 
 .. image:: psets.png
 
@@ -297,7 +299,7 @@ value, and are grouped into **Quantity Sets**. Similarly, there are also common
 quantities defined as part of the international standard, denoted by the prefix
 ``Qto_``. This prefix is short for "Quantity Take-Off".
 
-You can find **Quantities** in the **IFC Quantity Sets** subpanel.
+You can find **Quantities** in the **Object Quantity Sets** subpanel.
 
 .. image:: qtos.png
 
@@ -315,8 +317,8 @@ as a multi-storey column which can be related to multiple building storeys.
 Even in these cases, IFC enforces one location to be its primary
 location, known as its **Spatial Container**.
 
-If you click on any object, you can see its location in the **IFC Spatial
-Container** subpanel in the **Object Properties** tab.
+If you click on any object, you can see its location in the **Spatial
+Container** subpanel in the **Object Information** tab.
 
 Press the **Select Icon** to select all objects that are in the same location.
 
@@ -333,16 +335,15 @@ You can see a list of **Construction Types** in the **Outliner** panel in the
 with the wall type names of ``WT01``, ``WT02``, and ``WT03``, you should see
 three **IfcWallType** objects with those same names in the **Outliner**.
 
-You can click on these types to see more details about them in the **Object
-Properties** panel.
+You can click on these types to see more details about them in the
+**Properties** panel.
 
 .. image:: outliner-types.png
 
 When selecting an object, you can also see its construction type in **Object
-Properties** under the **IFC Construction Type** subpanel. You can press the
-**Select Icon** to select all objects that are of the same **Construction
-Type**. You can use the hide and isolate hotkeys to quickly view them in the
-model.
+Information** under the **Type** subpanel. You can press the **Select Icon** to
+select all objects that are of the same **Construction Type**. You can use the
+hide and isolate hotkeys to quickly view them in the model.
 
 .. image:: properties-types.png
 
@@ -374,12 +375,12 @@ Filtering by materials
 ----------------------
 
 Everything in the built environment is made from a physical raw **Material**
-resources. For example, a **Material** might be a 140mm core filled block.
-Another **Material** might be a 190mm hollowcore block. **Materials** are
-grouped into categories like steel, concrete, brick, block, and so on.
+resources. For example, a **Material** might be blockwork. Another
+**Material** might be in-situ concrete. **Materials** are grouped into
+categories like steel, concrete, brick, block, and so on.
 
-We can see a list of **Materials** used in the project in the **IFC Materials**
-subpanel in the **Scene Properties** tab.
+We can see a list of **Materials** used in the project in the **Materials**
+subpanel in the **Geometry and Materials** tab.
 
 Press the **Select Icon** to select all objects that are of the selected
 material.
@@ -393,16 +394,11 @@ The simplest form of measurement is the one that's already taken for you. The
 **Viewing attributes and properties** section describes how to view
 pre-calculated **Quantities**.
 
-Sometimes, you may wish to take manual measurements yourself. To view the
-overall dimensions of an object, first select an object, then expand out the
-viewport **Sidebar**.
+Sometimes, you may wish to take manual measurements yourself. You can view the
+overall X, Y, and Z dimensions of the currently selected object in the
+**Derived Coordinates** subpanel in the **Geometry and Materials** tab.
 
-.. image:: viewport-sidebar.png
-
-In the **Item** tab, you can find the X, Y, and Z overall **Dimensions** of the
-currently selected object.
-
-.. image:: viewport-dimensions.png
+.. image:: dimensions.png
 
 Another way to manually measure from two points is to use the **Measure** tool.
 First, press the **Snap Icon** to enable snapping. Then choose snap targets in
