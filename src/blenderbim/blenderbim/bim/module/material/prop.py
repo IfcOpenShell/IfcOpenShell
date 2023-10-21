@@ -103,11 +103,24 @@ def get_profiles(self, context):
     return MaterialsData.data["profiles"]
 
 
+def get_styles(self, context):
+    if not MaterialsData.is_loaded:
+        MaterialsData.load()
+    return MaterialsData.data["styles"]
+
+
+def get_contexts(self, context):
+    if not MaterialsData.is_loaded:
+        MaterialsData.load()
+    return MaterialsData.data["contexts"]
+
+
 class Material(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     is_category: BoolProperty(name="Is Category", default=False)
     is_expanded: BoolProperty(name="Is Expanded", default=True)
+    has_style: BoolProperty(name="Has Style", default=True)
     total_elements: IntProperty(name="Total Elements")
 
 
@@ -119,7 +132,9 @@ class BIMMaterialProperties(PropertyGroup):
     profiles: EnumProperty(items=get_profiles, name="Profiles")
     active_material_id: IntProperty(name="Active Material ID")
     material_attributes: CollectionProperty(name="Material Attributes", type=Attribute)
-    editing_material_type = StringProperty(name="Editing Material Type")
+    editing_material_type: StringProperty(name="Editing Material Type")
+    styles: EnumProperty(items=get_styles, name="Styles")
+    contexts: EnumProperty(items=get_contexts, name="Contexts")
 
 
 class BIMObjectMaterialProperties(PropertyGroup):
