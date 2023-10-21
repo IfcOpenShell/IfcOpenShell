@@ -46,7 +46,7 @@ Installation
 
    .. image:: install-blenderbim-3.png
 
-All done! If you check your Scene properties in the panel on the bottom right, you will see a panel to manage your **IFC Project**.
+All done! Your interface will now look similar to below. If you check the ``File`` menu you should also see an option to ``Open IFC Project``.
 
 .. image:: install-blenderbim-4.png
 
