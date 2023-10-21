@@ -715,3 +715,50 @@ class ContractMaterialCategory(bpy.types.Operator):
             category.is_expanded = False
         core.load_materials(tool.Material, props.material_type)
         return {"FINISHED"}
+
+
+class EnableEditingMaterialStyle(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.enable_editing_material_style"
+    bl_label = "Enable Editing Material Style"
+    bl_options = {"REGISTER", "UNDO"}
+    material: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        props = bpy.context.scene.BIMMaterialProperties
+        props.active_material_id = self.material
+        props.editing_material_type = "STYLE"
+
+
+class EditMaterialStyle(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.edit_material_style"
+    bl_label = "Edit Material Style"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = bpy.context.scene.BIMMaterialProperties
+        material = tool.Ifc.get().by_id(props.active_material_id)
+        style = tool.Ifc.get().by_id(int(props.styles))
+        context = tool.Ifc.get().by_id(int(props.contexts))
+        ifcopenshell.api.run(
+            "style.assign_material_style", tool.Ifc.get(), material=material, style=style, context=context
+        )
+        tool.Material.disable_editing_material()
+        core.load_materials(tool.Material, props.material_type)
+
+
+class UnassignMaterialStyle(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.unassign_material_style"
+    bl_label = "Unassign Material Style"
+    bl_options = {"REGISTER", "UNDO"}
+    style: bpy.props.IntProperty()
+    context: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        props = bpy.context.scene.BIMMaterialProperties
+        material = tool.Ifc.get().by_id(props.materials[props.active_material_index].ifc_definition_id)
+        style = tool.Ifc.get().by_id(self.style)
+        context = tool.Ifc.get().by_id(self.context)
+        ifcopenshell.api.run(
+            "style.unassign_material_style", tool.Ifc.get(), material=material, style=style, context=context
+        )
+        core.load_materials(tool.Material, props.material_type)

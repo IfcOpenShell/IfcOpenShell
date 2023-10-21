@@ -80,6 +80,7 @@ class Material(blenderbim.core.tool.Material):
                     new.total_elements = len(
                         ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material)
                     )
+                    new.has_style = bool(material.HasRepresentation)
             return
         for material in materials:
             new = props.materials.add()
