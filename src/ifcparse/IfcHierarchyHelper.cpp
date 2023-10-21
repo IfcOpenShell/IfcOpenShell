@@ -1043,3 +1043,6 @@ template IFC_PARSE_API class IfcHierarchyHelper<Ifc4x3_tc1>;
 #ifdef HAS_SCHEMA_4x3_add1
 template IFC_PARSE_API class IfcHierarchyHelper<Ifc4x3_add1>;
 #endif
+#ifdef HAS_SCHEMA_4x3_add2
+template IFC_PARSE_API class IfcHierarchyHelper<Ifc4x3_add2>;
+#endif
