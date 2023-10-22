@@ -2,8 +2,8 @@ from lark import Lark, Transformer
 
 # Grammar to retrieve the following structure: YYYY-MM-DDThh:mm:ss
 grammar = """
-    start: time_value
-    time_value: year "-" month "-" day "T" hour ":" minute ":" second ["." millisecond]
+ 
+    datetime_value: year "-" month "-" day "T" hour ":" minute ":" second ["." millisecond]
 
     hour: DIGIT DIGIT
     minute: DIGIT DIGIT
@@ -21,7 +21,7 @@ grammar = """
     %ignore WS
 """
 
-parser = Lark(grammar, start='time_value')
+parser = Lark(grammar, start='datetime_value')
 
 
 class DatetimeTransformer(Transformer):
@@ -52,10 +52,10 @@ class DatetimeTransformer(Transformer):
         else:
             return None
 
-    def time_value(self, items):
+    def datetime_value(self, items):
 
         year, month, day, hour, minute, second, millisecond = items
-
+        
         return {
             "year": year,
             "month": month,
