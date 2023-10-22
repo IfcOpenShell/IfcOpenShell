@@ -8,7 +8,7 @@ grammar = """
     hour: DIGIT DIGIT
     minute: DIGIT DIGIT
     second: DIGIT DIGIT
-    millisecond: DIGIT+
+    millisecond: DIGIT DIGIT DIGIT*
 
     day: DIGIT DIGIT
     month: DIGIT DIGIT
