@@ -92,6 +92,8 @@ class CoveringToolUI:
     def draw_default_interface(cls):
         row = cls.layout.row(align=True)
         row.prop(data=cls.props, property="rl3", text="RL")
+        row = cls.layout.row(align=True)
+        row.prop(data=cls.covering_props, property="ceiling_height", text="Ceiling Height")
         if AuthoringData.data["ifc_classes"]:
             active_obj = bpy.context.active_object
             element = tool.Ifc.get_entity(active_obj)
@@ -101,17 +103,26 @@ class CoveringToolUI:
             relating_type_id = int(cls.props.relating_type_id)
             type_material_usage = ifcopenshell.util.element.get_material(tool.Ifc.get().by_id(relating_type_id)).is_a()
 
-            if (AuthoringData.data["predefined_type"] == "FLOORING" and
-                type_material_usage == "IfcMaterialLayerSet" and
+#               PLEASE KEEP COMMENTS AS A REMINDER
+#                elif element and bpy.context.selected_objects and element.is_a("IfcSpace"):
+#                    op. = row.operator("bim.add_istance_flooring_from_spaces"):
+
+            if (type_material_usage == "IfcMaterialLayerSet" and
                 not bpy.context.selected_objects):
                 row = cls.layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_A")
-#               PLEASE KEEP COMMENTS AS A REMINDER
-#                elif element and bpy.context.selected_objects and element.is_a("IfcSpace"):
-#                    op. = row.operator("bim.add_istance_flooring_from_spaces"):
                 if tool.Ifc.get_entity(collection_obj):
-                    op = row.operator("bim.add_instance_flooring_covering_from_cursor")
+                    if AuthoringData.data["predefined_type"] == "FLOORING":
+                        op = row.operator("bim.add_instance_flooring_covering_from_cursor")
+                    elif AuthoringData.data["predefined_type"] == "CEILING":
+                        op = row.operator("bim.add_instance_ceiling_covering_from_cursor")
+                    else:
+                        op = row.operator("bim.add_constr_type_instance", text="Add")
+                        op.from_invoke = True
+                        if cls.props.relating_type_id.isnumeric():
+                            op.relating_type_id = int(cls.props.relating_type_id)
+
                 else:
                     op = row.operator("bim.add_constr_type_instance", text="Add")
                     op.from_invoke = True
@@ -136,7 +147,7 @@ class CoveringToolUI:
                 row = cls.layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_G")
-                op = row.operator("bim.regen_selected_flooring_object")
+                op = row.operator("bim.regen_selected_covering_object")
 
 
 
@@ -230,13 +241,22 @@ class Hotkey(bpy.types.Operator, Operator):
                 bpy.ops.bim.add_instance_flooring_covering_from_cursor()
             else:
                 bpy.ops.bim.add_constr_type_instance()
+        elif AuthoringData.data["predefined_type"] == "CEILING":
+            if element and bpy.context.selected_objects and element.is_a("IfcWall"):
+                pass
+            elif tool.Ifc.get_entity(collection_obj):
+                bpy.ops.bim.add_instance_ceiling_covering_from_cursor()
+            else:
+                bpy.ops.bim.add_constr_type_instance()
         else:
             bpy.ops.bim.add_constr_type_instance()
 
     def hotkey_S_G(self):
         active_obj = bpy.context.active_object
         element = tool.Ifc.get_entity(active_obj)
+        if (element and
+            bpy.context.selected_objects and
+            element.is_a("IfcCovering") and
+            AuthoringData.data["active_material_usage"] == "LAYER3"):
+                bpy.ops.bim.regen_selected_covering_object()
 
-        if AuthoringData.data["predefined_type"] == "FLOORING":
-            if element and bpy.context.selected_objects and element.is_a("IfcCovering"):
-                bpy.ops.bim.regen_selected_flooring_object()
