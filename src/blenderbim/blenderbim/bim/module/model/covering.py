@@ -51,11 +51,40 @@ class AddInstanceFlooringCoveringFromCursor(bpy.types.Operator, tool.Ifc.Operato
 
         core.add_instance_flooring_covering_from_cursor(tool.Ifc, tool.Spatial, tool.Model, tool.Type, tool.Geometry)
 
-class RegenSelectedFlooringObject(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.regen_selected_flooring_object"
-    bl_label = "Regen Flooring"
+class AddInstanceCeilingCoveringFromCursor(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_instance_ceiling_covering_from_cursor"
+    bl_label = "Add Ceiling From Cursor"
     bl_options = {"REGISTER"}
-    bl_description = "Regen selected flooring object"
+    bl_description = "Add a typed instance ceiling covering from cursor position. Move the cursor position into the desired position, select the right space collection and run the operator"
+
+    @classmethod
+    def poll(cls, context):
+        collection = context.view_layer.active_layer_collection.collection
+        collection_obj = collection.BIMCollectionProperties.obj
+        return tool.Ifc.get_entity(collection_obj)
+
+    def _execute(self, context):
+
+        def msg(self, context):
+            self.layout.label(text="NO ACTIVE STOREY")
+
+        collection = context.view_layer.active_layer_collection.collection
+        collection_obj = collection.BIMCollectionProperties.obj
+        if not collection_obj:
+            bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
+            return
+        spatial_element = tool.Ifc.get_entity(collection_obj)
+        if not spatial_element:
+            bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
+            return
+
+        core.add_instance_ceiling_covering_from_cursor(tool.Ifc, tool.Spatial, tool.Model, tool.Type, tool.Geometry, tool.Covering)
+
+class RegenSelectedCoveringObject(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.regen_selected_covering_object"
+    bl_label = "Regen"
+    bl_options = {"REGISTER"}
+    bl_description = "Regen selected covering object"
 
     @classmethod
     def poll(cls, context):
@@ -74,7 +103,7 @@ class RegenSelectedFlooringObject(bpy.types.Operator, tool.Ifc.Operator):
             bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
             return
 
-        core.regen_selected_flooring_object(tool.Ifc, tool.Spatial, tool.Model, tool.Type, tool.Geometry)
+        core.regen_selected_covering_object(tool.Ifc, tool.Spatial, tool.Model, tool.Type, tool.Geometry)
 
 
 class AddInstanceFlooringCoveringsFromWalls(bpy.types.Operator, tool.Ifc.Operator):

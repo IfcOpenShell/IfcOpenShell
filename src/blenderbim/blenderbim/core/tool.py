@@ -851,6 +851,9 @@ class Spatial:
     def regen_obj_representation(cls, ifc, geometry, obj, body): pass
     def toggle_spaces_visibility_wired_and_textured(cls, spaces): pass
 
+@interface
+class Covering:
+    def get_z_from_ceiling_height(cls): pass
 
 @interface
 class Structural:
