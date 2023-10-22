@@ -44,13 +44,6 @@ def add_instance_flooring_covering_from_cursor(ifc, spatial, model, Type, geomet
     name = "Covering"
     mesh = spatial.get_named_mesh_from_bmesh(name = name, bmesh = bm)
 
-
-#        spatial.edit_active_space_obj_from_mesh(mesh)
-#    else:
-#        if relating_type:
-#            name = model.generate_occurrence_name(relating_type, "IfcCovering")
-#        else:
-
     obj = spatial.get_named_obj_from_mesh(name, mesh)
 
     spatial.set_obj_origin_to_cursor_position(obj)
@@ -63,7 +56,49 @@ def add_instance_flooring_covering_from_cursor(ifc, spatial, model, Type, geomet
     body = spatial.get_body_representation(obj)
     spatial.regen_obj_representation(ifc, geometry, obj, body)
 
-def regen_selected_flooring_object(ifc, spatial, model, Type, geometry):
+def add_instance_ceiling_covering_from_cursor(ifc, spatial, model, Type, geometry, covering):
+    active_obj = spatial.get_active_obj()
+    selected_objects = spatial.get_selected_objects()
+    element = None
+    relating_type_id = spatial.get_relating_type_id()
+
+    relating_type = None
+    if relating_type_id:
+        relating_type = ifc.get().by_id(int(relating_type_id))
+        if not relating_type.is_a("IfcCoveringType"):
+            relating_type = None
+
+    if selected_objects and active_obj:
+        x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_active_obj(active_obj)
+        element = ifc.get_entity(active_obj)
+
+    else:
+        x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_cursor()
+        z = covering.get_z_from_ceiling_height()
+
+    space_polygon = spatial.get_space_polygon_from_context_visible_objects(x, y)
+
+    if not space_polygon:
+        return
+
+    bm = spatial.get_bmesh_from_polygon(space_polygon, h=0)
+    name = "Covering"
+    mesh = spatial.get_named_mesh_from_bmesh(name = name, bmesh = bm)
+
+    obj = spatial.get_named_obj_from_mesh(name, mesh)
+
+    spatial.set_obj_origin_to_cursor_position(obj)
+    spatial.traslate_obj_to_z_location(obj, z)
+    spatial.link_obj_to_active_collection(obj)
+    points = spatial.get_2d_vertices_from_obj(obj)
+    spatial.assign_type_to_obj(obj)
+
+    spatial.assign_swept_area_outer_curve_from_2d_vertices(obj, vertices = points)
+    body = spatial.get_body_representation(obj)
+    spatial.regen_obj_representation(ifc, geometry, obj, body)
+
+
+def regen_selected_covering_object(ifc, spatial, model, Type, geometry):
     active_obj = spatial.get_active_obj()
     selected_objects = spatial.get_selected_objects()
 
