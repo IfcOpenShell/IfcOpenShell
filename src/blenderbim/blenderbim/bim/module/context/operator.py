@@ -40,7 +40,23 @@ class AddContext(bpy.types.Operator, Operator):
     target_view: bpy.props.StringProperty()
     parent: bpy.props.IntProperty()
 
-    def _execute(self, context):
+
+
+    def _execute(self, context):   
+        
+        ifc_file = tool.Ifc.get()
+
+        # Check if a IfcGeometricRepresentationSubContext already exists in the file
+        for subcontext in ifc_file.by_type("IfcGeometricRepresentationSubContext", include_subtypes=False):
+            if (
+                subcontext.ContextType == self.context_type
+                and subcontext.ContextIdentifier == self.context_identifier
+                and subcontext.TargetView == self.target_view
+            ):
+                self.report({'INFO'}, "Context already exists. Did not add.")
+                return {'CANCELLED'}
+
+        # If the context doesn't exist, add it
         core.add_context(
             tool.Ifc,
             context_type=self.context_type,
@@ -48,6 +64,21 @@ class AddContext(bpy.types.Operator, Operator):
             target_view=self.target_view,
             parent=tool.Ifc.get().by_id(self.parent) if self.parent else None,
         )
+        self.report({'INFO'}, "Context added.")
+        return {'FINISHED'}
+
+    def context_already_exists(ifc_data, context_type, context_identifier, target_view):
+        # Check if the context already exists in the loaded IFC data
+        for context in ifc_data.by_type("IfcContext"):
+            if (
+                context.is_a() == context_type
+                and context.Name == context_identifier
+                and context.Phase == target_view
+            ):
+                return True
+        
+        return False
+
 
 
 class RemoveContext(bpy.types.Operator, Operator):
