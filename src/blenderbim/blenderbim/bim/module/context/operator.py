@@ -67,17 +67,6 @@ class AddContext(bpy.types.Operator, Operator):
         self.report({'INFO'}, "Context added.")
         return {'FINISHED'}
 
-    def context_already_exists(ifc_data, context_type, context_identifier, target_view):
-        # Check if the context already exists in the loaded IFC data
-        for context in ifc_data.by_type("IfcContext"):
-            if (
-                context.is_a() == context_type
-                and context.Name == context_identifier
-                and context.Phase == target_view
-            ):
-                return True
-        
-        return False
 
 
 
