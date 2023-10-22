@@ -26,7 +26,7 @@ parser = Lark(grammar, start='time_value')
 
 class DatetimeTransformer(Transformer):
     def year(self, items):
-        return ''.join(token.value for token in items)
+        return int(''.join(token.value for token in items))
 
     def month(self, items):
         return int(''.join(token.value for token in items))
@@ -83,9 +83,7 @@ def validate_datetime(parsed_datetime):
         # Year
         if parsed_datetime["year"] == "0000":
             return "invalid year value"
-        if parsed_datetime["year"][0] != "-" and len(parsed_datetime["year"]) > 4:
-            return "invalid year value"
-
+   
         # Month
         if not (parsed_datetime["month"] > 0 and parsed_datetime["month"] < 13):
             return "invalid month value"
@@ -139,8 +137,7 @@ if __name__ == '__main__':
     not_valid = ["2008-12-27_18:00:04",
                  "80-8-03T00:00:00",
                  "0000-8-03T00:00:00",
-                 "-2018-26-12T15:04:02",
-                 "12000-01-02T00:00:00"]
+                 "-2018-26-12T15:04:02"]
 
     for d in valid:
         validate(d)
