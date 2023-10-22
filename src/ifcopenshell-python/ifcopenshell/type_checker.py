@@ -12,7 +12,7 @@ grammar = """
 
     day: DIGIT DIGIT
     month: DIGIT DIGIT
-    year: MINUS? DIGIT+
+    year: MINUS? DIGIT DIGIT DIGIT DIGIT DIGIT*
 
     MINUS: "-"
     DIGIT: "0".."9"
