@@ -370,6 +370,7 @@ class Geometry:
     def remove_connection(cls, connection): pass
     def rename_object(cls, obj, name): pass
     def replace_object_with_empty(cls, obj): pass
+    def replace_object_data_globally(cls, old_data, new_data): pass
     def resolve_mapped_representation(cls, representation): pass
     def run_geometry_update_representation(cls, obj=None): pass
     def run_style_add_style(cls, obj=None): pass
@@ -378,6 +379,7 @@ class Geometry:
     def should_force_triangulation(cls): pass
     def should_generate_uvs(cls, obj): pass
     def should_use_presentation_style_assignment(cls): pass
+    def unresolve_type_representation(cls, representation, element): pass
 
 
 @interface
