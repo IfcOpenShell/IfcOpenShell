@@ -29,9 +29,9 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPointByDistanceExpression* i
 	auto curve = ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::piecewise_function>(map(inst->BasisCurve()));
    auto m = curve->evaluate(u);
 
-   auto o = Eigen::Vector3d(m.col(3)(0), m.col(3)(1), m.col(3)(2));
-   auto z = Eigen::Vector3d(m.col(2)(0), m.col(2)(1), m.col(2)(2));
-   auto x = Eigen::Vector3d(m.col(0)(0), m.col(0)(1), m.col(0)(2));
+   auto o = m.col(3).head<3>();
+   auto z = m.col(2).head<3>();
+   auto x = m.col(0).head<3>();
 
    if (inst->OffsetLateral().has_value()) {
        auto offset_lateral = inst->OffsetLateral().get() * length_unit_;
