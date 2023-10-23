@@ -59,9 +59,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcAxis2PlacementLinear* inst) 
 
 		refDirection = m->components().col(1).head<3>();
         
-		axis(0) = m->components().col(2)(0);
-      axis(1) = m->components().col(2)(1);
-      axis(2) = m->components().col(2)(2);
+		axis = m->components().col(2).head<3>();
     }
 	return taxonomy::make<taxonomy::matrix4>(o, axis, refDirection);
 }
