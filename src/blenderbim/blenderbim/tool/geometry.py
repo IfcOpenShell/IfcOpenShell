@@ -632,6 +632,18 @@ class Geometry(blenderbim.core.tool.Geometry):
         return representation
 
     @classmethod
+    def unresolve_type_representation(cls, representation, occurence):
+        if not ifcopenshell.util.element.get_type(occurence):
+            return representation
+
+        if representation.RepresentationType == "MappedRepresentation":
+            return representation
+
+        for mapped_representation in occurence.Representation.Representations:
+            if cls.resolve_mapped_representation(mapped_representation) == representation:
+                return mapped_representation
+
+    @classmethod
     def run_geometry_update_representation(cls, obj=None):
         bpy.ops.bim.update_representation(obj=obj.name, ifc_representation_class="")
 
