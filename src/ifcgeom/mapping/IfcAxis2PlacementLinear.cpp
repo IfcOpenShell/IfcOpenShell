@@ -31,7 +31,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcAxis2PlacementLinear* inst) 
 	Eigen::Vector3d o, axis(0, 0, 1), refDirection;
 
 	taxonomy::matrix4::ptr m = taxonomy::cast<taxonomy::matrix4>(map(inst->Location()));
-    o = Eigen::Vector3d(m->components().col(3)(0), m->components().col(3)(1), m->components().col(3)(2));
+    o = m->components().col(3).head<3>();
 
    const bool hasAxis = !!inst->Axis();
 	const bool hasRef = !!inst->RefDirection();
