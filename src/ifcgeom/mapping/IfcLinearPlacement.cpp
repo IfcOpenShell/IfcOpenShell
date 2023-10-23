@@ -25,23 +25,15 @@ using namespace ifcopenshell::geometry;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcLinearPlacement* inst) {
 
-	// The IFC specification does not provided a description of the optional
-	// CartesianPosition attribute. It is assumed to be a pre-computed IfcAxis2Placement3D
-	// to be used by software that don't support IfcLinearPlacement. In this case,
-	// we will simply use the intended CartesianPosition provided by the IFC model
-    if (inst->CartesianPosition()) {
-        return map(inst->CartesianPosition());
-    }
-
-	 // the following is taken from IfcLocalPlacement and tweaked a little
-	 // assumes that PlacementRelTo is relative to another IfcLinearPlacement
-	IfcSchema::IfcLinearPlacement* current = (IfcSchema::IfcLinearPlacement*)inst;
-	auto m4 = taxonomy::make<taxonomy::matrix4>();
-
+	 // IfcLinearPlacement was added in IFC 4.1 but it had an Orientation attribute of type IfcOrientationExpression, which when combined with other
+    // attributes was similar to IfcAxis2PlacementLinear. IFC 4.1 and IFC 4.2 have been withdrawn so I'm not going to try to implement linear placement for them.
+    // For this reason the preprocessor skips this code if SCHEMA_HAS_IfcAxis2PlacementLinear is not defined
 #if defined SCHEMA_HAS_IfcAxis2PlacementLinear
-	// IfcLinearPlacement was added in IFC 4.1 but it had an Orientation attribute of type IfcOrientationExpression, which when combined with other
-	// attributes was similar to IfcAxis2PlacementLinear. IFC 4.1 and IFC 4.2 have been withdrawn so I'm not going to try to implement linear placement for them.
-	// For this reason the preprocessor skips this code if SCHEMA_HAS_IfcAxix2PlacementLinear is not defined
+    // the following is taken from IfcLocalPlacement and tweaked a little
+    // assumes that PlacementRelTo is relative to another IfcLinearPlacement
+    IfcSchema::IfcLinearPlacement* current = (IfcSchema::IfcLinearPlacement*)inst;
+    auto m4 = taxonomy::make<taxonomy::matrix4>();
+
 
 	for (;;) {
         IfcSchema::IfcAxis2PlacementLinear* relplacement = current->RelativePlacement();
@@ -76,12 +68,34 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcLinearPlacement* inst) {
 			break;
 		}
 	}
+
+	 // The IFC specification does not provided a description of the optional
+    // CartesianPosition attribute. It is assumed to be a pre-computed IfcAxis2Placement3D
+    // to be used by software that don't support IfcLinearPlacement. Check that the
+	// provided cartesian position is the same as the one determined by linear placement
+    if (inst->CartesianPosition()) {
+        auto m_fallback = taxonomy::cast<taxonomy::matrix4>(map(inst->CartesianPosition()));
+        if (m4 != m_fallback) {
+            Logger::Warning("IfcLinearPlacement.CartesianPosition is different than the computed placement", inst);
+        }
+    }
+
+	 // @todo: rb - not sure what this means... it came from IfcLocalPlacement
+    // m4->components() = offset_and_rotation_ * m4->components();
+
+    return m4;
+
+#else
+	// The IFC specification does not provided a description of the optional
+    // CartesianPosition attribute. It is assumed to be a pre-computed IfcAxis2Placement3D
+    // to be used by software that don't support IfcLinearPlacement. In this case,
+    // we will simply use the intended CartesianPosition provided by the IFC model
+    if (inst->CartesianPosition()) {
+        return map(inst->CartesianPosition());
+    } else {
+        Logger::Error("Unsupported");
+    }
 #endif // SCHEMA_HAS_IfcAxis2PlacementLinear
-
-	// @todo: rb - not sure what this means... it came from IfcLocalPlacement
-	// m4->components() = offset_and_rotation_ * m4->components();
-
-	return m4;
 }
 
 #endif
