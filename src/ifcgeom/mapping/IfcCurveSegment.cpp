@@ -137,10 +137,12 @@ public:
                 m.col(1) = Eigen::Vector4d(0, 1, 0, 0);
                 m.col(2) = Eigen::Vector4d(-dy, 0, dx, 0);
                 m.col(3) = Eigen::Vector4d(0, 0, y, 1.0); // y is an elevation so store it as z
+            } else if (segment_type == ST_CANT) {
+                Logger::Warning(std::runtime_error("Use of IfcSpiral for cant is not supported"));
             } else {
-                assert(segment_type == ST_CANT); // if it isn't cant, is there a new segment type?
-                assert(false);                   // not expecting cant
+                Logger::Error(std::runtime_error("Unexpected segment type encountered"));
             }
+
 
 				Eigen::Matrix4d result = transformation_matrix * m;
             return result;
@@ -263,7 +265,6 @@ public:
 
 				auto dx = cos(angle);
             auto dy = sin(angle);
-            auto dz = 1.0;
 
 				auto x = R * dx;
 				auto y = R * dy;
@@ -281,10 +282,12 @@ public:
                 m.col(1) = Eigen::Vector4d(0, 1, 0, 0);
                 m.col(2) = Eigen::Vector4d(-dy, 0, dx, 0);
                 m.col(3) = Eigen::Vector4d(0, 0, y, 1.0); // y is an elevation so store it as z
+            } else if (segment_type == ST_CANT) {
+                Logger::Warning(std::runtime_error("Use of IfcCircle for cant is not supported"));
             } else {
-                assert(segment_type == ST_CANT); // if it isn't cant, is there a new segment type?
-                assert(false);                   // not expecting cant
+                Logger::Error(std::runtime_error("Unexpected segment type encountered"));
             }
+
 
             Eigen::Matrix4d result = transformation_matrix * m;
             return result;
@@ -313,12 +316,15 @@ public:
 		auto std_compare = [](double u_start, double u, double u_end) {return u_start <= u && u < u_end; };
 		auto end_compare = [](double u_start, double u, double u_end) {return u_start <= u && u <= (u_end + 0.001); };
 
-		auto iter = p->begin();
+		auto begin = p->begin();
+		auto iter = begin;
 		auto end = p->end();
 		auto last = std::prev(end);
 		auto p1 = *(iter++);
-      assert(p1->Coordinates().size() == 2); // expecting the polyline to be planar
-      auto u = 0.0;
+      
+		if (p1->Coordinates().size() != 2)  Logger::Warning("Expected IfcPolyline.Points to be 2D",pl);
+      
+		auto u = 0.0;
 		for (; iter != end; iter++)
 		{
 			auto p2 = *iter;
@@ -332,10 +338,13 @@ public:
 			auto dx = p2x - p1x;
 			auto dy = p2y - p1y;
 			auto l = sqrt(dx * dx + dy * dy);
-			if (l == 0.0)
+					
+			if (l < mapping_->conversion_settings().getValue(ConversionSettings::GV_PRECISION))
 			{
-				// @todo: rb use closeness tolerance instead of absolute 0.0
-				throw std::runtime_error("invalid polyline - points must not be coincident");
+            std::ostringstream os;
+            os << "Coincident IfcPolyline.Points are not expected. Skipping point " << std::distance(iter, begin) << std::endl;
+            Logger::Warning(os.str(), pl);
+            continue; // go to next point
 			}
 
 			dx /= l;
@@ -360,9 +369,10 @@ public:
                     m.col(1) = Eigen::Vector4d(0, 1, 0, 0);
                     m.col(2) = Eigen::Vector4d(-dy, 0, dx, 0);
                     m.col(3) = Eigen::Vector4d(0, 0, y, 1.0); // y is an elevation so store it as z
+                } else if (segment_type == ST_CANT) {
+                  Logger::Warning(std::runtime_error("Use of IfcPolyline for cant is not supported"));
                 } else {
-                    assert(segment_type == ST_CANT); // if it isn't cant, is there a new segment type?
-                    assert(false);                   // not expecting cant
+                  Logger::Error(std::runtime_error("Unexpected segment type encountered"));
                 }
 
 					 return m;
@@ -381,10 +391,11 @@ public:
 					return compare(u_start, u, u_end);
 				});
 
-			if (iter == fns.end()) throw std::runtime_error("invalid distance from start"); // this should never happen, but just in case it does
+			if (iter == fns.end()) throw std::runtime_error("invalid distance from start"); // this should never happen, but just in case it does, throw an exception so the problem gets automatically detected
 
-			auto [u_start, u_end, compare] = iter->first;
-			auto m = (iter->second)(u - u_start); // (u - u_start) is distance from start of this segment of the polyline
+			const auto& [u_start, u_end, compare] = iter->first;
+         const auto& fn = iter->second;
+			Eigen::Matrix4d m = fn(u - u_start); // (u - u_start) is distance from start of this segment of the polyline
          return m;
 			};
 	}
@@ -420,7 +431,6 @@ public:
 			eval_ = [px, py, dx, dy](double u) {
 				// https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcGradientCurve.htm
 				// the parameter, u, is the parameter of the BaseCurve (u = plan view distance along base curve)
-				auto x = px + u;
             
 				// dx and dy are normalized so u needs to be scaled by dy/dx
 				// Consider a 5% uphill grade defined by dr[0] = 1 and dr[1] = 0.05.
@@ -438,10 +448,12 @@ public:
             return m;
             };
 		} 
+		else if(segment_type_ == ST_CANT) {
+         Logger::Warning(std::runtime_error("Use of IfcLine for cant is not supported"), l);
+		}
 		else {
-            assert(segment_type_ == ST_CANT); // if it isn't cant, is there a new segment type?
-            assert(false);                    // not expecting cant
-      }
+         Logger::Error(std::runtime_error("Unexpected segment type encountered"), l);
+		}
 	}
 
 	void operator()(IfcSchema::IfcPolynomialCurve* p) {
@@ -449,7 +461,7 @@ public:
 		auto coeffX = p->CoefficientsX().get_value_or(std::vector<double>());
       auto coeffY = p->CoefficientsY().get_value_or(std::vector<double>());
       auto coeffZ = p->CoefficientsZ().get_value_or(std::vector<double>());
-      assert(coeffZ.size() == 0); // expecting the curve to by in the XY Plane (ST_HORIZONTAL) or the UZ Plane (ST_VERTICAL)
+      Logger::Warning("Expected IfcPolynomialCurve.CoefficientsZ to be undefined for alignment geometry", p);
 
 		auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(p->Position()))->ccomponents();
 
@@ -493,13 +505,13 @@ public:
             m.col(1) = Eigen::Vector4d(0, 1, 0, 0);
             m.col(2) = Eigen::Vector4d(dy, 0, dx, 0);
             m.col(3) = Eigen::Vector4d(0, 0, y, 1.0); // y is an elevation so store it as z
-         }
-			else
-			{
-            assert(segment_type == ST_CANT); // if it isn't cant, is there a new segment type?
-            assert(false); // not expecting cant
-			}
-         return m;
+         } else if (segment_type == ST_CANT) {
+                Logger::Warning(std::runtime_error("Use of IfcPolynomialCurve for cant is not supported"));
+         } else {
+                Logger::Error(std::runtime_error("Unexpected segment type encountered"));
+            }
+
+			return m;
       };
 	}
 
