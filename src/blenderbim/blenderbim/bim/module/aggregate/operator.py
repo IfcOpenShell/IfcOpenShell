@@ -164,6 +164,7 @@ class BIM_OT_add_aggregate(bpy.types.Operator, tool.Ifc.Operator):
 
     def create_aggregate(self, context, ifc_class):
         aggregate = bpy.data.objects.new("Assembly", None)
+        aggregate.location = context.scene.cursor.location
         bpy.ops.bim.assign_class(obj=aggregate.name, ifc_class=ifc_class)
         return aggregate
 
