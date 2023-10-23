@@ -57,9 +57,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcAxis2PlacementLinear* inst) 
 		// the matrix of orthogonal vectors that define the coordinate system at the point on curve as well as the point on curve
 		// In other words, the m matrix has everything needed
 
-		refDirection(0) = m->components().col(1)(0);
-      refDirection(1) = m->components().col(1)(1);
-      refDirection(2) = m->components().col(1)(2);
+		refDirection = m->components().col(1).head<3>();
         
 		axis(0) = m->components().col(2)(0);
       axis(1) = m->components().col(2)(1);
