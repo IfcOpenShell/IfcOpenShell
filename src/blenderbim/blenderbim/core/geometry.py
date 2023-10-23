@@ -106,10 +106,13 @@ def switch_representation(
     entity = ifc.get_entity(obj)
     current_obj_data = obj.data
 
-    # doesn't resolve mapped representations in case if it's going to have openings
-    # otherwise we would also add openings to the type and other occurences mesh data
     has_openings = apply_openings and getattr(entity, "HasOpenings", None)
-    if not has_openings:
+    if has_openings:
+        # if it has openings make sure to switch to element's mapped representation
+        representation = geometry.unresolve_type_representation(representation, entity)
+    else:
+        # doesn't resolve mapped representations in case if it's going to have openings
+        # otherwise we would also add openings to the type and other occurences mesh data
         representation = geometry.resolve_mapped_representation(representation)
 
     old_repr_data = geometry.get_representation_data(representation)
