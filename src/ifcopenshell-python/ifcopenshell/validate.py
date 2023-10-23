@@ -273,6 +273,53 @@ def get_entity_attributes(schema, entity):
     return entity_attrs
 
 
+def check(value, type, instance):
+        if value is None:
+            return
+
+        # @nb something can be a named type with rules and still be an aggregation.
+        # case in point IfcCompoundPlaneAngleMeasure. Therefore only unpack named
+        # type references from this point onwards.
+        while isinstance(
+            type,
+            (
+                ifcopenshell.ifcopenshell_wrapper.named_type,
+                ifcopenshell.ifcopenshell_wrapper.type_declaration,
+            ),
+        ):
+            type = type.declared_type()
+
+        if isinstance(value, (list, tuple)):
+            if isinstance(type, ifcopenshell.ifcopenshell_wrapper.aggregation_type):
+                ty = type.type_of_element()
+                for v in value:
+                    res = check(v, ty, instance=instance)
+                    if res:
+                        return res
+            else:
+                # Let's hope a schema validation error was reported for this case
+                pass
+
+        elif isinstance(value, ifcopenshell.entity_instance):
+            if isinstance(
+                value.is_a(),
+                ifcopenshell.ifcopenshell_wrapper.entity,
+            ):
+                # top level entity instances will be checked on their own
+                pass
+            else:
+                # unpack the type instance
+                check(value[0], value.is_a(), instance=instance)
+    
+                if value.is_a() == "IfcDateTime" and value[0]:
+                        parsing = parse_datetime(value[0])
+                        if parsing["status"] != -1:
+                            if validate_datetime(parsing["msg"]) != 1:
+                                return "attribute"
+                        else:
+                          return "syntax"
+                  
+
 def validate(f, logger, express_rules=False):
     """
     For an IFC population model `f` (or filepath to such a file) validate whether the entity attribute values are correctly supplied. As this
@@ -395,9 +442,30 @@ def validate(f, logger, express_rules=False):
                                 )
                                 
                 except Exception as e:
-                    #todo: handle aggregations
-                    pass
+                    is_aggreg = isinstance(type_of_attribute, ifcopenshell.ifcopenshell_wrapper.aggregation_type)
+                    
+                    if is_aggreg:
+                        recursed_result = check(val, type_of_attribute, instance=inst)
 
+                        if recursed_result:
+                            if recursed_result == "attribute":
+                                    logger.error(
+                                    "For instance:\n    %s\n    %s\nInvalid attribute value %s for %s.%s",
+                                    inst,
+                                    annotate_inst_attr_pos(inst, i),
+                                    entity,
+                                    attrs[i],
+                                )
+                            else:
+                                logger.error(
+                                            "For instance:\n    %s\n    %s\nInvalid attribute value %s for %s.%s",
+                                            inst,
+                                            annotate_inst_attr_pos(inst, i),
+                                            "syntax not conform to ISO",
+                                            entity,
+                                            attrs[i],
+                                        )
+                                
                 if is_derived and not isinstance(val, ifcopenshell.ifcopenshell_wrapper.attribute_value_derived):
                     if hasattr(logger, "set_state"):
                         logger.set_state('attribute', f"{entity.name()}.{attr.name()}")
