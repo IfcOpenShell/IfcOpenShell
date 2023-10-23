@@ -213,6 +213,7 @@ class AuthoringData:
         if bpy.context.active_object:
             representation = tool.Geometry.get_active_representation(bpy.context.active_object)
             if representation and representation.is_a("IfcShapeRepresentation"):
+                representation = tool.Geometry.resolve_mapped_representation(representation)
                 return representation.RepresentationType
 
     @classmethod
