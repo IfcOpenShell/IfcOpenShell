@@ -104,6 +104,7 @@ def switch_representation(
             return
 
     entity = ifc.get_entity(obj)
+    current_obj_data = obj.data
 
     # doesn't resolve mapped representations in case if it's going to have openings
     # otherwise we would also add openings to the type and other occurences mesh data
@@ -125,6 +126,10 @@ def switch_representation(
     # we assume that all the occurences and the type have the same representation context active
     # so geometry.delete_data cannot remove the data that's still used by some other object
     if should_reload and old_repr_data:
+        # if current object was using some temporary mesh (like during profile edit mode) instead of `old_repr_data`
+        # then `change_object_data` won't switch the mesh for all the occurences and we need to do it explicitly
+        if current_obj_data != old_repr_data and old_repr_data.users:
+            geometry.replace_object_data_globally(old_repr_data, new_repr_data)
         geometry.delete_data(old_repr_data)
 
     geometry.clear_modifiers(obj)
