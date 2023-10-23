@@ -104,7 +104,7 @@ def switch_representation(
             return
 
     entity = ifc.get_entity(obj)
-    current_obj_data = obj.data
+    current_obj_data = geometry.get_object_data(obj)
 
     has_openings = apply_openings and getattr(entity, "HasOpenings", None)
     if has_openings:
@@ -131,7 +131,7 @@ def switch_representation(
     if should_reload and old_repr_data:
         # if current object was using some temporary mesh (like during profile edit mode) instead of `old_repr_data`
         # then `change_object_data` won't switch the mesh for all the occurences and we need to do it explicitly
-        if current_obj_data != old_repr_data and old_repr_data.users:
+        if current_obj_data != old_repr_data and geometry.has_data_users(old_repr_data):
             geometry.replace_object_data_globally(old_repr_data, new_repr_data)
         geometry.delete_data(old_repr_data)
 
