@@ -126,7 +126,7 @@ void Logger::SetOutput(std::ostream* l1, std::ostream* l2) {
     wlog1 = wlog2 = 0;
     log1 = l1;
     log2 = l2;
-    if (!log2) {
+    if (log2 == nullptr) {
         log2 = &log_stream;
     }
 }
@@ -135,7 +135,7 @@ void Logger::SetOutput(std::wostream* l1, std::wostream* l2) {
     log1 = log2 = 0;
     wlog1 = l1;
     wlog2 = l2;
-    if (!wlog2) {
+    if (wlog2 == nullptr) {
         log2 = &log_stream;
     }
 }
@@ -160,17 +160,17 @@ void Logger::Message(Logger::Severity type, const std::string& message, const If
     if (type > max_severity) {
         max_severity = type;
     }
-    if ((log2 || wlog2) && type >= verbosity) {
+    if (((log2 != nullptr) || (wlog2 != nullptr)) && type >= verbosity) {
         if (format == FMT_PLAIN) {
-            if (log2) {
+            if (log2 != nullptr) {
                 plain_text_message(*log2, current_product, type, message, instance);
-            } else if (wlog2) {
+            } else if (wlog2 != nullptr) {
                 plain_text_message(*wlog2, current_product, type, message, instance);
             }
         } else if (format == FMT_JSON) {
-            if (log2) {
+            if (log2 != nullptr) {
                 json_message(*log2, current_product, type, message, instance);
-            } else if (wlog2) {
+            } else if (wlog2 != nullptr) {
                 json_message(*wlog2, current_product, type, message, instance);
             }
         }
@@ -192,9 +192,9 @@ void status(T& log1, const std::string& message, bool new_line) {
 }
 
 void Logger::Status(const std::string& message, bool new_line) {
-    if (log1) {
+    if (log1 != nullptr) {
         status(*log1, message, new_line);
-    } else if (wlog1) {
+    } else if (wlog1 != nullptr) {
         status(*wlog1, message, new_line);
     }
 }

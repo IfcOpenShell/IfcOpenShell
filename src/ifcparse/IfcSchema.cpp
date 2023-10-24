@@ -72,12 +72,12 @@ bool IfcParse::declaration::is(const std::string& name) const {
         return true;
     }
 
-    if (this->as_entity() && this->as_entity()->supertype()) {
+    if ((this->as_entity() != nullptr) && (this->as_entity()->supertype() != nullptr)) {
         return this->as_entity()->supertype()->is(name);
     }
-    if (this->as_type_declaration()) {
+    if (this->as_type_declaration() != nullptr) {
         const IfcParse::named_type* nt = this->as_type_declaration()->declared_type()->as_named_type();
-        if (nt) {
+        if (nt != nullptr) {
             return nt->is(name);
         }
     }
@@ -90,12 +90,12 @@ bool IfcParse::declaration::is(const IfcParse::declaration& decl) const {
         return true;
     }
 
-    if (this->as_entity() && this->as_entity()->supertype()) {
+    if ((this->as_entity() != nullptr) && (this->as_entity()->supertype() != nullptr)) {
         return this->as_entity()->supertype()->is(decl);
     }
-    if (this->as_type_declaration()) {
+    if (this->as_type_declaration() != nullptr) {
         const IfcParse::named_type* nt = this->as_type_declaration()->declared_type()->as_named_type();
-        if (nt) {
+        if (nt != nullptr) {
             return nt->is(decl);
         }
     }
@@ -129,16 +129,16 @@ IfcParse::schema_definition::schema_definition(const std::string& name, const st
     for (std::vector<const declaration*>::iterator it = declarations_.begin(); it != declarations_.end(); ++it) {
         (**it).schema_ = this;
 
-        if ((**it).as_type_declaration()) {
+        if ((**it).as_type_declaration() != nullptr) {
             type_declarations_.push_back((**it).as_type_declaration());
         }
-        if ((**it).as_select_type()) {
+        if ((**it).as_select_type() != nullptr) {
             select_types_.push_back((**it).as_select_type());
         }
-        if ((**it).as_enumeration_type()) {
+        if ((**it).as_enumeration_type() != nullptr) {
             enumeration_types_.push_back((**it).as_enumeration_type());
         }
-        if ((**it).as_entity()) {
+        if ((**it).as_entity() != nullptr) {
             entities_.push_back((**it).as_entity());
         }
     }
@@ -153,7 +153,7 @@ IfcParse::schema_definition::~schema_definition() {
 }
 
 IfcUtil::IfcBaseClass* IfcParse::schema_definition::instantiate(IfcEntityInstanceData* data) const {
-    if (factory_) {
+    if (factory_ != nullptr) {
         return (*factory_)(data);
     }
     return new IfcUtil::IfcLateBoundEntity(data->type(), data);

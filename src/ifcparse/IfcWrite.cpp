@@ -145,7 +145,7 @@ class StringBuilderVisitor : public boost::static_visitor<void> {
     }
     void operator()(const IfcUtil::IfcBaseClass* const& i) {
         const IfcEntityInstanceData& e = i->data();
-        if (!e.type()->as_entity()) {
+        if (e.type()->as_entity() == nullptr) {
             data << e.toString(upper);
         } else {
             data << "#" << e.id();
@@ -309,7 +309,7 @@ void IfcWriteArgument::set(const aggregate_of_aggregate_of_instance::ptr& v) {
 
 // Overload to detect null values
 void IfcWriteArgument::set(IfcUtil::IfcBaseInterface* const& v) {
-    if (v) {
+    if (v != nullptr) {
         container = v->as<IfcUtil::IfcBaseClass>();
     } else {
         container = boost::blank();

@@ -62,14 +62,14 @@
 #include <boost/optional.hpp>
 
 void aggregate_of_instance::push(IfcUtil::IfcBaseClass* l) {
-    if (l) {
+    if (l != nullptr) {
         ls.push_back(l);
     }
 }
 void aggregate_of_instance::push(const aggregate_of_instance::ptr& l) {
     if (l) {
         for (it i = l->begin(); i != l->end(); ++i) {
-            if (*i) {
+            if (*i != nullptr) {
                 ls.push_back(*i);
             }
         }
@@ -253,23 +253,23 @@ IfcUtil::ArgumentType IfcUtil::from_parameter_type(const IfcParse::parameter_typ
     const IfcParse::named_type* nt = pt->as_named_type();
     const IfcParse::simple_type* st = pt->as_simple_type();
 
-    if (at) {
+    if (at != nullptr) {
         return make_aggregate(from_parameter_type(at->type_of_element()));
     }
-    if (nt) {
-        if (nt->declared_type()->as_entity()) {
+    if (nt != nullptr) {
+        if (nt->declared_type()->as_entity() != nullptr) {
             return IfcUtil::Argument_ENTITY_INSTANCE;
         }
-        if (nt->declared_type()->as_enumeration_type()) {
+        if (nt->declared_type()->as_enumeration_type() != nullptr) {
             return IfcUtil::Argument_ENUMERATION;
         }
-        if (nt->declared_type()->as_select_type()) {
+        if (nt->declared_type()->as_select_type() != nullptr) {
             return IfcUtil::Argument_ENTITY_INSTANCE;
         }
-        if (nt->declared_type()->as_type_declaration()) {
+        if (nt->declared_type()->as_type_declaration() != nullptr) {
             return from_parameter_type(nt->declared_type()->as_type_declaration()->declared_type());
         }
-    } else if (st) {
+    } else if (st != nullptr) {
         switch (st->declared_type()) {
         case IfcParse::simple_type::binary_type:
             return IfcUtil::Argument_BINARY;
@@ -336,7 +336,7 @@ IFC_PARSE_API bool IfcUtil::path::rename_file(const std::string& old_filename, c
 }
 
 IFC_PARSE_API bool IfcUtil::path::delete_file(const std::string& filename) {
-    return std::remove(filename.c_str());
+    return std::remove(filename.c_str()) != 0;
 }
 
 #endif
