@@ -92,17 +92,15 @@ class pure_impure_helper {
     char peek() {
         if (pure_) {
             return stream_->peek_at(pointer_);
-        } else {
-            return stream_->Peek();
         }
+        return stream_->Peek();
     }
 
     unsigned int tell() {
         if (pure_) {
             return pointer_;
-        } else {
-            return stream_->Tell();
         }
+        return stream_->Tell();
     }
 
     void increment() {
@@ -206,27 +204,26 @@ class pure_impure_helper {
             if (builder_.empty()) {
                 static std::string empty;
                 return empty;
-            } else {
-                auto it = std::max_element(builder_.begin(), builder_.end());
-                if (*it <= 0x7e) {
-                    std::string r(builder_.begin(), builder_.end());
-                    return r;
-                } else {
-                    return IfcUtil::convert_utf8(builder_);
-                }
             }
-        } else if (mode == IfcParse::IfcCharacterDecoder::SUBSTITUTE) {
+            auto it = std::max_element(builder_.begin(), builder_.end());
+            if (*it <= 0x7e) {
+                std::string r(builder_.begin(), builder_.end());
+                return r;
+            }
+            return IfcUtil::convert_utf8(builder_);
+        }
+        if (mode == IfcParse::IfcCharacterDecoder::SUBSTITUTE) {
             std::string r;
             r.reserve(builder_.size());
             std::transform(builder_.begin(), builder_.end(), std::back_inserter(r), [&substitution_character](wchar_t c) {
                 if (c >= 0x20 && c <= 0x7e) {
                     return (char)c;
-                } else {
-                    return substitution_character;
                 }
+                return substitution_character;
             });
             return r;
-        } else if (mode == IfcParse::IfcCharacterDecoder::ESCAPE) {
+        }
+        if (mode == IfcParse::IfcCharacterDecoder::ESCAPE) {
             std::stringstream str;
             str << std::hex << std::setw(4) << std::setfill('0');
             std::for_each(builder_.begin(), builder_.end(), [&str](wchar_t c) {
@@ -237,9 +234,8 @@ class pure_impure_helper {
                 }
             });
             return str.str();
-        } else {
-            throw IfcParse::IfcException("Invalid conversion mode");
         }
+        throw IfcParse::IfcException("Invalid conversion mode");
     }
 };
 } // namespace

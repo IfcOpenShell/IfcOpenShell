@@ -86,9 +86,8 @@ class IFC_PARSE_API IfcEntityInstanceData {
         }
         if (type_->as_entity()) {
             return type_->as_entity()->attribute_count();
-        } else {
-            return 1;
         }
+        return 1;
     }
 
     void clearArguments();

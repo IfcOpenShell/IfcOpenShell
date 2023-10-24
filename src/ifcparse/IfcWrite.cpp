@@ -281,9 +281,8 @@ unsigned int IfcWriteArgument::size() const {
     const int size = container.apply_visitor(v);
     if (size == -1) {
         throw IfcParse::IfcException("Invalid cast");
-    } else {
-        return size;
     }
+    return size;
 }
 
 IfcUtil::ArgumentType IfcWriteArgument::type() const {

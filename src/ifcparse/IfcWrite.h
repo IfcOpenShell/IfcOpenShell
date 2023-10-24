@@ -122,9 +122,8 @@ class IFC_PARSE_API IfcWriteArgument : public Argument {
     const T& as() const {
         if (const T* val = boost::get<T>(&container)) {
             return *val;
-        } else {
-            throw IfcParse::IfcException("Invalid cast");
         }
+        throw IfcParse::IfcException("Invalid cast");
     }
 
     template <typename T>
