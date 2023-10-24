@@ -38,17 +38,12 @@
 #include "ifc_parse_api.h"
 #include "IfcBaseClass.h"
 #include "IfcCharacterDecoder.h"
-#include "IfcLogger.h"
 #include "IfcSpfStream.h"
-#include "macros.h"
 
 #include <boost/dynamic_bitset.hpp>
 #include <boost/shared_ptr.hpp>
 #include <cstring>
-#include <fstream>
 #include <iostream>
-#include <map>
-#include <sstream>
 #include <string>
 #include <vector>
 

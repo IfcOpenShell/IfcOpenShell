@@ -22,6 +22,7 @@
 #ifdef WITH_IFCXML
 
 #include "IfcFile.h"
+#include "IfcLogger.h"
 
 #include <boost/algorithm/string.hpp>
 #include <boost/range/adaptor/transformed.hpp>

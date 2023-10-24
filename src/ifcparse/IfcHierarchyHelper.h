@@ -29,6 +29,7 @@
 #define IFCHIERARCHYHELPER_H
 
 #include "ifc_parse_api.h"
+#include "IfcLogger.h"
 
 #include <map>
 

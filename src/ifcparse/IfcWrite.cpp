@@ -20,8 +20,6 @@
 #include "IfcWrite.h"
 
 #include "IfcCharacterDecoder.h"
-#include "IfcFile.h"
-#include "IfcParse.h"
 
 #include <boost/algorithm/string.hpp>
 #include <iomanip>

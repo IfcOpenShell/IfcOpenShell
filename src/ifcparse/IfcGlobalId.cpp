@@ -19,9 +19,7 @@
 
 #include "IfcGlobalId.h"
 
-#include "IfcBaseClass.h"
 #include "IfcException.h"
-#include "IfcLogger.h"
 
 #include <algorithm>
 #include <boost/lexical_cast.hpp>
