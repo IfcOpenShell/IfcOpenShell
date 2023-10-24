@@ -62,7 +62,7 @@ template <>
 const std::array<std::basic_string<wchar_t>, 5> severity_strings<wchar_t>::value = {L"Performance", L"Debug", L"Notice", L"Warning", L"Error"};
 
 template <typename T>
-void plain_text_message(T& os, const boost::optional<IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
+void plain_text_message(T& os, const boost::optional<const IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
     os << "[" << severity_strings<typename T::char_type>::value[type] << "] ";
     os << "[" << get_time(type <= Logger::LOG_PERF).c_str() << "] ";
     if (current_product) {
@@ -87,7 +87,7 @@ std::basic_string<T> string_as(const std::string& s) {
 }
 
 template <typename T>
-void json_message(T& os, const boost::optional<IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
+void json_message(T& os, const boost::optional<const IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
     boost::property_tree::basic_ptree<std::basic_string<typename T::char_type>, std::basic_string<typename T::char_type>> pt;
 
     // @todo this is crazy
@@ -112,7 +112,7 @@ void json_message(T& os, const boost::optional<IfcUtil::IfcBaseClass*>& current_
 }
 } // namespace
 
-void Logger::SetProduct(boost::optional<IfcUtil::IfcBaseClass*> product) {
+void Logger::SetProduct(boost::optional<const IfcUtil::IfcBaseClass*> product) {
     if (verbosity <= LOG_DEBUG && product) {
         Message(LOG_DEBUG, "Begin processing", *product);
     }
@@ -246,7 +246,7 @@ std::stringstream Logger::log_stream;
 Logger::Severity Logger::verbosity = Logger::LOG_NOTICE;
 Logger::Severity Logger::max_severity = Logger::LOG_NOTICE;
 Logger::Format Logger::format = Logger::FMT_PLAIN;
-boost::optional<IfcUtil::IfcBaseClass*> Logger::current_product;
+boost::optional<const IfcUtil::IfcBaseClass*> Logger::current_product;
 boost::optional<long long> Logger::first_timepoint;
 std::map<std::string, double> Logger::performance_statistics;
 std::map<std::string, double> Logger::performance_signal_start;

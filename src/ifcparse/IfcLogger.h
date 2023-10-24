@@ -60,7 +60,7 @@ class IFC_PARSE_API Logger {
 
     static Severity verbosity;
     static Format format;
-    static boost::optional<IfcUtil::IfcBaseClass*> current_product;
+    static boost::optional<const IfcUtil::IfcBaseClass*> current_product;
     static Severity max_severity;
 
     static boost::optional<long long> first_timepoint;
@@ -70,7 +70,7 @@ class IFC_PARSE_API Logger {
     static bool print_perf_stats_on_element;
 
   public:
-    static void SetProduct(boost::optional<IfcUtil::IfcBaseClass*> product);
+    static void SetProduct(boost::optional<const IfcUtil::IfcBaseClass*> product);
 
     /// Determines to what stream respectively progress and errors are logged
     static void SetOutput(std::wostream* l1, std::wostream* l2);
