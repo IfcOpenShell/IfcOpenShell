@@ -23,15 +23,12 @@
 #include "ifc_parse_api.h"
 #include "IfcBaseClass.h"
 
-#include <algorithm>
 #include <boost/optional.hpp>
 #include <boost/scope_exit.hpp>
 #include <exception>
 #include <map>
-#include <set>
 #include <sstream>
 #include <string>
-#include <vector>
 
 class IFC_PARSE_API Logger {
   public:

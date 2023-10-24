@@ -20,6 +20,7 @@
 #include "IfcSpfHeader.h"
 
 #include "IfcFile.h"
+#include "IfcLogger.h"
 
 static const char* const ISO_10303_21 = "ISO-10303-21";
 static const char* const HEADER = "HEADER";

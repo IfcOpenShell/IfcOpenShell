@@ -21,6 +21,8 @@
 
 #include "IfcBaseClass.h"
 
+#include <map>
+
 #ifdef HAS_SCHEMA_2x3
 #include "Ifc2x3.h"
 #endif
@@ -57,8 +59,6 @@
 #ifdef HAS_SCHEMA_4x3_add2
 #include "Ifc4x3_add2.h"
 #endif
-
-#include <map>
 
 bool IfcParse::declaration::is(const std::string& name) const {
     const std::string* name_ptr = &name;

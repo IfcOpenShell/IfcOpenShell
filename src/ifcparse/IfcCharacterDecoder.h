@@ -29,7 +29,6 @@
 
 #include "IfcSpfStream.h"
 
-#include <sstream>
 #include <string>
 
 namespace IfcUtil {

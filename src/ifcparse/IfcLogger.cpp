@@ -20,7 +20,6 @@
 #include "IfcLogger.h"
 
 #include "Argument.h"
-#include "IfcException.h"
 
 #include <algorithm>
 #include <boost/algorithm/string/replace.hpp>

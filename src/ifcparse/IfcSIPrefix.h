@@ -21,7 +21,8 @@
 #define IFCSIPREFIX
 
 #include "ifc_parse_api.h"
-#include "IfcParse.h"
+
+#include <string>
 
 namespace IfcParse {
 IFC_PARSE_API double IfcSIPrefixToValue(const std::string& prefix);

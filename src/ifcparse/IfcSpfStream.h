@@ -29,7 +29,6 @@
 
 #include "ifc_parse_api.h"
 
-#include <fstream>
 #include <string>
 
 #ifdef USE_MMAP

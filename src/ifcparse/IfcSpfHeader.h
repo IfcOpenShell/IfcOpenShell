@@ -21,7 +21,6 @@
 #define IFCSPFHEADER_H
 
 #include "ifc_parse_api.h"
-#include "IfcSpfStream.h"
 #include "IfcWrite.h"
 
 namespace IfcParse {

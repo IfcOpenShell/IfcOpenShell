@@ -60,7 +60,6 @@
 #include <algorithm>
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/optional.hpp>
-#include <iostream>
 
 void aggregate_of_instance::push(IfcUtil::IfcBaseClass* l) {
     if (l) {
