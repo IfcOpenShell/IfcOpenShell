@@ -154,13 +154,13 @@ class IFC_PARSE_API IfcBaseType : public IfcBaseClass {
 namespace IfcUtil {
 template <typename T>
 T IfcBaseEntity::get_value(const std::string& name) const {
-    auto attr = get(name);
+    auto* attr = get(name);
     return (T)*attr;
 }
 
 template <typename T>
 T IfcBaseEntity::get_value(const std::string& name, const T& default_value) const {
-    auto attr = get(name);
+    auto* attr = get(name);
     if (attr->isNull()) {
         return default_value;
     }
