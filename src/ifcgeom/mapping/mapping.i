@@ -149,11 +149,7 @@ BIND(IfcAxis1Placement);
 BIND(IfcCartesianTransformationOperator2D);
 // IfcCartesianTransformationOperator3DnonUniform included
 BIND(IfcCartesianTransformationOperator3D);
-// BIND(IfcObjectPlacement);
-BIND(IfcLocalPlacement); // -> matrix4
-#if defined SCHEMA_HAS_IfcLinearPlacement
-BIND(IfcLinearPlacement); // -> matrix4
-#endif
+BIND(IfcObjectPlacement); // -> matrix4
 BIND(IfcVector);
 
 // BIND(IfcColourRgb);
