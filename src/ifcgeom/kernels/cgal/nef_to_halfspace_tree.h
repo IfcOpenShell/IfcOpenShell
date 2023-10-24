@@ -695,6 +695,9 @@ public:
 											if (!std::any_of(edges_i.begin(), edges_i.end(), [&sc](CGAL::Segment_3<Kernel>& s) {
 												// When intersecting with the boundary of a facet we likely multiple co-planar facets. Exclude intersection.
 												auto xy = CGAL::intersection(s, *sc.segment);
+												if (!xy) {
+													return false;
+												}
 												Segment_collector<Kernel> scy;
 												boost::apply_visitor(scy)(*xy);
 												return (bool)scy.segment;
