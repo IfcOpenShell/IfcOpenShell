@@ -200,14 +200,14 @@ std::vector<T> split(const std::string& value) {
 }
 
 Argument* parse_attribute_value(const IfcParse::parameter_type* ty, const std::string& value) {
-    auto v = new IfcWrite::IfcWriteArgument();
+    auto* v = new IfcWrite::IfcWriteArgument();
 
     auto cpp_type = IfcUtil::from_parameter_type(ty);
 
     if (cpp_type == IfcUtil::Argument_STRING) {
         v->set(value);
     } else if (cpp_type == IfcUtil::Argument_ENUMERATION) {
-        auto enum_type = ty->as_named_type()->declared_type()->as_enumeration_type();
+        const auto* enum_type = ty->as_named_type()->declared_type()->as_enumeration_type();
 
         std::vector<std::string>::const_iterator it = std::find(
             enum_type->enumeration_items().begin(),
@@ -248,7 +248,7 @@ static void end_element(void* user, const xmlChar* tag) {
     if (!state->stack.empty() && state->stack.back().ntype() == stack_node::node_aggregate) {
         const auto& back = state->stack.back();
         auto& elems = state->stack.back().aggregate_elements;
-        auto li = new IfcParse::ArgumentList(elems.size());
+        auto* li = new IfcParse::ArgumentList(elems.size());
         size_t i = 0;
         for (auto& elem : elems) {
             li->arguments()[i++] = elem;
@@ -289,7 +289,7 @@ static void process_characters(void* user, const xmlChar* ch, int len) {
     }
 
     if (!state->stack.empty() && state->stack.back().inst() != nullptr && (state->stack.back().inst()->declaration().as_type_declaration() != nullptr)) {
-        auto pt = state->stack.back().inst()->declaration().as_type_declaration()->declared_type();
+        const auto* pt = state->stack.back().inst()->declaration().as_type_declaration()->declared_type();
         Argument* val = nullptr;
         try {
             val = parse_attribute_value(pt, txt);
@@ -323,17 +323,17 @@ static void process_characters(void* user, const xmlChar* ch, int len) {
             Logger::Error("Unrecognized header entry " + tagname);
         }
     } else if (state_type == stack_node::node_instance_attribute) {
-        auto pt = state->stack.back().inst()->declaration().as_entity()->attribute_by_index(state->stack.back().idx())->type_of_attribute();
+        const auto* pt = state->stack.back().inst()->declaration().as_entity()->attribute_by_index(state->stack.back().idx())->type_of_attribute();
         auto cpp_type = IfcUtil::from_parameter_type(pt);
         if (cpp_type != IfcUtil::Argument_ENTITY_INSTANCE) {
-            auto val = parse_attribute_value(pt, txt);
+            auto* val = parse_attribute_value(pt, txt);
             if (val != nullptr) {
                 state->stack.back().inst()->data().setArgument(state->stack.back().idx(), val);
             }
         }
     } else if (state_type == stack_node::node_aggregate_element) {
-        auto pt = state->stack.back().aggregate_elem_type();
-        auto val = parse_attribute_value(pt, txt);
+        const auto* pt = state->stack.back().aggregate_elem_type();
+        auto* val = parse_attribute_value(pt, txt);
         if (val != nullptr) {
             (*(state->stack.rbegin() + 1)).aggregate_elements.push_back(val);
         }
@@ -453,7 +453,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                 }
             }
 
-            auto untyped = new IfcEntityInstanceData(decl);
+            auto* untyped = new IfcEntityInstanceData(decl);
 
             const IfcParse::entity* entity = decl->as_entity();
             if (entity != nullptr) {
@@ -464,8 +464,8 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
 
                     auto idx = entity->attribute_index(pair.first);
                     if (idx != -1) {
-                        auto attr = entity->attribute_by_index(idx);
-                        auto val = parse_attribute_value(attr->type_of_attribute(), pair.second);
+                        const auto* attr = entity->attribute_by_index(idx);
+                        auto* val = parse_attribute_value(attr->type_of_attribute(), pair.second);
                         if (val != nullptr) {
                             untyped->setArgument(idx, val);
                         }
@@ -587,7 +587,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                         }
                     } else {
                         if (IfcUtil::from_parameter_type(attribute_type) == IfcUtil::Argument_ENTITY_INSTANCE) {
-                            if (auto entity = attribute_type->as_named_type()->declared_type()->as_entity()) {
+                            if (const auto* entity = attribute_type->as_named_type()->declared_type()->as_entity()) {
                                 auto inst_or_reference = create_instance(entity);
                                 Argument* attr;
                                 IfcUtil::IfcBaseClass* newinst;

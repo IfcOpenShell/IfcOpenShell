@@ -112,10 +112,10 @@ bool IfcParse::named_type::is(const IfcParse::declaration& decl) const {
 }
 
 IfcParse::entity::~entity() {
-    for (auto attribute : attributes_) {
+    for (const auto* attribute : attributes_) {
         delete attribute;
     }
-    for (auto inverse_attribute : inverse_attributes_) {
+    for (const auto* inverse_attribute : inverse_attributes_) {
         delete inverse_attribute;
     }
 }
