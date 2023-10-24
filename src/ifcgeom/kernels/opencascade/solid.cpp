@@ -23,6 +23,7 @@
 #include <BRepBuilderAPI_MakeFace.hxx>
 #include <BRepPrimAPI_MakePrism.hxx>
 #include <BRepAlgoAPI_Common.hxx>
+#include <ShapeFix_Solid.hxx>
 
 using namespace ifcopenshell::geometry;
 using namespace ifcopenshell::geometry::kernels;
@@ -31,7 +32,7 @@ using namespace IfcGeom::util;
 
 bool OpenCascadeKernel::convert(const taxonomy::solid::ptr solid, TopoDS_Shape& result) {
 	BRep_Builder BB;
-	TopoDS_Solid S;
+	TopoDS_Shape S;
 
 	if (solid->instance->declaration().is("IfcHalfSpaceSolid")) {
 		// halfspace
@@ -67,12 +68,16 @@ bool OpenCascadeKernel::convert(const taxonomy::solid::ptr solid, TopoDS_Shape& 
 	}
 
 	for (auto& s : solid->children) {
-		if (S.IsNull()) {
-			BB.MakeSolid(S);
+		TopoDS_Shape shl;
+		convert(s, shl);
+		if (shl.ShapeType() == TopAbs_SHELL) {
+			ShapeFix_Solid solid;
+			S = solid.SolidFromShell(TopoDS::Shell(shl));
+		} else if (solid->children.size() == 1) {
+			S = shl;
+		} else {
+			throw std::runtime_error("Unexpected configuration of subshapes");
 		}
-		TopoDS_Shell shl;
-		convert(((taxonomy::shell::ptr)s), shl);
-		BB.Add(S, shl);
 	}
 	if (!S.IsNull()) {
 		result = S;
