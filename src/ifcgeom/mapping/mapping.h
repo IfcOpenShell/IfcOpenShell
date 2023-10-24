@@ -4,6 +4,7 @@
 #include "../abstract_mapping.h"
 #include "../../ifcparse/macros.h"
 #include "../../ifcparse/IfcFile.h"
+#include "../../ifcparse/IfcLogger.h"
 
 #define INCLUDE_SCHEMA(x) STRINGIFY(../../ifcparse/x.h)
 #include INCLUDE_SCHEMA(IfcSchema)

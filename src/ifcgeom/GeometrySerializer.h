@@ -22,6 +22,7 @@
 
 #include "../ifcgeom/Serializer.h"
 #include "../ifcgeom/IfcGeomElement.h"
+#include <fstream>
 
 namespace ifcopenshell {
 namespace geometry {

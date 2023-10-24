@@ -28,6 +28,7 @@
 
 #include "../../ifcparse/IfcSIPrefix.h"
 #include "../../ifcparse/utils.h"
+#include "../../ifcparse/IfcLogger.h"
 
 using boost::property_tree::ptree;
 
