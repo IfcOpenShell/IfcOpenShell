@@ -355,9 +355,8 @@ Token IfcSpfLexer::Next() {
     }
     if (len) {
         return GeneralTokenPtr(this, pos, stream->Tell());
-    } else {
-        return NoneTokenPtr();
     }
+    return NoneTokenPtr();
 }
 
 bool IfcSpfStream::is_eof_at(unsigned int local_ptr) {
@@ -392,13 +391,13 @@ void IfcSpfLexer::TokenString(unsigned int offset, std::string& buffer) {
         stream->increment_at(offset);
         if (c == ' ' || c == '\r' || c == '\n' || c == '\t') {
             continue;
-        } else if (c == '\'') {
+        }
+        if (c == '\'') {
             // todo, make decoder use local offset ptr
             buffer = decoder->get(offset);
             break;
-        } else {
-            buffer.push_back(c);
         }
+        buffer.push_back(c);
     }
 }
 
@@ -574,14 +573,13 @@ boost::logic::tribool TokenFunc::asLogical(const Token& t) {
     if (t.type != Token_BOOL) {
         throw IfcInvalidTokenException(t.startPos, toString(t), "boolean");
     }
-
     if (t.value_int == 0) {
         return false;
-    } else if (t.value_int == 1) {
-        return true;
-    } else {
-        return boost::logic::indeterminate;
     }
+    if (t.value_int == 1) {
+        return true;
+    }
+    return boost::logic::indeterminate;
 }
 
 double TokenFunc::asFloat(const Token& t) {
@@ -589,13 +587,12 @@ double TokenFunc::asFloat(const Token& t) {
     if (t.type == Token_INT) {
         /// NB: We are being more permissive here then allowed by the standard
         return t.value_int;
-    } else // ----> continues beyond preprocessor directive
+    } // ----> continues beyond preprocessor directive
 #endif
-        if (t.type == Token_FLOAT) {
+    if (t.type == Token_FLOAT) {
         return t.value_double;
-    } else {
-        throw IfcInvalidTokenException(t.startPos, toString(t), "real");
     }
+    throw IfcInvalidTokenException(t.startPos, toString(t), "real");
 }
 
 const std::string& TokenFunc::asStringRef(const Token& t) {
@@ -615,9 +612,8 @@ const std::string& TokenFunc::asStringRef(const Token& t) {
 std::string TokenFunc::asString(const Token& t) {
     if (isString(t) || isEnumeration(t) || isBinary(t)) {
         return asStringRef(t);
-    } else {
-        throw IfcInvalidTokenException(t.startPos, toString(t), "string");
     }
+    throw IfcInvalidTokenException(t.startPos, toString(t), "string");
 }
 
 boost::dynamic_bitset<> TokenFunc::asBinary(const Token& t) {
@@ -703,9 +699,8 @@ class vector_or_array {
     size_t index() const {
         if (vector_) {
             return vector_->size();
-        } else {
-            return index_;
         }
+        return index_;
     }
 };
 } // namespace
@@ -935,27 +930,35 @@ ArgumentList::~ArgumentList() {
 IfcUtil::ArgumentType TokenArgument::type() const {
     if (TokenFunc::isInt(token)) {
         return IfcUtil::Argument_INT;
-    } else if (TokenFunc::isBool(token)) {
-        return IfcUtil::Argument_BOOL;
-    } else if (TokenFunc::isLogical(token)) {
-        return IfcUtil::Argument_LOGICAL;
-    } else if (TokenFunc::isFloat(token)) {
-        return IfcUtil::Argument_DOUBLE;
-    } else if (TokenFunc::isString(token)) {
-        return IfcUtil::Argument_STRING;
-    } else if (TokenFunc::isEnumeration(token)) {
-        return IfcUtil::Argument_ENUMERATION;
-    } else if (TokenFunc::isIdentifier(token)) {
-        return IfcUtil::Argument_ENTITY_INSTANCE;
-    } else if (TokenFunc::isBinary(token)) {
-        return IfcUtil::Argument_BINARY;
-    } else if (TokenFunc::isOperator(token, '$')) {
-        return IfcUtil::Argument_NULL;
-    } else if (TokenFunc::isOperator(token, '*')) {
-        return IfcUtil::Argument_DERIVED;
-    } else {
-        return IfcUtil::Argument_UNKNOWN;
     }
+    if (TokenFunc::isBool(token)) {
+        return IfcUtil::Argument_BOOL;
+    }
+    if (TokenFunc::isLogical(token)) {
+        return IfcUtil::Argument_LOGICAL;
+    }
+    if (TokenFunc::isFloat(token)) {
+        return IfcUtil::Argument_DOUBLE;
+    }
+    if (TokenFunc::isString(token)) {
+        return IfcUtil::Argument_STRING;
+    }
+    if (TokenFunc::isEnumeration(token)) {
+        return IfcUtil::Argument_ENUMERATION;
+    }
+    if (TokenFunc::isIdentifier(token)) {
+        return IfcUtil::Argument_ENTITY_INSTANCE;
+    }
+    if (TokenFunc::isBinary(token)) {
+        return IfcUtil::Argument_BINARY;
+    }
+    if (TokenFunc::isOperator(token, '$')) {
+        return IfcUtil::Argument_NULL;
+    }
+    if (TokenFunc::isOperator(token, '*')) {
+        return IfcUtil::Argument_DERIVED;
+    }
+    return IfcUtil::Argument_UNKNOWN;
 }
 
 //
@@ -973,9 +976,8 @@ Argument* TokenArgument::operator[](unsigned int /*i*/) const { throw IfcExcepti
 std::string TokenArgument::toString(bool upper) const {
     if (upper && TokenFunc::isString(token)) {
         return IfcWrite::IfcCharacterEncoder(TokenFunc::asString(token));
-    } else {
-        return TokenFunc::toString(token);
     }
+    return TokenFunc::toString(token);
 }
 bool TokenArgument::isNull() const { return TokenFunc::isOperator(token, '$'); }
 
@@ -1148,9 +1150,8 @@ IfcEntityInstanceData::~IfcEntityInstanceData() {
 unsigned IfcEntityInstanceData::set_id(boost::optional<unsigned> i) {
     if (i) {
         return id_ = *i;
-    } else {
-        return id_ = file->FreshId();
     }
+    return id_ = file->FreshId();
 }
 
 //
@@ -1215,9 +1216,8 @@ IfcUtil::ArgumentType get_argument_type(const IfcParse::declaration* decl, size_
 
     if (pt == 0) {
         return IfcUtil::Argument_UNKNOWN;
-    } else {
-        return IfcUtil::from_parameter_type(pt);
     }
+    return IfcUtil::from_parameter_type(pt);
 }
 } // namespace
 
@@ -1246,12 +1246,10 @@ Argument* IfcEntityInstanceData::getArgument(size_t i) const {
     if (i < getArgumentCount()) {
         if (attributes_[i] == nullptr) {
             return &static_null_attribute;
-        } else {
-            return attributes_[i];
         }
-    } else {
-        throw IfcParse::IfcException("Attribute index out of range");
+        return attributes_[i];
     }
+    throw IfcParse::IfcException("Attribute index out of range");
 }
 
 class unregister_inverse_visitor {
@@ -1799,13 +1797,12 @@ class traversal_recorder {
     aggregate_of_instance::ptr get_list() const {
         if (mode_ == 0) {
             return list_;
-        } else {
-            aggregate_of_instance::ptr l(new aggregate_of_instance);
-            for (auto& p : instances_by_level_) {
-                l->push(p.second);
-            }
-            return l;
         }
+        aggregate_of_instance::ptr l(new aggregate_of_instance);
+        for (auto& p : instances_by_level_) {
+            l->push(p.second);
+        }
+        return l;
     }
 };
 
@@ -2415,9 +2412,8 @@ IfcUtil::IfcBaseClass* IfcFile::instance_by_guid(const std::string& guid) {
     entity_by_guid_t::const_iterator it = byguid.find(guid);
     if (it == byguid.end()) {
         throw IfcException("Instance with GlobalId '" + guid + "' not found");
-    } else {
-        return it->second;
     }
+    return it->second;
 }
 
 // FIXME: Test destructor to delete entity and arg allocations

@@ -133,49 +133,43 @@ void IfcSpfHeader::write(std::ostream& os) const {
 const FileDescription& IfcSpfHeader::file_description() const {
     if (_file_description) {
         return *_file_description;
-    } else {
-        throw IfcException("File description not set");
     }
+    throw IfcException("File description not set");
 }
 
 const FileName& IfcSpfHeader::file_name() const {
     if (_file_name) {
         return *_file_name;
-    } else {
-        throw IfcException("File name not set");
     }
+    throw IfcException("File name not set");
 }
 
 const FileSchema& IfcSpfHeader::file_schema() const {
     if (_file_schema) {
         return *_file_schema;
-    } else {
-        throw IfcException("File schema not set");
     }
+    throw IfcException("File schema not set");
 }
 
 FileDescription& IfcSpfHeader::file_description() {
     if (_file_description) {
         return *_file_description;
-    } else {
-        throw IfcException("File description not set");
     }
+    throw IfcException("File description not set");
 }
 
 FileName& IfcSpfHeader::file_name() {
     if (_file_name) {
         return *_file_name;
-    } else {
-        throw IfcException("File name not set");
     }
+    throw IfcException("File name not set");
 }
 
 FileSchema& IfcSpfHeader::file_schema() {
     if (_file_schema) {
         return *_file_schema;
-    } else {
-        throw IfcException("File schema not set");
     }
+    throw IfcException("File schema not set");
 }
 
 FileDescription::FileDescription(IfcFile* file) : HeaderEntity(FILE_DESCRIPTION, 2, file) {}

@@ -206,9 +206,8 @@ class IFC_PARSE_API IfcFile {
         aggregate_of_instance::ptr untyped_list = instances_by_type(&T::Class());
         if (untyped_list) {
             return untyped_list->as<T>();
-        } else {
-            return typename T::list::ptr(new typename T::list);
         }
+        return typename T::list::ptr(new typename T::list);
     }
 
     template <class T>
@@ -216,9 +215,8 @@ class IFC_PARSE_API IfcFile {
         aggregate_of_instance::ptr untyped_list = instances_by_type_excl_subtypes(&T::Class());
         if (untyped_list) {
             return untyped_list->as<T>();
-        } else {
-            return typename T::list::ptr(new typename T::list);
         }
+        return typename T::list::ptr(new typename T::list);
     }
 
     /// Returns all entities in the file that match the positional argument.

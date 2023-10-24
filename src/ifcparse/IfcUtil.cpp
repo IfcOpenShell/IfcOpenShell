@@ -222,25 +222,26 @@ void IfcUtil::IfcBaseClass::data(IfcEntityInstanceData* d) {
 }
 
 IfcUtil::ArgumentType IfcUtil::make_aggregate(IfcUtil::ArgumentType elem_type) {
-    if (elem_type == IfcUtil::Argument_INT) {
+    switch (elem_type) {
+    case IfcUtil::Argument_INT:
         return IfcUtil::Argument_AGGREGATE_OF_INT;
-    } else if (elem_type == IfcUtil::Argument_DOUBLE) {
+    case IfcUtil::Argument_DOUBLE:
         return IfcUtil::Argument_AGGREGATE_OF_DOUBLE;
-    } else if (elem_type == IfcUtil::Argument_STRING) {
+    case IfcUtil::Argument_STRING:
         return IfcUtil::Argument_AGGREGATE_OF_STRING;
-    } else if (elem_type == IfcUtil::Argument_BINARY) {
+    case IfcUtil::Argument_BINARY:
         return IfcUtil::Argument_AGGREGATE_OF_BINARY;
-    } else if (elem_type == IfcUtil::Argument_ENTITY_INSTANCE) {
+    case IfcUtil::Argument_ENTITY_INSTANCE:
         return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE;
-    } else if (elem_type == IfcUtil::Argument_AGGREGATE_OF_INT) {
+    case IfcUtil::Argument_AGGREGATE_OF_INT:
         return IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT;
-    } else if (elem_type == IfcUtil::Argument_AGGREGATE_OF_DOUBLE) {
+    case IfcUtil::Argument_AGGREGATE_OF_DOUBLE:
         return IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE;
-    } else if (elem_type == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
+    case IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE:
         return IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE;
-    } else if (elem_type == IfcUtil::Argument_EMPTY_AGGREGATE) {
+    case IfcUtil::Argument_EMPTY_AGGREGATE:
         return IfcUtil::Argument_AGGREGATE_OF_EMPTY_AGGREGATE;
-    } else {
+    default:
         return IfcUtil::Argument_UNKNOWN;
     }
 }
@@ -254,14 +255,18 @@ IfcUtil::ArgumentType IfcUtil::from_parameter_type(const IfcParse::parameter_typ
 
     if (at) {
         return make_aggregate(from_parameter_type(at->type_of_element()));
-    } else if (nt) {
+    }
+    if (nt) {
         if (nt->declared_type()->as_entity()) {
             return IfcUtil::Argument_ENTITY_INSTANCE;
-        } else if (nt->declared_type()->as_enumeration_type()) {
+        }
+        if (nt->declared_type()->as_enumeration_type()) {
             return IfcUtil::Argument_ENUMERATION;
-        } else if (nt->declared_type()->as_select_type()) {
+        }
+        if (nt->declared_type()->as_select_type()) {
             return IfcUtil::Argument_ENTITY_INSTANCE;
-        } else if (nt->declared_type()->as_type_declaration()) {
+        }
+        if (nt->declared_type()->as_type_declaration()) {
             return from_parameter_type(nt->declared_type()->as_type_declaration()->declared_type());
         }
     } else if (st) {

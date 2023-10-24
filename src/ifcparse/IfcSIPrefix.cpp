@@ -59,39 +59,53 @@
 double IfcParse::IfcSIPrefixToValue(const std::string& v) {
     if (v == "EXA") {
         return 1.e18;
-    } else if (v == "PETA") {
-        return 1.e15;
-    } else if (v == "TERA") {
-        return 1.e12;
-    } else if (v == "GIGA") {
-        return 1.e9;
-    } else if (v == "MEGA") {
-        return 1.e6;
-    } else if (v == "KILO") {
-        return 1.e3;
-    } else if (v == "HECTO") {
-        return 1.e2;
-    } else if (v == "DECA") {
-        return 1.e1;
-    } else if (v == "DECI") {
-        return 1.e-1;
-    } else if (v == "CENTI") {
-        return 1.e-2;
-    } else if (v == "MILLI") {
-        return 1.e-3;
-    } else if (v == "MICRO") {
-        return 1.e-6;
-    } else if (v == "NANO") {
-        return 1.e-9;
-    } else if (v == "PICO") {
-        return 1.e-12;
-    } else if (v == "FEMTO") {
-        return 1.e-15;
-    } else if (v == "ATTO") {
-        return 1.e-18;
-    } else {
-        return 1.;
     }
+    if (v == "PETA") {
+        return 1.e15;
+    }
+    if (v == "TERA") {
+        return 1.e12;
+    }
+    if (v == "GIGA") {
+        return 1.e9;
+    }
+    if (v == "MEGA") {
+        return 1.e6;
+    }
+    if (v == "KILO") {
+        return 1.e3;
+    }
+    if (v == "HECTO") {
+        return 1.e2;
+    }
+    if (v == "DECA") {
+        return 1.e1;
+    }
+    if (v == "DECI") {
+        return 1.e-1;
+    }
+    if (v == "CENTI") {
+        return 1.e-2;
+    }
+    if (v == "MILLI") {
+        return 1.e-3;
+    }
+    if (v == "MICRO") {
+        return 1.e-6;
+    }
+    if (v == "NANO") {
+        return 1.e-9;
+    }
+    if (v == "PICO") {
+        return 1.e-12;
+    }
+    if (v == "FEMTO") {
+        return 1.e-15;
+    }
+    if (v == "ATTO") {
+        return 1.e-18;
+    }
+    return 1.;
 }
 
 template <typename Schema>

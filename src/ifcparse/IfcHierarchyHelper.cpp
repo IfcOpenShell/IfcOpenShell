@@ -998,20 +998,19 @@ typename Schema::IfcGeometricRepresentationContext* IfcHierarchyHelper<Schema>::
     typename std::map<std::string, typename Schema::IfcGeometricRepresentationContext*>::const_iterator it = contexts.find(s);
     if (it != contexts.end()) {
         return it->second;
-    } else {
-        typename Schema::IfcProject* project = getSingle<typename Schema::IfcProject>();
-        if (!project) {
-            project = addProject();
-        }
-        auto project_contexts = project->RepresentationContexts();
-        typename Schema::IfcGeometricRepresentationContext* context = new typename Schema::IfcGeometricRepresentationContext(
-            boost::none, s, 3, 1e-5, addPlacement3d(), addDoublet<typename Schema::IfcDirection>(0, 1));
-        addEntity(context);
-        push_back_to_maybe_optional(project_contexts, context);
-
-        project->setRepresentationContexts(project_contexts);
-        return contexts[s] = context;
     }
+    typename Schema::IfcProject* project = getSingle<typename Schema::IfcProject>();
+    if (!project) {
+        project = addProject();
+    }
+    auto project_contexts = project->RepresentationContexts();
+    typename Schema::IfcGeometricRepresentationContext* context = new typename Schema::IfcGeometricRepresentationContext(
+        boost::none, s, 3, 1e-5, addPlacement3d(), addDoublet<typename Schema::IfcDirection>(0, 1));
+    addEntity(context);
+    push_back_to_maybe_optional(project_contexts, context);
+
+    project->setRepresentationContexts(project_contexts);
+    return contexts[s] = context;
 }
 
 #ifdef HAS_SCHEMA_2x3
