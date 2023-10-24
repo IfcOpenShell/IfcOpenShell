@@ -319,7 +319,7 @@ class IFC_PARSE_API entity : public declaration {
 
     const attribute* attribute_by_index_(size_t& index) const {
         const attribute* attr = 0;
-        if (supertype_) {
+        if (supertype_ != nullptr) {
             attr = supertype_->attribute_by_index_(index);
         }
         if (attr == 0) {
@@ -361,7 +361,7 @@ class IFC_PARSE_API entity : public declaration {
     const std::vector<const attribute*> all_attributes() const {
         std::vector<const attribute*> attrs;
         attrs.reserve(derived_.size());
-        if (supertype_) {
+        if (supertype_ != nullptr) {
             const std::vector<const attribute*> supertype_attrs = supertype_->all_attributes();
             std::copy(supertype_attrs.begin(), supertype_attrs.end(), std::back_inserter(attrs));
         }
@@ -371,7 +371,7 @@ class IFC_PARSE_API entity : public declaration {
 
     const std::vector<const inverse_attribute*> all_inverse_attributes() const {
         std::vector<const inverse_attribute*> attrs;
-        if (supertype_) {
+        if (supertype_ != nullptr) {
             const std::vector<const inverse_attribute*> supertype_inv_attrs = supertype_->all_inverse_attributes();
             std::copy(supertype_inv_attrs.begin(), supertype_inv_attrs.end(), std::back_inserter(attrs));
         }
@@ -389,7 +389,7 @@ class IFC_PARSE_API entity : public declaration {
 
     size_t attribute_count() const {
         size_t super_count = 0;
-        if (supertype_) {
+        if (supertype_ != nullptr) {
             super_count = supertype_->attribute_count();
         }
         return super_count + attributes_.size();

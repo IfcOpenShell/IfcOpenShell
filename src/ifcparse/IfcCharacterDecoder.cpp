@@ -135,16 +135,16 @@ class pure_impure_helper {
             if (EXPECTS_CHARACTER(parse_state)) {
                 builder_.push_back(IfcUtil::convert_codepage(codepage, current_char + 0x80));
                 parse_state = 0;
-            } else if (current_char == '\'' && !parse_state) {
+            } else if (current_char == '\'' && (parse_state == 0U)) {
                 parse_state = APOSTROPHE;
-            } else if (current_char == '\\' && !parse_state) {
+            } else if (current_char == '\\' && (parse_state == 0U)) {
                 parse_state = FIRST_SOLIDUS;
             } else if (current_char == '\\' && EXPECTS_SOLIDUS(parse_state)) {
-                if (parse_state & ALPHABET_DEFINITION ||
-                    parse_state & IGNORED_DIRECTIVE ||
-                    parse_state & ENDEXTENDED_0) {
+                if (((parse_state & ALPHABET_DEFINITION) != 0U) ||
+                    ((parse_state & IGNORED_DIRECTIVE) != 0U) ||
+                    ((parse_state & ENDEXTENDED_0) != 0U)) {
                     parse_state = hex = hex_count = 0;
-                } else if (parse_state & ENCOUNTERED_HEX) {
+                } else if ((parse_state & ENCOUNTERED_HEX) != 0U) {
                     parse_state += THIRD_SOLIDUS;
                     parse_state -= ENCOUNTERED_HEX;
                 } else {
@@ -173,8 +173,8 @@ class pure_impure_helper {
                 hex <<= 4;
                 parse_state += HEX((++hex_count));
                 hex += HEX_TO_INT(current_char);
-                if ((hex_count == 2 && !(parse_state & EXTENDED2)) ||
-                    (hex_count == 4 && !(parse_state & EXTENDED4)) ||
+                if ((hex_count == 2 && ((parse_state & EXTENDED2) == 0U)) ||
+                    (hex_count == 4 && ((parse_state & EXTENDED4) == 0U)) ||
                     (hex_count == 8)) {
                     builder_.push_back(hex);
                     if (hex_count == 2) {
@@ -185,9 +185,9 @@ class pure_impure_helper {
                     }
                     hex = hex_count = 0;
                 }
-            } else if (parse_state && !(
-                                          (current_char == '\\' && parse_state == FIRST_SOLIDUS) ||
-                                          (current_char == '\'' && parse_state == APOSTROPHE))) {
+            } else if ((parse_state != 0U) && !(
+                                                  (current_char == '\\' && parse_state == FIRST_SOLIDUS) ||
+                                                  (current_char == '\'' && parse_state == APOSTROPHE))) {
                 if (parse_state == APOSTROPHE && current_char != '\'') {
                     break;
                 }
@@ -255,16 +255,16 @@ void IfcCharacterDecoder::skip() {
     while ((current_char = file->Peek()) != 0) {
         if (EXPECTS_CHARACTER(parse_state)) {
             parse_state = 0;
-        } else if (current_char == '\'' && !parse_state) {
+        } else if (current_char == '\'' && (parse_state == 0U)) {
             parse_state = APOSTROPHE;
-        } else if (current_char == '\\' && !parse_state) {
+        } else if (current_char == '\\' && (parse_state == 0U)) {
             parse_state = FIRST_SOLIDUS;
         } else if (current_char == '\\' && EXPECTS_SOLIDUS(parse_state)) {
-            if (parse_state & ALPHABET_DEFINITION ||
-                parse_state & IGNORED_DIRECTIVE ||
-                parse_state & ENDEXTENDED_0) {
+            if (((parse_state & ALPHABET_DEFINITION) != 0U) ||
+                ((parse_state & IGNORED_DIRECTIVE) != 0U) ||
+                ((parse_state & ENDEXTENDED_0) != 0U)) {
                 parse_state = hex_count = 0;
-            } else if (parse_state & ENCOUNTERED_HEX) {
+            } else if ((parse_state & ENCOUNTERED_HEX) != 0U) {
                 parse_state += THIRD_SOLIDUS;
                 parse_state -= ENCOUNTERED_HEX;
             } else {
@@ -290,8 +290,8 @@ void IfcCharacterDecoder::skip() {
             parse_state += PAGE;
         } else if (IS_HEXADECIMAL(current_char) && EXPECTS_HEX(parse_state)) {
             parse_state += HEX((++hex_count));
-            if ((hex_count == 2 && !(parse_state & EXTENDED2)) ||
-                (hex_count == 4 && !(parse_state & EXTENDED4)) ||
+            if ((hex_count == 2 && ((parse_state & EXTENDED2) == 0U)) ||
+                (hex_count == 4 && ((parse_state & EXTENDED4) == 0U)) ||
                 (hex_count == 8)) {
                 if (hex_count == 2) {
                     parse_state = 0;
@@ -301,9 +301,9 @@ void IfcCharacterDecoder::skip() {
                 }
                 hex_count = 0;
             }
-        } else if (parse_state && !(
-                                      (current_char == '\\' && parse_state == FIRST_SOLIDUS) ||
-                                      (current_char == '\'' && parse_state == APOSTROPHE))) {
+        } else if ((parse_state != 0U) && !(
+                                              (current_char == '\\' && parse_state == FIRST_SOLIDUS) ||
+                                              (current_char == '\'' && parse_state == APOSTROPHE))) {
             if (parse_state == APOSTROPHE && current_char != '\'') {
                 break;
             }

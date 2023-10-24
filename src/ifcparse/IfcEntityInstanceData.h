@@ -84,7 +84,7 @@ class IFC_PARSE_API IfcEntityInstanceData {
         if (type_ == 0) {
             return 0;
         }
-        if (type_->as_entity()) {
+        if (type_->as_entity() != nullptr) {
             return type_->as_entity()->attribute_count();
         }
         return 1;

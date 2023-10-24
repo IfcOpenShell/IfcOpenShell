@@ -37,7 +37,7 @@ namespace IfcUtil {
 class IFC_PARSE_API IfcBaseInterface {
   protected:
     static bool is_null(const IfcBaseInterface* not_this) {
-        return !not_this;
+        return not_this == nullptr;
     }
 
     template <typename T>
@@ -90,7 +90,7 @@ class IFC_PARSE_API IfcBaseClass : public virtual IfcBaseInterface {
     IfcEntityInstanceData* data_;
 
     static bool is_null(const IfcBaseClass* not_this) {
-        return !not_this;
+        return not_this == nullptr;
     }
 
   public:
