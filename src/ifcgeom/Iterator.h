@@ -469,6 +469,8 @@ namespace IfcGeom {
 			auto product_node = rep->products.front();
 			const IfcUtil::IfcBaseEntity* product = product_node.first;
 			const auto& place = product_node.second;
+
+			Logger::SetProduct(product);
 			
 			IfcGeom::BRepElement* brep = static_cast<IfcGeom::BRepElement*>(decorate_with_cache_(GeometrySerializer::READ_BREP, (std::string)*product->get("GlobalId"), std::to_string(representation->instance->data().id()), [kernel, settings, product, place, representation]() {
 				return kernel->create_brep_for_representation_and_product(representation, product, place);
