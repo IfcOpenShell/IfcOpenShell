@@ -45,8 +45,8 @@ enum ifcxml_dialect {
 // "Dereferences" a named_attribute. For example:
 // IfcCompoundPlaneAngleMeasure -> LIST [3:4] OF INTEGER
 void follow_named(const IfcParse::parameter_type*& pt) {
-    while (pt->as_named_type()) {
-        if (pt->as_named_type()->declared_type()->as_type_declaration()) {
+    while (pt->as_named_type() != nullptr) {
+        if (pt->as_named_type()->declared_type()->as_type_declaration() != nullptr) {
             pt = pt->as_named_type()->declared_type()->as_type_declaration()->declared_type();
         } else {
             break;
@@ -164,7 +164,7 @@ class stack_node {
         std::stringstream ss;
         static const char* const node_type_names[] = {"empty", "inst", "attr", "aggr", "agelem", "inv", "sel", "head", "hdentry"};
         ss << "[" << node_type_names[type_] << "] ";
-        if (inst_) {
+        if (inst_ != nullptr) {
             ss << inst_->declaration().name() << " ";
         }
         if (type_ == node_aggregate) {
@@ -288,7 +288,7 @@ static void process_characters(void* user, const xmlChar* ch, int len) {
         state_type = state->stack.back().ntype();
     }
 
-    if (!state->stack.empty() && state->stack.back().inst() != nullptr && state->stack.back().inst()->declaration().as_type_declaration()) {
+    if (!state->stack.empty() && state->stack.back().inst() != nullptr && (state->stack.back().inst()->declaration().as_type_declaration() != nullptr)) {
         auto pt = state->stack.back().inst()->declaration().as_type_declaration()->declared_type();
         Argument* val = nullptr;
         try {
@@ -296,7 +296,7 @@ static void process_characters(void* user, const xmlChar* ch, int len) {
         } catch (const std::exception& e) {
             Logger::Error(e, state->stack.back().inst());
         }
-        if (val) {
+        if (val != nullptr) {
             // type declaration always at idx 0
             state->stack.back().inst()->data().setArgument(0, val);
         }
@@ -327,14 +327,14 @@ static void process_characters(void* user, const xmlChar* ch, int len) {
         auto cpp_type = IfcUtil::from_parameter_type(pt);
         if (cpp_type != IfcUtil::Argument_ENTITY_INSTANCE) {
             auto val = parse_attribute_value(pt, txt);
-            if (val) {
+            if (val != nullptr) {
                 state->stack.back().inst()->data().setArgument(state->stack.back().idx(), val);
             }
         }
     } else if (state_type == stack_node::node_aggregate_element) {
         auto pt = state->stack.back().aggregate_elem_type();
         auto val = parse_attribute_value(pt, txt);
-        if (val) {
+        if (val != nullptr) {
             (*(state->stack.rbegin() + 1)).aggregate_elements.push_back(val);
         }
     }
@@ -357,11 +357,11 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
 
     std::vector<std::pair<std::string, std::string>> attributes;
 
-    if (attrs) {
+    if (attrs != nullptr) {
         std::string attrname;
         int i = 0;
         while (attrs[i] != NULL) {
-            if (i % 2) {
+            if ((i % 2) != 0) {
                 const std::string value = (char*)attrs[i];
 #ifndef NDEBUG
                 std::cout << " " << attrname << "='" << value << "'";
@@ -444,10 +444,9 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                         if (state->idmap.find(pair.second) == state->idmap.end()) {
                             rv = pair.second;
                             return rv;
-                        } else {
-                            rv = state->file->instance_by_id(state->idmap[pair.second]);
-                            return rv;
                         }
+                        rv = state->file->instance_by_id(state->idmap[pair.second]);
+                        return rv;
                     }
                 } else if (pair.first == "xsi:type") {
                     decl = state->file->schema()->declaration_by_name(pair.second)->as_entity();
@@ -457,7 +456,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
             auto untyped = new IfcEntityInstanceData(decl);
 
             const IfcParse::entity* entity = decl->as_entity();
-            if (entity) {
+            if (entity != nullptr) {
                 for (auto& pair : attributes) {
                     if (pair.first == "id" || pair.first == "xsi:type" || pair.first == "pos") {
                         continue;
@@ -467,7 +466,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                     if (idx != -1) {
                         auto attr = entity->attribute_by_index(idx);
                         auto val = parse_attribute_value(attr->type_of_attribute(), pair.second);
-                        if (val) {
+                        if (val != nullptr) {
                             untyped->setArgument(idx, val);
                         }
                     } else {
@@ -522,7 +521,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
 			boost::lexical_cast<int>(it->second);
 			*/
 
-            if (element_type->as_simple_type()) {
+            if (element_type->as_simple_type() != nullptr) {
                 state->stack.push_back(stack_node::aggregate_element(element_type, aggrpos));
             } else {
                 const IfcParse::declaration* decl = nullptr;
@@ -531,7 +530,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                 } catch (const std::exception& e) {
                     Logger::Error(e);
                 }
-                if (decl) {
+                if (decl != nullptr) {
                     auto inst_or_ref = create_instance(decl);
                     IfcUtil::IfcBaseClass* inst;
                     Argument* attr;
@@ -581,7 +580,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                     const IfcParse::parameter_type* attribute_type = current->attribute_by_index(idx)->type_of_attribute();
                     if (state->dialect == ifcxml_dialect_ifc2x3) {
                         follow_named(attribute_type);
-                        if (attribute_type->as_aggregation_type()) {
+                        if (attribute_type->as_aggregation_type() != nullptr) {
                             state->stack.push_back(stack_node::aggregate(state->stack.back().inst(), idx));
                         } else {
                             state->stack.push_back(stack_node::instance_attribute(state->stack.back().inst(), idx));
@@ -595,17 +594,17 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                                 instance_to_attribute(inst_or_reference, attr, newinst);
                                 state->stack.back().inst()->data().setArgument(idx, attr);
                                 state->stack.push_back(stack_node::instance(id_in_file, newinst));
-                            } else if (attribute_type->as_named_type()->declared_type()->as_select_type()) {
+                            } else if (attribute_type->as_named_type()->declared_type()->as_select_type() != nullptr) {
                                 // Select types cause an additional indirection, so the current stack node is simply repeated
                                 state->stack.push_back(stack_node::select(state->stack.back().inst(), idx));
                             }
-                        } else if (attribute_type->as_aggregation_type()) {
+                        } else if (attribute_type->as_aggregation_type() != nullptr) {
                             state->stack.push_back(stack_node::aggregate(state->stack.back().inst(), idx));
                         }
                     }
                 }
             }
-        } else if (state->file) {
+        } else if (state->file != nullptr) {
             if (state_type == stack_node::node_header) {
                 state->stack.push_back(stack_node::header_entry(tagname));
             } else if (tagname == "ex:iso_10303_28_header" || tagname == "header") {
@@ -620,12 +619,12 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                     Logger::Error(e);
                 }
 
-                if (!decl) {
+                if (decl == nullptr) {
                     goto end;
                 }
 
                 const IfcParse::entity* entity = decl->as_entity();
-                if (!entity && state_type != stack_node::node_instance_attribute) {
+                if ((entity == nullptr) && state_type != stack_node::node_instance_attribute) {
                     Logger::Error("Not an entity definition " + tagname);
                     goto end;
                 }
@@ -640,7 +639,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                         state->stack.back().inv_attr()->attribute_reference());
                     IfcWrite::IfcWriteArgument* attr_inv = new IfcWrite::IfcWriteArgument();
                     attr_inv->set(state->stack.back().inst());
-                    if (inst) {
+                    if (inst != nullptr) {
                         inst->data().setArgument(idx, attr_inv);
                     } else {
                         Logger::Error("Internal error, inverse attribute not processed");
@@ -689,7 +688,7 @@ IFC_PARSE_API IfcParse::IfcFile* IfcParse::parse_ifcxml(const std::string& filen
         }
     }
 
-    if (state.file) {
+    if (state.file != nullptr) {
         state.file->parsing_complete() = true;
         state.file->build_inverses();
     }

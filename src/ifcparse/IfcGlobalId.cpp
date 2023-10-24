@@ -35,7 +35,7 @@ static const char* chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnop
 std::string base64(unsigned v, int l) {
     std::string r;
     r.reserve(l);
-    while (v) {
+    while (v != 0U) {
         r.push_back(chars[v % 64]);
         v /= 64;
     }
@@ -54,7 +54,7 @@ unsigned from_base64(const std::string& s) {
         for (std::string::const_iterator i = s.begin() + zeros; i != s.end(); ++i) {
             r *= 64;
             const char* c = strchr(chars, *i);
-            if (!c) {
+            if (c == nullptr) {
                 throw IfcParse::IfcException("Failed to decode GlobalId");
             }
             r += (unsigned)(c - chars);

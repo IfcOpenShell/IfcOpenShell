@@ -40,7 +40,7 @@ HeaderEntity::HeaderEntity(const char* const datatype, size_t size, IfcFile* fil
     : IfcEntityInstanceData(file, size),
       _datatype(datatype),
       size_(size) {
-    if (file) {
+    if (file != nullptr) {
         offset_in_file_ = file->stream->Tell();
         load();
     }
@@ -131,45 +131,45 @@ void IfcSpfHeader::write(std::ostream& os) const {
 }
 
 const FileDescription& IfcSpfHeader::file_description() const {
-    if (_file_description) {
-        return *_file_description;
+    if (_file_description == nullptr) {
+        throw IfcException("File description not set");
     }
-    throw IfcException("File description not set");
+    return *_file_description;
 }
 
 const FileName& IfcSpfHeader::file_name() const {
-    if (_file_name) {
-        return *_file_name;
+    if (_file_name == nullptr) {
+        throw IfcException("File name not set");
     }
-    throw IfcException("File name not set");
+    return *_file_name;
 }
 
 const FileSchema& IfcSpfHeader::file_schema() const {
-    if (_file_schema) {
-        return *_file_schema;
+    if (_file_schema == nullptr) {
+        throw IfcException("File schema not set");
     }
-    throw IfcException("File schema not set");
+    return *_file_schema;
 }
 
 FileDescription& IfcSpfHeader::file_description() {
-    if (_file_description) {
-        return *_file_description;
+    if (_file_description == nullptr) {
+        throw IfcException("File description not set");
     }
-    throw IfcException("File description not set");
+    return *_file_description;
 }
 
 FileName& IfcSpfHeader::file_name() {
-    if (_file_name) {
-        return *_file_name;
+    if (_file_name == nullptr) {
+        throw IfcException("File name not set");
     }
-    throw IfcException("File name not set");
+    return *_file_name;
 }
 
 FileSchema& IfcSpfHeader::file_schema() {
-    if (_file_schema) {
-        return *_file_schema;
+    if (_file_schema == nullptr) {
+        throw IfcException("File schema not set");
     }
-    throw IfcException("File schema not set");
+    return *_file_schema;
 }
 
 FileDescription::FileDescription(IfcFile* file) : HeaderEntity(FILE_DESCRIPTION, 2, file) {}
