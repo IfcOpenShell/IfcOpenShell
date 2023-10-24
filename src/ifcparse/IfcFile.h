@@ -32,7 +32,6 @@
 #include <boost/unordered_map.hpp>
 #include <iterator>
 #include <map>
-#include <set>
 
 namespace IfcParse {
 

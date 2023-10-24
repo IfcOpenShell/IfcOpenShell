@@ -23,6 +23,7 @@
 #include "IfcCharacterDecoder.h"
 #include "IfcException.h"
 #include "IfcFile.h"
+#include "IfcLogger.h"
 #include "IfcSchema.h"
 #include "IfcSIPrefix.h"
 #include "IfcSpfStream.h"

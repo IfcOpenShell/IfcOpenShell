@@ -24,7 +24,6 @@
 
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
-#include <vector>
 
 class Argument;
 class aggregate_of_instance;

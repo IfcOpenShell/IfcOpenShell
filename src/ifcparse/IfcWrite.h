@@ -28,9 +28,9 @@
 #ifndef IFCWRITE_H
 #define IFCWRITE_H
 
+#include "aggregate_of_instance.h"
 #include "ifc_parse_api.h"
 #include "IfcBaseClass.h"
-#include "IfcParse.h"
 
 #include <boost/dynamic_bitset.hpp>
 #include <boost/optional.hpp>
@@ -38,7 +38,6 @@
 #include <boost/type_traits/remove_pointer.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <boost/variant.hpp>
-// #include <boost/logic/tribool.hpp>
 
 namespace IfcWrite {
 
