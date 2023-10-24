@@ -755,7 +755,7 @@ size_t IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::en
 
             if (TokenFunc::isKeyword(next)) {
                 try {
-                    auto ea = new EntityArgument(next);
+                    auto* ea = new EntityArgument(next);
                     addEntity(((IfcUtil::IfcBaseClass*)*ea));
                     filler.push_back(ea);
                 } catch (IfcException& e) {
@@ -873,7 +873,7 @@ ArgumentList::operator aggregate_of_aggregate_of_instance::ptr() const {
             aggregate_of_instance::ptr e = *arg_list;
             l->push(e);
         } else {
-            auto token = dynamic_cast<const TokenArgument*>(arg);
+            const auto* token = dynamic_cast<const TokenArgument*>(arg);
             int startpos = token != nullptr ? token->token.startPos : 0;
             std::string string_rep = this->toString();
             throw IfcInvalidTokenException(startpos, string_rep, "nested aggregate");
@@ -1051,7 +1051,7 @@ void IfcParse::IfcFile::try_read_semicolon() {
 
 void IfcParse::IfcFile::register_inverse(unsigned id_from, const IfcParse::entity* from_entity, Token t, int attribute_index) {
     // Assume a check on token type has already been performed
-    auto e = from_entity;
+    const auto* e = from_entity;
     byref_excl[t.value_int].push_back(id_from);
     while (e != nullptr) {
         byref[{t.value_int, e->index_in_schema(), attribute_index}].push_back(id_from);
@@ -1060,7 +1060,7 @@ void IfcParse::IfcFile::register_inverse(unsigned id_from, const IfcParse::entit
 }
 
 void IfcParse::IfcFile::register_inverse(unsigned id_from, const IfcParse::entity* from_entity, IfcUtil::IfcBaseClass* inst, int attribute_index) {
-    auto e = from_entity;
+    const auto* e = from_entity;
     byref_excl[inst->data().id()].push_back(id_from);
     while (e != nullptr) {
         byref[{inst->data().id(), e->index_in_schema(), attribute_index}].push_back(id_from);
@@ -1069,7 +1069,7 @@ void IfcParse::IfcFile::register_inverse(unsigned id_from, const IfcParse::entit
 }
 
 void IfcParse::IfcFile::unregister_inverse(unsigned id_from, const IfcParse::entity* from_entity, IfcUtil::IfcBaseClass* inst, int attribute_index) {
-    auto e = from_entity;
+    const auto* e = from_entity;
     while (e != nullptr) {
         std::vector<int>& ids = byref[{inst->data().id(), e->index_in_schema(), attribute_index}];
         std::vector<int>::iterator it = std::find(ids.begin(), ids.end(), id_from);
@@ -1799,7 +1799,7 @@ class traversal_recorder {
             return list_;
         }
         aggregate_of_instance::ptr l(new aggregate_of_instance);
-        for (auto& p : instances_by_level_) {
+        for (const auto& p : instances_by_level_) {
             l->push(p.second);
         }
         return l;
@@ -2174,8 +2174,8 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 
 void IfcFile::process_deletion_() {
 
-    for (auto& id : batch_deletion_ids_.get<0>()) {
-        auto entity = instance_by_id(id);
+    for (const auto& id : batch_deletion_ids_.get<0>()) {
+        auto* entity = instance_by_id(id);
 
         aggregate_of_instance::ptr references = instances_by_reference(id);
 
@@ -2425,7 +2425,7 @@ IfcFile::~IfcFile() {
     for (const auto& pair : byidentity) {
         entities_to_delete.insert(pair.second);
     }
-    for (auto entity : entities_to_delete) {
+    for (auto* entity : entities_to_delete) {
         delete entity;
     }
     delete stream;
@@ -2521,7 +2521,7 @@ std::vector<int> IfcFile::get_inverse_indices(int instance_id) {
 
     auto refs = instances_by_reference(instance_id);
 
-    for (auto& r : *refs) {
+    for (const auto& r : *refs) {
         auto it = mapping.find(r->data().id());
         if (it == mapping.end() || it->second.empty()) {
             throw IfcException("Internal error");
@@ -2667,7 +2667,7 @@ void IfcParse::IfcFile::build_inverses_(IfcUtil::IfcBaseClass* inst) {
     std::function<void(IfcUtil::IfcBaseClass*, int)> fn = [this, inst](IfcUtil::IfcBaseClass* attr, int idx) {
         if (attr->declaration().as_entity() != nullptr) {
             unsigned entity_attribute_id = attr->data().id();
-            auto decl = inst->declaration().as_entity();
+            const auto* decl = inst->declaration().as_entity();
             byref_excl[entity_attribute_id].push_back(inst->data().id());
             while (decl != nullptr) {
                 byref[{entity_attribute_id, decl->index_in_schema(), idx}].push_back(inst->data().id());
@@ -2680,7 +2680,7 @@ void IfcParse::IfcFile::build_inverses_(IfcUtil::IfcBaseClass* inst) {
 }
 
 void IfcParse::IfcFile::build_inverses() {
-    for (auto& pair : *this) {
+    for (const auto& pair : *this) {
         build_inverses_(pair.second);
     }
 }
