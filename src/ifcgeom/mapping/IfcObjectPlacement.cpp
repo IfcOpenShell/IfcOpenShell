@@ -25,15 +25,23 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement* inst) {
 	const IfcSchema::IfcObjectPlacement* relative_to = nullptr;
 	const IfcUtil::IfcBaseInterface* transform;
 
-#ifdef SCHEMA_HAS_IfcLinearPlacement
-	if (inst->as<IfcSchema::IfcLinearPlacement>()) {
-		transform = inst->as<IfcSchema::IfcLinearPlacement>()->RelativePlacement();
-	}
-#endif
+	const IfcSchema::IfcAxis2Placement3D* fallback = nullptr;
+
 	if (inst->as<IfcSchema::IfcLocalPlacement>()) {
 		transform = inst->as<IfcSchema::IfcLocalPlacement>()->RelativePlacement();
 	}
-	if (inst->as<IfcSchema::IfcGridPlacement>()) {
+#ifdef SCHEMA_HAS_IfcLinearPlacement
+   else if (inst->as<IfcSchema::IfcLinearPlacement>()) {
+#ifdef SCHEMA_IfcLinearPlacement_HAS_RelativePlacement
+        transform = inst->as<IfcSchema::IfcLinearPlacement>()->RelativePlacement();
+        fallback = inst->as<IfcSchema::IfcLinearPlacement>()->CartesianPosition();
+#else
+        // @todo Ifc4x1 and Ifc4x2 don't have RelativePlacement
+        return nullptr;
+#endif
+    }
+#endif
+    else if (inst->as<IfcSchema::IfcGridPlacement>()) {
 		// @todo a bit harder to map without kernel
 		return nullptr;
 	}
@@ -57,16 +65,26 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement* inst) {
 		}
 	}
 
+	taxonomy::ptr result;
 	if (!parent_placement_ignored && relative_to) {
 		// The parent placement of the current is a placement for a type that is
 		// being ignored (Site or Building) or it is the host element of an opening.
-		return taxonomy::make<taxonomy::matrix4>(
+        result = taxonomy::make<taxonomy::matrix4>(
 			taxonomy::cast<taxonomy::matrix4>(map(relative_to))->ccomponents() *
 			taxonomy::cast<taxonomy::matrix4>(map(transform))->ccomponents()
 		);
 	} else {
-		return map(transform);
+		result = map(transform);
 	}
+
+	if (fallback) {
+        auto mapped_fallback = taxonomy::cast<taxonomy::matrix4>(map(fallback));
+        if (mapped_fallback != result) {
+            Logger::Warning("Computed placement differs from fallback", inst);
+        }
+    }
+
+	return result;
 
 	// @todo
 	// m4->components() = offset_and_rotation_ * m4->components();
