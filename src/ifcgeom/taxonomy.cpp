@@ -472,6 +472,16 @@ ifcopenshell::geometry::taxonomy::item::ptr ifcopenshell::geometry::taxonomy::pi
 	return polygon_from_points(polygon);
 }
 
+Eigen::Matrix4d ifcopenshell::geometry::taxonomy::piecewise_function::evaluate(double u) const {
+   // @todo: rb optimize, assume monotonic evaluation and store last evaluated segment?
+   for (auto& [length, fn] : spans) {
+   if (u < length + 0.001) { // @todo: rb - need to use consistent tolerance
+         return fn(u);
+      }
+      u -= length;
+   }
+}
+
 ifcopenshell::geometry::taxonomy::collection::ptr ifcopenshell::geometry::flatten(taxonomy::collection::ptr deep) {
 	auto flat = make<taxonomy::collection>();
 	ifcopenshell::geometry::visit<taxonomy::collection>(deep, [&flat](taxonomy::ptr i) {
