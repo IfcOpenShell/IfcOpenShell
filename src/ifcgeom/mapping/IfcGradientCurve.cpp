@@ -24,7 +24,10 @@ using namespace ifcopenshell::geometry;
 #ifdef SCHEMA_HAS_IfcGradientCurve
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcGradientCurve* inst) {
-	auto horizontal = taxonomy::cast<taxonomy::piecewise_function>(map(inst->BaseCurve()));
+   if (!inst->BaseCurve()->as<IfcSchema::IfcCompositeCurve>())
+       Logger::Warning("Expected IfcGradientCurve.BaseCurve to be IfcCompositeCurve", inst); // CT 4.1.7.1.1.2
+
+   auto horizontal = taxonomy::cast<taxonomy::piecewise_function>(map(inst->BaseCurve()));
 	auto vertical = taxonomy::make<taxonomy::piecewise_function>();
 
 	auto segments = inst->Segments();
