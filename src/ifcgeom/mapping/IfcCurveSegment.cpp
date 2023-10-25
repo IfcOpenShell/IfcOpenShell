@@ -461,6 +461,7 @@ public:
 		auto coeffX = p->CoefficientsX().get_value_or(std::vector<double>());
       auto coeffY = p->CoefficientsY().get_value_or(std::vector<double>());
       auto coeffZ = p->CoefficientsZ().get_value_or(std::vector<double>());
+      if (!coeffZ.empty())
       Logger::Warning("Expected IfcPolynomialCurve.CoefficientsZ to be undefined for alignment geometry", p);
 
 		auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(p->Position()))->ccomponents();
