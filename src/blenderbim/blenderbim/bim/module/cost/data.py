@@ -158,8 +158,10 @@ class CostSchedulesData:
             unit = ifcopenshell.util.unit.get_property_unit(quantity, tool.Ifc.get())
             if unit:
                 data["UnitSymbol"] = ifcopenshell.util.unit.get_unit_symbol(unit)
-            else:
-                data["UnitSymbol"] = "U"
+            if quantity.is_a("IfcPhysicalSimpleQuantity"):
+                measure_class = quantity.wrapped_data.declaration().as_entity().attribute_by_index(3).type_of_attribute().declared_type().name()
+                if "Count" in measure_class:
+                    data["UnitSymbol"] = "U"
 
         # same_unit_nested_cost_item = set()
         # data["DerivedTotalCostQuantity"] = None
