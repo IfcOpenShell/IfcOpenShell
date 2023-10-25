@@ -56,98 +56,105 @@ enum segment_type_t {
 };
 
 class curve_segment_evaluator {
-private:
-	mapping* mapping_;
-	double length_unit_;
-	double start_;
-	double length_;
-	segment_type_t segment_type_;
-	IfcSchema::IfcCurve* curve_;
+  private:
+    mapping* mapping_;
+    double length_unit_;
+    double start_;
+    double length_;
+    segment_type_t segment_type_;
+    IfcSchema::IfcCurve* curve_;
 
-	std::optional<std::function<Eigen::Matrix4d(double)>> eval_;
+    std::optional<std::function<Eigen::Matrix4d(double)>> eval_;
 
-public:
-	// First constructor, takes parameters from IfcCurveSegment
-	curve_segment_evaluator(mapping* mapping,double length_unit, segment_type_t segment_type, IfcSchema::IfcCurve* curve, IfcSchema::IfcCurveMeasureSelect* st, IfcSchema::IfcCurveMeasureSelect* le)
-		: mapping_(mapping)
-		, length_unit_(length_unit)
-		, segment_type_(segment_type)
-		, curve_(curve)
-	{
-		// @todo in IFC4X3_ADD2 this needs to be length measure
+  public:
+    // First constructor, takes parameters from IfcCurveSegment
+    curve_segment_evaluator(mapping* mapping, double length_unit, segment_type_t segment_type, IfcSchema::IfcCurve* curve, IfcSchema::IfcCurveMeasureSelect* st, IfcSchema::IfcCurveMeasureSelect* le)
+        : mapping_(mapping),
+          length_unit_(length_unit),
+          segment_type_(segment_type),
+          curve_(curve) {
+        // @todo in IFC4X3_ADD2 this needs to be length measure
 
-		if (!st->as<IfcSchema::IfcLengthMeasure>() || !le->as<IfcSchema::IfcLengthMeasure>()) {
-			// @nb Parameter values are forbidden in the specification until parametrization is provided for all spirals
-			throw std::runtime_error("Unsupported curve measure type");
-		}
+        if (!st->as<IfcSchema::IfcLengthMeasure>() || !le->as<IfcSchema::IfcLengthMeasure>()) {
+            // @nb Parameter values are forbidden in the specification until parametrization is provided for all spirals
+            throw std::runtime_error("Unsupported curve measure type");
+        }
 
-		start_ = *st->as<IfcSchema::IfcLengthMeasure>() * length_unit;
-		length_ = *le->as<IfcSchema::IfcLengthMeasure>() * length_unit;
-	}
+        start_ = *st->as<IfcSchema::IfcLengthMeasure>() * length_unit;
+        length_ = *le->as<IfcSchema::IfcLengthMeasure>() * length_unit;
+    }
 
-	void set_spiral_functor(mapping* mapping_,IfcSchema::IfcSpiral* c, double s, std::function<double(double)> signX, std::function<double(double)> fnX, std::function<double(double)> signY, std::function<double(double)> fnY)
-	{
-		// determine the length of the spiral from the local origin to the end point
-		auto sign_s = binary_sign(start_);
-		auto sign_l = binary_sign(length_);
-		double L = 0;
-		if (sign_s == 0) L = fabs(length_); // start_ is at zero so length_ is the L
-		else if (sign_s == sign_l) L = fabs(start_ + length_); // start_ and length_ are additive
-		else L = fabs(start_); // start_ and length_ are in opposite directions so start_ is furthest from the origin
+    void set_spiral_functor(mapping* mapping_, IfcSchema::IfcSpiral* c, double s, std::function<double(double)> signX, std::function<double(double)> fnX, std::function<double(double)> signY, std::function<double(double)> fnY) {
+        // determine the length of the spiral from the local origin to the end point
+        auto sign_s = binary_sign(start_);
+        auto sign_l = binary_sign(length_);
+        double L = 0;
+        if (sign_s == 0) {
+            L = fabs(length_); // start_ is at zero so length_ is the L
+        } else if (sign_s == sign_l) {
+            L = fabs(start_ + length_); // start_ and length_ are additive
+        } else {
+            L = fabs(start_); // start_ and length_ are in opposite directions so start_ is furthest from the origin
+        }
 
-		auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(c->Position()))->ccomponents();
+        auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(c->Position()))->ccomponents();
 
-		auto segment_type = segment_type_;
-		auto start = start_;
+        auto start = start_;
 
-        eval_ = [L, start, s, signX, fnX, signY, fnY, transformation_matrix, segment_type](double u) {
-				using boost::math::quadrature::trapezoidal;
+        if (segment_type_ == ST_HORIZONTAL || segment_type_ == ST_VERTICAL) {
+            auto segment_type = segment_type_;
+            eval_ = [L, start, s, signX, fnX, signY, fnY, transformation_matrix, segment_type](double u) {
+                using boost::math::quadrature::trapezoidal;
 
-				u += start;
+                u += start;
 
-				// integration limits, integrate from a to b
-				auto a = 0.0;
-				auto b = fabs(u / s);
+                // integration limits, integrate from a to b
+                auto a = 0.0;
+                auto b = fabs(u / s);
 
-				auto x = signX(u) * trapezoidal(fnX, a, b);
-				auto y = signY(u) * trapezoidal(fnY, a, b);
+                auto x = signX(u) * trapezoidal(fnX, a, b);
+                auto y = signY(u) * trapezoidal(fnY, a, b);
 
-				// From https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcSpiral.htm, x = Integral(fnX du), y = Integral(fnY du)
-				// The tangent slope of a curve is the derivate of the curve, so the derivitive of an integral, is just the function
-				// Therefore, Dx/Du = fnX(u) and Dy/Du = fnY(u) which leads to du = Dx/fnX(u) and Dy = fnY(u)*Du = fnY(u)*Dx/fnX(u) so Dy/Dx = fnY(u)/fnX(u)
-				// However, Dx and Dy are not normalized. Recall that slope = rise/run
-				// If run = 1.0, then rise = Dy/Dx = fnY(u)/fnX(u) and l = sqrt((fnY(u)/fnX(u))^2 + 1.0^2)
-				// The direction ratios are dx = 1.0/l and dy = (fnY/fnX)/l;
-            auto rise = fnY(u) / fnX(u);
-            auto run = 1.0;
-            auto l = sqrt(run * run + rise * rise);
-            auto dx = run / l;
-            auto dy = rise / l;
+                // From https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcSpiral.htm, x = Integral(fnX du), y = Integral(fnY du)
+                // The tangent slope of a curve is the derivate of the curve, so the derivitive of an integral, is just the function
+                // Therefore, Dx/Du = fnX(u) and Dy/Du = fnY(u) which leads to du = Dx/fnX(u) and Dy = fnY(u)*Du = fnY(u)*Dx/fnX(u) so Dy/Dx = fnY(u)/fnX(u)
+                // However, Dx and Dy are not normalized. Recall that slope = rise/run
+                // If run = 1.0, then rise = Dy/Dx = fnY(u)/fnX(u) and l = sqrt((fnY(u)/fnX(u))^2 + 1.0^2)
+                // The direction ratios are dx = 1.0/l and dy = (fnY/fnX)/l;
+                auto rise = fnY(u) / fnX(u);
+                auto run = 1.0;
+                auto l = sqrt(run * run + rise * rise);
+                auto dx = run / l;
+                auto dy = rise / l;
 
-            Eigen::Matrix4d m;
-            if (segment_type == ST_HORIZONTAL) {
-                // rotate about the Z-axis
-                m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);  // vector tangent to the curve, in the direction of the curve
-                m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0); // vector perpendicular to the curve, towards the left when looking from start to end along the curve (this is used for IfcAxis2PlacementLinear.RefDirection when it is not provided)
-                m.col(2) = Eigen::Vector4d(0, 0, 1.0, 0);  // cross product of x and y and will always be up (this is used for IfcAxis2PlacementLinear.Axis when it is not provided)
-                m.col(3) = Eigen::Vector4d(x, y, 0.0, 1.0);
-            } else if (segment_type == ST_VERTICAL) {
-                // rotate about the Y-axis (slope along u is dx, slope vertically is dy, vertical position is y)
-                m.col(0) = Eigen::Vector4d(dx, 0, dy, 0);
-                m.col(1) = Eigen::Vector4d(0, 1, 0, 0);
-                m.col(2) = Eigen::Vector4d(-dy, 0, dx, 0);
-                m.col(3) = Eigen::Vector4d(0, 0, y, 1.0); // y is an elevation so store it as z
-            } else if (segment_type == ST_CANT) {
-                Logger::Warning(std::runtime_error("Use of IfcSpiral for cant is not supported"));
-            } else {
-                Logger::Error(std::runtime_error("Unexpected segment type encountered"));
-            }
-
-
-				Eigen::Matrix4d result = transformation_matrix * m;
-            return result;
-			};
-	}
+                Eigen::Matrix4d m;
+                if (segment_type == ST_HORIZONTAL) {
+                    // rotate about the Z-axis
+                    m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);  // vector tangent to the curve, in the direction of the curve
+                    m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0); // vector perpendicular to the curve, towards the left when looking from start to end along the curve (this is used for IfcAxis2PlacementLinear.RefDirection when it is not provided)
+                    m.col(2) = Eigen::Vector4d(0, 0, 1.0, 0);  // cross product of x and y and will always be up (this is used for IfcAxis2PlacementLinear.Axis when it is not provided)
+                    m.col(3) = Eigen::Vector4d(x, y, 0.0, 1.0);
+                } else if (segment_type == ST_VERTICAL) {
+                    // rotate about the Y-axis (slope along u is dx, slope vertically is dy, vertical position is y)
+                    m.col(0) = Eigen::Vector4d(dx, 0, dy, 0);
+                    m.col(1) = Eigen::Vector4d(0, 1, 0, 0);
+                    m.col(2) = Eigen::Vector4d(-dy, 0, dx, 0);
+                    m.col(3) = Eigen::Vector4d(0, 0, y, 1.0); // y is an elevation so store it as z
+                }
+                Eigen::Matrix4d result = transformation_matrix * m;
+                return result;
+            };
+	 }
+    else if (segment_type_ == ST_CANT) {
+            eval_ = [](double u) {
+                Eigen::Matrix4d result;
+                return result;
+            };
+    }
+    else {
+            Logger::Error(std::runtime_error("Unexpected segment type encountered"));
+    }
+}
 
 
 	// Clothoid using Taylor Series approximation
@@ -426,7 +433,7 @@ public:
 				};
 
 		}
-		else if (segment_type_ == ST_VERTICAL) {
+		else if (segment_type_ == ST_VERTICAL || segment_type_ == ST_CANT) {
 
 			eval_ = [px, py, dx, dy](double u) {
 				// https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcGradientCurve.htm
@@ -448,9 +455,6 @@ public:
             return m;
             };
 		} 
-		else if(segment_type_ == ST_CANT) {
-         Logger::Warning(std::runtime_error("Use of IfcLine for cant is not supported"), l);
-		}
 		else {
          Logger::Error(std::runtime_error("Unexpected segment type encountered"), l);
 		}
@@ -462,7 +466,7 @@ public:
       auto coeffY = p->CoefficientsY().get_value_or(std::vector<double>());
       auto coeffZ = p->CoefficientsZ().get_value_or(std::vector<double>());
       if (!coeffZ.empty())
-      Logger::Warning("Expected IfcPolynomialCurve.CoefficientsZ to be undefined for alignment geometry", p);
+			Logger::Warning("Expected IfcPolynomialCurve.CoefficientsZ to be undefined for alignment geometry", p);
 
 		auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(p->Position()))->ccomponents();
 
