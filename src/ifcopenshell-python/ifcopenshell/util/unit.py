@@ -464,6 +464,8 @@ def get_unit_symbol(unit):
     if unit.is_a("IfcSIUnit"):
         symbol += prefix_symbols.get(unit.Prefix, "")
     symbol += unit_symbols.get(unit.Name.replace("METER", "METRE"), "?")
+    if unit.is_a("IfcContextDependentUnit") and unit.UnitType == "USERDEFINED":
+        symbol = unit.Name
     return symbol
 
 
