@@ -108,6 +108,20 @@ def i_load_a_new_pset_template_file():
     IfcStore.pset_template_file = ifcopenshell.open(IfcStore.pset_template_path)
 
 
+@given("I create default MEP types")
+def i_create_default_mep_types():
+    model_props = bpy.context.scene.BIMModelProperties
+
+    model_props.type_class = "IfcDuctSegmentType"
+    model_props.type_name = "RECT1"
+    model_props.type_template = "FLOW_SEGMENT_RECTANGULAR"
+    bpy.ops.bim.add_type()
+
+    model_props.type_template = "FLOW_SEGMENT_CIRCULAR"
+    model_props.type_name = "RECT2"
+    bpy.ops.bim.add_type()
+
+
 @given("I add a cube")
 @when("I add a cube")
 def i_add_a_cube():

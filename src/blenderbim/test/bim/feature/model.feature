@@ -525,3 +525,28 @@ Scenario: Create a door, undo and create a new door
     And I press "mesh.add_door()"
     Then nothing happens
     And the object "IfcDoor/IfcDoor" exists
+
+Scenario: Create a MEP transition
+    Given an empty IFC project
+    And I create default MEP types
+    And the variable "element_types" is "[str(e.id()) for e in {ifc}.by_type('IfcDuctSegmentType')]"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_types}[0]"
+    And I press "bim.add_constr_type_instance"
+    And I rename the object "IfcDuctSegment/DuctSegment" to "IfcDuctSegment/RectSegment"
+
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_types}[1]"
+    And I press "bim.add_constr_type_instance"
+    And I rename the object "IfcDuctSegment/DuctSegment" to "IfcDuctSegment/CircleSegment"
+
+    And the object "IfcDuctSegment/RectSegment" is moved to "0,0,0"
+    And the object "IfcDuctSegment/CircleSegment" is moved to "2.5,0,0"
+    And the object "IfcDuctSegment/CircleSegment" is selected
+    And additionally the object "IfcDuctSegment/RectSegment" is selected
+    And I press "bim.mep_add_transition()"
+
+    Then the object "IfcDuctSegment/RectSegment" is at "0,0,0"
+    And the object "IfcDuctSegment/RectSegment" dimensions are "0.4,0.2,2.370096"
+    And the object "IfcDuctSegment/CircleSegment" is at "3.1299,0,0"
+    And the object "IfcDuctSegment/CircleSegment" dimensions are "0.1000, 0.09927, 2.370096"
+    And the object "IfcDuctFitting/DuctFitting" is at "2.370096, 0.0000, 0.0000"
+    And the object "IfcDuctFitting/DuctFitting" dimensions are "0.4000, 0.2000, 0.759807"
