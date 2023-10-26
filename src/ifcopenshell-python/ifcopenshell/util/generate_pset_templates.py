@@ -20,10 +20,12 @@ RUN_FROM_DEV_REPO = False
 
 import ifcopenshell.api
 import ifcopenshell.util.attribute
-from pathlib import Path
-from lxml import etree
 import glob
 import sys
+from pathlib import Path
+from lxml import etree
+from itertools import chain
+
 
 if not RUN_FROM_DEV_REPO:
     import zipfile
@@ -47,8 +49,9 @@ IFC2x3_OUTPUT_PATH = BASE_MODULE_PATH / "schema/Pset_IFC2X3.ifc"
 PROPERTY_TYPES_DICT = {
     "TypePropertySingleValue": ("P_SINGLEVALUE", "type"),
     # in IFC2X3 weirdly xmls have TypeSimpleProperty
-    # no difference with TypePropertySingleValue though
-    "TypeSimpleProperty": ("P_SINGLEVALUE", "type"),
+    # which is actually more P_REFERENCEVALUE value, not P_SINGLEVALUE
+    # because it utilizes IfcTimeSeries
+    "TypeSimpleProperty": ("P_REFERENCEVALUE", "type"),
     "TypePropertyListValue": ("P_LISTVALUE", "type"),
     "TypePropertyBoundedValue": ("P_BOUNDEDVALUE", "type"),
     "TypePropertyReferenceValue": ("P_REFERENCEVALUE", "reftype"),
@@ -121,12 +124,15 @@ class PsetTemplatesGenerator:
     def parse_psets_data(self, schema_name, pset_data_glob, project_name, ifc_output_path):
         schema_name = schema_name.upper()
         self.ifc_file = ifcopenshell.api.run("project.create_file", version=schema_name)
+        self.units = dict()
         schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_name)
 
         self.ifc_derived_unit_enum = (
             schema.declaration_by_name("IfcDerivedUnitEnum").as_enumeration_type().enumeration_items()
         )
         self.ifc_unit_enum = schema.declaration_by_name("IfcUnitEnum").as_enumeration_type().enumeration_items()
+        select_types = schema.declaration_by_name("IfcValue").select_list()
+        self.ifc_value_types = [t.name() for t in chain(*[select_type.select_list() for select_type in select_types])]
 
         project = self.ifc_entity("IfcProject", Name=project_name, GlobalId=ifcopenshell.guid.new())
         psets_list = []
@@ -246,11 +252,38 @@ class PsetTemplatesGenerator:
         self.add_prop_type_params_to_prop(pset_type, pdef, pset_property, property_type_tag)
         return pset_property
 
+    def get_unit(self, unit_type):
+        # to define USERDEFINED unit type we'd need more info
+        # like UserDefinedType name and elements for IfcDerivedUnit
+        # which is not provided in .xmls
+        if unit_type != "USERDEFINED":
+            return None
+
+        if unit_type in self.units:
+            return self.units[unit_type]
+
+        unit_entity = None
+        if unit_type in self.ifc_derived_unit_enum:
+            # TODO: define derived units if there will be someday api like `ifcopenshell.api.run("unit.add_derived_unit", ...)`
+            # since creating IfcDerivedUnit is more complex and requiring settting up elements it consists of
+            # and related IfcNamedUnits
+            # unit_entity = ifcopenshell.api.run("unit.add_derived_unit", self.ifc_file, unit_type=unit_type)
+            pass
+        elif unit_type in self.ifc_unit_enum:
+            unit_entity = ifcopenshell.api.run("unit.add_si_unit", self.ifc_file, unit_type=unit_type)
+        elif unit_type == "IFCMONETARYUNIT":
+            self.ifc_entity("IFCMONETARYUNIT", Currency="")
+        else:
+            print(f"WARNING. Wasn't able to find units {unit_type} in schema.")
+        self.units[unit_type] = unit_entity
+        return unit_entity
+
     def add_prop_type_params_to_prop(self, pset_type, pdef, pset_property, property_type_tag):
         if not pset_type:
             property_type = pdef.find("QtoType").text
         else:
             property_type, property_type_parse = PROPERTY_TYPES_DICT[property_type_tag]
+
         pset_property.TemplateType = property_type
 
         if not pset_type or property_type == "P_COMPLEX":
@@ -285,7 +318,24 @@ class PsetTemplatesGenerator:
             pset_property.SecondaryMeasureType = property_type_xml.find("DefinedValue/DataType").get("type")
         else:
             if property_type == "P_REFERENCEVALUE":
-                pset_property.PrimaryMeasureType = property_type_xml.get(property_type_parse)
+                if property_type_tag == "TypeSimpleProperty":
+                    type_xml = property_type_xml.find("DataType")
+                    primary_measure_type = type_xml.get(property_type_parse)
+                    unit_type = property_type_xml.find("UnitType")
+                    secondary_measure_type = (
+                        unit_type.get(property_type_parse).strip() if unit_type is not None else None
+                    )
+
+                    if primary_measure_type != "IfcTimeSeries":
+                        unit = self.get_unit(secondary_measure_type)
+                        secondary_measure_type = primary_measure_type
+                        primary_measure_type = "IfcTimeSeries"
+                        pset_property.PrimaryUnit = unit
+
+                    pset_property.PrimaryMeasureType = primary_measure_type
+                    pset_property.SecondaryMeasureType = secondary_measure_type
+                else:
+                    pset_property.PrimaryMeasureType = property_type_xml.get(property_type_parse)
                 # TODO: ifc4add2 seems to have some secondary measure types
                 # need to add it in ifc4x3 too
                 # if https://github.com/buildingSMART/IFC4.3.x-development/issues/586 is resolved
@@ -297,17 +347,10 @@ class PsetTemplatesGenerator:
 
                     # only used only in ifc2x3, omitted in ifc4 and ifc4x3
                     unit_type_xml = property_type_xml.find("UnitType")
+
                     if unit_type_xml is not None:
                         unit_type = unit_type_xml.get(property_type_parse).strip()
-                        if unit_type.lower().startswith("ifc"):
-                            unit_entity = self.ifc_entity(unit_type)
-                        else:
-                            if unit_type in self.ifc_derived_unit_enum:
-                                unit_entity = self.ifc_entity("IfcDerivedUnit", UnitType=unit_type)
-                            elif unit_type in self.ifc_unit_enum:
-                                unit_entity = self.ifc_entity("IfcNamedUnit", UnitType=unit_type)
-                            else:
-                                print("WARNING. Wasn't able to find units {unit_type} in schema.")
+                        unit_entity = self.get_unit(unit_type)
                         pset_property.PrimaryUnit = unit_entity
 
                 type_xml = property_type_xml.find(property_type_node)
@@ -316,6 +359,12 @@ class PsetTemplatesGenerator:
                     primary_measure_type = type_xml.find("DataType").get(property_type_parse)
                 else:
                     primary_measure_type = type_xml.get(property_type_parse)
+
+                primary_measure_type = primary_measure_type.strip()
+                if property_type == "P_SINGLEVALUE" and primary_measure_type not in self.ifc_value_types:
+                    print(
+                        f"Error assinging {primary_measure_type} as PrimaryMeasureType - it's not IfcValue, {property_type_tag}"
+                    )
 
                 pset_property.PrimaryMeasureType = primary_measure_type
 
