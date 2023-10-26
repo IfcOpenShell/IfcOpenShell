@@ -313,7 +313,7 @@ class Geometry(blenderbim.core.tool.Geometry):
         return (
             subcontext.ContextType,
             subcontext.ContextIdentifier,
-            subcontext.TargetView,
+            getattr(subcontext, "TargetView", None),
         )
 
     @classmethod
