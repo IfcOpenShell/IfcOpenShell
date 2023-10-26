@@ -30,7 +30,7 @@ from collections import namedtuple
 import ifcopenshell
 import ifcopenshell.express.rule_executor
 
-from type_checker import parse_datetime, validate_datetime
+from type_checker import parse_datetime, validate_datetime, DateError, DateErrorContent, DateErrorParsing
 
 named_type = ifcopenshell.ifcopenshell_wrapper.named_type
 aggregation_type = ifcopenshell.ifcopenshell_wrapper.aggregation_type
@@ -274,51 +274,49 @@ def get_entity_attributes(schema, entity):
 
 
 def check(value, type, instance):
-        if value is None:
-            return
+    if value is None:
+        return
 
-        # @nb something can be a named type with rules and still be an aggregation.
-        # case in point IfcCompoundPlaneAngleMeasure. Therefore only unpack named
-        # type references from this point onwards.
-        while isinstance(
-            type,
-            (
-                ifcopenshell.ifcopenshell_wrapper.named_type,
-                ifcopenshell.ifcopenshell_wrapper.type_declaration,
-            ),
+    # @nb something can be a named type with rules and still be an aggregation.
+    # case in point IfcCompoundPlaneAngleMeasure. Therefore only unpack named
+    # type references from this point onwards.
+    while isinstance(
+        type,
+        (
+            ifcopenshell.ifcopenshell_wrapper.named_type,
+            ifcopenshell.ifcopenshell_wrapper.type_declaration,
+        ),
+    ):
+        type = type.declared_type()
+
+    if isinstance(value, (list, tuple)):
+        if isinstance(type, ifcopenshell.ifcopenshell_wrapper.aggregation_type):
+            ty = type.type_of_element()
+            for v in value:
+                res = yield from check(v, ty, instance=instance)
+                if res:
+                    yield res
+        else:
+            # Let's hope a schema validation error was reported for this case
+            pass
+
+    elif isinstance(value, ifcopenshell.entity_instance):
+        if isinstance(
+            value.is_a(),
+            ifcopenshell.ifcopenshell_wrapper.entity,
         ):
-            type = type.declared_type()
+            # top level entity instances will be checked on their own
+            pass
+        else:
+            # unpack the type instance
+            yield from check(value[0], value.is_a(), instance=instance)
 
-        if isinstance(value, (list, tuple)):
-            if isinstance(type, ifcopenshell.ifcopenshell_wrapper.aggregation_type):
-                ty = type.type_of_element()
-                for v in value:
-                    res = check(v, ty, instance=instance)
-                    if res:
-                        return res
+        if value.is_a() == "IfcDateTime" and value[0]:
+            parsing = parse_datetime(value[0])
+            if isinstance(parsing, DateError().__class__):
+                yield DateErrorParsing()
             else:
-                # Let's hope a schema validation error was reported for this case
-                pass
-
-        elif isinstance(value, ifcopenshell.entity_instance):
-            if isinstance(
-                value.is_a(),
-                ifcopenshell.ifcopenshell_wrapper.entity,
-            ):
-                # top level entity instances will be checked on their own
-                pass
-            else:
-                # unpack the type instance
-                check(value[0], value.is_a(), instance=instance)
-    
-                if value.is_a() == "IfcDateTime" and value[0]:
-                        parsing = parse_datetime(value[0])
-                        if parsing["status"] != -1:
-                            if validate_datetime(parsing["msg"]) != 1:
-                                return "attribute"
-                        else:
-                          return "syntax"
-                  
+                yield parsing
 
 def validate(f, logger, express_rules=False):
     """
@@ -420,52 +418,55 @@ def validate(f, logger, express_rules=False):
                     type_name = declared_type.name()
 
                     if type_name == "IfcDateTime" and val:
+
                         parsing = parse_datetime(val)
-                        if parsing["status"] != -1:
-                            if validate_datetime(parsing["msg"]) != 1:
-                                logger.error(
+
+                        if isinstance(parsing, DateErrorParsing().__class__):
+                              logger.error(
                                     "For instance:\n    %s\n    %s\nInvalid attribute value %s for %s.%s",
                                     inst,
                                     annotate_inst_attr_pos(inst, i),
-                                    f"({validate_datetime(parsing['msg'])})",
+                                    parsing.msg,
                                     entity,
                                     attrs[i],
                                 )
-                        else:
-                          logger.error(
+                        elif isinstance(validate_datetime(parsing), DateErrorContent().__class__):
+                            logger.error(
                                     "For instance:\n    %s\n    %s\nInvalid attribute value %s for %s.%s",
                                     inst,
                                     annotate_inst_attr_pos(inst, i),
-                                    "syntax not conform to ISO",
+                                    parsing.msg,
                                     entity,
                                     attrs[i],
                                 )
-                                
+                            
                 except Exception as e:
                     is_aggreg = isinstance(type_of_attribute, ifcopenshell.ifcopenshell_wrapper.aggregation_type)
                     
                     if is_aggreg:
                         recursed_result = check(val, type_of_attribute, instance=inst)
-
-                        if recursed_result:
-                            if recursed_result == "attribute":
-                                    logger.error(
+                        for r in recursed_result:
+                            if isinstance(r,DateErrorParsing().__class__):                                    
+                                logger.error(
                                     "For instance:\n    %s\n    %s\nInvalid attribute value %s for %s.%s",
                                     inst,
                                     annotate_inst_attr_pos(inst, i),
+                                    r.msg,
                                     entity,
                                     attrs[i],
                                 )
                             else:
-                                logger.error(
+                                other_check = list(validate_datetime(r["msg"]))
+                                if other_check and isinstance(other_check[0], DateErrorContent().__class__):
+                                    logger.error(
                                             "For instance:\n    %s\n    %s\nInvalid attribute value %s for %s.%s",
                                             inst,
                                             annotate_inst_attr_pos(inst, i),
-                                            "syntax not conform to ISO",
+                                            other_check[0].msg,
                                             entity,
                                             attrs[i],
                                         )
-                                
+                  
                 if is_derived and not isinstance(val, ifcopenshell.ifcopenshell_wrapper.attribute_value_derived):
                     if hasattr(logger, "set_state"):
                         logger.set_state('attribute', f"{entity.name()}.{attr.name()}")

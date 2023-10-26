@@ -64,7 +64,18 @@ class DatetimeTransformer(Transformer):
             "minute": minute,
             "second": float(second + f".{millisecond if millisecond else ''}")
         }
+class DateError:
+    pass
 
+class DateErrorParsing(DateError):
+    def __init__(self):
+        self.type = "syntax"
+        self.msg = "(syntax error)"
+
+class DateErrorContent(DateError):
+    def __init__(self):
+        self.type = "content"
+        self.msg = "(content error)"
 
 def parse_datetime(datetime_value):
     try:
@@ -72,75 +83,37 @@ def parse_datetime(datetime_value):
         transformer = DatetimeTransformer()
         parsed_datetime = transformer.transform(tree)
         return {"status": 1, "msg": parsed_datetime}
-    except Exception as e:
-        return {"status": -1, "msg": e}
+    except Exception:
+        return DateErrorParsing()
 
 
 def validate_datetime(parsed_datetime):
-    if parsed_datetime == -1:
-        return "Syntax error"
-    else:
-        # Year
-        if parsed_datetime["year"] == "0000":
-            return "invalid year value"
-   
-        # Month
-        if not (parsed_datetime["month"] > 0 and parsed_datetime["month"] < 13):
-            return "invalid month value"
+    if parsed_datetime["year"] == 0:
+        yield DateErrorContent()
 
-        # Day
-        if not (parsed_datetime["day"] > 0 and parsed_datetime["day"] < 32):
-            return "invalid day value"
+    # Month
+    if not (parsed_datetime["month"] > 0 and parsed_datetime["month"] < 13):
+        yield DateErrorContent()
 
-        # Check February and Leap year case
-        if parsed_datetime["month"] == 2:
-            if int(parsed_datetime["year"]) % 4 == 0:
-                if not (parsed_datetime["day"] < 30):
-                    return "invalid day value"
-            else:
-                if not (parsed_datetime["day"] < 29):
-                    return "invalid day value"
+    # Day
+    if not (parsed_datetime["day"] > 0 and parsed_datetime["day"] < 32):
+        yield DateErrorContent()
 
-        # Hour
-        if not (parsed_datetime["hour"] > -1 and parsed_datetime["hour"] < 24):
-            return "invalid hour value"
+    # Check February and Leap year case
+    if parsed_datetime["month"] == 2:
+        if int(parsed_datetime["year"]) % 4 == 0:
+            if not (parsed_datetime["day"] < 30):
+                yield DateErrorContent()
+        else:
+            if not (parsed_datetime["day"] < 29):
+                yield DateErrorContent()
 
-        # Minute
-        if not (parsed_datetime["minute"] > -1 and parsed_datetime["minute"] < 60):
-            return "invalid minute value"
-
-        # Second
-        if not (parsed_datetime["second"] > -1 and parsed_datetime["second"] < 60):
-            return "invalid second value"
-
-        return 1
-
-
-def validate(d):
-    parsing = parse_datetime(d)
-    if parsing["status"] != -1:
-        if validate_datetime(parsing["msg"]) != 1:
-            print(validate_datetime(parsing["msg"]))
-    else:
-        print("syntax error")
-
-
-if __name__ == '__main__':
-
-    valid = ["2008-12-27T18:00:04",
-             "2018-12-27T15:00:04.000054",
-             "-2018-12-27T15:00:04.02",
-             "0480-08-03T00:00:00",
-             "-0480-08-03T00:00:00",
-             "-12000-01-02T00:00:00"]
-
-    not_valid = ["2008-12-27_18:00:04",
-                 "80-8-03T00:00:00",
-                 "0000-8-03T00:00:00",
-                 "-2018-26-12T15:04:02"]
-
-    for d in valid:
-        validate(d)
-
-    for d in not_valid:
-        validate(d)
+    # Hour
+    if not (parsed_datetime["hour"] > -1 and parsed_datetime["hour"] < 24):
+        yield DateErrorContent()
+    # Minute
+    if not (parsed_datetime["minute"] > -1 and parsed_datetime["minute"] < 60):
+        yield DateErrorContent()
+    # Second
+    if not (parsed_datetime["second"] > -1 and parsed_datetime["second"] < 60):
+        yield DateErrorContent()
