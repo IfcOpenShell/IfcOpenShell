@@ -513,7 +513,8 @@ class Model(blenderbim.core.tool.Model):
         else:
             pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="BBIM_Boolean")
             data = boolean_ids
-        ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": json.dumps(data)})
+        data = tool.Ifc.get().createIfcText(json.dumps(data))
+        ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
 
     @classmethod
     def unmark_manual_booleans(cls, element, booleans):
@@ -526,7 +527,8 @@ class Model(blenderbim.core.tool.Model):
         data = list(data)
         pset = tool.Ifc.get().by_id(pset["id"])
         if data:
-            ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": json.dumps(data)})
+            data = tool.Ifc.get().createIfcText(json.dumps(data))
+            ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
         else:
             ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
 
@@ -601,7 +603,7 @@ class Model(blenderbim.core.tool.Model):
         else:
             obj = tool.Ifc.get_object(element)
             array_pset = tool.Pset.get_element_pset(element, "BBIM_Array")
-            default_data = '[{"children": []}]'
+            default_data = tool.Ifc.get().createIfcText('[{"children": []}]')
             ifcopenshell.api.run(
                 "pset.edit_pset",
                 tool.Ifc.get(),
@@ -611,7 +613,7 @@ class Model(blenderbim.core.tool.Model):
 
             tool.Model.regenerate_array(obj, array_data)
 
-            json_data = json.dumps(array_data)
+            json_data = tool.Ifc.get().createIfcText(json.dumps(array_data))
             ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=array_pset, properties={"Data": json_data})
 
             for i in range(len(array_data)):

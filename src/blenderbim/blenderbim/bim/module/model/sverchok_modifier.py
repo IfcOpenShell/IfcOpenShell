@@ -169,7 +169,7 @@ class UpdateDataFromSverchok(bpy.types.Operator, tool.Ifc.Operator):
             "pset.edit_pset",
             tool.Ifc.get(),
             pset=pset,
-            properties={"Data": json.dumps(sverchok_data)},
+            properties={"Data": tool.Ifc.get().createIfcText(json.dumps(sverchok_data))},
         )
         update_sverchok_modifier(context)
 

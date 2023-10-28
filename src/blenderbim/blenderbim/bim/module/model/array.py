@@ -59,7 +59,7 @@ class AddArray(bpy.types.Operator, tool.Ifc.Operator):
             "pset.edit_pset",
             tool.Ifc.get(),
             pset=pset,
-            properties={"Parent": element.GlobalId, "Data": json.dumps(data)},
+            properties={"Parent": element.GlobalId, "Data": tool.Ifc.get().createIfcText(json.dumps(data))},
         )
         return {"FINISHED"}
 
@@ -132,7 +132,7 @@ class EditArray(bpy.types.Operator, tool.Ifc.Operator):
         tool.Model.regenerate_array(parent, data)
 
         pset = tool.Ifc.get().by_id(pset["id"])
-        data = json.dumps(data)
+        data = tool.Ifc.get().createIfcText(json.dumps(data))
         ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
 
         tool.Blender.Modifier.Array.set_children_lock_state(element, self.item, True)
@@ -196,7 +196,7 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
             ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
         else:
             del data[self.item]
-            data = json.dumps(data)
+            data = tool.Ifc.get().createIfcText(json.dumps(data))
             ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
             tool.Blender.Modifier.Array.constrain_children_to_parent(element)
 

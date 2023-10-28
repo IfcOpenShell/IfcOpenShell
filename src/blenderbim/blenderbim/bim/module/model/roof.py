@@ -412,7 +412,7 @@ def update_bbim_roof_pset(element, roof_data):
     pset = tool.Pset.get_element_pset(element, "BBIM_Roof")
     if not pset:
         pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="BBIM_Roof")
-    roof_data = json.dumps(roof_data, default=list)
+    roof_data = tool.Ifc.get().createIfcText(json.dumps(roof_data, default=list))
     ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": roof_data})
 
 
