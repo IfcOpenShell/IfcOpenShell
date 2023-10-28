@@ -496,7 +496,7 @@ class AddWindow(bpy.types.Operator, tool.Ifc.Operator):
             "pset.edit_pset",
             tool.Ifc.get(),
             pset=pset,
-            properties={"Data": json.dumps(window_data, default=list)},
+            properties={"Data": tool.Ifc.get().createIfcText(json.dumps(window_data, default=list))},
         )
         update_window_modifier_representation(context, obj)
         return {"FINISHED"}
@@ -553,7 +553,7 @@ class FinishEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
         update_window_modifier_representation(context, obj)
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Window")
-        window_data = json.dumps(window_data, default=list)
+        window_data = tool.Ifc.get().createIfcText(json.dumps(window_data, default=list))
         ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": window_data})
         return {"FINISHED"}
 

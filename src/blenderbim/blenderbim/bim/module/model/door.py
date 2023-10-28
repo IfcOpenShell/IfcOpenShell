@@ -549,7 +549,7 @@ class AddDoor(bpy.types.Operator, tool.Ifc.Operator):
             "pset.edit_pset",
             tool.Ifc.get(),
             pset=pset,
-            properties={"Data": json.dumps(door_data, default=list)},
+            properties={"Data": tool.Ifc.get().createIfcText(json.dumps(door_data, default=list))},
         )
         update_door_modifier_representation(context, obj)
         return {"FINISHED"}
@@ -608,7 +608,7 @@ class FinishEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
         update_door_modifier_representation(context, obj)
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Door")
-        door_data = json.dumps(door_data, default=list)
+        door_data = tool.Ifc.get().createIfcText(json.dumps(door_data, default=list))
         ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": door_data})
         return {"FINISHED"}
 
