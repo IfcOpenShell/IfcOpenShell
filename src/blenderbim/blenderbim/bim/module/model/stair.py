@@ -377,7 +377,7 @@ class AddStair(bpy.types.Operator, tool.Ifc.Operator):
             "pset.edit_pset",
             ifc_file,
             pset=pset,
-            properties={"Data": json.dumps(stair_data)},
+            properties={"Data": tool.Ifc.get().createIfcText(json.dumps(stair_data))},
         )
         regenerate_stair_mesh(context)
         update_ifc_stair_props(obj)
@@ -419,7 +419,7 @@ class FinishEditingStair(bpy.types.Operator, tool.Ifc.Operator):
         update_stair_representation(obj)
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Stair")
-        data = json.dumps(data)
+        data = tool.Ifc.get().createIfcText(json.dumps(data))
         ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
 
         # update IfcStairFlight properties

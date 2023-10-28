@@ -114,7 +114,7 @@ def update_bbim_railing_pset(element, railing_data):
     pset = tool.Pset.get_element_pset(element, "BBIM_Railing")
     if not pset:
         pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="BBIM_Railing")
-    railing_data = json.dumps(railing_data, default=list)
+    railing_data = tool.Ifc.get().createIfcText(json.dumps(railing_data, default=list))
     ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": railing_data})
 
 
