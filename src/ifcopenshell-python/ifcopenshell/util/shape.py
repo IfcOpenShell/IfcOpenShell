@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import shapely
 import numpy as np
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
@@ -521,7 +522,32 @@ def get_footprint_area(geometry, axis="Z", direction=None):
     for idx in range(len(vertices)):
         vertices[idx] = vertices[idx] - np.dot(vertices[idx], direction) * direction
 
-    return get_area_vf(vertices, filtered_faces)
+    # Now flatten 3D vertices into 2D polygons which can be unioned to find a footprint.
+
+    # Create an orthonormal basis using the direction
+    d = np.array(direction) / np.linalg.norm(direction)
+
+    # Find a vector not parallel to d
+    a = np.array(d)
+    if not np.isclose(a[2], 1.0, atol=0.01):  # If d is not along the Z-axis
+        a[2] += 0.01  # Small perturbation to make it not parallel
+    else:
+        a = np.array([1, 0, 0])
+
+    # First basis vector
+    b = np.cross(d, a)
+    b /= np.linalg.norm(b)
+
+    # Second basis vector
+    c = np.cross(d, b)
+
+    # Project the flattened vertices onto the basis to get 2D coordinates
+    vertices_2d = np.array([[np.dot(v, b), np.dot(v, c)] for v in vertices])
+
+    polygons = [shapely.Polygon(vertices_2d[face]) for face in filtered_faces]
+    unioned_polygon = shapely.ops.unary_union(polygons)
+
+    return unioned_polygon.area
 
 
 def get_outer_surface_area(geometry):
