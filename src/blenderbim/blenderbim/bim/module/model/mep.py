@@ -856,7 +856,7 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
                 "pset.edit_pset",
                 tool.Ifc.get(),
                 pset=pset,
-                properties={"Data": json.dumps(transition_data, default=list)},
+                properties={"Data": tool.Ifc.get().createIfcText(json.dumps(transition_data, default=list))},
             )
             tool.System.add_ports(obj, offset_end_port=profile_offset_si)
 
@@ -1200,7 +1200,7 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
                 "pset.edit_pset",
                 tool.Ifc.get(),
                 pset=pset,
-                properties={"Data": json.dumps(bend_data, default=list)},
+                properties={"Data": tool.Ifc.get().createIfcText(json.dumps(bend_data, default=list))},
             )
             tool.System.add_ports(obj, end_port_pos=second_object_offset)
 

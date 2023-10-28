@@ -908,14 +908,14 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
                         "pset.edit_pset",
                         tool.Ifc.get(),
                         pset=tool.Ifc.get().by_id(pset["id"]),
-                        properties={"Data": json.dumps(data)},
+                        properties={"Data": tool.Ifc.get().createIfcText(json.dumps(data))},
                     )
                 else:
                     ifcopenshell.api.run(
                         "pset.edit_pset",
                         tool.Ifc.get(),
                         pset=tool.Ifc.get().by_id(pset["id"]),
-                        properties={"Parent": parent.GlobalId, "Data": json.dumps(data)},
+                        properties={"Parent": parent.GlobalId, "Data": tool.Ifc.get().createIfcText(json.dumps(data))},
                     )
 
             else:
@@ -927,7 +927,7 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
                     "pset.edit_pset",
                     tool.Ifc.get(),
                     pset=pset,
-                    properties={"Parent": parent.GlobalId, "Data": json.dumps(data)},
+                    properties={"Parent": parent.GlobalId, "Data": tool.Ifc.get().createIfcText(json.dumps(data))},
                 )
 
         def add_child_to_assembly_data(new_entity):
@@ -941,7 +941,7 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
                 "pset.edit_pset",
                 tool.Ifc.get(),
                 pset=tool.Ifc.get().by_id(parent_pset["id"]),
-                properties={"Data": json.dumps(data)},
+                properties={"Data": tool.Ifc.get().createIfcText(json.dumps(data))},
             )
 
         def create_data_structure(entity, level=-1):
@@ -1215,7 +1215,10 @@ class RefreshAggregate(bpy.types.Operator):
                                 "pset.edit_pset",
                                 tool.Ifc.get(),
                                 pset=pset,
-                                properties={"Parent": instance_entity.GlobalId, "Data": json.dumps(data)},
+                                properties={
+                                    "Parent": instance_entity.GlobalId,
+                                    "Data": tool.Ifc.get().createIfcText(json.dumps(data)),
+                                },
                             )
 
                             part_obj = tool.Ifc.get_object(part)
@@ -1254,7 +1257,10 @@ class RefreshAggregate(bpy.types.Operator):
                             "pset.edit_pset",
                             tool.Ifc.get(),
                             pset=pset,
-                            properties={"Parent": instance_entity.GlobalId, "Data": json.dumps(data)},
+                            properties={
+                                "Parent": instance_entity.GlobalId,
+                                "Data": tool.Ifc.get().createIfcText(json.dumps(data)),
+                            },
                         )
 
                         part_obj = tool.Ifc.get_object(part)
