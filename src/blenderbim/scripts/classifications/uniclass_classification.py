@@ -33,13 +33,14 @@ tables = [
     ("FI", "Form of information"),
     ("Ro", "Roles"),
     ("Ma", "Materials"),
-    ("Pc", "Properties and characteristics"),
+    ("PC", "Properties and characteristics"),
     ("Zz", "CAD"),
 ]
 
 for identification, name in tables:
     ref = ifc.create_entity("IfcClassificationReference", Identification=identification, Name=name)
     references[identification] = ref
+    ref.ReferencedSource = classification
 
 for filename in os.listdir(directory_path):
     if filename.endswith(".xlsx") and "change-log" not in filename and "codes-not-in-use" not in filename:
