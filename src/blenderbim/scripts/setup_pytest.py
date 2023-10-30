@@ -18,18 +18,20 @@
 
 import sys
 import subprocess
+from pathlib import Path
 
 print("Here are the detected system paths:")
 print(sys.path)
 
 py_exec = str(sys.executable)
+base_python_path = str(Path(sys.executable).parent.parent)  # path without bin/python.exe
 
 print("Detected executable:", py_exec)
 
 subprocess.call([py_exec, "-m", "ensurepip", "--user"])
 subprocess.call([py_exec, "-m", "pip", "install", "--upgrade", "pip"])
 
-sys_paths = [p for p in sys.path if "site-packages" in p]
+sys_paths = [p for p in sys.path if "site-packages" in p and p.startswith(base_python_path)]
 if sys_paths:
     print("Detected installation directory:", sys_paths[-1])
     subprocess.call([py_exec, "-m", "pip", "install", f"--target={sys_paths[-1]}", "--upgrade", "pytest"])
