@@ -19,6 +19,7 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.util.schema
+import blenderbim.tool as tool
 from blenderbim.bim.module.root.data import IfcClassData
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -80,12 +81,46 @@ def get_contexts(self, context):
     return IfcClassData.data["contexts"]
 
 
+def update_relating_class_from_object(self, context):
+    if self.relating_class_object is None:
+        return
+    element = tool.Ifc.get_entity(self.relating_class_object)
+    if not element:
+        return
+    self.ifc_class = element.is_a()
+    predefined_type = ifcopenshell.util.element.get_predefined_type(element)
+    if predefined_type:
+        if element.PredefinedType == "USERDEFINED":
+            self.ifc_predefined_type = "USERDEFINED"
+            self.ifc_userdefined_type = predefined_type
+        else:
+            self.ifc_predefined_type = predefined_type
+    bpy.ops.bim.reassign_class()
+
+
+def is_object_class_applicable(self, obj):
+    element = tool.Ifc.get_entity(obj)
+    if not element:
+        return False
+    active_element = tool.Ifc.get_entity(bpy.context.active_object)
+    if not active_element:
+        return False
+    return element.is_a("IfcTypeObject") == active_element.is_a("IfcTypeObject")
+
+
 class BIMRootProperties(PropertyGroup):
     contexts: EnumProperty(items=get_contexts, name="Contexts")
     ifc_product: EnumProperty(items=get_ifc_products, name="Products", update=refresh_classes)
     ifc_class: EnumProperty(items=get_ifc_classes, name="Class", update=refresh_predefined_types)
     ifc_predefined_type: EnumProperty(items=get_ifc_predefined_types, name="Predefined Type", default=None)
     ifc_userdefined_type: StringProperty(name="Userdefined Type")
+    relating_class_object: PointerProperty(
+        type=bpy.types.Object,
+        name="Copy Class",
+        update=update_relating_class_from_object,
+        poll=is_object_class_applicable,
+        description="Copy the selected object's class and predefined type to the active object",
+    )
 
     getter_enum_suggestions = {
         "ifc_class": get_ifc_classes_suggestions,
