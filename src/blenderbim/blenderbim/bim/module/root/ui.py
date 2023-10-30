@@ -58,6 +58,7 @@ class BIM_PT_class(Panel):
                     root_prop.get_ifc_predefined_types(context.scene.BIMRootProperties, context),
                     is_reassigning_class=True,
                 )
+                self.layout.prop(context.scene.BIMRootProperties, "relating_class_object", icon="COPYDOWN")
             else:
                 row = self.layout.row(align=True)
                 row.label(text=IfcClassData.data["name"])
