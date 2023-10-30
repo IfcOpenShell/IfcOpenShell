@@ -559,5 +559,6 @@ def ensure_material_unassigned(usecase_path, ifc_file, settings):
         total_removed = 0
         for i in to_remove:
             obj.active_material_index = i - total_removed
-            bpy.ops.object.material_slot_remove({"object": obj})
+            with bpy.context.temp_override(object=obj):
+                bpy.ops.object.material_slot_remove()
             total_removed += 1

@@ -79,7 +79,8 @@ def calculate_formwork_area(objs, context):
             modifier = copied_obj.modifiers.new(type="BOOLEAN", name="Boolean")
             modifier.operation = "UNION"
             modifier.object = obj
-            bpy.ops.object.modifier_apply({"object": copied_obj}, modifier="Boolean")
+            with context.temp_override(object=copied_obj):
+                bpy.ops.object.modifier_apply(modifier="Boolean")
 
     copied_obj.name = "Formwork"
     copied_obj.BIMObjectProperties.ifc_definition_id = 0
