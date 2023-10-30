@@ -1401,7 +1401,8 @@ class IfcImporter:
                 context_override = {}
                 context_override["object"] = context_override["active_object"] = target
                 context_override["selected_objects"] = context_override["selected_editable_objects"] = objs
-                bpy.ops.object.join(context_override)
+                with bpy.context.temp_override(**context_override):
+                    bpy.ops.object.join()
                 target.data.name += "-merge"
                 for ifc_definition_id in id_set[group_name][1:]:
                     del self.added_data[ifc_definition_id]
