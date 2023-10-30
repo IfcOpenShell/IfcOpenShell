@@ -795,7 +795,8 @@ class OverrideDuplicateMove(bpy.types.Operator):
             new = blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
 
             # clean up the orphaned mesh with ifc id of the original object to avoid confusion
-            if new and temp_data:
+            # IfcGridAxis keeps the same mesh data (it's pointing to ifc id 0, so it's not a problem)
+            if new and temp_data and not new.is_a("IfcGridAxis"):
                 tool.Blender.remove_data_block(temp_data)
 
             if new:
