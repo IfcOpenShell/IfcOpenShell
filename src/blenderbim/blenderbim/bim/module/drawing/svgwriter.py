@@ -160,7 +160,7 @@ class SvgWriter:
     def find_xml_symbol_by_id(self, id):
         tree = ET.parse(self.resource_paths["Symbols"])
         xml_symbol = tree.find(f'.//*[@id="{id}"]')
-        return External(xml_symbol) if xml_symbol else None
+        return External(xml_symbol) if xml_symbol is not None else None
 
     def add_patterns(self):
         path = self.resource_paths["Patterns"]

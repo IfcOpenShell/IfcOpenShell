@@ -534,7 +534,7 @@ class CreateDrawing(bpy.types.Operator):
         root = etree.fromstring(results)
 
         group = root.find("{http://www.w3.org/2000/svg}g")
-        if not group:
+        if group is None:
             with open(svg_path, "wb") as svg:
                 svg.write(etree.tostring(root))
 
