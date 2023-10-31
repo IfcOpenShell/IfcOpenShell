@@ -197,6 +197,15 @@ class Blender:
 
     @classmethod
     def copy_node_graph(cls, material_to, material_from):
+        
+        # https://projects.blender.org/blender/blender/issues/108763
+        if bpy.app.version >= (4, 0):
+            print(
+                "WARNING. Copying node graph is not yet supported on Blender 4.0+ due Blender bug, "
+                f"copying node graph from {material_from.name} to {material_to.name} will be skipped"
+            )
+            return
+
         temp_override = cls.get_shader_editor_context()
         shader_editor = temp_override["space"]
 
