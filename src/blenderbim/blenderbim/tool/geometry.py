@@ -70,7 +70,8 @@ class Geometry(blenderbim.core.tool.Geometry):
                 context_override = {}
                 context_override["object"] = context_override["active_object"] = obj
                 context_override["selected_objects"] = context_override["selected_editable_objects"] = [obj]
-                bpy.ops.object.transform_apply(context_override, location=False, rotation=False, scale=True)
+                with bpy.context.temp_override(**context_override):
+                    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
             else:
                 obj.scale = Vector((1.0, 1.0, 1.0))
 
