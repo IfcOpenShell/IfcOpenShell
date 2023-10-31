@@ -288,9 +288,9 @@ class BaseShader:
     """
 
     def __init__(self):
-        # 3D_POLYLINE_UNIFORM_COLOR is good for smoothed lines since `bgl.enable(GL_LINE_SMOOTH)` is deprecated
-        self.line_shader = gpu.shader.from_builtin("3D_POLYLINE_UNIFORM_COLOR")
-        self.base_shader = gpu.shader.from_builtin("3D_UNIFORM_COLOR")
+        # POLYLINE_UNIFORM_COLOR is good for smoothed lines since `bgl.enable(GL_LINE_SMOOTH)` is deprecated
+        self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
+        self.base_shader = gpu.shader.from_builtin("UNIFORM_COLOR")
 
     def get_shader(self):
         """Returns shader for this type"""
