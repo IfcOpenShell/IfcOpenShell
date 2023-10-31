@@ -319,6 +319,17 @@ if getattr(bpy.types, "SCENE_PT_custom_props"):
             return tool.Blender.is_tab(context, "BLENDER")
 
 
+# available on Blender 4.0+
+if getattr(bpy.types, "SCENE_PT_simulation", None):
+
+    class Override_SCENE_PT_simulation(bpy.types.SCENE_PT_simulation):
+        bl_idname = "SCENE_PT_simulation_override"
+
+        @classmethod
+        def poll(cls, context):
+            return tool.Blender.is_tab(context, "BLENDER")
+
+
 @persistent
 def load_post(scene):
     global global_subscription_owner
@@ -361,6 +372,7 @@ def load_post(scene):
             "SCENE_PT_rigid_body_world",
             "SCENE_PT_audio",
             "SCENE_PT_keying_sets",
+            "SCENE_PT_simulation",
             "SCENE_PT_custom_props",
         ]:
             if getattr(bpy.types, panel, None):
