@@ -947,7 +947,7 @@ def remove_deep2(ifc_file, element, also_consider=[], do_not_delete=[]):
     :param element: The starting element that defines the subgraph
     :type element: ifcopenshell.entity_instance.entity_instance
     """
-    ifc_file.batch()
+    # ifc_file.batch()
     to_delete = set()
     subgraph = list(ifc_file.traverse(element, breadth_first=True))
     subgraph.extend(also_consider)
@@ -982,7 +982,7 @@ def remove_deep2(ifc_file, element, also_consider=[], do_not_delete=[]):
     # We delete elements from subgraph in reverse order to allow batching to work
     for subelement in filter(lambda e: e in to_delete, subgraph[::-1]):
         ifc_file.remove(subelement)
-    ifc_file.unbatch()
+    # ifc_file.unbatch()
 
 
 def copy(ifc_file, element):
