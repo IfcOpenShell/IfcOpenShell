@@ -33,6 +33,26 @@
             "name": "Furnace"
         }
     ],
+    "IfcElectricDistributionBoard": [
+        {
+            "name": "Circuit Breaker Panel",
+            "predefined_type": "DISTRIBUTIONBOARD"
+        },
+        {
+            "name": "Electrical Panel",
+            "predefined_type": "DISTRIBUTIONBOARD"
+        }
+    ],
+    "IfcElectricDistributionBoardType": [
+        {
+            "name": "Circuit Breaker Panel",
+            "predefined_type": "DISTRIBUTIONBOARD"
+        },
+        {
+            "name": "Electrical Panel",
+            "predefined_type": "DISTRIBUTIONBOARD"
+        }
+    ],
     "IfcFurniture": [
         {
             "name": "Casework"
@@ -57,7 +77,7 @@
     ],
     "IfcGeographicElement": [
         {
-            "name": "Tree"
+            "name": "Trees"
         },
         {
             "name": "Plants"
@@ -68,7 +88,7 @@
     ],
     "IfcGeographicElementType": [
         {
-            "name": "Tree"
+            "name": "Trees"
         },
         {
             "name": "Plants"
