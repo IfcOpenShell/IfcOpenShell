@@ -57,6 +57,25 @@ def updateContainerName(self, context):
     props.container_name = self.name
 
 
+def update_relating_container_from_object(self, context):
+    if self.relating_container_object is None or context.active_object is None:
+        return
+    element = tool.Ifc.get_entity(self.relating_container_object)
+    if not element:
+        return
+    container = ifcopenshell.util.element.get_container(element)
+    if container:
+        bpy.ops.bim.assign_container(structure=container.id())
+    else:
+        bpy.ops.bim.disable_editing_container()
+        bpy.ops.bim.remove_container()
+
+
+def is_object_applicable(self, obj):
+    element = tool.Ifc.get_entity(obj)
+    return bool(element)
+
+
 class SpatialElement(PropertyGroup):
     name: StringProperty(name="Name")
     long_name: StringProperty(name="Long Name")
@@ -73,6 +92,13 @@ class BIMSpatialProperties(PropertyGroup):
 
 class BIMObjectSpatialProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing")
+    relating_container_object: PointerProperty(
+        type=bpy.types.Object,
+        name="Copy Container",
+        update=update_relating_container_from_object,
+        poll=is_object_applicable,
+        description="Copy the target object's container to the active object",
+    )
 
 
 class BIMContainer(PropertyGroup):
