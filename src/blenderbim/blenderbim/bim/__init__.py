@@ -288,6 +288,7 @@ def unregister():
         "SCENE_PT_rigid_body_world",
         "SCENE_PT_audio",
         "SCENE_PT_keying_sets",
+        "SCENE_PT_simulation",
         "SCENE_PT_custom_props",
     ]:
         try:
