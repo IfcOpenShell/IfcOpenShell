@@ -390,8 +390,6 @@ class BaseDecorator:
         # 0 is the default font, but we're fancier than that
         font_id = self.font_id
 
-        dpi = context.preferences.system.dpi
-
         color = context.preferences.addons["blenderbim"].preferences.decorations_colour
 
         ang = -Vector((1, 0)).angle_signed(text_dir)
@@ -411,7 +409,7 @@ class BaseDecorator:
         font_size_px = int(0.004118616 * mm_to_px) * font_size_mm / 2.5
         pos = pos - line_no * font_size_px * rotation_matrix[1]
 
-        blf.size(font_id, font_size_px, dpi)
+        blf.size(font_id, font_size_px)
 
         if box_alignment or center or vcenter:
             w, h = blf.dimensions(font_id, text)
