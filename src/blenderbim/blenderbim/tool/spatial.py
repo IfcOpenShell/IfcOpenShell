@@ -78,6 +78,7 @@ class Spatial(blenderbim.core.tool.Spatial):
     @classmethod
     def enable_editing(cls, obj):
         obj.BIMObjectSpatialProperties.is_editing = True
+        obj.BIMObjectSpatialProperties.relating_container_object = None
 
     @classmethod
     def get_container(cls, element):
