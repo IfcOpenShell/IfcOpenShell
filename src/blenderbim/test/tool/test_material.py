@@ -43,7 +43,7 @@ class TestAddDefaultMaterialObject(NewFile):
 
 class TestDeleteObject(NewFile):
     def test_run(self):
-        material = subject.add_default_material_object()
+        material = subject.add_default_material_object(None)
         assert bpy.data.materials.get("Default")
         subject.delete_object(material)
         assert not bpy.data.materials.get("Default")
