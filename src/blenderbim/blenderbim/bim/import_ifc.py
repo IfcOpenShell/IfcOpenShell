@@ -1459,11 +1459,10 @@ class IfcImporter:
         types_collection.hide_viewport = False
         bpy.context.view_layer.objects.active = last_obj
 
-        context_override = {}
-        bpy.ops.object.editmode_toggle(context_override)
-        bpy.ops.mesh.tris_convert_to_quads(context_override)
-        bpy.ops.mesh.normals_make_consistent(context_override)
-        bpy.ops.object.editmode_toggle(context_override)
+        bpy.ops.object.editmode_toggle()
+        bpy.ops.mesh.tris_convert_to_quads()
+        bpy.ops.mesh.normals_make_consistent()
+        bpy.ops.object.editmode_toggle()
 
         types_collection.hide_viewport = True
         bpy.context.view_layer.objects.active = last_obj
