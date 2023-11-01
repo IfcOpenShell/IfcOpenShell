@@ -435,6 +435,8 @@ def get_materials(element, should_inherit=True):
         return [p.Material for p in material.MaterialProfiles]
     elif material.is_a("IfcMaterialConstituentSet"):
         return [c.Material for c in material.MaterialConstituents]
+    elif material.is_a("IfcMaterialList"):
+        return list(material.Materials)
 
 
 def get_styles(element):
