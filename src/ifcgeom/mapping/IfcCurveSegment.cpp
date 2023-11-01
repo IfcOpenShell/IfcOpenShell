@@ -102,6 +102,7 @@ class segment_geometry_adjuster {
     // and provided to the curve_segment_adjustor through this method
     void set_segment_end_point(const Eigen::Matrix4d& end_of_inst) {
        end_of_inst_ = end_of_inst;
+       init_adjustments();
     }
 
     // Transforms the ParentCurve geometry with the IfcCurveSegment.Placement and
@@ -116,6 +117,10 @@ class segment_geometry_adjuster {
     }
 
 	 protected:
+       // precompute any values that are constant when applying geometry adjustments
+       //( subclasses to override. 
+    virtual void init_adjustments() { /*do nothing*/
+    }
        // Applies geometric adjustment to the segment curve point evaluated at u
        // This default implementation does nothing
     virtual void apply_adjustments(double u, Eigen::Matrix4d& p) const { /* do nothing - override in subclass if needed */ }
@@ -140,6 +145,13 @@ class segment_geometry_adjuster {
 class linear_segment_geometry_adjuster : public segment_geometry_adjuster {
   public:
     using segment_geometry_adjuster::segment_geometry_adjuster;
+
+    protected:
+       virtual void init_adjustments() override {
+          // @todo: rb - implement to improve efficiency
+          // cache delta = (start_next - end_this)/length 
+          // adjustment is then adj = u*delta
+    }
 
 	 virtual void apply_adjustments(double u, Eigen::Matrix4d& p) const override {
        // make the adjustments based on the transition code
@@ -173,6 +185,7 @@ class linear_segment_geometry_adjuster : public segment_geometry_adjuster {
               auto dy = compute_adjustment<decltype(dye)>(u,dye,dys,length);
               p.col(i)(0) += dx;
               p.col(i)(1) += dy;
+              p.col(i).normalize();
           }
        }
     }
