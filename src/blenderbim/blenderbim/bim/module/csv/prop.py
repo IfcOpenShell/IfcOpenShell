@@ -72,6 +72,7 @@ class CsvProperties(PropertyGroup):
     empty_value: StringProperty(default="-", name="Empty String Value")
     true_value: StringProperty(default="YES", name="True Value")
     false_value: StringProperty(default="NO", name="False Value")
+    concat_value: StringProperty(default=", ", name="Concat Value")
     csv_delimiter: EnumProperty(
         items=[
             (";", ";", ""),
