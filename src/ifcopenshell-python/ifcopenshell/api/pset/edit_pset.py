@@ -158,9 +158,9 @@ class Usecase:
     def execute(self):
         self.update_pset_name()
         self.load_pset_template()
-        self.update_existing_properties()
-        new_properties = self.add_new_properties()
-        self.extend_pset_with_new_properties(new_properties)
+        existing_props = self.update_existing_properties()
+        new_props = self.add_new_properties()
+        self.assign_new_properties(existing_props + new_props)
 
     def update_pset_name(self):
         if self.settings["name"]:
@@ -198,18 +198,26 @@ class Usecase:
     # IfcPropertySingleValue.  Or maybe the user should
     # just delete the property first? - vulevukusej
     def update_existing_properties(self):
+        existing_props = []
         for prop in self.get_properties():
             if not self._should_update_prop(prop):
+                existing_props.append(prop)
                 continue
 
+            if self.file.get_total_inverses(prop) > 1:
+                continue  # Treat as a new property to avoid affecting other psets.
+
             if prop.is_a("IfcPropertyEnumeratedValue"):
-                self.update_existing_prop_enum(prop)
-
+                prop = self.update_existing_prop_enum(prop)
+                if prop:
+                    existing_props.append(prop)
             elif prop.is_a("IfcPropertySingleValue"):
-                self.update_existing_prop_single_value(prop)
-
+                prop = self.update_existing_prop_single_value(prop)
+                if prop:
+                    existing_props.append(prop)
             else:
                 raise NotImplementedError(f"Updating '{prop.is_a()}' properties is not supported yet")
+        return existing_props
 
     def update_existing_prop_enum(self, prop):
         """
@@ -228,10 +236,7 @@ class Usecase:
                 sel_vals.append(ifc_val)
             prop.EnumerationValues = tuple(sel_vals) or None
 
-        elif (
-            isinstance(value, ifcopenshell.entity_instance)
-            and value.is_a("IfcPropertyEnumeratedValue")
-        ):
+        elif isinstance(value, ifcopenshell.entity_instance) and value.is_a("IfcPropertyEnumeratedValue"):
             if not value.EnumerationReference.EnumerationValues:
                 if self._try_purge(prop):
                     return
@@ -245,6 +250,7 @@ class Usecase:
         if unit:
             prop.Unit = unit
         del self.settings["properties"][prop.Name]
+        return prop
 
     def update_existing_prop_single_value(self, prop):
         """
@@ -267,6 +273,7 @@ class Usecase:
         if unit:
             prop.Unit = unit
         del self.settings["properties"][prop.Name]
+        return prop
 
     def add_new_properties(self):
         properties = []
@@ -284,9 +291,7 @@ class Usecase:
                     kwargs = {"Name": name, "NominalValue": value}
                     if unit:
                         kwargs["Unit"] = unit
-                    properties.append(
-                        self.file.create_entity("IfcPropertySingleValue", **kwargs)
-                    )
+                    properties.append(self.file.create_entity("IfcPropertySingleValue", **kwargs))
 
                 else:
                     raise ValueError(f"{value.is_a()} cannot be assigned to the property set '{name}'")
@@ -307,11 +312,8 @@ class Usecase:
                             self.file.create_entity(
                                 "IfcPropertyListValue",
                                 Name=name,
-                                ListValues=[
-                                    self.file.create_entity(ifc_class, v)
-                                    for v in value
-                                ],
-                                Unit=unit
+                                ListValues=[self.file.create_entity(ifc_class, v) for v in value],
+                                Unit=unit,
                             )
                         )
                         break
@@ -321,7 +323,7 @@ class Usecase:
                             "IFCPROPERTYENUMERATION",
                             Name=name,
                             EnumerationValues=pset_template.Enumerators.EnumerationValues,
-                            **({"Unit": unit} if unit else {})
+                            **({"Unit": unit} if unit else {}),
                         )
                         prop_enum_value = self.file.create_entity(
                             "IFCPROPERTYENUMERATEDVALUE",
@@ -347,14 +349,10 @@ class Usecase:
                 if unit:
                     args["Unit"] = unit
 
-                properties.append(
-                    self.file.create_entity("IfcPropertySingleValue", **args)
-                )
+                properties.append(self.file.create_entity("IfcPropertySingleValue", **args))
         return properties
 
-    def extend_pset_with_new_properties(self, new_properties):
-        props = list(self.get_properties())
-        props.extend(new_properties)
+    def assign_new_properties(self, props):
         if hasattr(self.settings["pset"], "HasProperties"):
             self.settings["pset"].HasProperties = props
         elif hasattr(self.settings["pset"], "Properties"):
