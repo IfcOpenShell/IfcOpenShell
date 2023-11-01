@@ -174,6 +174,18 @@ def update_attribute_value(self, context):
             self.is_null = False
 
 
+def update_is_null(self, context):
+    if not self.is_null:
+        return
+    self.string_value = ""
+    self.int_value = 0
+    self.float_value = 0
+    self.length_value = 0
+    self.bool_value = False
+    if self.is_null is not True:
+        self.is_null = True
+
+
 def set_int_value(self, new_value):
     set_numerical_value(self, "int_value", new_value)
 
@@ -240,7 +252,7 @@ class Attribute(PropertyGroup):
     enum_items: StringProperty(name="Value")
     enum_descriptions: CollectionProperty(type=StrProperty)
     enum_value: EnumProperty(items=get_attribute_enum_values, name="Value", update=update_attribute_value)
-    is_null: BoolProperty(name="Is Null")
+    is_null: BoolProperty(name="Is Null", update=update_is_null)
     is_optional: BoolProperty(name="Is Optional")
     is_uri: BoolProperty(name="Is Uri", default=False)
     is_selected: BoolProperty(name="Is Selected", default=False)
