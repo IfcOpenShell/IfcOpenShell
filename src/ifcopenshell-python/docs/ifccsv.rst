@@ -66,8 +66,8 @@ utility:
 ::
 
     $ python -m ifccsv -h
-    usage: ifccsv.py [-h] -i IFC [-s SPREADSHEET] [-f FORMAT] [-d DELIMITER] [-n NULL] [-e EMPTY] [--bool_true BOOL_TRUE] [--bool_false BOOL_FALSE] [-q QUERY] [-a ATTRIBUTES [ATTRIBUTES ...]] [--headers HEADERS [HEADERS ...]]
-                     [--sort SORT [SORT ...]] [--order ORDER [ORDER ...]] [--export] [--import]
+    usage: ifccsv.py [-h] -i IFC [-s SPREADSHEET] [-f FORMAT] [-d DELIMITER] [-n NULL] [-e EMPTY] [--bool_true BOOL_TRUE] [--bool_false BOOL_FALSE] [--concat CONCAT] [-q QUERY] [-a ATTRIBUTES [ATTRIBUTES ...]]
+                     [--headers HEADERS [HEADERS ...]] [--sort SORT [SORT ...]] [--order ORDER [ORDER ...]] [--export] [--import]
 
     Exports IFC data to and from CSV
 
@@ -87,6 +87,7 @@ utility:
                             How to represent true values. Defaults to YES.
       --bool_false BOOL_FALSE
                             How to represent false values. Defaults to NO.
+      --concat CONCAT       How to concatenate lists. Defaults to ', '.
       -q QUERY, --query QUERY
                             Specify a IFC query selector, such as "IfcWall"
       -a ATTRIBUTES [ATTRIBUTES ...], --attributes ATTRIBUTES [ATTRIBUTES ...]

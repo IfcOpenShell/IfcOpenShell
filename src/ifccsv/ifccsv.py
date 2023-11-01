@@ -73,6 +73,7 @@ class IfcCsv:
         empty="",
         bool_true="YES",
         bool_false="NO",
+        concat=", ",
         sort=None,
         groups=None,
         summaries=None,
@@ -103,6 +104,8 @@ class IfcCsv:
                     value = bool_true
                 elif value is False:
                     value = bool_false
+                elif isinstance(value, (list, tuple)) and concat is not None:
+                    value = concat.join(map(str, value))
                 result.append(value)
             self.results.append(result)
 
@@ -453,6 +456,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--bool_true", type=str, default="YES", help="How to represent true values. Defaults to YES.")
     parser.add_argument("--bool_false", type=str, default="NO", help="How to represent false values. Defaults to NO.")
+    parser.add_argument("--concat", type=str, default=", ", help="How to concatenate lists. Defaults to ', '.")
     parser.add_argument("-q", "--query", type=str, default="", help='Specify a IFC query selector, such as "IfcWall"')
     parser.add_argument(
         "-a",
@@ -486,6 +490,7 @@ if __name__ == "__main__":
             empty=args.empty,
             bool_true=args.bool_true,
             bool_false=args.bool_false,
+            concat=args.concat,
             sort=sort,
         )
     elif getattr(args, "import"):
