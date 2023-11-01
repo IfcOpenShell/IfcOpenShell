@@ -919,12 +919,15 @@ class Restriction:
             return self
         self.base = ids_dict.get("@base", "xs:string")[3:]
         for key, value in ids_dict.items():
+            key = key.split(":")[-1]
             if key in ["@base", "annotation"]:
                 continue
-            if isinstance(value, dict):
-                self.options[key.split(":")[-1]] = value["@value"]
+            if key == "enumeration" and isinstance(value, dict):
+                self.options[key] = [value["@value"]]  # A single enumeration value which is pretty meaningless
+            elif isinstance(value, dict):
+                self.options[key] = value["@value"]
             else:
-                self.options[key.split(":")[-1]] = [v["@value"] for v in value]
+                self.options[key] = [v["@value"] for v in value]
         return self
 
     def asdict(self):
