@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import numpy as np
 import ifcopenshell
 
 
@@ -67,6 +68,21 @@ def get_representation(element, context, subcontext=None, target_view=None):
 
 
 def resolve_representation(representation):
-    if representation.Items and representation.Items[0].is_a("IfcMappedItem"):
+    if len(representation.Items) == 1 and representation.Items[0].is_a("IfcMappedItem"):
         return resolve_representation(representation.Items[0].MappingSource.MappedRepresentation)
     return representation
+
+
+def resolve_items(representation, matrix=None):
+    if matrix is None:
+        matrix = np.eye(4)
+    results = []
+    for item in representation.Items or []:  # Be forgiving of invalid IFCs because Revit :(
+        if item.is_a("IfcMappedItem"):
+            rep_matrix = ifcopenshell.util.placement.get_mappeditem_transformation(item)
+            if not np.allclose(rep_matrix, np.eye(4)):
+                rep_matrix = rep_matrix @ matrix.copy()
+            results.extend(resolve_items(item.MappingSource.MappedRepresentation, rep_matrix))
+        else:
+            results.append({"matrix": matrix.copy(), "item": item})
+    return results
