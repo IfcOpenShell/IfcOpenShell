@@ -35,7 +35,8 @@ auto sign = [](double v) -> int { return v < 0 ? -1 : 1; };                     
 auto binary_sign = [](double v) -> int { return v < 0 ? -1 : (0 < v ? 1 : 0); }; // returns -1, 0, or 1
 
 // @todo change the calculation at end of this to std::lerp when upgrading to C++ 20
-auto interpolate = [](double u, double a, double b, double l) -> double { return l == 0.0 ? 0.0 : u * (b - a) / l; };
+template <typename T>
+auto compute_adjustment = [](double u, const T& a, const T& b, double l) -> double { return l == 0.0 ? 0.0 : u * (b - a) / l; };
 } // namespace
 
 
@@ -154,8 +155,8 @@ class linear_segment_geometry_adjuster : public segment_geometry_adjuster {
        auto xs = start_next.col(3)(0);
        auto ys = start_next.col(3)(1);
        auto length = get_length();
-       auto x = interpolate(u,xe,xs,length);
-       auto y = interpolate(u,ye,ys,length);
+       auto x = compute_adjustment<decltype(xe)>(u, xe, xs, length);
+       auto y = compute_adjustment<decltype(ye)>(u, ye, ys, length);
 
        p.col(3)(0) += x;
        p.col(3)(1) += y;
@@ -168,8 +169,8 @@ class linear_segment_geometry_adjuster : public segment_geometry_adjuster {
               auto dye = end_this.col(i)(1);
               auto dxs = start_next.col(i)(0);
               auto dys = start_next.col(i)(1);
-              auto dx = interpolate(u,dxe,dxs,length);
-              auto dy = interpolate(u,dye,dys,length);
+              auto dx = compute_adjustment<decltype(dxe)>(u,dxe,dxs,length);
+              auto dy = compute_adjustment<decltype(dye)>(u,dye,dys,length);
               p.col(i)(0) += dx;
               p.col(i)(1) += dy;
           }
