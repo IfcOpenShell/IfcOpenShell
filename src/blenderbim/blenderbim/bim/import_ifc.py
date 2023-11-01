@@ -494,7 +494,7 @@ class IfcImporter:
 
         rep = representation
         while True:
-            if rep.Items and rep.Items[0].is_a("IfcMappedItem"):
+            if len(rep.Items) == 1 and rep.Items[0].is_a("IfcMappedItem"):
                 rep_matrix = ifcopenshell.util.placement.get_mappeditem_transformation(rep.Items[0])
                 if not np.allclose(rep_matrix, np.eye(4)):
                     matrix = rep_matrix @ matrix
@@ -547,7 +547,7 @@ class IfcImporter:
             return True
 
     def is_native_swept_disk_solid(self, element, representation):
-        items = representation.Items or []  # Be forgiving of invalid IFCs because Revit :(
+        items = [i["item"] for i in ifcopenshell.util.representation.resolve_items(representation)]
         if len(items) == 1 and items[0].is_a("IfcSweptDiskSolid"):
             if tool.Blender.Modifier.is_railing(element):
                 return False
@@ -563,6 +563,7 @@ class IfcImporter:
         return False
 
     def is_native_faceted_brep(self, representation):
+        # TODO handle mapped items
         for i in representation.Items:
             if i.is_a() != "IfcFacetedBrep":
                 return False
@@ -1316,12 +1317,17 @@ class IfcImporter:
         curve.resolution_u = 2
         polyline = curve.splines.new("POLY")
 
-        for item in native_data["representation"].Items:
+        for item_data in ifcopenshell.util.representation.resolve_items(native_data["representation"]):
+            item = item_data["item"]
+            matrix = item_data["matrix"]
+            matrix[0][3] *= self.unit_scale
+            matrix[1][3] *= self.unit_scale
+            matrix[2][3] *= self.unit_scale
             # TODO: support inner radius, start param, and end param
             geometry = self.create_generic_shape(item.Directrix)
             e = geometry.edges
             v = geometry.verts
-            vertices = [[v[i], v[i + 1], v[i + 2], 1] for i in range(0, len(v), 3)]
+            vertices = [list(matrix @ [v[i], v[i + 1], v[i + 2], 1]) for i in range(0, len(v), 3)]
             edges = [[e[i], e[i + 1]] for i in range(0, len(e), 2)]
             v2 = None
             for edge in edges:
