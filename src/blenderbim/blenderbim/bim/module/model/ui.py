@@ -278,16 +278,10 @@ class BIM_PT_stair(bpy.types.Panel):
                     row.label(text=str(prop_value))
 
             # calculated properties
-            number_of_rises = props.number_of_treads + 1
-            row = self.layout.row(align=True)
-            row.label(text="Number of risers")
-            row.label(text=str(number_of_rises))
-            row = self.layout.row(align=True)
-            row.label(text="Tread rise")
-            row.label(text=str(round(props.height / number_of_rises, 5)))
-            row = self.layout.row(align=True)
-            row.label(text="Length")
-            row.label(text=str(round(props.tread_run * number_of_rises, 5)))
+            for prop_name, prop_value in StairData.data["calculated_params"].items():
+                row = self.layout.row(align=True)
+                row.label(text=prop_name)
+                row.label(text=str(prop_value))
         else:
             row = self.layout.row()
             row.label(text="No Stair Found")
