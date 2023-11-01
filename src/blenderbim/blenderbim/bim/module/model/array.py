@@ -262,7 +262,9 @@ class SelectAllArrayObjects(bpy.types.Operator):
             return {"CANCELLED"}
 
         array_objects = tool.Blender.Modifier.Array.get_all_objects(parent_element)
-        tool.Blender.set_objects_selection(context, active_object=array_objects[0], selected_objects=array_objects)
+        tool.Blender.set_objects_selection(
+            context, active_object=array_objects[0], selected_objects=array_objects, clear_previous_selection=False
+        )
         return {"FINISHED"}
 
 

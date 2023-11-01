@@ -366,9 +366,10 @@ class Blender:
         active_object.select_set(True)
 
     @classmethod
-    def set_objects_selection(cls, context, active_object, selected_objects):
-        for obj in context.selected_objects:
-            obj.select_set(False)
+    def set_objects_selection(cls, context, active_object, selected_objects, clear_previous_selection=True):
+        if clear_previous_selection:
+            for obj in context.selected_objects:
+                obj.select_set(False)
         for obj in selected_objects:
             obj.select_set(True)
         context.view_layer.objects.active = active_object
