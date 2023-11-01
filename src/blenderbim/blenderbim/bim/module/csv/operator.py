@@ -207,6 +207,7 @@ class ExportIfcCsv(bpy.types.Operator):
             empty=props.empty_value,
             bool_true=props.true_value,
             bool_false=props.false_value,
+            concat=props.concat_value,
             sort=sort,
             groups=groups,
             summaries=summaries,
