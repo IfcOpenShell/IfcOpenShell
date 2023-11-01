@@ -92,7 +92,10 @@ class ReassignClass(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        objects = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
+        if self.obj:
+            objects = [bpy.data.objects.get(self.obj)]
+        else:
+            objects = set(context.selected_objects + [context.active_object])
         self.file = IfcStore.get_file()
         predefined_type = context.scene.BIMRootProperties.ifc_predefined_type
         if predefined_type == "USERDEFINED":
@@ -101,11 +104,9 @@ class ReassignClass(bpy.types.Operator):
             product = ifcopenshell.api.run(
                 "root.reassign_class",
                 self.file,
-                **{
-                    "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
-                    "ifc_class": context.scene.BIMRootProperties.ifc_class,
-                    "predefined_type": predefined_type,
-                },
+                product=self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
+                ifc_class=context.scene.BIMRootProperties.ifc_class,
+                predefined_type=predefined_type,
             )
             obj.name = "{}/{}".format(product.is_a(), getattr(product, "Name", "None"))
             tool.Ifc.link(product, obj)

@@ -80,11 +80,12 @@ class Usecase:
                 element.ObjectType = self.settings["predefined_type"]
         if element.is_a("IfcTypeProduct"):
             for typed_element in ifcopenshell.util.element.get_types(element) or []:
+                ifc_class = self.settings["ifc_class"].removesuffix("Type").removesuffix("Style")
                 ifcopenshell.api.run(
                     "root.reassign_class",
                     self.file,
                     product=typed_element,
-                    ifc_class=self.settings["ifc_class"].strip("Type"),
+                    ifc_class=ifc_class,
                     predefined_type= self.settings["predefined_type"]
                 )
         return element
