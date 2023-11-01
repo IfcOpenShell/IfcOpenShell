@@ -650,7 +650,7 @@ class Property(Facet):
 
                         if data_type.lower() != self.datatype.lower():
                             is_pass = False
-                            reason = {"type": "DATATYPE", "actual": data_type}
+                            reason = {"type": "DATATYPE", "actual": data_type, "datatype": self.datatype}
                             break
 
                         unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
@@ -669,7 +669,7 @@ class Property(Facet):
 
                         if data_type.lower() != self.datatype.lower():
                             is_pass = False
-                            reason = {"type": "DATATYPE", "actual": data_type}
+                            reason = {"type": "DATATYPE", "actual": data_type, "datatype": self.datatype}
                             break
 
                         unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
@@ -689,7 +689,7 @@ class Property(Facet):
                         data_type = prop_entity.EnumerationValues[0].is_a()
                         if data_type.lower() != self.datatype.lower():
                             is_pass = False
-                            reason = {"type": "DATATYPE", "actual": data_type}
+                            reason = {"type": "DATATYPE", "actual": data_type, "datatype": self.datatype}
                             break
                     elif prop_entity.is_a("IfcPropertyListValue"):
                         if not prop_entity.ListValues:
@@ -699,7 +699,7 @@ class Property(Facet):
                         data_type = prop_entity.ListValues[0].is_a()
                         if data_type.lower() != self.datatype.lower():
                             is_pass = False
-                            reason = {"type": "DATATYPE", "actual": data_type}
+                            reason = {"type": "DATATYPE", "actual": data_type, "datatype": self.datatype}
                             break
                         unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
                         if unit:
@@ -722,7 +722,7 @@ class Property(Facet):
                                 values.append(value.wrappedValue)
                         if data_type.lower() != self.datatype.lower():
                             is_pass = False
-                            reason = {"type": "DATATYPE", "actual": data_type}
+                            reason = {"type": "DATATYPE", "actual": data_type, "datatype": self.datatype}
                             break
                         unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
                         if unit:
@@ -762,7 +762,7 @@ class Property(Facet):
                                 values.extend(column_values)
                         if not values:
                             is_pass = False
-                            reason = {"type": "DATATYPE", "actual": data_type}
+                            reason = {"type": "DATATYPE", "actual": data_type, "datatype": self.datatype}
                             break
                         props[pset_name][prop_entity.Name] = values
                     else:
@@ -1049,7 +1049,7 @@ class PropertyResult(Result):
         elif self.reason["type"] == "NOVALUE":
             return "The property set does not contain the required property"
         elif self.reason["type"] == "DATATYPE":
-            return f"The data type \"{str(self.reason['actual'])}\" does not match the requirements"
+            return f"The property's data type \"{str(self.reason['actual'])}\" does not match the required data type of \"{str(self.reason['datatype'])}\""
         elif self.reason["type"] == "VALUE":
             if isinstance(self.reason["actual"], list):
                 if len(self.reason["actual"]) == 1:
