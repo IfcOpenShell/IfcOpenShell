@@ -151,15 +151,7 @@ typedef item const* ptr;
 
 				virtual item::ptr evaluate() const;
 
-				Eigen::Matrix4d evaluate(double u) const {
-					// @todo: rb optimize, assume monotonic evaluation and store last evaluated segment?
-					for (auto& [length, fn] : spans) {
-						if (u < length+0.001) { // @todo: rb - need to use consistent tolerance
-							return fn(u);
-						}
-						u -= length;
-					}
-				}
+				Eigen::Matrix4d evaluate(double u) const;
 			};
 
 #ifdef TAXONOMY_USE_SHARED_PTR
