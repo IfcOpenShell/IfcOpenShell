@@ -924,8 +924,8 @@ class Model(blenderbim.core.tool.Model):
 
         calculated_params = {}
         number_of_rises = number_of_treads + 1
-        calculated_params["Number of risers"] = number_of_rises
-        calculated_params["Tread rise"] = round(height / number_of_rises, 5)
+        calculated_params["Number of Risers"] = number_of_rises
+        calculated_params["Tread Rise"] = round(height / number_of_rises, 5)
         calculated_params["Length"] = round(tread_run * number_of_rises, 5)
         return calculated_params
 
@@ -956,98 +956,111 @@ class Model(blenderbim.core.tool.Model):
         if stair_type == "WOOD/STEEL":
             builder = ShapeBuilder(None)
             tread_shape = builder.get_rectangle_coords(
-                size=V(tread_run, 0, tread_depth), position=V(0, 0, -(tread_depth - tread_rise))
+                size=V(tread_run, tread_depth), position=V(0, -(tread_depth - tread_rise))
             )
-            tread_offset = V(tread_run, 0, tread_rise)
+            tread_offset = V(tread_run, tread_rise)
 
+            # each tread is a separate shape
             for i in range(number_of_risers):
                 cur_trade_shape = [v + tread_offset * i for v in tread_shape]
                 vertices.extend(cur_trade_shape)
 
                 cur_vertex = i * 4
-                edges.extend(
-                    [
-                        (cur_vertex, cur_vertex + 1),
-                        (cur_vertex + 1, cur_vertex + 2),
-                        (cur_vertex + 2, cur_vertex + 3),
-                        (cur_vertex + 3, cur_vertex),
-                    ]
+                verts_to_add = (
+                    (cur_vertex, cur_vertex + 1),
+                    (cur_vertex + 1, cur_vertex + 2),
+                    (cur_vertex + 2, cur_vertex + 3),
+                    (cur_vertex + 3, cur_vertex),
                 )
-                faces.append(list(range(cur_vertex, cur_vertex + 1)))
-
-            return (vertices, edges, faces)
+                edges.extend(verts_to_add)
 
         elif stair_type == "GENERIC":
-            vertices.append(Vector([0, 0, 0]))
+            vertices.append(Vector([0, 0]))
 
-            tread_verts = [Vector([0, 0, tread_rise]), Vector([tread_run, 0, tread_rise])]
-            tread_offset = Vector([tread_run, 0, tread_rise])
+            tread_verts = [Vector([0, tread_rise]), Vector([tread_run, tread_rise])]
+            tread_offset = Vector([tread_run, tread_rise])
 
+            # treads
             for i in range(number_of_risers):
                 current_tread_verts = [v + tread_offset * i for v in tread_verts]
-                last_vert_i = len(vertices) - 1
+                last_vert_i = i * 2
                 edges.extend([(last_vert_i, last_vert_i + 1), (last_vert_i + 1, last_vert_i + 2)])
                 vertices.extend(current_tread_verts)
 
+            # close the shape
             last_vert_i = len(vertices)
-            vertices.append(vertices[-1] * V(1, 0, 0))
+            vertices.append(vertices[-1] * V(1, 0))
             edges.extend([(last_vert_i - 1, last_vert_i), (last_vert_i, 0)])
 
-            return (vertices, edges, faces)
-
         elif stair_type == "CONCRETE":
+            # treads
             for i in range(number_of_risers):
-                vertices.extend(
-                    [Vector((tread_run * i, 0, tread_rise * i)), Vector((tread_run * i, 0, tread_rise * (i + 1)))]
-                )
+                vertices.append(Vector((tread_run * i, tread_rise * i)))
+                vertices.append(Vector((tread_run * i, tread_rise * (i + 1))))
                 cur_vertex = i * 2
                 if i != 0:
                     edges.append((cur_vertex - 1, cur_vertex))
                 edges.append((cur_vertex, cur_vertex + 1))
 
-            vertices.append(Vector((tread_run * number_of_risers, 0, tread_rise * number_of_risers)))
+            vertices.append(Vector((tread_run * number_of_risers, tread_rise * number_of_risers)))
             edges.append((number_of_risers * 2, number_of_risers * 2 - 1))
 
-            td_vector = Vector((vertices[2][2], 0, -vertices[2][0])).normalized() * tread_depth
+            # add the nibs
+            tread_diagonal_dir = vertices[2].normalized()
+            # td_vector is clockwise orthogonal vector
+            td_vector = tread_diagonal_dir.yx * V(1, -1) * tread_depth
 
-            k = tread_rise / tread_run
+            # graph: https://www.desmos.com/calculator/bilmnti3cp
+            stair_tan = tread_rise / tread_run
             s0 = vertices[0] + td_vector
-            b = s0.z - k * s0.x  # comes from y = kx + b
-            # you could use td_vector as depth_vector
-            # but then stair won't be perpendicular to the X+
-            # b is kind of vertical tread_depth (along Z+)
-            depth_vector = Vector((0, 0, b))
+            # comes from y = stair_tan * x + b
+            b = s0.y - stair_tan * s0.x
+            # if we use td_vector as depth_vector
+            # then stair won't be perpendicular to the X+
+            # to make it perpendicular to X+ we calculate `b`
+            # `b` is basically Z-offset where stair starts
+            depth_vector = V(0, b)
 
             # top nib
+            last_vert = vertices[-1]
+            last_vertex_i = len(vertices) - 1
+            # NOTE: has_top_nib = False and top_slab_depth are different things
             if has_top_nib:
-                vertices.append(vertices[number_of_risers * 2] + Vector((0, 0, -top_slab_depth)))
-                vertices.append(
-                    vertices[number_of_risers * 2] + Vector(((-top_slab_depth - b) / k, 0, -top_slab_depth))
-                )
-                last_vertex_i = len(vertices) - 1
-                edges.append((number_of_risers * 2, last_vertex_i - 1))
-                edges.append((last_vertex_i - 1, last_vertex_i))
+                vertices.append(last_vert + Vector((0, -top_slab_depth)))
+                slab_overlaps_stair = abs(b) - top_slab_depth
+                # run distance by X until stair will meet the slab
+                run_slab_distance = slab_overlaps_stair / stair_tan
+                vertices.append(last_vert + Vector((run_slab_distance, -top_slab_depth)))
+                edges.append((last_vertex_i, last_vertex_i + 1))
+                edges.append((last_vertex_i + 1, last_vertex_i + 2))
             else:
-                vertices.append(vertices[number_of_risers * 2] + depth_vector)
-                last_vertex_i = len(vertices) - 1
-                edges.append((number_of_risers * 2, last_vertex_i))
+                vertices.append(last_vert + depth_vector)
+                edges.append((last_vertex_i, last_vertex_i + 1))
 
             top_nib_end = len(vertices) - 1
 
             # bottom nib
-            if abs(b) <= base_slab_depth:
-                vertices.append(vertices[0] + depth_vector)
+            start_vert = vertices[0]
+            slab_overlaps_stair = max(abs(b) - base_slab_depth, 0)
+            if slab_overlaps_stair == 0:
+                # stair doesn't meet the slab
+                vertices.append(start_vert + depth_vector)
                 edges.append((0, len(vertices) - 1))
                 bottom_nib_end = len(vertices) - 1
             else:
-                vertices.append(vertices[0] + Vector(((-base_slab_depth - b) / k, 0, -base_slab_depth)))
-                vertices.append(vertices[0] + Vector((0, 0, -base_slab_depth)))
+                # run distance by X until stair will meet the slab
+                run_slab_distance = slab_overlaps_stair / stair_tan
+                vertices.append(start_vert + Vector((run_slab_distance, -base_slab_depth)))
+                vertices.append(start_vert + Vector((0, -base_slab_depth)))
                 last_vertex_i = len(vertices) - 1
                 edges.append((0, last_vertex_i))
                 edges.append((last_vertex_i - 1, last_vertex_i))
                 bottom_nib_end = len(vertices) - 2
 
+            # close the shape
             edges.append((bottom_nib_end, top_nib_end))
-            faces = [list(range(len(vertices)))]
+        else:
+            raise Exception(f"Unsupported stair type: {stair_type}")
 
-            return (vertices, edges, faces)
+        vertices = (v.to_3d().xzy for v in vertices)
+        return (vertices, edges, faces)
