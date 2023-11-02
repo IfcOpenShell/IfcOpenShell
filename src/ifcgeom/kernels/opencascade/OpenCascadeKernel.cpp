@@ -247,7 +247,7 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* 
 
 		for (unsigned int i = 0; i < opening_shapes.size(); ++i) {
 			TopoDS_Shape opening_shape_solid;
-			auto opening_shape_i = ((OpenCascadeShape*)opening_shapes[i].Shape())->shape();
+			auto opening_shape_i = std::static_pointer_cast<OpenCascadeShape>(opening_shapes[i].Shape())->shape();
 			const TopoDS_Shape& opening_shape_unlocated = util::ensure_fit_for_subtraction(opening_shape_i, opening_shape_solid, conv_settings_.getValue(ConversionSettings::GV_PRECISION));
 
 			auto gtrsf = opening_shapes[i].Placement();
@@ -277,7 +277,7 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* 
 
 		std::list<TopoDS_Shape> parts;
 
-		auto it3_shape = ((OpenCascadeShape*)it3->Shape())->shape();
+		auto it3_shape = std::static_pointer_cast<OpenCascadeShape>(it3->Shape())->shape();
 
 		bool is_multiple = it3_shape.ShapeType() == TopAbs_COMPOUND && TopoDS_Iterator(it3_shape).More() && util::is_nested_compound_of_solid(it3_shape);
 

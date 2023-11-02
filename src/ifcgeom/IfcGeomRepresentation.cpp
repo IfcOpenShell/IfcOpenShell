@@ -171,7 +171,7 @@ IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
 	}
 
 	if (brep.begin() != brep.end()) {
-		if (dynamic_cast<ifcopenshell::geometry::OpenCascadeShape*>(brep.begin()->Shape())) {
+		if (std::dynamic_pointer_cast<ifcopenshell::geometry::OpenCascadeShape>(brep.begin()->Shape())) {
 			ConversionResultShape* shape = brep.as_compound();
 			ifcopenshell::geometry::taxonomy::matrix4 identity;
 			shape->Serialize(identity, brep_data_);
@@ -198,7 +198,7 @@ IfcGeom::ConversionResultShape* IfcGeom::Representation::BRep::as_compound(bool 
 	builder.MakeCompound(compound);
 
 	for (auto it = begin(); it != end(); ++it) {
-		const TopoDS_Shape& s = *(ifcopenshell::geometry::OpenCascadeShape*)it->Shape();
+		const TopoDS_Shape& s = *std::static_pointer_cast<ifcopenshell::geometry::OpenCascadeShape>(it->Shape());
 
 		// @todo, check
 		gp_GTrsf trsf;
@@ -237,7 +237,7 @@ bool IfcGeom::Representation::BRep::calculate_surface_area(double& area) const {
 
 		for (IfcGeom::ConversionResults::const_iterator it = begin(); it != end(); ++it) {
 			GProp_GProps prop;
-			BRepGProp::SurfaceProperties(*(ifcopenshell::geometry::OpenCascadeShape*)it->Shape(), prop);
+			BRepGProp::SurfaceProperties(*std::static_pointer_cast<ifcopenshell::geometry::OpenCascadeShape>(it->Shape()), prop);
 			area += prop.Mass();
 		}
 
@@ -257,9 +257,9 @@ bool IfcGeom::Representation::BRep::calculate_volume(double& volume) const {
 		volume = 0.;
 
 		for (IfcGeom::ConversionResults::const_iterator it = begin(); it != end(); ++it) {
-			if (util::is_manifold(*(ifcopenshell::geometry::OpenCascadeShape*)it->Shape())) {
+			if (util::is_manifold(*std::static_pointer_cast<ifcopenshell::geometry::OpenCascadeShape>(it->Shape()))) {
 				GProp_GProps prop;
-				BRepGProp::VolumeProperties(*(ifcopenshell::geometry::OpenCascadeShape*)it->Shape(), prop);
+				BRepGProp::VolumeProperties(*std::static_pointer_cast<ifcopenshell::geometry::OpenCascadeShape>(it->Shape()), prop);
 				volume += prop.Mass();
 			} else {
 				return false;
@@ -299,9 +299,9 @@ bool IfcGeom::Representation::BRep::calculate_projected_surface_area(const ifcop
 
 		for (IfcGeom::ConversionResults::const_iterator it = begin(); it != end(); ++it) {
 			double x, y, z;
-			surface_area_along_direction(settings().deflection_tolerance(), *(ifcopenshell::geometry::OpenCascadeShape*)it->Shape(), ax, x, y, z);
+			surface_area_along_direction(settings().deflection_tolerance(), *std::static_pointer_cast<ifcopenshell::geometry::OpenCascadeShape>(it->Shape()), ax, x, y, z);
 
-			if (util::is_manifold(*(ifcopenshell::geometry::OpenCascadeShape*)it->Shape())) {
+			if (util::is_manifold(*std::static_pointer_cast<ifcopenshell::geometry::OpenCascadeShape>(it->Shape()))) {
 				x /= 2.;
 				y /= 2.;
 				z /= 2.;
@@ -413,4 +413,12 @@ void IfcGeom::Representation::Triangulation::addEdge(int n1, int n2, std::map<st
 	if (edgecount.find(e) == edgecount.end()) edgecount[e] = 1;
 	else edgecount[e] ++;
 	edges_temp.push_back(e);
+}
+
+const IfcGeom::ConversionResultShape* IfcGeom::Representation::BRep::item(int i) const {
+	if (i >= 0 && i < shapes_.size()) {
+		return shapes_[i].Shape()->moved(shapes_[i].Placement());
+	} else {
+		return nullptr;
+	}
 }

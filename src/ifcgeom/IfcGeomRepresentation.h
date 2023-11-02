@@ -64,6 +64,9 @@ namespace IfcGeom {
 			bool calculate_volume(double&) const;
 			bool calculate_surface_area(double&) const;
 			bool calculate_projected_surface_area(const ifcopenshell::geometry::taxonomy::matrix4& ax, double& along_x, double& along_y, double& along_z) const;
+
+			int size() const { return shapes_.size(); }
+			const IfcGeom::ConversionResultShape* item(int i) const;
 		};
 
 		class IFC_GEOM_API Serialization : public Representation  {
@@ -105,6 +108,11 @@ namespace IfcGeom {
 			size_t weld_offset_;
 			VertexKeyMap welds;
 
+			Triangulation(IfcGeom::IteratorSettings settings)
+				: Representation(IfcGeom::ElementSettings{ settings, 1., "" })
+				, weld_offset_(0)
+				{}
+
 		public:
 			const std::string& id() const { return id_; }
 			const std::vector<double>& verts() const { return _verts; }
@@ -145,6 +153,8 @@ namespace IfcGeom {
             /// Generates UVs for a single mesh using box projection.
             /// @todo Very simple impl. Assumes that input vertices and normals match 1:1.
 			static std::vector<double> box_project_uvs(const std::vector<double> &vertices, const std::vector<double> &normals);
+
+			static Triangulation* empty(IfcGeom::IteratorSettings settings) { return new Triangulation(settings); }
 
 			/// Welds vertices that belong to different faces
 			int addVertex(int material_index, double X, double Y, double Z);

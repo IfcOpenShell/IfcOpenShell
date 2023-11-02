@@ -248,7 +248,7 @@ bool IfcGeom::util::apply_folded_layerset(const ConversionResults& items, const 
 
 		for (ConversionResults::const_iterator it = items.begin(); it != items.end(); ++it) {
 			TopoDS_Shape a, b;
-			if (split_solid_by_shell(((OpenCascadeShape*)it->Shape())->shape(), shells.First(), a, b, tol)) {
+			if (split_solid_by_shell(std::static_pointer_cast<OpenCascadeShape>(it->Shape())->shape(), shells.First(), a, b, tol)) {
 				result.push_back(ConversionResult(it->ItemId(), it->Placement(), new OpenCascadeShape(b), (!!styles[0] ? styles[0] : it->StylePtr())));
 				result.push_back(ConversionResult(it->ItemId(), it->Placement(), new OpenCascadeShape(a), (!!styles[1] ? styles[1] : it->StylePtr())));
 			} else {
@@ -262,7 +262,7 @@ bool IfcGeom::util::apply_folded_layerset(const ConversionResults& items, const 
 
 		for (ConversionResults::const_iterator it = items.begin(); it != items.end(); ++it) {
 
-			const TopoDS_Shape& s = ((OpenCascadeShape*)it->Shape())->shape();
+			const TopoDS_Shape& s = std::static_pointer_cast<OpenCascadeShape>(it->Shape())->shape();
 			TopoDS_Solid sld;
 			ensure_fit_for_subtraction(s, sld, tol);
 
@@ -291,7 +291,7 @@ bool IfcGeom::util::apply_layerset(const ConversionResults& items, const std::ve
 
 		for (ConversionResults::const_iterator it = items.begin(); it != items.end(); ++it) {
 			TopoDS_Shape a, b;
-			if (split_solid_by_surface(((OpenCascadeShape*)it->Shape())->shape(), surfaces[1], a, b, tol)) {
+			if (split_solid_by_surface(std::static_pointer_cast<OpenCascadeShape>(it->Shape())->shape(), surfaces[1], a, b, tol)) {
 				result.push_back(ConversionResult(it->ItemId(), it->Placement(),new OpenCascadeShape(b), (!!styles[0] ? styles[0] : it->StylePtr())));
 				result.push_back(ConversionResult(it->ItemId(), it->Placement(),new OpenCascadeShape(a), (!!styles[1] ? styles[1] : it->StylePtr())));
 			} else {
@@ -334,7 +334,7 @@ bool IfcGeom::util::apply_layerset(const ConversionResults& items, const std::ve
 
 		for (ConversionResults::const_iterator it = items.begin(); it != items.end(); ++it) {
 
-			const TopoDS_Shape& s = ((OpenCascadeShape*)it->Shape())->shape();
+			const TopoDS_Shape& s = std::static_pointer_cast<OpenCascadeShape>(it->Shape())->shape();
 			TopoDS_Solid sld;
 			ensure_fit_for_subtraction(s, sld, tol);
 

@@ -24,6 +24,8 @@
 
 #undef Handle
 
+#include "../../../ifcgeom/kernels/cgal/nef_to_halfspace_tree.h"
+
 #define CGAL_NO_DEPRECATED_CODE
 
 #include <boost/property_map/property_map.hpp>
@@ -86,25 +88,131 @@ typedef boost::graph_traits<CGAL::Polyhedron_3<Kernel_>>::face_descriptor cgal_f
 
 namespace ifcopenshell { namespace geometry {
 
-	class CgalShape : public IfcGeom::ConversionResultShape {
-    public:
-		CgalShape(const cgal_shape_t& shape)
-			: shape_(shape) {}
+	using IfcGeom::OpaqueCoordinate;
+	using IfcGeom::OpaqueNumber;
 
-		const cgal_shape_t& shape() const { return shape_; }
-		operator const cgal_shape_t& () { return shape_; }
+	using IfcGeom::add_;
+	using IfcGeom::subtract_;
+	using IfcGeom::multiply_;
+	using IfcGeom::divide_;
+	using IfcGeom::equals_;
+	using IfcGeom::less_than_;
+	using IfcGeom::negate_;
+
+#ifndef IFOPSH_SIMPLE_KERNEL
+	class IFC_GEOM_API NumberEpeck : public OpaqueNumber {
+	private:
+		CGAL::Epeck::FT value_;
+
+		template <CGAL::Epeck::FT(*Fn)(CGAL::Epeck::FT, CGAL::Epeck::FT)>
+		OpaqueNumber* binary_op(OpaqueNumber* other) const {
+			auto nnd = dynamic_cast<NumberEpeck*>(other);
+			if (nnd) {
+				return new NumberEpeck(Fn(value_, nnd->value_));
+			} else {
+				return nullptr;
+			}
+		}
+
+		template <bool(*Fn)(CGAL::Epeck::FT, CGAL::Epeck::FT)>
+		bool binary_op_bool(OpaqueNumber* other) const {
+			auto nnd = dynamic_cast<NumberEpeck*>(other);
+			if (nnd) {
+				return new NumberEpeck(Fn(value_, nnd->value_));
+			} else {
+				return nullptr;
+			}
+		}
+
+		template <CGAL::Epeck::FT(*Fn)(CGAL::Epeck::FT)>
+		OpaqueNumber* unary_op() const {
+			return new NumberEpeck(Fn(value_));
+		}
+	public:
+		NumberEpeck(const CGAL::Epeck::FT& v)
+			: value_(v) {}
+
+		virtual double to_double() const {
+			return CGAL::to_double(value_);
+		}
+
+		const CGAL::Epeck::FT& value() const {
+			return value_;
+		}
+
+		virtual OpaqueNumber* operator+(OpaqueNumber* other) const {
+			return binary_op<add_<CGAL::Epeck::FT>>(other);
+		}
+		virtual OpaqueNumber* operator-(OpaqueNumber* other) const {
+			return binary_op<subtract_<CGAL::Epeck::FT>>(other);
+		}
+		virtual OpaqueNumber* operator*(OpaqueNumber* other) const {
+			return binary_op<multiply_<CGAL::Epeck::FT>>(other);
+		}
+		virtual OpaqueNumber* operator/(OpaqueNumber* other) const {
+			return binary_op<divide_<CGAL::Epeck::FT>>(other);
+		}
+		virtual bool operator==(OpaqueNumber* other) const {
+			return binary_op_bool<equals_<CGAL::Epeck::FT>>(other);
+		}
+		virtual bool operator<(OpaqueNumber* other) const {
+			return binary_op_bool<less_than_<CGAL::Epeck::FT>>(other);
+		}
+		virtual OpaqueNumber* operator-() const {
+			return unary_op<negate_<CGAL::Epeck::FT>>();
+		}
+	};
+#endif
+
+	class CgalShape : public IfcGeom::ConversionResultShape {
+	private:
+		mutable boost::optional<cgal_shape_t> shape_;
+#ifndef IFOPSH_SIMPLE_KERNEL
+		mutable boost::optional<CGAL::Nef_polyhedron_3<Kernel_>> nef_;
+#endif
+    public:
+		CgalShape(const cgal_shape_t& shape) {
+			shape_ = shape;
+		}
+
+#ifndef IFOPSH_SIMPLE_KERNEL
+		CgalShape(const CGAL::Nef_polyhedron_3<Kernel_>& shape) {
+			nef_ = shape;
+		}
+#endif
+
+#ifndef IFOPSH_SIMPLE_KERNEL
+		void to_poly() const {
+			if (!shape_) {
+				shape_.emplace();
+				nef_->convert_to_polyhedron(*shape_);
+			}
+		}
+
+		void to_nef() const {
+			if (!nef_) {
+				nef_.emplace(*shape_);
+			}
+		}
+
+		operator const CGAL::Nef_polyhedron_3<Kernel_>& () const { to_nef(); return *nef_; }
+		const CGAL::Nef_polyhedron_3<Kernel_>& nef() const { to_nef(); return *nef_; }
+#else
+		// noop on simple kernel
+		void to_poly() const {}
+#endif
+
+		operator const cgal_shape_t& () const { to_poly();  return *shape_; }
+		const cgal_shape_t& poly() const { to_poly(); return *shape_; }
 
 		virtual void Triangulate(const IfcGeom::IteratorSettings& settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int surface_style_id) const;
-		
 		virtual void Serialize(const ifcopenshell::geometry::taxonomy::matrix4& place, std::string&) const;
 
 		virtual IfcGeom::ConversionResultShape* clone() const {
-			return new CgalShape(shape_);
+			return new CgalShape(*shape_);
 		}
 
-		virtual bool is_manifold() const {
-			throw std::runtime_error("Not implemented");
-		}
+		virtual bool is_manifold() const;
 
 		virtual double bounding_box(void*&) const;
 
@@ -114,10 +222,91 @@ namespace ifcopenshell { namespace geometry {
 
 		virtual int surface_genus() const;
 
-    private:
-        cgal_shape_t shape_;
+		virtual int num_edges() const;
+		virtual int num_faces() const;
+
+		// @todo this must be something with a virtual dtor so that we can delete it.
+		virtual std::pair<OpaqueCoordinate<3>, OpaqueCoordinate<3>> bounding_box() const;
+
+		virtual std::shared_ptr<OpaqueNumber> length();
+		virtual std::shared_ptr<OpaqueNumber> area();
+		virtual std::shared_ptr<OpaqueNumber> volume();
+
+		virtual OpaqueCoordinate<3> position();
+		virtual OpaqueCoordinate<3> axis();
+		virtual OpaqueCoordinate<4> plane_equation();
+
+		virtual std::vector<ConversionResultShape*> convex_decomposition();
+		virtual ConversionResultShape* halfspaces();
+		virtual ConversionResultShape* solid();
+		virtual ConversionResultShape* box();
+		virtual std::vector<ConversionResultShape*> edges();
+		virtual std::vector<ConversionResultShape*> facets();
+
+		virtual ConversionResultShape* add(ConversionResultShape*);
+		virtual ConversionResultShape* subtract(ConversionResultShape*);
+		virtual ConversionResultShape* intersect(ConversionResultShape*);
+
+		virtual void map(OpaqueCoordinate<4>& from, OpaqueCoordinate<4>& to);
+		virtual ConversionResultShape* moved(ifcopenshell::geometry::taxonomy::matrix4::ptr) const;
 	};
-    
+
+#ifndef IFOPSH_SIMPLE_KERNEL
+	class CgalShapeHalfSpaceDecomposition : public IfcGeom::ConversionResultShape {
+	private:
+		std::unique_ptr<halfspace_tree<Kernel_>> shape_;
+		std::list<CGAL::Plane_3<Kernel_>> planes_;
+
+	public:
+		CgalShapeHalfSpaceDecomposition(const CGAL::Nef_polyhedron_3<Kernel_>& shape) {
+			auto shape_copy = shape;
+			shape_ = std::move(build_halfspace_tree_decomposed(shape_copy, planes_));
+		}
+
+		CgalShapeHalfSpaceDecomposition(const CGAL::Plane_3<Kernel_>& shape) {
+			shape_.reset(new halfspace_tree_plane<Kernel_>(shape));
+			planes_.push_back(shape);
+		}
+
+		virtual void Triangulate(const IfcGeom::IteratorSettings& settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int surface_style_id) const;
+		virtual void Serialize(const ifcopenshell::geometry::taxonomy::matrix4& place, std::string&) const;
+
+		virtual int surface_genus() const;
+		virtual bool is_manifold() const;
+
+		virtual int num_vertices() const;
+		virtual int num_edges() const;
+		virtual int num_faces() const;
+
+		virtual double bounding_box(void*&) const;
+
+		// @todo this must be something with a virtual dtor so that we can delete it.
+		virtual std::pair<OpaqueCoordinate<3>, OpaqueCoordinate<3>> bounding_box() const;
+		virtual void set_box(void* b);
+
+		virtual std::shared_ptr<OpaqueNumber> length();
+		virtual std::shared_ptr<OpaqueNumber> area();
+		virtual std::shared_ptr<OpaqueNumber> volume();
+
+		virtual OpaqueCoordinate<3> position();
+		virtual OpaqueCoordinate<3> axis();
+		virtual OpaqueCoordinate<4> plane_equation();
+
+		virtual std::vector<ConversionResultShape*> convex_decomposition();
+		virtual ConversionResultShape* halfspaces();
+		virtual ConversionResultShape* solid();
+		virtual ConversionResultShape* box();
+		virtual std::vector<ConversionResultShape*> edges();
+		virtual std::vector<ConversionResultShape*> facets();
+
+		virtual ConversionResultShape* add(ConversionResultShape*);
+		virtual ConversionResultShape* subtract(ConversionResultShape*);
+		virtual ConversionResultShape* intersect(ConversionResultShape*);
+
+		virtual void map(OpaqueCoordinate<4>& from, OpaqueCoordinate<4>& to);
+		virtual ConversionResultShape* moved(ifcopenshell::geometry::taxonomy::matrix4::ptr) const;
+	};
+#endif
 }}
 
 #endif

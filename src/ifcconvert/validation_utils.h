@@ -476,7 +476,7 @@ struct intersection_validator {
 			std::wcout << sss.c_str() << std::endl;
 
 			for (auto& g : geom_object->geometry()) {
-				auto s = ((ifcopenshell::geometry::CgalShape*) g.Shape())->shape();
+				cgal_shape_t s = *std::static_pointer_cast<ifcopenshell::geometry::CgalShape>(g.Shape());
 				const auto& m = g.Placement()->ccomponents();
 				const auto& n = geom_object->transformation().data()->ccomponents();
 

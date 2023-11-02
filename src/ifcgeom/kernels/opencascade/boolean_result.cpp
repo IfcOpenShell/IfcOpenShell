@@ -82,7 +82,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 		} else {
 
 			for (auto& r : cr) {
-				auto S = ((OpenCascadeShape*)r.Shape())->shape();
+				auto S = std::static_pointer_cast<OpenCascadeShape>(r.Shape())->shape();
 				gp_GTrsf trsf;
 				convert(r.Placement(), trsf);
 				// @todo it really confuses me why I cannot use Moved() here instead

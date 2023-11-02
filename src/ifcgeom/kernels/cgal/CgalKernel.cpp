@@ -23,7 +23,6 @@
 
 #include "../../../ifcparse/IfcLogger.h"
 #include "../../../ifcgeom/kernels/cgal/CgalConversionResult.h"
-#include "../../../ifcgeom/kernels/cgal/nef_to_halfspace_tree.h"
 
 #include <CGAL/minkowski_sum_3.h>
 #include <CGAL/exceptions.h>
@@ -817,7 +816,7 @@ bool ifcopenshell::geometry::kernels::CgalKernel::convert_openings(const IfcUtil
 	std::list<CGAL::Nef_polyhedron_3<Kernel_>> first_operands_nef, second_operands_nef;
 
 	for (auto& shp : entity_shapes) {
-		auto entity_shape = ((CgalShape*)shp.Shape())->shape();
+		cgal_shape_t entity_shape = *std::static_pointer_cast<CgalShape>(shp.Shape());
 		const auto& m = shp.Placement()->ccomponents();
 		if (!m.isIdentity()) {
 			cgal_placement_t trsf;
@@ -848,7 +847,7 @@ bool ifcopenshell::geometry::kernels::CgalKernel::convert_openings(const IfcUtil
 		AbstractKernel::convert(op.first, opening_shapes);
 
 		for (unsigned int i = 0; i < opening_shapes.size(); ++i) {
-			auto entity_shape_unlocated = ((CgalShape*)opening_shapes[i].Shape())->shape();
+			cgal_shape_t entity_shape_unlocated = *std::static_pointer_cast<CgalShape>(opening_shapes[i].Shape());
 			cgal_shape_t entity_shape(entity_shape_unlocated);
 			auto gtrsf = opening_shapes[i].Placement();
 			// @todo check
@@ -865,9 +864,7 @@ bool ifcopenshell::geometry::kernels::CgalKernel::convert_openings(const IfcUtil
 				continue;
 			}
 
-			auto graph = build_facet_edge_graph(nef);
-			auto tree = build_halfspace_tree(graph, nef);
-			tree->accumulate(all_operand_planes);
+			auto tree = build_halfspace_tree_decomposed(nef, all_operand_planes);
 
 			second_operand_instances.push_back(op.first->instance->as<IfcUtil::IfcBaseClass>());
 			second_operands.push_back(entity_shape);
@@ -1350,39 +1347,64 @@ bool CgalKernel::preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_ref
 
 	if (proc == PP_SNAP_PLANES_TO_FIRST_OPERAND) {
 		std::list<Kernel_::Plane_3> planes_fixed;
+		std::list<Kernel_::Plane_3> temp;
 		for (auto& nef : first_operands_nef) {
 			// @todo eliminate this copy (= to remove const)
 			auto nef_copy = nef;
-			auto graph = build_facet_edge_graph(nef);
-			auto tree = build_halfspace_tree(graph, nef_copy);
-			tree->accumulate(planes_fixed);
+			auto tree = build_halfspace_tree_decomposed(nef_copy, planes_fixed);  
 		}
 		{
 			// @nb we snap internally as well...
 			// @todo we can probably eliminate an evaluate() here
 			{
-				auto graph = build_facet_edge_graph(result);
 				// @todo is it deterministic enough so that rebuilding the same tree is identical/compatible?
-				auto tree = build_halfspace_tree(graph, result);
+				auto tree = build_halfspace_tree_decomposed(result, temp);
 				auto pmap = snap_halfspaces(all_operand_planes, 1.e-5);
 				result = tree->map(pmap)->evaluate();
 			}
 			{
 				std::list<Kernel_::Plane_3> planes;
-				auto graph = build_facet_edge_graph(result);
-				auto tree = build_halfspace_tree(graph, result);
-				tree->accumulate(planes);
+				auto tree = build_halfspace_tree_decomposed(result, planes);
 				auto pmap = snap_halfspaces_2(planes_fixed, planes, 1.e-5);
 				result = tree->map(pmap)->evaluate();
 			}
 		}
 	} else if (proc == PP_UNIFY_PLANES_INTERNALLY) {
 		std::list<Kernel_::Plane_3> planes;
-		auto graph = build_facet_edge_graph(result);
-		auto tree = build_halfspace_tree(graph, result);
-		tree->accumulate(planes);
-		auto pmap = snap_halfspaces(planes, 1.e-4);
-		result = tree->map(pmap)->evaluate();
+		auto tree = build_halfspace_tree_decomposed(result, planes);
+		auto pmap = snap_halfspaces(planes, 1.e-6);
+		std::wcout << tree->dump().c_str() << std::endl;
+		auto mapped = tree->map(pmap);
+		std::wcout << mapped->dump().c_str() << std::endl;
+
+		{
+			static int i = 1;
+			auto x = (halfspace_tree_nary_branch<Kernel_>*)&*tree;
+			int j = 0;
+			for (auto& a : x->operands_) {
+				auto A = a->evaluate();
+				cgal_shape_t p;
+				A.convert_to_Polyhedron(p);
+				std::string fn = "debug-orig-" + std::to_string(i) + "-" + std::to_string(j++) + ".off";
+				std::ofstream(fn.c_str()) << p;
+			}
+			i++;
+		}
+		{
+			static int i = 1;
+			auto x = (halfspace_tree_nary_branch<Kernel_>*)&*mapped;
+			int j = 0;
+			for (auto& a : x->operands_) {
+				auto A = a->evaluate();
+				cgal_shape_t p;
+				A.convert_to_Polyhedron(p);
+				std::string fn = "debug-mapped-" + std::to_string(i) + "-" + std::to_string(j++) + ".off";
+				std::ofstream(fn.c_str()) << p;
+			}
+			i++;
+		}
+
+		result = mapped->evaluate();
 	}
 
 	if (proc == PP_MINKOWSKY_DILATE) {
@@ -1396,6 +1418,22 @@ bool CgalKernel::preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_ref
 			return false;
 		}
 	}
+
+	
+
+	/*
+	{
+		size_t vi = 0;
+		static int i = 1;
+		std::string fn = "debug-" + std::to_string(i) + "-" + std::to_string(vi) + ".off";
+		auto ofs = std::make_unique<std::ofstream>(fn.c_str());
+		while (write_to_obj(result, *ofs, vi++)) {
+			fn = "debug-" + std::to_string(i++) + "-" + std::to_string(vi) + ".off";
+			ofs = std::make_unique<std::ofstream>(fn.c_str());
+		}
+		i += 1;
+	}
+	*/
 
 	try {
 		cgal_shape_t convert_back;
@@ -1891,7 +1929,7 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 		}
 
 		for (auto it = cr.begin(); it != cr.end(); ++it) {
-			const cgal_shape_t& entity_shape_unlocated(((CgalShape*)it->Shape())->shape());
+			cgal_shape_t entity_shape_unlocated = *std::static_pointer_cast<CgalShape>(it->Shape());
 			cgal_shape_t entity_shape(entity_shape_unlocated);
 			if (!it->Placement()->is_identity()) {
 				cgal_placement_t trsf;
