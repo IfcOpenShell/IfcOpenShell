@@ -259,8 +259,8 @@ class BIM_PT_stair(bpy.types.Panel):
             row = self.layout.row(align=True)
             row.label(text="Stair parameters", icon="IPO_CONSTANT")
 
-            stair_data = StairData.data["pset_data"]["data_dict"]
             if props.is_editing:
+                calculated_params = tool.Model.get_active_stair_calculated_params()
                 row = self.layout.row(align=True)
                 row.operator("bim.finish_editing_stair", icon="CHECKMARK", text="Finish Editing")
                 row.operator("bim.cancel_editing_stair", icon="CANCEL", text="")
@@ -269,6 +269,7 @@ class BIM_PT_stair(bpy.types.Panel):
                     self.layout.prop(props, prop_name)
                 regenerate_stair_mesh(context)
             else:
+                calculated_params = StairData.data["calculated_params"]
                 row.operator("bim.enable_editing_stair", icon="GREASEPENCIL", text="")
                 row.operator("bim.remove_stair", icon="X", text="")
                 row = self.layout.row(align=True)
@@ -278,7 +279,7 @@ class BIM_PT_stair(bpy.types.Panel):
                     row.label(text=str(prop_value))
 
             # calculated properties
-            for prop_name, prop_value in StairData.data["calculated_params"].items():
+            for prop_name, prop_value in calculated_params.items():
                 row = self.layout.row(align=True)
                 row.label(text=prop_name)
                 row.label(text=str(prop_value))

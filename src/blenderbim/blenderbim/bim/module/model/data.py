@@ -333,25 +333,7 @@ class StairData:
 
     @classmethod
     def calculated_params(cls):
-        props = bpy.context.active_object.BIMStairProperties
-
-        if props.is_editing:
-            si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-            number_of_treads = props.number_of_treads
-            height = props.height / si_conversion
-            tread_run = props.tread_run / si_conversion
-        else:
-            data = cls.data["pset_data"]["data_dict"]
-            number_of_treads = data["number_of_treads"]
-            height = data["height"]
-            tread_run = data["tread_run"]
-
-        calculated_params = {}
-        number_of_rises = number_of_treads + 1
-        calculated_params["Number of risers"] = number_of_rises
-        calculated_params["Tread rise"] = round(height / number_of_rises, 5)
-        calculated_params["Length"] = round(tread_run * number_of_rises, 5)
-        return calculated_params
+        return tool.Model.get_active_stair_calculated_params(cls.data["pset_data"]["data_dict"])
 
 
 class SverchokData:
