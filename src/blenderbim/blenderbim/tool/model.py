@@ -909,6 +909,27 @@ class Model(blenderbim.core.tool.Model):
         return (DoorData.is_loaded or not DoorData.load()) and DoorData.data["pset_data"]
 
     @classmethod
+    def get_active_stair_calculated_params(cls, pset_data=None):
+        props = bpy.context.active_object.BIMStairProperties
+
+        if props.is_editing:
+            si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            number_of_treads = props.number_of_treads
+            height = props.height / si_conversion
+            tread_run = props.tread_run / si_conversion
+        else:
+            number_of_treads = pset_data["number_of_treads"]
+            height = pset_data["height"]
+            tread_run = pset_data["tread_run"]
+
+        calculated_params = {}
+        number_of_rises = number_of_treads + 1
+        calculated_params["Number of risers"] = number_of_rises
+        calculated_params["Tread rise"] = round(height / number_of_rises, 5)
+        calculated_params["Length"] = round(tread_run * number_of_rises, 5)
+        return calculated_params
+
+    @classmethod
     def generate_stair_2d_profile(
         cls,
         number_of_treads,
