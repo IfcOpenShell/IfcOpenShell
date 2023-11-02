@@ -23,6 +23,7 @@ import blenderbim.tool as tool
 import numpy as np
 from test.bim.bootstrap import NewFile
 from blenderbim.tool.model import Model as subject
+from ifcopenshell.util.shape_builder import V
 
 
 class TestImplementsTool(NewFile):
@@ -105,3 +106,199 @@ class TestGetManualBooleans(NewFile):
         assert len(subject.get_manual_booleans(element)) == 0
         subject.mark_manual_booleans(element, booleans)
         assert len(subject.get_manual_booleans(element)) == 2
+
+
+class TestGenerateStair2DProfile(NewFile):
+    def compare_data(self, generated_profile, expected_profile):
+        verts_gen, edges_gen, faces_gen = generated_profile
+        verts, edges, faces = expected_profile
+
+        assert edges == tuple(edges_gen)
+        assert faces == tuple(tuple(face) for face in faces_gen)
+        for vert, vert_gen in zip(verts, verts_gen, strict=True):
+            assert tool.Cad.are_vectors_equal(vert, vert_gen, 0.01)
+
+    def test_create_concrete_stair(self):
+        kwargs = {
+            "base_slab_depth": 0.25,
+            "has_top_nib": False,
+            "height": 1.0,
+            "number_of_treads": 3,
+            "stair_type": "CONCRETE",
+            "top_slab_depth": 0.25,
+            "tread_depth": 0.25,
+            "tread_run": 0.3,
+            "width": 1.2,
+        }
+        verts_data = (
+            V(0.0, 0, 0.0),
+            V(0.0, 0, 0.25),
+            V(0.3, 0, 0.25),
+            V(0.3, 0, 0.5),
+            V(0.6, 0, 0.5),
+            V(0.6, 0, 0.75),
+            V(0.9, 0, 0.75),
+            V(0.9, 0, 1.0),
+            V(1.2, 0, 1.0),
+            V(1.2, 0, 0.67457),
+            V(0.1, 0, -0.25),
+            V(0.0, 0, -0.25),
+        )
+        edges_data = (
+            (0, 1),
+            (1, 2),
+            (2, 3),
+            (3, 4),
+            (4, 5),
+            (5, 6),
+            (6, 7),
+            (8, 7),
+            (8, 9),
+            (0, 11),
+            (10, 11),
+            (10, 9),
+        )
+        faces_data = ((0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11),)
+        expected_profile = (verts_data, edges_data, faces_data)
+        generated_profile = subject.generate_stair_2d_profile(**kwargs)
+        self.compare_data(generated_profile, expected_profile)
+
+    def test_create_concrete_stair_nib(self):
+        kwargs = {
+            "base_slab_depth": 0.25,
+            "has_top_nib": True,
+            "height": 1.0,
+            "number_of_treads": 3,
+            "stair_type": "CONCRETE",
+            "top_slab_depth": 0.25,
+            "tread_depth": 0.25,
+            "tread_run": 0.3,
+            "width": 1.2,
+        }
+        verts_data = (
+            V(0.0, 0, 0.0),
+            V(0.0, 0, 0.25),
+            V(0.3, 0, 0.25),
+            V(0.3, 0, 0.5),
+            V(0.6, 0, 0.5),
+            V(0.6, 0, 0.75),
+            V(0.9, 0, 0.75),
+            V(0.9, 0, 1.0),
+            V(1.2, 0, 1.0),
+            V(1.2, 0, 0.75),
+            V(1.3, 0, 0.75),
+            V(0.1, 0, -0.25),
+            V(0.0, 0, -0.25),
+        )
+
+        edges_data = (
+            (0, 1),
+            (1, 2),
+            (2, 3),
+            (3, 4),
+            (4, 5),
+            (5, 6),
+            (6, 7),
+            (8, 7),
+            (8, 9),
+            (9, 10),
+            (0, 12),
+            (11, 12),
+            (11, 10),
+        )
+
+        faces_data = ((0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12),)
+        expected_profile = (verts_data, edges_data, faces_data)
+        generated_profile = subject.generate_stair_2d_profile(**kwargs)
+        self.compare_data(generated_profile, expected_profile)
+
+    def test_create_wood_steel_stair(self):
+        kwargs = {
+            "height": 1.0,
+            "number_of_treads": 3,
+            "stair_type": "WOOD/STEEL",
+            "tread_depth": 0.25,
+            "tread_run": 0.3,
+            "width": 1.2,
+        }
+        verts_data = (
+            V(0.0, 0, 0.0),
+            V(0.3, 0, 0.0),
+            V(0.3, 0, 0.25),
+            V(0.0, 0, 0.25),
+            V(0.3, 0, 0.25),
+            V(0.6, 0, 0.25),
+            V(0.6, 0, 0.5),
+            V(0.3, 0, 0.5),
+            V(0.6, 0, 0.5),
+            V(0.9, 0, 0.5),
+            V(0.9, 0, 0.75),
+            V(0.6, 0, 0.75),
+            V(0.9, 0, 0.75),
+            V(1.2, 0, 0.75),
+            V(1.2, 0, 1.0),
+            V(0.9, 0, 1.0),
+        )
+
+        edges_data = (
+            (0, 1),
+            (1, 2),
+            (2, 3),
+            (3, 0),
+            (4, 5),
+            (5, 6),
+            (6, 7),
+            (7, 4),
+            (8, 9),
+            (9, 10),
+            (10, 11),
+            (11, 8),
+            (12, 13),
+            (13, 14),
+            (14, 15),
+            (15, 12),
+        )
+
+        faces_data = (
+            (0,),
+            (4,),
+            (8,),
+            (12,),
+        )
+
+        expected_profile = (verts_data, edges_data, faces_data)
+        generated_profile = subject.generate_stair_2d_profile(**kwargs)
+        self.compare_data(generated_profile, expected_profile)
+
+    def test_create_generic_stair(self):
+        kwargs = {"height": 1.0, "number_of_treads": 3, "stair_type": "GENERIC", "tread_run": 0.3, "width": 1.2}
+        verts_data = (
+            V(0.0, 0, 0.0),
+            V(0.0, 0, 0.25),
+            V(0.3, 0, 0.25),
+            V(0.3, 0, 0.5),
+            V(0.6, 0, 0.5),
+            V(0.6, 0, 0.75),
+            V(0.9, 0, 0.75),
+            V(0.9, 0, 1.0),
+            V(1.2, 0, 1.0),
+            V(1.2, 0, 0.0),
+        )
+
+        edges_data = (
+            (0, 1),
+            (1, 2),
+            (2, 3),
+            (3, 4),
+            (4, 5),
+            (5, 6),
+            (6, 7),
+            (7, 8),
+            (8, 9),
+            (9, 0),
+        )
+
+        faces_data = ()
+        expected_profile = (verts_data, edges_data, faces_data)
+        generated_profile = subject.generate_stair_2d_profile(**kwargs)
+        self.compare_data(generated_profile, expected_profile)
