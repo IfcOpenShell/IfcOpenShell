@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import blenderbim.bim
 import blenderbim.tool as tool
 from bpy.types import Panel, Menu, UIList
 from blenderbim.bim.ifc import IfcStore
@@ -51,6 +52,22 @@ class BIM_MT_separate(Menu):
         self.layout.operator("bim.override_mesh_separate", icon="PLUGIN", text="IFC Selection").type = "SELECTED"
         self.layout.operator("bim.override_mesh_separate", icon="PLUGIN", text="IFC By Material").type = "MATERIAL"
         self.layout.operator("bim.override_mesh_separate", icon="PLUGIN", text="IFC By Loose Parts").type = "LOOSE"
+
+
+class BIM_MT_hotkey_separate(Menu):
+    bl_idname = "BIM_MT_hotkey_separate"
+    bl_label = "Separate"
+
+    def draw(self, context):
+        self.layout.label(text="IFC Separate", icon_value=blenderbim.bim.icons["IFC"].icon_id)
+        self.layout.operator("bim.override_mesh_separate", text="Selection").type = "SELECTED"
+        self.layout.operator("bim.override_mesh_separate", text="By Material").type = "MATERIAL"
+        self.layout.operator("bim.override_mesh_separate", text="By Loose Parts").type = "LOOSE"
+        self.layout.separator()
+        self.layout.label(text="Blender Separate", icon="BLENDER")
+        self.layout.operator("mesh.separate", text="Selection").type = "SELECTED"
+        self.layout.operator("mesh.separate", text="By Material").type = "MATERIAL"
+        self.layout.operator("mesh.separate", text="By Loose Parts").type = "LOOSE"
 
 
 class BIM_MT_object_set_origin(Menu):

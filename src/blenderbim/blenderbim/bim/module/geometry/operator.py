@@ -67,9 +67,12 @@ class OverrideMeshSeparate(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         obj = context.active_object
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return
 
         # You cannot separate meshes if the representation is mapped.
-        relating_type = tool.Root.get_element_type(tool.Ifc.get_entity(obj))
+        relating_type = tool.Root.get_element_type(element)
         if relating_type and tool.Root.does_type_have_representations(relating_type):
             # We toggle edit mode to ensure that once representations are
             # unmapped, our Blender mesh only has a single user.
