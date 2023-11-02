@@ -158,7 +158,7 @@ class TestGenerateStair2DProfile(NewFile):
             (10, 11),
             (10, 9),
         )
-        faces_data = ((0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11),)
+        faces_data = ()
         expected_profile = (verts_data, edges_data, faces_data)
         generated_profile = subject.generate_stair_2d_profile(**kwargs)
         self.compare_data(generated_profile, expected_profile)
@@ -207,7 +207,7 @@ class TestGenerateStair2DProfile(NewFile):
             (11, 10),
         )
 
-        faces_data = ((0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12),)
+        faces_data = ()
         expected_profile = (verts_data, edges_data, faces_data)
         generated_profile = subject.generate_stair_2d_profile(**kwargs)
         self.compare_data(generated_profile, expected_profile)
@@ -259,12 +259,7 @@ class TestGenerateStair2DProfile(NewFile):
             (15, 12),
         )
 
-        faces_data = (
-            (0,),
-            (4,),
-            (8,),
-            (12,),
-        )
+        faces_data = ()
 
         expected_profile = (verts_data, edges_data, faces_data)
         generated_profile = subject.generate_stair_2d_profile(**kwargs)

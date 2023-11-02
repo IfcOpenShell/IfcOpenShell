@@ -201,13 +201,13 @@ class BIMStairProperties(PropertyGroup):
     is_editing: bpy.props.BoolProperty(default=False)
     width: bpy.props.FloatProperty(name="Width", default=1.2, soft_min=0.01, subtype="DISTANCE")
     height: bpy.props.FloatProperty(name="Height", default=1.0, soft_min=0.01, subtype="DISTANCE")
-    number_of_treads: bpy.props.IntProperty(name="Number of treads", default=6, soft_min=1)
+    number_of_treads: bpy.props.IntProperty(name="Number of Treads", default=6, soft_min=1)
     tread_depth: bpy.props.FloatProperty(name="Tread Depth", default=0.25, soft_min=0.01, subtype="DISTANCE")
     tread_run: bpy.props.FloatProperty(name="Tread Run", default=0.3, soft_min=0.01, subtype="DISTANCE")
-    base_slab_depth: bpy.props.FloatProperty(name="Base slab depth", default=0.25, soft_min=0, subtype="DISTANCE")
-    top_slab_depth: bpy.props.FloatProperty(name="Top slab depth", default=0.25, soft_min=0, subtype="DISTANCE")
-    has_top_nib: bpy.props.BoolProperty(name="Has top nib", default=True)
-    stair_type: bpy.props.EnumProperty(name="Stair type", items=stair_types, default="CONCRETE")
+    base_slab_depth: bpy.props.FloatProperty(name="Base Slab Depth", default=0.25, soft_min=0, subtype="DISTANCE")
+    top_slab_depth: bpy.props.FloatProperty(name="Top Slab Depth", default=0.25, soft_min=0, subtype="DISTANCE")
+    has_top_nib: bpy.props.BoolProperty(name="Has Top Nib", default=True)
+    stair_type: bpy.props.EnumProperty(name="Stair Type", items=stair_types, default="CONCRETE")
 
     def get_props_kwargs(self, convert_to_project_units=False, stair_type=None):
         if not stair_type:
