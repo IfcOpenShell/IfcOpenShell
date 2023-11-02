@@ -61,6 +61,7 @@ classes = (
     ui.BIM_PT_workarounds,
     ui.BIM_MT_object_set_origin,
     ui.BIM_MT_separate,
+    ui.BIM_MT_hotkey_separate,
     ui.BIM_UL_representation_items,
 )
 
@@ -91,7 +92,9 @@ def register():
         addon_keymaps.append((km, kmi))
         kmi = km.keymap_items.new("bim.override_object_duplicate_move_linked_macro", "D", "PRESS", alt=True)
         addon_keymaps.append((km, kmi))
-        kmi = km.keymap_items.new("bim.override_object_duplicate_move_aggregate_macro", "D", "PRESS", ctrl=True, shift=True)
+        kmi = km.keymap_items.new(
+            "bim.override_object_duplicate_move_aggregate_macro", "D", "PRESS", ctrl=True, shift=True
+        )
         addon_keymaps.append((km, kmi))
         kmi = km.keymap_items.new("bim.override_paste_buffer", "V", "PRESS", ctrl=True)
         addon_keymaps.append((km, kmi))
@@ -105,6 +108,9 @@ def register():
 
         km = wm.keyconfigs.addon.keymaps.new(name="Mesh", space_type="EMPTY")
         kmi = km.keymap_items.new("bim.override_mode_set_object", "TAB", "PRESS")
+        addon_keymaps.append((km, kmi))
+        kmi = km.keymap_items.new("wm.call_menu", "P", "PRESS")
+        kmi.properties.name = ui.BIM_MT_hotkey_separate.bl_idname
         addon_keymaps.append((km, kmi))
 
         km = wm.keyconfigs.addon.keymaps.new(name="Curve", space_type="EMPTY")
