@@ -1,13 +1,22 @@
-﻿#include "OpenCascadeConversionResult.h"
+﻿#include <map>
+
+#include <TopoDS.hxx>
+#include <TopExp.hxx>
+#include <BRepGProp.hxx>
+#include <GProp_GProps.hxx>
+#include <Geom_SphericalSurface.hxx>
+
+#include "OpenCascadeConversionResult.h"
 
 #include "../../../ifcparse/IfcLogger.h"
 #include "../../../ifcgeom/IfcGeomRepresentation.h"
 #include "base_utils.h"
+#include "boolean_utils.h"
 
-#include <TopoDS.hxx>
-#include <Geom_SphericalSurface.hxx>
-
-#include <map>
+using IfcGeom::OpaqueNumber;
+using IfcGeom::OpaqueCoordinate;
+using IfcGeom::NumberNativeDouble;
+using IfcGeom::ConversionResultShape;
 
 namespace {
 	// We bypass the conversion to gp_GTrsf, because it does not work
@@ -226,9 +235,190 @@ void ifcopenshell::geometry::OpenCascadeShape::Serialize(const ifcopenshell::geo
 }
 
 int ifcopenshell::geometry::OpenCascadeShape::surface_genus() const {
-	throw std::runtime_error("Not implemented");
+	return IfcGeom::util::surface_genus(shape_);
 }
 
 bool ifcopenshell::geometry::OpenCascadeShape::is_manifold() const {
+	return IfcGeom::util::is_manifold(shape_);
+}
+
+int ifcopenshell::geometry::OpenCascadeShape::num_vertices() const
+{
+	return IfcGeom::util::count(shape_, TopAbs_VERTEX);
+}
+
+int ifcopenshell::geometry::OpenCascadeShape::num_edges() const
+{
+	return IfcGeom::util::count(shape_, TopAbs_EDGE);
+}
+
+int ifcopenshell::geometry::OpenCascadeShape::num_faces() const
+{
+	return IfcGeom::util::count(shape_, TopAbs_FACE);
+}
+
+std::shared_ptr<OpaqueNumber> ifcopenshell::geometry::OpenCascadeShape::OpenCascadeShape::length()
+{
+	GProp_GProps prop;
+	BRepGProp::LinearProperties(shape_, prop);
+	double l = prop.Mass();
+	return std::make_shared<NumberNativeDouble>(l);
+}
+
+std::shared_ptr<OpaqueNumber> ifcopenshell::geometry::OpenCascadeShape::area()
+{
+	GProp_GProps prop;
+	BRepGProp::SurfaceProperties(shape_, prop);
+	double l = prop.Mass();
+	return std::make_shared<NumberNativeDouble>(l);
+}
+
+std::shared_ptr<OpaqueNumber> ifcopenshell::geometry::OpenCascadeShape::volume()
+{
+	GProp_GProps prop;
+	BRepGProp::VolumeProperties(shape_, prop);
+	double l = prop.Mass();
+	return std::make_shared<NumberNativeDouble>(l);
+}
+
+#include <Geom_Plane.hxx>
+
+OpaqueCoordinate<3> ifcopenshell::geometry::OpenCascadeShape::position()
+{
+	if (shape_.ShapeType() == TopAbs_FACE) {
+		auto surf = BRep_Tool::Surface(TopoDS::Face(shape_));
+		auto plane = Handle(Geom_Plane)::DownCast(surf);
+		if (plane) {
+			auto loc = plane->Location();
+			return OpaqueCoordinate<3>(
+				std::make_shared<NumberNativeDouble>(loc.X()),
+				std::make_shared<NumberNativeDouble>(loc.Y()),
+				std::make_shared<NumberNativeDouble>(loc.Z())
+			);
+		}
+	}
+	throw std::runtime_error("Invalid shape type");
+}
+
+OpaqueCoordinate<3> ifcopenshell::geometry::OpenCascadeShape::axis()
+{
+	if (shape_.ShapeType() == TopAbs_FACE) {
+		auto surf = BRep_Tool::Surface(TopoDS::Face(shape_));
+		auto plane = Handle(Geom_Plane)::DownCast(surf);
+		if (plane) {
+			auto dir = plane->Axis().Direction();
+			return OpaqueCoordinate<3>(
+				std::make_shared<NumberNativeDouble>(dir.X()),
+				std::make_shared<NumberNativeDouble>(dir.Y()),
+				std::make_shared<NumberNativeDouble>(dir.Z())
+			);
+		}
+	}
+	throw std::runtime_error("Invalid shape type");
+}
+
+OpaqueCoordinate<4> ifcopenshell::geometry::OpenCascadeShape::plane_equation()
+{
+	if (shape_.ShapeType() == TopAbs_FACE) {
+		auto surf = BRep_Tool::Surface(TopoDS::Face(shape_));
+		auto plane = Handle(Geom_Plane)::DownCast(surf);
+		if (plane) {
+			double a, b, c, d;
+			plane->Pln().Coefficients(a, b, c, d);
+			return OpaqueCoordinate<4>(
+				std::make_shared<NumberNativeDouble>(a),
+				std::make_shared<NumberNativeDouble>(b),
+				std::make_shared<NumberNativeDouble>(c),
+				std::make_shared<NumberNativeDouble>(d)
+			);
+		}
+	}
+	throw std::runtime_error("Invalid shape type");
+}
+
+std::vector<ConversionResultShape*> ifcopenshell::geometry::OpenCascadeShape::convex_decomposition()
+{
+	throw std::runtime_error("Not implemented");
+}
+
+ConversionResultShape * ifcopenshell::geometry::OpenCascadeShape::halfspaces()
+{
+	throw std::runtime_error("Not implemented");
+}
+
+ConversionResultShape* ifcopenshell::geometry::OpenCascadeShape::solid()
+{
+	throw std::runtime_error("Not implemented");
+}
+
+ConversionResultShape * ifcopenshell::geometry::OpenCascadeShape::box()
+{
+	throw std::runtime_error("Not implemented");
+}
+
+std::vector<ConversionResultShape*> ifcopenshell::geometry::OpenCascadeShape::edges()
+{
+	TopTools_IndexedMapOfShape map;
+	TopExp::MapShapes(shape_, TopAbs_EDGE, map);
+	std::vector<ConversionResultShape*> vec;
+	for (int i = 1; i <= map.Extent(); ++i) {
+		vec.push_back(new OpenCascadeShape(map.FindKey(i)));
+	}
+	return vec;
+}
+
+std::vector<ConversionResultShape*> ifcopenshell::geometry::OpenCascadeShape::facets()
+{
+	TopTools_IndexedMapOfShape map;
+	TopExp::MapShapes(shape_, TopAbs_FACE, map);
+	std::vector<ConversionResultShape*> vec;
+	for (int i = 1; i <= map.Extent(); ++i) {
+		vec.push_back(new OpenCascadeShape(map.FindKey(i)));
+	}
+	return vec;
+}
+
+namespace {
+	ConversionResultShape* boolean_op(BOPAlgo_Operation op, const TopoDS_Shape& shape_, const TopoDS_Shape& other_shape) {
+		IfcGeom::util::boolean_settings st;
+		st.attempt_2d = true;
+		st.debug = false;
+		st.precision = 1.e-5;
+
+		TopoDS_Shape result;
+		if (IfcGeom::util::boolean_operation(st, shape_, other_shape, op, result)) {
+			return new ifcopenshell::geometry::OpenCascadeShape(result);
+		} else {
+			throw std::runtime_error("Failed to process boolean operation");
+		}
+	}
+}
+
+ConversionResultShape* ifcopenshell::geometry::OpenCascadeShape::add(ConversionResultShape* other)
+{
+	return boolean_op(BOPAlgo_FUSE, shape_, ((ifcopenshell::geometry::OpenCascadeShape*)other)->shape_);
+}
+
+ConversionResultShape* ifcopenshell::geometry::OpenCascadeShape::subtract(ConversionResultShape* other)
+{
+	return boolean_op(BOPAlgo_CUT, shape_, ((ifcopenshell::geometry::OpenCascadeShape*)other)->shape_);
+}
+
+ConversionResultShape* ifcopenshell::geometry::OpenCascadeShape::intersect(ConversionResultShape* other)
+{
+	return boolean_op(BOPAlgo_COMMON, shape_, ((ifcopenshell::geometry::OpenCascadeShape*)other)->shape_);
+}
+
+std::pair<OpaqueCoordinate<3>, OpaqueCoordinate<3>> ifcopenshell::geometry::OpenCascadeShape::bounding_box() const
+{
+	throw std::runtime_error("Not implemented");
+}
+
+ConversionResultShape* ifcopenshell::geometry::OpenCascadeShape::moved(ifcopenshell::geometry::taxonomy::matrix4::ptr t) const
+{
+	return new OpenCascadeShape(IfcGeom::util::apply_transformation(shape_, *t));
+}
+
+void ifcopenshell::geometry::OpenCascadeShape::map(OpaqueCoordinate<4>& from, OpaqueCoordinate<4>& to) {
 	throw std::runtime_error("Not implemented");
 }

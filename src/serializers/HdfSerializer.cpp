@@ -593,7 +593,7 @@ void HdfSerializer::write(const IfcGeom::BRepElement* o) {
 		}
 
 		brep_strings.emplace_back();
-		write_shape(((ifcopenshell::geometry::OpenCascadeShape*)it->Shape())->shape(), brep_strings.back());
+		write_shape(std::static_pointer_cast<ifcopenshell::geometry::OpenCascadeShape>(it->Shape())->shape(), brep_strings.back());
 		
 		parts[i].surface_style = { "", "", 0, {nan,nan,nan}, {nan,nan,nan}, nan, nan };
 		if (it->hasStyle()) {

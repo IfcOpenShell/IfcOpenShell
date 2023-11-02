@@ -67,13 +67,13 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement* inst) {
 
 	taxonomy::ptr result;
 	if (!parent_placement_ignored && relative_to) {
-		// The parent placement of the current is a placement for a type that is
-		// being ignored (Site or Building) or it is the host element of an opening.
         result = taxonomy::make<taxonomy::matrix4>(
 			taxonomy::cast<taxonomy::matrix4>(map(relative_to))->ccomponents() *
 			taxonomy::cast<taxonomy::matrix4>(map(transform))->ccomponents()
 		);
 	} else {
+		// The parent placement of the current is a placement for a type that is
+		// being ignored (Site or Building) or it is the host element of an opening.
 		result = map(transform);
 	}
 

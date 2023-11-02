@@ -52,6 +52,10 @@
 %include "std_vector.i"
 %include "std_string.i"
 %include "exception.i"
+%include "std_shared_ptr.i"
+
+%shared_ptr(IfcGeom::OpaqueNumber);
+%ignore IfcGeom::NumberNativeDouble;
 
 // General python-specific rename rules for comparison operators.
 // Mostly to silence warnings, but might be of use some time.
@@ -130,6 +134,8 @@
 	#include "../ifcparse/IfcSchema.h"
 	#include "../ifcparse/utils.h"
 
+	#include "../ifcgeom/ConversionResult.h"
+
 	#include "../svgfill/src/svgfill.h"
 %}
 
@@ -152,6 +158,7 @@
 	#include <BRepTools_ShapeSet.hxx>
 #endif
 	#include "../ifcgeom/Iterator.h"
+	#include "../ifcgeom/ConversionResult.h"
 
 	#include "../serializers/SvgSerializer.h"
 	#include "../serializers/WavefrontObjSerializer.h"

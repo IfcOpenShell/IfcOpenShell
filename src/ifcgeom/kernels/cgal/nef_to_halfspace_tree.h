@@ -46,6 +46,7 @@
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/graph/copy.hpp>
 
+#include <list>
 #include <queue>
 #include <memory>
 #include <functional>
@@ -253,6 +254,7 @@ public:
 	virtual CGAL::Nef_polyhedron_3<Kernel> evaluate(int level = 0) const = 0;
 	virtual void accumulate(std::list<typename Kernel::Plane_3>&) const = 0;
 	virtual std::unique_ptr<halfspace_tree> map(const plane_map<Kernel>&) const = 0;
+	virtual std::string dump(int level = 0) const = 0;
 	virtual tree_type kind() const = 0;
 	virtual void merge(CGAL::Nef_polyhedron_3<Kernel>&) const = 0;
 };
@@ -260,7 +262,7 @@ public:
 // Halfspace tree component as n-ary operands
 template <typename Kernel>
 class halfspace_tree_nary_branch : public halfspace_tree<Kernel> {
-private:
+public:
 	halfspace_operation operation_;
 	std::list<std::unique_ptr<halfspace_tree<Kernel>>> operands_;
 
@@ -277,10 +279,18 @@ public:
 		: operation_(operation)
 		, operands_(std::move(operands))
 	{}
-	virtual CGAL::Nef_polyhedron_3<Kernel> evaluate(int level) const {
+	std::string dump(int level) const {
 		static const char* const ops[] = { "union", "subtraction", "intersection" };
-		// std::cout << std::string(level * 2, ' ') << ops[operation_] << " (" << std::endl;
 
+		std::ostringstream ss;
+		ss << std::string(level * 2, ' ') << ops[operation_] << " (" << std::endl;
+		for (auto& op : operands_) {
+			ss << op->dump(level + 1);
+		}
+		ss << std::string(level * 2, ' ') << ")" << std::endl;
+		return ss.str();
+	}
+	virtual CGAL::Nef_polyhedron_3<Kernel> evaluate(int level) const {
 		CGAL::Nef_polyhedron_3<Kernel> result;
 
 		if (operation_ == OP_SUBTRACTION) {
@@ -337,9 +347,6 @@ public:
 			return r;
 			*/
 		}
-
-		// std::cout << std::string(level * 2, ' ') << ")" << std::endl;
-
 		return result;
 	}
 	virtual void accumulate(std::list<typename Kernel::Plane_3>& points) const {
@@ -438,9 +445,12 @@ public:
 	halfspace_tree_plane(const typename Kernel::Plane_3& plane)
 		: plane_(plane)
 	{}
+	std::string dump(int level) const {
+		std::ostringstream ss;
+		ss << std::string(level * 2, ' ') << "p " << std::setprecision(15) << plane_ << std::endl;
+		return ss.str();
+	}
 	virtual CGAL::Nef_polyhedron_3<Kernel> evaluate(int level) const {
-		// std::cout << std::string(level * 2, ' ') << "p " << plane_ << std::endl;
-
 		if constexpr(CGAL::Is_extended_kernel<Kernel>::value_type::value) {
 			throw std::runtime_error("Not implemented yet");
 			// typename Kernel::Plane_3 plane(plane_.a().exact(), plane_.b().exact(), plane_.c().exact(), plane_.d().exact());
@@ -464,7 +474,19 @@ public:
 		points.push_back(plane_);
 	}
 	virtual std::unique_ptr<halfspace_tree<Kernel>> map(const std::map<typename Kernel::Plane_3, typename Kernel::Plane_3, PlaneLess<Kernel>>& m) const {
-		auto it = m.find(plane_);
+
+		std::array<Kernel::FT, 3> abcd = { {plane_.a(), plane_.b(), plane_.c()} };
+		auto minel = std::min_element(abcd.begin(), abcd.end());
+		auto maxel = std::max_element(abcd.begin(), abcd.end());
+		auto maxval = ((-*minel) > *maxel) ? (-*minel) : *maxel;
+		CGAL::Plane_3<Kernel> pp(
+			plane_.a() / maxval,
+			plane_.b() / maxval,
+			plane_.c() / maxval,
+			plane_.d() / maxval
+		);
+
+		auto it = m.find(pp);
 		if (it != m.end()) {
 			return std::unique_ptr<halfspace_tree<Kernel>>(new halfspace_tree_plane(it->second));
 		} else {
@@ -960,41 +982,22 @@ std::unique_ptr<halfspace_tree<TreeKernel>> build_halfspace_tree(Graph<Kernel>& 
 	return std::move(tree_0);
 }
 
+// Visitor for Nef_polyhedron_3 shells to convert facets to Polyhedron_3
+// using the Polygon_mesh_processing package and Polygon_triangulation_decomposition_2
+// in case of facets with inner bounds.
 template <typename Kernel>
-size_t edge_contract(Graph<Kernel>& G) {
-	size_t n = 0;
-	typename boost::graph_traits<Graph<Kernel>>::edge_iterator ei, ei_end;
-	bool has_contracted = true;
-	while (has_contracted) {
-		has_contracted = false;
-		for (boost::tie(ei, ei_end) = boost::edges(G); ei != ei_end; ++ei) {
-			auto srcid = boost::source(*ei, G);
-			auto tgtid = boost::target(*ei, G);
-			auto a = G[srcid].facet->plane().orthogonal_vector();
-			auto b = G[tgtid].facet->plane().orthogonal_vector();
-			// std::cout << srcid << " -- " << tgtid << std::endl << G[srcid].facet->plane() << std::endl << G[tgtid].facet->plane() << std::endl << CGAL::approximate_angle(a, b) << std::endl;
-			if (CGAL::approximate_angle(a, b) < 0.1) {
-				for (auto oe : boost::make_iterator_range(boost::out_edges(tgtid, G))) {
-					auto tt = boost::target(oe, G);
-					if (srcid != tt) { // Avoid self-loop
-						bool exists = boost::edge(srcid, tt, G).second;
-						if (!exists) {
-							boost::add_edge(srcid, tt, G);
-						}						
-					}
-				}
-				++n;
-				has_contracted = true;
-
-				boost::clear_vertex(tgtid, G);
-				boost::remove_vertex(tgtid , G);
-
-				break;
-			}
-		}
+struct Halffacet_collector {
+	std::set<typename CGAL::Nef_polyhedron_3<Kernel>::Halffacet_const_handle> facets;
+	void visit(typename CGAL::Nef_polyhedron_3<Kernel>::Vertex_const_handle) {}
+	void visit(typename CGAL::Nef_polyhedron_3<Kernel>::Halfedge_const_handle) {}
+	void visit(typename CGAL::Nef_polyhedron_3<Kernel>::Halffacet_const_handle h) {
+		facets.insert(h);
 	}
-	return n;
-}
+	void visit(typename CGAL::Nef_polyhedron_3<Kernel>::SHalfedge_const_handle) {}
+	void visit(typename CGAL::Nef_polyhedron_3<Kernel>::SHalfloop_const_handle) {}
+	void visit(typename CGAL::Nef_polyhedron_3<Kernel>::SFace_const_handle) {}
+};
+
 
 
 // Visitor for Nef_polyhedron_3 shells to convert facets to Polyhedron_3
@@ -1009,6 +1012,10 @@ public:
 	void visit(typename CGAL::Nef_polyhedron_3<Kernel>::Vertex_const_handle) {}
 	void visit(typename CGAL::Nef_polyhedron_3<Kernel>::Halfedge_const_handle) {}
 	void visit(typename CGAL::Nef_polyhedron_3<Kernel>::Halffacet_const_handle h) {
+
+		auto verts_backup = verts;
+		auto facets_backup = facets;
+
 		boost::optional<CGAL::Polygon_with_holes_2<Kernel>> pwh;
 		auto nf = std::distance(h->facet_cycles_begin(), h->facet_cycles_end());
 		for (auto fc = h->facet_cycles_begin(); fc != h->facet_cycles_end(); ++fc) {
@@ -1025,7 +1032,7 @@ public:
 			if (nf == 1) {
 				facets.emplace_back();
 			}
-			
+
 			CGAL_For_all(hc, hc_end) {
 				auto p = hc->source()->center_vertex()->point();
 				if (nf == 1) {
@@ -1063,6 +1070,46 @@ public:
 				}
 			}
 		}
+
+		// Eliminate small slivers that create topologic connections between interior and exterior.
+		// Use connected components on polyhedron to eliminate.
+
+		std::vector<const CGAL::Point_3<Kernel>*> verts_vector(verts.size());
+		for (auto& p : verts) {
+			verts_vector[p.second] = &p.first;
+		}
+
+		// We need to normalize because we want to compare to a real-world area value
+		auto b1 = h->plane().base1();
+		double l = std::sqrt(CGAL::to_double(b1.squared_length()));
+		b1 /= l;
+
+		auto b2 = h->plane().base2();
+		l = std::sqrt(CGAL::to_double(b2.squared_length()));
+		b2 /= l;
+
+		// check for size of emitted facet, rollback if too insignificant
+		typename Kernel::FT area = 0;
+		for (auto it = facets.begin() + facets_backup.size(); it != facets.end(); ++it) {
+			CGAL::Polygon_2<Kernel> loop;
+			for (auto& i : *it) {
+				const auto& p = *verts_vector[i];
+				auto v = p - h->plane().point();
+				// std::cout << "v " << v << std::endl;
+				CGAL::Point_2<Kernel> uv(v * b1, v * b2);
+				// std::cout << "uv " << uv << std::endl;
+				loop.push_back(uv);
+			}
+			area += loop.area();
+		}
+
+		// auto pl = h->plane();
+		// l = std::sqrt(CGAL::to_double(pl.orthogonal_vector().squared_length()));
+		// std::cout << pl.a() / l << " " << pl.b() / l << " " << pl.c() / l << " " << pl.d() / l << ": " << area << std::endl;
+		if (area < 1.e-5) {
+			verts = verts_backup;
+			facets = facets_backup;
+		}
 	}
 	void visit(typename CGAL::Nef_polyhedron_3<Kernel>::SHalfedge_const_handle) {}
 	void visit(typename CGAL::Nef_polyhedron_3<Kernel>::SHalfloop_const_handle) {}
@@ -1074,7 +1121,140 @@ public:
 		}
 		CGAL::Polygon_mesh_processing::polygon_soup_to_polygon_mesh(verts_vector, facets, P);
 	}
+	void write(std::ostream& ofs) {
+		std::vector<CGAL::Point_3<Kernel>> verts_vector(verts.size());
+		for (auto& p : verts) {
+			verts_vector[p.second] = p.first;
+		}
+		for (auto& v : verts_vector) {
+			ofs << "v " << v.cartesian(0) << " " << v.cartesian(1) << " " << v.cartesian(2) << "\n";
+		}
+		for (auto& idxs : facets) {
+			ofs << "i";
+			for (auto& i : idxs) {
+				ofs << " " << i;
+			}
+			ofs << "\n";
+		}
+		ofs << std::flush;
+	}
 };
+
+template <typename Kernel, typename TreeKernel = Kernel>
+std::unique_ptr<halfspace_tree<TreeKernel>> build_halfspace_tree_decomposed(CGAL::Nef_polyhedron_3<Kernel>& poly_, std::list<CGAL::Plane_3<Kernel>>& planes) {
+	std::unique_ptr<halfspace_tree<TreeKernel>> tree;
+	std::list<std::unique_ptr<halfspace_tree<TreeKernel>>> root_expression;
+
+	// Don't add intermediate facets created by decomposition
+	for (auto it = poly_.halffacets_begin(); it != poly_.halffacets_end(); ++it) {
+		// but below is converted to and from vanilla polyhedron, which recomputes planes (but is still exact).
+		// Therefore, we do need to have some uniformization step, which in this case is divide by larged a,b or c
+		// component.
+		if (it->incident_volume()->mark()) {
+			std::array<Kernel::FT, 3> abcd = { {it->plane().a(), it->plane().b(), it->plane().c()} };
+			auto minel = std::min_element(abcd.begin(), abcd.end());
+			auto maxel = std::max_element(abcd.begin(), abcd.end());
+			auto maxval = ((-*minel) > *maxel) ? (-*minel) : *maxel;
+			planes.push_back(Kernel::Plane_3(
+				it->plane().a() / maxval,
+				it->plane().b() / maxval,
+				it->plane().c() / maxval,
+				it->plane().d() / maxval
+			));
+		}
+	}
+
+	auto poly = poly_;
+	CGAL::convex_decomposition_3(poly);
+	// the first volume is the outer volume, which is
+	// ignored in the decomposition
+	auto ci = ++poly.volumes_begin();
+	int NN = 0;
+
+	for (; ci != poly.volumes_end(); ++ci, ++NN) {
+		std::list<std::unique_ptr<halfspace_tree<TreeKernel>>> sub_expression;
+
+		if (ci->mark()) {
+			Halffacet_collector<Kernel> vis;
+			poly.visit_shell_objects(CGAL::Nef_polyhedron_3<Kernel>::SFace_const_handle(ci->shells_begin()), vis);
+			for (auto& f : vis.facets) {
+				sub_expression.emplace_back(new halfspace_tree_plane<TreeKernel>(f->plane()));
+			}
+
+			/*
+			// @todo couldn't get it to work with the multiple volumes of a complex decomposition
+			// directly, so for now we need to isolate the individual volumes.
+			CGAL::Polyhedron_3<Kernel> P;
+			poly.convert_inner_shell_to_polyhedron(ci->shells_begin(), P);
+			CGAL::Nef_polyhedron_3<Kernel> Pnef(P);			
+
+			for (auto it = Pnef.halffacets_begin(); it != Pnef.halffacets_end(); ++it) {
+				if (it->incident_volume()->mark()) {
+					sub_expression.emplace_back(new halfspace_tree_plane<TreeKernel>(it->plane()));
+				}
+			}
+
+			if (sub_expression.size() != vis.facets.size()) {
+
+				Polysoup_builder<Kernel> vis2;
+				poly.visit_shell_objects(CGAL::Nef_polyhedron_3<Kernel>::SFace_const_handle(ci->shells_begin()), vis2);
+
+				{
+					std::ofstream("debug-nef-decomp.off") << P;
+				}
+				{
+					CGAL::Polyhedron_3<Kernel> temp;
+					vis2.build(temp);
+					std::ofstream("debug-converted-poly.off") << temp;
+				}
+
+				// throw std::runtime_error("Unexpected");
+			}
+			*/
+		}
+
+		root_expression.emplace_back(new halfspace_tree_nary_branch<TreeKernel>(OP_INTERSECTION, std::move(sub_expression)));
+	}
+
+	tree.reset(new halfspace_tree_nary_branch<TreeKernel>(OP_UNION, std::move(root_expression)));
+	return tree;
+}
+
+template <typename Kernel>
+size_t edge_contract(Graph<Kernel>& G) {
+	size_t n = 0;
+	typename boost::graph_traits<Graph<Kernel>>::edge_iterator ei, ei_end;
+	bool has_contracted = true;
+	while (has_contracted) {
+		has_contracted = false;
+		for (boost::tie(ei, ei_end) = boost::edges(G); ei != ei_end; ++ei) {
+			auto srcid = boost::source(*ei, G);
+			auto tgtid = boost::target(*ei, G);
+			auto a = G[srcid].facet->plane().orthogonal_vector();
+			auto b = G[tgtid].facet->plane().orthogonal_vector();
+			// std::cout << srcid << " -- " << tgtid << std::endl << G[srcid].facet->plane() << std::endl << G[tgtid].facet->plane() << std::endl << CGAL::approximate_angle(a, b) << std::endl;
+			if (CGAL::approximate_angle(a, b) < 0.1) {
+				for (auto oe : boost::make_iterator_range(boost::out_edges(tgtid, G))) {
+					auto tt = boost::target(oe, G);
+					if (srcid != tt) { // Avoid self-loop
+						bool exists = boost::edge(srcid, tt, G).second;
+						if (!exists) {
+							boost::add_edge(srcid, tt, G);
+						}						
+					}
+				}
+				++n;
+				has_contracted = true;
+
+				boost::clear_vertex(tgtid, G);
+				boost::remove_vertex(tgtid , G);
+
+				break;
+			}
+		}
+	}
+	return n;
+}
 
 // For some reason gives better results then Nef_polyhedron_3.convert_to_polyhedron() in some cases
 template <typename Kernel>
@@ -1089,6 +1269,25 @@ bool convert_to_polyhedron(const CGAL::Nef_polyhedron_3<Kernel>& a, CGAL::Polyhe
 				Polysoup_builder<Kernel> vis;
 				a.visit_shell_objects(CGAL::Nef_polyhedron_3<Kernel>::SFace_const_handle(jt), vis);
 				vis.build(b);
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+template <typename Kernel>
+bool write_to_obj(const CGAL::Nef_polyhedron_3<Kernel>& a, std::ofstream& ofs, size_t volume_index = 0) {
+	size_t v = 0;
+	for (auto it = a.volumes_begin(); it != a.volumes_end(); ++it) {
+		if (!it->mark()) {
+			continue;
+		}
+		for (auto jt = it->shells_begin(); jt != it->shells_end(); ++jt) {
+			if (v++ == volume_index) {
+				Polysoup_builder<Kernel> vis;
+				a.visit_shell_objects(CGAL::Nef_polyhedron_3<Kernel>::SFace_const_handle(jt), vis);
+				vis.write(ofs);
 				return true;
 			}
 		}

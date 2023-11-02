@@ -60,6 +60,7 @@
 
 %include "../ifcgeom/ifc_geom_api.h"
 %include "../ifcgeom/Converter.h"
+%include "../ifcgeom/ConversionResult.h"
 %include "../ifcgeom/IteratorSettings.h"
 %include "../ifcgeom/IfcGeomElement.h"
 %include "../ifcgeom/IfcGeomRepresentation.h"
@@ -601,6 +602,9 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 %template(svg_groups_of_polygons) std::vector<std::vector<svgfill::polygon_2>>;
 %template(svg_loop) std::vector<std::array<double, 2>>;
 %template(svg_loops) std::vector<std::vector<std::array<double, 2>>>;
+
+%template(OpaqueCoordinate_3) IfcGeom::OpaqueCoordinate<3>;
+%template(OpaqueCoordinate_4) IfcGeom::OpaqueCoordinate<4>;
 
 %naturalvar svgfill::polygon_2::boundary;
 %naturalvar svgfill::polygon_2::inner_boundaries;
