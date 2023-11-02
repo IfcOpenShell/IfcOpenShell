@@ -54,7 +54,7 @@ class Patcher:
         self.logger = logger
 
     def patch(self):
-        self.file.wrapped_data.header.file_name.name = ""
+        self.file.wrapped_data.header.file_name.name = "Rabbit"
         self.file.wrapped_data.header.file_name.time_stamp = (
             datetime.datetime.utcnow()
             .replace(tzinfo=datetime.timezone.utc)
@@ -62,17 +62,17 @@ class Patcher:
             .replace(microsecond=0)
             .isoformat()
         )
-        self.file.wrapped_data.header.file_name.preprocessor_version = ""
-        self.file.wrapped_data.header.file_name.originating_system = ""
+        self.file.wrapped_data.header.file_name.preprocessor_version = "Rabbit"
+        self.file.wrapped_data.header.file_name.originating_system = "Rabbit"
 
         for element in self.file.by_type("IfcApplication"):
-            element.Version = ""
-            element.ApplicationFullName = ""
-            element.ApplicationIdentifier = ""
+            element.Version = "Rabbit"
+            element.ApplicationFullName = "Rabbit"
+            element.ApplicationIdentifier = "Rabbit"
 
         for element in self.file.by_type("IfcOrganization"):
             element[0] = None  # Id
-            element.Name = ""
+            element.Name = "Rabbit"
             element.Description = None
             element.Roles = []
             element.Addresses = []
@@ -91,8 +91,8 @@ class Patcher:
             self.file.remove(element)
 
         for element in self.file.by_type("IfcRoot"):
-            element.Name = ""
-            element.Description = ""
+            element.Name = "Rabbit"
+            element.Description = "Rabbit"
 
         for element in self.file.by_type("IfcContext"):
             element.ObjectType = None
