@@ -249,6 +249,15 @@ class Blender:
         tool.Blender.get_viewport_context()["area"].tag_redraw()
 
     @classmethod
+    def force_depsgraph_update(cls):
+        """useful if you need to trigger callbacks like `depsgraph_update_pre`"""
+        # blender is requiring some ID to be changed
+        # to trigger depsgraph update
+        scene = bpy.context.scene
+        scene.show_subframe = scene.show_subframe
+        bpy.context.view_layer.update()
+
+    @classmethod
     def ensure_unique_name(cls, name, objects, iteration=0):
         """returns a unique name for the given name and dictionary of objects
         blender style name with .001, .002, etc. suffix
