@@ -681,9 +681,6 @@ class TestDrawingMaintainingSheetPosition(NewFile):
         obj = bpy.data.objects["Cube"]
         bpy.ops.bim.assign_class(ifc_class="IfcActuator", predefined_type="ELECTRICACTUATOR", userdefined_type="")
 
-        def update_depsgraph():
-            obj.hide_render = obj.hide_render  # hacky way to trigger depsgraph_update_pre
-
         bpy.ops.bim.load_sheets()
         bpy.ops.bim.add_sheet()
 
@@ -714,7 +711,7 @@ class TestDrawingMaintainingSheetPosition(NewFile):
 
         bpy.context.scene.camera.data.BIMCameraProperties.width = 25
         bpy.context.scene.camera.data.BIMCameraProperties.height = 25
-        update_depsgraph()
+        tool.Blender.force_depsgraph_update()
 
         bpy.ops.bim.create_drawing()
         bpy.ops.bim.open_sheet()
