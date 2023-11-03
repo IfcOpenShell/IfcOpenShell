@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.util.type
 import ifcopenshell.util.schema
 import ifcopenshell.util.element
 
@@ -79,12 +80,12 @@ class Usecase:
                 element.PredefinedType = "USERDEFINED"
                 element.ObjectType = self.settings["predefined_type"]
         if element.is_a("IfcTypeProduct"):
-            for typed_element in ifcopenshell.util.element.get_types(element) or []:
-                ifc_class = self.settings["ifc_class"].removesuffix("Type").removesuffix("Style")
+            for occurrence in ifcopenshell.util.element.get_types(element) or []:
+                ifc_class = ifcopenshell.util.type.get_applicable_entities(self.settings["ifc_class"])[0]
                 ifcopenshell.api.run(
                     "root.reassign_class",
                     self.file,
-                    product=typed_element,
+                    product=occurrence,
                     ifc_class=ifc_class,
                     predefined_type= self.settings["predefined_type"]
                 )
