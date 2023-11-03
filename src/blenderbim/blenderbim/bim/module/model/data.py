@@ -361,7 +361,7 @@ class SverchokData:
 
 
 def get_prop_from_data(props, data, prop_name):
-    prop_value = data[prop_name]
+    prop_value = data.get(prop_name, tool.Blender.get_blender_prop_default_value(props, prop_name))
     prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
     prop_readable_name = props.bl_rna.properties[prop_name].name
     return prop_readable_name, prop_value
