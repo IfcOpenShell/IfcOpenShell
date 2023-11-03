@@ -95,7 +95,6 @@ class TestEditPset(test.bootstrap.IFC4):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Pset_WallCommon")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Reference": "Foo"})
-        print("test")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Reference": None}, should_purge=True)
         pset = element.IsDefinedBy[0].RelatingPropertyDefinition
         assert len(pset.HasProperties) == 0
