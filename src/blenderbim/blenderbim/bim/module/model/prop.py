@@ -210,6 +210,14 @@ class BIMStairProperties(PropertyGroup):
     top_slab_depth: bpy.props.FloatProperty(name="Top Slab Depth", default=0.25, soft_min=0, subtype="DISTANCE")
     has_top_nib: bpy.props.BoolProperty(name="Has Top Nib", default=True)
     stair_type: bpy.props.EnumProperty(name="Stair Type", items=stair_types, default="CONCRETE")
+    custom_first_last_tread_run: bpy.props.FloatVectorProperty(
+        name="Custom First / Last Treads Widths",
+        description='Specify custom first / last treads widths, different from the general "Tread Run". Leave 0 to disable.',
+        default=(0, 0),
+        min=0,
+        unit="LENGTH",
+        size=2,
+    )
 
     def get_props_kwargs(self, convert_to_project_units=False, stair_type=None):
         if not stair_type:
@@ -239,6 +247,9 @@ class BIMStairProperties(PropertyGroup):
 
         elif stair_type == "GENERIC":
             pass
+
+        # defined here to appear last in UI
+        stair_kwargs["custom_first_last_tread_run"] = self.custom_first_last_tread_run
 
         if not convert_to_project_units:
             return stair_kwargs
