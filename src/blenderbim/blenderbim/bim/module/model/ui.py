@@ -266,7 +266,13 @@ class BIM_PT_stair(bpy.types.Panel):
                 row.operator("bim.cancel_editing_stair", icon="CANCEL", text="")
                 row = self.layout.row(align=True)
                 for prop_name in props.get_props_kwargs():
-                    self.layout.prop(props, prop_name)
+                    prop_value = getattr(props, prop_name)
+                    if isinstance(prop_value, bpy.types.bpy_prop_array):
+                        prop_readable_name = props.bl_rna.properties[prop_name].name
+                        self.layout.label(text=f"{prop_readable_name}:")
+                        self.layout.prop(props, prop_name, text="")
+                    else:
+                        self.layout.prop(props, prop_name)
                 regenerate_stair_mesh(context)
             else:
                 calculated_params = StairData.data["calculated_params"]
@@ -275,8 +281,14 @@ class BIM_PT_stair(bpy.types.Panel):
                 row = self.layout.row(align=True)
                 for prop_name, prop_value in StairData.data["general_params"].items():
                     row = self.layout.row(align=True)
-                    row.label(text=prop_name)
-                    row.label(text=str(prop_value))
+                    if isinstance(prop_value, bpy.types.bpy_prop_array):
+                        row.label(text=f"{prop_name}:")
+                        row = self.layout.row(align=True)
+                        for prop_value_item in prop_value:
+                            row.label(text=str(prop_value_item))
+                    else:
+                        row.label(text=prop_name)
+                        row.label(text=str(prop_value))
 
             # calculated properties
             for prop_name, prop_value in calculated_params.items():
