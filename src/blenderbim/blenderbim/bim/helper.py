@@ -260,12 +260,7 @@ def convert_property_group_from_si(property_group, skip_props=()):
     for prop_name in property_group.bl_rna.properties.keys():
         if prop_name in skip_props:
             continue
-        prop_bl_rna = property_group.bl_rna.properties[prop_name]
-        if prop_bl_rna.array_length > 0:
-            prop_value = prop_bl_rna.default_array
-        else:
-            prop_value = prop_bl_rna.default
-
+        prop_value = tool.Blender.get_blender_prop_default_value(property_group, prop_name)
         if type(prop_value) is float:
             prop_value = prop_value * conversion_k
         elif type(prop_value) is bpy.types.bpy_prop_array:
