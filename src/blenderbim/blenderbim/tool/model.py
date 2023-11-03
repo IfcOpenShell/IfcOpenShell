@@ -29,6 +29,8 @@ import blenderbim.core.tool
 import blenderbim.tool as tool
 import blenderbim.core.geometry as geometry
 from mathutils import Matrix, Vector
+from copy import deepcopy
+from functools import partial
 from blenderbim.bim import import_ifc
 from blenderbim.bim.module.geometry.helper import Helper
 from blenderbim.bim.module.model.data import AuthoringData, RailingData, RoofData, WindowData, DoorData
@@ -917,16 +919,32 @@ class Model(blenderbim.core.tool.Model):
             number_of_treads = props.number_of_treads
             height = props.height / si_conversion
             tread_run = props.tread_run / si_conversion
+            first_tread_run = props.custom_first_last_tread_run[0] / si_conversion
+            last_tread_run = props.custom_first_last_tread_run[1] / si_conversion
         else:
             number_of_treads = pset_data["number_of_treads"]
             height = pset_data["height"]
             tread_run = pset_data["tread_run"]
+            # use .get to not break the old .ifc models
+            custom_first_last_tread_run = pset_data.get("custom_first_last_tread_run", (0, 0))
+            first_tread_run, last_tread_run = custom_first_last_tread_run
 
         calculated_params = {}
         number_of_rises = number_of_treads + 1
         calculated_params["Number of Risers"] = number_of_rises
         calculated_params["Tread Rise"] = round(height / number_of_rises, 5)
-        calculated_params["Length"] = round(tread_run * number_of_rises, 5)
+
+        n_default_tread_runs = number_of_rises
+        length = 0
+        if first_tread_run != 0:
+            n_default_tread_runs -= 1
+            length += first_tread_run
+        if last_tread_run != 0:
+            n_default_tread_runs -= 1
+            if n_default_tread_runs >= 0:
+                length += last_tread_run
+        length += tread_run * max(n_default_tread_runs, 0)
+        calculated_params["Length"] = round(length, 5)
         return calculated_params
 
     @classmethod
@@ -943,6 +961,7 @@ class Model(blenderbim.core.tool.Model):
         has_top_nib=None,
         top_slab_depth=None,
         base_slab_depth=None,
+        custom_first_last_tread_run=(0, 0),
     ):
         """returns a tuple of stair profile data: (vertices, edges, faces)"""
         vertices = []
@@ -951,18 +970,35 @@ class Model(blenderbim.core.tool.Model):
 
         number_of_risers = number_of_treads + 1
         tread_rise = height / number_of_risers
-        length = tread_run * number_of_risers
+        custom_tread_run = any(run != 0 for run in custom_first_last_tread_run)
 
         if stair_type == "WOOD/STEEL":
             builder = ShapeBuilder(None)
-            tread_shape = builder.get_rectangle_coords(
-                size=V(tread_run, tread_depth), position=V(0, -(tread_depth - tread_rise))
-            )
-            tread_offset = V(tread_run, tread_rise)
+            # full tread rectangle
+            get_tread_verts = partial(builder.get_rectangle_coords, position=V(0, -(tread_depth - tread_rise)))
+            default_tread_verts = get_tread_verts(size=V(tread_run, tread_depth))
+            default_tread_offset = V(tread_run, tread_rise)
+
+            def get_tread_data(i):
+                if custom_tread_run:
+                    current_tread_run = None
+                    if i == 0 and custom_first_last_tread_run[0] != 0:
+                        current_tread_run = custom_first_last_tread_run[0]
+                    elif i == number_of_risers - 1 and custom_first_last_tread_run[1] != 0:
+                        current_tread_run = custom_first_last_tread_run[1]
+
+                    if current_tread_run:
+                        tread_offset = default_tread_offset.copy()
+                        tread_offset.x = current_tread_run
+                        tread_verts = get_tread_verts(size=V(current_tread_run, tread_depth))
+                        return tread_offset, tread_verts
+                return default_tread_offset, default_tread_verts
 
             # each tread is a separate shape
+            cur_offset = V(0, 0)
             for i in range(number_of_risers):
-                cur_trade_shape = [v + tread_offset * i for v in tread_shape]
+                tread_offset, tread_verts = get_tread_data(i)
+                cur_trade_shape = [v + cur_offset for v in tread_verts]
                 vertices.extend(cur_trade_shape)
 
                 cur_vertex = i * 4
@@ -973,19 +1009,40 @@ class Model(blenderbim.core.tool.Model):
                     (cur_vertex + 3, cur_vertex),
                 )
                 edges.extend(verts_to_add)
+                cur_offset += tread_offset
 
         elif stair_type == "GENERIC":
             vertices.append(Vector([0, 0]))
 
-            tread_verts = [Vector([0, tread_rise]), Vector([tread_run, tread_rise])]
-            tread_offset = Vector([tread_run, tread_rise])
+            # horizontal tread line
+            default_tread_verts = [Vector([0, tread_rise]), Vector([tread_run, tread_rise])]
+            default_tread_offset = Vector([tread_run, tread_rise])
+
+            def get_tread_data(i):
+                if custom_tread_run:
+                    current_tread_run = None
+                    if i == 0:
+                        current_tread_run = custom_first_last_tread_run[0]
+                    elif i == number_of_risers - 1:
+                        current_tread_run = custom_first_last_tread_run[1]
+
+                    if current_tread_run:
+                        tread_offset = default_tread_offset.copy()
+                        tread_offset.x = current_tread_run
+                        tread_verts = deepcopy(default_tread_verts)
+                        tread_verts[1].x = current_tread_run
+                        return tread_offset, tread_verts
+                return default_tread_offset, default_tread_verts
 
             # treads
+            current_offset = V(0, 0)
             for i in range(number_of_risers):
-                current_tread_verts = [v + tread_offset * i for v in tread_verts]
+                tread_offset, tread_verts = get_tread_data(i)
+                current_tread_verts = [v + current_offset for v in tread_verts]
                 last_vert_i = i * 2
                 edges.extend([(last_vert_i, last_vert_i + 1), (last_vert_i + 1, last_vert_i + 2)])
                 vertices.extend(current_tread_verts)
+                current_offset += tread_offset
 
             # close the shape
             last_vert_i = len(vertices)
@@ -993,33 +1050,62 @@ class Model(blenderbim.core.tool.Model):
             edges.extend([(last_vert_i - 1, last_vert_i), (last_vert_i, 0)])
 
         elif stair_type == "CONCRETE":
-            # treads
-            for i in range(number_of_risers):
-                vertices.append(Vector((tread_run * i, tread_rise * i)))
-                vertices.append(Vector((tread_run * i, tread_rise * (i + 1))))
-                cur_vertex = i * 2
-                if i != 0:
-                    edges.append((cur_vertex - 1, cur_vertex))
-                edges.append((cur_vertex, cur_vertex + 1))
+            vertices.append(V(0, 0))
 
-            vertices.append(Vector((tread_run * number_of_risers, tread_rise * number_of_risers)))
-            edges.append((number_of_risers * 2, number_of_risers * 2 - 1))
+            # NOTE: code until adding nibs is very similar to GENERIC
+            # horizontal tread line
+            default_tread_verts = [Vector([0, tread_rise]), Vector([tread_run, tread_rise])]
+            default_tread_offset = Vector([tread_run, tread_rise])
+
+            def get_tread_data(i):
+                if custom_tread_run:
+                    current_tread_run = None
+                    if i == 0:
+                        current_tread_run = custom_first_last_tread_run[0]
+                    elif i == number_of_risers - 1:
+                        current_tread_run = custom_first_last_tread_run[1]
+
+                    if current_tread_run:
+                        tread_offset = default_tread_offset.copy()
+                        tread_offset.x = current_tread_run
+                        tread_verts = deepcopy(default_tread_verts)
+                        tread_verts[1].x = current_tread_run
+                        return tread_offset, tread_verts
+                return default_tread_offset, default_tread_verts
+
+            # treads
+            current_offset = V(0, 0)
+            for i in range(number_of_risers):
+                tread_offset, tread_verts = get_tread_data(i)
+                current_tread_verts = [v + current_offset for v in tread_verts]
+                last_vert_i = i * 2
+                edges.extend([(last_vert_i, last_vert_i + 1), (last_vert_i + 1, last_vert_i + 2)])
+                vertices.extend(current_tread_verts)
+                current_offset += tread_offset
 
             # add the nibs
-            tread_diagonal_dir = vertices[2].normalized()
+            # basically we define stair bottom line as a line at `tread_depth` distance
+            # from the tread diagonal line
+            # we're going it define that line, sample it and abrupt it in case it meets a slab
+            # graph: https://www.desmos.com/calculator/bilmnti3cp
+            tread_diagonal_dir = V(tread_run, tread_rise).normalized()
             # td_vector is clockwise orthogonal vector
             td_vector = tread_diagonal_dir.yx * V(1, -1) * tread_depth
 
-            # graph: https://www.desmos.com/calculator/bilmnti3cp
             stair_tan = tread_rise / tread_run
-            s0 = vertices[0] + td_vector
+            # s0 is just a sampled point from the bottom line
+            # we stick to the third point as the first point
+            # is affected by customized tread run
+            s0 = vertices[2] + td_vector
             # comes from y = stair_tan * x + b
             b = s0.y - stair_tan * s0.x
-            # if we use td_vector as depth_vector
-            # then stair won't be perpendicular to the X+
-            # to make it perpendicular to X+ we calculate `b`
-            # `b` is basically Z-offset where stair starts
-            depth_vector = V(0, b)
+
+            def get_point_on_2d_line(x=None, y=None):
+                if y is None:
+                    y = stair_tan * x + b
+                elif x is None:
+                    x = (y - b) / stair_tan
+                return V(x, y)
 
             # top nib
             last_vert = vertices[-1]
@@ -1027,30 +1113,27 @@ class Model(blenderbim.core.tool.Model):
             # NOTE: has_top_nib = False and top_slab_depth are different things
             if has_top_nib:
                 vertices.append(last_vert + Vector((0, -top_slab_depth)))
-                slab_overlaps_stair = abs(b) - top_slab_depth
-                # run distance by X until stair will meet the slab
-                run_slab_distance = slab_overlaps_stair / stair_tan
-                vertices.append(last_vert + Vector((run_slab_distance, -top_slab_depth)))
+                vertices.append(get_point_on_2d_line(y=last_vert.y - top_slab_depth))
                 edges.append((last_vertex_i, last_vertex_i + 1))
                 edges.append((last_vertex_i + 1, last_vertex_i + 2))
             else:
-                vertices.append(last_vert + depth_vector)
+                new_vert = get_point_on_2d_line(last_vert.x)
+                vertices.append(new_vert)
                 edges.append((last_vertex_i, last_vertex_i + 1))
 
             top_nib_end = len(vertices) - 1
 
             # bottom nib
             start_vert = vertices[0]
-            slab_overlaps_stair = max(abs(b) - base_slab_depth, 0)
-            if slab_overlaps_stair == 0:
+            base_point = get_point_on_2d_line(x=start_vert.x)
+            if base_point.y > -base_slab_depth:
                 # stair doesn't meet the slab
-                vertices.append(start_vert + depth_vector)
+                vertices.append(base_point)
                 edges.append((0, len(vertices) - 1))
                 bottom_nib_end = len(vertices) - 1
             else:
-                # run distance by X until stair will meet the slab
-                run_slab_distance = slab_overlaps_stair / stair_tan
-                vertices.append(start_vert + Vector((run_slab_distance, -base_slab_depth)))
+                # slab overlaps stair
+                vertices.append(get_point_on_2d_line(y=start_vert.y - base_slab_depth))
                 vertices.append(start_vert + Vector((0, -base_slab_depth)))
                 last_vertex_i = len(vertices) - 1
                 edges.append((0, last_vertex_i))
