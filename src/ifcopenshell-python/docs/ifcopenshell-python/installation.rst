@@ -280,3 +280,12 @@ Compiling from source
 Advanced developers may want to compile IfcOpenShell. Refer to the
 :doc:`IfcOpenShell installation guide <../ifcopenshell/installation>` for
 instructions.
+
+Legacy versions
+---------------
+
+It is not recommended to use older versions of IfcOpenShell, but for historic
+reasons you may find them here:
+
+- `Builds for IfcOpenShell v0.6.0 <https://github.com/IfcOpenBot/IfcOpenShell/commit/721fe4729aa5302efe1602971aae2558934ad098#comments>`_
+- `Builds for IfcOpenShell v0.5.0 <https://github.com/IfcOpenShell/IfcOpenShell/releases/tag/v0.5.0-preview2>`_
