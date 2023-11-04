@@ -259,7 +259,9 @@ class CreateDrawing(bpy.types.Operator):
                 with profile("Combine SVG layers"):
                     svg_path = self.combine_svgs(context, underlay_svg, linework_svg, annotation_svg)
 
-            tool.Drawing.open_with_user_command(context.preferences.addons["blenderbim"].preferences.svg_command, svg_path)
+            tool.Drawing.open_with_user_command(
+                context.preferences.addons["blenderbim"].preferences.svg_command, svg_path
+            )
 
         if self.print_all:
             bpy.ops.bim.activate_drawing(drawing=original_drawing_id, camera_view_point=False)
