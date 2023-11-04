@@ -248,23 +248,30 @@ class SelectAllArrayObjects(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        object = context.active_object
-        element = tool.Ifc.get_entity(object)
-        array_pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
-        if not array_pset:
-            self.report({"ERROR"}, f"Object is not part of an array.")
-            return {"CANCELLED"}
+        objects = context.selected_objects
+        for object in objects:
+            element = tool.Ifc.get_entity(object)
+            if not element:
+                self.report({"ERROR"}, f"Non IFC objects, were deselected.")
+                object.select_set(False)
 
-        try:
-            parent_element = tool.Ifc.get().by_guid(array_pset["Parent"])
-        except RuntimeError:
-            self.report({"ERROR"}, f"Couldn't find array parent by guid '{array_pset['Parent']}'")
-            return {"CANCELLED"}
+            if element:
+                array_pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+                if not array_pset:
+                    self.report({"ERROR"}, f"Objects not part of an array, were deselected.")
+                    object.select_set(False)
 
-        array_objects = tool.Blender.Modifier.Array.get_all_objects(parent_element)
-        tool.Blender.set_objects_selection(
-            context, active_object=array_objects[0], selected_objects=array_objects, clear_previous_selection=False
-        )
+                if array_pset:
+                    try:
+                        parent_element = tool.Ifc.get().by_guid(array_pset["Parent"])
+                    except RuntimeError:
+                        self.report({"ERROR"}, f"Objects that don't have an array parent, were deselected.")
+                        object.select_set(False)
+
+                    array_objects = tool.Blender.Modifier.Array.get_all_objects(parent_element)
+                    tool.Blender.set_objects_selection(
+                        context, active_object=array_objects[0], selected_objects=array_objects, clear_previous_selection=False
+                )
         return {"FINISHED"}
 
 
