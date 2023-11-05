@@ -304,6 +304,8 @@ def set_element_value(ifc_file, element, query, value):
                 return ifcopenshell.util.schema.reassign_class(ifc_file, element, value)
         elif key == "id":
             return
+        elif key == "classification":
+            element = ifcopenshell.util.classification.get_references(element)
         elif key in ("x", "y", "z", "easting", "northing", "elevation") and hasattr(element, "ObjectPlacement"):
             return
         elif isinstance(element, ifcopenshell.entity_instance):
@@ -829,6 +831,8 @@ class Selector:
                 value = ifcopenshell.util.element.get_predefined_type(value)
             elif key == "id":
                 value = value.id()
+            elif key == "classification":
+                value = ifcopenshell.util.classification.get_references(value)
             elif key in ("x", "y", "z", "easting", "northing", "elevation") and hasattr(value, "ObjectPlacement"):
                 if getattr(value, "ObjectPlacement", None):
                     matrix = ifcopenshell.util.placement.get_local_placement(value.ObjectPlacement)
@@ -883,7 +887,7 @@ class Selector:
                         value = value[0]
                 else:
                     value = value.get(key, None)
-            elif isinstance(value, (list, tuple)):  # If we use regex
+            elif isinstance(value, (list, tuple, set)):  # If we use regex
                 if isinstance(key, str) and key.isnumeric():
                     try:
                         value = value[int(key)]
