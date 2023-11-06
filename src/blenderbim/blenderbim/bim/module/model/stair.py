@@ -146,6 +146,7 @@ def update_ifc_stair_props(obj):
     si_conversion = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
     riser_height = props.height / number_of_risers / si_conversion
     tread_length = props.tread_depth / si_conversion
+    nosing_length = props.nosing_length / si_conversion
 
     if element.is_a("IfcStairFlight"):
         if tool.Ifc.get_schema() == "IFC2X3":
@@ -171,6 +172,7 @@ def update_ifc_stair_props(obj):
             "NumberOfTreads": props.number_of_treads,
             "RiserHeight": riser_height,
             "TreadLength": tread_length,
+            "NosingLength": nosing_length,
         },
     )
     tool.Ifc.edit(obj)

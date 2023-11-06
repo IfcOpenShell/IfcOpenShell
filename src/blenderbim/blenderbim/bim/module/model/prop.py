@@ -193,6 +193,10 @@ class BIMArrayProperties(PropertyGroup):
 
 
 class BIMStairProperties(PropertyGroup):
+    def validate_nosing_value(self, context):
+        if self.stair_type != "WOOD/STEEL" and self.nosing_length < 0:
+            self["nosing_length"] = 0
+
     non_si_units_props = ("is_editing", "number_of_treads", "has_top_nib", "stair_type")
     stair_types = (
         ("CONCRETE", "Concrete", ""),
@@ -209,7 +213,9 @@ class BIMStairProperties(PropertyGroup):
     base_slab_depth: bpy.props.FloatProperty(name="Base Slab Depth", default=0.25, soft_min=0, subtype="DISTANCE")
     top_slab_depth: bpy.props.FloatProperty(name="Top Slab Depth", default=0.25, soft_min=0, subtype="DISTANCE")
     has_top_nib: bpy.props.BoolProperty(name="Has Top Nib", default=True)
-    stair_type: bpy.props.EnumProperty(name="Stair Type", items=stair_types, default="CONCRETE")
+    stair_type: bpy.props.EnumProperty(
+        name="Stair Type", items=stair_types, default="CONCRETE", update=validate_nosing_value
+    )
     custom_first_last_tread_run: bpy.props.FloatVectorProperty(
         name="Custom First / Last Treads Widths",
         description='Specify custom first / last treads widths, different from the general "Tread Run". Leave 0 to disable.',
@@ -217,6 +223,20 @@ class BIMStairProperties(PropertyGroup):
         min=0,
         unit="LENGTH",
         size=2,
+    )
+    # TODO: need to clamp at zero for non WOOD/STEEL
+    nosing_length: bpy.props.FloatProperty(
+        name="Nosing Length",
+        description=(
+            "Overhang of the tread, not counted as a part of the tread run.\n"
+            "Can be negative for WOOD/STEEL stair (then it becomes a tread gap)"
+        ),
+        default=0,
+        unit="LENGTH",
+        update=validate_nosing_value,
+    )
+    nosing_depth: bpy.props.FloatProperty(
+        name="Nosing Depth", description="Depth of the tread's nosing", min=0, default=0, unit="LENGTH"
     )
 
     def get_props_kwargs(self, convert_to_project_units=False, stair_type=None):
@@ -228,10 +248,12 @@ class BIMStairProperties(PropertyGroup):
             "height": self.height,
             "number_of_treads": self.number_of_treads,
             "tread_run": self.tread_run,
+            "nosing_length": self.nosing_length,
         }
 
         if stair_type == "CONCRETE":
             concrete_props = {
+                "nosing_depth": self.nosing_depth,
                 "base_slab_depth": self.base_slab_depth,
                 "top_slab_depth": self.top_slab_depth,
                 "has_top_nib": self.has_top_nib,
@@ -246,7 +268,10 @@ class BIMStairProperties(PropertyGroup):
             stair_kwargs.update(wood_steel_props)
 
         elif stair_type == "GENERIC":
-            pass
+            generic_props = {
+                "nosing_depth": self.nosing_depth,
+            }
+            stair_kwargs.update(generic_props)
 
         # defined here to appear last in UI
         stair_kwargs["custom_first_last_tread_run"] = self.custom_first_last_tread_run

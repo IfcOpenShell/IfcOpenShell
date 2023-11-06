@@ -113,7 +113,7 @@ class TestGenerateStair2DProfile(NewFile):
         verts_gen, edges_gen, faces_gen = generated_profile
         verts, edges, faces = expected_profile
 
-        assert edges == tuple(edges_gen)
+        assert np.all(edges == np.array(edges_gen))
         assert faces == tuple(tuple(face) for face in faces_gen)
         for vert, vert_gen in zip(verts, verts_gen, strict=True):
             assert tool.Cad.are_vectors_equal(vert, vert_gen, 0.01)
@@ -152,7 +152,7 @@ class TestGenerateStair2DProfile(NewFile):
             (4, 5),
             (5, 6),
             (6, 7),
-            (8, 7),
+            (7, 8),
             (8, 9),
             (0, 11),
             (10, 11),
@@ -199,7 +199,7 @@ class TestGenerateStair2DProfile(NewFile):
             (4, 5),
             (5, 6),
             (6, 7),
-            (8, 7),
+            (7, 8),
             (8, 9),
             (9, 10),
             (0, 12),
