@@ -921,6 +921,7 @@ class Model(blenderbim.core.tool.Model):
             tread_run = props.tread_run / si_conversion
             first_tread_run = props.custom_first_last_tread_run[0] / si_conversion
             last_tread_run = props.custom_first_last_tread_run[1] / si_conversion
+            nosing_length = props.nosing_length / si_conversion
         else:
             number_of_treads = pset_data["number_of_treads"]
             height = pset_data["height"]
@@ -928,12 +929,14 @@ class Model(blenderbim.core.tool.Model):
             # use .get to not break the old .ifc models
             custom_first_last_tread_run = pset_data.get("custom_first_last_tread_run", (0, 0))
             first_tread_run, last_tread_run = custom_first_last_tread_run
+            nosing_length = pset_data.get("nosing_length", 0)
 
         calculated_params = {}
         number_of_rises = number_of_treads + 1
         calculated_params["Number of Risers"] = number_of_rises
         calculated_params["Tread Rise"] = round(height / number_of_rises, 5)
 
+        # calculate stair length
         n_default_tread_runs = number_of_rises
         length = 0
         if first_tread_run != 0:
@@ -944,7 +947,16 @@ class Model(blenderbim.core.tool.Model):
             if n_default_tread_runs >= 0:
                 length += last_tread_run
         length += tread_run * max(n_default_tread_runs, 0)
+        # nosing overlaps
+        # are not part of the tread run
+        # so they don't affect the stair length
+        # except the first tread's nosing
+        if nosing_length > 0:  # nosing overlaps
+            length += nosing_length
+        if nosing_length < 0:  # tread gaps
+            length += abs(nosing_length) * number_of_treads
         calculated_params["Length"] = round(length, 5)
+
         return calculated_params
 
     @classmethod
@@ -962,6 +974,9 @@ class Model(blenderbim.core.tool.Model):
         top_slab_depth=None,
         base_slab_depth=None,
         custom_first_last_tread_run=(0, 0),
+        nosing_length=0,
+        # CONCRETE GENERIC STAIR ARGUMENTS
+        nosing_depth=0,
     ):
         """returns a tuple of stair profile data: (vertices, edges, faces)"""
         vertices = []
@@ -971,13 +986,67 @@ class Model(blenderbim.core.tool.Model):
         number_of_risers = number_of_treads + 1
         tread_rise = height / number_of_risers
         custom_tread_run = any(run != 0 for run in custom_first_last_tread_run)
+        nosing_overlap = max(nosing_length, 0)
+        nosing_tread_gap = -min(nosing_length, 0)
+        nosing_overlap_offset = -V(nosing_overlap, 0)
+
+        def define_generic_stair_treads():
+            vertices.append(Vector([0, 0]))
+            nonlocal nosing_depth, nosing_overlap
+            # avoid weird geometry
+            nosing_depth = min(nosing_depth, tread_rise)
+            nosing_overlap = min(nosing_overlap, tread_run)
+
+            default_tread_edges = np.array(((0, 1), (1, 2)))
+            # horizontal tread line
+            if nosing_overlap == 0:
+                default_tread_verts = (V(0, tread_rise), V(tread_run, tread_rise))
+            elif nosing_depth == 0:
+                default_tread_verts = (V(-nosing_overlap, tread_rise), V(tread_run, tread_rise))
+            else:  # nosing_overlap > 0 nosing_depth > 0
+                # kind of L shape
+                default_tread_verts = (
+                    V(0, tread_rise - nosing_depth),
+                    V(-nosing_overlap, tread_rise - nosing_depth),
+                    V(-nosing_overlap, tread_rise),
+                    V(tread_run, tread_rise),
+                )
+                add_edges = ((2, 3), (3, 4))
+                default_tread_edges = np.concatenate((default_tread_edges, add_edges))
+            default_tread_offset = Vector([tread_run, tread_rise])
+
+            def get_tread_data(i):
+                if custom_tread_run:
+                    current_tread_run = None
+                    if i == 0:
+                        current_tread_run = custom_first_last_tread_run[0]
+                    elif i == number_of_risers - 1:
+                        current_tread_run = custom_first_last_tread_run[1]
+
+                    if current_tread_run:
+                        tread_offset = default_tread_offset.copy()
+                        tread_offset.x = current_tread_run
+                        tread_verts = deepcopy(default_tread_verts)
+                        tread_verts[-1].x = current_tread_run
+                        return tread_offset, tread_verts
+                return default_tread_offset, default_tread_verts
+
+            # treads
+            current_offset = V(0, 0)
+            for i in range(number_of_risers):
+                last_vert_i = len(vertices) - 1
+                tread_offset, tread_verts = get_tread_data(i)
+                current_tread_verts = [v + current_offset for v in tread_verts]
+                edges.extend(default_tread_edges + last_vert_i)
+                vertices.extend(current_tread_verts)
+                current_offset += tread_offset
 
         if stair_type == "WOOD/STEEL":
             builder = ShapeBuilder(None)
             # full tread rectangle
             get_tread_verts = partial(builder.get_rectangle_coords, position=V(0, -(tread_depth - tread_rise)))
-            default_tread_verts = get_tread_verts(size=V(tread_run, tread_depth))
-            default_tread_offset = V(tread_run, tread_rise)
+            default_tread_verts = get_tread_verts(size=V(tread_run + nosing_overlap, tread_depth))
+            default_tread_offset = V(tread_run + nosing_tread_gap, tread_rise)
 
             def get_tread_data(i):
                 if custom_tread_run:
@@ -989,8 +1058,8 @@ class Model(blenderbim.core.tool.Model):
 
                     if current_tread_run:
                         tread_offset = default_tread_offset.copy()
-                        tread_offset.x = current_tread_run
-                        tread_verts = get_tread_verts(size=V(current_tread_run, tread_depth))
+                        tread_offset.x = current_tread_run + nosing_tread_gap
+                        tread_verts = get_tread_verts(size=V(current_tread_run + nosing_overlap, tread_depth))
                         return tread_offset, tread_verts
                 return default_tread_offset, default_tread_verts
 
@@ -998,7 +1067,7 @@ class Model(blenderbim.core.tool.Model):
             cur_offset = V(0, 0)
             for i in range(number_of_risers):
                 tread_offset, tread_verts = get_tread_data(i)
-                cur_trade_shape = [v + cur_offset for v in tread_verts]
+                cur_trade_shape = [v + cur_offset + nosing_overlap_offset for v in tread_verts]
                 vertices.extend(cur_trade_shape)
 
                 cur_vertex = i * 4
@@ -1012,37 +1081,7 @@ class Model(blenderbim.core.tool.Model):
                 cur_offset += tread_offset
 
         elif stair_type == "GENERIC":
-            vertices.append(Vector([0, 0]))
-
-            # horizontal tread line
-            default_tread_verts = [Vector([0, tread_rise]), Vector([tread_run, tread_rise])]
-            default_tread_offset = Vector([tread_run, tread_rise])
-
-            def get_tread_data(i):
-                if custom_tread_run:
-                    current_tread_run = None
-                    if i == 0:
-                        current_tread_run = custom_first_last_tread_run[0]
-                    elif i == number_of_risers - 1:
-                        current_tread_run = custom_first_last_tread_run[1]
-
-                    if current_tread_run:
-                        tread_offset = default_tread_offset.copy()
-                        tread_offset.x = current_tread_run
-                        tread_verts = deepcopy(default_tread_verts)
-                        tread_verts[1].x = current_tread_run
-                        return tread_offset, tread_verts
-                return default_tread_offset, default_tread_verts
-
-            # treads
-            current_offset = V(0, 0)
-            for i in range(number_of_risers):
-                tread_offset, tread_verts = get_tread_data(i)
-                current_tread_verts = [v + current_offset for v in tread_verts]
-                last_vert_i = i * 2
-                edges.extend([(last_vert_i, last_vert_i + 1), (last_vert_i + 1, last_vert_i + 2)])
-                vertices.extend(current_tread_verts)
-                current_offset += tread_offset
+            define_generic_stair_treads()
 
             # close the shape
             last_vert_i = len(vertices)
@@ -1050,38 +1089,7 @@ class Model(blenderbim.core.tool.Model):
             edges.extend([(last_vert_i - 1, last_vert_i), (last_vert_i, 0)])
 
         elif stair_type == "CONCRETE":
-            vertices.append(V(0, 0))
-
-            # NOTE: code until adding nibs is very similar to GENERIC
-            # horizontal tread line
-            default_tread_verts = [Vector([0, tread_rise]), Vector([tread_run, tread_rise])]
-            default_tread_offset = Vector([tread_run, tread_rise])
-
-            def get_tread_data(i):
-                if custom_tread_run:
-                    current_tread_run = None
-                    if i == 0:
-                        current_tread_run = custom_first_last_tread_run[0]
-                    elif i == number_of_risers - 1:
-                        current_tread_run = custom_first_last_tread_run[1]
-
-                    if current_tread_run:
-                        tread_offset = default_tread_offset.copy()
-                        tread_offset.x = current_tread_run
-                        tread_verts = deepcopy(default_tread_verts)
-                        tread_verts[1].x = current_tread_run
-                        return tread_offset, tread_verts
-                return default_tread_offset, default_tread_verts
-
-            # treads
-            current_offset = V(0, 0)
-            for i in range(number_of_risers):
-                tread_offset, tread_verts = get_tread_data(i)
-                current_tread_verts = [v + current_offset for v in tread_verts]
-                last_vert_i = i * 2
-                edges.extend([(last_vert_i, last_vert_i + 1), (last_vert_i + 1, last_vert_i + 2)])
-                vertices.extend(current_tread_verts)
-                current_offset += tread_offset
+            define_generic_stair_treads()
 
             # add the nibs
             # basically we define stair bottom line as a line at `tread_depth` distance
@@ -1096,7 +1104,7 @@ class Model(blenderbim.core.tool.Model):
             # s0 is just a sampled point from the bottom line
             # we stick to the third point as the first point
             # is affected by customized tread run
-            s0 = vertices[2] + td_vector
+            s0 = V(custom_first_last_tread_run[0] or tread_run, tread_rise) + td_vector
             # comes from y = stair_tan * x + b
             b = s0.y - stair_tan * s0.x
 
