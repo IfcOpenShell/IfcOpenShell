@@ -44,10 +44,10 @@ class IFC_PARSE_API IfcSpfStream {
 #ifdef USE_MMAP
     boost::iostreams::mapped_file_source mfs;
 #endif
-    FILE* stream;
-    const char* buffer;
-    unsigned int ptr;
-    unsigned int len;
+    FILE* stream_;
+    const char* buffer_;
+    unsigned int ptr_;
+    unsigned int len_;
 
   public:
     bool valid;

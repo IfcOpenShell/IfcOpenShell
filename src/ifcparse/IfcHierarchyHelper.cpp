@@ -995,8 +995,8 @@ void push_back_to_maybe_optional(boost::optional<boost::shared_ptr<T>>& t, U* u)
 
 template <typename Schema>
 typename Schema::IfcGeometricRepresentationContext* IfcHierarchyHelper<Schema>::getRepresentationContext(const std::string& s) {
-    typename std::map<std::string, typename Schema::IfcGeometricRepresentationContext*>::const_iterator it = contexts.find(s);
-    if (it != contexts.end()) {
+    typename std::map<std::string, typename Schema::IfcGeometricRepresentationContext*>::const_iterator it = contexts_.find(s);
+    if (it != contexts_.end()) {
         return it->second;
     }
     typename Schema::IfcProject* project = getSingle<typename Schema::IfcProject>();
@@ -1010,7 +1010,7 @@ typename Schema::IfcGeometricRepresentationContext* IfcHierarchyHelper<Schema>::
     push_back_to_maybe_optional(project_contexts, context);
 
     project->setRepresentationContexts(project_contexts);
-    return contexts[s] = context;
+    return contexts_[s] = context;
 }
 
 #ifdef HAS_SCHEMA_2x3

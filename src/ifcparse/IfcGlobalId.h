@@ -30,8 +30,9 @@ namespace IfcParse {
 /// A helper class for the creation of IFC GlobalIds.
 class IFC_PARSE_API IfcGlobalId {
   private:
-    std::string string_data, formatted_string;
-    boost::uuids::uuid uuid_data;
+    std::string string_data_;
+    std::string formatted_string_;
+    boost::uuids::uuid uuid_data_;
 
   public:
     static const unsigned int length = 22;

@@ -27,7 +27,7 @@ namespace IfcParse {
 
 class IFC_PARSE_API HeaderEntity : public IfcEntityInstanceData {
   private:
-    const char* const _datatype;
+    const char* const datatype_;
     size_t size_;
 
     HeaderEntity(const HeaderEntity&);            //N/A
@@ -55,7 +55,7 @@ class IFC_PARSE_API HeaderEntity : public IfcEntityInstanceData {
 
     std::string toString(bool upper = false) const {
         std::stringstream ss;
-        ss << _datatype << IfcEntityInstanceData::toString(upper);
+        ss << datatype_ << IfcEntityInstanceData::toString(upper);
         return ss.str();
     }
 };
@@ -104,9 +104,9 @@ class IFC_PARSE_API FileSchema : public HeaderEntity {
 class IFC_PARSE_API IfcSpfHeader {
   private:
     IfcFile* file_;
-    FileDescription* _file_description;
-    FileName* _file_name;
-    FileSchema* _file_schema;
+    FileDescription* file_description_;
+    FileName* file_name_;
+    FileSchema* file_schema_;
     void readParen();
     void readSemicolon();
     enum Trail {
@@ -119,18 +119,18 @@ class IFC_PARSE_API IfcSpfHeader {
   public:
     explicit IfcSpfHeader(IfcParse::IfcFile* file = 0)
         : file_(file),
-          _file_description(0),
-          _file_name(0),
-          _file_schema(0) {
-        _file_description = new FileDescription(file_);
-        _file_name = new FileName(file_);
-        _file_schema = new FileSchema(file_);
+          file_description_(0),
+          file_name_(0),
+          file_schema_(0) {
+        file_description_ = new FileDescription(file_);
+        file_name_ = new FileName(file_);
+        file_schema_ = new FileSchema(file_);
     }
 
     ~IfcSpfHeader() {
-        delete _file_schema;
-        delete _file_name;
-        delete _file_description;
+        delete file_schema_;
+        delete file_name_;
+        delete file_description_;
     }
 
     IfcParse::IfcFile* file() { return file_; }

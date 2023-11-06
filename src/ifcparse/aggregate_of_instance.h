@@ -29,7 +29,7 @@ template <class T>
 class aggregate_of;
 
 class IFC_PARSE_API aggregate_of_instance {
-    std::vector<IfcUtil::IfcBaseClass*> ls;
+    std::vector<IfcUtil::IfcBaseClass*> list_;
 
   public:
     typedef boost::shared_ptr<aggregate_of_instance> ptr;
@@ -59,14 +59,14 @@ class IFC_PARSE_API aggregate_of_instance {
 
 template <class T>
 class aggregate_of {
-    std::vector<T*> ls;
+    std::vector<T*> list_;
 
   public:
     typedef boost::shared_ptr<aggregate_of<T>> ptr;
     typedef typename std::vector<T*>::const_iterator it;
     void push(T* t) {
         if (t) {
-            ls.push_back(t);
+            list_.push_back(t);
         }
     }
     void push(ptr t) {
@@ -76,9 +76,9 @@ class aggregate_of {
             }
         }
     }
-    it begin() { return ls.begin(); }
-    it end() { return ls.end(); }
-    unsigned int size() const { return (unsigned int)ls.size(); }
+    it begin() { return list_.begin(); }
+    it end() { return list_.end(); }
+    unsigned int size() const { return (unsigned int)list_.size(); }
     aggregate_of_instance::ptr generalize() {
         aggregate_of_instance::ptr r(new aggregate_of_instance());
         for (it i = begin(); i != end(); ++i) {
@@ -86,7 +86,7 @@ class aggregate_of {
         }
         return r;
     }
-    bool contains(T* t) const { return std::find(ls.begin(), ls.end(), t) != ls.end(); }
+    bool contains(T* t) const { return std::find(list_.begin(), list_.end(), t) != list_.end(); }
     template <class U>
     typename U::list::ptr as() {
         typename U::list::ptr r(new typename U::list);
@@ -100,8 +100,8 @@ class aggregate_of {
     }
     void remove(T* t) {
         typename std::vector<T*>::iterator it;
-        while ((it = std::find(ls.begin(), ls.end(), t)) != ls.end()) {
-            ls.erase(it);
+        while ((it = std::find(list_.begin(), list_.end(), t)) != list_.end()) {
+            list_.erase(it);
         }
     }
 };
@@ -110,14 +110,14 @@ template <class T>
 class aggregate_of_aggregate_of;
 
 class IFC_PARSE_API aggregate_of_aggregate_of_instance {
-    std::vector<std::vector<IfcUtil::IfcBaseClass*>> ls;
+    std::vector<std::vector<IfcUtil::IfcBaseClass*>> list_;
 
   public:
     typedef boost::shared_ptr<aggregate_of_aggregate_of_instance> ptr;
     typedef std::vector<std::vector<IfcUtil::IfcBaseClass*>>::const_iterator outer_it;
     typedef std::vector<IfcUtil::IfcBaseClass*>::const_iterator inner_it;
     void push(const std::vector<IfcUtil::IfcBaseClass*>& l) {
-        ls.push_back(l);
+        list_.push_back(l);
     }
     void push(const aggregate_of_instance::ptr& l) {
         if (l) {
@@ -128,9 +128,9 @@ class IFC_PARSE_API aggregate_of_aggregate_of_instance {
             push(li);
         }
     }
-    outer_it begin() const { return ls.begin(); }
-    outer_it end() const { return ls.end(); }
-    int size() const { return (int)ls.size(); }
+    outer_it begin() const { return list_.begin(); }
+    outer_it end() const { return list_.end(); }
+    int size() const { return (int)list_.size(); }
     int totalSize() const {
         int accum = 0;
         for (outer_it it = begin(); it != end(); ++it) {
@@ -167,16 +167,16 @@ class IFC_PARSE_API aggregate_of_aggregate_of_instance {
 
 template <class T>
 class aggregate_of_aggregate_of {
-    std::vector<std::vector<T*>> ls;
+    std::vector<std::vector<T*>> list_;
 
   public:
     typedef typename boost::shared_ptr<aggregate_of_aggregate_of<T>> ptr;
     typedef typename std::vector<std::vector<T*>>::const_iterator outer_it;
     typedef typename std::vector<T*>::const_iterator inner_it;
-    void push(const std::vector<T*>& t) { ls.push_back(t); }
-    outer_it begin() { return ls.begin(); }
-    outer_it end() { return ls.end(); }
-    int size() const { return (int)ls.size(); }
+    void push(const std::vector<T*>& t) { list_.push_back(t); }
+    outer_it begin() { return list_.begin(); }
+    outer_it end() { return list_.end(); }
+    int size() const { return (int)list_.size(); }
     int totalSize() const {
         int accum = 0;
         for (outer_it it = begin(); it != end(); ++it) {

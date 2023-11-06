@@ -72,7 +72,7 @@ using namespace IfcParse;
 using namespace IfcWrite;
 
 IfcCharacterDecoder::IfcCharacterDecoder(IfcParse::IfcSpfStream* f) {
-    file = f;
+    stream_ = f;
     codepage_ = 0;
 }
 
@@ -241,18 +241,18 @@ class pure_impure_helper {
 } // namespace
 
 IfcCharacterDecoder::operator std::string() {
-    return pure_impure_helper(file).get(mode, substitution_character);
+    return pure_impure_helper(stream_).get(mode, substitution_character);
 }
 
 std::string IfcCharacterDecoder::get(unsigned int& ptr) {
-    return pure_impure_helper(file, ptr).get(mode, substitution_character);
+    return pure_impure_helper(stream_, ptr).get(mode, substitution_character);
 }
 
 void IfcCharacterDecoder::skip() {
     unsigned int parse_state = 0;
     char current_char;
     unsigned int hex_count = 0;
-    while ((current_char = file->Peek()) != 0) {
+    while ((current_char = stream_->Peek()) != 0) {
         if (EXPECTS_CHARACTER(parse_state)) {
             parse_state = 0;
         } else if (current_char == '\'' && (parse_state == 0U)) {
@@ -307,11 +307,11 @@ void IfcCharacterDecoder::skip() {
             if (parse_state == APOSTROPHE && current_char != '\'') {
                 break;
             }
-            throw IfcInvalidTokenException(file->Tell(), current_char);
+            throw IfcInvalidTokenException(stream_->Tell(), current_char);
         } else {
             parse_state = hex_count = 0;
         }
-        file->Inc();
+        stream_->Inc();
     }
 }
 
@@ -319,7 +319,7 @@ IfcCharacterDecoder::ConversionMode IfcCharacterDecoder::mode = IfcCharacterDeco
 char IfcCharacterDecoder::substitution_character = '_';
 
 IfcCharacterEncoder::IfcCharacterEncoder(const std::string& input)
-    : str(IfcUtil::convert_utf8_to_utf32(input)) {}
+    : str_(IfcUtil::convert_utf8_to_utf32(input)) {}
 
 IfcCharacterEncoder::operator std::string() {
     std::ostringstream oss;
@@ -328,12 +328,12 @@ IfcCharacterEncoder::operator std::string() {
     // Either 2 or 4 to uses \X2 or \X4 respectively.
     // Currently hardcoded to 4, but \X2 might be
     // sufficient for nearly all purposes.
-    const int num_bytes = (str.empty() || (*std::max_element(str.begin(), str.end()) > 0xffff)) ? 4 : 2;
+    const int num_bytes = (str_.empty() || (*std::max_element(str_.begin(), str_.end()) > 0xffff)) ? 4 : 2;
     const std::string num_bytes_str = std::string(1, num_bytes + 0x30);
 
     bool in_extended = false;
 
-    for (auto it = str.begin(); it != str.end(); ++it) {
+    for (auto it = str_.begin(); it != str_.end(); ++it) {
         auto ch = *it;
         const bool within_spf_range = ch >= 0x20 && ch <= 0x7e;
         if (in_extended && within_spf_range) {
