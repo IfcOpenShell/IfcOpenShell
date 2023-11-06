@@ -117,7 +117,8 @@ class IFC_PARSE_API aggregation_type : public parameter_type {
 
   protected:
     aggregate_type type_of_aggregation_;
-    int bound1_, bound2_;
+    int bound1_;
+    int bound2_;
     parameter_type* type_of_element_;
 
   public:
@@ -268,7 +269,8 @@ class IFC_PARSE_API inverse_attribute {
   protected:
     std::string name_;
     aggregate_type type_of_aggregation_;
-    int bound1_, bound2_;
+    int bound1_;
+    int bound2_;
     const entity* entity_reference_;
     const attribute* attribute_reference_;
 
