@@ -418,6 +418,27 @@ Scenario: Override duplicate move - copying a profiled extrusion
     Then the object "IfcWall/Cube.001" exists
     Then the object "IfcWall/Cube.001" has a "SweptSolid" representation of "Model/Body/MODEL_VIEW"
 
+Scenario: Override duplicate move - copying an aggregate
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And the object "IfcWall/Cube" is selected
+    When I press "bim.add_aggregate"
+    Then the object "IfcWall/Cube" is in the collection "IfcElementAssembly/Assembly"
+    And the object "IfcElementAssembly/Assembly" is in the collection "IfcElementAssembly/Assembly"
+    And the collection "IfcElementAssembly/Assembly" is in the collection "IfcBuildingStorey/My Storey"
+    When the object "IfcWall/Cube" is selected
+    And additionally the object "IfcElementAssembly/Assembly" is selected
+    When I duplicate the selected objects
+    Then the object "IfcWall/Cube.001" exists
+    And the object "IfcWall/Cube.001" is in the collection "IfcElementAssembly/Assembly.001"
+    And the object "IfcElementAssembly/Assembly.001" exists
+    And the object "IfcElementAssembly/Assembly.001" is in the collection "IfcElementAssembly/Assembly.001"
+    And the collection "IfcElementAssembly/Assembly.001" is in the collection "IfcBuildingStorey/My Storey"
+    
 Scenario: Override duplicate move linked - without active IFC data
     Given an empty Blender session
     And I add a cube
