@@ -113,21 +113,21 @@ bool IfcSpfHeader::tryRead() {
     }
 }
 
-void IfcSpfHeader::write(std::ostream& os) const {
-    os << ISO_10303_21 << ";"
-       << "\n";
-    os << HEADER << ";"
-       << "\n";
-    os << file_description().toString(true) << ";"
-       << "\n";
-    os << file_name().toString(true) << ";"
-       << "\n";
-    os << file_schema().toString(true) << ";"
-       << "\n";
-    os << ENDSEC << ";"
-       << "\n";
-    os << DATA << ";"
-       << "\n";
+void IfcSpfHeader::write(std::ostream& out) const {
+    out << ISO_10303_21 << ";"
+        << "\n";
+    out << HEADER << ";"
+        << "\n";
+    out << file_description().toString(true) << ";"
+        << "\n";
+    out << file_name().toString(true) << ";"
+        << "\n";
+    out << file_schema().toString(true) << ";"
+        << "\n";
+    out << ENDSEC << ";"
+        << "\n";
+    out << DATA << ";"
+        << "\n";
 }
 
 const FileDescription& IfcSpfHeader::file_description() const {

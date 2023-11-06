@@ -62,7 +62,7 @@
 
 bool IfcParse::declaration::is(const std::string& name) const {
     const std::string* name_ptr = &name;
-    if (std::any_of(name.begin(), name.end(), [](char c) { return std::islower(c); })) {
+    if (std::any_of(name.begin(), name.end(), [](char character) { return std::islower(character); })) {
         temp_string_() = name;
         boost::to_upper(temp_string_());
         name_ptr = &temp_string_();
@@ -76,9 +76,9 @@ bool IfcParse::declaration::is(const std::string& name) const {
         return this->as_entity()->supertype()->is(name);
     }
     if (this->as_type_declaration() != nullptr) {
-        const IfcParse::named_type* nt = this->as_type_declaration()->declared_type()->as_named_type();
-        if (nt != nullptr) {
-            return nt->is(name);
+        const IfcParse::named_type* named_type = this->as_type_declaration()->declared_type()->as_named_type();
+        if (named_type != nullptr) {
+            return named_type->is(name);
         }
     }
 
@@ -94,9 +94,9 @@ bool IfcParse::declaration::is(const IfcParse::declaration& decl) const {
         return this->as_entity()->supertype()->is(decl);
     }
     if (this->as_type_declaration() != nullptr) {
-        const IfcParse::named_type* nt = this->as_type_declaration()->declared_type()->as_named_type();
-        if (nt != nullptr) {
-            return nt->is(decl);
+        const IfcParse::named_type* named_type = this->as_type_declaration()->declared_type()->as_named_type();
+        if (named_type != nullptr) {
+            return named_type->is(decl);
         }
     }
 
@@ -159,8 +159,8 @@ IfcUtil::IfcBaseClass* IfcParse::schema_definition::instantiate(IfcEntityInstanc
     return new IfcUtil::IfcLateBoundEntity(data->type(), data);
 }
 
-void IfcParse::register_schema(schema_definition* s) {
-    schemas.insert({boost::to_upper_copy(s->name()), s});
+void IfcParse::register_schema(schema_definition* schema) {
+    schemas.insert({boost::to_upper_copy(schema->name()), schema});
 }
 
 const IfcParse::schema_definition* IfcParse::schema_by_name(const std::string& name) {
@@ -202,11 +202,11 @@ const IfcParse::schema_definition* IfcParse::schema_by_name(const std::string& n
     Ifc4x3_add2::get_schema();
 #endif
 
-    std::map<std::string, const IfcParse::schema_definition*>::const_iterator it = schemas.find(boost::to_upper_copy(name));
-    if (it == schemas.end()) {
+    std::map<std::string, const IfcParse::schema_definition*>::const_iterator iter = schemas.find(boost::to_upper_copy(name));
+    if (iter == schemas.end()) {
         throw IfcParse::IfcException("No schema named " + name);
     }
-    return it->second;
+    return iter->second;
 }
 
 std::vector<std::string> IfcParse::schema_names() {

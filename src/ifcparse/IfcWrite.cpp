@@ -57,17 +57,17 @@ class StringBuilderVisitor : public boost::static_visitor<void> {
     StringBuilderVisitor(const StringBuilderVisitor&);            //N/A
     StringBuilderVisitor& operator=(const StringBuilderVisitor&); //N/A
 
-    std::ostringstream& data;
+    std::ostringstream& data_;
     template <typename T>
     void serialize(const std::vector<T>& i) {
-        data << "(";
+        data_ << "(";
         for (typename std::vector<T>::const_iterator it = i.begin(); it != i.end(); ++it) {
             if (it != i.begin()) {
-                data << ",";
+                data_ << ",";
             }
-            data << *it;
+            data_ << *it;
         }
-        data << ")";
+        data_ << ")";
     }
     // The REAL token definition from the IFC SPF standard does not necessarily match
     // the output of the C++ ostream formatting operation.
@@ -115,25 +115,25 @@ class StringBuilderVisitor : public boost::static_visitor<void> {
         return oss.str();
     }
 
-    bool upper;
+    bool upper_;
 
   public:
     StringBuilderVisitor(std::ostringstream& stream, bool upper = false)
-        : data(stream),
-          upper(upper) {}
-    void operator()(const boost::blank& /*i*/) { data << "$"; }
-    void operator()(const IfcWriteArgument::Derived& /*i*/) { data << "*"; }
-    void operator()(const int& i) { data << i; }
-    void operator()(const bool& i) { data << (i ? ".T." : ".F."); }
-    void operator()(const boost::logic::tribool& i) { data << (i ? ".T." : (boost::logic::indeterminate(i) ? ".U." : ".F.")); }
-    void operator()(const double& i) { data << format_double(i); }
-    void operator()(const boost::dynamic_bitset<>& i) { data << format_binary(i); }
+        : data_(stream),
+          upper_(upper) {}
+    void operator()(const boost::blank& /*i*/) { data_ << "$"; }
+    void operator()(const IfcWriteArgument::Derived& /*i*/) { data_ << "*"; }
+    void operator()(const int& i) { data_ << i; }
+    void operator()(const bool& i) { data_ << (i ? ".T." : ".F."); }
+    void operator()(const boost::logic::tribool& i) { data_ << (i ? ".T." : (boost::logic::indeterminate(i) ? ".U." : ".F.")); }
+    void operator()(const double& i) { data_ << format_double(i); }
+    void operator()(const boost::dynamic_bitset<>& i) { data_ << format_binary(i); }
     void operator()(const std::string& i) {
         std::string s = i;
-        if (upper) {
-            data << static_cast<std::string>(IfcCharacterEncoder(s));
+        if (upper_) {
+            data_ << static_cast<std::string>(IfcCharacterEncoder(s));
         } else {
-            data << '\'' << s << '\'';
+            data_ << '\'' << s << '\'';
         }
     }
     void operator()(const std::vector<int>& i);
@@ -141,85 +141,85 @@ class StringBuilderVisitor : public boost::static_visitor<void> {
     void operator()(const std::vector<std::string>& i);
     void operator()(const std::vector<boost::dynamic_bitset<>>& i);
     void operator()(const IfcWriteArgument::EnumerationReference& i) {
-        data << "." << i.enumeration_value << ".";
+        data_ << "." << i.enumeration_value << ".";
     }
     void operator()(const IfcUtil::IfcBaseClass* const& i) {
         const IfcEntityInstanceData& e = i->data();
         if (e.type()->as_entity() == nullptr) {
-            data << e.toString(upper);
+            data_ << e.toString(upper_);
         } else {
-            data << "#" << e.id();
+            data_ << "#" << e.id();
         }
     }
     void operator()(const aggregate_of_instance::ptr& i) {
-        data << "(";
+        data_ << "(";
         for (aggregate_of_instance::it it = i->begin(); it != i->end(); ++it) {
             if (it != i->begin()) {
-                data << ",";
+                data_ << ",";
             }
             (*this)(*it);
         }
-        data << ")";
+        data_ << ")";
     }
     void operator()(const std::vector<std::vector<int>>& i);
     void operator()(const std::vector<std::vector<double>>& i);
     void operator()(const aggregate_of_aggregate_of_instance::ptr& i) {
-        data << "(";
+        data_ << "(";
         for (aggregate_of_aggregate_of_instance::outer_it outer_it = i->begin(); outer_it != i->end(); ++outer_it) {
             if (outer_it != i->begin()) {
-                data << ",";
+                data_ << ",";
             }
-            data << "(";
+            data_ << "(";
             for (aggregate_of_aggregate_of_instance::inner_it inner_it = outer_it->begin(); inner_it != outer_it->end(); ++inner_it) {
                 if (inner_it != outer_it->begin()) {
-                    data << ",";
+                    data_ << ",";
                 }
                 (*this)(*inner_it);
             }
-            data << ")";
+            data_ << ")";
         }
-        data << ")";
+        data_ << ")";
     }
-    void operator()(const IfcWriteArgument::empty_aggregate_t&) const { data << "()"; }
-    void operator()(const IfcWriteArgument::empty_aggregate_of_aggregate_t&) const { data << "()"; }
-    operator std::string() { return data.str(); }
+    void operator()(const IfcWriteArgument::empty_aggregate_t&) const { data_ << "()"; }
+    void operator()(const IfcWriteArgument::empty_aggregate_of_aggregate_t&) const { data_ << "()"; }
+    operator std::string() { return data_.str(); }
 };
 
 template <>
 void StringBuilderVisitor::serialize(const std::vector<std::string>& i) {
-    data << "(";
+    data_ << "(";
     for (std::vector<std::string>::const_iterator it = i.begin(); it != i.end(); ++it) {
         if (it != i.begin()) {
-            data << ",";
+            data_ << ",";
         }
-        std::string s = IfcCharacterEncoder(*it);
-        data << s;
+        std::string encoder = IfcCharacterEncoder(*it);
+        data_ << encoder;
     }
-    data << ")";
+    data_ << ")";
 }
 
 template <>
 void StringBuilderVisitor::serialize(const std::vector<double>& i) {
-    data << "(";
+    data_ << "(";
     for (std::vector<double>::const_iterator it = i.begin(); it != i.end(); ++it) {
         if (it != i.begin()) {
-            data << ",";
+            data_ << ",";
         }
-        data << format_double(*it);
+        data_ << format_double(*it);
     }
-    data << ")";
+    data_ << ")";
 }
 
 template <>
 void StringBuilderVisitor::serialize(const std::vector<boost::dynamic_bitset<>>& i) {
-    data << "(";
+    data_ << "(";
     for (std::vector<boost::dynamic_bitset<>>::const_iterator it = i.begin(); it != i.end(); ++it) {
         if (it != i.begin()) {
-            data << ",";
+            data_ << ",";
         }
-        data << format_binary(*it);
+        data_ << format_binary(*it);
     }
-    data << ")";
+    data_ << ")";
 }
 
 void StringBuilderVisitor::operator()(const std::vector<int>& i) { serialize(i); }
@@ -227,24 +227,24 @@ void StringBuilderVisitor::operator()(const std::vector<double>& i) { serialize(
 void StringBuilderVisitor::operator()(const std::vector<std::string>& i) { serialize(i); }
 void StringBuilderVisitor::operator()(const std::vector<boost::dynamic_bitset<>>& i) { serialize(i); }
 void StringBuilderVisitor::operator()(const std::vector<std::vector<int>>& i) {
-    data << "(";
+    data_ << "(";
     for (std::vector<std::vector<int>>::const_iterator it = i.begin(); it != i.end(); ++it) {
         if (it != i.begin()) {
-            data << ",";
+            data_ << ",";
         }
         serialize(*it);
     }
-    data << ")";
+    data_ << ")";
 }
 void StringBuilderVisitor::operator()(const std::vector<std::vector<double>>& i) {
-    data << "(";
+    data_ << "(";
     for (std::vector<std::vector<double>>::const_iterator it = i.begin(); it != i.end(); ++it) {
         if (it != i.begin()) {
-            data << ",";
+            data_ << ",";
         }
         serialize(*it);
     }
-    data << ")";
+    data_ << ")";
 }
 
 IfcWriteArgument::operator int() const { return as<int>(); }
@@ -272,13 +272,13 @@ Argument* IfcWriteArgument::operator[](unsigned int /*i*/) const { throw IfcPars
 std::string IfcWriteArgument::toString(bool upper) const {
     std::ostringstream str;
     str.imbue(std::locale::classic());
-    StringBuilderVisitor v(str, upper);
-    container_.apply_visitor(v);
-    return v;
+    StringBuilderVisitor visitor(str, upper);
+    container_.apply_visitor(visitor);
+    return visitor;
 }
 unsigned int IfcWriteArgument::size() const {
-    SizeVisitor v;
-    const int size = container_.apply_visitor(v);
+    SizeVisitor visitor;
+    const int size = container_.apply_visitor(visitor);
     if (size == -1) {
         throw IfcParse::IfcException("Invalid cast");
     }
@@ -290,27 +290,27 @@ IfcUtil::ArgumentType IfcWriteArgument::type() const {
 }
 
 // Overload to detect null values
-void IfcWriteArgument::set(const aggregate_of_instance::ptr& v) {
-    if (v) {
-        container_ = v;
+void IfcWriteArgument::set(const aggregate_of_instance::ptr& value) {
+    if (value) {
+        container_ = value;
     } else {
         container_ = boost::blank();
     }
 }
 
 // Overload to detect null values
-void IfcWriteArgument::set(const aggregate_of_aggregate_of_instance::ptr& v) {
-    if (v) {
-        container_ = v;
+void IfcWriteArgument::set(const aggregate_of_aggregate_of_instance::ptr& value) {
+    if (value) {
+        container_ = value;
     } else {
         container_ = boost::blank();
     }
 }
 
 // Overload to detect null values
-void IfcWriteArgument::set(IfcUtil::IfcBaseInterface* const& v) {
-    if (v != nullptr) {
-        container_ = v->as<IfcUtil::IfcBaseClass>();
+void IfcWriteArgument::set(IfcUtil::IfcBaseInterface* const& value) {
+    if (value != nullptr) {
+        container_ = value->as<IfcUtil::IfcBaseClass>();
     } else {
         container_ = boost::blank();
     }

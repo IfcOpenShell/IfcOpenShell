@@ -61,14 +61,14 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/optional.hpp>
 
-void aggregate_of_instance::push(IfcUtil::IfcBaseClass* l) {
-    if (l != nullptr) {
-        list_.push_back(l);
+void aggregate_of_instance::push(IfcUtil::IfcBaseClass* instance) {
+    if (instance != nullptr) {
+        list_.push_back(instance);
     }
 }
-void aggregate_of_instance::push(const aggregate_of_instance::ptr& l) {
-    if (l) {
-        for (it i = l->begin(); i != l->end(); ++i) {
+void aggregate_of_instance::push(const aggregate_of_instance::ptr& instance) {
+    if (instance) {
+        for (it i = instance->begin(); i != instance->end(); ++i) {
             if (*i != nullptr) {
                 list_.push_back(*i);
             }
@@ -86,9 +86,9 @@ bool aggregate_of_instance::contains(IfcUtil::IfcBaseClass* instance) const {
     return std::find(list_.begin(), list_.end(), instance) != list_.end();
 }
 void aggregate_of_instance::remove(IfcUtil::IfcBaseClass* instance) {
-    std::vector<IfcUtil::IfcBaseClass*>::iterator it;
-    while ((it = std::find(list_.begin(), list_.end(), instance)) != list_.end()) {
-        list_.erase(it);
+    std::vector<IfcUtil::IfcBaseClass*>::iterator iter;
+    while ((iter = std::find(list_.begin(), list_.end(), instance)) != list_.end()) {
+        list_.erase(iter);
     }
 }
 
@@ -168,8 +168,8 @@ const char* IfcUtil::ArgumentTypeToString(ArgumentType argument_type) {
     return argument_type_string[static_cast<int>(argument_type)];
 }
 
-bool IfcUtil::valid_binary_string(const std::string& s) {
-    for (std::string::const_iterator it = s.begin(); it != s.end(); ++it) {
+bool IfcUtil::valid_binary_string(const std::string& str) {
+    for (std::string::const_iterator it = str.begin(); it != str.end(); ++it) {
         if (*it != '0' && *it != '1') {
             return false;
         }
@@ -205,20 +205,20 @@ Argument* IfcUtil::IfcBaseEntity::get(const std::string& name) const {
 
 aggregate_of_instance::ptr IfcUtil::IfcBaseEntity::get_inverse(const std::string& name) const {
     const std::vector<const IfcParse::inverse_attribute*> attrs = declaration().as_entity()->all_inverse_attributes();
-    std::vector<const IfcParse::inverse_attribute*>::const_iterator it = attrs.begin();
-    for (; it != attrs.end(); ++it) {
-        if ((*it)->name() == name) {
+    std::vector<const IfcParse::inverse_attribute*>::const_iterator iter = attrs.begin();
+    for (; iter != attrs.end(); ++iter) {
+        if ((*iter)->name() == name) {
             return data().getInverse(
-                (*it)->entity_reference(),
-                (int)(*it)->entity_reference()->attribute_index((*it)->attribute_reference()));
+                (*iter)->entity_reference(),
+                (int)(*iter)->entity_reference()->attribute_index((*iter)->attribute_reference()));
         }
     }
     throw IfcParse::IfcException(name + " not found on " + declaration().name());
 }
 
-void IfcUtil::IfcBaseClass::data(IfcEntityInstanceData* d) {
+void IfcUtil::IfcBaseClass::data(IfcEntityInstanceData* data) {
     delete data_;
-    data_ = d;
+    data_ = data;
 }
 
 IfcUtil::ArgumentType IfcUtil::make_aggregate(IfcUtil::ArgumentType elem_type) {

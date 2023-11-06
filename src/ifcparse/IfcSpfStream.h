@@ -54,12 +54,12 @@ class IFC_PARSE_API IfcSpfStream {
     bool eof;
     unsigned int size;
 #ifdef USE_MMAP
-    IfcSpfStream(const std::string& fn, bool mmap = false);
+    IfcSpfStream(const std::string& path, bool mmap = false);
 #else
-    IfcSpfStream(const std::string& fn);
+    IfcSpfStream(const std::string& path);
 #endif
-    IfcSpfStream(std::istream& f, int len);
-    IfcSpfStream(void* data, int len);
+    IfcSpfStream(std::istream& stream, int length);
+    IfcSpfStream(void* data, int length);
     ~IfcSpfStream();
     /// Returns the character at the cursor
     char Peek();

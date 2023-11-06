@@ -87,8 +87,8 @@ class IFC_PARSE_API IfcFile {
       public:
         type_iterator() : entities_by_type_t::const_iterator(){};
 
-        type_iterator(const entities_by_type_t::const_iterator& it)
-            : entities_by_type_t::const_iterator(it){};
+        type_iterator(const entities_by_type_t::const_iterator& iter)
+            : entities_by_type_t::const_iterator(iter){};
 
         entities_by_type_t::key_type const* operator->() const {
             return &entities_by_type_t::const_iterator::operator->()->first;
@@ -151,7 +151,7 @@ class IFC_PARSE_API IfcFile {
 
     void setDefaultHeaderValues();
 
-    void initialize_(IfcParse::IfcSpfStream* f);
+    void initialize_(IfcParse::IfcSpfStream* stream);
 
     void build_inverses_(IfcUtil::IfcBaseClass*);
 
@@ -171,13 +171,13 @@ class IFC_PARSE_API IfcFile {
     IfcParse::IfcSpfStream* stream;
 
 #ifdef USE_MMAP
-    IfcFile(const std::string& fn, bool mmap = false);
+    IfcFile(const std::string& path, bool mmap = false);
 #else
-    IfcFile(const std::string& fn);
+    IfcFile(const std::string& path);
 #endif
-    IfcFile(std::istream& fn, int len);
-    IfcFile(void* data, int len);
-    IfcFile(IfcParse::IfcSpfStream* f);
+    IfcFile(std::istream& stream, int length);
+    IfcFile(void* data, int length);
+    IfcFile(IfcParse::IfcSpfStream* stream);
     IfcFile(const IfcParse::schema_definition* schema = IfcParse::schema_by_name("IFC4"));
 
     /// Deleting the file will also delete all new instances that were added to the file (via memory allocation)
@@ -230,10 +230,10 @@ class IFC_PARSE_API IfcFile {
     /// Returns all entities in the file that match the positional argument.
     /// NOTE: This also returns subtypes of the requested type, for example:
     /// IfcWall will also return IfcWallStandardCase entities
-    aggregate_of_instance::ptr instances_by_type(const std::string& t);
+    aggregate_of_instance::ptr instances_by_type(const std::string& type);
 
     /// Returns all entities in the file that match the positional argument.
-    aggregate_of_instance::ptr instances_by_type_excl_subtypes(const std::string& t);
+    aggregate_of_instance::ptr instances_by_type_excl_subtypes(const std::string& type);
 
     /// Returns all entities in the file that reference the id
     aggregate_of_instance::ptr instances_by_reference(int id);
@@ -275,7 +275,7 @@ class IFC_PARSE_API IfcFile {
     void recalculate_id_counter();
 
     IfcUtil::IfcBaseClass* addEntity(IfcUtil::IfcBaseClass* entity, int id = -1);
-    void addEntities(aggregate_of_instance::ptr es);
+    void addEntities(aggregate_of_instance::ptr entities);
 
     void batch() { batch_mode_ = true; }
     void unbatch() {

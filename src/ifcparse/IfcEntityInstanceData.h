@@ -44,10 +44,10 @@ class IFC_PARSE_API IfcEntityInstanceData {
 
   public:
     IfcEntityInstanceData(const IfcParse::declaration* type,
-                          IfcParse::IfcFile* file_,
+                          IfcParse::IfcFile* file,
                           unsigned id = 0,
                           unsigned offset_in_file = 0)
-        : file(file_),
+        : file(file),
           id_(id),
           type_(type),
           attributes_(0),
@@ -69,16 +69,16 @@ class IFC_PARSE_API IfcEntityInstanceData {
 
     void load() const;
 
-    IfcEntityInstanceData(const IfcEntityInstanceData& e);
+    IfcEntityInstanceData(const IfcEntityInstanceData& data);
 
     virtual ~IfcEntityInstanceData();
 
     boost::shared_ptr<aggregate_of_instance> getInverse(const IfcParse::declaration* type, int attribute_index) const;
 
-    Argument* getArgument(size_t i) const;
+    Argument* getArgument(size_t index) const;
 
     // NB: This makes a copy of the argument if make_copy is set
-    void setArgument(size_t i, Argument* a, IfcUtil::ArgumentType attr_type = IfcUtil::Argument_UNKNOWN, bool make_copy = false);
+    void setArgument(size_t ibdex, Argument* argument, IfcUtil::ArgumentType attr_type = IfcUtil::Argument_UNKNOWN, bool make_copy = false);
 
     virtual size_t getArgumentCount() const {
         if (type_ == 0) {
@@ -104,7 +104,7 @@ class IFC_PARSE_API IfcEntityInstanceData {
     // NB: const ommitted for lazy loading
     Argument**& attributes() const { return attributes_; }
 
-    unsigned set_id(boost::optional<unsigned> i = boost::none);
+    unsigned set_id(boost::optional<unsigned> id = boost::none);
 };
 
 #endif
