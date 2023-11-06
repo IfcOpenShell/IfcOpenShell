@@ -56,53 +56,53 @@
 #include "Ifc4x3_add2.h"
 #endif
 
-double IfcParse::IfcSIPrefixToValue(const std::string& v) {
-    if (v == "EXA") {
+double IfcParse::IfcSIPrefixToValue(const std::string& prefix) {
+    if (prefix == "EXA") {
         return 1.e18;
     }
-    if (v == "PETA") {
+    if (prefix == "PETA") {
         return 1.e15;
     }
-    if (v == "TERA") {
+    if (prefix == "TERA") {
         return 1.e12;
     }
-    if (v == "GIGA") {
+    if (prefix == "GIGA") {
         return 1.e9;
     }
-    if (v == "MEGA") {
+    if (prefix == "MEGA") {
         return 1.e6;
     }
-    if (v == "KILO") {
+    if (prefix == "KILO") {
         return 1.e3;
     }
-    if (v == "HECTO") {
+    if (prefix == "HECTO") {
         return 1.e2;
     }
-    if (v == "DECA") {
+    if (prefix == "DECA") {
         return 1.e1;
     }
-    if (v == "DECI") {
+    if (prefix == "DECI") {
         return 1.e-1;
     }
-    if (v == "CENTI") {
+    if (prefix == "CENTI") {
         return 1.e-2;
     }
-    if (v == "MILLI") {
+    if (prefix == "MILLI") {
         return 1.e-3;
     }
-    if (v == "MICRO") {
+    if (prefix == "MICRO") {
         return 1.e-6;
     }
-    if (v == "NANO") {
+    if (prefix == "NANO") {
         return 1.e-9;
     }
-    if (v == "PICO") {
+    if (prefix == "PICO") {
         return 1.e-12;
     }
-    if (v == "FEMTO") {
+    if (prefix == "FEMTO") {
         return 1.e-15;
     }
-    if (v == "ATTO") {
+    if (prefix == "ATTO") {
         return 1.e-18;
     }
     return 1.;
@@ -119,8 +119,8 @@ double IfcParse::get_SI_equivalent(typename Schema::IfcNamedUnit* named_unit) {
         typename Schema::IfcUnit* component = factor->UnitComponent();
         if (component->declaration().is(Schema::IfcSIUnit::Class())) {
             si_unit = component->template as<typename Schema::IfcSIUnit>();
-            typename Schema::IfcValue* v = factor->ValueComponent();
-            scale = *v->data().getArgument(0);
+            typename Schema::IfcValue* value = factor->ValueComponent();
+            scale = *value->data().getArgument(0);
         }
     } else if (named_unit->declaration().is(Schema::IfcSIUnit::Class())) {
         si_unit = named_unit->template as<typename Schema::IfcSIUnit>();

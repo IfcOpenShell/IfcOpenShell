@@ -39,8 +39,8 @@ class IFC_PARSE_API IfcException : public std::exception {
     std::string message_;
 
   public:
-    IfcException(const std::string& m)
-        : message_(m) {}
+    IfcException(const std::string& message)
+        : message_(message) {}
     virtual ~IfcException() throw() {}
     virtual const char* what() const throw() {
         return message_.c_str();
@@ -49,8 +49,8 @@ class IFC_PARSE_API IfcException : public std::exception {
 
 class IFC_PARSE_API IfcAttributeOutOfRangeException : public IfcException {
   public:
-    IfcAttributeOutOfRangeException(const std::string& e)
-        : IfcException(e) {}
+    IfcAttributeOutOfRangeException(const std::string& exception)
+        : IfcException(exception) {}
     ~IfcAttributeOutOfRangeException() throw() {}
 };
 
@@ -66,9 +66,9 @@ class IFC_PARSE_API IfcInvalidTokenException : public IfcException {
               " invalid " + expected_type) {}
     IfcInvalidTokenException(
         int token_start,
-        char c)
+        char character)
         : IfcException(
-              std::string("Unexpected '") + std::string(1, c) + "' at offset " +
+              std::string("Unexpected '") + std::string(1, character) + "' at offset " +
               boost::lexical_cast<std::string>(token_start)) {}
     ~IfcInvalidTokenException() throw() {}
 };

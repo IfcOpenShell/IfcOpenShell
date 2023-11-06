@@ -70,23 +70,23 @@ class IFC_PARSE_API Logger {
     static void SetProduct(boost::optional<const IfcUtil::IfcBaseClass*> product);
 
     /// Determines to what stream respectively progress and errors are logged
-    static void SetOutput(std::wostream* l1, std::wostream* l2);
+    static void SetOutput(std::wostream* stream1, std::wostream* stream2);
 
     /// Determines to what stream respectively progress and errors are logged
-    static void SetOutput(std::ostream* l1, std::ostream* l2);
+    static void SetOutput(std::ostream* stream1, std::ostream* stream2);
 
     /// Determines the types of log messages to get logged
-    static void Verbosity(Severity v);
+    static void Verbosity(Severity severity);
     static Severity Verbosity();
     static Severity MaxSeverity();
 
     /// Determines output format: plain text or sequence of JSON objects
-    static void OutputFormat(Format f);
+    static void OutputFormat(Format format);
     static Format OutputFormat();
 
     /// Log a message to the output stream
     static void Message(Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance = 0);
-    static void Message(Severity type, const std::exception& message, const IfcUtil::IfcBaseInterface* instance = 0);
+    static void Message(Severity type, const std::exception& exception, const IfcUtil::IfcBaseInterface* instance = 0);
 
     static void Notice(const std::string& message, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_NOTICE, message, instance); }
     static void Warning(const std::string& message, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_WARNING, message, instance); }

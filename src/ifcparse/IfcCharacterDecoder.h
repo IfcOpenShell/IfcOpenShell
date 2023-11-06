@@ -32,10 +32,10 @@
 #include <string>
 
 namespace IfcUtil {
-std::wstring::value_type convert_codepage(int codepage, int c);
-std::string convert_utf8(const std::wstring& s);
-std::wstring convert_utf8(const std::string& s);
-std::u32string convert_utf8_to_utf32(const std::string& s);
+std::wstring::value_type convert_codepage(int codepage, int index);
+std::string convert_utf8(const std::wstring& string);
+std::wstring convert_utf8(const std::string& string);
+std::u32string convert_utf8_to_utf32(const std::string& string);
 } // namespace IfcUtil
 
 namespace IfcParse {
@@ -53,7 +53,7 @@ class IFC_PARSE_API IfcCharacterDecoder {
     };
     static ConversionMode mode;
     static char substitution_character;
-    IfcCharacterDecoder(IfcParse::IfcSpfStream* file);
+    IfcCharacterDecoder(IfcParse::IfcSpfStream* stream);
     ~IfcCharacterDecoder();
     // Only advances the underlying token stream read pointer
     // to the next token.

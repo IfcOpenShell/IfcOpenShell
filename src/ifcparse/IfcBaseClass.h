@@ -61,11 +61,11 @@ class IFC_PARSE_API IfcBaseInterface {
         if (is_null(this)) {
             return static_cast<T*>(0);
         }
-        auto t = dynamic_cast<T*>(this);
-        if (do_throw && !t) {
+        auto type = dynamic_cast<T*>(this);
+        if (do_throw && !type) {
             raise_error_on_concrete_class<T>();
         }
-        return t;
+        return type;
     }
 
     template <class T>
@@ -73,11 +73,11 @@ class IFC_PARSE_API IfcBaseInterface {
         if (is_null(this)) {
             return static_cast<const T*>(0);
         }
-        auto t = dynamic_cast<const T*>(this);
-        if (do_throw && !t) {
+        auto type = dynamic_cast<const T*>(this);
+        if (do_throw && !type) {
             raise_error_on_concrete_class<T>();
         }
-        return t;
+        return type;
     }
 };
 
@@ -96,13 +96,13 @@ class IFC_PARSE_API IfcBaseClass : public virtual IfcBaseInterface {
   public:
     IfcBaseClass() : identity_(counter_++),
                      data_(0) {}
-    IfcBaseClass(IfcEntityInstanceData* d) : identity_(counter_++),
-                                             data_(d) {}
+    IfcBaseClass(IfcEntityInstanceData* data) : identity_(counter_++),
+                                                data_(data) {}
     virtual ~IfcBaseClass() { delete data_; }
 
     const IfcEntityInstanceData& data() const { return *data_; }
     IfcEntityInstanceData& data() { return *data_; }
-    void data(IfcEntityInstanceData* d);
+    void data(IfcEntityInstanceData* data);
 
     virtual const IfcParse::declaration& declaration() const = 0;
 
@@ -125,7 +125,7 @@ class IFC_PARSE_API IfcLateBoundEntity : public IfcBaseClass {
 class IFC_PARSE_API IfcBaseEntity : public IfcBaseClass {
   public:
     IfcBaseEntity() : IfcBaseClass() {}
-    IfcBaseEntity(IfcEntityInstanceData* d) : IfcBaseClass(d) {}
+    IfcBaseEntity(IfcEntityInstanceData* data) : IfcBaseClass(data) {}
 
     virtual const IfcParse::entity& declaration() const = 0;
 
@@ -137,14 +137,14 @@ class IFC_PARSE_API IfcBaseEntity : public IfcBaseClass {
     template <typename T>
     T get_value(const std::string& name, const T& default_value) const;
 
-    boost::shared_ptr<aggregate_of_instance> get_inverse(const std::string& a) const;
+    boost::shared_ptr<aggregate_of_instance> get_inverse(const std::string& name) const;
 };
 
 // TODO: Investigate whether these should be template classes instead
 class IFC_PARSE_API IfcBaseType : public IfcBaseClass {
   public:
     IfcBaseType() : IfcBaseClass() {}
-    IfcBaseType(IfcEntityInstanceData* d) : IfcBaseClass(d) {}
+    IfcBaseType(IfcEntityInstanceData* data) : IfcBaseClass(data) {}
 
     virtual const IfcParse::declaration& declaration() const = 0;
 };

@@ -34,23 +34,23 @@ class IFC_PARSE_API aggregate_of_instance {
   public:
     typedef boost::shared_ptr<aggregate_of_instance> ptr;
     typedef std::vector<IfcUtil::IfcBaseClass*>::const_iterator it;
-    void push(IfcUtil::IfcBaseClass* l);
-    void push(const ptr& l);
+    void push(IfcUtil::IfcBaseClass* instance);
+    void push(const ptr& instance);
     it begin();
     it end();
-    IfcUtil::IfcBaseClass* operator[](int i);
+    IfcUtil::IfcBaseClass* operator[](int index);
     unsigned int size() const;
     void reserve(unsigned capacity);
     bool contains(IfcUtil::IfcBaseClass*) const;
     template <class U>
     typename U::list::ptr as() {
-        typename U::list::ptr r(new typename U::list);
+        typename U::list::ptr result(new typename U::list);
         for (it i = begin(); i != end(); ++i) {
             if ((*i)->as<U>()) {
-                r->push((*i)->as<U>());
+                result->push((*i)->as<U>());
             }
         }
-        return r;
+        return result;
     }
     void remove(IfcUtil::IfcBaseClass*);
     aggregate_of_instance::ptr filtered(const std::set<const IfcParse::declaration*>& entities);
@@ -64,14 +64,14 @@ class aggregate_of {
   public:
     typedef boost::shared_ptr<aggregate_of<T>> ptr;
     typedef typename std::vector<T*>::const_iterator it;
-    void push(T* t) {
-        if (t) {
-            list_.push_back(t);
+    void push(T* type) {
+        if (type) {
+            list_.push_back(type);
         }
     }
-    void push(ptr t) {
-        if (t) {
-            for (typename T::list::it it = t->begin(); it != t->end(); ++it) {
+    void push(ptr instance) {
+        if (instance) {
+            for (typename T::list::it it = instance->begin(); it != instance->end(); ++it) {
                 push(*it);
             }
         }
@@ -80,28 +80,28 @@ class aggregate_of {
     it end() { return list_.end(); }
     unsigned int size() const { return (unsigned int)list_.size(); }
     aggregate_of_instance::ptr generalize() {
-        aggregate_of_instance::ptr r(new aggregate_of_instance());
+        aggregate_of_instance::ptr result(new aggregate_of_instance());
         for (it i = begin(); i != end(); ++i) {
-            r->push((*i)->template as<IfcUtil::IfcBaseClass>());
+            result->push((*i)->template as<IfcUtil::IfcBaseClass>());
         }
-        return r;
+        return result;
     }
-    bool contains(T* t) const { return std::find(list_.begin(), list_.end(), t) != list_.end(); }
+    bool contains(T* type) const { return std::find(list_.begin(), list_.end(), type) != list_.end(); }
     template <class U>
     typename U::list::ptr as() {
-        typename U::list::ptr r(new typename U::list);
+        typename U::list::ptr result(new typename U::list);
         const bool all = !U::Class().as_entity();
         for (it i = begin(); i != end(); ++i) {
             if (all || (*i)->declaration().is(U::Class())) {
-                r->push((U*)*i);
+                result->push((U*)*i);
             }
         }
-        return r;
+        return result;
     }
-    void remove(T* t) {
-        typename std::vector<T*>::iterator it;
-        while ((it = std::find(list_.begin(), list_.end(), t)) != list_.end()) {
-            list_.erase(it);
+    void remove(T* type) {
+        typename std::vector<T*>::iterator iter;
+        while ((iter = std::find(list_.begin(), list_.end(), type)) != list_.end()) {
+            list_.erase(iter);
         }
     }
 };
@@ -116,16 +116,16 @@ class IFC_PARSE_API aggregate_of_aggregate_of_instance {
     typedef boost::shared_ptr<aggregate_of_aggregate_of_instance> ptr;
     typedef std::vector<std::vector<IfcUtil::IfcBaseClass*>>::const_iterator outer_it;
     typedef std::vector<IfcUtil::IfcBaseClass*>::const_iterator inner_it;
-    void push(const std::vector<IfcUtil::IfcBaseClass*>& l) {
-        list_.push_back(l);
+    void push(const std::vector<IfcUtil::IfcBaseClass*>& instance) {
+        list_.push_back(instance);
     }
-    void push(const aggregate_of_instance::ptr& l) {
-        if (l) {
-            std::vector<IfcUtil::IfcBaseClass*> li;
-            for (std::vector<IfcUtil::IfcBaseClass*>::const_iterator jt = l->begin(); jt != l->end(); ++jt) {
-                li.push_back(*jt);
+    void push(const aggregate_of_instance::ptr& instance) {
+        if (instance) {
+            std::vector<IfcUtil::IfcBaseClass*> list;
+            for (std::vector<IfcUtil::IfcBaseClass*>::const_iterator iter = instance->begin(); iter != instance->end(); ++iter) {
+                list.push_back(*iter);
             }
-            push(li);
+            push(list);
         }
     }
     outer_it begin() const { return list_.begin(); }
@@ -149,7 +149,7 @@ class IFC_PARSE_API aggregate_of_aggregate_of_instance {
     }
     template <class U>
     typename aggregate_of_aggregate_of<U>::ptr as() {
-        typename aggregate_of_aggregate_of<U>::ptr r(new aggregate_of_aggregate_of<U>);
+        typename aggregate_of_aggregate_of<U>::ptr result(new aggregate_of_aggregate_of<U>);
         const bool all = !U::Class().as_entity();
         for (outer_it outer = begin(); outer != end(); ++outer) {
             const std::vector<IfcUtil::IfcBaseClass*>& from = *outer;
@@ -159,9 +159,9 @@ class IFC_PARSE_API aggregate_of_aggregate_of_instance {
                     to.push_back((U*)*inner);
                 }
             }
-            r->push(to);
+            result->push(to);
         }
-        return r;
+        return result;
     }
 };
 
@@ -173,7 +173,7 @@ class aggregate_of_aggregate_of {
     typedef typename boost::shared_ptr<aggregate_of_aggregate_of<T>> ptr;
     typedef typename std::vector<std::vector<T*>>::const_iterator outer_it;
     typedef typename std::vector<T*>::const_iterator inner_it;
-    void push(const std::vector<T*>& t) { list_.push_back(t); }
+    void push(const std::vector<T*>& type) { list_.push_back(type); }
     outer_it begin() { return list_.begin(); }
     outer_it end() { return list_.end(); }
     int size() const { return (int)list_.size(); }
@@ -184,26 +184,26 @@ class aggregate_of_aggregate_of {
         }
         return accum;
     }
-    bool contains(T* t) const {
-        for (outer_it it = begin(); it != end(); ++it) {
-            const std::vector<T*>& inner = *it;
-            if (std::find(inner.begin(), inner.end(), t) != inner.end()) {
+    bool contains(T* type) const {
+        for (outer_it iter = begin(); iter != end(); ++iter) {
+            const std::vector<T*>& inner = *iter;
+            if (std::find(inner.begin(), inner.end(), type) != inner.end()) {
                 return true;
             }
         }
         return false;
     }
     aggregate_of_aggregate_of_instance::ptr generalize() {
-        aggregate_of_aggregate_of_instance::ptr r(new aggregate_of_aggregate_of_instance());
+        aggregate_of_aggregate_of_instance::ptr result(new aggregate_of_aggregate_of_instance());
         for (outer_it outer = begin(); outer != end(); ++outer) {
             const std::vector<T*>& from = *outer;
             std::vector<IfcUtil::IfcBaseClass*> to;
             for (inner_it inner = from.begin(); inner != from.end(); ++inner) {
                 to.push_back(*inner);
             }
-            r->push(to);
+            result->push(to);
         }
-        return r;
+        return result;
     }
 };
 

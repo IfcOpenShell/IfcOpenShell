@@ -36,16 +36,16 @@ class IFC_PARSE_API HeaderEntity : public IfcEntityInstanceData {
     HeaderEntity(const char* const datatype, size_t size, IfcParse::IfcFile* file);
     virtual ~HeaderEntity();
 
-    void setValue(unsigned int i, const std::string& s) {
+    void setValue(unsigned int index, const std::string& string) {
         IfcWrite::IfcWriteArgument* argument = new IfcWrite::IfcWriteArgument;
-        argument->set(s);
-        setArgument(i, argument);
+        argument->set(string);
+        setArgument(index, argument);
     }
 
-    void setValue(unsigned int i, const std::vector<std::string>& s) {
+    void setValue(unsigned int index, const std::vector<std::string>& strings) {
         IfcWrite::IfcWriteArgument* argument = new IfcWrite::IfcWriteArgument;
-        argument->set(s);
-        setArgument(i, argument);
+        argument->set(strings);
+        setArgument(index, argument);
     }
 
   public:
@@ -54,9 +54,9 @@ class IFC_PARSE_API HeaderEntity : public IfcEntityInstanceData {
     }
 
     std::string toString(bool upper = false) const {
-        std::stringstream ss;
-        ss << datatype_ << IfcEntityInstanceData::toString(upper);
-        return ss.str();
+        std::stringstream stream;
+        stream << datatype_ << IfcEntityInstanceData::toString(upper);
+        return stream.str();
     }
 };
 
@@ -139,7 +139,7 @@ class IFC_PARSE_API IfcSpfHeader {
     void read();
     bool tryRead();
 
-    void write(std::ostream& os) const;
+    void write(std::ostream& out) const;
 
     const FileDescription& file_description() const;
     const FileName& file_name() const;

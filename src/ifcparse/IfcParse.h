@@ -88,51 +88,51 @@ struct Token {
 /// Tokens are merely offsets to where they can be read in the file
 class IFC_PARSE_API TokenFunc {
   private:
-    static bool startsWith(const Token& t, char c);
+    static bool startsWith(const Token& token, char character);
 
   public:
     /// Returns the offset at which the token is read from the file
     // static unsigned int Offset(const Token& t);
     /// Returns whether the token can be interpreted as a string
-    static bool isString(const Token& t);
+    static bool isString(const Token& token);
     /// Returns whether the token can be interpreted as an identifier
-    static bool isIdentifier(const Token& t);
+    static bool isIdentifier(const Token& token);
     /// Returns whether the token can be interpreted as a syntactical operator
-    static bool isOperator(const Token& t);
+    static bool isOperator(const Token& token);
     /// Returns whether the token is a given operator
-    static bool isOperator(const Token& t, char op);
+    static bool isOperator(const Token& token, char character);
     /// Returns whether the token can be interpreted as an enumerated value
-    static bool isEnumeration(const Token& t);
+    static bool isEnumeration(const Token& token);
     /// Returns whether the token can be interpreted as a datatype name
-    static bool isKeyword(const Token& t);
+    static bool isKeyword(const Token& token);
     /// Returns whether the token can be interpreted as an integer
-    static bool isInt(const Token& t);
+    static bool isInt(const Token& token);
     /// Returns whether the token can be interpreted as a boolean
-    static bool isBool(const Token& t);
+    static bool isBool(const Token& token);
     /// Returns whether the token can be interpreted as a logical
-    static bool isLogical(const Token& t);
+    static bool isLogical(const Token& token);
     /// Returns whether the token can be interpreted as a floating point number
-    static bool isFloat(const Token& t);
+    static bool isFloat(const Token& token);
     /// Returns whether the token can be interpreted as a binary type
-    static bool isBinary(const Token& t);
+    static bool isBinary(const Token& token);
     /// Returns the token interpreted as an integer
-    static int asInt(const Token& t);
+    static int asInt(const Token& token);
     /// Returns the token interpreted as an identifier
-    static int asIdentifier(const Token& t);
+    static int asIdentifier(const Token& token);
     /// Returns the token interpreted as an boolean (.T. or .F.)
-    static bool asBool(const Token& t);
+    static bool asBool(const Token& token);
     /// Returns the token interpreted as an logical (.T. or .F. or .U.)
-    static boost::logic::tribool asLogical(const Token& t);
+    static boost::logic::tribool asLogical(const Token& token);
     /// Returns the token as a floating point number
-    static double asFloat(const Token& t);
+    static double asFloat(const Token& token);
     /// Returns the token as a string (without the dot or apostrophe)
-    static std::string asString(const Token& t);
+    static std::string asString(const Token& token);
     /// Returns the token as a string in internal buffer (for optimization purposes)
-    static const std::string& asStringRef(const Token& t);
+    static const std::string& asStringRef(const Token& token);
     /// Returns the token as a string (without the dot or apostrophe)
-    static boost::dynamic_bitset<> asBinary(const Token& t);
+    static boost::dynamic_bitset<> asBinary(const Token& token);
     /// Returns a string representation of the token (including the dot or apostrophe)
-    static std::string toString(const Token& t);
+    static std::string toString(const Token& token);
 };
 
 //
@@ -152,12 +152,12 @@ class IFC_PARSE_API IfcSpfLexer {
 
   public:
     std::string& GetTempString() const {
-        static my_thread_local std::string s;
-        return s;
+        static my_thread_local std::string string;
+        return string;
     }
     IfcSpfStream* stream;
     IfcFile* file;
-    IfcSpfLexer(IfcSpfStream* s, IfcFile* f);
+    IfcSpfLexer(IfcSpfStream* stream, IfcFile* file);
     Token Next();
     ~IfcSpfLexer();
     void TokenString(unsigned int offset, std::string& result);
@@ -178,7 +178,7 @@ class IFC_PARSE_API ArgumentList : public Argument {
                              list_(new Argument* [size_] { 0 }) {}
     ~ArgumentList();
 
-    void read(IfcSpfLexer* t, std::vector<unsigned int>& ids);
+    void read(IfcSpfLexer* lexer, std::vector<unsigned int>& ids);
 
     IfcUtil::ArgumentType type() const;
 
@@ -195,7 +195,7 @@ class IFC_PARSE_API ArgumentList : public Argument {
     bool isNull() const;
     unsigned int size() const;
 
-    Argument* operator[](unsigned int i) const;
+    Argument* operator[](unsigned int index) const;
 
     std::string toString(bool upper = false) const;
 
@@ -221,7 +221,7 @@ class IFC_PARSE_API NullArgument : public Argument {
 class IFC_PARSE_API TokenArgument : public Argument {
   public:
     Token token;
-    TokenArgument(const Token& t);
+    TokenArgument(const Token& token);
 
     IfcUtil::ArgumentType type() const;
 
@@ -236,7 +236,7 @@ class IFC_PARSE_API TokenArgument : public Argument {
     bool isNull() const;
     unsigned int size() const;
 
-    Argument* operator[](unsigned int i) const;
+    Argument* operator[](unsigned int index) const;
     std::string toString(bool upper = false) const;
 };
 
@@ -248,7 +248,7 @@ class IFC_PARSE_API EntityArgument : public Argument {
     IfcUtil::IfcBaseClass* entity_;
 
   public:
-    EntityArgument(const Token& t);
+    EntityArgument(const Token& token);
     ~EntityArgument();
 
     IfcUtil::ArgumentType type() const;
@@ -258,17 +258,17 @@ class IFC_PARSE_API EntityArgument : public Argument {
     bool isNull() const;
     unsigned int size() const;
 
-    Argument* operator[](unsigned int i) const;
+    Argument* operator[](unsigned int index) const;
     std::string toString(bool upper = false) const;
 };
 
-IFC_PARSE_API IfcEntityInstanceData* read(unsigned int i, IfcFile* t, boost::optional<unsigned> offset = boost::none);
+IFC_PARSE_API IfcEntityInstanceData* read(unsigned int index, IfcFile* file, boost::optional<unsigned> offset = boost::none);
 
 IFC_PARSE_API aggregate_of_instance::ptr traverse(IfcUtil::IfcBaseClass* instance, int max_level = -1);
 
 IFC_PARSE_API aggregate_of_instance::ptr traverse_breadth_first(IfcUtil::IfcBaseClass* instance, int max_level = -1);
 } // namespace IfcParse
 
-IFC_PARSE_API std::ostream& operator<<(std::ostream& os, const IfcParse::IfcFile& f);
+IFC_PARSE_API std::ostream& operator<<(std::ostream& out, const IfcParse::IfcFile& file);
 
 #endif

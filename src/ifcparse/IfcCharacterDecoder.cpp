@@ -71,8 +71,8 @@
 using namespace IfcParse;
 using namespace IfcWrite;
 
-IfcCharacterDecoder::IfcCharacterDecoder(IfcParse::IfcSpfStream* f) {
-    stream_ = f;
+IfcCharacterDecoder::IfcCharacterDecoder(IfcParse::IfcSpfStream* stream) {
+    stream_ = stream;
     codepage_ = 0;
 }
 
@@ -205,35 +205,35 @@ class pure_impure_helper {
                 static std::string empty;
                 return empty;
             }
-            auto it = std::max_element(builder_.begin(), builder_.end());
-            if (*it <= 0x7e) {
-                std::string r(builder_.begin(), builder_.end());
-                return r;
+            auto iter = std::max_element(builder_.begin(), builder_.end());
+            if (*iter <= 0x7e) {
+                std::string result(builder_.begin(), builder_.end());
+                return result;
             }
             return IfcUtil::convert_utf8(builder_);
         }
         if (mode == IfcParse::IfcCharacterDecoder::SUBSTITUTE) {
-            std::string r;
-            r.reserve(builder_.size());
-            std::transform(builder_.begin(), builder_.end(), std::back_inserter(r), [&substitution_character](wchar_t c) {
-                if (c >= 0x20 && c <= 0x7e) {
-                    return (char)c;
+            std::string result;
+            result.reserve(builder_.size());
+            std::transform(builder_.begin(), builder_.end(), std::back_inserter(result), [&substitution_character](wchar_t character) {
+                if (character >= 0x20 && character <= 0x7e) {
+                    return (char)character;
                 }
                 return substitution_character;
             });
-            return r;
+            return result;
         }
         if (mode == IfcParse::IfcCharacterDecoder::ESCAPE) {
-            std::stringstream str;
-            str << std::hex << std::setw(4) << std::setfill('0');
-            std::for_each(builder_.begin(), builder_.end(), [&str](wchar_t c) {
-                if (c >= 0x20 && c <= 0x7e) {
-                    str.put((char)c);
+            std::stringstream stream;
+            stream << std::hex << std::setw(4) << std::setfill('0');
+            std::for_each(builder_.begin(), builder_.end(), [&stream](wchar_t character) {
+                if (character >= 0x20 && character <= 0x7e) {
+                    stream.put((char)character);
                 } else {
-                    str << "\\u" << c;
+                    stream << "\\u" << character;
                 }
             });
-            return str.str();
+            return stream.str();
         }
         throw IfcParse::IfcException("Invalid conversion mode");
     }
@@ -334,20 +334,20 @@ IfcCharacterEncoder::operator std::string() {
     bool in_extended = false;
 
     for (auto it = str_.begin(); it != str_.end(); ++it) {
-        auto ch = *it;
-        const bool within_spf_range = ch >= 0x20 && ch <= 0x7e;
+        auto character = *it;
+        const bool within_spf_range = character >= 0x20 && character <= 0x7e;
         if (in_extended && within_spf_range) {
             oss << "\\X0\\";
         } else if (!in_extended && !within_spf_range) {
             oss << "\\X" << num_bytes_str << "\\";
         }
         if (within_spf_range) {
-            oss.put((char)ch);
-            if (ch == '\\' || ch == '\'') {
-                oss.put((char)ch);
+            oss.put((char)character);
+            if (character == '\\' || character == '\'') {
+                oss.put((char)character);
             }
         } else {
-            oss << std::hex << std::setw(num_bytes * 2) << std::uppercase << std::setfill('0') << (int)ch;
+            oss << std::hex << std::setw(num_bytes * 2) << std::uppercase << std::setfill('0') << (int)character;
         }
         in_extended = !within_spf_range;
     }
@@ -374,13 +374,14 @@ def _():
 
 "{%s}" % ",".join(_())
 */
-std::wstring::value_type IfcUtil::convert_codepage(int codepage, int c) {
+std::wstring::value_type IfcUtil::convert_codepage(int codepage, int character) {
     if (codepage < 1 || codepage > 16 || codepage == 12) {
         throw IfcParse::IfcException("Invalid codepage");
     }
-    if (c < 0 || c > 255) {
+    if (character < 0 || character > 255) {
         throw IfcParse::IfcException("Invalid character ordinal");
     }
+    // NOLINTBEGIN(readability-magic-numbers)
     static std::array<std::array<wchar_t, 256>, 16> codepage_data = {{{{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255}},
                                                                       {{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 260, 728, 321, 164, 317, 346, 167, 168, 352, 350, 356, 377, 173, 381, 379, 176, 261, 731, 322, 180, 318, 347, 711, 184, 353, 351, 357, 378, 733, 382, 380, 340, 193, 194, 258, 196, 313, 262, 199, 268, 201, 280, 203, 282, 205, 206, 270, 272, 323, 327, 211, 212, 336, 214, 215, 344, 366, 218, 368, 220, 221, 354, 223, 341, 225, 226, 259, 228, 314, 263, 231, 269, 233, 281, 235, 283, 237, 238, 271, 273, 324, 328, 243, 244, 337, 246, 247, 345, 367, 250, 369, 252, 253, 355, 729}},
                                                                       {{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 294, 728, 163, 164, 0, 292, 167, 168, 304, 350, 286, 308, 173, 0, 379, 176, 295, 178, 179, 180, 181, 293, 183, 184, 305, 351, 287, 309, 189, 0, 380, 192, 193, 194, 0, 196, 266, 264, 199, 200, 201, 202, 203, 204, 205, 206, 207, 0, 209, 210, 211, 212, 288, 214, 215, 284, 217, 218, 219, 220, 364, 348, 223, 224, 225, 226, 0, 228, 267, 265, 231, 232, 233, 234, 235, 236, 237, 238, 239, 0, 241, 242, 243, 244, 289, 246, 247, 285, 249, 250, 251, 252, 365, 349, 729}},
@@ -397,19 +398,20 @@ std::wstring::value_type IfcUtil::convert_codepage(int codepage, int c) {
                                                                       {{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 7682, 7683, 163, 266, 267, 7690, 167, 7808, 169, 7810, 7691, 7922, 173, 174, 376, 7710, 7711, 288, 289, 7744, 7745, 182, 7766, 7809, 7767, 7811, 7776, 7923, 7812, 7813, 7777, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 372, 209, 210, 211, 212, 213, 214, 7786, 216, 217, 218, 219, 220, 221, 374, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 373, 241, 242, 243, 244, 245, 246, 7787, 248, 249, 250, 251, 252, 253, 375, 255}},
                                                                       {{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 8364, 165, 352, 167, 353, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 381, 181, 182, 183, 382, 185, 186, 187, 338, 339, 376, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255}},
                                                                       {{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 260, 261, 321, 8364, 8222, 352, 167, 353, 169, 536, 171, 377, 173, 378, 379, 176, 177, 268, 322, 381, 8221, 182, 183, 382, 269, 537, 187, 338, 339, 376, 380, 192, 193, 194, 258, 196, 262, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 272, 323, 210, 211, 212, 336, 214, 346, 368, 217, 218, 219, 220, 280, 538, 223, 224, 225, 226, 259, 228, 263, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 273, 324, 242, 243, 244, 337, 246, 347, 369, 249, 250, 251, 252, 281, 539, 255}}}};
-    auto r = codepage_data[codepage - 1][c];
-    if (r == 0) {
+    // NOLINTEND(readability-magic-numbers)
+    auto result = codepage_data[codepage - 1][character];
+    if (result == 0) {
         throw IfcParse::IfcException("Character not defined");
     }
-    return r;
+    return result;
 }
 
-std::string IfcUtil::convert_utf8(const std::wstring& s) {
-    return std::wstring_convert<std::codecvt_utf8<std::wstring::value_type>>().to_bytes(s);
+std::string IfcUtil::convert_utf8(const std::wstring& string) {
+    return std::wstring_convert<std::codecvt_utf8<std::wstring::value_type>>().to_bytes(string);
 }
 
-std::wstring IfcUtil::convert_utf8(const std::string& s) {
-    return std::wstring_convert<std::codecvt_utf8<std::wstring::value_type>>().from_bytes(s);
+std::wstring IfcUtil::convert_utf8(const std::string& string) {
+    return std::wstring_convert<std::codecvt_utf8<std::wstring::value_type>>().from_bytes(string);
 }
 
 #ifdef _MSC_VER
@@ -423,8 +425,8 @@ std::u32string IfcUtil::convert_utf8_to_utf32(const std::string& s) {
 
 #else
 
-std::u32string IfcUtil::convert_utf8_to_utf32(const std::string& s) {
-    return std::wstring_convert<std::codecvt_utf8<std::u32string::value_type>, std::u32string::value_type>().from_bytes(s);
+std::u32string IfcUtil::convert_utf8_to_utf32(const std::string& string) {
+    return std::wstring_convert<std::codecvt_utf8<std::u32string::value_type>, std::u32string::value_type>().from_bytes(string);
 }
 
 #endif

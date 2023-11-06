@@ -32,46 +32,47 @@
 static const char* chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_$";
 
 // Converts an unsigned integer into a base64 string of length l
-std::string base64(unsigned v, int l) {
-    std::string r;
-    r.reserve(l);
-    while (v != 0U) {
-        r.push_back(chars[v % 64]);
-        v /= 64;
+std::string base64(unsigned value, int length) {
+    const int BASE64 = 64;
+    std::string result;
+    result.reserve(length);
+    while (value != 0U) {
+        result.push_back(chars[value % BASE64]);
+        value /= BASE64;
     }
-    while ((int)r.size() != l) {
-        r.push_back('0');
+    while ((int)result.size() != length) {
+        result.push_back('0');
     }
-    std::reverse(r.begin(), r.end());
-    return r;
+    std::reverse(result.begin(), result.end());
+    return result;
 }
 
 // Converts a base64 string into an unsigned integer
-unsigned from_base64(const std::string& s) {
-    std::string::size_type zeros = s.find_first_not_of('0');
-    unsigned r = 0;
+unsigned from_base64(const std::string& string) {
+    std::string::size_type zeros = string.find_first_not_of('0');
+    unsigned result = 0;
     if (zeros != std::string::npos) {
-        for (std::string::const_iterator i = s.begin() + zeros; i != s.end(); ++i) {
-            r *= 64;
-            const char* c = strchr(chars, *i);
-            if (c == nullptr) {
+        for (std::string::const_iterator i = string.begin() + zeros; i != string.end(); ++i) {
+            result *= 64;
+            const char* character = strchr(chars, *i);
+            if (character == nullptr) {
                 throw IfcParse::IfcException("Failed to decode GlobalId");
             }
-            r += (unsigned)(c - chars);
+            result += (unsigned)(character - chars);
         }
     }
-    return r;
+    return result;
 }
 
 // Compresses the UUID byte array into a base64 representation
-std::string compress(unsigned char* v) {
-    std::string r;
-    r.reserve(22);
-    r += base64(v[0], 2);
+std::string compress(unsigned char* value) {
+    std::string result;
+    result.reserve(22);
+    result += base64(value[0], 2);
     for (unsigned i = 1; i < 16; i += 3) {
-        r += base64((v[i] << 16) + (v[i + 1] << 8) + v[i + 2], 4);
+        result += base64((value[i] << 16) + (value[i + 1] << 8) + value[i + 2], 4);
     }
-    return r;
+    return result;
 }
 
 // Expands the base64 representation into a UUID byte array
@@ -110,20 +111,20 @@ IfcParse::IfcGlobalId::IfcGlobalId() {
 #endif
 }
 
-IfcParse::IfcGlobalId::IfcGlobalId(const std::string& s)
-    : string_data_(s) {
-    std::vector<unsigned char> v;
-    expand(string_data_, v);
-    std::copy(v.begin(), v.end(), uuid_data_.begin());
+IfcParse::IfcGlobalId::IfcGlobalId(const std::string& string)
+    : string_data_(string) {
+    std::vector<unsigned char> result;
+    expand(string_data_, result);
+    std::copy(result.begin(), result.end(), uuid_data_.begin());
 #if BOOST_VERSION < 104400
-    formatted_string = boost::lexical_cast<std::string>(uuid_data);
+    formatted_string_ = boost::lexical_cast<std::string>(uuid_data_);
 #else
     formatted_string_ = boost::uuids::to_string(uuid_data_);
 #endif
 
 #ifndef NDEBUG
-    const std::string test_string = compress(&uuid_data.data[0]);
-    if (string_data != test_string) {
+    const std::string test_string = compress(&uuid_data_.data[0]);
+    if (string_data_ != test_string) {
         Logger::Message(Logger::LOG_ERROR, "Internal error generating GlobalId");
     }
 #endif

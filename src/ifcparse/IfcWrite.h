@@ -128,18 +128,18 @@ class IFC_PARSE_API IfcWriteArgument : public Argument {
 
     template <typename T>
     typename boost::disable_if<boost::is_base_of<IfcUtil::IfcBaseInterface, typename boost::remove_pointer<T>::type>, void>::type
-    set(const T& t) {
-        container_ = t;
+    set(const T& type) {
+        container_ = type;
     }
 
     // Overload to detect null values
-    void set(const aggregate_of_instance::ptr& v);
+    void set(const aggregate_of_instance::ptr& value);
 
     // Overload to detect null values
-    void set(const aggregate_of_aggregate_of_instance::ptr& v);
+    void set(const aggregate_of_aggregate_of_instance::ptr& value);
 
     // Overload to detect null values
-    void set(IfcUtil::IfcBaseInterface* const& v);
+    void set(IfcUtil::IfcBaseInterface* const& value);
 
     operator int() const;
     operator bool() const;
@@ -161,7 +161,7 @@ class IFC_PARSE_API IfcWriteArgument : public Argument {
     operator aggregate_of_aggregate_of_instance::ptr() const;
 
     bool isNull() const;
-    Argument* operator[](unsigned int i) const;
+    Argument* operator[](unsigned int index) const;
     std::string toString(bool upper = false) const;
     unsigned int size() const;
     IfcUtil::ArgumentType type() const;

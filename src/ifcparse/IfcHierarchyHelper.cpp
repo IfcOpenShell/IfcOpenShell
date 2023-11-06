@@ -63,11 +63,11 @@ typename Schema::IfcLocalPlacement* IfcHierarchyHelper<Schema>::addLocalPlacemen
                                                                                   double xx,
                                                                                   double xy,
                                                                                   double xz) {
-    typename Schema::IfcLocalPlacement* lp = new typename Schema::IfcLocalPlacement(parent,
-                                                                                    addPlacement3d(ox, oy, oz, zx, zy, zz, xx, xy, xz));
+    typename Schema::IfcLocalPlacement* local_placement = new typename Schema::IfcLocalPlacement(parent,
+                                                                                                 addPlacement3d(ox, oy, oz, zx, zy, zz, xx, xy, xz));
 
-    addEntity(lp);
-    return lp;
+    addEntity(local_placement);
+    return local_placement;
 }
 
 template <typename Schema>
@@ -995,9 +995,9 @@ void push_back_to_maybe_optional(boost::optional<boost::shared_ptr<T>>& t, U* u)
 
 template <typename Schema>
 typename Schema::IfcGeometricRepresentationContext* IfcHierarchyHelper<Schema>::getRepresentationContext(const std::string& s) {
-    typename std::map<std::string, typename Schema::IfcGeometricRepresentationContext*>::const_iterator it = contexts_.find(s);
-    if (it != contexts_.end()) {
-        return it->second;
+    typename std::map<std::string, typename Schema::IfcGeometricRepresentationContext*>::const_iterator iter = contexts_.find(s);
+    if (iter != contexts_.end()) {
+        return iter->second;
     }
     typename Schema::IfcProject* project = getSingle<typename Schema::IfcProject>();
     if (!project) {

@@ -106,16 +106,16 @@ void init_locale() {
 // Opens the file and gets the filesize
 //
 #ifdef USE_MMAP
-IfcSpfStream::IfcSpfStream(const std::string& fn, bool mmap)
+IfcSpfStream::IfcSpfStream(const std::string& path, bool mmap)
 #else
-IfcSpfStream::IfcSpfStream(const std::string& fn)
+IfcSpfStream::IfcSpfStream(const std::string& path)
 #endif
     : stream_(0),
       buffer_(0),
       valid(false),
       eof(false) {
 #ifdef _MSC_VER
-    std::wstring fn_ws = IfcUtil::path::from_utf8(fn);
+    std::wstring fn_ws = IfcUtil::path::from_utf8(path);
     const wchar_t* fn_wide = fn_ws.c_str();
 
 #ifdef USE_MMAP
@@ -132,10 +132,10 @@ IfcSpfStream::IfcSpfStream(const std::string& fn)
 
 #ifdef USE_MMAP
     if (mmap) {
-        mfs = boost::iostreams::mapped_file_source(fn);
+        mfs = boost::iostreams::mapped_file_source(path);
     } else {
 #endif
-        stream_ = fopen(fn.c_str(), "rb");
+        stream_ = fopen(path.c_str(), "rb");
 #ifdef USE_MMAP
     }
 #endif
@@ -174,28 +174,28 @@ IfcSpfStream::IfcSpfStream(const std::string& fn)
 #endif
 }
 
-IfcSpfStream::IfcSpfStream(std::istream& f, int l)
+IfcSpfStream::IfcSpfStream(std::istream& stream, int length)
     : stream_(0),
       buffer_(0) {
     eof = false;
-    size = l;
+    size = length;
     char* buffer_rw = new char[size];
-    f.read(buffer_rw, size);
+    stream.read(buffer_rw, size);
     buffer_ = buffer_rw;
-    valid = f.gcount() == size;
+    valid = stream.gcount() == size;
     ptr_ = 0;
-    len_ = l;
+    len_ = length;
 }
 
-IfcSpfStream::IfcSpfStream(void* data, int l)
+IfcSpfStream::IfcSpfStream(void* data, int length)
     : stream_(0),
       buffer_(0) {
     eof = false;
-    size = l;
+    size = length;
     buffer_ = (char*)data;
     valid = true;
     ptr_ = 0;
-    len_ = l;
+    len_ = length;
 }
 
 IfcSpfStream::~IfcSpfStream() {
@@ -218,8 +218,8 @@ void IfcSpfStream::Close() {
 //
 // Seeks an arbitrary position in the file
 //
-void IfcSpfStream::Seek(unsigned int o) {
-    ptr_ = o;
+void IfcSpfStream::Seek(unsigned int offset) {
+    ptr_ = offset;
     if (ptr_ >= len_) {
         throw IfcException("Reading outside of file limits");
     }
@@ -236,8 +236,8 @@ char IfcSpfStream::Peek() {
 //
 // Returns the character at specified offset
 //
-char IfcSpfStream::Read(unsigned int o) {
-    return buffer_[o];
+char IfcSpfStream::Read(unsigned int offset) {
+    return buffer_[offset];
 }
 
 //
@@ -262,10 +262,10 @@ void IfcSpfStream::Inc() {
     }
 }
 
-IfcSpfLexer::IfcSpfLexer(IfcParse::IfcSpfStream* s, IfcParse::IfcFile* f) {
-    file = f;
-    stream = s;
-    decoder_ = new IfcCharacterDecoder(s);
+IfcSpfLexer::IfcSpfLexer(IfcParse::IfcSpfStream* stream_, IfcParse::IfcFile* file_) {
+    file = file_;
+    stream = stream_;
+    decoder_ = new IfcCharacterDecoder(stream_);
 }
 
 IfcSpfLexer::~IfcSpfLexer() {
@@ -273,42 +273,42 @@ IfcSpfLexer::~IfcSpfLexer() {
 }
 
 unsigned int IfcSpfLexer::skipWhitespace() {
-    unsigned int n = 0;
+    unsigned int index = 0;
     while (!stream->eof) {
-        char c = stream->Peek();
-        if ((c == ' ' || c == '\r' || c == '\n' || c == '\t')) {
+        char character = stream->Peek();
+        if ((character == ' ' || character == '\r' || character == '\n' || character == '\t')) {
             stream->Inc();
-            ++n;
+            ++index;
         } else {
             break;
         }
     }
-    return n;
+    return index;
 }
 
 unsigned int IfcSpfLexer::skipComment() {
-    char c = stream->Peek();
-    if (c != '/') {
+    char character = stream->Peek();
+    if (character != '/') {
         return 0;
     }
     stream->Inc();
-    c = stream->Peek();
-    if (c != '*') {
+    character = stream->Peek();
+    if (character != '*') {
         stream->Seek(stream->Tell() - 1);
         return 0;
     }
-    unsigned int n = 2;
-    char p = 0;
+    unsigned int index = 2;
+    char intermediate = 0;
     while (!stream->eof) {
-        c = stream->Peek();
+        character = stream->Peek();
         stream->Inc();
-        ++n;
-        if (c == '/' && p == '*') {
+        ++index;
+        if (character == '/' && intermediate == '*') {
             break;
         }
-        p = c;
+        intermediate = character;
     }
-    return n;
+    return index;
 }
 
 //
@@ -328,10 +328,16 @@ Token IfcSpfLexer::Next() {
     }
     unsigned int pos = stream->Tell();
 
-    char c = stream->Peek();
+    char character = stream->Peek();
 
     // If the cursor is at [()=,;$*] we know token consists of single char
-    if (c == '(' || c == ')' || c == '=' || c == ',' || c == ';' || c == '$' || c == '*') {
+    if (character == '(' ||
+        character == ')' ||
+        character == '=' ||
+        character == ',' ||
+        character == ';' ||
+        character == '$' ||
+        character == '*') {
         stream->Inc();
         return OperatorTokenPtr(this, pos, pos + 1);
     }
@@ -341,15 +347,20 @@ Token IfcSpfLexer::Next() {
     while (!stream->eof) {
 
         // Read character and increment pointer if not starting a new token
-        c = stream->Peek();
-        if ((len != 0) && (c == '(' || c == ')' || c == '=' || c == ',' || c == ';' || c == '/')) {
+        character = stream->Peek();
+        if ((len != 0) && (character == '(' ||
+                           character == ')' ||
+                           character == '=' ||
+                           character == ',' ||
+                           character == ';' ||
+                           character == '/')) {
             break;
         }
         stream->Inc();
         len++;
 
         // If a string is encountered defer processing to the IfcCharacterDecoder
-        if (c == '\'') {
+        if (character == '\'') {
             decoder_->skip();
         }
     }
@@ -384,20 +395,28 @@ char IfcSpfStream::peek_at(unsigned int local_ptr) {
 void IfcSpfLexer::TokenString(unsigned int offset, std::string& buffer) {
     buffer.clear();
     while (!stream->is_eof_at(offset)) {
-        char c = stream->peek_at(offset);
-        if (!buffer.empty() && (c == '(' || c == ')' || c == '=' || c == ',' || c == ';' || c == '/')) {
+        char character = stream->peek_at(offset);
+        if (!buffer.empty() && (character == '(' ||
+                                character == ')' ||
+                                character == '=' ||
+                                character == ',' ||
+                                character == ';' ||
+                                character == '/')) {
             break;
         }
         stream->increment_at(offset);
-        if (c == ' ' || c == '\r' || c == '\n' || c == '\t') {
+        if (character == ' ' ||
+            character == '\r' ||
+            character == '\n' ||
+            character == '\t') {
             continue;
         }
-        if (c == '\'') {
+        if (character == '\'') {
             // todo, make decoder use local offset ptr
             buffer = decoder_->get(offset);
             break;
         }
-        buffer.push_back(c);
+        buffer.push_back(character);
     }
 }
 
@@ -405,11 +424,14 @@ void IfcSpfLexer::TokenString(unsigned int offset, std::string& buffer) {
 inline void RemoveTokenSeparators(IfcSpfStream* stream, unsigned start, unsigned end, std::string& oDestination) {
     oDestination.clear();
     for (unsigned i = start; i < end; i++) {
-        char c = stream->Read(i);
-        if (c == ' ' || c == '\r' || c == '\n' || c == '\t') {
+        char character = stream->Read(i);
+        if (character == ' ' ||
+            character == '\r' ||
+            character == '\n' ||
+            character == '\t') {
             continue;
         }
-        oDestination += c;
+        oDestination += character;
     }
 }
 
@@ -498,110 +520,110 @@ Token IfcParse::GeneralTokenPtr(IfcSpfLexer* lexer, unsigned start, unsigned end
 }
 Token IfcParse::NoneTokenPtr() { return Token(); }
 
-bool TokenFunc::isOperator(const Token& t) {
-    return t.type == Token_OPERATOR;
+bool TokenFunc::isOperator(const Token& token) {
+    return token.type == Token_OPERATOR;
 }
 
-bool TokenFunc::isOperator(const Token& t, char op) {
-    return t.type == Token_OPERATOR && t.value_char == op;
+bool TokenFunc::isOperator(const Token& token, char character) {
+    return token.type == Token_OPERATOR && token.value_char == character;
 }
 
-bool TokenFunc::isIdentifier(const Token& t) {
-    return t.type == Token_IDENTIFIER;
+bool TokenFunc::isIdentifier(const Token& token) {
+    return token.type == Token_IDENTIFIER;
 }
 
-bool TokenFunc::isString(const Token& t) {
-    return t.type == Token_STRING;
+bool TokenFunc::isString(const Token& token) {
+    return token.type == Token_STRING;
 }
 
-bool TokenFunc::isEnumeration(const Token& t) {
-    return t.type == Token_ENUMERATION || t.type == Token_BOOL;
+bool TokenFunc::isEnumeration(const Token& token) {
+    return token.type == Token_ENUMERATION || token.type == Token_BOOL;
 }
 
-bool TokenFunc::isBinary(const Token& t) {
-    return t.type == Token_BINARY;
+bool TokenFunc::isBinary(const Token& token) {
+    return token.type == Token_BINARY;
 }
 
-bool TokenFunc::isKeyword(const Token& t) {
-    return t.type == Token_KEYWORD;
+bool TokenFunc::isKeyword(const Token& token) {
+    return token.type == Token_KEYWORD;
 }
 
-bool TokenFunc::isInt(const Token& t) {
-    return t.type == Token_INT;
+bool TokenFunc::isInt(const Token& token) {
+    return token.type == Token_INT;
 }
 
-bool TokenFunc::isBool(const Token& t) {
+bool TokenFunc::isBool(const Token& token) {
     // Bool and logical share the same storage type, just logical unknown is stored as 2.
-    return t.type == Token_BOOL && t.value_int != 2;
+    return token.type == Token_BOOL && token.value_int != 2;
 }
 
-bool TokenFunc::isLogical(const Token& t) {
-    return t.type == Token_BOOL;
+bool TokenFunc::isLogical(const Token& token) {
+    return token.type == Token_BOOL;
 }
 
-bool TokenFunc::isFloat(const Token& t) {
+bool TokenFunc::isFloat(const Token& token) {
 #ifdef PERMISSIVE_FLOAT
     /// NB: We are being more permissive here then allowed by the standard
-    return t.type == Token_FLOAT || t.type == Token_INT;
+    return token.type == Token_FLOAT || token.type == Token_INT;
 #else
-    return t.type == Token_FLOAT;
+    return token.type == Token_FLOAT;
 #endif
 }
 
-int TokenFunc::asInt(const Token& t) {
-    if (t.type != Token_INT) {
-        throw IfcInvalidTokenException(t.startPos, toString(t), "integer");
+int TokenFunc::asInt(const Token& token) {
+    if (token.type != Token_INT) {
+        throw IfcInvalidTokenException(token.startPos, toString(token), "integer");
     }
-    return t.value_int;
+    return token.value_int;
 }
 
-int TokenFunc::asIdentifier(const Token& t) {
-    if (t.type != Token_IDENTIFIER) {
-        throw IfcInvalidTokenException(t.startPos, toString(t), "instance name");
+int TokenFunc::asIdentifier(const Token& token) {
+    if (token.type != Token_IDENTIFIER) {
+        throw IfcInvalidTokenException(token.startPos, toString(token), "instance name");
     }
-    return t.value_int;
+    return token.value_int;
 }
 
-bool TokenFunc::asBool(const Token& t) {
-    if (t.type != Token_BOOL) {
-        throw IfcInvalidTokenException(t.startPos, toString(t), "boolean");
+bool TokenFunc::asBool(const Token& token) {
+    if (token.type != Token_BOOL) {
+        throw IfcInvalidTokenException(token.startPos, toString(token), "boolean");
     }
-    return t.value_int == 1;
+    return token.value_int == 1;
 }
 
-boost::logic::tribool TokenFunc::asLogical(const Token& t) {
-    if (t.type != Token_BOOL) {
-        throw IfcInvalidTokenException(t.startPos, toString(t), "boolean");
+boost::logic::tribool TokenFunc::asLogical(const Token& token) {
+    if (token.type != Token_BOOL) {
+        throw IfcInvalidTokenException(token.startPos, toString(token), "boolean");
     }
-    if (t.value_int == 0) {
+    if (token.value_int == 0) {
         return false;
     }
-    if (t.value_int == 1) {
+    if (token.value_int == 1) {
         return true;
     }
     return boost::logic::indeterminate;
 }
 
-double TokenFunc::asFloat(const Token& t) {
+double TokenFunc::asFloat(const Token& token) {
 #ifdef PERMISSIVE_FLOAT
-    if (t.type == Token_INT) {
+    if (token.type == Token_INT) {
         /// NB: We are being more permissive here then allowed by the standard
-        return t.value_int;
+        return token.value_int;
     } // ----> continues beyond preprocessor directive
 #endif
-    if (t.type == Token_FLOAT) {
-        return t.value_double;
+    if (token.type == Token_FLOAT) {
+        return token.value_double;
     }
-    throw IfcInvalidTokenException(t.startPos, toString(t), "real");
+    throw IfcInvalidTokenException(token.startPos, toString(token), "real");
 }
 
-const std::string& TokenFunc::asStringRef(const Token& t) {
-    if (t.type == Token_NONE) {
+const std::string& TokenFunc::asStringRef(const Token& token) {
+    if (token.type == Token_NONE) {
         throw IfcParse::IfcException("Null token encountered, premature end of file?");
     }
-    std::string& str = t.lexer->GetTempString();
-    t.lexer->TokenString(t.startPos, str);
-    if ((isString(t) || isEnumeration(t) || isBinary(t)) && !str.empty()) {
+    std::string& str = token.lexer->GetTempString();
+    token.lexer->TokenString(token.startPos, str);
+    if ((isString(token) || isEnumeration(token) || isBinary(token)) && !str.empty()) {
         //remove start+end characters in-place
         str.erase(str.end() - 1);
         str.erase(str.begin());
@@ -609,15 +631,15 @@ const std::string& TokenFunc::asStringRef(const Token& t) {
     return str;
 }
 
-std::string TokenFunc::asString(const Token& t) {
-    if (isString(t) || isEnumeration(t) || isBinary(t)) {
-        return asStringRef(t);
+std::string TokenFunc::asString(const Token& token) {
+    if (isString(token) || isEnumeration(token) || isBinary(token)) {
+        return asStringRef(token);
     }
-    throw IfcInvalidTokenException(t.startPos, toString(t), "string");
+    throw IfcInvalidTokenException(token.startPos, toString(token), "string");
 }
 
-boost::dynamic_bitset<> TokenFunc::asBinary(const Token& t) {
-    const std::string& str = asStringRef(t);
+boost::dynamic_bitset<> TokenFunc::asBinary(const Token& token) {
+    const std::string& str = asStringRef(token);
     if (str.size() < 1) {
         throw IfcException("Token is not a valid binary sequence");
     }
@@ -648,19 +670,19 @@ boost::dynamic_bitset<> TokenFunc::asBinary(const Token& t) {
     return bitset;
 }
 
-std::string TokenFunc::toString(const Token& t) {
+std::string TokenFunc::toString(const Token& token) {
     std::string result;
-    t.lexer->TokenString(t.startPos, result);
+    token.lexer->TokenString(token.startPos, result);
     return result;
 }
 
-TokenArgument::TokenArgument(const Token& t) {
-    token = t;
+TokenArgument::TokenArgument(const Token& tok) {
+    token = tok;
 }
 
-EntityArgument::EntityArgument(const Token& t) {
-    IfcParse::IfcFile* file = t.lexer->file;
-    IfcEntityInstanceData* data = read(0, file, t.startPos);
+EntityArgument::EntityArgument(const Token& token) {
+    IfcParse::IfcFile* file = token.lexer->file;
+    IfcEntityInstanceData* data = read(0, file, token.startPos);
     // Data needs to be loaded, for the tokens
     // to be consumed and parsing to continue.
     data->load();
@@ -687,12 +709,12 @@ class vector_or_array {
           size_(size),
           index_(0) {}
 
-    void push_back(const T& t) {
+    void push_back(const T& type) {
         // @todo this should log a warning when the size is exceeded
         if (array_ && index_ < size_) {
-            array_[index_++] = t;
+            array_[index_++] = type;
         } else if (vector_) {
-            vector_->push_back(t);
+            vector_->push_back(type);
         }
     }
 
@@ -755,9 +777,9 @@ size_t IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::en
 
             if (TokenFunc::isKeyword(next)) {
                 try {
-                    auto* ea = new EntityArgument(next);
-                    addEntity(((IfcUtil::IfcBaseClass*)*ea));
-                    filler.push_back(ea);
+                    auto* entity = new EntityArgument(next);
+                    addEntity(((IfcUtil::IfcBaseClass*)*entity));
+                    filler.push_back(entity);
                 } catch (IfcException& e) {
                     Logger::Message(Logger::LOG_ERROR, e.what());
                 }
@@ -1069,26 +1091,26 @@ void IfcParse::IfcFile::register_inverse(unsigned id_from, const IfcParse::entit
 }
 
 void IfcParse::IfcFile::unregister_inverse(unsigned id_from, const IfcParse::entity* from_entity, IfcUtil::IfcBaseClass* inst, int attribute_index) {
-    const auto* e = from_entity;
-    while (e != nullptr) {
-        std::vector<int>& ids = byref_[{inst->data().id(), e->index_in_schema(), attribute_index}];
-        std::vector<int>::iterator it = std::find(ids.begin(), ids.end(), id_from);
-        if (it == ids.end()) {
+    const auto* entity = from_entity;
+    while (entity != nullptr) {
+        std::vector<int>& ids = byref_[{inst->data().id(), entity->index_in_schema(), attribute_index}];
+        std::vector<int>::iterator iter = std::find(ids.begin(), ids.end(), id_from);
+        if (iter == ids.end()) {
             // @todo inverses also need to be populated when multiple instances are added to a new file.
             // throw IfcParse::IfcException("Instance not found among inverses");
         } else {
-            ids.erase(it);
+            ids.erase(iter);
         }
-        e = e->supertype();
+        entity = entity->supertype();
     }
 
     std::vector<int>& ids = byref_excl_[inst->data().id()];
-    std::vector<int>::iterator it = std::find(ids.begin(), ids.end(), id_from);
-    if (it == ids.end()) {
+    std::vector<int>::iterator iter = std::find(ids.begin(), ids.end(), id_from);
+    if (iter == ids.end()) {
         // @todo inverses also need to be populated when multiple instances are added to a new file.
         // throw IfcParse::IfcException("Instance not found among inverses");
     } else {
-        ids.erase(it);
+        ids.erase(iter);
     }
 }
 
@@ -1158,15 +1180,15 @@ unsigned IfcEntityInstanceData::set_id(boost::optional<unsigned> i) {
 // Returns the entities of Entity type that have this entity in their ArgumentList
 //
 aggregate_of_instance::ptr IfcEntityInstanceData::getInverse(const IfcParse::declaration* type, int attribute_index) const {
-    static std::mutex m;
-    std::lock_guard<std::mutex> lk(m);
+    static std::mutex mtx;
+    std::lock_guard<std::mutex> lock(mtx);
 
     return file->getInverse(id_, type, attribute_index);
 }
 
 void IfcEntityInstanceData::load() const {
-    static std::recursive_mutex m;
-    std::lock_guard<std::recursive_mutex> lk(m);
+    static std::recursive_mutex mtx;
+    std::lock_guard<std::recursive_mutex> lockk(mtx);
 
     Argument** tmp_data = nullptr;
 
@@ -1221,19 +1243,19 @@ IfcUtil::ArgumentType get_argument_type(const IfcParse::declaration* decl, size_
 }
 } // namespace
 
-IfcEntityInstanceData::IfcEntityInstanceData(const IfcEntityInstanceData& e) {
+IfcEntityInstanceData::IfcEntityInstanceData(const IfcEntityInstanceData& data) {
     file = 0;
-    type_ = e.type_;
+    type_ = data.type_;
     id_ = 0;
 
-    const size_t count = e.getArgumentCount();
+    const size_t count = data.getArgumentCount();
 
     // In order not to have the instance read from file
     attributes_ = new Argument*[count];
 
     for (unsigned int i = 0; i < count; ++i) {
         attributes_[i] = 0;
-        this->setArgument(i, e.getArgument(i), get_argument_type(e.type(), i), true);
+        this->setArgument(i, data.getArgument(i), get_argument_type(data.type(), i), true);
     }
 }
 
@@ -1548,17 +1570,17 @@ IfcFile::IfcFile(const std::string& fn, bool mmap) {
     initialize_(new IfcSpfStream(fn, mmap));
 }
 #else
-IfcFile::IfcFile(const std::string& fn) {
-    initialize_(new IfcSpfStream(fn));
+IfcFile::IfcFile(const std::string& path) {
+    initialize_(new IfcSpfStream(path));
 }
 #endif
 
-IfcFile::IfcFile(std::istream& f, int len) {
-    initialize_(new IfcSpfStream(f, len));
+IfcFile::IfcFile(std::istream& stream, int length) {
+    initialize_(new IfcSpfStream(stream, length));
 }
 
-IfcFile::IfcFile(void* data, int len) {
-    initialize_(new IfcSpfStream(data, len));
+IfcFile::IfcFile(void* data, int length) {
+    initialize_(new IfcSpfStream(data, length));
 }
 
 IfcFile::IfcFile(IfcParse::IfcSpfStream* s) {
@@ -1844,18 +1866,18 @@ void traversal_visitor::operator()(IfcUtil::IfcBaseClass* inst, int /* index */)
 
 aggregate_of_instance::ptr IfcParse::traverse(IfcUtil::IfcBaseClass* instance, int max_level) {
     std::set<IfcUtil::IfcBaseClass*> visited;
-    traversal_recorder r(0);
-    traverse_(instance, visited, r, 0, max_level);
-    return r.get_list();
+    traversal_recorder recorder(0);
+    traverse_(instance, visited, recorder, 0, max_level);
+    return recorder.get_list();
 }
 
 // I'm cheating this isn't breadth-first, but rather we record visited instances
 // keeping track of their rank and return a list ordered by rank. Is this equivalent?
 aggregate_of_instance::ptr IfcParse::traverse_breadth_first(IfcUtil::IfcBaseClass* instance, int max_level) {
     std::set<IfcUtil::IfcBaseClass*> visited;
-    traversal_recorder r(1);
-    traverse_(instance, visited, r, 0, max_level);
-    return r.get_list();
+    traversal_recorder recorder(1);
+    traverse_(instance, visited, recorder, 0, max_level);
+    return recorder.get_list();
 }
 
 /// @note: for backwards compatibility
@@ -1868,8 +1890,8 @@ aggregate_of_instance::ptr IfcFile::traverse_breadth_first(IfcUtil::IfcBaseClass
     return IfcParse::traverse_breadth_first(instance, max_level);
 }
 
-void IfcFile::addEntities(aggregate_of_instance::ptr es) {
-    for (aggregate_of_instance::it i = es->begin(); i != es->end(); ++i) {
+void IfcFile::addEntities(aggregate_of_instance::ptr entities) {
+    for (aggregate_of_instance::it i = entities->begin(); i != entities->end(); ++i) {
         addEntity(*i);
     }
 }
@@ -2463,24 +2485,24 @@ struct id_instance_pair_sorter {
 };
 } // namespace
 
-std::ostream& operator<<(std::ostream& os, const IfcParse::IfcFile& f) {
-    f.header().write(os);
+std::ostream& operator<<(std::ostream& out, const IfcParse::IfcFile& file) {
+    file.header().write(out);
 
     typedef std::vector<std::pair<unsigned int, IfcUtil::IfcBaseClass*>> vector_t;
-    vector_t sorted(f.begin(), f.end());
+    vector_t sorted(file.begin(), file.end());
     std::sort(sorted.begin(), sorted.end(), id_instance_pair_sorter());
 
     for (vector_t::const_iterator it = sorted.begin(); it != sorted.end(); ++it) {
         const IfcUtil::IfcBaseClass* e = it->second;
         if (e->declaration().as_entity() != nullptr) {
-            os << e->data().toString(true) << ";" << std::endl;
+            out << e->data().toString(true) << ";" << std::endl;
         }
     }
 
-    os << "ENDSEC;" << std::endl;
-    os << "END-ISO-10303-21;" << std::endl;
+    out << "ENDSEC;" << std::endl;
+    out << "END-ISO-10303-21;" << std::endl;
 
-    return os;
+    return out;
 }
 
 std::string IfcFile::createTimestamp() const {
@@ -2520,8 +2542,8 @@ std::vector<int> IfcFile::get_inverse_indices(int instance_id) {
 
     auto refs = instances_by_reference(instance_id);
 
-    for (const auto& r : *refs) {
-        auto it = mapping.find(r->data().id());
+    for (const auto& ref : *refs) {
+        auto it = mapping.find(ref->data().id());
         if (it == mapping.end() || it->second.empty()) {
             throw IfcException("Internal error");
         }
