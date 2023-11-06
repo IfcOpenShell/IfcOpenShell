@@ -36,6 +36,7 @@ from blenderbim.bim.module.model.door import update_door_modifier_bmesh
 from blenderbim.bim.module.model.railing import update_railing_modifier_bmesh
 from blenderbim.bim.module.model.roof import update_roof_modifier_bmesh
 from blenderbim.bim.helper import prop_with_search
+from collections.abc import Iterable
 
 
 class LaunchTypeManager(bpy.types.Operator):
@@ -267,7 +268,7 @@ class BIM_PT_stair(bpy.types.Panel):
                 row = self.layout.row(align=True)
                 for prop_name in props.get_props_kwargs():
                     prop_value = getattr(props, prop_name)
-                    if isinstance(prop_value, bpy.types.bpy_prop_array):
+                    if isinstance(prop_value, Iterable) and not isinstance(prop_value, str):
                         prop_readable_name = props.bl_rna.properties[prop_name].name
                         self.layout.label(text=f"{prop_readable_name}:")
                         self.layout.prop(props, prop_name, text="")
@@ -281,7 +282,7 @@ class BIM_PT_stair(bpy.types.Panel):
                 row = self.layout.row(align=True)
                 for prop_name, prop_value in StairData.data["general_params"].items():
                     row = self.layout.row(align=True)
-                    if isinstance(prop_value, bpy.types.bpy_prop_array):
+                    if isinstance(prop_value, Iterable) and not isinstance(prop_value, str):
                         row.label(text=f"{prop_name}:")
                         row = self.layout.row(align=True)
                         for prop_value_item in prop_value:
