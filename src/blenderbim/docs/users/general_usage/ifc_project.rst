@@ -6,10 +6,10 @@ Overview
 
 .. container:: location-scene
 
-    |location| Scene Properties |>| IFC Project Info |>| IFC Project
+   |location| Scene Properties |>| IFC Project Info |>| IFC Project
 
-    .. |location| image:: ../../images/location-scene.svg
-    .. |>| image:: ../../images/location-breadcrumb.svg
+   .. |location| image:: /images/location-scene.svg
+   .. |>| image:: /images/location-breadcrumb.svg
 
 The IFC Project panel lets you create a new IFC project, load an existing IFC
 project, or view high level project metadata about the currently loaded project.
@@ -104,20 +104,20 @@ Advanced mode
 
 .. image:: images/ifc-project-load.png
 
-.. |FILE| image:: ../../images/icon-FILE.svg
+.. |FILE| image:: /images/icon-FILE.svg
    :class: icon
 
-.. |FILE_CACHE| image:: ../../images/icon-FILE_CACHE.svg
+.. |FILE_CACHE| image:: /images/icon-FILE_CACHE.svg
    :class: icon
 
-.. |FILE_HIDDEN| image:: ../../images/icon-FILE_HIDDEN.svg
+.. |FILE_HIDDEN| image:: /images/icon-FILE_HIDDEN.svg
    :class: icon
 
-.. |GREASEPENCIL| image:: ../../images/icon-GREASEPENCIL.svg
+.. |GREASEPENCIL| image:: /images/icon-GREASEPENCIL.svg
    :class: icon
 
-.. |EXPORT| image:: ../../images/icon-EXPORT.svg
+.. |EXPORT| image:: /images/icon-EXPORT.svg
    :class: icon
 
-.. |FILE_TICK| image:: ../../images/icon-FILE_TICK.svg
+.. |FILE_TICK| image:: /images/icon-FILE_TICK.svg
    :class: icon
