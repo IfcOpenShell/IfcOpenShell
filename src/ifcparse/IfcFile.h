@@ -135,15 +135,15 @@ class IFC_PARSE_API IfcFile {
 
     std::vector<Argument*> internal_attribute_vector_, internal_attribute_vector_simple_type_;
 
-    entity_by_id_t byid;
+    entity_by_id_t byid_;
     // this is for simple types
-    entity_by_iden_t byidentity;
-    entities_by_type_t bytype;
-    entities_by_type_t bytype_excl;
-    entities_by_ref_t byref;
-    entities_by_ref_excl_t byref_excl;
-    entity_by_guid_t byguid;
-    entity_entity_map_t entity_file_map;
+    entity_by_iden_t byidentity_;
+    entities_by_type_t bytype_;
+    entities_by_type_t bytype_excl_;
+    entities_by_ref_t byref_;
+    entities_by_ref_excl_t byref_excl_;
+    entity_by_guid_t byguid_;
+    entity_entity_map_t entity_file_map_;
 
     unsigned int MaxId;
 
@@ -316,7 +316,7 @@ class IFC_PARSE_API IfcFile {
 
     void build_inverses();
 
-    entity_by_guid_t& internal_guid_map() { return byguid; };
+    entity_by_guid_t& internal_guid_map() { return byguid_; };
 };
 
 #ifdef WITH_IFCXML

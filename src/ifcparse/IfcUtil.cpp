@@ -63,32 +63,32 @@
 
 void aggregate_of_instance::push(IfcUtil::IfcBaseClass* l) {
     if (l != nullptr) {
-        ls.push_back(l);
+        list_.push_back(l);
     }
 }
 void aggregate_of_instance::push(const aggregate_of_instance::ptr& l) {
     if (l) {
         for (it i = l->begin(); i != l->end(); ++i) {
             if (*i != nullptr) {
-                ls.push_back(*i);
+                list_.push_back(*i);
             }
         }
     }
 }
-unsigned int aggregate_of_instance::size() const { return (unsigned int)ls.size(); }
-void aggregate_of_instance::reserve(unsigned capacity) { ls.reserve((size_t)capacity); }
-aggregate_of_instance::it aggregate_of_instance::begin() { return ls.begin(); }
-aggregate_of_instance::it aggregate_of_instance::end() { return ls.end(); }
+unsigned int aggregate_of_instance::size() const { return (unsigned int)list_.size(); }
+void aggregate_of_instance::reserve(unsigned capacity) { list_.reserve((size_t)capacity); }
+aggregate_of_instance::it aggregate_of_instance::begin() { return list_.begin(); }
+aggregate_of_instance::it aggregate_of_instance::end() { return list_.end(); }
 IfcUtil::IfcBaseClass* aggregate_of_instance::operator[](int i) {
-    return ls[i];
+    return list_[i];
 }
 bool aggregate_of_instance::contains(IfcUtil::IfcBaseClass* instance) const {
-    return std::find(ls.begin(), ls.end(), instance) != ls.end();
+    return std::find(list_.begin(), list_.end(), instance) != list_.end();
 }
 void aggregate_of_instance::remove(IfcUtil::IfcBaseClass* instance) {
     std::vector<IfcUtil::IfcBaseClass*>::iterator it;
-    while ((it = std::find(ls.begin(), ls.end(), instance)) != ls.end()) {
-        ls.erase(it);
+    while ((it = std::find(list_.begin(), list_.end(), instance)) != list_.end()) {
+        list_.erase(it);
     }
 }
 

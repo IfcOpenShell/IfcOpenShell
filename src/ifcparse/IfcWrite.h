@@ -115,12 +115,12 @@ class IFC_PARSE_API IfcWriteArgument : public Argument {
         std::vector<std::vector<double>>,
         // An aggregate of an aggregate of entities. E.g. ((#1, #2), (#3))
         aggregate_of_aggregate_of_instance::ptr>
-        container;
+        container_;
 
   public:
     template <typename T>
     const T& as() const {
-        if (const T* val = boost::get<T>(&container)) {
+        if (const T* val = boost::get<T>(&container_)) {
             return *val;
         }
         throw IfcParse::IfcException("Invalid cast");
@@ -129,7 +129,7 @@ class IFC_PARSE_API IfcWriteArgument : public Argument {
     template <typename T>
     typename boost::disable_if<boost::is_base_of<IfcUtil::IfcBaseInterface, typename boost::remove_pointer<T>::type>, void>::type
     set(const T& t) {
-        container = t;
+        container_ = t;
     }
 
     // Overload to detect null values

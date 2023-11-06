@@ -273,12 +273,12 @@ std::string IfcWriteArgument::toString(bool upper) const {
     std::ostringstream str;
     str.imbue(std::locale::classic());
     StringBuilderVisitor v(str, upper);
-    container.apply_visitor(v);
+    container_.apply_visitor(v);
     return v;
 }
 unsigned int IfcWriteArgument::size() const {
     SizeVisitor v;
-    const int size = container.apply_visitor(v);
+    const int size = container_.apply_visitor(v);
     if (size == -1) {
         throw IfcParse::IfcException("Invalid cast");
     }
@@ -286,32 +286,32 @@ unsigned int IfcWriteArgument::size() const {
 }
 
 IfcUtil::ArgumentType IfcWriteArgument::type() const {
-    return static_cast<IfcUtil::ArgumentType>(container.which());
+    return static_cast<IfcUtil::ArgumentType>(container_.which());
 }
 
 // Overload to detect null values
 void IfcWriteArgument::set(const aggregate_of_instance::ptr& v) {
     if (v) {
-        container = v;
+        container_ = v;
     } else {
-        container = boost::blank();
+        container_ = boost::blank();
     }
 }
 
 // Overload to detect null values
 void IfcWriteArgument::set(const aggregate_of_aggregate_of_instance::ptr& v) {
     if (v) {
-        container = v;
+        container_ = v;
     } else {
-        container = boost::blank();
+        container_ = boost::blank();
     }
 }
 
 // Overload to detect null values
 void IfcWriteArgument::set(IfcUtil::IfcBaseInterface* const& v) {
     if (v != nullptr) {
-        container = v->as<IfcUtil::IfcBaseClass>();
+        container_ = v->as<IfcUtil::IfcBaseClass>();
     } else {
-        container = boost::blank();
+        container_ = boost::blank();
     }
 }

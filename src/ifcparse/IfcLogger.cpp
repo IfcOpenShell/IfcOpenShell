@@ -61,7 +61,7 @@ template <>
 const std::array<std::basic_string<wchar_t>, 5> severity_strings<wchar_t>::value = {L"Performance", L"Debug", L"Notice", L"Warning", L"Error"};
 
 template <typename T>
-void plain_text_message(T& os, const boost::optional<const IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
+void plain_text_message(T& os, const boost::optional<IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
     os << "[" << severity_strings<typename T::char_type>::value[type] << "] ";
     os << "[" << get_time(type <= Logger::LOG_PERF).c_str() << "] ";
     if (current_product) {
@@ -86,7 +86,7 @@ std::basic_string<T> string_as(const std::string& s) {
 }
 
 template <typename T>
-void json_message(T& os, const boost::optional<const IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
+void json_message(T& os, const boost::optional<IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
     boost::property_tree::basic_ptree<std::basic_string<typename T::char_type>, std::basic_string<typename T::char_type>> pt;
 
     // @todo this is crazy
@@ -112,31 +112,31 @@ void json_message(T& os, const boost::optional<const IfcUtil::IfcBaseClass*>& cu
 } // namespace
 
 void Logger::SetProduct(boost::optional<const IfcUtil::IfcBaseClass*> product) {
-    if (verbosity <= LOG_DEBUG && product) {
+    if (verbosity_ <= LOG_DEBUG && product) {
         Message(LOG_DEBUG, "Begin processing", *product);
     }
-    if (!product && print_perf_stats_on_element) {
+    if (!product && print_perf_stats_on_element_) {
         PrintPerformanceStats();
-        performance_statistics.clear();
+        performance_statistics_.clear();
     }
-    current_product = product;
+    current_product_ = product;
 }
 
 void Logger::SetOutput(std::ostream* l1, std::ostream* l2) {
-    wlog1 = wlog2 = 0;
-    log1 = l1;
-    log2 = l2;
-    if (log2 == nullptr) {
-        log2 = &log_stream;
+    wlog1_ = wlog2_ = 0;
+    log1_ = l1;
+    log2_ = l2;
+    if (log2_ == nullptr) {
+        log2_ = &log_stream_;
     }
 }
 
 void Logger::SetOutput(std::wostream* l1, std::wostream* l2) {
-    log1 = log2 = 0;
-    wlog1 = l1;
-    wlog2 = l2;
-    if (wlog2 == nullptr) {
-        log2 = &log_stream;
+    log1_ = log2_ = 0;
+    wlog1_ = l1;
+    wlog2_ = l2;
+    if (wlog2_ == nullptr) {
+        log2_ = &log_stream_;
     }
 }
 
@@ -145,33 +145,33 @@ void Logger::Message(Logger::Severity type, const std::string& message, const If
     std::lock_guard<std::mutex> lk(m);
 
     if (type == LOG_PERF) {
-        if (!first_timepoint) {
-            first_timepoint = std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count();
+        if (!first_timepoint_) {
+            first_timepoint_ = std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count();
         }
-        double t0 = (std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count() - *first_timepoint) / 1.e9;
+        double t0 = (std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count() - *first_timepoint_) / 1.e9;
         if (message.substr(0, 5) == "done ") {
             auto orig = message.substr(5);
-            performance_statistics[orig] += t0 - performance_signal_start[orig];
+            performance_statistics_[orig] += t0 - performance_signal_start_[orig];
         } else {
-            performance_signal_start[message] = t0;
+            performance_signal_start_[message] = t0;
         }
     }
 
-    if (type > max_severity) {
-        max_severity = type;
+    if (type > max_severity_) {
+        max_severity_ = type;
     }
-    if (((log2 != nullptr) || (wlog2 != nullptr)) && type >= verbosity) {
-        if (format == FMT_PLAIN) {
-            if (log2 != nullptr) {
-                plain_text_message(*log2, current_product, type, message, instance);
-            } else if (wlog2 != nullptr) {
-                plain_text_message(*wlog2, current_product, type, message, instance);
+    if (((log2_ != nullptr) || (wlog2_ != nullptr)) && type >= verbosity_) {
+        if (format_ == FMT_PLAIN) {
+            if (log2_ != nullptr) {
+                plain_text_message(*log2_, current_product_, type, message, instance);
+            } else if (wlog2_ != nullptr) {
+                plain_text_message(*wlog2_, current_product_, type, message, instance);
             }
-        } else if (format == FMT_JSON) {
-            if (log2 != nullptr) {
-                json_message(*log2, current_product, type, message, instance);
-            } else if (wlog2 != nullptr) {
-                json_message(*wlog2, current_product, type, message, instance);
+        } else if (format_ == FMT_JSON) {
+            if (log2_ != nullptr) {
+                json_message(*log2_, current_product_, type, message, instance);
+            } else if (wlog2_ != nullptr) {
+                json_message(*wlog2_, current_product_, type, message, instance);
             }
         }
     }
@@ -192,10 +192,10 @@ void status(T& log1, const std::string& message, bool new_line) {
 }
 
 void Logger::Status(const std::string& message, bool new_line) {
-    if (log1 != nullptr) {
-        status(*log1, message, new_line);
-    } else if (wlog1 != nullptr) {
-        status(*wlog1, message, new_line);
+    if (log1_ != nullptr) {
+        status(*log1_, message, new_line);
+    } else if (wlog1_ != nullptr) {
+        status(*wlog1_, message, new_line);
     }
 }
 
@@ -204,12 +204,12 @@ void Logger::ProgressBar(int progress) {
 }
 
 std::string Logger::GetLog() {
-    return log_stream.str();
+    return log_stream_.str();
 }
 
 void Logger::PrintPerformanceStats() {
     std::vector<std::pair<double, std::string>> items;
-    for (auto& p : performance_statistics) {
+    for (auto& p : performance_statistics_) {
         items.push_back({p.second, p.first});
     }
 
@@ -229,24 +229,24 @@ void Logger::PrintPerformanceStats() {
     }
 }
 
-void Logger::Verbosity(Logger::Severity v) { verbosity = v; }
-Logger::Severity Logger::Verbosity() { return verbosity; }
+void Logger::Verbosity(Logger::Severity v) { verbosity_ = v; }
+Logger::Severity Logger::Verbosity() { return verbosity_; }
 
-Logger::Severity Logger::MaxSeverity() { return max_severity; }
+Logger::Severity Logger::MaxSeverity() { return max_severity_; }
 
-void Logger::OutputFormat(Format f) { format = f; }
-Logger::Format Logger::OutputFormat() { return format; }
+void Logger::OutputFormat(Format f) { format_ = f; }
+Logger::Format Logger::OutputFormat() { return format_; }
 
-std::ostream* Logger::log1 = 0;
-std::ostream* Logger::log2 = 0;
-std::wostream* Logger::wlog1 = 0;
-std::wostream* Logger::wlog2 = 0;
-std::stringstream Logger::log_stream;
-Logger::Severity Logger::verbosity = Logger::LOG_NOTICE;
-Logger::Severity Logger::max_severity = Logger::LOG_NOTICE;
-Logger::Format Logger::format = Logger::FMT_PLAIN;
-boost::optional<const IfcUtil::IfcBaseClass*> Logger::current_product;
-boost::optional<long long> Logger::first_timepoint;
-std::map<std::string, double> Logger::performance_statistics;
-std::map<std::string, double> Logger::performance_signal_start;
-bool Logger::print_perf_stats_on_element = false;
+std::ostream* Logger::log1_ = 0;
+std::ostream* Logger::log2_ = 0;
+std::wostream* Logger::wlog1_ = 0;
+std::wostream* Logger::wlog2_ = 0;
+std::stringstream Logger::log_stream_;
+Logger::Severity Logger::verbosity_ = Logger::LOG_NOTICE;
+Logger::Severity Logger::max_severity_ = Logger::LOG_NOTICE;
+Logger::Format Logger::format_ = Logger::FMT_PLAIN;
+boost::optional<IfcUtil::IfcBaseClass*> Logger::current_product_;
+boost::optional<long long> Logger::first_timepoint_;
+std::map<std::string, double> Logger::performance_statistics_;
+std::map<std::string, double> Logger::performance_signal_start_;
+bool Logger::print_perf_stats_on_element_ = false;

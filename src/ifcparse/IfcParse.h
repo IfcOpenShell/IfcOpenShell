@@ -146,7 +146,7 @@ Token NoneTokenPtr();
 /// A stream of tokens to be read from a IfcSpfStream.
 class IFC_PARSE_API IfcSpfLexer {
   private:
-    IfcCharacterDecoder* decoder;
+    IfcCharacterDecoder* decoder_;
     unsigned int skipWhitespace();
     unsigned int skipComment();
 
@@ -219,7 +219,6 @@ class IFC_PARSE_API NullArgument : public Argument {
 /// #1=IfcVector(#2,1.0);
 ///              == ===
 class IFC_PARSE_API TokenArgument : public Argument {
-  private:
   public:
     Token token;
     TokenArgument(const Token& t);
@@ -246,7 +245,7 @@ class IFC_PARSE_API TokenArgument : public Argument {
 ///                        =====================   =====================
 class IFC_PARSE_API EntityArgument : public Argument {
   private:
-    IfcUtil::IfcBaseClass* entity;
+    IfcUtil::IfcBaseClass* entity_;
 
   public:
     EntityArgument(const Token& t);

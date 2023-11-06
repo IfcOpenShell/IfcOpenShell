@@ -89,14 +89,14 @@ void expand(const std::string& s, std::vector<unsigned char>& v) {
 static boost::uuids::basic_random_generator<boost::mt19937> gen;
 
 IfcParse::IfcGlobalId::IfcGlobalId() {
-    uuid_data = gen();
-    std::vector<unsigned char> v(uuid_data.size());
-    std::copy(uuid_data.begin(), uuid_data.end(), v.begin());
-    string_data = compress(&v[0]);
+    uuid_data_ = gen();
+    std::vector<unsigned char> v(uuid_data_.size());
+    std::copy(uuid_data_.begin(), uuid_data_.end(), v.begin());
+    string_data_ = compress(&v[0]);
 #if BOOST_VERSION < 104400
     formatted_string = boost::lexical_cast<std::string>(uuid_data);
 #else
-    formatted_string = boost::uuids::to_string(uuid_data);
+    formatted_string_ = boost::uuids::to_string(uuid_data_);
 #endif
 
 #ifndef NDEBUG
@@ -111,14 +111,14 @@ IfcParse::IfcGlobalId::IfcGlobalId() {
 }
 
 IfcParse::IfcGlobalId::IfcGlobalId(const std::string& s)
-    : string_data(s) {
+    : string_data_(s) {
     std::vector<unsigned char> v;
-    expand(string_data, v);
-    std::copy(v.begin(), v.end(), uuid_data.begin());
+    expand(string_data_, v);
+    std::copy(v.begin(), v.end(), uuid_data_.begin());
 #if BOOST_VERSION < 104400
     formatted_string = boost::lexical_cast<std::string>(uuid_data);
 #else
-    formatted_string = boost::uuids::to_string(uuid_data);
+    formatted_string_ = boost::uuids::to_string(uuid_data_);
 #endif
 
 #ifndef NDEBUG
@@ -130,13 +130,13 @@ IfcParse::IfcGlobalId::IfcGlobalId(const std::string& s)
 }
 
 IfcParse::IfcGlobalId::operator const std::string&() const {
-    return string_data;
+    return string_data_;
 }
 
 IfcParse::IfcGlobalId::operator const boost::uuids::uuid&() const {
-    return uuid_data;
+    return uuid_data_;
 }
 
 const std::string& IfcParse::IfcGlobalId::formatted() const {
-    return formatted_string;
+    return formatted_string_;
 }

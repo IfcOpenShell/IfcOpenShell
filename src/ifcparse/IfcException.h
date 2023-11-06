@@ -36,14 +36,14 @@
 namespace IfcParse {
 class IFC_PARSE_API IfcException : public std::exception {
   private:
-    std::string message;
+    std::string message_;
 
   public:
     IfcException(const std::string& m)
-        : message(m) {}
+        : message_(m) {}
     virtual ~IfcException() throw() {}
     virtual const char* what() const throw() {
-        return message.c_str();
+        return message_.c_str();
     }
 };
 

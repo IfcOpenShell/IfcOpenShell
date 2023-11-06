@@ -517,7 +517,7 @@ class IFC_PARSE_API IfcHierarchyHelper : public IfcParse::IfcFile {
     typename Schema::IfcGeometricRepresentationContext* getRepresentationContext(const std::string&);
 
   private:
-    std::map<std::string, typename Schema::IfcGeometricRepresentationContext*> contexts;
+    std::map<std::string, typename Schema::IfcGeometricRepresentationContext*> contexts_;
 };
 
 #ifdef HAS_SCHEMA_2x3

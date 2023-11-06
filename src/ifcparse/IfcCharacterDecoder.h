@@ -42,7 +42,7 @@ namespace IfcParse {
 
 class IFC_PARSE_API IfcCharacterDecoder {
   private:
-    IfcParse::IfcSpfStream* file;
+    IfcParse::IfcSpfStream* stream_;
     int codepage_;
 
   public:
@@ -72,7 +72,7 @@ namespace IfcWrite {
 
 class IFC_PARSE_API IfcCharacterEncoder {
   private:
-    std::u32string str;
+    std::u32string str_;
 
   public:
     IfcCharacterEncoder(const std::string& input);
