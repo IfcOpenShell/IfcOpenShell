@@ -108,6 +108,51 @@ class TestGetManualBooleans(NewFile):
         assert len(subject.get_manual_booleans(element)) == 2
 
 
+class TestStairCalculatedParams(NewFile):
+    def compare_data(self, pset_data, expected_calculated_data):
+        calculated_data = subject.get_active_stair_calculated_params(pset_data)
+        for key, value in expected_calculated_data.items():
+            assert tool.Cad.is_x(calculated_data[key], value)
+
+    def test_run(self):
+        bpy.ops.bim.create_project()
+        bpy.ops.mesh.add_clever_stair()
+        pset_data_base = {
+            "number_of_treads": 3,
+            "height": 1.0,
+            "tread_run": 0.3,
+            "custom_first_last_tread_run": (0.0, 0.0),
+            "nosing_length": 0.0,
+        }
+        calculated_data_base = {
+            "Number of Risers": 4,
+            "Tread Rise": 0.25,
+            "Length": 1.2,
+        }
+        self.compare_data(pset_data_base, calculated_data_base)
+
+        # custom first and last treads run
+        pset_data = pset_data_base.copy()
+        calculated_data = calculated_data_base.copy()
+        pset_data["custom_first_last_tread_run"] = (0.1, 0.4)
+        calculated_data["Length"] += -0.2 + 0.1
+        self.compare_data(pset_data, calculated_data)
+
+        # overlap affects stair length only by first tread
+        pset_data = pset_data_base.copy()
+        calculated_data = calculated_data_base.copy()
+        pset_data["nosing_length"] = 0.1
+        calculated_data["Length"] += 0.1
+        self.compare_data(pset_data, calculated_data)
+
+        # tread gap
+        pset_data = pset_data_base.copy()
+        calculated_data = calculated_data_base.copy()
+        pset_data["nosing_length"] = -0.1
+        calculated_data["Length"] += 0.1 * pset_data["number_of_treads"]
+        self.compare_data(pset_data, calculated_data)
+
+
 class TestGenerateStair2DProfile(NewFile):
     def compare_data(self, generated_profile, expected_profile):
         verts_gen, edges_gen, faces_gen = generated_profile
