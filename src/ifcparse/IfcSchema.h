@@ -147,8 +147,8 @@ class IFC_PARSE_API declaration {
     mutable const schema_definition* schema_;
 
     std::string& temp_string_() const {
-        static my_thread_local std::string s;
-        return s;
+        static my_thread_local std::string string;
+        return string;
     }
 
   public:
@@ -226,14 +226,14 @@ class IFC_PARSE_API enumeration_type : public declaration {
         return enumeration_items_[i].c_str();
     }
 
-    size_t lookup_enum_offset(const std::string& s) const {
-        size_t i = 0;
-        for (auto it = enumeration_items_.begin(); it != enumeration_items_.end(); ++it, ++i) {
-            if (s == *it) {
-                return i;
+    size_t lookup_enum_offset(const std::string& string) const {
+        size_t index = 0;
+        for (auto it = enumeration_items_.begin(); it != enumeration_items_.end(); ++it, ++index) {
+            if (string == *it) {
+                return index;
             }
         }
-        throw IfcParse::IfcException("Unable to find keyword in schema: " + s);
+        throw IfcParse::IfcException("Unable to find keyword in schema: " + string);
     }
 
     virtual const enumeration_type* as_enumeration_type() const { return this; }
@@ -404,10 +404,10 @@ class IFC_PARSE_API entity : public declaration {
             if (index > -1) {
                 index += current->attributes().size();
             } else {
-                std::vector<const attribute*>::const_iterator it;
-                it = std::find(current->attributes().begin(), current->attributes().end(), attr);
-                if (it != current->attributes().end()) {
-                    index = std::distance(current->attributes().begin(), it);
+                std::vector<const attribute*>::const_iterator iter;
+                iter = std::find(current->attributes().begin(), current->attributes().end(), attr);
+                if (iter != current->attributes().end()) {
+                    index = std::distance(current->attributes().begin(), iter);
                 }
             }
         } while ((current = current->supertype_) != 0);
@@ -422,10 +422,10 @@ class IFC_PARSE_API entity : public declaration {
             if (index > -1) {
                 index += current->attributes().size();
             } else {
-                std::vector<const attribute*>::const_iterator it;
-                it = std::find_if(current->attributes().begin(), current->attributes().end(), cmp);
-                if (it != current->attributes().end()) {
-                    index = std::distance(current->attributes().begin(), it);
+                std::vector<const attribute*>::const_iterator iter;
+                iter = std::find_if(current->attributes().begin(), current->attributes().end(), cmp);
+                if (iter != current->attributes().end()) {
+                    index = std::distance(current->attributes().begin(), iter);
                 }
             }
         } while ((current = current->supertype_) != 0);
@@ -464,16 +464,16 @@ class IFC_PARSE_API schema_definition {
 
     class declaration_by_index_sort {
       public:
-        bool operator()(const declaration* a, const declaration* b) {
-            return a->index_in_schema() < b->index_in_schema();
+        bool operator()(const declaration* lhs, const declaration* rhs) {
+            return lhs->index_in_schema() < rhs->index_in_schema();
         }
     };
 
     instance_factory* factory_;
 
     std::string& temp_string_() const {
-        static my_thread_local std::string s;
-        return s;
+        static my_thread_local std::string string;
+        return string;
     }
 
   public:
@@ -483,16 +483,16 @@ class IFC_PARSE_API schema_definition {
 
     const declaration* declaration_by_name(const std::string& name) const {
         const std::string* name_ptr = &name;
-        if (std::any_of(name.begin(), name.end(), [](char c) { return std::islower(c); })) {
+        if (std::any_of(name.begin(), name.end(), [](char character) { return std::islower(character); })) {
             temp_string_() = name;
             boost::to_upper(temp_string_());
             name_ptr = &temp_string_();
         }
-        std::vector<const declaration*>::const_iterator it = std::lower_bound(declarations_.begin(), declarations_.end(), *name_ptr, declaration_by_name_cmp());
-        if (it == declarations_.end() || (**it).name_uc() != *name_ptr) {
+        std::vector<const declaration*>::const_iterator iter = std::lower_bound(declarations_.begin(), declarations_.end(), *name_ptr, declaration_by_name_cmp());
+        if (iter == declarations_.end() || (**iter).name_uc() != *name_ptr) {
             throw IfcParse::IfcException("Entity with name '" + name + "' not found in schema '" + name_ + "'");
         }
-        return *it;
+        return *iter;
     }
 
     const declaration* declaration_by_name(int name) const {

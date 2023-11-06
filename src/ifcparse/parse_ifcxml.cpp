@@ -91,64 +91,64 @@ class stack_node {
 
   public:
     static stack_node instance(const std::string& id_in_file, IfcUtil::IfcBaseClass* inst) {
-        stack_node n;
-        n.type_ = node_instance;
-        n.inst_ = inst;
-        n.id_in_file_ = id_in_file;
-        return n;
+        stack_node node;
+        node.type_ = node_instance;
+        node.inst_ = inst;
+        node.id_in_file_ = id_in_file;
+        return node;
     }
 
     static stack_node instance_attribute(IfcUtil::IfcBaseClass* inst, int idx) {
-        stack_node n;
-        n.type_ = node_instance_attribute;
-        n.inst_ = inst;
-        n.idx_ = idx;
-        return n;
+        stack_node node;
+        node.type_ = node_instance_attribute;
+        node.inst_ = inst;
+        node.idx_ = idx;
+        return node;
     }
 
     static stack_node aggregate(IfcUtil::IfcBaseClass* inst, int idx) {
-        stack_node n;
-        n.type_ = node_aggregate;
-        n.inst_ = inst;
-        n.idx_ = idx;
-        return n;
+        stack_node node;
+        node.type_ = node_aggregate;
+        node.inst_ = inst;
+        node.idx_ = idx;
+        return node;
     }
 
     static stack_node aggregate_element(const IfcParse::parameter_type* aggregate_elem_type, int idx) {
-        stack_node n;
-        n.type_ = node_aggregate_element;
-        n.idx_ = idx;
-        n.aggregate_elem_type_ = aggregate_elem_type;
-        return n;
+        stack_node node;
+        node.type_ = node_aggregate_element;
+        node.idx_ = idx;
+        node.aggregate_elem_type_ = aggregate_elem_type;
+        return node;
     }
 
     static stack_node inverse(IfcUtil::IfcBaseClass* inst, const IfcParse::inverse_attribute* inv) {
-        stack_node n;
-        n.type_ = node_inverse;
-        n.inst_ = inst;
-        n.inv_ = inv;
-        return n;
+        stack_node node;
+        node.type_ = node_inverse;
+        node.inst_ = inst;
+        node.inv_ = inv;
+        return node;
     }
 
     static stack_node select(IfcUtil::IfcBaseClass* inst, int idx) {
-        stack_node n;
-        n.type_ = node_select;
-        n.inst_ = inst;
-        n.idx_ = idx;
-        return n;
+        stack_node node;
+        node.type_ = node_select;
+        node.inst_ = inst;
+        node.idx_ = idx;
+        return node;
     }
 
     static stack_node header() {
-        stack_node n;
-        n.type_ = node_header;
-        return n;
+        stack_node node;
+        node.type_ = node_header;
+        return node;
     };
 
     static stack_node header_entry(const std::string& tagname) {
-        stack_node n;
-        n.type_ = node_header_entry;
-        n.tagname_ = tagname;
-        return n;
+        stack_node node;
+        node.type_ = node_header_entry;
+        node.tagname_ = tagname;
+        return node;
     };
 
     node_type ntype() const { return type_; }
@@ -161,19 +161,19 @@ class stack_node {
     const IfcParse::parameter_type* aggregate_elem_type() const { return aggregate_elem_type_; }
 
     std::string repr() const {
-        std::stringstream ss;
+        std::stringstream stream;
         static const char* const node_type_names[] = {"empty", "inst", "attr", "aggr", "agelem", "inv", "sel", "head", "hdentry"};
-        ss << "[" << node_type_names[type_] << "] ";
+        stream << "[" << node_type_names[type_] << "] ";
         if (inst_ != nullptr) {
-            ss << inst_->declaration().name() << " ";
+            stream << inst_->declaration().name() << " ";
         }
         if (type_ == node_aggregate) {
-            ss << "{" << aggregate_elements.size() << " elems} ";
+            stream << "{" << aggregate_elements.size() << " elems} ";
         }
         if (idx_ != -1) {
-            ss << idx_ << " ";
+            stream << idx_ << " ";
         }
-        return ss.str();
+        return stream.str();
     }
 };
 
@@ -190,7 +190,7 @@ template <typename T>
 std::vector<T> split(const std::string& value) {
     std::vector<std::string> strs;
     boost::split(
-        strs, value, [](char c) { return c == ' '; }, boost::token_compress_on);
+        strs, value, [](char character) { return character == ' '; }, boost::token_compress_on);
     std::vector<T> r(strs.size());
     boost::copy(strs | boost::adaptors::transformed([](const std::string& s) {
                     return boost::lexical_cast<T>(s);
@@ -209,13 +209,13 @@ Argument* parse_attribute_value(const IfcParse::parameter_type* ty, const std::s
     } else if (cpp_type == IfcUtil::Argument_ENUMERATION) {
         const auto* enum_type = ty->as_named_type()->declared_type()->as_enumeration_type();
 
-        std::vector<std::string>::const_iterator it = std::find(
+        std::vector<std::string>::const_iterator iter = std::find(
             enum_type->enumeration_items().begin(),
             enum_type->enumeration_items().end(),
             boost::to_upper_copy(value));
 
-        if (it != enum_type->enumeration_items().end()) {
-            v->set(IfcWrite::IfcWriteArgument::EnumerationReference(it - enum_type->enumeration_items().begin(), it->c_str()));
+        if (iter != enum_type->enumeration_items().end()) {
+            v->set(IfcWrite::IfcWriteArgument::EnumerationReference(iter - enum_type->enumeration_items().begin(), iter->c_str()));
         }
     } else if (cpp_type == IfcUtil::Argument_INT) {
         v->set(boost::lexical_cast<int>(value));
@@ -248,12 +248,12 @@ static void end_element(void* user, const xmlChar* tag) {
     if (!state->stack.empty() && state->stack.back().ntype() == stack_node::node_aggregate) {
         const auto& back = state->stack.back();
         auto& elems = state->stack.back().aggregate_elements;
-        auto* li = new IfcParse::ArgumentList(elems.size());
+        auto* list = new IfcParse::ArgumentList(elems.size());
         size_t i = 0;
         for (auto& elem : elems) {
-            li->arguments()[i++] = elem;
+            list->arguments()[i++] = elem;
         }
-        back.inst()->data().attributes()[back.idx()] = li;
+        back.inst()->data().attributes()[back.idx()] = list;
     }
 
     if (state->dialect == ifcxml_dialect_ifc2x3 && state->stack.back().ntype() == stack_node::node_instance) {
@@ -274,14 +274,14 @@ static void end_element(void* user, const xmlChar* tag) {
     }
 }
 
-static void process_characters(void* user, const xmlChar* ch, int len) {
+static void process_characters(void* user, const xmlChar* character, int len) {
     ifcxml_parse_state* state = (ifcxml_parse_state*)user;
 
     if (state->file == nullptr) {
         return;
     }
 
-    std::string txt((char*)ch, len);
+    std::string txt((char*)character, len);
 
     stack_node::node_type state_type = stack_node::stack_empty;
     if (!state->stack.empty()) {
@@ -348,8 +348,8 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
     std::cout << "stack:" << std::endl;
     {
         int i = 1;
-        for (auto& n : state->stack) {
-            std::cout << "  " << (i++) << ":" << n.repr() << std::endl;
+        for (auto& node : state->stack) {
+            std::cout << "  " << (i++) << ":" << node.repr() << std::endl;
         }
     }
     std::cout << std::string(state->stack.size(), ' ') << "<" << tagname << ">";

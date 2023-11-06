@@ -38,7 +38,7 @@ class IfcBaseClass;
 IFC_PARSE_API const char* ArgumentTypeToString(ArgumentType argument_type);
 
 /// Returns false when the string `s` contains character outside of {'0', '1'}
-IFC_PARSE_API bool valid_binary_string(const std::string& s);
+IFC_PARSE_API bool valid_binary_string(const std::string& string);
 } // namespace IfcUtil
 
 class IFC_PARSE_API Argument {
@@ -65,7 +65,7 @@ class IFC_PARSE_API Argument {
     virtual unsigned int size() const = 0;
 
     virtual IfcUtil::ArgumentType type() const = 0;
-    virtual Argument* operator[](unsigned int i) const = 0;
+    virtual Argument* operator[](unsigned int index) const = 0;
     virtual std::string toString(bool upper = false) const = 0;
 
     virtual ~Argument(){};

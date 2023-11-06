@@ -42,8 +42,8 @@ std::string get_time(bool with_milliseconds = false) {
 
     if (with_milliseconds) {
         auto now_chrono = std::chrono::system_clock::now();
-        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now_chrono.time_since_epoch()) % 1000;
-        oss << '.' << std::setfill('0') << std::setw(3) << ms.count();
+        auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(now_chrono.time_since_epoch()) % 1000;
+        oss << '.' << std::setfill('0') << std::setw(3) << milliseconds.count();
     }
 
     return oss.str();
@@ -61,33 +61,33 @@ template <>
 const std::array<std::basic_string<wchar_t>, 5> severity_strings<wchar_t>::value = {L"Performance", L"Debug", L"Notice", L"Warning", L"Error"};
 
 template <typename T>
-void plain_text_message(T& os, const boost::optional<IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
-    os << "[" << severity_strings<typename T::char_type>::value[type] << "] ";
-    os << "[" << get_time(type <= Logger::LOG_PERF).c_str() << "] ";
+void plain_text_message(T& out, const boost::optional<IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
+    out << "[" << severity_strings<typename T::char_type>::value[type] << "] ";
+    out << "[" << get_time(type <= Logger::LOG_PERF).c_str() << "] ";
     if (current_product) {
         std::string global_id = *((IfcUtil::IfcBaseEntity*)*current_product)->get("GlobalId");
-        os << "{" << global_id.c_str() << "} ";
+        out << "{" << global_id.c_str() << "} ";
     }
-    os << message.c_str() << std::endl;
+    out << message.c_str() << std::endl;
     if (instance) {
         std::string instance_string = instance->data().toString();
         if (instance_string.size() > 259) {
             instance_string = instance_string.substr(0, 256) + "...";
         }
-        os << instance_string.c_str() << std::endl;
+        out << instance_string.c_str() << std::endl;
     }
 }
 
 template <typename T>
-std::basic_string<T> string_as(const std::string& s) {
-    std::basic_string<T> v;
-    v.assign(s.begin(), s.end());
-    return v;
+std::basic_string<T> string_as(const std::string& string) {
+    std::basic_string<T> result;
+    result.assign(string.begin(), string.end());
+    return result;
 }
 
 template <typename T>
-void json_message(T& os, const boost::optional<IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
-    boost::property_tree::basic_ptree<std::basic_string<typename T::char_type>, std::basic_string<typename T::char_type>> pt;
+void json_message(T& out, const boost::optional<IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
+    boost::property_tree::basic_ptree<std::basic_string<typename T::char_type>, std::basic_string<typename T::char_type>> property_tree;
 
     // @todo this is crazy
     static const typename T::char_type time_string[] = {'t', 'i', 'm', 'e', 0};
@@ -96,18 +96,18 @@ void json_message(T& os, const boost::optional<IfcUtil::IfcBaseClass*>& current_
     static const typename T::char_type message_string[] = {'m', 'e', 's', 's', 'a', 'g', 'e', 0};
     static const typename T::char_type instance_string[] = {'i', 'n', 's', 't', 'a', 'n', 'c', 'e', 0};
 
-    pt.put(level_string, severity_strings<typename T::char_type>::value[type]);
+    property_tree.put(level_string, severity_strings<typename T::char_type>::value[type]);
     if (current_product) {
-        pt.put(product_string, string_as<typename T::char_type>((**current_product).data().toString()));
+        property_tree.put(product_string, string_as<typename T::char_type>((**current_product).data().toString()));
     }
-    pt.put(message_string, string_as<typename T::char_type>(message));
+    property_tree.put(message_string, string_as<typename T::char_type>(message));
     if (instance) {
-        pt.put(instance_string, string_as<typename T::char_type>(instance->data().toString()));
+        property_tree.put(instance_string, string_as<typename T::char_type>(instance->data().toString()));
     }
 
-    pt.put(time_string, string_as<typename T::char_type>(get_time()));
+    property_tree.put(time_string, string_as<typename T::char_type>(get_time()));
 
-    boost::property_tree::write_json(os, pt, false);
+    boost::property_tree::write_json(out, property_tree, false);
 }
 } // namespace
 
@@ -122,27 +122,27 @@ void Logger::SetProduct(boost::optional<const IfcUtil::IfcBaseClass*> product) {
     current_product_ = product;
 }
 
-void Logger::SetOutput(std::ostream* l1, std::ostream* l2) {
+void Logger::SetOutput(std::ostream* stream1, std::ostream* stream2) {
     wlog1_ = wlog2_ = 0;
-    log1_ = l1;
-    log2_ = l2;
+    log1_ = stream1;
+    log2_ = stream2;
     if (log2_ == nullptr) {
         log2_ = &log_stream_;
     }
 }
 
-void Logger::SetOutput(std::wostream* l1, std::wostream* l2) {
+void Logger::SetOutput(std::wostream* stream1, std::wostream* stream2) {
     log1_ = log2_ = 0;
-    wlog1_ = l1;
-    wlog2_ = l2;
+    wlog1_ = stream1;
+    wlog2_ = stream2;
     if (wlog2_ == nullptr) {
         log2_ = &log_stream_;
     }
 }
 
 void Logger::Message(Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
-    static std::mutex m;
-    std::lock_guard<std::mutex> lk(m);
+    static std::mutex mtx;
+    std::lock_guard<std::mutex> lock(mtx);
 
     if (type == LOG_PERF) {
         if (!first_timepoint_) {
@@ -209,32 +209,32 @@ std::string Logger::GetLog() {
 
 void Logger::PrintPerformanceStats() {
     std::vector<std::pair<double, std::string>> items;
-    for (auto& p : performance_statistics_) {
-        items.push_back({p.second, p.first});
+    for (auto& stat : performance_statistics_) {
+        items.push_back({stat.second, stat.first});
     }
 
     std::sort(items.begin(), items.end());
     std::reverse(items.begin(), items.end());
 
     size_t max_size = 0;
-    for (auto& p : items) {
-        if (p.second.size() > max_size) {
-            max_size = p.second.size();
+    for (auto& item : items) {
+        if (item.second.size() > max_size) {
+            max_size = item.second.size();
         }
     }
 
-    for (auto& p : items) {
-        auto s = p.second + std::string(max_size - p.second.size(), ' ') + ": " + std::to_string(p.first);
-        Message(LOG_PERF, s);
+    for (auto& item : items) {
+        auto message = item.second + std::string(max_size - item.second.size(), ' ') + ": " + std::to_string(item.first);
+        Message(LOG_PERF, message);
     }
 }
 
-void Logger::Verbosity(Logger::Severity v) { verbosity_ = v; }
+void Logger::Verbosity(Logger::Severity severity) { verbosity_ = severity; }
 Logger::Severity Logger::Verbosity() { return verbosity_; }
 
 Logger::Severity Logger::MaxSeverity() { return max_severity_; }
 
-void Logger::OutputFormat(Format f) { format_ = f; }
+void Logger::OutputFormat(Format format) { format_ = format; }
 Logger::Format Logger::OutputFormat() { return format_; }
 
 std::ostream* Logger::log1_ = 0;
