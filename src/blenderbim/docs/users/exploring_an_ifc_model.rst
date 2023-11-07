@@ -25,20 +25,20 @@ Blender's interface is divided into three panels. The left **Outliner** panel
 shows a tree of geometric objects. The centre main **Viewport** panel shows 3D
 geometry. The right **Properties** panel shows data and relationships.
 
-.. image:: blenderbim-layout.png
+.. image:: images/blenderbim-layout.png
 
 The **Properties** panel has tabs to switch between different types of
 properties.
 
-.. image:: properties-tabs.png
+.. image:: images/properties-tabs.png
 
 Click on ``File > Open IFC Project`` and browse to your ``.ifc`` file.
 
-.. image:: properties-loadproject.png
+.. image:: images/properties-loadproject.png
 
 After loading, you will see the model appear in the **Viewport** panel.
 
-.. image:: example-project.png
+.. image:: images/example-project.png
 
 Take a look at the **Project Info** subpanel. It shows the loaded filename, as
 well as the **IFC Schema**. There are two commonly seen **IFC Schema**
@@ -65,7 +65,7 @@ orthographic view.
 To switch to a top view, front view, or side view, click the relevant axis on
 the **Navigate Gizmo**.
 
-.. image:: navigate-gizmo.png
+.. image:: images/navigate-gizmo.png
 
 You can also use your mouse to navigate. Hover your mouse over the **Viewport**
 panel and click and drag the Middle Mouse Button (``MMB``) to **Orbit**. Scroll
@@ -91,7 +91,7 @@ is the ``.`` button on the numpad. After zooming into an element, when you
 You can also zoom to all objects in the project by clicking on ``View > Frame
 All``.
 
-.. image:: frame-selected.png
+.. image:: images/frame-selected.png
 
 Another good way to navigate is by flying or walking around similar to a video
 game. Choose ``View > Navigation > Walk Navigation``, or use the ``Shift-```
@@ -105,7 +105,7 @@ Sometimes, you want to look through objects. You can toggle **X-Ray Mode** by
 pressing the button on the top right of the **Viewport** panel. The hotkey is
 ``Alt-Z``.
 
-.. image:: x-ray-mode.png
+.. image:: images/x-ray-mode.png
 
 .. tip::
 
@@ -127,7 +127,7 @@ represents the type of object, and the name is the name of the object.  Examples
 of classes you will see are ``IfcBuilding``, or ``IfcWall``. This naming
 convention makes it easy to quickly spot types of objects.
 
-.. image:: outliner.png
+.. image:: images/outliner.png
 
 Objects are organised in a hierarchy. By default, this hierarchy represents a
 breakdown of spaces, from large spaces such as a site and a building, down to
@@ -144,7 +144,7 @@ hierarchy.
 When there are lots of objects, you can type a name in the filter box to quickly
 identify objects by name or type.
 
-.. image:: outliner-filter.png
+.. image:: images/outliner-filter.png
 
 Clicking on an object in the **Outliner** panel also selects the corresponding
 object in the **Viewport** panel. A good strategy to find objects is to then use
@@ -159,7 +159,7 @@ next to the **IfcProject** collection. This will hide everything in the project.
 Then navigate through the hierarchy and enable the **Tick Icon** next to an
 **IfcBuildingStory**.
 
-.. image:: outliner-isolate.png
+.. image:: images/outliner-isolate.png
 
 Viewing element classes
 -----------------------
@@ -185,7 +185,7 @@ To view an object's class, click on an object in the **Viewport** or **Outliner*
 panel, then switch to the **Object Information** tab in the **Properties** panel.
 You can see the **Class** name in the **Object Metadata** subpanel.
 
-.. image:: element-class.png
+.. image:: images/element-class.png
 
 In this case, the **Class** of our roof is an **IfcSlab**. You'll notice this is
 the same **Class** name used as a prefix for the object name in the **Outliner**
@@ -221,7 +221,7 @@ Press the **Select Icon** to select all objects that are of the same
 hide elements instead, you can use ``Object > Show/Hidden > Hide Selected``
 (hotkey ``H``).
 
-.. image:: element-class-select.png
+.. image:: images/element-class-select.png
 
 .. note::
 
@@ -234,7 +234,7 @@ click on the bottom right status bar and enable **Scene Statistics** you will
 see information like **Objects 4/4**, which means that 4 objects are selected
 out of 4 available objects. This is a great way of counting objects like toilets.
 
-.. image:: scene-statistics.png
+.. image:: images/scene-statistics.png
 
 Viewing attributes and properties
 ---------------------------------
@@ -246,7 +246,7 @@ Let's focus on **Attributes** first. Scroll down to the **Attributes**
 subpanel. **Attributes** are a limited set of fundamental data (usually less
 than 10) associated with all IFC elements. These are fixed by the IFC standard.
 
-.. image:: attributes.png
+.. image:: images/attributes.png
 
 Here are some common attributes and what they mean:
 
@@ -277,7 +277,7 @@ Sets**. Each **Property Set** also has a name.
 
 You can find **Properties** in the **Object Property Sets** subpanel.
 
-.. image:: psets.png
+.. image:: images/psets.png
 
 Some very common **Properties** are standardised by international BIM standards.
 For example, the load bearing **Property** of a beam should always be called
@@ -301,7 +301,7 @@ quantities defined as part of the international standard, denoted by the prefix
 
 You can find **Quantities** in the **Object Quantity Sets** subpanel.
 
-.. image:: qtos.png
+.. image:: images/qtos.png
 
 Finding the location of objects
 -------------------------------
@@ -322,7 +322,7 @@ Container** subpanel in the **Object Information** tab.
 
 Press the **Select Icon** to select all objects that are in the same location.
 
-.. image:: spatial-container.png
+.. image:: images/spatial-container.png
 
 Checking construction types
 ---------------------------
@@ -338,14 +338,14 @@ three **IfcWallType** objects with those same names in the **Outliner**.
 You can click on these types to see more details about them in the
 **Properties** panel.
 
-.. image:: outliner-types.png
+.. image:: images/outliner-types.png
 
 When selecting an object, you can also see its construction type in **Object
 Information** under the **Type** subpanel. You can press the **Select Icon** to
 select all objects that are of the same **Construction Type**. You can use the
 hide and isolate hotkeys to quickly view them in the model.
 
-.. image:: properties-types.png
+.. image:: images/properties-types.png
 
 A **Construction Type** defines properties that are common to all occurrences of
 that type. For example, if a wall type specifies a fire rating property, then
@@ -362,7 +362,7 @@ the **Outliner** by pressing the **Visibility Icon**. Then, select a type, and
 click on ``View > Local View > Toggle Local View`` (hotkey ``/``) in the
 **Viewport**. Toggle the view to see the entire model again.
 
-.. image:: type-local-view.png
+.. image:: images/type-local-view.png
 
 .. note::
 
@@ -385,7 +385,7 @@ subpanel in the **Geometry and Materials** tab.
 Press the **Select Icon** to select all objects that are of the selected
 material.
 
-.. image:: materials.png
+.. image:: images/materials.png
 
 Taking simple measurements
 --------------------------
@@ -398,13 +398,13 @@ Sometimes, you may wish to take manual measurements yourself. You can view the
 overall X, Y, and Z dimensions of the currently selected object in the
 **Derived Coordinates** subpanel in the **Geometry and Materials** tab.
 
-.. image:: dimensions.png
+.. image:: images/dimensions.png
 
 Another way to manually measure from two points is to use the **Measure** tool.
 First, press the **Snap Icon** to enable snapping. Then choose snap targets in
 the **Snap Menu** in the top middle section of the **Viewport** panel.
 
-.. image:: snap-targets.png
+.. image:: images/snap-targets.png
 
 .. tip::
 
@@ -421,7 +421,7 @@ line along the X axis. Alternatively, press the ``Y`` or ``Z`` key to lock the
 measurement line along the Y or Z axis. Let go of the mouse to finish your
 measurement.
 
-.. image:: measure-tool.png
+.. image:: images/measure-tool.png
 
 To delete a measurement, just click on one point of the measurement, and press
 the ``Delete`` key. You can also click and drag the ends of your measurement
