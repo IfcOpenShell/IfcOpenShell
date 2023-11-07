@@ -31,12 +31,12 @@ Installation
 
    Open up Blender, and click on ``Edit > Preferences``.
 
-   .. image:: install-blenderbim-1.png
+   .. image:: images/install-blenderbim-1.png
 
    Select the **Add-ons** tab, and press **Install...** on the top right. Navigate
    to the .zip you downloaded in Step 2, and press **Install Add-on**.
 
-   .. image:: install-blenderbim-2.png
+   .. image:: images/install-blenderbim-2.png
 
    .. warning::
    
@@ -44,11 +44,11 @@ Installation
 
    You should now see **Import-Export: BlenderBIM** available in your add-ons list. Enable the add-on by pressing the checkbox.
 
-   .. image:: install-blenderbim-3.png
+   .. image:: images/install-blenderbim-3.png
 
 All done! Your interface will now look similar to below. If you check the ``File`` menu you should also see an option to ``Open IFC Project``.
 
-.. image:: install-blenderbim-4.png
+.. image:: images/install-blenderbim-4.png
 
 You can enable add-ons permanently by using ``Save User Settings`` from the Addons menu.
 
