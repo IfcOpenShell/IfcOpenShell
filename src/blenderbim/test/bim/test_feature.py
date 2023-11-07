@@ -837,3 +837,28 @@ def run_pdb():
     import pdb
 
     pdb.set_trace()
+
+@then(parsers.parse('the object "{obj_name1}" has a connection with "{obj_name2}"'))
+def the_obj1_has_a_connection_with_obj2(obj_name1, obj_name2):
+    element1 = replace_variables(obj_name1)
+    element1 = tool.Ifc.get_entity(the_object_name_exists(element1))
+    element2 = replace_variables(obj_name2)
+    element2 = tool.Ifc.get_entity(the_object_name_exists(element2))
+    connections = []
+    if hasattr(element1, "ConnectedTo") and element1.ConnectedTo:
+        connections = [connection for connection in element1.ConnectedTo]
+    elif hasattr(element1, "ConnectedFrom") and element1.ConnectedFrom:
+        connections = [connection for connection in element1.ConnectedFrom]
+    else:
+        assert False, f'Object "{obj_name1}" has no connections'
+        
+
+    relationships = {}
+    for conn in connections:
+        relationships[conn.RelatedElement] = conn.RelatingElement
+
+    for key, value in relationships.items():
+        print(key, value)
+        # assert False, f"1-{key} and {element1.id()} and {key.id()}"
+        assert (key.id() == element1.id() and value.id() == element2.id()) or (key.id() == element2.id() and value.id() == element1.id()), f"The object {obj_name1} is connected to {obj_name2}"
+    
