@@ -30,7 +30,7 @@ You can check whether or not your model is georeferenced in the **IFC
 Georeferencing** panel in the **Scene Properties** tab. You should see a section
 for the **Projected CRS** with an EPSG code.
 
-.. image:: projectedcrs.png
+.. image:: images/projectedcrs.png
 
 If you do not see this, your project is not georeferenced.
 
@@ -59,7 +59,7 @@ Northings.  Similarly, the model's +Y axis will point to **Grid North**.  As
 there is no **Map Conversion** involved, you will see a 0 in the Eastings,
 Northings, and Orthogonal Height in the **IFC Georeferencing** panel.
 
-.. image:: mapcoordinates.png
+.. image:: images/mapcoordinates.png
 
 When **Local engineering coordinates** are used, typically the architect will
 nominate a local origin and model geometry will be drawn orthogonally (i.e.
@@ -71,7 +71,7 @@ North**. The surveyor will then provide the necessary **Map Conversion**
 parameters to convert from **Local engineering coordinates** to Eastings,
 Northings, Orthogonal Height, and **Grid North**.
 
-.. image:: mapconversion.png
+.. image:: images/mapconversion.png
 
 .. warning::
 
@@ -96,7 +96,7 @@ abscissa of 1 and ordinate of 0. This default (1, 0) vector implies **Project
 East** and **Grid East** coalign, which means there is no rotation between
 **Project North** and **Grid North**.
 
-.. image:: xaxisabscissaordinate.png
+.. image:: images/xaxisabscissaordinate.png
 
 .. tip::
     
@@ -132,7 +132,7 @@ Georeferencing** panel under the **Blender Offset** header. It
 is very similar to a **Map Conversion**, but it will not have a scale and only
 temporarily affects your Blender session.
 
-.. image:: blenderoffset.png
+.. image:: images/blenderoffset.png
 
 .. note::
 
@@ -149,7 +149,7 @@ Advanced Mode** when loading a project. Then, set the **Distance Limit** (in
 meters) and the **False Origin** coordinate before pressing **Load Project
 Elements**.
 
-.. image:: manualorigin.png
+.. image:: images/manualorigin.png
 
 When a false origin is used, there are two possible methods to offset objects by
 the false origin.
@@ -163,7 +163,7 @@ check the "Blender Offset" property in the **Transform** panel in the **Object
 Properties**. This is an advanced property used by powerusers to debug
 coordinate issues and may be safely ignored by most users.
 
-.. image:: offsetmode.png
+.. image:: images/offsetmode.png
 
 Incorrect coordinate use
 ------------------------
@@ -198,7 +198,7 @@ in your coordinate in the **Input** field. Press either the **Local to Global**
 or **Global to Local** button to convert the coordinate. You will see the result
 of the calculation in the **Output** field.
 
-.. image:: coordinateconversion.png
+.. image:: images/coordinateconversion.png
 
 True north
 ----------
@@ -222,7 +222,7 @@ vector, but it should be only used as a reference, never used as a way to
 coordinate model rotations, and always with the understanding that it is not a
 fixed value.
 
-.. image:: truenorth.png
+.. image:: images/truenorth.png
 
 .. warning::
 
