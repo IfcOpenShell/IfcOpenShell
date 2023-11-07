@@ -21,7 +21,7 @@ BCF. The same concepts will apply. We can call this Native OpenBIM authoring,
 which is a paradigm shift from traditional BIM which relies on translated IFC
 data.
 
-.. image:: native-openbim.png
+.. image:: images/native-openbim.png
 
 Every user operation reads or writes this data structure in memory, and the IFC
 data becomes the source of truth for all data. There is no such thing as an
@@ -54,7 +54,7 @@ separated into modules. Each module focuses on a particular topic of BIM. Most
 modules are self-contained, but sometimes they connect to one another, just like
 how BIM works.
 
-.. image:: module-architecture.png
+.. image:: images/module-architecture.png
 
 Modules are not arbitrary divisions. They tend to reflect how portions of BIM
 data are segregated in the IFC international standard. This allows us to
@@ -79,7 +79,7 @@ To see the demo module in action, you'll need to enable it. In
 module. When you restart Blender, you will see a new demo panel in your scene
 properties interface tab. Have fun!
 
-.. image:: demo-module.png
+.. image:: images/demo-module.png
 
 Now you're ready to learn how to code! Here are all the files associated with
 the demo module. Feel free to read them in any order. Each file is heavily
@@ -166,7 +166,7 @@ The BlenderBIM Add-on code may be understood in three separate layers: **Deliver
 three layers from one another. Because they are separate, they can be tested and
 built separately.
 
-.. image:: architecture.png
+.. image:: images/architecture.png
 
 The **Delivery** mechanism is how the application is delivered to
 the user and handles user interactions. It covers the interface and triggering
@@ -228,7 +228,7 @@ time the BlenderBIM Add-on interacts with IFC, it uses the IfcOpenShell Python
 bindings, so all IFC data is already deserialised into Python objects. The inner
 workings of the C++ base is out of scope.
 
-.. image:: ifcopenshell-architecture.png
+.. image:: images/ifcopenshell-architecture.png
 
 IfcOpenShell offers a core set of low-level functionality to read and write this
 data. An example of the core functionality would be:
@@ -303,7 +303,7 @@ small, you can submit your changes just using the Github website. Browse to the
 navigate to the file you want to edit the code of. Then just press the edit icon
 to begin editing. When you're done, you'll be prompted to submit your changes.
 
-.. image:: github-editing.png
+.. image:: images/github-editing.png
 
 If you're making a large change, you'll need to create a **Pull Request**.
 Github has an excellent comprehensive guide on `how to contribute to projects

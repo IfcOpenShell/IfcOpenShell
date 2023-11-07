@@ -26,7 +26,7 @@ images. All stroke widths are 3px with a corner radius of 3px.  Horizontal
 underlines are 5px with a corner radius of 2px. The dark green is ``39b54a`` and
 the light green is ``d9e021``.
 
-.. image:: documentation-style.png
+.. image:: images/documentation-style.png
 
 Special keywords such as **Technical Terminology** that the user should be
 aware of should be bolded, titlecased, and used consistently. You *may*
