@@ -907,30 +907,7 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
         self.group_name = "Linked Aggregate"
         old_to_new = {}
 
-        # TODO Maybe this will be unnecessary after Refresh refactor
-        def add_assembly_data(element):
-            
-            data_to_add = {
-                "instance_of": [element.GlobalId],
-            }
-            data = [data_to_add]
-
-            pset = ifcopenshell.api.run(
-                "pset.add_pset", tool.Ifc.get(), product=element, name="BBIM_Linked_Aggregate_Data"
-            )
-
-            ifcopenshell.api.run(
-                "pset.edit_pset",
-                tool.Ifc.get(),
-                pset=pset,
-                properties={"Data": json.dumps(data)},
-            )
-        
         def select_objects_and_add_data(element): 
-            pset = ifcopenshell.util.element.get_pset(selected_element, "BBIM_Linked_Aggregate_Data")
-            if not pset: # TODO Is this still necessary?
-                add_assembly_data(element)
-            
             add_linked_aggregate_group(element)
             obj = tool.Ifc.get_object(element)
             obj.select_set(True)
@@ -939,6 +916,7 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
                 for part in parts:
                     if part.is_a("IfcElementAssembly"):
                         select_objects_and_add_data(part)
+                    add_linked_aggregate_group(part)
                     obj = tool.Ifc.get_object(part)
                     obj.select_set(True)
 
@@ -1090,9 +1068,6 @@ class RefreshLinkedAggregate(bpy.types.Operator):
                 
                 if element_aggregate and new[0].is_a("IfcElementAssembly"):
                     new_aggregate = ifcopenshell.util.element.get_aggregate(new[0])
-                    print("E-", element_aggregate)
-                    print("A-", new_aggregate)
-                    print("N-", new[0])
                     if not new_aggregate:
                         blenderbim.core.aggregate.assign_object(
                                                     tool.Ifc,
@@ -1105,7 +1080,7 @@ class RefreshLinkedAggregate(bpy.types.Operator):
         
         # TODO Add a "Mirror" option that treats the matrix differently
         
-        # TODO think of more edge cases and issues already reported
+        # TODO Think of more edge cases and issues already reported
 
         blenderbim.bim.handler.refresh_ui_data()
 
