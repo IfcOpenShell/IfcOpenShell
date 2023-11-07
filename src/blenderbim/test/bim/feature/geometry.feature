@@ -439,6 +439,62 @@ Scenario: Override duplicate move - copying an aggregate
     And the object "IfcElementAssembly/Assembly.001" is in the collection "IfcElementAssembly/Assembly.001"
     And the collection "IfcElementAssembly/Assembly.001" is in the collection "IfcBuildingStorey/My Storey"
     
+Scenario: Override duplicate move - copying objects with connection
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcWallType') if e.Name == 'WAL100'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    When I press "bim.add_constr_type_instance"
+    Then the object "IfcWall/Wall" is an "IfcWall"
+    And the object "IfcWall/Wall" dimensions are "1,0.1,3"
+    And the object "IfcWall/Wall" bottom left corner is at "0,0,0"
+    When I set "scene.BIMModelProperties.ifc_class" to "IfcSlabType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcSlabType') if e.Name == 'FLR150'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    When I press "bim.add_constr_type_instance"
+    Then the object "IfcSlab/Slab" is an "IfcSlab"
+    When the object "IfcSlab/Slab" is selected
+    And the object "IfcSlab/Slab" is moved to "0,0,4"
+    When I deselect all objects
+    And the object "IfcWall/Wall" is selected
+    And additionally the object "IfcSlab/Slab" is selected
+    When I press "bim.hotkey(hotkey='S_E')"
+    Then the object "IfcWall/Wall" dimensions are "1,0.1,4"
+    When I duplicate the selected objects
+    Then the object "IfcWall/Wall.001" exists
+    And the variable "wall_name" is "[o.name for o in bpy.context.selected_objects if o.name == 'IfcWall/Wall.001'][0]"
+    Then the object "IfcSlab/Slab.001" exists
+    And the variable "slab_name" is "[o.name for o in bpy.context.selected_objects if o.name == 'IfcSlab/Slab.001'][0]"
+    Then the object "{wall_name}" has a connection with "{slab_name}"
+    
+Scenario: Override duplicate move - copying walls with mitre joint
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcWallType') if e.Name == 'WAL100'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.hotkey(hotkey='S_A')"
+    And the cursor is at "0.5,0,0"
+    And I press "bim.hotkey(hotkey='S_A')"
+    And the object "IfcWall/Wall" is selected
+    And additionally the object "IfcWall/Wall.001" is selected
+    When I press "bim.hotkey(hotkey='S_Y')"
+    Then the object "IfcWall/Wall.001" dimensions are "0.5,0.1,3"
+    And the object "IfcWall/Wall.001" bottom left corner is at "0.5,0,0"
+    And the object "IfcWall/Wall" dimensions are "1.1,0.1,3"
+    And the object "IfcWall/Wall" bottom left corner is at "0.5,0.1,0"
+    And the object "IfcWall/Wall" top right corner is at "0.6,-1,3"
+    When I deselect all objects
+    And the object "IfcWall/Wall" is selected
+    And additionally the object "IfcWall/Wall.001" is selected
+    When I duplicate the selected objects
+    Then the object "IfcWall/Wall.002" exists
+    And the variable "wall_name1" is "[o.name for o in bpy.context.selected_objects if o.name == 'IfcWall/Wall.002'][0]"
+    Then the object "IfcWall/Wall.003" exists
+    And the variable "wall_name2" is "[o.name for o in bpy.context.selected_objects if o.name == 'IfcWall/Wall.003'][0]"
+    Then the object "{wall_name1}" has a connection with "{wall_name2}"
+    
 Scenario: Override duplicate move linked - without active IFC data
     Given an empty Blender session
     And I add a cube
