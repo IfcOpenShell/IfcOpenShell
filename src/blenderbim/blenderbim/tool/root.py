@@ -230,6 +230,34 @@ class Root(blenderbim.core.tool.Root):
                 relating_connection=data["relating_connection_type"],
                 related_connection=data["related_connection_type"],
             )
+
+    
+    @classmethod
+    def recreate_assembly(cls, old_to_new):
+        for old, new in old_to_new.items():
+            old_aggregate = ifcopenshell.util.element.get_aggregate(old)
+            if old_aggregate:
+                new_aggregate = old_to_new[old_aggregate]
+                blenderbim.core.aggregate.assign_object(
+                                            tool.Ifc,
+                                            tool.Aggregate,
+                                            tool.Collector,
+                                            relating_obj=tool.Ifc.get_object(new_aggregate[0]),
+                                            related_obj=tool.Ifc.get_object(new[0]),
+                                        )
+                
+                # Make sure that the array children also get reassigned to the correct aggregate
+                pset = ifcopenshell.util.element.get_pset(new[0], "BBIM_Array")
+                if pset:
+                    array_children = tool.Blender.Modifier.Array.get_all_children_objects(new[0])
+                    for obj in array_children:
+                        blenderbim.core.aggregate.assign_object(
+                                                    tool.Ifc,
+                                                    tool.Aggregate,
+                                                    tool.Collector,
+                                                    relating_obj=tool.Ifc.get_object(new_aggregate[0]),
+                                                    related_obj=tool.Ifc.get_object(tool.Ifc.get_entity(obj)),
+                                                )
     
 
     @classmethod
