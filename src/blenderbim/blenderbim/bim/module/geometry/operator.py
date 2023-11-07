@@ -810,7 +810,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
         # Recreate assembly relationship
         for old in old_to_new.keys():
             if old.is_a("IfcElementAssembly"):            
-                OverrideDuplicateMove.recreate_assembly(old_to_new)
+                tool.Root.recreate_assembly(old_to_new)
 
         # Remove connections with old objects and recreates paths
         OverrideDuplicateMove.remove_old_connections(old_to_new)
@@ -856,32 +856,32 @@ class OverrideDuplicateMove(bpy.types.Operator):
 
         return arrays_to_create, array_children
 
-    @staticmethod
-    def recreate_assembly(old_to_new):
-        for old, new in old_to_new.items():
-            old_aggregate = ifcopenshell.util.element.get_aggregate(old)
-            if old_aggregate:
-                new_aggregate = old_to_new[old_aggregate]
-                blenderbim.core.aggregate.assign_object(
-                                            tool.Ifc,
-                                            tool.Aggregate,
-                                            tool.Collector,
-                                            relating_obj=tool.Ifc.get_object(new_aggregate[0]),
-                                            related_obj=tool.Ifc.get_object(new[0]),
-                                        )
+    # @staticmethod
+    # def recreate_assembly(old_to_new):
+    #     for old, new in old_to_new.items():
+    #         old_aggregate = ifcopenshell.util.element.get_aggregate(old)
+    #         if old_aggregate:
+    #             new_aggregate = old_to_new[old_aggregate]
+    #             blenderbim.core.aggregate.assign_object(
+    #                                         tool.Ifc,
+    #                                         tool.Aggregate,
+    #                                         tool.Collector,
+    #                                         relating_obj=tool.Ifc.get_object(new_aggregate[0]),
+    #                                         related_obj=tool.Ifc.get_object(new[0]),
+    #                                     )
                 
-                # Make sure that the array children also get reassigned to the correct aggregate
-                pset = ifcopenshell.util.element.get_pset(new[0], "BBIM_Array")
-                if pset:
-                    array_children = tool.Blender.Modifier.Array.get_all_children_objects(new[0])
-                    for obj in array_children:
-                        blenderbim.core.aggregate.assign_object(
-                                                    tool.Ifc,
-                                                    tool.Aggregate,
-                                                    tool.Collector,
-                                                    relating_obj=tool.Ifc.get_object(new_aggregate[0]),
-                                                    related_obj=tool.Ifc.get_object(tool.Ifc.get_entity(obj)),
-                                                )
+    #             # Make sure that the array children also get reassigned to the correct aggregate
+    #             pset = ifcopenshell.util.element.get_pset(new[0], "BBIM_Array")
+    #             if pset:
+    #                 array_children = tool.Blender.Modifier.Array.get_all_children_objects(new[0])
+    #                 for obj in array_children:
+    #                     blenderbim.core.aggregate.assign_object(
+    #                                                 tool.Ifc,
+    #                                                 tool.Aggregate,
+    #                                                 tool.Collector,
+    #                                                 relating_obj=tool.Ifc.get_object(new_aggregate[0]),
+    #                                                 related_obj=tool.Ifc.get_object(tool.Ifc.get_entity(obj)),
+    #                                             )
 
     def remove_old_connections(old_to_new):
         for new in old_to_new.values():
