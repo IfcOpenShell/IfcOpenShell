@@ -27,6 +27,12 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRepresentation* l, IfcRepresen
 	if ( items->size() ) {
 		for ( IfcSchema::IfcRepresentationItem::list::it it = items->begin(); it != items->end(); ++ it ) {
 			IfcSchema::IfcRepresentationItem* representation_item = *it;
+
+			if(/*TODO: settings.get(CONVERT_IFC_BOUNDING_BOXES) && */representation_item->data().type() == &IfcSchema::IfcBoundingBox::Class()) {
+				part_succes |= true;
+				continue;
+			}
+
 			if ( shape_type(representation_item) == ST_SHAPELIST ) {
 				part_succes |= convert_shapes(*it, shapes);
 			} else {
