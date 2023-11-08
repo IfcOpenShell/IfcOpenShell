@@ -89,9 +89,9 @@ class BIM_PT_object_groups(Panel):
             ObjectGroupsData.load()
         self.props = context.scene.BIMGroupProperties
         row = self.layout.row(align=True)
-        if self.props.is_adding:
+        if self.props.is_editing:
             row.label(text="Adding Groups", icon="OUTLINER")
-            row.operator("bim.toggle_assigning_group", text="", icon="CANCEL")
+            row.operator("bim.disable_group_editing_ui", text="", icon="CANCEL")
             self.layout.template_list(
                 "BIM_UL_object_groups",
                 "",
@@ -102,7 +102,7 @@ class BIM_PT_object_groups(Panel):
             )
         else:
             row.label(text=f"{ObjectGroupsData.data['total_groups']} Groups in IFC Project", icon="OUTLINER")
-            row.operator("bim.toggle_assigning_group", text="", icon="ADD")
+            row.operator("bim.load_groups", text="", icon="GREASEPENCIL")
 
         for group in ObjectGroupsData.data["groups"]:
             row = self.layout.row(align=True)
