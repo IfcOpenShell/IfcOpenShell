@@ -1009,6 +1009,8 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
             segments_intersection_ws, (end_segment_data["start_point"], end_segment_data["end_point"])
         )
 
+        # start_/end_segment_sign indicate
+        # whether segments' z axes are directed towards the bend
         start_port = points_ports_map[start_point]
         end_port = points_ports_map[end_point]
         start_point_on_origin = start_point == start_segment_data["start_point"]
@@ -1077,9 +1079,9 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
         radial_offset = V(0, 0, 0)
         ref_point_radius = self.radius + profile_dim[lateral_axis]
         radial_offset[lateral_axis] = ref_point_radius * (1 - cos(angle)) * lateral_sign
-        radial_offset.z = ref_point_radius * sin(angle)
-        second_object_offset = radial_offset + V(0, 0, self.start_length)
-        second_object_offset += z_axis_end_object_local * (self.end_length * -end_segment_sign)
+        radial_offset.z = ref_point_radius * sin(angle) * start_segment_sign
+        end_port_offset = radial_offset + V(0, 0, self.start_length * start_segment_sign)
+        end_port_offset += z_axis_end_object_local * (self.end_length * -end_segment_sign)
 
         def get_segments_extend():
             segments_intersection = segments_intersection_ws - start_point
@@ -1203,7 +1205,7 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
                 pset=pset,
                 properties={"Data": tool.Ifc.get().createIfcText(json.dumps(bend_data, default=list))},
             )
-            tool.System.add_ports(obj, end_port_pos=second_object_offset)
+            tool.System.add_ports(obj, end_port_pos=end_port_offset)
 
         # NOTE: at this point we loose current blender objects selection
         # create transition element
