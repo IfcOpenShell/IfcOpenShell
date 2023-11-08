@@ -451,11 +451,12 @@ class MEPGenerator:
             # NOTE: I have a feeling that there are cases where order
             # in which we're checking the segments is important
             # but I couldn't pin it down to exact cases
-            for test_segment_data in fitting_data[:]:
+            for test_segment_data in fitting_data:
                 for base_segment_data in segments_data:
                     if not are_segments_compatible(test_segment_data, base_segment_data):
                         continue
-                    segments_data.remove(test_segment_data)
+                    segments_data.remove(base_segment_data)
+                    break
 
             # all segments were sorted
             return len(segments_data) == 0
