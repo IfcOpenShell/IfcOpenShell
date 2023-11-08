@@ -210,7 +210,7 @@ class SystemDecorationData:
             decorated_elements = set(ifcopenshell.util.system.get_system_elements(active_system))
 
         if not decorated_elements:
-            decorated_elements += ObjectSystemData.data["connected_elements"]
+            decorated_elements.update(ObjectSystemData.data["connected_elements"])
 
         return decorated_elements
 
