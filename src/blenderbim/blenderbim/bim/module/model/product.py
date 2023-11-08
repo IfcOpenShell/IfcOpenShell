@@ -249,6 +249,8 @@ class AddConstrTypeInstance(bpy.types.Operator):
             mat.translation *= unit_scale
             mat = obj.matrix_world @ mat
             new_port = tool.Ifc.run("root.create_entity", ifc_class="IfcDistributionPort")
+            new_port.PredefinedType = port.PredefinedType
+            new_port.SystemType = port.SystemType
             tool.Ifc.run("system.assign_port", element=element, port=new_port)
             tool.Ifc.run("geometry.edit_object_placement", product=new_port, matrix=mat, is_si=True)
 
