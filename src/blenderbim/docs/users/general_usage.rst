@@ -9,4 +9,5 @@ and exploring models.
    :maxdepth: 1
    :caption: Contents:
 
+   general_usage/interface
    general_usage/ifc_project
