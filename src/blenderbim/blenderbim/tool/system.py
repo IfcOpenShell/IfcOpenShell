@@ -50,9 +50,9 @@ class System(blenderbim.core.tool.System):
         length = bbox["min_z"] if tool.Cad.is_x(bbox["max_z"], 0) else bbox["max_z"]
         ports = []
         if add_start_port:
-            ports.append(add_port(mep_element, obj.matrix_world @ Matrix()))
+            ports.append(add_port(mep_element, obj.matrix_world))
         if add_end_port:
-            m = obj.matrix_world
+            m = obj.matrix_world.copy()
             if end_port_pos:
                 m.translation = end_port_pos
             else:
