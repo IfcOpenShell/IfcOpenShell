@@ -6,6 +6,6 @@ FILE_SCHEMA(('IFC4'));
 ENDSEC;
 DATA;
 #1=IFCWINDOWLININGPROPERTIES('28587KCHn5nOtS14mudQ45',$,$,$,$,$,$,$,$,$,$,$,$,$,$,$);
-#2=IFCWINDOWTYPE('1KvP7IY7D8aBiPWa0yrcu2',$,'WindowType',$,$,(#1),$,$,$,$,$,$,$);
+#2=IFCWINDOWTYPE('1KvP7IY7D8aBiPWa0yrcu2',$,'WindowType',$,$,(#1),$,$,$,.NOTDEFINED.,.NOTDEFINED.,$,$);
 ENDSEC;
 END-ISO-10303-21;
