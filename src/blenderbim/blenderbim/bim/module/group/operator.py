@@ -173,16 +173,6 @@ class DisableEditingGroup(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class ToggleAssigningGroup(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.toggle_assigning_group"
-    bl_label = "Toggle Assigning Group"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def _execute(self, context):
-        context.scene.BIMGroupProperties.is_adding = not context.scene.BIMGroupProperties.is_adding
-        return {"FINISHED"}
-
-
 class AssignGroup(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_group"
     bl_label = "Assign Group"

@@ -49,7 +49,6 @@ class Group(PropertyGroup):
 class BIMGroupProperties(PropertyGroup):
     group_attributes: CollectionProperty(name="Group Attributes", type=Attribute)
     is_editing: BoolProperty(name="Is Editing", default=False)
-    is_adding: BoolProperty(name="Is Adding", default=False)
     groups: CollectionProperty(name="Groups", type=Group)
     active_group_index: IntProperty(name="Active Group Index")
     active_group_id: IntProperty(name="Active Group Id")
