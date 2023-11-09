@@ -97,29 +97,30 @@ class segment_geometry_adjuster {
 			 auto next = taxonomy::cast<taxonomy::piecewise_function>(mapping->map(next_inst));
           start_of_next_inst_ = next->evaluate(0.0);
        } else {
-          // there is not a next segment, however IfcGradientCurve and IfcSegmentedRefernceCurve
-          // have an optional EndPoint attribute that serves the same purpose as the zero-length
-          // "next segment" at the end of the curve. The Ifc specification is a little redundant
-          // in that the "zero length" segment is required thereby negating the need for EndPoint
-          // but some implementations use the EndPoint instead of the "zero length" segment
-          // 
-          // Get the parent of this segment. If it is a IfcGradientCurve or IfcSegmentedRefernceCurve
-          // look for the optional EndPoint attribute
-          auto curves = inst->UsingCurves();
-if (curves && curves->size() {
-          auto curve = *curves->begin();
-          const IfcSchema::IfcPlacement* placement = nullptr;
-          if (curve->as<IfcSchema::IfcSegmentedReferenceCurve>()) {
-              auto s = curve->as<IfcSchema::IfcSegmentedReferenceCurve>();
-              placement = s->EndPoint();
-          } else if (curve->as<IfcSchema::IfcGradientCurve>()) {
-              auto s = curve->as<IfcSchema::IfcGradientCurve>();
-              placement = s->EndPoint();
-          }
-          if (placement) {
-              start_of_next_inst_ = taxonomy::cast<taxonomy::matrix4>(mapping->map(placement))->ccomponents();
-          }
-}
+             // there is not a next segment, however IfcGradientCurve and IfcSegmentedRefernceCurve
+             // have an optional EndPoint attribute that serves the same purpose as the zero-length
+             // "next segment" at the end of the curve. The Ifc specification is a little redundant
+             // in that the "zero length" segment is required thereby negating the need for EndPoint
+             // but some implementations use the EndPoint instead of the "zero length" segment
+             //
+             // Get the parent of this segment. If it is a IfcGradientCurve or IfcSegmentedRefernceCurve
+             // look for the optional EndPoint attribute
+             auto curves = inst->UsingCurves();
+         if (curves && curves->size() {
+                auto curve = *curves->begin();
+                const IfcSchema::IfcPlacement* placement = nullptr;
+                if (curve->as<IfcSchema::IfcSegmentedReferenceCurve>()) {
+                    auto s = curve->as<IfcSchema::IfcSegmentedReferenceCurve>();
+                    placement = s->EndPoint();
+                } else if (curve->as<IfcSchema::IfcGradientCurve>()) {
+                    auto s = curve->as<IfcSchema::IfcGradientCurve>();
+                    placement = s->EndPoint();
+                }
+                if (placement) {
+                    start_of_next_inst_ = taxonomy::cast<taxonomy::matrix4>(mapping->map(placement))->ccomponents();
+                }
+         }
+       }
        }
     }
 
