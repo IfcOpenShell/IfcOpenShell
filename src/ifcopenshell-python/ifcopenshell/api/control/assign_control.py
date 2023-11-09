@@ -40,8 +40,9 @@ class Usecase:
         :type relating_control: ifcopenshell.entity_instance.entity_instance
         :param related_object: The IfcObjectDefinition that is being controlled
         :type related_object: ifcopenshell.entity_instance.entity_instance
-        :return: The newly created IfcRelAssignsToControl
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :return: The newly created IfcRelAssignsToControl. If relationship already
+            existed before and wasn't changed then returns None.
+        :rtype: ifcopenshell.entity_instance.entity_instance, None
 
         Example:
 
@@ -76,7 +77,7 @@ class Usecase:
         if self.settings["related_object"].HasAssignments:
             for assignment in self.settings["related_object"].HasAssignments:
                 if (
-                    assignment.is_a("IfclRelAssignsToControl")
+                    assignment.is_a("IfcRelAssignsToControl")
                     and assignment.RelatingControl == self.settings["relating_control"]
                 ):
                     return
@@ -86,6 +87,8 @@ class Usecase:
             controls = self.settings["relating_control"].Controls[0]
 
         if controls:
+            if self.settings["related_object"] in controls.RelatedObjects:
+                return
             related_objects = set(controls.RelatedObjects)
             related_objects.add(self.settings["related_object"])
             controls.RelatedObjects = list(related_objects)
