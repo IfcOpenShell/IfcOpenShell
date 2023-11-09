@@ -101,3 +101,28 @@ Scenario: Select system products
     And I press "bim.assign_system(system={system})"
     When I press "bim.select_system_products(system={system})"
     Then nothing happens
+
+Scenario: Assign flow controls to flow element_type
+    Given an empty IFC project
+    And I add an empty
+    And the object "Empty" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcActuator"
+    And I press "bim.assign_class"
+    And I add an empty
+    And the object "Empty" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcActuator"
+    And I press "bim.assign_class"
+    And I add an empty
+    And the object "Empty" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcFlowSegment"
+    And I press "bim.assign_class"
+    And the object "IfcActuator/Empty" is selected
+    And additionally the object "IfcActuator/Empty.001" is selected
+    And additionally the object "IfcFlowSegment/Empty" is selected
+    When I press "bim.assign_unassign_flow_control(assign=True)"
+    And the variable "assigned_controls" is "set(tool.System.get_flow_element_controls({ifc}.by_type('IfcFlowSegment')[0]))"
+    Then the variable "assigned_controls" is "set[{ifc}.by_type('IfcActuator')]"
+

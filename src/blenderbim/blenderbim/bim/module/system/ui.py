@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 import blenderbim.bim.helper
 import blenderbim.tool as tool
 from blenderbim.bim.helper import prop_with_search
@@ -270,6 +271,68 @@ class BIM_PT_port(Panel):
                 depress=flow_direction == current_flow_direction,
                 text="",
             ).direction = flow_direction
+
+
+class BIM_PT_flow_controls(Panel):
+    bl_label = "Flow Controls"
+    bl_idname = "BIM_PT_flow_controls"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+    bl_order = 1
+    bl_parent_id = "BIM_PT_tab_services_object"
+
+    @classmethod
+    def poll(cls, context):
+        if not context.active_object:
+            return False
+        element = tool.Ifc.get_entity(context.active_object)
+        if not element or not (
+            element.is_a("IfcDistributionControlElement") or element.is_a("IfcDistributionFlowElement")
+        ):
+            return False
+        return True
+
+    def draw(self, context):
+        if not ObjectSystemData.is_loaded:
+            ObjectSystemData.load()
+
+        def display_element(control_id, flow_element_id, displayed_object_name):
+            displayed_object = bpy.data.objects[displayed_object_name]
+            row = self.layout.row(align=True)
+            op = row.operator("bim.assign_unassign_flow_control", text="", icon="X")
+            op.flow_control = control_id
+            op.flow_element = flow_element_id
+            op.assign = False
+            row.operator(
+                "bim.select_entity", text="", icon="RESTRICT_SELECT_OFF"
+            ).ifc_id = displayed_object.BIMObjectProperties.ifc_definition_id
+            row.label(text=f"{displayed_object_name}")
+
+        element = tool.Ifc.get_entity(context.active_object)
+        flow_controls_data = ObjectSystemData.data["flow_controls_data"]
+        if flow_controls_data["type"] == "IfcDistributionFlowElement":
+            controls = flow_controls_data["controls"]
+            row = self.layout.row(align=True)
+            if controls:
+                row.label(text="Controls assigned to the element:")
+            else:
+                row.label(text="No controls assigned to the flow element")
+            row.operator("bim.assign_unassign_flow_control", text="", icon="ADD").assign = True
+            if controls:
+                for control_data in controls:
+                    control, control_obj_name = control_data
+                    display_element(control.id(), element.id(), control_obj_name)
+        else:
+            flow_element, flow_element_obj_name = flow_controls_data["flow_element"]
+            row = self.layout.row(align=True)
+            if flow_element:
+                row.label(text="Flow element controlled by the flow control:")
+                display_element(element.id(), flow_element.id(), flow_element_obj_name)
+            else:
+                row.label(text="No flow element controlled by the flow control")
+                row.operator("bim.assign_unassign_flow_control", text="", icon="ADD").assign = True
 
 
 class BIM_PT_zones(Panel):

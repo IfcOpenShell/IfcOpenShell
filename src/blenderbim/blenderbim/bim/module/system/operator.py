@@ -421,3 +421,67 @@ class RemoveZone(bpy.types.Operator, Operator):
     def _execute(self, context):
         ifcopenshell.api.run("system.remove_system", tool.Ifc.get(), system=tool.Ifc.get().by_id(self.zone))
         bpy.ops.bim.load_zones()
+
+
+class AssignUnassignFlowControl(bpy.types.Operator, Operator):
+    bl_idname = "bim.assign_unassign_flow_control"
+    bl_label = "Assign/Unassign Flow Control"
+    bl_options = {"REGISTER", "UNDO"}
+    flow_element: bpy.props.IntProperty(options={"SKIP_SAVE"})
+    flow_control: bpy.props.IntProperty(options={"SKIP_SAVE"})
+    assign: bpy.props.BoolProperty(name="Assign/Unassign", default=True, options={"SKIP_SAVE"})
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        flow_element = None
+        flow_controls = []
+        from_selected_objects = False
+
+        if self.flow_element != 0:
+            flow_element = ifc_file.by_id(self.flow_element)
+        if self.flow_control != 0:
+            flow_controls = [ifc_file.by_id(self.flow_control)]
+
+        # if not provided as arguments tried to get them from
+        # the selected objects
+        if not flow_element or flow_controls:
+            from_selected_objects = True
+            for obj in context.selected_objects:
+                element = tool.Ifc.get_entity(obj)
+                if not element:
+                    continue
+
+                if element.is_a("IfcDistributionControlElement") and self.flow_control == 0:
+                    flow_controls.append(element)
+                elif element.is_a("IfcDistributionFlowElement") and self.flow_element == 0:
+                    if flow_element:
+                        self.report(
+                            {"ERROR"},
+                            "More than one flow element selected. Control can be assigned to only 1 flow element.",
+                        )
+                        return {"CANCELLED"}
+                    flow_element = element
+
+        if not flow_element:
+            self.report({"ERROR"}, "No flow element selected.")
+            return {"CANCELLED"}
+
+        if not flow_controls:
+            self.report({"ERROR"}, "No flow controls selected.")
+            return {"CANCELLED"}
+
+        for control in flow_controls:
+            if self.assign:
+                tool.Ifc.run(
+                    "system.assign_flow_control", relating_flow_element=flow_element, related_flow_control=control
+                )
+            else:
+                tool.Ifc.run(
+                    "system.unassign_flow_control", relating_flow_element=flow_element, related_flow_control=control
+                )
+
+        if from_selected_objects:
+            self.report(
+                {"INFO"}, f"{len(flow_controls)} flow controls were {'assigned' if self.assign else 'unassigned'}."
+            )
+        return {"FINISHED"}
