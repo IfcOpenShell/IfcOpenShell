@@ -40,14 +40,20 @@ auto compute_adjustment = [](double u, const T& a, const T& b, double l) -> doub
 } // namespace
 
 
+enum segment_type_t {
+    ST_HORIZONTAL,
+    ST_VERTICAL,
+    ST_CANT
+};
+
 // @todo use std::numbers::pi when upgrading to C++ 20
 static const double PI = boost::math::constants::pi<double>();
 
 // Current implementation uses the same segment_geometry_adjuster for all ParentCurve types.
 // Comment/Uncomment to change the type of segment geometry adjuster
 // Future implementations could use specialized adjusters based on ParentCurve type
-//#define GEOMETRY_ADJUSTER segment_geometry_adjuster
-#define GEOMETRY_ADJUSTER linear_segment_geometry_adjuster
+#define GEOMETRY_ADJUSTER segment_geometry_adjuster
+//#define GEOMETRY_ADJUSTER linear_segment_geometry_adjuster
  
 // Curve segments are evaluated using a parametric function over the curve length, u
 // IfcCurveSegment.TransitionCode defines how the end of a segment connects to the next segment.
@@ -73,13 +79,13 @@ static const double PI = boost::math::constants::pi<double>();
 // function to specialize the refinement of the placement at u.
 class segment_geometry_adjuster {
   public:
-    segment_geometry_adjuster(mapping* mapping, const IfcSchema::IfcCurveSegment* inst, const IfcSchema::IfcCurveSegment* next_inst) : 
+    segment_geometry_adjuster(mapping* mapping, segment_type_t segment_type,const IfcSchema::IfcCurveSegment* inst, const IfcSchema::IfcCurveSegment* next_inst) : 
        end_of_inst_(Eigen::Matrix4d::Identity()),
        start_of_next_inst_(Eigen::Matrix4d::Identity()),
        transition_code_(inst->Transition())
     {
-
         transformation_matrix_ = taxonomy::cast<taxonomy::matrix4>(mapping->map(inst->Placement()))->ccomponents();
+
         length_ = fabs(*inst->SegmentLength()->as<IfcSchema::IfcLengthMeasure>() * mapping->get_length_unit());
 
        if (next_inst) {
@@ -90,6 +96,28 @@ class segment_geometry_adjuster {
           // need to traverse the IfcCurveSegment objects in reverse order to avoid recursion.
 			 auto next = taxonomy::cast<taxonomy::piecewise_function>(mapping->map(next_inst));
           start_of_next_inst_ = next->evaluate(0.0);
+       } else {
+          // there is not a next segment, however IfcGradientCurve and IfcSegmentedRefernceCurve
+          // have an optional EndPoint attribute that serves the same purpose as the zero-length
+          // "next segment" at the end of the curve. The Ifc specification is a little redundant
+          // in that the "zero length" segment is required thereby negating the need for EndPoint
+          // but some implementations use the EndPoint instead of the "zero length" segment
+          // 
+          // Get the parent of this segment. If it is a IfcGradientCurve or IfcSegmentedRefernceCurve
+          // look for the optional EndPoint attribute
+          auto curves = inst->UsingCurves();
+          auto curve = *curves->begin();
+          const IfcSchema::IfcPlacement* placement = nullptr;
+          if (curve->as<IfcSchema::IfcSegmentedReferenceCurve>()) {
+              auto s = curve->as<IfcSchema::IfcSegmentedReferenceCurve>();
+              placement = s->EndPoint();
+          } else if (curve->as<IfcSchema::IfcGradientCurve>()) {
+              auto s = curve->as<IfcSchema::IfcGradientCurve>();
+              placement = s->EndPoint();
+          }
+          if (placement) {
+              start_of_next_inst_ = taxonomy::cast<taxonomy::matrix4>(mapping->map(placement))->ccomponents();
+          }
        }
     }
 
@@ -130,7 +158,6 @@ class segment_geometry_adjuster {
     IfcSchema::IfcTransitionCode::Value get_transition_code() const { return transition_code_; }
     double get_length() const { return length_; }
 
-    private:
     bool adjustments_ = true;
     Eigen::Matrix4d transformation_matrix_;
     Eigen::Matrix4d end_of_inst_;
@@ -191,6 +218,77 @@ class linear_segment_geometry_adjuster : public segment_geometry_adjuster {
     }
 };
 
+// specializes segment_geometry_adjuster for cant segments.
+// The specification for IfcSegmentedReferenceCurve provides the requirements for 
+// how the cant deviates from the base curve and how the cant transitions over
+// the length of an IfcCurveSegment. The exact requirements are unclear. For this
+// reason, the following implementation may not conform with the IFC specification.
+// 
+// https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcSegmentedReferenceCurve.htm
+// 
+// The treatment of cant geometry is as follows in this class:
+// 1) Superelevation (depression or elevation) from the axis of the base curve. 
+// From 8.9.3.62
+// "A deviating explicit position of a curve segment (IfcCurveSegment.Placement) from the axis of the base 
+// curve produces a superelevation i.e. depression or elevation from the axis of the base curve."
+// 
+// Nothing in the specification indicates that the deviation from the axis of the base curve is to be interpolated.
+// However, this would result in the cant elevation deviation being constant along each segment and there would
+// potentially be abrupt changes in elevation at segment boundaries.
+// 
+// To address this, the cant at a point along a segment is interpolated between IfcCurveSegment.Placement.Location.Y for placement
+// at the start of the current segment and the start of the next segment. If there is not a next segment, the optional
+// IfcSegmentedReferenceCurve.EndPoint attribute is used if present.
+// 
+// For simplicity in matrix operations, the Location.Z values are also interpolated. Though, they can reasonably be
+// expected to be 0.0 because cant is, in part, a vertical deviation from the IfcGradientCurve basis.
+// 
+// 2) Determination of Axis and RefDirection
+// From 8.9.3.62
+// "The superelevation rate of change is directly proportionate to the curve segment parent curve curvature gradient 
+// equation (IfcCurveSegment.ParentCurve) in the linear parameter space of the base curve. If no deviation in the position 
+// of the curve segment to the base curve axis is specified, the axes (Axis and RefDirection) directions of IfcAxis2Placement 
+// are interpolated between the initial curve segment placement and the placement of the subsequent curve segment."
+//
+// This seems to say that the type of the IfcCurveSegment.ParentCurve is related to the rate of change of the Axis and RefDirection
+// vectors along the length of the segment. The rate of change is understood to be equal to the derivative of the curvature of
+// the IfcCurve subtype.
+// 
+// However, if the IfcCureSegment.Placement does not deviate from the basic curve (which occurs with a deviation of 0.0), ignore
+// the IfcCurveSegment.ParentCurve type and linearly interpolate the Axis and RefDirection vectors from the stat of this and
+// the next segment.
+// 
+// For now, the derivative of the curvature of the IfcCurve subtype is difficult to implement and example models from the IFC spec
+// always use IfcAxis2Placement3D with Axis and RefDirection specified, the basic interpolation is used, ignoring the IfcCurve type. 
+//
+// This implementation will be revised as the understanding of IfcSegmentedRefereneCurve improves.
+class cant_adjuster : public segment_geometry_adjuster {
+  public:
+    using segment_geometry_adjuster::segment_geometry_adjuster;
+
+    virtual void transform_and_adjust(double u, Eigen::Matrix4d& p) const {
+       // don't call parent class version 
+       auto& start_this = get_start_of_segment();
+       auto& start_next = get_start_of_next_segment();
+       auto l = get_length();
+
+       for (int i = 0; i < 4; i++) {
+          p.col(i) = start_this.col(i) + (start_next.col(i) - start_this.col(i)) * u / l;
+          if (i < 3) {
+              p.col(i).normalize();
+          };
+       }
+
+       // when cant results are combined with the gradient curve
+       // the x-locate will be added which effective doubles them
+       // for this reason, set x location to 0
+       p.col(3)(0) = 0;
+    }
+
+  protected:
+    const Eigen::Matrix4d& get_start_of_segment() const { return transformation_matrix_; }
+};
+
 typedef boost::mpl::vector<
 	IfcSchema::IfcLine
 #ifdef SCHEMA_HAS_IfcClothoid
@@ -203,10 +301,6 @@ typedef boost::mpl::vector<
 	, IfcSchema::IfcCircle
 	, IfcSchema::IfcPolynomialCurve
 > curve_seg_types;
-
-enum segment_type_t {
-	ST_HORIZONTAL, ST_VERTICAL, ST_CANT
-};
 
 class curve_segment_evaluator {
   private:
@@ -283,14 +377,11 @@ class curve_segment_evaluator {
             L = fabs(start_); // start_ and length_ are in opposite directions so start_ is furthest from the origin
         }
 
-        auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(c->Position()))->ccomponents();
-
-        auto start = start_;
-
-		  geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, inst_, next_inst_);
-
         if (segment_type_ == ST_HORIZONTAL || segment_type_ == ST_VERTICAL) {
+            auto start = start_;
             auto segment_type = segment_type_;
+            auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(c->Position()))->ccomponents();
+            geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
             eval_ = [L, start, s, signX, fnX, signY, fnY, transformation_matrix, segment_type, geometry_adjuster = this->geometry_adjuster](double u) {
 
                 u += start;
@@ -332,11 +423,13 @@ class curve_segment_evaluator {
                 Eigen::Matrix4d result = transformation_matrix * m;
                 return geometry_adjuster->transform_and_adjust(u,result);
             };
-	 }
-    else if (segment_type_ == ST_CANT) {
-            eval_ = [geometry_adjuster = this->geometry_adjuster](double u) {
-                Eigen::Matrix4d result;
-                return geometry_adjuster->transform_and_adjust(u, result);
+	     }
+        else if (segment_type_ == ST_CANT) {
+            auto cant_adjuster_ = std::make_shared<cant_adjuster>(mapping_, segment_type_, inst_, next_inst_);
+            eval_ = [cant_adjuster_](double u) {
+                Eigen::Matrix4d result = Eigen::Matrix4d::Identity();
+                cant_adjuster_->transform_and_adjust(u, result);
+                return result;
             };
     }
     else {
@@ -393,25 +486,27 @@ class curve_segment_evaluator {
 #ifdef SCHEMA_HAS_IfcClothoid
 // Then initialize Function(double) -> Vector3, by means of IfcCurve subtypes
 	void operator()(const IfcSchema::IfcClothoid* c) {
-		// see https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcClothoid.htm
-		// also see, https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/concepts/Partial_Templates/Geometry/Curve_Segment_Geometry/Clothoid_Transition_Segment/content.html,
-		// which defines the clothoid constant as sqrt(L) and L is the length measured from the inflection point
-		auto A = c->ClothoidConstant();
+
+		  geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
+    // see https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcClothoid.htm
+      // also see, https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/concepts/Partial_Templates/Geometry/Curve_Segment_Geometry/Clothoid_Transition_Segment/content.html,
+      // which defines the clothoid constant as sqrt(L) and L is the length measured from the inflection point
+      auto A = c->ClothoidConstant();
       auto s = fabs(A * sqrt(PI));
 
-		// the integration is for the +X, +Y quadrant - need to adjust the signs of the resulting X and Y values
-		// so that the results are in the correct quadrant.
-		// A > 0 and u > 0 -> +X, +Y
-		// A < 0 and u > 0 -> +X, -Y
-		// A > 0 and u < 0 -> -X, -Y
-		// A < 0 and u < 0 -> -X, +Y
-		// X depends only on u, Y depends on u and A.
-		auto sign_x = [](double t) {return sign(t); };
-		auto sign_y = [A](double t) {return sign(t) == sign(A) ? 1.0 : -1.0; };
-		auto fn_x = [A,s](double t)->double {return s * cos(PI * fabs(A) * t * t / (2 * fabs(A))); };
-		auto fn_y = [A,s](double t)->double {return s * sin(PI * fabs(A) * t * t / (2 * fabs(A))); };
+      // the integration is for the +X, +Y quadrant - need to adjust the signs of the resulting X and Y values
+      // so that the results are in the correct quadrant.
+      // A > 0 and u > 0 -> +X, +Y
+      // A < 0 and u > 0 -> +X, -Y
+      // A > 0 and u < 0 -> -X, -Y
+      // A < 0 and u < 0 -> -X, +Y
+      // X depends only on u, Y depends on u and A.
+      auto sign_x = [](double t) { return sign(t); };
+      auto sign_y = [A](double t) { return sign(t) == sign(A) ? 1.0 : -1.0; };
+      auto fn_x = [A, s](double t) -> double { return s * cos(PI * fabs(A) * t * t / (2 * fabs(A))); };
+      auto fn_y = [A, s](double t) -> double { return s * sin(PI * fabs(A) * t * t / (2 * fabs(A))); };
 
-		set_spiral_function(mapping_, c, s, sign_x, fn_x, sign_y, fn_y);
+      set_spiral_function(mapping_, c, s, sign_x, fn_x, sign_y, fn_y);
 	}
 #endif
 
@@ -453,7 +548,7 @@ class curve_segment_evaluator {
 
 		auto segment_type = segment_type_;
 
-      geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, inst_, next_inst_);
+		geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
 
 		eval_ = [R, start, sign_l, transformation_matrix, segment_type, geometry_adjuster = this->geometry_adjuster](double u)
 			{
@@ -465,7 +560,7 @@ class curve_segment_evaluator {
 				auto x = R * dx;
 				auto y = R * dy;
 
-            Eigen::Matrix4d m;
+            Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
             if (segment_type == ST_HORIZONTAL) {
                 // rotate about the Z-axis
                 m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);  // vector tangent to the curve, in the direction of the curve
@@ -552,7 +647,7 @@ class curve_segment_evaluator {
                 auto x = segment_type == ST_HORIZONTAL ? p1x + u * dx : u;
                 auto y = p1y + u * dy;
 
-                Eigen::Matrix4d m;
+                Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
                 if (segment_type == ST_HORIZONTAL) {
                     // rotate about the Z-axis
                     m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);  // vector tangent to the curve, in the direction of the curve
@@ -581,7 +676,7 @@ class curve_segment_evaluator {
 		}
 
 		
-		geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, inst_, next_inst_);
+		  geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
 
 		eval_ = [fns, geometry_adjuster = this->geometry_adjuster](double u) {
 			auto iter = std::find_if(fns.cbegin(), fns.cend(), [=](const auto& fn)
@@ -610,22 +705,22 @@ class curve_segment_evaluator {
 		auto dx = dr[0] / m;
 		auto dy = dr[1] / m;
 
-      geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, inst_, next_inst_);
+      geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
       if (segment_type_ == ST_HORIZONTAL) {
 
 			eval_ = [px, py, dx, dy, geometry_adjuster=this->geometry_adjuster](double u) {
 				auto x = px + u * dx;
 				auto y = py + u * dy;
 
-            Eigen::Matrix4d m;
-            m.col(0) = Eigen::Vector4d(dx, dy, 0, 0); // vector tangent to the curve, in the direction of the curve
+            Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+            m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);  // vector tangent to the curve, in the direction of the curve
             m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0); // vector perpendicular to the curve, towards the left when looking from start to end along the curve (this is used for IfcAxis2PlacementLinear.RefDirection when it is not provided)
             m.col(2) = Eigen::Vector4d(0, 0, 1.0, 0);  // cross product of x and y and will always be up (this is used for IfcAxis2PlacementLinear.Axis when it is not provided)
             m.col(3) = Eigen::Vector4d(x, y, 0.0, 1.0);
             return geometry_adjuster->transform_and_adjust(u, m);
 			};
 		}
-		else if (segment_type_ == ST_VERTICAL || segment_type_ == ST_CANT) {
+		else if (segment_type_ == ST_VERTICAL) {
 
 			eval_ = [py, dx, dy, geometry_adjuster = this->geometry_adjuster](double u) {
 				// https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcGradientCurve.htm
@@ -639,7 +734,7 @@ class curve_segment_evaluator {
 				// y = py + u * dy/dx =  py + u * (dr[1]/m)*(m/dr[0]) = py + u * 0.05
 				auto y = py + u * dy/dx; 
 
-            Eigen::Matrix4d m;
+            Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
             m.col(0) = Eigen::Vector4d(dx, 0, dy, 0);
             m.col(1) = Eigen::Vector4d(0, 1, 0, 0);
             m.col(2) = Eigen::Vector4d(-dy, 0, dx, 0);
@@ -647,6 +742,14 @@ class curve_segment_evaluator {
             return geometry_adjuster->transform_and_adjust(u, m);
          };
 		} 
+      else if (segment_type_ == ST_CANT) {
+            auto cant_adjuster_ = std::make_shared<cant_adjuster>(mapping_, segment_type_, inst_, next_inst_);
+            eval_ = [cant_adjuster_](double u) {
+                Eigen::Matrix4d result = Eigen::Matrix4d::Identity();
+                cant_adjuster_->transform_and_adjust(u, result);
+                return result;
+            };
+        }
 		else {
          Logger::Error(std::runtime_error("Unexpected segment type encountered"), l);
 		}
@@ -664,7 +767,7 @@ class curve_segment_evaluator {
 
 		auto segment_type = segment_type_;
 
-		geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, inst_, next_inst_);
+		geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
 
 
       eval_ = [coeffX, coeffY, transformation_matrix, segment_type, geometry_adjuster = this->geometry_adjuster](double u) {
@@ -733,7 +836,7 @@ class curve_segment_evaluator {
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveSegment* inst) {
 	// Find the next segment after inst
 	const IfcSchema::IfcCurveSegment* next_inst = nullptr;
-   auto composite_curves = inst->data().getInverse(&IfcSchema::IfcCompositeCurve::Class(), 0);
+   auto composite_curves = inst->UsingCurves();
     if (composite_curves) {
 		 if (composite_curves->size() == 1) {
             auto segments = (*composite_curves->begin())->as<IfcSchema::IfcCompositeCurve>()->Segments();
@@ -757,19 +860,16 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveSegment* inst) {
 	bool is_vertical = false;
 	bool is_cant = false;
 
-	{
-		aggregate_of_instance::ptr segment_owners = inst->data().getInverse(&IfcSchema::IfcCompositeCurve::Class(), 0);
-		if (segment_owners) {
-			for (auto& cc : *segment_owners) {
-				if (cc->as<IfcSchema::IfcSegmentedReferenceCurve>()) {
-					is_cant = true;
-				}
-				else if (cc->as<IfcSchema::IfcGradientCurve>()) {
-					is_vertical = true;
-				}
-				else {
-					is_horizontal = true;
-				}
+	if (composite_curves) {
+		for (auto& cc : *composite_curves) {
+			if (cc->as<IfcSchema::IfcSegmentedReferenceCurve>()) {
+				is_cant = true;
+			}
+			else if (cc->as<IfcSchema::IfcGradientCurve>()) {
+				is_vertical = true;
+			}
+			else {
+				is_horizontal = true;
 			}
 		}
 	}
