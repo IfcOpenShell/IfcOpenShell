@@ -106,6 +106,7 @@ class segment_geometry_adjuster {
           // Get the parent of this segment. If it is a IfcGradientCurve or IfcSegmentedRefernceCurve
           // look for the optional EndPoint attribute
           auto curves = inst->UsingCurves();
+if (curves && curves->size() {
           auto curve = *curves->begin();
           const IfcSchema::IfcPlacement* placement = nullptr;
           if (curve->as<IfcSchema::IfcSegmentedReferenceCurve>()) {
@@ -118,6 +119,7 @@ class segment_geometry_adjuster {
           if (placement) {
               start_of_next_inst_ = taxonomy::cast<taxonomy::matrix4>(mapping->map(placement))->ccomponents();
           }
+}
        }
     }
 
