@@ -368,3 +368,15 @@ class System(blenderbim.core.tool.System):
     @classmethod
     def is_mep_element(cls, element):
         return element.is_a("IfcFlowSegment") or element.is_a("IfcFlowFitting")
+
+    @classmethod
+    def get_flow_element_controls(cls, element):
+        if not element.HasControlElements:
+            return []
+        return [control for control in element.HasControlElements[0].RelatedControlElements]
+
+    @classmethod
+    def get_flow_control_flow_element(cls, element):
+        if not element.AssignedToFlowElement:
+            return
+        return element.AssignedToFlowElement[0].RelatingFlowElement
