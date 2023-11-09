@@ -277,3 +277,30 @@ class TestSetActiveSystem(NewFile):
         system = ifcopenshell.api.run("system.add_system", ifc, ifc_class="IfcSystem")
         subject.set_active_edited_system(system)
         assert bpy.context.scene.BIMSystemProperties.edited_system_id == system.id()
+
+
+class TestFlowElementAndControls(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        flow_element = ifc.createIfcFlowSegment()
+        flow_control = ifc.createIfcController()
+        flow_control1 = ifc.createIfcController()
+
+        assert len(subject.get_flow_element_controls(flow_element)) == 0
+        assert subject.get_flow_control_flow_element(flow_control) == None
+
+        ifcopenshell.api.run(
+            "system.assign_flow_control",
+            ifc,
+            related_flow_control=flow_control,
+            relating_flow_element=flow_element,
+        )
+        ifcopenshell.api.run(
+            "system.assign_flow_control",
+            ifc,
+            related_flow_control=flow_control1,
+            relating_flow_element=flow_element,
+        )
+        controls = subject.get_flow_element_controls(flow_element)
+        assert set(controls) == set((flow_control, flow_control1))
+        assert subject.get_flow_control_flow_element(flow_control) == flow_element
