@@ -72,6 +72,7 @@ class ObjectSystemData:
             "systems": cls.systems(),
             # AFTER SYSTEMS
             "connected_elements": cls.connected_elements(),
+            "flow_controls_data": cls.flow_controls_data(),
         }
         cls.is_loaded = True
 
@@ -90,6 +91,26 @@ class ObjectSystemData:
         if not cls.element:
             return set()
         return tool.System.get_connected_elements(cls.element)
+
+    @classmethod
+    def flow_controls_data(cls):
+        flow_controls_data = {}
+        if not cls.element or not (
+            cls.element.is_a("IfcDistributionControlElement") or cls.element.is_a("IfcDistributionFlowElement")
+        ):
+            return flow_controls_data
+
+        if cls.element.is_a("IfcDistributionControlElement"):
+            flow_controls_data["type"] = "IfcDistributionControlElement"
+            flow_element = tool.System.get_flow_control_flow_element(cls.element)
+            flow_element_obj = tool.Ifc.get_object(flow_element).name if flow_element else None
+            flow_controls_data["flow_element"] = flow_element, flow_element_obj
+        else:
+            flow_controls_data["type"] = "IfcDistributionFlowElement"
+            controls = [(c, tool.Ifc.get_object(c).name) for c in tool.System.get_flow_element_controls(cls.element)]
+            flow_controls_data["controls"] = controls
+
+        return flow_controls_data
 
 
 class PortData:

@@ -24,6 +24,7 @@ classes = (
     operator.AddSystem,
     operator.AddZone,
     operator.AssignSystem,
+    operator.AssignUnassignFlowControl,
     operator.ConnectPort,
     operator.DisableEditingSystem,
     operator.DisableEditingZone,
@@ -54,6 +55,7 @@ classes = (
     ui.BIM_PT_active_object_zones,
     ui.BIM_PT_ports,
     ui.BIM_PT_port,
+    ui.BIM_PT_flow_controls,
     ui.BIM_UL_systems,
     ui.BIM_UL_zones,
 )
