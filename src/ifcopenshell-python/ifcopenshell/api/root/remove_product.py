@@ -167,4 +167,9 @@ class Usecase:
                     self.file.remove(inverse)
                 elif len(inverse.RelatedObjects) == 1:
                     self.file.remove(inverse)
+            elif inverse.is_a("IfcRelFlowControlElements"):
+                if inverse.RelatingFlowElement == self.settings["product"]:
+                    self.file.remove(inverse)
+                elif inverse.RelatedControlElements == (self.settings["product"],):
+                    self.file.remove(inverse)
         self.file.remove(self.settings["product"])
