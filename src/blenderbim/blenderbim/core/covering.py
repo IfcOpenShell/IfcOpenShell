@@ -124,7 +124,7 @@ def regen_selected_covering_object(ifc, spatial, model, Type, geometry):
     body = spatial.get_body_representation(active_obj)
     spatial.regen_obj_representation(ifc, geometry, active_obj, body)
 
-
+#TODO CHECK IF IT IS POSSIBLE TO CREATE ONLY ONE CORE FUNCTION FOR _FROM_WALLS
 def add_instance_flooring_coverings_from_walls(ifc, spatial, collector, geometry):
     z = spatial.get_active_obj_z()
     union = spatial.get_union_shape_from_selected_objects()
@@ -148,3 +148,25 @@ def add_instance_flooring_coverings_from_walls(ifc, spatial, collector, geometry
         body = spatial.get_body_representation(obj)
         spatial.regen_obj_representation(ifc, geometry, obj, body)
 
+def add_instance_ceiling_coverings_from_walls(ifc, spatial, collector, geometry, covering):
+    z = covering.get_z_from_ceiling_height()
+    union = spatial.get_union_shape_from_selected_objects()
+    for i, linear_ring in enumerate(union.interiors):
+        poly = spatial.get_buffered_poly_from_linear_ring(linear_ring)
+        bm = spatial.get_bmesh_from_polygon(poly, h=0)
+
+        name = "Covering" + str(i)
+        obj = spatial.get_named_obj_from_bmesh(name, bmesh = bm)
+
+        spatial.set_obj_origin_to_bboxcenter(obj)
+        spatial.traslate_obj_to_z_location(obj, z)
+        spatial.link_obj_to_active_collection(obj)
+
+        points = spatial.get_2d_vertices_from_obj(obj)
+
+        spatial.assign_type_to_obj(obj)
+        spatial.assign_container_to_obj(obj)
+
+        spatial.assign_swept_area_outer_curve_from_2d_vertices(obj, vertices = points)
+        body = spatial.get_body_representation(obj)
+        spatial.regen_obj_representation(ifc, geometry, obj, body)

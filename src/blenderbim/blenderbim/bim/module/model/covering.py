@@ -145,3 +145,42 @@ class AddInstanceFlooringCoveringsFromWalls(bpy.types.Operator, tool.Ifc.Operato
 
         core.add_instance_flooring_coverings_from_walls(tool.Ifc, tool.Spatial, tool.Collector, tool.Geometry)
 
+class AddInstanceCeilingCoveringsFromWalls(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_instance_ceiling_coverings_from_walls"
+    bl_label = "Add Ceilings From Walls"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Add instance ceiling coverings from selected walls. The active object must be a wall and layered vertically"
+
+    @classmethod
+    def poll(cls, context):
+        active_obj = bpy.context.active_object
+        element = tool.Ifc.get_entity(active_obj)
+        if element:
+            if element.is_a("IfcWall") and tool.Model.get_usage_type(element) == "LAYER2":
+                return context.selected_objects
+
+    def _execute(self, context):
+        # This only works based on a 2D plan only considering the standard
+        # walls (i.e. prismatic) in the active object storey.
+        # In order to run, the active object must be a wall and
+        # there must be selected walls
+
+        active_obj = bpy.context.active_object
+        if not active_obj:
+            self.report({"ERROR"}, "No active object. Please select a wall")
+            return
+
+        element = tool.Ifc.get_entity(active_obj)
+        if element and not element.is_a("IfcWall"):
+            return self.report({"ERROR"}, "The active object is not a wall. Please select a wall.")
+
+        container = ifcopenshell.util.element.get_container(element)
+        if not container:
+            self.report({"ERROR"}, "The wall is not contained.")
+
+        if not bpy.context.selected_objects:
+            self.report({"ERROR"}, "No selected objects found. Please select walls.")
+            return
+
+        core.add_instance_ceiling_coverings_from_walls(tool.Ifc, tool.Spatial, tool.Collector, tool.Geometry, tool.Covering)
+
