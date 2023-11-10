@@ -391,3 +391,45 @@ class TestRemoveProduct(test.bootstrap.IFC4):
         ifcopenshell.api.run("drawing.assign_product", self.file, relating_product=element, related_object=annotation)
         ifcopenshell.api.run("root.remove_product", self.file, product=element)
         assert not self.file.by_type("IfcRelAssignsToProduct")
+
+    def test_removing_flow_control_elements(self):
+        flow_element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcFlowSegment")
+        flow_control = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcController")
+        flow_control1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcController")
+
+        ifcopenshell.api.run(
+            "system.assign_flow_control",
+            self.file,
+            related_flow_control=flow_control,
+            relating_flow_element=flow_element,
+        )
+        ifcopenshell.api.run(
+            "system.assign_flow_control",
+            self.file,
+            related_flow_control=flow_control1,
+            relating_flow_element=flow_element,
+        )
+        ifcopenshell.api.run("root.remove_product", self.file, product=flow_control)
+        assert len(self.file.by_type("IfcRelFlowControlElements")) == 1
+        ifcopenshell.api.run("root.remove_product", self.file, product=flow_control1)
+        assert not self.file.by_type("IfcRelFlowControlElements")
+
+    def test_removing_flow_element_with_flow_controls(self):
+        flow_element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcFlowSegment")
+        flow_control = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcController")
+        flow_control1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcController")
+
+        ifcopenshell.api.run(
+            "system.assign_flow_control",
+            self.file,
+            related_flow_control=flow_control,
+            relating_flow_element=flow_element,
+        )
+        ifcopenshell.api.run(
+            "system.assign_flow_control",
+            self.file,
+            related_flow_control=flow_control1,
+            relating_flow_element=flow_element,
+        )
+        ifcopenshell.api.run("root.remove_product", self.file, product=flow_element)
+        assert not self.file.by_type("IfcRelFlowControlElements")
