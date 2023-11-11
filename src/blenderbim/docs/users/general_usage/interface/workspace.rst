@@ -19,7 +19,8 @@ The right **Properties** panel shows data and relationships.
 3. Main 3D viewport
 4. Property editor
 5. Toolbar with added BIM functionality
-6. Status bar with information about the currently used Blender and BlenderBIM version
+6. Sidebar with BlenderBIM & 4D/5D Toolkit panels
+7. Status bar with information about the currently used Blender and BlenderBIM version
 
 Additionally, the `File` menue in the Topbar adds menue entries to Create/Open and Save an IFC project directly.
 
