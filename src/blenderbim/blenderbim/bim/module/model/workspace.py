@@ -427,11 +427,14 @@ class BimToolUI:
                 row.operator("bim.show_openings", icon="HIDE_OFF", text="")
 
         if AuthoringData.data["active_class"] in ("IfcOpeningElement",):
+            row.operator("bim.edit_openings", icon="CHECKMARK", text="")
+            row.operator("bim.hide_openings", icon="CANCEL", text="")
             if len(context.selected_objects) == 2:
                 row = cls.layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_L")
                 row.operator("bim.clone_opening", text="Clone Opening")
+                
 
         cls.layout.row(align=True).label(text="Align")
         add_layout_hotkey_operator(cls.layout, "Align Exterior", "S_X", "")
