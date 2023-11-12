@@ -50,6 +50,7 @@ def add_instance_flooring_covering_from_cursor(ifc, spatial, model, Type, geomet
 #    spatial.traslate_obj_to_z_location(obj, z)
     spatial.link_obj_to_active_collection(obj)
     points = spatial.get_2d_vertices_from_obj(obj)
+    points = spatial.get_scaled_2d_vertices(points)
     spatial.assign_type_to_obj(obj)
 
     spatial.assign_swept_area_outer_curve_from_2d_vertices(obj, vertices = points)
@@ -91,6 +92,7 @@ def add_instance_ceiling_covering_from_cursor(ifc, spatial, model, Type, geometr
     spatial.traslate_obj_to_z_location(obj, z)
     spatial.link_obj_to_active_collection(obj)
     points = spatial.get_2d_vertices_from_obj(obj)
+    points = spatial.get_scaled_2d_vertices(points)
     spatial.assign_type_to_obj(obj)
 
     spatial.assign_swept_area_outer_curve_from_2d_vertices(obj, vertices = points)
@@ -119,6 +121,7 @@ def regen_selected_covering_object(ifc, spatial, model, Type, geometry):
     obj = spatial.get_named_obj_from_mesh(name, mesh)
 
     points = spatial.get_2d_vertices_from_obj(obj)
+    points = spatial.get_scaled_2d_vertices(points)
 
     spatial.assign_swept_area_outer_curve_from_2d_vertices(active_obj, vertices = points)
     body = spatial.get_body_representation(active_obj)
@@ -140,6 +143,7 @@ def add_instance_flooring_coverings_from_walls(ifc, spatial, collector, geometry
         spatial.link_obj_to_active_collection(obj)
 
         points = spatial.get_2d_vertices_from_obj(obj)
+        points = spatial.get_scaled_2d_vertices(points)
 
         spatial.assign_type_to_obj(obj)
         spatial.assign_container_to_obj(obj)
@@ -163,6 +167,7 @@ def add_instance_ceiling_coverings_from_walls(ifc, spatial, collector, geometry,
         spatial.link_obj_to_active_collection(obj)
 
         points = spatial.get_2d_vertices_from_obj(obj)
+        points = spatial.get_scaled_2d_vertices(points)
 
         spatial.assign_type_to_obj(obj)
         spatial.assign_container_to_obj(obj)
