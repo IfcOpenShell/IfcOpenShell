@@ -9,3 +9,4 @@ This section covers the general user interface of BlenderBIM.
    :caption: Contents:
 
    interface/workspace
+   interface/property-editor
