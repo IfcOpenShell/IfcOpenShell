@@ -40,3 +40,8 @@ img.icon {
     vertical-align: middle;
     vertical-align: middle;
 }
+.content figure figcaption>p {
+    font-style: italic;
+    font-size: small;
+    color: #808080;
+}
