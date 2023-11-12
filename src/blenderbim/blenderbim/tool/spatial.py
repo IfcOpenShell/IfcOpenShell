@@ -628,6 +628,18 @@ class Spatial(blenderbim.core.tool.Spatial):
         return points
 
     @classmethod
+    def get_scaled_2d_vertices(cls, points):
+        model = tool.Ifc.get()
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(model)
+        for i in range(len(points)):
+            a = list(points[i])
+            a[0]/=unit_scale
+            a[1]/=unit_scale
+            points[i] = tuple(a)
+
+        return points
+
+    @classmethod
     def assign_swept_area_outer_curve_from_2d_vertices(cls, obj, vertices):
         body = cls.get_body_representation(obj)
         model = tool.Ifc.get()
