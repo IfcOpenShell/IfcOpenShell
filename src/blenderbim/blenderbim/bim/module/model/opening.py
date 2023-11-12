@@ -732,6 +732,9 @@ class HideOpenings(Operator, tool.Ifc.Operator):
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
+            if element.is_a("IfcOpeningElement"):
+                element = element.VoidsElements[0].RelatingBuildingElement
+                obj = tool.Ifc.get_object(element)
             openings = [r.RelatedOpeningElement for r in element.HasOpenings]
             for opening in openings:
                 opening_obj = tool.Ifc.get_object(opening)
@@ -759,6 +762,9 @@ class EditOpenings(Operator, tool.Ifc.Operator):
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
+            if element.is_a("IfcOpeningElement"):
+                element = element.VoidsElements[0].RelatingBuildingElement
+                obj = tool.Ifc.get_object(element)
             openings = [r.RelatedOpeningElement for r in element.HasOpenings]
             for opening in openings:
                 similar_openings = [o for o in all_openings if o.ObjectPlacement == opening.ObjectPlacement]
