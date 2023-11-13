@@ -455,7 +455,7 @@ class EnableEditingRailingPath(bpy.types.Operator, tool.Ifc.Operator):
 
         if bpy.context.active_object.mode != "EDIT":
             bpy.ops.object.mode_set(mode="EDIT")
-        bpy.ops.wm.tool_set_by_id(tool.Blender.get_viewport_context(), name="bim.cad_tool")
+        tool.Blender.set_viewport_tool("bim.cad_tool")
         ProfileDecorator.install(context, exit_edit_mode_callback=lambda: cancel_editing_railing_path(context))
         return {"FINISHED"}
 
