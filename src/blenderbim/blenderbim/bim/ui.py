@@ -750,21 +750,6 @@ class BIM_PT_tab_references(Panel):
         pass
 
 
-class BIM_PT_tab_services_object(Panel):
-    bl_label = "Services"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-    bl_order = 1
-
-    @classmethod
-    def poll(cls, context):
-        return tool.Blender.is_tab(context, "SERVICES") and tool.Ifc.get()
-
-    def draw(self, context):
-        pass
-
-
 class BIM_PT_tab_misc(Panel):
     bl_label = "Misc."
     bl_space_type = "PROPERTIES"
