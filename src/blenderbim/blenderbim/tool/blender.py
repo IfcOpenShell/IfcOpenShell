@@ -186,6 +186,11 @@ class Blender:
             setattr(region_3d, attr, data[attr])
 
     @classmethod
+    def set_viewport_tool(cls, tool_name):
+        with bpy.context.temp_override(**tool.Blender.get_viewport_context()):
+            bpy.ops.wm.tool_set_by_id(name=tool_name)
+
+    @classmethod
     def get_shader_editor_context(cls):
         for screen in bpy.data.screens:
             for area in screen.areas:
