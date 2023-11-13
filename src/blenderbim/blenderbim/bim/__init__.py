@@ -219,8 +219,8 @@ def register():
 
     wm = bpy.context.window_manager
     if wm.keyconfigs.addon:
-        km = wm.keyconfigs.addon.keymaps.new(name='Window', space_type='EMPTY')
-        kmi = km.keymap_items.new('bim.switch_tab', 'TAB', 'PRESS', ctrl=True)
+        km = wm.keyconfigs.addon.keymaps.new(name="Window", space_type="EMPTY")
+        kmi = km.keymap_items.new("bim.switch_tab", "TAB", "PRESS", ctrl=True)
         addon_keymaps.append((km, kmi))
 
     global icons
@@ -238,11 +238,13 @@ def register():
     global last_commit_hash
     try:
         import git
+
         path = Path(__file__).resolve().parent
         repo = git.Repo(str(path), search_parent_directories=True)
         last_commit_hash = repo.head.object.hexsha
     except:
         pass
+
 
 def unregister():
     global icons
