@@ -255,6 +255,8 @@ class AuthoringData:
         if not relating_type_id:
             return
         relating_type = tool.Ifc.get().by_id(int(relating_type_id))
+        if not hasattr(relating_type, "PredefinedType"):
+            return
         predefined_type = relating_type.PredefinedType
         return predefined_type
 
