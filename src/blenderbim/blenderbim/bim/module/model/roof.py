@@ -649,7 +649,7 @@ class EnableEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
 
         if bpy.context.active_object.mode != "EDIT":
             bpy.ops.object.mode_set(mode="EDIT")
-        bpy.ops.wm.tool_set_by_id(tool.Blender.get_viewport_context(), name="bim.cad_tool")
+        tool.Blender.set_viewport_tool("bim.cad_tool")
 
         def mark_preview_edges(bm, bew_verts, new_edges, new_faces):
             preview_layer = bm.edges.layers.int["BBIM_preview"]
