@@ -288,7 +288,7 @@ class DumbSlabPlaner:
                     "geometry.add_slab_representation",
                     tool.Ifc.get(),
                     context=body_context,
-                    depth=thickness,
+                    depth=thickness * self.unit_scale,
                     x_angle=x_angle,
                 )
                 for inverse in tool.Ifc.get().get_inverse(representation):
@@ -313,7 +313,7 @@ class DumbSlabPlaner:
                 "geometry.add_slab_representation",
                 tool.Ifc.get(),
                 context=body_context,
-                depth=thickness,
+                depth=thickness * self.unit_scale,
                 x_angle=x_angle,
             )
             ifcopenshell.api.run(
