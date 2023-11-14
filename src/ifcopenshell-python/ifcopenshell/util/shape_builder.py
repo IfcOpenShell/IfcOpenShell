@@ -1172,10 +1172,9 @@ class ShapeBuilder:
         """
         print = lambda *args, **kwargs: __builtins__["print"](*args, **kwargs) if verbose else None
 
-        # offsets tend to have bunch of float point garbage
+        # vectors tend to have bunch of float point garbage
         # that can result in errors when we're calculating value for square root below
-        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(self.file)
-        offset = round_vector_to_precision(profile_offset, si_conversion)
+        offset = round_vector_to_precision(profile_offset, 1)
         diff = start_half_dim.xy - end_half_dim.xy
         diff = Vector([abs(i) for i in diff])
 
@@ -1320,7 +1319,7 @@ class ShapeBuilder:
         end_length: float,
         angle: float,
         radius: float,
-        profile_offset: Vector,
+        bend_vector: Vector,
         flip_z_axis: bool,
     ):
         """
@@ -1332,8 +1331,9 @@ class ShapeBuilder:
         :param type: float
         :param radius: bend radius
         :param type: float
-        :param profile_offset: offset between start and end segments in local space of start segment
-            used mainly to determine the seconn bend axis and it's direction.
+        :param bend_vector: offset between start and end segments in local space of start segment
+            used mainly to determine the second bend axis and it's direction (positive or negative),
+            the actual magnitude of the vector is not important (though near zero values will be ignored).
         :param type: Vector
         :param flip_z_axis: since we cannot determine z axis direction from the profile offset,
         there is an option to flip it if bend is going by start segment Z- axis.
@@ -1359,10 +1359,10 @@ class ShapeBuilder:
         is_circular_profile = profile.is_a("IfcCircleProfileDef")
         profile_dim = get_dim(profile, start_length)
 
-        rounded_offset = round_vector_to_precision(profile_offset, si_conversion)
-        lateral_axis = next(i for i in range(2) if not is_x(rounded_offset[i], 0))
+        rounded_bend_vector = round_vector_to_precision(bend_vector, si_conversion)
+        lateral_axis = next(i for i in range(2) if not is_x(rounded_bend_vector[i], 0))
         non_lateral_axis = 1 if lateral_axis == 0 else 0
-        lateral_sign = sign(profile_offset[lateral_axis])
+        lateral_sign = sign(bend_vector[lateral_axis])
         z_sign = -1 if flip_z_axis else 1
 
         rep_items = []

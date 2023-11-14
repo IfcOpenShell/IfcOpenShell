@@ -311,6 +311,7 @@ class MEPGenerator:
                     profile_joiner.set_depth(connected_obj, connected_element_length)
 
     def get_segment_data(self, segment):
+        """returns points data is in world space"""
         ports = tool.System.get_ports(segment)
         segment_object = tool.Ifc.get_object(segment)
         start_point = segment_object.location
@@ -1025,7 +1026,14 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
 
         # TODO: profile offset may need to be flipped (check transition code)
         to_start_object_space = start_object_rotation.inverted()
-        profile_offset = (to_start_object_space @ end_point) - (to_start_object_space @ start_point)
+        ref_point = end_point.copy()
+        end_segment_dir = (second_segment_end - end_point).normalized()
+        # we prioritize direction between end_point and start_point for bend_vector
+        # if those point match we use general end segment direction
+        if tool.Cad.is_x((end_point - start_point).length, 0):
+            ref_point = end_point + end_segment_dir
+        bend_vector = (to_start_object_space @ ref_point) - (to_start_object_space @ start_point)
+
         z_axis_end_object_local = to_start_object_space @ tool.Cad.get_basis_vector(end_object, 2)
 
         def check_for_double_bends():
@@ -1049,7 +1057,7 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
                 )
 
             non_lateral_axis = 0 if lateral_axes[0] == 1 else 1
-            non_lateral_axis_offset = profile_offset[non_lateral_axis]
+            non_lateral_axis_offset = bend_vector[non_lateral_axis]
             if not tool.Cad.is_x(non_lateral_axis_offset, 0):
                 return (
                     None,
@@ -1075,7 +1083,7 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
 
         angle, rotation_axis = get_bend_rotation()
 
-        lateral_sign = tool.Cad.sign(profile_offset[lateral_axis])
+        lateral_sign = tool.Cad.sign(bend_vector[lateral_axis])
         radial_offset = V(0, 0, 0)
         ref_point_radius = self.radius + profile_dim[lateral_axis]
         radial_offset[lateral_axis] = ref_point_radius * (1 - cos(angle)) * lateral_sign
@@ -1083,21 +1091,19 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
         end_port_offset = radial_offset + V(0, 0, self.start_length * start_segment_sign)
         end_port_offset += z_axis_end_object_local * (self.end_length * -end_segment_sign)
 
-        def get_segments_extend():
-            segments_intersection = segments_intersection_ws - start_point
-            segments_intersection = to_start_object_space @ segments_intersection
-
+        def get_segments_extend_points():
             # since tangent segments are equal
             # if drawn for the circle from the same point
             required_offset = ref_point_radius * tan(angle / 2)
 
-            current_start_offset = segments_intersection.length
-            current_end_offset = (segments_intersection - profile_offset).length
+            start_segment_extend_point = segments_intersection_ws - start_segment_sign * (
+                self.start_length + required_offset
+            ) * get_z_basis(start_object)
+            end_segment_extend_point = segments_intersection_ws - end_segment_sign * (
+                self.end_length + required_offset
+            ) * get_z_basis(end_object)
 
-            start_extend = current_start_offset - (required_offset + self.start_length)
-            end_extend = current_end_offset - (required_offset + self.end_length)
-
-            return start_extend, end_extend
+            return start_segment_extend_point, end_segment_extend_point
 
         def check_new_segment_length(start_point, end_point, extend_point):
             """Check if segment is placed too near to the bend point.
@@ -1117,8 +1123,7 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
             return None
 
         # adjust segments to fit the radius and angle
-        start_segment_extend, end_segment_extend = get_segments_extend()
-        start_segment_extend_point = start_point + start_segment_sign * start_segment_extend * get_z_basis(start_object)
+        start_segment_extend_point, end_segment_extend_point = get_segments_extend_points()
         projection = check_new_segment_length(first_segment_start, start_point, start_segment_extend_point)
         if projection is not None:
             self.report(
@@ -1127,7 +1132,6 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
             )
             return {"ERROR"}
 
-        end_segment_extend_point = end_point + end_segment_sign * end_segment_extend * get_z_basis(end_object)
         projection = check_new_segment_length(second_segment_end, end_point, end_segment_extend_point)
         if projection is not None:
             self.report(
@@ -1148,7 +1152,7 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
             self.end_length / si_conversion,
             angle,
             self.radius / si_conversion,
-            profile_offset / si_conversion,
+            bend_vector / si_conversion,
             flip_z_axis=start_segment_sign == -1,
         )
 
