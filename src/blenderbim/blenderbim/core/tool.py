@@ -253,7 +253,7 @@ class Drawing:
     def copy_representation(cls, source, dest): pass
     def create_annotation_context(cls, target_view, object_type=None): pass
     def create_annotation_object(cls, drawing, object_type): pass
-    def create_camera(cls, name, matrix): pass
+    def create_camera(cls, name, matrix, location_hint): pass
     def create_svg_schedule(cls, schedule): pass
     def create_svg_sheet(cls, document, titleblock): pass
     def delete_collection(cls, collection): pass
@@ -316,6 +316,7 @@ class Drawing:
     def is_drawing_active(cls): pass
     def is_editing_sheets(cls): pass
     def move_file(cls, src, dest): pass
+    def open_layout_svg(cls, uri): pass
     def open_spreadsheet(cls, uri): pass
     def open_svg(cls, filepath): pass
     def remove_literal_from_annotation(cls, obj, literal): pass
@@ -369,6 +370,7 @@ class Geometry:
     def remove_connection(cls, connection): pass
     def rename_object(cls, obj, name): pass
     def replace_object_with_empty(cls, obj): pass
+    def replace_object_data_globally(cls, old_data, new_data): pass
     def resolve_mapped_representation(cls, representation): pass
     def run_geometry_update_representation(cls, obj=None): pass
     def run_style_add_style(cls, obj=None): pass
@@ -377,6 +379,7 @@ class Geometry:
     def should_force_triangulation(cls): pass
     def should_generate_uvs(cls, obj): pass
     def should_use_presentation_style_assignment(cls): pass
+    def unresolve_type_representation(cls, representation, element): pass
 
 
 @interface
@@ -384,12 +387,11 @@ class Georeference:
     def angle2coords(cls, angle, type): pass
     def disable_editing(cls): pass
     def enable_editing(cls): pass
-    def enh2xyz(cls, map_conversion, coordinates): pass
+    def enh2xyz(cls, coordinates): pass
     def get_angle(cls, type): pass
     def get_coordinates(cls, io): pass
     def get_cursor_location(cls): pass
     def get_map_conversion_attributes(cls): pass
-    def get_map_conversion(cls): pass
     def get_projected_crs_attributes(cls): pass
     def get_true_north_attributes(cls): pass
     def import_map_conversion(cls): pass
@@ -402,7 +404,7 @@ class Georeference:
     def set_ifc_grid_north(cls): pass
     def set_ifc_true_north(cls): pass
     def set_vector_coordinates(cls, vector_coordinates, type): pass
-    def xyz2enh(cls, map_conversion, coordinates): pass
+    def xyz2enh(cls, coordinates): pass
 
 
 @interface
@@ -446,7 +448,7 @@ class Loader:
 
 @interface
 class Material:
-    def add_default_material_object(cls): pass
+    def add_default_material_object(cls, name): pass
     def add_material_to_set(cls, material_set, material): pass
     def delete_object(cls, obj): pass
     def disable_editing_material(cls): pass
@@ -810,6 +812,13 @@ class Spatial:
     def set_relative_object_matrix(cls, target_obj, relative_to_obj, matrix): pass
     def show_scene_objects(cls): pass
     #HERE STARTS SPATIAL TOOL
+    def is_bounding_class(cls, visible_element): pass
+    def get_space_polygon_from_context_visible_objects(cls, x, y): pass
+    def get_boundary_lines_from_context_visible_objects(cls, visible_objects): pass
+    def get_gross_mesh_from_element(cls, visible_element): pass
+    def create_mesh_from_shape(cls, shape): pass
+    def get_x_y_z_h_mat_from_active_obj(cls, active_obj): pass
+    def get_x_y_z_h_mat_from_cursor(cls): pass
     def get_union_shape_from_selected_objects(cls): pass
     def get_boundary_elements(cls, selected_objects): pass
     def get_polygons(cls, boundary_elements): pass
@@ -820,17 +829,31 @@ class Spatial:
     def get_buffered_poly_from_linear_ring(cls, linear_ring): pass
     def get_bmesh_from_polygon(cls, poly, h): pass
     def get_named_obj_from_bmesh(cls, name, bmesh): pass
+    def get_named_obj_from_mesh(cls, name, mesh): pass
+    def get_named_mesh_from_bmesh(cls, name, bmesh): pass
+    def get_transformed_mesh_from_local_to_global(cls, mesh): pass
+    def edit_active_space_obj_from_mesh(cls, mesh): pass
     def set_obj_origin_to_bboxcenter(cls, obj): pass
-    def get_active_obj_z(cls, obj): pass
+    def set_obj_origin_to_cursor_position(cls, obj): pass
+    def get_selected_objects(cls): pass
+    def get_active_obj(cls): pass
+    def get_active_obj_z(cls): pass
+    def get_active_obj_height(cls): pass
+    def get_relating_type_id(cls): pass
     def traslate_obj_to_z_location(cls, obj): pass
     def link_obj_to_active_collection(cls, obj): pass
     def get_2d_vertices_from_obj(cls, obj): pass
     def assign_swept_area_outer_curve_from_2d_vertices(cls, obj, vertices): pass
     def get_body_representation(cls, obj): pass
+    def assign_ifcspace_class_to_obj(cls, obj): pass
     def assign_type_to_obj(cls, obj): pass
+    def assign_relating_type_to_element(cls, ifc, Type, element, relating_type): pass
     def regen_obj_representation(cls, ifc, geometry, obj, body): pass
     def toggle_spaces_visibility_wired_and_textured(cls, spaces): pass
 
+@interface
+class Covering:
+    def get_z_from_ceiling_height(cls): pass
 
 @interface
 class Structural:
@@ -898,6 +921,7 @@ class System:
     def run_geometry_edit_object_placement(cls, obj=None): pass
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
     def select_system_products(cls, system): pass
+    def set_active_edited_system(cls, system): pass
     def set_active_system(cls, system): pass
 
 

@@ -259,7 +259,9 @@ class CreateDrawing(bpy.types.Operator):
                 with profile("Combine SVG layers"):
                     svg_path = self.combine_svgs(context, underlay_svg, linework_svg, annotation_svg)
 
-            tool.Drawing.open_with_user_command(context.preferences.addons["blenderbim"].preferences.svg_command, svg_path)
+            tool.Drawing.open_with_user_command(
+                context.preferences.addons["blenderbim"].preferences.svg_command, svg_path
+            )
 
         if self.print_all:
             bpy.ops.bim.activate_drawing(drawing=original_drawing_id, camera_view_point=False)
@@ -534,7 +536,7 @@ class CreateDrawing(bpy.types.Operator):
         root = etree.fromstring(results)
 
         group = root.find("{http://www.w3.org/2000/svg}g")
-        if not group:
+        if group is None:
             with open(svg_path, "wb") as svg:
                 svg.write(etree.tostring(root))
 
@@ -918,7 +920,7 @@ class CreateDrawing(bpy.types.Operator):
             join_criteria = join_criteria.split(",")
         else:
             # Drawing convention states that same objects classes with the same material are merged when cut.
-            join_criteria = ["class", "material.Name", 'r"Pset.*Common"."Status"']
+            join_criteria = ["class", "material.Name", "/Pset_.*Common/.Status", "EPset_Status.Status"]
 
         group = root.find("{http://www.w3.org/2000/svg}g")
         joined_paths = {}

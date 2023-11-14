@@ -472,6 +472,7 @@ class AppendLibraryElement(bpy.types.Operator):
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = self.file
         ifc_importer.type_collection = type_collection
+        ifc_importer.process_context_filter()
         ifc_importer.material_creator.load_existing_materials()
         self.import_materials(element, ifc_importer)
         self.import_styles(element, ifc_importer)
@@ -808,9 +809,9 @@ class ToggleFilterCategories(bpy.types.Operator):
 
 class LinkIfc(bpy.types.Operator):
     bl_idname = "bim.link_ifc"
-    bl_label = "Link IFC"
+    bl_label = "Link Blend/IFC File"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Link a Blender file"
+    bl_description = "This will link the Blender file that is synced with the IFC file"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     files: bpy.props.CollectionProperty(name="Files", type=bpy.types.OperatorFileListElement)
     directory: bpy.props.StringProperty(subtype="DIR_PATH")
@@ -1114,8 +1115,8 @@ class ExportIFC(bpy.types.Operator):
     @classmethod
     def description(cls, context, properties):
         if properties.should_save_as:
-            return "Export the IFC project to a selected file"
-        return "Export the IFC project to this file"
+            return "Save the IFC file under a new name, or relocate file"
+        return "Save the IFC file.  Will save both .IFC/.BLEND files if synced together"
 
 
 class ImportIFC(bpy.types.Operator):

@@ -125,7 +125,7 @@ class Writer:
         else:
             self.config = getattr(self.parser.preset, "config")
 
-    def write(self, null="N/A", empty="-", bool_true="YES", bool_false="NO"):
+    def write(self, null="N/A", empty="-", bool_true="YES", bool_false="NO", list_separator=", "):
         self.categories = {}
         null = self.config.get("null", null)
         empty = self.config.get("empty", empty)
@@ -155,6 +155,8 @@ class Writer:
                         value = bool_true
                     elif value is False:
                         value = bool_false
+                    elif isinstance(value, (list, tuple)):
+                        value = list_separator.join([str(v) for v in value])
                     processed_row.append(value)
                 rows.append(processed_row)
 
@@ -256,10 +258,13 @@ class Writer:
                         cell_format = "n"
                     else:
                         cell_format = colours[c - 1]  # Adjusted the indexing
-                    cell = worksheet.cell(row=r, column=c, value=col)
+                    cell = worksheet.cell(row=r, column=c, value=str(col))
                     cell.fill = cell_formats[cell_format]
                     c += 1
                 r += 1
+
+        if "Sheet" in workbook.sheetnames and len(workbook.sheetnames) > 1:
+            workbook.remove(workbook["Sheet"])
 
         workbook.save(output)
 

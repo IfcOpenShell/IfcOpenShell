@@ -26,6 +26,7 @@ from blenderbim.bim.helper import prop_with_search, close_operator_panel
 from bpy.types import WorkSpaceTool
 from blenderbim.bim.module.model.data import AuthoringData
 from blenderbim.bim.module.drawing.data import DecoratorData
+from blenderbim.bim.module.system.data import PortData
 from blenderbim.bim.module.model.prop import get_ifc_class
 
 
@@ -218,6 +219,9 @@ class BimToolUI:
             row.label(text="No IFC Project", icon="ERROR")
             return
 
+        if not PortData.is_loaded:
+            PortData.load()
+
         if not AuthoringData.is_loaded:
             AuthoringData.load(ifc_element_type)
         elif ifc_element_type == "all" and AuthoringData.data["ifc_element_type"] is not None:
@@ -348,16 +352,15 @@ class BimToolUI:
                 "IfcPipeSegment",
             ):
                 add_layout_hotkey_operator(cls.layout, "Add Fitting", "S_F", "")
-                add_layout_hotkey_operator(
-                    cls.layout, "Regen MEP", "S_G", bpy.ops.bim.regenerate_distribution_element.__doc__
-                )
+
                 if context.region.type != "TOOL_HEADER":
                     cls.layout.operator("bim.mep_add_bend")
                     cls.layout.operator("bim.mep_add_transition")
                     cls.layout.operator("bim.mep_add_obstruction")
-                    cls.layout.operator("bim.mep_connect_elements")
+
             else:
                 add_layout_hotkey_operator(cls.layout, "Edit Axis", "A_E", "")
+                add_layout_hotkey_operator(cls.layout, "Flip", "S_F", bpy.ops.bim.flip_object.__doc__)
                 add_layout_hotkey_operator(cls.layout, "Butt", "S_T", "")
                 add_layout_hotkey_operator(cls.layout, "Mitre", "S_Y", "")
                 add_layout_hotkey_operator(cls.layout, "Rotate 90", "S_R", bpy.ops.bim.rotate_90.__doc__)
@@ -401,6 +404,12 @@ class BimToolUI:
             row.label(text="", icon=f"EVENT_TAB")
             row.operator("bim.enable_editing_roof_path", text="Edit Roof Path")
 
+        if context.region.type != "TOOL_HEADER" and PortData.data["total_ports"] > 0:
+            add_layout_hotkey_operator(
+                cls.layout, "Regen MEP", "S_G", bpy.ops.bim.regenerate_distribution_element.__doc__
+            )
+            cls.layout.operator("bim.mep_connect_elements")
+
         row = cls.layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
         row.label(text="", icon="EVENT_O")
@@ -418,11 +427,14 @@ class BimToolUI:
                 row.operator("bim.show_openings", icon="HIDE_OFF", text="")
 
         if AuthoringData.data["active_class"] in ("IfcOpeningElement",):
+            row.operator("bim.edit_openings", icon="CHECKMARK", text="")
+            row.operator("bim.hide_openings", icon="CANCEL", text="")
             if len(context.selected_objects) == 2:
                 row = cls.layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_L")
                 row.operator("bim.clone_opening", text="Clone Opening")
+                
 
         cls.layout.row(align=True).label(text="Align")
         add_layout_hotkey_operator(cls.layout, "Align Exterior", "S_X", "")
@@ -615,6 +627,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             usage = tool.Model.get_usage_type(element)
             if not usage:
                 representation = tool.Geometry.get_active_representation(obj)
+                representation = tool.Geometry.resolve_mapped_representation(representation)
                 if representation and representation.RepresentationType == "SweptSolid":
                     usage = "SWEPTSOLID"
                 else:
@@ -668,25 +681,29 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.flip_wall()
         elif self.active_class in ("IfcWindow", "IfcWindowStandardCase", "IfcDoor", "IfcDoorStandardCase"):
             bpy.ops.bim.flip_fill()
+        elif self.active_class in ("IfcBeam", "IfcColumn"):
+            bpy.ops.bim.flip_object(flip_local_axes="XZ")
         elif self.active_class in ("IfcDuctSegment", "IfcPipeSegment", "IfcCableCarrierSegment", "IfcCableSegment"):
             bpy.ops.bim.fit_flow_segments()
 
     def hotkey_S_G(self):
+        obj = bpy.context.active_object
+        element = tool.Ifc.get_entity(obj)
         if not bpy.context.selected_objects:
             if self.props.ifc_class == "IfcSpaceType":
                 bpy.ops.bim.generate_space()
             return
         if self.active_material_usage == "LAYER2":
             bpy.ops.bim.recalculate_wall()
+        elif tool.System.get_ports(element):
+            bpy.ops.bim.regenerate_distribution_element()
         elif self.active_material_usage == "PROFILE":
-            if self.active_class in (
+            if self.active_class not in (
                 "IfcCableCarrierSegment",
                 "IfcCableSegment",
                 "IfcDuctSegment",
                 "IfcPipeSegment",
             ):
-                bpy.ops.bim.regenerate_distribution_element()
-            else:
                 bpy.ops.bim.recalculate_profile()
         elif self.active_class in ("IfcWindow", "IfcWindowStandardCase", "IfcDoor", "IfcDoorStandardCase"):
             bpy.ops.bim.recalculate_fill()

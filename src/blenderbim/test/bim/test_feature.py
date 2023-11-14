@@ -28,6 +28,7 @@ from blenderbim.tool.brick import BrickStore
 from blenderbim.bim.module.model.data import AuthoringData
 from pytest_bdd import scenarios, given, when, then, parsers
 from mathutils import Vector
+from math import radians
 
 scenarios("feature")
 
@@ -106,6 +107,20 @@ def the_brickschema_is_stubbed():
 def i_load_a_new_pset_template_file():
     IfcStore.pset_template_path = bpy.context.scene.BIMPsetTemplateProperties.pset_template_files
     IfcStore.pset_template_file = ifcopenshell.open(IfcStore.pset_template_path)
+
+
+@given("I create default MEP types")
+def i_create_default_mep_types():
+    model_props = bpy.context.scene.BIMModelProperties
+
+    model_props.type_class = "IfcDuctSegmentType"
+    model_props.type_name = "RECT1"
+    model_props.type_template = "FLOW_SEGMENT_RECTANGULAR"
+    bpy.ops.bim.add_type()
+
+    model_props.type_template = "FLOW_SEGMENT_CIRCULAR"
+    model_props.type_name = "RECT2"
+    bpy.ops.bim.add_type()
 
 
 @given("I add a cube")
@@ -227,13 +242,23 @@ def then_the_object_name_is_selected(name):
     assert obj in bpy.context.selected_objects
 
 
+@given(parsers.parse('the object "{name}" is rotated by "{rotation_deg}" deg'))
+@when(parsers.parse('the object "{name}" is rotated by "{rotation_deg}" deg'))
+def the_object_name_is_rotated_by(name, rotation_deg):
+    rotation_deg = [radians(float(rot)) for rot in rotation_deg.split(",")]
+    obj = the_object_name_exists(name)
+    obj.rotation_euler[0] += rotation_deg[0]
+    obj.rotation_euler[1] += rotation_deg[1]
+    obj.rotation_euler[2] += rotation_deg[2]
+    bpy.context.view_layer.update()  # make sure matrix is updated
+
+
 @given(parsers.parse('the object "{name}" is moved to "{location}"'))
 @when(parsers.parse('the object "{name}" is moved to "{location}"'))
 def the_object_name_is_moved_to_location(name, location):
     location = [float(co) for co in location.split(",")]
-    the_object_name_exists(name).matrix_world[0][3] = location[0]
-    the_object_name_exists(name).matrix_world[1][3] = location[1]
-    the_object_name_exists(name).matrix_world[2][3] = location[2]
+    obj = the_object_name_exists(name)
+    obj.matrix_world.translation = location
 
 
 @given(parsers.parse('the object "{name}" is scaled to "{scale}"'))

@@ -18,8 +18,8 @@
 
 import bpy
 import ifcopenshell
-from ifcopenshell.util.doc import get_entity_doc
 import blenderbim.tool as tool
+from ifcopenshell.util.doc import get_entity_doc
 
 
 def refresh():
@@ -33,8 +33,17 @@ class StylesData:
 
     @classmethod
     def load(cls):
-        cls.data = {"style_types": cls.style_types(), "total_styles": cls.total_styles()}
+        cls.data = {
+            "style_types": cls.style_types(),
+            "total_styles": cls.total_styles(),
+            "reflectance_methods": cls.reflectance_methods(),
+        }
         cls.is_loaded = True
+
+    @classmethod
+    def reflectance_methods(cls):
+        declaration = tool.Ifc.schema().declaration_by_name("IfcReflectanceMethodEnum")
+        return [(i, i, "") for i in declaration.enumeration_items()]
 
     @classmethod
     def style_types(cls):

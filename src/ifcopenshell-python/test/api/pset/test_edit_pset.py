@@ -168,7 +168,9 @@ class TestEditPset(test.bootstrap.IFC4):
         assert pset.HasProperties[0].NominalValue.wrappedValue == 34
 
     def test_editing_list_valued_properties(self):
-        cable = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcDistributionPort", predefined_type="CABLE")
+        cable = ifcopenshell.api.run(
+            "root.create_entity", self.file, ifc_class="IfcDistributionPort", predefined_type="CABLE"
+        )
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=cable, name="Pset_DistributionPortTypeCable")
         ifcopenshell.api.run(
             "pset.edit_pset",
@@ -178,10 +180,10 @@ class TestEditPset(test.bootstrap.IFC4):
                 "Protocols": ["One", "Two", "Three"],
             },
         )
-        assert pset.HasProperties[0].is_a('IfcPropertyListValue')
+        assert pset.HasProperties[0].is_a("IfcPropertyListValue")
         assert len(pset.HasProperties[0].ListValues) == 3
-        assert set(map(ifcopenshell.entity_instance.is_a, pset.HasProperties[0].ListValues)) == {'IfcIdentifier'}
-        assert list(map(operator.itemgetter(0), pset.HasProperties[0].ListValues)) == ['One', 'Two', 'Three']
+        assert set(map(ifcopenshell.entity_instance.is_a, pset.HasProperties[0].ListValues)) == {"IfcIdentifier"}
+        assert list(map(operator.itemgetter(0), pset.HasProperties[0].ListValues)) == ["One", "Two", "Three"]
 
     def test_editing_properties_with_an_explicit_type(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
@@ -262,10 +264,10 @@ class TestEditPset(test.bootstrap.IFC4):
                             "Name": "foo",
                             "TemplateType": "P_SINGLEVALUE",
                             "PrimaryMeasureType": "IfcContextDependentMeasure",
-                        }
+                        },
                     )
                 ],
-            }
+            },
         )
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foo_Bar")
@@ -282,3 +284,19 @@ class TestEditPset(test.bootstrap.IFC4):
         assert pset.HasProperties[0].Name == "foo"
         assert pset.HasProperties[0].NominalValue.is_a("IfcContextDependentMeasure")
         assert pset.HasProperties[0].NominalValue.wrappedValue == 12
+
+    def test_editing_a_shared_property(self):
+        element1 = self.file.createIfcMaterial()
+        element2 = self.file.createIfcMaterial()
+        pset1 = ifcopenshell.api.run("pset.add_pset", self.file, product=element1, name="Foo_Bar")
+        pset2 = ifcopenshell.api.run("pset.add_pset", self.file, product=element2, name="Foo_Bar")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset1, properties={"foo": "bar"})
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset2, properties={"foo2": "bar2"})
+        element1.HasProperties[0].Properties = list(element1.HasProperties[0].Properties) + list(
+            element2.HasProperties[0].Properties
+        )
+        assert ifcopenshell.util.element.get_pset(element1, "Foo_Bar", "foo2") == "bar2"
+        assert ifcopenshell.util.element.get_pset(element2, "Foo_Bar", "foo2") == "bar2"
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset1, properties={"foo2": "bar3"})
+        assert ifcopenshell.util.element.get_pset(element1, "Foo_Bar", "foo2") == "bar3"
+        assert ifcopenshell.util.element.get_pset(element2, "Foo_Bar", "foo2") == "bar2"

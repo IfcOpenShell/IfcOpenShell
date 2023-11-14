@@ -90,7 +90,7 @@ class Ids:
         return ids_dict
 
     def parse(self, data):
-        for attribute in ["title", "copyright", "version", "description", "author"]:
+        for attribute in ["title", "copyright", "version", "description", "author", "date", "purpose", "milestone"]:
             value = data["info"].get(attribute)
             if value:
                 self.info[attribute] = value
