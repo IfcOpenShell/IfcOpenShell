@@ -97,8 +97,7 @@ class TestSetCursorLocation:
 class TestConvertLocalToGlobal:
     def test_run(self, georeference):
         georeference.get_coordinates("input").should_be_called().will_return("coordinates")
-        georeference.get_map_conversion().should_be_called().will_return("map_conversion")
-        georeference.xyz2enh("coordinates", "map_conversion").should_be_called().will_return("enh")
+        georeference.xyz2enh("coordinates").should_be_called().will_return("enh")
         georeference.set_coordinates("output", "enh").should_be_called()
         georeference.set_cursor_location("enh").should_be_called()
         subject.convert_local_to_global(georeference)
@@ -107,8 +106,7 @@ class TestConvertLocalToGlobal:
 class TestConvertGlobalToLocal:
     def test_run(self, georeference):
         georeference.get_coordinates("input").should_be_called().will_return("coordinates")
-        georeference.get_map_conversion().should_be_called().will_return("map_conversion")
-        georeference.enh2xyz("coordinates", "map_conversion").should_be_called().will_return("xyz")
+        georeference.enh2xyz("coordinates").should_be_called().will_return("xyz")
         georeference.set_coordinates("output", "xyz").should_be_called()
         georeference.set_cursor_location("xyz").should_be_called()
         subject.convert_global_to_local(georeference)

@@ -118,13 +118,15 @@ class Misc(blenderbim.core.tool.Misc):
 
             mod = new_obj.modifiers.new(type="BOOLEAN", name="Boolean")
             mod.object = cutter
-            bpy.ops.object.modifier_apply({"object": new_obj}, modifier="Boolean")
+            with bpy.context.temp_override(object=new_obj):
+                bpy.ops.object.modifier_apply(modifier="Boolean")
 
             bm_flipped.to_mesh(cutter_mesh)
 
             mod = obj.modifiers.new(type="BOOLEAN", name="Boolean")
             mod.object = cutter
-            bpy.ops.object.modifier_apply({"object": obj}, modifier="Boolean")
+            with bpy.context.temp_override(object=obj):
+                bpy.ops.object.modifier_apply(modifier="Boolean")
 
             bm.to_mesh(cutter_mesh)
 

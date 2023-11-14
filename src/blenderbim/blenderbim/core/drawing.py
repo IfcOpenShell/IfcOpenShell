@@ -90,7 +90,7 @@ def add_sheet(ifc, drawing, titleblock=None):
 
 
 def open_sheet(drawing, sheet=None):
-    drawing.open_svg(drawing.get_document_uri(sheet, "LAYOUT"))
+    drawing.open_layout_svg(drawing.get_document_uri(sheet, "LAYOUT"))
 
 
 def remove_sheet(ifc, drawing, sheet=None):
@@ -190,7 +190,7 @@ def disable_editing_drawings(drawing):
 def add_drawing(ifc, collector, drawing, target_view=None, location_hint=None):
     drawing_name = drawing.ensure_unique_drawing_name(drawing.generate_drawing_name(target_view, location_hint))
     drawing_matrix = drawing.generate_drawing_matrix(target_view, location_hint)
-    camera = drawing.create_camera(drawing_name, drawing_matrix)
+    camera = drawing.create_camera(drawing_name, drawing_matrix, location_hint)
     element = drawing.run_root_assign_class(
         obj=camera,
         ifc_class="IfcAnnotation",

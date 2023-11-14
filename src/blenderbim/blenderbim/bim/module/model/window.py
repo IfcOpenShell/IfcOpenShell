@@ -119,13 +119,7 @@ def update_window_modifier_representation(context, obj):
         }
         representation_data["panel_properties"].append(panel_data)
 
-    def get_active_representation_context(obj):
-        active_representation = tool.Geometry.get_active_representation(obj)
-        if active_representation:
-            return active_representation.ContextOfItems
-        return ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
-
-    previously_active_context = get_active_representation_context(obj)
+    previously_active_context = tool.Geometry.get_active_representation_context(obj)
 
     # ELEVATION_VIEW representation
     profile = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Profile", "ELEVATION_VIEW")
@@ -154,7 +148,7 @@ def update_window_modifier_representation(context, obj):
 
     # adding switch representation at the end instead of changing order of representations
     # to prevent #2744
-    if get_active_representation_context(obj) != previously_active_context:
+    if tool.Geometry.get_active_representation_context(obj) != previously_active_context:
         previously_active_representation = ifcopenshell.util.representation.get_representation(
             element,
             previously_active_context.ContextType,
@@ -502,7 +496,7 @@ class AddWindow(bpy.types.Operator, tool.Ifc.Operator):
             "pset.edit_pset",
             tool.Ifc.get(),
             pset=pset,
-            properties={"Data": json.dumps(window_data, default=list)},
+            properties={"Data": tool.Ifc.get().createIfcText(json.dumps(window_data, default=list))},
         )
         update_window_modifier_representation(context, obj)
         return {"FINISHED"}
@@ -559,7 +553,7 @@ class FinishEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
         update_window_modifier_representation(context, obj)
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Window")
-        window_data = json.dumps(window_data, default=list)
+        window_data = tool.Ifc.get().createIfcText(json.dumps(window_data, default=list))
         ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": window_data})
         return {"FINISHED"}
 

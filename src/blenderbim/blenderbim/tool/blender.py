@@ -186,6 +186,11 @@ class Blender:
             setattr(region_3d, attr, data[attr])
 
     @classmethod
+    def set_viewport_tool(cls, tool_name):
+        with bpy.context.temp_override(**tool.Blender.get_viewport_context()):
+            bpy.ops.wm.tool_set_by_id(name=tool_name)
+
+    @classmethod
     def get_shader_editor_context(cls):
         for screen in bpy.data.screens:
             for area in screen.areas:
@@ -197,6 +202,15 @@ class Blender:
 
     @classmethod
     def copy_node_graph(cls, material_to, material_from):
+        
+        # https://projects.blender.org/blender/blender/issues/108763
+        if bpy.app.version >= (4, 0):
+            print(
+                "WARNING. Copying node graph is not yet supported on Blender 4.0+ due Blender bug, "
+                f"copying node graph from {material_from.name} to {material_to.name} will be skipped"
+            )
+            return
+
         temp_override = cls.get_shader_editor_context()
         shader_editor = temp_override["space"]
 
@@ -238,6 +252,15 @@ class Blender:
     @classmethod
     def update_viewport(cls):
         tool.Blender.get_viewport_context()["area"].tag_redraw()
+
+    @classmethod
+    def force_depsgraph_update(cls):
+        """useful if you need to trigger callbacks like `depsgraph_update_pre`"""
+        # blender is requiring some ID to be changed
+        # to trigger depsgraph update
+        scene = bpy.context.scene
+        scene.show_subframe = scene.show_subframe
+        bpy.context.view_layer.update()
 
     @classmethod
     def ensure_unique_name(cls, name, objects, iteration=0):
@@ -343,6 +366,8 @@ class Blender:
             "max_y": bound_box[6][1],
             "min_z": bound_box[0][2],
             "max_z": bound_box[6][2],
+            "min_point": Vector(bound_box[0]),
+            "max_point": Vector(bound_box[6]),
             "center": (Vector(bound_box[6]) + Vector(bound_box[0])) / 2,
         }
         return bbox_dict
@@ -355,9 +380,10 @@ class Blender:
         active_object.select_set(True)
 
     @classmethod
-    def set_objects_selection(cls, context, active_object, selected_objects):
-        for obj in context.selected_objects:
-            obj.select_set(False)
+    def set_objects_selection(cls, context, active_object, selected_objects, clear_previous_selection=True):
+        if clear_previous_selection:
+            for obj in context.selected_objects:
+                obj.select_set(False)
         for obj in selected_objects:
             obj.select_set(True)
         context.view_layer.objects.active = active_object

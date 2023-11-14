@@ -23,8 +23,10 @@ from mathutils import Vector
 
 
 def refresh():
-    DerivedPlacementsData.is_loaded = False
+    PlacementData.is_loaded = False
+    DerivedCoordinatesData.is_loaded = False
     RepresentationsData.is_loaded = False
+    RepresentationItemsData.is_loaded = False
     ConnectionsData.is_loaded = False
 
 
@@ -89,6 +91,50 @@ class RepresentationsData:
                 )
             )
         return results
+
+
+class RepresentationItemsData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {
+            "total_items": cls.total_items(),
+            "active_surface_style": cls.active_surface_style(),
+            "active_layer": cls.active_layer(),
+        }
+        cls.is_loaded = True
+
+    @classmethod
+    def total_items(cls):
+        active_representation_id = None
+        result = 0
+        if bpy.context.active_object.data and hasattr(bpy.context.active_object.data, "BIMMeshProperties"):
+            active_representation_id = bpy.context.active_object.data.BIMMeshProperties.ifc_definition_id
+            element = tool.Ifc.get().by_id(active_representation_id)
+            if not element.is_a("IfcShapeRepresentation"):
+                return 0
+            queue = list(element.Items)
+            while queue:
+                item = queue.pop()
+                if item.is_a("IfcMappedItem"):
+                    queue.extend(item.MappingSource.MappedRepresentation.Items)
+                else:
+                    result += 1
+        return result
+
+    @classmethod
+    def active_surface_style(cls):
+        props = bpy.context.active_object.BIMGeometryProperties
+        if props.active_item_index < len(props.items):
+            return props.items[props.active_item_index].surface_style
+
+    @classmethod
+    def active_layer(cls):
+        props = bpy.context.active_object.BIMGeometryProperties
+        if props.active_item_index < len(props.items):
+            return props.items[props.active_item_index].layer
 
 
 class ConnectionsData:
@@ -184,7 +230,7 @@ class ConnectionsData:
         return results
 
 
-class DerivedPlacementsData:
+class DerivedCoordinatesData:
     data = {}
     is_loaded = False
 
@@ -263,6 +309,25 @@ class DerivedPlacementsData:
         for i, storey in enumerate(storeys):
             if storey[0] != element:
                 continue
-            if i >= len(storeys):
+            if i >= len(storeys) - 1:
                 return "N/A"
             return "{0:.3f}".format(round(storeys[i + 1][1] - storey[1], 3))
+
+
+class PlacementData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {
+            "has_placement": cls.has_placement(),
+        }
+        cls.is_loaded = True
+
+    @classmethod
+    def has_placement(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if element and hasattr(element, "ObjectPlacement"):
+            return True
+        return False

@@ -69,7 +69,7 @@ class Usecase:
                     continue
                 if prop.is_a("IfcPropertyEnumeratedValue"):
                     enumeration = prop.EnumerationReference
-                    if self.file.get_total_inverses(enumeration) == 1:
+                    if enumeration and self.file.get_total_inverses(enumeration) == 1:
                         self.file.remove(enumeration)
                 self.file.remove(prop)
             self.file.remove(self.settings["pset"])

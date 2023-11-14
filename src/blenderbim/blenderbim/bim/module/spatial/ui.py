@@ -62,6 +62,7 @@ class BIM_PT_spatial(Panel):
             row.operator("bim.disable_editing_container", icon="CANCEL", text="")
 
             self.layout.template_list("BIM_UL_containers", "", props, "containers", props, "active_container_index")
+            self.layout.prop(osprops, "relating_container_object")
         else:
             row = self.layout.row(align=True)
             if SpatialData.data["label"]:
@@ -103,7 +104,7 @@ class BIM_PT_SpatialManager(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
-    bl_parent_id = "BIM_PT_project_setup"
+    bl_parent_id = "BIM_PT_tab_project_setup"
 
     @classmethod
     def poll(cls, context):

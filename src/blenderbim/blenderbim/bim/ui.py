@@ -132,6 +132,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         description='E.g. [["inkscape", "svg", "-o", "eps"], ["pstoedit", "-dt", "-f", "dxf:-polyaslines -mm", "eps", "dxf", "-psarg", "-dNOSAFER"]]',
     )
     svg_command: StringProperty(name="SVG Command", description='E.g. [["firefox", "path"]]')
+    layout_svg_command: StringProperty(name="Layout SVG Command", description='E.g. [["firefox", "path"]]')
     pdf_command: StringProperty(name="PDF Command", description='E.g. [["firefox", "path"]]')
     spreadsheet_command: StringProperty(name="Spreadsheet Command", description='E.g. [["libreoffice", "path"]]')
     openlca_port: IntProperty(name="OpenLCA IPC Port", default=8080)
@@ -204,6 +205,8 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.prop(self, "svg2dxf_command")
         row = layout.row()
         row.prop(self, "svg_command")
+        row = layout.row()
+        row.prop(self, "layout_svg_command")
         row = layout.row()
         row.prop(self, "pdf_command")
         row = layout.row()
@@ -336,7 +339,7 @@ class BIM_PT_tabs(Panel):
         tab_entry.enabled = enabled
 
 
-class BIM_PT_project_info(Panel):
+class BIM_PT_tab_project_info(Panel):
     bl_label = "Project Info"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -350,8 +353,22 @@ class BIM_PT_project_info(Panel):
         pass
 
 
-class BIM_PT_project_setup(Panel):
+class BIM_PT_tab_project_setup(Panel):
     bl_label = "Project Setup"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "PROJECT")
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_stakeholders(Panel):
+    bl_label = "Stakeholders"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -359,7 +376,7 @@ class BIM_PT_project_setup(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "PROJECT")
+        return tool.Blender.is_tab(context, "PROJECT") and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -394,7 +411,7 @@ class BIM_PT_tab_grouping_and_filtering(Panel):
         pass
 
 
-class BIM_PT_geometry(Panel):
+class BIM_PT_tab_geometry(Panel):
     bl_label = "Geometry"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -492,6 +509,20 @@ class BIM_PT_tab_services(Panel):
         pass
 
 
+class BIM_PT_tab_zones(Panel):
+    bl_label = "Zones"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "SERVICES") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
 class BIM_PT_tab_quality_control(Panel):
     bl_label = "Quality Control"
     bl_space_type = "PROPERTIES"
@@ -547,6 +578,21 @@ class BIM_PT_tab_object_metadata(Panel):
     @classmethod
     def poll(cls, context):
         return tool.Blender.is_tab(context, "OBJECT") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_placement(Panel):
+    bl_label = "Placement"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_order = 1
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "GEOMETRY") and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -629,8 +675,8 @@ class BIM_PT_tab_styles(Panel):
         pass
 
 
-class BIM_PT_tab_services_object(Panel):
-    bl_label = "Services"
+class BIM_PT_tab_profiles(Panel):
+    bl_label = "Profiles"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -638,7 +684,67 @@ class BIM_PT_tab_services_object(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "SERVICES") and tool.Ifc.get()
+        return tool.Blender.is_tab(context, "GEOMETRY") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_sheets(Panel):
+    bl_label = "Sheets"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_order = 1
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "DRAWINGS") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_drawings(Panel):
+    bl_label = "Drawings"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_order = 1
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "DRAWINGS") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_schedules(Panel):
+    bl_label = "Schedules"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_order = 1
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "DRAWINGS") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_references(Panel):
+    bl_label = "References"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_order = 1
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "DRAWINGS") and tool.Ifc.get()
 
     def draw(self, context):
         pass

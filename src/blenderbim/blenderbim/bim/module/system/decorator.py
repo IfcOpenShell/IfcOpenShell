@@ -122,15 +122,15 @@ class SystemDecorator:
         selected_vertices = decoration_data["selected_vertices"]
 
         ### Actually drawing
-        # 3D_POLYLINE_UNIFORM_COLOR is good for smoothed lines since `bgl.enable(GL_LINE_SMOOTH)` is deprecated
-        self.line_shader = gpu.shader.from_builtin("3D_POLYLINE_UNIFORM_COLOR")
+        # POLYLINE_UNIFORM_COLOR is good for smoothed lines since `bgl.enable(GL_LINE_SMOOTH)` is deprecated
+        self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
         self.line_shader.bind()
         # POLYLINE_UNIFORM_COLOR specific uniforms
         self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
         self.line_shader.uniform_float("lineWidth", 2.0)
 
         # general shader
-        self.shader = gpu.shader.from_builtin("3D_UNIFORM_COLOR")
+        self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
         self.shader.bind()
 
         self.draw_batch("LINES", all_vertices, transparent_color(unselected_elements_color), unselected_edges)

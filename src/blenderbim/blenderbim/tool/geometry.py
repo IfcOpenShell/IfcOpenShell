@@ -28,7 +28,7 @@ import blenderbim.core.style
 import blenderbim.core.spatial
 import blenderbim.tool as tool
 import blenderbim.bim.import_ifc
-from math import radians
+from math import radians, pi
 from mathutils import Vector, Matrix
 from blenderbim.bim.ifc import IfcStore
 
@@ -37,11 +37,15 @@ class Geometry(blenderbim.core.tool.Geometry):
     @classmethod
     def change_object_data(cls, obj, data, is_global=False):
         if is_global:
-            if obj.mode == "EDIT":
-                raise Exception("user_remap is not supported in EDIT mode")
-            obj.data.user_remap(data)
+            cls.replace_object_data_globally(obj.data, data)
         else:
             obj.data = data
+
+    @classmethod
+    def replace_object_data_globally(cls, old_data, new_data):
+        if getattr(old_data, "is_editmode", None):
+            raise Exception("user_remap is not supported for meshes in EDIT mode")
+        old_data.user_remap(new_data)
 
     @classmethod
     def clear_cache(cls, element):
@@ -66,7 +70,8 @@ class Geometry(blenderbim.core.tool.Geometry):
                 context_override = {}
                 context_override["object"] = context_override["active_object"] = obj
                 context_override["selected_objects"] = context_override["selected_editable_objects"] = [obj]
-                bpy.ops.object.transform_apply(context_override, location=False, rotation=False, scale=True)
+                with bpy.context.temp_override(**context_override):
+                    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
             else:
                 obj.scale = Vector((1.0, 1.0, 1.0))
 
@@ -298,6 +303,32 @@ class Geometry(blenderbim.core.tool.Geometry):
             return tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
 
     @classmethod
+    def get_active_representation_context(cls, obj):
+        active_representation = tool.Geometry.get_active_representation(obj)
+        if active_representation:
+            return active_representation.ContextOfItems
+        return ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+
+    @classmethod
+    def get_subcontext_parameters(cls, subcontext):
+        return (
+            subcontext.ContextType,
+            subcontext.ContextIdentifier,
+            getattr(subcontext, "TargetView", None),
+        )
+
+    @classmethod
+    def get_representation_by_context(cls, element, context):
+        if element.is_a("IfcProduct") and element.Representation:
+            for r in element.Representation.Representations:
+                if r.ContextOfItems == context:
+                    return r
+        elif element.is_a("IfcTypeProduct") and element.RepresentationMaps:
+            for r in element.RepresentationMaps:
+                if r.MappedRepresentation.ContextOfItems == context:
+                    return r.MappedRepresentation
+
+    @classmethod
     def get_cartesian_point_coordinate_offset(cls, obj):
         props = bpy.context.scene.BIMGeoreferenceProperties
         if props.has_blender_offset and obj.BIMObjectProperties.blender_offset_type == "CARTESIAN_POINT":
@@ -449,23 +480,28 @@ class Geometry(blenderbim.core.tool.Geometry):
         element = tool.Ifc.get_entity(obj)
         settings = ifcopenshell.geom.settings()
         settings.set(settings.WELD_VERTICES, True)
-
         context = representation.ContextOfItems
-        if context.ContextIdentifier == "Body" and context.TargetView == "MODEL_VIEW":
+
+        if element.is_a("IfcTypeProduct"):
+            # You may only specify a single representation when creating shapes for types
             try:
-                if element.is_a("IfcTypeProduct") or not apply_openings:
-                    shape = ifcopenshell.geom.create_shape(settings, representation)
-                else:
-                    shape = ifcopenshell.geom.create_shape(settings, element)
+                shape = ifcopenshell.geom.create_shape(settings, representation)
             except:
                 settings.set(settings.INCLUDE_CURVES, True)
-                if element.is_a("IfcTypeProduct") or not apply_openings:
-                    shape = ifcopenshell.geom.create_shape(settings, representation)
-                else:
-                    shape = ifcopenshell.geom.create_shape(settings, element)
+                shape = ifcopenshell.geom.create_shape(settings, representation)
         else:
-            settings.set(settings.INCLUDE_CURVES, True)
-            shape = ifcopenshell.geom.create_shape(settings, representation)
+            if not apply_openings:
+                settings.set(settings.DISABLE_OPENING_SUBTRACTIONS, True)
+
+            if context.ContextIdentifier == "Body" and context.TargetView == "MODEL_VIEW":
+                try:
+                    shape = ifcopenshell.geom.create_shape(settings, element, representation)
+                except:
+                    settings.set(settings.INCLUDE_CURVES, True)
+                    shape = ifcopenshell.geom.create_shape(settings, element, representation)
+            else:
+                settings.set(settings.INCLUDE_CURVES, True)
+                shape = ifcopenshell.geom.create_shape(settings, element, representation)
 
         ifc_importer = blenderbim.bim.import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = tool.Ifc.get()
@@ -597,6 +633,18 @@ class Geometry(blenderbim.core.tool.Geometry):
         return representation
 
     @classmethod
+    def unresolve_type_representation(cls, representation, occurence):
+        if not ifcopenshell.util.element.get_type(occurence):
+            return representation
+
+        if representation.RepresentationType == "MappedRepresentation":
+            return representation
+
+        for mapped_representation in occurence.Representation.Representations:
+            if cls.resolve_mapped_representation(mapped_representation) == representation:
+                return mapped_representation
+
+    @classmethod
     def run_geometry_update_representation(cls, obj=None):
         bpy.ops.bim.update_representation(obj=obj.name, ifc_representation_class="")
 
@@ -641,3 +689,25 @@ class Geometry(blenderbim.core.tool.Geometry):
     @classmethod
     def get_model_representations(cls):
         return tool.Ifc.get().by_type("IfcShapeRepresentation")
+
+    @classmethod
+    def flip_object(cls, obj, flip_local_axes):
+        assert len(flip_local_axes) == 2, "flip_local_axes must be two axes to flip"
+        rotation_axis = next(i for i in "XYZ" if i not in flip_local_axes)
+        rotation_axis_i = "XYZ".index(rotation_axis)
+
+        bb_data = tool.Blender.get_object_bounding_box(obj)
+        # min max points of rotated plane of origin based bounding box
+        min_point = Vector([min(i, 0) for i in bb_data["min_point"]])
+        max_point = Vector([max(i, 0) for i in bb_data["max_point"]])
+        # keep it in rotated plane only
+        max_point[rotation_axis_i] = min_point[rotation_axis_i]
+
+        # to compensate for flipped two axes
+        # we adjust new max point to match previous min point (or vice versa)
+        original_min_point = obj.matrix_world @ min_point
+        obj.matrix_world = obj.matrix_world @ Matrix.Rotation(pi, 4, rotation_axis)
+        new_max_point = obj.matrix_world @ max_point
+        obj.matrix_world.translation += original_min_point - new_max_point
+
+        bpy.context.view_layer.update()

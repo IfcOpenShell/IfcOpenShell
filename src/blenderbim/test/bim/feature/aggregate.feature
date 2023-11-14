@@ -42,6 +42,7 @@ Scenario: Unassign object - multiple objects are contained again to their indire
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcMember"
     And I press "bim.assign_class"
     And I add a cube
@@ -105,6 +106,7 @@ Scenario: Add aggregate - add multiple elements to a custom aggregate class
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcMember"
     And I press "bim.assign_class"
     And I add a cube

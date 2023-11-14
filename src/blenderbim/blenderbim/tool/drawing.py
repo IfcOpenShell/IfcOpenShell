@@ -205,11 +205,14 @@ class Drawing(blenderbim.core.tool.Drawing):
         return rep
 
     @classmethod
-    def create_camera(cls, name, matrix):
+    def create_camera(cls, name, matrix, location_hint):
         camera = bpy.data.objects.new(name, bpy.data.cameras.new(name))
         camera.location = (0, 0, 1.5)  # The view shall be 1.5m above the origin
         camera.data.show_limits = True
-        camera.data.type = "ORTHO"
+        if location_hint == "PERSPECTIVE":
+            camera.data.type = "PERSP"
+        else:
+            camera.data.type = "ORTHO"
         camera.data.ortho_scale = 50  # The default of 6m is too small
         camera.data.clip_start = 0.002  # 2mm is close to zero but allows any GPU-drawn lines to be visible.
         camera.data.clip_end = 10  # A slightly more reasonable default
@@ -487,6 +490,8 @@ class Drawing(blenderbim.core.tool.Drawing):
                 return mathutils.Matrix(((0, 0, -1, x), (-1, 0, 0, y), (0, 1, 0, z), (0, 0, 0, 1)))
             elif location_hint == "WEST":
                 return mathutils.Matrix(((0, 0, 1, x), (1, 0, 0, y), (0, 1, 0, z), (0, 0, 0, 1)))
+        elif target_view == "MODEL_VIEW":
+            return mathutils.Matrix(((1, 0, 0, x), (0, 1, 0, y), (0, 0, 1, z), (0, 0, 0, 1)))
         return mathutils.Matrix()
 
     @classmethod
@@ -628,16 +633,11 @@ class Drawing(blenderbim.core.tool.Drawing):
         camera.show_limits = True
 
         if camera_type == "ORTHO":
-            camera.ortho_scale = width if width > height else height
             camera.clip_start = 0.002  # Technically 0, but Blender doesn't allow this, so 2mm it is!
             camera.clip_end = depth
 
-            if width > height:
-                camera.BIMCameraProperties.raster_x = 1000
-                camera.BIMCameraProperties.raster_y = round(1000 * (height / width))
-            else:
-                camera.BIMCameraProperties.raster_x = round(1000 * (width / height))
-                camera.BIMCameraProperties.raster_y = 1000
+            camera.BIMCameraProperties.width = width
+            camera.BIMCameraProperties.height = height
         elif camera_type == "PERSP":
             abs_min_z = abs(min(z))
             abs_max_z = abs(max(z))
@@ -645,14 +645,13 @@ class Drawing(blenderbim.core.tool.Drawing):
             camera.clip_end = abs_min_z
             max_res = 1000
 
+            camera.BIMCameraProperties.width = width
+            camera.BIMCameraProperties.height = height
+
             if width > height:
                 fov = 2 * math.atan(width / (2 * abs_min_z))
-                camera.BIMCameraProperties.raster_x = max_res
-                camera.BIMCameraProperties.raster_y = int(max_res / (width / height))
             else:
                 fov = 2 * math.atan(height / (2 * abs_min_z))
-                camera.BIMCameraProperties.raster_y = max_res
-                camera.BIMCameraProperties.raster_x = int(max_res * (width / height))
 
             camera.angle = fov
 
@@ -850,6 +849,10 @@ class Drawing(blenderbim.core.tool.Drawing):
         cls.open_with_user_command(bpy.context.preferences.addons["blenderbim"].preferences.svg_command, uri)
 
     @classmethod
+    def open_layout_svg(cls, uri):
+        cls.open_with_user_command(bpy.context.preferences.addons["blenderbim"].preferences.layout_svg_command, uri)
+
+    @classmethod
     def run_root_assign_class(
         cls,
         obj=None,
@@ -954,6 +957,8 @@ class Drawing(blenderbim.core.tool.Drawing):
             return (location.Name or "UNNAMED").upper() + " " + target_view.split("_")[0]
         elif target_view in ("SECTION_VIEW", "ELEVATION_VIEW") and location_hint:
             return location_hint + " " + target_view.split("_")[0]
+        elif target_view == "MODEL_VIEW" and location_hint:
+            return location_hint
         return target_view
 
     @classmethod
@@ -1642,30 +1647,34 @@ class Drawing(blenderbim.core.tool.Drawing):
 
         for element in filtered_elements:
             obj = tool.Ifc.get_object(element)
+            current_representation = tool.Geometry.get_active_representation(obj)
+            if current_representation:
+                subcontext = current_representation.ContextOfItems
+                current_representation_subcontext = tool.Geometry.get_subcontext_parameters(subcontext)
+
             for subcontext in subcontexts:
+                # prioritize already active representation if it matches the subcontext
+                # (element could have multiple representations in the same subcontext)
+                if current_representation and subcontext == current_representation_subcontext:
+                    break
                 priority_representation = ifcopenshell.util.representation.get_representation(element, *subcontext)
                 if priority_representation:
-                    current_representation = tool.Geometry.get_active_representation(obj)
-                    if current_representation != priority_representation:
-                        blenderbim.core.geometry.switch_representation(
-                            tool.Ifc,
-                            tool.Geometry,
-                            obj=obj,
-                            representation=priority_representation,
-                            should_reload=False,
-                            is_global=True,
-                            should_sync_changes_first=True,
-                        )
+                    blenderbim.core.geometry.switch_representation(
+                        tool.Ifc,
+                        tool.Geometry,
+                        obj=obj,
+                        representation=priority_representation,
+                        should_reload=False,
+                        is_global=True,
+                        should_sync_changes_first=True,
+                    )
                     break
 
     @classmethod
     def get_elements_in_camera_view(cls, camera, objs):
-        if bpy.context.scene.render.resolution_x > bpy.context.scene.render.resolution_y:
-            x = camera.data.ortho_scale / 2
-            y = (camera.data.BIMCameraProperties.raster_y / camera.data.BIMCameraProperties.raster_x) * x
-        else:
-            y = camera.data.ortho_scale / 2
-            x = (camera.data.BIMCameraProperties.raster_x / camera.data.BIMCameraProperties.raster_y) * y
+        props = camera.data.BIMCameraProperties
+        x = props.width
+        y = props.height
 
         camera_inverse_matrix = camera.matrix_world.inverted()
         return set(

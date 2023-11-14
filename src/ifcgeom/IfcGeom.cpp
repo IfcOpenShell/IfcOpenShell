@@ -249,65 +249,64 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 	for (IfcSchema::IfcRelVoidsElement::list::it it = openings->begin(); it != openings->end(); ++it) {
 		IfcSchema::IfcRelVoidsElement* v = *it;
 		IfcSchema::IfcFeatureElementSubtraction* fes = v->RelatedOpeningElement();
-		if (fes->declaration().is(IfcSchema::IfcOpeningElement::Class())) {
-			if (!fes->Representation()) continue;
+		if (!fes->Representation()) {
+			continue;
+		}
 
-			/*
-			// Not yet implemented and tested, process opening placement up to parent wall
-			// placement so that the matrix inverse can be eliminated.
-			// @todo property check and handle the decomposition into parts (where element
-			// carying geom and opening are in different branches).
-			// @todo properly check whether opening correctly references wall placement
-			// and fallback to matrix inverse when not the case.
-			auto relative = entity;
-			{
-				auto ds = relative->Decomposes();
-				if (ds->size() == 1) {
-					relative = (*ds->begin())->RelatingObject()->as<IfcSchema::IfcProduct>();
-				}
+		/*
+		// Not yet implemented and tested, process opening placement up to parent wall
+		// placement so that the matrix inverse can be eliminated.
+		// @todo property check and handle the decomposition into parts (where element
+		// carying geom and opening are in different branches).
+		// @todo properly check whether opening correctly references wall placement
+		// and fallback to matrix inverse when not the case.
+		auto relative = entity;
+		{
+			auto ds = relative->Decomposes();
+			if (ds->size() == 1) {
+				relative = (*ds->begin())->RelatingObject()->as<IfcSchema::IfcProduct>();
 			}
-			set_conversion_placement_rel_to_instance(relative);
-			*/
+		}
+		set_conversion_placement_rel_to_instance(relative);
+		*/
 
-			// Convert the IfcRepresentation of the IfcOpeningElement
-			gp_Trsf opening_trsf;
-			if (fes->ObjectPlacement()) {
-				try {
-					convert(fes->ObjectPlacement(), opening_trsf);
-				} catch (const std::exception& e) {
-					Logger::Error(e);
-				} catch (...) {
-					Logger::Error("Failed to construct placement");
-				}
+		// Convert the IfcRepresentation of the IfcOpeningElement
+		gp_Trsf opening_trsf;
+		if (fes->ObjectPlacement()) {
+			try {
+				convert(fes->ObjectPlacement(), opening_trsf);
+			} catch (const std::exception& e) {
+				Logger::Error(e);
+			} catch (...) {
+				Logger::Error("Failed to construct placement");
 			}
+		}
 
-			// set_conversion_placement_rel_to_instance(nullptr);
+		// set_conversion_placement_rel_to_instance(nullptr);
 
-			// Move the opening into the coordinate system of the IfcProduct
-			opening_trsf.PreMultiply(entity_trsf.Inverted());
+		// Move the opening into the coordinate system of the IfcProduct
+		opening_trsf.PreMultiply(entity_trsf.Inverted());
 
-			IfcSchema::IfcProductRepresentation* prodrep = fes->Representation();
-			IfcSchema::IfcRepresentation::list::ptr reps = prodrep->Representations();
+		IfcSchema::IfcProductRepresentation* prodrep = fes->Representation();
+		IfcSchema::IfcRepresentation::list::ptr reps = prodrep->Representations();
 
-			IfcGeom::IfcRepresentationShapeItems opening_shapes;
+		IfcGeom::IfcRepresentationShapeItems opening_shapes;
 
-			for (IfcSchema::IfcRepresentation::list::it it2 = reps->begin(); it2 != reps->end(); ++it2) {
-				if (IfcParse::traverse((*it2))->as<IfcSchema::IfcBoundingBox>()->size()) {
-					continue;
-				}
-				convert_shapes(*it2, opening_shapes);
+		for (IfcSchema::IfcRepresentation::list::it it2 = reps->begin(); it2 != reps->end(); ++it2) {
+			if (IfcParse::traverse((*it2))->as<IfcSchema::IfcBoundingBox>()->size()) {
+				continue;
 			}
+			convert_shapes(*it2, opening_shapes);
+		}
 
-			for (unsigned int i = 0; i < opening_shapes.size(); ++i) {
-				TopoDS_Shape opening_shape_solid;
-				const TopoDS_Shape& opening_shape_unlocated = util::ensure_fit_for_subtraction(opening_shapes[i].Shape(), opening_shape_solid, getValue(GV_PRECISION));
+		for (unsigned int i = 0; i < opening_shapes.size(); ++i) {
+			TopoDS_Shape opening_shape_solid;
+			const TopoDS_Shape& opening_shape_unlocated = util::ensure_fit_for_subtraction(opening_shapes[i].Shape(), opening_shape_solid, getValue(GV_PRECISION));
 
-				gp_GTrsf gtrsf = opening_shapes[i].Placement();
-				gtrsf.PreMultiply(opening_trsf);
-				TopoDS_Shape opening_shape = util::apply_transformation(opening_shape_unlocated, gtrsf);
-				opening_vector.push_back(std::make_pair(util::min_edge_length(opening_shape), opening_shape));
-			}
-
+			gp_GTrsf gtrsf = opening_shapes[i].Placement();
+			gtrsf.PreMultiply(opening_trsf);
+			TopoDS_Shape opening_shape = util::apply_transformation(opening_shape_unlocated, gtrsf);
+			opening_vector.push_back(std::make_pair(util::min_edge_length(opening_shape), opening_shape));
 		}
 	}
 
@@ -515,7 +514,7 @@ double IfcGeom::Kernel::getValue(GeomValue var) const {
 IfcSchema::IfcRelVoidsElement::list::ptr IfcGeom::Kernel::find_openings(IfcSchema::IfcProduct* product) {
 	std::vector<IfcSchema::IfcRelVoidsElement*> rs;
 
-	if ( product->declaration().is(IfcSchema::IfcElement::Class()) && !product->declaration().is(IfcSchema::IfcOpeningElement::Class()) ) {
+	if ( product->declaration().is(IfcSchema::IfcElement::Class()) && !product->declaration().is(IfcSchema::IfcFeatureElementSubtraction::Class()) ) {
 		IfcSchema::IfcElement* element = (IfcSchema::IfcElement*)product;
 		auto rels = element->HasOpenings();
 		rs.insert(rs.end(), rels->begin(), rels->end());
@@ -527,7 +526,7 @@ IfcSchema::IfcRelVoidsElement::list::ptr IfcGeom::Kernel::find_openings(IfcSchem
 		auto decomposes = obdef->Decomposes();
 		if (decomposes->size() != 1) break;
 		IfcSchema::IfcObjectDefinition* rel_obdef = (*decomposes->begin())->RelatingObject();
-		if ( rel_obdef->declaration().is(IfcSchema::IfcElement::Class()) && !rel_obdef->declaration().is(IfcSchema::IfcOpeningElement::Class()) ) {
+		if ( rel_obdef->declaration().is(IfcSchema::IfcElement::Class()) && !rel_obdef->declaration().is(IfcSchema::IfcFeatureElementSubtraction::Class()) ) {
 			IfcSchema::IfcElement* element = (IfcSchema::IfcElement*)rel_obdef;
 			auto rels = element->HasOpenings();
 			rs.insert(rs.end(), rels->begin(), rels->end());

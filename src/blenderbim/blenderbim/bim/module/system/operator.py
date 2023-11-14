@@ -21,6 +21,7 @@ import ifcopenshell.api
 import blenderbim.tool as tool
 import blenderbim.core.system as core
 import blenderbim.bim.handler
+import blenderbim.bim.helper
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.system.data import PortData
 from mathutils import Matrix
@@ -67,7 +68,7 @@ class EditSystem(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.edit_system(
-            tool.Ifc, tool.System, system=tool.Ifc.get().by_id(context.scene.BIMSystemProperties.active_system_id)
+            tool.Ifc, tool.System, system=tool.Ifc.get().by_id(context.scene.BIMSystemProperties.edited_system_id)
         )
 
 
@@ -326,3 +327,161 @@ class SetFlowDirection(bpy.types.Operator, Operator):
 
         self.report({"ERROR"}, "Selected elements are not connected to set the flow direction")
         return {"CANCELLED"}
+
+
+class LoadZones(bpy.types.Operator, Operator):
+    bl_idname = "bim.load_zones"
+    bl_label = "Load Zones"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = bpy.context.scene.BIMZoneProperties
+        props.zones.clear()
+        for zone in tool.Ifc.get().by_type("IfcZone"):
+            new = props.zones.add()
+            new.ifc_definition_id = zone.id()
+            new.name = zone.Name or "Unnamed"
+        props.is_loaded = True
+        props.is_editing = 0
+
+
+class UnloadZones(bpy.types.Operator, Operator):
+    bl_idname = "bim.unload_zones"
+    bl_label = "Unload Zones"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = bpy.context.scene.BIMZoneProperties
+        props.is_loaded = False
+
+
+class AddZone(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_zone"
+    bl_label = "Add Zone"
+    bl_options = {"REGISTER", "UNDO"}
+    name: bpy.props.StringProperty()
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        row = self.layout
+        row.prop(self, "name", text="Name")
+
+    def _execute(self, context):
+        element = ifcopenshell.api.run("system.add_system", tool.Ifc.get(), ifc_class="IfcZone")
+        if self.name:
+            element.Name = self.name
+        bpy.ops.bim.load_zones()
+
+
+class EnableEditingZone(bpy.types.Operator, Operator):
+    bl_idname = "bim.enable_editing_zone"
+    bl_label = "Enable Editing Zone"
+    bl_options = {"REGISTER", "UNDO"}
+    zone: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        props = bpy.context.scene.BIMZoneProperties
+        props.attributes.clear()
+        blenderbim.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.zone), props.attributes)
+        props.is_editing = self.zone
+
+
+class DisableEditingZone(bpy.types.Operator, Operator):
+    bl_idname = "bim.disable_editing_zone"
+    bl_label = "Disable Editing Zone"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = bpy.context.scene.BIMZoneProperties
+        props.is_editing = 0
+
+
+class EditZone(bpy.types.Operator, Operator):
+    bl_idname = "bim.edit_zone"
+    bl_label = "Edit Zone"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = bpy.context.scene.BIMZoneProperties
+        zone = tool.Ifc.get().by_id(props.is_editing)
+        attributes = blenderbim.bim.helper.export_attributes(props.attributes)
+        ifcopenshell.api.run("system.edit_system", tool.Ifc.get(), system=zone, attributes=attributes)
+        props.is_editing = 0
+        bpy.ops.bim.load_zones()
+
+
+class RemoveZone(bpy.types.Operator, Operator):
+    bl_idname = "bim.remove_zone"
+    bl_label = "Remove Zone"
+    bl_options = {"REGISTER", "UNDO"}
+    zone: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        ifcopenshell.api.run("system.remove_system", tool.Ifc.get(), system=tool.Ifc.get().by_id(self.zone))
+        bpy.ops.bim.load_zones()
+
+
+class AssignUnassignFlowControl(bpy.types.Operator, Operator):
+    bl_idname = "bim.assign_unassign_flow_control"
+    bl_label = "Assign/Unassign Flow Control"
+    bl_options = {"REGISTER", "UNDO"}
+    flow_element: bpy.props.IntProperty(options={"SKIP_SAVE"})
+    flow_control: bpy.props.IntProperty(options={"SKIP_SAVE"})
+    assign: bpy.props.BoolProperty(name="Assign/Unassign", default=True, options={"SKIP_SAVE"})
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        flow_element = None
+        flow_controls = []
+        from_selected_objects = False
+
+        if self.flow_element != 0:
+            flow_element = ifc_file.by_id(self.flow_element)
+        if self.flow_control != 0:
+            flow_controls = [ifc_file.by_id(self.flow_control)]
+
+        # if not provided as arguments tried to get them from
+        # the selected objects
+        if not flow_element or flow_controls:
+            from_selected_objects = True
+            for obj in context.selected_objects:
+                element = tool.Ifc.get_entity(obj)
+                if not element:
+                    continue
+
+                if element.is_a("IfcDistributionControlElement") and self.flow_control == 0:
+                    flow_controls.append(element)
+                elif element.is_a("IfcDistributionFlowElement") and self.flow_element == 0:
+                    if flow_element:
+                        self.report(
+                            {"ERROR"},
+                            "More than one flow element selected. Control can be assigned to only 1 flow element.",
+                        )
+                        return {"CANCELLED"}
+                    flow_element = element
+
+        if not flow_element:
+            self.report({"ERROR"}, "No flow element selected.")
+            return {"CANCELLED"}
+
+        if not flow_controls:
+            self.report({"ERROR"}, "No flow controls selected.")
+            return {"CANCELLED"}
+
+        for control in flow_controls:
+            if self.assign:
+                tool.Ifc.run(
+                    "system.assign_flow_control", relating_flow_element=flow_element, related_flow_control=control
+                )
+            else:
+                tool.Ifc.run(
+                    "system.unassign_flow_control", relating_flow_element=flow_element, related_flow_control=control
+                )
+
+        if from_selected_objects:
+            self.report(
+                {"INFO"}, f"{len(flow_controls)} flow controls were {'assigned' if self.assign else 'unassigned'}."
+            )
+        return {"FINISHED"}

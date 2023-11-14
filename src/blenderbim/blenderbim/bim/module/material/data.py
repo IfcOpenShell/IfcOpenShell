@@ -38,6 +38,9 @@ class MaterialsData:
             "total_materials": cls.total_materials(),
             "material_types": cls.material_types(),
             "profiles": cls.profiles(),
+            "styles": cls.styles(),
+            "contexts": cls.contexts(),
+            "active_styles": cls.active_styles(),
         }
         cls.is_loaded = True
 
@@ -78,6 +81,58 @@ class MaterialsData:
             for p in tool.Ifc.get().by_type("IfcProfileDef")
             if p.ProfileName
         ]
+
+    @classmethod
+    def contexts(cls):
+        results = []
+        for element in tool.Ifc.get().by_type("IfcGeometricRepresentationContext", include_subtypes=False):
+            results.append((str(element.id()), element.ContextType or "Unnamed", ""))
+        for element in tool.Ifc.get().by_type("IfcGeometricRepresentationSubContext", include_subtypes=False):
+            results.append(
+                (
+                    str(element.id()),
+                    "{}/{}/{}".format(
+                        element.ContextType or "Unnamed",
+                        element.ContextIdentifier or "Unnamed",
+                        element.TargetView or "Unnamed",
+                    ),
+                    "",
+                )
+            )
+        return results
+
+    @classmethod
+    def styles(cls):
+        return [(str(s.id()), s.Name or "Unnamed", "") for s in tool.Ifc.get().by_type("IfcSurfaceStyle") if s.Name]
+
+    @classmethod
+    def active_styles(cls):
+        props = bpy.context.scene.BIMMaterialProperties
+        results = []
+        if props.materials and props.active_material_index < len(props.materials):
+            material = props.materials[props.active_material_index].ifc_definition_id
+            if not material:
+                return results
+            material = tool.Ifc.get().by_id(material)
+            for definition in material.HasRepresentation:
+                for representation in definition.Representations:
+                    if not representation.is_a("IfcStyledRepresentation"):
+                        continue
+                    context = representation.ContextOfItems
+                    for item in representation.Items:
+                        if not item.is_a("IfcStyledItem"):
+                            continue
+                        for style in item.Styles:
+                            if style.is_a("IfcSurfaceStyle"):
+                                results.append({
+                                    "context_type": context.ContextType,
+                                    "context_identifier": getattr(context, "ContextIdentifier", ""),
+                                    "target_view": getattr(context, "TargetView", ""),
+                                    "name": style.Name or "Unnamed",
+                                    "id": style.id(),
+                                    "context_id": context.id(),
+                                })
+        return results
 
 
 class ObjectMaterialData:
@@ -173,6 +228,8 @@ class ObjectMaterialData:
                 items = cls.material.MaterialProfiles
             elif cls.material.is_a("IfcMaterialConstituentSet"):
                 items = cls.material.MaterialConstituents
+            elif cls.material.is_a("IfcMaterialList"):
+                items = cls.material.Materials
 
             icon = "LAYER_ACTIVE"
             if "Layer" in cls.material.is_a():
@@ -191,7 +248,9 @@ class ObjectMaterialData:
                         data["name"] = "No Profile"
                 if item.is_a("IfcMaterialLayer"):
                     data["name"] += f" ({item.LayerThickness})"
-                if not item.is_a("IfcMaterialList"):
+                if item.is_a("IfcMaterial"):
+                    data["material"] = item.Name or "Unnamed"
+                else:
                     data["material"] = item.Material.Name or "Unnamed"
                 results.append(data)
         return results

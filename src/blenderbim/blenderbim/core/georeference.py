@@ -71,13 +71,13 @@ def set_cursor_location(georeference):
 
 
 def convert_local_to_global(georeference):
-    coordinates = georeference.xyz2enh(georeference.get_coordinates("input"), georeference.get_map_conversion())
+    coordinates = georeference.xyz2enh(georeference.get_coordinates("input"))
     georeference.set_coordinates("output", coordinates)
     georeference.set_cursor_location(coordinates)
 
 
 def convert_global_to_local(georeference):
-    coordinates = georeference.enh2xyz(georeference.get_coordinates("input"), georeference.get_map_conversion())
+    coordinates = georeference.enh2xyz(georeference.get_coordinates("input"))
     georeference.set_coordinates("output", coordinates)
     georeference.set_cursor_location(coordinates)
 
@@ -86,4 +86,4 @@ def convert_angle_to_coord(georeference, type):
     georeference.set_vector_coordinates(vector_coordinates,type)
 
 def import_plot(georeference, filepath):
-    georeference.import_plot(filepath, georeference.get_map_conversion())
+    georeference.import_plot(filepath)

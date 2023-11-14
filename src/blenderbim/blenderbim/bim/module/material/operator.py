@@ -118,10 +118,18 @@ class AddMaterial(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Add Material"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
+    name: bpy.props.StringProperty(default="Default")
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        row = self.layout
+        row.prop(self, "name", text="Name")
 
     def _execute(self, context):
         obj = bpy.data.materials.get(self.obj) if self.obj else None
-        core.add_material(tool.Ifc, tool.Material, tool.Style, obj=obj)
+        core.add_material(tool.Ifc, tool.Material, tool.Style, obj=obj, name=self.name)
         material_prop_purge()
 
 
@@ -174,7 +182,7 @@ class AssignMaterial(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         objects = [bpy.data.objects.get(self.obj)] if self.obj else tool.Blender.get_selected_objects()
-        core.assign_material(tool.Ifc, tool.Material, material_type= self.material_type , objects=objects )
+        core.assign_material(tool.Ifc, tool.Material, material_type=self.material_type, objects=objects)
 
 
 class UnassignMaterial(bpy.types.Operator, tool.Ifc.Operator):
@@ -185,7 +193,7 @@ class UnassignMaterial(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         objects = [bpy.data.objects.get(self.obj)] if self.obj else tool.Blender.get_selected_objects()
-        core.unassign_material(tool.Ifc, tool.Material, objects=objects )
+        core.unassign_material(tool.Ifc, tool.Material, objects=objects)
 
 
 class AddConstituent(bpy.types.Operator, tool.Ifc.Operator):
@@ -350,10 +358,8 @@ class AddListItem(bpy.types.Operator, tool.Ifc.Operator):
         ifcopenshell.api.run(
             "material.add_list_item",
             self.file,
-            **{
-                "material_list": self.file.by_id(self.list_item_set),
-                "material": self.file.by_id(int(obj.BIMObjectMaterialProperties.material)),
-            },
+            material_list=self.file.by_id(self.list_item_set),
+            material=self.file.by_id(int(obj.BIMObjectMaterialProperties.material)),
         )
 
 
@@ -709,3 +715,50 @@ class ContractMaterialCategory(bpy.types.Operator):
             category.is_expanded = False
         core.load_materials(tool.Material, props.material_type)
         return {"FINISHED"}
+
+
+class EnableEditingMaterialStyle(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.enable_editing_material_style"
+    bl_label = "Enable Editing Material Style"
+    bl_options = {"REGISTER", "UNDO"}
+    material: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        props = bpy.context.scene.BIMMaterialProperties
+        props.active_material_id = self.material
+        props.editing_material_type = "STYLE"
+
+
+class EditMaterialStyle(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.edit_material_style"
+    bl_label = "Edit Material Style"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = bpy.context.scene.BIMMaterialProperties
+        material = tool.Ifc.get().by_id(props.active_material_id)
+        style = tool.Ifc.get().by_id(int(props.styles))
+        context = tool.Ifc.get().by_id(int(props.contexts))
+        ifcopenshell.api.run(
+            "style.assign_material_style", tool.Ifc.get(), material=material, style=style, context=context
+        )
+        tool.Material.disable_editing_material()
+        core.load_materials(tool.Material, props.material_type)
+
+
+class UnassignMaterialStyle(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.unassign_material_style"
+    bl_label = "Unassign Material Style"
+    bl_options = {"REGISTER", "UNDO"}
+    style: bpy.props.IntProperty()
+    context: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        props = bpy.context.scene.BIMMaterialProperties
+        material = tool.Ifc.get().by_id(props.materials[props.active_material_index].ifc_definition_id)
+        style = tool.Ifc.get().by_id(self.style)
+        context = tool.Ifc.get().by_id(self.context)
+        ifcopenshell.api.run(
+            "style.unassign_material_style", tool.Ifc.get(), material=material, style=style, context=context
+        )
+        core.load_materials(tool.Material, props.material_type)

@@ -20,6 +20,7 @@
 import uuid
 import ifcopenshell
 import ifcopenshell.api
+import ifctester.facet
 from ifctester.facet import Entity, Attribute, Classification, Property, PartOf, Material, Restriction
 
 
@@ -28,6 +29,8 @@ def set_facet(facet):
 
 
 def run(name, *, facet, inst, expected):
+    ifctester.facet.get_pset.cache_clear()
+    ifctester.facet.get_psets.cache_clear()
     assert bool(facet(inst)) is expected
 
 
@@ -76,7 +79,6 @@ class TestEntity:
             expected=False,
         )
 
-        # TODO But in that case why are the enumerations for things like partOf using the IFC capitalisation?
         facet = Entity(name="IfcWall")
         ifc = ifcopenshell.file()
         run(
@@ -1406,7 +1408,7 @@ class TestPartOf:
         facet = PartOf()
         assert facet.asdict() == {"entity": {"name": {"simpleValue": "IFCWALL"}}, "@maxOccurs": "unbounded" }
         facet = PartOf(
-            entity="IFCGROUP",
+            name="IFCGROUP",
             predefinedType="predefinedType",
             relation="IFCRELASSIGNSTOGROUP",
             minOccurs="0",
@@ -1431,16 +1433,16 @@ class TestPartOf:
 
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcElementAssembly")
         subelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
-        facet = PartOf(entity="IFCELEMENTASSEMBLY", relation="IFCRELAGGREGATES")
+        facet = PartOf(name="IFCELEMENTASSEMBLY", relation="IFCRELAGGREGATES")
         run("A non aggregated element fails an aggregate relationship", facet=facet, inst=subelement, expected=False)
         ifcopenshell.api.run("aggregate.assign_object", ifc, product=subelement, relating_object=element)
         run("The aggregated whole fails an aggregate relationship", facet=facet, inst=element, expected=False)
         run("The aggregated part passes an aggregate relationship", facet=facet, inst=subelement, expected=True)
 
         run("A required facet checks all parameters as normal", facet=facet, inst=subelement, expected=True)
-        facet = PartOf(entity="IFCELEMENTASSEMBLY", relation="IFCRELAGGREGATES", minOccurs=0, maxOccurs=0)
+        facet = PartOf(name="IFCELEMENTASSEMBLY", relation="IFCRELAGGREGATES", minOccurs=0, maxOccurs=0)
         run("A prohibited facet returns the opposite of a required facet", facet=facet, inst=subelement, expected=False)
-        facet = PartOf(entity="IFCELEMENTASSEMBLY", relation="IFCRELAGGREGATES", minOccurs=0)
+        facet = PartOf(name="IFCELEMENTASSEMBLY", relation="IFCRELAGGREGATES", minOccurs=0)
         run("An optional facet always passes regardless of outcome 1/2", facet=facet, inst=element, expected=True)
         run("An optional facet always passes regardless of outcome 2/2", facet=facet, inst=subelement, expected=True)
 
@@ -1448,17 +1450,17 @@ class TestPartOf:
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcSlab")
         subelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcBeam")
         ifcopenshell.api.run("aggregate.assign_object", ifc, product=subelement, relating_object=element)
-        facet = PartOf(entity="IFCSLAB", relation="IFCRELAGGREGATES")
+        facet = PartOf(name="IFCSLAB", relation="IFCRELAGGREGATES")
         run("An aggregate may specify the entity of the whole 1/2", facet=facet, inst=subelement, expected=True)
-        facet = PartOf(entity="IFCWALL", relation="IFCRELAGGREGATES")
+        facet = PartOf(name="IFCWALL", relation="IFCRELAGGREGATES")
         run("An aggregate may specify the entity of the whole 2/2", facet=facet, inst=subelement, expected=False)
 
         element.PredefinedType = "BASESLAB"
-        facet = PartOf(entity="IFCSLAB", predefinedType="BASESLAB", relation="IFCRELAGGREGATES")
+        facet = PartOf(name="IFCSLAB", predefinedType="BASESLAB", relation="IFCRELAGGREGATES")
         run(
             "An aggregate may specify the predefined type of the whole 1/2", facet=facet, inst=subelement, expected=True
         )
-        facet = PartOf(entity="IFCSLAB", predefinedType="SLABRADOR", relation="IFCRELAGGREGATES")
+        facet = PartOf(name="IFCSLAB", predefinedType="SLABRADOR", relation="IFCRELAGGREGATES")
         run(
             "An aggregate may specify the predefined type of the whole 2/2",
             facet=facet,
@@ -1472,13 +1474,13 @@ class TestPartOf:
         subsubelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcBeam")
         ifcopenshell.api.run("aggregate.assign_object", ifc, product=subelement, relating_object=element)
         ifcopenshell.api.run("aggregate.assign_object", ifc, product=subsubelement, relating_object=subelement)
-        facet = PartOf(entity="IFCELEMENTASSEMBLY", relation="IFCRELAGGREGATES")
+        facet = PartOf(name="IFCELEMENTASSEMBLY", relation="IFCRELAGGREGATES")
         run("An aggregate entity may pass any ancestral whole passes", facet=facet, inst=subsubelement, expected=True)
 
         ifc = ifcopenshell.file()
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcElementAssembly")
         group = ifcopenshell.api.run("group.add_group", ifc)
-        facet = PartOf(entity="IFCGROUP", relation="IFCRELASSIGNSTOGROUP")
+        facet = PartOf(name="IFCGROUP", relation="IFCRELASSIGNSTOGROUP")
         run("A non grouped element fails a group relationship", facet=facet, inst=element, expected=False)
         ifcopenshell.api.run("group.assign_group", ifc, products=[element], group=group)
         run("A grouped element passes a group relationship", facet=facet, inst=element, expected=True)
@@ -1486,22 +1488,22 @@ class TestPartOf:
         ifc = ifcopenshell.file()
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcElementAssembly")
         group = ifc.createIfcInventory()
-        facet = PartOf(entity="IFCGROUP", relation="IFCRELASSIGNSTOGROUP")
+        facet = PartOf(name="IFCGROUP", relation="IFCRELASSIGNSTOGROUP")
         ifcopenshell.api.run("group.assign_group", ifc, products=[element], group=group)
         run("A group entity must match exactly 1/2", facet=facet, inst=element, expected=False)
-        facet = PartOf(entity="IFCINVENTORY", relation="IFCRELASSIGNSTOGROUP")
+        facet = PartOf(name="IFCINVENTORY", relation="IFCRELASSIGNSTOGROUP")
         run("A group entity must match exactly 2/2", facet=facet, inst=element, expected=True)
 
         group.ObjectType = "BUNNY"
-        facet = PartOf(entity="IFCINVENTORY", predefinedType="BUNNARY", relation="IFCRELASSIGNSTOGROUP")
+        facet = PartOf(name="IFCINVENTORY", predefinedType="BUNNARY", relation="IFCRELASSIGNSTOGROUP")
         run("A group predefined type must match exactly 2/2", facet=facet, inst=element, expected=False)
-        facet = PartOf(entity="IFCINVENTORY", predefinedType="BUNNY", relation="IFCRELASSIGNSTOGROUP")
+        facet = PartOf(name="IFCINVENTORY", predefinedType="BUNNY", relation="IFCRELASSIGNSTOGROUP")
         run("A group predefined type must match exactly 2/2", facet=facet, inst=element, expected=True)
 
         ifc = ifcopenshell.file()
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcElementAssembly")
         container = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcSpace")
-        facet = PartOf(entity="IFCSPACE", relation="IFCRELCONTAINEDINSPATIALSTRUCTURE")
+        facet = PartOf(name="IFCSPACE", relation="IFCRELCONTAINEDINSPATIALSTRUCTURE")
         run("Any contained element passes a containment relationship 1/2", facet=facet, inst=element, expected=False)
         ifcopenshell.api.run("spatial.assign_container", ifc, product=element, relating_structure=container)
         run("Any contained element passes a containment relationship 2/2", facet=facet, inst=element, expected=True)
@@ -1511,15 +1513,15 @@ class TestPartOf:
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcElementAssembly")
         container = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcSpace")
         ifcopenshell.api.run("spatial.assign_container", ifc, product=element, relating_structure=container)
-        facet = PartOf(relation="IFCRELCONTAINEDINSPATIALSTRUCTURE", entity="IFCSITE")
+        facet = PartOf(relation="IFCRELCONTAINEDINSPATIALSTRUCTURE", name="IFCSITE")
         run("The container entity must match exactly 1/2", facet=facet, inst=element, expected=False)
-        facet = PartOf(relation="IFCRELCONTAINEDINSPATIALSTRUCTURE", entity="IFCSPACE")
+        facet = PartOf(relation="IFCRELCONTAINEDINSPATIALSTRUCTURE", name="IFCSPACE")
         run("The container entity must match exactly 2/2", facet=facet, inst=element, expected=True)
 
         container.ObjectType = "BURROW"
-        facet = PartOf(relation="IFCRELCONTAINEDINSPATIALSTRUCTURE", entity="IFCSPACE", predefinedType="WARREN")
+        facet = PartOf(relation="IFCRELCONTAINEDINSPATIALSTRUCTURE", name="IFCSPACE", predefinedType="WARREN")
         run("The container predefined type must match exactly 1/2", facet=facet, inst=element, expected=False)
-        facet = PartOf(relation="IFCRELCONTAINEDINSPATIALSTRUCTURE", entity="IFCSPACE", predefinedType="BURROW")
+        facet = PartOf(relation="IFCRELCONTAINEDINSPATIALSTRUCTURE", name="IFCSPACE", predefinedType="BURROW")
         run("The container predefined type must match exactly 2/2", facet=facet, inst=element, expected=True)
 
         ifc = ifcopenshell.file()
@@ -1528,14 +1530,14 @@ class TestPartOf:
         ifcopenshell.api.run("aggregate.assign_object", ifc, product=subelement, relating_object=element)
         container = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcSpace")
         ifcopenshell.api.run("spatial.assign_container", ifc, product=element, relating_structure=container)
-        facet = PartOf(relation="IFCRELCONTAINEDINSPATIALSTRUCTURE", entity="IFCSPACE")
+        facet = PartOf(relation="IFCRELCONTAINEDINSPATIALSTRUCTURE", name="IFCSPACE")
         run("The container may be indirect", facet=facet, inst=subelement, expected=True)
 
         ifc = ifcopenshell.file()
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcFurniture")
         subelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcDiscreteAccessory")
         ifcopenshell.api.run("nest.assign_object", ifc, related_object=subelement, relating_object=element)
-        facet = PartOf(entity="IFCFURNITURE", relation="IFCRELNESTS")
+        facet = PartOf(name="IFCFURNITURE", relation="IFCRELNESTS")
         run("Any nested part passes a nest relationship", facet=facet, inst=subelement, expected=True)
         run("Any nested whole fails a nest relationship", facet=facet, inst=element, expected=False)
 
@@ -1543,16 +1545,16 @@ class TestPartOf:
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcFurniture")
         subelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcDiscreteAccessory")
         ifcopenshell.api.run("nest.assign_object", ifc, related_object=subelement, relating_object=element)
-        facet = PartOf(relation="IFCRELNESTS", entity="IFCBEAM")
+        facet = PartOf(relation="IFCRELNESTS", name="IFCBEAM")
         run("The nest entity must match exactly 1/2", facet=facet, inst=subelement, expected=False)
-        facet = PartOf(relation="IFCRELNESTS", entity="IFCFURNITURE")
+        facet = PartOf(relation="IFCRELNESTS", name="IFCFURNITURE")
         run("The nest entity must match exactly 2/2", facet=facet, inst=subelement, expected=True)
 
         element.PredefinedType = "USERDEFINED"
         element.ObjectType = "WATERBOTTLE"
-        facet = PartOf(relation="IFCRELNESTS", entity="IFCFURNITURE", predefinedType="LITTERBOX")
+        facet = PartOf(relation="IFCRELNESTS", name="IFCFURNITURE", predefinedType="LITTERBOX")
         run("The nest predefined type must match exactly 1/2", facet=facet, inst=subelement, expected=False)
-        facet = PartOf(relation="IFCRELNESTS", entity="IFCFURNITURE", predefinedType="WATERBOTTLE")
+        facet = PartOf(relation="IFCRELNESTS", name="IFCFURNITURE", predefinedType="WATERBOTTLE")
         run("The nest predefined type must match exactly 2/2", facet=facet, inst=subelement, expected=True)
 
         ifc = ifcopenshell.file()
@@ -1561,7 +1563,7 @@ class TestPartOf:
         subsubelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcMechanicalFastener")
         ifcopenshell.api.run("nest.assign_object", ifc, related_object=subelement, relating_object=element)
         ifcopenshell.api.run("nest.assign_object", ifc, related_object=subsubelement, relating_object=subelement)
-        facet = PartOf(relation="IFCRELNESTS", entity="IFCFURNITURE")
+        facet = PartOf(relation="IFCRELNESTS", name="IFCFURNITURE")
         run("Nesting may be indirect", facet=facet, inst=subsubelement, expected=True)
 
 

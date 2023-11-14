@@ -38,8 +38,18 @@ def get_contexts(self, context):
     return RepresentationsData.data["contexts"]
 
 
+class RepresentationItem(PropertyGroup):
+    name: StringProperty(name="Name")
+    surface_style: StringProperty(name="Surface Style")
+    layer: StringProperty(name="Layer")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+
+
 class BIMObjectGeometryProperties(PropertyGroup):
     contexts: EnumProperty(items=get_contexts, name="Contexts")
+    is_editing: BoolProperty(name="Is Editing", default=False)
+    items: CollectionProperty(name="Representation Items", type=RepresentationItem)
+    active_item_index: IntProperty(name="Active Representation Item Index")
 
 
 class BIMGeometryProperties(PropertyGroup):

@@ -31,6 +31,7 @@ class Usecase:
             # Planes are defined as a matrix. The XY plane is the clipping boundary and +Z is removed.
             # [{"type": "IfcBooleanClippingResult", "operand_type": "IfcHalfSpaceSolid", "matrix": [...]}, {...}]
             "clippings": [],  # A list of planes that define clipping half space solids
+            "placement_zx_axes": (None, None),
         }
         for key, value in settings.items():
             self.settings[key] = value
@@ -46,13 +47,14 @@ class Usecase:
 
     def create_item(self):
         point = self.get_point()
+        placement = self.file.createIfcAxis2Placement3D(
+            point,
+            self.file.createIfcDirection(self.settings["placement_zx_axes"][0] or (0.0, 0.0, 1.0)),
+            self.file.createIfcDirection(self.settings["placement_zx_axes"][1] or (1.0, 0.0, 0.0)),
+        )
         extrusion = self.file.createIfcExtrudedAreaSolid(
             self.settings["profile"],
-            self.file.createIfcAxis2Placement3D(
-                point,
-                self.file.createIfcDirection((0.0, 0.0, 1.0)),
-                self.file.createIfcDirection((1.0, 0.0, 0.0)),
-            ),
+            placement,
             self.file.createIfcDirection((0.0, 0.0, 1.0)),
             self.convert_si_to_unit(self.settings["depth"]),
         )
@@ -140,7 +142,7 @@ class Usecase:
             settings = ifcopenshell.geom.settings()
             settings.set(settings.INCLUDE_CURVES, True)
             shape = ifcopenshell.geom.create_shape(settings, self.settings["profile"])
-            x = [verts[i] for i in range(0, len(shape.verts), 3)]
+            x = [shape.verts[i] for i in range(0, len(shape.verts), 3)]
             return self.convert_si_to_unit(max(x) - min(x))
         return 0.0
 
@@ -169,6 +171,6 @@ class Usecase:
             settings = ifcopenshell.geom.settings()
             settings.set(settings.INCLUDE_CURVES, True)
             shape = ifcopenshell.geom.create_shape(settings, self.settings["profile"])
-            y = [verts[i + 1] for i in range(0, len(shape.verts), 3)]
+            y = [shape.verts[i + 1] for i in range(0, len(shape.verts), 3)]
             return self.convert_si_to_unit(max(y) - min(y))
         return 0.0

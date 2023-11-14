@@ -34,6 +34,7 @@ import blenderbim.core.drawing
 import blenderbim.tool as tool
 import blenderbim.bim.handler
 from mathutils import Vector, Matrix
+from time import time
 from blenderbim.bim import import_ifc
 from blenderbim.bim.ifc import IfcStore
 
@@ -66,9 +67,12 @@ class OverrideMeshSeparate(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         obj = context.active_object
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return
 
         # You cannot separate meshes if the representation is mapped.
-        relating_type = tool.Root.get_element_type(tool.Ifc.get_entity(obj))
+        relating_type = tool.Root.get_element_type(element)
         if relating_type and tool.Root.does_type_have_representations(relating_type):
             # We toggle edit mode to ensure that once representations are
             # unmapped, our Blender mesh only has a single user.
@@ -210,18 +214,22 @@ class SwitchRepresentation(bpy.types.Operator, Operator):
     should_switch_all_meshes: bpy.props.BoolProperty()
 
     def _execute(self, context):
-        target = tool.Ifc.get().by_id(self.ifc_definition_id).ContextOfItems
+        target_representation = tool.Ifc.get().by_id(self.ifc_definition_id)
+        target = target_representation.ContextOfItems
         is_subcontext = target.is_a("IfcGeometricRepresentationSubContext")
         for obj in set(context.selected_objects + [context.active_object]):
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
-            if is_subcontext:
-                representation = ifcopenshell.util.representation.get_representation(
-                    element, target.ContextType, target.ContextIdentifier, target.TargetView
-                )
+            if obj == context.active_object:
+                representation = target_representation
             else:
-                representation = ifcopenshell.util.representation.get_representation(element, target.ContextType)
+                if is_subcontext:
+                    representation = ifcopenshell.util.representation.get_representation(
+                        element, target.ContextType, target.ContextIdentifier, target.TargetView
+                    )
+                else:
+                    representation = ifcopenshell.util.representation.get_representation(element, target.ContextType)
             if not representation:
                 continue
             core.switch_representation(
@@ -465,7 +473,7 @@ class CopyRepresentation(bpy.types.Operator, Operator):
                 if not element:
                     continue
                 bm.to_mesh(obj.data)
-                old_rep = self.get_representation_by_context(element, geometric_context)
+                old_rep = tool.Geometry.get_representation_by_context(element, geometric_context)
                 if old_rep:
                     ifcopenshell.api.run(
                         "geometry.unassign_representation", tool.Ifc.get(), product=element, representation=old_rep
@@ -481,16 +489,6 @@ class CopyRepresentation(bpy.types.Operator, Operator):
                     ifc_representation_class=None,
                     profile_set_usage=None,
                 )
-
-    def get_representation_by_context(self, element, context):
-        if element.is_a("IfcProduct") and element.Representation:
-            for r in element.Representation.Representations:
-                if r.ContextOfItems == context:
-                    return r
-        elif element.is_a("IfcTypeProduct") and element.RepresentationMaps:
-            for r in element.RepresentationMaps:
-                if r.MappedRepresentation.ContextOfItems == context:
-                    return r.MappedRepresentation
 
 
 class OverrideDelete(bpy.types.Operator):
@@ -800,7 +798,8 @@ class OverrideDuplicateMove(bpy.types.Operator):
             new = blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
 
             # clean up the orphaned mesh with ifc id of the original object to avoid confusion
-            if new and temp_data:
+            # IfcGridAxis keeps the same mesh data (it's pointing to ifc id 0, so it's not a problem)
+            if new and temp_data and not new.is_a("IfcGridAxis"):
                 tool.Blender.remove_data_block(temp_data)
 
             if new:
@@ -1003,6 +1002,9 @@ class RefreshLinkedAggregate(bpy.types.Operator):
 
     def _execute(self, context):
         self.group_name = 'Linked Aggregate'
+        refresh_start_time = time()
+        self.new_active_obj = None
+        old_to_new = {}
 
         def delete_objects(element):
             parts = ifcopenshell.util.element.get_parts(element)
@@ -1083,6 +1085,11 @@ class RefreshLinkedAggregate(bpy.types.Operator):
         # TODO Think of more edge cases and issues already reported
 
         blenderbim.bim.handler.refresh_ui_data()
+
+        operator_time = time() - refresh_start_time
+        if operator_time > 10:
+            self.report({"INFO"}, "Refresh Aggregate was finished in {:.2f} seconds".format(operator_time))
+        return {"FINISHED"}
 
 
 class OverrideJoin(bpy.types.Operator, Operator):
@@ -1429,3 +1436,70 @@ class OverrideModeSetObject(bpy.types.Operator):
         if self.edited_objs:
             return context.window_manager.invoke_props_dialog(self)
         return self.execute(context)
+
+
+class FlipObject(bpy.types.Operator):
+    bl_idname = "bim.flip_object"
+    bl_label = "Flip Object"
+    bl_description = "Flip object's local axes, keep the position"
+    bl_options = {"REGISTER", "UNDO"}
+
+    flip_local_axes: bpy.props.EnumProperty(
+        name="Flip Local Axes", items=(("XY", "XY", ""), ("YZ", "YZ", ""), ("XZ", "XZ", "")), default="XY"
+    )
+
+    def execute(self, context):
+        for obj in context.selected_objects:
+            tool.Geometry.flip_object(obj, self.flip_local_axes)
+        return {"FINISHED"}
+
+
+class EnableEditingRepresentationItems(bpy.types.Operator, Operator):
+    bl_idname = "bim.enable_editing_representation_items"
+    bl_label = "Enable Editing Representation Items"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        obj = context.active_object
+
+        props = obj.BIMGeometryProperties
+        props.is_editing = True
+
+        props.items.clear()
+
+        if bpy.context.active_object.data and hasattr(bpy.context.active_object.data, "BIMMeshProperties"):
+            active_representation_id = bpy.context.active_object.data.BIMMeshProperties.ifc_definition_id
+            element = tool.Ifc.get().by_id(active_representation_id)
+            if not element.is_a("IfcShapeRepresentation"):
+                return
+            queue = list(element.Items)
+            while queue:
+                item = queue.pop()
+                if item.is_a("IfcMappedItem"):
+                    queue.extend(item.MappingSource.MappedRepresentation.Items)
+                else:
+                    new = props.items.add()
+                    new.name = item.is_a()
+                    new.ifc_definition_id = item.id()
+
+                    styles = []
+                    for inverse in tool.Ifc.get().get_inverse(item):
+                        if inverse.is_a("IfcStyledItem"):
+                            styles = inverse.Styles
+                            if styles and styles[0].is_a("IfcPresentationStyleAssignment"):
+                                styles = styles[0].Styles
+                            for style in styles:
+                                if style.is_a("IfcSurfaceStyle"):
+                                    new.surface_style = style.Name or "Unnamed"
+                        elif inverse.is_a("IfcPresentationLayerAssignment"):
+                            new.layer = inverse.Name or "Unnamed"
+
+
+class DisableEditingRepresentationItems(bpy.types.Operator, Operator):
+    bl_idname = "bim.disable_editing_representation_items"
+    bl_label = "Disable Editing Representation Items"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        obj = context.active_object
+        obj.BIMGeometryProperties.is_editing = False

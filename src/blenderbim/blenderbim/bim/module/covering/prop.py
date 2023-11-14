@@ -30,11 +30,10 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-import blenderbim.tool as tool
-import blenderbim.core.geometry
-import ifcopenshell
+#import blenderbim.tool as tool
+#import blenderbim.core.geometry
+#import ifcopenshell
 
 
 class BIMCoveringProperties(PropertyGroup):
-    pass
-#    depth: bpy.props.FloatProperty(name="Depth", default=0.1, subtype="DISTANCE", description="Flooring depth")
+    ceiling_height: bpy.props.FloatProperty(name="ceiling_height", default=2.7, subtype="DISTANCE", description="Ceiling height")

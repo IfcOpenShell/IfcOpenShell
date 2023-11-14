@@ -99,7 +99,7 @@ class DeleteSverchokGraph(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
     def draw(self, context):
-        self.layout.label(text="WARNING. The graph will be removed permamently.")
+        self.layout.label(text="WARNING. The graph will be removed permanently.")
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
@@ -169,7 +169,7 @@ class UpdateDataFromSverchok(bpy.types.Operator, tool.Ifc.Operator):
             "pset.edit_pset",
             tool.Ifc.get(),
             pset=pset,
-            properties={"Data": json.dumps(sverchok_data)},
+            properties={"Data": tool.Ifc.get().createIfcText(json.dumps(sverchok_data))},
         )
         update_sverchok_modifier(context)
 

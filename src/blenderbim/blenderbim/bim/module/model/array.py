@@ -59,7 +59,7 @@ class AddArray(bpy.types.Operator, tool.Ifc.Operator):
             "pset.edit_pset",
             tool.Ifc.get(),
             pset=pset,
-            properties={"Parent": element.GlobalId, "Data": json.dumps(data)},
+            properties={"Parent": element.GlobalId, "Data": tool.Ifc.get().createIfcText(json.dumps(data))},
         )
         return {"FINISHED"}
 
@@ -132,7 +132,7 @@ class EditArray(bpy.types.Operator, tool.Ifc.Operator):
         tool.Model.regenerate_array(parent, data)
 
         pset = tool.Ifc.get().by_id(pset["id"])
-        data = json.dumps(data)
+        data = tool.Ifc.get().createIfcText(json.dumps(data))
         ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
 
         tool.Blender.Modifier.Array.set_children_lock_state(element, self.item, True)
@@ -169,7 +169,6 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
 
         pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
         data = json.loads(pset["Data"])
-        data[self.item]["count"] = 1
 
         if (self.keep_objs) & (self.item < (len(data) - 1)):
             self.report(
@@ -188,6 +187,8 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
             tool.Blender.Modifier.Array.bake_children_transform(element, self.item)
             tool.Blender.Modifier.Array.set_children_lock_state(element, self.item, False)
 
+        if not self.keep_objs:
+            data[self.item]["count"] = 1
         tool.Model.regenerate_array(parent, data, self.keep_objs)
 
         pset = tool.Ifc.get().by_id(pset["id"])
@@ -195,7 +196,7 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
             ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
         else:
             del data[self.item]
-            data = json.dumps(data)
+            data = tool.Ifc.get().createIfcText(json.dumps(data))
             ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
             tool.Blender.Modifier.Array.constrain_children_to_parent(element)
 
@@ -247,21 +248,30 @@ class SelectAllArrayObjects(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        object = context.active_object
-        element = tool.Ifc.get_entity(object)
-        array_pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
-        if not array_pset:
-            self.report({"ERROR"}, f"Object is not part of an array.")
-            return {"CANCELLED"}
+        objects = context.selected_objects
+        for object in objects:
+            element = tool.Ifc.get_entity(object)
+            if not element:
+                self.report({"ERROR"}, f"Non IFC objects, were deselected.")
+                object.select_set(False)
 
-        try:
-            parent_element = tool.Ifc.get().by_guid(array_pset["Parent"])
-        except RuntimeError:
-            self.report({"ERROR"}, f"Couldn't find array parent by guid '{array_pset['Parent']}'")
-            return {"CANCELLED"}
+            if element:
+                array_pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+                if not array_pset:
+                    self.report({"ERROR"}, f"Objects not part of an array, were deselected.")
+                    object.select_set(False)
 
-        array_objects = tool.Blender.Modifier.Array.get_all_objects(parent_element)
-        tool.Blender.set_objects_selection(context, active_object=array_objects[0], selected_objects=array_objects)
+                if array_pset:
+                    try:
+                        parent_element = tool.Ifc.get().by_guid(array_pset["Parent"])
+                    except RuntimeError:
+                        self.report({"ERROR"}, f"Objects that don't have an array parent, were deselected.")
+                        object.select_set(False)
+
+                    array_objects = tool.Blender.Modifier.Array.get_all_objects(parent_element)
+                    tool.Blender.set_objects_selection(
+                        context, active_object=array_objects[0], selected_objects=array_objects, clear_previous_selection=False
+                )
         return {"FINISHED"}
 
 

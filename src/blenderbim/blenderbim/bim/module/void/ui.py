@@ -111,21 +111,28 @@ class BIM_PT_booleans(Panel):
 
         if context.active_object.data.BIMMeshProperties.ifc_definition_id:
             row = layout.row(align=True)
-            row.label(text=f"{BooleansData.data['total_booleans']} Booleans Found")
-            row.operator("bim.add_boolean", text="Apply Boolean", icon="ADD")
+            total_booleans = BooleansData.data["total_booleans"]
+            manual_booleans = BooleansData.data["manual_booleans"]
+            row.label(text=f"{len(total_booleans)} Booleans Found ({len(manual_booleans)} Manual)")
+            row.operator("bim.add_boolean", text="", icon="ADD")
             show_boolean_button = row.row(align=True)
             show_boolean_button.operator("bim.show_booleans", text="", icon="HIDE_OFF")
-            show_boolean_button.enabled = BooleansData.data["total_booleans"] > 0
+            show_boolean_button.enabled = len(total_booleans) > 0
             row.operator("bim.hide_booleans", text="", icon="HIDE_ON")
+
+            booleans_are_manual = len(manual_booleans) == len(total_booleans)
+            op = row.operator(
+                "bim.booleans_mark_as_manual", text="", icon="PINNED" if booleans_are_manual else "UNPINNED"
+            )
+            op.mark_as_manual = not booleans_are_manual
 
         elif context.active_object.data.BIMMeshProperties.ifc_boolean_id:
             upsteam_obj = context.active_object.data.BIMMeshProperties.obj
             upstream_obj_ifc_id = upsteam_obj.BIMObjectProperties.ifc_definition_id
 
             row = layout.row(align=True)
-            row.label(text="Used as a boolean operand with:")
-            row.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = upstream_obj_ifc_id
             row.label(text=upsteam_obj.name)
+            row.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = upstream_obj_ifc_id
 
             row = layout.row()
             row.operator("bim.remove_booleans", text="Remove Boolean", icon="X")

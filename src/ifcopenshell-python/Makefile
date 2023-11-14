@@ -68,6 +68,12 @@ endif
 test:
 	pytest -p no:pytest-blender test
 
+# safe version of tests without mathutils dependency
+# for tests to work for github workflow with python <3.10 #3895
+.PHONY: test-safe
+test-safe:
+	pytest -p no:pytest-blender test --ignore=test/util/test_shape_builder.py
+
 .PHONY: build-ids-docs
 build-ids-docs:
 	mkdir -p test/build
@@ -103,7 +109,7 @@ endif
 	mkdir -p dist/ifcopenshell
 	cp -r ifcopenshell/* dist/ifcopenshell/
 
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.7.0-9cc1f5f-$(PLATFORM)64.zip
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.7.0-6c9e130-$(PLATFORM)64.zip
 	cd dist/working && unzip ifcopenshell-python*
 	cp -r dist/working/ifcopenshell/ifcopenshell_wrapper.py dist/ifcopenshell/
 ifeq ($(PLATFORM), win)

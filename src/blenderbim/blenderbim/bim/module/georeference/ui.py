@@ -29,7 +29,7 @@ class BIM_PT_gis(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_geometry"
+    bl_parent_id = "BIM_PT_tab_geometry"
 
     def draw(self, context):
         self.layout.use_property_split = True
@@ -78,10 +78,14 @@ class BIM_PT_gis(Panel):
     def draw_ui(self, context):
         props = context.scene.BIMGeoreferenceProperties
 
+        if tool.Ifc.get_schema() == "IFC2X3":
+            row = self.layout.row()
+            row.label(text="IFC2X3 Fallback In Use", icon="ERROR")
+
         if not GeoreferenceData.data["projected_crs"]:
             row = self.layout.row(align=True)
             row.label(text="Not Georeferenced")
-            if tool.Ifc.get_schema != "IFC2X3":
+            if tool.Ifc.get_schema() != "IFC2X3":
                 row.operator("bim.add_georeferencing", icon="ADD", text="")
 
         if props.has_blender_offset:
@@ -110,8 +114,9 @@ class BIM_PT_gis(Panel):
         if GeoreferenceData.data["projected_crs"]:
             row = self.layout.row(align=True)
             row.label(text="Projected CRS", icon="WORLD")
-            row.operator("bim.enable_editing_georeferencing", icon="GREASEPENCIL", text="")
-            row.operator("bim.remove_georeferencing", icon="X", text="")
+            if tool.Ifc.get_schema() != "IFC2X3":
+                row.operator("bim.enable_editing_georeferencing", icon="GREASEPENCIL", text="")
+                row.operator("bim.remove_georeferencing", icon="X", text="")
 
         for key, value in GeoreferenceData.data["projected_crs"].items():
             if not value:
