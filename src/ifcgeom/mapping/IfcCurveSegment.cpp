@@ -263,7 +263,7 @@ class linear_segment_geometry_adjuster : public segment_geometry_adjuster {
 // For now, the derivative of the curvature of the IfcCurve subtype is difficult to implement and example models from the IFC spec
 // always use IfcAxis2Placement3D with Axis and RefDirection specified, the basic interpolation is used, ignoring the IfcCurve type. 
 //
-// This implementation will be revised as the understanding of IfcSegmentedRefereneCurve improves.
+// This implementation will be revised as the understanding of IfcSegmentedReferenceCurve improves.
 class cant_adjuster : public segment_geometry_adjuster {
   public:
     using segment_geometry_adjuster::segment_geometry_adjuster;
@@ -280,11 +280,6 @@ class cant_adjuster : public segment_geometry_adjuster {
               p.col(i).normalize();
           };
        }
-
-       // when cant results are combined with the gradient curve
-       // the x-locate will be added which effective doubles them
-       // for this reason, set x location to 0
-       p.col(3)(0) = 0;
     }
 
   protected:
@@ -366,7 +361,7 @@ class curve_segment_evaluator {
         }
     }
 
-    void set_spiral_function(mapping* mapping_, const IfcSchema::IfcSpiral* c, double s, std::function<double(double)> signX, std::function<double(double)> fnX, std::function<double(double)> signY, std::function<double(double)> fnY) {
+    void set_spiral_function(mapping* mapping_, const IfcSchema::IfcSpiral* c, double s, std::function<double(double)> signX, std::function<double(double)> fnX, std::function<double(double)> signY, std::function<double(double)> fnY, std::function<double(double)> fnSlope) {
         // determine the length of the spiral from the local origin to the end point
         auto sign_s = binary_sign(start_);
         auto sign_l = binary_sign(length_);
@@ -384,7 +379,7 @@ class curve_segment_evaluator {
             auto segment_type = segment_type_;
             auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(c->Position()))->ccomponents();
             geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
-            eval_ = [L, start, s, signX, fnX, signY, fnY, transformation_matrix, segment_type, geometry_adjuster = this->geometry_adjuster](double u) {
+            eval_ = [L, start, s, signX, fnX, signY, fnY, fnSlope, transformation_matrix, segment_type, geometry_adjuster = this->geometry_adjuster](double u) {
 
                 u += start;
 
@@ -402,11 +397,17 @@ class curve_segment_evaluator {
                 // However, Dx and Dy are not normalized. Recall that slope = rise/run
                 // If run = 1.0, then rise = Dy/Dx = fnY(u)/fnX(u) and l = sqrt((fnY(u)/fnX(u))^2 + 1.0^2)
                 // The direction ratios are dx = 1.0/l and dy = (fnY/fnX)/l;
-                auto rise = fnY(u) / fnX(u);
-                auto run = 1.0;
-                auto l = sqrt(run * run + rise * rise);
-                auto dx = run / l;
-                auto dy = rise / l;
+                //auto fy = fnY(u);
+                //auto fx = fnX(u);
+                //auto rise = fy / fx;
+                //auto run = 1.0;
+                //auto l = sqrt(run * run + rise * rise);
+                //auto dx = run / l;
+                //auto dy = rise / l;
+
+                auto slope = fnSlope(u);
+                auto dx = signX(u) * cos(slope);
+                auto dy = signY(u) * sin(slope);
 
                 Eigen::Matrix4d m;
                 if (segment_type == ST_HORIZONTAL) {
@@ -507,8 +508,10 @@ class curve_segment_evaluator {
       auto sign_y = [A](double t) { return sign(t) == sign(A) ? 1.0 : -1.0; };
       auto fn_x = [A, s](double t) -> double { return s * cos(PI * fabs(A) * t * t / (2 * fabs(A))); };
       auto fn_y = [A, s](double t) -> double { return s * sin(PI * fabs(A) * t * t / (2 * fabs(A))); };
+      //auto fn_slope = [A](double t) -> double { return sqrt(PI) * t * t / (2 * abs(A)); };
+      auto fn_slope = [A](double t) -> double { return pow(t / A, 2) / 2; };
 
-      set_spiral_function(mapping_, c, s, sign_x, fn_x, sign_y, fn_y);
+      set_spiral_function(mapping_, c, s, sign_x, fn_x, sign_y, fn_y, fn_slope);
 	}
 #endif
 
@@ -533,18 +536,19 @@ class curve_segment_evaluator {
 
 		auto fn_x = [theta](double t)->double {return cos(theta(t)); };
 		auto fn_y = [theta](double t)->double {return sin(theta(t)); };
+      auto fn_slope = [](double t)->double { return tan(t); };
 
 		double s = 1.0; // @todo: rb - this is supposed to be the curve length when the parametric value u = 1.0
-		set_spiral_function(mapping_, c, s, sign_x, fn_x, sign_y, fn_y);
+		set_spiral_function(mapping_, c, s, sign_x, fn_x, sign_y, fn_y, fn_slope);
 	}
 #endif
 
 	void operator()(const IfcSchema::IfcCircle* c)
 	{
-		auto R = c->Radius();
+		auto R = c->Radius() * length_unit_;
 
       auto sign_l = sign(length_);
-		auto start = start_;
+		auto start_angle = start_/R;
 
 		auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(c->Position()))->ccomponents();
 
@@ -552,9 +556,9 @@ class curve_segment_evaluator {
 
 		geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
 
-		eval_ = [R, start, sign_l, transformation_matrix, segment_type, geometry_adjuster = this->geometry_adjuster](double u)
+		eval_ = [R, start_angle, sign_l, transformation_matrix, segment_type, geometry_adjuster = this->geometry_adjuster](double u)
 			{
-				auto angle = start + sign_l * u / R;
+            auto angle = start_angle + sign_l * u / R;
 
 				auto dx = cos(angle);
             auto dy = sin(angle);
@@ -702,8 +706,8 @@ class curve_segment_evaluator {
 		auto v = l->Dir();
 		auto dr = v->Orientation()->DirectionRatios();
 		auto m = v->Magnitude();
-		auto px = c[0];
-		auto py = c[1];
+		auto px = c[0] * length_unit_;
+      auto py = c[1] * length_unit_;
 		auto dx = dr[0] / m;
 		auto dy = dr[1] / m;
 
@@ -765,28 +769,35 @@ class curve_segment_evaluator {
       if (!coeffZ.empty())
 			Logger::Warning("Expected IfcPolynomialCurve.CoefficientsZ to be undefined for alignment geometry. Coefficients ignored.", p);
 
+
+
 		auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(p->Position()))->ccomponents();
 
 		auto segment_type = segment_type_;
+        auto length_unit = length_unit_;
 
 		geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
 
 
-      eval_ = [coeffX, coeffY, transformation_matrix, segment_type, geometry_adjuster = this->geometry_adjuster](double u) {
+      eval_ = [coeffX, coeffY, transformation_matrix, segment_type, length_unit, geometry_adjuster = this->geometry_adjuster](double u) {
          std::array<const std::vector<double>*, 2> coefficients{&coeffX, &coeffY};
-         std::array<double, 2> position{0.0, 0.0};
+         std::array<double, 2> position{0.0, 0.0}; // = SUM(coeff*u^pos)
          std::array<double, 2> slope{0.0, 0.0}; // slope is derivative of the curve = SUM( coeff*pos*u^(pos-1) )
          for (int i = 0; i < 2; i++) {
+             auto length_conversion = length_unit;
              auto begin = coefficients[i]->cbegin();
              auto end = coefficients[i]->cend();
-               for (auto iter = begin; iter != end; iter++) {
+             for (auto iter = begin; iter != end; iter++) {
                   auto exp = std::distance(begin, iter);
-                  position[i] += (*iter) * pow(u, exp);
+                  auto coeff = (*iter)*length_conversion;
+                  position[i] += coeff* pow(u, exp);
 
 						if (iter != begin) {
-                      slope[i] += (*iter) * exp * pow(u, exp - 1);
+                      slope[i] += coeff * exp * pow(u, exp - 1);
                   }
-               }
+
+                  length_conversion /= length_unit;
+             }
          }
 
 			auto x = position[0];
