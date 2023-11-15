@@ -38,7 +38,7 @@ private:
 	const std::string hdf_filename;
 	unsigned int vcount_total;
 	H5::H5File file;
-	SerializerSettings settings_;
+	ifcopenshell::geometry::SerializerSettings settings_;
 
 	static const H5std_string DATASET_NAME_POSITIONS;
 	static const H5std_string DATASET_NAME_UVCOORDS;
@@ -92,7 +92,7 @@ private:
 	void write_style(surface_style_serialization& data, const ifcopenshell::geometry::taxonomy::style& s);
 
 public:
-	HdfSerializer(const std::string& hdf_filename, const SerializerSettings& settings, bool read_only=false);
+	HdfSerializer(const std::string& hdf_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, bool read_only=false);
 	virtual ~HdfSerializer() {}
 	bool ready();
 	void writeHeader();

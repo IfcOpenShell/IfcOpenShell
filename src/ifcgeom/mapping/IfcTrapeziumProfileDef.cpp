@@ -33,7 +33,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrapeziumProfileDef* inst) {
 	// The trapezium x center should not be midway of BottomXDim but rather at the center of the overall bounding box.
 	const double x_offset = ((std::min(dx, 0.) + std::max(w + dx, x1 * 2.)) / 2.) - x1;
 
-	const double tol = conv_settings_.getValue(ConversionSettings::GV_PRECISION);
+	const double tol = settings_.get<settings::Precision>().get();
 
 	if (x1 < tol || w < tol || y < tol) {
 		Logger::Message(Logger::LOG_NOTICE, "Skipping zero sized profile:", inst);

@@ -2,6 +2,7 @@
 
 #include "../ifcparse/IfcLogger.h"
 
+/*
 void IfcGeom::IteratorSettings::set_deflection_tolerance(double value)
 {
 	deflection_tolerance_ = value;
@@ -10,3 +11,5 @@ void IfcGeom::IteratorSettings::set_deflection_tolerance(double value)
 		deflection_tolerance_ = 1e-3;
 	}
 }
+
+*/

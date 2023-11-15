@@ -33,7 +33,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPolyline* inst) {
 		return taxonomy::cast<taxonomy::point3>(map(p));
 	});
 
-	const bool closed_by_proximity = polygon.size() >= 3 && (*polygon.front()->components_ - *polygon.back()->components_).norm() < conv_settings_.getValue(ConversionSettings::GV_PRECISION);
+	const bool closed_by_proximity = polygon.size() >= 3 && (*polygon.front()->components_ - *polygon.back()->components_).norm() < settings_.get<settings::Precision>().get();
 	if (closed_by_proximity) {
 		polygon.resize(polygon.size() - 1);
 		polygon.push_back(polygon.front());

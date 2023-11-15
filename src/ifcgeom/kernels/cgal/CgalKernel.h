@@ -86,13 +86,13 @@ namespace ifcopenshell {
 				bool thin_solid(const CGAL::Nef_polyhedron_3<Kernel_>& a, CGAL::Nef_polyhedron_3<Kernel_>& result);
 
 				CGAL::Nef_polyhedron_3<Kernel_> create_precision_cube_() const {
-					auto cc = utils::create_cube(conv_settings_.getValue(ConversionSettings::GV_PRECISION));
+					auto cc = utils::create_cube(settings_.get<settings::Precision>().get());
 					return CGAL::Nef_polyhedron_3<Kernel_>(cc);
 				}
 #endif
 			public:
 
-				CgalKernel(const ConversionSettings& settings)
+				CgalKernel(const Settings& settings)
 					: AbstractKernel("cgal", settings)
 					, circle_segments_(32)
 				{}

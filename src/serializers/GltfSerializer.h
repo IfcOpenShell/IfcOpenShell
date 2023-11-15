@@ -39,7 +39,7 @@ private:
 
 	int writeMaterial(const ifcopenshell::geometry::taxonomy::style& style);
 public:
-	GltfSerializer(const std::string& filename, const SerializerSettings& settings);
+	GltfSerializer(const std::string& filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings);
 	virtual ~GltfSerializer();
 	bool ready();
 	void writeHeader();

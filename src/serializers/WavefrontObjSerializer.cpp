@@ -27,14 +27,14 @@
 #include <boost/lexical_cast.hpp>
 #include <iomanip>
 
-WaveFrontOBJSerializer::WaveFrontOBJSerializer(const stream_or_filename& obj_filename, const stream_or_filename& mtl_filename, const SerializerSettings& settings)
-	: WriteOnlyGeometrySerializer(settings)
+WaveFrontOBJSerializer::WaveFrontOBJSerializer(const stream_or_filename& obj_filename, const stream_or_filename& mtl_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings)
+	: WriteOnlyGeometrySerializer(geometry_settings, settings)
 	, obj_stream(obj_filename)
 	, mtl_stream(mtl_filename)
 	, vcount_total(1)
 {
-	obj_stream.stream << std::setprecision(settings.precision);
-	mtl_stream.stream << std::setprecision(settings.precision);
+	obj_stream.stream << std::setprecision(settings.get<ifcopenshell::geometry::settings::FloatingPointDigits>().get());
+	mtl_stream.stream << std::setprecision(settings.get<ifcopenshell::geometry::settings::FloatingPointDigits>().get());
 }
 
 bool WaveFrontOBJSerializer::ready() {
@@ -91,7 +91,7 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement* o)
 {
     obj_stream.stream << "g " << object_id(o) << "\n";
 	obj_stream.stream << "s 1" << "\n";
-	const bool isyup = settings().get(SerializerSettings::USE_Y_UP);
+	const bool isyup = settings().get<ifcopenshell::geometry::settings::UseYUp>().get();
 
     const IfcGeom::Representation::Triangulation& mesh = o->geometry();
 

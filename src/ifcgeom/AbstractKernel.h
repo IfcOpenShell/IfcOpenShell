@@ -20,15 +20,15 @@ namespace ifcopenshell { namespace geometry { namespace kernels {
 	class IFC_GEOM_API AbstractKernel {
 	protected:
 		std::string geometry_library;
-		ConversionSettings conv_settings_;
+		Settings settings_;
 
 	public:
-		AbstractKernel(const std::string& geometry_library, const ConversionSettings& settings)
+		AbstractKernel(const std::string& geometry_library, const Settings& settings)
 			: geometry_library(geometry_library)
-			, conv_settings_(settings) {}
+			, settings_(settings) {}
 
 		bool convert(const taxonomy::ptr, IfcGeom::ConversionResults&);
-		const ConversionSettings& settings() const;
+		const Settings& settings() const;
 
 		virtual bool convert_impl(const taxonomy::matrix4::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
 		virtual bool convert_impl(const taxonomy::point3::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
@@ -68,7 +68,7 @@ namespace ifcopenshell { namespace geometry { namespace kernels {
 
 	};
 
-	AbstractKernel* construct(const std::string& geometry_library, const ConversionSettings& conv_settings);
+	AbstractKernel* construct(const std::string& geometry_library, const Settings& conv_settings);
 
 }
 }

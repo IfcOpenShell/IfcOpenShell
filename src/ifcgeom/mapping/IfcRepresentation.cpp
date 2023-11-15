@@ -22,7 +22,8 @@
 using namespace ifcopenshell::geometry;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRepresentation* inst) {
-	const bool use_body = !this->settings_.get(IfcGeom::IteratorSettings::INCLUDE_CURVES);
+	// @todo
+	const bool use_body = !this->settings_.get<settings::IncludeCurves>().get();
 
 	auto items = map_to_collection(this, inst->Items());
 	if (items == nullptr) {

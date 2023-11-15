@@ -30,7 +30,7 @@
 }
 
 // SWIG does not support bool references in a meaningful way, so the
-// IfcGeom::IteratorSettings functions degrade to return a read only value
+// ifcopenshell::geometry::Settings functions degrade to return a read only value
 %typemap(out) double& {
 	$result = SWIG_From_double(*$1);
 }
@@ -62,6 +62,7 @@
 %include "../ifcgeom/Converter.h"
 %include "../ifcgeom/ConversionResult.h"
 %include "../ifcgeom/IteratorSettings.h"
+%include "../ifcgeom/ConversionSettings.h"
 %include "../ifcgeom/IfcGeomElement.h"
 %include "../ifcgeom/IfcGeomRepresentation.h"
 %include "../ifcgeom/Iterator.h"
@@ -73,6 +74,55 @@
 %include "../serializers/WavefrontObjSerializer.h"
 %include "../serializers/XmlSerializer.h"
 %include "../serializers/GltfSerializer.h"
+
+
+%extend ifcopenshell::geometry::Settings {
+	void set_(const std::string& name, bool val) {
+		return $self->set(name, val);
+	}
+	void set_(const std::string& name, int val) {
+		return $self->set(name, val);
+	}
+	void set_(const std::string& name, double val) {
+		return $self->set(name, val);
+	}
+	void set_(const std::string& name, const std::string& val) {
+		return $self->set(name, val);
+	}
+	void set_(const std::string& name, const std::set<int>& val) {
+		return $self->set(name, val);
+	}
+	boost::variant<bool, int, double, std::string, std::set<int>> get_(const std::string& name) {
+		return $self->get(name);
+	}
+	std::vector<std::string> setting_names() {
+		return $self->setting_names();
+	}
+}
+
+%extend ifcopenshell::geometry::SerializerSettings {
+	void set_(const std::string& name, bool val) {
+		return $self->set(name, val);
+	}
+	void set_(const std::string& name, int val) {
+		return $self->set(name, val);
+	}
+	void set_(const std::string& name, double val) {
+		return $self->set(name, val);
+	}
+	void set_(const std::string& name, const std::string& val) {
+		return $self->set(name, val);
+	}
+	void set_(const std::string& name, const std::set<int>& val) {
+		return $self->set(name, val);
+	}
+	boost::variant<bool, int, double, std::string, std::set<int>> get_(const std::string& name) {
+		return $self->get(name);
+	}
+	std::vector<std::string> setting_names() {
+		return $self->setting_names();
+	}
+}
 
 #ifdef IFOPSH_WITH_OPENCASCADE
 
@@ -184,33 +234,6 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 	$result = boost::apply_visitor(ShapeRTTI(), $1);
 }
 
-%extend SerializerSettings {
-	%pythoncode %{
-
-	old_init = __init__
-
-	def __init__(self, **kwargs):
-    	self.old_init()
-    	for k, v in kwargs.items():
-    		self.set(getattr(self, k), v)
-
-	def __repr__(self):
-		def d():
-			import numbers
-			for x in dir(self):
-				if x.isupper() and x not in {"NUM_SETTINGS", "USE_PYTHON_OPENCASCADE", "DEFAULT_PRECISION"}:
-					v = getattr(self, x)
-					if isinstance(v, numbers.Integral):
-						yield x
-
-		return "%s(%s)" % (
-			type(self).__name__,
-			(", ".join(map(lambda x: "%s = %r" % (x, self.get(getattr(self, x))), d())))
-		)
-
-	%}
-}
-
 %newobject construct_iterator_with_include_exclude;
 %newobject construct_iterator_with_include_exclude_globalid;
 %newobject construct_iterator_with_include_exclude_id;
@@ -218,13 +241,13 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 // I couldn't get the vector<string> typemap to be applied when %extending Iterator constructor.
 // anyway it does not matter as SWIG generates C code without actual constructors
 %inline %{
-	IfcGeom::Iterator* construct_iterator_with_include_exclude(const std::string& geometry_library, IfcGeom::IteratorSettings settings, IfcParse::IfcFile* file, std::vector<std::string> elems, bool include, int num_threads) {
+	IfcGeom::Iterator* construct_iterator_with_include_exclude(const std::string& geometry_library, ifcopenshell::geometry::Settings settings, IfcParse::IfcFile* file, std::vector<std::string> elems, bool include, int num_threads) {
 		std::set<std::string> elems_set(elems.begin(), elems.end());
 		IfcGeom::entity_filter ef{ include, false, elems_set };
 		return new IfcGeom::Iterator(geometry_library, settings, file, {ef}, num_threads);
 	}
 
-	IfcGeom::Iterator* construct_iterator_with_include_exclude_globalid(const std::string& geometry_library, IfcGeom::IteratorSettings settings, IfcParse::IfcFile* file, std::vector<std::string> elems, bool include, int num_threads) {
+	IfcGeom::Iterator* construct_iterator_with_include_exclude_globalid(const std::string& geometry_library, ifcopenshell::geometry::Settings settings, IfcParse::IfcFile* file, std::vector<std::string> elems, bool include, int num_threads) {
 		std::set<std::string> elems_set(elems.begin(), elems.end());
 		IfcGeom::attribute_filter af;
 		af.attribute_name = "GlobalId";
@@ -233,7 +256,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		return new IfcGeom::Iterator(geometry_library, settings, file, {af}, num_threads);
 	}
 
-	IfcGeom::Iterator* construct_iterator_with_include_exclude_id(const std::string& geometry_library, IfcGeom::IteratorSettings settings, IfcParse::IfcFile* file, std::vector<int> elems, bool include, int num_threads) {
+	IfcGeom::Iterator* construct_iterator_with_include_exclude_id(const std::string& geometry_library, ifcopenshell::geometry::Settings settings, IfcParse::IfcFile* file, std::vector<int> elems, bool include, int num_threads) {
 		std::set<int> elems_set(elems.begin(), elems.end());
 		IfcGeom::instance_id_filter af(include, false, elems_set);
 		return new IfcGeom::Iterator(geometry_library, settings, file, {af}, num_threads);
@@ -374,7 +397,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 	}
 
 	template <typename Schema>
-	static boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*> helper_fn_create_shape(const std::string& geometry_library, IfcGeom::IteratorSettings& settings, IfcUtil::IfcBaseClass* instance, IfcUtil::IfcBaseClass* representation = 0) {
+	static boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*> helper_fn_create_shape(const std::string& geometry_library, ifcopenshell::geometry::Settings& settings, IfcUtil::IfcBaseClass* instance, IfcUtil::IfcBaseClass* representation = 0) {
 		IfcParse::IfcFile* file = instance->data().file;
 			
 		ifcopenshell::geometry::Converter kernel(geometry_library, file, settings);
@@ -403,13 +426,13 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 					if (!rep->RepresentationIdentifier()) {
 						continue;
 					}
-					if (!settings.get(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES)) {
+					if (settings.get<ifcopenshell::geometry::settings::IncludeSurfaces>().get()) {
 						if (*rep->RepresentationIdentifier() == "Body") {
 							ifc_representation = rep;
 							break;
 						}
 					}
-					if (settings.get(IfcGeom::IteratorSettings::INCLUDE_CURVES)) {
+					if (settings.get<ifcopenshell::geometry::settings::IncludeCurves>().get()) {
 						if (*rep->RepresentationIdentifier() == "Plan" || *rep->RepresentationIdentifier() == "Axis") {
 							ifc_representation = rep;
 							break;
@@ -427,13 +450,13 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 					// TODO: Remove redundancy with IfcGeomIterator.h
 					if (context->ContextType()) {
 						std::set<std::string> context_types;
-						if (!settings.get(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES)) {
+						if (settings.get<ifcopenshell::geometry::settings::IncludeSurfaces>().get()) {
 							context_types.insert("model");
 							context_types.insert("design");
 							context_types.insert("model view");
 							context_types.insert("detail view");
 						}
-						if (settings.get(IfcGeom::IteratorSettings::INCLUDE_CURVES)) {
+						if (settings.get<ifcopenshell::geometry::settings::IncludeCurves>().get()) {
 							context_types.insert("plan");
 						}			
 
@@ -461,11 +484,11 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 			if (!brep) {
 				throw IfcParse::IfcException("Failed to process shape");
 			}
-			if (settings.get(IfcGeom::IteratorSettings::USE_BREP_DATA)) {
+			if (settings.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::SERIALIZED) {
 				IfcGeom::SerializedElement* serialization = new IfcGeom::SerializedElement(*brep);
 				delete brep;
 				return serialization;
-			} else if (!settings.get(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION)) {
+			} else if (settings.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::TRIANGULATED) {
 				IfcGeom::TriangulationElement* triangulation = new IfcGeom::TriangulationElement(*brep);
 				delete brep;
 				return triangulation;
@@ -481,12 +504,11 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 				) {
 					IfcGeom::ConversionResults shapes = kernel.convert(instance);
 
-					IfcGeom::ElementSettings element_settings(settings, kernel.mapping()->get_length_unit(), instance->declaration().name());
-					IfcGeom::Representation::BRep brep(element_settings, to_locale_invariant_string(instance->data().id()), shapes);
+					IfcGeom::Representation::BRep brep(settings, instance->declaration().name(), to_locale_invariant_string(instance->data().id()), shapes);
 					try {
-						if (settings.get(IfcGeom::IteratorSettings::USE_BREP_DATA)) {
+						if (settings.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::SERIALIZED) {
 							return new IfcGeom::Representation::Serialization(brep);
-						} else if (!settings.get(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION)) {
+						} else if (settings.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::TRIANGULATED) {
 							return new IfcGeom::Representation::Triangulation(brep);
 						}
 					} catch (...) {
@@ -502,7 +524,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 %}
 
 %inline %{
-	static boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*> create_shape(IfcGeom::IteratorSettings& settings, IfcUtil::IfcBaseClass* instance, IfcUtil::IfcBaseClass* representation = 0, const char* const geometry_library="opencascade") {
+	static boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*> create_shape(ifcopenshell::geometry::Settings& settings, IfcUtil::IfcBaseClass* instance, IfcUtil::IfcBaseClass* representation = 0, const char* const geometry_library="opencascade") {
 		const std::string& schema_name = instance->declaration().schema()->name();
 
 		#ifdef HAS_SCHEMA_2x3

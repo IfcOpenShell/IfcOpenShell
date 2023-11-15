@@ -632,7 +632,7 @@ class curve_segment_evaluator {
 			auto dy = p2y - p1y;
 			auto l = sqrt(dx * dx + dy * dy);
 					
-			if (l < mapping_->conversion_settings().getValue(ConversionSettings::GV_PRECISION))
+			if (l < mapping_->settings().get<ifcopenshell::geometry::settings::Precision>().get())
 			{
             std::ostringstream os;
             os << "Coincident IfcPolyline.Points are not expected. Skipping point " << std::distance(iter, begin) << std::endl;

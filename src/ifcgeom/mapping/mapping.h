@@ -31,9 +31,8 @@ namespace geometry {
 		void addRepresentationsFromContextIds(IfcSchema::IfcRepresentation::list::ptr&);
 		void addRepresentationsFromDefaultContexts(IfcSchema::IfcRepresentation::list::ptr&);
 	public:
-		POSTFIX_SCHEMA(mapping)(IfcParse::IfcFile* file, IfcGeom::IteratorSettings& settings) : abstract_mapping(settings), file_(file), placement_rel_to_type_(0), placement_rel_to_instance_(0) {
+		POSTFIX_SCHEMA(mapping)(IfcParse::IfcFile* file, Settings& settings) : abstract_mapping(settings), file_(file), placement_rel_to_type_(0), placement_rel_to_instance_(0) {
 			initialize_units_();
-			apply_settings();
 		}
 		virtual ifcopenshell::geometry::taxonomy::ptr map(const IfcUtil::IfcBaseInterface*);
 		virtual void get_representations(std::vector<geometry_conversion_task>& tasks, std::vector<filter_t>& filters);
@@ -42,8 +41,6 @@ namespace geometry {
 		virtual double get_length_unit() const { return length_unit_; }
 		virtual aggregate_of_instance::ptr find_openings(const IfcUtil::IfcBaseEntity*);
 		virtual IfcUtil::IfcBaseEntity* representation_of(const IfcUtil::IfcBaseEntity* product);
-
-		void apply_settings();
 		
 		virtual const IfcUtil::IfcBaseEntity* get_single_material_association(const IfcUtil::IfcBaseEntity* product);
 		IfcSchema::IfcRepresentation* representation_mapped_to(const IfcSchema::IfcRepresentation* representation);

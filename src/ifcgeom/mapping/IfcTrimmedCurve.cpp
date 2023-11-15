@@ -70,7 +70,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrimmedCurve* inst) {
 		}
 	}
 
-	const double tol = conv_settings_.getValue(ConversionSettings::GV_PRECISION);
+	const double tol = settings_.get<settings::Precision>().get();
 
 	trim_cartesian &= has_pnts[0] && has_pnts[1];
 	bool trim_cartesian_failed = !trim_cartesian;
@@ -126,7 +126,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrimmedCurve* inst) {
 		}
 
 		// @todo is 100. not too much? Check with the original issue.
-		const double precision_markup = conv_settings_.getValue(ConversionSettings::GV_PRECISION_FACTOR) == 1. ? 1. : 100.;
+		const double precision_markup = settings_.get<settings::PrecisionFactor>().get() == 1. ? 1. : 100.;
 
 		if (isConic && std::fabs(fmod(flts[1] - flts[0], pi * 2.)) < precision_markup * tol / (2 * pi * radius)) {
 			flts[0] = 0.;

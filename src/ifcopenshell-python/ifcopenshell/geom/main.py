@@ -50,28 +50,59 @@ if has_occ:
         else:
             return shape
 
+class missing_setting:
+    def __repr__(self): return '-'
 
-# Subclass the settings module to provide an additional
-# setting to enable pythonOCC when available
+class settings_mixin:
+    """
+    Pythonic interface mixin to the settings modules and
+    to provide an additional setting to enable pythonOCC
+    when available
+    """
+    
+    def __init__(self, **kwargs):
+        super(settings_mixin, self).__init__()
+        for k, v in kwargs.items():
+            self.set(getattr(self, k), v)
 
-# nb: we just subclass serializer settings, so in python
-# we do not differentiate between the two setting types
+    def __repr__(self):
+        def safe_get(x):
+            try: return self.get_(x)
+            except: return missing_setting()
+        fmt_pair = lambda x: "%s = %r" % (self.rname(x), safe_get(x))
+        return "%s(%s)" % (
+            type(self).__name__,
+            ", ".join(map(fmt_pair, self.setting_names()))
+        )
+        
+    @staticmethod
+    def name(k):
+        return k.lower().replace('_', '-')
+        
+    @staticmethod
+    def rname(k):
+        return k.upper().replace('-', '_')
+    
+    def set(self, k, v):
+        if k == "USE_PYTHON_OPENCASCADE":
+            if not has_occ:
+                raise ArgumentError("Python OpenCASCADE is not installed")
+            if v:
+                self.set_("iterator-output", ifcopenshell_wrapper.SERIALIZED)
+                self.set_("use-world-coords", True)
+                self.use_python_opencascade = True
+        else:
+            self.set_(self.name(k), v)
+        
+    def get(self, k):
+        return self.get_(self.name(k))
 
 
-class settings(ifcopenshell_wrapper.SerializerSettings):
-    if has_occ:
-        USE_PYTHON_OPENCASCADE = -1
+class serializer_settings(settings_mixin, ifcopenshell_wrapper.SerializerSettings):
+    pass
 
-        def set(self, *args):
-            setting, value = args
-            if setting == settings.USE_PYTHON_OPENCASCADE:
-                self.set(settings.USE_BREP_DATA, value)
-                self.set(settings.USE_WORLD_COORDS, value)
-                self.set(settings.DISABLE_TRIANGULATION, value)
-                self.use_python_opencascade = value
-            else:
-                ifcopenshell_wrapper.SerializerSettings.set(self, *args)
-
+class settings(settings_mixin, ifcopenshell_wrapper.Settings):
+    pass
 
 # Make sure people are able to use python's platform agnostic paths
 class iterator(ifcopenshell_wrapper.Iterator):

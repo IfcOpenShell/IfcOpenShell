@@ -27,21 +27,21 @@ namespace {
 
 IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 	OpenCascadeKernel* kernel,
-	const taxonomy::shell::ptr shell
+	const ifcopenshell::geometry::taxonomy::shell::ptr shell
 )
 	: kernel_(kernel)
 	, non_manifold_(false)
 {
 	// @todo use pointers?
-	std::vector<taxonomy::point3::ptr> points;
-	std::vector<taxonomy::loop::ptr> loops;
+	std::vector<ifcopenshell::geometry::taxonomy::point3::ptr> points;
+	std::vector<ifcopenshell::geometry::taxonomy::loop::ptr> loops;
 
 	for (auto& f : shell->children) {
 		for (auto& l : f->children) {
 			loops.push_back(l);
 			for (auto& e : l->children) {
 				// @todo make sure only cartesian points are provided here
-				points.push_back(boost::get<taxonomy::point3::ptr>(e->start));
+				points.push_back(boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>(e->start));
 			}
 		}
 	}
@@ -79,12 +79,12 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 	double bdiff = std::numeric_limits<double>::infinity();
 	for (size_t i = 0; i < 3; ++i) {
 		const double d = bmax[i] - bmin[i];
-		if (d > kernel->settings().getValue(ConversionSettings::GV_PRECISION) * 10. && d < bdiff) {
+		if (d > kernel->settings().get<ifcopenshell::geometry::settings::Precision>().get() * 10. && d < bdiff) {
 			bdiff = d;
 		}
 	}
 
-	eps_ = kernel->settings().getValue(ConversionSettings::GV_PRECISION) * 10. * (std::min)(1.0, bdiff);
+	eps_ = kernel->settings().get<ifcopenshell::geometry::settings::Precision>().get() * 10. * (std::min)(1.0, bdiff);
 
 	size_t loops_removed, non_manifold, duplicate_faces;
 
@@ -192,15 +192,15 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 	}
 }
 
-void IfcGeom::OpenCascadeKernel::faceset_helper::loop_(const taxonomy::loop::ptr ps, const std::function<void(int, int, bool)>& callback) {
+void IfcGeom::OpenCascadeKernel::faceset_helper::loop_(const ifcopenshell::geometry::taxonomy::loop::ptr ps, const std::function<void(int, int, bool)>& callback) {
 	if (ps->children.size() < 3) {
 		return;
 	}
 
-	auto a = boost::get<taxonomy::point3::ptr>(ps->children.back()->start);
+	auto a = boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>(ps->children.back()->start);
 	auto A = a->identity();
 	for (auto& b : ps->children) {
-		auto B = boost::get<taxonomy::point3::ptr>(b->start)->identity();
+		auto B = boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>(b->start)->identity();
 		auto C = vertex_mapping_[A], D = vertex_mapping_[B];
 		bool fwd = C < D;
 		if (!fwd) {
@@ -222,7 +222,7 @@ bool IfcGeom::OpenCascadeKernel::faceset_helper::edge(int A, int B, TopoDS_Edge&
 	return true;
 }
 
-bool IfcGeom::OpenCascadeKernel::faceset_helper::wire(const taxonomy::loop::ptr loop, TopoDS_Wire& w) {
+bool IfcGeom::OpenCascadeKernel::faceset_helper::wire(const ifcopenshell::geometry::taxonomy::loop::ptr loop, TopoDS_Wire& w) {
 	TopTools_ListOfShape ws;
 	if (!wires(loop, ws)) {
 		return false;
@@ -231,7 +231,7 @@ bool IfcGeom::OpenCascadeKernel::faceset_helper::wire(const taxonomy::loop::ptr 
 	return true;
 }
 
-bool IfcGeom::OpenCascadeKernel::faceset_helper::wires(const taxonomy::loop::ptr loop, TopTools_ListOfShape& wires) {
+bool IfcGeom::OpenCascadeKernel::faceset_helper::wires(const ifcopenshell::geometry::taxonomy::loop::ptr loop, TopTools_ListOfShape& wires) {
 	if (duplicates_.find(loop->identity()) != duplicates_.end()) {
 		return false;
 	}
@@ -253,7 +253,11 @@ bool IfcGeom::OpenCascadeKernel::faceset_helper::wires(const taxonomy::loop::ptr
 		wire.Closed(true);
 
 		TopTools_ListOfShape results;
-		if (kernel_->settings().getValue(ConversionSettings::GV_NO_WIRE_INTERSECTION_CHECK) < 0. && util::wire_intersections(wire, results, {kernel_->settings().getValue(ConversionSettings::GV_NO_WIRE_INTERSECTION_CHECK) < 0., kernel_->settings().getValue(ConversionSettings::GV_NO_WIRE_INTERSECTION_TOLERANCE) < 0., 0., kernel_->settings().getValue(ConversionSettings::GV_PRECISION)})) {
+		if (!kernel_->settings().get<ifcopenshell::geometry::settings::NoWireIntersectionCheck>().get() && util::wire_intersections(wire, results, {
+			!kernel_->settings().get<ifcopenshell::geometry::settings::NoWireIntersectionCheck>().get(),
+			!kernel_->settings().get<ifcopenshell::geometry::settings::NoWireIntersectionTolerance>().get(), 0.,
+			kernel_->settings().get<ifcopenshell::geometry::settings::Precision>().get()}))
+		{
 			Logger::Warning("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
 			non_manifold_ = true;
 			wires = results;

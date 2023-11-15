@@ -45,14 +45,14 @@ void fix_spaceboundaries(IfcParse::IfcFile& f, bool no_progress, bool quiet, boo
 		return;
 	}
 
-	IfcGeom::IteratorSettings settings;
+	ifcopenshell::geometry::Settings settings;
 
-	settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, false);
-	settings.set(IfcGeom::IteratorSettings::WELD_VERTICES, false);
-	settings.set(IfcGeom::IteratorSettings::SEW_SHELLS, true);
-	settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS, true);
-	settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
-	settings.set(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS, true);
+	settings.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = false;
+	settings.get<ifcopenshell::geometry::settings::WeldVertices>().value = false;
+	settings.get<ifcopenshell::geometry::settings::ReorientShells>().value = true;
+	settings.get<ifcopenshell::geometry::settings::ConvertBackUnits>().value = true;
+	settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
+	settings.get<ifcopenshell::geometry::settings::DisableOpeningSubtractions>().value = true;
 
 	ifcopenshell::geometry::Converter c("cgal", &f2, settings);
 

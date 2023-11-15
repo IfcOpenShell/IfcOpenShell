@@ -25,7 +25,7 @@ using namespace ifcopenshell::geometry;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCircle* inst) {
 	const double r = inst->Radius() * length_unit_;
-	if (r < conv_settings_.getValue(ConversionSettings::GV_PRECISION)) { 
+	if (r < settings_.get<settings::Precision>().get()) { 
 		Logger::Message(Logger::LOG_ERROR, "Radius not greater than zero for:", inst);
 		return nullptr;
 	}

@@ -21,7 +21,7 @@
 #define IFCSHAPELIST_H
 
 #include "../ifcgeom/IfcGeomRenderStyles.h"
-#include "../ifcgeom/IteratorSettings.h"
+#include "../ifcgeom/ConversionSettings.h"
 #include "../ifcgeom/taxonomy.h"
 
 #include <memory>
@@ -183,8 +183,8 @@ namespace IfcGeom {
 
 	class IFC_GEOM_API ConversionResultShape {
 	public:
-		virtual void Triangulate(const IfcGeom::IteratorSettings& settings, const ifcopenshell::geometry::taxonomy::matrix4& place, Representation::Triangulation* t, int surface_style_id) const = 0;
-		IfcGeom::Representation::Triangulation* Triangulate(const IfcGeom::IteratorSettings& settings) const;
+		virtual void Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, Representation::Triangulation* t, int surface_style_id) const = 0;
+		IfcGeom::Representation::Triangulation* Triangulate(const ifcopenshell::geometry::Settings& settings) const;
 		virtual void Serialize(const ifcopenshell::geometry::taxonomy::matrix4& place, std::string&) const = 0;
 				
 		virtual int surface_genus() const = 0;
@@ -223,6 +223,7 @@ namespace IfcGeom {
 		virtual ConversionResultShape* moved(ifcopenshell::geometry::taxonomy::matrix4::ptr) const = 0;
 
 		virtual ~ConversionResultShape() {}
+		
 	};
 
 	class IFC_GEOM_API ConversionResult {
