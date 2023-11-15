@@ -1151,7 +1151,7 @@ std::unique_ptr<halfspace_tree<TreeKernel>> build_halfspace_tree_decomposed(CGAL
 		// Therefore, we do need to have some uniformization step, which in this case is divide by larged a,b or c
 		// component.
 		if (it->incident_volume()->mark()) {
-			std::array<typename Kernel::FT, 3> abc{ plane_.a(), plane_.b(), plane_.c() };
+			std::array<typename Kernel::FT, 3> abc{ it->plane().a(), it->plane().b(), it->plane().c() };
 			auto minel = std::min_element(abc.begin(), abc.end());
 			auto maxel = std::max_element(abc.begin(), abc.end());
 			auto maxval = ((-*minel) > *maxel) ? (-*minel) : *maxel;
