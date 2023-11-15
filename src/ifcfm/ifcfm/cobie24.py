@@ -413,7 +413,7 @@ def get_space_data(ifc_file, element):
         "CreatedOn": get_created_on(element),
         "Category": get_category(element),
         "FloorName": floor_name,
-        "Description": val(element.Description),
+        "Description": val(element.LongName),
         "ExternalSystem": get_external_system(element),
         "ExternalObject": element.is_a(),
         "ExternalIdentifier": element.GlobalId,
