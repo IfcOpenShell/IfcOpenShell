@@ -118,9 +118,9 @@ namespace ifcopenshell { namespace geometry {
 		bool binary_op_bool(OpaqueNumber* other) const {
 			auto nnd = dynamic_cast<NumberEpeck*>(other);
 			if (nnd) {
-				return new NumberEpeck(Fn(value_, nnd->value_));
+				return Fn(value_, nnd->value_);
 			} else {
-				return nullptr;
+				return false;
 			}
 		}
 
