@@ -409,13 +409,16 @@ class BIM_PT_product_assignments(Panel):
         if props.is_editing_product:
             row = self.layout.row(align=True)
             row.prop(props, "relating_product", text="")
+            row.operator("bim.assign_selected_as_product", icon="OBJECT_DATA", text="")
             row.operator("bim.edit_assigned_product", icon="CHECKMARK", text="")
             row.operator("bim.disable_editing_assigned_product", icon="CANCEL", text="")
         else:
             row = self.layout.row(align=True)
             row.label(text=ProductAssignmentsData.data["relating_product"] or "No Relating Product", icon="OBJECT_DATA")
             row.operator("bim.enable_editing_assigned_product", icon="GREASEPENCIL", text="")
-            row.operator("bim.select_assigned_product", icon="RESTRICT_SELECT_OFF", text="")
+            col = row.column()
+            col.operator("bim.select_assigned_product", icon="RESTRICT_SELECT_OFF", text="")
+            col.enabled = bool(ProductAssignmentsData.data["relating_product"])
 
 
 class BIM_PT_text(Panel):
