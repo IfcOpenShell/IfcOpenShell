@@ -679,6 +679,7 @@ if(MSVC)
     #     endforeach()
     # endif()
 
+	add_definitions(-D_ENABLE_EXTENDED_ALIGNED_STORAGE)
 else()
     add_definitions(-Wall -Wextra)
 
