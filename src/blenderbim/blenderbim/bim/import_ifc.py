@@ -1532,7 +1532,7 @@ class IfcImporter:
         obj = self.create_product(self.project["ifc"])
         self.project["blender"].objects.link(obj)
         self.project["blender"].BIMCollectionProperties.obj = obj
-        obj.BIMObjectProperties.collection = self.project["blender"]
+        obj.BIMObjectProperties.collection = self.collections[project.GlobalId] = self.project["blender"]
 
     def create_collections(self):
         self.create_spatial_decomposition_collections()
