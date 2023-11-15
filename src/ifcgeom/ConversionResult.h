@@ -101,9 +101,9 @@ namespace IfcGeom {
 		bool binary_op_bool(OpaqueNumber* other) const {
 			auto nnd = dynamic_cast<NumberNativeDouble*>(other);
 			if (nnd) {
-				return new NumberNativeDouble(Fn(value_, nnd->value_));
+				return Fn(value_, nnd->value_);
 			} else {
-				return nullptr;
+				return false;
 			}
 		}
 
