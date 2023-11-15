@@ -475,9 +475,9 @@ public:
 	}
 	virtual std::unique_ptr<halfspace_tree<Kernel>> map(const std::map<typename Kernel::Plane_3, typename Kernel::Plane_3, PlaneLess<Kernel>>& m) const {
 
-		std::array<typename Kernel::FT, 3> abcd{ plane_.a(), plane_.b(), plane_.c() };
-		auto minel = std::min_element(abcd.begin(), abcd.end());
-		auto maxel = std::max_element(abcd.begin(), abcd.end());
+		std::array<typename Kernel::FT, 3> abc{ plane_.a(), plane_.b(), plane_.c() };
+		auto minel = std::min_element(abc.begin(), abc.end());
+		auto maxel = std::max_element(abc.begin(), abc.end());
 		auto maxval = ((-*minel) > *maxel) ? (-*minel) : *maxel;
 		CGAL::Plane_3<Kernel> pp(
 			plane_.a() / maxval,
@@ -1151,11 +1151,11 @@ std::unique_ptr<halfspace_tree<TreeKernel>> build_halfspace_tree_decomposed(CGAL
 		// Therefore, we do need to have some uniformization step, which in this case is divide by larged a,b or c
 		// component.
 		if (it->incident_volume()->mark()) {
-			std::array<Kernel::FT, 3> abcd = { {it->plane().a(), it->plane().b(), it->plane().c()} };
-			auto minel = std::min_element(abcd.begin(), abcd.end());
-			auto maxel = std::max_element(abcd.begin(), abcd.end());
+			std::array<typename Kernel::FT, 3> abc{ plane_.a(), plane_.b(), plane_.c() };
+			auto minel = std::min_element(abc.begin(), abc.end());
+			auto maxel = std::max_element(abc.begin(), abc.end());
 			auto maxval = ((-*minel) > *maxel) ? (-*minel) : *maxel;
-			planes.push_back(Kernel::Plane_3(
+			planes.push_back(typename Kernel::Plane_3(
 				it->plane().a() / maxval,
 				it->plane().b() / maxval,
 				it->plane().c() / maxval,
@@ -1176,7 +1176,7 @@ std::unique_ptr<halfspace_tree<TreeKernel>> build_halfspace_tree_decomposed(CGAL
 
 		if (ci->mark()) {
 			Halffacet_collector<Kernel> vis;
-			poly.visit_shell_objects(CGAL::Nef_polyhedron_3<Kernel>::SFace_const_handle(ci->shells_begin()), vis);
+			poly.visit_shell_objects(typename CGAL::Nef_polyhedron_3<Kernel>::SFace_const_handle(ci->shells_begin()), vis);
 			for (auto& f : vis.facets) {
 				sub_expression.emplace_back(new halfspace_tree_plane<TreeKernel>(f->plane()));
 			}
