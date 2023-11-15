@@ -475,7 +475,7 @@ public:
 	}
 	virtual std::unique_ptr<halfspace_tree<Kernel>> map(const std::map<typename Kernel::Plane_3, typename Kernel::Plane_3, PlaneLess<Kernel>>& m) const {
 
-		std::array<Kernel::FT, 3> abcd{ plane_.a(), plane_.b(), plane_.c() };
+		std::array<typename Kernel::FT, 3> abcd{ plane_.a(), plane_.b(), plane_.c() };
 		auto minel = std::min_element(abcd.begin(), abcd.end());
 		auto maxel = std::max_element(abcd.begin(), abcd.end());
 		auto maxval = ((-*minel) > *maxel) ? (-*minel) : *maxel;
