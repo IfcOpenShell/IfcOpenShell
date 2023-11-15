@@ -48,6 +48,7 @@ class Parser:
         self.preset = preset
         self.categories = {}
         self.config = None
+        self.get_custom_category_elements = {}
         self.get_custom_element_data = {}
         self.duplicate_keys = []
 
@@ -60,7 +61,11 @@ class Parser:
     def parse(self, ifc_file, name=None):
         for category_name, category_config in self.config["categories"].items():
             self.categories.setdefault(category_name, {})
-            for element in category_config["get_category_elements"](ifc_file):
+            if category_name in self.get_custom_category_elements:
+                elements = self.get_custom_category_elements[category_name](ifc_file)
+            else:
+                elements = category_config["get_category_elements"](ifc_file)
+            for element in elements:
                 get_element_data = category_config["get_element_data"]
 
                 if isinstance(get_element_data, dict):
