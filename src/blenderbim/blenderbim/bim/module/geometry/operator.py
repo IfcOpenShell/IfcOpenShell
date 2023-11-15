@@ -67,9 +67,12 @@ class OverrideMeshSeparate(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         obj = context.active_object
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return
 
         # You cannot separate meshes if the representation is mapped.
-        relating_type = tool.Root.get_element_type(tool.Ifc.get_entity(obj))
+        relating_type = tool.Root.get_element_type(element)
         if relating_type and tool.Root.does_type_have_representations(relating_type):
             # We toggle edit mode to ensure that once representations are
             # unmapped, our Blender mesh only has a single user.
@@ -795,7 +798,8 @@ class OverrideDuplicateMove(bpy.types.Operator):
             new = blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
 
             # clean up the orphaned mesh with ifc id of the original object to avoid confusion
-            if new and temp_data:
+            # IfcGridAxis keeps the same mesh data (it's pointing to ifc id 0, so it's not a problem)
+            if new and temp_data and not new.is_a("IfcGridAxis"):
                 tool.Blender.remove_data_block(temp_data)
 
             if new:
@@ -908,14 +912,14 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
                         "pset.edit_pset",
                         tool.Ifc.get(),
                         pset=tool.Ifc.get().by_id(pset["id"]),
-                        properties={"Data": json.dumps(data)},
+                        properties={"Data": tool.Ifc.get().createIfcText(json.dumps(data))},
                     )
                 else:
                     ifcopenshell.api.run(
                         "pset.edit_pset",
                         tool.Ifc.get(),
                         pset=tool.Ifc.get().by_id(pset["id"]),
-                        properties={"Parent": parent.GlobalId, "Data": json.dumps(data)},
+                        properties={"Parent": parent.GlobalId, "Data": tool.Ifc.get().createIfcText(json.dumps(data))},
                     )
 
             else:
@@ -927,7 +931,7 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
                     "pset.edit_pset",
                     tool.Ifc.get(),
                     pset=pset,
-                    properties={"Parent": parent.GlobalId, "Data": json.dumps(data)},
+                    properties={"Parent": parent.GlobalId, "Data": tool.Ifc.get().createIfcText(json.dumps(data))},
                 )
 
         def add_child_to_assembly_data(new_entity):
@@ -941,7 +945,7 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
                 "pset.edit_pset",
                 tool.Ifc.get(),
                 pset=tool.Ifc.get().by_id(parent_pset["id"]),
-                properties={"Data": json.dumps(data)},
+                properties={"Data": tool.Ifc.get().createIfcText(json.dumps(data))},
             )
 
         def create_data_structure(entity, level=-1):
@@ -1215,7 +1219,10 @@ class RefreshAggregate(bpy.types.Operator):
                                 "pset.edit_pset",
                                 tool.Ifc.get(),
                                 pset=pset,
-                                properties={"Parent": instance_entity.GlobalId, "Data": json.dumps(data)},
+                                properties={
+                                    "Parent": instance_entity.GlobalId,
+                                    "Data": tool.Ifc.get().createIfcText(json.dumps(data)),
+                                },
                             )
 
                             part_obj = tool.Ifc.get_object(part)
@@ -1254,7 +1261,10 @@ class RefreshAggregate(bpy.types.Operator):
                             "pset.edit_pset",
                             tool.Ifc.get(),
                             pset=pset,
-                            properties={"Parent": instance_entity.GlobalId, "Data": json.dumps(data)},
+                            properties={
+                                "Parent": instance_entity.GlobalId,
+                                "Data": tool.Ifc.get().createIfcText(json.dumps(data)),
+                            },
                         )
 
                         part_obj = tool.Ifc.get_object(part)

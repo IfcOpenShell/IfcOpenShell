@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 import blenderbim.bim.helper
 import blenderbim.tool as tool
 from blenderbim.bim.helper import prop_with_search
@@ -128,7 +129,7 @@ class BIM_PT_ports(Panel):
     bl_region_type = "WINDOW"
     bl_context = "object"
     bl_order = 1
-    bl_parent_id = "BIM_PT_tab_services_object"
+    bl_parent_id = "BIM_PT_tab_services"
 
     @classmethod
     def poll(cls, context):
@@ -176,23 +177,24 @@ class BIM_PT_ports(Panel):
         cols = [row.column(align=True) for i in range(6)]
 
         for i, port_data in enumerate(PortData.data["located_ports_data"]):
-            port, port_obj, connected_obj = port_data
+            port, port_obj_name, connected_obj_name = port_data
             flow_direction_icon = FLOW_DIRECTION_TO_ICON[port.FlowDirection or "NOTDEFINED"]
-            if port_obj:
+            if port_obj_name:
                 cols[0].label(text="", icon=flow_direction_icon)
                 cols[1].operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = port.id()
-                cols[2].label(text=port_obj.name)
+                cols[2].label(text=port_obj_name)
             else:
                 cols[0].label(text="", icon=flow_direction_icon)
                 cols[1].label(text="", icon="HIDE_ON")
                 cols[2].label(text="Port is hidden")
 
-            if connected_obj:
+            if connected_obj_name:
+                connected_obj = bpy.data.objects[connected_obj_name]
                 cols[3].operator("bim.disconnect_port", text="", icon="UNLINKED").element_id = port.id()
                 cols[4].operator(
                     "bim.select_entity", text="", icon="RESTRICT_SELECT_OFF"
                 ).ifc_id = connected_obj.BIMObjectProperties.ifc_definition_id
-                cols[5].label(text=f"{connected_obj.name}")
+                cols[5].label(text=connected_obj_name)
             else:
                 cols[3].label(text="", icon="UNLINKED")
                 cols[4].label(text="", icon="BLANK1")
@@ -207,7 +209,7 @@ class BIM_PT_port(Panel):
     bl_region_type = "WINDOW"
     bl_context = "object"
     bl_order = 1
-    bl_parent_id = "BIM_PT_tab_services_object"
+    bl_parent_id = "BIM_PT_tab_services"
 
     @classmethod
     def poll(cls, context):
@@ -242,19 +244,21 @@ class BIM_PT_port(Panel):
 
         # port located on
         row = layout.row(align=True)
-        relating_object = PortData.data["port_relating_object"]
+        relating_object_name = PortData.data["port_relating_object_name"]
+        relating_object = bpy.data.objects[relating_object_name]
         row.label(text="Port located on:")
-        row.label(text=relating_object.name)
+        row.label(text=relating_object_name)
         row.operator(
             "bim.select_entity", text="", icon="RESTRICT_SELECT_OFF"
         ).ifc_id = relating_object.BIMObjectProperties.ifc_definition_id
 
         # object connected to the port
         row = layout.row(align=True)
-        connected_object = PortData.data["port_connected_object"]
-        if connected_object:
+        connected_object_name = PortData.data["port_connected_object_name"]
+        if connected_object_name:
+            connected_object = bpy.data.objects[connected_object_name]
             row.label(text="Port connected to:")
-            row.label(text=connected_object.name)
+            row.label(text=connected_object_name)
             row.operator(
                 "bim.select_entity", text="", icon="RESTRICT_SELECT_OFF"
             ).ifc_id = connected_object.BIMObjectProperties.ifc_definition_id
@@ -270,6 +274,68 @@ class BIM_PT_port(Panel):
                 depress=flow_direction == current_flow_direction,
                 text="",
             ).direction = flow_direction
+
+
+class BIM_PT_flow_controls(Panel):
+    bl_label = "Flow Controls"
+    bl_idname = "BIM_PT_flow_controls"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+    bl_order = 1
+    bl_parent_id = "BIM_PT_tab_services"
+
+    @classmethod
+    def poll(cls, context):
+        if not context.active_object:
+            return False
+        element = tool.Ifc.get_entity(context.active_object)
+        if not element or not (
+            element.is_a("IfcDistributionControlElement") or element.is_a("IfcDistributionFlowElement")
+        ):
+            return False
+        return True
+
+    def draw(self, context):
+        if not ObjectSystemData.is_loaded:
+            ObjectSystemData.load()
+
+        def display_element(control_id, flow_element_id, displayed_object_name):
+            displayed_object = bpy.data.objects[displayed_object_name]
+            row = self.layout.row(align=True)
+            op = row.operator("bim.assign_unassign_flow_control", text="", icon="X")
+            op.flow_control = control_id
+            op.flow_element = flow_element_id
+            op.assign = False
+            row.operator(
+                "bim.select_entity", text="", icon="RESTRICT_SELECT_OFF"
+            ).ifc_id = displayed_object.BIMObjectProperties.ifc_definition_id
+            row.label(text=f"{displayed_object_name}")
+
+        element = tool.Ifc.get_entity(context.active_object)
+        flow_controls_data = ObjectSystemData.data["flow_controls_data"]
+        if flow_controls_data["type"] == "IfcDistributionFlowElement":
+            controls = flow_controls_data["controls"]
+            row = self.layout.row(align=True)
+            if controls:
+                row.label(text="Controls assigned to the element:")
+            else:
+                row.label(text="No controls assigned to the flow element")
+            row.operator("bim.assign_unassign_flow_control", text="", icon="ADD").assign = True
+            if controls:
+                for control_data in controls:
+                    control, control_obj_name = control_data
+                    display_element(control.id(), element.id(), control_obj_name)
+        else:
+            flow_element, flow_element_obj_name = flow_controls_data["flow_element"]
+            row = self.layout.row(align=True)
+            if flow_element:
+                row.label(text="Flow element controlled by the flow control:")
+                display_element(element.id(), flow_element.id(), flow_element_obj_name)
+            else:
+                row.label(text="No flow element controlled by the flow control")
+                row.operator("bim.assign_unassign_flow_control", text="", icon="ADD").assign = True
 
 
 class BIM_PT_zones(Panel):

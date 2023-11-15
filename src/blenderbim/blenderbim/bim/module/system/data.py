@@ -72,6 +72,7 @@ class ObjectSystemData:
             "systems": cls.systems(),
             # AFTER SYSTEMS
             "connected_elements": cls.connected_elements(),
+            "flow_controls_data": cls.flow_controls_data(),
         }
         cls.is_loaded = True
 
@@ -91,6 +92,26 @@ class ObjectSystemData:
             return set()
         return tool.System.get_connected_elements(cls.element)
 
+    @classmethod
+    def flow_controls_data(cls):
+        flow_controls_data = {}
+        if not cls.element or not (
+            cls.element.is_a("IfcDistributionControlElement") or cls.element.is_a("IfcDistributionFlowElement")
+        ):
+            return flow_controls_data
+
+        if cls.element.is_a("IfcDistributionControlElement"):
+            flow_controls_data["type"] = "IfcDistributionControlElement"
+            flow_element = tool.System.get_flow_control_flow_element(cls.element)
+            flow_element_obj = tool.Ifc.get_object(flow_element).name if flow_element else None
+            flow_controls_data["flow_element"] = flow_element, flow_element_obj
+        else:
+            flow_controls_data["type"] = "IfcDistributionFlowElement"
+            controls = [(c, tool.Ifc.get_object(c).name) for c in tool.System.get_flow_element_controls(cls.element)]
+            flow_controls_data["controls"] = controls
+
+        return flow_controls_data
+
 
 class PortData:
     data = {}
@@ -105,8 +126,8 @@ class PortData:
             "total_ports": cls.total_ports(),
             "located_ports_data": cls.located_ports_data(),
             "is_port": is_port,
-            "port_connected_object": cls.port_connected_object() if is_port else None,
-            "port_relating_object": cls.port_relating_object() if is_port else None,
+            "port_connected_object_name": cls.port_connected_object_name() if is_port else None,
+            "port_relating_object_name": cls.port_relating_object_name() if is_port else None,
         }
         # AFTER located_ports_data
         cls.data["selected_objects_flow_direction"] = cls.selected_objects_flow_direction() if not is_port else None
@@ -121,16 +142,16 @@ class PortData:
         return cls.element and cls.element.is_a("IfcDistributionPort")
 
     @classmethod
-    def port_relating_object(cls):
-        return tool.Ifc.get_object(tool.System.get_port_relating_element(cls.element))
+    def port_relating_object_name(cls):
+        return tool.Ifc.get_object(tool.System.get_port_relating_element(cls.element)).name
 
     @classmethod
-    def port_connected_object(cls):
+    def port_connected_object_name(cls):
         connected_port = tool.System.get_connected_port(cls.element)
         if not connected_port:
             return
         connected_element = tool.System.get_port_relating_element(connected_port)
-        return tool.Ifc.get_object(connected_element)
+        return tool.Ifc.get_object(connected_element).name
 
     @classmethod
     def located_ports_data(cls):
@@ -138,19 +159,23 @@ class PortData:
 
         data = []
         for port in ports:
-            port_obj = tool.Ifc.get_object(port)
+            # port may be not present as a scene object
+            port_obj_name = getattr(tool.Ifc.get_object(port), "name", None)
             connected_port = tool.System.get_connected_port(port)
             if connected_port:
-                connected_obj = tool.Ifc.get_object(tool.System.get_port_relating_element(connected_port))
+                connected_obj_name = tool.Ifc.get_object(tool.System.get_port_relating_element(connected_port)).name
             else:
-                connected_obj = None
+                connected_obj_name = None
 
-            data.append((port, port_obj, connected_obj))
+            data.append((port, port_obj_name, connected_obj_name))
         return data
 
     @classmethod
     def selected_objects_flow_direction(cls):
-        for port, port_obj, connected_obj in cls.data["located_ports_data"]:
+        for port, _, connected_obj_name in cls.data["located_ports_data"]:
+            if connected_obj_name is None:
+                continue
+            connected_obj = bpy.data.objects[connected_obj_name]
             if connected_obj in bpy.context.selected_objects:
                 return port.FlowDirection
 
@@ -210,7 +235,7 @@ class SystemDecorationData:
             decorated_elements = set(ifcopenshell.util.system.get_system_elements(active_system))
 
         if not decorated_elements:
-            decorated_elements += ObjectSystemData.data["connected_elements"]
+            decorated_elements.update(ObjectSystemData.data["connected_elements"])
 
         return decorated_elements
 

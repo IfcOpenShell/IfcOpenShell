@@ -108,6 +108,7 @@ classes = (
     space.GenerateSpace,
     space.GenerateSpacesFromWalls,
     covering.AddInstanceFlooringCoveringsFromWalls,
+    covering.AddInstanceCeilingCoveringsFromWalls,
     covering.AddInstanceFlooringCoveringFromCursor,
     covering.AddInstanceCeilingCoveringFromCursor,
     covering.RegenSelectedCoveringObject,

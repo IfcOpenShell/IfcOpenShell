@@ -255,6 +255,8 @@ class AuthoringData:
         if not relating_type_id:
             return
         relating_type = tool.Ifc.get().by_id(int(relating_type_id))
+        if not hasattr(relating_type, "PredefinedType"):
+            return
         predefined_type = relating_type.PredefinedType
         return predefined_type
 
@@ -314,6 +316,7 @@ class StairData:
         if not cls.data["pset_data"]:
             return
         cls.data["general_params"] = cls.general_params()
+        cls.data["calculated_params"] = cls.calculated_params()
 
     @classmethod
     def pset_data(cls):
@@ -329,6 +332,10 @@ class StairData:
             prop_readable_name, prop_value = get_prop_from_data(props, data, prop_name)
             general_params[prop_readable_name] = prop_value
         return general_params
+
+    @classmethod
+    def calculated_params(cls):
+        return tool.Model.get_active_stair_calculated_params(cls.data["pset_data"]["data_dict"])
 
 
 class SverchokData:
@@ -356,7 +363,7 @@ class SverchokData:
 
 
 def get_prop_from_data(props, data, prop_name):
-    prop_value = data[prop_name]
+    prop_value = data.get(prop_name, tool.Blender.get_blender_prop_default_value(props, prop_name))
     prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
     prop_readable_name = props.bl_rna.properties[prop_name].name
     return prop_readable_name, prop_value

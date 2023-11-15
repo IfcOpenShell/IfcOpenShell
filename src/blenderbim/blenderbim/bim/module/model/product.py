@@ -249,6 +249,8 @@ class AddConstrTypeInstance(bpy.types.Operator):
             mat.translation *= unit_scale
             mat = obj.matrix_world @ mat
             new_port = tool.Ifc.run("root.create_entity", ifc_class="IfcDistributionPort")
+            new_port.PredefinedType = port.PredefinedType
+            new_port.SystemType = port.SystemType
             tool.Ifc.run("system.assign_port", element=element, port=new_port)
             tool.Ifc.run("geometry.edit_object_placement", product=new_port, matrix=mat, is_si=True)
 
@@ -559,5 +561,6 @@ def ensure_material_unassigned(usecase_path, ifc_file, settings):
         total_removed = 0
         for i in to_remove:
             obj.active_material_index = i - total_removed
-            bpy.ops.object.material_slot_remove({"object": obj})
+            with bpy.context.temp_override(object=obj):
+                bpy.ops.object.material_slot_remove()
             total_removed += 1

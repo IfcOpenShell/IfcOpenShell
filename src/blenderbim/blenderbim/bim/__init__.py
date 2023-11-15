@@ -151,7 +151,6 @@ classes = [
     ui.BIM_PT_tab_references,
     # Services and systems
     ui.BIM_PT_tab_services,
-    ui.BIM_PT_tab_services_object,
     ui.BIM_PT_tab_zones,
     # Structural analysis
     ui.BIM_PT_tab_structural,
@@ -220,8 +219,8 @@ def register():
 
     wm = bpy.context.window_manager
     if wm.keyconfigs.addon:
-        km = wm.keyconfigs.addon.keymaps.new(name='Window', space_type='EMPTY')
-        kmi = km.keymap_items.new('bim.switch_tab', 'TAB', 'PRESS', ctrl=True)
+        km = wm.keyconfigs.addon.keymaps.new(name="Window", space_type="EMPTY")
+        kmi = km.keymap_items.new("bim.switch_tab", "TAB", "PRESS", ctrl=True)
         addon_keymaps.append((km, kmi))
 
     global icons
@@ -239,11 +238,13 @@ def register():
     global last_commit_hash
     try:
         import git
+
         path = Path(__file__).resolve().parent
         repo = git.Repo(str(path), search_parent_directories=True)
         last_commit_hash = repo.head.object.hexsha
     except:
         pass
+
 
 def unregister():
     global icons
@@ -288,6 +289,7 @@ def unregister():
         "SCENE_PT_rigid_body_world",
         "SCENE_PT_audio",
         "SCENE_PT_keying_sets",
+        "SCENE_PT_simulation",
         "SCENE_PT_custom_props",
     ]:
         try:

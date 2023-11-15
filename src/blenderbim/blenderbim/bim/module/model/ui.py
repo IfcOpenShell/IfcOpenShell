@@ -36,6 +36,7 @@ from blenderbim.bim.module.model.door import update_door_modifier_bmesh
 from blenderbim.bim.module.model.railing import update_railing_modifier_bmesh
 from blenderbim.bim.module.model.roof import update_roof_modifier_bmesh
 from blenderbim.bim.helper import prop_with_search
+from collections.abc import Iterable
 
 
 class LaunchTypeManager(bpy.types.Operator):
@@ -259,35 +260,42 @@ class BIM_PT_stair(bpy.types.Panel):
             row = self.layout.row(align=True)
             row.label(text="Stair parameters", icon="IPO_CONSTANT")
 
-            stair_data = StairData.data["pset_data"]["data_dict"]
             if props.is_editing:
+                calculated_params = tool.Model.get_active_stair_calculated_params()
                 row = self.layout.row(align=True)
                 row.operator("bim.finish_editing_stair", icon="CHECKMARK", text="Finish Editing")
                 row.operator("bim.cancel_editing_stair", icon="CANCEL", text="")
                 row = self.layout.row(align=True)
                 for prop_name in props.get_props_kwargs():
-                    self.layout.prop(props, prop_name)
+                    prop_value = getattr(props, prop_name)
+                    if isinstance(prop_value, Iterable) and not isinstance(prop_value, str):
+                        prop_readable_name = props.bl_rna.properties[prop_name].name
+                        self.layout.label(text=f"{prop_readable_name}:")
+                        self.layout.prop(props, prop_name, text="")
+                    else:
+                        self.layout.prop(props, prop_name)
                 regenerate_stair_mesh(context)
             else:
+                calculated_params = StairData.data["calculated_params"]
                 row.operator("bim.enable_editing_stair", icon="GREASEPENCIL", text="")
                 row.operator("bim.remove_stair", icon="X", text="")
                 row = self.layout.row(align=True)
                 for prop_name, prop_value in StairData.data["general_params"].items():
                     row = self.layout.row(align=True)
-                    row.label(text=prop_name)
-                    row.label(text=str(prop_value))
+                    if isinstance(prop_value, Iterable) and not isinstance(prop_value, str):
+                        row.label(text=f"{prop_name}:")
+                        row = self.layout.row(align=True)
+                        for prop_value_item in prop_value:
+                            row.label(text=str(prop_value_item))
+                    else:
+                        row.label(text=prop_name)
+                        row.label(text=str(prop_value))
 
             # calculated properties
-            number_of_rises = props.number_of_treads + 1
-            row = self.layout.row(align=True)
-            row.label(text="Number of risers")
-            row.label(text=str(number_of_rises))
-            row = self.layout.row(align=True)
-            row.label(text="Tread rise")
-            row.label(text=str(round(props.height / number_of_rises, 5)))
-            row = self.layout.row(align=True)
-            row.label(text="Length")
-            row.label(text=str(round(props.tread_run * number_of_rises, 5)))
+            for prop_name, prop_value in calculated_params.items():
+                row = self.layout.row(align=True)
+                row.label(text=prop_name)
+                row.label(text=str(prop_value))
         else:
             row = self.layout.row()
             row.label(text="No Stair Found")

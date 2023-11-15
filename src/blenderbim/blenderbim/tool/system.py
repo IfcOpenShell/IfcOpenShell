@@ -50,9 +50,9 @@ class System(blenderbim.core.tool.System):
         length = bbox["min_z"] if tool.Cad.is_x(bbox["max_z"], 0) else bbox["max_z"]
         ports = []
         if add_start_port:
-            ports.append(add_port(mep_element, obj.matrix_world @ Matrix()))
+            ports.append(add_port(mep_element, obj.matrix_world))
         if add_end_port:
-            m = obj.matrix_world
+            m = obj.matrix_world.copy()
             if end_port_pos:
                 m.translation = end_port_pos
             else:
@@ -368,3 +368,15 @@ class System(blenderbim.core.tool.System):
     @classmethod
     def is_mep_element(cls, element):
         return element.is_a("IfcFlowSegment") or element.is_a("IfcFlowFitting")
+
+    @classmethod
+    def get_flow_element_controls(cls, element):
+        if not element.HasControlElements:
+            return []
+        return [control for control in element.HasControlElements[0].RelatedControlElements]
+
+    @classmethod
+    def get_flow_control_flow_element(cls, element):
+        if not element.AssignedToFlowElement:
+            return
+        return element.AssignedToFlowElement[0].RelatingFlowElement

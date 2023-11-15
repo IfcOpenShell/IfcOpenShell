@@ -44,7 +44,7 @@ class Usecase:
         :param relating_structure: The IfcSpatialStructureElement element, such
             as IfcBuilding, IfcBuildingStorey, or IfcSpace that the element
             exists in.
-        :return: The IfcRelContainedInSpatialStructure relationship instance
+        :return: The IfcRelReferencedInSpatialStructure relationship instance
         :rtype: ifcopenshell.entity_instance.entity_instance
 
         Example:

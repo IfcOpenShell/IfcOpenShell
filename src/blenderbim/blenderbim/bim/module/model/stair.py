@@ -27,7 +27,6 @@ from bmesh.types import BMVert
 from bpy.types import Operator
 from bpy.props import FloatProperty, IntProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
-from ifcopenshell.util.shape_builder import V, ShapeBuilder
 
 
 def add_dumb_stair_object(self, context):
@@ -78,129 +77,10 @@ class BIM_OT_add_object(Operator, AddObjectHelper):
         return {"FINISHED"}
 
 
-def generate_stair_2d_profile(
-    number_of_treads,
-    height,
-    width,
-    tread_run,
-    stair_type,
-    # WOOD/STEEL CONCRETE STAIR ARGUMENTS
-    tread_depth=None,
-    # CONCRETE STAIR ARGUMENTS
-    has_top_nib=None,
-    top_slab_depth=None,
-    base_slab_depth=None,
-):
-    vertices = []
-    edges = []
-    faces = []
-
-    number_of_risers = number_of_treads + 1
-    tread_rise = height / number_of_risers
-    length = tread_run * number_of_risers
-
-    if stair_type == "WOOD/STEEL":
-        builder = ShapeBuilder(None)
-        tread_shape = builder.get_rectangle_coords(
-            size=V(tread_run, 0, tread_depth), position=V(0, 0, -(tread_depth - tread_rise))
-        )
-        tread_offset = V(tread_run, 0, tread_rise)
-
-        for i in range(number_of_risers):
-            cur_trade_shape = [v + tread_offset * i for v in tread_shape]
-            vertices.extend(cur_trade_shape)
-
-            cur_vertex = i * 4
-            edges.extend(
-                [
-                    (cur_vertex, cur_vertex + 1),
-                    (cur_vertex + 1, cur_vertex + 2),
-                    (cur_vertex + 2, cur_vertex + 3),
-                    (cur_vertex + 3, cur_vertex),
-                ]
-            )
-            faces.append(list(range(cur_vertex, cur_vertex + 1)))
-
-        return (vertices, edges, faces)
-
-    elif stair_type == "GENERIC":
-        vertices.append(Vector([0, 0, 0]))
-
-        tread_verts = [Vector([0, 0, tread_rise]), Vector([tread_run, 0, tread_rise])]
-        tread_offset = Vector([tread_run, 0, tread_rise])
-
-        for i in range(number_of_risers):
-            current_tread_verts = [v + tread_offset * i for v in tread_verts]
-            last_vert_i = len(vertices) - 1
-            edges.extend([(last_vert_i, last_vert_i + 1), (last_vert_i + 1, last_vert_i + 2)])
-            vertices.extend(current_tread_verts)
-
-        last_vert_i = len(vertices)
-        vertices.append(vertices[-1] * V(1, 0, 0))
-        edges.extend([(last_vert_i - 1, last_vert_i), (last_vert_i, 0)])
-
-        return (vertices, edges, faces)
-
-    elif stair_type == "CONCRETE":
-        for i in range(number_of_risers):
-            vertices.extend(
-                [Vector((tread_run * i, 0, tread_rise * i)), Vector((tread_run * i, 0, tread_rise * (i + 1)))]
-            )
-            cur_vertex = i * 2
-            if i != 0:
-                edges.append((cur_vertex - 1, cur_vertex))
-            edges.append((cur_vertex, cur_vertex + 1))
-
-        vertices.append(Vector((tread_run * number_of_risers, 0, tread_rise * number_of_risers)))
-        edges.append((number_of_risers * 2, number_of_risers * 2 - 1))
-
-        td_vector = Vector((vertices[2][2], 0, -vertices[2][0])).normalized() * tread_depth
-
-        k = tread_rise / tread_run
-        s0 = vertices[0] + td_vector
-        b = s0.z - k * s0.x  # comes from y = kx + b
-        # you could use td_vector as depth_vector
-        # but then stair won't be perpendicular to the X+
-        # b is kind of vertical tread_depth (along Z+)
-        depth_vector = Vector((0, 0, b))
-
-        # top nib
-        if has_top_nib:
-            vertices.append(vertices[number_of_risers * 2] + Vector((0, 0, -top_slab_depth)))
-            vertices.append(vertices[number_of_risers * 2] + Vector(((-top_slab_depth - b) / k, 0, -top_slab_depth)))
-            last_vertex_i = len(vertices) - 1
-            edges.append((number_of_risers * 2, last_vertex_i - 1))
-            edges.append((last_vertex_i - 1, last_vertex_i))
-        else:
-            vertices.append(vertices[number_of_risers * 2] + depth_vector)
-            last_vertex_i = len(vertices) - 1
-            edges.append((number_of_risers * 2, last_vertex_i))
-
-        top_nib_end = len(vertices) - 1
-
-        # bottom nib
-        if abs(b) <= base_slab_depth:
-            vertices.append(vertices[0] + depth_vector)
-            edges.append((0, len(vertices) - 1))
-            bottom_nib_end = len(vertices) - 1
-        else:
-            vertices.append(vertices[0] + Vector(((-base_slab_depth - b) / k, 0, -base_slab_depth)))
-            vertices.append(vertices[0] + Vector((0, 0, -base_slab_depth)))
-            last_vertex_i = len(vertices) - 1
-            edges.append((0, last_vertex_i))
-            edges.append((last_vertex_i - 1, last_vertex_i))
-            bottom_nib_end = len(vertices) - 2
-
-        edges.append((bottom_nib_end, top_nib_end))
-        faces = [list(range(len(vertices)))]
-
-        return (vertices, edges, faces)
-
-
 def regenerate_stair_mesh(context):
     obj = context.active_object
     props_kwargs = obj.BIMStairProperties.get_props_kwargs()
-    vertices, edges, faces = generate_stair_2d_profile(**props_kwargs)
+    vertices, edges, faces = tool.Model.generate_stair_2d_profile(**props_kwargs)
 
     obj = context.active_object
     bm = bmesh.new()
@@ -266,6 +146,7 @@ def update_ifc_stair_props(obj):
     si_conversion = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
     riser_height = props.height / number_of_risers / si_conversion
     tread_length = props.tread_depth / si_conversion
+    nosing_length = props.nosing_length / si_conversion
 
     if element.is_a("IfcStairFlight"):
         if tool.Ifc.get_schema() == "IFC2X3":
@@ -291,6 +172,7 @@ def update_ifc_stair_props(obj):
             "NumberOfTreads": props.number_of_treads,
             "RiserHeight": riser_height,
             "TreadLength": tread_length,
+            "NosingLength": nosing_length,
         },
     )
     tool.Ifc.edit(obj)
@@ -377,7 +259,7 @@ class AddStair(bpy.types.Operator, tool.Ifc.Operator):
             "pset.edit_pset",
             ifc_file,
             pset=pset,
-            properties={"Data": json.dumps(stair_data)},
+            properties={"Data": tool.Ifc.get().createIfcText(json.dumps(stair_data))},
         )
         regenerate_stair_mesh(context)
         update_ifc_stair_props(obj)
@@ -419,7 +301,7 @@ class FinishEditingStair(bpy.types.Operator, tool.Ifc.Operator):
         update_stair_representation(obj)
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Stair")
-        data = json.dumps(data)
+        data = tool.Ifc.get().createIfcText(json.dumps(data))
         ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
 
         # update IfcStairFlight properties

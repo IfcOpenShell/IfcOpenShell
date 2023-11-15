@@ -732,6 +732,9 @@ class HideOpenings(Operator, tool.Ifc.Operator):
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
+            if element.is_a("IfcOpeningElement"):
+                element = element.VoidsElements[0].RelatingBuildingElement
+                obj = tool.Ifc.get_object(element)
             openings = [r.RelatedOpeningElement for r in element.HasOpenings]
             for opening in openings:
                 opening_obj = tool.Ifc.get_object(opening)
@@ -759,10 +762,14 @@ class EditOpenings(Operator, tool.Ifc.Operator):
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
+            if element.is_a("IfcOpeningElement"):
+                element = element.VoidsElements[0].RelatingBuildingElement
+                obj = tool.Ifc.get_object(element)
             openings = [r.RelatedOpeningElement for r in element.HasOpenings]
             for opening in openings:
                 similar_openings = [o for o in all_openings if o.ObjectPlacement == opening.ObjectPlacement]
                 opening_obj = tool.Ifc.get_object(opening)
+                building_objs.add(obj)
                 if opening_obj:
                     if tool.Ifc.is_edited(opening_obj):
                         tool.Geometry.run_geometry_update_representation(obj=opening_obj)
@@ -770,9 +777,12 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                         blenderbim.core.geometry.edit_object_placement(
                             tool.Ifc, tool.Geometry, tool.Surveyor, obj=opening_obj
                         )
-                        for similar_opening in similar_openings:
-                            similar_opening.ObjectPlacement = opening.ObjectPlacement
-                    building_objs.add(obj)
+                    for similar_opening in similar_openings:
+                        similar_opening.ObjectPlacement = opening.ObjectPlacement
+                        element = similar_opening.VoidsElements[0].RelatingBuildingElement
+                        obj = tool.Ifc.get_object(element)
+                        building_objs.add(obj)
+                    
                     building_objs.update(self.get_all_building_objects_of_similar_openings(opening))
                     tool.Ifc.unlink(element=opening, obj=opening_obj)
                     bpy.data.objects.remove(opening_obj)
@@ -873,14 +883,14 @@ class DecorationsHandler:
             if not obj:
                 continue
 
-            self.line_shader = gpu.shader.from_builtin("3D_POLYLINE_UNIFORM_COLOR")
+            self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
             self.line_shader.bind()  # required to be able to change uniforms of the shader
             # POLYLINE_UNIFORM_COLOR specific uniforms
             self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
             self.line_shader.uniform_float("lineWidth", 2.0)
 
             # general shader
-            self.shader = gpu.shader.from_builtin("3D_UNIFORM_COLOR")
+            self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
 
             verts = []
             selected_edges = []

@@ -139,6 +139,16 @@ class CoveringToolUI:
                     row.label(text="", icon="EVENT_A")
                     op = row.operator("bim.add_instance_flooring_coverings_from_walls")
 
+            elif (AuthoringData.data["predefined_type"] == "CEILING" and
+                type_material_usage == "IfcMaterialLayerSet" and
+                element and
+                bpy.context.selected_objects and
+                element.is_a("IfcWall")):
+                    row = cls.layout.row(align=True)
+                    row.label(text="", icon="EVENT_SHIFT")
+                    row.label(text="", icon="EVENT_A")
+                    op = row.operator("bim.add_instance_ceiling_coverings_from_walls")
+
             elif (element and
                   bpy.context.selected_objects and
                   element.is_a("IfcCovering") and
@@ -243,7 +253,7 @@ class Hotkey(bpy.types.Operator, Operator):
                 bpy.ops.bim.add_constr_type_instance()
         elif AuthoringData.data["predefined_type"] == "CEILING":
             if element and bpy.context.selected_objects and element.is_a("IfcWall"):
-                pass
+                bpy.ops.bim.add_instance_ceiling_coverings_from_walls()
             elif tool.Ifc.get_entity(collection_obj):
                 bpy.ops.bim.add_instance_ceiling_covering_from_cursor()
             else:
