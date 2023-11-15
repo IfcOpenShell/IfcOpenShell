@@ -191,13 +191,12 @@
 
 		template <typename T>
 		PyObject* operator()(const T& t) {
-			return pythonize(t);
-		}
-
-		template <>
-		PyObject* operator()(const std::set<int>& t) {
-			std::vector<int> vs(t.begin(), t.end());
-			return pythonize_vector(vs);
+			if constexpr (std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, std::set<int>>) {
+				std::vector<int> vs(t.begin(), t.end());
+				return pythonize_vector(vs);
+			} else {
+				return pythonize(t);
+			}
 		}
 	};
 
