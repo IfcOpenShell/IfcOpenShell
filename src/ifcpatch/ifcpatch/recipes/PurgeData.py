@@ -173,3 +173,10 @@ class Patcher:
 
         for element in self.file.by_type("IfcProfileDef"):
             element.ProfileName = None
+
+        for element in self.file.by_type("IfcShapeAspect"):
+            element.Name = None
+            element.Description = None
+
+        for element in self.file.by_type("IfcPresentationLayerAssignment"):
+            self.file.remove(element)
