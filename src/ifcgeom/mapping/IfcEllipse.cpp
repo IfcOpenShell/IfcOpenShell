@@ -24,7 +24,7 @@ using namespace ifcopenshell::geometry;
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcEllipse* inst) {
 	double x = inst->SemiAxis1() * length_unit_;
 	double y = inst->SemiAxis2() * length_unit_;
-	const double tol = conv_settings_.getValue(ConversionSettings::GV_PRECISION);
+	const double tol = settings_.get<settings::Precision>().get();
 	if (x < tol || y < tol) {
 		Logger::Message(Logger::LOG_ERROR, "Radius not greater than zero for:", inst);
 		return nullptr;

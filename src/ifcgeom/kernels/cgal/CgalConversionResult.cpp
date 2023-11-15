@@ -18,7 +18,7 @@ using ifcopenshell::geometry::NumberEpeck;
 #define NumberType NumberEpeck
 #endif
 
-void ifcopenshell::geometry::CgalShape::Triangulate(const IfcGeom::IteratorSettings& settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int surface_style_id) const {
+void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int surface_style_id) const {
 	// Copy is made because triangulate_faces() obviously does not accept a const argument
 	// ... also becuase of transforming the vertex positions, right?
 	cgal_shape_t s = *this;
@@ -372,7 +372,7 @@ void ifcopenshell::geometry::CgalShape::map(OpaqueCoordinate<4>& from, OpaqueCoo
 
 #ifndef IFOPSH_SIMPLE_KERNEL
 
-void ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::Triangulate(const IfcGeom::IteratorSettings& settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int surface_style_id) const {
+void ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int surface_style_id) const {
 	throw std::runtime_error("Not implemented");
 }
 

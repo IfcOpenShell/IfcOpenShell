@@ -433,13 +433,13 @@ struct intersection_validator {
 
 	intersection_validator(IfcParse::IfcFile& f, std::initializer_list<std::string> entities, double eps, bool no_progress, bool quiet, bool stderr_progress) {
 
-		IfcGeom::IteratorSettings settings;
-		settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, false);
-		settings.set(IfcGeom::IteratorSettings::WELD_VERTICES, false);
-		settings.set(IfcGeom::IteratorSettings::SEW_SHELLS, true);
-		settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS, true);
-		settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
-		settings.set(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS, true);
+		ifcopenshell::geometry::Settings settings;
+		settings.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = false;
+		settings.get<ifcopenshell::geometry::settings::WeldVertices>().value = false;
+		settings.get<ifcopenshell::geometry::settings::ReorientShells>().value = true;
+		settings.get<ifcopenshell::geometry::settings::ConvertBackUnits>().value = true;
+		settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
+		settings.get<ifcopenshell::geometry::settings::DisableOpeningSubtractions>().value = true;
 
 		std::vector<ifcopenshell::geometry::filter_t> spaces_and_walls = {
 			IfcGeom::entity_filter(true, false, entities)

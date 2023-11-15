@@ -311,7 +311,7 @@ void SvgSerializer::write(path_object& p, const TopoDS_Shape& comp_or_wire, boos
 				ycoords.push_back(path.add(p2.Y()));
 			} else if (ty != STANDARD_TYPE(Geom_Line)) {
 				BRepAdaptor_Curve crv(edge);
-				GCPnts_QuasiUniformDeflection tessellater(crv, settings().deflection_tolerance());
+				GCPnts_QuasiUniformDeflection tessellater(crv, geometry_settings().get<ifcopenshell::geometry::settings::MesherLinearDeflection>().get());
 				// NB: Start at 2: 1-based and skip the first point, assume it coincides with p1.
 				for (int i = 2; i <= tessellater.NbPoints(); ++i) {
 					gp_Pnt pi = tessellater.Value(i);
@@ -379,9 +379,8 @@ namespace {
 		for (const auto& p : o->parents()) {
 			if (p->type() == "IfcBuildingStorey") {
 				try {
-					const IfcGeom::ElementSettings& settings = o->geometry().settings();
 					double e = *p->product()->get("Elevation");
-					double storey_elevation = e * settings.unit_magnitude();
+					double storey_elevation = e * o->geometry().settings().get<ifcopenshell::geometry::settings::LengthUnit>().get();
 					return std::make_pair(p->product(), storey_elevation);
 				} catch (...) {
 					continue;
@@ -1883,7 +1882,7 @@ void SvgSerializer::addTextAnnotations(const drawing_key& k) {
 				auto desc = (std::string) *ds;
 
 				if (object_type == "Text") {
-					auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(file, settings_);
+					auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(file, geometry_settings_);
 					auto item = mapping->map(*pl);
 					auto matrix = ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::matrix4>(item);
 					delete mapping;
@@ -2307,11 +2306,11 @@ std::string SvgSerializer::nameElement(const IfcUtil::IfcBaseEntity* storey, con
 std::string SvgSerializer::idElement(const IfcUtil::IfcBaseEntity* elem) {
 	const std::string type = elem->declaration().is("IfcBuildingStorey") ? "storey" : "product";
 	const std::string name =
-		(settings().get(SerializerSettings::USE_ELEMENT_GUIDS)
+		(settings().get<ifcopenshell::geometry::settings::UseElementGuids>().get()
 			? static_cast<std::string>(*elem->get("GlobalId"))
-			: ((settings().get(SerializerSettings::USE_ELEMENT_NAMES) && !elem->get("Name")->isNull()))
+			: ((settings().get<ifcopenshell::geometry::settings::UseElementNames>().get() && !elem->get("Name")->isNull()))
 			? static_cast<std::string>(*elem->get("Name"))
-			: (settings().get(SerializerSettings::USE_ELEMENT_STEPIDS))
+			: (settings().get<ifcopenshell::geometry::settings::UseElementStepIds>().get())
 			? ("id-" + boost::lexical_cast<std::string>(elem->data().id()))
 			: IfcParse::IfcGlobalId(*elem->get("GlobalId")).formatted());
 	return type + "-" + name;
@@ -2340,7 +2339,7 @@ void SvgSerializer::setFile(IfcParse::IfcFile* f) {
 
 	auto storeys = f->instances_by_type("IfcBuildingStorey");
 	if (!storeys || storeys->size() == 0) {
-		auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(file, settings_);
+		auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(file, geometry_settings_);
 
 		std::vector<const IfcParse::declaration*> to_derive_from;
 		to_derive_from.push_back(f->schema()->declaration_by_name("IfcBuilding"));

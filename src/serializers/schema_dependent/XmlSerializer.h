@@ -35,7 +35,7 @@ private:
 	IfcParse::IfcFile* file;
 
 	// @todo
-	IfcGeom::IteratorSettings settings_;
+	ifcopenshell::geometry::Settings settings_;
 	ifcopenshell::geometry::abstract_mapping* mapping_;
 
 public:

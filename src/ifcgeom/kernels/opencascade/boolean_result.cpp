@@ -46,7 +46,7 @@ namespace {
 bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, ConversionResults& results) {
 	bool valid_result = false;
 	bool first = true;
-	const double tol = conv_settings_.getValue(ConversionSettings::GV_PRECISION);
+	const double tol = settings_.get<settings::Precision>().get();
 
 	TopoDS_Shape a;
 	TopTools_ListOfShape b;
@@ -58,14 +58,14 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 		AbstractKernel::convert(c, cr);
 		if (first && br->operation == taxonomy::boolean_result::SUBTRACTION) {
 			// @todo A will be null on union/intersection, intended?
-			IfcGeom::util::flatten_shape_list(cr, a, false, conv_settings_.getValue(ifcopenshell::geometry::ConversionSettings::GV_PRECISION));
+			IfcGeom::util::flatten_shape_list(cr, a, false, settings_.get<settings::Precision>().get());
 			first_item_style = c->surface_style;
 			if (!first_item_style && c->kind() == taxonomy::COLLECTION) {
 				// @todo recursively right?
 				first_item_style = taxonomy::cast<taxonomy::geom_item>(taxonomy::cast<taxonomy::collection>(c)->children[0])->surface_style;
 			}
 
-			if (conv_settings_.getValue(ConversionSettings::GV_DISABLE_BOOLEAN_RESULT) > 0.0) {
+			if (settings_.get<settings::DisableBooleanResult>().get()) {
 				results.emplace_back(IfcGeom::ConversionResult(
 					(int)br->instance->data().id(),
 					br->matrix,
@@ -109,9 +109,9 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 	}
 
 	util::boolean_settings bst;
-	bst.attempt_2d = conv_settings_.getValue(ConversionSettings::GV_BOOLEAN_ATTEMPT_2D) > 0.;
-	bst.debug = conv_settings_.getValue(ConversionSettings::GV_DEBUG_BOOLEAN) > 0.;
-	bst.precision = conv_settings_.getValue(ConversionSettings::GV_PRECISION);
+	bst.attempt_2d = settings_.get<settings::BooleanAttempt2d>().get();
+	bst.debug = settings_.get<settings::DebugBooleanOperations>().get();
+	bst.precision = settings_.get<settings::Precision>().get();
 
 	TopoDS_Shape r;
 

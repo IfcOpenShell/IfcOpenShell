@@ -37,7 +37,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 			Logger::Notice("Infinite IfcLine used as ParentCurve of segment, treating as a segment", segment);
 			double u0 = 0.0;
 			double u1 = segment->as<IfcSchema::IfcCompositeCurveSegment>()->ParentCurve()->as<IfcSchema::IfcLine>()->Dir()->Magnitude() * length_unit_;
-			if (u1 < conv_settings_.getValue(ConversionSettings::GV_PRECISION)) {
+			if (u1 < settings_.get<settings::Precision>().get()) {
 				Logger::Warning("Segment length below tolerance", segment);
 			}
 

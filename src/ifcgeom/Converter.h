@@ -18,19 +18,19 @@ namespace ifcopenshell { namespace geometry {
 		typedef boost::shared_ptr<IfcGeom::Representation::BRep> brep_ptr;
 	private:
 		std::string geometry_library_;
-		abstract_mapping* mapping_;
-		kernels::AbstractKernel* kernel_;
-		IfcGeom::IteratorSettings settings_;
+		ifcopenshell::geometry::abstract_mapping* mapping_;
+		ifcopenshell::geometry::kernels::AbstractKernel* kernel_;
+		ifcopenshell::geometry::Settings settings_;
 		std::map<ifcopenshell::geometry::taxonomy::ptr, brep_ptr, ifcopenshell::geometry::taxonomy::less_functor> cache_;
 
 	public:
-		kernels::AbstractKernel* kernel() { return kernel_; }
+		ifcopenshell::geometry::kernels::AbstractKernel* kernel() { return kernel_; }
 
-		Converter(const std::string& geometry_library, IfcParse::IfcFile* file, IfcGeom::IteratorSettings& settings);
+		Converter(const std::string& geometry_library, IfcParse::IfcFile* file, ifcopenshell::geometry::Settings& settings);
 		
 		~Converter() {}
 
-		abstract_mapping* mapping() const { return mapping_; }
+		ifcopenshell::geometry::abstract_mapping* mapping() const { return mapping_; }
 
 		/*
 		virtual NativeElement<double, double>* convert(
@@ -49,8 +49,8 @@ namespace ifcopenshell { namespace geometry {
 		IfcGeom::BRepElement* create_brep_for_representation_and_product(const IfcUtil::IfcBaseEntity* representation, const IfcUtil::IfcBaseEntity* product);
 		// IfcGeom::BRepElement* create_brep_for_processed_representation(const IfcUtil::IfcBaseEntity* representation, const IfcUtil::IfcBaseEntity* product, IfcGeom::BRepElement* brep);
 
-		IfcGeom::BRepElement* create_brep_for_representation_and_product(taxonomy::ptr, const IfcUtil::IfcBaseEntity* product, const taxonomy::matrix4::ptr& place);
-		IfcGeom::BRepElement* create_brep_for_processed_representation(const IfcUtil::IfcBaseEntity* product, const taxonomy::matrix4::ptr& place, IfcGeom::BRepElement*);
+		IfcGeom::BRepElement* create_brep_for_representation_and_product(ifcopenshell::geometry::taxonomy::ptr, const IfcUtil::IfcBaseEntity* product, const ifcopenshell::geometry::taxonomy::matrix4::ptr& place);
+		IfcGeom::BRepElement* create_brep_for_processed_representation(const IfcUtil::IfcBaseEntity* product, const ifcopenshell::geometry::taxonomy::matrix4::ptr& place, IfcGeom::BRepElement*);
 	};
 }}
 

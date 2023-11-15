@@ -205,7 +205,7 @@ namespace ifcopenshell { namespace geometry {
 		operator const cgal_shape_t& () const { to_poly();  return *shape_; }
 		const cgal_shape_t& poly() const { to_poly(); return *shape_; }
 
-		virtual void Triangulate(const IfcGeom::IteratorSettings& settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int surface_style_id) const;
+		virtual void Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int surface_style_id) const;
 		virtual void Serialize(const ifcopenshell::geometry::taxonomy::matrix4& place, std::string&) const;
 
 		virtual IfcGeom::ConversionResultShape* clone() const {
@@ -268,7 +268,7 @@ namespace ifcopenshell { namespace geometry {
 			planes_.push_back(shape);
 		}
 
-		virtual void Triangulate(const IfcGeom::IteratorSettings& settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int surface_style_id) const;
+		virtual void Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int surface_style_id) const;
 		virtual void Serialize(const ifcopenshell::geometry::taxonomy::matrix4& place, std::string&) const;
 
 		virtual int surface_genus() const;

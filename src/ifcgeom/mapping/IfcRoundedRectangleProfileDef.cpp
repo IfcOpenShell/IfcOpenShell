@@ -28,7 +28,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRoundedRectangleProfileDef* 
 	const double y = inst->YDim() / 2.0f  * length_unit_;
 	const double r = inst->RoundingRadius() * length_unit_;
 
-	const double tol = conv_settings_.getValue(ConversionSettings::GV_PRECISION);
+	const double tol = settings_.get<settings::Precision>().get();
 
 	if (x < tol || y < tol) {
 		Logger::Message(Logger::LOG_NOTICE, "Skipping zero sized profile:", inst);

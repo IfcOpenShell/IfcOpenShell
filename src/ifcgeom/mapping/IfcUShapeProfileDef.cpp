@@ -51,7 +51,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcUShapeProfileDef* inst) {
 		dy2 = x * tan(slope);
 	}
 
-	const double tol = conv_settings_.getValue(ConversionSettings::GV_PRECISION);
+	const double tol = settings_.get<settings::Precision>().get();
 
 	if (x < tol || y < tol || d1 < tol || d2 < tol) {
 		Logger::Message(Logger::LOG_NOTICE, "Skipping zero sized profile:", inst);

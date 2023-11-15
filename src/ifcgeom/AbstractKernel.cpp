@@ -33,12 +33,12 @@ bool ifcopenshell::geometry::kernels::AbstractKernel::convert(const taxonomy::pt
 	}
 }
 
-const ConversionSettings & ifcopenshell::geometry::kernels::AbstractKernel::settings() const
+const Settings& ifcopenshell::geometry::kernels::AbstractKernel::settings() const
 {
-	return conv_settings_;
+	return settings_;
 }
 
-ifcopenshell::geometry::kernels::AbstractKernel* ifcopenshell::geometry::kernels::construct(const std::string& geometry_library, const ConversionSettings& conv_settings) {
+ifcopenshell::geometry::kernels::AbstractKernel* ifcopenshell::geometry::kernels::construct(const std::string& geometry_library, const Settings& conv_settings) {
 	const std::string geometry_library_lower = boost::to_lower_copy(geometry_library);
 
 #ifdef IFOPSH_WITH_OPENCASCADE

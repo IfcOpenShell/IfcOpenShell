@@ -185,4 +185,20 @@
 		}
 		return pyobj;
 	}
+
+	struct pythonizing_visitor {
+		typedef PyObject* result_type;
+
+		template <typename T>
+		PyObject* operator()(const T& t) {
+			return pythonize(t);
+		}
+
+		template <>
+		PyObject* operator()(const std::set<int>& t) {
+			std::vector<int> vs(t.begin(), t.end());
+			return pythonize_vector(vs);
+		}
+	};
+
 %}

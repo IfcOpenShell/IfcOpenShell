@@ -26,7 +26,7 @@ using namespace ifcopenshell::geometry;
 #define mapping POSTFIX_SCHEMA(mapping)
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcExtrudedAreaSolidTapered* inst) {
 	const double height = inst->Depth() * length_unit_;
-	if (height < conv_settings_.getValue(ConversionSettings::GV_PRECISION)) {
+	if (height < settings_.get<settings::Precision>().get()) {
 		Logger::Message(Logger::LOG_ERROR, "Non-positive extrusion height encountered for:", inst);
 		return nullptr;
 	}

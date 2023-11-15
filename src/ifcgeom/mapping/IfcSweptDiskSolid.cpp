@@ -62,7 +62,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSweptDiskSolid* inst) {
 	ep = inst->EndParam();
 #endif
 
-	const double tol = conv_settings_.getValue(ConversionSettings::GV_PRECISION);
+	const double tol = settings_.get<settings::Precision>().get();
 
 #ifdef SCHEMA_HAS_IfcSweptDiskSolidPolygonal
 	if (inst->as<IfcSchema::IfcSweptDiskSolidPolygonal>()) {

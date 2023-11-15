@@ -20,6 +20,8 @@
 #ifndef IFCGEOMITERATORSETTINGS_H
 #define IFCGEOMITERATORSETTINGS_H
 
+/*
+
 #include "ifc_geom_api.h"
 
 #include "../ifcparse/IfcException.h"
@@ -204,5 +206,7 @@ namespace IfcGeom
         std::string element_type_;
     };
 }
+
+*/
 
 #endif

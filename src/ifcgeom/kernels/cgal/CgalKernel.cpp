@@ -1109,7 +1109,7 @@ bool CgalKernel::process_extrusion(const cgal_face_t& bottom_face, taxonomy::dir
 
 bool CgalKernel::convert(const taxonomy::extrusion::ptr extrusion, cgal_shape_t &shape) {
 	const double& height = extrusion->depth;
-	if (height < conv_settings_.getValue(ConversionSettings::GV_PRECISION)) {
+	if (height < settings_.get<settings::Precision>().get()) {
 		Logger::Message(Logger::LOG_ERROR, "Non-positive extrusion height encountered for:", extrusion->instance);
 		return false;
 	}

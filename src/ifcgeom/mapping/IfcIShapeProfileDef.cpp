@@ -78,7 +78,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcIShapeProfileDef* inst) {
 		fe2 = fe1;
 	}
 
-	const double tol = conv_settings_.getValue(ConversionSettings::GV_PRECISION);
+	const double tol = settings_.get<settings::Precision>().get();
 
 	if (x1 < tol || x2 < tol || y < tol || d1 < tol || ft1 < tol || ft2 < tol) {
 		Logger::Message(Logger::LOG_NOTICE, "Skipping zero sized profile:", inst);

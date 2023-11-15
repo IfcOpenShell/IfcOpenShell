@@ -41,7 +41,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPolyLoop* inst) {
 	}
 
 	// @todo Remove points that are too close to one another
-	const double eps = conv_settings_.getValue(ConversionSettings::GV_PRECISION);
+	const double eps = settings_.get<settings::Precision>().get();
 	// util::remove_duplicate_points_from_loop(polygon, true, eps);
 
 	int count = polygon.size();

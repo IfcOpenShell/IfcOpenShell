@@ -27,10 +27,9 @@ namespace geometry {
     
     class abstract_mapping {
 	protected:
-		IfcGeom::IteratorSettings settings_;
-		ConversionSettings conv_settings_;
+		Settings settings_;
 	public:
-		abstract_mapping(IfcGeom::IteratorSettings& s) : settings_(s) {}
+		abstract_mapping(Settings& s) : settings_(s) {}
 
 		virtual ifcopenshell::geometry::taxonomy::ptr map(const IfcUtil::IfcBaseInterface*) = 0;
 		virtual void get_representations(std::vector<geometry_conversion_task>& tasks, std::vector<filter_t>& filters) = 0;
@@ -44,18 +43,17 @@ namespace geometry {
 		virtual double get_length_unit() const = 0;
 		virtual IfcUtil::IfcBaseEntity* representation_of(const IfcUtil::IfcBaseEntity* product) = 0;
 
-		const IfcGeom::IteratorSettings& settings() const { return settings_; }
-		const ConversionSettings& conversion_settings() const { return conv_settings_; }
+		const Settings& settings() const { return settings_; }
     };
 
 	namespace impl {
-		typedef boost::function2<abstract_mapping*, IfcParse::IfcFile*, IfcGeom::IteratorSettings&> mapping_fn;
+		typedef boost::function2<abstract_mapping*, IfcParse::IfcFile*, Settings&> mapping_fn;
 
 		class MappingFactoryImplementation : public std::map<std::string, mapping_fn> {
 		public:
 			MappingFactoryImplementation();
 			void bind(const std::string& schema_name, mapping_fn);
-			abstract_mapping* construct(IfcParse::IfcFile*, IfcGeom::IteratorSettings&);
+			abstract_mapping* construct(IfcParse::IfcFile*, Settings&);
 		};
 
 		MappingFactoryImplementation& mapping_implementations();

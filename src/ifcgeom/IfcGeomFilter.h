@@ -75,7 +75,7 @@ namespace IfcGeom {
 			// in IfcConvert so invocation is bound to a single file with a single
 			// schema.
 			// @todo pass settings
-			IfcGeom::IteratorSettings s;
+			ifcopenshell::geometry::Settings s;
 			static auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(prod->data().file, s);
             while ((parent = mapping->get_decomposing_entity(current, traverse_openings)) != nullptr) {
                 if (pred(parent)) {
@@ -183,7 +183,7 @@ namespace IfcGeom {
 
 		bool match(IfcUtil::IfcBaseEntity* prod) const {
 			// @todo
-			IfcGeom::IteratorSettings s;
+			ifcopenshell::geometry::Settings s;
 			static auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(prod->data().file, s);
 			layer_map_t layers = mapping->get_layers(prod);
             return std::find_if(layers.begin(), layers.end(), wildcards_match(values)) != layers.end();

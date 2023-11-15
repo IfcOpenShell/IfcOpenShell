@@ -31,7 +31,7 @@ namespace {
 	}
 }
 
-void ifcopenshell::geometry::OpenCascadeShape::Triangulate(const IfcGeom::IteratorSettings& settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int surface_style_id) const {
+void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int surface_style_id) const {
 
 	// @todo remove duplication with OpenCascadeKernel::convert(const taxonomy::matrix4::ptr matrix, gp_GTrsf& trsf);
 	// above can be static?
@@ -50,7 +50,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(const IfcGeom::Iterat
 
 	// Triangulate the shape
 	try {
-		BRepMesh_IncrementalMesh(shape_, settings.deflection_tolerance(), false, settings.angular_tolerance());
+		BRepMesh_IncrementalMesh(shape_, settings.get<settings::MesherLinearDeflection>().get(), false, settings.get<settings::MesherAngularDeflection>().get());
 	} catch (...) {
 		Logger::Message(Logger::LOG_ERROR, "Failed to triangulate shape");
 		return;
@@ -77,8 +77,8 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(const IfcGeom::Iterat
 			std::map<int, int> dict;
 
 			// Vertex normals are only calculated if vertices are not welded and calculation is not disable explicitly.
-			const bool calculate_normals = !settings.get(IfcGeom::IteratorSettings::WELD_VERTICES) &&
-				!settings.get(IfcGeom::IteratorSettings::NO_NORMALS);
+			const bool calculate_normals = !settings.get<settings::WeldVertices>().get() &&
+				!settings.get<settings::DontEmitNormals>().get();
 
 			for (int i = 1; i <= tri->NbNodes(); ++i) {
 				coords.push_back(tri->Node(i).Transformed(loc).XYZ());
@@ -155,7 +155,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(const IfcGeom::Iterat
 		}
 	}
 
-	if (!t->normals().empty() && settings.get(IfcGeom::IteratorSettings::GENERATE_UVS)) {
+	if (!t->normals().empty() && settings.get<settings::GenerateUvs>().get()) {
 		t->uvs() = IfcGeom::Representation::Triangulation::box_project_uvs(t->verts(), t->normals());
 	}
 
@@ -166,7 +166,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(const IfcGeom::Iterat
 		// belong to any face.
 		for (TopExp_Explorer texp(shape_, TopAbs_EDGE); texp.More(); texp.Next()) {
 			BRepAdaptor_Curve crv(TopoDS::Edge(texp.Current()));
-			GCPnts_QuasiUniformDeflection tessellater(crv, settings.deflection_tolerance());
+			GCPnts_QuasiUniformDeflection tessellater(crv, settings.get<settings::MesherLinearDeflection>().get());
 			int n = tessellater.NbPoints();
 			int previous = -1;
 
@@ -182,7 +182,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(const IfcGeom::Iterat
 					segments.push_back(std::make_pair(previous, current));
 				}
 
-				if (settings.get(IfcGeom::IteratorSettings::EDGE_ARROWS)) {
+				if (settings.get<settings::EdgeArrows>().get()) {
 					// In case you want direction arrows on your edges
 					double u = tessellater.Parameter(i);
 					gp_XYZ p2, p3;

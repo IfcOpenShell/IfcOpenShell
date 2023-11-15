@@ -409,7 +409,7 @@ void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationEleme
 	DeferredObject deferred(name, representation_id, o->type(), o->transformation(), mesh.verts(), mesh.normals(),
 		mesh.faces(), mesh.edges(), mesh.material_ids(), mesh.materials(), material_references, mesh.uvs());
 
-	if (serializer->settings().get(SerializerSettings::USE_ELEMENT_HIERARCHY)) {
+	if (serializer->geometry_settings().get<ifcopenshell::geometry::settings::UseElementHierarchy>().get()) {
 		deferred.parents() = o->parents();
 	}
 
@@ -451,7 +451,7 @@ std::string ColladaSerializer::differentiateSlabTypes(const IfcUtil::IfcBaseEnti
 
 std::string ColladaSerializer::object_id(const IfcGeom::Element* o) /*override*/
 {
-    if (settings_.get(SerializerSettings::USE_ELEMENT_TYPES)) {
+    if (settings_.get<ifcopenshell::geometry::settings::UseElementTypes>().get()) {
         const std::string slabSuffix = (o->product() && o->product()->declaration().name() == "IfcSlab")
             ? differentiateSlabTypes(o->product())
             : "";
@@ -464,7 +464,7 @@ void ColladaSerializer::ColladaExporter::endDocument() {
 	// In fact due the XML based nature of Collada and its dependency on library nodes,
 	// only at this point all objects are written to the stream.
 	materials.write();
-	bool use_hierarchy = serializer->settings().get(SerializerSettings::USE_ELEMENT_HIERARCHY);
+	bool use_hierarchy = serializer->geometry_settings().get<ifcopenshell::geometry::settings::UseElementHierarchy>().get();
 	
 	std::set<std::string> geometries_written;
 

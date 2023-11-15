@@ -34,8 +34,8 @@ class StepSerializer : public OpenCascadeBasedSerializer
 private:
 	STEPControl_Writer writer;	
 public:
-	explicit StepSerializer(const std::string& out_filename, const SerializerSettings& settings)
-		: OpenCascadeBasedSerializer(out_filename, settings)
+	explicit StepSerializer(const std::string& out_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& serializer_settings)
+		: OpenCascadeBasedSerializer(out_filename, geometry_settings, serializer_settings)
 	{}
 	virtual ~StepSerializer() {}
 	void writeShape(const std::string& name, const TopoDS_Shape& shape) {

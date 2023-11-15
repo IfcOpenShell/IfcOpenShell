@@ -269,7 +269,7 @@ namespace IfcGeom {
 
 			std::vector<T> select(const IfcGeom::BRepElement* elem, bool completely_within = false, double extend = -1.e-5) const {
 				auto shp = elem->geometry().as_compound();
-				auto compound = ((OpenCascadeShape*)shp)->shape();
+				auto compound = ((ifcopenshell::geometry::OpenCascadeShape*)shp)->shape();
 				const auto& m = elem->transformation().data()->ccomponents();
 				gp_Trsf tr;
 				tr.SetValues(
@@ -369,10 +369,10 @@ namespace IfcGeom {
 		tree() {};
 
 		tree(IfcParse::IfcFile& f) {
-			add_file(f, IfcGeom::IteratorSettings());
+			add_file(f, ifcopenshell::geometry::Settings{});
 		}
 
-		tree(IfcParse::IfcFile& f, const IfcGeom::IteratorSettings& settings) {
+		tree(IfcParse::IfcFile& f, ifcopenshell::geometry::Settings settings) {
 			add_file(f, settings);
 		}
 
@@ -380,11 +380,11 @@ namespace IfcGeom {
 			add_file(it);
 		}		
 
-		void add_file(IfcParse::IfcFile& f, const IfcGeom::IteratorSettings& settings) {
-			IfcGeom::IteratorSettings settings_ = settings;
-			settings_.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
-			settings_.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, true);
-			settings_.set(IfcGeom::IteratorSettings::SEW_SHELLS, true);
+		void add_file(IfcParse::IfcFile& f, ifcopenshell::geometry::Settings settings) {
+			ifcopenshell::geometry::Settings settings_ = settings;
+			settings_.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
+			settings_.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = true;
+			settings_.get<ifcopenshell::geometry::settings::ReorientShells>().value = true;
 
 			IfcGeom::Iterator it(settings_, &f, {}, 1);
 

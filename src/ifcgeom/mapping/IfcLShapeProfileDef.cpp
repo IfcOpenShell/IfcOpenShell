@@ -42,7 +42,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcLShapeProfileDef* inst) {
 		f2 = *inst->EdgeRadius() * length_unit_;
 	}
 
-	const double tol = conv_settings_.getValue(ConversionSettings::GV_PRECISION);
+	const double tol = settings_.get<settings::Precision>().get();
 
 	if ( x < tol || y < tol || d < tol) {
 		Logger::Message(Logger::LOG_NOTICE, "Skipping zero sized profile:", inst);

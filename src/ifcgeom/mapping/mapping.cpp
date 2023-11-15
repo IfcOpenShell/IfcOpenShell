@@ -32,7 +32,7 @@ using namespace IfcGeom;
 
 namespace {
 	struct POSTFIX_SCHEMA(factory_t) {
-		abstract_mapping* operator()(IfcParse::IfcFile* file, IteratorSettings& settings) const {
+		abstract_mapping* operator()(IfcParse::IfcFile* file, Settings& settings) const {
 			ifcopenshell::geometry::POSTFIX_SCHEMA(mapping)* m = new ifcopenshell::geometry::POSTFIX_SCHEMA(mapping)(file, settings);
 			return m;
 		}
@@ -114,7 +114,7 @@ namespace {
 bool mapping::reuse_ok_(const IfcSchema::IfcProduct::list::ptr& products) {
 	// With world coords enabled, object transformations are directly applied to
 	// the BRep. There is no way to re-use the geometry for multiple products.
-	if (settings_.get(IfcGeom::IteratorSettings::USE_WORLD_COORDS)) {
+	if (settings_.get<settings::UseWorldCoords>().get()) {
 		return false;
 	}
 
@@ -127,11 +127,11 @@ bool mapping::reuse_ok_(const IfcSchema::IfcProduct::list::ptr& products) {
 	for (IfcSchema::IfcProduct::list::it it = products->begin(); it != products->end(); ++it) {
 		IfcSchema::IfcProduct* product = *it;
 
-		if (!settings_.get(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS) && find_openings(product)->size()) {
+		if (!settings_.get<settings::DisableOpeningSubtractions>().get() && find_openings(product)->size()) {
 			return false;
 		}
 
-		if (settings_.get(IfcGeom::IteratorSettings::APPLY_LAYERSETS)) {
+		if (settings_.get<settings::ApplyLayerSets>().get()) {
 			IfcSchema::IfcRelAssociates::list::ptr associations = product->HasAssociations();
 			for (IfcSchema::IfcRelAssociates::list::it jt = associations->begin(); jt != associations->end(); ++jt) {
 				IfcSchema::IfcRelAssociatesMaterial* assoc = (*jt)->as<IfcSchema::IfcRelAssociatesMaterial>();
@@ -188,7 +188,7 @@ aggregate_of_instance::ptr mapping::find_openings(const IfcUtil::IfcBaseEntity* 
 void mapping::get_representations(std::vector<geometry_conversion_task>& tasks, std::vector<filter_t>& filters) {
 	IfcSchema::IfcRepresentation::list::ptr representations(new IfcSchema::IfcRepresentation::list);
 
-	if (settings_.context_ids().empty()) {
+	if (!settings_.get<settings::ContextIds>().has()) {
 		addRepresentationsFromDefaultContexts(representations);
 	} else {
 		addRepresentationsFromContextIds(representations);
@@ -664,8 +664,8 @@ void mapping::initialize_units_() {
 }
 
 void mapping::initialize_settings() {
-	conv_settings_.setValue(ConversionSettings::GV_LENGTH_UNIT, length_unit_);
-	conv_settings_.setValue(ConversionSettings::GV_PLANEANGLE_UNIT, angle_unit_);
+	settings_.get<settings::LengthUnit>().value = length_unit_;
+	settings_.get<settings::PlaneUnit>().value = angle_unit_;
 
 	// Set precision from file
 	double lowest_precision_encountered = std::numeric_limits<double>::infinity();
@@ -679,12 +679,13 @@ void mapping::initialize_settings() {
 		IfcSchema::IfcGeometricRepresentationContext* context = *it;
 
 		// See if there is a context_id filter and whether the context is selected
-		if (!settings_.context_ids().empty()) {
-			if (settings_.context_ids().find(context->data().id()) == settings_.context_ids().end()) {
+		if (settings_.get<settings::ContextIds>().has()) {
+			auto cids = settings_.get<settings::ContextIds>().get();
+			if (cids.find(context->data().id()) == cids.end()) {
 				bool selected_sub_context = false;
 				auto subs = context->HasSubContexts();
 				for (auto& sub : *subs) {
-					if (settings_.context_ids().find(context->data().id()) != settings_.context_ids().end()) {
+					if (cids.find(context->data().id()) != cids.end()) {
 						selected_sub_context = true;
 						break;
 					}
@@ -695,9 +696,10 @@ void mapping::initialize_settings() {
 			}
 		}
 
-		if (context->Precision() && (*context->Precision() * length_unit_ * 10.) < lowest_precision_encountered) {
+		auto fp = settings_.get<settings::PrecisionFactor>().get();
+		if (context->Precision() && (*context->Precision() * length_unit_ * fp) < lowest_precision_encountered) {
 			// Some arbitrary factor that has proven to work better for the models in the set of test files.
-			lowest_precision_encountered = *context->Precision() * length_unit_ * 10.;
+			lowest_precision_encountered = *context->Precision() * length_unit_ * fp;
 			any_precision_encountered = true;
 		}
 	}
@@ -713,7 +715,7 @@ void mapping::initialize_settings() {
 		}
 	}
 
-	conv_settings_.setValue(ConversionSettings::GV_PRECISION, precision_to_set);
+	settings_.get<Precision>().value = precision_to_set;
 }
 
 bool mapping::get_layerset_information(const IfcUtil::IfcBaseInterface* p, layerset_information& info, int &)
@@ -920,7 +922,7 @@ IfcSchema::IfcRepresentation* mapping::find_representation(const IfcSchema::IfcP
 }
 
 void mapping::addRepresentationsFromContextIds(IfcSchema::IfcRepresentation::list::ptr& representations) {
-	for (auto context_id : settings_.context_ids()) {
+	for (auto context_id : settings_.get<settings::ContextIds>().get()) {
 		IfcSchema::IfcGeometricRepresentationContext* context;
 		try {
 			context = file_->instance_by_id(context_id)->as<IfcSchema::IfcGeometricRepresentationContext>();
@@ -944,7 +946,7 @@ void mapping::addRepresentationsFromDefaultContexts(IfcSchema::IfcRepresentation
 	allowed_context_types.insert("notdefined");
 
 	std::set<std::string> context_types;
-	if (!settings_.get(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES)) {
+	if (settings_.get<settings::IncludeSurfaces>().get()) {
 		// Really this should only be 'Model', as per
 		// the standard 'Design' is deprecated. So,
 		// just for backwards compatibility:
@@ -954,7 +956,7 @@ void mapping::addRepresentationsFromDefaultContexts(IfcSchema::IfcRepresentation
 		context_types.insert("model view");
 		context_types.insert("detail view");
 	}
-	if (settings_.get(IfcGeom::IteratorSettings::INCLUDE_CURVES)) {
+	if (settings_.get<settings::IncludeCurves>().get()) {
 		context_types.insert("plan");
 	}
 
@@ -1020,63 +1022,6 @@ void mapping::addRepresentationsFromDefaultContexts(IfcSchema::IfcRepresentation
 	}
 }
 
-void mapping::apply_settings() {
-	conv_settings_.setValue(ConversionSettings::GV_MAX_FACES_TO_ORIENT, settings_.get(IfcGeom::IteratorSettings::SEW_SHELLS) ? std::numeric_limits<double>::infinity() : -1);
-	conv_settings_.setValue(ConversionSettings::GV_DIMENSIONALITY, (settings_.get(IfcGeom::IteratorSettings::INCLUDE_CURVES)
-		? (settings_.get(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES) ? -1. : 0.) : +1.));
-	conv_settings_.setValue(ConversionSettings::GV_LAYERSET_FIRST,
-		settings_.get(IfcGeom::IteratorSettings::LAYERSET_FIRST)
-		? +1.0
-		: -1.0
-	);
-	conv_settings_.setValue(ConversionSettings::GV_NO_WIRE_INTERSECTION_CHECK,
-		settings_.get(IfcGeom::IteratorSettings::NO_WIRE_INTERSECTION_CHECK)
-		? +1.0
-		: -1.0
-	);
-	conv_settings_.setValue(ConversionSettings::GV_NO_WIRE_INTERSECTION_TOLERANCE,
-		settings_.get(IfcGeom::IteratorSettings::NO_WIRE_INTERSECTION_TOLERANCE)
-		? +1.0
-		: -1.0
-	);
-	conv_settings_.setValue(ConversionSettings::GV_PRECISION_FACTOR,
-		settings_.get(IfcGeom::IteratorSettings::STRICT_TOLERANCE)
-		? 1.0
-		: 10.0
-	);
-
-	conv_settings_.setValue(ConversionSettings::GV_DISABLE_BOOLEAN_RESULT,
-		settings_.get(IfcGeom::IteratorSettings::DISABLE_BOOLEAN_RESULT)
-		? +1.0
-		: -1.0
-	);
-
-	conv_settings_.setValue(ConversionSettings::GV_DEBUG_BOOLEAN,
-		settings_.get(IfcGeom::IteratorSettings::DEBUG_BOOLEAN)
-		? +1.0
-		: -1.0
-	);
-
-	conv_settings_.setValue(ConversionSettings::GV_BOOLEAN_ATTEMPT_2D,
-		settings_.get(IfcGeom::IteratorSettings::BOOLEAN_ATTEMPT_2D)
-		? +1.0
-		: -1.0
-	);
-
-	if (settings_.get(IfcGeom::IteratorSettings::BUILDING_LOCAL_PLACEMENT)) {
-		if (settings_.get(IfcGeom::IteratorSettings::SITE_LOCAL_PLACEMENT)) {
-			Logger::Message(Logger::LOG_WARNING, "building-local-placement takes precedence over site-local-placement");
-		}
-		placement_rel_to_type_ = &IfcSchema::IfcBuilding::Class();
-	} else if (settings_.get(IfcGeom::IteratorSettings::SITE_LOCAL_PLACEMENT)) {
-		placement_rel_to_type_ = &IfcSchema::IfcSite::Class();
-	}
-
-	// @todo
-	// conv_settings_.set_offset(settings_.offset);
-	// conv_settings_.set_rotation(settings_.rotation);
-}
-
 IfcUtil::IfcBaseEntity* mapping::representation_of(const IfcUtil::IfcBaseEntity* product) {
 	// @todo correct, but very inefficient
 	IfcSchema::IfcRepresentation::list::ptr representations(new IfcSchema::IfcRepresentation::list);
@@ -1084,7 +1029,7 @@ IfcUtil::IfcBaseEntity* mapping::representation_of(const IfcUtil::IfcBaseEntity*
 	IfcSchema::IfcRepresentation::list::ptr intersection(new IfcSchema::IfcRepresentation::list);
 	IfcSchema::IfcRepresentation::list::ptr intersection_no_box(new IfcSchema::IfcRepresentation::list);
 
-	if (settings_.context_ids().empty()) {
+	if (!settings_.get<settings::ContextIds>().has()) {
 		addRepresentationsFromDefaultContexts(representations);
 	} else {
 		addRepresentationsFromContextIds(representations);
@@ -1100,7 +1045,7 @@ IfcUtil::IfcBaseEntity* mapping::representation_of(const IfcUtil::IfcBaseEntity*
 		}
 	}
 
-	if (intersection->size() == 0 && settings_.context_ids().empty() && settings_.get(IfcGeom::IteratorSettings::INCLUDE_CURVES) && settings_.get(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES)) {
+	if (intersection->size() == 0 && settings_.get<settings::ContextIds>().has() && settings_.get<settings::IncludeCurves>().get() && !settings_.get<settings::IncludeSurfaces>().get()) {
 		for (auto& r : *of_product) {
 			if (r->RepresentationIdentifier() && *r->RepresentationIdentifier() == "Axis") {
 				intersection->push(r);

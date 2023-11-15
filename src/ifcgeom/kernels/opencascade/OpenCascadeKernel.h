@@ -56,12 +56,9 @@
 #include "../../../ifcgeom/taxonomy.h"
 #include "../../../ifcgeom/ConversionSettings.h"
 
-// @todo remove once merged to same ns.
-using namespace ifcopenshell::geometry;
-
 namespace IfcGeom {
 
-class IFC_GEOM_API OpenCascadeKernel : public kernels::AbstractKernel {
+class IFC_GEOM_API OpenCascadeKernel : public ifcopenshell::geometry::kernels::AbstractKernel {
 private:
 
 	/*
@@ -81,7 +78,7 @@ private:
 		double eps_;
 		bool non_manifold_;
 		
-		void loop_(const taxonomy::loop::ptr ps, const std::function<void(int, int, bool)>& callback);
+		void loop_(const ifcopenshell::geometry::taxonomy::loop::ptr ps, const std::function<void(int, int, bool)>& callback);
 
 		/*
 		bool construct(const IfcSchema::IfcCartesianPoint* cp, gp_Pnt* l);
@@ -99,7 +96,7 @@ private:
 		std::vector<const void*> get_idxs(const std::vector<int>& it);
 		*/
 	public:
-		faceset_helper(OpenCascadeKernel* kernel, const taxonomy::shell::ptr l);
+		faceset_helper(OpenCascadeKernel* kernel, const ifcopenshell::geometry::taxonomy::shell::ptr l);
 		~faceset_helper();
 
 		bool non_manifold() const { return non_manifold_; }
@@ -108,8 +105,8 @@ private:
 		
 		bool edge(int A, int B, TopoDS_Edge& e);
 
-		bool wire(const taxonomy::loop::ptr loop, TopoDS_Wire& wire);
-		bool wires(const taxonomy::loop::ptr loop, TopTools_ListOfShape& wires);
+		bool wire(const ifcopenshell::geometry::taxonomy::loop::ptr loop, TopoDS_Wire& wire);
+		bool wires(const ifcopenshell::geometry::taxonomy::loop::ptr loop, TopTools_ListOfShape& wires);
 	};
 
 	faceset_helper* faceset_helper_;
@@ -124,28 +121,28 @@ private:
 	double precision_;
 
 public:
-	OpenCascadeKernel(const ConversionSettings& settings)
+	OpenCascadeKernel(const ifcopenshell::geometry::Settings& settings)
 		: AbstractKernel("opencascade", settings)
 		, faceset_helper_(nullptr)
-		, precision_(settings.getValue(ConversionSettings::GV_PRECISION))
+		, precision_(settings.get<ifcopenshell::geometry::settings::Precision>().get())
 	{}
 
-	bool convert(const taxonomy::extrusion::ptr, TopoDS_Shape&);
-	bool convert(const taxonomy::face::ptr, TopoDS_Shape&);
-	bool convert(const taxonomy::loop::ptr, TopoDS_Wire&);
-	bool convert(const taxonomy::matrix4::ptr, gp_GTrsf&);
-	bool convert(const taxonomy::shell::ptr, TopoDS_Shape&);
-	bool convert(const taxonomy::solid::ptr, TopoDS_Shape&);
-	bool convert(const taxonomy::bspline_surface::ptr bs, Handle(Geom_Surface) surf);
+	bool convert(const ifcopenshell::geometry::taxonomy::extrusion::ptr, TopoDS_Shape&);
+	bool convert(const ifcopenshell::geometry::taxonomy::face::ptr, TopoDS_Shape&);
+	bool convert(const ifcopenshell::geometry::taxonomy::loop::ptr, TopoDS_Wire&);
+	bool convert(const ifcopenshell::geometry::taxonomy::matrix4::ptr, gp_GTrsf&);
+	bool convert(const ifcopenshell::geometry::taxonomy::shell::ptr, TopoDS_Shape&);
+	bool convert(const ifcopenshell::geometry::taxonomy::solid::ptr, TopoDS_Shape&);
+	bool convert(const ifcopenshell::geometry::taxonomy::bspline_surface::ptr bs, Handle(Geom_Surface) surf);
 
-	virtual bool convert_impl(const taxonomy::loop::ptr, IfcGeom::ConversionResults&);
-	virtual bool convert_impl(const taxonomy::face::ptr, IfcGeom::ConversionResults&);
-	virtual bool convert_impl(const taxonomy::solid::ptr, IfcGeom::ConversionResults&);
-	virtual bool convert_impl(const taxonomy::shell::ptr, IfcGeom::ConversionResults&);
-	virtual bool convert_impl(const taxonomy::extrusion::ptr, IfcGeom::ConversionResults&);
-	virtual bool convert_impl(const taxonomy::boolean_result::ptr, IfcGeom::ConversionResults&);
+	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::loop::ptr, IfcGeom::ConversionResults&);
+	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::face::ptr, IfcGeom::ConversionResults&);
+	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::solid::ptr, IfcGeom::ConversionResults&);
+	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::shell::ptr, IfcGeom::ConversionResults&);
+	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::extrusion::ptr, IfcGeom::ConversionResults&);
+	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::boolean_result::ptr, IfcGeom::ConversionResults&);
 
-	virtual bool convert_openings(const IfcUtil::IfcBaseEntity* entity, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geometry::taxonomy::matrix4>>& openings,
+	virtual bool convert_openings(const IfcUtil::IfcBaseEntity* entity, const std::vector<std::pair<ifcopenshell::geometry::taxonomy::ptr, ifcopenshell::geometry::taxonomy::matrix4>>& openings,
 		const IfcGeom::ConversionResults& entity_shapes, const ifcopenshell::geometry::taxonomy::matrix4& entity_trsf, IfcGeom::ConversionResults& cut_shapes);
 
 	template <typename T, typename U>

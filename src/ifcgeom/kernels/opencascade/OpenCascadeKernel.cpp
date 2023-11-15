@@ -201,13 +201,15 @@ namespace {
 	};
 }
 
+using namespace ifcopenshell::geometry;
+
 bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* entity, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geometry::taxonomy::matrix4>>& openings,
 	const IfcGeom::ConversionResults& entity_shapes, const ifcopenshell::geometry::taxonomy::matrix4& entity_trsf, IfcGeom::ConversionResults& cut_shapes) {
 
 	util::boolean_settings bst;
-	bst.attempt_2d = conv_settings_.getValue(ConversionSettings::GV_BOOLEAN_ATTEMPT_2D) > 0.;
-	bst.debug = conv_settings_.getValue(ConversionSettings::GV_DEBUG_BOOLEAN) > 0.;
-	bst.precision = conv_settings_.getValue(ConversionSettings::GV_PRECISION);
+	bst.attempt_2d = settings_.get<settings::BooleanAttempt2d>().get();
+	bst.debug = settings_.get<settings::DebugBooleanOperations>().get();
+	bst.precision = settings_.get<settings::Precision>().get();
 
 	std::vector< std::pair<double, TopoDS_Shape> > opening_vector;
 
@@ -248,7 +250,7 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* 
 		for (unsigned int i = 0; i < opening_shapes.size(); ++i) {
 			TopoDS_Shape opening_shape_solid;
 			auto opening_shape_i = std::static_pointer_cast<OpenCascadeShape>(opening_shapes[i].Shape())->shape();
-			const TopoDS_Shape& opening_shape_unlocated = util::ensure_fit_for_subtraction(opening_shape_i, opening_shape_solid, conv_settings_.getValue(ConversionSettings::GV_PRECISION));
+			const TopoDS_Shape& opening_shape_unlocated = util::ensure_fit_for_subtraction(opening_shape_i, opening_shape_solid, settings_.get<settings::Precision>().get());
 
 			auto gtrsf = opening_shapes[i].Placement();
 			// @todo check
@@ -306,7 +308,7 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* 
 				if (as_shell) {
 					entity_shape_unlocated = entity_part;
 				} else {
-					entity_shape_unlocated = util::ensure_fit_for_subtraction(entity_part, entity_shape_solid, conv_settings_.getValue(ConversionSettings::GV_PRECISION));
+					entity_shape_unlocated = util::ensure_fit_for_subtraction(entity_part, entity_shape_solid, settings_.get<settings::Precision>().get());
 				}
 				const auto& m = it3->Placement()->ccomponents();
 				// @todo

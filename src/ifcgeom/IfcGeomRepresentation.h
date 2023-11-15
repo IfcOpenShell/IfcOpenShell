@@ -20,7 +20,7 @@
 #ifndef IFCGEOMREPRESENTATION_H
 #define IFCGEOMREPRESENTATION_H
 
-#include "../ifcgeom/IteratorSettings.h"
+#include "../ifcgeom/ConversionSettings.h"
 #include "../ifcgeom/ConversionResult.h"
 
 #include <map>
@@ -33,12 +33,17 @@ namespace IfcGeom {
 			Representation(const Representation&); //N/A
 			Representation& operator =(const Representation&); //N/A
 		protected:
-			const ElementSettings settings_;
+			const ifcopenshell::geometry::Settings settings_;
+			const std::string entity_;
 		public:
-			explicit Representation(const ElementSettings& settings)
-				: settings_(settings) 
+			explicit Representation(const ifcopenshell::geometry::Settings& settings, const std::string& entity)
+				: settings_(settings)
+				, entity_(entity)
 			{}
-			const ElementSettings& settings() const { return settings_; }
+			const ifcopenshell::geometry::Settings& settings() const { return settings_; }
+			const std::string& entity() const {
+				return entity_;
+			}
 			virtual ~Representation() {}
 		};
 
@@ -49,8 +54,8 @@ namespace IfcGeom {
 			BRep(const BRep& other);
 			BRep& operator=(const BRep& other);
 		public:
-			BRep(const ElementSettings& settings, const std::string& id, const IfcGeom::ConversionResults& shapes)
-				: Representation(settings)
+			BRep(const ifcopenshell::geometry::Settings& settings, const std::string& entity, const std::string& id, const IfcGeom::ConversionResults& shapes)
+				: Representation(settings, entity)
 				, id_(id)
 				, shapes_(shapes)
 			{}
@@ -108,8 +113,8 @@ namespace IfcGeom {
 			size_t weld_offset_;
 			VertexKeyMap welds;
 
-			Triangulation(IfcGeom::IteratorSettings settings)
-				: Representation(IfcGeom::ElementSettings{ settings, 1., "" })
+			Triangulation(const ifcopenshell::geometry::Settings& settings, const std::string& entity)
+				: Representation(settings, entity)
 				, weld_offset_(0)
 				{}
 
@@ -127,7 +132,8 @@ namespace IfcGeom {
 			Triangulation(const BRep& shape_model);
 
 			Triangulation(
-				ElementSettings settings,
+				const ifcopenshell::geometry::Settings& settings,
+				const std::string& entity,
 				const std::string& id,
 				const std::vector<double>& verts,
 				const std::vector<int>& faces,
@@ -137,7 +143,7 @@ namespace IfcGeom {
 				const std::vector<int>& material_ids,
 				const std::vector<ifcopenshell::geometry::taxonomy::style>& materials
 			)
-				: Representation(settings)
+				: Representation(settings, entity)
 				, id_(id)
 				, _verts(verts)
 				, _faces(faces)
@@ -154,7 +160,7 @@ namespace IfcGeom {
             /// @todo Very simple impl. Assumes that input vertices and normals match 1:1.
 			static std::vector<double> box_project_uvs(const std::vector<double> &vertices, const std::vector<double> &normals);
 
-			static Triangulation* empty(IfcGeom::IteratorSettings settings) { return new Triangulation(settings); }
+			static Triangulation* empty(const ifcopenshell::geometry::Settings& settings) { return new Triangulation(settings, ""); }
 
 			/// Welds vertices that belong to different faces
 			int addVertex(int material_index, double X, double Y, double Z);

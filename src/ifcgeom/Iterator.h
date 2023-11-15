@@ -85,14 +85,11 @@
 #include <chrono>
 #include <atomic>
 
-// @todo
-using namespace ifcopenshell::geometry;
-
 namespace {
 	struct geometry_conversion_result {
 		int index;
 		ifcopenshell::geometry::taxonomy::ptr item;
-		std::vector<std::pair<const IfcUtil::IfcBaseEntity*, taxonomy::matrix4::ptr>> products;
+		std::vector<std::pair<const IfcUtil::IfcBaseEntity*, ifcopenshell::geometry::taxonomy::matrix4::ptr>> products;
 		std::vector<IfcGeom::BRepElement*> breps;
 		std::vector<IfcGeom::Element*> elements;
 	};
@@ -124,17 +121,17 @@ namespace IfcGeom {
 
 		std::string geometry_library_;
 		
-		IteratorSettings settings_;
+		ifcopenshell::geometry::Settings settings_;
 		IfcParse::IfcFile* ifc_file;
 		std::vector<filter_t> filters_;
 		bool owns_ifc_file;
 		int num_threads_;
 
 		// When single-threaded
-		Converter* converter_;
+		ifcopenshell::geometry::Converter* converter_;
 		
 		// When multi-threaded
-		std::vector<Converter*> kernel_pool;
+		std::vector<ifcopenshell::geometry::Converter*> kernel_pool;
 
 		// The object is fetched beforehand to be sure that get() returns a valid element
 		TriangulationElement* current_triangulation;
@@ -151,8 +148,8 @@ namespace IfcGeom {
 		std::string unit_name_;
 		double unit_magnitude_;
 
-        taxonomy::point3 bounds_min_;
-		taxonomy::point3 bounds_max_;
+        ifcopenshell::geometry::taxonomy::point3 bounds_min_;
+		ifcopenshell::geometry::taxonomy::point3 bounds_max_;
 
 		// Should not be destructed because, destructor is blocking
 		std::future<void> init_future_;
@@ -171,8 +168,8 @@ namespace IfcGeom {
 				return *initialization_outcome_;
 			}
 
-			converter_ = new Converter(geometry_library_, ifc_file, settings_);
-			std::vector<geometry_conversion_task> reps;
+			converter_ = new ifcopenshell::geometry::Converter(geometry_library_, ifc_file, settings_);
+			std::vector<ifcopenshell::geometry::geometry_conversion_task> reps;
 			converter_->mapping()->get_representations(reps, filters_);
 
 			for (auto& task : reps) {
@@ -183,7 +180,7 @@ namespace IfcGeom {
 				}
 				std::transform(task.products->begin(), task.products->end(), std::back_inserter(res.products), [this, &res](IfcUtil::IfcBaseClass* prod) {
 					auto prod_item = converter_->mapping()->map(prod);
-					return std::make_pair(prod->as<IfcUtil::IfcBaseEntity>(), taxonomy::cast<taxonomy::geom_item>(prod_item)->matrix);
+					return std::make_pair(prod->as<IfcUtil::IfcBaseEntity>(), ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::geom_item>(prod_item)->matrix);
 				});
 				tasks_.push_back(res);
 			}
@@ -279,13 +276,13 @@ namespace IfcGeom {
 
 			kernel_pool.reserve(conc_threads);
 			for (unsigned i = 0; i < conc_threads; ++i) {
-				kernel_pool.push_back(new Converter(geometry_library_, ifc_file, settings_));
+				kernel_pool.push_back(new ifcopenshell::geometry::Converter(geometry_library_, ifc_file, settings_));
 			}
 
 			std::vector<std::future<geometry_conversion_result*>> threadpool;			
 			
 			for (auto& rep : tasks_) {
-				Converter* K = nullptr;
+				ifcopenshell::geometry::Converter* K = nullptr;
 				if (threadpool.size() < kernel_pool.size()) {
 					K = kernel_pool[threadpool.size()];
 				}
@@ -309,8 +306,8 @@ namespace IfcGeom {
 
 				std::future<geometry_conversion_result*> fu = std::async(
 					std::launch::async, [this](
-						Converter* kernel,
-						const IfcGeom::IteratorSettings& settings,
+						ifcopenshell::geometry::Converter* kernel,
+						ifcopenshell::geometry::Settings settings,
 						geometry_conversion_result* rep) {
 							this->create_element_(kernel, settings, rep); 
 							return rep;
@@ -364,7 +361,7 @@ namespace IfcGeom {
 					}
 				} while (++num_created, next());
 			} else {
-				std::vector<geometry_conversion_task> reps;
+				std::vector<ifcopenshell::geometry::geometry_conversion_task> reps;
 				converter_->mapping()->get_representations(reps, filters_);
 
 				std::vector<IfcUtil::IfcBaseClass*> products;
@@ -374,7 +371,7 @@ namespace IfcGeom {
 
 				for (auto& product : products) {
 					auto prod_item = converter_->mapping()->map(product);
-					auto vec = taxonomy::cast<taxonomy::geom_item>(prod_item)->matrix->translation_part();
+					auto vec = ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::geom_item>(prod_item)->matrix->translation_part();
 
 					for (int i = 0; i < 3; ++i) {
 						bounds_min_.components()(i) = std::min(bounds_min_.components()(i), vec(i));
@@ -395,8 +392,8 @@ namespace IfcGeom {
         const std::vector<IfcGeom::filter_t>& filters() const { return filters_; }
         std::vector<IfcGeom::filter_t>& filters() { return filters_; }
 
-        const taxonomy::point3& bounds_min() const { return bounds_min_; }
-        const taxonomy::point3& bounds_max() const { return bounds_max_; }
+        const ifcopenshell::geometry::taxonomy::point3& bounds_min() const { return bounds_min_; }
+        const ifcopenshell::geometry::taxonomy::point3& bounds_max() const { return bounds_max_; }
 
 	private:
 
@@ -460,8 +457,8 @@ namespace IfcGeom {
 		}
 
 		void create_element_(
-			Converter* kernel,
-			const IfcGeom::IteratorSettings& settings,
+			ifcopenshell::geometry::Converter* kernel,
+			ifcopenshell::geometry::Settings settings,
 			geometry_conversion_result* rep)
 		{
 			auto representation = rep->item;
@@ -507,18 +504,18 @@ namespace IfcGeom {
 		}
 
 		IfcGeom::Element* process_based_on_settings(
-			const IfcGeom::IteratorSettings& settings,
+			ifcopenshell::geometry::Settings settings,
 			IfcGeom::BRepElement* elem,
 			IfcGeom::TriangulationElement* previous = nullptr)
 		{
-			if (settings.get(IfcGeom::IteratorSettings::USE_BREP_DATA)) {
+			if (settings.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::SERIALIZED) {
 				try {
 					return new IfcGeom::SerializedElement(*elem);
 				} catch (...) {
 					Logger::Message(Logger::LOG_ERROR, "Getting a serialized element from model failed.");
 					return nullptr;
 				}
-			} else if (!settings.get(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION)) {
+			} else if (settings.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::TRIANGULATED) {
 				// the part before the hyphen is the representation id
 				auto gid2 = elem->geometry().id();
 				auto hyphen = gid2.find("-");
@@ -610,7 +607,7 @@ namespace IfcGeom {
             auto ret = *task_result_iterator_;
 			
 			// If we want to organize the element considering their hierarchy
-			if (settings_.get(IteratorSettings::ELEMENT_HIERARCHY))
+			if (settings_.get<ifcopenshell::geometry::settings::UseElementHierarchy>().get())
 			{
 				// We are going to build a vector with the element parents.
 				// First, create the parent vector
@@ -665,7 +662,7 @@ namespace IfcGeom {
 		}
 
 		const Element* get_object(int id) {
-			taxonomy::matrix4::ptr m4;
+			ifcopenshell::geometry::taxonomy::matrix4::ptr m4;
 			int parent_id = -1;
 			std::string instance_type, product_name, product_guid;
             IfcUtil::IfcBaseEntity* ifc_product = 0;
@@ -684,7 +681,7 @@ namespace IfcGeom {
 					parent_id = parent_object->data().id();
 				}
 
-				m4 = taxonomy::cast<taxonomy::geom_item>(converter_->mapping()->map(ifc_product))->matrix;
+				m4 = ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::geom_item>(converter_->mapping()->map(ifc_product))->matrix;
 			} catch (const std::exception& e) {
 				Logger::Error(e);
 			}
@@ -701,9 +698,7 @@ namespace IfcGeom {
 				Logger::Error("Unknown error returning product");
 			}
 
-			ElementSettings element_settings(settings_, unit_magnitude_, instance_type);
-
-			Element* ifc_object = new Element(element_settings, id, parent_id, product_name, instance_type, product_guid, "", m4, ifc_product);
+			Element* ifc_object = new Element(settings_, id, parent_id, product_name, instance_type, product_guid, "", m4, ifc_product);
 			return ifc_object;
 		}
 
@@ -729,7 +724,7 @@ namespace IfcGeom {
 			return product;
 		}
 
-		Iterator(const std::string& geometry_library, const IteratorSettings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters, int num_threads)
+		Iterator(const std::string& geometry_library, const ifcopenshell::geometry::Settings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters, int num_threads)
 			: settings_(settings)
 			, ifc_file(file)
 			, filters_(filters)
@@ -739,7 +734,7 @@ namespace IfcGeom {
 		{
 		}
 
-		Iterator(const IteratorSettings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters, int num_threads)
+		Iterator(const ifcopenshell::geometry::Settings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters, int num_threads)
 			: settings_(settings)
 			, ifc_file(file)
 			, filters_(filters)
@@ -749,7 +744,7 @@ namespace IfcGeom {
 		{
 		}
 
-		Iterator(const IteratorSettings& settings, IfcParse::IfcFile* file)
+		Iterator(const ifcopenshell::geometry::Settings& settings, IfcParse::IfcFile* file)
 			: settings_(settings)
 			, ifc_file(file)
 			, owns_ifc_file(false)
@@ -758,7 +753,7 @@ namespace IfcGeom {
 		{
 		}
 
-		Iterator(const std::string& geometry_library, const IteratorSettings& settings, IfcParse::IfcFile* file)
+		Iterator(const std::string& geometry_library, const ifcopenshell::geometry::Settings& settings, IfcParse::IfcFile* file)
 			: settings_(settings)
 			, ifc_file(file)
 			, owns_ifc_file(false)
@@ -767,7 +762,7 @@ namespace IfcGeom {
 		{
 		}
 
-		Iterator(const std::string& geometry_library, const IteratorSettings& settings, IfcParse::IfcFile* file, int num_threads)
+		Iterator(const std::string& geometry_library, const ifcopenshell::geometry::Settings& settings, IfcParse::IfcFile* file, int num_threads)
 			: settings_(settings)
 			, ifc_file(file)
 			, owns_ifc_file(false)
@@ -781,7 +776,7 @@ namespace IfcGeom {
 				delete ifc_file;
 			}
 
-			if (!settings_.get(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION)) {
+			if (!settings_.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::NATIVE) {
 				for (auto& p : all_processed_native_elements_) {
 					delete p;
 				}

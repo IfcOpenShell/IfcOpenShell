@@ -72,7 +72,7 @@ bool OpenCascadeKernel::convert(const taxonomy::shell::ptr l, TopoDS_Shape& shap
 	// @todo
 	/* face_list.Extent() > getValue(GV_MAX_FACES_TO_ORIENT) ||  */
 
-	if (!create_solid_from_faces(face_list, shape, conv_settings_.getValue(ifcopenshell::geometry::ConversionSettings::GV_PRECISION))) {
+	if (!create_solid_from_faces(face_list, shape, settings_.get<settings::Precision>().get())) {
 		TopoDS_Compound compound;
 		BRep_Builder builder;
 		builder.MakeCompound(compound);

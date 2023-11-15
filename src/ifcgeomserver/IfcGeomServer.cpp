@@ -583,23 +583,26 @@ int main () {
 			char* data = new char[len];
 			memcpy(data, m.string().c_str(), len);
 
-			IfcGeom::IteratorSettings settings;
-            settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, false);
-            settings.set(IfcGeom::IteratorSettings::WELD_VERTICES, false);
-            settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS, true);
+			ifcopenshell::geometry::Settings settings;
+            settings.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = false;
+            settings.get<ifcopenshell::geometry::settings::WeldVertices>().value = false;
+            settings.get<ifcopenshell::geometry::settings::ConvertBackUnits>().value = true;
             // settings.set(IfcGeom::IteratorSettings::INCLUDE_CURVES, true);
 
+			/*
+			// @todo
 			std::vector< std::pair<uint32_t, uint32_t> >::const_iterator it = setting_pairs.begin();
 			for (; it != setting_pairs.end(); ++it) {
-				settings.set(it->first, it->second != 0);
+				settings.get(it->first, it->second != 0);
 				if (it->first == IfcGeom::IteratorSettings::SEW_SHELLS && it->second) {
 					// Quantities (especially volume) can be emitted if there are proper
 					// topologically valid geometries being created.
 					emit_quantities = true;
 				}
 			}
+			*/
 
-			settings.set_deflection_tolerance(deflection);
+			settings.get<ifcopenshell::geometry::settings::MesherLinearDeflection>().value = deflection;
 
 			file = new IfcParse::IfcFile(data, (int)len);
 			iterator = new IfcGeom::Iterator(settings, file);

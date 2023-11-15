@@ -4,12 +4,12 @@
 
 using namespace ifcopenshell::geometry;
 
-ifcopenshell::geometry::Converter::Converter(const std::string& geometry_library, IfcParse::IfcFile* file, IfcGeom::IteratorSettings& s)
+ifcopenshell::geometry::Converter::Converter(const std::string& geometry_library, IfcParse::IfcFile* file, ifcopenshell::geometry::Settings& s)
 	: geometry_library_(boost::to_lower_copy(geometry_library))
 	, settings_(s)
 {
 	mapping_ = impl::mapping_implementations().construct(file, settings_);
-	kernel_ = kernels::construct(geometry_library, mapping_->conversion_settings());
+	kernel_ = kernels::construct(geometry_library, mapping_->settings());
 }
 
 namespace {
@@ -44,7 +44,7 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 		return 0;
 	}
 
-	if (settings_.get(IfcGeom::IteratorSettings::APPLY_LAYERSETS)) {
+	if (settings_.get<ifcopenshell::geometry::settings::ApplyLayerSets>().get()) {
 		ifcopenshell::geometry::layerset_information layerinfo;
 		std::vector<ifcopenshell::geometry::endpoint_connection> neighbours;
 		std::map<IfcUtil::IfcBaseEntity*, ifcopenshell::geometry::layerset_information> neigbour_layers;
@@ -133,11 +133,11 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 		representation_id_builder << "-material-" << single_material->data().id();
 	}
 
-	if (settings_.force_space_transparency() >= 0. && product->declaration().is("IfcSpace")) {
+	if (settings_.get<ifcopenshell::geometry::settings::ForceSpaceTransparency>().has() && product->declaration().is("IfcSpace")) {
 		for (auto& s : shapes) {
 			if (s.hasStyle()) {
 				// @todo the uglyness
-				const_cast<taxonomy::style*>(&*s.StylePtr())->transparency = settings_.force_space_transparency();
+				const_cast<taxonomy::style*>(&*s.StylePtr())->transparency = settings_.get<ifcopenshell::geometry::settings::ForceSpaceTransparency>().get();
 			}
 		}
 	}
@@ -156,14 +156,12 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 	const std::string guid = product->get_value<std::string>("GlobalId", "");
 
 	const std::string product_type = product->declaration().name();
-	IfcGeom::ElementSettings element_settings(settings_, mapping_->get_length_unit(), product_type);
-
 
 	// Does the IfcElement have any IfcOpenings?
 	// Note that openings for IfcOpeningElements are not processed
 	auto openings = mapping_->find_openings(product);
 
-	if (!settings_.get(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS) && openings && openings->size()) {
+	if (!settings_.get<ifcopenshell::geometry::settings::DisableOpeningSubtractions>().get() && openings && openings->size()) {
 		representation_id_builder << "-openings";
 		for (auto it = openings->begin(); it != openings->end(); ++it) {
 			representation_id_builder << "-" << (*it)->data().id();
@@ -191,23 +189,23 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 			opened_shapes = shapes;
 		}
 
-		if (settings_.get(IfcGeom::IteratorSettings::USE_WORLD_COORDS)) {
+		if (settings_.get<ifcopenshell::geometry::settings::UseWorldCoords>().get()) {
 			for (auto it = opened_shapes.begin(); it != opened_shapes.end(); ++it) {
 				it->prepend(place);
 			}
 			place = ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::matrix4>();
 			representation_id_builder << "-world-coords";
 		}
-		shape = new IfcGeom::Representation::BRep(element_settings, representation_id_builder.str(), opened_shapes);
-	} else if (settings_.get(IfcGeom::IteratorSettings::USE_WORLD_COORDS)) {
+		shape = new IfcGeom::Representation::BRep(settings_, product_type, representation_id_builder.str(), opened_shapes);
+	} else if (settings_.get<ifcopenshell::geometry::settings::UseWorldCoords>().get()) {
 		for (auto it = shapes.begin(); it != shapes.end(); ++it) {
 			it->prepend(place);
 		}
 		place = ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::matrix4>();
 		representation_id_builder << "-world-coords";
-		shape = new IfcGeom::Representation::BRep(element_settings, representation_id_builder.str(), shapes);
+		shape = new IfcGeom::Representation::BRep(settings_, product_type, representation_id_builder.str(), shapes);
 	} else {
-		shape = new IfcGeom::Representation::BRep(element_settings, representation_id_builder.str(), shapes);
+		shape = new IfcGeom::Representation::BRep(settings_, product_type, representation_id_builder.str(), shapes);
 	}
 
 	std::string context_string = "";

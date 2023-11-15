@@ -12,17 +12,17 @@ using namespace ifcopenshell::geometry;
 void fix_wallconnectivity(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool stderr_progress) {
 	intersection_validator v(f, { "IfcWall" }, 1.e-3, no_progress, quiet, stderr_progress);
 
+	ifcopenshell::geometry::Settings settings;
 
-	IfcGeom::IteratorSettings settings;
-	settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, false);
-	settings.set(IfcGeom::IteratorSettings::WELD_VERTICES, false);
-	settings.set(IfcGeom::IteratorSettings::SEW_SHELLS, true);
-	settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS, true);
-	settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
-	settings.set(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS, true);
+	settings.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = false;
+	settings.get<ifcopenshell::geometry::settings::WeldVertices>().value = false;
+	settings.get<ifcopenshell::geometry::settings::ReorientShells>().value = true;
+	settings.get<ifcopenshell::geometry::settings::ConvertBackUnits>().value = true;
+	settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
+	settings.get<ifcopenshell::geometry::settings::DisableOpeningSubtractions>().value = true;
 
-	settings.set(IfcGeom::IteratorSettings::INCLUDE_CURVES, true);
-	settings.set(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES, true);
+	settings.get<ifcopenshell::geometry::settings::IncludeCurves>().value = true;
+	settings.get<ifcopenshell::geometry::settings::IncludeSurfaces>().value = false;
 	
 	ifcopenshell::geometry::Converter c("cgal", &f, settings);
 

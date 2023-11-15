@@ -56,6 +56,7 @@
 
 %shared_ptr(IfcGeom::OpaqueNumber);
 %ignore IfcGeom::NumberNativeDouble;
+%ignore ifcopenshell::geometry::Converter;
 
 // General python-specific rename rules for comparison operators.
 // Mostly to silence warnings, but might be of use some time.
@@ -134,6 +135,7 @@
 	#include "../ifcparse/IfcSchema.h"
 	#include "../ifcparse/utils.h"
 
+	#include "../ifcgeom/ConversionSettings.h"
 	#include "../ifcgeom/ConversionResult.h"
 
 	#include "../svgfill/src/svgfill.h"
@@ -204,6 +206,9 @@
 	#include "../ifcparse/IfcFile.h"
 	#include "../ifcparse/IfcSchema.h"
 	#include "../ifcparse/utils.h"
+	
+	#include "../ifcgeom/ConversionSettings.h"
+	#include "../ifcgeom/ConversionResult.h"
 
 	#include "../svgfill/src/svgfill.h"
 %}

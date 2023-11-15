@@ -147,3 +147,8 @@ CREATE_VECTOR_TYPEMAP_OUT(IfcParse::inverse_attribute const *)
 CREATE_VECTOR_TYPEMAP_OUT(IfcParse::entity const *)
 CREATE_VECTOR_TYPEMAP_OUT(IfcParse::declaration const *)
 CREATE_VECTOR_TYPEMAP_OUT(IfcGeom::ConversionResultShape *)
+
+%typemap(out) boost::variant<bool, int, double, std::string, std::set<int>> {
+	pythonizing_visitor vis;
+	$result = $1.apply_visitor(vis);
+}

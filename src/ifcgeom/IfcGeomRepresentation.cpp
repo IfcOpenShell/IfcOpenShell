@@ -142,7 +142,7 @@ namespace {
 #endif
 
 IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
-	: Representation(brep.settings())
+	: Representation(brep.settings(), brep.entity())
 	, id_(brep.id())
 {
 	for (auto it = brep.begin(); it != brep.end(); ++it) {
@@ -213,9 +213,9 @@ IfcGeom::ConversionResultShape* IfcGeom::Representation::BRep::as_compound(bool 
 			trsf = tr;
 		}
 
-		if (!force_meters && settings().get(IteratorSettings::CONVERT_BACK_UNITS)) {
+		if (!force_meters && settings().get<ifcopenshell::geometry::settings::ConvertBackUnits>().get()) {
 			gp_Trsf scale;
-			scale.SetScaleFactor(1.0 / settings().unit_magnitude());
+			scale.SetScaleFactor(1.0 / settings().get<ifcopenshell::geometry::settings::LengthUnit>().get());
 			trsf.PreMultiply(scale);
 		}
 
@@ -299,7 +299,7 @@ bool IfcGeom::Representation::BRep::calculate_projected_surface_area(const ifcop
 
 		for (IfcGeom::ConversionResults::const_iterator it = begin(); it != end(); ++it) {
 			double x, y, z;
-			surface_area_along_direction(settings().deflection_tolerance(), *std::static_pointer_cast<ifcopenshell::geometry::OpenCascadeShape>(it->Shape()), ax, x, y, z);
+			surface_area_along_direction(settings().get<ifcopenshell::geometry::settings::MesherLinearDeflection>().get(), *std::static_pointer_cast<ifcopenshell::geometry::OpenCascadeShape>(it->Shape()), ax, x, y, z);
 
 			if (util::is_manifold(*std::static_pointer_cast<ifcopenshell::geometry::OpenCascadeShape>(it->Shape()))) {
 				x /= 2.;
@@ -323,7 +323,7 @@ bool IfcGeom::Representation::BRep::calculate_projected_surface_area(const ifcop
 }
 
 IfcGeom::Representation::Triangulation::Triangulation(const BRep& shape_model)
-	: Representation(shape_model.settings())
+	: Representation(shape_model.settings(), shape_model.entity())
 	, id_(shape_model.id())
 	, weld_offset_(0)
 {
@@ -343,8 +343,8 @@ IfcGeom::Representation::Triangulation::Triangulation(const BRep& shape_model)
 			}
 		}
 
-		if (settings().get(IteratorSettings::APPLY_DEFAULT_MATERIALS) && surface_style_id == -1) {
-			const auto& material = IfcGeom::get_default_style(settings().element_type());
+		if (settings().get<ifcopenshell::geometry::settings::ApplyDefaultMaterials>().get() && surface_style_id == -1) {
+			const auto& material = IfcGeom::get_default_style(shape_model.entity());
 			auto mit = std::find(_materials.begin(), _materials.end(), material);
 			if (mit == _materials.end()) {
 				surface_style_id = (int)_materials.size();
@@ -390,12 +390,13 @@ std::vector<double> IfcGeom::Representation::Triangulation::box_project_uvs(cons
 }
 
 int IfcGeom::Representation::Triangulation::addVertex(int material_index, double pX, double pY, double pZ) {
-	const bool convert = settings().get(IteratorSettings::CONVERT_BACK_UNITS);
-	const double X = convert ? (pX / settings().unit_magnitude()) : pX;
-	const double Y = convert ? (pY / settings().unit_magnitude()) : pY;
-	const double Z = convert ? (pZ / settings().unit_magnitude()) : pZ;
+	const bool convert = settings().get<ifcopenshell::geometry::settings::ConvertBackUnits>().get();
+	auto unit_magnitude = settings().get<ifcopenshell::geometry::settings::LengthUnit>().get();
+	const double X = convert ? (pX /unit_magnitude) : pX;
+	const double Y = convert ? (pY /unit_magnitude) : pY;
+	const double Z = convert ? (pZ /unit_magnitude) : pZ;
 	int i = (int)_verts.size() / 3;
-	if (settings().get(IteratorSettings::WELD_VERTICES)) {
+	if (settings().get<ifcopenshell::geometry::settings::WeldVertices>().get()) {
 		const VertexKey key = std::make_pair(material_index, std::make_pair(X, std::make_pair(Y, Z)));
 		typename VertexKeyMap::const_iterator it = welds.find(key);
 		if (it != welds.end()) return it->second;

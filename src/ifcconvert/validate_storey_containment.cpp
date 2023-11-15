@@ -10,13 +10,14 @@
 #include <algorithm>
 
 void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool stderr_progress) {
-	IfcGeom::IteratorSettings settings;
-	settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, false);
-	settings.set(IfcGeom::IteratorSettings::WELD_VERTICES, false);
-	settings.set(IfcGeom::IteratorSettings::SEW_SHELLS, true);
-	settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS, true);
-	settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
-	settings.set(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS, true);
+	ifcopenshell::geometry::Settings settings;
+
+	settings.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = false;
+	settings.get<ifcopenshell::geometry::settings::WeldVertices>().value = false;
+	settings.get<ifcopenshell::geometry::settings::ReorientShells>().value = true;
+	settings.get<ifcopenshell::geometry::settings::ConvertBackUnits>().value = true;
+	settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
+	settings.get<ifcopenshell::geometry::settings::DisableOpeningSubtractions>().value = true;
 
 	std::vector<ifcopenshell::geometry::filter_t> no_openings_and_spaces = {
 		IfcGeom::entity_filter(false, false, {"IfcOpeningElement", "IfcSpace"})
@@ -133,7 +134,7 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 		std::vector<double> intersection_volumes(nefs.size());
 
 		for (auto& g : geom_object->geometry()) {
-			auto s = ((ifcopenshell::geometry::CgalShape*) g.Shape())->shape();
+			auto s = std::static_pointer_cast<ifcopenshell::geometry::CgalShape>(g.Shape())->poly();
 			const auto& m = g.Placement()->ccomponents();
 			const auto& n = geom_object->transformation().data()->ccomponents();
 

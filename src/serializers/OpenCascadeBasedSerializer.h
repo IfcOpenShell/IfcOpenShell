@@ -36,8 +36,8 @@ protected:
 	const std::string out_filename;
 	const char* getSymbolForUnitMagnitude(float mag);
 public:
-	explicit OpenCascadeBasedSerializer(const std::string& out_filename, const SerializerSettings& settings)
-		: WriteOnlyGeometrySerializer(settings)
+	explicit OpenCascadeBasedSerializer(const std::string& out_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings)
+		: WriteOnlyGeometrySerializer(geometry_settings, settings)
 		, out_filename(out_filename)
 	{}
 	virtual ~OpenCascadeBasedSerializer() {}

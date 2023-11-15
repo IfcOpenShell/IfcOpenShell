@@ -53,8 +53,8 @@ herr_t print_stack(hid_t /*estack*/, void*) {
 	return 0;
 }
 
-HdfSerializer::HdfSerializer(const std::string& hdf_filename, const SerializerSettings& settings, bool read_only)
-	: GeometrySerializer(settings)
+HdfSerializer::HdfSerializer(const std::string& hdf_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, bool read_only)
+	: GeometrySerializer(geometry_settings, settings)
 	, hdf_filename(hdf_filename)
 	, settings_(settings)
 {
@@ -284,7 +284,6 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 	auto representation_group = element_group.openGroup(representation_id_str);
 	std::string geom_id = read_scalar_attribute<std::string>(representation_group, "geom_id");
 
-	IfcGeom::ElementSettings element_settings(settings_, f.getUnit("LENGTHUNIT").second, type);
 	auto inst = f.instance_by_id(id)->as<IfcUtil::IfcBaseEntity>();
 
 	boost::shared_ptr<IfcGeom::Representation::BRep> brep_geometry;
@@ -305,6 +304,9 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 	if (rt == READ_BREP && !brep_geometry) {
 		auto brepDataset = representation_group.openDataSet(DATASET_NAME_OCCT);
 		
+		/*
+		// @todo
+
 		static const auto ignored_settings =
 			// Settings that do not affect storage of brep data
 			IfcGeom::IteratorSettings::DISABLE_TRIANGULATION | IfcGeom::IteratorSettings::USE_BREP_DATA |
@@ -325,6 +327,7 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 		if (stored_settings != requested_settings && (stored_settings | IfcGeom::IteratorSettings::USE_WORLD_COORDS) != requested_settings) {
 			throw std::runtime_error("Settings mismatch");
 		}
+		*/
 
 		std::vector<brep_element> parts;
 		{
@@ -357,6 +360,9 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 			shapes.push_back(IfcGeom::ConversionResult(part.id, matrix, new ifcopenshell::geometry::OpenCascadeShape(shp), style_ptr));
 		}
 
+		/*
+		// @todo
+
 		// World coordinates can be applied post-hoc
 		if (settings_.get(IfcGeom::IteratorSettings::USE_WORLD_COORDS) && !(stored_settings & IfcGeom::IteratorSettings::USE_WORLD_COORDS)) {
 			for (IfcGeom::ConversionResults::iterator it = shapes.begin(); it != shapes.end(); ++it) {
@@ -364,13 +370,16 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 			}
 			trsf = ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::matrix4>();
 		}
+		*/
 
-		brep_geometry = boost::shared_ptr<IfcGeom::Representation::BRep>(new IfcGeom::Representation::BRep(element_settings, geom_id, shapes));
+		brep_geometry = boost::shared_ptr<IfcGeom::Representation::BRep>(new IfcGeom::Representation::BRep(geometry_settings(), type, geom_id, shapes));
 
-
+		/*
+		// @todo
 		if (!settings_.get(IfcGeom::IteratorSettings::USE_WORLD_COORDS)) {
 			brep_cache_.insert({ representation_id_str, brep_geometry });
 		}
+		*/
 	}
 	
 	if (rt == READ_TRIANGULATION && !triangulation_geometry) {
@@ -413,7 +422,8 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 		}
 
 		triangulation_geometry = boost::shared_ptr<IfcGeom::Representation::Triangulation>(new IfcGeom::Representation::Triangulation(
-			element_settings,
+			geometry_settings_,
+			type,
 			geom_id,
 			verts,
 			faces,
@@ -432,7 +442,7 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 	} else {
 		return new IfcGeom::TriangulationElement(
 			IfcGeom::Element(
-				element_settings,
+				geometry_settings_,
 				id,
 				parent_id,
 				name,
@@ -619,7 +629,11 @@ void HdfSerializer::write(const IfcGeom::BRepElement* o) {
 
 	H5::DataSpace attrdspace(H5S_SCALAR);
 	H5::Attribute att = brepDataset.createAttribute("settings", H5::PredType::NATIVE_UINT64, attrdspace);
+	/*
+	// @todo
 	uint64_t value = o->geometry().settings().get_raw();
+	*/
+	uint64_t value = 0;
 	att.write(H5::PredType::NATIVE_UINT64, &value);
 }
 

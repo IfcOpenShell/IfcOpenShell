@@ -33,7 +33,7 @@ void ifcopenshell::geometry::impl::MappingFactoryImplementation::bind(const std:
 	this->insert(std::make_pair(schema_name_lower, fn));
 }
 
-ifcopenshell::geometry::abstract_mapping* ifcopenshell::geometry::impl::MappingFactoryImplementation::construct(IfcParse::IfcFile* file, IfcGeom::IteratorSettings& s) {
+ifcopenshell::geometry::abstract_mapping* ifcopenshell::geometry::impl::MappingFactoryImplementation::construct(IfcParse::IfcFile* file, Settings& s) {
 	const std::string schema_name_lower = boost::to_lower_copy(file->schema()->name());
 	std::map<std::string, ifcopenshell::geometry::impl::mapping_fn>::const_iterator it;
 	it = this->find(schema_name_lower);

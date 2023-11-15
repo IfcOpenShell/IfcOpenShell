@@ -217,7 +217,6 @@ int main(int argc, char** argv) {
 	typedef char char_t;
 #endif
 
-	double deflection_tolerance, angular_tolerance, force_space_transparency;
 	inclusion_filter include_filter;
 	inclusion_traverse_filter include_traverse_filter;
 	exclusion_filter exclude_filter;
@@ -276,6 +275,8 @@ int main(int argc, char** argv) {
 
 	// none, convex-decomposition, minkowski-triangles or halfspace-snapping
 	std::string exterior_only_algo;
+
+	ifcopenshell::geometry::Settings geometry_settings;
     
 	po::options_description geom_options("Geometry options");
 	geom_options.add_options()
@@ -283,32 +284,6 @@ int main(int argc, char** argv) {
 			"Geometry kernel to use (opencascade, cgal, cgal-simple).")
 		("threads,j", po::value<int>(&num_threads)->default_value(1),
 			"Number of parallel processing threads for geometry interpretation.")
-		("plan",
-			"Specifies whether to include curves in the output result. Typically "
-			"these are representations of type Plan or Axis. Excluded by default.")
-		("model",
-			"Specifies whether to include surfaces and solids in the output result. "
-			"Typically these are representations of type Body or Facetation. "
-			"Included by default.")
-		("weld-vertices",
-			"Specifies whether vertices are welded, meaning that the coordinates "
-			"vector will only contain unique xyz-triplets. This results in a "
-			"manifold mesh which is useful for modelling applications, but might "
-			"result in unwanted shading artefacts in rendering applications.")
-		("use-world-coords",
-			"Specifies whether to apply the local placements of building elements "
-			"directly to the coordinates of the representation mesh rather than "
-			"to represent the local placement in the 4x3 matrix, which will in that "
-			"case be the identity matrix.")
-		("convert-back-units",
-			"Specifies whether to convert back geometrical output back to the "
-			"unit of measure in which it is defined in the IFC file. Default is "
-			"to use meters.")
-		("orient-shells",
-			"Specifies whether to orient the faces of IfcConnectedFaceSets. "
-			"This is a potentially time consuming operation, but guarantees a "
-			"consistent orientation of surface normals, even if the faces are not "
-			"properly oriented in the IFC file.")
 		("center-model",
             "Centers the elements by applying the center point of all placements as an offset."
             "Can take several minutes on large models.")
@@ -318,30 +293,6 @@ int main(int argc, char** argv) {
             "Applies an arbitrary offset of form 'x;y;z' to all placements.")
 		("model-rotation", po::value<std::string>(&rotation_str),
 			"Applies an arbitrary quaternion rotation of form 'x;y;z;w' to all placements.")
-#if OCC_VERSION_HEX < 0x60900
-		// In Open CASCADE version prior to 6.9.0 boolean operations with multiple
-		// arguments where not introduced yet and a work-around was implemented to
-		// subtract multiple openings as a single compound. This hack is obsolete
-		// for newer versions of Open CASCADE.
-		("merge-boolean-operands",
-			"Specifies whether to merge all IfcOpeningElement operands into a single "
-			"operand before applying the subtraction operation. This may "
-			"introduce a performance improvement at the risk of failing, in "
-			"which case the subtraction is applied one-by-one.")
-#endif
-		("disable-opening-subtractions",
-			"Specifies whether to disable the boolean subtraction of "
-			"IfcOpeningElement Representations from their RelatingElements.")
-		("disable-boolean-results",
-			"Specifies whether to disable the boolean operation within representations "
-			"such as clippings by means of IfcBooleanResult and subtypes")
-		("no-2d-boolean",
-			"Do not attempt to process boolean subtractions in 2D.")
-		("enable-layerset-slicing",
-			"Specifies whether to enable the slicing of products according "
-			"to their associated IfcMaterialLayerSet.")
-		("layerset-first", "Assigns the first layer material of the layerset "
-			"to the complete product.")
 		("include", po::value<inclusion_filter>(&include_filter)->multitoken(),
 			"Specifies that the instances that match a specific filtering criteria are to be included in the geometrical output:\n"
 			"1) 'entities': the following list of types should be included. SVG output defaults "
@@ -368,32 +319,15 @@ int main(int argc, char** argv) {
 			"are '--include=arg GlobalId ...' and 'include arg GlobalId ...'. Spaces and tabs can be used as delimiters."
 			"Multiple filters of same type with different values can be inserted on their own lines. "
 			"See --include, --include+, --exclude, and --exclude+ for more details.")
-		("no-normals",
-			"Disables computation of normals. Saves time and file size and is useful "
-			"in instances where you're going to recompute normals for the exported "
-			"model in other modelling application in any case.")
-		("deflection-tolerance", po::value<double>(&deflection_tolerance)->default_value(1e-3),
-			"Sets the deflection tolerance of the mesher, 1e-3 by default if not specified.")
-		("force-space-transparency", po::value<double>(&force_space_transparency),
-			"Overrides transparency of spaces in geometry output.")
-		("angular-tolerance", po::value<double>(&angular_tolerance)->default_value(0.5),
-			"Sets the angular tolerance of the mesher in radians 0.5 by default if not specified.")
-		("generate-uvs",
-			"Generates UVs (texture coordinates) by using simple box projection. Requires normals. "
-			"Not guaranteed to work properly if used with --weld-vertices.")
         ("default-material-file", new po::typed_value<path_t, char_t>(&default_material_filename),
             "Specifies a material file that describes the material object types will have"
             "if an object does not have any specified material in the IFC file.")
-		("validate", "Checks whether geometrical output conforms to the included explicit quantities.")
-		("no-wire-intersection-check", "Skip wire intersection check.")
-		("no-wire-intersection-tolerance", "Set wire intersection tolerance to 0.")
 		("exterior-only",
 			po::value<std::string>(&exterior_only_algo)->default_value("none")->implicit_value("minkowski-triangles"),
 			"Export only the exterior shell of the building found by geometric analysis. convex-decomposition, minkowski-triangles or halfspace-snapping")
-		("strict-tolerance", "Use exact tolerance from model. Default is a 10 "
-						 "times increase for more permissive edge curves and fewer artifacts after "
-						 "boolean operations at the expense of geometric detail "
-						 "due to vertex collapsing and wire intersection fuzziness.");
+		;
+	
+	geometry_settings.define_options(geom_options);
 
     std::string bounds;
 #ifdef HAVE_ICU
@@ -408,6 +342,8 @@ int main(int argc, char** argv) {
 #ifdef IFOPSH_WITH_OPENCASCADE
 	SvgSerializer::storey_height_display_types svg_storey_height_display = SvgSerializer::SH_NONE;
 #endif
+
+	ifcopenshell::geometry::SerializerSettings serializer_settings;
 
     po::options_description serializer_options("Serialization options");
     serializer_options.add_options()
@@ -454,40 +390,13 @@ int main(int argc, char** argv) {
 		("section-height", po::value<double>(&section_height),
 		    "Specifies the cut section height for SVG 2D geometry.")
 		("section-height-from-storeys", "Derives section height from storey elevation. Use --section-height to override default offset of 1.2")
-		("use-element-names",
-            "Use entity instance IfcRoot.Name instead of unique IDs for naming elements upon serialization. "
-            "Applicable for OBJ, DAE, STP, and SVG output.")
-        ("use-element-guids",
-            "Use entity instance IfcRoot.GlobalId instead of unique IDs for naming elements upon serialization. "
-            "Applicable for OBJ, DAE, STP, and SVG output.")
-		("use-element-numeric-ids", "Use the numeric step identifier (entity instance name) for naming elements upon serialization. "
-			"Applicable for OBJ, DAE, STP, and SVG output.")
-        ("use-material-names",
-            "Use material names instead of unique IDs for naming materials upon serialization. "
-            "Applicable for OBJ and DAE output.")
-		("use-element-types",
-			"Use element types instead of unique IDs for naming elements upon serialization. "
-			"Applicable for DAE output.")
-		("use-element-hierarchy",
-			"Order the elements using their IfcBuildingStorey parent. "
-			"Applicable for DAE output.")
-		("site-local-placement",
-			"Place elements locally in the IfcSite coordinate system, instead of placing "
-			"them in the IFC global coords. Applicable for OBJ, DAE, and STP output.")
-		("y-up", "Change the 'up' axis to positive Y, default is Z UP, Applicable for OBJ output.")
-		("building-local-placement",
-			"Similar to --site-local-placement, but placing elements in locally in the parent IfcBuilding coord system")
-        ("precision", po::value<short>(&precision)->default_value(SerializerSettings::DEFAULT_PRECISION),
-            "Sets the precision to be used to format floating-point values, 15 by default. "
-            "Use a negative value to use the system's default precision (should be 6 typically). "
-            "Applicable for OBJ and DAE output. For DAE output, value >= 15 means that up to 16 decimals are used, "
-            " and any other value means that 6 or 7 decimals are used.")
 		("print-space-names", "Prints IfcSpace LongName and Name in the geometry output. Applicable for SVG output")
 		("print-space-areas", "Prints calculated IfcSpace areas in square meters. Applicable for SVG output")
 		("space-name-transform", po::value<std::string>(),
 			"Additional transform to the space labels in SVG")
-		("edge-arrows", "Adds arrow heads to edge segments to signify edge direction")
 		;
+
+	serializer_settings.define_options(serializer_options);
 
     po::options_description cmdline_options;
 	cmdline_options.add(generic_options).add(fileio_options).add(geom_options).add(ifc_options).add(serializer_options);
@@ -523,39 +432,11 @@ int main(int argc, char** argv) {
 	const bool no_progress = vmap.count("no-progress") != 0;
 	const bool quiet = vmap.count("quiet") != 0;
 	const bool stderr_progress = vmap.count("stderr-progress") != 0;
-	const bool weld_vertices = vmap.count("weld-vertices") != 0;
-	const bool use_world_coords = vmap.count("use-world-coords") != 0;
-	const bool convert_back_units = vmap.count("convert-back-units") != 0;
-	const bool orient_shells = vmap.count("orient-shells") != 0;
-#if OCC_VERSION_HEX < 0x60900
-	const bool merge_boolean_operands = vmap.count("merge-boolean-operands") != 0;
-#endif
-	const bool disable_opening_subtractions = vmap.count("disable-opening-subtractions") != 0;
-	const bool disable_boolean_results = vmap.count("disable-boolean-results") != 0;
-	const bool include_plan = vmap.count("plan") != 0;
-	const bool include_model = vmap.count("model") != 0 || (!include_plan);
-	const bool enable_layerset_slicing = vmap.count("enable-layerset-slicing") != 0;
-	const bool layerset_first = vmap.count("layerset-first") != 0;
-	const bool use_element_names = vmap.count("use-element-names") != 0;
-	const bool use_element_guids = vmap.count("use-element-guids") != 0;
-	const bool use_element_stepids = vmap.count("use-element-numeric-ids") != 0;
-	const bool use_material_names = vmap.count("use-material-names") != 0;
-	const bool use_element_types = vmap.count("use-element-types") != 0;
-	const bool use_element_hierarchy = vmap.count("use-element-hierarchy") != 0;
-	const bool use_y_up = vmap.count("y-up") != 0;
-	const bool no_normals = vmap.count("no-normals") != 0;
+
 	const bool center_model = vmap.count("center-model") != 0;
 	const bool center_model_geometry = vmap.count("center-model-geometry") != 0;
 	const bool model_offset = vmap.count("model-offset") != 0;
 	const bool model_rotation = vmap.count("model-rotation") != 0;
-	const bool site_local_placement = vmap.count("site-local-placement") != 0;
-	const bool building_local_placement = vmap.count("building-local-placement") != 0;
-	const bool generate_uvs = vmap.count("generate-uvs") != 0;
-	const bool validate = vmap.count("validate") != 0;
-	const bool edge_arrows = vmap.count("edge-arrows") != 0;
-	const bool no_wire_intersection_check = vmap.count("no-wire-intersection-check") != 0;
-	const bool no_wire_intersection_tolerance = vmap.count("no-wire-intersection-tolerance") != 0;
-	const bool strict_tolerance = vmap.count("strict-tolerance") != 0;
 
     if (!quiet || vmap.count("version")) {
 		print_version();
@@ -849,12 +730,12 @@ int main(int argc, char** argv) {
 			settings.threads = num_threads;
 		}
 
-		settings.settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, false);
-		settings.settings.set(IfcGeom::IteratorSettings::WELD_VERTICES, false);
-		settings.settings.set(IfcGeom::IteratorSettings::SEW_SHELLS, true);
-		settings.settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS, true);
-		settings.settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
-		settings.settings.set(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS, !settings.apply_openings);
+		settings.settings.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = false;
+		settings.settings.get<ifcopenshell::geometry::settings::WeldVertices>().value = false;
+		settings.settings.get<ifcopenshell::geometry::settings::ReorientShells>().value = true;
+		settings.settings.get<ifcopenshell::geometry::settings::ConvertBackUnits>().value = true;
+		settings.settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
+		settings.settings.get<ifcopenshell::geometry::settings::DisableOpeningSubtractions>().value = !settings.apply_openings;
 
 		if (include_filter.type != geom_filter::UNUSED) {
 			settings.entity_names = include_filter.values;
@@ -916,77 +797,43 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	SerializerSettings settings;
-	/// @todo Make APPLY_DEFAULT_MATERIALS configurable? Quickly tested setting this to false and using obj exporter caused the program to crash and burn.
-	settings.set(IfcGeom::IteratorSettings::APPLY_DEFAULT_MATERIALS,      true);
-	settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS,             use_world_coords || output_extension == OBJ || output_extension == STP || output_extension == IGS);
-	settings.set(IfcGeom::IteratorSettings::WELD_VERTICES,                weld_vertices);
-	settings.set(IfcGeom::IteratorSettings::SEW_SHELLS,                   orient_shells || output_extension == SVG); // svg depends on correct solids for boolean subtractions for hlr
-	settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS,           convert_back_units);
-	settings.set(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS, disable_opening_subtractions);
-	settings.set(IfcGeom::IteratorSettings::DISABLE_BOOLEAN_RESULT, disable_boolean_results);
-	settings.set(IfcGeom::IteratorSettings::INCLUDE_CURVES,               include_plan);
-	settings.set(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES,  !include_model);
-	settings.set(IfcGeom::IteratorSettings::APPLY_LAYERSETS,              enable_layerset_slicing);
-	settings.set(IfcGeom::IteratorSettings::LAYERSET_FIRST,               layerset_first);
-	settings.set(IfcGeom::IteratorSettings::DEBUG_BOOLEAN,                vmap.count("debug"));
-    settings.set(IfcGeom::IteratorSettings::NO_NORMALS, no_normals);
-    settings.set(IfcGeom::IteratorSettings::GENERATE_UVS, generate_uvs);
-	settings.set(IfcGeom::IteratorSettings::EDGE_ARROWS, edge_arrows);
-	settings.set(IfcGeom::IteratorSettings::ELEMENT_HIERARCHY, use_element_hierarchy || output_extension == SVG);
-	settings.set(IfcGeom::IteratorSettings::SITE_LOCAL_PLACEMENT, site_local_placement);
-	settings.set(IfcGeom::IteratorSettings::BUILDING_LOCAL_PLACEMENT, building_local_placement);
-	settings.set(IfcGeom::IteratorSettings::VALIDATE_QUANTITIES, validate);
-	settings.set(IfcGeom::IteratorSettings::NO_WIRE_INTERSECTION_CHECK, no_wire_intersection_check);
-	settings.set(IfcGeom::IteratorSettings::NO_WIRE_INTERSECTION_TOLERANCE, no_wire_intersection_tolerance);
-	settings.set(IfcGeom::IteratorSettings::STRICT_TOLERANCE, strict_tolerance);
-	settings.set(IfcGeom::IteratorSettings::BOOLEAN_ATTEMPT_2D, !vmap.count("no-2d-boolean"));	
+	if (!geometry_settings.get<ifcopenshell::geometry::settings::WeldVertices>().has()) {
+		geometry_settings.get<ifcopenshell::geometry::settings::WeldVertices>().value = false;
+	}
 
-    settings.set(SerializerSettings::USE_ELEMENT_NAMES, use_element_names);
-    settings.set(SerializerSettings::USE_ELEMENT_GUIDS, use_element_guids);
-	settings.set(SerializerSettings::USE_Y_UP, use_y_up);
-	settings.set(SerializerSettings::USE_ELEMENT_STEPIDS, use_element_stepids);
-	settings.set(SerializerSettings::USE_MATERIAL_NAMES, use_material_names);
-	settings.set(SerializerSettings::USE_ELEMENT_TYPES, use_element_types);
-	settings.set(SerializerSettings::USE_ELEMENT_HIERARCHY, use_element_hierarchy);
-    settings.set_deflection_tolerance(deflection_tolerance);
-	settings.set_angular_tolerance(angular_tolerance);
-	settings.precision = precision;
-
-	if (vmap.count("force-space-transparency")) {
-		settings.force_space_transparency(force_space_transparency);
-		IfcGeom::update_default_style("IfcSpace").transparency = force_space_transparency;
+	if (geometry_settings.get<ifcopenshell::geometry::settings::ForceSpaceTransparency>().has()) {
+		IfcGeom::update_default_style("IfcSpace").transparency = geometry_settings.get<ifcopenshell::geometry::settings::ForceSpaceTransparency>().get();
 	}
 
 	boost::shared_ptr<GeometrySerializer> serializer; /**< @todo use std::unique_ptr when possible */
 	if (output_extension == OBJ) {
         // Do not use temp file for MTL as it's such a small file.
         const path_t mtl_filename = change_extension(output_filename, MTL);
-		serializer = boost::make_shared<WaveFrontOBJSerializer>(IfcUtil::path::to_utf8(output_temp_filename), IfcUtil::path::to_utf8(mtl_filename), settings);
+		serializer = boost::make_shared<WaveFrontOBJSerializer>(IfcUtil::path::to_utf8(output_temp_filename), IfcUtil::path::to_utf8(mtl_filename), geometry_settings, serializer_settings);
 #ifdef WITH_OPENCOLLADA
 	} else if (output_extension == DAE) {
-		serializer = boost::make_shared<ColladaSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
+		serializer = boost::make_shared<ColladaSerializer>(IfcUtil::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
 #endif
 #ifdef WITH_GLTF
 	} else if (output_extension == GLB) {
-		serializer = boost::make_shared<GltfSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
+		serializer = boost::make_shared<GltfSerializer>(IfcUtil::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
 #endif
 #ifdef IFOPSH_WITH_OPENCASCADE
 	} else if (output_extension == STP) {
-		serializer = boost::make_shared<StepSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
+		serializer = boost::make_shared<StepSerializer>(IfcUtil::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
 	} else if (output_extension == IGS) {
 #if OCC_VERSION_HEX < 0x60900
 		// According to https://tracker.dev.opencascade.org/view.php?id=25689 something has been fixed in 6.9.0
 		IGESControl_Controller::Init(); // work around Open Cascade bug
 #endif
-		serializer = boost::make_shared<IgesSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
+		serializer = boost::make_shared<IgesSerializer>(IfcUtil::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
 	} else if (output_extension == SVG) {
-		settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
-		serializer = boost::make_shared<SvgSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
+		geometry_settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
+		serializer = boost::make_shared<SvgSerializer>(IfcUtil::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
 #ifdef WITH_HDF5
 	} else if (output_extension == HDF) {
-		settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
-		serializer = boost::make_shared<HdfSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
+		geometry_settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
+		serializer = boost::make_shared<HdfSerializer>(IfcUtil::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
 #endif
 #endif	
 	} else {
@@ -996,7 +843,7 @@ int main(int argc, char** argv) {
 		return EXIT_FAILURE;
 	}
 
-    if (use_element_hierarchy && output_extension != DAE) {
+    if (geometry_settings.get<ifcopenshell::geometry::settings::UseElementHierarchy>().get() && output_extension != DAE) {
         cerr_ << "[Error] --use-element-hierarchy can be used only with .dae output.\n";
         /// @todo Lots of duplicate error-and-exit code.
 		write_log(!quiet);
@@ -1007,17 +854,17 @@ int main(int argc, char** argv) {
 
     const bool is_tesselated = serializer->isTesselated(); // isTesselated() doesn't change at run-time
 	if (!is_tesselated) {
-		if (weld_vertices) {
+		if (geometry_settings.get<ifcopenshell::geometry::settings::WeldVertices>().get()) {
             Logger::Notice("Weld vertices setting ignored when writing non-tesselated output");
 		}
-        if (generate_uvs) {
+        if (geometry_settings.get<ifcopenshell::geometry::settings::GenerateUvs>().get()) {
             Logger::Notice("Generate UVs setting ignored when writing non-tesselated output");
         }
         if (center_model || center_model_geometry || model_offset) {
             Logger::Notice("Centering/offsetting model setting ignored when writing non-tesselated output");
         }
 
-        settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
+		geometry_settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
 	}
 
 	if (!serializer->ready()) {
@@ -1042,6 +889,8 @@ int main(int argc, char** argv) {
 		Logger::SetOutput(quiet ? nullptr : &cout_, vcounter.count > 1 ? &cout_ : &log_stream);
 	}
 
+	/*
+	// @todo
 	if (model_rotation) {
 		std::array<double, 4> &rotation = settings.rotation;
 		if (sscanf(rotation_str.c_str(), "%lf;%lf;%lf;%lf", &rotation[0], &rotation[1], &rotation[2], &rotation[3]) != 4) {
@@ -1104,10 +953,10 @@ int main(int argc, char** argv) {
         msg << std::setprecision (std::numeric_limits< double >::max_digits10) << "Using model offset (" << offset[0] << "," << offset[1] << "," << offset[2] << ")";
         Logger::Notice(msg.str());
     }
-
+	*/
 	std::unique_ptr<IfcGeom::Iterator> context_iterator;
 	if (!elems_from_adaptor) {
-		context_iterator.reset(new IfcGeom::Iterator(geometry_kernel, settings, ifc_file, filter_funcs, num_threads));
+		context_iterator.reset(new IfcGeom::Iterator(geometry_kernel, geometry_settings, ifc_file, filter_funcs, num_threads));
 	}	
 
 #if defined(WITH_HDF5) && defined(IFOPSH_WITH_OPENCASCADE)
@@ -1116,7 +965,7 @@ int main(int argc, char** argv) {
 		if (!vmap.count("cache-file")) {
 			cache_file = input_filename + CACHE + HDF;
 		}
-		cache.reset(new HdfSerializer(IfcUtil::path::to_utf8(cache_file), settings));
+		cache.reset(new HdfSerializer(IfcUtil::path::to_utf8(cache_file), geometry_settings, serializer_settings));
 		context_iterator->set_cache(cache.get());
 	}
 #endif
@@ -1209,7 +1058,7 @@ int main(int argc, char** argv) {
 	}
 #endif
 
-    if (context_iterator && convert_back_units) {
+    if (context_iterator && geometry_settings.get<ifcopenshell::geometry::settings::ConvertBackUnits>().get()) {
 		serializer->setUnitNameAndMagnitude(context_iterator->unit_name(), static_cast<float>(context_iterator->unit_magnitude()));
 	} else {
 		serializer->setUnitNameAndMagnitude("METER", 1.0f);
@@ -1315,7 +1164,7 @@ int main(int argc, char** argv) {
             output_temp_filename << "' for the conversion result.";
     }
 
-	if (validate && Logger::MaxSeverity() >= Logger::LOG_ERROR) {
+	if (geometry_settings.get<ifcopenshell::geometry::settings::ValidateQuantities>().get() && Logger::MaxSeverity() >= Logger::LOG_ERROR) {
 		Logger::Error("Errors encountered during processing.");
 		successful = false;
 	}
@@ -1666,12 +1515,12 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 		}
 	}
 
-	IfcGeom::IteratorSettings settings;
-	settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, false);
-	settings.set(IfcGeom::IteratorSettings::WELD_VERTICES, false);
-	settings.set(IfcGeom::IteratorSettings::SEW_SHELLS, true);
-	settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS, true);
-	settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
+	ifcopenshell::geometry::Settings settings;
+	settings.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = false;
+	settings.get<ifcopenshell::geometry::settings::WeldVertices>().value = false;
+	settings.get<ifcopenshell::geometry::settings::ReorientShells>().value = true;
+	settings.get<ifcopenshell::geometry::settings::ConvertBackUnits>().value = true;
+	settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
 
 	IfcGeom::Iterator context_iterator(settings, &f, {}, 1);
 
