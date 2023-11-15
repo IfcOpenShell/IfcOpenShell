@@ -2284,6 +2284,27 @@ class RemoveTextLiteral(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class AssignSelectedObjectAsProduct(bpy.types.Operator):
+    bl_idname = "bim.assign_selected_as_product"
+    bl_label = "Assign Selected Object As Product"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if len(context.selected_objects) != 2:
+            cls.poll_message_set({"ERROR"}, "2 objects need to be selected")
+            return False
+        return True
+
+    def execute(self, context):
+        objs = context.selected_objects[:]
+        objs.remove(context.active_object)
+        other_selected_object = next(obj for obj in context.selected_objects if obj != context.active_object)
+        context.active_object.BIMAssignedProductProperties.relating_product = other_selected_object
+        bpy.ops.bim.edit_assigned_product()
+        return {"FINISHED"}
+
+
 class EditAssignedProduct(bpy.types.Operator, Operator):
     bl_idname = "bim.edit_assigned_product"
     bl_label = "Edit Text Product"
