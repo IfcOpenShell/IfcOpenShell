@@ -496,7 +496,7 @@ def get_type_data(ifc_file, element):
     pset_metadata = {}
     pset_mapping = {
         "manufacturer": {"Manufacturer"},
-        "model_number": {"ModelNumber", "ArticleNumber", "ModelReference"},
+        "model_number": {"ModelNumber", "ArticleNumber", "ModelLabel"},
         "warranty_guarantor_parts": {"WarrantyGuarantorParts", "PointOfContact"},
         "warranty_guarantor_labor": {"WarrantyGuarantorLabor", "PointOfContact"},
         "warranty_description": {"WarrantyDescription", "WarrantyIdentifier"},
@@ -505,7 +505,7 @@ def get_type_data(ifc_file, element):
         "nominal_width": {"NominalWidth", "OverallWidth", "Width"},
         # https://github.com/opensourceBIM/COBie-plugins/blob/master/COBiePlugins/lib/IfcToCobieConfig.xml#L104
         "nominal_height": {"NominalHeight", "Height"},  # Original has a typo "Heght"
-        "model_reference": {"ModelLabel"},  # I believe this is what the intention was, not "ModelReference".
+        "model_reference": {"ModelReference"},
         "shape": {"Shape"},
         "size": {"Size"},
         "color": {"Color", "Colour"},
@@ -993,6 +993,7 @@ def get_owner_name(element):
 def get_created_on(element):
     if getattr(element, "OwnerHistory", None):
         return ifcopenshell.util.date.ifc2datetime(element.OwnerHistory.CreationDate).isoformat()
+    return "1900-12-31T23:59:59"  # Yes, really
 
 
 def get_external_system(element):

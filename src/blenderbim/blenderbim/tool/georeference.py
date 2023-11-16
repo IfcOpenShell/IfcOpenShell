@@ -174,15 +174,7 @@ class Georeference(blenderbim.core.tool.Georeference):
         )
 
     @classmethod
-    def get_map_conversion(cls):
-        if tool.Ifc.get_schema() == "IFC2X3":
-            return
-        for context in tool.Ifc.get().by_type("IfcGeometricRepresentationContext", include_subtypes=False):
-            if context.HasCoordinateOperation:
-                return context.HasCoordinateOperation[0]
-
-    @classmethod
-    def xyz2enh(cls, coordinates, map_conversion):
+    def xyz2enh(cls, coordinates):
         props = bpy.context.scene.BIMGeoreferenceProperties
         if props.has_blender_offset:
             coordinates = ifcopenshell.util.geolocation.xyz2enh(
@@ -196,53 +188,12 @@ class Georeference(blenderbim.core.tool.Georeference):
                 float(props.blender_x_axis_ordinate),
                 1.0,
             )
-        if map_conversion:
-            unit = map_conversion.TargetCRS.MapUnit
-            e = map_conversion.Eastings
-            n = map_conversion.Northings
-            h = map_conversion.OrthogonalHeight
-            if unit:
-                scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-                e = ifcopenshell.util.unit.convert(e, getattr(unit, "Prefix", None), unit.Name, None, None) / scale
-                n = ifcopenshell.util.unit.convert(n, getattr(unit, "Prefix", None), unit.Name, None, None) / scale
-                h = ifcopenshell.util.unit.convert(h, getattr(unit, "Prefix", None), unit.Name, None, None) / scale
-            coordinates = ifcopenshell.util.geolocation.xyz2enh(
-                coordinates[0],
-                coordinates[1],
-                coordinates[2],
-                e,
-                n,
-                h,
-                map_conversion.XAxisAbscissa or 1.0,
-                map_conversion.XAxisOrdinate or 0.0,
-                map_conversion.Scale or 1.0,
-            )
-        return coordinates
+        return ifcopenshell.util.geolocation.auto_xyz2enh(tool.Ifc.get(), *coordinates)
 
     @classmethod
-    def enh2xyz(cls, coordinates, map_conversion):
+    def enh2xyz(cls, coordinates):
+        coordinates = ifcopenshell.util.geolocation.auto_enh2xyz(tool.Ifc.get(), *coordinates)
         props = bpy.context.scene.BIMGeoreferenceProperties
-        if map_conversion:
-            unit = map_conversion.TargetCRS.MapUnit
-            e = map_conversion.Eastings
-            n = map_conversion.Northings
-            h = map_conversion.OrthogonalHeight
-            if unit:
-                scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-                e = ifcopenshell.util.unit.convert(e, getattr(unit, "Prefix", None), unit.Name, None, None) / scale
-                n = ifcopenshell.util.unit.convert(n, getattr(unit, "Prefix", None), unit.Name, None, None) / scale
-                h = ifcopenshell.util.unit.convert(h, getattr(unit, "Prefix", None), unit.Name, None, None) / scale
-            coordinates = ifcopenshell.util.geolocation.enh2xyz(
-                coordinates[0],
-                coordinates[1],
-                coordinates[2],
-                e,
-                n,
-                h,
-                map_conversion.XAxisAbscissa or 1.0,
-                map_conversion.XAxisOrdinate or 0.0,
-                map_conversion.Scale or 1.0,
-            )
         if props.has_blender_offset:
             coordinates = ifcopenshell.util.geolocation.enh2xyz(
                 coordinates[0],
@@ -316,7 +267,7 @@ class Georeference(blenderbim.core.tool.Georeference):
         rows = parse_csv(filepath)
         vertices = []
         for row in rows:
-            coordinates = cls.enh2xyz([float(row[0]), float(row[1]), float(row[2])], map_conversion)
+            coordinates = cls.enh2xyz([float(row[0]), float(row[1]), float(row[2])])
             vertices.append(coordinates)
 
         mesh = bpy.data.meshes.new("mesh")

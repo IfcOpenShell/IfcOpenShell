@@ -61,7 +61,7 @@ class Usecase:
             wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
 
             # Let's construct that wall!
-            ifcopenshell.api.run("sequence.assign_product", relating_product=wall, related_object=task)
+            ifcopenshell.api.run("sequence.assign_product", model, relating_product=wall, related_object=task)
         """
         self.file = file
         self.settings = {

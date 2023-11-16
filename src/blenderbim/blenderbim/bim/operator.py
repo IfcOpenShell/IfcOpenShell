@@ -237,7 +237,7 @@ class FileAssociate(bpy.types.Operator):
         # tried to do the regitsry change from powershell/cmd - but even admin rights are not enough
         # this is why we're using .reg
         reg_change_path = os.path.join(src_dir, "windows_bbim_association.reg")
-        subprocess.run(["cmd", "/c", reg_change_path])
+        subprocess.run(["cmd", "/c", "call", reg_change_path])
 
         ps_script_path = os.path.join(src_dir, "windows_bbim_association.ps1")
         # NOTE: call powershell with RunAs to get admin rights from user
@@ -816,6 +816,10 @@ def update_enum_property_search_prop(self, context):
         if prop.name == self.dummy_name:
             setattr(context.data, self.prop_name, self.collection_identifiers[i].name)
             predefined_type = self.collection_predefined_types[i].name
+            if self.first_launch:
+                self.first_launch = False
+            else:
+                context.window.screen = context.window.screen
             if predefined_type:
                 try:
                     setattr(context.data, "ifc_predefined_type", predefined_type)
@@ -828,6 +832,7 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
     bl_idname = "bim.enum_property_search"
     bl_label = "Search For Property"
     bl_options = {"REGISTER", "UNDO"}
+    first_launch: bpy.props.BoolProperty(default=True, options={"SKIP_SAVE"})
     dummy_name: bpy.props.StringProperty(name="Property", update=update_enum_property_search_prop)
     collection_names: bpy.props.CollectionProperty(type=StrProperty)
     collection_identifiers: bpy.props.CollectionProperty(type=StrProperty)

@@ -27,8 +27,8 @@ import ifcopenshell.util.element
 
 class Material(blenderbim.core.tool.Material):
     @classmethod
-    def add_default_material_object(cls):
-        return bpy.data.materials.new("Default")
+    def add_default_material_object(cls, name):
+        return bpy.data.materials.new(name or "Default")
 
     @classmethod
     def delete_object(cls, obj):
@@ -80,6 +80,7 @@ class Material(blenderbim.core.tool.Material):
                     new.total_elements = len(
                         ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material)
                     )
+                    new.has_style = bool(material.HasRepresentation)
             return
         for material in materials:
             new = props.materials.add()

@@ -34,6 +34,7 @@ import blenderbim.core.drawing
 import blenderbim.tool as tool
 import blenderbim.bim.handler
 from mathutils import Vector, Matrix
+from time import time
 from blenderbim.bim import import_ifc
 from blenderbim.bim.ifc import IfcStore
 
@@ -66,9 +67,12 @@ class OverrideMeshSeparate(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         obj = context.active_object
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return
 
         # You cannot separate meshes if the representation is mapped.
-        relating_type = tool.Root.get_element_type(tool.Ifc.get_entity(obj))
+        relating_type = tool.Root.get_element_type(element)
         if relating_type and tool.Root.does_type_have_representations(relating_type):
             # We toggle edit mode to ensure that once representations are
             # unmapped, our Blender mesh only has a single user.
@@ -210,18 +214,22 @@ class SwitchRepresentation(bpy.types.Operator, Operator):
     should_switch_all_meshes: bpy.props.BoolProperty()
 
     def _execute(self, context):
-        target = tool.Ifc.get().by_id(self.ifc_definition_id).ContextOfItems
+        target_representation = tool.Ifc.get().by_id(self.ifc_definition_id)
+        target = target_representation.ContextOfItems
         is_subcontext = target.is_a("IfcGeometricRepresentationSubContext")
         for obj in set(context.selected_objects + [context.active_object]):
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
-            if is_subcontext:
-                representation = ifcopenshell.util.representation.get_representation(
-                    element, target.ContextType, target.ContextIdentifier, target.TargetView
-                )
+            if obj == context.active_object:
+                representation = target_representation
             else:
-                representation = ifcopenshell.util.representation.get_representation(element, target.ContextType)
+                if is_subcontext:
+                    representation = ifcopenshell.util.representation.get_representation(
+                        element, target.ContextType, target.ContextIdentifier, target.TargetView
+                    )
+                else:
+                    representation = ifcopenshell.util.representation.get_representation(element, target.ContextType)
             if not representation:
                 continue
             core.switch_representation(
@@ -465,7 +473,7 @@ class CopyRepresentation(bpy.types.Operator, Operator):
                 if not element:
                     continue
                 bm.to_mesh(obj.data)
-                old_rep = self.get_representation_by_context(element, geometric_context)
+                old_rep = tool.Geometry.get_representation_by_context(element, geometric_context)
                 if old_rep:
                     ifcopenshell.api.run(
                         "geometry.unassign_representation", tool.Ifc.get(), product=element, representation=old_rep
@@ -481,16 +489,6 @@ class CopyRepresentation(bpy.types.Operator, Operator):
                     ifc_representation_class=None,
                     profile_set_usage=None,
                 )
-
-    def get_representation_by_context(self, element, context):
-        if element.is_a("IfcProduct") and element.Representation:
-            for r in element.Representation.Representations:
-                if r.ContextOfItems == context:
-                    return r
-        elif element.is_a("IfcTypeProduct") and element.RepresentationMaps:
-            for r in element.RepresentationMaps:
-                if r.MappedRepresentation.ContextOfItems == context:
-                    return r.MappedRepresentation
 
 
 class OverrideDelete(bpy.types.Operator):
@@ -800,7 +798,8 @@ class OverrideDuplicateMove(bpy.types.Operator):
             new = blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
 
             # clean up the orphaned mesh with ifc id of the original object to avoid confusion
-            if new and temp_data:
+            # IfcGridAxis keeps the same mesh data (it's pointing to ifc id 0, so it's not a problem)
+            if new and temp_data and not new.is_a("IfcGridAxis"):
                 tool.Blender.remove_data_block(temp_data)
 
             if new:
@@ -913,14 +912,14 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
                         "pset.edit_pset",
                         tool.Ifc.get(),
                         pset=tool.Ifc.get().by_id(pset["id"]),
-                        properties={"Data": json.dumps(data)},
+                        properties={"Data": tool.Ifc.get().createIfcText(json.dumps(data))},
                     )
                 else:
                     ifcopenshell.api.run(
                         "pset.edit_pset",
                         tool.Ifc.get(),
                         pset=tool.Ifc.get().by_id(pset["id"]),
-                        properties={"Parent": parent.GlobalId, "Data": json.dumps(data)},
+                        properties={"Parent": parent.GlobalId, "Data": tool.Ifc.get().createIfcText(json.dumps(data))},
                     )
 
             else:
@@ -932,7 +931,7 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
                     "pset.edit_pset",
                     tool.Ifc.get(),
                     pset=pset,
-                    properties={"Parent": parent.GlobalId, "Data": json.dumps(data)},
+                    properties={"Parent": parent.GlobalId, "Data": tool.Ifc.get().createIfcText(json.dumps(data))},
                 )
 
         def add_child_to_assembly_data(new_entity):
@@ -946,7 +945,7 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
                 "pset.edit_pset",
                 tool.Ifc.get(),
                 pset=tool.Ifc.get().by_id(parent_pset["id"]),
-                properties={"Data": json.dumps(data)},
+                properties={"Data": tool.Ifc.get().createIfcText(json.dumps(data))},
             )
 
         def create_data_structure(entity, level=-1):
@@ -1171,6 +1170,7 @@ class RefreshAggregate(bpy.types.Operator):
         return {"FINISHED"}
 
     def _execute(self, context):
+        refresh_start_time = time()
         self.new_active_obj = None
         old_to_new = {}
 
@@ -1211,20 +1211,23 @@ class RefreshAggregate(bpy.types.Operator):
                                 "instance_of": [part.GlobalId],
                             }
                             data = [data_children]
-                            
+
                             pset = ifcopenshell.api.run(
-                                                "pset.add_pset", tool.Ifc.get(), product=part, name="BBIM_Aggregate_Data"
-                                            )
+                                "pset.add_pset", tool.Ifc.get(), product=part, name="BBIM_Aggregate_Data"
+                            )
                             ifcopenshell.api.run(
                                 "pset.edit_pset",
                                 tool.Ifc.get(),
                                 pset=pset,
-                                properties={"Parent": instance_entity.GlobalId, "Data": json.dumps(data)},
+                                properties={
+                                    "Parent": instance_entity.GlobalId,
+                                    "Data": tool.Ifc.get().createIfcText(json.dumps(data)),
+                                },
                             )
-                            
+
                             part_obj = tool.Ifc.get_object(part)
                             new_part = duplicate_objects(part_obj)
-                            
+
                             blenderbim.core.aggregate.assign_object(
                                 tool.Ifc,
                                 tool.Aggregate,
@@ -1233,34 +1236,37 @@ class RefreshAggregate(bpy.types.Operator):
                                 related_obj=tool.Ifc.get_object(new_part),
                             )
                             duplicate_children(new_part)
-                            
+
                 for part in parts:
                     pset = ifcopenshell.util.element.get_pset(part, "BBIM_Aggregate_Data")
                     if part.is_a("IfcElementAssembly"):
                         pass
-                        
+
                     else:
                         if not pset:
                             pset = ifcopenshell.api.run(
-                                                "pset.add_pset", tool.Ifc.get(), product=part, name="BBIM_Aggregate_Data"
-                                            )
+                                "pset.add_pset", tool.Ifc.get(), product=part, name="BBIM_Aggregate_Data"
+                            )
                         else:
                             pset = ifcopenshell.util.element.get_pset(part, "BBIM_Aggregate_Data")
                             pset = tool.Ifc.get().by_id(pset["id"])
-                        
+
                         data_children = {
                             "children": [],
                             "instance_of": [],
                         }
                         data = [data_children]
-                    
+
                         ifcopenshell.api.run(
                             "pset.edit_pset",
                             tool.Ifc.get(),
                             pset=pset,
-                            properties={"Parent": instance_entity.GlobalId, "Data": json.dumps(data)},
+                            properties={
+                                "Parent": instance_entity.GlobalId,
+                                "Data": tool.Ifc.get().createIfcText(json.dumps(data)),
+                            },
                         )
-                        
+
                         part_obj = tool.Ifc.get_object(part)
                         new_part = duplicate_objects(part_obj)
                         blenderbim.core.aggregate.assign_object(
@@ -1281,7 +1287,7 @@ class RefreshAggregate(bpy.types.Operator):
                 collection.objects.link(new_obj)
             obj.select_set(False)
             new_obj.select_set(True)
-            
+
             # This is needed to make sure the new object gets unlink from
             # the old object assembly collection
             new_obj.BIMObjectProperties.collection = None
@@ -1293,15 +1299,15 @@ class RefreshAggregate(bpy.types.Operator):
 
             if new_entity:
                 tool.Model.handle_array_on_copied_element(new_entity)
-                
+
                 if not new_entity.is_a("IfcElementAssembly"):
                     blenderbim.core.aggregate.unassign_object(
-                    tool.Ifc,
-                    tool.Aggregate,
-                    tool.Collector,
-                    relating_obj=obj,
-                    related_obj=tool.Ifc.get_object(new_entity),
-                )
+                        tool.Ifc,
+                        tool.Aggregate,
+                        tool.Collector,
+                        relating_obj=obj,
+                        related_obj=tool.Ifc.get_object(new_entity),
+                    )
 
                 old_to_new[tool.Ifc.get_entity(obj)] = [new_entity]
 
@@ -1323,7 +1329,6 @@ class RefreshAggregate(bpy.types.Operator):
         else:
             self.report({"INFO"}, "Object is not part of a IfcElementAssembly.")
             return {"FINISHED"}
-
 
         pset = ifcopenshell.util.element.get_pset(selected_root_entity, "BBIM_Aggregate_Data")
         if not pset:
@@ -1347,7 +1352,6 @@ class RefreshAggregate(bpy.types.Operator):
         for parent in parents:
             duplicate_children(parent)
 
-        
         # Remove connections with old objects
         for new in old_to_new.values():
             for connection in new[0].ConnectedTo:
@@ -1365,7 +1369,7 @@ class RefreshAggregate(bpy.types.Operator):
 
             new_obj = tool.Ifc.get_object(new[0])
 
-            matrix_diff =  Matrix.inverted(original_matrix) @ new_obj.matrix_world
+            matrix_diff = Matrix.inverted(original_matrix) @ new_obj.matrix_world
             new_matrix = selected_matrix @ matrix_diff
 
             new_obj.matrix_world = new_matrix
@@ -1376,6 +1380,9 @@ class RefreshAggregate(bpy.types.Operator):
 
         blenderbim.bim.handler.refresh_ui_data()
 
+        operator_time = time() - refresh_start_time
+        if operator_time > 10:
+            self.report({"INFO"}, "Refresh Aggregate was finished in {:.2f} seconds".format(operator_time))
         return {"FINISHED"}
 
 
@@ -1723,3 +1730,70 @@ class OverrideModeSetObject(bpy.types.Operator):
         if self.edited_objs:
             return context.window_manager.invoke_props_dialog(self)
         return self.execute(context)
+
+
+class FlipObject(bpy.types.Operator):
+    bl_idname = "bim.flip_object"
+    bl_label = "Flip Object"
+    bl_description = "Flip object's local axes, keep the position"
+    bl_options = {"REGISTER", "UNDO"}
+
+    flip_local_axes: bpy.props.EnumProperty(
+        name="Flip Local Axes", items=(("XY", "XY", ""), ("YZ", "YZ", ""), ("XZ", "XZ", "")), default="XY"
+    )
+
+    def execute(self, context):
+        for obj in context.selected_objects:
+            tool.Geometry.flip_object(obj, self.flip_local_axes)
+        return {"FINISHED"}
+
+
+class EnableEditingRepresentationItems(bpy.types.Operator, Operator):
+    bl_idname = "bim.enable_editing_representation_items"
+    bl_label = "Enable Editing Representation Items"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        obj = context.active_object
+
+        props = obj.BIMGeometryProperties
+        props.is_editing = True
+
+        props.items.clear()
+
+        if bpy.context.active_object.data and hasattr(bpy.context.active_object.data, "BIMMeshProperties"):
+            active_representation_id = bpy.context.active_object.data.BIMMeshProperties.ifc_definition_id
+            element = tool.Ifc.get().by_id(active_representation_id)
+            if not element.is_a("IfcShapeRepresentation"):
+                return
+            queue = list(element.Items)
+            while queue:
+                item = queue.pop()
+                if item.is_a("IfcMappedItem"):
+                    queue.extend(item.MappingSource.MappedRepresentation.Items)
+                else:
+                    new = props.items.add()
+                    new.name = item.is_a()
+                    new.ifc_definition_id = item.id()
+
+                    styles = []
+                    for inverse in tool.Ifc.get().get_inverse(item):
+                        if inverse.is_a("IfcStyledItem"):
+                            styles = inverse.Styles
+                            if styles and styles[0].is_a("IfcPresentationStyleAssignment"):
+                                styles = styles[0].Styles
+                            for style in styles:
+                                if style.is_a("IfcSurfaceStyle"):
+                                    new.surface_style = style.Name or "Unnamed"
+                        elif inverse.is_a("IfcPresentationLayerAssignment"):
+                            new.layer = inverse.Name or "Unnamed"
+
+
+class DisableEditingRepresentationItems(bpy.types.Operator, Operator):
+    bl_idname = "bim.disable_editing_representation_items"
+    bl_label = "Disable Editing Representation Items"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        obj = context.active_object
+        obj.BIMGeometryProperties.is_editing = False

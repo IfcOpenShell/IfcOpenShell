@@ -63,12 +63,16 @@ related information in ``shape.geometry``:
     location = matrix[:,3][0:3]
 
     # X Y Z of vertices in flattened list e.g. [v1x, v1y, v1z, v2x, v2y, v2z, ...]
+    # These vertices are local relative to the shape's transformation matrix.
     verts = shape.geometry.verts
 
     # Indices of vertices per edge e.g. [e1v1, e1v2, e2v1, e2v2, ...]
+    # If the geometry is mesh-like, edges contain the original edges.
+    # These may be quads or ngons and not necessarily triangles.
     edges = shape.geometry.edges
 
     # Indices of vertices per triangle face e.g. [f1v1, f1v2, f1v3, f2v1, f2v2, f2v3, ...]
+    # Note that faces are always triangles.
     faces = shape.geometry.faces
 
     # Since the lists are flattened, you may prefer to group them like so depending on your geometry kernel
@@ -101,6 +105,9 @@ related information in ``shape.geometry``:
 
     # Indices of material applied per triangle face e.g. [f1m, f2m, ...]
     material_ids = shape.geometry.material_ids
+
+    # IDs representation item per triangle face e.g. [f1i, f2i, ...]
+    item_ids = shape.geometry.item_ids
 
 Alternatively, you may choose to retrieve an OpenCASCADE BRep:
 

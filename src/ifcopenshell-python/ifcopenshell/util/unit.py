@@ -464,6 +464,8 @@ def get_unit_symbol(unit):
     if unit.is_a("IfcSIUnit"):
         symbol += prefix_symbols.get(unit.Prefix, "")
     symbol += unit_symbols.get(unit.Name.replace("METER", "METRE"), "?")
+    if unit.is_a("IfcContextDependentUnit") and unit.UnitType == "USERDEFINED":
+        symbol = unit.Name
     return symbol
 
 
@@ -504,8 +506,8 @@ def convert(value, from_prefix, from_unit, to_prefix, to_unit):
     :return: The converted value.
     :rtype: float
     """
-    if from_unit in si_conversions:
-        value *= si_conversions[from_unit]
+    if from_unit.lower() in si_conversions:
+        value *= si_conversions[from_unit.lower()]
     elif from_prefix:
         value *= get_prefix_multiplier(from_prefix)
         if "SQUARE" in from_unit:
@@ -513,8 +515,8 @@ def convert(value, from_prefix, from_unit, to_prefix, to_unit):
         elif "CUBIC" in from_unit:
             value *= get_prefix_multiplier(from_prefix)
             value *= get_prefix_multiplier(from_prefix)
-    if to_unit in si_conversions:
-        return value * (1 / si_conversions[to_unit])
+    if to_unit.lower() in si_conversions:
+        return value * (1 / si_conversions[to_unit.lower()])
     elif to_prefix:
         value *= 1 / get_prefix_multiplier(to_prefix)
         if "SQUARE" in from_unit:

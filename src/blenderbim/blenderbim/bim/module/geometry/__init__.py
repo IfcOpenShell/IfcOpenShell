@@ -22,7 +22,10 @@ from . import ui, prop, operator
 classes = (
     operator.AddRepresentation,
     operator.CopyRepresentation,
+    operator.DisableEditingRepresentationItems,
     operator.EditObjectPlacement,
+    operator.EnableEditingRepresentationItems,
+    operator.FlipObject,
     operator.GetRepresentationIfcParameters,
     operator.OverrideDelete,
     operator.OverrideDuplicateMove,
@@ -46,15 +49,20 @@ classes = (
     operator.SwitchRepresentation,
     operator.UpdateParametricRepresentation,
     operator.UpdateRepresentation,
+    prop.RepresentationItem,
     prop.BIMObjectGeometryProperties,
     prop.BIMGeometryProperties,
-    ui.BIM_PT_derived_placements,
+    ui.BIM_PT_placement,
     ui.BIM_PT_representations,
+    ui.BIM_PT_representation_items,
     ui.BIM_PT_connections,
     ui.BIM_PT_mesh,
+    ui.BIM_PT_derived_coordinates,
     ui.BIM_PT_workarounds,
     ui.BIM_MT_object_set_origin,
     ui.BIM_MT_separate,
+    ui.BIM_MT_hotkey_separate,
+    ui.BIM_UL_representation_items,
 )
 
 
@@ -71,7 +79,6 @@ def register():
 
     bpy.types.Object.BIMGeometryProperties = bpy.props.PointerProperty(type=prop.BIMObjectGeometryProperties)
     bpy.types.Scene.BIMGeometryProperties = bpy.props.PointerProperty(type=prop.BIMGeometryProperties)
-    bpy.types.OBJECT_PT_transform.append(ui.BIM_PT_transform)
     bpy.types.VIEW3D_MT_object.append(ui.object_menu)
     bpy.types.OUTLINER_MT_object.append(ui.outliner_menu)
     bpy.types.VIEW3D_MT_object_context_menu.append(ui.object_menu)
@@ -85,7 +92,9 @@ def register():
         addon_keymaps.append((km, kmi))
         kmi = km.keymap_items.new("bim.override_object_duplicate_move_linked_macro", "D", "PRESS", alt=True)
         addon_keymaps.append((km, kmi))
-        kmi = km.keymap_items.new("bim.override_object_duplicate_move_aggregate_macro", "D", "PRESS", ctrl=True, shift=True)
+        kmi = km.keymap_items.new(
+            "bim.override_object_duplicate_move_aggregate_macro", "D", "PRESS", ctrl=True, shift=True
+        )
         addon_keymaps.append((km, kmi))
         kmi = km.keymap_items.new("bim.override_paste_buffer", "V", "PRESS", ctrl=True)
         addon_keymaps.append((km, kmi))
@@ -99,6 +108,9 @@ def register():
 
         km = wm.keyconfigs.addon.keymaps.new(name="Mesh", space_type="EMPTY")
         kmi = km.keymap_items.new("bim.override_mode_set_object", "TAB", "PRESS")
+        addon_keymaps.append((km, kmi))
+        kmi = km.keymap_items.new("wm.call_menu", "P", "PRESS")
+        kmi.properties.name = ui.BIM_MT_hotkey_separate.bl_idname
         addon_keymaps.append((km, kmi))
 
         km = wm.keyconfigs.addon.keymaps.new(name="Curve", space_type="EMPTY")
@@ -116,7 +128,6 @@ def register():
 
 def unregister():
     bpy.types.VIEW3D_MT_object.remove(ui.object_menu)
-    bpy.types.OBJECT_PT_transform.remove(ui.BIM_PT_transform)
     bpy.types.OUTLINER_MT_object.remove(ui.outliner_menu)
     bpy.types.VIEW3D_MT_object_context_menu.remove(ui.outliner_menu)
     bpy.types.VIEW3D_MT_edit_mesh.remove(ui.edit_mesh_menu)

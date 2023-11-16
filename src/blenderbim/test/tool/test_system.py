@@ -20,13 +20,69 @@ import bpy
 import ifcopenshell
 import blenderbim.core.tool
 import blenderbim.tool as tool
+import numpy as np
 from test.bim.bootstrap import NewFile
 from blenderbim.tool.system import System as subject
+from mathutils import Euler, Vector, Matrix
+from math import pi
 
 
 class TestImplementsTool(NewFile):
     def test_run(self):
         assert isinstance(subject(), blenderbim.core.tool.System)
+
+
+class TestAddPorts(NewFile):
+    def setup_mep_segment(self):
+        bpy.ops.bim.create_project()
+        bpy.ops.mesh.primitive_cube_add(size=1, location=(0, 0, 0))
+        obj = bpy.data.objects["Cube"]
+        obj.scale = (1, 1, 5)
+        bpy.ops.bim.assign_class(ifc_class="IfcDuctSegment", predefined_type="RIGIDSEGMENT", userdefined_type="")
+        element = tool.Ifc.get_entity(obj)
+        obj.matrix_world = Euler((pi / 2, 0, pi / 2)).to_matrix().to_4x4() @ obj.matrix_world
+        # move origin
+        for v in obj.data.vertices:
+            v.co += Vector((0, 0, 2.5))
+        return obj, element
+
+    def check_ports_matrices(self, ports, expected_matrices):
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        for port, expected_matrix in zip(ports, expected_matrices, strict=True):
+            port_matrix = tool.Model.get_element_matrix(port)
+            port_matrix.translation *= si_conversion
+            assert np.allclose(port_matrix, expected_matrix, atol=1.0e-5)
+
+    def test_run(self):
+        # default use
+        obj, element = self.setup_mep_segment()
+        ports = subject.add_ports(obj)
+        assert len(subject.get_ports(element)) == len(ports)
+        self.check_ports_matrices(ports, (obj.matrix_world, obj.matrix_world @ Matrix.Translation((0, 0, 5))))
+
+        # skip end port
+        obj, element = self.setup_mep_segment()
+        ports = subject.add_ports(obj, add_end_port=False)
+        self.check_ports_matrices(ports, (obj.matrix_world,))
+
+        # skip start port
+        obj, element = self.setup_mep_segment()
+        ports = subject.add_ports(obj, add_start_port=False)
+        self.check_ports_matrices(ports, (obj.matrix_world @ Matrix.Translation((0, 0, 5)),))
+
+        # position end port
+        obj, element = self.setup_mep_segment()
+        ports = subject.add_ports(obj, end_port_pos=Vector((1, 2, 3)))
+        translated_matrix = obj.matrix_world.copy()
+        translated_matrix.translation = (1, 2, 3)
+        self.check_ports_matrices(ports, (obj.matrix_world, translated_matrix))
+
+        # offset end port
+        obj, element = self.setup_mep_segment()
+        ports = subject.add_ports(obj, offset_end_port=Vector((0, 0, 1)))
+        translated_matrix = obj.matrix_world.copy()
+        translated_matrix.translation = (5, 0, 1)
+        self.check_ports_matrices(ports, (obj.matrix_world, translated_matrix))
 
 
 class TestCreateEmptyAtCursorWithElementOrientation(NewFile):
@@ -53,9 +109,9 @@ class TestDeleteElementObjects(NewFile):
 
 class TestDisableEditingSystem(NewFile):
     def test_run(self):
-        bpy.context.scene.BIMSystemProperties.active_system_id = 10
+        bpy.context.scene.BIMSystemProperties.edited_system_id = 10
         subject.disable_editing_system()
-        assert bpy.context.scene.BIMSystemProperties.active_system_id == 0
+        assert bpy.context.scene.BIMSystemProperties.edited_system_id == 0
 
 
 class TestDisableSystemEditingUI(NewFile):
@@ -177,7 +233,11 @@ class TestLoadPorts(NewFile):
         ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
         ifcopenshell.api.run("unit.assign_unit", ifc)
         tool.Ifc().set(ifc)
+
         element = ifc.createIfcChiller()
+        obj = bpy.data.objects.new("Object", None)
+        tool.Ifc.link(element, obj)
+
         port = ifc.createIfcDistributionPort()
         subject.load_ports(element, [port])
         obj = tool.Ifc.get_object(port)
@@ -215,5 +275,32 @@ class TestSetActiveSystem(NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc().set(ifc)
         system = ifcopenshell.api.run("system.add_system", ifc, ifc_class="IfcSystem")
-        subject.set_active_system(system)
-        assert bpy.context.scene.BIMSystemProperties.active_system_id == system.id()
+        subject.set_active_edited_system(system)
+        assert bpy.context.scene.BIMSystemProperties.edited_system_id == system.id()
+
+
+class TestFlowElementAndControls(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        flow_element = ifc.createIfcFlowSegment()
+        flow_control = ifc.createIfcController()
+        flow_control1 = ifc.createIfcController()
+
+        assert len(subject.get_flow_element_controls(flow_element)) == 0
+        assert subject.get_flow_control_flow_element(flow_control) == None
+
+        ifcopenshell.api.run(
+            "system.assign_flow_control",
+            ifc,
+            related_flow_control=flow_control,
+            relating_flow_element=flow_element,
+        )
+        ifcopenshell.api.run(
+            "system.assign_flow_control",
+            ifc,
+            related_flow_control=flow_control1,
+            relating_flow_element=flow_element,
+        )
+        controls = subject.get_flow_element_controls(flow_element)
+        assert set(controls) == set((flow_control, flow_control1))
+        assert subject.get_flow_control_flow_element(flow_control) == flow_element

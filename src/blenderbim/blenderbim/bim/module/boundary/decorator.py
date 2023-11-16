@@ -62,14 +62,14 @@ class BoundaryDecorator:
         gpu.state.point_size_set(6)
         gpu.state.blend_set("ALPHA")
 
-        self.line_shader = gpu.shader.from_builtin("3D_POLYLINE_UNIFORM_COLOR")
+        self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
         self.line_shader.bind()  # required to be able to change uniforms of the shader
         # POLYLINE_UNIFORM_COLOR specific uniforms
         self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
         self.line_shader.uniform_float("lineWidth", 2.0)
 
         # general shader
-        self.shader = gpu.shader.from_builtin("3D_UNIFORM_COLOR")
+        self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
 
         selected_vertices = []
         selected_edges = []

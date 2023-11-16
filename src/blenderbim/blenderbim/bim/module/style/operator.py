@@ -16,15 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import bpy
+import blenderbim.bim.helper
 import blenderbim.bim.handler
 import blenderbim.tool as tool
 import blenderbim.core.style as core
 import ifcopenshell.util.representation
+from pathlib import Path
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.style.data import StylesData, StyleAttributesData
-from pathlib import Path
-import os
 
 
 class UpdateStyleColours(bpy.types.Operator, tool.Ifc.Operator):
@@ -99,9 +100,16 @@ class EnableEditingStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_style"
     bl_label = "Enable Editing Style"
     bl_options = {"REGISTER", "UNDO"}
+    style: bpy.props.IntProperty(default=0)
 
     def _execute(self, context):
-        core.enable_editing_style(tool.Style, obj=context.active_object.active_material)
+        props = bpy.context.scene.BIMStylesProperties
+        style = tool.Ifc.get().by_id(self.style)
+        props.is_editing_style = style.id()
+        props.is_editing_class = "IfcSurfaceStyle"
+        attributes = props.attributes
+        attributes.clear()
+        blenderbim.bim.helper.import_attributes2(style, attributes)
 
 
 class DisableEditingStyle(bpy.types.Operator, tool.Ifc.Operator):
@@ -110,7 +118,8 @@ class DisableEditingStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Disable Editing Style"
 
     def _execute(self, context):
-        core.disable_editing_style(tool.Style, obj=context.active_object.active_material)
+        props = bpy.context.scene.BIMStylesProperties
+        props.is_editing_style = 0
 
 
 class EditStyle(bpy.types.Operator, tool.Ifc.Operator):
@@ -119,7 +128,12 @@ class EditStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.edit_style(tool.Ifc, tool.Style, obj=context.active_object.active_material)
+        props = bpy.context.scene.BIMStylesProperties
+        style = tool.Ifc.get().by_id(props.is_editing_style)
+        attributes = blenderbim.bim.helper.export_attributes(props.attributes)
+        ifcopenshell.api.run("style.edit_presentation_style", tool.Ifc.get(), style=style, attributes=attributes)
+        props.is_editing_style = 0
+        core.load_styles(tool.Style, style_type=props.style_type)
 
 
 class UpdateCurrentStyle(bpy.types.Operator):
@@ -415,3 +429,240 @@ class ClearTextureMapPath(bpy.types.Operator):
         props = context.material.BIMStyleProperties
         setattr(props, self.texture_map_prop, "")
         return {"FINISHED"}
+
+
+class EnableAddingPresentationStyle(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.enable_adding_presentation_style"
+    bl_label = "Enable Add Presentation Style"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = bpy.context.scene.BIMStylesProperties
+        props.is_adding = True
+
+
+class DisableAddingPresentationStyle(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.disable_adding_presentation_style"
+    bl_label = "Disable Add Presentation Style"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = bpy.context.scene.BIMStylesProperties
+        props.is_adding = False
+
+
+class AddPresentationStyle(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_presentation_style"
+    bl_label = "Add Presentation Style"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = bpy.context.scene.BIMStylesProperties
+        if props.style_type == "IfcSurfaceStyle":
+            style = ifcopenshell.api.run("style.add_style", tool.Ifc.get(), name=props.style_name)
+            if props.surface_style_class in ("IfcSurfaceStyleShading", "IfcSurfaceStyleRendering"):
+                surface_style = ifcopenshell.api.run(
+                    "style.add_surface_style",
+                    tool.Ifc.get(),
+                    style=style,
+                    ifc_class=props.surface_style_class,
+                    attributes={
+                        "SurfaceColour": {
+                            "Name": None,
+                            "Red": props.surface_colour[0],
+                            "Green": props.surface_colour[1],
+                            "Blue": props.surface_colour[2],
+                        }
+                    },
+                )
+                if props.surface_style_class == "IfcSurfaceStyleRendering":
+                    surface_style.ReflectanceMethod = "NOTDEFINED"
+            material = bpy.data.materials.new(style.Name)
+            tool.Ifc.link(style, material)
+            material.use_fake_user = True
+            if surface_style.is_a("IfcSurfaceStyleShading"):
+                tool.Loader.create_surface_style_shading(material, surface_style)
+            elif surface_style.is_a("IfcSurfaceStyleRendering"):
+                tool.Loader.create_surface_style_rendering(material, surface_style)
+        props.is_adding = False
+        core.load_styles(tool.Style, style_type=props.style_type)
+
+
+class EnableEditingSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.enable_editing_surface_style"
+    bl_label = "Enable Editing Surface Style"
+    bl_options = {"REGISTER", "UNDO"}
+    style: bpy.props.IntProperty(default=0)
+    ifc_class: bpy.props.StringProperty(default="")
+
+    def _execute(self, context):
+        props = bpy.context.scene.BIMStylesProperties
+        style = tool.Ifc.get().by_id(self.style)
+
+        shading = None
+
+        surface_style = None
+        for style2 in style.Styles:
+            if style2.is_a() == self.ifc_class:
+                surface_style = style2
+            if style2.is_a() == "IfcSurfaceStyleShading":
+                shading = style2
+
+        color_to_tuple = lambda x: (x.Red, x.Green, x.Blue)
+
+        if surface_style:
+            if self.ifc_class == "IfcSurfaceStyleShading":
+                props.surface_colour = color_to_tuple(surface_style.SurfaceColour)
+                props.transparency = surface_style.Transparency or 0.0
+            elif self.ifc_class == "IfcSurfaceStyleRendering":
+                props.surface_colour = color_to_tuple(surface_style.SurfaceColour)
+                props.transparency = surface_style.Transparency or 0.0
+
+                if surface_style.DiffuseColour:
+                    props.is_diffuse_colour_null = False
+                    if surface_style.DiffuseColour.is_a("IfcColourRgb"):
+                        props.diffuse_colour_class = "IfcColourRgb"
+                        props.diffuse_colour = color_to_tuple(surface_style.DiffuseColour)
+                    else:
+                        props.diffuse_colour_class = "IfcNormalisedRatioMeasure"
+                        props.diffuse_colour_ratio = surface_style.DiffuseColour.wrappedValue
+                else:
+                    props.is_diffuse_colour_null = False
+
+                if surface_style.SpecularColour:
+                    props.is_specular_colour_null = False
+                    if surface_style.SpecularColour.is_a("IfcColourRgb"):
+                        props.specular_colour_class = "IfcColourRgb"
+                        props.specular_colour = color_to_tuple(surface_style.SpecularColour)
+                    else:
+                        props.specular_colour_class = "IfcNormalisedRatioMeasure"
+                        props.specular_colour_ratio = surface_style.SpecularColour.wrappedValue
+                else:
+                    props.is_specular_colour_null = False
+
+                if surface_style.SpecularHighlight:
+                    props.is_specular_highlight_null = False
+                    if surface_style.SpecularHighlight.is_a("IfcSpecularRoughness"):
+                        props.specular_highlight = surface_style.SpecularHighlight.wrappedValue
+                    else:
+                        props.is_specular_highlight_null = False  # Exponent is meaningless
+                else:
+                    props.is_specular_highlight_null = True
+
+                props.reflectance_method = surface_style.ReflectanceMethod
+        elif shading:
+            props.surface_colour = color_to_tuple(shading.SurfaceColour)
+            props.transparency = shading.Transparency or 0.0
+
+        props.is_editing_style = self.style
+        props.is_editing_class = self.ifc_class
+
+
+class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.edit_surface_style"
+    bl_label = "Edit Surface Style"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        self.props = bpy.context.scene.BIMStylesProperties
+        self.style = tool.Ifc.get().by_id(self.props.is_editing_style)
+
+        self.surface_style = None
+        self.shading_style = None
+        self.rendering_style = None
+        for style2 in self.style.Styles:
+            if style2.is_a() == self.props.is_editing_class:
+                self.surface_style = style2
+            if style2.is_a() == "IfcSurfaceStyleShading":
+                self.shading_style = style2
+            if style2.is_a() == "IfcSurfaceStyleRendering":
+                self.rendering_style = style2
+
+        if self.surface_style:
+            self.edit_existing_style()
+        else:
+            self.add_new_style()
+
+        self.props.is_editing_style = 0
+        core.load_styles(tool.Style, style_type=self.props.style_type)
+
+    def edit_existing_style(self):
+        material = tool.Ifc.get_object(self.style)
+        if self.surface_style.is_a() == "IfcSurfaceStyleShading":
+            ifcopenshell.api.run(
+                "style.edit_surface_style",
+                tool.Ifc.get(),
+                style=self.surface_style,
+                attributes={
+                    "SurfaceColour": self.color_to_dict(self.props.surface_colour),
+                    "Transparency": self.props.transparency or None,
+                },
+            )
+            tool.Loader.create_surface_style_shading(material, self.surface_style)
+        elif self.surface_style.is_a() == "IfcSurfaceStyleRendering":
+            ifcopenshell.api.run(
+                "style.edit_surface_style",
+                tool.Ifc.get(),
+                style=self.surface_style,
+                attributes=self.get_rendering_attributes(),
+            )
+            tool.Loader.create_surface_style_rendering(material, self.surface_style)
+
+    def add_new_style(self):
+        material = tool.Ifc.get_object(self.style)
+        if self.props.is_editing_class == "IfcSurfaceStyleShading":
+            surface_style = ifcopenshell.api.run(
+                "style.add_surface_style",
+                tool.Ifc.get(),
+                style=self.style,
+                ifc_class="IfcSurfaceStyleShading",
+                attributes=self.get_shading_attributes(),
+            )
+            tool.Loader.create_surface_style_shading(material, surface_style)
+        elif self.props.is_editing_class == "IfcSurfaceStyleRendering":
+            surface_style = ifcopenshell.api.run(
+                "style.add_surface_style",
+                tool.Ifc.get(),
+                style=self.style,
+                ifc_class="IfcSurfaceStyleRendering",
+                attributes=self.get_rendering_attributes(),
+            )
+            tool.Loader.create_surface_style_rendering(material, surface_style)
+
+    def get_shading_attributes(self):
+        return {
+            "SurfaceColour": self.color_to_dict(self.props.surface_colour),
+            "Transparency": self.props.transparency or None,
+        }
+
+    def get_rendering_attributes(self):
+        if self.props.is_diffuse_colour_null:
+            diffuse_colour = None
+        elif self.props.diffuse_colour_class == "IfcColourRgb":
+            diffuse_colour = self.color_to_dict(self.props.diffuse_colour)
+        elif self.props.diffuse_colour_class == "IfcNormalisedRatioMeasure":
+            diffuse_colour = self.props.diffuse_colour_ratio
+
+        if self.props.is_specular_colour_null:
+            specular_colour = None
+        elif self.props.specular_colour_class == "IfcColourRgb":
+            specular_colour = self.color_to_dict(self.props.specular_colour)
+        elif self.props.specular_colour_class == "IfcNormalisedRatioMeasure":
+            specular_colour = self.props.specular_colour_ratio
+
+        if self.props.is_specular_highlight_null:
+            specular_highlight = None
+        else:
+            specular_highlight = {"SpecularRoughness": self.props.specular_highlight}
+
+        return {
+            "SurfaceColour": self.color_to_dict(self.props.surface_colour),
+            "Transparency": self.props.transparency or None,
+            "ReflectanceMethod": self.props.reflectance_method,
+            "DiffuseColour": diffuse_colour,
+            "SpecularColour": specular_colour,
+            "SpecularHighlight": specular_highlight,
+        }
+
+    def color_to_dict(self, x):
+        return {"Red": x[0], "Green": x[1], "Blue": x[2]}

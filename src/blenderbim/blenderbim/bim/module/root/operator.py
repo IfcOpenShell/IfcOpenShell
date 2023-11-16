@@ -66,6 +66,7 @@ class EnableReassignClass(bpy.types.Operator):
                 context.scene.BIMRootProperties.ifc_product = ifc_product
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         context.scene.BIMRootProperties.ifc_class = element.is_a()
+        context.scene.BIMRootProperties.relating_class_object = None
         if hasattr(element, "PredefinedType") and element.PredefinedType:
             context.scene.BIMRootProperties.ifc_predefined_type = element.PredefinedType
         return {"FINISHED"}
@@ -91,7 +92,10 @@ class ReassignClass(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        objects = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
+        if self.obj:
+            objects = [bpy.data.objects.get(self.obj)]
+        else:
+            objects = set(context.selected_objects + [context.active_object])
         self.file = IfcStore.get_file()
         predefined_type = context.scene.BIMRootProperties.ifc_predefined_type
         if predefined_type == "USERDEFINED":
@@ -100,14 +104,12 @@ class ReassignClass(bpy.types.Operator):
             product = ifcopenshell.api.run(
                 "root.reassign_class",
                 self.file,
-                **{
-                    "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
-                    "ifc_class": context.scene.BIMRootProperties.ifc_class,
-                    "predefined_type": predefined_type,
-                },
+                product=self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
+                ifc_class=context.scene.BIMRootProperties.ifc_class,
+                predefined_type=predefined_type,
             )
             obj.name = "{}/{}".format(product.is_a(), getattr(product, "Name", "None"))
-            IfcStore.link_element(product, obj)
+            tool.Ifc.link(product, obj)
             obj.BIMObjectProperties.is_reassigning_class = False
         return {"FINISHED"}
 
@@ -174,15 +176,21 @@ class UnlinkObject(bpy.types.Operator):
             if element:
                 if self.should_delete:
                     obj_copy = obj.copy()
+
+                    # copy object data, so it won't be removed by `delete_ifc_object`
+                    if obj.data:
+                        obj_copy.data = obj.data.copy()
+                        if obj.type == "MESH":
+                            obj_copy.data.BIMMeshProperties.ifc_definition_id = 0
+
                     for collection in obj.users_collection:
                         collection.objects.link(obj_copy)
                     tool.Geometry.delete_ifc_object(obj)
                     obj = obj_copy
                 if obj in IfcStore.edited_objs:
                     IfcStore.edited_objs.remove(obj)
-                IfcStore.unlink_element(obj=obj)
-                if obj.data:
-                    obj.data = obj.data.copy()
+                tool.Ifc.unlink(obj=obj)
+
             for material_slot in obj.material_slots:
                 if material_slot.material:
                     material_slot.material = material_slot.material.copy()

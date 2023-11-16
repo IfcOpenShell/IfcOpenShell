@@ -64,9 +64,10 @@ def get_facility_data(ifc_file, element):
         "Name": element.Name,
         "ProjectName": ifc_file.by_type("IfcProject")[0].Name,
         "SiteName": getattr(get_facility_parent(element, "IfcSite"), "Name", None),
-        "Category": get_classification(element),
-        "AuthorOrganizationName": get_owner_name(element),
-        "AuthorDate": get_owner_creation_date(element),
+        "ClassificationIdentification": get_classification_identification(element),
+        "ClassificationName": get_classification_name(element),
+        "OrganizationName": get_owner_name(element),
+        "CreationDate": get_owner_creation_date(element),
         "ModelSoftware": get_owner_application(element),
         "ModelProjectID": ifc_file.by_type("IfcProject")[0].GlobalId,
         "ModelSiteID": getattr(get_facility_parent(element, "IfcSite"), "GlobalId", None),
@@ -80,9 +81,10 @@ def get_facility_data(ifc_file, element):
 def get_storey_data(ifc_file, element):
     return {
         "Name": element.Name,
-        "Category": "Level",
-        "AuthorOrganizationName": get_owner_name(element),
-        "AuthorDate": get_owner_creation_date(element),
+        "ClassificationIdentification": "Level",
+        "ClassificationName": get_classification_name(element),
+        "OrganizationName": get_owner_name(element),
+        "CreationDate": get_owner_creation_date(element),
         "ModelSoftware": get_owner_application(element),
         "ModelObject": element.is_a(),
         "ModelID": element.GlobalId,
@@ -95,14 +97,16 @@ def get_space_data(ifc_file, element):
     return {
         "Name": element.Name,
         "Description": element.LongName,
-        "Category": get_classification(element),
+        "ClassificationIdentification": get_classification_identification(element),
+        "ClassificationName": get_classification_name(element),
         "LevelName": getattr(get_facility_parent(element, "IfcBuildingStorey"), "Name", None),
-        "AuthorOrganizationName": get_owner_name(element),
-        "AuthorDate": get_owner_creation_date(element),
+        "OrganizationName": get_owner_name(element),
+        "CreationDate": get_owner_creation_date(element),
         "ModelSoftware": get_owner_application(element),
         "ModelID": element.GlobalId,
-        "AreaGross": get_property(psets, "Qto_SpaceBaseQuantities", "GrossFloorArea", decimals=2),
-        "AreaNet": get_property(psets, "Qto_SpaceBaseQuantities", "NetFloorArea", decimals=2),
+        "FinishCeilingHeight": get_property(psets, "Qto_SpaceBaseQuantities", "FinishCeilingHeight", decimals=2),
+        "GrossFloorArea": get_property(psets, "Qto_SpaceBaseQuantities", "GrossFloorArea", decimals=2),
+        "NetFloorArea": get_property(psets, "Qto_SpaceBaseQuantities", "NetFloorArea", decimals=2),
     }
 
 
@@ -111,8 +115,8 @@ def get_zone_data(ifc_file, element):
     return {
         "Name": zone.Name,
         "SpaceName": space.Name,
-        "AuthorOrganizationName": get_owner_name(zone),
-        "AuthorDate": get_owner_creation_date(zone),
+        "OrganizationName": get_owner_name(zone),
+        "CreationDate": get_owner_creation_date(zone),
         "ModelSoftware": get_owner_application(zone),
         "ModelID": zone.GlobalId,
     }
@@ -123,9 +127,10 @@ def get_element_type_data(ifc_file, element):
     return {
         "Name": element.Name,
         "Description": element.Description,
-        "Category": get_classification(element),
-        "AuthorOrganizationName": get_owner_name(element),
-        "AuthorDate": get_owner_creation_date(element),
+        "ClassificationIdentification": get_classification_identification(element),
+        "ClassificationName": get_classification_name(element),
+        "OrganizationName": get_owner_name(element),
+        "CreationDate": get_owner_creation_date(element),
         "ModelSoftware": get_owner_application(element),
         "ModelObject": "{}[{}]".format(element.is_a(), ifcopenshell.util.element.get_predefined_type(element)),
         "ModelID": element.GlobalId,
@@ -149,8 +154,8 @@ def get_element_data(ifc_file, element):
         "TypeName": ifcopenshell.util.element.get_type(element).Name,
         "SpaceName": space_name,
         "SystemName": system,
-        "AuthorOrganizationName": get_owner_name(element),
-        "AuthorDate": get_owner_creation_date(element),
+        "OrganizationName": get_owner_name(element),
+        "CreationDate": get_owner_creation_date(element),
         "ModelSoftware": get_owner_application(element),
         "ModelObject": "{}[{}]".format(element.is_a(), ifcopenshell.util.element.get_predefined_type(element)),
         "ModelID": element.GlobalId,
@@ -169,9 +174,10 @@ def get_system_data(ifc_file, element):
     return {
         "Name": element.Name,
         "Description": element.Description,
-        "Category": get_classification(element),
-        "AuthorOrganizationName": get_owner_name(element),
-        "AuthorDate": get_owner_creation_date(element),
+        "ClassificationIdentification": get_classification_identification(element),
+        "ClassificationName": get_classification_name(element),
+        "OrganizationName": get_owner_name(element),
+        "CreationDate": get_owner_creation_date(element),
         "ModelSoftware": get_owner_application(element),
         "ModelID": element.GlobalId,
     }
@@ -205,12 +211,18 @@ def get_facility_parent(element, ifc_class):
         parent = ifcopenshell.util.element.get_aggregate(parent)
 
 
-def get_classification(element):
+def get_classification_identification(element):
     references = list(ifcopenshell.util.classification.get_references(element))
     if references:
         if hasattr(references[0], "Identification"):
-            return "{}:{}".format(references[0].Identification, references[0].Name)
-        return "{}:{}".format(references[0].ItemReference, references[0].Name)
+            return references[0].Identification
+        return references[0].ItemReference
+
+
+def get_classification_name(element):
+    references = list(ifcopenshell.util.classification.get_references(element))
+    if references:
+        return references[0].Name
 
 
 def get_property(psets, pset_name, prop_name, decimals=None):
@@ -239,9 +251,10 @@ config = {
                 "Name",
                 "ProjectName",
                 "SiteName",
-                "Category",
-                "AuthorOrganizationName",
-                "AuthorDate",
+                "ClassificationIdentification",
+                "ClassificationName",
+                "OrganizationName",
+                "CreationDate",
                 "ModelSoftware",
                 "ModelProjectID",
                 "ModelSiteID",
@@ -259,9 +272,10 @@ config = {
             "keys": ["Name"],
             "headers": [
                 "Name",
-                "Category",
-                "AuthorOrganizationName",
-                "AuthorDate",
+                "ClassificationIdentification",
+                "ClassificationName",
+                "OrganizationName",
+                "CreationDate",
                 "ModelSoftware",
                 "ModelObject",
                 "ModelID",
@@ -277,14 +291,16 @@ config = {
             "headers": [
                 "Name",
                 "Description",
-                "Category",
+                "ClassificationIdentification",
+                "ClassificationName",
                 "LevelName",
-                "AuthorOrganizationName",
-                "AuthorDate",
+                "OrganizationName",
+                "CreationDate",
                 "ModelSoftware",
                 "ModelID",
-                "AreaGross",
-                "AreaNet",
+                "FinishCeilingHeight",
+                "GrossFloorArea",
+                "NetFloorArea",
             ],
             "colours": "ppprreeess",
             "sort": [{"name": "LevelName", "order": "ASC"}, {"name": "Name", "order": "ASC"}],
@@ -293,7 +309,7 @@ config = {
         },
         "Zones": {
             "keys": ["Name", "SpaceName"],
-            "headers": ["Name", "SpaceName", "AuthorOrganizationName", "AuthorDate", "ModelSoftware", "ModelID"],
+            "headers": ["Name", "SpaceName", "OrganizationName", "CreationDate", "ModelSoftware", "ModelID"],
             "colours": "prreee",
             "sort": [{"name": "Name", "order": "ASC"}],
             "get_category_elements": get_zones,
@@ -304,9 +320,10 @@ config = {
             "headers": [
                 "Name",
                 "Description",
-                "Category",
-                "AuthorOrganizationName",
-                "AuthorDate",
+                "ClassificationIdentification",
+                "ClassificationName",
+                "OrganizationName",
+                "CreationDate",
                 "ModelSoftware",
                 "ModelObject",
                 "ModelID",
@@ -329,8 +346,8 @@ config = {
                 "TypeName",
                 "SpaceName",
                 "SystemName",
-                "AuthorOrganizationName",
-                "AuthorDate",
+                "OrganizationName",
+                "CreationDate",
                 "ModelSoftware",
                 "ModelObject",
                 "ModelID",
@@ -353,9 +370,10 @@ config = {
             "headers": [
                 "Name",
                 "Description",
-                "Category",
-                "AuthorOrganizationName",
-                "AuthorDate",
+                "ClassificationIdentification",
+                "ClassificationName",
+                "OrganizationName",
+                "CreationDate",
                 "ModelSoftware",
                 "ModelID",
             ],

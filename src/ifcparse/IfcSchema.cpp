@@ -124,6 +124,9 @@ void IfcParse::register_schema(schema_definition* s) {
 #ifdef HAS_SCHEMA_4x3_add1
 #include "../ifcparse/Ifc4x3_add1.h"
 #endif
+#ifdef HAS_SCHEMA_4x3_add2
+#include "../ifcparse/Ifc4x3_add2.h"
+#endif
 
 const IfcParse::schema_definition* IfcParse::schema_by_name(const std::string& name) {
 	// TODO: initialize automatically somehow
@@ -159,6 +162,9 @@ const IfcParse::schema_definition* IfcParse::schema_by_name(const std::string& n
 #endif
 #ifdef HAS_SCHEMA_4x3_add1
    Ifc4x3_add1::get_schema();
+#endif
+#ifdef HAS_SCHEMA_4x3_add2
+   Ifc4x3_add2::get_schema();
 #endif
 
 	std::map<std::string, const IfcParse::schema_definition*>::const_iterator it = schemas.find(boost::to_upper_copy(name));
@@ -216,6 +222,9 @@ void IfcParse::clear_schemas() {
 #endif
 #ifdef HAS_SCHEMA_4x3_add1
 	Ifc4x3_add1::clear_schema();
+#endif
+#ifdef HAS_SCHEMA_4x3_add2
+	Ifc4x3_add2::clear_schema();
 #endif
 
 	// clear any remaining registered schemas
