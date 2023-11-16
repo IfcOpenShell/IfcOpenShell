@@ -114,10 +114,8 @@ class RegenerateDistributionElement(bpy.types.Operator, tool.Ifc.Operator):
 
                 obj = tool.Ifc.get_object(element)
                 obj_pred = tool.Ifc.get_object(predecessor)
-                if tool.Ifc.is_moved(obj):
-                    blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
-                if tool.Ifc.is_moved(obj_pred):
-                    blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj_pred)
+                tool.Model.sync_object_ifc_position(obj)
+                tool.Model.sync_object_ifc_position(obj_pred)
 
                 port, port_pred = get_connected_ports_between(element, predecessor)
                 port_matrix_pred = tool.Model.get_element_matrix(port_pred)
@@ -990,11 +988,13 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
         start_object_rotation = start_object.matrix_world.to_quaternion().to_matrix()
         start_segment_data = MEPGenerator().get_segment_data(start_element)
         end_segment_data = MEPGenerator().get_segment_data(end_element)
+        # use id() to match by the exact vector objects and not by their values
+        # since vectors position could match
         points_ports_map = {
-            start_segment_data["start_point"]: start_segment_data["start_port"],
-            start_segment_data["end_point"]: start_segment_data["end_port"],
-            end_segment_data["start_point"]: end_segment_data["start_port"],
-            end_segment_data["end_point"]: end_segment_data["end_port"],
+            id(start_segment_data["start_point"]): start_segment_data["start_port"],
+            id(start_segment_data["end_point"]): start_segment_data["end_port"],
+            id(end_segment_data["start_point"]): end_segment_data["start_port"],
+            id(end_segment_data["end_point"]): end_segment_data["end_port"],
         }
 
         get_z_basis = lambda o: tool.Cad.get_basis_vector(o, 2)
@@ -1012,8 +1012,8 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
 
         # start_/end_segment_sign indicate
         # whether segments' z axes are directed towards the bend
-        start_port = points_ports_map[start_point]
-        end_port = points_ports_map[end_point]
+        start_port = points_ports_map[id(start_point)]
+        end_port = points_ports_map[id(end_point)]
         start_point_on_origin = start_point == start_segment_data["start_point"]
         start_connection = "ATSTART" if start_point_on_origin else "ATEND"
         start_segment_sign = -1 if start_point_on_origin else 1
