@@ -854,6 +854,12 @@ class Model(blenderbim.core.tool.Model):
         tool.Ifc.run("geometry.edit_object_placement", product=element, matrix=matrix, is_si=True)
 
     @classmethod
+    def sync_object_ifc_position(cls, obj):
+        """make sure IFC position will be in sync with the Blender object position, if object was moved in Blender"""
+        if tool.Ifc.is_moved(obj):
+            blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+
+    @classmethod
     def get_element_matrix(cls, element, keep_local=False):
         placement = element.ObjectPlacement
         if keep_local:
