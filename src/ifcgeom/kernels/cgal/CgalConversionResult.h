@@ -182,18 +182,9 @@ namespace ifcopenshell { namespace geometry {
 #endif
 
 #ifndef IFOPSH_SIMPLE_KERNEL
-		void to_poly() const {
-			if (!shape_) {
-				shape_.emplace();
-				nef_->convert_to_polyhedron(*shape_);
-			}
-		}
+		void to_poly() const;
 
-		void to_nef() const {
-			if (!nef_) {
-				nef_.emplace(*shape_);
-			}
-		}
+		void to_nef() const;
 
 		operator const CGAL::Nef_polyhedron_3<Kernel_>& () const { to_nef(); return *nef_; }
 		const CGAL::Nef_polyhedron_3<Kernel_>& nef() const { to_nef(); return *nef_; }
