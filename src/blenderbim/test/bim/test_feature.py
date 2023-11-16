@@ -113,14 +113,26 @@ def i_load_a_new_pset_template_file():
 def i_create_default_mep_types():
     model_props = bpy.context.scene.BIMModelProperties
 
+    # add couple segments types
     model_props.type_class = "IfcDuctSegmentType"
     model_props.type_name = "RECT1"
     model_props.type_template = "FLOW_SEGMENT_RECTANGULAR"
     bpy.ops.bim.add_type()
 
     model_props.type_template = "FLOW_SEGMENT_CIRCULAR"
-    model_props.type_name = "RECT2"
+    model_props.type_name = "CIRCLE1"
     bpy.ops.bim.add_type()
+
+    # add an actuator type
+    model_props.type_class = "IfcActuatorType"
+    model_props.type_template = "MESH"  # cube representation
+    model_props.type_name = "ACTUATOR"
+    bpy.ops.bim.add_type()
+    with bpy.context.temp_override(active_object=bpy.data.objects["IfcActuatorType/ACTUATOR"]):
+        bpy.ops.bim.add_port()
+        # port at cube's left side
+        bpy.data.objects["IfcDistributionPort/Port"].location = (-0.5, 0, 0)
+        bpy.ops.bim.hide_ports()
 
 
 @given("I add a cube")
