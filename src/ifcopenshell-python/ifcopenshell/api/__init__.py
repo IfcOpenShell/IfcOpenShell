@@ -17,7 +17,11 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 """High level user-oriented IFC authoring capabilities"""
-import json
+import os
+import inspect
+from pathlib import Path
+from collections import defaultdict
+from typing import DefaultDict
 import numpy
 import importlib
 import ifcopenshell
@@ -170,3 +174,17 @@ def extract_docs(module, usecase):
 
 
 add_schema_attributes_listener("material.add_layer", add_pre_listener)
+
+
+def list_actions() -> DefaultDict[str, list[str]]:
+    actions_to_exclude: list[str] = ["__init__", "settings", "multischema"]
+    api_actions: DefaultDict[str, list[str]] = defaultdict(list)
+    ios_dir = Path(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
+
+    for path in ios_dir.glob("*/*.py"):
+        if (action := path.stem) in actions_to_exclude:
+            continue
+        module = path.parent.name
+        api_actions[module].append(action)
+
+    return api_actions
