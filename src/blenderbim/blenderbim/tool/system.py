@@ -42,8 +42,7 @@ class System(blenderbim.core.tool.System):
         # make sure obj.dimensions and .matrix_world has valid data
         bpy.context.view_layer.update()
         # need to make sure .ObjectPlacement is also updated when we're going to add ports
-        if tool.Ifc.is_moved(obj):
-            blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+        tool.Model.sync_object_ifc_position(obj)
 
         mep_element = tool.Ifc.get_entity(obj)
         bbox = tool.Blender.get_object_bounding_box(obj)
@@ -350,20 +349,24 @@ class System(blenderbim.core.tool.System):
         return decoration_data
 
     @classmethod
-    def get_connected_elements(cls, element, elements=None):
-        if elements is None:
-            elements = set((element,))
+    def get_connected_elements(cls, element, traversed_elements=None):
+        """Recursively retrieves all connected elements to the given `element`.
+
+        `traversed_elements` is a set to store connected elements fetched recursively,
+        should be `None`"""
+        if traversed_elements is None:
+            traversed_elements = set((element,))
 
         connected_elements = ifcopenshell.util.system.get_connected_from(element)
         connected_elements += ifcopenshell.util.system.get_connected_to(element)
 
         for element in connected_elements:
-            if element in elements:
+            if element in traversed_elements:
                 continue
-            elements.add(element)
-            cls.get_connected_elements(element, elements)
+            traversed_elements.add(element)
+            cls.get_connected_elements(element, traversed_elements)
 
-        return elements
+        return traversed_elements
 
     @classmethod
     def is_mep_element(cls, element):

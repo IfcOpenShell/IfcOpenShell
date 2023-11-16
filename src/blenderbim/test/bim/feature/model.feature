@@ -529,13 +529,14 @@ Scenario: Create a door, undo and create a new door
 Scenario: Create a MEP transition
     Given an empty IFC project
     And I create default MEP types
-    And the variable "element_types" is "[str(e.id()) for e in {ifc}.by_type('IfcDuctSegmentType')]"
+    And the variable "segment_types" is "[str(e.id()) for e in {ifc}.by_type('IfcDuctSegmentType')]"
 
-    And I set "scene.BIMModelProperties.relating_type_id" to "{element_types}[0]"
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcDuctSegmentType"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{segment_types}[0]"
     And I press "bim.add_constr_type_instance"
     And I rename the object "IfcDuctSegment/DuctSegment" to "IfcDuctSegment/RectSegment"
 
-    And I set "scene.BIMModelProperties.relating_type_id" to "{element_types}[1]"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{segment_types}[1]"
     And I press "bim.add_constr_type_instance"
     And I rename the object "IfcDuctSegment/DuctSegment" to "IfcDuctSegment/CircleSegment"
 
@@ -557,14 +558,15 @@ Scenario: Create a MEP transition
 Scenario: Create a MEP bend between intersecting with different locations
     Given an empty IFC project
     And I create default MEP types
-    And the variable "element_types" is "[str(e.id()) for e in {ifc}.by_type('IfcDuctSegmentType')]"
+    And the variable "segment_types" is "[str(e.id()) for e in {ifc}.by_type('IfcDuctSegmentType')]"
 
-    And I set "scene.BIMModelProperties.relating_type_id" to "{element_types}[0]"
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcDuctSegmentType"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{segment_types}[0]"
     And I set "scene.BIMModelProperties.extrusion_depth" to "5.0"
     And I press "bim.add_constr_type_instance"
     And I rename the object "IfcDuctSegment/DuctSegment" to "IfcDuctSegment/Seg1"
 
-    And I set "scene.BIMModelProperties.relating_type_id" to "{element_types}[0]"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{segment_types}[0]"
     And I press "bim.add_constr_type_instance"
     And I rename the object "IfcDuctSegment/DuctSegment" to "IfcDuctSegment/Seg2"
     And the object "IfcDuctSegment/Seg2" is rotated by "0,0,90" deg
@@ -586,14 +588,15 @@ Scenario: Create a MEP bend between intersecting with different locations
 Scenario: Create a MEP bend between intersecting segments at the same location
     Given an empty IFC project
     And I create default MEP types
-    And the variable "element_types" is "[str(e.id()) for e in {ifc}.by_type('IfcDuctSegmentType')]"
+    And the variable "segment_types" is "[str(e.id()) for e in {ifc}.by_type('IfcDuctSegmentType')]"
 
-    And I set "scene.BIMModelProperties.relating_type_id" to "{element_types}[0]"
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcDuctSegmentType"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{segment_types}[0]"
     And I set "scene.BIMModelProperties.extrusion_depth" to "5.0"
     And I press "bim.add_constr_type_instance"
     And I rename the object "IfcDuctSegment/DuctSegment" to "IfcDuctSegment/Seg1"
 
-    And I set "scene.BIMModelProperties.relating_type_id" to "{element_types}[0]"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{segment_types}[0]"
     And I press "bim.add_constr_type_instance"
     And I rename the object "IfcDuctSegment/DuctSegment" to "IfcDuctSegment/Seg2"
     And the object "IfcDuctSegment/Seg2" is rotated by "0,0,90" deg
