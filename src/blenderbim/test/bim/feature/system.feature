@@ -200,7 +200,6 @@ Scenario: Connect MEP elements and regenerate
     And I press "bim.regenerate_distribution_element"
 
     # final check
-    # And I save sample test files and open in blender
     Then the object "IfcActuator/Actuator" is at "0.0,5.0,10"
     And the object "IfcDuctSegment/Seg1" is at "-6.0,5.0,10.0"
     And the object "IfcDuctSegment/Seg1" dimensions are "0.4,0.2,5.5"
