@@ -175,8 +175,8 @@ mapper = {
         'GrossWeight' : None,
     },
     'Qto_RoofBaseQuantities' : {
-        'GrossArea' : "get_gross_footprint_area",
-        'NetArea' : "get_net_footprint_area",
+        'GrossArea' : "get_gross_top_area",
+        'NetArea' : "get_net_top_area",
         'ProjectedArea' : None,
     },
     'Qto_ChimneyBaseQuantities' : {
