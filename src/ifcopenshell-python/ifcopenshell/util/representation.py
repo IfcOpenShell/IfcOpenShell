@@ -19,7 +19,7 @@
 from __future__ import annotations
 import numpy as np
 import ifcopenshell
-from typing import Any
+from typing import Any, Union
 from dataclasses import dataclass
 
 
@@ -99,7 +99,7 @@ class ClippingInfo:
     operand_type: str = "IfcHalfSpaceSolid"
 
     @classmethod
-    def parse(cls, raw_data: Any) -> ifcopenshell.entity_instance | ClippingInfo | None:
+    def parse(cls, raw_data: Any) -> Union[ifcopenshell.entity_instance, ClippingInfo, None]:
         """`raw_data` can be either:
         - IfcBooleanResult IFC entity
         - `ClippingInfo` instance
