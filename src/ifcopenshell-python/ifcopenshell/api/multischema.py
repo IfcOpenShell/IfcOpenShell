@@ -1,13 +1,12 @@
+from __future__ import annotations
 import ast
 import os
-import importlib
 import inspect
 import warnings
 from pathlib import Path
 from dataclasses import dataclass, field
 from functools import reduce
-from typing import Optional, Any, TypeVar
-from types import ModuleType, UnionType, GenericAlias
+from typing import Optional, Any
 import ifcopenshell
 from ifcopenshell.api import list_actions
 
@@ -21,6 +20,76 @@ def pascal_to_snake(txt: str) -> str:
 
 def snake_to_pascal(txt: str) -> str:
     return txt.replace("_", " ").title().replace(" ", "")
+
+
+def type_to_str(builtin_type: type) -> str:
+    candidates: list[str] = [el for el in dir(__builtins__) if getattr(__builtins__, el) == builtin_type]
+    if len(candidates) != 1:
+        raise ValueError(f"Type {builtin_type} not found on __builtins__")
+    return candidates[0]
+
+
+@dataclass(slots=True)
+class AstAnnotation:
+    def __call__(self) -> ast.expr:
+        ...
+
+    def __or__(self, other: AstAnnotation) -> AstAnnotation:
+        if self.__class__.__name__ == other.__class__.__name__ and self == other:
+            return self
+        return AstAnnotationUnion([self, other])
+
+
+@dataclass(slots=True)
+class AstAnnotationEntityInstance(AstAnnotation):
+    def __call__(self) -> ast.Attribute:
+        return ast.Attribute(
+            value=ast.Name(id="ifcopenshell", ctx=ast.Load()),
+            attr="entity_instance",
+            ctx=ast.Load()
+        )
+
+
+@dataclass(slots=True)
+class AstAnnotationName(AstAnnotation):
+    annotation_type: type
+
+    def __call__(self) -> ast.Name:
+        return ast.Name(id=type_to_str(self.annotation_type), ctx=ast.Load())
+
+
+@dataclass(slots=True)
+class AstAnnotationConstant(AstAnnotation):
+    annotation_value: Any
+
+    def __call__(self) -> ast.Constant:
+        return ast.Constant(value=self.annotation_value)
+
+
+@dataclass(slots=True)
+class AstAnnotationAggregation(AstAnnotation):
+    aggregation_type: type
+    aggregation_content: AstAnnotation
+
+    def __call__(self) -> ast.Subscript:
+        return ast.Subscript(
+            value=ast.Name(id=type_to_str(self.aggregation_type), ctx=ast.Load()),
+            slice=self.aggregation_content(),
+            ctx=ast.Load()
+        )
+
+
+@dataclass(slots=True)
+class AstAnnotationUnion(AstAnnotation):
+    annotations: list[AstAnnotation]
+    subscript_name: str = "Union"
+
+    def __call__(self) -> ast.Subscript:
+        return ast.Subscript(
+            value=ast.Name(id=self.subscript_name, ctx=ast.Load()),
+            slice=ast.Tuple(elts=[ann() for ann in self.annotations], ctx=ast.Load()),
+            ctx=ast.Load()
+        )
 
 
 @dataclass(slots=True)
@@ -39,10 +108,11 @@ class SchemaAttrParser:
         return wrapper.schema_by_name(self.version)
 
     @staticmethod
-    def ast_definition(name: str, annotation: str, value: Optional[Any] = None) -> ast.AnnAssign:
+    def ast_definition(name: str, annotation: AstAnnotation, value: Optional[Any] = None) -> ast.AnnAssign:
         kwargs = {
             "target": ast.Name(id=name, ctx=ast.Store()),
-            "annotation": ast.Name(id=annotation, ctx=ast.Load())
+            "annotation": annotation(),
+            "simple": 1
         }
         if value:
             kwargs["value"] = ast.Constant(value=value)
@@ -61,7 +131,6 @@ class SchemaAttrParser:
         name: str = pascal_to_snake(name_pascal)
         if name in self.exclude:
             return
-        # optional: bool = attribute.optional()
         default = self.defaults[name_pascal] if name_pascal in self.defaults else None
         type_of_attribute = attribute.type_of_attribute()
         if isinstance(type_of_attribute, wrapper.simple_type):
@@ -72,36 +141,39 @@ class SchemaAttrParser:
             annotation = self.parse_aggregation_type(type_of_attribute)
         else:
             warnings.warn(f"Unexpected type of attribute {type(type_of_attribute)}")
-            annotation = Any
+            annotation = AstAnnotationConstant(Any)
         return self.ast_definition(name, annotation, default)
 
     @staticmethod
-    def parse_simple_type(simple: wrapper.simple_type) -> type | UnionType:
+    def parse_simple_type(simple: wrapper.simple_type) -> AstAnnotation:
         return {
-            "string": str,
-            "logical": bool | None,
-            "boolean": bool,
-            "real": float,
-            "number": int | float,
-            "integer": int,
-            "binary": bytes
+            "string": AstAnnotationName(str),
+            "logical": AstAnnotationUnion([
+                AstAnnotationName(bool),
+                AstAnnotationConstant(None)
+            ]),
+            "boolean": AstAnnotationName(bool),
+            "real": AstAnnotationName(float),
+            "number": AstAnnotationUnion([
+                AstAnnotationName(int),
+                AstAnnotationName(float)
+            ]),
+            "integer": AstAnnotationName(int),
+            "binary": AstAnnotationName(bytes)
         }[simple.declared_type()]
 
-    def parse_named_type(self, named: wrapper.named_type) -> type | UnionType | GenericAlias:
+    def parse_named_type(self, named: wrapper.named_type) -> AstAnnotation:
         declared_type = named.declared_type()
         if isinstance(declared_type, wrapper.entity):
-            return ifcopenshell.entity_instance
+            return AstAnnotationEntityInstance()
         elif isinstance(declared_type, wrapper.type_declaration):
             return self.parse_type_declaration(declared_type)
         elif isinstance(declared_type, wrapper.select_type):
             return self.parse_select_type(declared_type)
         elif isinstance(declared_type, wrapper.enumeration_type):
-            return str
+            return AstAnnotationName(str)
 
-    def parse_type_declaration(
-            self, declaration: wrapper.type_declaration
-    ) -> type | UnionType | GenericAlias:
-
+    def parse_type_declaration(self, declaration: wrapper.type_declaration) -> AstAnnotation:
         declared_type = declaration.declared_type()
         if isinstance(declared_type, wrapper.simple_type):
             return self.parse_simple_type(declared_type)
@@ -112,7 +184,7 @@ class SchemaAttrParser:
         elif isinstance(declared_type, wrapper.type_declaration):
             return self.parse_type_declaration(declared_type)
 
-    def parse_aggregation_type(self, aggregation: wrapper.aggregation_type) -> UnionType | GenericAlias:
+    def parse_aggregation_type(self, aggregation: wrapper.aggregation_type) -> AstAnnotation:
         type_of_element = aggregation.type_of_element()
         type_of_aggregation = aggregation.type_of_aggregation_string()
 
@@ -124,27 +196,29 @@ class SchemaAttrParser:
             element_annotation = self.parse_aggregation_type(type_of_element)
         else:
             warnings.warn(f"Unexpected type of element {type(type_of_element)}")
-            element_annotation = Any
+            element_annotation = AstAnnotationConstant(Any)
 
         if type_of_aggregation == "list":  # ordered w/o repetition, flexible size
-            return list[element_annotation]
+            return AstAnnotationAggregation(list, element_annotation)
         elif type_of_aggregation == "set":  # unordered w/o repetition
-            return set[element_annotation]
+            return AstAnnotationAggregation(set, element_annotation)
         elif type_of_aggregation == "array":  # ordered and fixed size
             min_size: int = aggregation.bound1()
             max_size: int = aggregation.bound2()
-            annotations = [tuple[(element_annotation, ) * size] for size in (min_size, max_size) if size != -1]
-            return reduce(lambda a, b: a | b, annotations)
+            return AstAnnotationUnion(
+                [AstAnnotationUnion(annotations=[element_annotation for _ in range(size)], subscript_name="tuple")
+                 for size in (min_size, max_size) if size != -1]
+            )
 
-    def parse_select_type(self, select: wrapper.select_type) -> type | UnionType | GenericAlias:
-        annotations = set()
+    def parse_select_type(self, select: wrapper.select_type) -> AstAnnotation:
+        annotations: set[AstAnnotation] = set()
         for item in select.select_list():
             if isinstance(item, wrapper.entity):
-                annotations.add(ifcopenshell.entity_instance)
+                annotations.add(AstAnnotationEntityInstance())
             elif isinstance(item, wrapper.type_declaration):
                 annotations.add(self.parse_type_declaration(item))
             elif isinstance(item, wrapper.select_type):
-                annotations.union(set(self.parse_select_type(item).__args__))
+                annotations.union({self.parse_select_type(item)})
         return reduce(lambda a, b: a | b, annotations)
 
 
@@ -156,15 +230,20 @@ class SchemaApiActionBuilder(ast.NodeTransformer):
     output_dir: Path
 
     def __post_init__(self) -> None:
-        python_module: ModuleType = importlib.import_module(f"ifcopenshell.api.{self.module}.{self.action}")
-        source: str = inspect.getsource(python_module)
+        api_dir = Path(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
+        source_path = api_dir / self.module / f"{self.action}.py"
+        source: str = open(source_path, 'r').read()
         tree: ast.Module = ast.parse(source)
         updated_tree: ast.Module = self.visit(tree)
-        # print(ast.dump(updated_tree, indent=4))
-        updated_source = ast.unparse(updated_tree)
-        (self.output_dir / self.module).mkdir(exist_ok=True)
-        with open(self.output_dir / self.module / f"{self.action}.py", "w") as f:
-            f.write(updated_source)
+        try:
+            updated_source = ast.unparse(updated_tree)
+            (self.output_dir / self.module).mkdir(exist_ok=True)
+            with open(self.output_dir / self.module / f"{self.action}.py", "w") as f:
+                preamble = f"# DO NOT EDIT THIS AUTOGENERATED FILE\n"
+                preamble += f"# EDIT ifcopenshell.api.{self.module}.{self.action} instead\n\n"
+                f.write(preamble + updated_source)
+        except:
+            print(f"error unparsing {self.module}.{self.action}")
 
     def visit_ClassDef(self, node: ast.ClassDef) -> ast.ClassDef:
         attrs_decorator = self.get_schema_attrs_decorator(node)
@@ -175,9 +254,12 @@ class SchemaApiActionBuilder(ast.NodeTransformer):
         attr_parser = SchemaAttrParser(ifc_class=ifc_class, defaults=defaults, exclude=exclude, version=self.version)
         attr_nodes: list[ast.AnnAssign] = attr_parser()
 
+        found_assigns = False
         num_assigns = 0
         for idx, child in enumerate(ast.iter_child_nodes(node)):
-            if not isinstance(child, ast.AnnAssign):
+            if isinstance(child, ast.AnnAssign):
+                found_assigns = True
+            if not isinstance(child, ast.AnnAssign) and found_assigns:
                 num_assigns = idx
                 break
         for attr_node in attr_nodes:
