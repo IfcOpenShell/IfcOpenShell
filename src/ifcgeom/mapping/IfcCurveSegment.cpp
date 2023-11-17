@@ -275,10 +275,16 @@ class cant_adjuster : public segment_geometry_adjuster {
        auto l = get_length();
 
        for (int i = 0; i < 4; i++) {
-          p.col(i) = start_this.col(i) + (start_next.col(i) - start_this.col(i)) * u / l;
-          if (i < 3) {
-              p.col(i).normalize();
-          };
+          //p.col(i) = start_this.col(i) + (start_next.col(i) - start_this.col(i)) * u / l;
+          for (int j = 0; j < 3; j++) {
+              auto st = start_this.col(i)(j);
+              auto sn = start_next.col(i)(j);
+              auto result = st + (sn - st) * u / l;
+              p.col(i)(j) = result;
+          }
+          //if (i < 3) {
+          //    p.col(i).normalize();
+          //};
        }
     }
 
@@ -405,7 +411,7 @@ class curve_segment_evaluator {
                 //auto dx = run / l;
                 //auto dy = rise / l;
 
-                auto slope = fnSlope(u);
+                auto slope = fnSlope(b);
                 auto dx = signX(u) * cos(slope);
                 auto dy = signY(u) * sin(slope);
 
@@ -509,7 +515,7 @@ class curve_segment_evaluator {
       auto fn_x = [A, s](double t) -> double { return s * cos(PI * fabs(A) * t * t / (2 * fabs(A))); };
       auto fn_y = [A, s](double t) -> double { return s * sin(PI * fabs(A) * t * t / (2 * fabs(A))); };
       //auto fn_slope = [A](double t) -> double { return sqrt(PI) * t * t / (2 * abs(A)); };
-      auto fn_slope = [A](double t) -> double { return pow(t / A, 2) / 2; };
+      auto fn_slope = [A, s](double t) -> double { return pow(t*s / A, 2) / 2; };
 
       set_spiral_function(mapping_, c, s, sign_x, fn_x, sign_y, fn_y, fn_slope);
 	}

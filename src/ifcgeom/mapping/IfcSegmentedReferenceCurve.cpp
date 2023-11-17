@@ -50,7 +50,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSegmentedReferenceCurve* ins
 	}
 
 	auto composition = [gradient, cant](double u)->Eigen::Matrix4d {
-		auto xyz = gradient->evaluate(u);
+		auto g = gradient->evaluate(u);
 		auto c = cant->evaluate(u);
 
       // when cant results are combined with the gradient curve
@@ -59,10 +59,9 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSegmentedReferenceCurve* ins
       c.col(3)(0) = 0;
 
       std::swap(c.col(3)(1), c.col(3)(2));
-      //c.col(0).swap(c.col(1));
 
       Eigen::Matrix4d m;
-      m = xyz * c;
+      m = g * c;
       return m;
 	};
 
