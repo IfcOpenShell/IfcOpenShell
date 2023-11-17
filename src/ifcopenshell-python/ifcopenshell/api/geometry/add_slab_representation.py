@@ -27,7 +27,8 @@ class Usecase:
             "context": None,  # IfcGeometricRepresentationContext
             "depth": 0.2,
             "x_angle": 0,  # Radians
-            # Planes are defined as a matrix. The XY plane is the clipping boundary and +Z is removed.
+            # Planes are defined either by ClippingInfo objects
+            # or by dictionaries of arguments for `ClippingInfo.parse`
             "clippings": [],  # A list of planes that define clipping half space solids
         }
         for key, value in settings.items():
@@ -78,23 +79,12 @@ class Usecase:
     def apply_clippings(self, first_operand):
         while self.settings["clippings"]:
             clipping = self.settings["clippings"].pop()
-            second_operand = self.file.createIfcHalfSpaceSolid(
-                self.file.createIfcPlane(
-                    self.file.createIfcAxis2Placement3D(
-                        self.file.createIfcCartesianPoint(
-                            (
-                                self.convert_si_to_unit(clipping[0][3]),
-                                self.convert_si_to_unit(clipping[1][3]),
-                                self.convert_si_to_unit(clipping[2][3]),
-                            )
-                        ),
-                        self.file.createIfcDirection((clipping[0][2], clipping[1][2], clipping[2][2])),
-                        self.file.createIfcDirection((clipping[0][0], clipping[1][0], clipping[2][0])),
-                    )
-                ),
-                False,
-            )
-            first_operand = self.file.createIfcBooleanClippingResult("DIFFERENCE", first_operand, second_operand)
+            if isinstance(clipping, ifcopenshell.entity_instance):
+                new = ifcopenshell.util.element.copy(self.file, clipping)
+                new.FirstOperand = first_operand
+                first_operand = new
+            else:  # ClippingInfo
+                first_operand = clipping.apply(self.file, first_operand, self.settings["unit_scale"])
         return first_operand
 
     def convert_si_to_unit(self, co):
