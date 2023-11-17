@@ -821,9 +821,9 @@ class curve_segment_evaluator {
             m.col(3) = Eigen::Vector4d(x, y, 0.0, 1.0);
          } else if (segment_type == ST_VERTICAL) {
 				// rotate about the Y-axis (slope along u is dx, slope vertically is dy, vertical position is y)
-            m.col(0) = Eigen::Vector4d(dx, 0, -dy, 0);
+            m.col(0) = Eigen::Vector4d(dx, 0, dy, 0);
             m.col(1) = Eigen::Vector4d(0, 1, 0, 0);
-            m.col(2) = Eigen::Vector4d(dy, 0, dx, 0);
+            m.col(2) = Eigen::Vector4d(-dy, 0, dx, 0);
             m.col(3) = Eigen::Vector4d(0, 0, y, 1.0); // y is an elevation so store it as z
          } else if (segment_type == ST_CANT) {
                 Logger::Warning(std::runtime_error("Use of IfcPolynomialCurve for cant is not supported"));
