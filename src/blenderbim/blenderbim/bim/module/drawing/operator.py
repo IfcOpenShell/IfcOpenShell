@@ -2292,7 +2292,7 @@ class AssignSelectedObjectAsProduct(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         if len(context.selected_objects) != 2:
-            cls.poll_message_set({"ERROR"}, "2 objects need to be selected")
+            cls.poll_message_set("2 objects need to be selected")
             return False
         return True
 
