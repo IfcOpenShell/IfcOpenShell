@@ -97,6 +97,12 @@ class settings_mixin:
     def get(self, k):
         return self.get_(self.name(k))
 
+    def __getattr__(self, k):
+        if k in map(self.rname, self.setting_names()):
+            return k
+        else:
+            raise AttributeError("'Settings' object has no attribute '%s'" % k)
+
 
 class serializer_settings(settings_mixin, ifcopenshell_wrapper.SerializerSettings):
     pass

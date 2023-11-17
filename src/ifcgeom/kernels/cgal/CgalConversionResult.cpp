@@ -18,6 +18,21 @@ using ifcopenshell::geometry::NumberEpeck;
 #define NumberType NumberEpeck
 #endif
 
+#ifndef IFOPSH_SIMPLE_KERNEL
+void ifcopenshell::geometry::CgalShape::to_poly() const {
+	if (!shape_) {
+		shape_.emplace();
+		nef_->convert_to_polyhedron(*shape_);
+	}
+}
+
+void ifcopenshell::geometry::CgalShape::to_nef() const {
+	if (!nef_) {
+		nef_ = utils::create_nef_polyhedron(*shape_);
+	}
+}
+#endif
+
 void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int surface_style_id) const {
 	// Copy is made because triangulate_faces() obviously does not accept a const argument
 	// ... also becuase of transforming the vertex positions, right?
