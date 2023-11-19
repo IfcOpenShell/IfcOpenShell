@@ -207,10 +207,11 @@ class IfcGit:
         )
 
     @classmethod
-    def load_project(cls, path_ifc):
+    def load_project(cls, path_ifc=""):
         """Clear and load an ifc project"""
 
-        IfcStore.purge()
+        if path_ifc:
+            IfcStore.purge()
         # delete any IfcProject/* collections
         for collection in bpy.data.collections:
             if re.match("^IfcProject/", collection.name):
