@@ -101,8 +101,6 @@ class RepresentationItemsData:
     def load(cls):
         cls.data = {
             "total_items": cls.total_items(),
-            "active_surface_style": cls.active_surface_style(),
-            "active_layer": cls.active_layer(),
         }
         cls.is_loaded = True
 
@@ -123,18 +121,6 @@ class RepresentationItemsData:
                 else:
                     result += 1
         return result
-
-    @classmethod
-    def active_surface_style(cls):
-        props = bpy.context.active_object.BIMGeometryProperties
-        if props.active_item_index < len(props.items):
-            return props.items[props.active_item_index].surface_style
-
-    @classmethod
-    def active_layer(cls):
-        props = bpy.context.active_object.BIMGeometryProperties
-        if props.active_item_index < len(props.items):
-            return props.items[props.active_item_index].layer
 
 
 class ConnectionsData:
