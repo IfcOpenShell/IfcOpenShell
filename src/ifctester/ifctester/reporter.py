@@ -217,7 +217,7 @@ class Json(Reporter):
             total_checks_pass += total_pass
             requirements.append(
                 {
-                    "description": requirement.to_string("requirement"),
+                    "description": requirement.to_string("requirement") if specification.maxOccurs != 0 else requirement.to_string("requirement").replace('shall', 'shall not'),
                     "status": requirement.status,
                     "failed_entities": self.report_failed_entities(requirement),
                     "total_applicable": total_applicable,

@@ -224,7 +224,11 @@ class Specification:
             self.applicable_entities.append(element)
             for facet in self.requirements:
                 result = facet(element)
-                if not bool(result):
+                if self.maxOccurs == 0:
+                    prohibited = bool(result)                    
+                else:
+                    prohibited = not bool(result)
+                if prohibited:
                     self.failed_entities.add(element)
                     facet.failed_entities.append(element)
                     facet.failed_reasons.append(str(result))
