@@ -803,7 +803,7 @@ class TestUpdateTextValue(NewFile):
         assert obj is not None, obj
         with bpy.context.temp_override(active_object=obj):
             bpy.ops.bim.enable_editing_text()
-            bpy.ops.bim.remove_text_literal(1)
+            bpy.ops.bim.remove_text_literal(literal_prop_id=1)
             props.literals[0].attributes["Literal"].string_value = "changed_value"
             props.font_size = "2.5"
             bpy.ops.bim.disable_editing_text()

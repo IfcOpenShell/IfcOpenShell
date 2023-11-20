@@ -638,7 +638,8 @@ class BIM_OT_remove_section_plane(bpy.types.Operator):
             material.node_tree.nodes.remove(override)
         bpy.data.node_groups.remove(bpy.data.node_groups.get("Section Override"))
         bpy.data.node_groups.remove(bpy.data.node_groups.get("Section Compare"))
-        bpy.ops.object.delete({"selected_objects": [context.active_object]})
+        with context.temp_override(selected_objects=[context.active_object]):
+            bpy.ops.object.delete()
 
 
 class ReloadIfcFile(bpy.types.Operator, tool.Ifc.Operator):
