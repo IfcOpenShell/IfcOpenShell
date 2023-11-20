@@ -1048,38 +1048,59 @@ class RefreshLinkedAggregate(bpy.types.Operator):
                     tool.Geometry.delete_ifc_object(tool.Ifc.get_object(part))
                     
             tool.Geometry.delete_ifc_object(tool.Ifc.get_object(element))
+
+        def get_element_assembly(element):
+            if element.is_a("IfcElementAssembly"):
+                return element
+            elif element.Decomposes:
+                if element.Decomposes[0].RelatingObject.is_a("IfcElementAssembly"):
+                    element = element.Decomposes[0].RelatingObject
+                    return element
+            else:
+                return None
         
-        if len(context.selected_objects) != 1:
+
+        selected_objs = context.selected_objects
+        selected_elements = [tool.Ifc.get_entity(selected_obj) for selected_obj in selected_objs]
+        active_element = tool.Ifc.get_entity(context.active_object)
+        active_element = get_element_assembly(active_element)
+
+        working_selection = []
+        for selected_element in selected_elements:
+            selected_element = get_element_assembly(selected_element)
+            if not selected_element:
+                self.report({"INFO"}, "Object is not part of a IfcElementAssembly.")
+                return {'FINISHED'}
+            working_selection.append(selected_element)
+
+        working_selection = list(set(working_selection))
+        working_ids = [e.id() for e in working_selection]
+        selection_group = []
+        for selected_element in working_selection:
+            product_linked_agg_group = [
+                r.RelatingGroup
+                for r in getattr(selected_element, "HasAssignments", []) or []
+                if r.is_a("IfcRelAssignsToGroup")
+                if self.group_name in r.RelatingGroup.Name
+            ]
+            selection_group.append(product_linked_agg_group[0].id())
+
+        if len(set(selection_group))> 1:
+            self.report({"INFO"}, "Objects are not part of the same Linked Aggregate")
             return {"FINISHED"}
-
-        selected_obj = context.selected_objects[0]
-        selected_element = tool.Ifc.get_entity(selected_obj)
-
-        if selected_element.is_a("IfcElementAssembly"):
-            pass
-        elif selected_element.Decomposes:
-            if selected_element.Decomposes[0].RelatingObject.is_a("IfcElementAssembly"):
-                selected_element = selected_element.Decomposes[0].RelatingObject
-                selected_obj = tool.Ifc.get_object(selected_element)
-        else:
-            self.report({"INFO"}, "Object is not part of a IfcElementAssembly.")
-            return {"FINISHED"}
-
-        product_linked_agg_group = [
-            r.RelatingGroup
-            for r in getattr(selected_element, "HasAssignments", []) or []
-            if r.is_a("IfcRelAssignsToGroup")
-            if self.group_name in r.RelatingGroup.Name
-        ]
-        selection_group = product_linked_agg_group[0].id()
         
-        elements = tool.Drawing.get_group_elements(tool.Ifc.get().by_id(selection_group))
+        elements = tool.Drawing.get_group_elements(tool.Ifc.get().by_id(selection_group[0]))
+        
         for element in elements:
-            if element.GlobalId == selected_element.GlobalId:
+            if element.GlobalId == active_element.GlobalId:
+                continue
+            
+            if (len(working_selection) > 1) and not (element.id() in working_ids):
                 continue
 
             element_aggregate = ifcopenshell.util.element.get_aggregate(element)
-            
+
+            selected_obj = tool.Ifc.get_object(active_element)
             selected_matrix = selected_obj.matrix_world
             object_duplicate = tool.Ifc.get_object(element)
             duplicate_matrix = object_duplicate.matrix_world.decompose()
@@ -1089,7 +1110,7 @@ class RefreshLinkedAggregate(bpy.types.Operator):
             for obj in context.selected_objects:
                 obj.select_set(False)
                 
-            tool.Ifc.get_object(selected_element).select_set(True)
+            tool.Ifc.get_object(active_element).select_set(True)
             
             old_to_new = DuplicateMoveLinkedAggregate.execute_ifc_duplicate_linked_aggregate_operator(self, context)
             for old, new in old_to_new.items():
@@ -1111,12 +1132,7 @@ class RefreshLinkedAggregate(bpy.types.Operator):
                                                     relating_obj=tool.Ifc.get_object(element_aggregate),
                                                     related_obj=tool.Ifc.get_object(new[0]),
                                                 )                        
-
-        
-        # TODO Add a "Mirror" option that treats the matrix differently
-        
-        # TODO Think of more edge cases and issues already reported
-
+                        
         blenderbim.bim.handler.refresh_ui_data()
 
         operator_time = time() - refresh_start_time
