@@ -131,11 +131,48 @@ class SelectRequirement(bpy.types.Operator):
         props.n_entities = len(failed_entities)
         props.has_entities = True if props.n_entities > 0 else False
         props.failed_entities.clear()
+        
         for e in failed_entities:
             new_entity = props.failed_entities.add()
             new_entity.ifc_id = e["id"]
-            new_entity.element = f'{e["class"]}/{e["name"]}'
+            new_entity.element = f'{e["class"]} | {e["name"]}'
             new_entity.reason = e["reason"]
+        
+        if props.flag:
+            area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
+            area.spaces[0].shading.color_type = "OBJECT"
+            area.spaces[0].shading.show_xray = True
+            failed_ids = [ e["id"] for e in failed_entities ]
+            for obj in context.scene.objects:
+                if obj.BIMObjectProperties.ifc_definition_id in failed_ids:
+                    obj.color = (1,0,0,1)
+                else:
+                    obj.color = (1,1,1,1)
+      
+
+        return {"FINISHED"}
+    
+class SelectFailedEntities(bpy.types.Operator):
+    bl_idname = "bim.select_failed_entities"
+    bl_label = "Select Failed Entities"
+    bl_options = {"REGISTER", "UNDO"}
+    spec_index: bpy.props.IntProperty()
+    req_index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.IfcTesterProperties
+        report = tool.Tester.report
+        props.old_index = self.spec_index
+        failed_entities = report[self.spec_index]["requirements"][self.req_index]["failed_entities"]
+        props.n_entities = len(failed_entities)
+        props.has_entities = True if props.n_entities > 0 else False
+                
+        failed_ids = [ e["id"] for e in failed_entities ]
+        for obj in context.scene.objects:
+            if obj.BIMObjectProperties.ifc_definition_id in failed_ids:
+                obj.select_set(True)
+            else:
+                obj.select_set(False)   
 
         return {"FINISHED"}
 
