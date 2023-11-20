@@ -25,6 +25,8 @@ using namespace ifcopenshell::geometry;
 
 #include "../profile_helper.h"
 
+#include <numeric>
+
 #include <boost/mpl/vector.hpp>
 #include <boost/mpl/for_each.hpp>
 #include <boost/math/quadrature/trapezoidal.hpp>
@@ -710,12 +712,24 @@ class curve_segment_evaluator {
 		auto s = l->Pnt();
 		auto c = s->Coordinates();
 		auto v = l->Dir();
+
+      // 8.9.3.75 IfcVector https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcVector.htm
+      // 8.9.3.30 IfcDirection https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcDirection.htm
+      // "The IfcDirection does not imply a vector length, and the direction ratios does not have to be normalized."
+      //
+      // Therefore, the direction ratios need to be normalized to compute points on the line. Magnitude is not used
+      // because it relates to the parameterization of the line, which isn't currently done for IfcCurveSegment 
 		auto dr = v->Orientation()->DirectionRatios();
-		auto m = v->Magnitude();
-		auto px = c[0] * length_unit_;
+
+      // normalize the direction ratios
+      double m_squared = std::inner_product(dr.begin(), dr.end(), dr.begin(), 0.0);
+      double m = sqrt(m_squared);
+      std::for_each(dr.begin(), dr.end(), [m](auto& d) { return d / m; });
+      auto dx = dr[0];
+      auto dy = dr[1];
+
+      auto px = c[0] * length_unit_;
       auto py = c[1] * length_unit_;
-		auto dx = dr[0] / m;
-		auto dy = dr[1] / m;
 
       geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
       if (segment_type_ == ST_HORIZONTAL) {
