@@ -964,7 +964,8 @@ class ActivateBcfViewpoint(bpy.types.Operator):
                 context_override = {}
                 context_override["object"] = context_override["active_object"] = objs[0]
                 context_override["selected_objects"] = context_override["selected_editable_objects"] = objs
-                bpy.ops.object.hide_view_set(context_override, unselected=True)
+                with context.temp_override(**context_override):
+                    bpy.ops.object.hide_view_set(unselected=True)
                 context.area.type = old
 
         if viewpoint.visualization_info.components.view_setup_hints:
@@ -985,7 +986,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         old = context.area.type
         context.area.type = "VIEW_3D"
         bpy.ops.object.select_pattern(pattern="IfcSpace/*")
-        bpy.ops.object.hide_view_set({})
+        bpy.ops.object.hide_view_set()
         context.area.type = old
 
     def set_openings_visibility(self, is_visible, context):
