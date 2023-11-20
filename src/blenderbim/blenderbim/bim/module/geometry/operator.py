@@ -760,7 +760,8 @@ class OverrideDuplicateMove(bpy.types.Operator):
 
         self.new_active_obj = None
         # Track decompositions so they can be recreated after the operation
-        relationships = tool.Root.get_decomposition_relationships(objects_to_duplicate)
+        decomposition_relationships = tool.Root.get_decomposition_relationships(objects_to_duplicate)
+        connection_relationships = tool.Root.get_connection_relationships(objects_to_duplicate)
         old_to_new = {}
 
         for obj in objects_to_duplicate:
@@ -815,8 +816,17 @@ class OverrideDuplicateMove(bpy.types.Operator):
                 if new.is_a("IfcRelSpaceBoundary"):
                     tool.Boundary.decorate_boundary(new_obj)
 
+        # Recreate assembly relationship
+        for old in old_to_new.keys():
+            if old.is_a("IfcElementAssembly"):            
+                tool.Root.recreate_assembly(old_to_new)
+
+        # Remove connections with old objects and recreates paths
+        OverrideDuplicateMove.remove_old_connections(old_to_new)
+        tool.Root.recreate_connections(connection_relationships, old_to_new)
+
         # Recreate decompositions
-        tool.Root.recreate_decompositions(relationships, old_to_new)
+        tool.Root.recreate_decompositions(decomposition_relationships, old_to_new)
         blenderbim.bim.handler.refresh_ui_data()
         return old_to_new
 
@@ -855,6 +865,44 @@ class OverrideDuplicateMove(bpy.types.Operator):
                 arrays_to_create[array_parent_obj] = array_data
 
         return arrays_to_create, array_children
+
+    # @staticmethod
+    # def recreate_assembly(old_to_new):
+    #     for old, new in old_to_new.items():
+    #         old_aggregate = ifcopenshell.util.element.get_aggregate(old)
+    #         if old_aggregate:
+    #             new_aggregate = old_to_new[old_aggregate]
+    #             blenderbim.core.aggregate.assign_object(
+    #                                         tool.Ifc,
+    #                                         tool.Aggregate,
+    #                                         tool.Collector,
+    #                                         relating_obj=tool.Ifc.get_object(new_aggregate[0]),
+    #                                         related_obj=tool.Ifc.get_object(new[0]),
+    #                                     )
+                
+    #             # Make sure that the array children also get reassigned to the correct aggregate
+    #             pset = ifcopenshell.util.element.get_pset(new[0], "BBIM_Array")
+    #             if pset:
+    #                 array_children = tool.Blender.Modifier.Array.get_all_children_objects(new[0])
+    #                 for obj in array_children:
+    #                     blenderbim.core.aggregate.assign_object(
+    #                                                 tool.Ifc,
+    #                                                 tool.Aggregate,
+    #                                                 tool.Collector,
+    #                                                 relating_obj=tool.Ifc.get_object(new_aggregate[0]),
+    #                                                 related_obj=tool.Ifc.get_object(tool.Ifc.get_entity(obj)),
+    #                                             )
+
+    def remove_old_connections(old_to_new):
+        for new in old_to_new.values():
+            for connection in new[0].ConnectedTo:
+                entity = connection.RelatedElement
+                if entity in old_to_new.keys():
+                    core.remove_connection(tool.Geometry, connection=connection)
+            for connection in new[0].ConnectedFrom:
+                entity = connection.RelatingElement
+                if entity in old_to_new.keys():
+                    core.remove_connection(tool.Geometry, connection=connection)
 
 
 class OverrideDuplicateMoveLinkedMacro(bpy.types.Macro):
