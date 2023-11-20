@@ -1059,7 +1059,6 @@ class RefreshLinkedAggregate(bpy.types.Operator):
             else:
                 return None
         
-
         selected_objs = context.selected_objects
         selected_elements = [tool.Ifc.get_entity(selected_obj) for selected_obj in selected_objs]
         active_element = tool.Ifc.get_entity(context.active_object)
@@ -1083,6 +1082,7 @@ class RefreshLinkedAggregate(bpy.types.Operator):
                 if r.is_a("IfcRelAssignsToGroup")
                 if self.group_name in r.RelatingGroup.Name
             ]
+<<<<<<< HEAD
             selection_group.append(product_linked_agg_group[0].id())
 
         if len(set(selection_group))> 1:
