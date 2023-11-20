@@ -296,7 +296,7 @@ class IfcImporter:
         if self.ifc_import_settings.should_clean_mesh and len(self.file.by_type("IfcElement")) < 1000:
             self.clean_mesh()
             self.profile_code("Mesh cleaning")
-        if self.ifc_import_settings.should_merge_materials_by_colour or len(self.material_creator.materials) > 300:
+        if self.ifc_import_settings.should_merge_materials_by_colour:
             self.merge_materials_by_colour()
             self.profile_code("Merging by colour")
         self.set_default_context()
