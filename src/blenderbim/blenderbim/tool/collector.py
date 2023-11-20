@@ -199,6 +199,14 @@ class Collector(blenderbim.core.tool.Collector):
                 if collection:
                     return collection
 
+        nest = ifcopenshell.util.element.get_nest(element)
+        if nest:
+            nest_obj = tool.Ifc.get_object(nest)
+            if nest_obj:
+                collection = nest_obj.BIMObjectProperties.collection
+                if collection:
+                    return collection
+
         container = ifcopenshell.util.element.get_container(element)
         if container:
             container_obj = tool.Ifc.get_object(container)

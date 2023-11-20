@@ -691,6 +691,9 @@ def get_container(element, should_get_direct=False, ifc_class=None):
         aggregate = get_aggregate(element)
         if aggregate:
             return get_container(aggregate, should_get_direct)
+        nest = get_nest(element)
+        if nest:
+            return get_container(nest, should_get_direct)
         if hasattr(element, "ContainedInStructure") and element.ContainedInStructure:
             container = element.ContainedInStructure[0].RelatingStructure
             if not ifc_class:
@@ -790,7 +793,7 @@ def get_grouped_by(element):
 
 def get_aggregate(element):
     """
-    Retrieves the aggregate of an element.
+    Retrieves the aggregate parent of an element.
 
     :param element: The IFC element
     :return: The aggregate of the element
@@ -803,6 +806,23 @@ def get_aggregate(element):
     """
     if hasattr(element, "Decomposes") and element.Decomposes:
         return element.Decomposes[0].RelatingObject
+
+
+def get_nest(element):
+    """
+    Retrieves the nest parent of an element.
+
+    :param element: The IFC element
+    :return: The nested whole of the element
+
+    Example:
+
+    .. code:: python
+    element = file.by_type("IfcBeam")[0]
+    aggregate = ifcopenshell.util.element.get_nest(element)
+    """
+    if hasattr(element, "Nests") and element.Nests:
+        return element.Nests[0].RelatingObject
 
 
 def get_parts(element):

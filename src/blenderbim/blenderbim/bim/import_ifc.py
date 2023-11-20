@@ -1537,7 +1537,7 @@ class IfcImporter:
     def create_collections(self):
         self.create_spatial_decomposition_collections()
         if self.ifc_import_settings.collection_mode == "DECOMPOSITION":
-            self.create_aggregate_collections()
+            self.create_aggregate_and_nest_collections()
         elif self.ifc_import_settings.collection_mode == "SPATIAL_DECOMPOSITION":
             pass
 
@@ -1573,15 +1573,21 @@ class IfcImporter:
                 for rel_aggregate in element.IsDecomposedBy:
                     self.create_spatial_decomposition_collection(collection, rel_aggregate.RelatedObjects)
 
-    def create_aggregate_collections(self):
+    def create_aggregate_and_nest_collections(self):
         if self.ifc_import_settings.has_filter:
             rel_aggregates = [e.IsDecomposedBy[0] for e in self.elements if e.IsDecomposedBy]
             rel_aggregates += [e.Decomposes[0] for e in self.elements if e.Decomposes]
+            rel_aggregates += [e.IsNestedBy[0] for e in self.elements if e.IsNestedBy]
+            rel_aggregates += [e.Nests[0] for e in self.elements if e.Nests]
             rel_aggregates = set(rel_aggregates)
         else:
             rel_aggregates = [
                 a
                 for a in self.file.by_type("IfcRelAggregates")
+                if a.RelatingObject.is_a("IfcElement") or a.RelatingObject.is_a("IfcElementType")
+            ] + [
+                a
+                for a in self.file.by_type("IfcRelNests")
                 if a.RelatingObject.is_a("IfcElement") or a.RelatingObject.is_a("IfcElementType")
             ]
 
@@ -1687,6 +1693,9 @@ class IfcImporter:
         elif getattr(element, "Decomposes", None):
             aggregate = ifcopenshell.util.element.get_aggregate(element)
             return self.collections[aggregate.GlobalId].objects.link(obj)
+        elif getattr(element, "Nests", None):
+            nest = ifcopenshell.util.element.get_nest(element)
+            return self.collections[nest.GlobalId].objects.link(obj)
         else:
             return self.place_object_in_spatial_decomposition_collection(element, obj)
 
