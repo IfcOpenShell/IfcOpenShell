@@ -52,6 +52,7 @@ class IfcTesterProperties(PropertyGroup):
     ifc_file: StringProperty(default="", name="IFC File")
     should_load_from_memory: BoolProperty(default=False, name="Load from Memory")
     generate_html_report: BoolProperty(default=False, name="Generate HTML report")
+    flag : BoolProperty(default=False, name="Flag failed entities")
     active_specification_index: IntProperty(name="Active Specification Index", update=update_active_specification_index)
     old_index: IntProperty(name="", default=0)
     active_failed_entity_index: IntProperty(name="Active Failed Entity Index")
