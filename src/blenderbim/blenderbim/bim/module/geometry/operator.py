@@ -903,7 +903,8 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
 
     def execute_ifc_duplicate_linked_aggregate_operator(self, context):
         self.new_active_obj = None
-        self.group_name = "Linked Aggregate"
+        self.group_name = "BBIM_Linked_Aggregate"
+        self.pset_name = "BBIM_Linked_Aggregate"
         old_to_new = {}
 
         def select_objects_and_add_data(element): 
@@ -912,10 +913,14 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
             obj.select_set(True)
             parts = ifcopenshell.util.element.get_parts(element)
             if parts:
+                index = 0
                 for part in parts:
                     if part.is_a("IfcElementAssembly"):
                         select_objects_and_add_data(part)
-                    add_linked_aggregate_group(part)
+
+                    add_linked_aggregate_pset(part, index)
+                    index += 1
+                        
                     obj = tool.Ifc.get_object(part)
                     obj.select_set(True)
 
@@ -933,6 +938,25 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
             ifcopenshell.api.run(
                 "group.assign_group", tool.Ifc.get(), products=[element], group=linked_aggregate_group
             )
+
+        def add_linked_aggregate_pset(part, index):
+            pset = ifcopenshell.util.element.get_pset(part, self.pset_name)
+            
+            if not pset:
+                pset = ifcopenshell.api.run(
+                    "pset.add_pset", tool.Ifc.get(), product=part, name=self.pset_name
+                )
+            else:
+                pset = tool.Ifc.get().by_id(pset["id"])
+
+            ifcopenshell.api.run(
+                "pset.edit_pset",
+                tool.Ifc.get(),
+                pset=pset,
+                properties={"Index": index},
+            )
+
+            return index
        
              
         if len(context.selected_objects) != 1:
@@ -1001,9 +1025,10 @@ class RefreshLinkedAggregate(bpy.types.Operator):
         return {"FINISHED"}
 
     def _execute(self, context):
-        self.group_name = 'Linked Aggregate'
-        refresh_start_time = time()
         self.new_active_obj = None
+        self.group_name = 'BBIM_Linked_Aggregate'
+        self.pset_name = "BBIM_Linked_Aggregate"
+        refresh_start_time = time()
         old_to_new = {}
 
         def delete_objects(element):
@@ -1012,6 +1037,7 @@ class RefreshLinkedAggregate(bpy.types.Operator):
                 for part in parts:
                     if part.is_a("IfcElementAssembly"):
                         delete_objects(part)
+                        
                     tool.Geometry.delete_ifc_object(tool.Ifc.get_object(part))
                     
             tool.Geometry.delete_ifc_object(tool.Ifc.get_object(element))
