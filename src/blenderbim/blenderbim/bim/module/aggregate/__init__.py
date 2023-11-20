@@ -30,6 +30,7 @@ classes = (
     operator.BIM_OT_add_part_to_object,
     prop.BIMObjectAggregateProperties,
     ui.BIM_PT_aggregate,
+    ui.BIM_PT_linked_aggregate,
 )
 
 

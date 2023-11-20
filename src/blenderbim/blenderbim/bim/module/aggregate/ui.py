@@ -18,16 +18,17 @@
 
 from bpy.types import Panel
 from blenderbim.bim.module.aggregate.data import AggregateData
+from blenderbim.bim.module.group.data import GroupsData, ObjectGroupsData
 from blenderbim.bim.ifc import IfcStore
 
 
 class BIM_PT_aggregate(Panel):
     bl_label = "Aggregates"
     bl_idname = "BIM_PT_aggregate"
-    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_order = 2
     bl_parent_id = "BIM_PT_tab_object_metadata"
 
     @classmethod
@@ -90,3 +91,46 @@ class BIM_PT_aggregate(Panel):
             op = layout.operator("bim.add_part_to_object", text="Add " + part_class.lstrip("Ifc"))
             op.part_class = part_class
             op.obj = context.active_object.name
+            
+            
+class BIM_PT_linked_aggregate(Panel):
+    bl_label = "Linked Aggregates"
+    bl_idname = "BIM_PT_linked_aggregate"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+    bl_order = 2
+    bl_parent_id = "BIM_PT_aggregate"
+
+    @classmethod
+    def poll(cls, context):
+        if not context.active_object:
+            return False
+        props = context.active_object.BIMObjectProperties
+        if not props.ifc_definition_id:
+            return False
+        if not IfcStore.get_element(props.ifc_definition_id):
+            return False
+        if not IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcObjectDefinition"):
+            return False
+        return True
+
+    def draw(self, context):
+        layout = self.layout
+        if not ObjectGroupsData.is_loaded:
+            ObjectGroupsData.load()
+
+        props = context.scene.BIMGroupProperties
+        for group in ObjectGroupsData.data["groups"]:
+            if group["name"] == "Linked Aggregate":
+                row = layout.row(align=True)
+                row.label(text=f"{group['total_objects']} Linked Aggregates")
+                row.operator("bim.refresh_linked_aggregate", text="", icon="FILE_REFRESH")
+        
+
+        # Select Linked Aggregate Element
+        # Select Linked Aggregate Decomposition
+        # Break the link of Linked Aggregate (highest level)
+
+        # Add Decomposition Operator (Alt+D) to the aggregate panel
