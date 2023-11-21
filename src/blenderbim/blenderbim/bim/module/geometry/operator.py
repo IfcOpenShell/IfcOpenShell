@@ -820,10 +820,10 @@ class OverrideDuplicateMove(bpy.types.Operator):
                 if new.is_a("IfcRelSpaceBoundary"):
                     tool.Boundary.decorate_boundary(new_obj)
 
-        # Recreate assembly relationship
+        # Recreate aggregate relationship
         for old in old_to_new.keys():
             if old.is_a("IfcElementAssembly"):            
-                tool.Root.recreate_assembly(old_to_new)
+                tool.Root.recreate_aggregate(old_to_new)
 
         # Remove connections with old objects and recreates paths
         OverrideDuplicateMove.remove_old_connections(old_to_new)
@@ -1007,10 +1007,10 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
         old_to_new = OverrideDuplicateMove.execute_ifc_duplicate_operator(self, context, linked=True)
 
         
-        # Recreate assembly relationship
+        # Recreate aggregate relationship
         for old in old_to_new.keys():
             if old.is_a("IfcElementAssembly"):            
-                tool.Root.recreate_assembly(old_to_new)
+                tool.Root.recreate_aggregate(old_to_new)
 
 
         blenderbim.bim.handler.refresh_ui_data()

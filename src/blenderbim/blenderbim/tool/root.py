@@ -233,11 +233,24 @@ class Root(blenderbim.core.tool.Root):
 
     
     @classmethod
-    def recreate_assembly(cls, old_to_new):
+    def recreate_aggregate(cls, old_to_new):
+        print("O_T_N", old_to_new)
         for old, new in old_to_new.items():
             old_aggregate = ifcopenshell.util.element.get_aggregate(old)
+            print("Old", old_aggregate)
             if old_aggregate:
-                new_aggregate = old_to_new[old_aggregate]
+                try:
+                    new_aggregate = old_to_new[old_aggregate]
+                except:
+                    blenderbim.core.aggregate.unassign_object(
+                                                tool.Ifc,
+                                                tool.Aggregate,
+                                                tool.Collector,
+                                                relating_obj=tool.Ifc.get_object(old_aggregate),
+                                                related_obj=tool.Ifc.get_object(new[0]),
+                                            )
+                    continue
+                
                 blenderbim.core.aggregate.assign_object(
                                             tool.Ifc,
                                             tool.Aggregate,
