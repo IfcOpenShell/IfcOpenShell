@@ -151,13 +151,14 @@ class BIM_PT_gis(Panel):
             row.label(text=GeoreferenceData.data["true_derived_angle"])
 
 
-class BIM_PT_gis_utilities(Panel):
-    bl_idname = "BIM_PT_gis_utilities"
-    bl_label = "Georeferencing Utilities"
+class BIM_PT_gis_calculator(Panel):
+    bl_idname = "BIM_PT_gis_calculator"
+    bl_label = "Georeferencing Calculator"
     bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "BlenderBIM"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_gis"
 
     def draw(self, context):
         props = context.scene.BIMGeoreferenceProperties
