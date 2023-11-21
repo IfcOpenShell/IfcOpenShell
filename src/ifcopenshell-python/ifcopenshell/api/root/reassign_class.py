@@ -73,13 +73,21 @@ class Usecase:
         element = ifcopenshell.util.schema.reassign_class(
             self.file, self.settings["product"], self.settings["ifc_class"]
         )
+        is_type = element.is_a("IfcTypeProduct")
         if self.settings["predefined_type"] and hasattr(element, "PredefinedType"):
             try:
                 element.PredefinedType = self.settings["predefined_type"]
             except:
+                # PredefinedType wasn't in the respective enum, assume it's actually USERDEFINED
+                # and set .ElementType / .ObjectType to the provided predefined type
                 element.PredefinedType = "USERDEFINED"
-                element.ObjectType = self.settings["predefined_type"]
-        if element.is_a("IfcTypeProduct"):
+                if is_type:
+                    element.ElementType = self.settings["predefined_type"]
+                else:
+                    element.ObjectType = self.settings["predefined_type"]
+
+        # reassign classes for occurences connected to the type
+        if is_type:
             for occurrence in ifcopenshell.util.element.get_types(element) or []:
                 ifc_class = ifcopenshell.util.type.get_applicable_entities(self.settings["ifc_class"])[0]
                 ifcopenshell.api.run(
@@ -87,6 +95,6 @@ class Usecase:
                     self.file,
                     product=occurrence,
                     ifc_class=ifc_class,
-                    predefined_type= self.settings["predefined_type"]
+                    predefined_type=self.settings["predefined_type"],
                 )
         return element
