@@ -300,7 +300,7 @@ typedef boost::mpl::vector<
 	, IfcSchema::IfcClothoid
 #endif
 #if defined SCHEMA_HAS_IfcSecondOrderPolynomialSpiral
-	, IfcSchema::IfcSecondOrderPolynomialSpiral
+	//, IfcSchema::IfcSecondOrderPolynomialSpiral // this isn't implemented yet, just some stubbed out dummy code
 #endif
 	, IfcSchema::IfcPolyline
 	, IfcSchema::IfcCircle
@@ -577,15 +577,15 @@ class curve_segment_evaluator {
             Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
             if (segment_type == ST_HORIZONTAL) {
                 // rotate about the Z-axis
-                m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);  // vector tangent to the curve, in the direction of the curve
-                m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0); // vector perpendicular to the curve, towards the left when looking from start to end along the curve (this is used for IfcAxis2PlacementLinear.RefDirection when it is not provided)
-                m.col(2) = Eigen::Vector4d(0, 0, 1.0, 0);  // cross product of x and y and will always be up (this is used for IfcAxis2PlacementLinear.Axis when it is not provided)
+                m.col(0) = Eigen::Vector4d(-dy, dx, 0, 0);  // vector tangent to the curve, in the direction of the curve
+                m.col(1) = Eigen::Vector4d(-sign_l * dx, -sign_l * dy, 0, 0); // vector perpendicular to the curve, towards the left when looking from start to end along the curve (this is used for IfcAxis2PlacementLinear.RefDirection when it is not provided)
+                m.col(2) = Eigen::Vector4d(0, 0, 1.0, 0);   // cross product of x and y and will always be up (this is used for IfcAxis2PlacementLinear.Axis when it is not provided)
                 m.col(3) = Eigen::Vector4d(x, y, 0.0, 1.0);
             } else if (segment_type == ST_VERTICAL) {
                 // rotate about the Y-axis (slope along u is dx, slope vertically is dy, vertical position is y)
-                m.col(0) = Eigen::Vector4d(dx, 0, dy, 0);
+                m.col(0) = Eigen::Vector4d(-dy, 0, dx, 0);
                 m.col(1) = Eigen::Vector4d(0, 1, 0, 0);
-                m.col(2) = Eigen::Vector4d(-dy, 0, dx, 0);
+                m.col(2) = Eigen::Vector4d(-dx, 0, -dy, 0);
                 m.col(3) = Eigen::Vector4d(0, 0, y, 1.0); // y is an elevation so store it as z
             } else if (segment_type == ST_CANT) {
                 Logger::Warning(std::runtime_error("Use of IfcCircle for cant is not supported"));
