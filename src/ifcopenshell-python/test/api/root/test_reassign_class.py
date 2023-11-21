@@ -35,10 +35,18 @@ class TestReassignClass(test.bootstrap.IFC4):
         )
         assert new.PredefinedType == "FLOOR"
 
-    def test_falling_back_to_userdefined_if_the_predefined_type_cannot_be_reassigned(self):
+    def test_falling_back_to_userdefined_if_the_predefined_type_cannot_be_reassigned_for_occurrence_class(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         new = ifcopenshell.api.run(
             "root.reassign_class", self.file, product=element, ifc_class="IfcSlab", predefined_type="FOO"
         )
         assert new.PredefinedType == "USERDEFINED"
         assert new.ObjectType == "FOO"
+
+    def test_falling_back_to_userdefined_if_the_predefined_type_cannot_be_reassigned_for_type_class(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        new = ifcopenshell.api.run(
+            "root.reassign_class", self.file, product=element, ifc_class="IfcSlabType", predefined_type="FOO"
+        )
+        assert new.PredefinedType == "USERDEFINED"
+        assert new.ElementType == "FOO"
