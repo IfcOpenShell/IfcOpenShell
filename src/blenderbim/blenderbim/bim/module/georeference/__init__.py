@@ -37,7 +37,7 @@ classes = (
     operator.ImportPlot,
     prop.BIMGeoreferenceProperties,
     ui.BIM_PT_gis,
-    ui.BIM_PT_gis_utilities,
+    ui.BIM_PT_gis_calculator,
 )
 
 
