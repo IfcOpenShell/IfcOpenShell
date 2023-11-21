@@ -979,12 +979,14 @@ class ActivateBcfViewpoint(bpy.types.Operator):
             self.hide_spaces(context)
             self.set_openings_visibility(False, context)
 
+        # set selection at the end not to conflict with .hide_spaces
         self.set_selection(viewpoint)
         self.set_colours(viewpoint)
 
     def hide_spaces(self, context):
         old = context.area.type
         context.area.type = "VIEW_3D"
+        bpy.ops.object.select_all(action="DESELECT")
         bpy.ops.object.select_pattern(pattern="IfcSpace/*")
         bpy.ops.object.hide_view_set()
         context.area.type = old
