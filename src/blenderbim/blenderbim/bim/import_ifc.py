@@ -616,11 +616,11 @@ class IfcImporter:
             project = self.file.by_type("IfcContext")[0]
         site = self.find_decomposed_ifc_class(project, "IfcSite")
         if site and self.is_element_far_away(site):
-            return self.guess_georeferencing(site)
+            return self.guess_false_origin_and_project_north(site)
         building = self.find_decomposed_ifc_class(project, "IfcBuilding")
         if building and self.is_element_far_away(building):
-            return self.guess_georeferencing(building)
-        return self.guess_absolute_coordinate()
+            return self.guess_false_origin_and_project_north(building)
+        return self.guess_false_origin()
 
     def set_manual_blender_offset(self):
         props = bpy.context.scene.BIMGeoreferenceProperties
@@ -629,7 +629,7 @@ class IfcImporter:
         props.blender_orthogonal_height = str(self.ifc_import_settings.false_origin[2])
         props.has_blender_offset = True
 
-    def guess_georeferencing(self, element):
+    def guess_false_origin_and_project_north(self, element):
         if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
             return
         placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
@@ -644,7 +644,7 @@ class IfcImporter:
             props.blender_x_axis_ordinate = str(placement[1][0])
         props.has_blender_offset = True
 
-    def guess_absolute_coordinate(self):
+    def guess_false_origin(self):
         # Civil BIM applications like to work in absolute coordinates, where the
         # ObjectPlacement is usually 0,0,0 (but not always, so we'll need to
         # check for the actual transformation) but each individual coordinate of
@@ -668,6 +668,10 @@ class IfcImporter:
             elements_checked += 1
             if elements_checked > element_checking_threshold:
                 return
+            if element.ObjectPlacement and element.ObjectPlacement.is_a("IfcLocalPlacement"):
+                placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)[:,3][0:3]
+                if self.is_point_far_away(placement, is_meters=False):
+                    return placement
             if not self.does_element_likely_have_geometry_far_away(element):
                 continue
             shape = self.create_generic_shape(element)
