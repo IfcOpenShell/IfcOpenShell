@@ -356,20 +356,25 @@ class BIM_PT_placement(Panel):
         if not PlacementData.is_loaded:
             PlacementData.load()
 
-        if PlacementData.data["has_placement"]:
-            row = self.layout.row()
-            row.prop(context.active_object, "location", text="Location")
-            row = self.layout.row()
-            row.prop(context.active_object, "rotation_euler", text="Rotation")
-        else:
+        if not PlacementData.data["has_placement"]:
             row = self.layout.row()
             row.label(text="No Object Placement Found")
+            return
+
+        row = self.layout.row()
+        row.prop(context.active_object, "location", text="Location")
+        row = self.layout.row()
+        row.prop(context.active_object, "rotation_euler", text="Rotation")
 
         if context.active_object.BIMObjectProperties.blender_offset_type != "NONE":
             row = self.layout.row(align=True)
             row.label(text="Blender Offset", icon="TRACKING_REFINE_FORWARDS")
             row.label(text=context.active_object.BIMObjectProperties.blender_offset_type)
 
+            row = self.layout.row(align=True)
+            row.label(text=PlacementData.data["original_x"], icon="EMPTY_AXIS")
+            row.label(text=PlacementData.data["original_y"])
+            row.label(text=PlacementData.data["original_z"])
 
 class BIM_PT_derived_coordinates(Panel):
     bl_label = "Derived Coordinates"

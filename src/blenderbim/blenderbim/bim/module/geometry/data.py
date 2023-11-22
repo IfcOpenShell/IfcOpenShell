@@ -308,6 +308,9 @@ class PlacementData:
     def load(cls):
         cls.data = {
             "has_placement": cls.has_placement(),
+            "original_x": cls.original_x(),
+            "original_y": cls.original_y(),
+            "original_z": cls.original_z(),
         }
         cls.is_loaded = True
 
@@ -317,3 +320,42 @@ class PlacementData:
         if element and hasattr(element, "ObjectPlacement"):
             return True
         return False
+
+    @classmethod
+    def original_x(cls):
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        obj = bpy.context.active_object
+        if not obj or not props.has_blender_offset:
+            return
+        return str(round(cls.original_xyz(obj.location)[0], 3))
+
+    @classmethod
+    def original_y(cls):
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        obj = bpy.context.active_object
+        if not obj or not props.has_blender_offset:
+            return
+        return str(round(cls.original_xyz(obj.location)[1], 3))
+
+    @classmethod
+    def original_z(cls):
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        obj = bpy.context.active_object
+        if not obj or not props.has_blender_offset:
+            return
+        return str(round(cls.original_xyz(obj.location)[2], 3))
+
+    @classmethod
+    def original_xyz(cls, location):
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        return ifcopenshell.util.geolocation.xyz2enh(
+            location[0],
+            location[1],
+            location[2],
+            float(props.blender_eastings),
+            float(props.blender_northings),
+            float(props.blender_orthogonal_height),
+            float(props.blender_x_axis_abscissa),
+            float(props.blender_x_axis_ordinate),
+            1.0,
+        )
