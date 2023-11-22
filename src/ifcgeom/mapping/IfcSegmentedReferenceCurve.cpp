@@ -28,7 +28,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSegmentedReferenceCurve* ins
        Logger::Warning("Expected IfcSegmentedReferenceCurve.BaseCurve to be IfcGradient", inst); // CT 4.1.7.1.1.3
 		  
 	auto gradient = taxonomy::cast<taxonomy::piecewise_function>(map(inst->BaseCurve()));
-	auto cant = taxonomy::make<taxonomy::piecewise_function>();
+	auto cant = taxonomy::make<taxonomy::piecewise_function>(&settings_);
 
 	auto segments = inst->Segments();
 
@@ -76,7 +76,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSegmentedReferenceCurve* ins
 		}
 	}
 
-	auto pwf = taxonomy::make<taxonomy::piecewise_function>();
+	auto pwf = taxonomy::make<taxonomy::piecewise_function>(&settings_);
 	pwf->spans.emplace_back( min_length, composition );
 	pwf->instance = inst;
 	return pwf;

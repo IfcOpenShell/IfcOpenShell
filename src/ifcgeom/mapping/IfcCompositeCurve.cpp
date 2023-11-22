@@ -23,7 +23,7 @@ using namespace ifcopenshell::geometry;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 	auto loop = taxonomy::make<taxonomy::loop>();
-	auto pwf = taxonomy::make<taxonomy::piecewise_function>();
+	auto pwf = taxonomy::make<taxonomy::piecewise_function>(&settings_);
 
 #ifdef SCHEMA_HAS_IfcSegment
 	// 4x3

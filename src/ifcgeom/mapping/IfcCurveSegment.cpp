@@ -942,7 +942,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveSegment* inst) {
 	auto length = fabs(cse.length());
 
 	// @todo it might be suboptimal that we no longer have the spans now
-	auto pwf = taxonomy::make<taxonomy::piecewise_function>();
+	auto pwf = taxonomy::make<taxonomy::piecewise_function>(&settings_);
 	pwf->spans.push_back({ length, fn });
 	pwf->instance = inst;
 	return pwf;

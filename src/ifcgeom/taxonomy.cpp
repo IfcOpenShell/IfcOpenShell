@@ -459,11 +459,20 @@ ifcopenshell::geometry::taxonomy::item::ptr ifcopenshell::geometry::taxonomy::pi
 		length += s.first;
 
    std::vector<taxonomy::point3::ptr> polygon;
+	
+	auto param_type = settings_ ? settings_->get<ifcopenshell::geometry::settings::PiecewiseStepType>().get() : ifcopenshell::geometry::settings::PiecewiseStepMethod::MAXSTEPSIZE;
+   auto param = settings_ ? settings_->get<ifcopenshell::geometry::settings::PiecewiseStepParam>().get() : 0.5;
+   int num_steps = 0;
+   if (param_type == ifcopenshell::geometry::settings::PiecewiseStepMethod::MAXSTEPSIZE) {
+	   // parameter is max step size
+      num_steps = (int)std::ceil(length / param);
+   } else {
+	   // parameter is minimum number of steps
+      num_steps = (int)std::ceil(param);
+    }
+    auto resolution = length / num_steps;
 
-	static const double target_resolution = 0.5;
-	int num_steps = (int)std::ceil(length / target_resolution);
-   auto resolution = length / num_steps;
-	for (int i = 0; i <= num_steps; ++i) {
+	 for (int i = 0; i <= num_steps; ++i) {
 		auto u = resolution * i;
       Eigen::Matrix4d m = evaluate(u);
       polygon.push_back(taxonomy::make<taxonomy::point3>(m.col(3)(0), m.col(3)(1), m.col(3)(2)));
