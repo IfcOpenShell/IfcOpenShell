@@ -25,6 +25,7 @@ import blenderbim.tool as tool
 import blenderbim.core.drawing as core
 import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.decoration as decoration
+from blenderbim.bim.prop import BIMFilterGroup
 from blenderbim.bim.module.drawing.data import DrawingsData, DecoratorData, SheetsData, AnnotationData
 from blenderbim.bim.module.drawing.data import refresh as refresh_drawing_data
 from pathlib import Path
@@ -379,6 +380,9 @@ class BIMCameraProperties(PropertyGroup):
     height: FloatProperty(name="Height", default=50, subtype="DISTANCE")
     is_nts: BoolProperty(name="Is NTS", update=update_is_nts)
     active_drawing_style_index: IntProperty(name="Active Drawing Style Index")
+    filter_mode: StringProperty(name="Filter Mode", default="NONE")
+    include_filter_groups: CollectionProperty(type=BIMFilterGroup, name="Include Filter")
+    exclude_filter_groups: CollectionProperty(type=BIMFilterGroup, name="Exclude Filter")
 
     # For now, this JSON dump are all the parameters that determine a camera's "Block representation"
     # By checking this, you will know whether or not the camera IFC representation needs to be refreshed

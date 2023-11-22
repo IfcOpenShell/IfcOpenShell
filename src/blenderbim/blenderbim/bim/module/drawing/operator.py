@@ -2527,3 +2527,36 @@ class SelectAssignedProduct(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.select_assigned_product(tool.Drawing, context)
+
+
+class EnableEditingElementFilter(bpy.types.Operator, Operator):
+    bl_idname = "bim.enable_editing_element_filter"
+    bl_label = "Enable Editing Element Filter"
+    bl_options = {"REGISTER", "UNDO"}
+    filter_mode: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        obj = bpy.context.scene.camera
+        if obj:
+            obj.data.BIMCameraProperties.filter_mode = self.filter_mode
+
+
+class EditElementFilter(bpy.types.Operator, Operator):
+    bl_idname = "bim.edit_element_filter"
+    bl_label = "Edit Element Filter"
+    bl_options = {"REGISTER", "UNDO"}
+    filter_mode: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        props = context.active_object.data.BIMCameraProperties
+        obj = bpy.context.scene.camera
+        element = tool.Ifc.get_entity(obj)
+        pset = tool.Pset.get_element_pset(element, "EPset_Drawing")
+        if self.filter_mode == "INCLUDE":
+            query = tool.Search.export_filter_query(props.include_filter_groups) or None
+            ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Include": query})
+        elif self.filter_mode == "EXCLUDE":
+            query = tool.Search.export_filter_query(props.exclude_filter_groups) or None
+            ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Exclude": query})
+        obj.data.BIMCameraProperties.filter_mode = "NONE"
+        bpy.ops.bim.activate_drawing(drawing=element.id(), camera_view_point=False)

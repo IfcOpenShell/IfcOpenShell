@@ -268,7 +268,7 @@ def convert_property_group_from_si(property_group, skip_props=()):
         setattr(property_group, prop_name, prop_value)
 
 
-def draw_filter(layout, props, data, module):
+def draw_filter(layout, filter_groups, data, module):
     if not data.is_loaded:
         data.load()
 
@@ -286,7 +286,7 @@ def draw_filter(layout, props, data, module):
     row.operator("bim.add_filter_group", text="Add Search Group", icon="ADD").module = module
     row.operator("bim.edit_filter_query", text="", icon="FILTER").module = module
 
-    for i, filter_group in enumerate(props.filter_groups):
+    for i, filter_group in enumerate(filter_groups):
         box = layout.box()
 
         row = box.row(align=True)
