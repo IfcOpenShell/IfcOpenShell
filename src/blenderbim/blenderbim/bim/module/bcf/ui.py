@@ -39,8 +39,7 @@ class BIM_PT_bcf(Panel):
         scene = context.scene
         props = scene.BCFProperties
 
-
-        if not props.is_loaded:
+        if not bcfstore.BcfStore.get_bcfxml():
             row = layout.row(align=True)
             row.operator("bim.new_bcf_project", text="New Project")
             row.operator("bim.load_bcf_project", text="Load Project")
