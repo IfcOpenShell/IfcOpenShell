@@ -36,7 +36,7 @@ class BIM_PT_search(Panel):
 
         props = context.scene.BIMSearchProperties
 
-        blenderbim.bim.helper.draw_filter(self.layout, props, SearchData, "search")
+        blenderbim.bim.helper.draw_filter(self.layout, props.filter_groups, SearchData, "search")
 
         if len(props.filter_groups):
             row = self.layout.row(align=True)

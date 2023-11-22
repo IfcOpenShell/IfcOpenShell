@@ -456,3 +456,16 @@ class BIMMeshProperties(PropertyGroup):
     ifc_parameters: CollectionProperty(name="IFC Parameters", type=IfcParameter)
     material_checksum: StringProperty(name="Material Checksum", default="[]")
     mesh_checksum: StringProperty(name="Mesh Checksum", default="")
+
+
+class BIMFacet(PropertyGroup):
+    name: StringProperty(name="Name")
+    pset: StringProperty(name="Pset")
+    value: StringProperty(name="Value")
+    type: StringProperty(name="Type")
+    comparison: StringProperty(name="Comparison")
+
+
+
+class BIMFilterGroup(PropertyGroup):
+    filters: CollectionProperty(type=BIMFacet, name="filters")
