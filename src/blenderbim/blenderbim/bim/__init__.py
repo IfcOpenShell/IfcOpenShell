@@ -122,6 +122,8 @@ classes = [
     prop.BIMCollectionProperties,
     prop.BIMMaterialProperties,
     prop.BIMMeshProperties,
+    prop.BIMFacet,
+    prop.BIMFilterGroup,
     ui.BIM_UL_generic,
     ui.BIM_UL_topics,
     ui.BIM_ADDON_preferences,

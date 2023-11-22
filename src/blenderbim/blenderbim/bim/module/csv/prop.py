@@ -17,8 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from blenderbim.bim.module.search.prop import BIMFilterGroup
-from blenderbim.bim.prop import StrProperty
+from blenderbim.bim.prop import StrProperty, BIMFilterGroup
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,

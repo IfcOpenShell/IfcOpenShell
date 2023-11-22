@@ -48,8 +48,6 @@ classes = (
     operator.ShowAllElements,
     operator.ToggleFilterSelection,
     prop.BIMColour,
-    prop.BIMFacet,
-    prop.BIMFilterGroup,
     prop.BIMFilterClasses,
     prop.BIMFilterBuildingStoreys,
     prop.BIMSearchProperties,

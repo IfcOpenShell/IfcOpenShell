@@ -29,6 +29,7 @@ def refresh():
     SheetsData.is_loaded = False
     DocumentsData.is_loaded = False
     DrawingsData.is_loaded = False
+    ElementFiltersData.is_loaded = False
     AnnotationData.is_loaded = False
     DecoratorData.data = {}
     DecoratorData.cut_cache = {}
@@ -135,6 +136,55 @@ class DrawingsData:
             return {}
         drawing = ifc_file.by_id(bpy.context.scene.DocProperties.active_drawing_id)
         return ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing")
+
+
+class ElementFiltersData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {
+            "saved_searches": cls.saved_searches(),
+            "has_include_filter": cls.has_include_filter(),
+            "has_exclude_filter": cls.has_exclude_filter(),
+        }
+        cls.is_loaded = True
+
+    @classmethod
+    def saved_searches(cls):
+        if not tool.Ifc.get():
+            return []
+        groups = tool.Ifc.get().by_type("IfcGroup")
+        results = []
+        for group in groups:
+            try:
+                data = json.loads(group.Description)
+                if isinstance(data, dict) and data.get("type", None) == "BBIM_Search" and data.get("query", None):
+                    results.append(group)
+            except:
+                pass
+        return [(str(g.id()), g.Name or "Unnamed", "") for g in sorted(results, key=lambda x: x.Name or "Unnamed")]
+
+    @classmethod
+    def has_include_filter(cls):
+        obj = bpy.context.scene.camera
+        if not obj:
+            return
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return
+        return bool(ifcopenshell.util.element.get_pset(element, "EPset_Drawing", "Include"))
+
+    @classmethod
+    def has_exclude_filter(cls):
+        obj = bpy.context.scene.camera
+        if not obj:
+            return
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return
+        return bool(ifcopenshell.util.element.get_pset(element, "EPset_Drawing", "Exclude"))
 
 
 class DocumentsData:
