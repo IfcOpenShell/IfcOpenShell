@@ -164,10 +164,10 @@ def update_shading_style(self, context):
 REFLECTANCE_METHODS = [
     ("PHYSICAL", "PHYSICAL", ""),
     ("FLAT", "FLAT", ""),
-    # ("METAL", "METAL", ""),
-    # ("MATT", "MATT", ""),
-    # ("GLASS", "GLASS", ""),
-    # ("NOTDEFINED", "NOTDEFINED", ""),
+    ("METAL", "METAL", ""),
+    ("MATT", "MATT", ""),
+    ("GLASS", "GLASS", ""),
+    ("NOTDEFINED", "NOTDEFINED", ""),
 ]
 
 
