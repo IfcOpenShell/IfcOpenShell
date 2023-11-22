@@ -67,8 +67,11 @@ class EnableReassignClass(bpy.types.Operator):
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         context.scene.BIMRootProperties.ifc_class = element.is_a()
         context.scene.BIMRootProperties.relating_class_object = None
-        if hasattr(element, "PredefinedType") and element.PredefinedType:
-            context.scene.BIMRootProperties.ifc_predefined_type = element.PredefinedType
+        if hasattr(element, "PredefinedType"):
+            if element.PredefinedType:
+                context.scene.BIMRootProperties.ifc_predefined_type = element.PredefinedType
+            userdefined_type = ifcopenshell.util.element.get_predefined_type(element)
+            context.scene.BIMRootProperties.ifc_userdefined_type = userdefined_type or ""
         return {"FINISHED"}
 
 
