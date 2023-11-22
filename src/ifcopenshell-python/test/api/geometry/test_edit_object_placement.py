@@ -582,6 +582,47 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
         with pytest.raises(RuntimeError):
             self.file.by_id(previous_placement_id)
 
+    def test_changing_placements_without_affecting_children_doesnt_affect_subchildren(self):
+        def np_matrix_translation(translation):
+            (m := numpy.eye(4))[:3, 3] = translation
+            return m
+
+        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
+        ifcopenshell.api.run("unit.assign_unit", self.file)
+
+        building = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
+        storey = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuildingStorey")
+        ifcopenshell.api.run("aggregate.assign_object", self.file, product=storey, relating_object=building)
+        wall = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        ifcopenshell.api.run("spatial.assign_container", self.file, product=wall, relating_structure=storey)
+
+        matrix = np_matrix_translation((1, 1, 1))
+        submatrix = np_matrix_translation((1, 2, 3))
+        building_placement_id = ifcopenshell.api.run(
+            "geometry.edit_object_placement", self.file, product=building, matrix=matrix.copy(), is_si=False
+        ).id()
+        storey_placement_id = ifcopenshell.api.run(
+            "geometry.edit_object_placement", self.file, product=storey, matrix=matrix.copy(), is_si=False
+        ).id()
+        wall_placement_id = ifcopenshell.api.run(
+            "geometry.edit_object_placement", self.file, product=wall, matrix=matrix.copy(), is_si=False
+        ).id()
+        ifcopenshell.api.run(
+            "geometry.edit_object_placement",
+            self.file,
+            product=building,
+            matrix=submatrix.copy(),
+            is_si=False,
+        )
+        # product and it's children have their placement rebuilt
+        with pytest.raises(RuntimeError):
+            self.file.by_id(building_placement_id)
+        with pytest.raises(RuntimeError):
+            self.file.by_id(storey_placement_id)
+        # subchildren are unaffected, exception is not raised
+        self.file.by_id(wall_placement_id)
+        assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(wall.ObjectPlacement), matrix)
+
 
 class TestEditObjectPlacementIFC2X3(test.bootstrap.IFC2X3):
     def test_changing_placements_relative_to_a_distribution_element(self):
