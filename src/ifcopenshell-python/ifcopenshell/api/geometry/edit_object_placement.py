@@ -100,6 +100,8 @@ class Usecase:
         if not placement:
             return []
         results = []
+        # NOTE: we ignore subchildren as we already adjust position for their parent
+        # therefore they're not present in `results` and `should_transform_children` should be `True`
         for referenced_placement in placement.ReferencedByPlacements:
             matrix = ifcopenshell.util.placement.get_local_placement(referenced_placement)
             for obj in referenced_placement.PlacesObject:
@@ -111,8 +113,7 @@ class Usecase:
                     # Feature elements affect the geometry of their parent, and
                     # so logically should always move with the parent.
                     continue
-                results.append({"product": obj, "matrix": matrix, "is_si": False, "should_transform_children": False})
-            results.extend(self.get_children_settings(referenced_placement))
+                results.append({"product": obj, "matrix": matrix, "is_si": False, "should_transform_children": True})
         return results
 
     def get_relative_placement(self, placement_rel_to):
