@@ -20,7 +20,7 @@ import bpy
 import blenderbim.tool as tool
 from ifcopenshell import util
 from ifcopenshell.util.selector import Selector
-from blenderbim.bim.prop import ObjProperty, StrProperty
+from blenderbim.bim.prop import ObjProperty, StrProperty, BIMFilterGroup
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.search.data import SearchData, ColourByPropertyData, SelectSimilarData
 from bpy.types import PropertyGroup
@@ -96,18 +96,6 @@ class BIMFilterBuildingStoreys(PropertyGroup):
     is_selected: BoolProperty(name="Is Level Selected", default=True, update=update_is_container_selected)
     total: IntProperty(name="Total")
     unselected_objects: CollectionProperty(type=ObjProperty, name="Unfiltered Objects")
-
-
-class BIMFacet(PropertyGroup):
-    name: StringProperty(name="Name")
-    pset: StringProperty(name="Pset")
-    value: StringProperty(name="Value")
-    type: StringProperty(name="Type")
-    comparison: StringProperty(name="Comparison")
-
-
-class BIMFilterGroup(PropertyGroup):
-    filters: CollectionProperty(type=BIMFacet, name="filters")
 
 
 class BIMColour(PropertyGroup):

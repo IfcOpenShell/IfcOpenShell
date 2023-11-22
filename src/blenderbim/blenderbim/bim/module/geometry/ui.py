@@ -376,6 +376,7 @@ class BIM_PT_placement(Panel):
             row.label(text=PlacementData.data["original_y"])
             row.label(text=PlacementData.data["original_z"])
 
+
 class BIM_PT_derived_coordinates(Panel):
     bl_label = "Derived Coordinates"
     bl_idname = "BIM_PT_derived_coordinates"
