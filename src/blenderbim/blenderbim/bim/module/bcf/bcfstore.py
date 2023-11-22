@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
+import bpy
 import bcf
 import bcf.v2.bcfxml
 
@@ -23,12 +25,31 @@ import bcf.v2.bcfxml
 class BcfStore:
     bcfxml = None
 
-    @staticmethod
-    def get_bcfxml():
-        if not BcfStore.bcfxml:
-            BcfStore.bcfxml = bcf.v2.bcfxml.BcfXml()
-        return BcfStore.bcfxml
+    @classmethod
+    def get_bcfxml(cls):
+        if not cls.bcfxml:
+            bcf_filepath = bpy.context.scene.BCFProperties.bcf_file
+            if not os.path.isabs(bcf_filepath):
+                bcf_filepath = os.path.abspath(os.path.join(bpy.path.abspath("//"), bcf_filepath))
+            if bcf_filepath:
+                try:
+                    cls.bcfxml = bcf.bcfxml.load(bcf_filepath)
+                except:
+                    # there will be a plenty of "Permission denied" errors
+                    # as many poll() methods will try to access the bcfxml simultaneously
+                    # the first time it's loaded
+                    pass
+        return cls.bcfxml
 
     @classmethod
-    def set(cls, bcfxml):
+    def set(cls, bcfxml, filepath):
         cls.bcfxml = bcfxml
+        bpy.context.scene.BCFProperties.bcf_file = filepath
+
+    @classmethod
+    def set_by_filepath(cls, filepath):
+        cls.set(None, filepath)
+
+    @classmethod
+    def unload_bcfxml(cls):
+        cls.set(None, "")
