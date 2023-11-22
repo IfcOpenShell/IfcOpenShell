@@ -276,18 +276,35 @@ class cant_adjuster : public segment_geometry_adjuster {
        auto& start_next = get_start_of_next_segment();
        auto l = get_length();
 
-       for (int i = 0; i < 4; i++) {
-          //p.col(i) = start_this.col(i) + (start_next.col(i) - start_this.col(i)) * u / l;
-          for (int j = 0; j < 3; j++) {
-              auto st = start_this.col(i)(j);
-              auto sn = start_next.col(i)(j);
-              auto result = st + (sn - st) * u / l;
-              p.col(i)(j) = result;
-          }
-          //if (i < 3) {
-          //    p.col(i).normalize();
-          //};
-       }
+       // tilt angle of vector normal to cant at start of this and start of next segment
+       auto tilt_start_this = atan2(start_this.col(2)(2), start_this.col(2)(1));
+       auto tilt_start_next = atan2(start_next.col(2)(2), start_next.col(2)(1));
+
+       // tilt angle of vector normal to cant at u assuming linear interpolation
+       // @todo: rb - rate of change of slope is related to curve type (such as clothoid or line)
+       // need to somehow account for that - it is important when tilt at start of next isn't provided
+       // because it defines how much tilt_start_this varies along the length
+       auto tilt = tilt_start_this + (tilt_start_next - tilt_start_this) * u / l;
+
+       // populate Axis vector
+       p.col(2)(1) = cos(tilt);
+       p.col(2)(2) = sin(tilt);
+
+       // populate Y vector
+       p.col(1)(1) = -p.col(2)(2);
+       p.col(1)(2) = p.col(2)(1);
+
+       // use linear interpolation to compute elevation change due to cant
+       auto st = start_this.col(3)(1);
+       auto sn = start_next.col(3)(1);
+       auto slope = (sn - st) / l;
+
+       // RefDirection.z is due to cant elevation change slope
+       p.col(0)(2) = slope;
+       p.col(0).normalize();
+
+       auto result = st + u * slope;
+       p.col(3)(1) = result;
     }
 
   protected:

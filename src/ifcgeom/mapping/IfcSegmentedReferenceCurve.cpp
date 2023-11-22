@@ -53,11 +53,6 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSegmentedReferenceCurve* ins
 		auto g = gradient->evaluate(u);
 		auto c = cant->evaluate(u);
 
-      // when cant results are combined with the gradient curve
-      // the x-location will be added which doubles them
-      // for this reason, set x location to 0
-      c.col(3)(0) = 0;
-
       std::swap(c.col(3)(1), c.col(3)(2));
 
       Eigen::Matrix4d m;
