@@ -28,7 +28,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcGradientCurve* inst) {
        Logger::Warning("Expected IfcGradientCurve.BaseCurve to be IfcCompositeCurve", inst); // CT 4.1.7.1.1.2
 
    auto horizontal = taxonomy::cast<taxonomy::piecewise_function>(map(inst->BaseCurve()));
-	auto vertical = taxonomy::make<taxonomy::piecewise_function>();
+	auto vertical = taxonomy::make<taxonomy::piecewise_function>(&settings_);
 
 	auto segments = inst->Segments();
 
@@ -73,7 +73,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcGradientCurve* inst) {
 		}
 	}
 
-	auto pwf = taxonomy::make<taxonomy::piecewise_function>();
+	auto pwf = taxonomy::make<taxonomy::piecewise_function>(&settings_);
 	pwf->spans.emplace_back( min_length, composition );
 	pwf->instance = inst;
 	return pwf;

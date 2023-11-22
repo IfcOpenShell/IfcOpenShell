@@ -37,3 +37,17 @@ std::istream& ifcopenshell::geometry::settings::operator>>(std::istream& in, Ite
 	}
 	return in;
 }
+
+std::istream& ifcopenshell::geometry::settings::operator>>(std::istream& in, PiecewiseStepMethod& ioo) {
+    std::string token;
+    in >> token;
+    boost::to_upper(token);
+    if (token == "MAXSTEPSIZE") {
+        ioo = MAXSTEPSIZE;
+    } else if (token == "MINSTEPS") {
+        ioo = MINSTEPS;
+    } else {
+        in.setstate(std::ios_base::failbit);
+    }
+    return in;
+}
