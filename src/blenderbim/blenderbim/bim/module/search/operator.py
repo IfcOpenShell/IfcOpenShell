@@ -434,10 +434,14 @@ class SelectIfcClass(Operator):
     ifc_class: StringProperty()
 
     def execute(self, context):
-        for element in tool.Ifc.get().by_type(self.ifc_class):
-            obj = tool.Ifc.get_object(element)
-            if obj:
-                obj.select_set(True)
+        objects = bpy.context.selected_objects
+        for object in objects:
+            element = tool.Ifc.get_entity(object)
+            element_class = element.is_a()
+            for elem in tool.Ifc.get().by_type(element_class):
+                obj = tool.Ifc.get_object(elem)
+                if obj:
+                    obj.select_set(True)
         return {"FINISHED"}
 
 
