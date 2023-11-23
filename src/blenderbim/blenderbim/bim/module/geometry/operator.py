@@ -923,6 +923,7 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
     def _execute(self, context):
         return DuplicateMoveLinkedAggregate.execute_ifc_duplicate_linked_aggregate_operator(self, context)
 
+    @staticmethod
     def execute_ifc_duplicate_linked_aggregate_operator(self, context):
         self.new_active_obj = None
         self.group_name = "BBIM_Linked_Aggregate"
@@ -1058,79 +1059,93 @@ class RefreshLinkedAggregate(bpy.types.Operator):
                     return element
             else:
                 return None
+
+        def handle_selection(selected_objs):
+            selected_elements = [tool.Ifc.get_entity(selected_obj) for selected_obj in selected_objs]
+
+            selected_parents = []
+            for selected_element in selected_elements:
+                selected_element = get_element_assembly(selected_element)
+                if not selected_element:
+                    self.report({"INFO"}, "Object is not part of a IfcElementAssembly.")
+                    return {'FINISHED'}
+                selected_parents.append(selected_element)
+
+            selected_parents = list(set(selected_parents))
+            linked_aggregate_groups = []
+            for selected_element in selected_parents:
+                product_linked_agg_group = [
+                    r.RelatingGroup
+                    for r in getattr(selected_element, "HasAssignments", []) or []
+                    if r.is_a("IfcRelAssignsToGroup")
+                    if self.group_name in r.RelatingGroup.Name
+                ]
+                linked_aggregate_groups.append(product_linked_agg_group[0].id())
+                
+            return list(set(linked_aggregate_groups)), selected_parents
+
         
-        selected_objs = context.selected_objects
-        selected_elements = [tool.Ifc.get_entity(selected_obj) for selected_obj in selected_objs]
         active_element = tool.Ifc.get_entity(context.active_object)
         active_element = get_element_assembly(active_element)
+        selected_objs = context.selected_objects
+        linked_aggregate_groups, selected_parents = handle_selection(selected_objs)
 
-        working_selection = []
-        for selected_element in selected_elements:
-            selected_element = get_element_assembly(selected_element)
-            if not selected_element:
-                self.report({"INFO"}, "Object is not part of a IfcElementAssembly.")
-                return {'FINISHED'}
-            working_selection.append(selected_element)
+        if len(linked_aggregate_groups) > 1:
+            if len(selected_parents) != len(linked_aggregate_groups):
+                self.report({"INFO"}, "Select only one object from each Linked Aggregate or multiple objects from the same Linked Aggregate.")
+                return {"FINISHED"}
 
-        working_selection = list(set(working_selection))
-        working_ids = [e.id() for e in working_selection]
-        selection_group = []
-        for selected_element in working_selection:
-            product_linked_agg_group = [
-                r.RelatingGroup
-                for r in getattr(selected_element, "HasAssignments", []) or []
-                if r.is_a("IfcRelAssignsToGroup")
-                if self.group_name in r.RelatingGroup.Name
-            ]
-            selection_group.append(product_linked_agg_group[0].id())
-
-        if len(set(selection_group))> 1:
-            self.report({"INFO"}, "Objects are not part of the same Linked Aggregate")
-            return {"FINISHED"}
+        for group in linked_aggregate_groups:
+            elements = tool.Drawing.get_group_elements(tool.Ifc.get().by_id(group))
+            if len(linked_aggregate_groups) > 1:
+                base_instance = [e for e in elements if e in selected_parents][0]
+                instances_to_refresh = elements
+                
+            elif (len(linked_aggregate_groups) == 1) and (len(selected_parents) > 1):
+                base_instance = active_element
+                instances_to_refresh = [element for element in elements if element in selected_parents]
+                
+            else:
+                base_instance = active_element
+                instances_to_refresh = elements
         
-        elements = tool.Drawing.get_group_elements(tool.Ifc.get().by_id(selection_group[0]))
-        
-        for element in elements:
-            if element.GlobalId == active_element.GlobalId:
-                continue
-            
-            if (len(working_selection) > 1) and not (element.id() in working_ids):
-                continue
+            for element in instances_to_refresh:
+                if element.GlobalId == base_instance.GlobalId:
+                    continue
 
-            element_aggregate = ifcopenshell.util.element.get_aggregate(element)
+                element_aggregate = ifcopenshell.util.element.get_aggregate(element)
 
-            selected_obj = tool.Ifc.get_object(active_element)
-            selected_matrix = selected_obj.matrix_world
-            object_duplicate = tool.Ifc.get_object(element)
-            duplicate_matrix = object_duplicate.matrix_world.decompose()
-            
-            delete_objects(element)
-            
-            for obj in context.selected_objects:
-                obj.select_set(False)
+                selected_obj = tool.Ifc.get_object(base_instance)
+                selected_matrix = selected_obj.matrix_world
+                object_duplicate = tool.Ifc.get_object(element)
+                duplicate_matrix = object_duplicate.matrix_world.decompose()
                 
-            tool.Ifc.get_object(active_element).select_set(True)
+                delete_objects(element)
             
-            old_to_new = DuplicateMoveLinkedAggregate.execute_ifc_duplicate_linked_aggregate_operator(self, context)
-            for old, new in old_to_new.items():
+                for obj in context.selected_objects:
+                    obj.select_set(False)
                 
-                new_obj = tool.Ifc.get_object(new[0])
-                new_base_matrix = Matrix.LocRotScale(*duplicate_matrix)
-                matrix_diff = Matrix.inverted(selected_matrix) @ new_obj.matrix_world 
-                new_obj_matrix = new_base_matrix @ matrix_diff
-                new_obj.matrix_world = new_obj_matrix
-
-                
-                if element_aggregate and new[0].is_a("IfcElementAssembly"):
-                    new_aggregate = ifcopenshell.util.element.get_aggregate(new[0])
-                    if not new_aggregate:
-                        blenderbim.core.aggregate.assign_object(
-                                                    tool.Ifc,
-                                                    tool.Aggregate,
-                                                    tool.Collector,
-                                                    relating_obj=tool.Ifc.get_object(element_aggregate),
-                                                    related_obj=tool.Ifc.get_object(new[0]),
-                                                )                        
+                tool.Ifc.get_object(base_instance).select_set(True)
+            
+                old_to_new = DuplicateMoveLinkedAggregate.execute_ifc_duplicate_linked_aggregate_operator(self, context)
+                for old, new in old_to_new.items():
+                    new_obj = tool.Ifc.get_object(new[0])
+                    new_base_matrix = Matrix.LocRotScale(*duplicate_matrix)
+                    matrix_diff = Matrix.inverted(selected_matrix) @ new_obj.matrix_world 
+                    new_obj_matrix = new_base_matrix @ matrix_diff
+                    new_obj.matrix_world = new_obj_matrix
+                    
+                    if element_aggregate and new[0].is_a("IfcElementAssembly"):
+                        new_aggregate = ifcopenshell.util.element.get_aggregate(new[0])
+                        
+                        if not new_aggregate:
+                            blenderbim.core.aggregate.assign_object(
+                                                        tool.Ifc,
+                                                        tool.Aggregate,
+                                                        tool.Collector,
+                                                        relating_obj=tool.Ifc.get_object(element_aggregate),
+                                                        related_obj=tool.Ifc.get_object(new[0]),
+                                                    )                        
                         
         blenderbim.bim.handler.refresh_ui_data()
 

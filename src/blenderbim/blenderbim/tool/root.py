@@ -234,10 +234,8 @@ class Root(blenderbim.core.tool.Root):
     
     @classmethod
     def recreate_aggregate(cls, old_to_new):
-        print("O_T_N", old_to_new)
         for old, new in old_to_new.items():
             old_aggregate = ifcopenshell.util.element.get_aggregate(old)
-            print("Old", old_aggregate)
             if old_aggregate:
                 try:
                     new_aggregate = old_to_new[old_aggregate]
