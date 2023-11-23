@@ -2,10 +2,6 @@ name: ci-ifcopenshell-conda-daily
 
 on:
   workflow_dispatch:
-  push:
-      paths:
-        - .github/workflows/ci-ifcopenshell-conda-daily.yml
-        - conda/**
   schedule:
   #         ┌───────────── minute (0 - 59)
   #         │  ┌───────────── hour (0 - 23)
@@ -19,7 +15,7 @@ jobs:
   activate:
     runs-on: ubuntu-latest
     if: |
-      github.repository == 'IfcOpenShell/IfcOpenShell'
+      github.repository == 'Krande/IfcOpenShell'
     steps:
       - name: Set env
         run: echo ok go
