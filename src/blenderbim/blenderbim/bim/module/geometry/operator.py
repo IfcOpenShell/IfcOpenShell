@@ -1062,13 +1062,16 @@ class RefreshLinkedAggregate(bpy.types.Operator):
 
         def handle_selection(selected_objs):
             selected_elements = [tool.Ifc.get_entity(selected_obj) for selected_obj in selected_objs]
+            if None in selected_elements:
+                self.report({"INFO"}, "Object has no Ifc Metadata.")
+                return None, None
 
             selected_parents = []
             for selected_element in selected_elements:
                 selected_element = get_element_assembly(selected_element)
                 if not selected_element:
                     self.report({"INFO"}, "Object is not part of a IfcElementAssembly.")
-                    return {'FINISHED'}
+                    return None, None
                 selected_parents.append(selected_element)
 
             selected_parents = list(set(selected_parents))
@@ -1080,15 +1083,24 @@ class RefreshLinkedAggregate(bpy.types.Operator):
                     if r.is_a("IfcRelAssignsToGroup")
                     if self.group_name in r.RelatingGroup.Name
                 ]
-                linked_aggregate_groups.append(product_linked_agg_group[0].id())
+                try:
+                    linked_aggregate_groups.append(product_linked_agg_group[0].id())
+                except:
+                    self.report({"INFO"}, "Object is not part of a Linked Aggregate.")
+                    return None, None
                 
             return list(set(linked_aggregate_groups)), selected_parents
 
-        
         active_element = tool.Ifc.get_entity(context.active_object)
+        if not active_element:
+            self.report({"INFO"}, "Object has no Ifc metadata.")
+            return {"FINISHED"}
+            
         active_element = get_element_assembly(active_element)
         selected_objs = context.selected_objects
         linked_aggregate_groups, selected_parents = handle_selection(selected_objs)
+        if not linked_aggregate_groups or not selected_parents:
+            return {"FINISHED"}
 
         if len(linked_aggregate_groups) > 1:
             if len(selected_parents) != len(linked_aggregate_groups):
