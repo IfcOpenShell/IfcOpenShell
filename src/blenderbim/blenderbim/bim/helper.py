@@ -87,8 +87,15 @@ def import_attributes(ifc_class, props, data, callback=None):
 
 # A more elegant attribute importer signature, intended to supersede import_attributes
 def import_attributes2(element, props, callback=None):
-    for attribute in element.wrapped_data.declaration().as_entity().all_attributes():
-        import_attribute(attribute, props, element.get_info(), callback=callback)
+    if isinstance(element, str):
+        attributes = tool.Ifc.schema().declaration_by_name(element).as_entity().all_attributes()
+        info = {a.name(): None for a in attributes}
+        info["type"] = element
+    else:
+        attributes = element.wrapped_data.declaration().as_entity().all_attributes()
+        info = element.get_info()
+    for attribute in attributes:
+        import_attribute(attribute, props, info, callback=callback)
 
 
 def import_attribute(attribute, props, data, callback=None):

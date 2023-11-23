@@ -202,7 +202,6 @@ class Blender:
 
     @classmethod
     def copy_node_graph(cls, material_to, material_from):
-        
         # https://projects.blender.org/blender/blender/issues/108763
         if bpy.app.version >= (4, 0):
             print(
@@ -643,3 +642,61 @@ class Blender:
         if blenderbim.bim.last_commit_hash != "8888888":
             version += f"-{blenderbim.bim.last_commit_hash[:7]}"
         return version
+
+    @classmethod
+    def register_toolbar(cls):
+        import blenderbim.bim.module.model.workspace as ws_model
+        import blenderbim.bim.module.drawing.workspace as ws_drawing
+        import blenderbim.bim.module.spatial.workspace as ws_spatial
+        import blenderbim.bim.module.structural.workspace as ws_structural
+        import blenderbim.bim.module.covering.workspace as ws_covering
+
+        if bpy.app.background:
+            return
+
+        try:
+            bpy.utils.register_tool(ws_model.WallTool, after={"builtin.transform"}, separator=True, group=False)
+            bpy.utils.register_tool(ws_model.SlabTool, after={"bim.wall_tool"}, separator=False, group=False)
+            bpy.utils.register_tool(ws_model.DoorTool, after={"bim.slab_tool"}, separator=False, group=False)
+            bpy.utils.register_tool(ws_model.WindowTool, after={"bim.door_tool"}, separator=False, group=False)
+            bpy.utils.register_tool(ws_model.ColumnTool, after={"bim.window_tool"}, separator=False, group=False)
+            bpy.utils.register_tool(ws_model.BeamTool, after={"bim.column_tool"}, separator=False, group=False)
+            bpy.utils.register_tool(ws_model.DuctTool, after={"bim.beam_tool"}, separator=False, group=False)
+            bpy.utils.register_tool(ws_model.PipeTool, after={"bim.duct_tool"}, separator=False, group=False)
+            bpy.utils.register_tool(ws_model.BimTool, after={"bim.pipe_tool"}, separator=False, group=False)
+            bpy.utils.register_tool(ws_drawing.AnnotationTool, after={"bim.bim_tool"}, separator=True, group=False)
+            bpy.utils.register_tool(ws_spatial.SpatialTool, after={"bim.annotation_tool"}, separator=False, group=False)
+            bpy.utils.register_tool(
+                ws_structural.StructuralTool, after={"bim.spatial_tool"}, separator=False, group=False
+            )
+            bpy.utils.register_tool(ws_covering.CoveringTool, after={"bim.structural_tool"}, separator=False, group=False)
+        except:
+            pass
+
+    @classmethod
+    def unregister_toolbar(cls):
+        import blenderbim.bim.module.model.workspace as ws_model
+        import blenderbim.bim.module.drawing.workspace as ws_drawing
+        import blenderbim.bim.module.spatial.workspace as ws_spatial
+        import blenderbim.bim.module.structural.workspace as ws_structural
+        import blenderbim.bim.module.covering.workspace as ws_covering
+
+        if bpy.app.background:
+            return
+
+        try:
+            bpy.utils.unregister_tool(ws_model.WallTool)
+            bpy.utils.unregister_tool(ws_model.SlabTool)
+            bpy.utils.unregister_tool(ws_model.DoorTool)
+            bpy.utils.unregister_tool(ws_model.WindowTool)
+            bpy.utils.unregister_tool(ws_model.ColumnTool)
+            bpy.utils.unregister_tool(ws_model.BeamTool)
+            bpy.utils.unregister_tool(ws_model.DuctTool)
+            bpy.utils.unregister_tool(ws_model.PipeTool)
+            bpy.utils.unregister_tool(ws_model.BimTool)
+            bpy.utils.unregister_tool(ws_drawing.AnnotationTool)
+            bpy.utils.unregister_tool(ws_spatial.SpatialTool)
+            bpy.utils.unregister_tool(ws_structural.StructuralTool)
+            bpy.utils.unregister_tool(ws_covering.CoveringTool)
+        except:
+            pass
