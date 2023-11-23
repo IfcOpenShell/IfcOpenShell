@@ -34,8 +34,8 @@ jobs:
       fail-fast: false
       matrix:
         pyver: [
-          { name: py310, distver: '3.10'},
-          { name: py311, distver: '3.11'}
+          { name: py311, distver: '3.11'},
+          { name: py312, distver: '3.12'}
         ]
         platform: [
           { name: Windows, distver: windows-2022, upload: 'true' },
@@ -53,13 +53,13 @@ jobs:
           tar xf MacOSX10.13.sdk.tar.xz && \
           sudo mv -v MacOSX10.13.sdk /opt/ && \
           ls /opt/
-      - uses: seanmiddleditch/gha-setup-ninja@master
-      - uses: mamba-org/provision-with-micromamba@main # https://github.com/mamba-org/provision-with-micromamba
+      - uses: mamba-org/setup-micromamba@v1 # https://github.com/mamba-org/setup-micromamba
         with:
-          channels: conda-forge
-          channel-priority: strict
+          cache-environment: true
           environment-file: conda/environment.yml
-          extra-specs: |
+          condarc:
+            channel_priority: strict
+          create-args: >-
             python=${{ matrix.pyver.distver }}
       - name: build, test and upload ifcopenshell
         if: ${{ matrix.platform.upload == 'true' }}
