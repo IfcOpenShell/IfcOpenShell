@@ -550,9 +550,19 @@ class EnableEditingSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
                     props.is_specular_highlight_null = True
 
                 props.reflectance_method = surface_style.ReflectanceMethod
-        elif shading:
-            props.surface_colour = color_to_tuple(shading.SurfaceColour)
-            props.transparency = shading.Transparency or 0.0
+            elif self.ifc_class == "IfcExternallyDefinedSurfaceStyle":
+                attributes = props.external_style_attributes
+                attributes.clear()
+                blenderbim.bim.helper.import_attributes2(surface_style, attributes)
+        else:
+            if self.ifc_class == "IfcSurfaceStyleRendering":
+                if shading:
+                    props.surface_colour = color_to_tuple(shading.SurfaceColour)
+                    props.transparency = shading.Transparency or 0.0
+            elif self.ifc_class == "IfcExternallyDefinedSurfaceStyle":
+                attributes = props.external_style_attributes
+                attributes.clear()
+                blenderbim.bim.helper.import_attributes2(self.ifc_class, attributes)
 
         props.is_editing_style = self.style
         props.is_editing_class = self.ifc_class
@@ -607,6 +617,13 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
                 attributes=self.get_rendering_attributes(),
             )
             tool.Loader.create_surface_style_rendering(material, self.surface_style)
+        elif self.surface_style.is_a() == "IfcExternallyDefinedSurfaceStyle":
+            surface_style = ifcopenshell.api.run(
+                "style.edit_surface_style",
+                tool.Ifc.get(),
+                style=self.surface_style,
+                attributes=blenderbim.bim.helper.export_attributes(self.props.external_style_attributes),
+            )
 
     def add_new_style(self):
         material = tool.Ifc.get_object(self.style)
@@ -628,6 +645,14 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
                 attributes=self.get_rendering_attributes(),
             )
             tool.Loader.create_surface_style_rendering(material, surface_style)
+        elif self.props.is_editing_class == "IfcExternallyDefinedSurfaceStyle":
+            surface_style = ifcopenshell.api.run(
+                "style.add_surface_style",
+                tool.Ifc.get(),
+                style=self.style,
+                ifc_class="IfcExternallyDefinedSurfaceStyle",
+                attributes=blenderbim.bim.helper.export_attributes(self.props.external_style_attributes),
+            )
 
     def get_shading_attributes(self):
         return {
