@@ -116,6 +116,8 @@ class BIM_PT_styles(Panel):
                 self.draw_surface_style_shading()
             elif self.props.is_editing_class == "IfcSurfaceStyleRendering":
                 self.draw_surface_style_rendering()
+            elif self.props.is_editing_class == "IfcExternallyDefinedSurfaceStyle":
+                self.draw_externally_defined_surface_style()
 
     def draw_surface_style_shading(self):
         row = self.layout.row()
@@ -182,6 +184,12 @@ class BIM_PT_styles(Panel):
 
         row = self.layout.row(align=True)
         row.operator("bim.edit_surface_style", text="Save Rendering Style", icon="CHECKMARK")
+        row.operator("bim.disable_editing_style", text="", icon="CANCEL")
+
+    def draw_externally_defined_surface_style(self):
+        blenderbim.bim.helper.draw_attributes(self.props.external_style_attributes, self.layout)
+        row = self.layout.row(align=True)
+        row.operator("bim.edit_surface_style", text="Save External Style", icon="CHECKMARK")
         row.operator("bim.disable_editing_style", text="", icon="CANCEL")
 
 
