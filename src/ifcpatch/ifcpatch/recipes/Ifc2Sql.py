@@ -87,7 +87,7 @@ class Patcher:
         .. code:: python
 
             # Convert to SQLite
-            ifcpatch.execute({"input": model, "recipe": "Ifc2Sql", "arguments": ["sqlite"]})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "Ifc2Sql", "arguments": ["sqlite"]})
         """
         self.src = src
         self.file = file

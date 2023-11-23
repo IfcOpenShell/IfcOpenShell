@@ -50,7 +50,7 @@ class Patcher:
 
         .. code:: python
 
-            ifcpatch.execute({"input": model, "recipe": "FixArchiCADToRevitSpaces", "arguments": []})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "FixArchiCADToRevitSpaces", "arguments": []})
         """
         self.src = src
         self.file = file

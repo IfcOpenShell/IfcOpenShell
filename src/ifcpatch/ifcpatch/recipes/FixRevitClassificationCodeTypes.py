@@ -33,7 +33,7 @@ class Patcher:
 
         .. code:: python
 
-            ifcpatch.execute({"input": model, "recipe": "FixRevitClassificationCodeTypes"})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "FixRevitClassificationCodeTypes"})
         """
         self.src = src
         self.file = file

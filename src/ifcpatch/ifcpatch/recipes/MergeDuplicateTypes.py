@@ -53,10 +53,10 @@ class Patcher:
         .. code:: python
 
             # Default behaviour of merging by Tag attribute
-            ifcpatch.execute({"input": model, "recipe": "MergeDuplicateTypes", "arguments": []})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "MergeDuplicateTypes", "arguments": []})
 
             # Explicitly say we want to merge based on the Name attribute
-            ifcpatch.execute({"input": model, "recipe": "MergeDuplicateTypes", "arguments": ["Name"]})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "MergeDuplicateTypes", "arguments": ["Name"]})
         """
         self.src = src
         self.file = file

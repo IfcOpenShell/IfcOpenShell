@@ -39,7 +39,7 @@ class Patcher:
 
         .. code:: python
 
-            ifcpatch.execute({"input": model, "recipe": "TessellateElements", "arguments": ["IfcBeam"]})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "TessellateElements", "arguments": ["IfcBeam"]})
         """
         self.src = src
         self.file = file

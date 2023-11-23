@@ -55,7 +55,7 @@ class Patcher:
 
             # Any property named "Area" is converted to a quantity named
             # "NetSideArea", if that standardised quantity exists.
-            ifcpatch.execute({"input": model, "recipe": "ConvertPropertiesToQuantities", "arguments": ["Area", "NetSideArea"]})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ConvertPropertiesToQuantities", "arguments": ["Area", "NetSideArea"]})
         """
         self.src = src
         self.file = file

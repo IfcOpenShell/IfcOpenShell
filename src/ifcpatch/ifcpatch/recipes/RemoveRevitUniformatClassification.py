@@ -29,7 +29,7 @@ class Patcher:
 
         .. code:: python
 
-            ifcpatch.execute({"input": model, "recipe": "RemoveRevitUniformatClassification"})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "RemoveRevitUniformatClassification"})
         """
         self.src = src
         self.file = file
