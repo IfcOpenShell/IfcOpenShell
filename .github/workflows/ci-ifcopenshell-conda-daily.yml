@@ -57,7 +57,7 @@ jobs:
         with:
           cache-environment: true
           environment-file: conda/environment.yml
-          condarc:
+          condarc: |
             channel_priority: strict
           create-args: >-
             python=${{ matrix.pyver.distver }}
