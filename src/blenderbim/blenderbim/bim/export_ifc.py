@@ -74,7 +74,7 @@ class IfcExporter:
     def set_header(self):
         self.file.wrapped_data.header.file_name.name = os.path.basename(self.ifc_export_settings.output_file)
         self.file.wrapped_data.header.file_name.time_stamp = (
-            datetime.datetime.now(datetime.UTC)
+            datetime.datetime.utcnow()
             .replace(tzinfo=datetime.timezone.utc)
             .astimezone()
             .replace(microsecond=0)
