@@ -123,7 +123,7 @@ class BIM_PT_linked_aggregate(Panel):
 
         props = context.scene.BIMGroupProperties
         for group in ObjectGroupsData.data["groups"]:
-            if group["name"] == "Linked Aggregate":
+            if group["name"] == "BBIM_Linked_Aggregate":
                 row = layout.row(align=True)
                 row.label(text=f"{group['total_objects']} Linked Aggregates")
                 row.operator("bim.refresh_linked_aggregate", text="", icon="FILE_REFRESH")
@@ -131,6 +131,7 @@ class BIM_PT_linked_aggregate(Panel):
 
         # Select Linked Aggregate Element
         # Select Linked Aggregate Decomposition
+        # When remove object from a linked aggregate should remove the pset
         # Break the link of Linked Aggregate (highest level)
 
         # Add Decomposition Operator (Alt+D) to the aggregate panel
