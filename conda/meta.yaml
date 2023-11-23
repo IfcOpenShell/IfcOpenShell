@@ -51,20 +51,18 @@ requirements:
     - mpir  # [win]
     - nlohmann_json
     - zlib
-  run_constrained:
-    - occt 7.7.2 *{{ variant }}*
 
 test:
   imports:
     - ifcopenshell
 
 about:
-  home: http://ifcopenshell.org
+  home: https://ifcopenshell.org
   license: LGPL-3.0-or-later
   license_file: COPYING
   summary: 'IfcOpenShell is a library to support the IFC file format'
   description: |
     IfcOpenShell is an open source (LGPL) software library for 
     working with the Industry Foundation Classes (IFC) file format.
-  doc_url: http://ifcopenshell.org/
+  doc_url: https://ifcopenshell.org/
   dev_url: https://github.com/IfcOpenShell/IfcOpenShell
