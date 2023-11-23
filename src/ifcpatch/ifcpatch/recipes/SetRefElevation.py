@@ -37,7 +37,7 @@ class Patcher:
         .. code:: python
 
             # All IfcSites will have their reference elevation set to 42.
-            ifcpatch.execute({"input": model, "recipe": "SetRefElevation", "arguments": [42]})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "SetRefElevation", "arguments": [42]})
         """
         self.src = src
         self.file = file

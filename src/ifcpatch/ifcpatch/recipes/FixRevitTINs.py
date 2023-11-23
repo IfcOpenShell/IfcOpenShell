@@ -52,7 +52,7 @@ class Patcher:
 
         .. code:: python
 
-            ifcpatch.execute({"input": model, "recipe": "Fix12DToRevitTINs", "arguments": []})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "Fix12DToRevitTINs", "arguments": []})
         """
         self.src = src
         self.file = file
