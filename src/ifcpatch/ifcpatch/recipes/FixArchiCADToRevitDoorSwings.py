@@ -54,7 +54,7 @@ class Patcher:
 
         .. code:: python
 
-            ifcpatch.execute({"input": model, "recipe": "FixArchiCADToRevitDoorSwings", "arguments": []})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "FixArchiCADToRevitDoorSwings", "arguments": []})
         """
         self.src = src
         self.file = file

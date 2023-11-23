@@ -34,7 +34,7 @@ class Patcher:
 
         .. code:: python
 
-            ifcpatch.execute({"input": model, "recipe": "ConvertNestToAggregate", "arguments": []})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ConvertNestToAggregate", "arguments": []})
         """
         self.src = src
         self.file = file

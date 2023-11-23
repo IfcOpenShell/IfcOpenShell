@@ -43,7 +43,7 @@ class Patcher:
 
         .. code:: python
 
-            ifcpatch.execute({"input": model, "recipe": "RecycleNonRootedElements", "arguments": []})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "RecycleNonRootedElements", "arguments": []})
         """
         self.src = src
         self.file = file

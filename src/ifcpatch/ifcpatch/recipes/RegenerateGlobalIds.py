@@ -41,10 +41,10 @@ class Patcher:
         .. code:: python
 
             # Regenerate all GlobalIds
-            ifcpatch.execute({"input": model, "recipe": "RegenerateGlobalIds", "arguments": []})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "RegenerateGlobalIds", "arguments": []})
 
             # Regenerate only duplicate GlobalIds
-            ifcpatch.execute({"input": model, "recipe": "RegenerateGlobalIds", "arguments": [True]})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "RegenerateGlobalIds", "arguments": [True]})
         """
         self.src = src
         self.file = file

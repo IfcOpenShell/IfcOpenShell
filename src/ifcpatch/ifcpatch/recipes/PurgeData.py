@@ -47,7 +47,7 @@ class Patcher:
         .. code:: python
 
             # Watch the world burn
-            ifcpatch.execute({"input": model, "recipe": "PurgeData", "arguments": []})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "PurgeData", "arguments": []})
         """
         self.src = src
         self.file = file

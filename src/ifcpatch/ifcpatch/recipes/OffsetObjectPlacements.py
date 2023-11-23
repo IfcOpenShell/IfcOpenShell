@@ -68,13 +68,13 @@ class Patcher:
         .. code:: python
 
             # Offset a model by 100 units in both the X and Y axis.
-            ifcpatch.execute({"input": model, "recipe": "OffsetObjectPlacements", "arguments": [100,100,0]})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "OffsetObjectPlacements", "arguments": [100,100,0]})
 
             # Rotate by 90 degrees, but don't do any offset
-            ifcpatch.execute({"input": model, "recipe": "OffsetObjectPlacements", "arguments": [0,0,0,True,90]})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "OffsetObjectPlacements", "arguments": [0,0,0,True,90]})
 
             # Some crazy 3D rotation and offset
-            ifcpatch.execute({"input": model, "recipe": "OffsetObjectPlacements", "arguments": [12.5,5,2,False,90,90,45]})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "OffsetObjectPlacements", "arguments": [12.5,5,2,False,90,90,45]})
         """
         self.src = src
         self.file = file
