@@ -19,6 +19,7 @@
 import blenderbim.tool as tool
 from bpy.types import Panel
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.fm.data import FMData
 
 
 class BIM_PT_fm(Panel):
@@ -30,6 +31,9 @@ class BIM_PT_fm(Panel):
     bl_parent_id = "BIM_PT_tab_handover"
 
     def draw(self, context):
+        if not FMData.is_loaded:
+            FMData.load()
+
         layout = self.layout
         layout.use_property_split = True
 
