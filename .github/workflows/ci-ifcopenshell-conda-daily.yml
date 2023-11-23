@@ -66,5 +66,5 @@ jobs:
       - name: build, test and upload ifcopenshell
         if: ${{ matrix.platform.upload == 'true' }}
         run: |
-          conda-build . --python ${{ matrix.pyver.distver }} -c conda-forge --variants "{variant: ${{ matrix.variant }}}" --token ${{ secrets.ANACONDA_TOKEN }} --user ifcopenshell
+          conda mambabuild . --python ${{ matrix.pyver.distver }} -c conda-forge --variants "{variant: ${{ matrix.variant }}}" --token ${{ secrets.ANACONDA_TOKEN }} --user ifcopenshell
         working-directory: ./conda
