@@ -32,8 +32,7 @@ requirements:
     - occt 7.7.2 *{{ variant }}*
     - libxml2
     - cgal-cpp
-    - hdf5 1.12 # [win]
-    - hdf5 # [not win]
+    - hdf5
     - mpfr
     - gmp  # [unix]
     - mpir  # [win]
