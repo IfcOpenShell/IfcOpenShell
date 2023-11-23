@@ -234,6 +234,8 @@ def get_property(psets, pset_name, prop_name, decimals=None):
 
 
 config = {
+    "name": "IFC Basic",
+    "description": "buildingSMART standardised properties related to asset management and handover",
     "colours": {
         "h": "dddddd",  # Header data
         "p": "dc8774",  # Primary identification data

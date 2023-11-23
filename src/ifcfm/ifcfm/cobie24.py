@@ -1036,6 +1036,8 @@ def get_sheet_name(element):
 
 
 config = {
+    "name": "COBie 2.4",
+    "description": "Construction-Operations Building information exchange specification by NBIMS-US and BS 1192-4:2014.",
     "colours": {
         "h": "c0c0c0",  # Header data
         "r": "ffff99",  # Required

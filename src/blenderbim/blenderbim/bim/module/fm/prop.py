@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+from blenderbim.bim.module.fm.data import FMData
 from blenderbim.bim.prop import StrProperty
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -31,21 +32,18 @@ from bpy.props import (
 )
 
 
+def get_engine(self, context):
+    if not FMData.is_loaded:
+        FMData.load()
+    return FMData.data["engine"]
+
+
 class BIMFMProperties(PropertyGroup):
     ifc_file: StringProperty(default="", name="IFC File")
     ifc_files: CollectionProperty(name="IFC Files", type=StrProperty)
     spreadsheet_files: CollectionProperty(name="Spreadsheets", type=StrProperty)
     should_load_from_memory: BoolProperty(default=False, name="Load from Memory")
-    engine: EnumProperty(
-        items=[
-            ("aohbsem", "AOH-BSEM", ""),
-            ("basic", "Basic", ""),
-            ("cobie24", "COBie 2.4", ""),
-            ("cobie3", "COBie 3", ""),
-        ],
-        name="Engine",
-        default="cobie24",
-    )
+    engine: EnumProperty(items=get_engine, name="Engine")
     format: EnumProperty(
         items=[
             ("csv", "csv", ""),

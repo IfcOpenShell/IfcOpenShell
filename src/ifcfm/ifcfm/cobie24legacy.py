@@ -1143,6 +1143,8 @@ def get_sheet_name(element):
 
 
 config = {
+    "name": "COBie 2.4 Legacy",
+    "description": "A port of the original implementation of COBie by Prairie Sky Consulting for historical preservation",
     "colours": {
         "h": "c0c0c0",  # Header data
         "r": "ffff99",  # Required
