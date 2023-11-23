@@ -582,9 +582,10 @@ if(HDF5_SUPPORT)
 
         else()
             message(STATUS "Packaging hdf5 and zlib for conda distribution")
-            set(HDF5_LIBRARIES)
+
             if(WIN32)
                 # Windows
+                set(HDF5_LIBRARIES)
                 find_package(HDF5 COMPONENTS CXX)
                 if (HDF5_FOUND)
                     set(HDF5_LIBRARIES ${HDF5_CXX_LIBRARIES})
@@ -592,27 +593,23 @@ if(HDF5_SUPPORT)
                 list(APPEND HDF5_LIBRARIES
                     "${HDF5_LIBRARY_DIR}/zlib.lib"
                 )
-            elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-                # macOS
-                list(APPEND HDF5_LIBRARIES
-                    "${HDF5_LIBRARY_DIR}/libhdf5_cpp.dylib"
-                    "${HDF5_LIBRARY_DIR}/libhdf5.dylib"
-                    "${HDF5_LIBRARY_DIR}/libz.dylib"
-                )
             else()
-                # linux
-                list(APPEND HDF5_LIBRARIES
-                    "${HDF5_LIBRARY_DIR}/libhdf5_cpp.so"
-                    "${HDF5_LIBRARY_DIR}/libhdf5.so"
-                    "${HDF5_LIBRARY_DIR}/libz.so"
+                if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+                    # macOS
+                    set(zlib_post libz)
+                    set(lib_ext dylib)
+                else()
+                    # linux
+                    set(zlib_post libz)
+                    set(lib_ext so)
+                endif()
+
+                set(HDF5_LIBRARIES
+                    "${HDF5_LIBRARY_DIR}/libhdf5_cpp.${lib_ext}"
+                    "${HDF5_LIBRARY_DIR}/libhdf5.${lib_ext}"
+                    "${HDF5_LIBRARY_DIR}/${zlib_post}.${lib_ext}"
                 )
             endif()
-
-            set(HDF5_LIBRARIES
-                "${HDF5_LIBRARY_DIR}/libhdf5_cpp.${lib_ext}"
-                "${HDF5_LIBRARY_DIR}/libhdf5.${lib_ext}"
-                "${HDF5_LIBRARY_DIR}/${zlib_post}.${lib_ext}"
-            )
         endif()
     endif()
 
