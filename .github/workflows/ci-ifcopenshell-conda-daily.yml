@@ -9,7 +9,7 @@ jobs:
   activate:
     runs-on: ubuntu-latest
     if: |
-      github.repository == 'IfcOpenShell/IfcOpenShell'
+      github.repository == 'Krande/IfcOpenShell'
     steps:
       - name: Set env
         run: echo ok go
