@@ -58,7 +58,7 @@ class Usecase:
         self.file = ifcopenshell.file(schema=self.settings["version"])
         self.file.wrapped_data.header.file_name.name = "/dev/null"  # Hehehe
         self.file.wrapped_data.header.file_name.time_stamp = (
-            datetime.datetime.now(datetime.UTC)
+            datetime.datetime.utcnow()
             .replace(tzinfo=datetime.timezone.utc)
             .astimezone()
             .replace(microsecond=0)
