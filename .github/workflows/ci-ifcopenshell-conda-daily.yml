@@ -1,6 +1,7 @@
 name: ci-ifcopenshell-conda-daily-v0.8.0
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - v0.8.0
@@ -9,7 +10,7 @@ jobs:
   activate:
     runs-on: ubuntu-latest
     if: |
-      github.repository == 'Krande/IfcOpenShell'
+      github.repository == 'IfcOpenShell/IfcOpenShell'
     steps:
       - name: Set env
         run: echo ok go
