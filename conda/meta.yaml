@@ -32,7 +32,8 @@ requirements:
     - occt 7.7.2 *{{ variant }}*
     - libxml2
     - cgal-cpp
-    - hdf5
+    - hdf5 1.12 # [win]
+    - hdf5 # [not win]
     - mpfr
     - gmp  # [unix]
     - mpir  # [win]
@@ -44,8 +45,8 @@ requirements:
     - occt 7.7.2 *{{ variant }}*
     - {{ pin_compatible('cgal-cpp', max_pin='x.x.x') }}
     - {{ pin_compatible('boost-cpp', max_pin='x.x.x') }}
+    - {{ pin_compatible('hdf5', max_pin='x.x.x') }}
     - libxml2
-    - hdf5
     - mpfr
     - gmp  # [unix]
     - mpir  # [win]
