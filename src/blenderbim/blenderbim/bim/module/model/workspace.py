@@ -434,7 +434,6 @@ class BimToolUI:
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_L")
                 row.operator("bim.clone_opening", text="Clone Opening")
-                
 
         cls.layout.row(align=True).label(text="Align")
         add_layout_hotkey_operator(cls.layout, "Align Exterior", "S_X", "")
