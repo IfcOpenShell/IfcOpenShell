@@ -18,7 +18,7 @@ jobs:
   activate:
     runs-on: ubuntu-latest
     if: |
-      github.repository == 'IfcOpenShell/IfcOpenShell'
+      github.repository == 'Krande/IfcOpenShell'
     steps:
       - name: Set env
         run: echo ok go
@@ -66,5 +66,5 @@ jobs:
       - name: build, test and upload ifcopenshell
         if: ${{ matrix.platform.upload == 'true' }}
         run: |
-          conda-build . --python ${{ matrix.pyver.distver }} -c conda-forge --token ${{ secrets.ANACONDA_TOKEN }} --user ifcopenshell --variants "{variant: ${{ matrix.variant }}}"
+          conda-build . --python ${{ matrix.pyver.distver }} -c conda-forge --variants "{variant: ${{ matrix.variant }}}"
         working-directory: ./conda
