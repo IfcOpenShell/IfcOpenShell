@@ -59,6 +59,8 @@ jobs:
           environment-name: build-env
           cache-environment: true
           condarc: |
+            channels:
+              - conda-forge
             channel_priority: strict
           create-args: >-
             python=3.11
