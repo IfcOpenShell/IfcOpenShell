@@ -16,17 +16,8 @@ on:
   - cron: "49 23 * * *" # 11min before utc midnight every day
 
 jobs:
-  activate:
-    runs-on: ubuntu-latest
-    if: |
-      github.repository == 'Krande/IfcOpenShell'
-    steps:
-      - name: Set env
-        run: echo ok go
-
   test:
     name: ${{ matrix.platform.distver }}-${{ matrix.pyver.name }}-${{ matrix.variant }}
-    needs: activate
     runs-on: ${{ matrix.platform.distver }}
     defaults:
       run:
