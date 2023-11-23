@@ -426,21 +426,33 @@ class SelectGlobalId(Operator):
 
 
 class SelectIfcClass(Operator):
-    """Click to select all objects that match with the given IFC class"""
+    """Click to select all objects that match with the given IFC class\nSHIFT + Click to also match Predefined Type"""
 
     bl_idname = "bim.select_ifc_class"
     bl_label = "Select IFC Class"
     bl_options = {"REGISTER", "UNDO"}
+    should_filter_predefined_type: BoolProperty(default=False)
+
+    def invoke(self, context, event):
+        self.should_filter_predefined_type = event.shift
+        return self.execute(context)
 
     def execute(self, context):
-        objects = bpy.context.selected_objects
+        objects = context.selected_objects
         classes = set()
+        predefined_types = set()
         for obj in objects:
             element = tool.Ifc.get_entity(obj)
             if element:
                 classes.add(element.is_a())
+                predefined_types.add(ifcopenshell.util.element.get_predefined_type(element))
         for cls in classes:
             for element in tool.Ifc.get().by_type(cls):
+                if (
+                    self.should_filter_predefined_type
+                    and ifcopenshell.util.element.get_predefined_type(element) not in predefined_types
+                ):
+                    continue
                 obj = tool.Ifc.get_object(element)
                 if obj:
                     obj.select_set(True)
