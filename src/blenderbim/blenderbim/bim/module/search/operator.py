@@ -431,15 +431,17 @@ class SelectIfcClass(Operator):
     bl_idname = "bim.select_ifc_class"
     bl_label = "Select IFC Class"
     bl_options = {"REGISTER", "UNDO"}
-    ifc_class: StringProperty()
 
     def execute(self, context):
         objects = bpy.context.selected_objects
-        for object in objects:
-            element = tool.Ifc.get_entity(object)
-            element_class = element.is_a()
-            for elem in tool.Ifc.get().by_type(element_class):
-                obj = tool.Ifc.get_object(elem)
+        classes = set()
+        for obj in objects:
+            element = tool.Ifc.get_entity(obj)
+            if element:
+                classes.add(element.is_a())
+        for cls in classes:
+            for element in tool.Ifc.get().by_type(cls):
+                obj = tool.Ifc.get_object(element)
                 if obj:
                     obj.select_set(True)
         return {"FINISHED"}
