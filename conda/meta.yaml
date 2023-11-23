@@ -1,6 +1,10 @@
 {% set name = "ifcopenshell" %}
 {% set version = "0.7.0" %}
+{% set build = 1 %}
 
+# Higher number -> Always prioritize "novtk" variant over "all" variant
+{% set build = build + 200 %}   # [variant == "novtk"]
+{% set build = build + 100 %}   # [variant == "all"]
 
 package:
   name: {{ name }}
@@ -10,8 +14,9 @@ source:
   path: ..
 
 build:
+  string: {{ variant }}_h{{ PKG_HASH }}_{{ build }}
   binary_relocation: false [osx]
-  number: 1
+  number: {{ build }}
 
 requirements:
   build:
@@ -24,7 +29,7 @@ requirements:
   host:
     - python
     - boost-cpp
-    - occt ==7.7.0
+    - occt 7.7.2 *{{ variant }}*
     - libxml2
     - cgal-cpp
     - hdf5
@@ -36,16 +41,18 @@ requirements:
 
   run:
     - python
-    - {{ pin_compatible('occt', max_pin='x.x.x') }}
+    - occt 7.7.2 *{{ variant }}*
     - {{ pin_compatible('cgal-cpp', max_pin='x.x.x') }}
     - {{ pin_compatible('boost-cpp', max_pin='x.x.x') }}
+    - {{ pin_compatible('hdf5', max_pin='x.x.x') }}
     - libxml2
-    - hdf5
     - mpfr
     - gmp  # [unix]
     - mpir  # [win]
     - nlohmann_json
     - zlib
+  run_constrained:
+    - occt 7.7.2 *{{ variant }}*
 
 test:
   imports:

@@ -1,6 +1,7 @@
 name: ci-ifcopenshell-conda-daily
 
 on:
+  workflow_dispatch:
   push:
       paths:
         - .github/workflows/ci-ifcopenshell-conda-daily.yml
@@ -18,13 +19,13 @@ jobs:
   activate:
     runs-on: ubuntu-latest
     if: |
-      github.repository == 'IfcOpenShell/IfcOpenShell'
+      github.repository == 'Krande/IfcOpenShell'
     steps:
       - name: Set env
         run: echo ok go
 
   test:
-    name: ${{ matrix.platform.distver }}-${{ matrix.pyver.name }}
+    name: ${{ matrix.platform.distver }}-${{ matrix.pyver.name }}-${{ matrix.variant }}
     needs: activate
     runs-on: ${{ matrix.platform.distver }}
     defaults:
@@ -42,10 +43,15 @@ jobs:
           { name: Linux, distver: ubuntu-22.04,  upload: 'true' },
           { name: macOS, distver: macos-12, upload: 'true' }
         ]
+        variant: [
+          'novtk',
+#          'all'
+        ]
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
+
       - name: Download MacOSX SDK
         if: ${{ matrix.platform.name == 'macOS' }}
         run: |
@@ -53,21 +59,21 @@ jobs:
           tar xf MacOSX10.13.sdk.tar.xz && \
           sudo mv -v MacOSX10.13.sdk /opt/ && \
           ls /opt/
+
       - uses: mamba-org/setup-micromamba@v1 # https://github.com/mamba-org/setup-micromamba
         with:
+          environment-name: build-env
           cache-environment: true
-          environment-file: conda/environment.yml
           condarc: |
+            channels:
+              - conda-forge
             channel_priority: strict
           create-args: >-
-            python=${{ matrix.pyver.distver }}
+            python=3.11
+            boa
+
       - name: build, test and upload ifcopenshell
         if: ${{ matrix.platform.upload == 'true' }}
         run: |
-          conda-build . --python ${{ matrix.pyver.distver }} -c conda-forge --token ${{ secrets.ANACONDA_TOKEN }} --user ifcopenshell
-        working-directory: ./conda
-      - name: build & test ifcopenshell
-        if: ${{ matrix.platform.upload == 'false' }}
-        run: |
-          conda-build . --python ${{ matrix.pyver.distver }} -c conda-forge
+          conda-build . --python ${{ matrix.pyver.distver }} -c conda-forge --variants "{variant: ${{ matrix.variant }}}" --token ${{ secrets.ANACONDA_TOKEN }} --user ifcopenshell
         working-directory: ./conda
