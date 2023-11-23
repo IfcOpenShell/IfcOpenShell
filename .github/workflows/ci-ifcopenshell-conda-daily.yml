@@ -24,7 +24,7 @@ jobs:
         run: echo ok go
 
   test:
-    name: ${{ matrix.platform.distver }}-${{ matrix.pyver.name }}
+    name: ${{ matrix.platform.distver }}-${{ matrix.pyver.name }}-${{ matrix.variant }}
     needs: activate
     runs-on: ${{ matrix.platform.distver }}
     defaults:
@@ -57,11 +57,11 @@ jobs:
       - uses: mamba-org/setup-micromamba@v1 # https://github.com/mamba-org/setup-micromamba
         with:
           cache-environment: true
-          environment-file: conda/environment.yml
           condarc: |
             channel_priority: strict
           create-args: >-
-            python=${{ matrix.pyver.distver }}
+            python=3.11
+            boa
 
       - name: build, test and upload ifcopenshell
         if: ${{ matrix.platform.upload == 'true' }}
