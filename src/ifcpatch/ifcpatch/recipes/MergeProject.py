@@ -37,7 +37,7 @@ class Patcher:
 
         .. code:: python
 
-            ifcpatch.execute({"input": model, "recipe": "MergeProject", "arguments": ["/path/to/model2.ifc"]})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "MergeProject", "arguments": ["/path/to/model2.ifc"]})
         """
         self.src = src
         self.file = file

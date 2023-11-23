@@ -35,7 +35,7 @@ class Patcher:
         .. code:: python
 
             # Upgrade an IFC2X3 model to IFC4
-            ifcpatch.execute({"input": model, "recipe": "Migrate", "arguments": ["IFC4"]})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "Migrate", "arguments": ["IFC4"]})
         """
         self.src = src
         self.file = file
