@@ -18,7 +18,7 @@ jobs:
   activate:
     runs-on: ubuntu-latest
     if: |
-      github.repository == 'Krande/IfcOpenShell'
+      github.repository == 'IfcOpenShell/IfcOpenShell'
     steps:
       - name: Set env
         run: echo ok go
@@ -42,7 +42,10 @@ jobs:
           { name: Linux, distver: ubuntu-22.04,  upload: 'true' },
           { name: macOS, distver: macos-12, upload: 'true' }
         ]
-        variant: ['novtk', 'all']
+        variant: [
+          'novtk',
+#          'all'
+        ]
     steps:
       - uses: actions/checkout@v3
         with:
@@ -69,5 +72,5 @@ jobs:
       - name: build, test and upload ifcopenshell
         if: ${{ matrix.platform.upload == 'true' }}
         run: |
-          conda-build . --python ${{ matrix.pyver.distver }} -c conda-forge --variants "{variant: ${{ matrix.variant }}}"
+          conda-build . --python ${{ matrix.pyver.distver }} -c conda-forge --variants "{variant: ${{ matrix.variant }}}" --token ${{ secrets.ANACONDA_TOKEN }} --user ifcopenshell
         working-directory: ./conda
