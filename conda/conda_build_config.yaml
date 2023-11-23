@@ -1,2 +1,6 @@
 CONDA_BUILD_SYSROOT:
   - /opt/MacOSX10.13.sdk       # [osx]
+
+variant:
+  - novtk
+  - all
