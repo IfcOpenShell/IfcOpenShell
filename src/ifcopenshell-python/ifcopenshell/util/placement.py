@@ -89,10 +89,10 @@ def get_local_placement(placement):
 
     .. code:: python
 
-        element = file.by_type("IfcBeam")[0]
-        matrix = ifcopenshell.util.placement.get_local_placement(element)
+        placement = file.by_type("IfcBeam")[0].ObjectPlacement
+        matrix = ifcopenshell.util.placement.get_local_placement(placement)
 
-    :param placement: The IfcLocalPlacement enitity
+    :param placement: The IfcLocalPlacement entity
     :type placement: ifcopenshell.entity_instance.entity_instance
     :return: A 4x4 numpy matrix
     :rtype: np.array[np.array[float]]
