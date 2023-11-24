@@ -19,12 +19,7 @@
 import os
 import json
 import time
-import inspect
-import types
-import importlib
 from typing import Any, Optional, Callable, TypeVar
-from dataclasses import dataclass, field, fields
-from functools import reduce
 import ifcopenshell
 import ifcopenshell.util.attribute
 
@@ -346,40 +341,6 @@ def with_schema_attrs(
     """Decorates an API Usecase dataclass, allowing it to be passed IFC schema attributes"""
 
     def inner(usecase: Usecase) -> Usecase:
-        raw_init = usecase.__init__
-
-        def __init__(self, *args, **kwargs):
-            """Wraps a generic signature around the dataclass, allowing for kwargs corresponding to Schema attrs"""
-            ref_params = inspect.signature(self.__init__).parameters
-            base_params = list(inspect.signature(raw_init).parameters.keys())
-            base_kwargs = {key: value for key, value in kwargs.items() if key in base_params}
-            other_kwargs = {key: value for key, value in kwargs.items() if key not in base_params}
-            for name, param in ref_params.items():
-                if name not in other_kwargs and name not in base_params and param.default != inspect.Parameter.empty:
-                    other_kwargs[name] = param.default
-            raw_init(self, *args, **base_kwargs)
-            for key, value in other_kwargs.items():
-                setattr(self, key, value)
-
-        @staticmethod
-        def __schema_attrs_def__() -> dict[str, Any]:
-            """Internal configuration for Schema attribute retrieving"""
-            return {"ifc_class": ifc_class, "defaults": defaults, "exclude": exclude or []}
-
-        def schema_attrs(self) -> dict[str, Any]:
-            """Actual values of Schema attributes, either defaults or passed to __init__"""
-            field_keys = [field.name for field in fields(self)]
-            ordinary_keys = list(self.__dict__.keys())
-            keys = set(field_keys + ordinary_keys)
-            return {
-                snake_to_pascal(key): getattr(self, key) for key in keys if key in self.__schema_attr_keys__[ifc_class]
-            }
-
-        usecase.__init__ = __init__
-        usecase.__init__.__doc__ = usecase.__doc__
-        usecase.__schema_attrs_def__ = __schema_attrs_def__
-        usecase.schema_attrs = schema_attrs
-        usecase.__raw_init__ = raw_init
         return usecase
     return inner
 
