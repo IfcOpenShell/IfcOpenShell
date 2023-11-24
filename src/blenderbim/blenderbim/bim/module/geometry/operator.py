@@ -736,7 +736,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
         new_active_obj = None
         for obj in context.selected_objects:
             new_obj = obj.copy()
-            if linked and obj.data:
+            if obj.data and not linked:
                 new_obj.data = obj.data.copy()
             if obj == context.active_object:
                 new_active_obj = new_obj
