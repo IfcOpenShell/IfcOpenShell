@@ -8,11 +8,12 @@ import warnings
 from pathlib import Path
 from dataclasses import dataclass, field
 from functools import reduce
-from typing import cast, Optional, Union, Any, Callable
+from typing import cast, Optional, Union, Any, Callable, Type, TypeVar
 import ifcopenshell
 from ifcopenshell.api import list_actions
 
 wrapper = ifcopenshell.ifcopenshell_wrapper
+TASTCALL = TypeVar("TASTCALL", bound=Union[ast.ClassDef, ast.FunctionDef])
 
 
 class PythonArgType(Enum):  # See PEP 570 and PEP 3102 for reference
@@ -136,6 +137,16 @@ def add_import_alias(ast_module: ast.Module, module: str, alias: str) -> None:
         add_import_to_module(ast_module, module, alias)
 
 
+def get_child_node(parent: ast.AST, child_name: str, child_type: Type[TASTCALL] = ast.FunctionDef) -> TASTCALL:
+    matches = [
+        cast(TASTCALL, child) for child in ast.iter_child_nodes(parent)
+        if isinstance(child, child_type) and child.name == child_name
+    ]
+    if len(matches) != 1:
+        raise LookupError(f"{len(matches)} classes were found for '{child_name}'")
+    return matches[0]
+
+
 @dataclass(slots=True)
 class PythonArg:
     argtype: PythonArgType = PythonArgType.POS_OR_KW
@@ -190,7 +201,10 @@ class PythonArg:
 
 
 @dataclass(slots=True)
-class InitArguments:
+class SignatureArgs:
+    version: str
+    module: str
+    action: str
     posonlyargs: list[ast.arg] = field(default_factory=list)
     args: list[ast.arg] = field(default_factory=list)
     kwonlyargs: list[ast.arg] = field(default_factory=list)
@@ -199,18 +213,28 @@ class InitArguments:
     defaults: list[ast.expr] = field(default_factory=list)
     kw_defaults: list[Optional[ast.Constant]] = field(default_factory=list)
     sigtype: SignatureType = SignatureType.INIT
+    docstring: Optional[ast.Expr] = None
+    return_annotation: Optional[ast.AST] = None
 
     @classmethod
-    def from_ast_node(cls, init_args: ast.arguments) -> InitArguments:
+    def from_ast_node(
+            cls, version: str, module: str, action: str, args: ast.arguments,
+            docstring: Optional[ast.Expr] = None, return_annotation: Optional[ast.AST] = None
+    ) -> SignatureArgs:
         return cls(
-            posonlyargs=init_args.posonlyargs,
-            args=init_args.args,
-            kwonlyargs=init_args.kwonlyargs,
-            vararg=init_args.vararg,
-            kwarg=init_args.kwarg,
-            defaults=init_args.defaults,
-            kw_defaults=init_args.kw_defaults,
-            sigtype=SignatureType.INIT
+            version=version,
+            module=module,
+            action=action,
+            posonlyargs=args.posonlyargs,
+            args=args.args,
+            kwonlyargs=args.kwonlyargs,
+            vararg=args.vararg,
+            kwarg=args.kwarg,
+            defaults=args.defaults,
+            kw_defaults=args.kw_defaults,
+            sigtype=SignatureType.INIT,
+            docstring=docstring,
+            return_annotation=return_annotation
         )
 
     def to_ast_node(self) -> ast.arguments:
@@ -250,9 +274,14 @@ class InitArguments:
 
     @classmethod
     def from_python_args(
-            cls, args: list[PythonArg], sigtype: SignatureType = SignatureType.DATACLASS, add_self: bool = False
-    ) -> InitArguments:
-        init_args = cls(sigtype=sigtype)
+            cls, version: str, module: str, action: str, args: list[PythonArg],
+            sigtype: SignatureType = SignatureType.DATACLASS, docstring: Optional[ast.Expr] = None,
+            return_annotation: Optional[ast.AST] = None, add_self: bool = False
+    ) -> SignatureArgs:
+        signature_args = cls(
+            version=version, module=module, action=action, sigtype=sigtype, docstring=docstring,
+            return_annotation=return_annotation
+        )
         if add_self:
             self_argtype = (
                 PythonArgType.POS_ONLY
@@ -260,10 +289,10 @@ class InitArguments:
                 else PythonArgType.POS_OR_KW
             )
             self_arg = PythonArg(argtype=self_argtype, name="self")
-            init_args.add(self_arg)
+            signature_args.add(self_arg)
         for arg in args:
-            init_args.add(arg)
-        return init_args
+            signature_args.add(arg)
+        return signature_args
 
     def to_python_args(self) -> list[PythonArg]:
         python_args: list[PythonArg] = []
@@ -324,15 +353,23 @@ class InitArguments:
             if argname == "self":
                 continue
             if argname == "file":
-                argname = "self"
-            args.append(ast.Name(id=argname, ctx=ast.Load()))
+                continue
+            args.append(
+                ast.keyword(
+                    arg=argname,
+                    value=ast.Name(id=argname, ctx=ast.Load())
+                )
+            )
         if self.vararg:
             args.append(
                 ast.Starred(value=ast.Name(id=self.vararg.arg, ctx=ast.Load()), ctx=ast.Load())
             )
         for kwarg in self.kwonlyargs:
             keywords.append(
-                ast.keyword(arg=kwarg.arg, value=ast.Name(id=kwarg.arg, ctx=ast.Load()))
+                ast.keyword(
+                    arg=kwarg.arg,
+                    value=ast.Name(id=kwarg.arg, ctx=ast.Load())
+                )
             )
         if self.kwarg:
             keywords.append(
@@ -340,38 +377,54 @@ class InitArguments:
             )
         return args, keywords
 
-    def to_ast_call_node(self, version: str, module: str, action: str) -> ast.FunctionDef:
-        init_args_without_self = copy.deepcopy(self)
-        init_args_without_self.remove("self")
-
-        ast_attr_ifcopenshell = ast.Name(
-            id="ifcopenshell",
-            ctx=ast.Load()
-        )
-        ast_attr_api = ast.Attribute(
-            value=ast_attr_ifcopenshell,
-            attr=f"api_{version}",
-            ctx=ast.Load()
-        )
-        ast_attr_module = ast.Attribute(
-            value=ast_attr_api,
-            attr=module,
-            ctx=ast.Load()
-        )
-        ast_attr_action = ast.Attribute(
-            value=ast_attr_module,
-            attr=action,
-            ctx=ast.Load()
-        )
-        args, keywords = init_args_without_self.to_ast_call_arguments()
-
+    def to_ast_api_action_method(self) -> ast.FunctionDef:
+        signature_args_call = copy.deepcopy(self)
+        signature_args_call.remove("file")
+        signature_args_return = copy.deepcopy(self)
+        signature_args_return.remove("self")
+        args, keywords = signature_args_return.to_ast_call_arguments()
+        docstring = [self.docstring] if self.docstring else []
         return ast.FunctionDef(
-            name=action,
-            args=init_args_without_self.to_ast_node(),
-            body=ast.Expr(
-                value=ast.Call(func=ast_attr_action, args=args, keywords=keywords)
-            ),
-            decorator_list=[]
+            name=self.action,
+            args=signature_args_call.to_ast_node(),
+            body=[
+                *docstring,
+                ast.Return(
+                    value=ast.Call(
+                        func=ast.Attribute(
+                            value=ast.Attribute(
+                                value=ast.Name(id="ifcopenshell", ctx=ast.Load()),
+                                attr="api",
+                                ctx=ast.Load()
+                            ),
+                            attr="run",
+                            ctx=ast.Load()
+                        ),
+                        args=[
+                            ast.Constant(value=f"{self.module}.{self.action}"),
+                            ast.Attribute(
+                                value=ast.Name(id="self", ctx=ast.Load()),
+                                attr="file",
+                                ctx=ast.Load()
+                            ),
+                            *args
+                        ],
+                        keywords=[
+                            ast.keyword(
+                                arg="on_static_version",
+                                value=ast.Attribute(
+                                    value=ast.Name(id="self", ctx=ast.Load()),
+                                    attr="version",
+                                    ctx=ast.Load()
+                                )
+                            ),
+                            *keywords
+                        ]
+                    )
+                )
+            ],
+            decorator_list=[],
+            returns=self.return_annotation
         )
 
     def add(self, new_arg: PythonArg) -> None:
@@ -547,6 +600,49 @@ class InitArguments:
             ],
             decorator_list=[]
         )
+
+    def bake_api_module_class(self, append_to: Optional[ast.ClassDef] = None) -> ast.ClassDef:
+        if not append_to:
+            append_to = ast.ClassDef(
+                name=f"ApiModule_{self.module}",
+                bases=[],
+                keywords=[],
+                body=[
+                    ast.Expr(
+                        ast.Constant(value=f"IfcOpenShell API {self.module} module")
+                    ),
+                    ast.AnnAssign(
+                        target=ast.Name(id="file", ctx=ast.Store()),
+                        annotation=ast.Attribute(
+                            value=ast.Name(id="ifcopenshell", ctx=ast.Load()),
+                            attr="file",
+                            ctx=ast.Load()),
+                        simple=1
+                    ),
+                    ast.AnnAssign(
+                        target=ast.Name(id='version', ctx=ast.Store()),
+                        annotation=ast.Name(id='str', ctx=ast.Load()),
+                        simple=1
+                    ),
+                ],
+                decorator_list=[
+                    ast.Call(
+                        func=ast.Name(id="dataclass", ctx=ast.Load()),
+                        args=[],
+                        keywords=[
+                            ast.keyword(
+                                arg="slots",
+                                value=ast.Constant(value=True)
+                            )
+                        ]
+                    )
+                ]
+            )
+
+        append_to.body.append(
+            cast(ast.stmt, ast.fix_missing_locations(self.to_ast_api_action_method()))
+        )
+        return ast.fix_missing_locations(append_to)
 
 
 @dataclass(slots=True)
@@ -804,6 +900,11 @@ class SchemaAttrsRemover(ast.NodeTransformer):
         return node
 
 
+class FileHelperRemover(ast.NodeTransformer):
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> Optional[ast.FunctionDef]:
+        return None if node.name == "file" else node
+
+
 @dataclass(slots=True)
 class SchemaApiActionBuilder:
     module: str
@@ -811,13 +912,13 @@ class SchemaApiActionBuilder:
     version: str
     api_dir: Path
     _output_dir: Optional[Path] = field(init=False)
-    _init_arguments: Optional[InitArguments] = field(init=False, default=None)
+    _init_arguments: Optional[SignatureArgs] = field(init=False, default=None)
 
     def __post_init__(self):
         self._output_dir: Path = self.api_dir.parent / f"api_{self.version}"
         self._output_dir.mkdir(exist_ok=True)
 
-    def __call__(self) -> tuple[ast.Module, InitArguments]:
+    def __call__(self) -> tuple[ast.Module, SignatureArgs]:
         source: str = open(self.source_path, 'r').read()
         tree: ast.Module = ast.parse(source)
         updated_tree = self.update_usecase(tree)
@@ -849,7 +950,7 @@ class SchemaApiActionBuilder:
             schema_args = SchemaAttrParser.from_decorator(attrs_decorator, version=self.version)()
 
         sigtype = self.get_signature_type(usecase_node)
-        update_usecase_func: Callable[[ast.ClassDef, list[PythonArg]], InitArguments] = {
+        update_usecase_func: Callable[[ast.ClassDef, list[PythonArg]], SignatureArgs] = {
             SignatureType.INIT: self.update_usecase_init,
             SignatureType.DATACLASS: self.update_usecase_dataclass
         }[sigtype]
@@ -857,20 +958,27 @@ class SchemaApiActionBuilder:
         self._init_arguments = update_usecase_func(usecase_node, schema_args)
         if schema_args:
             add_import_alias(tree, "typing", "Union")
-        schema_attrs_method = InitArguments.from_python_args(schema_args, sigtype=sigtype).bake_method()
+        schema_attrs_method = SignatureArgs.from_python_args(
+            version=self.version, module=self.module, action=self.action, args=schema_args, sigtype=sigtype
+        ).bake_method()
         usecase_node.body.append(cast(ast.stmt, schema_attrs_method))
         tree = SchemaAttrsRemover().visit(tree)
         return ast.fix_missing_locations(tree)
 
-    def update_usecase_init(self, usecase_node: ast.ClassDef, schema_args: list[PythonArg]) -> InitArguments:
+    def update_usecase_init(self, usecase_node: ast.ClassDef, schema_args: list[PythonArg]) -> SignatureArgs:
         init_node = self.get_init(usecase_node)
-        init_arguments = InitArguments.from_ast_node(init_node.args)
+        docstring = self.get_docstring(init_node)
+        return_annotation = self.get_usecase_return_annotation(usecase_node)
+        signature_args = SignatureArgs.from_ast_node(
+            version=self.version, module=self.module, action=self.action, args=init_node.args,
+            docstring=docstring, return_annotation=return_annotation
+        )
         for schema_arg in schema_args:
-            init_arguments.add(schema_arg)
-        init_node.args = init_arguments.to_ast_node()
-        return init_arguments
+            signature_args.add(schema_arg)
+        init_node.args = signature_args.to_ast_node()
+        return signature_args
 
-    def update_usecase_dataclass(self, usecase_node: ast.ClassDef, schema_args: list[PythonArg]) -> InitArguments:
+    def update_usecase_dataclass(self, usecase_node: ast.ClassDef, schema_args: list[PythonArg]) -> SignatureArgs:
         wrn_msg = f"Dataclass from {self.module}.{self.action} has no signature"
         idx_assign_min, idx_assign_max, found_assigns = find_ast_idxs(
             node=usecase_node, on_type=ast.AnnAssign, wrn_msg=wrn_msg
@@ -880,19 +988,28 @@ class SchemaApiActionBuilder:
             PythonArg.from_ast_annassign(cast(ast.AnnAssign, usecase_node.body[idx]))
             for idx in range(idx_assign_min, idx_assign_max + 1)
         ]
-
-        init_arguments = InitArguments.from_python_args(dataclass_args + schema_args, sigtype=SignatureType.DATACLASS)
-        annassigns = init_arguments.to_ast_annassigns()
+        docstring = self.get_docstring(usecase_node)
+        return_annotation = self.get_usecase_return_annotation(usecase_node)
+        signature_args = SignatureArgs.from_python_args(
+            version=self.version, module=self.module, action=self.action, args=dataclass_args + schema_args,
+            sigtype=SignatureType.DATACLASS, docstring=docstring, return_annotation=return_annotation
+        )
+        annassigns = signature_args.to_ast_annassigns()
         if found_assigns:
             del usecase_node.body[idx_assign_min:idx_assign_max + 1]
         usecase_node.body[idx_assign_min:idx_assign_min] = annassigns
-        return init_arguments
+        return signature_args
 
     def get_usecase(self, tree: ast.Module) -> ast.ClassDef:
         for node in ast.walk(tree):
             if isinstance(node, ast.ClassDef) and node.name == "Usecase":
                 return node
         raise RuntimeError(f"{self.module}.{self.action} does not contain a Usecase class")
+
+    @staticmethod
+    def get_usecase_return_annotation(usecase: ast.ClassDef) -> ast.AST:
+        execute_node = get_child_node(parent=usecase, child_name="execute", child_type=ast.FunctionDef)
+        return execute_node.returns
 
     @staticmethod
     def get_signature_type(usecase_node: ast.ClassDef) -> SignatureType:
@@ -907,6 +1024,10 @@ class SchemaApiActionBuilder:
         if len(inits) != 1:
             raise LookupError(f"{len(inits)} __init__ methods were found")
         return inits[0]
+
+    @staticmethod
+    def get_docstring(node: Union[ast.ClassDef, ast.FunctionDef]) -> Optional[ast.Expr]:
+        return node.body[0] if node.body and isinstance(node.body[0], ast.Expr) else None
 
     @staticmethod
     def is_schema_attrs_decorator(decorator: ast.expr) -> bool:
@@ -936,18 +1057,35 @@ class SchemaApiBuilder:
     def __call__(self) -> None:
         file_source: str = open(self.file_path, 'r').read()
         file_tree: ast.Module = ast.parse(file_source)
-        file_node = self.get_file_node(file_tree)
+        file_tree = FileHelperRemover().visit(file_tree)
+        file_node = get_child_node(parent=file_tree, child_name="_file", child_type=ast.ClassDef)
+        file_init_node = get_child_node(parent=file_node, child_name="__init__", child_type=ast.FunctionDef)
+        idx_class_min, idx_class_max, found_class_items = find_ast_idxs(node=file_tree, on_type=ast.ClassDef)
 
         for module, actions in list_actions().items():
+            module_node: Optional[ast.ClassDef] = None
             for action in actions:
                 action_tree, init_arguments = SchemaApiActionBuilder(module, action, self.version, self.api_dir)()
-                file_node.body.append(
-                    cast(ast.stmt, init_arguments.to_ast_call_node(self.version, module, action))
-                )
+                module_node = init_arguments.bake_api_module_class(append_to=module_node)
 
+            if module_node is None:
+                warnings.warn(f"Apparently, API module '{module}' does not contain any actions yet")
+                continue
+
+            file_tree.body.insert(
+                idx_class_min,
+                cast(ast.stmt, ast.fix_missing_locations(module_node))
+            )
+            file_init_node.body.append(
+                self.to_ast_api_module_assignment(module)
+            )
+
+        add_import_alias(ast_module=file_tree, module="typing", alias="Union")
+        add_import_alias(ast_module=file_tree, module="typing", alias="Optional")
+        add_import_alias(ast_module=file_tree, module="dataclasses", alias="dataclass")
+        updated_file_source = preamble(self.version, "ifcopenshell.file.py")
+        updated_file_source += ast.unparse(ast.fix_missing_locations(file_tree))
         with open(self.api_dir.parent / f"file_{self.version}.py", "w") as f:
-            updated_file_source = preamble(self.version, "ifcopenshell.file.py")
-            updated_file_source += ast.unparse(ast.fix_missing_locations(file_node))
             f.write(updated_file_source)
 
     @property
@@ -955,14 +1093,34 @@ class SchemaApiBuilder:
         return self.api_dir.parent / "file.py"
 
     @staticmethod
-    def get_file_node(tree: ast.Module) -> ast.ClassDef:
-        files = [
-            child for child in ast.iter_child_nodes(tree)
-            if isinstance(child, ast.ClassDef) and child.name == "file"
-        ]
-        if len(files) != 1:
-            raise LookupError(f"{len(files)} file classes were found")
-        return files[0]
+    def to_ast_api_module_assignment(module) -> ast.Assign:
+        return ast.Assign(
+            targets=[
+                ast.Attribute(
+                    value=ast.Name(id="self", ctx=ast.Load()),
+                    attr=module,
+                    ctx=ast.Store()
+                )
+            ],
+            value=ast.Call(
+                func=ast.Name(id=f"ApiModule_{module}", ctx=ast.Load()),
+                args=[],
+                keywords=[
+                    ast.keyword(
+                        arg="file",
+                        value=ast.Name(id="self", ctx=ast.Load())
+                    ),
+                    ast.keyword(
+                        arg="version",
+                        value=ast.Attribute(
+                            value=ast.Name(id="self", ctx=ast.Load()),
+                            attr="schema",
+                            ctx=ast.Load()
+                        )
+                    )
+                ]
+            )
+        )
 
 
 if __name__ == "__main__":
