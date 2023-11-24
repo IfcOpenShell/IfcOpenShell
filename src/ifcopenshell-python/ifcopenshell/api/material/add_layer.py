@@ -18,7 +18,6 @@
 
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Optional
 import ifcopenshell
 from ifcopenshell.util.schema import with_schema_attrs
 
@@ -88,7 +87,7 @@ class Usecase:
     file: ifcopenshell.file
     layer_set: ifcopenshell.entity_instance
 
-    def execute(self):
+    def execute(self) -> ifcopenshell.entity_instance:
         layers = list(self.layer_set.MaterialLayers or [])
         layer = self.file.create_entity("IfcMaterialLayer", **self.schema_attrs())
         layers.append(layer)
