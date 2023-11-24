@@ -516,10 +516,10 @@ class file(object):
     def write(self, path: "os.PathLike | str", format=None, zipped=False) -> None:
         """Write ifc model to file.
 
-        :param format: Force use of a specific format. Guessed from file name if None.
+        :param format: Force use of a specific format. Guessed from file name if None.
         Supported formats : .ifc, .ifcXML, .ifcZIP (equivalent to format=".ifc" with zipped=True)
         For zipped .ifcXML use format=".ifcXML" with zipped=True
-        :param zipped: zip the file after it is written
+        :param zipped: zip the file after it is written
 
         Examples:
         >>> model.write("path/to/model.ifc")
