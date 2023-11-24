@@ -162,6 +162,7 @@ def update_shading_style(self, context):
 
 
 # TODO: support more more methods
+# based on https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcReflectanceMethodEnum.htm
 REFLECTANCE_METHODS = [
     ("PHYSICAL", "PHYSICAL", ""),
     ("FLAT", "FLAT", ""),
@@ -169,6 +170,12 @@ REFLECTANCE_METHODS = [
     ("MATT", "MATT", ""),
     ("GLASS", "GLASS", ""),
     ("NOTDEFINED", "NOTDEFINED", ""),
+]
+
+UV_MODES = [
+    ("UV", "UV", "Actual UV data presented on the geometry"),
+    ("Generated", "Generated", "Automatically-generated UV from the vertex positions of the mesh"),
+    ("Camera", "Camera", "UV from position coordinate in camera space"),
 ]
 
 
@@ -209,7 +216,6 @@ class BIMStyleProperties(PropertyGroup):
         update=update_shading_style,
     )
 
-    # GLTF style properties
     update_graph: BoolProperty(
         name="Update Shade Graph on Prop Change",
         description="Update shader graph in real time\nas you update style properties",
@@ -217,6 +223,16 @@ class BIMStyleProperties(PropertyGroup):
         get=update_graph_get,
         set=update_graph_set,
     )
+
+    uv_mode: EnumProperty(
+        name="UV Mode",
+        description="Type of UV used for the textures",
+        items=UV_MODES,
+        default="UV",
+        update=update_shader_graph,
+    )
+
+    # GLTF style properties
     reflectance_method: EnumProperty(
         name="Reflectance Method",
         description="Reflectance method to use for the material",
@@ -247,6 +263,8 @@ class BIMStyleProperties(PropertyGroup):
     )
     roughness: bpy.props.FloatProperty(name="Roughness", default=0.0, min=0.0, max=1.0, update=update_shader_graph)
     metallic: bpy.props.FloatProperty(name="Metallic", default=0.0, min=0.0, max=1.0, update=update_shader_graph)
+
+    # texture paths
     normal_path: bpy.props.StringProperty(
         name="NormalMap",
         maxlen=1024,
