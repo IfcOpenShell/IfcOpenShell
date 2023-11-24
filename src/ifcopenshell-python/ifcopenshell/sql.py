@@ -3,14 +3,14 @@ try:
     import json
 
     import ifcopenshell.util.schema
-    from .file import file
+    from .file import _file
     from . import ifcopenshell_wrapper
     from .entity_instance import entity_instance
 except ImportError as e:
     print(f"No SQL support: {e}")
 
 
-class sqlite(file):
+class sqlite(_file):
     def __init__(self, filepath):
         import sqlite3
 
