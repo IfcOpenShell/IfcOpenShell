@@ -27,6 +27,7 @@ import numbers
 import zipfile
 import functools
 from pathlib import Path
+import importlib
 
 import ifcopenshell.util.element
 import ifcopenshell.util.file
@@ -179,7 +180,7 @@ class Transaction:
 file_dict = {}
 
 
-class file(object):
+class _file(object):
     """Base class for containing IFC files.
 
     Class has instance methods for filtering by element Id, Type, etc.
@@ -564,3 +565,20 @@ class file(object):
     @staticmethod
     def from_pointer(v):
         return file_dict.get(v)
+
+
+def file(f=None, schema=None, schema_version=None, strong_typing=True):
+    if schema_version:
+        prefixes = ("IFC", "X", "_ADD", "_TC")
+        schema = "".join("".join(map(str, t)) if t[1] else "" for t in zip(prefixes, schema_version))
+    else:
+        schema = {"IFC4X3": "IFC4X3_ADD1"}.get(schema, schema)
+
+    if strong_typing:
+        file_module = importlib.import_module(f"ifcopenshell.file_{schema}")
+        file_class = file_module._file
+    else:
+        file_class = _file
+
+    return file_class(f, schema=schema, schema_version=schema_version)
+

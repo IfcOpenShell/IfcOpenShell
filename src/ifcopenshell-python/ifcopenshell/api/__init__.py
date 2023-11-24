@@ -32,7 +32,7 @@ pre_listeners = {}
 post_listeners = {}
 
 
-def run(usecase_path, ifc_file=None, should_run_listeners=True, **settings):
+def run(usecase_path, ifc_file=None, on_static_version=None, should_run_listeners=True, **settings):
     if should_run_listeners:
         for listener in pre_listeners.get(usecase_path, {}).values():
             listener(usecase_path, ifc_file, settings)
@@ -61,9 +61,11 @@ def run(usecase_path, ifc_file=None, should_run_listeners=True, **settings):
         # except:
         #    print(usecase_path, vcs_settings)
 
-    importlib.import_module(f"ifcopenshell.api.{usecase_path}")
+    api_path = f"api_{on_static_version}" if on_static_version else "api"
+    importlib.import_module(f"ifcopenshell.{api_path}")
+    importlib.import_module(f"ifcopenshell.{api_path}.{usecase_path}")
     module, usecase = usecase_path.split(".")
-    usecase_class = getattr(getattr(getattr(ifcopenshell.api, module), usecase), "Usecase")
+    usecase_class = getattr(getattr(getattr(getattr(ifcopenshell, api_path), module), usecase), "Usecase")
 
     if ifc_file:
         result = usecase_class(ifc_file, **settings).execute()
