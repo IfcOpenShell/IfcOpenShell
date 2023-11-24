@@ -382,6 +382,7 @@ class Ods(Json):
                 "GlobalId",
                 "Tag",
                 "Element",
+                "ElementType",
             ]:
                 tc = TableCell(valuetype="string", stylename="h")
                 tc.addElement(P(text=header))
@@ -391,6 +392,8 @@ class Ods(Json):
                 if requirement["status"]:
                     continue
                 for failure in requirement["failed_entities"]:
+                    element = failure.get("element", None)
+                    element_type = ifcopenshell.util.element.get_type(failure.get("element", None))
                     row = [
                         requirement["description"],
                         failure.get("reason", "No reason provided"),
@@ -400,7 +403,8 @@ class Ods(Json):
                         failure["description"],
                         failure["global_id"],
                         failure["tag"],
-                        str(failure.get("element", "No element found")),
+                        str(element) if element else "N/A",
+                        str(element_type) if element_type else "N/A",
                     ]
                     tr = TableRow()
                     c = 0
