@@ -114,6 +114,19 @@ class PsetQto:
             template_type = template_type or ""
             if "TYPE" in template_type and ifcopenshell.util.schema.is_a(entity, "IfcTypeObject"):
                 types = ifcopenshell.util.type.get_applicable_types(applicable_class, "IFC4")
+                if not types:
+                    # Abstract classes will not have an "applicable type" but
+                    # the implementer agreement still applies to them.
+                    occurrence_class = None
+                    try:
+                        occurrence_class = self.schema.declaration_by_name(applicable_class + "Type")
+                    except:
+                        try:
+                            occurrence_class = self.schema.declaration_by_name("IfcType" + applicable_class[3:])
+                        except:
+                            pass
+                    if occurrence_class:
+                        types = [occurrence_class.name()]
                 for ifc_type in types:
                     if ifcopenshell.util.schema.is_a(entity, ifc_type):
                         return True
