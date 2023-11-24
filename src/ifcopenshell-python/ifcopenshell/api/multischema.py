@@ -1009,7 +1009,7 @@ class SchemaApiActionBuilder:
     @staticmethod
     def get_usecase_return_annotation(usecase: ast.ClassDef) -> ast.AST:
         execute_node = get_child_node(parent=usecase, child_name="execute", child_type=ast.FunctionDef)
-        return execute_node.returns
+        return cast(ast.AST, execute_node.returns)
 
     @staticmethod
     def get_signature_type(usecase_node: ast.ClassDef) -> SignatureType:
@@ -1059,7 +1059,9 @@ class SchemaApiBuilder:
         file_tree: ast.Module = ast.parse(file_source)
         file_tree = FileHelperRemover().visit(file_tree)
         file_node = get_child_node(parent=file_tree, child_name="_file", child_type=ast.ClassDef)
-        file_init_node = get_child_node(parent=file_node, child_name="__init__", child_type=ast.FunctionDef)
+        file_init_node = get_child_node(
+            parent=cast(ast.AST, file_node), child_name="__init__", child_type=ast.FunctionDef
+        )
         idx_class_min, idx_class_max, found_class_items = find_ast_idxs(node=file_tree, on_type=ast.ClassDef)
 
         for module, actions in list_actions().items():
@@ -1077,7 +1079,7 @@ class SchemaApiBuilder:
                 cast(ast.stmt, ast.fix_missing_locations(module_node))
             )
             file_init_node.body.append(
-                self.to_ast_api_module_assignment(module)
+                cast(ast.stmt, self.to_ast_api_module_assignment(module))
             )
 
         add_import_alias(ast_module=file_tree, module="typing", alias="Union")
