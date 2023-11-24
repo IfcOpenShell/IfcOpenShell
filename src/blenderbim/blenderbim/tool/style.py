@@ -417,7 +417,8 @@ class Style(blenderbim.core.tool.Style):
 
         results = []
         for item in items:
-            for uv_map in item.HasTextures or []:
+            # only IfcTessellatedFaceSet has HasTextures
+            for uv_map in getattr(item, "HasTextures", None) or []:
                 results.append(uv_map)
         return results
 
