@@ -147,6 +147,7 @@ class Style(blenderbim.core.tool.Style):
                 "Mode": prop_mode,
                 "type": "IfcImageTexture",
                 "URLReference": tool.Blender.blender_path_to_posix(path),
+                "uv_mode": props.uv_mode,
             }
             textures.append(texture_data)
 
@@ -184,13 +185,17 @@ class Style(blenderbim.core.tool.Style):
         unused_texture_maps = list(STYLE_TEXTURE_PROPS_MAP.keys())
 
         if texture_style:
+            uv_mode = None
             for texture in texture_style.Textures:
+                texture_data = tool.Loader.surface_texture_to_dict(texture)
+                uv_mode = texture_data["uv_mode"]
                 if texture.Mode not in texture_maps:
                     print(f"WARNING. Unsupported texture mode: {texture.Mode}. Supported maps: {texture_maps}")
                     continue
                 prop_blender = STYLE_TEXTURE_PROPS_MAP.get(texture.Mode, None)
                 setattr(props, prop_blender, texture.URLReference)
                 unused_texture_maps.remove(texture.Mode)
+        props.uv_mode = uv_mode if uv_mode else "UV"
 
         # clear empty texture fields
         for texture_mode in unused_texture_maps:

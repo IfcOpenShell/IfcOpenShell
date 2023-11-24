@@ -132,6 +132,22 @@ class Loader(blenderbim.core.tool.Loader):
         return surface_style
 
     @classmethod
+    def surface_texture_to_dict(cls, surface_texture):
+        if isinstance(surface_texture, dict):
+            return surface_texture
+        mappings = surface_texture.IsMappedBy or []
+        surface_texture = surface_texture.get_info()
+        uv_mode = None
+        if mappings:
+            coordinates = mappings[0]
+            if coordinates.is_a("IfcTextureCoordinateGenerator") and coordinates.Mode == "COORD":
+                uv_mode = "Generated"
+            elif coordinates.is_a("IfcTextureCoordinateGenerator") and coordinates.Mode == "COORD-EYE":
+                uv_mode = "Camera"
+        surface_texture["uv_mode"] = uv_mode or "UV"
+        return surface_texture
+
+    @classmethod
     def create_surface_style_rendering(cls, blender_material, surface_style):
         surface_style = cls.surface_style_to_dict(surface_style)
         cls.create_surface_style_shading(blender_material, surface_style)
@@ -192,11 +208,15 @@ class Loader(blenderbim.core.tool.Loader):
     @classmethod
     def create_surface_style_with_textures(cls, blender_material, rendering_style, texture_style):
         """supposed to be called after `create_surface_style_rendering`"""
-        if not isinstance(texture_style, list):
-            textures = [t.get_info() for t in texture_style.Textures]
+        if not isinstance(texture_style, list):  # assume it's IfcSurfaceStyleWithTextures
+            textures = [cls.surface_texture_to_dict(t) for t in texture_style.Textures]
         else:
             textures = texture_style
         rendering_style = cls.surface_style_to_dict(rendering_style)
+
+        # `rendering_style` is a dict and `textures` is a list of dicts
+        # containing ifc data, that way method can be called by just providing those dictionaries
+        # without actually changing IFC data
 
         reflectance_method = rendering_style["ReflectanceMethod"]
         if reflectance_method not in ("PHYSICAL", "NOTDEFINED", "FLAT"):
@@ -229,6 +249,16 @@ class Loader(blenderbim.core.tool.Loader):
 
             if reflectance_method in ["PHYSICAL", "NOTDEFINED"]:
                 bsdf = tool.Blender.get_material_node(blender_material, "BSDF_PRINCIPLED")
+
+                SUPPORTED_PBR_TEXTURES = ("NORMAL", "EMISSIVE", "METALLICROUGHNESS", "OCCLUSION", "DIFFUSE")
+                if mode not in SUPPORTED_PBR_TEXTURES:
+                    print(
+                        f"WARNING. Texture with {mode} Mode is not supported for style with PHYSICAL reflectance method.\n"
+                        f"Supported types are: {', '.join(SUPPORTED_PBR_TEXTURES)}\n"
+                        f"Texture by path {image_url} will be skipped."
+                    )
+                    continue
+
                 if mode == "NORMAL":
                     # add normal map node
                     normalmap = blender_material.node_tree.nodes.new(type="ShaderNodeNormalMap")
@@ -317,6 +347,10 @@ class Loader(blenderbim.core.tool.Loader):
             elif reflectance_method == "FLAT":
                 bsdf = tool.Blender.get_material_node(blender_material, "MIX_SHADER")
                 if mode != "EMISSIVE":
+                    print(
+                        "WARNING. Only EMISSIVE Mode textures are supported for style with FLAT reflectance method.\n"
+                        f"{mode} Mode texture by path {image_url} will be skipped."
+                    )
                     continue
 
                 # remove RGB node from `create_surface_style_rendering`
@@ -334,22 +368,15 @@ class Loader(blenderbim.core.tool.Loader):
             # extend the image by repeating pixels on its edges if RepeatS or RepeatT is False
             repeat_s = texture.get("RepeatS", True)
             repeat_t = texture.get("RepeatT", True)
-            if node and (not repeat_s or not repeat_t):
+            if not repeat_s or not repeat_t:
                 node.extension = "EXTEND"
 
-            # TODO: add support for texture data not ifc elements
             # IsMappedBy could only get with the entity_instance for IFC4/IFC4x3
-            if isinstance(texture, dict):
-                texture = tool.Ifc.get().by_id(texture['id'])
-            if node and getattr(texture, "IsMappedBy", None):
-                coordinates = texture.IsMappedBy[0]
-                coord = blender_material.node_tree.nodes.new(type="ShaderNodeTexCoord")
-                coord.location = node.location - Vector((200, 0))
-                if coordinates.is_a("IfcTextureCoordinateGenerator") and coordinates.Mode == "COORD":
-                    blender_material.node_tree.links.new(coord.outputs["Generated"], node.inputs["Vector"])
-                elif coordinates.is_a("IfcTextureCoordinateGenerator") and coordinates.Mode == "COORD-EYE":
-                    blender_material.node_tree.links.new(coord.outputs["Camera"], node.inputs["Vector"])
-                else:
-                    blender_material.node_tree.links.new(coord.outputs["UV"], node.inputs["Vector"])
-                    # save the TextureMap id for set uv when set material to mesh
-                    blender_material.BIMMaterialProperties.ifc_coordinate_id = coordinates.id()
+            coord = blender_material.node_tree.nodes.new(type="ShaderNodeTexCoord")
+            coord.location = node.location - Vector((200, 0))
+            if texture["uv_mode"] == "Generated":
+                blender_material.node_tree.links.new(coord.outputs["Generated"], node.inputs["Vector"])
+            elif texture["uv_mode"] == "Camera":
+                blender_material.node_tree.links.new(coord.outputs["Camera"], node.inputs["Vector"])
+            else:  # uv_mode == UV
+                blender_material.node_tree.links.new(coord.outputs["UV"], node.inputs["Vector"])

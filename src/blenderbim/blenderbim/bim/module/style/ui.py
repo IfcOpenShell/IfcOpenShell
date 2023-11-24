@@ -423,6 +423,7 @@ class BIM_PT_STYLE_GRAPH(Panel):
         if not bpy.data.filepath:
             layout.label(text="Save .blend file to keep relative paths", icon="ERROR")
 
+        layout.prop(props, "uv_mode")
         layout.label(text="Texture Maps:")
         for texture_type in texture_maps:
             add_texture_path(STYLE_TEXTURE_PROPS_MAP[texture_type])

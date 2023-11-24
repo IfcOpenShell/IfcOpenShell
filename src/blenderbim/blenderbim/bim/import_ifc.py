@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import os
 import re
 import bpy
@@ -38,7 +39,7 @@ from blenderbim.bim.module.drawing.prop import ANNOTATION_TYPES_DATA
 
 
 class MaterialCreator:
-    def __init__(self, ifc_import_settings, ifc_importer):
+    def __init__(self, ifc_import_settings: IfcImportSettings, ifc_importer: IfcImporter):
         self.mesh = None
         self.obj = None
         self.materials = {}
@@ -125,9 +126,21 @@ class MaterialCreator:
             return
         for style_id in style_ids:
             material = self.styles[style_id]
-            ifc_coordinate_id = material.BIMMaterialProperties.ifc_coordinate_id
-            if ifc_coordinate_id != 0:
-                self.load_texture_map(tool.Ifc.get().by_id(ifc_coordinate_id))
+
+            def get_ifc_coordinate(style_id):
+                style = self.ifc_importer.file.by_id(style_id)
+                if coords := getattr(style, "IsMappedTo", None):
+                    coords = coords[0]
+                    # IfcTextureCoordinateGenerator handled in the style shader graph
+                    if coords.is_a("IfcIndexedTextureMap"):
+                        return coords
+                    # TODO: support IfcTextureMap
+                    if coords.is_a("IfcTextureMap"):
+                        print(f"WARNING. IfcTextureMap texture coordinates is not supported.")
+                        return
+
+            if coords := get_ifc_coordinate(style_id):
+                self.load_texture_map(coords)
             if self.mesh.materials.find(material.name) == -1:
                 self.mesh.materials.append(material)
         return True
