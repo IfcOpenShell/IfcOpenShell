@@ -14,7 +14,7 @@ source:
   path: ..
 
 build:
-  string: {{ variant }}_h{{ PKG_HASH }}_{{ build }}
+  string: py{{ CONDA_PY }}_{{ variant }}_h{{ PKG_HASH }}_{{ build }}
   binary_relocation: false [osx]
   number: {{ build }}
 
