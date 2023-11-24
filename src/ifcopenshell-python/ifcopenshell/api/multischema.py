@@ -378,8 +378,24 @@ class SignatureArgs:
         return args, keywords
 
     def to_ast_api_action_method(self) -> ast.FunctionDef:
-        signature_args_call = copy.deepcopy(self)
-        signature_args_call.remove("file")
+        if self.sigtype == SignatureType.INIT:
+            signature_args_call = copy.deepcopy(self)
+            signature_args_call.remove("file")
+        elif self.sigtype == SignatureType.DATACLASS:
+            signature_args_call = SignatureArgs(
+                version=self.version, module=self.module, action=self.action, docstring=self.docstring,
+                return_annotation=self.return_annotation
+            )
+            python_args = self.to_python_args()
+            self_argtype = (
+                PythonArgType.POS_ONLY
+                if any(arg.argtype == PythonArgType.POS_ONLY for arg in python_args)
+                else PythonArgType.POS_OR_KW
+            )
+            self_arg = PythonArg(argtype=self_argtype, name="self")
+            signature_args_call.add(self_arg)
+            for arg in self.to_python_args():
+                signature_args_call.add(arg)
         signature_args_return = copy.deepcopy(self)
         signature_args_return.remove("self")
         args, keywords = signature_args_return.to_ast_call_arguments()
