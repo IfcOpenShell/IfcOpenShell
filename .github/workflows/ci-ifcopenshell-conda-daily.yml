@@ -2,10 +2,6 @@ name: ci-ifcopenshell-conda-daily
 
 on:
   workflow_dispatch:
-  push:
-      paths:
-        - .github/workflows/ci-ifcopenshell-conda-daily.yml
-        - conda/**
   schedule:
   #         ┌───────────── minute (0 - 59)
   #         │  ┌───────────── hour (0 - 23)
@@ -61,6 +57,7 @@ jobs:
             channel_priority: strict
           create-args: >-
             python=3.11
+            anaconda-client
             boa
 
       - name: build, test and upload ifcopenshell
