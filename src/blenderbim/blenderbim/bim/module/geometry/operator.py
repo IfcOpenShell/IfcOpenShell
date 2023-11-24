@@ -800,7 +800,12 @@ class OverrideDuplicateMove(bpy.types.Operator):
             # clean up the orphaned mesh with ifc id of the original object to avoid confusion
             # IfcGridAxis keeps the same mesh data (it's pointing to ifc id 0, so it's not a problem)
             if new and temp_data and not new.is_a("IfcGridAxis"):
-                tool.Blender.remove_data_block(temp_data)
+                if new.is_a("IfcRelSpaceBoundary"):
+                    surface = new.ConnectionGeometry.SurfaceOnRelatingElement
+                    temp_data.name = f"0/{surface.id()}"
+                    temp_data.BIMMeshProperties.ifc_definition_id = surface.id()
+                else:
+                    tool.Blender.remove_data_block(temp_data)
 
             if new:
                 # TODO: handle array data for other cases of duplication
