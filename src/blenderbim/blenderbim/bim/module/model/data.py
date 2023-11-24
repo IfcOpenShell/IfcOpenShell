@@ -270,7 +270,9 @@ class AuthoringData:
             usage = tool.Model.get_usage_type(element)
             if not usage:
                 representation = tool.Geometry.get_active_representation(obj)
-                if representation and representation.RepresentationType == "SweptSolid":
+                # besides IfcRepresentation it could be IfcCurveBoundedPlane
+                # if IfcRelSpaceBoundary selected
+                if representation and getattr(representation, "RepresentationType", None) == "SweptSolid":
                     usage = "SWEPTSOLID"
                 else:
                     continue
