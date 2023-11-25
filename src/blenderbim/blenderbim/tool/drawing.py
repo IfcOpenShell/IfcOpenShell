@@ -1689,15 +1689,17 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def is_in_camera_view(cls, obj, camera_inverse_matrix, x, y, clip_start, clip_end):
         local_bbox = [camera_inverse_matrix @ obj.matrix_world @ Vector(v) for v in obj.bound_box]
-        for v in local_bbox:
-            if v.z < -clip_start and v.z > -clip_end and abs(v.x) < x and abs(v.y) < y:
-                return True
-        if any([v.z > -clip_start for v in local_bbox]) and any([v.z < -clip_end for v in local_bbox]):
-            return True
-        elif any([v.x < -x for v in local_bbox]) and any([v.x > x for v in local_bbox]):
-            return True
-        elif any([v.y < -y for v in local_bbox]) and any([v.y > y for v in local_bbox]):
-            return True
+        local_x = [v.x for v in local_bbox]
+        local_y = [v.y for v in local_bbox]
+        local_z = [v.z for v in local_bbox]
+        aabb1_min = (-x/2, -y/2, -clip_end)
+        aabb1_max = (x/2, y/2, -clip_start)
+        aabb2_min = (min(local_x), min(local_y), min(local_z))
+        aabb2_max = (max(local_x), max(local_y), max(local_z))
+        for i in range(3):
+            if aabb1_max[i] < aabb2_min[i] or aabb1_min[i] > aabb2_max[i]:
+                return False
+        return True
 
     @classmethod
     def is_intersecting_camera(cls, obj, camera):
