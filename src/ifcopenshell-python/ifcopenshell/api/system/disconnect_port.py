@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.element
 
 
 class Usecase:
@@ -76,4 +77,7 @@ class Usecase:
         for rel in rels:
             rel.RelatingPort.FlowDirection = None
             rel.RelatedPort.FlowDirection = None
+            history = rel.OwnerHistory
             self.file.remove(rel)
+            if history:
+                ifcopenshell.util.element.remove_deep2(self.file, history)

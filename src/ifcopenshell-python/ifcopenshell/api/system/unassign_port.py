@@ -63,7 +63,10 @@ class Usecase:
         for rel in self.settings["element"].IsNestedBy or []:
             if self.settings["port"] in rel.RelatedObjects:
                 if len(rel.RelatedObjects) == 1:
+                    history = rel.OwnerHistory
                     self.file.remove(rel)
+                    if history:
+                        ifcopenshell.util.element.remove_deep2(self.file, history)
                     return
                 related_objects = set(rel.RelatedObjects) or set()
                 related_objects.remove(self.settings["port"])
@@ -73,5 +76,8 @@ class Usecase:
     def execute_ifc2x3(self):
         for rel in self.settings["element"].HasPorts or []:
             if rel.RelatingPort == self.settings["port"]:
+                history = rel.OwnerHistory
                 self.file.remove(rel)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(self.file, history)
                 return
