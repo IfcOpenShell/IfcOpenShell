@@ -57,6 +57,8 @@ class BIM_PT_styles(Panel):
             row.operator("bim.load_styles", text="", icon="IMPORT").style_type = self.props.style_type
             return
 
+        self.layout.template_list("BIM_UL_styles", "", self.props, "styles", self.props, "active_style_index")
+
         if self.props.is_adding:
             box = self.layout.box()
             row = box.row()
@@ -80,6 +82,7 @@ class BIM_PT_styles(Panel):
             row.operator("bim.remove_style", text="", icon="X").style = style.ifc_definition_id
 
             if self.props.style_type == "IfcSurfaceStyle":
+                self.layout.label(text="Choose current style's aspect to edit:")
                 col = self.layout.column(align=True)
 
                 row = col.row(align=True)
@@ -104,8 +107,6 @@ class BIM_PT_styles(Panel):
                 op.ifc_class = "IfcExternallyDefinedSurfaceStyle"
                 op.style = style.ifc_definition_id
 
-        self.layout.template_list("BIM_UL_styles", "", self.props, "styles", self.props, "active_style_index")
-
         if self.props.is_editing_style:
             if self.props.is_editing_class == "IfcSurfaceStyle":
                 blenderbim.bim.helper.draw_attributes(self.props.attributes, self.layout)
@@ -118,6 +119,9 @@ class BIM_PT_styles(Panel):
                 self.draw_surface_style_rendering()
             elif self.props.is_editing_class == "IfcExternallyDefinedSurfaceStyle":
                 self.draw_externally_defined_surface_style()
+            else:
+                # TODO: UI for Texture, Lighting, Refract
+                self.layout.label(text=f"{self.props.is_editing_class} UI is not yet supported.")
 
     def draw_surface_style_shading(self):
         row = self.layout.row()
