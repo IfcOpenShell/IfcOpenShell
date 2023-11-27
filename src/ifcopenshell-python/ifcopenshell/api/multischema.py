@@ -2,6 +2,7 @@ from __future__ import annotations
 import ast
 import os
 import copy
+import shutil
 import inspect
 from enum import Enum, auto
 import warnings
@@ -926,24 +927,34 @@ class SchemaApiActionBuilder:
     module: str
     action: str
     version: str
-    api_dir: Path
-    _output_dir: Optional[Path] = field(init=False)
-    _init_arguments: Optional[SignatureArgs] = field(init=False, default=None)
+    parent: SchemaApiBuilder
+    _signature_args: Optional[SignatureArgs] = field(init=False, default=None)
 
     def __post_init__(self):
-        self._output_dir: Path = self.api_dir.parent / f"api_{self.version}"
-        self._output_dir.mkdir(exist_ok=True)
+        self.destination_path_module.mkdir(exist_ok=True)
 
     def __call__(self) -> tuple[ast.Module, SignatureArgs]:
-        source: str = open(self.source_path, 'r').read()
+        source: str = open(self.source_path_action, 'r').read()
         tree: ast.Module = ast.parse(source)
         updated_tree = self.update_usecase(tree)
         self.save(updated_tree)
-        return updated_tree, self._init_arguments
+        return updated_tree, self._signature_args
 
     @property
-    def source_path(self) -> Path:
-        return self.api_dir / self.module / f"{self.action}.py"
+    def source_path_module(self) -> Path:
+        return self.parent.api_dir / self.module
+
+    @property
+    def source_path_action(self) -> Path:
+        return self.source_path_module / f"{self.action}.py"
+
+    @property
+    def destination_path_module(self) -> Path:
+        return self.parent.output_dir / self.module
+
+    @property
+    def destination_path_action(self) -> Path:
+        return self.destination_path_module / f"{self.action}.py"
 
     def save(self, tree: ast.Module) -> None:
         try:
@@ -952,9 +963,7 @@ class SchemaApiActionBuilder:
             warnings.warn(f"Error unparsing abstract syntax tree of {self.module}.{self.action}")
             return
 
-        module_dir = self._output_dir / self.module
-        module_dir.mkdir(exist_ok=True)
-        with open(module_dir / f"{self.action}.py", "w") as f:
+        with open(self.destination_path_action, "w") as f:
             filename = f"ifcopenshell.api.{self.module}.{self.action}.py"
             f.write(preamble(self.version, filename) + updated_source)
 
@@ -971,7 +980,7 @@ class SchemaApiActionBuilder:
             SignatureType.DATACLASS: self.update_usecase_dataclass
         }[sigtype]
 
-        self._init_arguments = update_usecase_func(usecase_node, schema_args)
+        self._signature_args = update_usecase_func(usecase_node, schema_args)
         if schema_args:
             add_import_alias(tree, "typing", "Union")
         schema_attrs_method = SignatureArgs.from_python_args(
@@ -1069,6 +1078,7 @@ class SchemaApiActionBuilder:
 class SchemaApiBuilder:
     version: str
     api_dir: Path
+    overwrite: bool = True
 
     def __call__(self) -> None:
         file_source: str = open(self.file_path, 'r').read()
@@ -1079,11 +1089,15 @@ class SchemaApiBuilder:
             parent=cast(ast.AST, file_node), child_name="__init__", child_type=ast.FunctionDef
         )
         idx_class_min, idx_class_max, found_class_items = find_ast_idxs(node=file_tree, on_type=ast.ClassDef)
+        if self.overwrite:
+            self.wipe_previous()
+        with open(self.output_dir / "__init__.py", "w") as f:
+            f.write("")
 
         for module, actions in list_actions().items():
             module_node: Optional[ast.ClassDef] = None
             for action in actions:
-                action_tree, init_arguments = SchemaApiActionBuilder(module, action, self.version, self.api_dir)()
+                action_tree, init_arguments = SchemaApiActionBuilder(module, action, self.version, self)()
                 module_node = init_arguments.bake_api_module_class(append_to=module_node)
 
             if module_node is None:
@@ -1109,6 +1123,14 @@ class SchemaApiBuilder:
     @property
     def file_path(self) -> Path:
         return self.api_dir.parent / "file.py"
+
+    @property
+    def output_dir(self) -> Path:
+        return self.api_dir.parent / f"api_{self.version}"
+
+    def wipe_previous(self):
+        shutil.rmtree(self.output_dir)
+        self.output_dir.mkdir()
 
     @staticmethod
     def to_ast_api_module_assignment(module) -> ast.Assign:
