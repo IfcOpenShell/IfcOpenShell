@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.element
 
 
 class Usecase:
@@ -59,7 +60,16 @@ class Usecase:
                 )
             elif inverse.is_a("IfcRelAssignsToGroup"):
                 if inverse.RelatingGroup == self.settings["system"]:
+                    history = inverse.OwnerHistory
                     self.file.remove(inverse)
+                    if history:
+                        ifcopenshell.util.element.remove_deep2(self.file, history)
                 elif len(inverse.RelatedObjects) == 1:
+                    history = inverse.OwnerHistory
                     self.file.remove(inverse)
+                    if history:
+                        ifcopenshell.util.element.remove_deep2(self.file, history)
+        history = self.settings["system"].OwnerHistory
         self.file.remove(self.settings["system"])
+        if history:
+            ifcopenshell.util.element.remove_deep2(self.file, history)

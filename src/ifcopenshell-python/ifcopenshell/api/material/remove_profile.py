@@ -17,6 +17,10 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import ifcopenshell
+import ifcopenshell.util.element
+
+
 class Usecase:
     def __init__(self, file, profile=None):
         """Removes a profile item from a profile set
@@ -65,5 +69,10 @@ class Usecase:
         self.settings = {"profile": profile}
 
     def execute(self):
+        subelements = set()
+        for attribute in self.settings["profile"]:
+            if isinstance(attribute, ifcopenshell.entity_instance):
+                subelements.add(attribute)
         self.file.remove(self.settings["profile"])
-        # TODO: deep purge
+        for subelement in subelements:
+            ifcopenshell.util.element.remove_deep2(self.file, subelement)

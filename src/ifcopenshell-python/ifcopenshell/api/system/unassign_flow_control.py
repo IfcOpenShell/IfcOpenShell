@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.element
 
 
 class Usecase:
@@ -64,7 +65,11 @@ class Usecase:
         if assignment.RelatingFlowElement != self.settings["relating_flow_element"]:
             return
         if len(assignment.RelatedControlElements) == 1:
-            return self.file.remove(assignment)
+            history = assignment.OwnerHistory
+            self.file.remove(assignment)
+            if history:
+                ifcopenshell.util.element.remove_deep2(self.file, history)
+            return
         related_flow_controls = list(assignment.RelatedControlElements)
         related_flow_controls.remove(self.settings["related_flow_control"])
         assignment.RelatedControlElements = related_flow_controls
