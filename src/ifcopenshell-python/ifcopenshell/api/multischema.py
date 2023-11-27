@@ -90,13 +90,6 @@ def find_ast_idxs(
     return idx_min, idx_max, found_items
 
 
-def alias_in_module(ast_module: ast.Module, alias: str) -> bool:
-    for node in ast.walk(ast_module):
-        if isinstance(node, ast.Name) and node.id == alias:
-            return True
-    return False
-
-
 def get_import_from_module(ast_module: ast.Module, module: str) -> Optional[ast.ImportFrom]:
     for node in ast.walk(ast_module):
         if isinstance(node, ast.ImportFrom) and node.module == module:
@@ -129,12 +122,13 @@ def add_alias_to_import(node: ast.ImportFrom, alias: str) -> None:
 
 
 def add_import_alias(ast_module: ast.Module, module: str, alias: str) -> None:
-    if not alias_in_module(ast_module, alias):
-        return
+    """Adds an alias import to a module, if it wasn't already imported"""
     import_node = get_import_from_module(ast_module, module)
     if import_node:
+        # adds alias to an existing import from, in case it wasn't already present
         add_alias_to_import(import_node, alias)
     else:
+        # adding 'from module import alias' (either with another existing 'import module' or not)
         add_import_to_module(ast_module, module, alias)
 
 
