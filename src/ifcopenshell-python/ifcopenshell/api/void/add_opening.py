@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.element
 import ifcopenshell.util.placement
 
 
@@ -108,7 +109,10 @@ class Usecase:
         if voids_elements:
             if voids_elements[0].RelatingBuildingElement == self.settings["element"]:
                 return
+            history = voids_elements[0].OwnerHistory
             self.file.remove(voids_elements[0])
+            if history:
+                ifcopenshell.util.element.remove_deep2(self.file, history)
 
         self.file.create_entity(
             "IfcRelVoidsElement",

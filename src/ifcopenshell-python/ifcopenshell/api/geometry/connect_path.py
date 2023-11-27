@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.element
 
 
 class Usecase:
@@ -77,7 +78,10 @@ class Usecase:
 
         if incompatible_connections:
             for connection in set(incompatible_connections):
+                history = connection.OwnerHistory
                 self.file.remove(connection)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(self.file, history)
 
         return self.file.createIfcRelConnectsPathElements(
             ifcopenshell.guid.new(),

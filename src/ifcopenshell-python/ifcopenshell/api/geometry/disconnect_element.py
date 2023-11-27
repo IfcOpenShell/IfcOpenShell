@@ -16,6 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
+import ifcopenshell.util.element
+
 
 class Usecase:
     def __init__(self, file, **settings):
@@ -48,4 +51,7 @@ class Usecase:
 
         if incompatible_connections:
             for connection in set(incompatible_connections):
+                history = connection.OwnerHistory
                 self.file.remove(connection)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(self.file, history)

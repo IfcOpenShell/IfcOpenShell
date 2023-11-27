@@ -16,7 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.element
 
 
 class Usecase:
@@ -35,5 +37,11 @@ class Usecase:
         # TODO: do a deep purge
         for inverse in self.file.get_inverse(self.settings["load_group"]):
             if inverse.is_a("IfcRelAssignsToGroup") and len(inverse.RelatedObjects) == 1:
+                history = inverse.OwnerHistory
                 self.file.remove(inverse)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(self.file, history)
+        history = self.settings["load_group"].OwnerHistory
         self.file.remove(self.settings["load_group"])
+        if history:
+            ifcopenshell.util.element.remove_deep2(self.file, history)

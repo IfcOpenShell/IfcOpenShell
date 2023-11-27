@@ -20,9 +20,7 @@ import ifcopenshell.util.date
 
 
 class Usecase:
-    def __init__(
-        self, file, rel_sequence=None, lag_value=None, duration_type="WORKTIME"
-    ):
+    def __init__(self, file, rel_sequence=None, lag_value=None, duration_type="WORKTIME"):
         """Assign a lag time to a sequence relationship between tasks
 
         A task sequence (e.g. finish to start) may optionally have a lag time
@@ -94,22 +92,15 @@ class Usecase:
 
     def execute(self):
         lag_value = self.file.createIfcDuration(
-            ifcopenshell.util.date.datetime2ifc(
-                self.settings["lag_value"], "IfcDuration"
-            )
+            ifcopenshell.util.date.datetime2ifc(self.settings["lag_value"], "IfcDuration")
         )
         lag_time = self.file.create_entity(
-            "IfcLagTime",
-            **{
-                "DurationType": self.settings["duration_type"],
-                "LagValue": lag_value,
-            }
+            "IfcLagTime", DurationType=self.settings["duration_type"], LagValue=lag_value
         )
         if self.settings["rel_sequence"].is_a("IfcRelSequence"):
             if (
                 self.settings["rel_sequence"].TimeLag
-                and len(self.file.get_inverse(self.settings["rel_sequence"].TimeLag))
-                == 1
+                and len(self.file.get_inverse(self.settings["rel_sequence"].TimeLag)) == 1
             ):
                 self.file.remove(self.settings["rel_sequence"].TimeLag)
         self.settings["rel_sequence"].TimeLag = lag_time

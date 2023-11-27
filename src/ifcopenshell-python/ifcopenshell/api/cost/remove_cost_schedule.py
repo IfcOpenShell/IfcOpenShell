@@ -16,7 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.element
 
 
 class Usecase:
@@ -53,4 +55,7 @@ class Usecase:
                     for related_object in inverse.RelatedObjects
                     if related_object.is_a("IfcCostItem")
                 ]
+        history = self.settings["cost_schedule"].OwnerHistory
         self.file.remove(self.settings["cost_schedule"])
+        if history:
+            ifcopenshell.util.element.remove_deep2(self.file, history)

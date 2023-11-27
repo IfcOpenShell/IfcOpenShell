@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.element
 import ifcopenshell.util.placement
 
 
@@ -120,7 +121,10 @@ class Usecase:
                 contained_in_structure[0].RelatedElements = related_elements
                 ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": contained_in_structure[0]})
             else:
+                history = contained_in_structure[0].OwnerHistory
                 self.file.remove(contained_in_structure[0])
+                if history:
+                    ifcopenshell.util.element.remove_deep2(self.file, history)
 
         if contains_elements:
             related_elements = list(contains_elements[0].RelatedElements)

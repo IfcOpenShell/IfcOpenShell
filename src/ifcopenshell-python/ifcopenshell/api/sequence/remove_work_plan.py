@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.util.element
 
 
 class Usecase:
@@ -52,4 +53,7 @@ class Usecase:
             definition=self.settings["work_plan"],
             relating_context=self.file.by_type("IfcContext")[0],
         )
+        history = self.settings["work_plan"].OwnerHistory
         self.file.remove(self.settings["work_plan"])
+        if history:
+            ifcopenshell.util.element.remove_deep2(self.file, history)

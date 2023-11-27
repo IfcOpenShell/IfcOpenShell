@@ -16,7 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.element
 
 
 class Usecase:
@@ -38,6 +40,9 @@ class Usecase:
             ifcopenshell.api.run(
                 "structural.remove_structural_boundary_condition",
                 self.file,
-                **{"connection": self.settings["relation"].RelatedStructuralConnection}
+                connection=self.settings["relation"].RelatedStructuralConnection
             )
+        history = self.settings["relation"].OwnerHistory
         self.file.remove(self.settings["relation"])
+        if history:
+            ifcopenshell.util.element.remove_deep2(self.file, history)

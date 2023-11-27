@@ -16,8 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api
-
 
 class Usecase:
     def __init__(self, file, recurrence_pattern=None):
@@ -53,4 +51,6 @@ class Usecase:
         self.settings = {"recurrence_pattern": recurrence_pattern}
 
     def execute(self):
+        for time_period in self.settings["recurrence_pattern"].TimePeriods or []:
+            self.file.remove(time_period)
         self.file.remove(self.settings["recurrence_pattern"])
