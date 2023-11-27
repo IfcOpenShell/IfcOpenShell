@@ -127,19 +127,22 @@ class MaterialCreator:
         for style_id in style_ids:
             material = self.styles[style_id]
 
-            def get_ifc_coordinate(style_id):
-                style = self.ifc_importer.file.by_id(style_id)
-                if coords := getattr(style, "IsMappedTo", None):
-                    coords = coords[0]
-                    # IfcTextureCoordinateGenerator handled in the style shader graph
-                    if coords.is_a("IfcIndexedTextureMap"):
-                        return coords
-                    # TODO: support IfcTextureMap
-                    if coords.is_a("IfcTextureMap"):
-                        print(f"WARNING. IfcTextureMap texture coordinates is not supported.")
-                        return
+            def get_ifc_coordinate(material):
+                texture_style = tool.Style.get_texture_style(material)
+                if not texture_style:
+                    return
+                for texture in texture_style.Textures or []:
+                    if coords := getattr(texture, "IsMappedBy", None):
+                        coords = coords[0]
+                        # IfcTextureCoordinateGenerator handled in the style shader graph
+                        if coords.is_a("IfcIndexedTextureMap"):
+                            return coords
+                        # TODO: support IfcTextureMap
+                        if coords.is_a("IfcTextureMap"):
+                            print(f"WARNING. IfcTextureMap texture coordinates is not supported.")
+                            return
 
-            if coords := get_ifc_coordinate(style_id):
+            if coords := get_ifc_coordinate(material):
                 self.load_texture_map(coords)
             if self.mesh.materials.find(material.name) == -1:
                 self.mesh.materials.append(material)
