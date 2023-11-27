@@ -16,7 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.element
 
 
 class Usecase:
@@ -51,7 +53,16 @@ class Usecase:
                     for related_object in inverse.RelatedObjects:
                         ifcopenshell.api.run("cost.remove_cost_item", self.file, cost_item=related_object)
                 elif inverse.RelatedObjects == tuple(self.settings["cost_item"]):
+                    history = inverse.OwnerHistory
                     self.file.remove(inverse)
+                    if history:
+                        ifcopenshell.util.element.remove_deep2(self.file, history)
             elif inverse.is_a("IfcRelAssignsToControl"):
+                history = inverse.OwnerHistory
                 self.file.remove(inverse)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(self.file, history)
+        history = self.settings["cost_item"].OwnerHistory
         self.file.remove(self.settings["cost_item"])
+        if history:
+            ifcopenshell.util.element.remove_deep2(self.file, history)

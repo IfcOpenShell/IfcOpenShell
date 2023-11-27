@@ -55,6 +55,7 @@ class Usecase:
 
         for rel in self.settings["information"].IsPointedTo or []:
             if rel.RelatedDocuments == (self.settings["information"],):
+                # This relationship is non-rooted
                 self.file.remove(rel)
 
         for rel in self.settings["information"].DocumentInfoForObjects or []:

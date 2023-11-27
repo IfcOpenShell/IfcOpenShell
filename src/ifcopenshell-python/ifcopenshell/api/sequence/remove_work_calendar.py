@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.util.element
 
 
 class Usecase:
@@ -54,13 +55,14 @@ class Usecase:
         )
         if self.settings["work_calendar"].Controls:
             for rel in self.settings["work_calendar"].Controls:
-                for object in rel.RelatedObjects:
+                for related_object in rel.RelatedObjects:
                     ifcopenshell.api.run(
                         "control.unassign_control",
                         self.file,
-                        **{
-                            "relating_control": self.settings["work_calendar"],
-                            "related_object": object,
-                        }
+                        relating_control=self.settings["work_calendar"],
+                        related_object=related_object,
                     )
+        history = self.settings["work_calendar"].OwnerHistory
         self.file.remove(self.settings["work_calendar"])
+        if history:
+            ifcopenshell.util.element.remove_deep2(self.file, history)

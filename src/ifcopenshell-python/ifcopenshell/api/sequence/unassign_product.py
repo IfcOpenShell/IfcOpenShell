@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.element
 
 
 class Usecase:
@@ -63,17 +64,16 @@ class Usecase:
 
     def execute(self):
         for rel in self.settings["related_object"].HasAssignments or []:
-            if (
-                not rel.is_a("IfcRelAssignsToProduct")
-                or rel.RelatingProduct != self.settings["relating_product"]
-            ):
+            if not rel.is_a("IfcRelAssignsToProduct") or rel.RelatingProduct != self.settings["relating_product"]:
                 continue
             if len(rel.RelatedObjects) == 1:
-                return self.file.remove(rel)
+                history = rel.OwnerHistory
+                self.file.remove(rel)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(self.file, history)
+                return
             related_objects = list(rel.RelatedObjects)
             related_objects.remove(self.settings["related_object"])
             rel.RelatedObjects = related_objects
-            ifcopenshell.api.run(
-                "owner.update_owner_history", self.file, **{"element": rel}
-            )
+            ifcopenshell.api.run("owner.update_owner_history", self.file, element=rel)
             return rel

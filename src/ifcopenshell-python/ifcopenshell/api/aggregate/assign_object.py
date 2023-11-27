@@ -109,7 +109,10 @@ class Usecase:
                 decomposes.RelatedObjects = related_objects
                 ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": decomposes})
             else:
+                history = decomposes.OwnerHistory
                 self.file.remove(decomposes)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(self.file, history)
 
         if is_decomposed_by:
             related_objects = set(is_decomposed_by.RelatedObjects)
