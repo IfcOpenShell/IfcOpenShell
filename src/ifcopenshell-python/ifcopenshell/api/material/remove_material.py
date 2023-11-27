@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.util.element
 
 
 class Usecase:
@@ -59,7 +60,10 @@ class Usecase:
             elif inverse.is_a("IfcMaterialProfile"):
                 self.file.remove(inverse)
             elif inverse.is_a("IfcRelAssociatesMaterial"):
+                history = inverse.OwnerHistory
                 self.file.remove(inverse)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(self.file, history)
             elif inverse.is_a("IfcMaterialProperties"):
                 for prop in inverse.Properties or []:
                     self.file.remove(prop)

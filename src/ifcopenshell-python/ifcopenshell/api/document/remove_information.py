@@ -17,7 +17,9 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.element
 
 
 class Usecase:
@@ -56,5 +58,8 @@ class Usecase:
                 self.file.remove(rel)
 
         for rel in self.settings["information"].DocumentInfoForObjects or []:
+            history = rel.OwnerHistory
             self.file.remove(rel)
+            if history:
+                ifcopenshell.util.element.remove_deep2(self.file, history)
         self.file.remove(self.settings["information"])

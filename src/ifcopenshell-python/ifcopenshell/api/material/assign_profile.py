@@ -111,6 +111,7 @@ class Usecase:
                             self.change_profile(element)
 
         if old_profile and len(self.file.get_inverse(old_profile)) == 0:
+            # TODO: check remove deep
             self.file.remove(old_profile)
 
     def change_profile(self, element):
