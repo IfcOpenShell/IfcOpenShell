@@ -14,7 +14,7 @@ import ifcopenshell
 from ifcopenshell.api import list_actions
 
 wrapper = ifcopenshell.ifcopenshell_wrapper
-TASTCALL = TypeVar("TASTCALL", bound=Union[ast.ClassDef, ast.FunctionDef])
+ASTCALLT = TypeVar("ASTCALLT", bound=Union[ast.ClassDef, ast.FunctionDef])
 
 
 class PythonArgType(Enum):  # See PEP 570 and PEP 3102 for reference
@@ -71,6 +71,7 @@ def is_dataclass(node: ast.ClassDef) -> bool:
 def find_ast_idxs(
         node: ast.AST, on_type: Union[type, tuple[type, ...]], wrn_msg: Optional[str] = None
 ) -> tuple[int, int, bool]:
+    """Returns min/max indices of child nodes of a certain type"""
     found_items = False
     idx_min, idx_max = -1, -1
     for idx, child in enumerate(ast.iter_child_nodes(node)):
@@ -91,6 +92,7 @@ def find_ast_idxs(
 
 
 def get_import_from_module(ast_module: ast.Module, module: str) -> Optional[ast.ImportFrom]:
+    """Obtains the node corresponding to a certain module import (if ImportFrom)"""
     for node in ast.walk(ast_module):
         if isinstance(node, ast.ImportFrom) and node.module == module:
             return node
@@ -98,6 +100,7 @@ def get_import_from_module(ast_module: ast.Module, module: str) -> Optional[ast.
 
 
 def add_import_to_module(ast_module: ast.Module, module: str, alias: str) -> None:
+    """Adds 'from <module> import <alias>' after the last existing import"""
     idx_import_min, idx_import_max, found_import = find_ast_idxs(node=ast_module, on_type=(ast.Import, ast.ImportFrom))
     ast_module.body.insert(
         idx_import_max,
@@ -110,6 +113,7 @@ def add_import_to_module(ast_module: ast.Module, module: str, alias: str) -> Non
 
 
 def add_alias_to_import(node: ast.ImportFrom, alias: str) -> None:
+    """Adds an alias at the end of an ImportFrom -> 'from existing_import import existing1, existing2, <alias>'"""
     alias_found = False
     for name in node.names:
         if not isinstance(name, ast.alias):
@@ -132,9 +136,10 @@ def add_import_alias(ast_module: ast.Module, module: str, alias: str) -> None:
         add_import_to_module(ast_module, module, alias)
 
 
-def get_child_node(parent: ast.AST, child_name: str, child_type: Type[TASTCALL] = ast.FunctionDef) -> TASTCALL:
+def get_child_node(parent: ast.AST, child_name: str, child_type: Type[ASTCALLT] = ast.FunctionDef) -> ASTCALLT:
+    """Gets a child node of a certain type and with a certain name"""
     matches = [
-        cast(TASTCALL, child) for child in ast.iter_child_nodes(parent)
+        cast(ASTCALLT, child) for child in ast.iter_child_nodes(parent)
         if isinstance(child, child_type) and child.name == child_name
     ]
     if len(matches) != 1:
@@ -142,8 +147,44 @@ def get_child_node(parent: ast.AST, child_name: str, child_type: Type[TASTCALL] 
     return matches[0]
 
 
+def module_to_file_init_ast_assignment(module) -> ast.Assign:
+    """
+    Generates an AST node equivalent to the following source:
+        'self.<module> = ApiModule_<module>(file=self, version=self.schema)'
+    Intended to be appended to file.__init__
+    """
+    return ast.Assign(
+        targets=[
+            ast.Attribute(
+                value=ast.Name(id="self", ctx=ast.Load()),
+                attr=module,
+                ctx=ast.Store()
+            )
+        ],
+        value=ast.Call(
+            func=ast.Name(id=f"ApiModule_{module}", ctx=ast.Load()),
+            args=[],
+            keywords=[
+                ast.keyword(
+                    arg="file",
+                    value=ast.Name(id="self", ctx=ast.Load())
+                ),
+                ast.keyword(
+                    arg="version",
+                    value=ast.Attribute(
+                        value=ast.Name(id="self", ctx=ast.Load()),
+                        attr="schema",
+                        ctx=ast.Load()
+                    )
+                )
+            ]
+        )
+    )
+
+
 @dataclass(slots=True)
 class PythonArg:
+    """Characterization of a Python argument"""
     argtype: PythonArgType = PythonArgType.POS_OR_KW
     name: Optional[str] = None
     annotation: Optional[Union[AstAnnotation, ast.AST]] = None
@@ -197,6 +238,10 @@ class PythonArg:
 
 @dataclass(slots=True)
 class SignatureArgs:
+    """
+    Characterization of a group of Python arguments, constituting a function signature
+    Useful reference: https://peps.python.org/pep-0570/#syntax-and-semantics
+    """
     version: str
     module: str
     action: str
@@ -658,6 +703,7 @@ class SignatureArgs:
 
 @dataclass(slots=True)
 class AstAnnotation:
+    """Characterization of a Python annotation. Base class."""
     def __call__(self) -> ast.expr:
         ...
 
@@ -669,6 +715,7 @@ class AstAnnotation:
 
 @dataclass(slots=True)
 class AstAnnotationEntityInstance(AstAnnotation):
+    """Characterization of an IfcOpenShell entity instance annotation"""
     def __call__(self) -> ast.Attribute:
         return ast.Attribute(
             value=ast.Name(id="ifcopenshell", ctx=ast.Load()),
@@ -678,7 +725,8 @@ class AstAnnotationEntityInstance(AstAnnotation):
 
 
 @dataclass(slots=True)
-class AstAnnotationName(AstAnnotation):
+class AstAnnotationType(AstAnnotation):
+    """Characterization of an annotation corresponding to a Python type"""
     annotation_type: type
 
     def __call__(self) -> ast.Name:
@@ -686,7 +734,8 @@ class AstAnnotationName(AstAnnotation):
 
 
 @dataclass(slots=True)
-class AstAnnotationConstant(AstAnnotation):
+class AstAnnotationValue(AstAnnotation):
+    """Characterization of an annotation corresponding to a Python value"""
     annotation_value: Any
 
     def __call__(self) -> ast.Constant:
@@ -695,8 +744,10 @@ class AstAnnotationConstant(AstAnnotation):
 
 @dataclass(slots=True)
 class AstAnnotationAggregation(AstAnnotation):
+    """Characterization of an annotation corresponding to an aggregation of other annotations"""
     aggregation_type: type
     aggregation_content: AstAnnotation
+    # TODO: add bounds
 
     def __call__(self) -> ast.Subscript:
         return ast.Subscript(
@@ -708,6 +759,7 @@ class AstAnnotationAggregation(AstAnnotation):
 
 @dataclass(slots=True)
 class AstAnnotationUnion(AstAnnotation):
+    """Characterization of a union of other annotations"""
     annotations: list[AstAnnotation]
     subscript_name: str = "Union"
 
@@ -721,7 +773,7 @@ class AstAnnotationUnion(AstAnnotation):
 
 @dataclass(slots=True)
 class SchemaAttrParser:
-    """Parses IFC Schema attributes"""
+    """Parses IFC Schema attributes into a PythonArg list"""
     ifc_class: str
     defaults: dict[str, Any] = field(default_factory=dict)
     exclude: list[str] = field(default_factory=list)
@@ -730,10 +782,6 @@ class SchemaAttrParser:
     def __call__(self) -> list[PythonArg]:
         return self.retrieve_parameters()
 
-    @property
-    def schema(self) -> wrapper.schema_definition:
-        return wrapper.schema_by_name(self.version)
-
     def retrieve_parameters(self) -> list[PythonArg]:
         entity = self.schema.declaration_by_name(self.ifc_class)
         parsed_attrs = []
@@ -741,6 +789,10 @@ class SchemaAttrParser:
             if parameter := self.parse_attribute(attribute):
                 parsed_attrs.append(parameter)
         return parsed_attrs
+
+    @property
+    def schema(self) -> wrapper.schema_definition:
+        return wrapper.schema_by_name(self.version)
 
     def parse_attribute(self, attribute: wrapper.attribute) -> Optional[PythonArg]:
         name_pascal: str = attribute.name()
@@ -757,26 +809,20 @@ class SchemaAttrParser:
             annotation = self.parse_aggregation_type(type_of_attribute)
         else:
             warnings.warn(f"Unexpected type of attribute {type(type_of_attribute)}")
-            annotation = AstAnnotationConstant(Any)
-        annotation = annotation | AstAnnotationConstant(None)
+            annotation = AstAnnotationValue(Any)
+        annotation = annotation | AstAnnotationValue(None)
         return PythonArg(name=name, annotation=annotation, default=default, enforce_none_default=True)
 
     @staticmethod
     def parse_simple_type(simple: wrapper.simple_type) -> AstAnnotation:
         return {
-            "string": AstAnnotationName(str),
-            "logical": AstAnnotationUnion([
-                AstAnnotationName(bool),
-                AstAnnotationConstant(None)
-            ]),
-            "boolean": AstAnnotationName(bool),
-            "real": AstAnnotationName(float),
-            "number": AstAnnotationUnion([
-                AstAnnotationName(int),
-                AstAnnotationName(float)
-            ]),
-            "integer": AstAnnotationName(int),
-            "binary": AstAnnotationName(bytes)
+            "string": AstAnnotationType(str),
+            "logical": AstAnnotationType(bool) | AstAnnotationValue(None),
+            "boolean": AstAnnotationType(bool),
+            "real": AstAnnotationType(float),
+            "number": AstAnnotationType(int) | AstAnnotationType(float),
+            "integer": AstAnnotationType(int),
+            "binary": AstAnnotationType(bytes)
         }[simple.declared_type()]
 
     def parse_named_type(self, named: wrapper.named_type) -> AstAnnotation:
@@ -788,7 +834,7 @@ class SchemaAttrParser:
         elif isinstance(declared_type, wrapper.select_type):
             return self.parse_select_type(declared_type)
         elif isinstance(declared_type, wrapper.enumeration_type):
-            return AstAnnotationName(str)
+            return AstAnnotationType(str)
 
     def parse_type_declaration(self, declaration: wrapper.type_declaration) -> AstAnnotation:
         declared_type = declaration.declared_type()
@@ -813,7 +859,7 @@ class SchemaAttrParser:
             element_annotation = self.parse_aggregation_type(type_of_element)
         else:
             warnings.warn(f"Unexpected type of element {type(type_of_element)}")
-            element_annotation = AstAnnotationConstant(Any)
+            element_annotation = AstAnnotationValue(Any)
 
         if type_of_aggregation == "list":  # ordered w/o repetition, flexible size
             return AstAnnotationAggregation(list, element_annotation)
@@ -874,6 +920,7 @@ class SchemaAttrParser:
 
 
 class SchemaAttrsRemover(ast.NodeTransformer):
+    """AST node visitor that removes a decorator with the specified name"""
     schema_decorator_name: str = "with_schema_attrs"
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> Optional[ast.ImportFrom]:
@@ -912,12 +959,15 @@ class SchemaAttrsRemover(ast.NodeTransformer):
 
 
 class FileHelperRemover(ast.NodeTransformer):
+    """AST node visitor that removes the 'file' function"""
+
     def visit_FunctionDef(self, node: ast.FunctionDef) -> Optional[ast.FunctionDef]:
         return None if node.name == "file" else node
 
 
 @dataclass(slots=True)
 class SchemaApiActionBuilder:
+    """Builds static API module/action Python source, adapted to a certain schema definition"""
     module: str
     action: str
     version: str
@@ -1070,6 +1120,7 @@ class SchemaApiActionBuilder:
 
 @dataclass(slots=True)
 class SchemaApiBuilder:
+    """Builds static API module Python source (including its API actions), adapted to a certain schema definition"""
     version: str
     api_dir: Path
     overwrite: bool = True
@@ -1103,7 +1154,7 @@ class SchemaApiBuilder:
                 cast(ast.stmt, ast.fix_missing_locations(module_node))
             )
             file_init_node.body.append(
-                cast(ast.stmt, self.to_ast_api_module_assignment(module))
+                cast(ast.stmt, module_to_file_init_ast_assignment(module))
             )
 
         add_import_alias(ast_module=file_tree, module="typing", alias="Union")
@@ -1126,38 +1177,9 @@ class SchemaApiBuilder:
         shutil.rmtree(self.output_dir)
         self.output_dir.mkdir()
 
-    @staticmethod
-    def to_ast_api_module_assignment(module) -> ast.Assign:
-        return ast.Assign(
-            targets=[
-                ast.Attribute(
-                    value=ast.Name(id="self", ctx=ast.Load()),
-                    attr=module,
-                    ctx=ast.Store()
-                )
-            ],
-            value=ast.Call(
-                func=ast.Name(id=f"ApiModule_{module}", ctx=ast.Load()),
-                args=[],
-                keywords=[
-                    ast.keyword(
-                        arg="file",
-                        value=ast.Name(id="self", ctx=ast.Load())
-                    ),
-                    ast.keyword(
-                        arg="version",
-                        value=ast.Attribute(
-                            value=ast.Name(id="self", ctx=ast.Load()),
-                            attr="schema",
-                            ctx=ast.Load()
-                        )
-                    )
-                ]
-            )
-        )
-
 
 if __name__ == "__main__":
+    """RUN TO BUILD STATIC PYTHON APIs"""
     api_dir = Path(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
 
     for version in ["IFC2X3", "IFC4", "IFC4X3"]:  # TODO: include every version
