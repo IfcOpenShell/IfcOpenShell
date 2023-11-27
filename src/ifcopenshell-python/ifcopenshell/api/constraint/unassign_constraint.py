@@ -16,6 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
+import ifcopenshell.util.element
+
 
 class Usecase:
     def __init__(self, file, product=None, constraint=None):
@@ -40,4 +43,7 @@ class Usecase:
     def execute(self):
         for rel in self.settings["product"].HasAssociations:
             if rel.is_a("IfcRelAssociatesConstraint") and rel.RelatingConstraint == self.settings["constraint"]:
+                history = rel.OwnerHistory
                 self.file.remove(rel)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(self.file, history)

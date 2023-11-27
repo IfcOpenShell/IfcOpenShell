@@ -16,7 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.element
 
 
 class Usecase:
@@ -65,22 +67,23 @@ class Usecase:
                     )
         for inverse in self.file.get_inverse(self.settings["work_schedule"]):
             if inverse.is_a("IfcRelDefinesByObject"):
-                if (
-                    inverse.RelatingObject == self.settings["work_schedule"]
-                    or len(inverse.RelatedObjects) == 1
-                ):
+                if inverse.RelatingObject == self.settings["work_schedule"] or len(inverse.RelatedObjects) == 1:
+                    history = inverse.OwnerHistory
                     self.file.remove(inverse)
+                    if history:
+                        ifcopenshell.util.element.remove_deep2(self.file, history)
                 else:
                     related_objects = list(inverse.RelatedObjects)
                     related_objects.remove(self.settings["work_schedule"])
                     inverse.RelatedObjects = related_objects
             elif inverse.is_a("IfcRelAssignsToControl"):
                 [
-                    ifcopenshell.api.run(
-                        "sequence.remove_task", self.file, task=related_object
-                    )
+                    ifcopenshell.api.run("sequence.remove_task", self.file, task=related_object)
                     for related_object in inverse.RelatedObjects
                     if related_object.is_a("IfcTask")
                 ]
 
+        history = self.settings["work_schedule"].OwnerHistory
         self.file.remove(self.settings["work_schedule"])
+        if history:
+            ifcopenshell.util.element.remove_deep2(self.file, history)

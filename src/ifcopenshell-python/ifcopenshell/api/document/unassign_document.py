@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.util.element
 
 
 class Usecase:
@@ -59,6 +60,9 @@ class Usecase:
         for rel in self.settings["product"].HasAssociations:
             if rel.is_a("IfcRelAssociatesDocument") and rel.RelatingDocument == self.settings["document"]:
                 if len(rel.RelatedObjects) == 1:
+                    history = rel.OwnerHistory
                     self.file.remove(rel)
+                    if history:
+                        ifcopenshell.util.element.remove_deep2(self.file, history)
                 else:
                     rel.RelatedObjects = [o for o in rel.RelatedObjects if o != self.settings["product"]]

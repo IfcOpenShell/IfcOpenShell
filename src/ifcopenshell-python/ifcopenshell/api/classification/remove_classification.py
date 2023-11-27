@@ -16,6 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
+import ifcopenshell.util.element
+
 
 class Usecase:
     def __init__(self, file, classification=None):
@@ -48,7 +51,10 @@ class Usecase:
         self.file.remove(self.settings["classification"])
         for rel in self.file.by_type("IfcRelAssociatesClassification"):
             if not rel.RelatingClassification:
+                history = rel.OwnerHistory
                 self.file.remove(rel)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(self.file, history)
         for rel in self.file.by_type("IfcExternalReferenceRelationship"):
             if not rel.RelatingReference:
                 self.file.remove(rel)

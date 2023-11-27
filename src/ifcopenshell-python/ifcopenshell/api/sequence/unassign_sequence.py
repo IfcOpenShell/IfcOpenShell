@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.element
 
 
 class Usecase:
@@ -65,9 +66,8 @@ class Usecase:
     def execute(self):
         for rel in self.settings["related_process"].IsSuccessorFrom or []:
             if rel.RelatingProcess == self.settings["relating_process"]:
+                history = rel.OwnerHistory
                 self.file.remove(rel)
-        ifcopenshell.api.run(
-            "sequence.cascade_schedule",
-            self.file,
-            task=self.settings["related_process"],
-        )
+                if history:
+                    ifcopenshell.util.element.remove_deep2(self.file, history)
+        ifcopenshell.api.run("sequence.cascade_schedule", self.file, task=self.settings["related_process"])

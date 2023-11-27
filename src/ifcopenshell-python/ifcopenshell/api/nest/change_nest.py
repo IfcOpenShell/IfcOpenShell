@@ -18,6 +18,8 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.element
+
 
 class Usecase:
     def __init__(self, file, item=None, new_parent=None):
@@ -35,5 +37,13 @@ class Usecase:
             nests.RelatedObjects = related_objects
             ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": nests})
         else:
+            history = nests.OwnerHistory
             self.file.remove(nests)
-        ifcopenshell.api.run("nest.assign_object", self.file, related_object=self.settings["item"], relating_object=self.settings["new_parent"])
+            if history:
+                ifcopenshell.util.element.remove_deep2(self.file, history)
+        ifcopenshell.api.run(
+            "nest.assign_object",
+            self.file,
+            related_object=self.settings["item"],
+            relating_object=self.settings["new_parent"],
+        )
