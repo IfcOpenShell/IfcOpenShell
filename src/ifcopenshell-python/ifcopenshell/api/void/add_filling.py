@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.util.element
 
 
 class Usecase:
@@ -108,13 +109,14 @@ class Usecase:
         if fills_voids:
             if fills_voids[0].RelatingOpeningElement == self.settings["opening"]:
                 return
+            history = fills_voids[0].OwnerHistory
             self.file.remove(fills_voids[0])
+            if history:
+                ifcopenshell.util.element.remove_deep2(self.file, history)
 
         self.file.create_entity(
             "IfcRelFillsElement",
-            **{
-                "GlobalId": ifcopenshell.guid.new(),
-                "RelatingOpeningElement": self.settings["opening"],
-                "RelatedBuildingElement": self.settings["element"],
-            }
+            GlobalId=ifcopenshell.guid.new(),
+            RelatingOpeningElement=self.settings["opening"],
+            RelatedBuildingElement=self.settings["element"],
         )

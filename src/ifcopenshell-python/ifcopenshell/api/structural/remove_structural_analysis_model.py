@@ -16,6 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
+import ifcopenshell.util.element
+
 
 class Usecase:
     def __init__(self, file, structural_analysis_model=None):
@@ -34,5 +37,11 @@ class Usecase:
 
     def execute(self):
         for rel in self.settings["structural_analysis_model"].IsGroupedBy or []:
+            history = rel.OwnerHistory
             self.file.remove(rel)
+            if history:
+                ifcopenshell.util.element.remove_deep2(self.file, history)
+        history = self.settings["structural_analysis_model"].OwnerHistory
         self.file.remove(self.settings["structural_analysis_model"])
+        if history:
+            ifcopenshell.util.element.remove_deep2(self.file, history)
