@@ -128,48 +128,90 @@ class Usecase:
             elif inverse.is_a("IfcRelSpaceBoundary"):
                 ifcopenshell.api.run("boundary.remove_boundary", self.file, boundary=inverse)
             elif inverse.is_a("IfcRelFillsElement"):
+                history = inverse.OwnerHistory
                 self.file.remove(inverse)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(self.file, history)
             elif inverse.is_a("IfcRelVoidsElement"):
+                history = inverse.OwnerHistory
                 self.file.remove(inverse)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(self.file, history)
             elif inverse.is_a("IfcRelServicesBuildings"):
+                history = inverse.OwnerHistory
                 self.file.remove(inverse)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(self.file, history)
             elif inverse.is_a("IfcRelNests"):
                 if inverse.RelatingObject == self.settings["product"]:
                     for subelement in inverse.RelatedObjects:
                         if subelement.is_a("IfcDistributionPort"):
                             ifcopenshell.api.run("root.remove_product", self.file, product=subelement)
                     if not inverse.RelatedObjects:
+                        history = inverse.OwnerHistory
                         self.file.remove(inverse)
+                        if history:
+                            ifcopenshell.util.element.remove_deep2(self.file, history)
             elif inverse.is_a("IfcRelAggregates"):
                 if inverse.RelatingObject == self.settings["product"] or len(inverse.RelatedObjects) == 1:
+                    history = inverse.OwnerHistory
                     self.file.remove(inverse)
+                    if history:
+                        ifcopenshell.util.element.remove_deep2(self.file, history)
             elif inverse.is_a("IfcRelContainedInSpatialStructure"):
                 if inverse.RelatingStructure == self.settings["product"] or len(inverse.RelatedElements) == 1:
+                    history = inverse.OwnerHistory
                     self.file.remove(inverse)
+                    if history:
+                        ifcopenshell.util.element.remove_deep2(self.file, history)
             elif inverse.is_a("IfcRelConnectsElements"):
                 if inverse.is_a("IfcRelConnectsWithRealizingElements"):
                     if self.settings["product"] not in (inverse.RelatingElement, inverse.RelatedElement) and any(
                         el for el in inverse.RealizingElements if el != self.settings["product"]
                     ):
                         continue
+                history = inverse.OwnerHistory
                 self.file.remove(inverse)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(self.file, history)
             elif inverse.is_a("IfcRelConnectsPorts"):
                 if self.settings["product"] not in (inverse.RelatingPort, inverse.RelatedPort):
                     # if it's not RelatingPort/RelatedPort then it's optional RealizingElement
                     # so we keep the relationship
                     continue
+                history = inverse.OwnerHistory
                 self.file.remove(inverse)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(self.file, history)
             elif inverse.is_a("IfcRelAssignsToGroup"):
                 if len(inverse.RelatedObjects) == 1:
+                    history = inverse.OwnerHistory
                     self.file.remove(inverse)
+                    if history:
+                        ifcopenshell.util.element.remove_deep2(self.file, history)
             elif inverse.is_a("IfcRelAssignsToProduct"):
                 if inverse.RelatingProduct == self.settings["product"]:
+                    history = inverse.OwnerHistory
                     self.file.remove(inverse)
+                    if history:
+                        ifcopenshell.util.element.remove_deep2(self.file, history)
                 elif len(inverse.RelatedObjects) == 1:
+                    history = inverse.OwnerHistory
                     self.file.remove(inverse)
+                    if history:
+                        ifcopenshell.util.element.remove_deep2(self.file, history)
             elif inverse.is_a("IfcRelFlowControlElements"):
                 if inverse.RelatingFlowElement == self.settings["product"]:
+                    history = inverse.OwnerHistory
                     self.file.remove(inverse)
+                    if history:
+                        ifcopenshell.util.element.remove_deep2(self.file, history)
                 elif inverse.RelatedControlElements == (self.settings["product"],):
+                    history = inverse.OwnerHistory
                     self.file.remove(inverse)
+                    if history:
+                        ifcopenshell.util.element.remove_deep2(self.file, history)
+        history = self.settings["product"].OwnerHistory
         self.file.remove(self.settings["product"])
+        if history:
+            ifcopenshell.util.element.remove_deep2(self.file, history)
