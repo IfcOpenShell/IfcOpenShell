@@ -146,16 +146,33 @@ class ValidateIfcFile(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        return tool.Ifc.get()
 
     def execute(self, context):
         import ifcopenshell.validate
 
+        class LogDetectionHandler(logging.Handler):
+            message_logged = False
+
+            def emit(self, record):
+                if not self.message_logged:
+                    self.message_logged = True
+
         logger = logging.getLogger("validate")
         logger.setLevel(logging.DEBUG)
-        ifcopenshell.validate.validate(IfcStore.get_file(), logger, express_rules=True)
 
-        self.report({"INFO"}, "Check validation results in the system console.")
+        # use LogDetectionHandler to check whether there were any validation errors
+        # during `ifcopenshell.validate.validate`
+        handler = LogDetectionHandler()
+        logger.addHandler(handler)
+        ifcopenshell.validate.validate(tool.Ifc.get(), logger, express_rules=True)
+        logger.removeHandler(handler)
+
+        if handler.message_logged:
+            self.report({"INFO"}, "Check validation results in the system console.")
+        else:
+            self.report({"INFO"}, "No validation issues found.")
+
         return {"FINISHED"}
 
 
