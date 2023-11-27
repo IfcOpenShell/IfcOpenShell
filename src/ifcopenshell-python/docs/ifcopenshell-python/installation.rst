@@ -116,10 +116,22 @@ Conda
     conda install -c ifcopenshell -c conda-forge ifcopenshell
     # Alteratively, to install an older, stable version
     conda install -c conda-forge ifcopenshell
+    # If you want to install additional packages that rely on occt, you should install them at the same time into a fresh environment
+    conda create -n testenv -c conda-forge ifcopenshell pythonocc-core
 
 .. note::
 
     Installing IfcOpenShell from Conda will also install IfcConvert.
+
+.. note::
+
+    If you plan on using any other packages using `occt` (OpenCascade) you will need to ensure that
+    the `occt` version installed by `ifcopenshell` is compatible with the other packages.
+    A common error when using two packages compiled with different `occt` versions are
+    `ImportError: cannot import name 'V3d' from 'OCC'`. To avoid this, you should install
+    both packages at the same time and let conda resolve the common occt version. Here is an
+    example where `ifcopenshell` and `pythonocc-core` are installed in the same environment `testenv`
+    `conda create -n testenv -c conda-forge ifcopenshell pythonocc-core`
 
 .. warning::
 
