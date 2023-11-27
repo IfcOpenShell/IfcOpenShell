@@ -574,7 +574,7 @@ def file(f=None, schema=None, schema_version=None, strong_typing=True):
     else:
         schema = {"IFC4X3": "IFC4X3_ADD1"}.get(schema, schema)
 
-    if strong_typing:
+    if strong_typing and schema:
         file_module = importlib.import_module(f"ifcopenshell.file_{schema}")
         file_class = file_module._file
     else:
