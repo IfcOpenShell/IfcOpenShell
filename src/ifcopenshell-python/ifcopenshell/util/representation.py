@@ -16,13 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import annotations
 import numpy as np
 import ifcopenshell
-import ifcopenshell.util.shape_builder
-from mathutils import Vector
-from typing import Any, Union
-from dataclasses import dataclass
 
 
 def get_context(ifc_file, context, subcontext=None, target_view=None):
@@ -91,50 +86,3 @@ def resolve_items(representation, matrix=None):
         else:
             results.append({"matrix": matrix.copy(), "item": item})
     return results
-
-
-@dataclass
-class ClippingInfo:
-    location: tuple[float, float, float]
-    normal: tuple[float, float, float]
-    type: str = "IfcBooleanClippingResult"
-    operand_type: str = "IfcHalfSpaceSolid"
-
-    @classmethod
-    def parse(cls, raw_data: Any) -> Union[ifcopenshell.entity_instance, ClippingInfo, None]:
-        """`raw_data` can be either:
-        - IfcBooleanResult IFC entity
-        - `ClippingInfo` instance
-        - dictionary to define `ClippingInfo` - either `location` and `normal`
-            or a `matrix` where XY plane is the clipping boundary and +Z is removed.
-            `matrix` method will be soon to be deprecated completely.
-        """
-        if isinstance(raw_data, ifcopenshell.entity_instance):
-            if not raw_data.is_a("IfcBooleanResult"):
-                raise Exception(f"Provided clipping of unexpected IFC class: {raw_data}")
-            return raw_data
-        elif isinstance(raw_data, ClippingInfo):
-            return raw_data
-        elif isinstance(raw_data, dict):
-            if "matrix" in raw_data:
-                raw_data = raw_data.copy()
-                matrix = np.array(raw_data["matrix"])[:3]
-                raw_data["normal"] = matrix[:, 2].tolist()
-                raw_data["location"] = matrix[:, 3].tolist()
-                del raw_data["matrix"]
-            clipping_data = cls(**raw_data)
-            if clipping_data.type != "IfcBooleanClippingResult":
-                raise Exception(f'Provided clipping with unexpected result type "{clipping_data.type}"')
-            if clipping_data.operand_type != "IfcHalfSpaceSolid":
-                raise Exception(f'Provided clipping with unexpected operand type "{clipping_data.operand_type}"')
-            return clipping_data
-        raise Exception(f"Unexpected clipping type provided: {raw_data}")
-
-    def apply(
-        self, file: ifcopenshell.file, first_operand: ifcopenshell.entity_instance, unit_scale: float
-    ) -> ifcopenshell.entity_instance:
-        builder = ifcopenshell.util.shape_builder.ShapeBuilder(file)
-        plane = builder.plane(location=Vector([i / unit_scale for i in self.location]), normal=Vector(self.normal))
-        second_operand = file.createIfcHalfSpaceSolid(plane, False)
-        first_operand = file.createIfcBooleanClippingResult("DIFFERENCE", first_operand, second_operand)
-        return first_operand
