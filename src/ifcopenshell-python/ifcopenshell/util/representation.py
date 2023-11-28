@@ -19,6 +19,8 @@
 from __future__ import annotations
 import numpy as np
 import ifcopenshell
+import ifcopenshell.util.shape_builder
+from mathutils import Vector
 from typing import Any, Union
 from dataclasses import dataclass
 
@@ -131,15 +133,8 @@ class ClippingInfo:
     def apply(
         self, file: ifcopenshell.file, first_operand: ifcopenshell.entity_instance, unit_scale: float
     ) -> ifcopenshell.entity_instance:
-        # TODO: move to a separate method like `shape_builder.add_plane`
-        def create_ifc_half_space_solid():
-            location = file.createIfcCartesianPoint([i / unit_scale for i in self.location])
-            direction = file.createIfcDirection(self.normal)
-            axis_placement = file.createIfcAxis2Placement3D(location, direction, None)
-            plane = file.createIfcPlane(axis_placement)
-            halfspace_solid = file.createIfcHalfSpaceSolid(plane, False)
-            return halfspace_solid
-
-        second_operand = create_ifc_half_space_solid()
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(file)
+        plane = builder.plane(location=Vector([i / unit_scale for i in self.location]), normal=Vector(self.normal))
+        second_operand = file.createIfcHalfSpaceSolid(plane, False)
         first_operand = file.createIfcBooleanClippingResult("DIFFERENCE", first_operand, second_operand)
         return first_operand
