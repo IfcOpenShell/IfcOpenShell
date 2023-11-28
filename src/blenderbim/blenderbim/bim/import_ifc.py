@@ -143,61 +143,10 @@ class MaterialCreator:
                             return
 
             if coords := get_ifc_coordinate(material):
-                self.load_texture_map(coords)
+                tool.Loader.load_indexed_texture_map(coords, self.mesh)
             if self.mesh.materials.find(material.name) == -1:
                 self.mesh.materials.append(material)
         return True
-
-    def load_texture_map(self, coordinates):
-        # Get a BMesh representation
-        bm = bmesh.new()
-        bm.from_mesh(self.mesh)
-        uv_layer = bm.loops.layers.uv.verify()
-
-        # remap the faceset CoordList index to the vertices in blender mesh
-        coordinates_remap = []
-        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(self.ifc_importer.file)
-        faceset = coordinates.MappedTo
-        for co in faceset.Coordinates.CoordList:
-            co = mathutils.Vector(co) * si_conversion
-            index = next(v.index for v in bm.verts if (v.co - co).length_squared < 1e-5)
-            coordinates_remap.append(index)
-
-        # ifc indices start with 1
-        remap_verts_to_blender = lambda ifc_verts: [coordinates_remap[i - 1] for i in ifc_verts]
-
-        # faces_remap - ifc faces described using blender verts indices
-        # IFC4.3+
-        if coordinates.is_a("IfcIndexedPolygonalTextureMap"):
-            faces_remap = [
-                remap_verts_to_blender(tex_coord_index.TexCoordsOf.CoordIndex)
-                for tex_coord_index in coordinates.TexCoordIndices
-            ]
-            texture_map = [tex_coord_index.TexCoordIndex for tex_coord_index in coordinates.TexCoordIndices]
-        else:  # IfcIndexedTriangleTextureMap
-            if faceset.is_a("IfcTriangulatedFaceSet"):
-                faces_remap = [remap_verts_to_blender(triangle_face) for triangle_face in faceset.CoordIndex]
-            else:  # IfcPolygonalFaceSet
-                faces_remap = [remap_verts_to_blender(triangle_face.CoordIndex) for triangle_face in faceset.Faces]
-            texture_map = coordinates.TexCoordIndex
-
-        # apply uv to each face
-        for bface in bm.faces:
-            face = [loop.vert.index for loop in bface.loops]
-            # find the corresponding TexCoordIndex by matching ifc faceset with blender face
-            # remap TexCoordIndex as the loop start may different from blender face
-            texCoordIndex = next(
-                [tex_coord_index[face_remap.index(i)] for i in face]
-                for tex_coord_index, face_remap in zip(texture_map, faces_remap, strict=True)
-                if all(i in face_remap for i in face)
-            )
-            # apply uv to each loop
-            for loop, i in zip(bface.loops, texCoordIndex):
-                loop[uv_layer].uv = coordinates.TexCoords.TexCoordsList[i - 1]
-
-        # Finish up, write the bmesh back to the mesh
-        bm.to_mesh(self.mesh)
-        bm.free()
 
     def assign_material_slots_to_faces(self):
         if "ios_materials" not in self.mesh or not self.mesh["ios_materials"]:
