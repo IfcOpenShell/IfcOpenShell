@@ -82,7 +82,7 @@ class BIM_PT_styles(Panel):
             row.operator("bim.remove_style", text="", icon="X").style = style.ifc_definition_id
 
             if self.props.style_type == "IfcSurfaceStyle":
-                self.layout.label(text="Choose current style's aspect to edit:")
+                self.layout.label(text="Surface Style Element:")
                 col = self.layout.column(align=True)
 
                 row = col.row(align=True)

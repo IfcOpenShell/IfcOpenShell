@@ -106,7 +106,7 @@ class Console(Reporter):
         for requirement in specification.requirements:
             self.set_style("reset")
             self.set_style("red") if requirement.failed_entities else self.set_style("green")
-            self.print(" " * 8 + requirement.to_string("requirement"))
+            self.print(" " * 8 + requirement.to_string("requirement", specification, requirement))
             self.set_style("reset")
             for i, element in enumerate(requirement.failed_entities[0:10]):
                 self.print(" " * 12, end="")
@@ -217,7 +217,7 @@ class Json(Reporter):
             total_checks_pass += total_pass
             requirements.append(
                 {
-                    "description": requirement.to_string("requirement") if specification.maxOccurs != 0 else requirement.to_string("requirement").replace('shall', 'shall not'),
+                    "description": requirement.to_string("requirement", specification, requirement),
                     "status": requirement.status,
                     "failed_entities": self.report_failed_entities(requirement),
                     "total_applicable": total_applicable,
