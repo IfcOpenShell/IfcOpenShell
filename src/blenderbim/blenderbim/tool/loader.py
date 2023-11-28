@@ -61,7 +61,7 @@ class Loader(blenderbim.core.tool.Loader):
 
     @classmethod
     def get_name(cls, element):
-        return "{}/{}".format(element.is_a(), element.Name)
+        return "{}/{}".format(element.is_a(), getattr(element, "Name", "None"))
 
     @classmethod
     def link_mesh(cls, shape, mesh):
