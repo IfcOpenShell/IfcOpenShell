@@ -485,3 +485,24 @@ class Style(blenderbim.core.tool.Style):
     @classmethod
     def change_current_style_type(cls, blender_material, style_type):
         blender_material.BIMStyleProperties.active_style_type = style_type
+
+    @classmethod
+    def get_styled_items(cls, style):
+        ifc_file = tool.Ifc.get()
+
+        inverses = list(ifc_file.get_inverse(style))
+        items = []
+        while inverses:
+            inverse = inverses.pop()
+            if inverse.is_a("IfcPresentationStyleAssignment"):
+                inverses.extend(ifc_file.get_inverse(inverse))
+                continue
+
+            if not (item := inverse.Item):
+                continue
+
+            if item.is_a("IfcMappedItem"):
+                items.extend(item.MappingSource.MappedRepresentation.Items)
+            else:
+                items.append(item)
+        return items

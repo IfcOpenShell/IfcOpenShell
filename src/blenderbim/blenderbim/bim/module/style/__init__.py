@@ -38,6 +38,7 @@ classes = (
     operator.EnableEditingSurfaceStyle,
     operator.LoadStyles,
     operator.RemoveStyle,
+    operator.SaveUVToStyle,
     operator.SelectByStyle,
     operator.UnlinkStyle,
     operator.UpdateCurrentStyle,
