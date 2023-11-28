@@ -157,23 +157,28 @@ class MaterialCreator:
         # remap the faceset CoordList index to the vertices in blender mesh
         coordinates_remap = []
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(self.ifc_importer.file)
-        for co in coordinates.MappedTo.Coordinates.CoordList:
+        faceset = coordinates.MappedTo
+        for co in faceset.Coordinates.CoordList:
             co = mathutils.Vector(co) * si_conversion
             index = next(v.index for v in bm.verts if (v.co - co).length_squared < 1e-5)
             coordinates_remap.append(index)
 
-        faces_remap = None
-        texture_map = None
+        # ifc indices start with 1
+        remap_verts_to_blender = lambda ifc_verts: [coordinates_remap[i - 1] for i in ifc_verts]
+
+        # faces_remap - ifc faces described using blender verts indices
+        # IFC4.3+
         if coordinates.is_a("IfcIndexedPolygonalTextureMap"):
             faces_remap = [
-                [coordinates_remap[i - 1] for i in tex_coord_index.TexCoordsOf.CoordIndex]
+                remap_verts_to_blender(tex_coord_index.TexCoordsOf.CoordIndex)
                 for tex_coord_index in coordinates.TexCoordIndices
             ]
             texture_map = [tex_coord_index.TexCoordIndex for tex_coord_index in coordinates.TexCoordIndices]
-        elif coordinates.is_a("IfcIndexedTriangleTextureMap"):
-            faces_remap = [
-                [coordinates_remap[i - 1] for i in triangle_face] for triangle_face in coordinates.MappedTo.CoordIndex
-            ]
+        else:  # IfcIndexedTriangleTextureMap
+            if faceset.is_a("IfcTriangulatedFaceSet"):
+                faces_remap = [remap_verts_to_blender(triangle_face) for triangle_face in faceset.CoordIndex]
+            else:  # IfcPolygonalFaceSet
+                faces_remap = [remap_verts_to_blender(triangle_face.CoordIndex) for triangle_face in faceset.Faces]
             texture_map = coordinates.TexCoordIndex
 
         # apply uv to each face
@@ -183,7 +188,7 @@ class MaterialCreator:
             # remap TexCoordIndex as the loop start may different from blender face
             texCoordIndex = next(
                 [tex_coord_index[face_remap.index(i)] for i in face]
-                for tex_coord_index, face_remap in zip(texture_map, faces_remap)
+                for tex_coord_index, face_remap in zip(texture_map, faces_remap, strict=True)
                 if all(i in face_remap for i in face)
             )
             # apply uv to each loop
