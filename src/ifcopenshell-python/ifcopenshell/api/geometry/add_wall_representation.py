@@ -18,7 +18,7 @@
 
 import ifcopenshell.util.unit
 from math import sin, cos
-from ifcopenshell.util.representation import ClippingInfo
+from ifcopenshell.util.shape_builder import ClippingInfo
 
 
 class Usecase:
