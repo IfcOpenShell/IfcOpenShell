@@ -17,12 +17,15 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bmesh
 import ifcopenshell
 import blenderbim.core.tool
 import blenderbim.tool as tool
 from test.bim.bootstrap import NewFile
 from blenderbim.tool.loader import Loader as subject
 import numpy as np
+from ifcopenshell.util.shape_builder import ShapeBuilder, V
+from mathutils import Vector
 
 
 class TestImplementsTool(NewFile):
@@ -78,3 +81,113 @@ class TestCreatingStyles(NewFile):
         image_node = tool.Blender.get_material_node(material, "TEX_IMAGE")
         assert image_node.outputs["Color"].links[0].to_socket.name == "Base Color"
         assert image_node.inputs["Vector"].links[0].from_socket.name == "Generated"
+
+
+class TestLoadingIndexedTextureMap(NewFile):
+    def test_run(self):
+        bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
+        bpy.ops.bim.create_project()
+
+        # TODO: replace with loading geometry from IFC
+        # create a cube without uv and triangulate it
+        mesh = bpy.data.meshes.new("Cube")
+        bm = tool.Blender.get_bmesh_for_mesh(mesh, clean=True)
+        bmesh.ops.create_cube(bm, size=2.0, calc_uvs=False)
+        bmesh.ops.triangulate(bm, faces=bm.faces[:])
+        tool.Blender.apply_bmesh(mesh, bm)
+
+        ifc_file = tool.Ifc.get()
+        builder = ShapeBuilder(ifc_file)
+
+        # tesselated cube
+        points = (
+            V(-1000, -1000, -1000),
+            V(-1000, -1000, 1000),
+            V(-1000, 1000, -1000),
+            V(-1000, 1000, 1000),
+            V(1000, -1000, -1000),
+            V(1000, -1000, 1000),
+            V(1000, 1000, -1000),
+            V(1000, 1000, 1000),
+        )
+        faces = (
+            (1, 2, 0),
+            (3, 6, 2),
+            (7, 4, 6),
+            (5, 0, 4),
+            (6, 0, 2),
+            (3, 5, 7),
+            (1, 3, 2),
+            (3, 7, 6),
+            (7, 5, 4),
+            (5, 1, 0),
+            (6, 4, 0),
+            (3, 1, 5),
+        )
+        face_set = builder.polygonal_face_set(points, faces)
+
+        uv_indices = (
+            (1, 2, 3),
+            (4, 5, 6),
+            (7, 8, 9),
+            (10, 11, 12),
+            (13, 14, 15),
+            (16, 17, 18),
+            (19, 20, 21),
+            (22, 23, 24),
+            (25, 26, 27),
+            (28, 29, 30),
+            (31, 32, 33),
+            (34, 35, 36),
+        )
+        uv_verts = (
+            (0.625, 0.0),
+            (0.375, 0.25),
+            (0.375, 0.0),
+            (0.625, 0.25),
+            (0.375, 0.5),
+            (0.375, 0.25),
+            (0.625, 0.5),
+            (0.375, 0.75),
+            (0.375, 0.5),
+            (0.625, 0.75),
+            (0.375, 1.0),
+            (0.375, 0.75),
+            (0.375, 0.5),
+            (0.125, 0.75),
+            (0.125, 0.5),
+            (0.875, 0.5),
+            (0.625, 0.75),
+            (0.625, 0.5),
+            (0.625, 0.0),
+            (0.625, 0.25),
+            (0.375, 0.25),
+            (0.625, 0.25),
+            (0.625, 0.5),
+            (0.375, 0.5),
+            (0.625, 0.5),
+            (0.625, 0.75),
+            (0.375, 0.75),
+            (0.625, 0.75),
+            (0.625, 1.0),
+            (0.375, 1.0),
+            (0.375, 0.5),
+            (0.375, 0.75),
+            (0.125, 0.75),
+            (0.875, 0.5),
+            (0.875, 0.75),
+            (0.625, 0.75),
+        )
+        uv_verts_list = ifc_file.createIfcTextureVertexList()
+        uv_verts_list.TexCoordsList = uv_verts
+        texture_coord = ifc_file.createIfcIndexedTriangleTextureMap()
+        texture_coord.MappedTo = face_set
+        texture_coord.TexCoordIndex = uv_indices
+        texture_coord.TexCoords = uv_verts_list
+
+        subject.load_indexed_texture_map(texture_coord, mesh)
+
+        uv_layer = mesh.uv_layers.active
+        assert uv_layer is not None
+        for ifc_uv, blender_uv in zip(uv_verts, uv_layer.uv, strict=True):
+            assert tool.Cad.are_vectors_equal(Vector(ifc_uv), blender_uv.vector)
