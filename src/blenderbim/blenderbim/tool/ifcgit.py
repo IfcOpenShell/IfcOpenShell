@@ -34,7 +34,7 @@ class IfcGit:
         working_dir = repo.working_dir
         for item in os.listdir(working_dir):
             path = os.path.join(working_dir, item)
-            if os.path.isfile(path) and re.match(".*\.ifc$", path, re.IGNORECASE):
+            if os.path.isfile(path) and re.match(".*\\.ifc$", path, re.IGNORECASE):
                 cls.load_project(path)
                 return True
         return False
@@ -202,7 +202,7 @@ class IfcGit:
         """Check a bare branch or tag name is valid"""
 
         return re.match(
-            "^(?!\.| |-|/)((?!\.\.)(?!.*/\.)(/\*|/\*/)*(?!@\{)[^\~\:\^\\\ \?*\[])+(?<!\.|/)(?<!\.lock)$",
+            "^(?!\\.| |-|/)((?!\\.\\.)(?!.*/\\.)(/\\*|/\\*/)*(?!@\\{)[^\\~\\:\\^\\\\ \\?*\\[])+(?<!\\.|/)(?<!\\.lock)$",
             string,
         )
 
