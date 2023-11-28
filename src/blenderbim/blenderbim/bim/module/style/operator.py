@@ -26,6 +26,7 @@ import ifcopenshell.util.representation
 from pathlib import Path
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.style.data import StylesData, StyleAttributesData
+from mathutils import Vector
 
 
 class UpdateStyleColours(bpy.types.Operator, tool.Ifc.Operator):
@@ -691,3 +692,122 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
 
     def color_to_dict(self, x):
         return {"Red": x[0], "Green": x[1], "Blue": x[2]}
+
+
+class SaveUVToStyle(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.save_uv_to_style"
+    bl_label = "Save UV To Style"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        context = bpy.context
+        ifc_file = tool.Ifc.get()
+        material = context.active_object.active_material
+        obj = context.active_object
+
+        # find active style item
+        style_id = material.BIMMaterialProperties.ifc_style_id
+        style = ifc_file.by_id(style_id)
+
+        def get_active_representation_items():
+            representation = tool.Geometry.get_active_representation(obj)
+            representation = ifcopenshell.util.representation.resolve_representation(representation)
+            items = []
+            for item in representation.Items:
+                if item.is_a("IfcMappedItem"):
+                    items.extend(item.MappingSource.MappedRepresentation.Items)
+                items.append(item)
+            return items
+
+        all_styled_items = set(tool.Style.get_styled_items(style))
+        active_representation_items = set(get_active_representation_items())
+
+        if not active_representation_items.issubset(all_styled_items):
+            self.report(
+                {"ERROR"},
+                "Not all items of the current representation are styled by the active style, not yet supported",
+            )
+            return {"CANCELLED"}
+
+        if any(not i.is_a("IfcPolygonalFaceSet") for i in active_representation_items):
+            self.report({"ERROR"}, "One of the items is not IfcPolygonalFaceSet, not yet supported.")
+            return {"CANCELLED"}
+
+        for faceset in active_representation_items:
+            if any(len(f.CoordIndex) != 3 for f in faceset.Faces):
+                self.report({"ERROR"}, "One of the facesets is not triangulated, not yet supported.")
+                return {"CANCELLED"}
+
+        if len(active_representation_items) != 1:
+            self.report({"ERROR"}, "Only 1 faceset item is supported.")
+            return {"CANCELLED"}
+
+        texture_style = tool.Style.get_texture_style(material)
+        if not texture_style:
+            self.report({"ERROR"}, "No texture style found, not yet supported.")
+            return {"CANCELLED"}
+
+        # unmap preivously used IfcIndexedTextureMap
+        # TODO: remove orphaned data?
+        textures = set(texture_style.Textures)
+        coords = set()
+        for texture in textures:
+            coords.update(texture.IsMappedBy or [])
+        for coord in coords:
+            if coord.is_a("IfcIndexedTextureMap") and coord.MappedTo in active_representation_items:
+                coord.Maps = list(set(coord.Maps) - textures)
+
+        mesh = obj.data
+        uv_indices = []
+        uv_verts = [uv.vector for uv in mesh.uv_layers.active.uv]
+
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+
+        for faceset in active_representation_items:
+            # remap the faceset CoordList index to the vertices in blender mesh
+            coordinates_remap = []
+            remap_failed = False
+            ifc_coordinates = faceset.Coordinates.CoordList
+            for co in ifc_coordinates:
+                co = Vector(co) * si_conversion
+                index = next((v.index for v in mesh.vertices if (v.co - co).length_squared < 1e-5), None)
+                coordinates_remap.append(index)
+                if index is None:
+                    remap_failed = True
+            # ifc indices start with 1
+            remap_verts_to_blender = lambda ifc_verts: [coordinates_remap[i - 1] for i in ifc_verts]
+
+            if remap_failed or len(ifc_coordinates) != len(mesh.vertices):
+                self.report({"ERROR"}, "Mesh vertices doesn't match IFC faceset vertices.")
+                return {"CANCELLED"}
+
+            # safe check as I'm not sure indices in Blender and IFC match
+            faces_remap = [remap_verts_to_blender(triangle_face.CoordIndex) for triangle_face in faceset.Faces]
+
+            for ifc_face_remapped in faces_remap:
+                for blender_face in mesh.polygons:
+                    blender_face_verts = blender_face.vertices[:]
+                    # assume that blender verts order can be different
+                    if set(blender_face_verts) == set(ifc_face_remapped):
+                        blender_face_loops = blender_face.loop_indices[:]
+                        face_uv_indices = [
+                            blender_face_loops[blender_face_verts.index(i)] + 1 for i in ifc_face_remapped
+                        ]
+                        uv_indices.append(face_uv_indices)
+                        break
+                else:
+                    self.report({"ERROR"}, "Couldn't find matching blender face for ifc face.")
+                    return {"CANCELLED"}
+
+            texture_coord = ifc_file.create_entity("IfcIndexedTriangleTextureMap")
+            texture_coord.Maps = list(textures)
+            texture_coord.MappedTo = faceset
+
+            texture_coord.TexCoordIndex = uv_indices
+            uv_verts_list = ifc_file.create_entity("IfcTextureVertexList")
+            uv_verts_list.TexCoordsList = uv_verts
+            texture_coord.TexCoords = uv_verts_list
+
+        self.report({"INFO"}, f"UV saved to the style {style.Name}")
+
+        return {"FINISHED"}
