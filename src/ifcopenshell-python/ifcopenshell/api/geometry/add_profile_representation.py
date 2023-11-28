@@ -18,7 +18,7 @@
 
 import ifcopenshell.geom
 import ifcopenshell.util.unit
-from ifcopenshell.util.representation import ClippingInfo
+from ifcopenshell.util.shape_builder import ClippingInfo
 
 
 class Usecase:
