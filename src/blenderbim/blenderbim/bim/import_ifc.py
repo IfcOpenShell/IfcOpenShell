@@ -156,8 +156,9 @@ class MaterialCreator:
 
         # remap the faceset CoordList index to the vertices in blender mesh
         coordinates_remap = []
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(self.ifc_importer.file)
         for co in coordinates.MappedTo.Coordinates.CoordList:
-            co = mathutils.Vector(co)
+            co = mathutils.Vector(co) * si_conversion
             index = next(v.index for v in bm.verts if (v.co - co).length_squared < 1e-5)
             coordinates_remap.append(index)
 
