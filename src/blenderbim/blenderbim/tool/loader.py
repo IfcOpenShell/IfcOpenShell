@@ -387,7 +387,8 @@ class Loader(blenderbim.core.tool.Loader):
         # Get a BMesh representation
         bm = bmesh.new()
         bm.from_mesh(mesh)
-        uv_layer = bm.loops.layers.uv.verify()
+        # constistent naming with how Blender does it
+        uv_layer = bm.loops.layers.uv.active or bm.loops.layers.uv.new("UVMap")
 
         # remap the faceset CoordList index to the vertices in blender mesh
         coordinates_remap = []
