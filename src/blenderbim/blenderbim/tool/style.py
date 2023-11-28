@@ -184,8 +184,8 @@ class Style(blenderbim.core.tool.Style):
         texture_maps = TEXTURE_MAPS_BY_METHODS[style_data["ReflectanceMethod"]]
         unused_texture_maps = list(STYLE_TEXTURE_PROPS_MAP.keys())
 
+        uv_mode = None
         if texture_style:
-            uv_mode = None
             for texture in texture_style.Textures:
                 texture_data = tool.Loader.surface_texture_to_dict(texture)
                 uv_mode = texture_data["uv_mode"]
