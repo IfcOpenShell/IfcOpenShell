@@ -18,7 +18,7 @@
 
 import ifcopenshell.geom
 import ifcopenshell.util.unit
-from ifcopenshell.util.shape_builder import ClippingInfo
+from ifcopenshell.util.data import Clipping
 
 
 class Usecase:
@@ -29,8 +29,8 @@ class Usecase:
             "profile": None,
             "depth": 1.0,
             "cardinal_point": 5,
-            # Planes are defined either by ClippingInfo objects
-            # or by dictionaries of arguments for `ClippingInfo.parse`
+            # Planes are defined either by Clipping objects
+            # or by dictionaries of arguments for `Clipping.parse`
             "clippings": [],  # A list of planes that define clipping half space solids
             "placement_zx_axes": (None, None),
         }
@@ -39,7 +39,7 @@ class Usecase:
 
     def execute(self):
         self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
-        self.settings["clippings"] = [ClippingInfo.parse(c) for c in self.settings["clippings"]]
+        self.settings["clippings"] = [Clipping.parse(c) for c in self.settings["clippings"]]
         return self.file.createIfcShapeRepresentation(
             self.settings["context"],
             self.settings["context"].ContextIdentifier,
@@ -71,7 +71,7 @@ class Usecase:
                 new = ifcopenshell.util.element.copy(self.file, clipping)
                 new.FirstOperand = first_operand
                 first_operand = new
-            else:  # ClippingInfo
+            else:  # Clipping
                 first_operand = clipping.apply(self.file, first_operand, self.settings["unit_scale"])
         return first_operand
 
