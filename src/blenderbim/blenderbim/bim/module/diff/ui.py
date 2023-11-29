@@ -107,10 +107,22 @@ class BIM_PT_diff(Panel):
 
         if DiffData.data["diff_json"]:
             row = layout.row()
-            row.alignment = "CENTER"
-            row.label(text=f"{DiffData.data['total_added']} added")
-            row.label(text=f"{DiffData.data['total_deleted']} deleted")
-            row.label(text=f"{DiffData.data['total_changed']} changed")
+            col = row.column(align=True)
+            col.operator(
+                "bim.select_diff_objects",
+                icon="RESTRICT_SELECT_OFF",
+                text=f"Select {DiffData.data['total_added']} Added",
+            ).mode = "ADDED"
+            col.operator(
+                "bim.select_diff_objects",
+                icon="RESTRICT_SELECT_OFF",
+                text=f"Select {DiffData.data['total_deleted']} Deleted",
+            ).mode = "DELETED"
+            col.operator(
+                "bim.select_diff_objects",
+                icon="RESTRICT_SELECT_OFF",
+                text=f"Select {DiffData.data['total_changed']} Changed",
+            ).mode = "CHANGED"
 
         if DiffData.data["changes"]:
             box = layout.box()
