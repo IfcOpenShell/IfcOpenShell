@@ -647,7 +647,3 @@ class RemoveDoor(bpy.types.Operator, tool.Ifc.Operator):
         ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
 
         return {"FINISHED"}
-
-
-def add_object_button(self, context):
-    self.layout.operator(BIM_OT_add_door.bl_idname, icon="PLUGIN")
