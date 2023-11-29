@@ -59,6 +59,10 @@ def name_callback(obj, data):
     if not obj.BIMObjectProperties.ifc_definition_id:
         return
 
+    if obj.BIMObjectProperties.is_renaming:
+        obj.BIMObjectProperties.is_renaming = False
+        return
+
     element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
     if "/" in obj.name:
         object_name = obj.name
