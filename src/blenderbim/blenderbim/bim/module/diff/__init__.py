@@ -20,11 +20,12 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
-    operator.SelectDiffJsonFile,
-    operator.VisualiseDiff,
-    operator.SelectDiffOldFile,
-    operator.SelectDiffNewFile,
     operator.ExecuteIfcDiff,
+    operator.SelectDiffJsonFile,
+    operator.SelectDiffNewFile,
+    operator.SelectDiffObjects,
+    operator.SelectDiffOldFile,
+    operator.VisualiseDiff,
     prop.Relationships,
     prop.DiffProperties,
     ui.BIM_PT_diff,
