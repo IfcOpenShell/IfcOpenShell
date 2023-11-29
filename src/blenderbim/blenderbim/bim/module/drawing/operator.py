@@ -41,15 +41,16 @@ import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.sheeter as sheeter
 import blenderbim.bim.module.drawing.scheduler as scheduler
 import blenderbim.bim.module.drawing.helper as helper
+import blenderbim.bim.export_ifc
 from blenderbim.bim.module.drawing.decoration import CutDecorator
 from blenderbim.bim.module.drawing.data import DecoratorData, DrawingsData
-import blenderbim.bim.export_ifc
 from lxml import etree
-from mathutils import Vector, Color
+from mathutils import Vector, Color, Matrix
 from timeit import default_timer as timer
 from blenderbim.bim.module.drawing.prop import RasterStyleProperty, Literal, RASTER_STYLE_PROPERTIES_EXCLUDE
 from blenderbim.bim.ifc import IfcStore
 from pathlib import Path
+from bpy_extras.image_utils import load_image
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
@@ -2560,3 +2561,74 @@ class EditElementFilter(bpy.types.Operator, Operator):
             ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Exclude": query})
         obj.data.BIMCameraProperties.filter_mode = "NONE"
         bpy.ops.bim.activate_drawing(drawing=element.id(), camera_view_point=False)
+
+
+class AddReferenceImage(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_reference_image"
+    bl_label = "Add Reference Image"
+    bl_options = {"REGISTER", "UNDO"}
+
+    filepath: bpy.props.StringProperty(
+        name="File Path", description="Filepath used to import from", maxlen=1024, default="", subtype="FILE_PATH"
+    )
+    filter_image: bpy.props.BoolProperty(default=True, options={"HIDDEN", "SKIP_SAVE"})
+    filter_folder: bpy.props.BoolProperty(default=True, options={"HIDDEN", "SKIP_SAVE"})
+
+    override_existing_image: bpy.props.BoolProperty(
+        name="Override Existing Image",
+        default=True,
+        description=(
+            "Override image if it was previously loaded to Blender. If disabled, will always create a new image"
+        ),
+    )
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        image_filepath = Path(self.filepath)
+
+        if self.override_existing_image:
+            params = {"check_existing": True, "force_reload": True}
+        else:
+            params = {"check_existing": False}
+        image = load_image(image_filepath.name, image_filepath.parent, **params)
+
+        temp_mesh = bpy.data.meshes.new("temp_mesh")
+        bm = tool.Blender.get_bmesh_for_mesh(temp_mesh)
+        plane_scale = (Vector(image.size) / min(image.size)).to_3d()
+        matrix = Matrix.LocRotScale(None, None, plane_scale)
+        bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=1, matrix=matrix, calc_uvs=False)
+        tool.Blender.apply_bmesh(temp_mesh, bm)
+        obj = bpy.data.objects.new(image_filepath.stem, temp_mesh)
+
+        # assign to the active collection
+        collection = context.view_layer.active_layer_collection.collection
+        collection.objects.link(obj)
+
+        tool.Drawing.run_root_assign_class(
+            obj=obj,
+            ifc_class="IfcAnnotation",
+            predefined_type="IMAGE",
+            should_add_representation=True,
+            context=ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW"),
+            ifc_representation_class=None,
+        )
+        tool.Blender.remove_data_block(temp_mesh)
+
+        tool.Blender.set_active_object(obj)
+        material = bpy.data.materials.new(name=image_filepath.stem)
+        obj.data.materials.append(None)  # new slot
+        obj.material_slots[0].material = material
+        bpy.ops.bim.add_style()
+
+        style = ifc_file.by_id(material.BIMMaterialProperties.ifc_style_id)
+        representation = tool.Geometry.get_active_representation(obj)
+        tool.Ifc.run("style.assign_representation_styles", shape_representation=representation, styles=[style])
+
+        material.diffuse_color = (0.031379, 0, 0.801157, 1)
+        material.BIMStyleProperties.diffuse_path = self.filepath
+        material.BIMStyleProperties.uv_mode = "Generated"
+        bpy.ops.bim.update_style_colours()

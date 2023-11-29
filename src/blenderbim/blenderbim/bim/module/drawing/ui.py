@@ -651,3 +651,7 @@ class BIM_UL_sheets(bpy.types.UIList):
         if not flt_flags:
             return flt_flags, flt_neworder
         return flt_flags, flt_neworder
+
+
+def add_object_button(self, context):
+    self.layout.operator("bim.add_reference_image", icon="TEXTURE", text="IFC Reference Image")
