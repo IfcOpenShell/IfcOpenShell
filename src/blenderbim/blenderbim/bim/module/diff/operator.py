@@ -18,7 +18,7 @@
 
 import bpy
 import json
-import ifccsv
+import logging
 import ifcopenshell
 import blenderbim.bim.handler
 import blenderbim.tool as tool
@@ -52,6 +52,16 @@ class VisualiseDiff(bpy.types.Operator):
             diff = json.load(file)
         for obj in context.visible_objects:
             obj.color = (1.0, 1.0, 1.0, 1.0)
+
+            if "IfcDiff Deleted Elements" in obj.users_collection[0].name:
+                obj.color = (1.0, 0.0, 0.0, 1.0)
+                continue
+            elif "IfcDiff Added Elements" in obj.users_collection[0].name:
+                obj.color = (0.0, 1.0, 0.0, 1.0)
+                continue
+            elif "IfcDiff Changed Elements" in obj.users_collection[0].name:
+                obj.color = (0.0, 0.0, 0.7, 1.0)
+                continue
 
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
@@ -135,14 +145,84 @@ class ExecuteIfcDiff(bpy.types.Operator):
     def execute(self, context):
         import ifcdiff
 
-        old = ifcopenshell.open(context.scene.DiffProperties.old_file)
-        new = ifcopenshell.open(context.scene.DiffProperties.new_file)
-        relationships = [r.relationship for r in context.scene.DiffProperties.diff_relationships]
-        query = context.scene.DiffProperties.diff_filter_elements
+        self.props = context.scene.DiffProperties
+
+        if tool.Ifc.get():
+            if self.props.active_file == "NONE":
+                old = ifcopenshell.open(self.props.old_file)
+                new = ifcopenshell.open(self.props.new_file)
+            elif self.props.active_file == "NEW":
+                old = ifcopenshell.open(self.props.old_file)
+                new = tool.Ifc.get()
+            elif self.props.active_file == "OLD":
+                old = tool.Ifc.get()
+                new = ifcopenshell.open(self.props.new_file)
+        else:
+            old = ifcopenshell.open(self.props.old_file)
+            new = ifcopenshell.open(self.props.new_file)
+
+        relationships = [r.relationship for r in self.props.diff_relationships]
+        query = self.props.diff_filter_elements
 
         ifc_diff = ifcdiff.IfcDiff(old, new, relationships=relationships, filter_elements=query)
         ifc_diff.diff()
         ifc_diff.export(self.filepath)
-        context.scene.DiffProperties.diff_json_file = self.filepath
+        self.props.diff_json_file = self.filepath
+
+        self.load_changed_elements(ifc_diff)
+
         blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}
+
+    def load_changed_elements(self, ifc_diff):
+        if not tool.Ifc.get() or self.props.active_file == "NONE" or not self.props.should_load_changed_elements:
+            return
+
+        active_ifc = tool.Ifc.get()
+        logger = logging.getLogger("ImportIFC")
+        ifc_import_settings = blenderbim.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
+        ifc_importer = blenderbim.bim.import_ifc.IfcImporter(ifc_import_settings)
+
+        if self.props.active_file == "NEW":
+            tool.Ifc.set(ifc_diff.old)
+            ifc_importer.file = ifc_diff.old
+            ifc_importer.process_context_filter()
+            ifc_importer.create_materials()
+            ifc_importer.create_styles()
+
+            elements = {ifc_diff.old.by_guid(guid) for guid in ifc_diff.deleted_elements}
+            ifc_importer.create_generic_elements(elements)
+            self.place_objs_in_collection(ifc_importer.added_data.values(), "IfcDiff Deleted Elements")
+
+            ifc_importer.added_data = {}
+
+            elements = {ifc_diff.old.by_guid(guid) for guid in ifc_diff.change_register.keys()}
+            ifc_importer.create_generic_elements(elements)
+            self.place_objs_in_collection(ifc_importer.added_data.values(), "IfcDiff Changed Elements")
+        elif self.props.active_file == "OLD":
+            tool.Ifc.set(ifc_diff.new)
+            ifc_importer.file = ifc_diff.new
+            ifc_importer.process_context_filter()
+            ifc_importer.create_materials()
+            ifc_importer.create_styles()
+
+            elements = {ifc_diff.new.by_guid(guid) for guid in ifc_diff.added_elements}
+            ifc_importer.create_generic_elements(elements)
+            self.place_objs_in_collection(ifc_importer.added_data.values(), "IfcDiff Added Elements")
+
+            ifc_importer.added_data = {}
+
+            elements = {ifc_diff.new.by_guid(guid) for guid in ifc_diff.change_register.keys()}
+            ifc_importer.create_generic_elements(elements)
+            self.place_objs_in_collection(ifc_importer.added_data.values(), "IfcDiff Changed Elements")
+        tool.Ifc.set(active_ifc)
+
+    def place_objs_in_collection(self, objs, name):
+        collection = bpy.data.collections.get(name)
+        if not collection:
+            collection = bpy.data.collections.new(name)
+            bpy.context.scene.collection.children.link(collection)
+
+        for obj in objs:
+            if isinstance(obj, bpy.types.Object):
+                collection.objects.link(obj)
