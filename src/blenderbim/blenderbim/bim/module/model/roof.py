@@ -803,7 +803,3 @@ class SetGableRoofEdgeAngle(bpy.types.Operator):
 
         tool.Blender.apply_bmesh(me, bm)
         return {"FINISHED"}
-
-
-def add_object_button(self, context):
-    self.layout.operator(BIM_OT_add_roof.bl_idname, icon="PLUGIN")

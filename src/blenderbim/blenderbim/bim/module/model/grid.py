@@ -111,7 +111,3 @@ class BIM_OT_add_object(Operator, tool.Ifc.Operator):
     def _execute(self, context):
         add_object(self, context)
         return {"FINISHED"}
-
-
-def add_object_button(self, context):
-    self.layout.operator(BIM_OT_add_object.bl_idname, icon="PLUGIN")

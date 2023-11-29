@@ -537,7 +537,3 @@ class RemoveRailing(bpy.types.Operator, tool.Ifc.Operator):
         pset = tool.Pset.get_element_pset(element, "BBIM_Railing")
         ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
         return {"FINISHED"}
-
-
-def add_object_button(self, context):
-    self.layout.operator(BIM_OT_add_railing.bl_idname, icon="PLUGIN")
