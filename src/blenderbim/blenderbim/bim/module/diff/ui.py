@@ -44,13 +44,38 @@ class BIM_PT_diff(Panel):
 
         layout.label(text="IFC Diff Setup:")
 
-        row = layout.row(align=True)
-        row.prop(props, "old_file")
-        row.operator("bim.select_diff_old_file", icon="FILE_FOLDER", text="")
+        if tool.Ifc.get():
+            row = layout.row()
+            row.prop(props, "active_file")
 
-        row = layout.row(align=True)
-        row.prop(props, "new_file")
-        row.operator("bim.select_diff_new_file", icon="FILE_FOLDER", text="")
+            if props.active_file == "NONE":
+                row = layout.row(align=True)
+                row.prop(props, "old_file")
+                row.operator("bim.select_diff_old_file", icon="FILE_FOLDER", text="")
+
+                row = layout.row(align=True)
+                row.prop(props, "new_file")
+                row.operator("bim.select_diff_new_file", icon="FILE_FOLDER", text="")
+            elif props.active_file == "NEW":
+                row = layout.row(align=True)
+                row.prop(props, "old_file")
+                row.operator("bim.select_diff_old_file", icon="FILE_FOLDER", text="")
+            elif props.active_file == "OLD":
+                row = layout.row(align=True)
+                row.prop(props, "new_file")
+                row.operator("bim.select_diff_new_file", icon="FILE_FOLDER", text="")
+
+            if props.active_file != "NONE":
+                row = layout.row()
+                row.prop(props, "should_load_changed_elements")
+        else:
+            row = layout.row(align=True)
+            row.prop(props, "old_file")
+            row.operator("bim.select_diff_old_file", icon="FILE_FOLDER", text="")
+
+            row = layout.row(align=True)
+            row.prop(props, "new_file")
+            row.operator("bim.select_diff_new_file", icon="FILE_FOLDER", text="")
 
         row = layout.row(align=True)
         row.prop(props, "diff_relationships")

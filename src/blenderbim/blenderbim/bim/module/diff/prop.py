@@ -49,3 +49,13 @@ class DiffProperties(PropertyGroup):
     new_file: StringProperty(default="", name="New IFC File")
     diff_relationships: CollectionProperty(type=Relationships, name="Relationships")
     diff_filter_elements: StringProperty(default="", name="Filter")
+    should_load_changed_elements: BoolProperty(name="Load Changed Elements", default=True)
+    active_file: EnumProperty(
+        items=[
+            ("NONE", "N/A", ""),
+            ("OLD", "Old", ""),
+            ("NEW", "New", ""),
+        ],
+        name="Active File",
+        default="NEW",
+    )

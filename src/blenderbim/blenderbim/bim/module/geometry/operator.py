@@ -35,7 +35,6 @@ import blenderbim.tool as tool
 import blenderbim.bim.handler
 from mathutils import Vector, Matrix
 from time import time
-from blenderbim.bim import import_ifc
 from blenderbim.bim.ifc import IfcStore
 
 
