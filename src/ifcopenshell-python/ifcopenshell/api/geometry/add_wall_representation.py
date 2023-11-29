@@ -18,7 +18,7 @@
 
 import ifcopenshell.util.unit
 from math import sin, cos
-from ifcopenshell.util.shape_builder import ClippingInfo
+from ifcopenshell.util.data import Clipping
 
 
 class Usecase:
@@ -32,8 +32,8 @@ class Usecase:
             "thickness": 0.2,
             # Sloped walls along the wall's X axis, provided in radians
             "x_angle": 0,
-            # Planes are defined either by ClippingInfo objects
-            # or by dictionaries of arguments for `ClippingInfo.parse`
+            # Planes are defined either by Clipping objects
+            # or by dictionaries of arguments for `Clipping.parse`
             "clippings": [],  # A list of planes that define clipping half space solids
             "booleans": [],  # Any existing IfcBooleanResults
         }
@@ -42,7 +42,7 @@ class Usecase:
 
     def execute(self):
         self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
-        self.settings["clippings"] = [ClippingInfo.parse(c) for c in self.settings["clippings"]]
+        self.settings["clippings"] = [Clipping.parse(c) for c in self.settings["clippings"]]
         return self.file.createIfcShapeRepresentation(
             self.settings["context"],
             self.settings["context"].ContextIdentifier,
@@ -101,7 +101,7 @@ class Usecase:
                 new = ifcopenshell.util.element.copy(self.file, clipping)
                 new.FirstOperand = first_operand
                 first_operand = new
-            else:  # ClippingInfo
+            else:  # Clipping
                 first_operand = clipping.apply(self.file, first_operand, self.settings["unit_scale"])
         return first_operand
 
