@@ -214,5 +214,7 @@ class Root(blenderbim.core.tool.Root):
 
     @classmethod
     def set_object_name(cls, obj, element):
+        # This disables the Blender name event handler
+        obj.BIMObjectProperties.is_renaming = True
         name = getattr(element, "Name", getattr(element, "AxisTag", None))
         obj.name = "{}/{}".format(element.is_a(), name or "Unnamed")
