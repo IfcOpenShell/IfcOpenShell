@@ -425,6 +425,7 @@ class BIMObjectProperties(PropertyGroup):
         default="NONE",
     )
     is_reassigning_class: BoolProperty(name="Is Reassigning Class")
+    is_renaming: BoolProperty(name="Is Renaming", default=False)
     location_checksum: StringProperty(name="Location Checksum")
     rotation_checksum: StringProperty(name="Rotation Checksum")
 
