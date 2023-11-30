@@ -36,17 +36,27 @@ class BIM_PT_search(Panel):
 
         props = context.scene.BIMSearchProperties
 
-        blenderbim.bim.helper.draw_filter(self.layout, props, SearchData, "search")
+        blenderbim.bim.helper.draw_filter(self.layout, props.filter_groups, SearchData, "search")
 
         if len(props.filter_groups):
             row = self.layout.row(align=True)
             row.operator("bim.search", text="Search", icon="VIEWZOOM")
 
-        return  # Temporary for now whilst searching is being upgraded.
+        return
 
+
+class BIM_PT_filter(Panel):
+    bl_label = "Filter Selection"
+    bl_idname = "BIM_PT_filter"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_grouping_and_filtering"
+
+    def draw(self, context):
         row = self.layout.row(align=True)
         row.operator("bim.activate_ifc_class_filter", icon="FILTER")
-        row.operator("bim.activate_ifc_building_storey_filter", icon="FILTER")
+        row.operator("bim.activate_ifc_container_filter", icon="FILTER")
 
 
 class BIM_PT_colour_by_property(Panel):
@@ -77,9 +87,12 @@ class BIM_PT_colour_by_property(Panel):
         row = self.layout.row(align=True)
         row.operator("bim.colour_by_property", icon="BRUSH_DATA")
         row.operator("bim.reset_object_colours")
+        row.operator("bim.select_by_property", icon="RESTRICT_SELECT_OFF", text="")
 
         if len(props.colourscheme):
-            self.layout.template_list("BIM_UL_colourscheme", "", props, "colourscheme", props, "active_colourscheme_index")
+            self.layout.template_list(
+                "BIM_UL_colourscheme", "", props, "colourscheme", props, "active_colourscheme_index"
+            )
 
 
 class BIM_PT_select_similar(Panel):

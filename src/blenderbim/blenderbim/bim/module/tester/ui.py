@@ -43,6 +43,8 @@ class BIM_PT_tester(Panel):
 
         row = self.layout.row()
         row.prop(props, "generate_html_report")
+        row = self.layout.row()
+        row.prop(props, "flag")
 
         if not tool.Ifc.get() or not props.should_load_from_memory:
             row = self.layout.row(align=True)
@@ -87,9 +89,12 @@ class BIM_PT_tester(Panel):
             row = box.row(align=True)
             row.label(text=requirement["description"], icon="CHECKMARK" if requirement["status"] else "CANCEL")
             if not requirement["status"]:
-                op = row.operator("bim.select_requirement", text="", icon="LONGDISPLAY")
+                op  = row.operator("bim.select_requirement", text="", icon="LONGDISPLAY")
+                op2 = row.operator("bim.select_failed_entities", text="", icon="RESTRICT_SELECT_OFF")
                 op.spec_index = props.active_specification_index
                 op.req_index = i
+                op2.spec_index = props.active_specification_index
+                op2.req_index = i
 
         if props.old_index == props.active_specification_index and props.n_entities > 0:
             row = self.layout.row()
@@ -107,8 +112,9 @@ class BIM_PT_tester(Panel):
 class BIM_UL_tester_specifications(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
-            row = layout.row(align=True)
+            row = layout.split(factor=0.3, align=True)
             row.label(text=item.name, icon="CHECKMARK" if item.status else "CANCEL")
+            row.label(text=item.description)
 
 
 class BIM_UL_tester_failed_entities(UIList):

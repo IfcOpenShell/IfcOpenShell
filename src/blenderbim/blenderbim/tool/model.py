@@ -17,7 +17,10 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import json
 import bmesh
+import collections
+import numpy as np
 import ifcopenshell
 import ifcopenshell.util.unit
 import ifcopenshell.util.placement
@@ -26,11 +29,12 @@ import blenderbim.core.tool
 import blenderbim.tool as tool
 import blenderbim.core.geometry as geometry
 from mathutils import Matrix, Vector
+from copy import deepcopy
+from functools import partial
 from blenderbim.bim import import_ifc
 from blenderbim.bim.module.geometry.helper import Helper
 from blenderbim.bim.module.model.data import AuthoringData, RailingData, RoofData, WindowData, DoorData
-import collections
-import json
+from ifcopenshell.util.shape_builder import V, ShapeBuilder
 
 
 class Model(blenderbim.core.tool.Model):
@@ -437,17 +441,9 @@ class Model(blenderbim.core.tool.Model):
         ifc_importer.calculate_unit_scale()
         ifc_importer.process_context_filter()
         ifc_importer.material_creator.load_existing_materials()
-        openings = set(openings)
-        openings -= ifc_importer.create_products(openings)
-        for opening in openings or []:
-            if tool.Ifc.get_object(opening):
-                continue
-            opening_obj = ifc_importer.create_product(opening)
-            if obj:
-                opening_obj.parent = obj
-                opening_obj.matrix_parent_inverse = obj.matrix_world.inverted()
-        for obj in ifc_importer.added_data.values():
-            bpy.context.scene.collection.objects.link(obj)
+        ifc_importer.create_generic_elements(set(openings))
+        for opening_obj in ifc_importer.added_data.values():
+            bpy.context.scene.collection.objects.link(opening_obj)
         return ifc_importer.added_data.values()
 
     @classmethod
@@ -481,20 +477,63 @@ class Model(blenderbim.core.tool.Model):
         return {"thickness": thickness, "offset": offset, "direction_sense": direction_sense}
 
     @classmethod
-    def get_manual_booleans(cls, element):
-        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        if not body:
-            return []
+    def get_booleans(cls, element=None, representation=None):
+        if representation is None:
+            representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+            if not representation:
+                return []
         booleans = []
-        items = list(body.Items)
+        items = list(representation.Items)
         while items:
             item = items.pop()
-            if item.is_a() == "IfcBooleanResult":
+            if item.is_a("IfcBooleanResult"):
                 booleans.append(item)
                 items.append(item.FirstOperand)
-            elif item.is_a("IfcBooleanClippingResult"):
-                items.append(item.FirstOperand)
         return booleans
+
+    @classmethod
+    def get_manual_booleans(cls, element, representation=None):
+        pset = ifcopenshell.util.element.get_pset(element, "BBIM_Boolean")
+        if not pset:
+            return []
+        boolean_ids = json.loads(pset["Data"])
+        if representation is None:
+            representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+            if not representation:
+                return []
+        booleans = [b for b in cls.get_booleans(element) if b.id() in boolean_ids]
+        return booleans
+
+    @classmethod
+    def mark_manual_booleans(cls, element, booleans):
+        pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Boolean")
+        boolean_ids = [b.id() for b in booleans]
+        if pset_data:
+            pset = tool.Ifc.get().by_id(pset_data["id"])
+            data = json.loads(pset_data["Data"])
+            data.extend(boolean_ids)
+            data = list(set(data))
+        else:
+            pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="BBIM_Boolean")
+            data = boolean_ids
+        data = tool.Ifc.get().createIfcText(json.dumps(data))
+        ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
+
+    @classmethod
+    def unmark_manual_booleans(cls, element, booleans):
+        pset = ifcopenshell.util.element.get_pset(element, "BBIM_Boolean")
+        if not pset:
+            return
+        boolean_ids = [b.id() for b in booleans]
+        data = set(json.loads(pset["Data"]))
+        data -= set(boolean_ids)
+        data = list(data)
+        pset = tool.Ifc.get().by_id(pset["id"])
+        if data:
+            data = tool.Ifc.get().createIfcText(json.dumps(data))
+            ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
+        else:
+            ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
 
     @classmethod
     def get_flow_segment_axis(cls, obj):
@@ -540,13 +579,61 @@ class Model(blenderbim.core.tool.Model):
         return axes
 
     @classmethod
-    def regenerate_array(cls, parent, data, keep_objs=False):
-        tool.Blender.Modifier.Array.remove_constraints(tool.Ifc.get_entity(parent))
+    def handle_array_on_copied_element(cls, element, array_data=None):
+        """if no `array_data` is provided then an array will be removed from the element"""
+
+        if array_data is None:
+            array_pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+            if not array_pset:
+                return
+
+            array_pset_data = array_pset["Data"]
+            array_pset = tool.Ifc.get().by_id(array_pset["id"])
+            ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=array_pset)
+
+            # remove constraints
+            obj = tool.Ifc.get_object(element)
+            if not array_pset_data:  # skip array parents
+                constraint = next((c for c in obj.constraints if c.type == "CHILD_OF"), None)
+                if constraint:
+                    matrix = obj.matrix_world.copy()
+                    obj.constraints.remove(constraint)
+                    # keep the matrix before the constraint
+                    # otherwise object will jump to some previous position
+                    obj.matrix_world = matrix
+                tool.Blender.lock_transform(obj, False)
+
+        else:
+            obj = tool.Ifc.get_object(element)
+            array_pset = tool.Pset.get_element_pset(element, "BBIM_Array")
+            default_data = tool.Ifc.get().createIfcText('[{"children": []}]')
+            ifcopenshell.api.run(
+                "pset.edit_pset",
+                tool.Ifc.get(),
+                pset=array_pset,
+                properties={"Parent": element.GlobalId, "Data": default_data},
+            )
+
+            tool.Model.regenerate_array(obj, array_data)
+
+            json_data = tool.Ifc.get().createIfcText(json.dumps(array_data))
+            ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=array_pset, properties={"Data": json_data})
+
+            for i in range(len(array_data)):
+                tool.Blender.Modifier.Array.set_children_lock_state(element, i, True)
+            tool.Blender.Modifier.Array.constrain_children_to_parent(element)
+
+    @classmethod
+    def regenerate_array(cls, parent_obj, data, array_layers_to_apply=tuple()):
+        """`array_layers_to_apply` - list of array layer indices to apply"""
+        tool.Blender.Modifier.Array.remove_constraints(tool.Ifc.get_entity(parent_obj))
 
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        obj_stack = [parent]
+        obj_stack = [parent_obj]
 
-        for array in data:
+        for array_i, array in enumerate(data):
+            # for `sync_children` we remove all previously generated children to regenerate them again
+            # to assure they are in complete sync (psets, etc) with the array parent
             if array["sync_children"]:
                 removed_children = set(array["children"])
                 for removed_child in removed_children:
@@ -561,16 +648,21 @@ class Model(blenderbim.core.tool.Model):
             total_existing_children = len(array["children"])
             children_elements = []
             children_objs = []
+
+            # calculate offset
             if array["method"] == "DISTRIBUTE":
                 divider = 1 if ((array["count"] - 1) == 0) else (array["count"] - 1)
-                base_offset = Vector([array["x"] / divider, array["y"] / divider, array["z"] / divider]) * unit_scale
+                base_offset = Vector([array["x"], array["y"], array["z"]]) / divider * unit_scale
             else:
                 base_offset = Vector([array["x"], array["y"], array["z"]]) * unit_scale
+
             for i in range(array["count"]):
                 if i == 0:
                     continue
                 offset = base_offset * i
+
                 for obj in obj_stack:
+                    # get currently proccesed array element and it's object
                     if child_i >= total_existing_children:
                         child_obj = tool.Spatial.duplicate_object_and_data(obj)
                         child_element = tool.Spatial.run_root_copy_class(obj=child_obj)
@@ -584,16 +676,17 @@ class Model(blenderbim.core.tool.Model):
                             child_obj = tool.Spatial.duplicate_object_and_data(obj)
                             child_element = tool.Spatial.run_root_copy_class(obj=child_obj)
 
-                    child_psets = ifcopenshell.util.element.get_psets(child_element)
-                    child_pset = child_psets.get("BBIM_Array")
+                    # add child pset
+                    child_pset = tool.Pset.get_element_pset(child_element, "BBIM_Array")
                     if child_pset:
                         ifcopenshell.api.run(
                             "pset.edit_pset",
                             tool.Ifc.get(),
-                            pset=tool.Ifc.get().by_id(child_pset["id"]),
+                            pset=child_pset,
                             properties={"Data": None},
                         )
 
+                    # set child object position
                     new_matrix = obj.matrix_world.copy()
                     if array["use_local_space"]:
                         current_obj_translation = obj.matrix_world @ offset
@@ -601,23 +694,29 @@ class Model(blenderbim.core.tool.Model):
                         current_obj_translation = obj.matrix_world.translation + offset
                     new_matrix.translation = current_obj_translation
                     child_obj.matrix_world = new_matrix
+
                     children_objs.append(child_obj)
                     children_elements.append(child_element)
                     child_i += 1
+
             obj_stack.extend(children_objs)
             array["children"] = [e.GlobalId for e in children_elements]
 
+            # handle elements unused in the array after regeneration
             removed_children = set(existing_children) - set(array["children"])
             for removed_child in removed_children:
                 element = tool.Ifc.get().by_guid(removed_child)
                 obj = tool.Ifc.get_object(element)
                 if obj:
-                    if keep_objs:
-                        pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
-                        pset = tool.Ifc.get().by_id(pset["id"])
-                        ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
-                    else:
-                        tool.Geometry.delete_ifc_object(obj)
+                    tool.Geometry.delete_ifc_object(obj)
+
+            if array_i in array_layers_to_apply:
+                for child_element in children_elements:
+                    pset = tool.Pset.get_element_pset(child_element, "BBIM_Array")
+                    ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=child_element, pset=pset)
+
+                array["children"] = []
+                array["count"] = 1
 
             bpy.context.view_layer.update()
 
@@ -770,8 +869,18 @@ class Model(blenderbim.core.tool.Model):
         tool.Ifc.run("geometry.edit_object_placement", product=element, matrix=matrix, is_si=True)
 
     @classmethod
-    def get_element_matrix(cls, element):
-        placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+    def sync_object_ifc_position(cls, obj):
+        """make sure IFC position will be in sync with the Blender object position, if object was moved in Blender"""
+        if tool.Ifc.is_moved(obj):
+            blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+
+    @classmethod
+    def get_element_matrix(cls, element, keep_local=False):
+        placement = element.ObjectPlacement
+        if keep_local:
+            placement = ifcopenshell.util.placement.get_axis2placement(placement.RelativePlacement)
+        else:
+            placement = ifcopenshell.util.placement.get_local_placement(placement)
         return Matrix(placement)
 
     @classmethod
@@ -821,3 +930,249 @@ class Model(blenderbim.core.tool.Model):
     @classmethod
     def is_parametric_door_active(cls):
         return (DoorData.is_loaded or not DoorData.load()) and DoorData.data["pset_data"]
+
+    @classmethod
+    def get_active_stair_calculated_params(cls, pset_data=None):
+        props = bpy.context.active_object.BIMStairProperties
+
+        if props.is_editing:
+            si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            number_of_treads = props.number_of_treads
+            height = props.height / si_conversion
+            tread_run = props.tread_run / si_conversion
+            first_tread_run = props.custom_first_last_tread_run[0] / si_conversion
+            last_tread_run = props.custom_first_last_tread_run[1] / si_conversion
+            nosing_length = props.nosing_length / si_conversion
+        else:
+            number_of_treads = pset_data["number_of_treads"]
+            height = pset_data["height"]
+            tread_run = pset_data["tread_run"]
+            # use .get to not break the old .ifc models
+            custom_first_last_tread_run = pset_data.get("custom_first_last_tread_run", (0, 0))
+            first_tread_run, last_tread_run = custom_first_last_tread_run
+            nosing_length = pset_data.get("nosing_length", 0)
+
+        calculated_params = {}
+        number_of_rises = number_of_treads + 1
+        calculated_params["Number of Risers"] = number_of_rises
+        calculated_params["Tread Rise"] = round(height / number_of_rises, 5)
+
+        # calculate stair length
+        n_default_tread_runs = number_of_rises
+        length = 0
+        if first_tread_run != 0:
+            n_default_tread_runs -= 1
+            length += first_tread_run
+        if last_tread_run != 0:
+            n_default_tread_runs -= 1
+            if n_default_tread_runs >= 0:
+                length += last_tread_run
+        length += tread_run * max(n_default_tread_runs, 0)
+        # nosing overlaps
+        # are not part of the tread run
+        # so they don't affect the stair length
+        # except the first tread's nosing
+        if nosing_length > 0:  # nosing overlaps
+            length += nosing_length
+        if nosing_length < 0:  # tread gaps
+            length += abs(nosing_length) * number_of_treads
+        calculated_params["Length"] = round(length, 5)
+
+        return calculated_params
+
+    @classmethod
+    def generate_stair_2d_profile(
+        cls,
+        number_of_treads,
+        height,
+        width,
+        tread_run,
+        stair_type,
+        # WOOD/STEEL CONCRETE STAIR ARGUMENTS
+        tread_depth=None,
+        # CONCRETE STAIR ARGUMENTS
+        has_top_nib=None,
+        top_slab_depth=None,
+        base_slab_depth=None,
+        custom_first_last_tread_run=(0, 0),
+        nosing_length=0,
+        # CONCRETE GENERIC STAIR ARGUMENTS
+        nosing_depth=0,
+    ):
+        """returns a tuple of stair profile data: (vertices, edges, faces)"""
+        vertices = []
+        edges = []
+        faces = []
+
+        number_of_risers = number_of_treads + 1
+        tread_rise = height / number_of_risers
+        custom_tread_run = any(run != 0 for run in custom_first_last_tread_run)
+        nosing_overlap = max(nosing_length, 0)
+        nosing_tread_gap = -min(nosing_length, 0)
+        nosing_overlap_offset = -V(nosing_overlap, 0)
+
+        def define_generic_stair_treads():
+            vertices.append(Vector([0, 0]))
+            nonlocal nosing_depth, nosing_overlap
+            # avoid weird geometry
+            nosing_depth = min(nosing_depth, tread_rise)
+            nosing_overlap = min(nosing_overlap, tread_run)
+
+            default_tread_edges = np.array(((0, 1), (1, 2)))
+            # horizontal tread line
+            if nosing_overlap == 0:
+                default_tread_verts = (V(0, tread_rise), V(tread_run, tread_rise))
+            elif nosing_depth == 0:
+                default_tread_verts = (V(-nosing_overlap, tread_rise), V(tread_run, tread_rise))
+            else:  # nosing_overlap > 0 nosing_depth > 0
+                # kind of L shape
+                default_tread_verts = (
+                    V(0, tread_rise - nosing_depth),
+                    V(-nosing_overlap, tread_rise - nosing_depth),
+                    V(-nosing_overlap, tread_rise),
+                    V(tread_run, tread_rise),
+                )
+                add_edges = ((2, 3), (3, 4))
+                default_tread_edges = np.concatenate((default_tread_edges, add_edges))
+            default_tread_offset = Vector([tread_run, tread_rise])
+
+            def get_tread_data(i):
+                if custom_tread_run:
+                    current_tread_run = None
+                    if i == 0:
+                        current_tread_run = custom_first_last_tread_run[0]
+                    elif i == number_of_risers - 1:
+                        current_tread_run = custom_first_last_tread_run[1]
+
+                    if current_tread_run:
+                        tread_offset = default_tread_offset.copy()
+                        tread_offset.x = current_tread_run
+                        tread_verts = deepcopy(default_tread_verts)
+                        tread_verts[-1].x = current_tread_run
+                        return tread_offset, tread_verts
+                return default_tread_offset, default_tread_verts
+
+            # treads
+            current_offset = V(0, 0)
+            for i in range(number_of_risers):
+                last_vert_i = len(vertices) - 1
+                tread_offset, tread_verts = get_tread_data(i)
+                current_tread_verts = [v + current_offset for v in tread_verts]
+                edges.extend(default_tread_edges + last_vert_i)
+                vertices.extend(current_tread_verts)
+                current_offset += tread_offset
+
+        if stair_type == "WOOD/STEEL":
+            builder = ShapeBuilder(None)
+            # full tread rectangle
+            get_tread_verts = partial(builder.get_rectangle_coords, position=V(0, -(tread_depth - tread_rise)))
+            default_tread_verts = get_tread_verts(size=V(tread_run + nosing_overlap, tread_depth))
+            default_tread_offset = V(tread_run + nosing_tread_gap, tread_rise)
+
+            def get_tread_data(i):
+                if custom_tread_run:
+                    current_tread_run = None
+                    if i == 0 and custom_first_last_tread_run[0] != 0:
+                        current_tread_run = custom_first_last_tread_run[0]
+                    elif i == number_of_risers - 1 and custom_first_last_tread_run[1] != 0:
+                        current_tread_run = custom_first_last_tread_run[1]
+
+                    if current_tread_run:
+                        tread_offset = default_tread_offset.copy()
+                        tread_offset.x = current_tread_run + nosing_tread_gap
+                        tread_verts = get_tread_verts(size=V(current_tread_run + nosing_overlap, tread_depth))
+                        return tread_offset, tread_verts
+                return default_tread_offset, default_tread_verts
+
+            # each tread is a separate shape
+            cur_offset = V(0, 0)
+            for i in range(number_of_risers):
+                tread_offset, tread_verts = get_tread_data(i)
+                cur_trade_shape = [v + cur_offset + nosing_overlap_offset for v in tread_verts]
+                vertices.extend(cur_trade_shape)
+
+                cur_vertex = i * 4
+                verts_to_add = (
+                    (cur_vertex, cur_vertex + 1),
+                    (cur_vertex + 1, cur_vertex + 2),
+                    (cur_vertex + 2, cur_vertex + 3),
+                    (cur_vertex + 3, cur_vertex),
+                )
+                edges.extend(verts_to_add)
+                cur_offset += tread_offset
+
+        elif stair_type == "GENERIC":
+            define_generic_stair_treads()
+
+            # close the shape
+            last_vert_i = len(vertices)
+            vertices.append(vertices[-1] * V(1, 0))
+            edges.extend([(last_vert_i - 1, last_vert_i), (last_vert_i, 0)])
+
+        elif stair_type == "CONCRETE":
+            define_generic_stair_treads()
+
+            # add the nibs
+            # basically we define stair bottom line as a line at `tread_depth` distance
+            # from the tread diagonal line
+            # we're going it define that line, sample it and abrupt it in case it meets a slab
+            # graph: https://www.desmos.com/calculator/bilmnti3cp
+            tread_diagonal_dir = V(tread_run, tread_rise).normalized()
+            # td_vector is clockwise orthogonal vector
+            td_vector = tread_diagonal_dir.yx * V(1, -1) * tread_depth
+
+            stair_tan = tread_rise / tread_run
+            # s0 is just a sampled point from the bottom line
+            # we stick to the third point as the first point
+            # is affected by customized tread run
+            s0 = V(custom_first_last_tread_run[0] or tread_run, tread_rise) + td_vector
+            # comes from y = stair_tan * x + b
+            b = s0.y - stair_tan * s0.x
+
+            def get_point_on_2d_line(x=None, y=None):
+                if y is None:
+                    y = stair_tan * x + b
+                elif x is None:
+                    x = (y - b) / stair_tan
+                return V(x, y)
+
+            # top nib
+            last_vert = vertices[-1]
+            last_vertex_i = len(vertices) - 1
+            # NOTE: has_top_nib = False and top_slab_depth are different things
+            if has_top_nib:
+                vertices.append(last_vert + Vector((0, -top_slab_depth)))
+                vertices.append(get_point_on_2d_line(y=last_vert.y - top_slab_depth))
+                edges.append((last_vertex_i, last_vertex_i + 1))
+                edges.append((last_vertex_i + 1, last_vertex_i + 2))
+            else:
+                new_vert = get_point_on_2d_line(last_vert.x)
+                vertices.append(new_vert)
+                edges.append((last_vertex_i, last_vertex_i + 1))
+
+            top_nib_end = len(vertices) - 1
+
+            # bottom nib
+            start_vert = vertices[0]
+            base_point = get_point_on_2d_line(x=start_vert.x)
+            if base_point.y > -base_slab_depth:
+                # stair doesn't meet the slab
+                vertices.append(base_point)
+                edges.append((0, len(vertices) - 1))
+                bottom_nib_end = len(vertices) - 1
+            else:
+                # slab overlaps stair
+                vertices.append(get_point_on_2d_line(y=start_vert.y - base_slab_depth))
+                vertices.append(start_vert + Vector((0, -base_slab_depth)))
+                last_vertex_i = len(vertices) - 1
+                edges.append((0, last_vertex_i))
+                edges.append((last_vertex_i - 1, last_vertex_i))
+                bottom_nib_end = len(vertices) - 2
+
+            # close the shape
+            edges.append((bottom_nib_end, top_nib_end))
+        else:
+            raise Exception(f"Unsupported stair type: {stair_type}")
+
+        vertices = (v.to_3d().xzy for v in vertices)
+        return (vertices, edges, faces)

@@ -74,7 +74,7 @@ class Usecase:
                 product=beam, type="IfcMaterialProfileSetUsage")
 
             # Let's give a 1000mm long beam body representation.
-            body = ifcopenshell.api.run("geoemtry.add_profile_representation",
+            body = ifcopenshell.api.run("geometry.add_profile_representation",
                 context=body_context, profile=hea100, depth=1000)
             ifcopenshell.api.run("geometry.assign_representation", model, product=beam, representation=body)
             ifcopenshell.api.run("geometry.edit_object_placement", model, product=beam)
@@ -111,6 +111,7 @@ class Usecase:
                             self.change_profile(element)
 
         if old_profile and len(self.file.get_inverse(old_profile)) == 0:
+            # TODO: check remove deep
             self.file.remove(old_profile)
 
     def change_profile(self, element):

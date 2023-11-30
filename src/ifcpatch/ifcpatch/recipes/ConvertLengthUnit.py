@@ -38,10 +38,10 @@ class Patcher:
         .. code:: python
 
             # Convert to millimeters
-            ifcpatch.execute({"input": model, "recipe": "ConvertLengthUnit", "arguments": ["MILLIMETERS"]})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ConvertLengthUnit", "arguments": ["MILLIMETERS"]})
 
             # Convert to feet
-            ifcpatch.execute({"input": model, "recipe": "ConvertLengthUnit", "arguments": ["FEET"]})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ConvertLengthUnit", "arguments": ["FEET"]})
         """
         self.src = src
         self.file = file

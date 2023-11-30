@@ -26,7 +26,7 @@ import os.path
 
 # fmt: off
 TEXTURE_MAPS_BY_METHODS = {
-    "PHYSICAL": ("NORMAL", "EMISSIVE", "METALLICROUGHNESS", "DIFFUSE", "OCCLUSION"), 
+    "PHYSICAL": ("NORMAL", "EMISSIVE", "METALLICROUGHNESS", "DIFFUSE", "OCCLUSION"),
     "FLAT": ("EMISSIVE",)
 }
 # fmt: on
@@ -147,6 +147,7 @@ class Style(blenderbim.core.tool.Style):
                 "Mode": prop_mode,
                 "type": "IfcImageTexture",
                 "URLReference": tool.Blender.blender_path_to_posix(path),
+                "uv_mode": props.uv_mode,
             }
             textures.append(texture_data)
 
@@ -183,14 +184,18 @@ class Style(blenderbim.core.tool.Style):
         texture_maps = TEXTURE_MAPS_BY_METHODS[style_data["ReflectanceMethod"]]
         unused_texture_maps = list(STYLE_TEXTURE_PROPS_MAP.keys())
 
+        uv_mode = None
         if texture_style:
             for texture in texture_style.Textures:
+                texture_data = tool.Loader.surface_texture_to_dict(texture)
+                uv_mode = texture_data["uv_mode"]
                 if texture.Mode not in texture_maps:
                     print(f"WARNING. Unsupported texture mode: {texture.Mode}. Supported maps: {texture_maps}")
                     continue
                 prop_blender = STYLE_TEXTURE_PROPS_MAP.get(texture.Mode, None)
                 setattr(props, prop_blender, texture.URLReference)
                 unused_texture_maps.remove(texture.Mode)
+        props.uv_mode = uv_mode if uv_mode else "UV"
 
         # clear empty texture fields
         for texture_mode in unused_texture_maps:
@@ -417,12 +422,14 @@ class Style(blenderbim.core.tool.Style):
 
         results = []
         for item in items:
-            for uv_map in item.HasTextures or []:
+            # only IfcTessellatedFaceSet has HasTextures
+            for uv_map in getattr(item, "HasTextures", None) or []:
                 results.append(uv_map)
         return results
 
     @classmethod
     def import_presentation_styles(cls, style_type):
+        color_to_tuple = lambda x: (x.Red, x.Green, x.Blue)
         props = bpy.context.scene.BIMStylesProperties
         props.styles.clear()
         styles = sorted(tool.Ifc.get().by_type(style_type), key=lambda x: x.Name or "Unnamed")
@@ -430,6 +437,17 @@ class Style(blenderbim.core.tool.Style):
             new = props.styles.add()
             new.ifc_definition_id = style.id()
             new.name = style.Name or "Unnamed"
+            new.ifc_class = style.is_a()
+            for surface_style in getattr(style, "Styles", []) or []:
+                new2 = new.style_classes.add()
+                new2.name = surface_style.is_a()
+                if surface_style.is_a("IfcSurfaceStyleShading"):
+                    new.has_surface_colour = True
+                    new.surface_colour = color_to_tuple(surface_style.SurfaceColour)
+                if surface_style.is_a("IfcSurfaceStyleRendering"):
+                    if surface_style.DiffuseColour and surface_style.DiffuseColour.is_a("IfcColourRgb"):
+                        new.has_diffuse_colour = True
+                        new.diffuse_colour = color_to_tuple(surface_style.DiffuseColour)
             new.total_elements = len(ifcopenshell.util.element.get_elements_by_style(tool.Ifc.get(), style))
 
     @classmethod
@@ -467,3 +485,24 @@ class Style(blenderbim.core.tool.Style):
     @classmethod
     def change_current_style_type(cls, blender_material, style_type):
         blender_material.BIMStyleProperties.active_style_type = style_type
+
+    @classmethod
+    def get_styled_items(cls, style):
+        ifc_file = tool.Ifc.get()
+
+        inverses = list(ifc_file.get_inverse(style))
+        items = []
+        while inverses:
+            inverse = inverses.pop()
+            if inverse.is_a("IfcPresentationStyleAssignment"):
+                inverses.extend(ifc_file.get_inverse(inverse))
+                continue
+
+            if not (item := inverse.Item):
+                continue
+
+            if item.is_a("IfcMappedItem"):
+                items.extend(item.MappingSource.MappedRepresentation.Items)
+            else:
+                items.append(item)
+        return items

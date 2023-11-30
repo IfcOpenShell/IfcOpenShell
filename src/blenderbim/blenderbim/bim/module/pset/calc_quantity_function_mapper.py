@@ -71,10 +71,10 @@ mapper = {
         'Area' : "get_net_side_area",
     },
     'Qto_DuctSegmentBaseQuantities' : {
-        'Length' : None,
+        'Length' : "get_length",
         'GrossCrossSectionArea' : None,
         'NetCrossSectionArea' : None,
-        'OuterSurfaceArea' : None,
+        'OuterSurfaceArea' : "get_outer_surface_area",
         'GrossWeight' : None,
     },
     'Qto_TransformerBaseQuantities' : {
@@ -175,8 +175,8 @@ mapper = {
         'GrossWeight' : None,
     },
     'Qto_RoofBaseQuantities' : {
-        'GrossArea' : "get_gross_footprint_area",
-        'NetArea' : "get_net_footprint_area",
+        'GrossArea' : "get_gross_top_area",
+        'NetArea' : "get_net_top_area",
         'ProjectedArea' : None,
     },
     'Qto_ChimneyBaseQuantities' : {
@@ -203,10 +203,10 @@ mapper = {
         'Weight' : None,
     },
     'Qto_DuctFittingBaseQuantities' : {
-        'Length' : None,
+        'Length' : "get_length",
         'GrossCrossSectionArea' : None,
         'NetCrossSectionArea' : None,
-        'OuterSurfaceArea' : None,
+        'OuterSurfaceArea' : "get_outer_surface_area",
         'GrossWeight' : None,
     },
     'Qto_UnitaryControlElementBaseQuantities' : {

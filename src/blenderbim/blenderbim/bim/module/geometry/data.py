@@ -23,8 +23,10 @@ from mathutils import Vector
 
 
 def refresh():
-    DerivedPlacementsData.is_loaded = False
+    PlacementData.is_loaded = False
+    DerivedCoordinatesData.is_loaded = False
     RepresentationsData.is_loaded = False
+    RepresentationItemsData.is_loaded = False
     ConnectionsData.is_loaded = False
 
 
@@ -89,6 +91,36 @@ class RepresentationsData:
                 )
             )
         return results
+
+
+class RepresentationItemsData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {
+            "total_items": cls.total_items(),
+        }
+        cls.is_loaded = True
+
+    @classmethod
+    def total_items(cls):
+        active_representation_id = None
+        result = 0
+        if bpy.context.active_object.data and hasattr(bpy.context.active_object.data, "BIMMeshProperties"):
+            active_representation_id = bpy.context.active_object.data.BIMMeshProperties.ifc_definition_id
+            element = tool.Ifc.get().by_id(active_representation_id)
+            if not element.is_a("IfcShapeRepresentation"):
+                return 0
+            queue = list(element.Items)
+            while queue:
+                item = queue.pop()
+                if item.is_a("IfcMappedItem"):
+                    queue.extend(item.MappingSource.MappedRepresentation.Items)
+                else:
+                    result += 1
+        return result
 
 
 class ConnectionsData:
@@ -184,7 +216,7 @@ class ConnectionsData:
         return results
 
 
-class DerivedPlacementsData:
+class DerivedCoordinatesData:
     data = {}
     is_loaded = False
 
@@ -263,6 +295,67 @@ class DerivedPlacementsData:
         for i, storey in enumerate(storeys):
             if storey[0] != element:
                 continue
-            if i >= len(storeys):
+            if i >= len(storeys) - 1:
                 return "N/A"
             return "{0:.3f}".format(round(storeys[i + 1][1] - storey[1], 3))
+
+
+class PlacementData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {
+            "has_placement": cls.has_placement(),
+            "original_x": cls.original_x(),
+            "original_y": cls.original_y(),
+            "original_z": cls.original_z(),
+        }
+        cls.is_loaded = True
+
+    @classmethod
+    def has_placement(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if element and hasattr(element, "ObjectPlacement"):
+            return True
+        return False
+
+    @classmethod
+    def original_x(cls):
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        obj = bpy.context.active_object
+        if not obj or not props.has_blender_offset:
+            return
+        return str(round(cls.original_xyz(obj.location)[0], 3))
+
+    @classmethod
+    def original_y(cls):
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        obj = bpy.context.active_object
+        if not obj or not props.has_blender_offset:
+            return
+        return str(round(cls.original_xyz(obj.location)[1], 3))
+
+    @classmethod
+    def original_z(cls):
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        obj = bpy.context.active_object
+        if not obj or not props.has_blender_offset:
+            return
+        return str(round(cls.original_xyz(obj.location)[2], 3))
+
+    @classmethod
+    def original_xyz(cls, location):
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        return ifcopenshell.util.geolocation.xyz2enh(
+            location[0],
+            location[1],
+            location[2],
+            float(props.blender_eastings),
+            float(props.blender_northings),
+            float(props.blender_orthogonal_height),
+            float(props.blender_x_axis_abscissa),
+            float(props.blender_x_axis_ordinate),
+            1.0,
+        )

@@ -27,7 +27,8 @@ class Usecase:
             "context": None,  # IfcGeometricRepresentationContext
             "depth": 0.2,
             "x_angle": 0,  # Radians
-            # Planes are defined as a matrix. The XY plane is the clipping boundary and +Z is removed.
+            # Planes are defined either by Clipping objects
+            # or by dictionaries of arguments for `Clipping.parse`
             "clippings": [],  # A list of planes that define clipping half space solids
         }
         for key, value in settings.items():
@@ -95,6 +96,12 @@ class Usecase:
                 False,
             )
             first_operand = self.file.createIfcBooleanClippingResult("DIFFERENCE", first_operand, second_operand)
+            if isinstance(clipping, ifcopenshell.entity_instance):
+                new = ifcopenshell.util.element.copy(self.file, clipping)
+                new.FirstOperand = first_operand
+                first_operand = new
+            else:  # Clipping
+                first_operand = clipping.apply(self.file, first_operand, self.settings["unit_scale"])
         return first_operand
 
     def convert_si_to_unit(self, co):

@@ -14,7 +14,6 @@ BIM will by definition contain a (big) number of submodules or subschemas. Grant
   
 3. Completeness : I need to have access to all the items that are related to the topic I'm interested in. If it is tied to another submodule, I need to have access to it.
 
-
 * **Blender**
 
   These considerations must be adapted to the Python API, to the general paradigm we have chosen to access, modify or create IFC data, and to the general philosophy of Blender. There are many ways and places where an add-on creator can choose to present information to the user. BlenderBim currently works that way :
@@ -69,12 +68,13 @@ BIM will by definition contain a (big) number of submodules or subschemas. Grant
 
   The user should be advised why they are prevented to do things via either : 
 
-    - A custom message using Blender's report system
+  - A custom message using Blender's report system
 
-    - A label in the UI replacing the missing UI elements
+  - A label in the UI replacing the missing UI elements
 
-    - An helpful tooltip on an operator
-  Generally the context itself should be used to the best of its ability to convey why it's possible to do some things or not. The separation of concerns in multiple   different dynamically hidden-or-shown sub-panels should help limit confusion.
+  - A helpful tooltip on an operator
+  
+    Generally the context itself should be used to the best of its ability to convey why it's possible to do some things or not. The separation of concerns in multiple   different dynamically hidden-or-shown sub-panels should help limit confusion.
 
   - The user should be forbidden to click on buttons when its execution returns early and does nothing. If a button is clickable and the user clicks on it,   there should always be some kind of feedback.
 
@@ -82,7 +82,7 @@ Icons
 ^^^^^
 
 * .. image:: https://user-images.githubusercontent.com/25156105/137270452-bf6c03ea-2d3e-4ae3-8121-6799e8beb335.png
- 
+
 **Icon name** : `"CANCEL"` 
 
 **Use** : To disable the edition state of a particular item.
@@ -113,9 +113,9 @@ Icons
 
 **Proposal** : https://user-images.githubusercontent.com/25156105/137273329-532d6d59-e39d-483e-980b-b8405062eaa8.gif
 
-* .. image:: https://user-images.githubusercontent.com/25156105/137273981-26fa664a-a29e-402e-9d7e-67b8b71c2d5d.png
+.. image:: https://user-images.githubusercontent.com/25156105/137273981-26fa664a-a29e-402e-9d7e-67b8b71c2d5d.png
 
-**Icon name** : `"ADD"`
+* **Icon name** : `"ADD"`
 
 **Use** : To add an item to a particular context, either initializing it (eg. adding a coordinate system) or adding an element to a list.
 

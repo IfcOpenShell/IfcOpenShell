@@ -64,6 +64,7 @@ class BIM_PT_type(Panel):
         select_type_objects_row.enabled = int(TypeData.data["total_instances"]) > 0
         op = row.operator("bim.duplicate_type", icon="DUPLICATE", text="")
         op.element = context.active_object.BIMObjectProperties.ifc_definition_id
+        row.operator("bim.auto_rename_occurrences", icon="ITALIC", text="")
 
     def draw_product_ui(self, context):
         layout = self.layout

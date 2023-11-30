@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.util.type
 import ifcopenshell.util.schema
 import ifcopenshell.util.element
 
@@ -37,6 +38,14 @@ class Usecase:
 
         This is especially useful when dealing with poorly classified data from
         proprietary software with limited IFC capabilities.
+
+        If you are reassigning a type, the occurrence classes are also
+        reassigned to maintain validity.
+
+        Vice versa, if you are reassigning an occurrence, the type is also
+        reassigned in IFC4 and up. In IFC2X3, this may not occur if the type
+        cannot be unambiguously derived, so you are required to manually check
+        this.
 
         :param product: The IfcProduct that you want to change the class of.
         :type product: ifcopenshell.entity_instance.entity_instance
@@ -69,22 +78,37 @@ class Usecase:
         }
 
     def execute(self):
-        element = ifcopenshell.util.schema.reassign_class(
-            self.file, self.settings["product"], self.settings["ifc_class"]
-        )
+        element = self.reassign_class(self.settings["product"], self.settings["ifc_class"])
+
+        if element.is_a("IfcTypeProduct"):
+            for occurrence in ifcopenshell.util.element.get_types(element) or []:
+                ifc_class = ifcopenshell.util.type.get_applicable_entities(self.settings["ifc_class"])[0]
+                self.reassign_class(occurrence, ifc_class)
+        else:
+            element_type = ifcopenshell.util.element.get_type(element)
+            if element_type:
+                ifc_class = ifcopenshell.util.type.get_applicable_types(self.settings["ifc_class"])
+                if ifc_class and len(ifc_class) == 1:
+                    element_type = self.reassign_class(element_type, ifc_class[0])
+                ifc_class = element.is_a()
+                for occurrence in ifcopenshell.util.element.get_types(element_type) or []:
+                    if occurrence == element:
+                        continue
+                    self.reassign_class(occurrence, ifc_class)
+        return element
+
+    def reassign_class(self, element, ifc_class):
+        element = ifcopenshell.util.schema.reassign_class(self.file, element, ifc_class)
         if self.settings["predefined_type"] and hasattr(element, "PredefinedType"):
             try:
                 element.PredefinedType = self.settings["predefined_type"]
             except:
+                # PredefinedType wasn't in the respective enum, assume it's actually USERDEFINED
+                # and set .ElementType / .ObjectType to the provided predefined type
                 element.PredefinedType = "USERDEFINED"
-                element.ObjectType = self.settings["predefined_type"]
-        if element.is_a("IfcTypeProduct"):
-            for typed_element in ifcopenshell.util.element.get_types(element) or []:
-                ifcopenshell.api.run(
-                    "root.reassign_class",
-                    self.file,
-                    product=typed_element,
-                    ifc_class=self.settings["ifc_class"].strip("Type"),
-                    predefined_type= self.settings["predefined_type"]
-                )
+                if element.is_a("IfcTypeProduct"):
+                    element.ElementType = self.settings["predefined_type"]
+                else:
+                    element.ObjectType = self.settings["predefined_type"]
+
         return element

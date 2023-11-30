@@ -24,6 +24,7 @@ import ifcopenshell.util.unit
 from ifcopenshell.util.unit import convert_si_to_unit
 from ifcopenshell.util.representation import ClippingInfo
 from math import sin, cos
+from ifcopenshell.util.data import Clipping
 
 
 @dataclass(slots=True)
@@ -45,6 +46,27 @@ class Usecase:
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         if self.file.strict_validation:
             self.validate_attrs()
+    def __init__(self, file, **settings):
+        self.file = file
+        self.settings = {
+            "context": None,  # IfcGeometricRepresentationContext
+            "length": 1.0,
+            "height": 3.0,
+            "offset": 0.0,
+            "thickness": 0.2,
+            # Sloped walls along the wall's X axis, provided in radians
+            "x_angle": 0,
+            # Planes are defined either by Clipping objects
+            # or by dictionaries of arguments for `Clipping.parse`
+            "clippings": [],  # A list of planes that define clipping half space solids
+            "booleans": [],  # Any existing IfcBooleanResults
+        }
+        for key, value in settings.items():
+            self.settings[key] = value
+
+    def execute(self):
+        self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
+        self.settings["clippings"] = [Clipping.parse(c) for c in self.settings["clippings"]]
         return self.file.createIfcShapeRepresentation(
             self.context,
             self.context.ContextIdentifier,
@@ -128,4 +150,6 @@ class Usecase:
                 first_operand = new
             else:
                 first_operand = clipping.apply(self.file, first_operand)
+            else:  # Clipping
+                first_operand = clipping.apply(self.file, first_operand, self.settings["unit_scale"])
         return first_operand

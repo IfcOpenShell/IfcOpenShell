@@ -40,10 +40,25 @@ def get_style_types(self, context):
     return StylesData.data["style_types"]
 
 
+def get_reflectance_methods(self, context):
+    if not StylesData.is_loaded:
+        StylesData.load()
+    return StylesData.data["reflectance_methods"]
+
+
 class Style(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     total_elements: IntProperty(name="Total Elements")
+    style_classes: CollectionProperty(name="Style Classes", type=StrProperty)
+    has_surface_colour: BoolProperty(name="Has Surface Colour", default=False)
+    surface_colour: bpy.props.FloatVectorProperty(
+        name="Surface Colour", subtype="COLOR", default=(1, 1, 1), min=0.0, max=1.0, size=3
+    )
+    has_diffuse_colour: BoolProperty(name="Has Diffuse Colour", default=False)
+    diffuse_colour: bpy.props.FloatVectorProperty(
+        name="Diffuse Colour", subtype="COLOR", default=(1, 1, 1), min=0.0, max=1.0, size=3
+    )
 
 
 STYLE_TYPES = [
@@ -60,8 +75,54 @@ def update_shading_styles(self, context):
 
 
 class BIMStylesProperties(PropertyGroup):
+    is_adding: BoolProperty(name="Is Adding")
     is_editing: BoolProperty(name="Is Editing")
-    style_type: EnumProperty(items=get_style_types, name="Style Type")
+    is_editing_style: IntProperty(name="Is Editing Style")
+    is_editing_class: StringProperty(name="Is Editing Class")
+    attributes: CollectionProperty(name="Attributes", type=Attribute)
+    external_style_attributes: CollectionProperty(name="External Style Attributes", type=Attribute)
+    style_type: EnumProperty(items=get_style_types, default=2, name="Style Type")
+    style_name: StringProperty(name="Style Name")
+    surface_style_class: EnumProperty(
+        items=[
+            (x, x, "")
+            for x in (
+                "IfcSurfaceStyleShading",
+                "IfcSurfaceStyleRendering",
+                "IfcSurfaceStyleWithTextures",
+                "IfcSurfaceStyleLighting",
+                "IfcSurfaceStyleRefraction",
+                "IfcExternallyDefinedSurfaceStyle",
+            )
+        ],
+        name="Surface Style Class",
+        default="IfcSurfaceStyleShading",
+    )
+    surface_colour: bpy.props.FloatVectorProperty(
+        name="Surface Colour", subtype="COLOR", default=(1, 1, 1), min=0.0, max=1.0, size=3
+    )
+    transparency: bpy.props.FloatProperty(name="Transparency", default=0.0, min=0.0, max=1.0)
+    is_diffuse_colour_null: BoolProperty(name="Is Null")
+    diffuse_colour_class: EnumProperty(
+        items=[(x, x, "") for x in ("IfcColourRgb", "IfcNormalisedRatioMeasure")],
+        name="Diffuse Colour Class",
+    )
+    diffuse_colour: bpy.props.FloatVectorProperty(
+        name="Diffuse Colour", subtype="COLOR", default=(1, 1, 1), min=0.0, max=1.0, size=3
+    )
+    diffuse_colour_ratio: bpy.props.FloatProperty(name="Diffuse Ratio", default=0.0, min=0.0, max=1.0)
+    is_specular_colour_null: BoolProperty(name="Is Null")
+    specular_colour_class: EnumProperty(
+        items=[(x, x, "") for x in ("IfcColourRgb", "IfcNormalisedRatioMeasure")],
+        name="Specular Colour Class",
+    )
+    specular_colour: bpy.props.FloatVectorProperty(
+        name="Specular Colour", subtype="COLOR", default=(1, 1, 1), min=0.0, max=1.0, size=3
+    )
+    specular_colour_ratio: bpy.props.FloatProperty(name="Specular Ratio", default=0.0, min=0.0, max=1.0)
+    is_specular_highlight_null: BoolProperty(name="Is Null")
+    specular_highlight: bpy.props.FloatProperty(name="Specular Highlight", default=0.0, min=0.0, max=1.0)
+    reflectance_method: EnumProperty(name="Reflectance Method", items=get_reflectance_methods)
     styles: CollectionProperty(name="Styles", type=Style)
     active_style_index: IntProperty(name="Active Style Index")
     active_style_type: EnumProperty(
@@ -101,13 +162,20 @@ def update_shading_style(self, context):
 
 
 # TODO: support more more methods
+# based on https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcReflectanceMethodEnum.htm
 REFLECTANCE_METHODS = [
     ("PHYSICAL", "PHYSICAL", ""),
     ("FLAT", "FLAT", ""),
-    # ("METAL", "METAL", ""),
-    # ("MATT", "MATT", ""),
-    # ("GLASS", "GLASS", ""),
-    # ("NOTDEFINED", "NOTDEFINED", ""),
+    ("METAL", "METAL", ""),
+    ("MATT", "MATT", ""),
+    ("GLASS", "GLASS", ""),
+    ("NOTDEFINED", "NOTDEFINED", ""),
+]
+
+UV_MODES = [
+    ("UV", "UV", "Actual UV data presented on the geometry"),
+    ("Generated", "Generated", "Automatically-generated UV from the vertex positions of the mesh"),
+    ("Camera", "Camera", "UV from position coordinate in camera space"),
 ]
 
 
@@ -148,7 +216,6 @@ class BIMStyleProperties(PropertyGroup):
         update=update_shading_style,
     )
 
-    # GLTF style properties
     update_graph: BoolProperty(
         name="Update Shade Graph on Prop Change",
         description="Update shader graph in real time\nas you update style properties",
@@ -156,6 +223,16 @@ class BIMStyleProperties(PropertyGroup):
         get=update_graph_get,
         set=update_graph_set,
     )
+
+    uv_mode: EnumProperty(
+        name="UV Mode",
+        description="Type of UV used for the textures",
+        items=UV_MODES,
+        default="UV",
+        update=update_shader_graph,
+    )
+
+    # GLTF style properties
     reflectance_method: EnumProperty(
         name="Reflectance Method",
         description="Reflectance method to use for the material",
@@ -186,6 +263,8 @@ class BIMStyleProperties(PropertyGroup):
     )
     roughness: bpy.props.FloatProperty(name="Roughness", default=0.0, min=0.0, max=1.0, update=update_shader_graph)
     metallic: bpy.props.FloatProperty(name="Metallic", default=0.0, min=0.0, max=1.0, update=update_shader_graph)
+
+    # texture paths
     normal_path: bpy.props.StringProperty(
         name="NormalMap",
         maxlen=1024,

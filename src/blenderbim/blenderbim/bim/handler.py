@@ -59,6 +59,10 @@ def name_callback(obj, data):
     if not obj.BIMObjectProperties.ifc_definition_id:
         return
 
+    if obj.BIMObjectProperties.is_renaming:
+        obj.BIMObjectProperties.is_renaming = False
+        return
+
     element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
     if "/" in obj.name:
         object_name = obj.name
@@ -319,6 +323,17 @@ if getattr(bpy.types, "SCENE_PT_custom_props"):
             return tool.Blender.is_tab(context, "BLENDER")
 
 
+# available on Blender 4.0+
+if getattr(bpy.types, "SCENE_PT_simulation", None):
+
+    class Override_SCENE_PT_simulation(bpy.types.SCENE_PT_simulation):
+        bl_idname = "SCENE_PT_simulation_override"
+
+        @classmethod
+        def poll(cls, context):
+            return tool.Blender.is_tab(context, "BLENDER")
+
+
 @persistent
 def load_post(scene):
     global global_subscription_owner
@@ -345,6 +360,9 @@ def load_post(scene):
     ifcopenshell.api.owner.settings.get_application = get_application
     AuthoringData.type_thumbnails = {}
 
+    if not bpy.context.preferences.addons["blenderbim"].preferences.should_setup_toolbar:
+        tool.Blender.unregister_toolbar()
+
     if bpy.context.preferences.addons["blenderbim"].preferences.should_setup_workspace:
         if "BIM" in bpy.data.workspaces:
             bpy.context.window.workspace = bpy.data.workspaces["BIM"]
@@ -361,6 +379,7 @@ def load_post(scene):
             "SCENE_PT_rigid_body_world",
             "SCENE_PT_audio",
             "SCENE_PT_keying_sets",
+            "SCENE_PT_simulation",
             "SCENE_PT_custom_props",
         ]:
             if getattr(bpy.types, panel, None):

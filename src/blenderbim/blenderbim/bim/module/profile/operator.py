@@ -143,7 +143,7 @@ class EnableEditingArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
         tool.Blender.select_and_activate_single_object(context, obj)
         bpy.ops.object.mode_set(mode="EDIT")
         ProfileDecorator.install(context, exit_edit_mode_callback=lambda: disable_editing_arbitrary_profile(context))
-        bpy.ops.wm.tool_set_by_id(tool.Blender.get_viewport_context(), name="bim.cad_tool")
+        tool.Blender.set_viewport_tool("bim.cad_tool")
 
 
 def disable_editing_arbitrary_profile(context):
@@ -223,7 +223,9 @@ class PurgeUnusedProfiles(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMProfileProperties
-        core.purge_unused_profiles(tool.Ifc, tool.Profile)
+        purged_profiles = core.purge_unused_profiles(tool.Ifc, tool.Profile)
+        self.report({"INFO"}, f"{purged_profiles} profiles were purged.")
+
         if props.is_editing:
             refresh()
             bpy.ops.bim.load_profiles()

@@ -8,6 +8,8 @@ try:
 except:
     print("Warning: GitPython not available.")
 import bpy
+import logging
+from blenderbim.bim import import_ifc
 from blenderbim.bim.ifc import IfcStore
 import blenderbim.tool as tool
 
@@ -32,7 +34,7 @@ class IfcGit:
         working_dir = repo.working_dir
         for item in os.listdir(working_dir):
             path = os.path.join(working_dir, item)
-            if os.path.isfile(path) and re.match(".*\.ifc$", path, re.IGNORECASE):
+            if os.path.isfile(path) and re.match(".*\\.ifc$", path, re.IGNORECASE):
                 cls.load_project(path)
                 return True
         return False
@@ -200,15 +202,16 @@ class IfcGit:
         """Check a bare branch or tag name is valid"""
 
         return re.match(
-            "^(?!\.| |-|/)((?!\.\.)(?!.*/\.)(/\*|/\*/)*(?!@\{)[^\~\:\^\\\ \?*\[])+(?<!\.|/)(?<!\.lock)$",
+            "^(?!\\.| |-|/)((?!\\.\\.)(?!.*/\\.)(/\\*|/\\*/)*(?!@\\{)[^\\~\\:\\^\\\\ \\?*\\[])+(?<!\\.|/)(?<!\\.lock)$",
             string,
         )
 
     @classmethod
-    def load_project(cls, path_ifc):
+    def load_project(cls, path_ifc=""):
         """Clear and load an ifc project"""
 
-        IfcStore.purge()
+        if path_ifc:
+            IfcStore.purge()
         # delete any IfcProject/* collections
         for collection in bpy.data.collections:
             if re.match("^IfcProject/", collection.name):
@@ -220,7 +223,14 @@ class IfcGit:
 
         bpy.data.orphans_purge(do_recursive=True)
 
-        bpy.ops.bim.load_project(filepath=path_ifc, should_start_fresh_session=False)
+        settings = import_ifc.IfcImportSettings.factory(bpy.context, path_ifc, logging.getLogger("ImportIFC"))
+        settings.should_setup_viewport_camera = False
+        ifc_importer = import_ifc.IfcImporter(settings)
+        ifc_importer.execute()
+        tool.Project.load_pset_templates()
+        tool.Project.load_default_thumbnails()
+        tool.Project.set_default_context()
+        tool.Project.set_default_modeling_dimensions()
         bpy.ops.object.select_all(action="DESELECT")
 
     @classmethod

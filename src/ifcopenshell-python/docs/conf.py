@@ -36,7 +36,7 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 
 project = "IfcOpenShell"
-copyright = "2020-2022, IfcOpenShell Contributors"
+copyright = "2011-2023, IfcOpenShell Contributors"
 author = "IfcOpenShell Contributors"
 
 # The full version, including alpha/beta/rc tags
@@ -66,7 +66,8 @@ autoapi_add_toctree_entry = True
 autoapi_type = 'python'
 
 # autoapi works by reading source code instead of importing modules
-autoapi_dirs = ['../ifcopenshell', '../../ifcdiff', '../../ifcpatch/ifcpatch']
+autoapi_dirs = ['../ifcopenshell', '../../bcf/src', '../../bsdd', '../../ifccsv', '../../ifcdiff', '../../ifcpatch/ifcpatch', '../../ifctester/ifctester']
+# autoapi_dirs = ['../../bcf/src', '../../bsdd', '../../ifccsv', '../../ifcdiff', '../../ifcpatch/ifcpatch', '../../ifctester/ifctester']
 
 # These are auto-generated based on the IFC schema, so exclude them
 autoapi_ignore = ['*ifcopenshell/express/rules*']

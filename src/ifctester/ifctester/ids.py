@@ -21,7 +21,7 @@ import datetime
 from xmlschema import XMLSchema
 from xmlschema import etree_tostring
 from xml.etree import ElementTree as ET
-from .facet import Entity, Attribute, Classification, Property, PartOf, Material, Restriction
+from .facet import Entity, Attribute, Classification, Property, PartOf, Material, Restriction, get_pset, get_psets
 
 
 cwd = os.path.dirname(os.path.realpath(__file__))
@@ -90,7 +90,7 @@ class Ids:
         return ids_dict
 
     def parse(self, data):
-        for attribute in ["title", "copyright", "version", "description", "author"]:
+        for attribute in ["title", "copyright", "version", "description", "author", "date", "purpose", "milestone"]:
             value = data["info"].get(attribute)
             if value:
                 self.info[attribute] = value
@@ -113,6 +113,8 @@ class Ids:
         return get_schema().is_valid(filepath)
 
     def validate(self, ifc_file, filter_version=False):
+        get_pset.cache_clear()
+        get_psets.cache_clear()
         for specification in self.specifications:
             specification.reset_status()
             specification.validate(ifc_file, filter_version=filter_version)
@@ -222,7 +224,11 @@ class Specification:
             self.applicable_entities.append(element)
             for facet in self.requirements:
                 result = facet(element)
-                if not bool(result):
+                if self.maxOccurs == 0:
+                    prohibited = bool(result)                    
+                else:
+                    prohibited = not bool(result)
+                if prohibited:
                     self.failed_entities.add(element)
                     facet.failed_entities.append(element)
                     facet.failed_reasons.append(str(result))
@@ -247,9 +253,7 @@ class Specification:
             if self.failed_entities:
                 self.status = False
         elif self.maxOccurs == 0:
-            if (len(self.applicable_entities)) > 0 and len(self.requirements) == 0:
-                self.status = False
-            if (len(self.applicable_entities)) > 0 and (len(self.applicable_entities) - len(self.failed_entities)) > 0:
+            if (len(self.applicable_entities)) > 0:
                 self.status = False
 
     def get_usage(self):

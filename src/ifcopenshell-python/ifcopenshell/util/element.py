@@ -19,7 +19,7 @@
 import ifcopenshell
 
 
-def get_pset(element, name, prop=None, should_inherit=True):
+def get_pset(element, name, prop=None, should_inherit=True, verbose=False):
     """Retrieve a single property set or single property
 
     This is more efficient than ifcopenshell.util.element.get_psets if you know
@@ -64,7 +64,7 @@ def get_pset(element, name, prop=None, should_inherit=True):
         if should_inherit:
             element_type = ifcopenshell.util.element.get_type(element)
             if element_type:
-                type_pset = get_pset(element_type, name, prop, should_inherit=False)
+                type_pset = get_pset(element_type, name, prop, should_inherit=False, verbose=verbose)
         for relationship in element.IsDefinedBy:
             if relationship.is_a("IfcRelDefinesByProperties"):
                 definition = relationship.RelatingPropertyDefinition
@@ -77,19 +77,19 @@ def get_pset(element, name, prop=None, should_inherit=True):
 
     if not prop:
         if type_pset:
-            occurrence_pset = get_property_definition(pset)
+            occurrence_pset = get_property_definition(pset, verbose=verbose)
             if occurrence_pset:
                 type_pset.update(occurrence_pset)
             return type_pset
-        return get_property_definition(pset)
+        return get_property_definition(pset, verbose=verbose)
 
-    value = get_property_definition(pset, prop)
+    value = get_property_definition(pset, prop=prop, verbose=verbose)
     if value is None and type_pset is not None:
         return type_pset
     return value
 
 
-def get_psets(element, psets_only=False, qtos_only=False, should_inherit=True):
+def get_psets(element, psets_only=False, qtos_only=False, should_inherit=True, verbose=False):
     """Retrieve property sets, their related properties' names & values and ids.
 
     If should_inherit is true, the pset "id" only refers to the ID of the
@@ -122,12 +122,12 @@ def get_psets(element, psets_only=False, qtos_only=False, should_inherit=True):
                 continue
             if qtos_only and not definition.is_a("IfcElementQuantity"):
                 continue
-            psets[definition.Name] = get_property_definition(definition)
+            psets[definition.Name] = get_property_definition(definition, verbose=verbose)
     elif element.is_a("IfcMaterialDefinition") or element.is_a("IfcProfileDef"):
         for definition in getattr(element, "HasProperties", None) or []:
             if qtos_only:
                 continue
-            psets[definition.Name] = get_property_definition(definition)
+            psets[definition.Name] = get_property_definition(definition, verbose=verbose)
     elif hasattr(element, "IsDefinedBy"):
         if should_inherit:
             element_type = ifcopenshell.util.element.get_type(element)
@@ -140,21 +140,21 @@ def get_psets(element, psets_only=False, qtos_only=False, should_inherit=True):
                     continue
                 if qtos_only and not definition.is_a("IfcElementQuantity"):
                     continue
-                psets.setdefault(definition.Name, {}).update(get_property_definition(definition))
+                psets.setdefault(definition.Name, {}).update(get_property_definition(definition, verbose=verbose))
     return psets
 
 
-def get_property_definition(definition, prop=None):
+def get_property_definition(definition, prop=None, verbose=False):
     if not definition:
         return
 
     if prop:
         if definition.is_a("IfcElementQuantity"):
-            return get_quantity(definition.Quantities, prop)
+            return get_quantity(definition.Quantities, prop, verbose=verbose)
         elif definition.is_a("IfcPropertySet"):
-            return get_property(definition.HasProperties, prop)
+            return get_property(definition.HasProperties, prop, verbose=verbose)
         elif definition.is_a("IfcMaterialProperties") or definition.is_a("IfcProfileProperties"):
-            return get_property(definition.Properties, prop)
+            return get_property(definition.Properties, prop, verbose=verbose)
         else:
             # Entity introduced in IFC4
             # definition.is_a('IfcPreDefinedPropertySet'):
@@ -166,11 +166,11 @@ def get_property_definition(definition, prop=None):
 
     props = {}
     if definition.is_a("IfcElementQuantity"):
-        props.update(get_quantities(definition.Quantities))
+        props.update(get_quantities(definition.Quantities, verbose=verbose))
     elif definition.is_a("IfcPropertySet"):
-        props.update(get_properties(definition.HasProperties))
+        props.update(get_properties(definition.HasProperties, verbose=verbose))
     elif definition.is_a("IfcMaterialProperties") or definition.is_a("IfcProfileProperties"):
-        props.update(get_properties(definition.Properties))
+        props.update(get_properties(definition.Properties, verbose=verbose))
     else:
         # Entity introduced in IFC4
         # definition.is_a('IfcPreDefinedPropertySet'):
@@ -181,76 +181,105 @@ def get_property_definition(definition, prop=None):
     return props
 
 
-def get_quantity(quantities, name):
+def get_quantity(quantities, name, verbose=False):
     for quantity in quantities or []:
         if quantity.Name != name:
             continue
         if quantity.is_a("IfcPhysicalSimpleQuantity"):
-            return quantity[3]
-            results[quantity.Name] = quantity[3]
+            result = quantity[3]
         elif quantity.is_a("IfcPhysicalComplexQuantity"):
             data = {k: v for k, v in quantity.get_info().items() if v is not None and k != "Name"}
             data["properties"] = get_quantities(quantity.HasQuantities)
             del data["HasQuantities"]
-            return data
+            result = data
+        if verbose:
+            result = {"id": quantity.id(), "class": quantity.is_a(), "value": result}
+        return result
 
 
-def get_quantities(quantities, name=None):
+def get_quantities(quantities, verbose=False):
     results = {}
     for quantity in quantities or []:
         if quantity.is_a("IfcPhysicalSimpleQuantity"):
             results[quantity.Name] = quantity[3]
+            if verbose:
+                results[quantity.Name] = {
+                    "id": quantity.id(),
+                    "class": quantity.is_a(),
+                    "value": results[quantity.Name],
+                }
         elif quantity.is_a("IfcPhysicalComplexQuantity"):
             data = {k: v for k, v in quantity.get_info().items() if v is not None and k != "Name"}
             data["properties"] = get_quantities(quantity.HasQuantities)
             del data["HasQuantities"]
             results[quantity.Name] = data
+            if verbose:
+                results[quantity.Name] = {
+                    "id": quantity.id(),
+                    "class": quantity.is_a(),
+                    "value": results[quantity.Name],
+                }
     return results
 
 
-def get_property(properties, name):
+def get_property(properties, name, verbose=False):
     for prop in properties or []:
         if prop.Name != name:
             continue
         if prop.is_a("IfcPropertySingleValue"):
-            return prop.NominalValue.wrappedValue if prop.NominalValue else None
+            result = prop.NominalValue.wrappedValue if prop.NominalValue else None
         elif prop.is_a("IfcPropertyEnumeratedValue"):
-            return [v.wrappedValue for v in prop.EnumerationValues] if prop.EnumerationValues else None
+            result = [v.wrappedValue for v in prop.EnumerationValues] if prop.EnumerationValues else None
         elif prop.is_a("IfcPropertyListValue"):
-            return [v.wrappedValue for v in prop.ListValues] or None
+            result = [v.wrappedValue for v in prop.ListValues] or None
         elif prop.is_a("IfcPropertyBoundedValue"):
             data = prop.get_info()
             del data["Unit"]
-            return data
+            result = data
         elif prop.is_a("IfcPropertyTableValue"):
-            return prop.get_info()
+            result = prop.get_info()
         elif prop.is_a("IfcComplexProperty"):
             data = {k: v for k, v in prop.get_info().items() if v is not None and k != "Name"}
             data["properties"] = get_properties(prop.HasProperties)
             del data["HasProperties"]
-            return data
+            result = data
+        if verbose:
+            result = {"id": prop.id(), "class": prop.is_a(), "value": result}
+        return result
 
 
-def get_properties(properties):
+def get_properties(properties, verbose=False):
     results = {}
     for prop in properties or []:
         if prop.is_a("IfcPropertySingleValue"):
             results[prop.Name] = prop.NominalValue.wrappedValue if prop.NominalValue else None
+            if verbose:
+                results[prop.Name] = {"id": prop.id(), "class": prop.is_a(), "value": results[prop.Name]}
         elif prop.is_a("IfcPropertyEnumeratedValue"):
             results[prop.Name] = [v.wrappedValue for v in prop.EnumerationValues] if prop.EnumerationValues else None
+            if verbose:
+                results[prop.Name] = {"id": prop.id(), "class": prop.is_a(), "value": results[prop.Name]}
         elif prop.is_a("IfcPropertyListValue"):
             results[prop.Name] = [v.wrappedValue for v in prop.ListValues] or None
+            if verbose:
+                results[prop.Name] = {"id": prop.id(), "class": prop.is_a(), "value": results[prop.Name]}
         elif prop.is_a("IfcPropertyBoundedValue"):
             data = prop.get_info()
             del data["Unit"]
             results[prop.Name] = data
+            if verbose:
+                results[prop.Name] = {"id": prop.id(), "class": prop.is_a(), "value": results[prop.Name]}
         elif prop.is_a("IfcPropertyTableValue"):
             results[prop.Name] = prop.get_info()
+            if verbose:
+                results[prop.Name] = {"id": prop.id(), "class": prop.is_a(), "value": results[prop.Name]}
         elif prop.is_a("IfcComplexProperty"):
             data = {k: v for k, v in prop.get_info().items() if v is not None and k != "Name"}
             data["properties"] = get_properties(prop.HasProperties)
             del data["HasProperties"]
             results[prop.Name] = data
+            if verbose:
+                results[prop.Name] = {"id": prop.id(), "class": prop.is_a(), "value": results[prop.Name]}
     return results
 
 
@@ -406,6 +435,8 @@ def get_materials(element, should_inherit=True):
         return [p.Material for p in material.MaterialProfiles]
     elif material.is_a("IfcMaterialConstituentSet"):
         return [c.Material for c in material.MaterialConstituents]
+    elif material.is_a("IfcMaterialList"):
+        return list(material.Materials)
 
 
 def get_styles(element):
@@ -577,7 +608,7 @@ def get_elements_by_layer(ifc_file, layer):
     :rtype: list[ifcopenshell.entity_instance.entity_instance]
     """
     results = set()
-    for item in layer.AssignedItems:
+    for item in layer.AssignedItems or []:
         if item.is_a("IfcShapeRepresentation"):
             results.update(get_elements_by_representation(ifc_file, item))
         elif item.is_a("IfcRepresentationItem"):
@@ -660,6 +691,9 @@ def get_container(element, should_get_direct=False, ifc_class=None):
         aggregate = get_aggregate(element)
         if aggregate:
             return get_container(aggregate, should_get_direct)
+        nest = get_nest(element)
+        if nest:
+            return get_container(nest, should_get_direct)
         if hasattr(element, "ContainedInStructure") and element.ContainedInStructure:
             container = element.ContainedInStructure[0].RelatingStructure
             if not ifc_class:
@@ -759,7 +793,7 @@ def get_grouped_by(element):
 
 def get_aggregate(element):
     """
-    Retrieves the aggregate of an element.
+    Retrieves the aggregate parent of an element.
 
     :param element: The IFC element
     :return: The aggregate of the element
@@ -772,6 +806,23 @@ def get_aggregate(element):
     """
     if hasattr(element, "Decomposes") and element.Decomposes:
         return element.Decomposes[0].RelatingObject
+
+
+def get_nest(element):
+    """
+    Retrieves the nest parent of an element.
+
+    :param element: The IFC element
+    :return: The nested whole of the element
+
+    Example:
+
+    .. code:: python
+    element = file.by_type("IfcBeam")[0]
+    aggregate = ifcopenshell.util.element.get_nest(element)
+    """
+    if hasattr(element, "Nests") and element.Nests:
+        return element.Nests[0].RelatingObject
 
 
 def get_parts(element):
@@ -918,7 +969,7 @@ def remove_deep2(ifc_file, element, also_consider=[], do_not_delete=[]):
     :param element: The starting element that defines the subgraph
     :type element: ifcopenshell.entity_instance.entity_instance
     """
-    ifc_file.batch()
+    # ifc_file.batch()
     to_delete = set()
     subgraph = list(ifc_file.traverse(element, breadth_first=True))
     subgraph.extend(also_consider)
@@ -953,7 +1004,7 @@ def remove_deep2(ifc_file, element, also_consider=[], do_not_delete=[]):
     # We delete elements from subgraph in reverse order to allow batching to work
     for subelement in filter(lambda e: e in to_delete, subgraph[::-1]):
         ifc_file.remove(subelement)
-    ifc_file.unbatch()
+    # ifc_file.unbatch()
 
 
 def copy(ifc_file, element):
@@ -1022,7 +1073,13 @@ def copy_deep(ifc_file, element, exclude=None, exclude_callback=None, copied_ent
             elif exclude_callback and exclude_callback(attribute):
                 pass
             else:
-                attribute = copy_deep(ifc_file, attribute, exclude=exclude, copied_entities=copied_entities)
+                attribute = copy_deep(
+                    ifc_file,
+                    attribute,
+                    exclude=exclude,
+                    copied_entities=copied_entities,
+                    exclude_callback=exclude_callback,
+                )
         elif isinstance(attribute, tuple) and attribute and isinstance(attribute[0], ifcopenshell.entity_instance):
             if exclude and any([attribute[0].is_a(e) for e in exclude]):
                 pass

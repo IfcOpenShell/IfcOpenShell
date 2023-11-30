@@ -35,4 +35,5 @@ class TestAssignProduct(test.bootstrap.IFC4):
         label = self.file.createIfcAnnotation()
         ifcopenshell.api.run("drawing.assign_product", self.file, relating_product=wall, related_object=label)
         ifcopenshell.api.run("drawing.assign_product", self.file, relating_product=wall, related_object=label)
+        assert len(wall.ReferencedBy) == 1
         assert wall.ReferencedBy[0].RelatedObjects == (label,)

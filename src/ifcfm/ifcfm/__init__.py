@@ -36,32 +36,32 @@ except:
     pass  # No ODF support
 
 
+try:
+    import pandas as pd
+except:
+    pass  # No Pandas support
+
+
 class Parser:
     def __init__(self, preset="basic"):
         self.file = None
         self.preset = preset
         self.categories = {}
-        self.get_category_elements = {}
-        self.get_element_data = {}
+        self.config = None
         self.get_custom_element_data = {}
         self.duplicate_keys = []
 
         if isinstance(preset, str):
             module = importlib.import_module(f"ifcfm.{preset}")
-            self.get_category_elements = getattr(module, "get_category_elements")
-            self.get_element_data = getattr(module, "get_element_data")
-        elif isinstance(preset, dict):
-            self.get_category_elements = preset["get_category_elements"]
-            self.get_element_data = preset["get_element_data"]
+            self.config = getattr(module, "config")
         else:
-            self.get_category_elements = getattr(preset, "get_category_elements")
-            self.get_element_data = getattr(preset, "get_element_data")
+            self.config = preset
 
-    def parse(self, ifc_file):
-        for category_name, get_category_elements in self.get_category_elements.items():
+    def parse(self, ifc_file, name=None):
+        for category_name, category_config in self.config["categories"].items():
             self.categories.setdefault(category_name, {})
-            for element in get_category_elements(ifc_file):
-                get_element_data = self.get_element_data[category_name]
+            for element in category_config["get_category_elements"](ifc_file):
+                get_element_data = category_config["get_element_data"]
 
                 if isinstance(get_element_data, dict):
                     data = {}
@@ -71,7 +71,7 @@ class Parser:
                     data = get_element_data(ifc_file, element) or {}
 
                 get_custom_element_data = self.get_custom_element_data.get(category_name, lambda x, y: None)
-                if isinstance(get_element_data, dict):
+                if isinstance(get_custom_element_data, dict):
                     custom_data = {}
                     for key, query in get_custom_element_data.items():
                         custom_data[key] = ifcopenshell.util.selector.get_element_value(element, query)
@@ -81,11 +81,37 @@ class Parser:
                 data.update(custom_data)
 
                 if data:
-                    key = data["key"]
-                    del data["key"]
+                    key = "-".join([str(data[k]) for k in category_config["keys"]])
                     if key in self.categories[category_name]:
                         self.duplicate_keys.append((self.categories[category_name][key], data))
                     self.categories[category_name][key] = data
+
+    def federate(self, paths):
+        for path in paths:
+            spreadsheet = pd.ExcelFile(path)
+            sheet_names = spreadsheet.sheet_names
+
+            for category_name, category_config in self.config["categories"].items():
+                self.categories.setdefault(category_name, {})
+                if category_name not in sheet_names:
+                    continue
+
+                self.categories.setdefault(category_name, {})
+                df = pd.read_excel(spreadsheet, sheet_name=category_name, keep_default_na=False)
+                for _, row in df.iterrows():
+                    key = "-".join([str(row[k]) for k in category_config["keys"]])
+                    if key in self.categories[category_name]:
+                        continue
+                    self.categories[category_name][key] = row.to_dict()
+
+    def exclude_categories(self, names):
+        for name in names:
+            if name in self.config["categories"]:
+                del self.config["categories"][name]
+
+    def exclude_element_data(self, category, names):
+        headers = self.config["categories"][category]["headers"]
+        self.config["categories"][category]["headers"] = [h for h in headers if h not in names]
 
 
 class Writer:
@@ -99,14 +125,15 @@ class Writer:
         else:
             self.config = getattr(self.parser.preset, "config")
 
-    def write(self, null="N/A", empty="-", bool_true="YES", bool_false="NO"):
+    def write(self, null="N/A", empty="-", bool_true="YES", bool_false="NO", list_separator=", "):
         self.categories = {}
         null = self.config.get("null", null)
         empty = self.config.get("empty", empty)
         bool_true = self.config.get("bool_true", bool_true)
         bool_false = self.config.get("bool_false", bool_false)
-        for category, data in self.parser.categories.items():
-            headers = self.config.get("categories", {}).get(category, {}).get("headers", [])
+        for category, config in self.config["categories"].items():
+            data = self.parser.categories.get(category, None)
+            headers = config["headers"]
 
             if not data:
                 self.categories[category] = {"headers": headers, "rows": []}
@@ -128,6 +155,8 @@ class Writer:
                         value = bool_true
                     elif value is False:
                         value = bool_false
+                    elif isinstance(value, (list, tuple)):
+                        value = list_separator.join([str(v) for v in value])
                     processed_row.append(value)
                 rows.append(processed_row)
 
@@ -138,7 +167,7 @@ class Writer:
                     if isinstance(value, str):
                         convert = lambda text: int(text) if text.isdigit() else text.lower()
                         return [convert(c) for c in re.split("([0-9]+)", value)]
-                    return value
+                    return [str(value)]
 
                 # Sort least important keys first, then more important keys.
                 # https://stackoverflow.com/questions/11476371/sort-by-multiple-keys-using-different-orderings
@@ -229,9 +258,18 @@ class Writer:
                         cell_format = "n"
                     else:
                         cell_format = colours[c - 1]  # Adjusted the indexing
-                    cell = worksheet.cell(row=r, column=c, value=col)
+                    cell = worksheet.cell(row=r, column=c, value=str(col))
                     cell.fill = cell_formats[cell_format]
                     c += 1
                 r += 1
 
+        if "Sheet" in workbook.sheetnames and len(workbook.sheetnames) > 1:
+            workbook.remove(workbook["Sheet"])
+
         workbook.save(output)
+
+    def write_pd(self):
+        results = {}
+        for category, data in self.categories.items():
+            results[category] = pd.DataFrame(data["rows"], columns=data["headers"])
+        return results

@@ -9,12 +9,14 @@ authors = [
 ]
 description = "Python bindings, utility functions, and high-level API for IfcOpenShell"
 readme = "README.md"
+requires-python = ">=3.6,<3.12"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
 ]
 [project.optional-dependencies]
 geometry = ["mathutils"]
+date = ["isodate"]
 [project.urls]
 "Homepage" = "http://ifcopenshell.org"
 "Bug Tracker" = "https://github.com/ifcopenshell/ifcopenshell/issues"

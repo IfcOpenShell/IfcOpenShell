@@ -37,6 +37,7 @@ classes = (
     operator.LoadProjectElements,
     operator.NewProject,
     operator.RefreshLibrary,
+    operator.RevertProject,
     operator.RewindLibrary,
     operator.SaveLibraryFile,
     operator.SelectLibraryFile,

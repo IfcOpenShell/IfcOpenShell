@@ -50,7 +50,10 @@ class Usecase:
         self.file.remove(self.settings["metric"])
         for rel in self.file.by_type("IfcRelAssociatesConstraint"):
             if not rel.RelatingConstraint:
+                history = rel.OwnerHistory
                 self.file.remove(rel)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(self.file, history)
         for resource_rel in self.file.by_type("IfcResourceConstraintRelationship"):
             if not resource_rel.RelatingConstraint:
                 self.file.remove(resource_rel)

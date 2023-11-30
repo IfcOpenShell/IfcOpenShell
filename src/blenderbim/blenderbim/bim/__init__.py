@@ -46,7 +46,6 @@ modules = {
     "aggregate": None,
     "geometry": None,
     "fm": None,
-    "cobie": None,
     "resource": None,
     "cost": None,
     "sequence": None,
@@ -79,6 +78,7 @@ modules = {
     "augin": None,
     "debug": None,
     "ifcgit": None,
+    "covering": None,
     # Uncomment this line to enable loading of the demo module. Happy hacking!
     # The name "demo" must correlate to a folder name in `bim/module/`.
     # "demo": None,
@@ -122,29 +122,38 @@ classes = [
     prop.BIMCollectionProperties,
     prop.BIMMaterialProperties,
     prop.BIMMeshProperties,
+    prop.BIMFacet,
+    prop.BIMFilterGroup,
     ui.BIM_UL_generic,
     ui.BIM_UL_topics,
     ui.BIM_ADDON_preferences,
-    # Project overview
-    ui.BIM_PT_project_info,
-    ui.BIM_PT_project_setup,
-    ui.BIM_PT_geometry,
-    ui.BIM_PT_tab_grouping_and_filtering,
     # Tabs panel
     ui.BIM_PT_tabs,
+    # Project overview
+    ui.BIM_PT_tab_project_info,
+    ui.BIM_PT_tab_project_setup,
+    ui.BIM_PT_tab_geometry,
+    ui.BIM_PT_tab_stakeholders,
+    ui.BIM_PT_tab_grouping_and_filtering,
     # Object information
     ui.BIM_PT_tab_object_metadata,
     ui.BIM_PT_tab_misc,
     # Geometry and materials
+    ui.BIM_PT_tab_placement,
     ui.BIM_PT_tab_representations,
     ui.BIM_PT_tab_geometric_relationships,
     ui.BIM_PT_tab_parametric_geometry,
+    ui.BIM_PT_tab_profiles,
     ui.BIM_PT_tab_materials,
     ui.BIM_PT_tab_styles,
     # Drawings and documents
+    ui.BIM_PT_tab_sheets,
+    ui.BIM_PT_tab_drawings,
+    ui.BIM_PT_tab_schedules,
+    ui.BIM_PT_tab_references,
     # Services and systems
     ui.BIM_PT_tab_services,
-    ui.BIM_PT_tab_services_object,
+    ui.BIM_PT_tab_zones,
     # Structural analysis
     ui.BIM_PT_tab_structural,
     # Construction scheduling
@@ -212,8 +221,8 @@ def register():
 
     wm = bpy.context.window_manager
     if wm.keyconfigs.addon:
-        km = wm.keyconfigs.addon.keymaps.new(name='Window', space_type='EMPTY')
-        kmi = km.keymap_items.new('bim.switch_tab', 'TAB', 'PRESS', ctrl=True)
+        km = wm.keyconfigs.addon.keymaps.new(name="Window", space_type="EMPTY")
+        kmi = km.keymap_items.new("bim.switch_tab", "TAB", "PRESS", ctrl=True)
         addon_keymaps.append((km, kmi))
 
     global icons
@@ -231,11 +240,13 @@ def register():
     global last_commit_hash
     try:
         import git
+
         path = Path(__file__).resolve().parent
         repo = git.Repo(str(path), search_parent_directories=True)
         last_commit_hash = repo.head.object.hexsha
     except:
         pass
+
 
 def unregister():
     global icons
@@ -280,6 +291,7 @@ def unregister():
         "SCENE_PT_rigid_body_world",
         "SCENE_PT_audio",
         "SCENE_PT_keying_sets",
+        "SCENE_PT_simulation",
         "SCENE_PT_custom_props",
     ]:
         try:

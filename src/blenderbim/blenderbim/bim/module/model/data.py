@@ -53,6 +53,7 @@ class AuthoringData:
         cls.data["ifc_element_type"] = cls.ifc_element_type
         cls.data["ifc_classes"] = cls.ifc_classes()
         cls.data["relating_type_id"] = cls.relating_type_id()  # only after .ifc_classes()
+        cls.data["predefined_type"] = cls.predefined_type()
         cls.data["type_class"] = cls.type_class()
 
         # only after .type_class()
@@ -212,6 +213,7 @@ class AuthoringData:
         if bpy.context.active_object:
             representation = tool.Geometry.get_active_representation(bpy.context.active_object)
             if representation and representation.is_a("IfcShapeRepresentation"):
+                representation = tool.Geometry.resolve_mapped_representation(representation)
                 return representation.RepresentationType
 
     @classmethod
@@ -248,6 +250,17 @@ class AuthoringData:
         return []
 
     @classmethod
+    def predefined_type(cls):
+        relating_type_id = cls.props.relating_type_id
+        if not relating_type_id:
+            return
+        relating_type = tool.Ifc.get().by_id(int(relating_type_id))
+        if not hasattr(relating_type, "PredefinedType"):
+            return
+        predefined_type = relating_type.PredefinedType
+        return predefined_type
+
+    @classmethod
     def selected_material_usages(cls):
         selected_usages = {}
         for obj in bpy.context.selected_objects:
@@ -257,7 +270,9 @@ class AuthoringData:
             usage = tool.Model.get_usage_type(element)
             if not usage:
                 representation = tool.Geometry.get_active_representation(obj)
-                if representation and representation.RepresentationType == "SweptSolid":
+                # besides IfcRepresentation it could be IfcCurveBoundedPlane
+                # if IfcRelSpaceBoundary selected
+                if representation and getattr(representation, "RepresentationType", None) == "SweptSolid":
                     usage = "SWEPTSOLID"
                 else:
                     continue
@@ -303,6 +318,7 @@ class StairData:
         if not cls.data["pset_data"]:
             return
         cls.data["general_params"] = cls.general_params()
+        cls.data["calculated_params"] = cls.calculated_params()
 
     @classmethod
     def pset_data(cls):
@@ -318,6 +334,10 @@ class StairData:
             prop_readable_name, prop_value = get_prop_from_data(props, data, prop_name)
             general_params[prop_readable_name] = prop_value
         return general_params
+
+    @classmethod
+    def calculated_params(cls):
+        return tool.Model.get_active_stair_calculated_params(cls.data["pset_data"]["data_dict"])
 
 
 class SverchokData:
@@ -345,7 +365,7 @@ class SverchokData:
 
 
 def get_prop_from_data(props, data, prop_name):
-    prop_value = data[prop_name]
+    prop_value = data.get(prop_name, tool.Blender.get_blender_prop_default_value(props, prop_name))
     prop_value = round(prop_value, 5) if type(prop_value) is float else prop_value
     prop_readable_name = props.bl_rna.properties[prop_name].name
     return prop_readable_name, prop_value

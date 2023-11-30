@@ -1,17 +1,14 @@
-Let's learn IfcOpenShell
-========================
+Let's learn IfcOpenShell!
+=========================
 
-IfcOpenShell is a suite of developer libraries and utilities to manipulate OpenBIM data.
-
-.. note::
-
-   This documentation is incomplete. Would you like to help write more? `Get in touch! <https://osarch.org/chat/>`__
+.. image:: ifcopenshell/images/intro.png
 
 .. toctree::
    :hidden:
    :maxdepth: 1
    :caption: Main:
 
+   introduction
    ifcopenshell
    ifcopenshell-python
    ifcconvert
@@ -22,16 +19,19 @@ IfcOpenShell is a suite of developer libraries and utilities to manipulate OpenB
    :maxdepth: 1
    :caption: Utilities:
 
+   bcf
    bimserver-plugin
    bimtester
+   bsdd
    ifc2ca
    ifc4d
    ifc5d
    ifccityjson
    ifcclash
-   ifccobie
    ifccsv
    ifcdiff
+   ifcfm
+   ifcmax
    ifcpatch
    ifcsverchok
    ifctester
@@ -44,11 +44,4 @@ IfcOpenShell is a suite of developer libraries and utilities to manipulate OpenB
 
    C++ API Reference <https://ifcopenshell.github.io/docs/rst_files/library_root.html>
    Python API Reference <autoapi/index>
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   indices

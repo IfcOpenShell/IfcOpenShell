@@ -137,7 +137,7 @@ class RemoveOpening(bpy.types.Operator, tool.Ifc.Operator):
 
         if opening_obj:
             opening_obj.name = "/".join(opening_obj.name.split("/")[1:])
-            IfcStore.unlink_element(obj=opening_obj)
+            tool.Ifc.unlink(obj=opening_obj)
 
         ifcopenshell.api.run("void.remove_opening", tool.Ifc.get(), opening=opening)
 
@@ -147,14 +147,12 @@ class RemoveOpening(bpy.types.Operator, tool.Ifc.Operator):
         for building_element in decomposed_building_elements:
             building_obj = tool.Ifc.get_object(building_element)
             if building_obj and building_obj.data:
-                body = ifcopenshell.util.representation.get_representation(
-                    building_element, "Model", "Body", "MODEL_VIEW"
-                )
+                representation = tool.Geometry.get_active_representation(building_obj)
                 blenderbim.core.geometry.switch_representation(
                     tool.Ifc,
                     tool.Geometry,
                     obj=building_obj,
-                    representation=body,
+                    representation=representation,
                     should_reload=True,
                     is_global=True,
                     should_sync_changes_first=False,
@@ -219,4 +217,43 @@ class SelectDecomposition(bpy.types.Operator):
                 subobj = tool.Ifc.get_object(subelement)
                 if subobj:
                     subobj.select_set(True)
+        return {"FINISHED"}
+
+
+class BooleansMarkAsManual(bpy.types.Operator):
+    bl_idname = "bim.booleans_mark_as_manual"
+    bl_label = "Mark Booleans as Manual"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = (
+        "\nMark all booleans in object's current representations as manual.\n"
+        "Manual booleans will be preserved until they are removed explicitly"
+    )
+    mark_as_manual: bpy.props.BoolProperty(name="Mark as Manual", default=True)
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        if (
+            obj
+            and tool.Ifc.get_entity(obj)
+            and hasattr(obj.data, "BIMMeshProperties")
+            and obj.data.BIMMeshProperties.ifc_definition_id
+        ):
+            return True
+        cls.poll_message_set("Need to select IFC element with representation")
+        return False
+
+    def execute(self, context):
+        obj = context.active_object
+        element = tool.Ifc.get_entity(obj)
+        representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+        booleans = tool.Model.get_booleans(representation=representation)
+
+        if self.mark_as_manual:
+            tool.Model.mark_manual_booleans(element, booleans)
+        else:
+            tool.Model.unmark_manual_booleans(element, booleans)
+
+        self.report({"INFO"}, f"{len(booleans)} were marked as {'manual' if self.mark_as_manual else 'automatic'}")
+        blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}

@@ -18,6 +18,7 @@
 
 import re
 import bpy
+import bmesh
 import ifcopenshell.util.element
 import blenderbim.core.tool
 import blenderbim.tool as tool
@@ -61,7 +62,7 @@ class Loader(blenderbim.core.tool.Loader):
 
     @classmethod
     def get_name(cls, element):
-        return "{}/{}".format(element.is_a(), element.Name)
+        return "{}/{}".format(element.is_a(), getattr(element, "Name", "None"))
 
     @classmethod
     def link_mesh(cls, shape, mesh):
@@ -80,6 +81,7 @@ class Loader(blenderbim.core.tool.Loader):
         if transparency := surface_style.get("Transparency", None):
             alpha = 1 - transparency
         blender_material.diffuse_color = surface_style["SurfaceColour"][:3] + (alpha,)
+        blender_material.use_nodes = False
 
     @classmethod
     def restart_material_node_tree(cls, blender_material):
@@ -129,6 +131,22 @@ class Loader(blenderbim.core.tool.Loader):
         else:
             surface_style["SpecularHighlight"] = None
         return surface_style
+
+    @classmethod
+    def surface_texture_to_dict(cls, surface_texture):
+        if isinstance(surface_texture, dict):
+            return surface_texture
+        mappings = surface_texture.IsMappedBy or []
+        surface_texture = surface_texture.get_info()
+        uv_mode = None
+        if mappings:
+            coordinates = mappings[0]
+            if coordinates.is_a("IfcTextureCoordinateGenerator") and coordinates.Mode == "COORD":
+                uv_mode = "Generated"
+            elif coordinates.is_a("IfcTextureCoordinateGenerator") and coordinates.Mode == "COORD-EYE":
+                uv_mode = "Camera"
+        surface_texture["uv_mode"] = uv_mode or "UV"
+        return surface_texture
 
     @classmethod
     def create_surface_style_rendering(cls, blender_material, surface_style):
@@ -191,11 +209,15 @@ class Loader(blenderbim.core.tool.Loader):
     @classmethod
     def create_surface_style_with_textures(cls, blender_material, rendering_style, texture_style):
         """supposed to be called after `create_surface_style_rendering`"""
-        if not isinstance(texture_style, list):
-            textures = [t.get_info() for t in texture_style.Textures]
+        if not isinstance(texture_style, list):  # assume it's IfcSurfaceStyleWithTextures
+            textures = [cls.surface_texture_to_dict(t) for t in texture_style.Textures]
         else:
             textures = texture_style
         rendering_style = cls.surface_style_to_dict(rendering_style)
+
+        # `rendering_style` is a dict and `textures` is a list of dicts
+        # containing ifc data, that way method can be called by just providing those dictionaries
+        # without actually changing IFC data
 
         reflectance_method = rendering_style["ReflectanceMethod"]
         if reflectance_method not in ("PHYSICAL", "NOTDEFINED", "FLAT"):
@@ -228,6 +250,16 @@ class Loader(blenderbim.core.tool.Loader):
 
             if reflectance_method in ["PHYSICAL", "NOTDEFINED"]:
                 bsdf = tool.Blender.get_material_node(blender_material, "BSDF_PRINCIPLED")
+
+                SUPPORTED_PBR_TEXTURES = ("NORMAL", "EMISSIVE", "METALLICROUGHNESS", "OCCLUSION", "DIFFUSE")
+                if mode not in SUPPORTED_PBR_TEXTURES:
+                    print(
+                        f"WARNING. Texture with {mode} Mode is not supported for style with PHYSICAL reflectance method.\n"
+                        f"Supported types are: {', '.join(SUPPORTED_PBR_TEXTURES)}\n"
+                        f"Texture by path {image_url} will be skipped."
+                    )
+                    continue
+
                 if mode == "NORMAL":
                     # add normal map node
                     normalmap = blender_material.node_tree.nodes.new(type="ShaderNodeNormalMap")
@@ -316,6 +348,10 @@ class Loader(blenderbim.core.tool.Loader):
             elif reflectance_method == "FLAT":
                 bsdf = tool.Blender.get_material_node(blender_material, "MIX_SHADER")
                 if mode != "EMISSIVE":
+                    print(
+                        "WARNING. Only EMISSIVE Mode textures are supported for style with FLAT reflectance method.\n"
+                        f"{mode} Mode texture by path {image_url} will be skipped."
+                    )
                     continue
 
                 # remove RGB node from `create_surface_style_rendering`
@@ -333,22 +369,68 @@ class Loader(blenderbim.core.tool.Loader):
             # extend the image by repeating pixels on its edges if RepeatS or RepeatT is False
             repeat_s = texture.get("RepeatS", True)
             repeat_t = texture.get("RepeatT", True)
-            if node and (not repeat_s or not repeat_t):
+            if not repeat_s or not repeat_t:
                 node.extension = "EXTEND"
 
-            # TODO: add support for texture data not ifc elements
             # IsMappedBy could only get with the entity_instance for IFC4/IFC4x3
-            if isinstance(texture, dict):
-                texture = tool.Ifc.get().by_id(texture['id'])
-            if node and getattr(texture, "IsMappedBy", None):
-                coordinates = texture.IsMappedBy[0]
-                coord = blender_material.node_tree.nodes.new(type="ShaderNodeTexCoord")
-                coord.location = node.location - Vector((200, 0))
-                if coordinates.is_a("IfcTextureCoordinateGenerator") and coordinates.Mode == "COORD":
-                    blender_material.node_tree.links.new(coord.outputs["Generated"], node.inputs["Vector"])
-                elif coordinates.is_a("IfcTextureCoordinateGenerator") and coordinates.Mode == "COORD-EYE":
-                    blender_material.node_tree.links.new(coord.outputs["Camera"], node.inputs["Vector"])
-                else:
-                    blender_material.node_tree.links.new(coord.outputs["UV"], node.inputs["Vector"])
-                    # save the TextureMap id for set uv when set material to mesh
-                    blender_material.BIMMaterialProperties.ifc_coordinate_id = coordinates.id()
+            coord = blender_material.node_tree.nodes.new(type="ShaderNodeTexCoord")
+            coord.location = node.location - Vector((200, 0))
+            if texture["uv_mode"] == "Generated":
+                blender_material.node_tree.links.new(coord.outputs["Generated"], node.inputs["Vector"])
+            elif texture["uv_mode"] == "Camera":
+                blender_material.node_tree.links.new(coord.outputs["Camera"], node.inputs["Vector"])
+            else:  # uv_mode == UV
+                blender_material.node_tree.links.new(coord.outputs["UV"], node.inputs["Vector"])
+
+    @classmethod
+    def load_indexed_texture_map(cls, coordinates, mesh):
+        # Get a BMesh representation
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+        # constistent naming with how Blender does it
+        uv_layer = bm.loops.layers.uv.active or bm.loops.layers.uv.new("UVMap")
+
+        # remap the faceset CoordList index to the vertices in blender mesh
+        coordinates_remap = []
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        faceset = coordinates.MappedTo
+        for co in faceset.Coordinates.CoordList:
+            co = Vector(co) * si_conversion
+            index = next(v.index for v in bm.verts if (v.co - co).length_squared < 1e-5)
+            coordinates_remap.append(index)
+
+        # ifc indices start with 1
+        remap_verts_to_blender = lambda ifc_verts: [coordinates_remap[i - 1] for i in ifc_verts]
+
+        # faces_remap - ifc faces described using blender verts indices
+        # IFC4.3+
+        if coordinates.is_a("IfcIndexedPolygonalTextureMap"):
+            faces_remap = [
+                remap_verts_to_blender(tex_coord_index.TexCoordsOf.CoordIndex)
+                for tex_coord_index in coordinates.TexCoordIndices
+            ]
+            texture_map = [tex_coord_index.TexCoordIndex for tex_coord_index in coordinates.TexCoordIndices]
+        else:  # IfcIndexedTriangleTextureMap
+            if faceset.is_a("IfcTriangulatedFaceSet"):
+                faces_remap = [remap_verts_to_blender(triangle_face) for triangle_face in faceset.CoordIndex]
+            else:  # IfcPolygonalFaceSet
+                faces_remap = [remap_verts_to_blender(triangle_face.CoordIndex) for triangle_face in faceset.Faces]
+            texture_map = coordinates.TexCoordIndex
+
+        # apply uv to each face
+        for bface in bm.faces:
+            face = [loop.vert.index for loop in bface.loops]
+            # find the corresponding TexCoordIndex by matching ifc faceset with blender face
+            # remap TexCoordIndex as the loop start may different from blender face
+            texCoordIndex = next(
+                [tex_coord_index[face_remap.index(i)] for i in face]
+                for tex_coord_index, face_remap in zip(texture_map, faces_remap, strict=True)
+                if all(i in face_remap for i in face)
+            )
+            # apply uv to each loop
+            for loop, i in zip(bface.loops, texCoordIndex):
+                loop[uv_layer].uv = coordinates.TexCoords.TexCoordsList[i - 1]
+
+        # Finish up, write the bmesh back to the mesh
+        bm.to_mesh(mesh)
+        bm.free()

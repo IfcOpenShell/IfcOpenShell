@@ -175,7 +175,7 @@ Scenario: Load project elements - load objects filtered by whitelist
     And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc', is_advanced=True)"
     When I set "scene.BIMProjectProperties.collection_mode" to "DECOMPOSITION"
     And I set "scene.BIMProjectProperties.filter_mode" to "WHITELIST"
-    And I set "scene.BIMProjectProperties.filter_query" to ".IfcSlab"
+    And I set "scene.BIMProjectProperties.filter_query" to "IfcSlab"
     And I set "scene.BIMProjectProperties.should_filter_spatial_elements" to "True"
     And I press "bim.load_project_elements"
     Then the object "IfcProject/My Project" is an "IfcProject"
@@ -195,7 +195,7 @@ Scenario: Load project elements - load objects filtered by blacklist
     And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc', is_advanced=True)"
     When I set "scene.BIMProjectProperties.collection_mode" to "DECOMPOSITION"
     And I set "scene.BIMProjectProperties.filter_mode" to "BLACKLIST"
-    And I set "scene.BIMProjectProperties.filter_query" to ".IfcSlab"
+    And I set "scene.BIMProjectProperties.filter_query" to "IfcSlab"
     And I set "scene.BIMProjectProperties.should_filter_spatial_elements" to "True"
     And I press "bim.load_project_elements"
     Then the object "IfcProject/My Project" is an "IfcProject"
@@ -436,6 +436,7 @@ Scenario: Export IFC - with changed object scale synchronised
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
@@ -450,6 +451,7 @@ Scenario: Export IFC - with changed style colour synchronised
     And I add a cube
     And the object "Cube" is selected
     And I add a material
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
@@ -464,6 +466,7 @@ Scenario: Export IFC - with changed style element synchronised
     And I add a cube
     And the object "Cube" is selected
     And I add a material
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected

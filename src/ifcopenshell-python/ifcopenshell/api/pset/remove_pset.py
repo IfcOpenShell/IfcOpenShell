@@ -16,6 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
+import ifcopenshell.util.element
+
 
 class Usecase:
     def __init__(self, file, product=None, pset=None):
@@ -69,9 +72,15 @@ class Usecase:
                     continue
                 if prop.is_a("IfcPropertyEnumeratedValue"):
                     enumeration = prop.EnumerationReference
-                    if self.file.get_total_inverses(enumeration) == 1:
+                    if enumeration and self.file.get_total_inverses(enumeration) == 1:
                         self.file.remove(enumeration)
                 self.file.remove(prop)
+            history = self.settings["pset"].OwnerHistory
             self.file.remove(self.settings["pset"])
+            if history:
+                ifcopenshell.util.element.remove_deep2(self.file, history)
         for element in to_purge:
+            history = getattr(element, "OwnerHistory", None)
             self.file.remove(element)
+            if history:
+                ifcopenshell.util.element.remove_deep2(self.file, history)

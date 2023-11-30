@@ -79,6 +79,7 @@ def update_type_class(self, context):
 def update_relating_type_id(self, context):
     AuthoringData.data["relating_type_id"] = AuthoringData.relating_type_id()
     AuthoringData.data["type_thumbnail"] = AuthoringData.type_thumbnail()
+    AuthoringData.data["predefined_type"] = AuthoringData.predefined_type()
 
 
 def update_type_page(self, context):
@@ -132,13 +133,14 @@ class BIMModelProperties(PropertyGroup):
     y: bpy.props.FloatProperty(name="Y", default=0.5, subtype="DISTANCE", description="Size by Y axis for the opening")
     z: bpy.props.FloatProperty(name="Z", default=0.5, subtype="DISTANCE", description="Size by Z axis for the opening")
     # Used for things like walls, doors, flooring, skirting, etc
-    rl1: bpy.props.FloatProperty(name="RL", default=1, subtype="DISTANCE", description="Z offset for walls")  
+    rl1: bpy.props.FloatProperty(name="RL", default=1, subtype="DISTANCE", description="Z offset for walls")
     # Used for things like windows, other hosted furniture, and MEP
     rl2: bpy.props.FloatProperty(name="RL", default=1, subtype="DISTANCE", description="Z offset for windows")
     # Used for plan calculation points such as in room generation
     rl3: bpy.props.FloatProperty(name="RL", default=1, subtype="DISTANCE", description="Z offset for space calculation")
     x_angle: bpy.props.FloatProperty(name="X Angle", default=0, subtype="ANGLE", min=-pi / 180 * 89, max=pi / 180 * 89)
     type_page: bpy.props.IntProperty(name="Type Page", default=1, update=update_type_page)
+    # fmt: off
     type_template: bpy.props.EnumProperty(
         items=(
             ("MESH", "Custom Mesh", "Use as a representation currently active object mesh or default cube if no object selected"),
@@ -158,6 +160,7 @@ class BIMModelProperties(PropertyGroup):
         name="Type Template",
         default="MESH",
     )
+    # fmt: on
     type_class: bpy.props.EnumProperty(items=get_type_class, name="IFC Class", update=update_type_class)
     type_predefined_type: bpy.props.EnumProperty(items=get_type_predefined_type, name="Predefined Type", default=None)
     type_name: bpy.props.StringProperty(name="Name", default="TYPEX")
@@ -190,6 +193,10 @@ class BIMArrayProperties(PropertyGroup):
 
 
 class BIMStairProperties(PropertyGroup):
+    def validate_nosing_value(self, context):
+        if self.stair_type != "WOOD/STEEL" and self.nosing_length < 0:
+            self["nosing_length"] = 0
+
     non_si_units_props = ("is_editing", "number_of_treads", "has_top_nib", "stair_type")
     stair_types = (
         ("CONCRETE", "Concrete", ""),
@@ -200,13 +207,37 @@ class BIMStairProperties(PropertyGroup):
     is_editing: bpy.props.BoolProperty(default=False)
     width: bpy.props.FloatProperty(name="Width", default=1.2, soft_min=0.01, subtype="DISTANCE")
     height: bpy.props.FloatProperty(name="Height", default=1.0, soft_min=0.01, subtype="DISTANCE")
-    number_of_treads: bpy.props.IntProperty(name="Number of treads", default=6, soft_min=1)
+    number_of_treads: bpy.props.IntProperty(name="Number of Treads", default=6, soft_min=1)
     tread_depth: bpy.props.FloatProperty(name="Tread Depth", default=0.25, soft_min=0.01, subtype="DISTANCE")
     tread_run: bpy.props.FloatProperty(name="Tread Run", default=0.3, soft_min=0.01, subtype="DISTANCE")
-    base_slab_depth: bpy.props.FloatProperty(name="Base slab depth", default=0.25, soft_min=0, subtype="DISTANCE")
-    top_slab_depth: bpy.props.FloatProperty(name="Top slab depth", default=0.25, soft_min=0, subtype="DISTANCE")
-    has_top_nib: bpy.props.BoolProperty(name="Has top nib", default=True)
-    stair_type: bpy.props.EnumProperty(name="Stair type", items=stair_types, default="CONCRETE")
+    base_slab_depth: bpy.props.FloatProperty(name="Base Slab Depth", default=0.25, soft_min=0, subtype="DISTANCE")
+    top_slab_depth: bpy.props.FloatProperty(name="Top Slab Depth", default=0.25, soft_min=0, subtype="DISTANCE")
+    has_top_nib: bpy.props.BoolProperty(name="Has Top Nib", default=True)
+    stair_type: bpy.props.EnumProperty(
+        name="Stair Type", items=stair_types, default="CONCRETE", update=validate_nosing_value
+    )
+    custom_first_last_tread_run: bpy.props.FloatVectorProperty(
+        name="Custom First / Last Treads Widths",
+        description='Specify custom first / last treads widths, different from the general "Tread Run". Leave 0 to disable.',
+        default=(0, 0),
+        min=0,
+        unit="LENGTH",
+        size=2,
+    )
+    # TODO: need to clamp at zero for non WOOD/STEEL
+    nosing_length: bpy.props.FloatProperty(
+        name="Nosing Length",
+        description=(
+            "Overhang of the tread, not counted as a part of the tread run.\n"
+            "Can be negative for WOOD/STEEL stair (then it becomes a tread gap)"
+        ),
+        default=0,
+        unit="LENGTH",
+        update=validate_nosing_value,
+    )
+    nosing_depth: bpy.props.FloatProperty(
+        name="Nosing Depth", description="Depth of the tread's nosing", min=0, default=0, unit="LENGTH"
+    )
 
     def get_props_kwargs(self, convert_to_project_units=False, stair_type=None):
         if not stair_type:
@@ -217,10 +248,12 @@ class BIMStairProperties(PropertyGroup):
             "height": self.height,
             "number_of_treads": self.number_of_treads,
             "tread_run": self.tread_run,
+            "nosing_length": self.nosing_length,
         }
 
         if stair_type == "CONCRETE":
             concrete_props = {
+                "nosing_depth": self.nosing_depth,
                 "base_slab_depth": self.base_slab_depth,
                 "top_slab_depth": self.top_slab_depth,
                 "has_top_nib": self.has_top_nib,
@@ -235,7 +268,13 @@ class BIMStairProperties(PropertyGroup):
             stair_kwargs.update(wood_steel_props)
 
         elif stair_type == "GENERIC":
-            pass
+            generic_props = {
+                "nosing_depth": self.nosing_depth,
+            }
+            stair_kwargs.update(generic_props)
+
+        # defined here to appear last in UI
+        stair_kwargs["custom_first_last_tread_run"] = self.custom_first_last_tread_run
 
         if not convert_to_project_units:
             return stair_kwargs

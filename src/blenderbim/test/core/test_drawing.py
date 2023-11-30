@@ -140,7 +140,7 @@ class TestAddSheet:
 class TestOpenSheet:
     def test_run(self, drawing):
         drawing.get_document_uri("sheet", "LAYOUT").should_be_called().will_return("uri")
-        drawing.open_svg("uri").should_be_called()
+        drawing.open_layout_svg("uri").should_be_called()
         subject.open_sheet(drawing, sheet="sheet")
 
 
@@ -311,7 +311,7 @@ class TestAddDrawing:
         drawing.generate_drawing_name("target_view", "location_hint").should_be_called().will_return("drawing_name")
         drawing.ensure_unique_drawing_name("drawing_name").should_be_called().will_return("name")
         drawing.generate_drawing_matrix("target_view", "location_hint").should_be_called().will_return("matrix")
-        drawing.create_camera("name", "matrix").should_be_called().will_return("obj")
+        drawing.create_camera("name", "matrix", "location_hint").should_be_called().will_return("obj")
         drawing.get_body_context().should_be_called().will_return("context")
         drawing.run_root_assign_class(
             obj="obj",

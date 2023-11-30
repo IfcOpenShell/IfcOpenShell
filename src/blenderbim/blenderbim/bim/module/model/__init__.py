@@ -28,6 +28,7 @@ from . import (
     roof,
     slab,
     space,
+    covering,
     stair,
     window,
     opening,
@@ -106,6 +107,11 @@ classes = (
     slab.SetArcIndex,
     space.GenerateSpace,
     space.GenerateSpacesFromWalls,
+    covering.AddInstanceFlooringCoveringsFromWalls,
+    covering.AddInstanceCeilingCoveringsFromWalls,
+    covering.AddInstanceFlooringCoveringFromCursor,
+    covering.AddInstanceCeilingCoveringFromCursor,
+    covering.RegenSelectedCoveringObject,
     space.ToggleSpaceVisibility,
     mep.FitFlowSegments,
     mep.RegenerateDistributionElement,
@@ -204,12 +210,7 @@ def register():
     bpy.types.Object.BIMDoorProperties = bpy.props.PointerProperty(type=prop.BIMDoorProperties)
     bpy.types.Object.BIMRailingProperties = bpy.props.PointerProperty(type=prop.BIMRailingProperties)
     bpy.types.Object.BIMRoofProperties = bpy.props.PointerProperty(type=prop.BIMRoofProperties)
-    bpy.types.VIEW3D_MT_mesh_add.append(grid.add_object_button)
-    bpy.types.VIEW3D_MT_mesh_add.append(stair.add_object_button)
-    bpy.types.VIEW3D_MT_mesh_add.append(window.add_object_button)
-    bpy.types.VIEW3D_MT_mesh_add.append(door.add_object_button)
-    bpy.types.VIEW3D_MT_mesh_add.append(railing.add_object_button)
-    bpy.types.VIEW3D_MT_mesh_add.append(roof.add_object_button)
+    bpy.types.VIEW3D_MT_mesh_add.append(ui.add_mesh_object_menu)
     bpy.types.VIEW3D_MT_add.append(ui.add_menu)
     bpy.app.handlers.load_post.append(handler.load_post)
     wm = bpy.context.window_manager
@@ -240,12 +241,7 @@ def unregister():
     del bpy.types.Object.BIMRailingProperties
     del bpy.types.Object.BIMRoofProperties
     bpy.app.handlers.load_post.remove(handler.load_post)
-    bpy.types.VIEW3D_MT_mesh_add.remove(grid.add_object_button)
-    bpy.types.VIEW3D_MT_mesh_add.remove(stair.add_object_button)
-    bpy.types.VIEW3D_MT_mesh_add.remove(window.add_object_button)
-    bpy.types.VIEW3D_MT_mesh_add.remove(door.add_object_button)
-    bpy.types.VIEW3D_MT_mesh_add.remove(railing.add_object_button)
-    bpy.types.VIEW3D_MT_mesh_add.remove(roof.add_object_button)
+    bpy.types.VIEW3D_MT_mesh_add.remove(ui.add_mesh_object_menu)
     bpy.types.VIEW3D_MT_add.remove(ui.add_menu)
     wm = bpy.context.window_manager
     kc = wm.keyconfigs.addon

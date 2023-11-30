@@ -73,6 +73,7 @@ class IfcCsv:
         empty="",
         bool_true="YES",
         bool_false="NO",
+        concat=", ",
         sort=None,
         groups=None,
         summaries=None,
@@ -103,6 +104,8 @@ class IfcCsv:
                     value = bool_true
                 elif value is False:
                     value = bool_false
+                elif isinstance(value, (list, tuple)) and concat is not None:
+                    value = concat.join(map(str, value))
                 result.append(value)
             self.results.append(result)
 
@@ -247,10 +250,11 @@ class IfcCsv:
         if not self.results:
             return
         if sort:
+
             def natural_sort(value):
                 if isinstance(value, str):
                     convert = lambda text: int(text) if text.isdigit() else text.lower()
-                    return [convert(c) for c in re.split('([0-9]+)', value)]
+                    return [convert(c) for c in re.split("([0-9]+)", value)]
                 return value
 
             # Sort least important keys first, then more important keys.
@@ -370,7 +374,9 @@ class IfcCsv:
                 results.update([p.Name for p in element.Quantities])
         return ["{}.{}".format(pset_qto_name, n) for n in results]
 
-    def Import(self, ifc_file, table, attributes=None, delimiter=",", null="-", empty="", bool_true="YES", bool_false="NO"):
+    def Import(
+        self, ifc_file, table, attributes=None, delimiter=",", null="-", empty="", bool_true="YES", bool_false="NO"
+    ):
         ext = table.split(".")[-1].lower()
 
         if ext == "csv":
@@ -380,7 +386,9 @@ class IfcCsv:
         elif ext == "xlsx":
             self.import_xlsx(ifc_file, table, attributes, null, empty, bool_true, bool_false)
 
-    def import_csv(self, ifc_file, table, attributes=None, delimiter=",", null="-", empty="", bool_true="YES", bool_false="NO"):
+    def import_csv(
+        self, ifc_file, table, attributes=None, delimiter=",", null="-", empty="", bool_true="YES", bool_false="NO"
+    ):
         with open(table, newline="", encoding="utf-8") as f:
             reader = csv.reader(f, delimiter=delimiter)
             headers = []
@@ -441,10 +449,14 @@ if __name__ == "__main__":
     parser.add_argument("-f", "--format", type=str, default="csv", help="The format, chosen from csv, ods, or xlsx")
     parser.add_argument("-d", "--delimiter", type=str, default=",", help="The delimiter in CSV. Defaults to a comma.")
     parser.add_argument(
-        "-n", "--null", type=str, default="-", help="How to represent null values. Defaults to a hyphen."
+        "-n", "--null", type=str, default="N/A", help="How to represent null values. Defaults to N/A."
+    )
+    parser.add_argument(
+        "-e", "--empty", type=str, default="-", help="How to represent empty strings. Defaults to a hyphen."
     )
     parser.add_argument("--bool_true", type=str, default="YES", help="How to represent true values. Defaults to YES.")
     parser.add_argument("--bool_false", type=str, default="NO", help="How to represent false values. Defaults to NO.")
+    parser.add_argument("--concat", type=str, default=", ", help="How to concatenate lists. Defaults to ', '.")
     parser.add_argument("-q", "--query", type=str, default="", help='Specify a IFC query selector, such as "IfcWall"')
     parser.add_argument(
         "-a",
@@ -452,9 +464,7 @@ if __name__ == "__main__":
         nargs="+",
         help="Specify attributes that are part of the extract, using the IfcQuery syntax such as 'class', 'Name' or 'Pset_Foo.Bar'",
     )
-    parser.add_argument(
-        "--headers", nargs="+", help="Specify human readable headers that correlate to each attribute."
-    )
+    parser.add_argument("--headers", nargs="+", help="Specify human readable headers that correlate to each attribute.")
     parser.add_argument("--sort", nargs="+", help="Specify one or more attributes to sort by.")
     parser.add_argument("--order", nargs="+", help="Choose the sort order from ASC or DESC for each sorted attribute.")
     parser.add_argument("--export", action="store_true", help="Export from IFC to the desired format.")
@@ -477,14 +487,21 @@ if __name__ == "__main__":
             format=args.format,
             delimiter=args.delimiter,
             null=args.null,
+            empty=args.empty,
             bool_true=args.bool_true,
             bool_false=args.bool_false,
+            concat=args.concat,
             sort=sort,
         )
     elif getattr(args, "import"):
         ifc_csv = IfcCsv()
         ifc_file = ifcopenshell.open(args.ifc)
         ifc_csv.Import(
-            ifc_file, args.spreadsheet, attributes=args.attributes or [], delimiter=args.delimiter, null=args.null
+            ifc_file,
+            args.spreadsheet,
+            attributes=args.attributes or [],
+            delimiter=args.delimiter,
+            null=args.null,
+            empty=args.empty,
         )
         ifc_file.write(args.ifc)

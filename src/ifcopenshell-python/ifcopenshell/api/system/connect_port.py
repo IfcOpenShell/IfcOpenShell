@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.element
 
 
 class Usecase:
@@ -82,8 +83,8 @@ class Usecase:
             # Create 2 ports, one for either end of both the duct and fitting.
             duct_port1 = ifcopenshell.api.run("system.add_port", model, element=duct)
             duct_port2 = ifcopenshell.api.run("system.add_port", model, element=duct)
-            fitting_port1 = ifcopenshell.api.run("system.add_port", model, element=duct)
-            fitting_port2 = ifcopenshell.api.run("system.add_port", model, element=duct)
+            fitting_port1 = ifcopenshell.api.run("system.add_port", model, element=fitting)
+            fitting_port2 = ifcopenshell.api.run("system.add_port", model, element=fitting)
 
             # Connect the duct and fitting together. At this point, we have not
             # yet determined the direction of the flow, so we leave direction as
@@ -138,16 +139,28 @@ class Usecase:
     def purge_existing_connections_to_other_ports(self):
         for rel in self.settings["port1"].ConnectedTo or []:
             if rel.RelatedPort != self.settings["port2"]:
+                history = rel.OwnerHistory
                 self.file.remove(rel)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(self.file, history)
         for rel in self.settings["port1"].ConnectedFrom or []:
             if rel.RelatingPort != self.settings["port2"]:
+                history = rel.OwnerHistory
                 self.file.remove(rel)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(self.file, history)
         for rel in self.settings["port2"].ConnectedTo or []:
             if rel.RelatedPort != self.settings["port1"]:
+                history = rel.OwnerHistory
                 self.file.remove(rel)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(self.file, history)
         for rel in self.settings["port2"].ConnectedFrom or []:
             if rel.RelatingPort != self.settings["port1"]:
+                history = rel.OwnerHistory
                 self.file.remove(rel)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(self.file, history)
 
     def set_connected_to(self):
         if self.settings["port1"].ConnectedTo:
@@ -175,11 +188,17 @@ class Usecase:
 
     def purge_connected_to(self):
         for rel in self.settings["port1"].ConnectedTo or []:
+            history = rel.OwnerHistory
             self.file.remove(rel)
+            if history:
+                ifcopenshell.util.element.remove_deep2(self.file, history)
 
     def purge_connected_from(self):
         for rel in self.settings["port1"].ConnectedFrom or []:
+            history = rel.OwnerHistory
             self.file.remove(rel)
+            if history:
+                ifcopenshell.util.element.remove_deep2(self.file, history)
 
     def set_realising_element(self):
         for rel in self.settings["port1"].ConnectedTo or []:

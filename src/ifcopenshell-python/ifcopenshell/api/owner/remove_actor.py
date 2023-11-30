@@ -16,7 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api
+import ifcopenshell
+import ifcopenshell.util.element
 
 
 class Usecase:
@@ -48,4 +49,7 @@ class Usecase:
         self.settings = {"actor": actor}
 
     def execute(self):
+        history = self.settings["actor"].OwnerHistory
         self.file.remove(self.settings["actor"])
+        if history:
+            ifcopenshell.util.element.remove_deep2(self.file, history)

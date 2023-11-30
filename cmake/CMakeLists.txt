@@ -58,6 +58,7 @@ option(BUILD_PACKAGE "" OFF)
 option(COLLADA_SUPPORT "Build IfcConvert with COLLADA support (requires OpenCOLLADA)." ON)
 option(GLTF_SUPPORT "Build IfcConvert with glTF support (requires json.hpp)." OFF)
 option(HDF5_SUPPORT "Enable HDF5 support (requires HDF5, zlib)" ON)
+option(WITH_PROJ "Enable output of Earth-Centered Earth-Fixed glTF output using the PROJ library" OFF)
 option(IFCXML_SUPPORT "Build IfcParse with ifcXML support (requires libxml2)." ON)
 option(USD_SUPPORT "Build IfcConvert with USD support (requires pixar's USD library)." OFF)
 
@@ -438,9 +439,13 @@ if(BUILD_IFCGEOM)
         if(WASM_BUILD)
             set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
         else()
-            # OPENCASCADE_LIBRARIES repeated N times below in order to fix cyclic dependencies - use --start-group ... --end-group instead?
+            # OPENCASCADE_LIBRARIES repeated N times below in order to fix cyclic dependencies
             # tfk: --start-group ... --end-group didn't work on the apple linker when last tested
-            set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+            if(APPLE)
+                set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+            else()
+                set(OPENCASCADE_LIBRARIES -Wl,--start-group ${OPENCASCADE_LIBRARIES} -Wl,--end-group ${CMAKE_THREAD_LIBS_INIT})
+            endif()
         endif()
         
         if (NOT APPLE AND NOT WIN32)
@@ -580,23 +585,31 @@ if(HDF5_SUPPORT)
 
             if(WIN32)
                 # Windows
-                set(zlib_post zlib)
-                set(lib_ext lib)
-            elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-                # macOS
-                set(zlib_post libz)
-                set(lib_ext dylib)
+                set(HDF5_LIBRARIES)
+                find_package(HDF5 COMPONENTS CXX)
+                if (HDF5_FOUND)
+                    set(HDF5_LIBRARIES ${HDF5_CXX_LIBRARIES})
+                endif()
+                list(APPEND HDF5_LIBRARIES
+                    "${HDF5_LIBRARY_DIR}/zlib.lib"
+                )
             else()
-                # linux
-                set(zlib_post libz)
-                set(lib_ext so)
-            endif()
+                if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+                    # macOS
+                    set(zlib_post libz)
+                    set(lib_ext dylib)
+                else()
+                    # linux
+                    set(zlib_post libz)
+                    set(lib_ext so)
+                endif()
 
-            set(HDF5_LIBRARIES
-                "${HDF5_LIBRARY_DIR}/libhdf5_cpp.${lib_ext}"
-                "${HDF5_LIBRARY_DIR}/libhdf5.${lib_ext}"
-                "${HDF5_LIBRARY_DIR}/${zlib_post}.${lib_ext}"
-            )
+                set(HDF5_LIBRARIES
+                    "${HDF5_LIBRARY_DIR}/libhdf5_cpp.${lib_ext}"
+                    "${HDF5_LIBRARY_DIR}/libhdf5.${lib_ext}"
+                    "${HDF5_LIBRARY_DIR}/${zlib_post}.${lib_ext}"
+                )
+            endif()
         endif()
     endif()
 
@@ -738,7 +751,7 @@ if(NOT SCHEMA_VERSIONS)
         # super arbitrarily try to keep size down at least a little bit
         set(SCHEMA_VERSIONS "2x3" "4")
     else()
-        set(SCHEMA_VERSIONS "2x3" "4" "4x1" "4x2" "4x3_rc1" "4x3_rc2" "4x3_rc3" "4x3_rc4" "4x3" "4x3_tc1" "4x3_add1")
+        set(SCHEMA_VERSIONS "2x3" "4" "4x1" "4x2" "4x3_rc1" "4x3_rc2" "4x3_rc3" "4x3_rc4" "4x3" "4x3_tc1" "4x3_add1" "4x3_add2")
     endif()
 endif()
 
@@ -933,6 +946,15 @@ if(BUILD_CONVERT OR BUILD_IFCPYTHON)
 
     add_library(Serializers ${SERIALIZERS_FILES})
     set_target_properties(Serializers PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS" VERSION "${PROJECT_VERSION}" SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
+
+	if (WITH_PROJ)
+		target_compile_definitions(Serializers PRIVATE "WITH_PROJ")
+		if (PROJ_STATIC)
+			target_compile_definitions(Serializers PRIVATE "PROJ_DLL=")
+		endif()
+		target_include_directories(Serializers PRIVATE ${PROJ_INCLUDE_DIR} ${SQLITE_INCLUDE_DIR})
+		target_link_libraries(Serializers ${PROJ_LIBRARIES})
+	endif()
 
     target_link_libraries(Serializers ${SERIALIZER_SCHEMA_LIBRARIES} ${OPENCOLLADA_LIBRARIES} ${USD_LIBRARIES})
 

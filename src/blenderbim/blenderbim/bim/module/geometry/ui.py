@@ -17,11 +17,18 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import blenderbim.bim
 import blenderbim.tool as tool
-from bpy.types import Panel, Menu
+from bpy.types import Panel, Menu, UIList
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import prop_with_search
-from blenderbim.bim.module.geometry.data import RepresentationsData, ConnectionsData, DerivedPlacementsData
+from blenderbim.bim.module.geometry.data import (
+    RepresentationsData,
+    RepresentationItemsData,
+    ConnectionsData,
+    PlacementData,
+    DerivedCoordinatesData,
+)
 
 
 def object_menu(self, context):
@@ -30,6 +37,37 @@ def object_menu(self, context):
     self.layout.operator("bim.override_object_delete", icon="PLUGIN")
     self.layout.operator("bim.override_paste_buffer", icon="PLUGIN")
     self.layout.menu("BIM_MT_object_set_origin", icon="PLUGIN")
+
+
+def edit_mesh_menu(self, context):
+    self.layout.separator()
+    self.layout.menu("BIM_MT_separate", icon="PLUGIN")
+
+
+class BIM_MT_separate(Menu):
+    bl_idname = "BIM_MT_separate"
+    bl_label = "IFC Separate"
+
+    def draw(self, context):
+        self.layout.operator("bim.override_mesh_separate", icon="PLUGIN", text="IFC Selection").type = "SELECTED"
+        self.layout.operator("bim.override_mesh_separate", icon="PLUGIN", text="IFC By Material").type = "MATERIAL"
+        self.layout.operator("bim.override_mesh_separate", icon="PLUGIN", text="IFC By Loose Parts").type = "LOOSE"
+
+
+class BIM_MT_hotkey_separate(Menu):
+    bl_idname = "BIM_MT_hotkey_separate"
+    bl_label = "Separate"
+
+    def draw(self, context):
+        self.layout.label(text="IFC Separate", icon_value=blenderbim.bim.icons["IFC"].icon_id)
+        self.layout.operator("bim.override_mesh_separate", text="Selection").type = "SELECTED"
+        self.layout.operator("bim.override_mesh_separate", text="By Material").type = "MATERIAL"
+        self.layout.operator("bim.override_mesh_separate", text="By Loose Parts").type = "LOOSE"
+        self.layout.separator()
+        self.layout.label(text="Blender Separate", icon="BLENDER")
+        self.layout.operator("mesh.separate", text="Selection").type = "SELECTED"
+        self.layout.operator("mesh.separate", text="By Material").type = "MATERIAL"
+        self.layout.operator("mesh.separate", text="By Loose Parts").type = "LOOSE"
 
 
 class BIM_MT_object_set_origin(Menu):
@@ -107,6 +145,57 @@ class BIM_PT_representations(Panel):
             op.ifc_definition_id = representation["id"]
             op.disable_opening_subtractions = False
             row.operator("bim.remove_representation", icon="X", text="").representation_id = representation["id"]
+
+
+class BIM_PT_representation_items(Panel):
+    bl_label = "Representation Items"
+    bl_idname = "BIM_PT_representation_items"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_order = 1
+    bl_parent_id = "BIM_PT_tab_representations"
+
+    @classmethod
+    def poll(cls, context):
+        if not context.active_object:
+            return False
+        if not IfcStore.get_element(context.active_object.BIMObjectProperties.ifc_definition_id):
+            return False
+        return IfcStore.get_file()
+
+    def draw(self, context):
+        if not RepresentationItemsData.is_loaded:
+            RepresentationItemsData.load()
+
+        props = context.active_object.BIMGeometryProperties
+
+        row = self.layout.row(align=True)
+        row.label(text=f"{RepresentationItemsData.data['total_items']} Items Found")
+
+        if props.is_editing:
+            row.operator("bim.disable_editing_representation_items", icon="CANCEL", text="")
+        else:
+            row.operator("bim.enable_editing_representation_items", icon="IMPORT", text="")
+            return
+
+        self.layout.template_list("BIM_UL_representation_items", "", props, "items", props, "active_item_index")
+
+        item_is_active = props.active_item_index < len(props.items)
+        if item_is_active:
+            surface_style = props.items[props.active_item_index].surface_style
+            presentation_layer = props.items[props.active_item_index].layer
+        else:
+            surface_style, presentation_layer = None, None
+
+        row = self.layout.row()
+        if surface_style:
+            row.label(text=surface_style, icon="MATERIAL")
+        else:
+            row.label(text="No Surface Style", icon="MESH_UVSPHERE")
+
+        row = self.layout.row()
+        row.label(text=presentation_layer or "No Presentation Layer", icon="STICKY_UVS_LOC")
 
 
 class BIM_PT_connections(Panel):
@@ -213,6 +302,9 @@ class BIM_PT_mesh(Panel):
         layout = self.layout
 
         row = layout.row()
+        row.operator("bim.update_representation", text="Manually Save Representation")
+
+        row = layout.row()
         row.operator("bim.copy_representation", text="Copy Mesh From Active To Selected")
 
         row = layout.row()
@@ -235,50 +327,105 @@ class BIM_PT_mesh(Panel):
         op = row.operator("bim.update_representation", text="Convert To Arbitrary Extrusion With Voids")
         op.ifc_representation_class = "IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids"
 
+        if context.active_object and context.active_object.data:
+            mprops = context.active_object.data.BIMMeshProperties
+            row = layout.row()
+            row.operator("bim.get_representation_ifc_parameters")
+            for index, ifc_parameter in enumerate(mprops.ifc_parameters):
+                row = layout.row(align=True)
+                row.prop(ifc_parameter, "name", text="")
+                row.prop(ifc_parameter, "value", text="")
+                row.operator("bim.update_parametric_representation", icon="FILE_REFRESH", text="").index = index
 
-def BIM_PT_transform(self, context):
-    if context.active_object and context.active_object.BIMObjectProperties.ifc_definition_id:
-        row = self.layout.row(align=True)
-        row.label(text="Blender Offset")
-        row.label(text=context.active_object.BIMObjectProperties.blender_offset_type)
 
-        row = self.layout.row()
-        row.operator("bim.edit_object_placement")
-
-
-class BIM_PT_derived_placements(Panel):
-    bl_label = "Derived Placements"
-    bl_idname = "BIM_PT_derived_placements"
-    bl_options = {"DEFAULT_CLOSED"}
+class BIM_PT_placement(Panel):
+    bl_label = "Placement"
+    bl_idname = "BIM_PT_placement"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "object"
+    bl_context = "scene"
     bl_order = 1
-    bl_parent_id = "OBJECT_PT_transform"
+    bl_parent_id = "BIM_PT_tab_placement"
+    bl_options = {"HIDE_HEADER"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object and context.active_object.BIMObjectProperties.ifc_definition_id
 
     def draw(self, context):
-        if not DerivedPlacementsData.is_loaded:
-            DerivedPlacementsData.load()
+        if not PlacementData.is_loaded:
+            PlacementData.load()
+
+        if not PlacementData.data["has_placement"]:
+            row = self.layout.row()
+            row.label(text="No Object Placement Found")
+            return
+
+        row = self.layout.row()
+        row.prop(context.active_object, "location", text="Location")
+        row = self.layout.row()
+        row.prop(context.active_object, "rotation_euler", text="Rotation")
+
+        if context.active_object.BIMObjectProperties.blender_offset_type != "NONE":
+            row = self.layout.row(align=True)
+            row.label(text="Blender Offset", icon="TRACKING_REFINE_FORWARDS")
+            row.label(text=context.active_object.BIMObjectProperties.blender_offset_type)
+
+            row = self.layout.row(align=True)
+            row.label(text=PlacementData.data["original_x"], icon="EMPTY_AXIS")
+            row.label(text=PlacementData.data["original_y"])
+            row.label(text=PlacementData.data["original_z"])
+
+
+class BIM_PT_derived_coordinates(Panel):
+    bl_label = "Derived Coordinates"
+    bl_idname = "BIM_PT_derived_coordinates"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_order = 3
+    bl_parent_id = "BIM_PT_tab_placement"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object is not None
+
+    def draw(self, context):
+        if not DerivedCoordinatesData.is_loaded:
+            DerivedCoordinatesData.load()
+
+        row = self.layout.row()
+        row.operator("bim.edit_object_placement", icon="EXPORT")
+
+        row = self.layout.row()
+        row.label(text="XYZ Dimensions")
+
+        row = self.layout.row(align=True)
+        row.enabled = False
+        row.prop(context.active_object, "dimensions", text="X", index=0, slider=True)
+        row.prop(context.active_object, "dimensions", text="Y", index=1, slider=True)
+        row.prop(context.active_object, "dimensions", text="Z", index=2, slider=True)
 
         row = self.layout.row(align=True)
         row.label(text="Min Global Z")
-        row.label(text=DerivedPlacementsData.data["min_global_z"])
+        row.label(text=DerivedCoordinatesData.data["min_global_z"])
         row = self.layout.row(align=True)
         row.label(text="Max Global Z")
-        row.label(text=DerivedPlacementsData.data["max_global_z"])
+        row.label(text=DerivedCoordinatesData.data["max_global_z"])
 
-        if DerivedPlacementsData.data["has_collection"]:
+        if DerivedCoordinatesData.data["has_collection"]:
             row = self.layout.row(align=True)
             row.label(text="Min Decomposed Z")
-            row.label(text=DerivedPlacementsData.data["min_decomposed_z"])
+            row.label(text=DerivedCoordinatesData.data["min_decomposed_z"])
             row = self.layout.row(align=True)
             row.label(text="Max Decomposed Z")
-            row.label(text=DerivedPlacementsData.data["max_decomposed_z"])
+            row.label(text=DerivedCoordinatesData.data["max_decomposed_z"])
 
-        if DerivedPlacementsData.data["is_storey"]:
+        if DerivedCoordinatesData.data["is_storey"]:
             row = self.layout.row(align=True)
             row.label(text="Storey Height")
-            row.label(text=DerivedPlacementsData.data["storey_height"])
+            row.label(text=DerivedCoordinatesData.data["storey_height"])
 
 
 class BIM_PT_workarounds(Panel):
@@ -307,3 +454,13 @@ class BIM_PT_workarounds(Panel):
         row.prop(props, "should_force_triangulation")
         row = self.layout.row()
         row.prop(props, "should_use_presentation_style_assignment")
+
+
+class BIM_UL_representation_items(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item:
+            icon = "MATERIAL" if item.surface_style else "MESH_UVSPHERE"
+            row = layout.row(align=True)
+            row.label(text=item.name, icon=icon)
+            if item.layer:
+                row.label(text="", icon="STICKY_UVS_LOC")

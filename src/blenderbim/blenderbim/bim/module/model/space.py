@@ -18,15 +18,11 @@
 
 
 import bpy
-import bmesh
-import shapely
 import ifcopenshell
 import ifcopenshell.util.element
 import blenderbim.tool as tool
+import blenderbim.core.spatial as core
 import blenderbim.core.type
-from math import pi
-from mathutils import Vector, Matrix
-from shapely import Polygon, MultiPolygon
 
 
 class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
@@ -49,13 +45,7 @@ class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
         def msg(self, context):
             self.layout.label(text="NO ACTIVE STOREY")
 
-        props = context.scene.BIMModelProperties
-        relating_type_id = props.relating_type_id
-        relating_type = None
-        if relating_type_id:
-            relating_type = tool.Ifc.get().by_id(int(relating_type_id))
-            if not relating_type.is_a("IfcSpaceType"):
-                relating_type = None
+#        props = context.scene.BIMModelProperties
 
         collection = context.view_layer.active_layer_collection.collection
         collection_obj = collection.BIMCollectionProperties.obj
@@ -67,151 +57,7 @@ class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
             bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
             return
 
-        active_obj = bpy.context.active_object
-        element = None
-        if bpy.context.selected_objects and active_obj:
-            element = tool.Ifc.get_entity(active_obj)
-            mat = active_obj.matrix_world
-            local_bbox_center = 0.125 * sum((Vector(b) for b in active_obj.bound_box), Vector())
-            global_bbox_center = mat @ local_bbox_center
-            x = global_bbox_center.x
-            y = global_bbox_center.y
-            z = (mat @ Vector(active_obj.bound_box[0])).z
-
-            h = active_obj.dimensions.z
-        else:
-            x, y = context.scene.cursor.location.xy
-            z = collection_obj.matrix_world.translation.z
-            mat = Matrix()
-            mat.translation = (x, y, z)
-            h = 3
-
-        calculation_rl = context.scene.BIMModelProperties.rl3
-        self.cut_point = collection_obj.matrix_world.translation.copy() + Vector((0, 0, calculation_rl))
-        self.cut_normal = Vector((0, 0, 1))
-        boundary_lines = []
-
-        gross_settings = ifcopenshell.geom.settings()
-        gross_settings.set(gross_settings.DISABLE_OPENING_SUBTRACTIONS, True)
-
-        for obj in bpy.context.visible_objects:
-            visible_element = tool.Ifc.get_entity(obj)
-
-            if (
-                not visible_element
-                or obj.type != "MESH"
-                or not self.is_bounding_class(visible_element)
-                or not tool.Drawing.is_intersecting_plane(obj, self.cut_point, self.cut_normal)
-            ):
-                continue
-
-            old_mesh = None
-            if visible_element.HasOpenings:
-                new_mesh = self.create_mesh(ifcopenshell.geom.create_shape(gross_settings, visible_element))
-                old_mesh = obj.data
-                obj.data = new_mesh
-
-            local_cut_point = obj.matrix_world.inverted() @ self.cut_point
-            local_cut_normal = obj.matrix_world.inverted().to_quaternion() @ self.cut_normal
-            verts, edges = tool.Drawing.bisect_mesh_with_plane(obj, local_cut_point, local_cut_normal)
-
-            if old_mesh:
-                obj.data = old_mesh
-                bpy.data.meshes.remove(new_mesh)
-
-            for edge in edges or []:
-                boundary_lines.append(
-                    shapely.LineString(
-                        [Vector((round(x, 3) for x in verts[edge[0]])), Vector((round(x, 3) for x in verts[edge[1]]))]
-                    )
-                )
-
-        unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
-        closed_polygons = shapely.polygonize(unioned_boundaries.geoms)
-
-        space_polygon = None
-        for polygon in closed_polygons.geoms:
-            if shapely.contains_xy(polygon, x, y):
-                space_polygon = shapely.force_3d(polygon)
-
-        if not space_polygon:
-            return
-
-        bm = bmesh.new()
-        bm.verts.index_update()
-        bm.edges.index_update()
-
-        mat_invert = mat.inverted()
-        new_verts = [bm.verts.new(mat_invert @ Vector([v[0], v[1], z])) for v in space_polygon.exterior.coords[0:-1]]
-        [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
-        bm.edges.new((new_verts[len(new_verts) - 1], new_verts[0]))
-
-        for interior in space_polygon.interiors:
-            new_verts = [bm.verts.new(mat_invert @ Vector([v[0], v[1], z])) for v in interior.coords[0:-1]]
-            [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
-            bm.edges.new((new_verts[len(new_verts) - 1], new_verts[0]))
-
-        bm.verts.index_update()
-        bm.edges.index_update()
-
-        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
-        bmesh.ops.triangle_fill(bm, edges=bm.edges)
-        bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 5, verts=bm.verts, edges=bm.edges)
-
-        extrusion = bmesh.ops.extrude_face_region(bm, geom=bm.faces)
-        extruded_verts = [g for g in extrusion["geom"] if isinstance(g, bmesh.types.BMVert)]
-        bmesh.ops.translate(bm, vec=[0.0, 0.0, h], verts=extruded_verts)
-
-        mesh = bpy.data.meshes.new(name="Space")
-        bm.to_mesh(mesh)
-        bm.free()
-
-        if element and element.is_a("IfcSpace"):
-            mesh.name = active_obj.data.name
-            mesh.BIMMeshProperties.ifc_definition_id = active_obj.data.BIMMeshProperties.ifc_definition_id
-            tool.Geometry.change_object_data(active_obj, mesh, is_global=True)
-            tool.Ifc.edit(active_obj)
-        else:
-            if relating_type:
-                name = tool.Model.generate_occurrence_name(relating_type, "IfcSpace")
-            else:
-                name = "Space"
-            obj = bpy.data.objects.new("Space", mesh)
-            obj.matrix_world = mat
-            collection.objects.link(obj)
-            bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcSpace")
-            element = tool.Ifc.get_entity(obj)
-            if relating_type:
-                blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
-
-    def is_bounding_class(self, element):
-        for ifc_class in ["IfcWall", "IfcColumn", "IfcMember", "IfcVirtualElement", "IfcPlate"]:
-            if element.is_a(ifc_class):
-                return True
-        return False
-
-    def create_mesh(self, shape):
-        geometry = shape.geometry
-        mesh = bpy.data.meshes.new("tmp")
-        verts = geometry.verts
-        if geometry.faces:
-            num_vertices = len(verts) // 3
-            total_faces = len(geometry.faces)
-            loop_start = range(0, total_faces, 3)
-            num_loops = total_faces // 3
-            loop_total = [3] * num_loops
-            num_vertex_indices = len(geometry.faces)
-
-            mesh.vertices.add(num_vertices)
-            mesh.vertices.foreach_set("co", verts)
-            mesh.loops.add(num_vertex_indices)
-            mesh.loops.foreach_set("vertex_index", geometry.faces)
-            mesh.polygons.add(num_loops)
-            mesh.polygons.foreach_set("loop_start", loop_start)
-            mesh.polygons.foreach_set("loop_total", loop_total)
-            mesh.polygons.foreach_set("use_smooth", [0] * total_faces)
-            mesh.update()
-        return mesh
+        core.generate_space(tool.Ifc, tool.Spatial, tool.Model, tool.Type)
 
 
 class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
@@ -230,10 +76,12 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         # This only works based on a 2D plan only considering the standard
         # walls (i.e. prismatic) in the active object storey.
-        # In order to run, the active objct must be a wall and
-        # have to be selected walls
-        props = context.scene.BIMModelProperties
+        # In order to run, the active object must be a wall and
+        # there must be selected walls
+
         active_obj = bpy.context.active_object
+        element = tool.Ifc.get_entity(active_obj)
+        container = tool.Spatial.get_container(element)
 
         if not active_obj:
             self.report({"ERROR"}, "No active object. Please select a wall")
@@ -243,7 +91,6 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
         if element and not element.is_a("IfcWall"):
             return self.report({"ERROR"}, "The active object is not a wall. Please select a wall.")
 
-        container = ifcopenshell.util.element.get_container(element)
         if not container:
             self.report({"ERROR"}, "The wall is not contained.")
 
@@ -251,161 +98,7 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "No selected objects found. Please select walls.")
             return
 
-        x, y, z = active_obj.matrix_world.translation.xyz
-        mat = active_obj.matrix_world
-        h = active_obj.dimensions.z
-        selected_objects = bpy.context.selected_objects
-
-        boundary_elements = self.get_boundary_elements(selected_objects)
-
-        polys = self.get_polygons(boundary_elements)
-
-        converted_tolerance = self.get_converted_tolerance(tolerance=0.03)
-
-        union = shapely.ops.unary_union(polys).buffer(converted_tolerance, cap_style=2, join_style=2)
-
-        union = self.get_purged_inner_holes_poly(union_geom=union, min_area=self.get_converted_tolerance(tolerance=3))
-
-        for i, linear_ring in enumerate(union.interiors):
-            poly = Polygon(linear_ring)
-            poly = poly.buffer(converted_tolerance, single_sided=True, cap_style=2, join_style=2)
-
-            bm = self.get_bmesh_from_polygon(poly, mat, h)
-
-            name = "Space" + str(i)
-            mesh = bpy.data.meshes.new(name=name)
-            bm.to_mesh(mesh)
-            bm.free()
-
-            obj = bpy.data.objects.new(name, mesh)
-            obj.matrix_world = mat
-
-            self.set_obj_origin_to_bboxcenter(obj)
-
-            if z != 0:
-                obj.location = obj.location + Vector((0, 0, z))
-
-            context.view_layer.active_layer_collection.collection.objects.link(obj)
-            bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcSpace")
-            container_obj = tool.Ifc.get_object(container)
-            blenderbim.core.spatial.assign_container(
-                tool.Ifc, tool.Collector, tool.Spatial, structure_obj=container_obj, element_obj=obj
-            )
-
-    def get_boundary_elements(self, selected_objects):
-        boundary_elements = []
-        for obj in selected_objects:
-            subelement = tool.Ifc.get_entity(obj)
-            if subelement.is_a("IfcWall") or subelement.is_a("IfcColumn"):
-                boundary_elements.append(subelement)
-        return boundary_elements
-
-    def get_polygons(self, boundary_elements):
-        polys = []
-        for boundary_element in boundary_elements:
-            obj = tool.Ifc.get_object(boundary_element)
-            if not obj:
-                continue
-            points = []
-            base = self.get_obj_base_points(obj)
-            for index in ["low_left", "low_right", "high_right", "high_left"]:
-                point = base[index]
-                points.append(point)
-
-            polys.append(Polygon(points))
-        return polys
-
-    def get_obj_base_points(self, obj):
-        x_values = [(obj.matrix_world @ Vector(v)).x for v in obj.bound_box]
-        y_values = [(obj.matrix_world @ Vector(v)).y for v in obj.bound_box]
-        return {
-            "low_left": (x_values[0], y_values[0]),
-            "high_left": (x_values[3], y_values[3]),
-            "low_right": (x_values[4], y_values[4]),
-            "high_right": (x_values[7], y_values[7]),
-        }
-
-    def get_converted_tolerance(self, tolerance):
-        model = tool.Ifc.get()
-        project_unit = ifcopenshell.util.unit.get_project_unit(model, "LENGTHUNIT")
-        prefix = getattr(project_unit, "Prefix", None)
-
-        converted_tolerance = ifcopenshell.util.unit.convert(
-            value=tolerance,
-            from_prefix=None,
-            from_unit="METRE",
-            to_prefix=prefix,
-            to_unit=project_unit.Name,
-        )
-        return tolerance
-
-    def get_purged_inner_holes_poly(self, union_geom, min_area):
-        interiors_list = []
-
-        if union_geom.geom_type == "MultiPolygon":
-            for poly in union_geom.geoms:
-                interiors_list = self.get_poly_valid_interior_list(
-                    poly=poly, min_area=min_area, interiors_list=interiors_list
-                )
-
-            new_poly = Polygon(poly.exterior.coords, holes=interiors_list)
-
-        if union_geom.geom_type == "Polygon":
-            interiors_list = self.get_poly_valid_interior_list(
-                poly=union_geom, min_area=min_area, interiors_list=interiors_list
-            )
-            new_poly = Polygon(union_geom.exterior.coords, holes=interiors_list)
-
-        return new_poly
-
-    def get_poly_valid_interior_list(self, poly, min_area, interiors_list):
-        for interior in poly.interiors:
-            p = Polygon(interior)
-            if p.area >= min_area:
-                interiors_list.append(interior)
-        return interiors_list
-
-    def get_bmesh_from_polygon(self, poly, mat, h):
-        bm = bmesh.new()
-        bm.verts.index_update()
-        bm.edges.index_update()
-
-        mat_invert = mat.inverted()
-
-        new_verts = [bm.verts.new(mat_invert @ Vector([v[0], v[1], 0])) for v in poly.exterior.coords[0:-1]]
-        [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
-        bm.edges.new((new_verts[len(new_verts) - 1], new_verts[0]))
-
-        bm.verts.index_update()
-        bm.edges.index_update()
-
-        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
-        bmesh.ops.triangle_fill(bm, edges=bm.edges)
-        bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 5, verts=bm.verts, edges=bm.edges)
-
-        extrusion = bmesh.ops.extrude_face_region(bm, geom=bm.faces)
-        extruded_verts = [g for g in extrusion["geom"] if isinstance(g, bmesh.types.BMVert)]
-        bmesh.ops.translate(bm, vec=[0.0, 0.0, h], verts=extruded_verts)
-
-        bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
-
-        return bm
-
-    def set_obj_origin_to_bboxcenter(self, obj):
-        mat = obj.matrix_world
-        inverted = mat.inverted()
-        local_bbox_center = 0.125 * sum((Vector(b) for b in obj.bound_box), Vector())
-        global_bbox_center = mat @ local_bbox_center
-
-        oldLoc = obj.location
-        newLoc = global_bbox_center
-        diff = newLoc - oldLoc
-        for vert in obj.data.vertices:
-            aux_vector = mat @ vert.co
-            aux_vector = aux_vector - diff
-            vert.co = inverted @ aux_vector
-        obj.location = newLoc
-
+        core.generate_spaces_from_walls(tool.Ifc, tool.Spatial, tool.Collector)
 
 class ToggleSpaceVisibility(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.toggle_space_visibility"
@@ -414,26 +107,6 @@ class ToggleSpaceVisibility(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Change the space visibility"
 
     def execute(cls, context):
-        model = tool.Ifc.get()
+        core.toggle_space_visibility(tool.Ifc, tool.Spatial)
+        return {"FINISHED"}
 
-        spaces = model.by_type("IfcSpace")
-
-        if not spaces:
-            print(spaces)
-            return {"FINISHED"}
-
-        first_obj = tool.Ifc.get_object(spaces[0])
-
-        if bpy.data.objects[first_obj.name].display_type == "TEXTURED":
-            for space in spaces:
-                obj = tool.Ifc.get_object(space)
-                bpy.data.objects[obj.name].show_wire = True
-                bpy.data.objects[obj.name].display_type = "WIRE"
-            return {"FINISHED"}
-
-        elif bpy.data.objects[first_obj.name].display_type == "WIRE":
-            for space in spaces:
-                obj = tool.Ifc.get_object(space)
-                bpy.data.objects[obj.name].show_wire = False
-                bpy.data.objects[obj.name].display_type = "TEXTURED"
-            return {"FINISHED"}

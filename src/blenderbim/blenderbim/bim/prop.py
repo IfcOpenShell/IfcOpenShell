@@ -174,6 +174,18 @@ def update_attribute_value(self, context):
             self.is_null = False
 
 
+def update_is_null(self, context):
+    if not self.is_null:
+        return
+    self.string_value = ""
+    self.int_value = 0
+    self.float_value = 0
+    self.length_value = 0
+    self.bool_value = False
+    if self.is_null is not True:
+        self.is_null = True
+
+
 def set_int_value(self, new_value):
     set_numerical_value(self, "int_value", new_value)
 
@@ -240,7 +252,7 @@ class Attribute(PropertyGroup):
     enum_items: StringProperty(name="Value")
     enum_descriptions: CollectionProperty(type=StrProperty)
     enum_value: EnumProperty(items=get_attribute_enum_values, name="Value", update=update_attribute_value)
-    is_null: BoolProperty(name="Is Null")
+    is_null: BoolProperty(name="Is Null", update=update_is_null)
     is_optional: BoolProperty(name="Is Optional")
     is_uri: BoolProperty(name="Is Uri", default=False)
     is_selected: BoolProperty(name="Is Selected", default=False)
@@ -413,6 +425,7 @@ class BIMObjectProperties(PropertyGroup):
         default="NONE",
     )
     is_reassigning_class: BoolProperty(name="Is Reassigning Class")
+    is_renaming: BoolProperty(name="Is Renaming", default=False)
     location_checksum: StringProperty(name="Location Checksum")
     rotation_checksum: StringProperty(name="Rotation Checksum")
 
@@ -427,7 +440,6 @@ class BIMMaterialProperties(PropertyGroup):
     attributes: CollectionProperty(name="Attributes", type=Attribute)
     # In Blender, a material object can map to an IFC material, IFC surface style, or both
     ifc_style_id: IntProperty(name="IFC Style ID")
-    ifc_coordinate_id: IntProperty(name="IFC Coordinate ID")
     shading_checksum: StringProperty(name="Shading Checksum")
 
 
@@ -444,3 +456,15 @@ class BIMMeshProperties(PropertyGroup):
     ifc_parameters: CollectionProperty(name="IFC Parameters", type=IfcParameter)
     material_checksum: StringProperty(name="Material Checksum", default="[]")
     mesh_checksum: StringProperty(name="Mesh Checksum", default="")
+
+
+class BIMFacet(PropertyGroup):
+    name: StringProperty(name="Name")
+    pset: StringProperty(name="Pset")
+    value: StringProperty(name="Value")
+    type: StringProperty(name="Type")
+    comparison: StringProperty(name="Comparison")
+
+
+class BIMFilterGroup(PropertyGroup):
+    filters: CollectionProperty(type=BIMFacet, name="filters")

@@ -25,34 +25,35 @@ from blenderbim.bim.module.drawing.data import (
     SheetsData,
     DocumentsData,
     DrawingsData,
+    ElementFiltersData,
     DecoratorData,
 )
 from blenderbim.bim.module.drawing.prop import ANNOTATION_TYPES_DATA
 
 
 class BIM_PT_camera(Panel):
-    bl_label = "Drawing Generation"
+    bl_label = "Active Drawing"
     bl_idname = "BIM_PT_camera"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "data"
-
-    @classmethod
-    def poll(cls, context):
-        return context.camera and hasattr(context.active_object.data, "BIMCameraProperties")
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_drawings"
 
     def draw(self, context):
-        layout = self.layout
-
-        if "/" not in context.active_object.name:
-            layout.label(text="This is not a BIM camera.")
+        if not (context.scene.camera and hasattr(context.scene.camera.data, "BIMCameraProperties")):
+            row = self.layout.row()
+            row.label(text="No Active Drawing", icon="ERROR")
             return
 
-        layout.use_property_split = True
-        dprops = context.scene.DocProperties
-        props = context.active_object.data.BIMCameraProperties
+        if "/" not in context.scene.camera.name:
+            self.layout.label(text="This is not a BIM camera.")
+            return
 
-        col = layout.column(align=True)
+        self.layout.use_property_split = True
+        dprops = context.scene.DocProperties
+        props = context.scene.camera.data.BIMCameraProperties
+
+        col = self.layout.column(align=True)
         row = col.row(align=True)
         row.prop(props, "has_underlay", icon="OUTLINER_OB_IMAGE")
         row.prop(dprops, "should_use_underlay_cache", text="", icon="FILE_REFRESH")
@@ -63,32 +64,86 @@ class BIM_PT_camera(Panel):
         row.prop(props, "has_annotation", icon="MOD_EDGESPLIT")
         row.prop(dprops, "should_use_annotation_cache", text="", icon="FILE_REFRESH")
 
-        row = layout.row()
+        row = self.layout.row()
         row.prop(props, "calculate_shapely_surfaces")
-        row = layout.row()
+        row = self.layout.row()
         row.prop(props, "calculate_svgfill_surfaces")
 
-        row = layout.row()
-        row.prop(dprops, "should_extract")
+        row = self.layout.row()
+        row.prop(props, "width")
+        row = self.layout.row()
+        row.prop(props, "height")
 
-        row = layout.row()
-        row.prop(props, "raster_x")
-        row = layout.row()
-        row.prop(props, "raster_y")
+        row = self.layout.row()
+        row.prop(context.scene.camera.data, "clip_end", text="Depth")
 
-        row = layout.row(align=True)
-        row.prop(props, "diagram_scale")
+        row = self.layout.row(align=True)
+        row.prop(props, "diagram_scale", text="Scale")
         row.prop(props, "is_nts", text="", icon="MOD_EDGESPLIT")
 
         if props.diagram_scale == "CUSTOM":
-            row = layout.row(align=True)
+            row = self.layout.row(align=True)
             row.prop(props, "custom_scale_numerator", text="Custom Scale")
             row.prop(props, "custom_scale_denominator", text="")
 
-        row = layout.row(align=True)
+        if props.has_underlay:
+            row = self.layout.row()
+            row.prop(props, "dpi")
+
+        row = self.layout.row(align=True)
         row.operator("bim.create_drawing", text="Create Drawing", icon="OUTPUT")
         op = row.operator("bim.open_drawing", icon="URL", text="")
-        op.view = context.active_object.name.split("/")[1]
+        op.view = context.scene.camera.name.split("/")[1]
+
+
+class BIM_PT_element_filters(Panel):
+    bl_label = "Element Filters"
+    bl_idname = "BIM_PT_element_filters"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_camera"
+
+    @classmethod
+    def poll(cls, context):
+        return context.scene.camera and hasattr(context.active_object.data, "BIMCameraProperties")
+
+    def draw(self, context):
+        if not ElementFiltersData.is_loaded:
+            ElementFiltersData.load()
+
+        props = context.scene.camera.data.BIMCameraProperties
+
+        if props.filter_mode == "INCLUDE":
+            blenderbim.bim.helper.draw_filter(
+                self.layout, props.include_filter_groups, ElementFiltersData, "drawing_include"
+            )
+            row = self.layout.row(align=True)
+            row.operator(
+                "bim.edit_element_filter", icon="CHECKMARK", text="Save Include Filter"
+            ).filter_mode = "INCLUDE"
+            row.operator("bim.enable_editing_element_filter", icon="CANCEL", text="").filter_mode = "NONE"
+        elif props.filter_mode == "EXCLUDE":
+            blenderbim.bim.helper.draw_filter(
+                self.layout, props.exclude_filter_groups, ElementFiltersData, "drawing_exclude"
+            )
+            row = self.layout.row(align=True)
+            row.operator(
+                "bim.edit_element_filter", icon="CHECKMARK", text="Save Exclude Filter"
+            ).filter_mode = "EXCLUDE"
+            row.operator("bim.enable_editing_element_filter", icon="CANCEL", text="").filter_mode = "NONE"
+        else:
+            row = self.layout.row(align=True)
+            text = "Include Filter" if ElementFiltersData.data["has_include_filter"] else "No Include Filter Found"
+            icon = "GREASEPENCIL" if ElementFiltersData.data["has_include_filter"] else "ADD"
+            row.label(text=text, icon="FILTER")
+            row.operator("bim.enable_editing_element_filter", icon=icon, text="").filter_mode = "INCLUDE"
+            row = self.layout.row(align=True)
+            text = "Exclude Filter" if ElementFiltersData.data["has_exclude_filter"] else "No Exclude Filter Found"
+            icon = "GREASEPENCIL" if ElementFiltersData.data["has_exclude_filter"] else "ADD"
+            row.label(text=text, icon="FILTER")
+            row.operator("bim.enable_editing_element_filter", icon=icon, text="").filter_mode = "EXCLUDE"
 
 
 class BIM_PT_drawing_underlay(Panel):
@@ -97,12 +152,12 @@ class BIM_PT_drawing_underlay(Panel):
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "data"
+    bl_context = "scene"
     bl_parent_id = "BIM_PT_camera"
 
     @classmethod
     def poll(cls, context):
-        return context.camera and hasattr(context.active_object.data, "BIMCameraProperties")
+        return context.scene.camera and hasattr(context.active_object.data, "BIMCameraProperties")
 
     def draw(self, context):
         layout = self.layout
@@ -164,10 +219,8 @@ class BIM_PT_drawings(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-
-    @classmethod
-    def poll(cls, context):
-        return tool.Blender.is_tab(context, "DRAWINGS") and tool.Ifc.get()
+    bl_parent_id = "BIM_PT_tab_drawings"
+    bl_options = {"HIDE_HEADER"}
 
     def draw(self, context):
         if not DrawingsData.is_loaded:
@@ -245,10 +298,8 @@ class BIM_PT_schedules(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-
-    @classmethod
-    def poll(cls, context):
-        return tool.Blender.is_tab(context, "DRAWINGS") and tool.Ifc.get()
+    bl_parent_id = "BIM_PT_tab_schedules"
+    bl_options = {"HIDE_HEADER"}
 
     def draw(self, context):
         if not DocumentsData.is_loaded:
@@ -297,10 +348,8 @@ class BIM_PT_references(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-
-    @classmethod
-    def poll(cls, context):
-        return tool.Blender.is_tab(context, "DRAWINGS") and tool.Ifc.get()
+    bl_parent_id = "BIM_PT_tab_references"
+    bl_options = {"HIDE_HEADER"}
 
     def draw(self, context):
         if not DocumentsData.is_loaded:
@@ -341,10 +390,8 @@ class BIM_PT_sheets(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-
-    @classmethod
-    def poll(cls, context):
-        return tool.Blender.is_tab(context, "DRAWINGS") and tool.Ifc.get()
+    bl_parent_id = "BIM_PT_tab_sheets"
+    bl_options = {"HIDE_HEADER"}
 
     def draw(self, context):
         if not SheetsData.is_loaded:
@@ -413,13 +460,16 @@ class BIM_PT_product_assignments(Panel):
         if props.is_editing_product:
             row = self.layout.row(align=True)
             row.prop(props, "relating_product", text="")
+            row.operator("bim.assign_selected_as_product", icon="OBJECT_DATA", text="")
             row.operator("bim.edit_assigned_product", icon="CHECKMARK", text="")
             row.operator("bim.disable_editing_assigned_product", icon="CANCEL", text="")
         else:
             row = self.layout.row(align=True)
             row.label(text=ProductAssignmentsData.data["relating_product"] or "No Relating Product", icon="OBJECT_DATA")
             row.operator("bim.enable_editing_assigned_product", icon="GREASEPENCIL", text="")
-            row.operator("bim.select_assigned_product", icon="RESTRICT_SELECT_OFF", text="")
+            col = row.column()
+            col.operator("bim.select_assigned_product", icon="RESTRICT_SELECT_OFF", text="")
+            col.enabled = bool(ProductAssignmentsData.data["relating_product"])
 
 
 class BIM_PT_text(Panel):
@@ -601,3 +651,7 @@ class BIM_UL_sheets(bpy.types.UIList):
         if not flt_flags:
             return flt_flags, flt_neworder
         return flt_flags, flt_neworder
+
+
+def add_object_button(self, context):
+    self.layout.operator("bim.add_reference_image", icon="TEXTURE", text="IFC Reference Image")

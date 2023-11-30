@@ -212,7 +212,7 @@ class FileAssociate(bpy.types.Operator):
         self.layout.label(text="On the next step to create file association ")
         self.layout.label(text="the system console will be opened ")
         self.layout.label(text=f"and you will be asked to type command")
-        self.layout.label(text=f'"{command}"')
+        self.layout.label(text=f"{command}")
         self.layout.label(text="to create an association.")
 
     def invoke(self, context, event):
@@ -237,11 +237,11 @@ class FileAssociate(bpy.types.Operator):
         # tried to do the regitsry change from powershell/cmd - but even admin rights are not enough
         # this is why we're using .reg
         reg_change_path = os.path.join(src_dir, "windows_bbim_association.reg")
-        subprocess.run(["cmd", "/c", reg_change_path])
+        subprocess.run(["cmd", "/c", "call", reg_change_path])
 
         ps_script_path = os.path.join(src_dir, "windows_bbim_association.ps1")
         # NOTE: call powershell with RunAs to get admin rights from user
-        subprocess.run(["powershell", "-file", ps_script_path, binary_path], shell=True)
+        subprocess.run(["powershell", "-ExecutionPolicy", "Bypass", "-File", ps_script_path, binary_path], shell=True)
 
     def install_desktop_linux(self, src_dir=None, destdir="/tmp", binary_path="/usr/bin/blender"):
         """Creates linux file assocations and launcher icon"""
@@ -638,7 +638,8 @@ class BIM_OT_remove_section_plane(bpy.types.Operator):
             material.node_tree.nodes.remove(override)
         bpy.data.node_groups.remove(bpy.data.node_groups.get("Section Override"))
         bpy.data.node_groups.remove(bpy.data.node_groups.get("Section Compare"))
-        bpy.ops.object.delete({"selected_objects": [context.active_object]})
+        with context.temp_override(selected_objects=[context.active_object]):
+            bpy.ops.object.delete()
 
 
 class ReloadIfcFile(bpy.types.Operator, tool.Ifc.Operator):
@@ -816,6 +817,10 @@ def update_enum_property_search_prop(self, context):
         if prop.name == self.dummy_name:
             setattr(context.data, self.prop_name, self.collection_identifiers[i].name)
             predefined_type = self.collection_predefined_types[i].name
+            if self.first_launch:
+                self.first_launch = False
+            else:
+                context.window.screen = context.window.screen
             if predefined_type:
                 try:
                     setattr(context.data, "ifc_predefined_type", predefined_type)
@@ -828,6 +833,7 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
     bl_idname = "bim.enum_property_search"
     bl_label = "Search For Property"
     bl_options = {"REGISTER", "UNDO"}
+    first_launch: bpy.props.BoolProperty(default=True, options={"SKIP_SAVE"})
     dummy_name: bpy.props.StringProperty(name="Property", update=update_enum_property_search_prop)
     collection_names: bpy.props.CollectionProperty(type=StrProperty)
     collection_identifiers: bpy.props.CollectionProperty(type=StrProperty)

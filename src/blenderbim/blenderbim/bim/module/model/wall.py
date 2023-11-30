@@ -828,10 +828,10 @@ class DumbWallJoiner:
             return
 
         for rel in element1.ConnectedTo:
-            if rel.RelatingConnectionType in ["ATSTART", "ATEND"]:
+            if rel.is_a("IfcRelConnectsPathElements") and rel.RelatingConnectionType in ["ATSTART", "ATEND"]:
                 rel.RelatingConnectionType = "ATSTART" if rel.RelatingConnectionType == "ATEND" else "ATEND"
         for rel in element1.ConnectedFrom:
-            if rel.RelatedConnectionType in ["ATSTART", "ATEND"]:
+            if rel.is_a("IfcRelConnectsPathElements") and rel.RelatedConnectionType in ["ATSTART", "ATEND"]:
                 rel.RelatedConnectionType = "ATSTART" if rel.RelatedConnectionType == "ATEND" else "ATEND"
 
         layers1 = tool.Model.get_material_layer_parameters(element1)
@@ -1262,8 +1262,13 @@ class DumbWallJoiner:
                     results["is_sloped"] = True
                 results["height"] = (item.Depth * self.unit_scale) / (1 / cos(results["x_angle"]))
                 break
-            elif item.is_a("IfcBooleanClippingResult"):
+            elif item.is_a("IfcBooleanClippingResult"):  # should be before IfcBooleanResult check
                 item = item.FirstOperand
+            elif item.is_a("IfcBooleanResult"):
+                if item.FirstOperand.is_a("IfcExtrudedAreaSolid") or item.FirstOperand.is_a("IfcBooleanResult"):
+                    item = item.FirstOperand
+                else:
+                    item = item.SecondOperand
             else:
                 break
         return results

@@ -79,9 +79,11 @@ class BIM_PT_ifccsv(Panel):
             row.prop(props, "true_value")
             row = layout.row()
             row.prop(props, "false_value")
+            row = layout.row()
+            row.prop(props, "concat_value")
             layout.use_property_split = False
 
-        blenderbim.bim.helper.draw_filter(self.layout, props, SearchData, "csv")
+        blenderbim.bim.helper.draw_filter(self.layout, props.filter_groups, SearchData, "csv")
 
         row = layout.row(align=True)
         row.operator("bim.add_csv_attribute", icon="ADD")

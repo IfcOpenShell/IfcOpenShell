@@ -21,6 +21,7 @@ import builtins
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.classification
+from functools import lru_cache
 from xmlschema.validators import identities
 
 
@@ -39,6 +40,16 @@ def cast_to_value(from_value, to_value):
         return builtins.__dict__[target_type](from_value)
     except ValueError:
         pass
+
+
+@lru_cache
+def get_pset(element, pset):
+    return ifcopenshell.util.element.get_pset(element, pset)
+
+
+@lru_cache
+def get_psets(element):
+    return ifcopenshell.util.element.get_psets(element)
 
 
 class Facet:
@@ -74,11 +85,16 @@ class Facet:
     def filter(self, ifc_file, elements):
         return [e for e in elements if self(e)]
 
-    def to_string(self, clause_type):
+    def to_string(self, clause_type, specification=None, requirement=None):
         if clause_type == "applicability":
             templates = self.applicability_templates
         elif clause_type == "requirement":
-            templates = self.requirement_templates
+            is_prohibited = False
+            if specification.maxOccurs == 0:
+                is_prohibited = not is_prohibited
+            if requirement.maxOccurs == 0:
+                is_prohibited = not is_prohibited
+            templates = self.prohibited_templates if is_prohibited else self.requirement_templates
 
         for template in templates:
             total_variables = len(template) - len(template.replace("{", ""))
@@ -127,6 +143,10 @@ class Entity(Facet):
         self.requirement_templates = [
             "Shall be {name} data of type {predefinedType}",
             "Shall be {name} data",
+        ]
+        self.prohibited_templates = [
+            "Shall not be {name} data of type {predefinedType}",
+            "Shall not be {name} data",
         ]
         super().__init__(name, predefinedType, instructions)
 
@@ -180,6 +200,10 @@ class Attribute(Facet):
         self.requirement_templates = [
             "The {name} shall be {value}",
             "The {name} shall be provided",
+        ]
+        self.prohibited_templates = [
+            "The {name} shall not be {value}",
+            "The {name} shall not be provided",
         ]
         super().__init__(name, value, minOccurs, maxOccurs, instructions)
 
@@ -286,7 +310,7 @@ class Attribute(Facet):
 
 
 class Classification(Facet):
-    def __init__(self, value=None, system=None, uri=None, minOccurs=None, maxOccurs=None, instructions=None):
+    def __init__(self, value=None, system=None, uri=None, minOccurs=None, maxOccurs="unbounded", instructions=None):
         self.parameters = ["value", "system", "@uri", "@minOccurs", "@maxOccurs", "@instructions"]
         self.applicability_templates = [
             "Data having a {system} reference of {value}",
@@ -300,6 +324,13 @@ class Classification(Facet):
             "Shall be classified as {value}",
             "Shall be classified",
         ]
+        self.prohibited_templates = [
+            "Shall not have a {system} reference of {value}",
+            "Shall not be classified using {system}",
+            "Shall not be classified as {value}",
+            "Shall not be classified",
+        ]
+
         super().__init__(value, system, uri, minOccurs, maxOccurs, instructions)
 
     def filter(self, ifc_file, elements):
@@ -343,23 +374,27 @@ class Classification(Facet):
 class PartOf(Facet):
     def __init__(
         self,
-        entity="IFCWALL",
+        name="IFCWALL",
         predefinedType=None,
         relation=None,
         minOccurs=None,
-        maxOccurs=None,
+        maxOccurs="unbounded",
         instructions=None,
     ):
-        self.parameters = ["entity", "predefinedType", "@relation", "@minOccurs", "@maxOccurs", "@instructions"]
+        self.parameters = ["name", "predefinedType", "@relation", "@minOccurs", "@maxOccurs", "@instructions"]
         self.applicability_templates = [
-            "An element with an {relation} relationship with an {entity}",
+            "An element with an {relation} relationship with an {name}",
             "An element with an {relation} relationship",
         ]
         self.requirement_templates = [
-            "An element must have an {relation} relationship with an {entity}",
+            "An element must have an {relation} relationship with an {name}",
             "An element must have an {relation} relationship",
         ]
-        super().__init__(entity, predefinedType, relation, minOccurs, maxOccurs, instructions)
+        self.prohibited_templates = [
+            "An element must not have an {relation} relationship with an {name}",
+            "An element must not have an {relation} relationship",
+        ]
+        super().__init__(name, predefinedType, relation, minOccurs, maxOccurs, instructions)
 
     def filter(self, ifc_file, elements):
         if isinstance(elements, list):
@@ -369,9 +404,9 @@ class PartOf(Facet):
     def asdict(self):
         results = super().asdict()
         entity = {}
-        if "entity" in results:
-            entity["name"] = results["entity"]
-            del results["entity"]
+        if "name" in results:
+            entity["name"] = results["name"]
+            del results["name"]
         if "predefinedType" in results:
             entity["predefinedType"] = results["predefinedType"]
             del results["predefinedType"]
@@ -396,7 +431,7 @@ class PartOf(Facet):
             parent = self.get_parent(inst)
             while parent:
                 ancestors.append(parent.is_a())
-                if parent.is_a().upper() == self.entity:
+                if parent.is_a().upper() == self.name:
                     if self.predefinedType:
                         if ifcopenshell.util.element.get_predefined_type(parent) == self.predefinedType:
                             is_pass = True
@@ -411,12 +446,12 @@ class PartOf(Facet):
             is_pass = aggregate is not None
             if not is_pass:
                 reason = {"type": "NOVALUE"}
-            if is_pass and self.entity:
+            if is_pass and self.name:
                 is_pass = False
                 ancestors = []
                 while aggregate is not None:
                     ancestors.append(aggregate.is_a())
-                    if aggregate.is_a().upper() == self.entity:
+                    if aggregate.is_a().upper() == self.name:
                         if self.predefinedType:
                             if ifcopenshell.util.element.get_predefined_type(aggregate) == self.predefinedType:
                                 is_pass = True
@@ -435,8 +470,8 @@ class PartOf(Facet):
             is_pass = group is not None
             if not is_pass:
                 reason = {"type": "NOVALUE"}
-            if is_pass and self.entity:
-                if group.is_a().upper() != self.entity:
+            if is_pass and self.name:
+                if group.is_a().upper() != self.name:
                     is_pass = False
                     reason = {"type": "ENTITY", "actual": group.is_a().upper()}
                 if self.predefinedType:
@@ -449,8 +484,8 @@ class PartOf(Facet):
             is_pass = container is not None
             if not is_pass:
                 reason = {"type": "NOVALUE"}
-            if is_pass and self.entity:
-                if container.is_a().upper() != self.entity:
+            if is_pass and self.name:
+                if container.is_a().upper() != self.name:
                     is_pass = False
                     reason = {"type": "ENTITY", "actual": container.is_a().upper()}
                 if self.predefinedType:
@@ -463,12 +498,12 @@ class PartOf(Facet):
             is_pass = nest is not None
             if not is_pass:
                 reason = {"type": "NOVALUE"}
-            if is_pass and self.entity:
+            if is_pass and self.name:
                 is_pass = False
                 ancestors = []
                 while nest is not None:
                     ancestors.append(nest.is_a())
-                    if nest.is_a().upper() == self.entity:
+                    if nest.is_a().upper() == self.name:
                         if self.predefinedType:
                             if ifcopenshell.util.element.get_predefined_type(nest) == self.predefinedType:
                                 is_pass = True
@@ -483,9 +518,9 @@ class PartOf(Facet):
             is_pass = building_element is not None
             if not is_pass:
                 reason = {"type": "NOVALUE"}
-            if is_pass and self.entity:
+            if is_pass and self.name:
                 is_pass = False
-                if building_element.is_a().upper() == self.entity:
+                if building_element.is_a().upper() == self.name:
                     if self.predefinedType:
                         if ifcopenshell.util.element.get_predefined_type(building_element) == self.predefinedType:
                             is_pass = True
@@ -498,9 +533,9 @@ class PartOf(Facet):
             is_pass = opening is not None
             if not is_pass:
                 reason = {"type": "NOVALUE"}
-            if is_pass and self.entity:
+            if is_pass and self.name:
                 is_pass = False
-                if opening.is_a().upper() == self.entity:
+                if opening.is_a().upper() == self.name:
                     if self.predefinedType:
                         if ifcopenshell.util.element.get_predefined_type(opening) == self.predefinedType:
                             is_pass = True
@@ -552,7 +587,7 @@ class Property(Facet):
         datatype=None,
         uri=None,
         minOccurs=None,
-        maxOccurs=None,
+        maxOccurs="unbounded",
         instructions=None,
     ):
         self.parameters = [
@@ -573,6 +608,10 @@ class Property(Facet):
             "{name} data shall be {value} and in the dataset {propertySet}",
             "{name} data shall be provided in the dataset {propertySet}",
         ]
+        self.prohibited_templates = [
+            "{name} data shall not be {value} and in the dataset {propertySet}",
+            "{name} data shall not be provided in the dataset {propertySet}",
+        ]
         super().__init__(propertySet, name, value, datatype, uri, minOccurs, maxOccurs, instructions)
 
     def filter(self, ifc_file, elements):
@@ -591,10 +630,10 @@ class Property(Facet):
             return PropertyResult(True)
 
         if isinstance(self.propertySet, str):
-            pset = ifcopenshell.util.element.get_pset(inst, self.propertySet)
+            pset = get_pset(inst, self.propertySet)
             psets = {self.propertySet: pset} if pset else {}
         else:
-            all_psets = ifcopenshell.util.element.get_psets(inst)
+            all_psets = get_psets(inst)
             psets = {k: v for k, v in all_psets.items() if k == self.propertySet}
 
         is_pass = bool(psets)
@@ -639,7 +678,7 @@ class Property(Facet):
 
                         if data_type.lower() != self.datatype.lower():
                             is_pass = False
-                            reason = {"type": "DATATYPE", "actual": data_type}
+                            reason = {"type": "DATATYPE", "actual": data_type, "datatype": self.datatype}
                             break
 
                         unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
@@ -658,7 +697,7 @@ class Property(Facet):
 
                         if data_type.lower() != self.datatype.lower():
                             is_pass = False
-                            reason = {"type": "DATATYPE", "actual": data_type}
+                            reason = {"type": "DATATYPE", "actual": data_type, "datatype": self.datatype}
                             break
 
                         unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
@@ -678,7 +717,7 @@ class Property(Facet):
                         data_type = prop_entity.EnumerationValues[0].is_a()
                         if data_type.lower() != self.datatype.lower():
                             is_pass = False
-                            reason = {"type": "DATATYPE", "actual": data_type}
+                            reason = {"type": "DATATYPE", "actual": data_type, "datatype": self.datatype}
                             break
                     elif prop_entity.is_a("IfcPropertyListValue"):
                         if not prop_entity.ListValues:
@@ -688,7 +727,7 @@ class Property(Facet):
                         data_type = prop_entity.ListValues[0].is_a()
                         if data_type.lower() != self.datatype.lower():
                             is_pass = False
-                            reason = {"type": "DATATYPE", "actual": data_type}
+                            reason = {"type": "DATATYPE", "actual": data_type, "datatype": self.datatype}
                             break
                         unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
                         if unit:
@@ -711,7 +750,7 @@ class Property(Facet):
                                 values.append(value.wrappedValue)
                         if data_type.lower() != self.datatype.lower():
                             is_pass = False
-                            reason = {"type": "DATATYPE", "actual": data_type}
+                            reason = {"type": "DATATYPE", "actual": data_type, "datatype": self.datatype}
                             break
                         unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
                         if unit:
@@ -751,7 +790,7 @@ class Property(Facet):
                                 values.extend(column_values)
                         if not values:
                             is_pass = False
-                            reason = {"type": "DATATYPE", "actual": data_type}
+                            reason = {"type": "DATATYPE", "actual": data_type, "datatype": self.datatype}
                             break
                         props[pset_name][prop_entity.Name] = values
                     else:
@@ -824,7 +863,7 @@ class Property(Facet):
 
 
 class Material(Facet):
-    def __init__(self, value=None, uri=None, minOccurs=None, maxOccurs=None, instructions=None):
+    def __init__(self, value=None, uri=None, minOccurs=None, maxOccurs="unbounded", instructions=None):
         self.parameters = ["value", "@uri", "@minOccurs", "@maxOccurs", "@instructions"]
         self.applicability_templates = [
             "All data with a {value} material",
@@ -833,6 +872,10 @@ class Material(Facet):
         self.requirement_templates = [
             "Shall have a material of {value}",
             "Shall have a material",
+        ]
+        self.prohibited_templates = [
+            "Shall not have a material of {value}",
+            "Shall not have a material",
         ]
         super().__init__(value, uri, minOccurs, maxOccurs, instructions)
 
@@ -908,12 +951,15 @@ class Restriction:
             return self
         self.base = ids_dict.get("@base", "xs:string")[3:]
         for key, value in ids_dict.items():
+            key = key.split(":")[-1]
             if key in ["@base", "annotation"]:
                 continue
-            if isinstance(value, dict):
-                self.options[key.split(":")[-1]] = value["@value"]
+            if key == "enumeration" and isinstance(value, dict):
+                self.options[key] = [value["@value"]]  # A single enumeration value which is pretty meaningless
+            elif isinstance(value, dict):
+                self.options[key] = value["@value"]
             else:
-                self.options[key.split(":")[-1]] = [v["@value"] for v in value]
+                self.options[key] = [v["@value"] for v in value]
         return self
 
     def asdict(self):
@@ -1035,7 +1081,7 @@ class PropertyResult(Result):
         elif self.reason["type"] == "NOVALUE":
             return "The property set does not contain the required property"
         elif self.reason["type"] == "DATATYPE":
-            return f"The data type \"{str(self.reason['actual'])}\" does not match the requirements"
+            return f"The property's data type \"{str(self.reason['actual'])}\" does not match the required data type of \"{str(self.reason['datatype'])}\""
         elif self.reason["type"] == "VALUE":
             if isinstance(self.reason["actual"], list):
                 if len(self.reason["actual"]) == 1:
