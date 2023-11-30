@@ -275,7 +275,7 @@ class UpdateRepresentation(bpy.types.Operator, Operator):
     ifc_representation_class: bpy.props.StringProperty()
 
     def _execute(self, context):
-        if context.active_object and context.active_object.mode != "OBJECT":
+        if context.view_layer.objects.active and context.view_layer.objects.active.mode != "OBJECT":
             # Ensure mode is object to prevent invalid mesh data causing CTD
             bpy.ops.object.mode_set(mode="OBJECT", toggle=False)
 
