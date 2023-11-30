@@ -600,6 +600,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         ifc_importer.file = tool.Ifc.get()
         ifc_importer.calculate_unit_scale()
         ifc_importer.process_context_filter()
+        ifc_importer.material_creator.load_existing_materials()
         ifc_importer.create_generic_elements(elements)
         for obj in ifc_importer.added_data.values():
             tool.Collector.assign(obj)
