@@ -42,10 +42,16 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRepresentation* inst) {
 	// @todo
 	// if (s.ShapeType() == TopAbs_COMPOUND && TopoDS_Iterator(s).More() && TopoDS_Iterator(s).Value().ShapeType() == TopAbs_SOLID) {
 
-	return filter_in_place(items, [&use_body](taxonomy::ptr i) {
+	auto filtered = filter_in_place(items, [&use_body](taxonomy::ptr i) {
 		// @todo just filter loops for now.
-		return (i->kind() != taxonomy::LOOP) == use_body;
+		return (i->kind() != taxonomy::LOOP && i->kind() != taxonomy::PIECEWISE_FUNCTION) == use_body;
 	});
+
+	if (filtered->children.empty()) {
+		return nullptr;
+	}
+
+	return filtered;
 }
 
 /*

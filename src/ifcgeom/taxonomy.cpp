@@ -1,3 +1,4 @@
+#include "../ifcparse/IfcLogger.h"
 #include "taxonomy.h"
 #include "profile_helper.h"
 
@@ -477,6 +478,13 @@ ifcopenshell::geometry::taxonomy::item::ptr ifcopenshell::geometry::taxonomy::pi
       Eigen::Matrix4d m = evaluate(u);
       polygon.push_back(taxonomy::make<taxonomy::point3>(m.col(3)(0), m.col(3)(1), m.col(3)(2)));
 	}
+
+	// @nb temporary debugging - can be removed later.
+	std::ostringstream oss;
+	for (auto it = polygon.begin(); it != polygon.end() && std::distance(polygon.begin(), it) < 5; ++it) {
+		(**it).print(oss);
+	}
+	Logger::Notice("Evaluated points: " + oss.str(), instance);
 
 	return polygon_from_points(polygon);
 }
