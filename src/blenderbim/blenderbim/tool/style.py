@@ -506,3 +506,9 @@ class Style(blenderbim.core.tool.Style):
             else:
                 items.append(item)
         return items
+
+    @classmethod
+    def assign_style_to_object(cls, style, obj):
+        """assigns `style` to `object` current representation"""
+        representation = tool.Geometry.get_active_representation(obj)
+        tool.Ifc.run("style.assign_representation_styles", shape_representation=representation, styles=[style])
