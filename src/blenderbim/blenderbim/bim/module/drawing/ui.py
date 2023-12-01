@@ -107,7 +107,11 @@ class BIM_PT_element_filters(Panel):
 
     @classmethod
     def poll(cls, context):
-        return context.scene.camera and hasattr(context.active_object.data, "BIMCameraProperties")
+        return (
+            context.scene.camera
+            and context.active_object
+            and hasattr(context.active_object.data, "BIMCameraProperties")
+        )
 
     def draw(self, context):
         if not ElementFiltersData.is_loaded:
@@ -157,7 +161,11 @@ class BIM_PT_drawing_underlay(Panel):
 
     @classmethod
     def poll(cls, context):
-        return context.scene.camera and hasattr(context.active_object.data, "BIMCameraProperties")
+        return (
+            context.scene.camera
+            and context.active_object
+            and hasattr(context.active_object.data, "BIMCameraProperties")
+        )
 
     def draw(self, context):
         layout = self.layout
