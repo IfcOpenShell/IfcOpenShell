@@ -2306,7 +2306,7 @@ void IfcFile::process_deletion_() {
             }
         }
 
-        if (entity->declaration().is(*ifcroot_type_)) {
+        if (entity->declaration().is(*ifcroot_type_) && !entity->data().getArgument(0)->isNull()) {
             const std::string global_id = *entity->data().getArgument(0);
             auto it = byguid_.find(global_id);
             if (it != byguid_.end()) {
