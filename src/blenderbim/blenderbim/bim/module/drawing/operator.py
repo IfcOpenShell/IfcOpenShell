@@ -2624,6 +2624,9 @@ class AddReferenceImage(bpy.types.Operator, Operator):
         obj.material_slots[0].material = material
         bpy.ops.bim.add_style()
 
+        style = ifc_file.by_id(material.BIMMaterialProperties.ifc_style_id)
+        tool.Style.assign_style_to_object(style, obj)
+
         material.diffuse_color = (0.031379, 0, 0.801157, 1)
         material.BIMStyleProperties.diffuse_path = self.filepath
         material.BIMStyleProperties.uv_mode = "Generated"
