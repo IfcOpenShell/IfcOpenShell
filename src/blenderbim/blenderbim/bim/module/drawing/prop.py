@@ -515,6 +515,7 @@ ANNOTATION_TYPES_DATA = {
     "REVISION_CLOUD":("Revision Cloud",   "Add revision cloud", "VOLUME_DATA", "mesh"),
     "FILL_AREA":     ("Fill Area",        "", "NODE_TEXTURE", "mesh"),
     "FALL":          ("Fall",             "", "SORT_ASC", "curve"),
+    "IMAGE":         ("Image",            "Add reference image attached to the drawing", "TEXTURE", "mesh"),
 }
 # fmt: on
 

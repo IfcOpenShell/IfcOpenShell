@@ -104,6 +104,9 @@ class AddAnnotationType(bpy.types.Operator, Operator):
         )
         element.ApplicableOccurrence = f"IfcAnnotation/{object_type}"
 
+        if props.create_representation_for_type and object_type == "IMAGE":
+            bpy.ops.bim.add_reference_image("INVOKE_DEFAULT", use_existing_object_by_name=obj.name)
+
 
 class EnableAddAnnotationType(bpy.types.Operator, Operator):
     bl_idname = "bim.enable_add_annotation_type"
@@ -2581,6 +2584,11 @@ class AddReferenceImage(bpy.types.Operator, Operator):
             "Override image if it was previously loaded to Blender. If disabled, will always create a new image"
         ),
     )
+    use_existing_object_by_name: bpy.props.StringProperty(
+        name="Use Existing Object By Name",
+        description="Existing object name to add a style with reference image to. If not provided will create a new object.",
+        options={"SKIP_SAVE"},
+    )
 
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
@@ -2596,29 +2604,33 @@ class AddReferenceImage(bpy.types.Operator, Operator):
             params = {"check_existing": False}
         image = load_image(image_filepath.name, image_filepath.parent, **params)
 
-        temp_mesh = bpy.data.meshes.new("temp_mesh")
-        bm = tool.Blender.get_bmesh_for_mesh(temp_mesh)
-        plane_scale = (Vector(image.size) / min(image.size)).to_3d()
-        matrix = Matrix.LocRotScale(None, None, plane_scale)
-        bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=1, matrix=matrix, calc_uvs=False)
-        tool.Blender.apply_bmesh(temp_mesh, bm)
-        obj = bpy.data.objects.new(image_filepath.stem, temp_mesh)
+        def bm_add_image_plane(mesh):
+            bm = tool.Blender.get_bmesh_for_mesh(mesh, clean=True)
+            plane_scale = (Vector(image.size) / min(image.size)).to_3d()
+            matrix = Matrix.LocRotScale(None, None, plane_scale)
+            bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=1, matrix=matrix, calc_uvs=False)
+            tool.Blender.apply_bmesh(mesh, bm)
 
-        # assign to the active collection
-        collection = context.view_layer.active_layer_collection.collection
-        collection.objects.link(obj)
-
-        tool.Drawing.run_root_assign_class(
-            obj=obj,
-            ifc_class="IfcAnnotation",
-            predefined_type="IMAGE",
-            should_add_representation=True,
-            context=ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW"),
-            ifc_representation_class=None,
-        )
-        tool.Blender.remove_data_block(temp_mesh)
+        if self.use_existing_object_by_name:
+            obj = bpy.data.objects[self.use_existing_object_by_name]
+            bm_add_image_plane(obj.data)
+            bpy.ops.bim.update_representation(obj=obj.name, ifc_representation_class="")
+        else:
+            temp_mesh = bpy.data.meshes.new("temp_mesh")
+            bm_add_image_plane(temp_mesh)
+            obj = bpy.data.objects.new(image_filepath.stem, temp_mesh)
+            tool.Drawing.run_root_assign_class(
+                obj=obj,
+                ifc_class="IfcAnnotation",
+                predefined_type="IMAGE",
+                should_add_representation=True,
+                context=ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW"),
+                ifc_representation_class=None,
+            )
+            tool.Blender.remove_data_block(temp_mesh)
 
         tool.Blender.set_active_object(obj)
+
         material = bpy.data.materials.new(name=image_filepath.stem)
         obj.data.materials.append(None)  # new slot
         obj.material_slots[0].material = material
@@ -2626,8 +2638,8 @@ class AddReferenceImage(bpy.types.Operator, Operator):
 
         style = ifc_file.by_id(material.BIMMaterialProperties.ifc_style_id)
         tool.Style.assign_style_to_object(style, obj)
+        tool.Geometry.record_object_materials(obj)
 
-        material.diffuse_color = (0.031379, 0, 0.801157, 1)
         material.BIMStyleProperties.diffuse_path = self.filepath
         material.BIMStyleProperties.uv_mode = "Generated"
         bpy.ops.bim.update_style_colours()
