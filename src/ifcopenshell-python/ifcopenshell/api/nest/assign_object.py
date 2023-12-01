@@ -47,7 +47,7 @@ class Usecase:
         construction models. Its main usecase is in modular construction, kit of
         parts, or fabrication models.
 
-        As a product may only have a single locaion in the "spatial
+        As a product may only have a single location in the "spatial
         decomposition" tree, assigning an nesting relationship will remove any
         previous aggregation, containment, or nesting relationships it may have.
 
