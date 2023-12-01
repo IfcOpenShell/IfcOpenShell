@@ -3,6 +3,8 @@
 
 #include "../ifcparse/IfcBaseClass.h"
 
+#include "ConversionSettings.h"
+
 #include <boost/variant.hpp>
 #include <boost/functional/hash.hpp>
 
@@ -127,12 +129,20 @@ typedef item const* ptr;
 
 			struct implicit_item : public item {
 				DECLARE_PTR(implicit_item)
+				using item::item;
 
 				virtual item::ptr evaluate() const = 0;
 			};
 
 			struct piecewise_function : public implicit_item {
 				DECLARE_PTR(piecewise_function)
+
+				piecewise_function(const IfcUtil::IfcBaseInterface* instance = nullptr) : implicit_item(instance){};
+				piecewise_function(ifcopenshell::geometry::Settings* settings) : settings_(settings){};
+            piecewise_function(piecewise_function&&) = default;
+            piecewise_function(const piecewise_function&) = default;
+
+				ifcopenshell::geometry::Settings* settings_ = nullptr;
 
 				// length of span, function to evaluate span
 				std::vector<std::pair<double, std::function<Eigen::Matrix4d(double u)>>> spans;

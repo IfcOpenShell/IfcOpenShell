@@ -120,6 +120,9 @@ BIND(IfcSegmentedReferenceCurve);
 BIND(IfcGradientCurve);
 #endif
 BIND(IfcCompositeCurve);
+#ifdef SCHEMA_HAS_IfcOffsetCurveByDistances
+BIND(IfcOffsetCurveByDistances)
+#endif
 BIND(IfcTrimmedCurve);
 BIND(IfcArbitraryOpenProfileDef);
 #ifdef SCHEMA_HAS_IfcIndexedPolyCurve
