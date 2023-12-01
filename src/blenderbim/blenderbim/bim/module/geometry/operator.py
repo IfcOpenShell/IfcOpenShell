@@ -374,14 +374,14 @@ class UpdateRepresentation(bpy.types.Operator, Operator):
                 tool.Geometry.run_style_add_style(obj=mat)
                 for mat in tool.Geometry.get_object_materials_without_styles(obj)
             ]
-            ifcopenshell.api.run(
-                "style.assign_representation_styles",
-                self.file,
-                shape_representation=new_representation,
-                styles=tool.Geometry.get_styles(obj, only_assigned_to_faces=True),
-                should_use_presentation_style_assignment=context.scene.BIMGeometryProperties.should_use_presentation_style_assignment,
-            )
-            tool.Geometry.record_object_materials(obj)
+        ifcopenshell.api.run(
+            "style.assign_representation_styles",
+            self.file,
+            shape_representation=new_representation,
+            styles=tool.Geometry.get_styles(obj, only_assigned_to_faces=True),
+            should_use_presentation_style_assignment=context.scene.BIMGeometryProperties.should_use_presentation_style_assignment,
+        )
+        tool.Geometry.record_object_materials(obj)
 
         # TODO: move this into a replace_representation usecase or something
         for inverse in self.file.get_inverse(old_representation):
