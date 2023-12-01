@@ -83,6 +83,9 @@
 	void set_(const std::string& name, int val) {
 		return $self->set(name, val);
 	}
+	void set_(const std::string& name, ifcopenshell::geometry::settings::IteratorOutputOptions val) {
+		return $self->set(name, val);
+	}	
 	void set_(const std::string& name, double val) {
 		return $self->set(name, val);
 	}
@@ -92,7 +95,7 @@
 	void set_(const std::string& name, const std::set<int>& val) {
 		return $self->set(name, val);
 	}
-	boost::variant<bool, int, double, std::string, std::set<int>> get_(const std::string& name) {
+	ifcopenshell::geometry::Settings::value_variant_t get_(const std::string& name) {
 		return $self->get(name);
 	}
 	std::vector<std::string> setting_names() {
@@ -116,7 +119,7 @@
 	void set_(const std::string& name, const std::set<int>& val) {
 		return $self->set(name, val);
 	}
-	boost::variant<bool, int, double, std::string, std::set<int>> get_(const std::string& name) {
+	ifcopenshell::geometry::SerializerSettings::value_variant_t get_(const std::string& name) {
 		return $self->get(name);
 	}
 	std::vector<std::string> setting_names() {

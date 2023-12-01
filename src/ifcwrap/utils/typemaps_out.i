@@ -148,7 +148,12 @@ CREATE_VECTOR_TYPEMAP_OUT(IfcParse::entity const *)
 CREATE_VECTOR_TYPEMAP_OUT(IfcParse::declaration const *)
 CREATE_VECTOR_TYPEMAP_OUT(IfcGeom::ConversionResultShape *)
 
-%typemap(out) boost::variant<bool, int, double, std::string, std::set<int>> {
+%typemap(out) ifcopenshell::geometry::Settings::value_variant_t {
+	pythonizing_visitor vis;
+	$result = $1.apply_visitor(vis);
+}
+
+%typemap(out) ifcopenshell::geometry::SerializerSettings::value_variant_t {
 	pythonizing_visitor vis;
 	$result = $1.apply_visitor(vis);
 }
