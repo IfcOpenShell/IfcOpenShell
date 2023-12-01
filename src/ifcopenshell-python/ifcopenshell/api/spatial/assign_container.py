@@ -57,7 +57,7 @@ class Usecase:
         critical in facility management, as it indicates through which space
         equipment may be accessed for maintenance purposes.
 
-        As a product may only have a single locaion in the "spatial
+        As a product may only have a single location in the "spatial
         decomposition" tree, assigning an aggregate relationship will remove any
         previous aggregation, containment, or nesting relationships it may have.
 
