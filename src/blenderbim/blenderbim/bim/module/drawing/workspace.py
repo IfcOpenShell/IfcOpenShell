@@ -186,6 +186,9 @@ def create_annotation_occurrence(context):
     tool.Collector.assign(obj)
     tool.Blender.select_and_activate_single_object(context, obj)
 
+    if relating_type_repr is None and props.object_type == "IMAGE":
+        bpy.ops.bim.add_reference_image("INVOKE_DEFAULT", use_existing_object_by_name=obj.name)
+
 
 def create_annotation():
     props = bpy.context.scene.BIMAnnotationProperties
@@ -194,6 +197,10 @@ def create_annotation():
     else:
         object_type = props.object_type
         bpy.ops.bim.add_annotation(object_type=object_type, data_type=ANNOTATION_TYPES_DATA[object_type][-1])
+        if props.object_type == "IMAGE":
+            bpy.ops.bim.add_reference_image(
+                "INVOKE_DEFAULT", use_existing_object_by_name=bpy.context.active_object.name
+            )
 
 
 class AnnotationToolUI:
