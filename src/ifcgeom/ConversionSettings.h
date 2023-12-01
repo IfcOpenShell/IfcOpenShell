@@ -300,12 +300,29 @@ namespace ifcopenshell {
 				static constexpr const char* const description = "Overrides transparency of spaces in geometry output.";
 			};
 
+			enum PiecewiseStepMethod  {
+				MAXSTEPSIZE,
+				MINSTEPS };
+
+			std::istream& operator>>(std::istream& in, PiecewiseStepMethod& ioo);
+
+         struct PiecewiseStepType : public SettingBase<PiecewiseStepType, PiecewiseStepMethod> {
+               static constexpr const char* const name = "piecewise-step-type";
+               static constexpr const char* const description = "Indicates the method used for defining step size when evaluating piecewise curves. Provides interpretation of piecewise-step-param";
+               static constexpr PiecewiseStepMethod defaultvalue = MAXSTEPSIZE;
+         };
+
+			struct PiecewiseStepParam : public SettingBase<PiecewiseStepParam, double> {
+               static constexpr const char* const name = "piecewise-step-param";
+               static constexpr const char* const description = "Indicates the parameter value for defining step size when evaluating piecewise curves.";
+               static constexpr double defaultvalue = 0.5; // ceiling of this value is used when PiecewiseStepMethod is MinSteps
+         };
 		}
 
 		template <typename settings_t>
 		class IFC_GEOM_API SettingsContainer {
 		public:
-			typedef boost::variant<bool, int, double, std::string, std::set<int>, IteratorOutputOptions> value_variant_t;
+         typedef boost::variant<bool, int, double, std::string, std::set<int>, IteratorOutputOptions, PiecewiseStepMethod> value_variant_t;
 		private:
 			settings_t settings;
 
@@ -385,7 +402,7 @@ namespace ifcopenshell {
 		};
 
 		class IFC_GEOM_API Settings : public SettingsContainer<
-			std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, IncludeCurves, IncludeSurfaces, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, WeldVertices, UseWorldCoords, ConvertBackUnits, ContextIds, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency>
+                                          std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, IncludeCurves, IncludeSurfaces, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, WeldVertices, UseWorldCoords, ConvertBackUnits, ContextIds, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, PiecewiseStepType, PiecewiseStepParam>
 		>
 		{};
 }

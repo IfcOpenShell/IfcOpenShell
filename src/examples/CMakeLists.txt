@@ -33,3 +33,6 @@ set_target_properties(IfcAdvancedHouse PROPERTIES FOLDER Examples)
 
 endif()
 
+ADD_EXECUTABLE(IfcAlignment IfcAlignment.cpp)
+TARGET_LINK_LIBRARIES(IfcAlignment ${IFCOPENSHELL_LIBRARIES})
+set_target_properties(IfcAlignment PROPERTIES FOLDER Examples)

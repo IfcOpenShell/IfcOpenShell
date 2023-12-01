@@ -43,23 +43,27 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcAxis2PlacementLinear* inst) 
 	if (hasAxis) {
 		taxonomy::direction3::ptr v = taxonomy::cast<taxonomy::direction3>(map(inst->Axis()));
 		axis = *v->components_;
-	}
+    } else { 
+		// 8.9.3.4 IfcAxis2LinearPlacement does not specify the default when Axis is omitted
+		// When RefDirection is omitted, see comment below, it is taken to be tangent to the curve.
+		// To be consistent, Axis is taken to be orthogonal to RefDirection
+        axis = m->components().col(2).head<3>();
+    }
 
 	if (hasRef) {
 		taxonomy::direction3::ptr v = taxonomy::cast<taxonomy::direction3>(map(inst->RefDirection()));
 		refDirection = *v->components_;
 	} else {
-		// @todo: rb "If RefDirection is omitted, the direction is taken from the curve tangent at Location"
+		// 8.9.3.4 IfcAxis2LinearPlacement 
 		// https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcAxis2PlacementLinear.htm
-		// Based on our email discussion, I'm using the perpendicular direction towards the right as viewed in the XY Plane for .RefDirection
+      // "If RefDirection is omitted, the direction is taken from the curve tangent at Location"
 		//
 		// When the PointByDistanceExpression Location is evaluated, it is evaluating the basis curve and returning
 		// the matrix of orthogonal vectors that define the coordinate system at the point on curve as well as the point on curve
 		// In other words, the m matrix has everything needed
 
-		refDirection = m->components().col(1).head<3>();
-        
-		axis = m->components().col(2).head<3>();
+		refDirection = m->components().col(0).head<3>();
+
     }
 	return taxonomy::make<taxonomy::matrix4>(o, axis, refDirection);
 }
