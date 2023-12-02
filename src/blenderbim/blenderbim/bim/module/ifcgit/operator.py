@@ -96,7 +96,7 @@ class DiscardUncommitted(bpy.types.Operator):
 
     def execute(self, context):
 
-        core.discard_uncomitted(tool.IfcGit, tool.Ifc)
+        core.discard_uncommitted(tool.IfcGit, tool.Ifc)
         refresh()
         return {"FINISHED"}
 
