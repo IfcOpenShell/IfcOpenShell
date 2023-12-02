@@ -19,7 +19,7 @@ def clone_repo(ifcgit, remote_url, local_folder, operator):
     ifcgit.load_anyifc(repo)
 
 
-def discard_uncomitted(ifcgit, ifc):
+def discard_uncommitted(ifcgit, ifc):
     path_ifc = ifc.get_path()
     # NOTE this is calling the git binary in a subprocess
     ifcgit.git_checkout(path_ifc)
