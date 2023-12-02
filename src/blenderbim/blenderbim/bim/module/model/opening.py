@@ -782,7 +782,7 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                         element = similar_opening.VoidsElements[0].RelatingBuildingElement
                         obj = tool.Ifc.get_object(element)
                         building_objs.add(obj)
-                    
+
                     building_objs.update(self.get_all_building_objects_of_similar_openings(opening))
                     tool.Ifc.unlink(element=opening, obj=opening_obj)
                     bpy.data.objects.remove(opening_obj)
@@ -826,13 +826,10 @@ class CloneOpening(Operator, tool.Ifc.Operator):
                 continue
 
         opening_placement = opening.ObjectPlacement
-        opening_representations = opening.Representation.Representations
+        opening_representation = opening.Representation
 
         new_opening = ifcopenshell.api.run("root.create_entity", tool.Ifc.get(), ifc_class="IfcOpeningElement")
-        for representation in opening_representations:
-            ifcopenshell.api.run(
-                "geometry.assign_representation", tool.Ifc.get(), product=new_opening, representation=representation
-            )
+        new_opening.Representation = opening_representation
 
         ifcopenshell.api.run("void.add_opening", tool.Ifc.get(), opening=new_opening, element=wall)
         new_opening.ObjectPlacement = opening_placement
