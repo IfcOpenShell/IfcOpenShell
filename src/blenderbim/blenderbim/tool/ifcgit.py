@@ -130,6 +130,7 @@ class IfcGit:
 
     @classmethod
     def create_new_branch(cls):
+        """Convert a detached HEAD into a branch"""
         props = bpy.context.scene.IfcGitProperties
         repo = IfcGitRepo.repo
         new_branch = repo.create_head(props.new_branch_name)
