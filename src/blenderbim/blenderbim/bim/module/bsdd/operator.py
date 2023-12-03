@@ -33,7 +33,13 @@ class LoadBSDDDomains(bpy.types.Operator):
         props = context.scene.BIMBSDDProperties
         props.domains.clear()
         client = bsdd.Client()
-        for domain in sorted(client.Domain(), key=lambda x: x["name"]):
+
+        if props.load_activated_domains:
+            domains = [d for d in client.Domain() if d["status"] == "Active"]
+        else:
+            domains = client.Domain()
+
+        for domain in sorted(domains, key=lambda x: x["name"]):
             new = props.domains.add()
             new.name = domain["name"]
             new.namespace_uri = domain["namespaceUri"]
