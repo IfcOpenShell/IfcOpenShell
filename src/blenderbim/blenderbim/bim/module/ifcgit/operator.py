@@ -115,18 +115,17 @@ class CommitChanges(bpy.types.Operator):
         repo = IfcGitData.data["repo"]
         if props.commit_message == "":
             return False
-        if (
-            repo
-            and repo.head.is_detached
-            and (
-                not tool.IfcGit.is_valid_ref_format(props.new_branch_name)
-                or props.new_branch_name in [branch.name for branch in repo.branches]
-            )
-        ):
-            cls.poll_message_set(
-                "The new branch name is invalid, please insert a valid branch name (eg. with no spaces, ...)"
-            )
-            return False
+        if repo:
+            if props.new_branch_name in [branch.name for branch in repo.branches]:
+                cls.poll_message_set("Branch already exists!")
+                return False
+            elif not tool.IfcGit.is_valid_ref_format(props.new_branch_name):
+                if repo.head.is_detached:
+                    cls.poll_message_set("Branch name is invalid or empty!")
+                    return False
+                elif props.new_branch_name != "":
+                    cls.poll_message_set("Branch name is invalid!")
+                    return False
         return True
 
     def execute(self, context):

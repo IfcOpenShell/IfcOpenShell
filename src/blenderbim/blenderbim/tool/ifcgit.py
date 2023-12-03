@@ -82,6 +82,16 @@ class IfcGit:
         IfcGitRepo.repo.git.checkout(path_file)
 
     @classmethod
+    def checkout_new_branch(cls, path_file):
+        """Create a branch and move uncommitted changes to this branch"""
+        props = bpy.context.scene.IfcGitProperties
+        if props.new_branch_name:
+            IfcGitRepo.repo.git.checkout(b=props.new_branch_name)
+            props.display_branch = props.new_branch_name
+            props.new_branch_name = ""
+            bpy.ops.ifcgit.refresh()
+
+    @classmethod
     def git_commit(cls, path_file):
         props = bpy.context.scene.IfcGitProperties
         repo = IfcGitRepo.repo

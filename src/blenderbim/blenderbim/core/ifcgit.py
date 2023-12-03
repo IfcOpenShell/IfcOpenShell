@@ -27,11 +27,15 @@ def discard_uncommitted(ifcgit, ifc):
 
 
 def commit_changes(ifcgit, ifc, repo):
+    """Commit and create new branches as required"""
     path_ifc = ifc.get_path()
-    ifcgit.git_commit(path_ifc)
 
     if repo.head.is_detached:
+        ifcgit.git_commit(path_ifc)
         ifcgit.create_new_branch()
+    else:
+        ifcgit.checkout_new_branch(path_ifc)
+        ifcgit.git_commit(path_ifc)
 
 
 def add_tag(ifcgit, repo):

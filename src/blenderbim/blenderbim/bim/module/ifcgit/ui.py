@@ -79,10 +79,12 @@ class IFCGIT_PT_panel(bpy.types.Panel):
             row = layout.row()
             row.prop(props, "commit_message")
 
+            row = layout.row()
             if IfcGitData.data["is_detached"]:
-                row = layout.row()
                 row.label(text="HEAD is detached, commit will create a branch", icon="ERROR")
-                row.prop(props, "new_branch_name")
+            else:
+                row.label(text="Optionally create a branch:")
+            row.prop(props, "new_branch_name")
 
             row = layout.row()
             row.operator("ifcgit.commit_changes", icon="GREASEPENCIL")
