@@ -269,21 +269,18 @@ class BIMStyleProperties(PropertyGroup):
         name="NormalMap",
         maxlen=1024,
         default="",
-        subtype="FILE_PATH",
         update=update_shader_graph,
     )
     emissive_path: bpy.props.StringProperty(
         name="Emissive",
         maxlen=1024,
         default="",
-        subtype="FILE_PATH",
         update=update_shader_graph,
     )
     metallic_roughness_path: bpy.props.StringProperty(
         name="Metallic/Roughness",
         maxlen=1024,
         default="",
-        subtype="FILE_PATH",
         update=update_shader_graph,
         description="Green Channel = Roughness,\nBlue Channel = Metallic",
     )
@@ -291,7 +288,6 @@ class BIMStyleProperties(PropertyGroup):
         name="Diffuse",
         maxlen=1024,
         default="",
-        subtype="FILE_PATH",
         update=update_shader_graph,
     )
     occlusion_path: bpy.props.StringProperty(
@@ -299,6 +295,5 @@ class BIMStyleProperties(PropertyGroup):
         description="Note that occlusion isn't actually used in Blender shader, we're just storing the data",
         maxlen=1024,
         default="",
-        subtype="FILE_PATH",
         update=update_shader_graph,
     )

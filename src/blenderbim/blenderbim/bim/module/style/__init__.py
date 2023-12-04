@@ -25,6 +25,7 @@ classes = (
     operator.AddStyle,
     operator.BrowseExternalStyle,
     operator.ClearTextureMapPath,
+    operator.ChooseTextureMapPath,
     operator.DisableAddingPresentationStyle,
     operator.DisableEditingExternalStyle,
     operator.DisableEditingStyle,
