@@ -31,24 +31,28 @@ JSON_TO_IFC = {
     "BuildingInstallation": ["IfcBuildingElementProxy"],
     "BuildingConstructiveElement": ["IfcBuildingElementProxy"],
     "BuildingFurniture": ["IfcFurniture"],
-    "BuildingStorey": ["IfcBuildingStorey",  {"CompositionType": "PARTIAL"}],
-    "BuildingRoom": ["IfcSpace",  {"CompositionType": "ELEMENT"}],
-    "BuildingUnit": ["IfcSpace",  {"CompositionType": "ELEMENT"}],
+    "BuildingStorey": ["IfcBuildingStorey", {"CompositionType": "PARTIAL"}],
+    "BuildingRoom": ["IfcSpace", {"CompositionType": "ELEMENT"}],
+    "BuildingUnit": ["IfcSpace", {"CompositionType": "ELEMENT"}],
     "Road": ["IfcCivilElement"],  # Update for IFC4.3
     "Railway": ["IfcCivilElement"],  # Update for IFC4.3
     "TransportationSquare": ["IfcCivilElement"],  # Update for IFC4.3
     "TINRelief": ["IfcGeographicElement", {"PredefinedType": "TERRAIN"}],
-    "WaterBody": ["IfcGeographicElement", {"PredefinedType": "USERDEFINED",
-                                           "ObjectType": "WaterBody"}],  # Update for IFC4.3
-    "LandUse": ["IfcGeographicElement", {"PredefinedType": "USERDEFINED",
-                                         "ObjectType": "LandUse"}],
-    "PlantCover": ["IfcGeographicElement", {"PredefinedType": "USERDEFINED",
-                                            "ObjectType": "Plantcover"}],
-    "SolitaryVegetationObject": ["IfcGeographicElement", {"PredefinedType": "USERDEFINED",
-                                                          "ObjectType": "SolitaryVegetationObject"}],
+    "WaterBody": [
+        "IfcGeographicElement",
+        {"PredefinedType": "USERDEFINED", "ObjectType": "WaterBody"},
+    ],  # Update for IFC4.3
+    "LandUse": ["IfcGeographicElement", {"PredefinedType": "USERDEFINED", "ObjectType": "LandUse"}],
+    "PlantCover": ["IfcGeographicElement", {"PredefinedType": "USERDEFINED", "ObjectType": "Plantcover"}],
+    "SolitaryVegetationObject": [
+        "IfcGeographicElement",
+        {"PredefinedType": "USERDEFINED", "ObjectType": "SolitaryVegetationObject"},
+    ],
     "CityFurniture": ["IfcFurnishingElement"],
     "OtherConstruction": ["IfcCivilElement"],
-    "+GenericCityObject": ["IfcCivilElement"], # We make an exception here, because GenericCityObject is a remnant from CityJSON v1.0, which was moved to an extension in v1.1 and it is commonly used.
+    "+GenericCityObject": [
+        "IfcCivilElement"
+    ],  # We make an exception here, because GenericCityObject is a remnant from CityJSON v1.0, which was moved to an extension in v1.1 and it is commonly used.
     "Bridge": ["IfcCivilElement"],  # Update for IFC4.3
     "BridgePart": ["IfcCivilElement"],  # Update for IFC4.3
     "BridgeInstallation": ["IfcCivilElement"],  # Update for IFC4.3
@@ -73,12 +77,18 @@ JSON_TO_IFC = {
     "InteriorWallSurface": ["IfcWall"],
     "CeilingSurface": ["IfcCovering", {"PredefinedType": "CEILING"}],
     "FloorSurface": ["IfcSlab", {"PredefinedType": "FLOOR"}],
-    "WaterSurface": ["IfcGeographicElement", {"PredefinedType": "USERDEFINED",
-                                              "ObjectType": "WaterSurface"}],  # Update for IFC4.3
-    "WaterGroundSurface": ["IfcGeographicElement", {"PredefinedType": "USERDEFINED",
-                                                    "ObjectType": "WaterGroundSurface"}],  # Update for IFC4.3
-    "WaterClosureSurface": ["IfcGeographicElement", {"PredefinedType": "USERDEFINED",
-                                                     "ObjectType": "WaterClosureSurface"}],  # Update for IFC4.3
+    "WaterSurface": [
+        "IfcGeographicElement",
+        {"PredefinedType": "USERDEFINED", "ObjectType": "WaterSurface"},
+    ],  # Update for IFC4.3
+    "WaterGroundSurface": [
+        "IfcGeographicElement",
+        {"PredefinedType": "USERDEFINED", "ObjectType": "WaterGroundSurface"},
+    ],  # Update for IFC4.3
+    "WaterClosureSurface": [
+        "IfcGeographicElement",
+        {"PredefinedType": "USERDEFINED", "ObjectType": "WaterClosureSurface"},
+    ],  # Update for IFC4.3
     "TrafficArea": ["IfcCivilElement"],  # Update for IFC4.3
     "AuxiliaryTrafficArea": ["IfcCivilElement"],  # Update for IFC4.3
     "TransportationMarking": ["IfcCivilElement"],  # Update for IFC4.3
@@ -94,9 +104,17 @@ class Cityjson2ifc:
         self.geometry = GeometryIO()
         self.configuration()
 
-    def configuration(self, file_destination="output.ifc", name_attribute=None,
-                      split=True, lod=None, name_project=None, name_site=None,
-                      name_person_family=None, name_person_given=None):
+    def configuration(
+        self,
+        file_destination="output.ifc",
+        name_attribute=None,
+        split=True,
+        lod=None,
+        name_project=None,
+        name_site=None,
+        name_person_family=None,
+        name_person_given=None,
+    ):
         self.properties["file_destination"], self.properties["file_extension"] = os.path.splitext(file_destination)
         self.properties["name_attribute"] = name_attribute
         self.properties["split"] = split
@@ -111,7 +129,7 @@ class Cityjson2ifc:
         self.create_new_file()
         self.create_metadata()
         self.geometry.set_scale(self.properties["local_scale"])
-        #self.geometry.build_vertices(self.IFC_model,
+        # self.geometry.build_vertices(self.IFC_model,
         #                             coords=city_model.j["vertices"],
         #                             scale=self.properties["local_scale"])
         # self.build_vertices()
@@ -128,29 +146,36 @@ class Cityjson2ifc:
         self.properties["local_translation"] = None
         self.properties["local_scale"] = None
         if not self.city_model.is_transformed:
-            self.properties["local_scale"] = self.city_model.transform['scale']
-            local_translation = self.city_model.transform['translate']
+            self.properties["local_scale"] = self.city_model.transform["scale"]
+            local_translation = self.city_model.transform["translate"]
             self.properties["local_translation"] = {
                 "Eastings": local_translation[0],
                 "Northings": local_translation[1],
-                "OrthogonalHeight": local_translation[2]
+                "OrthogonalHeight": local_translation[2],
             }
 
         epsg = self.city_model.get_epsg()
         if epsg:
             # Meter is assumed as unit for now
             unit = self.IFC_model.createIfcSIUnit(None, "LENGTHUNIT", None, "METRE")
-            self.properties["local_translation"]["TargetCRS"] = self.IFC_model.create_entity("IfcProjectedCrs", Name=f"EPSG:{epsg}")
+            self.properties["local_translation"]["TargetCRS"] = self.IFC_model.create_entity(
+                "IfcProjectedCrs", Name=f"EPSG:{epsg}"
+            )
             self.properties["local_translation"]["SourceCRS"] = self.IFC_representation_context
             self.IFC_model.create_entity("IfcMapConversion", **self.properties["local_translation"])
 
     def create_new_file(self):
         self.IFC_model = ifcopenshell.api.run("project.create_file")
-        self.IFC_project = ifcopenshell.api.run("root.create_entity", self.IFC_model, **{"ifc_class": "IfcProject", "name": self.properties.get("name_project", "My Project")})
+        self.IFC_project = ifcopenshell.api.run(
+            "root.create_entity",
+            self.IFC_model,
+            **{"ifc_class": "IfcProject", "name": self.properties.get("name_project", "My Project")},
+        )
         ifcopenshell.api.run("unit.assign_unit", self.IFC_model, length={"is_metric": True, "raw": "METERS"})
         self.properties["owner_history"] = self.create_owner_history()
-        self.IFC_representation_context = ifcopenshell.api.run("context.add_context", self.IFC_model,
-                                                               **{"context_type": "Model"})
+        self.IFC_representation_context = ifcopenshell.api.run(
+            "context.add_context", self.IFC_model, **{"context_type": "Model"}
+        )
 
         if not self.city_model.has_metadata() or "presentLoDs" not in self.city_model.j["metadata"]:
             self.city_model.update_metadata()
@@ -158,13 +183,19 @@ class Cityjson2ifc:
         # create IFC representation subcontexts from lods
         self.create_representation_sub_contexts()
 
-        self.IFC_site = ifcopenshell.api.run("root.create_entity", self.IFC_model,
-                                             **{"ifc_class": "IfcSite",
-                                                "name": self.properties.get("name_site", "My Site")})
-        self.IFC_model.create_entity("IfcRelAggregates",
-                                     **{"GlobalId": ifcopenshell.guid.new(),
-                                        "RelatedObjects": [self.IFC_site],
-                                        "RelatingObject": self.IFC_project})
+        self.IFC_site = ifcopenshell.api.run(
+            "root.create_entity",
+            self.IFC_model,
+            **{"ifc_class": "IfcSite", "name": self.properties.get("name_site", "My Site")},
+        )
+        self.IFC_model.create_entity(
+            "IfcRelAggregates",
+            **{
+                "GlobalId": ifcopenshell.guid.new(),
+                "RelatedObjects": [self.IFC_site],
+                "RelatingObject": self.IFC_project,
+            },
+        )
 
     def create_representation_sub_contexts(self):
         self.IFC_representation_sub_contexts = {}
@@ -178,19 +209,28 @@ class Cityjson2ifc:
         #                                                               "subcontext": "Body",
         #                                                               "target_view": "USERDEFINED",
         #                                                               "UserDefinedTargetView":str(lod)})
-        return self.IFC_model.create_entity("IfcGeometricRepresentationSubContext",
-                                         **{"ContextType": "Model",
-                                        "ContextIdentifier": "Body",
-                                        "TargetView": "USERDEFINED",
-                                        "ParentContext": self.IFC_representation_context,
-                                        "UserDefinedTargetView": "LOD" + lod})
+        return self.IFC_model.create_entity(
+            "IfcGeometricRepresentationSubContext",
+            **{
+                "ContextType": "Model",
+                "ContextIdentifier": "Body",
+                "TargetView": "USERDEFINED",
+                "ParentContext": self.IFC_representation_context,
+                "UserDefinedTargetView": "LOD" + lod,
+            },
+        )
 
     def create_owner_history(self):
         actor = self.IFC_model.createIfcActorRole("ENGINEER", None, None)
         person = self.IFC_model.createIfcPerson(
             self.properties.get("name_person_family", "FamilyName"),
             self.properties.get("name_person_given", "GivenName"),
-            None, None, None, None, (actor,))
+            None,
+            None,
+            None,
+            None,
+            (actor,),
+        )
         organization = self.IFC_model.createIfcOrganization(
             None,
             "IfcOpenShell",
@@ -199,8 +239,9 @@ class Cityjson2ifc:
         p_o = self.IFC_model.createIfcPersonAndOrganization(person, organization)
         application = self.IFC_model.createIfcApplication(organization, __version__, "ifccityjson", "ifccityjson")
         timestamp = int(datetime.now().timestamp())
-        ownerHistory = self.IFC_model.createIfcOwnerHistory(p_o, application, "READWRITE", None, None, None, None,
-                                                            timestamp)
+        ownerHistory = self.IFC_model.createIfcOwnerHistory(
+            p_o, application, "READWRITE", None, None, None, None, timestamp
+        )
 
         return ownerHistory
 
@@ -217,7 +258,7 @@ class Cityjson2ifc:
             file = self.properties["file_destination"] + lod + self.properties["file_extension"]
             self.IFC_model.write(file)
             IFC_copied_model = ifcopenshell.open(file)
-            IFC_copied_model_sub_contexts = IFC_copied_model.by_type('IfcGeometricRepresentationSubContext')
+            IFC_copied_model_sub_contexts = IFC_copied_model.by_type("IfcGeometricRepresentationSubContext")
             for sub_context in IFC_copied_model_sub_contexts:
                 if sub_context.id() == sub_context_id:
                     continue
@@ -234,7 +275,7 @@ class Cityjson2ifc:
             del IFC_copied_model
 
     def create_IFC_classes(self):
-        parents_children_relations = {"IfcSite": {'Parent': self.IFC_site, 'Children': []}}
+        parents_children_relations = {"IfcSite": {"Parent": self.IFC_site, "Children": []}}
         geometries = {}
         for obj_id, obj in self.city_model.get_cityobjects().items():
             # CityJSON type to class
@@ -272,17 +313,19 @@ class Cityjson2ifc:
                 if geometry and geometry.surfaces:
                     IFC_semantic_surface_children.extend(self.create_IFC_semantic_surface_children(geometry, lod))
                 elif geometry:
-                    IFC_geometry, shape_representation_type = self.geometry.create_IFC_geometry(self.IFC_model,
-                                                                                                geometry)
+                    IFC_geometry, shape_representation_type = self.geometry.create_IFC_geometry(
+                        self.IFC_model, geometry
+                    )
                 if IFC_geometry:
-                    IFC_shape_representation = self.create_IFC_shape_representation(IFC_geometry,
-                                                                                shape_representation_type,
-                                                                                lod)
+                    IFC_shape_representation = self.create_IFC_shape_representation(
+                        IFC_geometry, shape_representation_type, lod
+                    )
                     IFC_shape_representations.append(IFC_shape_representation)
 
             if len(IFC_shape_representations) > 0:
-                data["Representation"] = self.IFC_model.create_entity("IfcProductDefinitionShape",
-                                                              Representations=IFC_shape_representations)
+                data["Representation"] = self.IFC_model.create_entity(
+                    "IfcProductDefinitionShape", Representations=IFC_shape_representations
+                )
             data["GlobalId"] = ifcopenshell.guid.new()
             data["Name"] = IFC_name
 
@@ -290,48 +333,54 @@ class Cityjson2ifc:
 
             # Define aggregation
             if len(obj.parents) == 0:
-                parents_children_relations["IfcSite"]['Children'].append(IFC_object)
+                parents_children_relations["IfcSite"]["Children"].append(IFC_object)
 
             for parent in obj.parents:
                 if parent not in parents_children_relations:
-                    parents_children_relations[parent] = {'Parent': None, 'Children': []}
-                parents_children_relations[parent]['Children'].append(IFC_object)
+                    parents_children_relations[parent] = {"Parent": None, "Children": []}
+                parents_children_relations[parent]["Children"].append(IFC_object)
 
             if len(obj.children) > 0:
                 if obj_id not in parents_children_relations:
-                    parents_children_relations[obj_id] = {'Parent': None, 'Children': []}
-                parents_children_relations[obj_id]['Parent'] = IFC_object
+                    parents_children_relations[obj_id] = {"Parent": None, "Children": []}
+                parents_children_relations[obj_id]["Parent"] = IFC_object
 
             if IFC_semantic_surface_children:
-                self.IFC_model.create_entity("IfcRelContainedInSpatialStructure",
-                                             **{"GlobalId": ifcopenshell.guid.new(),
-                                                "RelatedElements": IFC_semantic_surface_children,
-                                                "RelatingStructure": IFC_object})
+                self.IFC_model.create_entity(
+                    "IfcRelContainedInSpatialStructure",
+                    **{
+                        "GlobalId": ifcopenshell.guid.new(),
+                        "RelatedElements": IFC_semantic_surface_children,
+                        "RelatingStructure": IFC_object,
+                    },
+                )
 
             self.create_property_set(obj.attributes, IFC_object)
 
         for parent, parent_children in parents_children_relations.items():
-            self.IFC_model.create_entity("IfcRelAggregates",
-                                         **{"GlobalId": ifcopenshell.guid.new(),
-                                            "RelatedObjects": parent_children['Children'],
-                                            "RelatingObject": parent_children['Parent']}
-                                         )
+            self.IFC_model.create_entity(
+                "IfcRelAggregates",
+                **{
+                    "GlobalId": ifcopenshell.guid.new(),
+                    "RelatedObjects": parent_children["Children"],
+                    "RelatingObject": parent_children["Parent"],
+                },
+            )
 
     def create_IFC_semantic_surface_children(self, geometry, lod):
         IFC_semantic_surface_children = []
         for surface_id in geometry.surfaces:
             IFC_child_class = JSON_TO_IFC[geometry.surfaces[surface_id]["type"]][0]
-            child_data = {"GlobalId": ifcopenshell.guid.new(),
-                          "Name": IFC_child_class
-                          }
+            child_data = {"GlobalId": ifcopenshell.guid.new(), "Name": IFC_child_class}
 
             # CREATE ENTITY
             surface_geometry = self.geometry.create_IFC_surface(self.IFC_model, geometry, surface_id)
             if surface_geometry:
-                IFC_shape_representation =self.create_IFC_shape_representation(surface_geometry, 'brep', lod)
+                IFC_shape_representation = self.create_IFC_shape_representation(surface_geometry, "brep", lod)
 
-                child_data["Representation"] = self.IFC_model.create_entity("IfcProductDefinitionShape",
-                                             Representations=[IFC_shape_representation])
+                child_data["Representation"] = self.IFC_model.create_entity(
+                    "IfcProductDefinitionShape", Representations=[IFC_shape_representation]
+                )
             IFC_semantic_surface_children.append(self.IFC_model.create_entity(IFC_child_class, **child_data))
 
         return IFC_semantic_surface_children
@@ -340,10 +389,13 @@ class Cityjson2ifc:
         if not isinstance(IFC_geometry, list):
             IFC_geometry = [IFC_geometry]
 
-        shape_representation = self.IFC_model.create_entity("IfcShapeRepresentation",
-                                                            self.IFC_representation_sub_contexts[lod], 'Body',
-                                                            shape_representation_type,
-                                                            IFC_geometry)
+        shape_representation = self.IFC_model.create_entity(
+            "IfcShapeRepresentation",
+            self.IFC_representation_sub_contexts[lod],
+            "Body",
+            shape_representation_type,
+            IFC_geometry,
+        )
         return shape_representation
 
     def create_property_set(self, CJ_attributes, IFC_entity):
