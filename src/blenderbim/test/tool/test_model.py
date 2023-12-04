@@ -199,10 +199,11 @@ class TestGenerateStair2DProfile(NewFile):
             (6, 7),
             (7, 8),
             (8, 9),
-            (0, 11),
+            (11, 0),
             (10, 11),
-            (10, 9),
+            (9, 10),
         )
+        edges_data = [e[::-1] for e in edges_data]
         faces_data = ()
         expected_profile = (verts_data, edges_data, faces_data)
         generated_profile = subject.generate_stair_2d_profile(**kwargs)
@@ -235,7 +236,6 @@ class TestGenerateStair2DProfile(NewFile):
             V(0.1, 0, -0.25),
             V(0.0, 0, -0.25),
         )
-
         edges_data = (
             (0, 1),
             (1, 2),
@@ -247,10 +247,11 @@ class TestGenerateStair2DProfile(NewFile):
             (7, 8),
             (8, 9),
             (9, 10),
-            (0, 12),
+            (12, 0),
             (11, 12),
-            (11, 10),
+            (10, 11),
         )
+        edges_data = [e[::-1] for e in edges_data]
 
         faces_data = ()
         expected_profile = (verts_data, edges_data, faces_data)
@@ -284,7 +285,6 @@ class TestGenerateStair2DProfile(NewFile):
             V(1.2, 0, 1.0),
             V(0.9, 0, 1.0),
         )
-
         edges_data = (
             (0, 1),
             (1, 2),
@@ -324,7 +324,6 @@ class TestGenerateStair2DProfile(NewFile):
             V(1.2, 0, 1.0),
             V(1.2, 0, 0.0),
         )
-
         edges_data = (
             (0, 1),
             (1, 2),
@@ -337,6 +336,7 @@ class TestGenerateStair2DProfile(NewFile):
             (8, 9),
             (9, 0),
         )
+        edges_data = [e[::-1] for e in edges_data]
 
         faces_data = ()
         expected_profile = (verts_data, edges_data, faces_data)
