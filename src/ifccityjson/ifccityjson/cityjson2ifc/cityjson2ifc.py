@@ -140,7 +140,7 @@ class Cityjson2ifc:
         if epsg:
             # Meter is assumed as unit for now
             unit = self.IFC_model.createIfcSIUnit(None, "LENGTHUNIT", None, "METRE")
-            self.properties["local_translation"]["TargetCRS"] = self.IFC_model.create_entity("IfcProjectedCrs", Name=f"epsg:{epsg}")
+            self.properties["local_translation"]["TargetCRS"] = self.IFC_model.create_entity("IfcProjectedCrs", Name=f"EPSG:{epsg}")
             self.properties["local_translation"]["SourceCRS"] = self.IFC_representation_context
             self.IFC_model.create_entity("IfcMapConversion", **self.properties["local_translation"])
 
