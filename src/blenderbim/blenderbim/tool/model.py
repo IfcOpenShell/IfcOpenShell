@@ -1109,6 +1109,9 @@ class Model(blenderbim.core.tool.Model):
             vertices.append(vertices[-1] * V(1, 0))
             edges.extend([(last_vert_i - 1, last_vert_i), (last_vert_i, 0)])
 
+            # flip edges direction for ccw polygon winding order
+            edges = [e[::-1] for e in edges]
+
         elif stair_type == "CONCRETE":
             define_generic_stair_treads()
 
@@ -1158,19 +1161,22 @@ class Model(blenderbim.core.tool.Model):
             if base_point.y > -base_slab_depth:
                 # stair doesn't meet the slab
                 vertices.append(base_point)
-                edges.append((0, len(vertices) - 1))
+                edges.append((len(vertices) - 1, 0))
                 bottom_nib_end = len(vertices) - 1
             else:
                 # slab overlaps stair
                 vertices.append(get_point_on_2d_line(y=start_vert.y - base_slab_depth))
                 vertices.append(start_vert + Vector((0, -base_slab_depth)))
                 last_vertex_i = len(vertices) - 1
-                edges.append((0, last_vertex_i))
+                edges.append((last_vertex_i, 0))
                 edges.append((last_vertex_i - 1, last_vertex_i))
                 bottom_nib_end = len(vertices) - 2
 
             # close the shape
-            edges.append((bottom_nib_end, top_nib_end))
+            edges.append((top_nib_end, bottom_nib_end))
+
+            # flip edges direction for ccw polygon winding order
+            edges = [e[::-1] for e in edges]
         else:
             raise Exception(f"Unsupported stair type: {stair_type}")
 
