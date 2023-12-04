@@ -1,4 +1,3 @@
-
 # ifccityjson - Python CityJSON to IFC converter
 # Copyright (C) 2021 Laurens J.N. Oostwegel <l.oostwegel@gmail.com>
 #
@@ -19,6 +18,7 @@
 
 import warnings
 
+
 class GeometryIO:
     def __init__(self, scale=None):
         self.vertices = {}
@@ -33,9 +33,7 @@ class GeometryIO:
 
     def build_vertex(self, IFC_model, vertex):
         if self.scale:
-            IFC_vertex = [float(xyz) * coord_scale
-                                for xyz, coord_scale
-                                in zip(vertex, self.scale)]
+            IFC_vertex = [float(xyz) * coord_scale for xyz, coord_scale in zip(vertex, self.scale)]
         else:
             IFC_vertex = [float(xyz) for xyz in vertex]
 
@@ -54,13 +52,13 @@ class GeometryIO:
     # https://www.cityjson.org/specs/1.0.3/#geometry-objects
     def create_IFC_geometry(self, IFC_model, geometry):
         IFC_Geometry = None
-        geometry_type = 'brep'
+        geometry_type = "brep"
         if geometry.type in ["MultiPoint"]:
             IFC_geometry = self.create_IFC_cartesian_point_list3D(IFC_model, geometry)
-            geometry_type = 'PointCloud'
+            geometry_type = "PointCloud"
         elif geometry.type in ["MultiLineString"]:
             IFC_geometry = self.create_IFC_composite_curve(IFC_model, geometry)
-            geometry_type = 'Curve3D'
+            geometry_type = "Curve3D"
         elif geometry.type in ["CompositeSurface", "MultiSurface"]:
             IFC_geometry = self.create_IFC_surface(IFC_model, geometry)
         elif geometry.type == "Solid":
@@ -152,7 +150,7 @@ class GeometryIO:
         for vertex in face[0]:
             vertices.append(self.get_vertex(IFC_model, vertex))
         polyloop = IFC_model.create_entity("IfcPolyLoop", Polygon=vertices)
-        outerbound = IFC_model.create_entity("IfcFaceOuterBound", Bound=polyloop, 	Orientation=True)
+        outerbound = IFC_model.create_entity("IfcFaceOuterBound", Bound=polyloop, Orientation=True)
 
         # return if only exterior face
         if len(face) == 1:
@@ -164,5 +162,5 @@ class GeometryIO:
             for vertex in interior_face:
                 vertices.append(self.get_vertex(IFC_model, vertex))
             polyloop = IFC_model.create_entity("IfcPolyLoop", Polygon=vertices)
-            innerbounds.append(IFC_model.create_entity("IfcFaceBound", Bound=polyloop, 	Orientation=False))
+            innerbounds.append(IFC_model.create_entity("IfcFaceBound", Bound=polyloop, Orientation=False))
         return IFC_model.create_entity("IfcFace", Bounds=[outerbound] + innerbounds)
