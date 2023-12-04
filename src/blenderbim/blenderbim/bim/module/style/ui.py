@@ -417,15 +417,14 @@ class BIM_PT_STYLE_GRAPH(Panel):
         def add_texture_path(path_name):
             row = layout.row(align=True)
             row.prop(props, path_name)
-            op = row.operator("bim.clear_texture_map_path", text="", icon="X")
-            op.texture_map_prop = path_name
+            op_path = row.operator("bim.choose_texture_map_path", text="", icon="FILEBROWSER")
+            op_clear = row.operator("bim.clear_texture_map_path", text="", icon="X")
+            op_path.texture_map_prop = op_clear.texture_map_prop = path_name
 
         layout.separator()
         texture_maps = TEXTURE_MAPS_BY_METHODS.get(props.reflectance_method, [])
         if not texture_maps:
             return
-        if not bpy.data.filepath:
-            layout.label(text="Save .blend file to keep relative paths", icon="ERROR")
 
         layout.prop(props, "uv_mode")
         layout.label(text="Texture Maps:")
