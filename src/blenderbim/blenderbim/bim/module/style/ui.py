@@ -65,6 +65,8 @@ class BIM_PT_styles(Panel):
             row.prop(self.props, "style_name", text="Name")
             if self.props.style_type == "IfcSurfaceStyle":
                 row = box.row()
+                # NOTE: user must choose 1 of the style elements to create IfcSurfaceStyle
+                # otherwise it won't be a valid IFC
                 row.prop(self.props, "surface_style_class", text="Class")
                 if self.props.surface_style_class in ("IfcSurfaceStyleShading", "IfcSurfaceStyleRendering"):
                     row = box.row()

@@ -501,6 +501,9 @@ class AddPresentationStyle(bpy.types.Operator, tool.Ifc.Operator):
         props = bpy.context.scene.BIMStylesProperties
         if props.style_type == "IfcSurfaceStyle":
             style = ifcopenshell.api.run("style.add_style", tool.Ifc.get(), name=props.style_name)
+
+            # setup surface style element
+            surface_style = None
             if props.surface_style_class in ("IfcSurfaceStyleShading", "IfcSurfaceStyleRendering"):
                 surface_style = ifcopenshell.api.run(
                     "style.add_surface_style",
@@ -518,13 +521,17 @@ class AddPresentationStyle(bpy.types.Operator, tool.Ifc.Operator):
                 )
                 if props.surface_style_class == "IfcSurfaceStyleRendering":
                     surface_style.ReflectanceMethod = "NOTDEFINED"
+
+            # setup blender material
             material = bpy.data.materials.new(style.Name)
             tool.Ifc.link(style, material)
             material.use_fake_user = True
-            if surface_style.is_a("IfcSurfaceStyleShading"):
-                tool.Loader.create_surface_style_shading(material, surface_style)
-            elif surface_style.is_a("IfcSurfaceStyleRendering"):
-                tool.Loader.create_surface_style_rendering(material, surface_style)
+            if surface_style:
+                if surface_style.is_a("IfcSurfaceStyleRendering"):
+                    tool.Loader.create_surface_style_rendering(material, surface_style)
+                elif surface_style.is_a("IfcSurfaceStyleShading"):
+                    tool.Loader.create_surface_style_shading(material, surface_style)
+
         props.is_adding = False
         core.load_styles(tool.Style, style_type=props.style_type)
 
