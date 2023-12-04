@@ -163,6 +163,8 @@ class Json(Reporter):
     def report(self):
         self.results["title"] = self.ids.info.get("title", "Untitled IDS")
         self.results["date"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.results["filepath"] = self.ids.filepath
+        self.results["filename"] = self.ids.filename
         total_specifications = 0
         total_specifications_pass = 0
         total_requirements = 0
