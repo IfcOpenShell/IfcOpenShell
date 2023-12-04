@@ -1653,10 +1653,12 @@ class Drawing(blenderbim.core.tool.Drawing):
                 subcontext = current_representation.ContextOfItems
                 current_representation_subcontext = tool.Geometry.get_subcontext_parameters(subcontext)
 
+            has_context = False
             for subcontext in subcontexts:
                 # prioritize already active representation if it matches the subcontext
                 # (element could have multiple representations in the same subcontext)
                 if current_representation and subcontext == current_representation_subcontext:
+                    has_context = True
                     break
                 priority_representation = ifcopenshell.util.representation.get_representation(element, *subcontext)
                 if priority_representation:
@@ -1669,7 +1671,12 @@ class Drawing(blenderbim.core.tool.Drawing):
                         is_global=True,
                         should_sync_changes_first=True,
                     )
+                    has_context = True
                     break
+
+            if not has_context:
+                obj.hide_set(True)
+                obj.hide_render = True
 
     @classmethod
     def get_elements_in_camera_view(cls, camera, objs):
