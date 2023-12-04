@@ -410,6 +410,46 @@ class SelectByStyle(bpy.types.Operator, tool.Ifc.Operator):
         core.select_by_style(tool.Style, tool.Spatial, style=tool.Ifc.get().by_id(self.style))
 
 
+class ChooseTextureMapPath(bpy.types.Operator):
+    bl_idname = "bim.choose_texture_map_path"
+    bl_label = "Choose Texture Map Path"
+    bl_options = {"REGISTER", "UNDO"}
+    texture_map_prop: bpy.props.StringProperty(default="")
+
+    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=True)
+    filepath: bpy.props.StringProperty(
+        name="File Path", description="Filepath used to import from", maxlen=1024, default="", subtype="FILE_PATH"
+    )
+    filter_image: bpy.props.BoolProperty(default=True, options={"HIDDEN", "SKIP_SAVE"})
+    filter_folder: bpy.props.BoolProperty(default=True, options={"HIDDEN", "SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+    @classmethod
+    def poll(cls, context):
+        poll = getattr(context, "material", None)
+        if not poll:
+            cls.poll_message_set("Select a material")
+        return poll
+
+    def execute(self, context):
+        if not self.texture_map_prop:
+            self.report({"ERROR"}, "Provide a texture map")
+            return {"CANCELLED"}
+
+        abs_path = Path(self.filepath)
+        if self.use_relative_path:
+            image_filepath = abs_path.relative_to(Path(tool.Ifc.get_path()).parent)
+        else:
+            image_filepath = abs_path
+
+        props = context.material.BIMStyleProperties
+        setattr(props, self.texture_map_prop, image_filepath.as_posix())
+        return {"FINISHED"}
+
+
 class ClearTextureMapPath(bpy.types.Operator):
     bl_idname = "bim.clear_texture_map_path"
     bl_label = "Clear Texture Map Path"
