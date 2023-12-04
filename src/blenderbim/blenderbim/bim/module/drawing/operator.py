@@ -2571,6 +2571,7 @@ class AddReferenceImage(bpy.types.Operator, Operator):
     bl_label = "Add Reference Image"
     bl_options = {"REGISTER", "UNDO"}
 
+    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=True)
     filepath: bpy.props.StringProperty(
         name="File Path", description="Filepath used to import from", maxlen=1024, default="", subtype="FILE_PATH"
     )
@@ -2595,14 +2596,18 @@ class AddReferenceImage(bpy.types.Operator, Operator):
         return {"RUNNING_MODAL"}
 
     def _execute(self, context):
+        abs_path = Path(self.filepath)
+        if self.use_relative_path:
+            image_filepath = abs_path.relative_to(Path(tool.Ifc.get_path()).parent)
+        else:
+            image_filepath = abs_path
         ifc_file = tool.Ifc.get()
-        image_filepath = Path(self.filepath)
 
         if self.override_existing_image:
             params = {"check_existing": True, "force_reload": True}
         else:
             params = {"check_existing": False}
-        image = load_image(image_filepath.name, image_filepath.parent, **params)
+        image = load_image(abs_path.name, abs_path.parent, **params)
 
         def bm_add_image_plane(mesh):
             bm = tool.Blender.get_bmesh_for_mesh(mesh, clean=True)
@@ -2640,6 +2645,6 @@ class AddReferenceImage(bpy.types.Operator, Operator):
         tool.Style.assign_style_to_object(style, obj)
         tool.Geometry.record_object_materials(obj)
 
-        material.BIMStyleProperties.diffuse_path = self.filepath
+        material.BIMStyleProperties.diffuse_path = image_filepath.as_posix()
         material.BIMStyleProperties.uv_mode = "Generated"
         bpy.ops.bim.update_style_colours()
