@@ -18,6 +18,12 @@ using ifcopenshell::geometry::NumberEpeck;
 #define NumberType NumberEpeck
 #endif
 
+ifcopenshell::geometry::CgalShape::CgalShape(const cgal_shape_t & shape) {
+	shape_ = shape;
+	CGAL::Polygon_mesh_processing::triangulate_faces(*shape_);
+	CGAL::Polygon_mesh_processing::remove_degenerate_faces(*shape_);
+}
+
 #ifndef IFOPSH_SIMPLE_KERNEL
 void ifcopenshell::geometry::CgalShape::to_poly() const {
 	if (!shape_) {
