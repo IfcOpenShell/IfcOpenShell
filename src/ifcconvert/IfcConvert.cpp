@@ -805,6 +805,10 @@ int main(int argc, char** argv) {
 		IfcGeom::update_default_style("IfcSpace").transparency = geometry_settings.get<ifcopenshell::geometry::settings::ForceSpaceTransparency>().get();
 	}
 
+	if (output_extension == OBJ || output_extension == STP || output_extension == IGS) {
+		geometry_settings.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = true;
+	}
+
 	boost::shared_ptr<GeometrySerializer> serializer; /**< @todo use std::unique_ptr when possible */
 	if (output_extension == OBJ) {
         // Do not use temp file for MTL as it's such a small file.
