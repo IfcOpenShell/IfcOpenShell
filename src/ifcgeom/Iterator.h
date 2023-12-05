@@ -185,9 +185,9 @@ namespace IfcGeom {
 				tasks_.push_back(res);
 			}
 
-			std::vector<IfcUtil::IfcBaseClass*> products;
-			for (auto& r : reps) {
-				std::copy(r.products->begin(), r.products->end(), std::back_inserter(products));
+			size_t num_products = 0;
+			for (auto& r : tasks_) {
+				num_products += r.products.size();
 			}
 
 			/*
@@ -220,7 +220,7 @@ namespace IfcGeom {
 			}
 			*/
 
-			Logger::Notice("Created " + boost::lexical_cast<std::string>(tasks_.size()) + " tasks for " + boost::lexical_cast<std::string>(products.size()) + " products");
+			Logger::Notice("Created " + boost::lexical_cast<std::string>(tasks_.size()) + " tasks for " + boost::lexical_cast<std::string>(num_products) + " products");
 
 			if (tasks_.size() == 0) {
 				Logger::Warning("No representations encountered, aborting");
