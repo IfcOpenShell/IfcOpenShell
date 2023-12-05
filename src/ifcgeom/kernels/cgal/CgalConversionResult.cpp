@@ -265,12 +265,62 @@ std::shared_ptr<OpaqueNumber> ifcopenshell::geometry::CgalShape::volume()
 
 OpaqueCoordinate<3> ifcopenshell::geometry::CgalShape::position()
 {
-	throw std::runtime_error("Invalid shape type");
+	to_poly();
+	if (shape_->size_of_facets() == 1) {
+		// return centroid;
+		// CGAL::Vector_3<Kernel_> p;
+		std::array<Kernel_::FT, 3> p;
+		for (auto it = shape_->points_begin(); it != shape_->points_end(); ++it) {
+			for (int i = 0; i < 3; ++i) {
+				p[i] += it->cartesian(i);
+			}			
+		}
+		Kernel_::FT N(std::distance(shape_->points_begin(), shape_->points_end()));
+		for (int i = 0; i < 3; ++i) {
+			p[i] /= N;
+		}
+		return OpaqueCoordinate<3>(
+			std::make_shared<NumberType>(p[0]),
+			std::make_shared<NumberType>(p[1]),
+			std::make_shared<NumberType>(p[2])
+		);
+	} else {
+		throw std::runtime_error("Invalid shape type");
+	}
+}
+
+namespace {
+	struct Plane_equation {
+		template <class Facet>
+		typename Facet::Plane_3 operator()(Facet& f) {
+			// @todo from the docs, but better use Newell's method
+			typename Facet::Halfedge_handle h = f.halfedge();
+			typedef typename Facet::Plane_3  Plane;
+			return Plane(h->vertex()->point(),
+				h->next()->vertex()->point(),
+				h->next()->next()->vertex()->point());
+		}
+	};
 }
 
 OpaqueCoordinate<3> ifcopenshell::geometry::CgalShape::axis()
 {
-	throw std::runtime_error("Invalid shape type");
+	to_poly();
+	if (shape_->size_of_facets() == 1) {
+		auto pl = Plane_equation()(*shape_->facets_begin());
+		std::array<typename Kernel_::FT, 3> abc{ pl.a(), pl.b(), pl.c() };
+		auto minel = std::min_element(abc.begin(), abc.end());
+		auto maxel = std::max_element(abc.begin(), abc.end());
+		auto maxval = ((-*minel) > *maxel) ? (-*minel) : *maxel;
+
+		return OpaqueCoordinate<3>(
+			std::make_shared<NumberType>(pl.a() / maxval),
+			std::make_shared<NumberType>(pl.b() / maxval),
+			std::make_shared<NumberType>(pl.c() / maxval)
+		);
+	} else {
+		throw std::runtime_error("Invalid shape type");
+	}
 }
 
 OpaqueCoordinate<4> ifcopenshell::geometry::CgalShape::plane_equation()
@@ -330,7 +380,24 @@ std::vector<ConversionResultShape*> ifcopenshell::geometry::CgalShape::edges()
 
 std::vector<ConversionResultShape*> ifcopenshell::geometry::CgalShape::facets()
 {
-	throw std::runtime_error("Not implemented");
+	to_poly();
+	std::vector<ConversionResultShape*> result;
+	for (auto &face : faces(*shape_)) {
+		std::vector<cgal_point_t> ps;
+		std::vector<std::vector<size_t>> ids(1);
+
+		auto it = face->facet_begin();
+		do {
+			ps.push_back(it->vertex()->point());
+			ids.front().push_back(ids.front().size());
+		} while (++it != face->facet_begin());
+
+		cgal_shape_t poly;
+		CGAL::Polygon_mesh_processing::polygon_soup_to_polygon_mesh(ps, ids, poly);
+
+		result.push_back(new CgalShape(poly));
+	}
+	return result;
 }
 
 ConversionResultShape* ifcopenshell::geometry::CgalShape::add(ConversionResultShape* other)
@@ -459,10 +526,14 @@ OpaqueCoordinate<3> ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::pos
 OpaqueCoordinate<3> ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::axis()
 {
 	if (planes_.size() == 1) {
+		std::array<typename Kernel_::FT, 3> abc{ planes_.front().a(), planes_.front().b(), planes_.front().c() };
+		auto minel = std::min_element(abc.begin(), abc.end());
+		auto maxel = std::max_element(abc.begin(), abc.end());
+		auto maxval = ((-*minel) > *maxel) ? (-*minel) : *maxel;
 		return OpaqueCoordinate<3>(
-			std::make_shared<NumberType>(planes_.front().a()),
-			std::make_shared<NumberType>(planes_.front().b()),
-			std::make_shared<NumberType>(planes_.front().c())
+			std::make_shared<NumberType>(planes_.front().a() / maxval),
+			std::make_shared<NumberType>(planes_.front().b() / maxval),
+			std::make_shared<NumberType>(planes_.front().c() / maxval)
 		);
 	} else {
 		throw std::runtime_error("Invalid shape type");
@@ -472,11 +543,15 @@ OpaqueCoordinate<3> ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::axi
 OpaqueCoordinate<4> ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::plane_equation()
 {
 	if (planes_.size() == 1) {
+		std::array<typename Kernel_::FT, 3> abc{ planes_.front().a(), planes_.front().b(), planes_.front().c() };
+		auto minel = std::min_element(abc.begin(), abc.end());
+		auto maxel = std::max_element(abc.begin(), abc.end());
+		auto maxval = ((-*minel) > *maxel) ? (-*minel) : *maxel;
 		return OpaqueCoordinate<4>(
-			std::make_shared<NumberType>(planes_.front().a()),
-			std::make_shared<NumberType>(planes_.front().b()),
-			std::make_shared<NumberType>(planes_.front().c()),
-			std::make_shared<NumberType>(planes_.front().d())
+			std::make_shared<NumberType>(planes_.front().a() / maxval),
+			std::make_shared<NumberType>(planes_.front().b() / maxval),
+			std::make_shared<NumberType>(planes_.front().c() / maxval),
+			std::make_shared<NumberType>(planes_.front().d() / maxval)
 		);
 	} else {
 		throw std::runtime_error("Invalid shape type");
