@@ -171,9 +171,7 @@ namespace ifcopenshell { namespace geometry {
 		mutable boost::optional<CGAL::Nef_polyhedron_3<Kernel_>> nef_;
 #endif
     public:
-		CgalShape(const cgal_shape_t& shape) {
-			shape_ = shape;
-		}
+		CgalShape(const cgal_shape_t& shape);
 
 #ifndef IFOPSH_SIMPLE_KERNEL
 		CgalShape(const CGAL::Nef_polyhedron_3<Kernel_>& shape) {
