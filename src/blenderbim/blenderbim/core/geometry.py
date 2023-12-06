@@ -106,6 +106,9 @@ def switch_representation(
     entity = ifc.get_entity(obj)
     current_obj_data = geometry.get_object_data(obj)
 
+    if not current_obj_data and geometry.is_text_literal(representation):
+        return
+
     has_openings = apply_openings and getattr(entity, "HasOpenings", None)
     if has_openings:
         # if it has openings make sure to switch to element's mapped representation
