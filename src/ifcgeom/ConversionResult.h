@@ -245,14 +245,8 @@ namespace IfcGeom {
 		ConversionResult(int id, ConversionResultShape* shape)
 			: id(id), placement_(ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::matrix4>()), shape_(shape)
 		{}
-		void append(ifcopenshell::geometry::taxonomy::matrix4::ptr trsf) {
-			// @todo verify order
-			placement_->components() = placement_->ccomponents() * trsf->ccomponents();
-		}
-		void prepend(ifcopenshell::geometry::taxonomy::matrix4::ptr trsf) {
-			// @todo verify order
-			placement_->components() = trsf->ccomponents() * placement_->ccomponents();
-		}
+		void append(ifcopenshell::geometry::taxonomy::matrix4::ptr trsf);
+		void prepend(ifcopenshell::geometry::taxonomy::matrix4::ptr trsf);
 		std::shared_ptr<ConversionResultShape> Shape() const { return shape_; }
 		ifcopenshell::geometry::taxonomy::matrix4::ptr Placement() const { return placement_; }
 		bool hasStyle() const { return !!style_; }
