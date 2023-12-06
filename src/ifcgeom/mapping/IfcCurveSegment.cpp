@@ -286,14 +286,6 @@ class cant_adjuster : public segment_geometry_adjuster {
        // because it defines how much tilt_start_this varies along the length
        auto tilt = tilt_start_this + (tilt_start_next - tilt_start_this) * u / l;
 
-       // populate Axis vector
-       p.col(2)(1) = cos(tilt);
-       p.col(2)(2) = sin(tilt);
-
-       // populate Y vector
-       p.col(1)(1) = -p.col(2)(2);
-       p.col(1)(2) = p.col(2)(1);
-
        // use linear interpolation to compute elevation change due to cant
        auto st = start_this.col(3)(1);
        auto sn = start_next.col(3)(1);
@@ -302,6 +294,15 @@ class cant_adjuster : public segment_geometry_adjuster {
        // RefDirection.z is due to cant elevation change slope
        p.col(0)(2) = slope;
        p.col(0).normalize();
+
+       // populate Axis vector
+       p.col(2)(0) = -slope;
+       p.col(2)(1) = cos(tilt);
+       p.col(2)(2) = sin(tilt);
+       p.col(2).normalize();
+
+       // Axis X RefDirection = Y
+       p.col(1).head<3>() = p.col(2).head<3>().cross(p.col(0).head<3>());
 
        auto result = st + u * slope;
        p.col(3)(1) = result;
@@ -612,7 +613,7 @@ class curve_segment_evaluator {
 
 
             Eigen::Matrix4d result = transformation_matrix * m;
-          return geometry_adjuster->transform_and_adjust(u, result);
+            return geometry_adjuster->transform_and_adjust(u, result);
 			};
 	}
 
