@@ -631,6 +631,17 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 %template(OpaqueCoordinate_3) IfcGeom::OpaqueCoordinate<3>;
 %template(OpaqueCoordinate_4) IfcGeom::OpaqueCoordinate<4>;
 
+%{
+	#include "../ifcgeom/kernels/cgal/CgalConversionResult.h"
+%}
+
+%inline %{
+	std::shared_ptr<IfcGeom::OpaqueNumber> create_epeck(int i) {
+		return std::make_shared<ifcopenshell::geometry::NumberEpeck>(i);
+	}
+%}
+
+
 %naturalvar svgfill::polygon_2::boundary;
 %naturalvar svgfill::polygon_2::inner_boundaries;
 %naturalvar svgfill::polygon_2::point_inside;
