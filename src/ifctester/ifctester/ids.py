@@ -168,13 +168,15 @@ class Specification:
             clause = getattr(self, clause_type)
             if not clause:
                 continue
+            facets = {}
             for facet in clause:
                 facet_type = type(facet).__name__
                 facet_type = facet_type[0].lower() + facet_type[1:]
-                if facet_type in results[clause_type]:
-                    results[clause_type][facet_type].append(facet.asdict())
-                else:
-                    results[clause_type][facet_type] = [facet.asdict()]
+                facets.setdefault(facet_type, []).append(facet.asdict(clause_type))
+            # Canonicalise ordering as per XSD requirements
+            for facet_type in ("entity", "partOf", "classification", "attribute", "property", "material"):
+                if facet_type in facets:
+                    results[clause_type][facet_type] = facets[facet_type]
         return results
 
     def parse(self, ids_dict):

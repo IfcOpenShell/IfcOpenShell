@@ -60,12 +60,15 @@ class Facet:
         for i, name in enumerate(self.parameters):
             setattr(self, name.replace("@", ""), parameters[i])
 
-    def asdict(self):
+    def asdict(self, clause_type):
         results = {}
         for name in self.parameters:
             value = getattr(self, name.replace("@", ""))
             if value is not None:
                 results[name] = value if "@" in name else self.to_ids_value(value)
+        if clause_type == "applicability":
+            for key in ["@uri", "@instructions", "@minOccurs", "@maxOccurs"]:
+                results.pop(key, None)
         return results
 
     def parse(self, xml):
