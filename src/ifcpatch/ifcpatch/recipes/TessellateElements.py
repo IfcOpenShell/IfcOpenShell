@@ -50,20 +50,27 @@ class Patcher:
         context = ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW")
         elements = ifcopenshell.util.selector.filter_elements(self.file, self.query)
         settings = ifcopenshell.geom.settings()
+        settings.set(settings.STRICT_TOLERANCE, True)
         settings.set_context_ids([context.id()])
         iterator = ifcopenshell.geom.iterator(settings, self.file, multiprocessing.cpu_count(), include=elements)
+        replacements = {}
         if iterator.initialize():
             while True:
                 shape = iterator.get()
                 element = self.file.by_guid(shape.guid)
                 v = [[x.tolist() for x in ifcopenshell.util.shape.get_vertices(shape.geometry)]]
                 f = [ifcopenshell.util.shape.get_faces(shape.geometry)]
-                mesh = ifcopenshell.api.run(
-                    "geometry.add_mesh_representation", self.file, context=context, vertices=v, faces=f
-                )
-                representations = element.Representation.Representations
-                representations = [r for r in representations if r.ContextOfItems != context]
-                representations.append(mesh)
-                element.Representation.Representations = representations
+                replacements[element] = (v, f)
                 if not iterator.next():
                     break
+
+        # Do the replacements outside the iterator to prevent messing up iterator state.
+        for element, geometry in replacements.items():
+            v, f = geometry
+            mesh = ifcopenshell.api.run(
+                "geometry.add_mesh_representation", self.file, context=context, vertices=v, faces=f
+            )
+            representations = element.Representation.Representations
+            representations = [r for r in representations if r.ContextOfItems != context]
+            representations.append(mesh)
+            element.Representation.Representations = representations
