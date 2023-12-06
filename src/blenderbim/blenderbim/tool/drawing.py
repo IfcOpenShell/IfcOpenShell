@@ -1636,11 +1636,32 @@ class Drawing(blenderbim.core.tool.Drawing):
 
         subcontexts = []
         target_view = cls.get_drawing_target_view(drawing)
-        context_filters = [("Model", "Body", target_view), ("Model", "Body", "MODEL_VIEW")]
+
         if target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW"):
-            plan_contexts = [("Plan", "Body", target_view), ("Plan", "Body", "MODEL_VIEW")]
-            plan_contexts.extend(context_filters)
-            context_filters = plan_contexts
+            context_filters = [
+                ("Plan", "Body", target_view),
+                ("Plan", "Body", "MODEL_VIEW"),
+                ("Plan", "Facetation", target_view),
+                ("Plan", "Facetation", "MODEL_VIEW"),
+                ("Model", "Body", target_view),
+                ("Model", "Body", "MODEL_VIEW"),
+                ("Model", "Facetation", target_view),
+                ("Model", "Facetation", "MODEL_VIEW"),
+                ("Plan", "Annotation", target_view),
+                ("Plan", "Annotation", "MODEL_VIEW"),
+                ("Model", "Annotation", target_view),
+                ("Model", "Annotation", "MODEL_VIEW"),
+            ]
+        else:
+            context_filters = [
+                ("Model", "Body", target_view),
+                ("Model", "Body", "MODEL_VIEW"),
+                ("Model", "Facetation", target_view),
+                ("Model", "Facetation", "MODEL_VIEW"),
+                ("Model", "Annotation", target_view),
+                ("Model", "Annotation", "MODEL_VIEW"),
+            ]
+
         for context_filter in context_filters:
             subcontext = ifcopenshell.util.representation.get_context(tool.Ifc.get(), *context_filter)
             if subcontext:
