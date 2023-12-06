@@ -759,7 +759,8 @@ class OverrideDuplicateMove(bpy.types.Operator):
 
         self.new_active_obj = None
         # Track decompositions so they can be recreated after the operation
-        relationships = tool.Root.get_decomposition_relationships(objects_to_duplicate)
+        decomposition_relationships = tool.Root.get_decomposition_relationships(objects_to_duplicate)
+        connection_relationships = tool.Root.get_connection_relationships(objects_to_duplicate)
         old_to_new = {}
 
         for obj in objects_to_duplicate:
@@ -819,9 +820,19 @@ class OverrideDuplicateMove(bpy.types.Operator):
                 if new.is_a("IfcRelSpaceBoundary"):
                     tool.Boundary.decorate_boundary(new_obj)
 
+        # Recreate aggregate relationship
+        for old in old_to_new.keys():
+            if old.is_a("IfcElementAssembly"):            
+                tool.Root.recreate_aggregate(old_to_new)
+
+        # Remove connections with old objects and recreates paths
+        OverrideDuplicateMove.remove_old_connections(old_to_new)
+        tool.Root.recreate_connections(connection_relationships, old_to_new)
+
         # Recreate decompositions
-        tool.Root.recreate_decompositions(relationships, old_to_new)
+        tool.Root.recreate_decompositions(decomposition_relationships, old_to_new)
         blenderbim.bim.handler.refresh_ui_data()
+        return old_to_new
 
     @staticmethod
     def process_arrays(self, context):
@@ -860,6 +871,18 @@ class OverrideDuplicateMove(bpy.types.Operator):
         return arrays_to_create, array_children
 
 
+    def remove_old_connections(old_to_new):
+        for new in old_to_new.values():
+            for connection in new[0].ConnectedTo:
+                entity = connection.RelatedElement
+                if entity in old_to_new.keys():
+                    core.remove_connection(tool.Geometry, connection=connection)
+            for connection in new[0].ConnectedFrom:
+                entity = connection.RelatingElement
+                if entity in old_to_new.keys():
+                    core.remove_connection(tool.Geometry, connection=connection)
+
+
 class OverrideDuplicateMoveLinkedMacro(bpy.types.Macro):
     bl_idname = "bim.override_object_duplicate_move_linked_macro"
     bl_label = "IFC Duplicate Linked"
@@ -882,15 +905,15 @@ class OverrideDuplicateMoveLinked(bpy.types.Operator):
         return OverrideDuplicateMove.execute_ifc_duplicate_operator(self, context, linked=True)
 
 
-class OverrideDuplicateMoveAggregateMacro(bpy.types.Macro):
-    bl_idname = "bim.override_object_duplicate_move_aggregate_macro"
-    bl_label = "IFC Duplicate Objects Aggregate"
+class DuplicateMoveLinkedAggregateMacro(bpy.types.Macro):
+    bl_idname = "bim.object_duplicate_move_linked_aggregate_macro"
+    bl_label = "IFC Duplicate Linked Aggregate"
     bl_options = {"REGISTER", "UNDO"}
 
 
-class OverrideDuplicateMoveAggregate(bpy.types.Operator):
-    bl_idname = "bim.override_object_duplicate_move_aggregate"
-    bl_label = "IFC Duplicate Objects Aggregate"
+class DuplicateMoveLinkedAggregate(bpy.types.Operator):
+    bl_idname = "bim.object_duplicate_move_linked_aggregate"
+    bl_label = "IFC Duplicate Linked Aggregate"
     bl_options = {"REGISTER", "UNDO"}
     is_interactive: bpy.props.BoolProperty(name="Is Interactive", default=True)
 
@@ -902,263 +925,103 @@ class OverrideDuplicateMoveAggregate(bpy.types.Operator):
         return OverrideDuplicateMove.execute_duplicate_operator(self, context, linked=False)
 
     def _execute(self, context):
+        return DuplicateMoveLinkedAggregate.execute_ifc_duplicate_linked_aggregate_operator(self, context)
+
+    @staticmethod
+    def execute_ifc_duplicate_linked_aggregate_operator(self, context):
         self.new_active_obj = None
+        self.group_name = "BBIM_Linked_Aggregate"
+        self.pset_name = "BBIM_Linked_Aggregate"
         old_to_new = {}
 
-        ### Adding the assembly data
-        def add_assembly_data(element, parent, data_to_add):
-            pset = ifcopenshell.util.element.get_pset(element, "BBIM_Aggregate_Data")
-            data = [data_to_add]
+        def select_objects_and_add_data(element): 
+            add_linked_aggregate_group(element)
+            obj = tool.Ifc.get_object(element)
+            obj.select_set(True)
+            parts = ifcopenshell.util.element.get_parts(element)
+            if parts:
+                index = 0
+                for part in parts:
+                    if part.is_a("IfcElementAssembly"):
+                        select_objects_and_add_data(part)
 
-            if pset:
-                if parent == None:
-                    ifcopenshell.api.run(
-                        "pset.edit_pset",
-                        tool.Ifc.get(),
-                        pset=tool.Ifc.get().by_id(pset["id"]),
-                        properties={"Data": tool.Ifc.get().createIfcText(json.dumps(data))},
-                    )
-                else:
-                    ifcopenshell.api.run(
-                        "pset.edit_pset",
-                        tool.Ifc.get(),
-                        pset=tool.Ifc.get().by_id(pset["id"]),
-                        properties={"Parent": parent.GlobalId, "Data": tool.Ifc.get().createIfcText(json.dumps(data))},
-                    )
+                    add_linked_aggregate_pset(part, index)
+                    index += 1
+                        
+                    obj = tool.Ifc.get_object(part)
+                    obj.select_set(True)
 
-            else:
+        def add_linked_aggregate_group(element):
+            linked_aggregate_group = None
+            product_groups_name = [
+                r.RelatingGroup.Name
+                for r in getattr(element, "HasAssignments", []) or []
+                if r.is_a("IfcRelAssignsToGroup")
+            ]
+            if self.group_name in product_groups_name:
+                return
+                            
+            linked_aggregate_group = ifcopenshell.api.run("group.add_group", tool.Ifc.get(), Name=self.group_name)
+            ifcopenshell.api.run(
+                "group.assign_group", tool.Ifc.get(), products=[element], group=linked_aggregate_group
+            )
+
+        def add_linked_aggregate_pset(part, index):
+            pset = ifcopenshell.util.element.get_pset(part, self.pset_name)
+            
+            if not pset:
                 pset = ifcopenshell.api.run(
-                    "pset.add_pset", tool.Ifc.get(), product=element, name="BBIM_Aggregate_Data"
+                    "pset.add_pset", tool.Ifc.get(), product=part, name=self.pset_name
                 )
-
-                ifcopenshell.api.run(
-                    "pset.edit_pset",
-                    tool.Ifc.get(),
-                    pset=pset,
-                    properties={"Parent": parent.GlobalId, "Data": tool.Ifc.get().createIfcText(json.dumps(data))},
-                )
-
-        def add_child_to_assembly_data(new_entity):
-            pset = ifcopenshell.util.element.get_pset(new_entity, "BBIM_Aggregate_Data")
-            parent_element = tool.Ifc.get().by_guid(pset["Parent"])
-            parent_pset = ifcopenshell.util.element.get_pset(parent_element, "BBIM_Aggregate_Data")
-            data = json.loads(parent_pset["Data"])
-            data[0]["children"].append(new_entity.GlobalId)
+            else:
+                pset = tool.Ifc.get().by_id(pset["id"])
 
             ifcopenshell.api.run(
                 "pset.edit_pset",
                 tool.Ifc.get(),
-                pset=tool.Ifc.get().by_id(parent_pset["id"]),
-                properties={"Data": tool.Ifc.get().createIfcText(json.dumps(data))},
+                pset=pset,
+                properties={"Index": index},
             )
 
-        def create_data_structure(entity, level=-1):
-            level += 1
-
-            data_children = {
-                "children": [],
-                "instance_of": [],
-            }
-
-            data_parent = {
-                "children": [],
-                "instance_of": [entity.GlobalId],
-            }
-
-            if not entity.is_a("IfcElementAssembly"):
-                return
-            else:
-                if level == 0:
-                    add_assembly_data(entity, entity, data_parent)
-                else:
-                    add_assembly_data(entity, None, data_parent)
-                parts = ifcopenshell.util.element.get_parts(entity)
-                for part in parts:
-                    if part.is_a("IfcElementAssembly"):
-                        add_assembly_data(part, entity, data_children)
-                        add_child_to_assembly_data(part)
-                        create_data_structure(part, level)
-                        continue
-                    add_assembly_data(part, entity, data_children)
-                    add_child_to_assembly_data(part)
-
-                return
-
-        def recreate_data_structure(entity, level=-1):
-            level += 1
-
-            pset = ifcopenshell.util.element.get_pset(entity, "BBIM_Aggregate_Data")
-            pset_data = json.loads(pset["Data"])[0]
-            instance_of = pset_data["instance_of"]
-
-            data_children = {
-                "children": [],
-                "instance_of": [],
-            }
-
-            # Keeps instance ID through all copies
-            data_parent = {
-                "children": [],
-                "instance_of": instance_of,
-            }
-
-            if not entity.is_a("IfcElementAssembly"):
-                return
-            else:
-                if level == 0:
-                    add_assembly_data(entity, entity, data_parent)
-                else:
-                    add_assembly_data(entity, None, data_parent)
-                parts = ifcopenshell.util.element.get_parts(entity)
-                for part in parts:
-                    if part.is_a("IfcElementAssembly"):
-                        add_child_to_assembly_data(part)
-                        recreate_data_structure(part, level)
-                        continue
-                    add_assembly_data(part, entity, data_children)
-                    add_child_to_assembly_data(part)
-
-                return
-
-        def duplicate_all(obj, level=-1, new_parent=None, parents=[]):
-            level += 1
-
-            entity = tool.Ifc.get_entity(obj)
-
-            if level == 0:
-                new_parent = duplicate_objects(obj)
-                parents.append(new_parent)
-            else:
-                pair = []
-                pair.append(new_parent)
-                new_parent = duplicate_objects(obj)
-                pair.append(new_parent)
-                parents.append(pair)
-
-            if not entity.is_a("IfcElementAssembly"):
-                return
-            else:
-                parts = ifcopenshell.util.element.get_parts(entity)
-
-                # Ensures that we are duplication all the IfcElementAssembly
-                # before duplicating the nested objects
-                for part in parts:
-                    if part.is_a("IfcElementAssembly"):
-                        pass
-                    else:
-                        part_obj = tool.Ifc.get_object(part)
-                        new_part = duplicate_objects(part_obj)
-                        blenderbim.core.aggregate.assign_object(
-                            tool.Ifc,
-                            tool.Aggregate,
-                            tool.Collector,
-                            relating_obj=tool.Ifc.get_object(new_parent),
-                            related_obj=tool.Ifc.get_object(new_part),
-                        )
-
-                for part in parts:
-                    if part.is_a("IfcElementAssembly"):
-                        part_obj = tool.Ifc.get_object(part)
-
-                        # Recursion Call
-                        duplicate_all(part_obj, level, new_parent, parents)
-
-            if level == 0:
-                for p in parents[1:]:
-                    blenderbim.core.aggregate.assign_object(
-                        tool.Ifc,
-                        tool.Aggregate,
-                        tool.Collector,
-                        relating_obj=tool.Ifc.get_object(p[0]),
-                        related_obj=tool.Ifc.get_object(p[1]),
-                    )
-
-                return new_parent
-            return
-
-        def duplicate_objects(obj, is_root=False):
-            new_obj = obj.copy()
-            if obj.data:
-                new_obj.data = obj.data.copy()
-            if obj == context.active_object:
-                self.new_active_obj = new_obj
-            for collection in obj.users_collection:
-                collection.objects.link(new_obj)
-            obj.select_set(False)
-            new_obj.select_set(True)
-
-            # This is needed to make sure the new object gets unlink from
-            # the old object assembly collection
-            new_obj.BIMObjectProperties.collection = None
-
-            # Copy the actual class
-            new_entity = blenderbim.core.root.copy_class(
-                tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj
-            )
-
-            if new_entity:
-                tool.Model.handle_array_on_copied_element(new_entity)
-                blenderbim.core.aggregate.unassign_object(
-                    tool.Ifc,
-                    tool.Aggregate,
-                    tool.Collector,
-                    relating_obj=tool.Ifc.get_object(selected_root_entity),
-                    related_obj=tool.Ifc.get_object(new_entity),
-                )
-
-                old_to_new[tool.Ifc.get_entity(obj)] = [new_entity]
-
-            return new_entity
-
-        ### Check if only one element and it's assembly
+            return index
+       
+             
         if len(context.selected_objects) != 1:
             return {"FINISHED"}
 
         selected_obj = context.selected_objects[0]
-        selected_root_entity = tool.Ifc.get_entity(selected_obj)
+        selected_element = tool.Ifc.get_entity(selected_obj)
 
-        if not selected_root_entity.is_a("IfcElementAssembly"):
+        if selected_element.is_a("IfcElementAssembly"):
+            pass
+        elif selected_element.Decomposes:
+            if selected_element.Decomposes[0].RelatingObject.is_a("IfcElementAssembly"):
+                selected_element = selected_element.Decomposes[0].RelatingObject
+                selected_obj = tool.Ifc.get_object(selected_element)
+        else:
+            self.report({"INFO"}, "Object is not part of a IfcElementAssembly.")
             return {"FINISHED"}
 
-        pset = ifcopenshell.util.element.get_pset(selected_root_entity, "BBIM_Aggregate_Data")
-        if not pset:
-            create_data_structure(selected_root_entity)
 
-        pset = ifcopenshell.util.element.get_pset(selected_root_entity, "BBIM_Aggregate_Data")
+        select_objects_and_add_data(selected_element)
 
-        selected_root_parent = selected_root_entity
+        old_to_new = OverrideDuplicateMove.execute_ifc_duplicate_operator(self, context, linked=True)
 
-        new_root_entity = duplicate_all(selected_obj)
+        
+        # Recreate aggregate relationship
+        for old in old_to_new.keys():
+            if old.is_a("IfcElementAssembly"):            
+                tool.Root.recreate_aggregate(old_to_new)
 
-        recreate_data_structure(new_root_entity)
-
-        # Remove connections with old objects
-        for new in old_to_new.values():
-            for connection in new[0].ConnectedTo:
-                entity = connection.RelatedElement
-                if entity in old_to_new.keys():
-                    core.remove_connection(tool.Geometry, connection=connection)
-            for connection in new[0].ConnectedFrom:
-                entity = connection.RelatingElement
-                if entity in old_to_new.keys():
-                    core.remove_connection(tool.Geometry, connection=connection)
-
-        old_objs = []
-        for old, new in old_to_new.items():
-            old_objs.append(tool.Ifc.get_object(old))
-
-        relationships = tool.Root.get_decomposition_relationships(old_objs)
-
-        tool.Root.recreate_decompositions(relationships, old_to_new)
 
         blenderbim.bim.handler.refresh_ui_data()
 
-        return {"FINISHED"}
+        return old_to_new
 
 
-class RefreshAggregate(bpy.types.Operator):
-    bl_idname = "bim.refresh_aggregate"
-    bl_label = "IFC Refresh Aggregate"
+class RefreshLinkedAggregate(bpy.types.Operator):
+    bl_idname = "bim.refresh_linked_aggregate"
+    bl_label = "IFC Refresh Linked Aggregate"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -1174,214 +1037,132 @@ class RefreshAggregate(bpy.types.Operator):
         return {"FINISHED"}
 
     def _execute(self, context):
-        refresh_start_time = time()
         self.new_active_obj = None
+        self.group_name = 'BBIM_Linked_Aggregate'
+        self.pset_name = "BBIM_Linked_Aggregate"
+        refresh_start_time = time()
         old_to_new = {}
 
-        def remove_objects(entity, level=-1, parents=[]):
-            level += 1
-            if level == 0:
-                parents = [entity]
-            parts = ifcopenshell.util.element.get_parts(entity)
-            for part in parts:
-                if part.is_a("IfcElementAssembly"):
-                    parents.append(part)
-                    remove_objects(part, level, parents)
-                    continue
-                else:
-                    part_obj = tool.Ifc.get_object(part)
-                    if part_obj:
-                        tool.Geometry.delete_ifc_object(part_obj)
+        def delete_objects(element):
+            parts = ifcopenshell.util.element.get_parts(element)
+            if parts:
+                for part in parts:
+                    if part.is_a("IfcElementAssembly"):
+                        delete_objects(part)
+                        
+                    tool.Geometry.delete_ifc_object(tool.Ifc.get_object(part))
+                    
+            tool.Geometry.delete_ifc_object(tool.Ifc.get_object(element))
 
-            return parents
-
-        def duplicate_children(entity):
-            pset = ifcopenshell.util.element.get_pset(entity, "BBIM_Aggregate_Data")
-            pset_data = json.loads(pset["Data"])[0]
-            instance_of = pset_data["instance_of"][0]
-
-            instance_entity = tool.Ifc.get().by_guid(instance_of)
-
-            if not instance_entity.is_a("IfcElementAssembly"):
-                return
+        def get_element_assembly(element):
+            if element.is_a("IfcElementAssembly"):
+                return element
+            elif element.Decomposes:
+                if element.Decomposes[0].RelatingObject.is_a("IfcElementAssembly"):
+                    element = element.Decomposes[0].RelatingObject
+                    return element
             else:
-                parts = ifcopenshell.util.element.get_parts(instance_entity)
-                for part in parts:
-                    pset = ifcopenshell.util.element.get_pset(part, "BBIM_Aggregate_Data")
-                    if part.is_a("IfcElementAssembly"):
-                        if not pset:
-                            data_children = {
-                                "children": [],
-                                "instance_of": [part.GlobalId],
-                            }
-                            data = [data_children]
+                return None
 
-                            pset = ifcopenshell.api.run(
-                                "pset.add_pset", tool.Ifc.get(), product=part, name="BBIM_Aggregate_Data"
-                            )
-                            ifcopenshell.api.run(
-                                "pset.edit_pset",
-                                tool.Ifc.get(),
-                                pset=pset,
-                                properties={
-                                    "Parent": instance_entity.GlobalId,
-                                    "Data": tool.Ifc.get().createIfcText(json.dumps(data)),
-                                },
-                            )
+        def handle_selection(selected_objs):
+            selected_elements = [tool.Ifc.get_entity(selected_obj) for selected_obj in selected_objs]
+            if None in selected_elements:
+                self.report({"INFO"}, "Object has no Ifc Metadata.")
+                return None, None
 
-                            part_obj = tool.Ifc.get_object(part)
-                            new_part = duplicate_objects(part_obj)
+            selected_parents = []
+            for selected_element in selected_elements:
+                selected_element = get_element_assembly(selected_element)
+                if not selected_element:
+                    self.report({"INFO"}, "Object is not part of a IfcElementAssembly.")
+                    return None, None
+                selected_parents.append(selected_element)
 
+            selected_parents = list(set(selected_parents))
+            linked_aggregate_groups = []
+            for selected_element in selected_parents:
+                product_linked_agg_group = [
+                    r.RelatingGroup
+                    for r in getattr(selected_element, "HasAssignments", []) or []
+                    if r.is_a("IfcRelAssignsToGroup")
+                    if self.group_name in r.RelatingGroup.Name
+                ]
+                try:
+                    linked_aggregate_groups.append(product_linked_agg_group[0].id())
+                except:
+                    self.report({"INFO"}, "Object is not part of a Linked Aggregate.")
+                    return None, None
+                
+            return list(set(linked_aggregate_groups)), selected_parents
+
+        active_element = tool.Ifc.get_entity(context.active_object)
+        if not active_element:
+            self.report({"INFO"}, "Object has no Ifc metadata.")
+            return {"FINISHED"}
+            
+        active_element = get_element_assembly(active_element)
+        selected_objs = context.selected_objects
+        linked_aggregate_groups, selected_parents = handle_selection(selected_objs)
+        if not linked_aggregate_groups or not selected_parents:
+            return {"FINISHED"}
+
+        if len(linked_aggregate_groups) > 1:
+            if len(selected_parents) != len(linked_aggregate_groups):
+                self.report({"INFO"}, "Select only one object from each Linked Aggregate or multiple objects from the same Linked Aggregate.")
+                return {"FINISHED"}
+
+        for group in linked_aggregate_groups:
+            elements = tool.Drawing.get_group_elements(tool.Ifc.get().by_id(group))
+            if len(linked_aggregate_groups) > 1:
+                base_instance = [e for e in elements if e in selected_parents][0]
+                instances_to_refresh = elements
+                
+            elif (len(linked_aggregate_groups) == 1) and (len(selected_parents) > 1):
+                base_instance = active_element
+                instances_to_refresh = [element for element in elements if element in selected_parents]
+                
+            else:
+                base_instance = active_element
+                instances_to_refresh = elements
+        
+            for element in instances_to_refresh:
+                if element.GlobalId == base_instance.GlobalId:
+                    continue
+
+                element_aggregate = ifcopenshell.util.element.get_aggregate(element)
+
+                selected_obj = tool.Ifc.get_object(base_instance)
+                selected_matrix = selected_obj.matrix_world
+                object_duplicate = tool.Ifc.get_object(element)
+                duplicate_matrix = object_duplicate.matrix_world.decompose()
+                
+                delete_objects(element)
+            
+                for obj in context.selected_objects:
+                    obj.select_set(False)
+                
+                tool.Ifc.get_object(base_instance).select_set(True)
+            
+                old_to_new = DuplicateMoveLinkedAggregate.execute_ifc_duplicate_linked_aggregate_operator(self, context)
+                for old, new in old_to_new.items():
+                    new_obj = tool.Ifc.get_object(new[0])
+                    new_base_matrix = Matrix.LocRotScale(*duplicate_matrix)
+                    matrix_diff = Matrix.inverted(selected_matrix) @ new_obj.matrix_world 
+                    new_obj_matrix = new_base_matrix @ matrix_diff
+                    new_obj.matrix_world = new_obj_matrix
+                    
+                    if element_aggregate and new[0].is_a("IfcElementAssembly"):
+                        new_aggregate = ifcopenshell.util.element.get_aggregate(new[0])
+                        
+                        if not new_aggregate:
                             blenderbim.core.aggregate.assign_object(
-                                tool.Ifc,
-                                tool.Aggregate,
-                                tool.Collector,
-                                relating_obj=tool.Ifc.get_object(entity),
-                                related_obj=tool.Ifc.get_object(new_part),
-                            )
-                            duplicate_children(new_part)
-
-                for part in parts:
-                    pset = ifcopenshell.util.element.get_pset(part, "BBIM_Aggregate_Data")
-                    if part.is_a("IfcElementAssembly"):
-                        pass
-
-                    else:
-                        if not pset:
-                            pset = ifcopenshell.api.run(
-                                "pset.add_pset", tool.Ifc.get(), product=part, name="BBIM_Aggregate_Data"
-                            )
-                        else:
-                            pset = ifcopenshell.util.element.get_pset(part, "BBIM_Aggregate_Data")
-                            pset = tool.Ifc.get().by_id(pset["id"])
-
-                        data_children = {
-                            "children": [],
-                            "instance_of": [],
-                        }
-                        data = [data_children]
-
-                        ifcopenshell.api.run(
-                            "pset.edit_pset",
-                            tool.Ifc.get(),
-                            pset=pset,
-                            properties={
-                                "Parent": instance_entity.GlobalId,
-                                "Data": tool.Ifc.get().createIfcText(json.dumps(data)),
-                            },
-                        )
-
-                        part_obj = tool.Ifc.get_object(part)
-                        new_part = duplicate_objects(part_obj)
-                        blenderbim.core.aggregate.assign_object(
-                            tool.Ifc,
-                            tool.Aggregate,
-                            tool.Collector,
-                            relating_obj=tool.Ifc.get_object(entity),
-                            related_obj=tool.Ifc.get_object(new_part),
-                        )
-
-        def duplicate_objects(obj, is_root=False):
-            new_obj = obj.copy()
-            if obj.data:
-                new_obj.data = obj.data.copy()
-            if obj == context.active_object:
-                self.new_active_obj = new_obj
-            for collection in obj.users_collection:
-                collection.objects.link(new_obj)
-            obj.select_set(False)
-            new_obj.select_set(True)
-
-            # This is needed to make sure the new object gets unlink from
-            # the old object assembly collection
-            new_obj.BIMObjectProperties.collection = None
-
-            # Copy the actual class
-            new_entity = blenderbim.core.root.copy_class(
-                tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj
-            )
-
-            if new_entity:
-                tool.Model.handle_array_on_copied_element(new_entity)
-
-                if not new_entity.is_a("IfcElementAssembly"):
-                    blenderbim.core.aggregate.unassign_object(
-                        tool.Ifc,
-                        tool.Aggregate,
-                        tool.Collector,
-                        relating_obj=obj,
-                        related_obj=tool.Ifc.get_object(new_entity),
-                    )
-
-                old_to_new[tool.Ifc.get_entity(obj)] = [new_entity]
-
-            return new_entity
-
-        if len(context.selected_objects) != 1:
-            self.report({"INFO"}, "Only 1 object need to be selected.")
-            return {"FINISHED"}
-
-        selected_root_obj = context.selected_objects[0]
-        selected_root_entity = tool.Ifc.get_entity(selected_root_obj)
-
-        if selected_root_entity.is_a("IfcElementAssembly"):
-            pass
-        elif selected_root_entity.Decomposes:
-            if selected_root_entity.Decomposes[0].RelatingObject.is_a("IfcElementAssembly"):
-                selected_root_entity = selected_root_entity.Decomposes[0].RelatingObject
-                selected_root_obj = tool.Ifc.get_object(selected_root_entity)
-        else:
-            self.report({"INFO"}, "Object is not part of a IfcElementAssembly.")
-            return {"FINISHED"}
-
-        pset = ifcopenshell.util.element.get_pset(selected_root_entity, "BBIM_Aggregate_Data")
-        if not pset:
-            self.report({"INFO"}, "Object is not part of an assembly aggregate.")
-            return {"FINISHED"}
-
-        pset_data = json.loads(pset["Data"])[0]
-        instance_of = pset_data["instance_of"][0]
-        original_root_entity = tool.Ifc.get().by_guid(instance_of)
-        if original_root_entity == selected_root_entity:
-            self.report({"INFO"}, "Cannot refresh original assembly. Select an assembly instance.")
-            return {"FINISHED"}
-
-        parents = remove_objects(selected_root_entity)
-
-        original_root_object = tool.Ifc.get_object(original_root_entity)
-
-        selected_matrix = selected_root_obj.matrix_world
-        original_matrix = original_root_object.matrix_world
-
-        for parent in parents:
-            duplicate_children(parent)
-
-        # Remove connections with old objects
-        for new in old_to_new.values():
-            for connection in new[0].ConnectedTo:
-                entity = connection.RelatedElement
-                if entity in old_to_new.keys():
-                    core.remove_connection(tool.Geometry, connection=connection)
-            for connection in new[0].ConnectedFrom:
-                entity = connection.RelatingElement
-                if entity in old_to_new.keys():
-                    core.remove_connection(tool.Geometry, connection=connection)
-
-        old_objs = []
-        for old, new in old_to_new.items():
-            old_objs.append(tool.Ifc.get_object(old))
-
-            new_obj = tool.Ifc.get_object(new[0])
-
-            matrix_diff = Matrix.inverted(original_matrix) @ new_obj.matrix_world
-            new_matrix = selected_matrix @ matrix_diff
-
-            new_obj.matrix_world = new_matrix
-
-        relationships = tool.Root.get_decomposition_relationships(old_objs)
-
-        tool.Root.recreate_decompositions(relationships, old_to_new)
-
+                                                        tool.Ifc,
+                                                        tool.Aggregate,
+                                                        tool.Collector,
+                                                        relating_obj=tool.Ifc.get_object(element_aggregate),
+                                                        related_obj=tool.Ifc.get_object(new[0]),
+                                                    )                        
+                        
         blenderbim.bim.handler.refresh_ui_data()
 
         operator_time = time() - refresh_start_time
