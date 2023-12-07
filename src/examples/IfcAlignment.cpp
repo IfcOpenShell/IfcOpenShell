@@ -159,7 +159,12 @@ int main()
    }
 
    auto site = file.addSite(project, nullptr);
+   auto local_placement = site->ObjectPlacement();
+   if (!local_placement) {
+      local_placement = file.addLocalPlacement();
+   }
 
+   auto geometric_representation_context = file.getRepresentationContext(std::string("Model")); // creates the representation context if it doesn't already exist
    
    //
    // Define horizontal alignment
@@ -245,21 +250,43 @@ int main()
    horizontal_curve_segments->push(terminator_segment.first);
    horizontal_segments->push(terminator_segment.second);
 
-   auto composite_curve = new Schema::IfcCompositeCurve(horizontal_curve_segments, false/*not self-intersecting*/);
+   // create plan view footprint model representation for the horizontal alignment
+   
+   // start by defining a composite curve composed of the horizonal curve segments
+   auto composite_curve = new Schema::IfcCompositeCurve(horizontal_curve_segments, false /*not self-intersecting*/);
    file.addEntity(composite_curve);
 
-   typename aggregate_of<typename Schema::IfcRepresentationItem>::ptr representation_items(new aggregate_of<typename Schema::IfcRepresentationItem>());
-   representation_items->push(composite_curve);
+   // the composite curve is a representation item
+   typename aggregate_of<typename Schema::IfcRepresentationItem>::ptr alignment_representation_items(new aggregate_of<typename Schema::IfcRepresentationItem>());
+   alignment_representation_items->push(composite_curve);
 
-   auto geometric_representation_context = file.getRepresentationContext(std::string("3D")); // creates the representation context if it doesn't already exist
-   auto representation_subcontext = new Schema::IfcGeometricRepresentationSubContext(std::string("Axis"), std::string("Model"), geometric_representation_context, boost::none, Schema::IfcGeometricProjectionEnum::IfcGeometricProjection_GRAPH_VIEW, boost::none);
-   file.addEntity(representation_subcontext);
-   auto shape_representation_2D = new Schema::IfcShapeRepresentation(representation_subcontext, std::string("FootPrint"), std::string("Curve2D"), representation_items);
-   file.addEntity(shape_representation_2D);
+   // create the footprint representation subcontext for CT 4.1.7.1.1.2 Alignment Geometry - Horizontal and Vertical
+   auto footprint_representation_subcontext = new Schema::IfcGeometricRepresentationSubContext(std::string("FootPrint"), std::string("Model"), geometric_representation_context, boost::none, Schema::IfcGeometricProjectionEnum::IfcGeometricProjection_MODEL_VIEW, boost::none);
+   file.addEntity(footprint_representation_subcontext);
 
-   auto horizontal_alignment = new Schema::IfcAlignmentHorizontal(IfcParse::IfcGlobalId(), nullptr, std::string("Horizontal Alignment"), boost::none, boost::none, nullptr, nullptr/*representation*/);
+   // create the footprint representation
+   auto footprint_shape_representation = new Schema::IfcShapeRepresentation(footprint_representation_subcontext, std::string("FootPrint"), std::string("Curve2D"), alignment_representation_items);
+   file.addEntity(footprint_shape_representation);
+
+   // create the axis representation subcontext for CT 4.1.7.1.1.1 Alignment Geometry - Horizontal
+   auto axis2d_representation_subcontext = new Schema::IfcGeometricRepresentationSubContext(std::string("Axis"), std::string("Model"), geometric_representation_context, boost::none, Schema::IfcGeometricProjectionEnum::IfcGeometricProjection_MODEL_VIEW, boost::none);
+   file.addEntity(axis2d_representation_subcontext);
+
+   // create axis curve 2d representation
+   auto axis2d_shape_representation = new Schema::IfcShapeRepresentation(axis2d_representation_subcontext, std::string("Axis"), std::string("Curve2D"), alignment_representation_items);
+   file.addEntity(axis2d_shape_representation);
+
+   // there are two representations for the horizontal alignment (footprint and axis2d)
+   typename aggregate_of<typename Schema::IfcRepresentation>::ptr horizontal_representations(new aggregate_of<typename Schema::IfcRepresentation>());
+   horizontal_representations->push(footprint_shape_representation);
+   horizontal_representations->push(axis2d_shape_representation);
+
+   auto horizontal_product = new Schema::IfcProductDefinitionShape(std::string("Horizontal product definition shape"), boost::none, horizontal_representations);
+
+   auto horizontal_alignment = new Schema::IfcAlignmentHorizontal(IfcParse::IfcGlobalId(), nullptr, std::string("Horizontal Alignment"), boost::none, boost::none, local_placement, horizontal_product);
    file.addEntity(horizontal_alignment);
 
+   // for the business logic, nest the individual horizontal alignment segment with the alignment
    auto nests_horizontal_segments = new Schema::IfcRelNests(IfcParse::IfcGlobalId(), nullptr, boost::none, std::string("Nests horizontal alignment segments with horizontal alignment"), horizontal_alignment, horizontal_segments);
    file.addEntity(nests_horizontal_segments);
    
@@ -332,33 +359,43 @@ int main()
    vertical_curve_segments->push(vertical_terminator_segment.first);
    vertical_segments->push(vertical_terminator_segment.second);
 
-   auto vertical_profile = new Schema::IfcAlignmentVertical(IfcParse::IfcGlobalId(), nullptr, std::string("Vertical Alignment"), boost::none, boost::none, file.getSingle<typename Schema::IfcLocalPlacement>(), nullptr);
+   // create profile view axis model representation for the vertical profile
+
+   // start by defining a gradient curve composed of the vertical curve segments and associated with the horizont composite curve
+   auto gradient_curve = new Schema::IfcGradientCurve(vertical_curve_segments, false, composite_curve, nullptr);
+
+   // the gradient curve is a representation item
+   typename aggregate_of<typename Schema::IfcRepresentationItem>::ptr profile_representation_items(new aggregate_of<typename Schema::IfcRepresentationItem>());
+   profile_representation_items->push(gradient_curve);
+
+   // create the axis representation subcontext
+   auto axis_representation_subcontext = new Schema::IfcGeometricRepresentationSubContext(std::string("Axis"), std::string("Model"), geometric_representation_context, boost::none, Schema::IfcGeometricProjectionEnum::IfcGeometricProjection_MODEL_VIEW, boost::none);
+   file.addEntity(axis_representation_subcontext);
+
+   // create the axis representation
+   auto axis_shape_representation = new Schema::IfcShapeRepresentation(axis_representation_subcontext, std::string("Axis"), std::string("Curve3D"), profile_representation_items);
+   file.addEntity(axis_shape_representation);
+
+   typename aggregate_of<typename Schema::IfcRepresentation>::ptr vertical_representations(new aggregate_of<typename Schema::IfcRepresentation>());
+   vertical_representations->push(axis_shape_representation);
+
+   auto vertical_product = new Schema::IfcProductDefinitionShape(std::string("Vertical product definition shape"), boost::none, vertical_representations);
+
+   auto vertical_profile = new Schema::IfcAlignmentVertical(IfcParse::IfcGlobalId(), nullptr, std::string("Vertical Alignment"), boost::none, boost::none, local_placement, vertical_product);
    file.addEntity(vertical_profile);
 
+   // for the business logic, nest the individual vertical curve segments with the vertical alignment
    auto nests_vertical_segments = new Schema::IfcRelNests(IfcParse::IfcGlobalId(), nullptr, boost::none, std::string("Nests vertical alignment segments with vertical alignment"), vertical_profile, vertical_segments);
    file.addEntity(nests_vertical_segments);
 
+   // the alignment has two representations, a plan view footprint and a 3d axis
+   typename aggregate_of<typename Schema::IfcRepresentation>::ptr alignment_representations(new aggregate_of<typename Schema::IfcRepresentation>());
+   alignment_representations->push(footprint_shape_representation); // 2D alignment geometry
+   alignment_representations->push(axis_shape_representation);      // 3D alignment geometry
 
-   typename aggregate_of<typename Schema::IfcRepresentationItem>::ptr representation_items2(new aggregate_of<typename Schema::IfcRepresentationItem>());
-
-   auto gradient_curve = new Schema::IfcGradientCurve(vertical_curve_segments, false, composite_curve, nullptr);
-   representation_items2->push(gradient_curve);
-
-
-   auto shape_representation_3D = new Schema::IfcShapeRepresentation(representation_subcontext, std::string("Axis"), std::string("Curve3D"), representation_items2);
-   file.addEntity(shape_representation_3D);
-
-   typename aggregate_of<typename Schema::IfcRepresentation>::ptr representations(new aggregate_of<typename Schema::IfcRepresentation>());
-   representations->push(shape_representation_2D); // 2D alignment geometry
-   representations->push(shape_representation_3D); // 3D alignment geometry
-   auto alignment_product = new Schema::IfcProductDefinitionShape(std::string("Alignment Product Definition Shape"), boost::none, representations);
+   // create the alignment
+   auto alignment_product = new Schema::IfcProductDefinitionShape(std::string("Alignment Product Definition Shape"), boost::none, alignment_representations);
    
-   auto local_placement = site->ObjectPlacement();
-   if (!local_placement)
-   {
-      local_placement = file.addLocalPlacement();
-   }
-
    auto alignment = new Schema::IfcAlignment(IfcParse::IfcGlobalId(), nullptr, std::string("Example Alignment"), boost::none, boost::none, local_placement, alignment_product, boost::none);
    file.addEntity(alignment);
 
