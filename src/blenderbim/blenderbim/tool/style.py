@@ -538,3 +538,7 @@ class Style(blenderbim.core.tool.Style):
         """assigns `style` to `object` current representation"""
         representation = tool.Geometry.get_active_representation(obj)
         tool.Ifc.run("style.assign_representation_styles", shape_representation=representation, styles=[style])
+
+    @classmethod
+    def reload_material_from_ifc(cls, blender_material):
+        blender_material.BIMStyleProperties.active_style_type = blender_material.BIMStyleProperties.active_style_type
