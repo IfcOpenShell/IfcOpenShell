@@ -99,13 +99,13 @@ class segment_geometry_adjuster {
 			 auto next = taxonomy::cast<taxonomy::piecewise_function>(mapping->map(next_inst));
           start_of_next_inst_ = next->evaluate(0.0);
        } else {
-             // there is not a next segment, however IfcGradientCurve and IfcSegmentedRefernceCurve
+             // there is not a next segment, however IfcGradientCurve and IfcSegmentedReferenceCurve
              // have an optional EndPoint attribute that serves the same purpose as the zero-length
              // "next segment" at the end of the curve. The Ifc specification is a little redundant
              // in that the "zero length" segment is required thereby negating the need for EndPoint
              // but some implementations use the EndPoint instead of the "zero length" segment
              //
-             // Get the parent of this segment. If it is a IfcGradientCurve or IfcSegmentedRefernceCurve
+             // Get the parent of this segment. If it is a IfcGradientCurve or IfcSegmentedReferenceCurve
              // look for the optional EndPoint attribute
              auto curves = inst->UsingCurves();
          if (curves && curves->size()) {
@@ -387,7 +387,7 @@ class curve_segment_evaluator {
         }
     }
 
-    void set_spiral_function(mapping* mapping_, const IfcSchema::IfcSpiral* c, double s, std::function<double(double)> signX, std::function<double(double)> fnX, std::function<double(double)> signY, std::function<double(double)> fnY, std::function<double(double)> fnSlope) {
+    void set_spiral_function(mapping* mapping_, const IfcSchema::IfcSpiral* c, double s, std::function<double(double)> signX, std::function<double(double)> fnX, std::function<double(double)> signY, std::function<double(double)> fnY) {
         // determine the length of the spiral from the local origin to the end point
         auto sign_s = binary_sign(start_);
         auto sign_l = binary_sign(length_);
@@ -405,7 +405,7 @@ class curve_segment_evaluator {
             auto segment_type = segment_type_;
             auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(c->Position()))->ccomponents();
             geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
-            eval_ = [L, start, s, signX, fnX, signY, fnY, fnSlope, transformation_matrix, segment_type, geometry_adjuster = this->geometry_adjuster](double u) {
+            eval_ = [L, start, s, signX, fnX, signY, fnY, transformation_matrix, segment_type, geometry_adjuster = this->geometry_adjuster](double u) {
 
                 u += start;
 
@@ -419,21 +419,8 @@ class curve_segment_evaluator {
 
                 // From https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcSpiral.htm, x = Integral(fnX du), y = Integral(fnY du)
                 // The tangent slope of a curve is the derivate of the curve, so the derivitive of an integral, is just the function
-                // Therefore, Dx/Du = fnX(u) and Dy/Du = fnY(u) which leads to du = Dx/fnX(u) and Dy = fnY(u)*Du = fnY(u)*Dx/fnX(u) so Dy/Dx = fnY(u)/fnX(u)
-                // However, Dx and Dy are not normalized. Recall that slope = rise/run
-                // If run = 1.0, then rise = Dy/Dx = fnY(u)/fnX(u) and l = sqrt((fnY(u)/fnX(u))^2 + 1.0^2)
-                // The direction ratios are dx = 1.0/l and dy = (fnY/fnX)/l;
-                //auto fy = fnY(u);
-                //auto fx = fnX(u);
-                //auto rise = fy / fx;
-                //auto run = 1.0;
-                //auto l = sqrt(run * run + rise * rise);
-                //auto dx = run / l;
-                //auto dy = rise / l;
-
-                auto slope = fnSlope(b);
-                auto dx = signX(u) * cos(slope);
-                auto dy = signY(u) * sin(slope);
+                auto dx = signX(u)*fnX(b)/s;
+                auto dy = signY(u)*fnY(b)/s;
 
                 Eigen::Matrix4d m;
                 if (segment_type == ST_HORIZONTAL) {
@@ -534,10 +521,8 @@ class curve_segment_evaluator {
       auto sign_y = [A](double t) { return sign(t) == sign(A) ? 1.0 : -1.0; };
       auto fn_x = [A, s](double t) -> double { return s * cos(PI * fabs(A) * t * t / (2 * fabs(A))); };
       auto fn_y = [A, s](double t) -> double { return s * sin(PI * fabs(A) * t * t / (2 * fabs(A))); };
-      //auto fn_slope = [A](double t) -> double { return sqrt(PI) * t * t / (2 * abs(A)); };
-      auto fn_slope = [A, s](double t) -> double { return pow(t*s / A, 2) / 2; };
 
-      set_spiral_function(mapping_, c, s, sign_x, fn_x, sign_y, fn_y, fn_slope);
+      set_spiral_function(mapping_, c, s, sign_x, fn_x, sign_y, fn_y);
 	}
 #endif
 
@@ -562,10 +547,9 @@ class curve_segment_evaluator {
 
 		auto fn_x = [theta](double t)->double {return cos(theta(t)); };
 		auto fn_y = [theta](double t)->double {return sin(theta(t)); };
-      auto fn_slope = [](double t)->double { return tan(t); };
 
 		double s = 1.0; // @todo: rb - this is supposed to be the curve length when the parametric value u = 1.0
-		set_spiral_function(mapping_, c, s, sign_x, fn_x, sign_y, fn_y, fn_slope);
+		set_spiral_function(mapping_, c, s, sign_x, fn_x, sign_y, fn_y);
 	}
 #endif
 
