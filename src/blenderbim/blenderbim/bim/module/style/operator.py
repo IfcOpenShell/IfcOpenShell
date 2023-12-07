@@ -124,9 +124,7 @@ class DisableEditingStyle(bpy.types.Operator, tool.Ifc.Operator):
 
         style = tool.Ifc.get().by_id(props.is_editing_style)
         material = tool.Ifc.get_object(style)
-        # just to trigger style update
-        material.BIMStyleProperties.active_style_type = material.BIMStyleProperties.active_style_type
-
+        tool.Style.reload_material_from_ifc(material)
         props.is_editing_style = 0
 
 
@@ -652,7 +650,7 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
             # TODO: provide `uv_maps` - need to rework .get_uv_maps not to depend on a single representation
             material = tool.Ifc.get_object(self.style)
             shading_style = self.rendering_style or self.shading_style
-            # TODO: support creating texture styles without defining shading style first
+            # TODO: support creating texture styles without defining rendering style first
             if self.rendering_style is None:
                 self.report(
                     {"ERROR"},
