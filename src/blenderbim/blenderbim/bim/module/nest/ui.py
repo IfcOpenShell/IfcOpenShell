@@ -1,5 +1,5 @@
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2023 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -17,13 +17,13 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 from bpy.types import Panel
-from blenderbim.bim.module.aggregate.data import AggregateData
+from blenderbim.bim.module.nest.data import NestData
 from blenderbim.bim.ifc import IfcStore
 
 
-class BIM_PT_aggregate(Panel):
-    bl_label = "Aggregates"
-    bl_idname = "BIM_PT_aggregate"
+class BIM_PT_nest(Panel):
+    bl_label = "Nest"
+    bl_idname = "BIM_PT_nest"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -45,10 +45,10 @@ class BIM_PT_aggregate(Panel):
 
     def draw(self, context):
         layout = self.layout
-        if not AggregateData.is_loaded:
-            AggregateData.load()
+        if not NestData.is_loaded:
+            NestData.load()
 
-        props = context.active_object.BIMObjectAggregateProperties
+        props = context.active_object.BIMObjectNestProperties
 
         if props.is_editing:
             row = layout.row(align=True)
@@ -56,43 +56,28 @@ class BIM_PT_aggregate(Panel):
             if props.relating_object:
                 op = row.operator("bim.assign_object", icon="CHECKMARK", text="")
                 op.relating_object = props.relating_object.BIMObjectProperties.ifc_definition_id
-            row.operator("bim.disable_editing_aggregate", icon="CANCEL", text="")
+            row.operator("bim.disable_editing_nest", icon="CANCEL", text="")
         else:
             row = layout.row(align=True)
-            if AggregateData.data["has_relating_object"]:
-                row.label(text=AggregateData.data["relating_object_label"], icon="TRIA_UP")
-                op = row.operator("bim.select_aggregate", icon="RESTRICT_SELECT_OFF", text="")
+            if NestData.data["has_relating_object"]:
+                row.label(text=NestData.data["relating_object_label"], icon="TRIA_UP")
+                op = row.operator("bim.select_nest", icon="RESTRICT_SELECT_OFF", text="")
                 op.obj = context.active_object.name
-                row.operator("bim.enable_editing_aggregate", icon="GREASEPENCIL", text="")
-                row.operator("bim.add_aggregate", icon="ADD", text="")
+                row.operator("bim.enable_editing_nest", icon="GREASEPENCIL", text="")
                 op = row.operator("bim.unassign_object", icon="X", text="")
             else:
-                row.label(text="No Aggregate", icon="TRIA_UP")
-                row.operator("bim.enable_editing_aggregate", icon="GREASEPENCIL", text="")
-                row.operator("bim.add_aggregate", icon="ADD", text="")
+                row.label(text="No Host", icon="TRIA_UP")
+                row.operator("bim.enable_editing_nest", icon="GREASEPENCIL", text="")
 
         row = layout.row(align=True)
-        total_parts = AggregateData.data["total_parts"]
-        if total_parts == 0:
-            row.label(text="No Parts", icon="TRIA_DOWN")
-        elif total_parts == 1:
-            row.label(text="1 Part", icon="TRIA_DOWN")
+        total_components = NestData.data["total_components"]
+        if total_components == 0:
+            row.label(text="No Components", icon="TRIA_DOWN")
+        elif total_components == 1:
+            row.label(text="1 Component", icon="TRIA_DOWN")
         else:
-            row.label(text=f"{total_parts} Parts", icon="TRIA_DOWN")
+            row.label(text=f"{total_components} Components", icon="TRIA_DOWN")
 
-        if AggregateData.data["has_related_objects"]:
-            op = row.operator("bim.select_parts", icon="RESTRICT_SELECT_OFF", text="")
-            op.obj = context.active_object.name
-
-        ifc_class = AggregateData.data["ifc_class"]
-        part_class = ""
-        if ifc_class == "IfcBuilding":
-            part_class = "IfcBuildingStorey"
-        elif ifc_class == "IfcSite":
-            part_class = "IfcBuilding"
-        elif ifc_class == "IfcProject":
-            part_class = "IfcSite"
-        if part_class != "":
-            op = layout.operator("bim.add_part_to_object", text="Add " + part_class.lstrip("Ifc"))
-            op.part_class = part_class
+        if NestData.data["has_related_objects"]:
+            op = row.operator("bim.select_components", icon="RESTRICT_SELECT_OFF", text="")
             op.obj = context.active_object.name

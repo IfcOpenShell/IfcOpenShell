@@ -44,6 +44,7 @@ modules = {
     "spatial": None,
     "void": None,
     "aggregate": None,
+    "nest": None,
     "geometry": None,
     "fm": None,
     "resource": None,

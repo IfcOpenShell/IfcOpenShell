@@ -37,6 +37,7 @@ from blenderbim.tool.loader import Loader
 from blenderbim.tool.material import Material
 from blenderbim.tool.misc import Misc
 from blenderbim.tool.model import Model
+from blenderbim.tool.nest import Nest
 from blenderbim.tool.owner import Owner
 from blenderbim.tool.patch import Patch
 from blenderbim.tool.project import Project
