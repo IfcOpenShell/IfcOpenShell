@@ -80,7 +80,7 @@ class Loader(blenderbim.core.tool.Loader):
         # Transparency was added in IFC4
         if transparency := surface_style.get("Transparency", None):
             alpha = 1 - transparency
-        blender_material.diffuse_color = surface_style["SurfaceColour"][:3] + (alpha,)
+        blender_material.diffuse_color = surface_style["SurfaceColour"] + (alpha,)
         blender_material.use_nodes = False
 
     @classmethod
@@ -100,36 +100,39 @@ class Loader(blenderbim.core.tool.Loader):
         if isinstance(surface_style, dict):
             return surface_style
         surface_style = surface_style.get_info()
-        color_to_tuple = lambda x: (x.Red, x.Green, x.Blue, 1)
 
+        color_to_tuple = lambda x: (x.Red, x.Green, x.Blue)
+
+        def convert_ifc_color_or_factor(color_or_factor):
+            if color_or_factor is None:
+                return
+            if color_or_factor.is_a("IfcColourRgb"):
+                return ("IfcColourRgb", color_to_tuple(color_or_factor))
+            # IfcNormalisedRatioMeasure
+            return ("IfcNormalisedRatioMeasure", color_or_factor.wrappedValue)
+
+        # can be only IfcColourRgb
         if surface_style["SurfaceColour"]:
             surface_style["SurfaceColour"] = color_to_tuple(surface_style["SurfaceColour"])
 
-        if surface_style.get("DiffuseColour", None) and surface_style["DiffuseColour"].is_a("IfcColourRgb"):
-            surface_style["DiffuseColour"] = ("IfcColourRgb", color_to_tuple(surface_style["DiffuseColour"]))
+        if surface_style["type"] == "IfcSurfaceStyleShading":
+            return surface_style
 
-        elif surface_style.get("DiffuseColour", None) and surface_style["DiffuseColour"].is_a(
-            "IfcNormalisedRatioMeasure"
-        ):
-            diffuse_color_value = surface_style["DiffuseColour"].wrappedValue
-            diffuse_color = [v * diffuse_color_value for v in surface_style["SurfaceColour"][:3]] + [1]
-            surface_style["DiffuseColour"] = ("IfcNormalisedRatioMeasure", diffuse_color)
-        else:
-            surface_style["DiffuseColour"] = None
+        # IfcSurfaceStyleRendering
+        # IfcColourOrFactor
+        surface_style["DiffuseColour"] = convert_ifc_color_or_factor(surface_style["DiffuseColour"])
+        surface_style["SpecularColour"] = convert_ifc_color_or_factor(surface_style["SpecularColour"])
 
-        if surface_style.get("SpecularColour", None) and surface_style["SpecularColour"].is_a(
-            "IfcNormalisedRatioMeasure"
-        ):
-            surface_style["SpecularColour"] = surface_style["SpecularColour"].wrappedValue
-        else:
-            surface_style["SpecularColour"] = None
+        if specular_highlight := surface_style["SpecularHighlight"]:
+            if specular_highlight.is_a("IfcSpecularRoughness"):
+                surface_style["SpecularHighlight"] = specular_highlight.wrappedValue
+            else:  # discard IfcSpecularExponent value
+                surface_style["SpecularHighlight"] = None
 
-        if surface_style.get("SpecularHighlight", None) and surface_style["SpecularHighlight"].is_a(
-            "IfcSpecularRoughness"
-        ):
-            surface_style["SpecularHighlight"] = surface_style["SpecularHighlight"].wrappedValue
-        else:
-            surface_style["SpecularHighlight"] = None
+        # NOTE: IfcSurfaceStyleRendering also has following attributes but we ignore them
+        # as they're about to get deprecated:
+        # TransmissionColour, DiffuseTransmissionColour, ReflectionColour
+
         return surface_style
 
     @classmethod
@@ -158,20 +161,29 @@ class Loader(blenderbim.core.tool.Loader):
             print(f'WARNING. Unsupported reflectance method "{reflectance_method}" on style {surface_style}')
             return
 
+        # TODO: reset pins to default values if no values passed
         if reflectance_method in ["PHYSICAL", "NOTDEFINED"]:
             blender_material.use_nodes = True
             cls.restart_material_node_tree(blender_material)
             bsdf = tool.Blender.get_material_node(blender_material, "BSDF_PRINCIPLED")
+
             if surface_style["DiffuseColour"]:
                 color_type, color_value = surface_style["DiffuseColour"]
                 if color_type == "IfcColourRgb":
-                    bsdf.inputs["Base Color"].default_value = color_value
-                elif color_type == "IfcNormalisedRatioMeasure":
-                    bsdf.inputs["Base Color"].default_value = color_value
+                    bsdf.inputs["Base Color"].default_value = color_value + (1,)
+                else:  # "IfcNormalisedRatioMeasure"
+                    color_value = [v * color_value for v in surface_style["SurfaceColour"]]
+                    bsdf.inputs["Base Color"].default_value = color_value + (1,)
+
             if surface_style["SpecularColour"]:
-                bsdf.inputs["Metallic"].default_value = surface_style["SpecularColour"]
+                color_type, color_value = surface_style["SpecularColour"]
+                if color_type == "IfcNormalisedRatioMeasure":
+                    bsdf.inputs["Metallic"].default_value = color_value
+                # IfcColourRgb is ignored
+
             if surface_style["SpecularHighlight"]:
                 bsdf.inputs["Roughness"].default_value = surface_style["SpecularHighlight"]
+
             if transparency := surface_style.get("Transparency", None):
                 bsdf.inputs["Alpha"].default_value = 1 - transparency
                 blender_material.blend_method = "BLEND"
@@ -204,7 +216,7 @@ class Loader(blenderbim.core.tool.Loader):
             if surface_style["DiffuseColour"]:
                 color_type, color_value = surface_style["DiffuseColour"]
                 if color_type == "IfcColourRgb":
-                    rgb.outputs[0].default_value = color_value
+                    rgb.outputs[0].default_value = color_value + (1,)
 
     @classmethod
     def create_surface_style_with_textures(cls, blender_material, rendering_style, texture_style):
