@@ -127,6 +127,13 @@ def misc():
 
 
 @pytest.fixture
+def nest():
+    prophet = Prophecy(blenderbim.core.tool.Nest)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
 def owner():
     prophet = Prophecy(blenderbim.core.tool.Owner)
     yield prophet
