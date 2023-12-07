@@ -1,5 +1,5 @@
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2023 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -22,10 +22,10 @@ import ifcopenshell.util.element
 
 
 def refresh():
-    AggregateData.is_loaded = False
+    NestData.is_loaded = False
 
 
-class AggregateData:
+class NestData:
     data = {}
     is_loaded = False
 
@@ -35,14 +35,13 @@ class AggregateData:
             "has_relating_object": cls.has_relating_object(),
             "relating_object_label": cls.get_relating_object_label(),
             "has_related_objects": cls.has_related_objects(),
-            "total_parts": cls.total_parts(),
-            "ifc_class": cls.ifc_class(),
+            "total_components": cls.total_components(),
         }
         cls.is_loaded = True
 
     @classmethod
     def get_relating_object(cls):
-        return ifcopenshell.util.element.get_aggregate(tool.Ifc.get_entity(bpy.context.active_object))
+        return ifcopenshell.util.element.get_nest(tool.Ifc.get_entity(bpy.context.active_object))
 
     @classmethod
     def has_relating_object(cls) -> bool:
@@ -50,25 +49,19 @@ class AggregateData:
 
     @classmethod
     def get_relating_object_label(cls) -> str:
-        aggregate = cls.get_relating_object()
-        if aggregate:
-            return f"{aggregate.is_a()}/{aggregate.Name or ''}"
+        nest = cls.get_relating_object()
+        if nest:
+            return f"{nest.is_a()}/{nest.Name or ''}"
 
     @classmethod
     def get_related_objects(cls):
-        return ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(bpy.context.active_object))
+        return ifcopenshell.util.element.get_components(tool.Ifc.get_entity(bpy.context.active_object))
 
     @classmethod
-    def total_parts(cls):
-        parts = cls.get_related_objects()
-        return len(parts) if parts else 0
+    def total_components(cls):
+        components = cls.get_related_objects()
+        return len(components) if components else 0
 
     @classmethod
     def has_related_objects(cls) -> bool:
         return bool(cls.get_related_objects())
-
-    @classmethod
-    def ifc_class(cls) -> str:
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        if element:
-            return element.is_a()
