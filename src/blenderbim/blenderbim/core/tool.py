@@ -508,6 +508,14 @@ class Model:
 
 
 @interface
+class Nest:
+    def can_nest(cls, relating_object, related_object): pass
+    def disable_editing(cls, obj): pass
+    def enable_editing(cls, obj): pass
+    def get_container(cls, element): pass
+
+
+@interface
 class Patch:
     def run_migrate_patch(cls, infile, outfile, schema): pass
 

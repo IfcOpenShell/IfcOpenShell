@@ -29,10 +29,6 @@ class TestImplementsTool(NewFile):
         assert isinstance(subject(), blenderbim.core.tool.Aggregate)
 
 
-
-
-
-
 class TestCanAggregate(NewFile):
     def test_elements_can_aggregate(self):
         ifc = ifcopenshell.file()
@@ -106,6 +102,7 @@ class TestCanAggregate(NewFile):
         subelement_obj = bpy.data.objects.new("Object", None)
         tool.Ifc.link(subelement, subelement_obj)
         assert subject.can_aggregate(element_obj, subelement_obj) is False
+
 
 class TestDisableEditing(NewFile):
     def test_run(self):

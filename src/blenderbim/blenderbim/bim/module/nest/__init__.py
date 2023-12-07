@@ -1,5 +1,5 @@
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2023 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -20,22 +20,20 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
-    operator.BIM_OT_add_aggregate,
-    operator.BIM_OT_add_part_to_object,
     operator.BIM_OT_assign_object,
-    operator.BIM_OT_disable_editing_aggregate,
-    operator.BIM_OT_enable_editing_aggregate,
-    operator.BIM_OT_select_aggregate,
-    operator.BIM_OT_select_parts,
+    operator.BIM_OT_disable_editing_nest,
+    operator.BIM_OT_enable_editing_nest,
+    operator.BIM_OT_select_components,
+    operator.BIM_OT_select_nest,
     operator.BIM_OT_unassign_object,
-    prop.BIMObjectAggregateProperties,
-    ui.BIM_PT_aggregate,
+    prop.BIMObjectNestProperties,
+    ui.BIM_PT_nest,
 )
 
 
 def register():
-    bpy.types.Object.BIMObjectAggregateProperties = bpy.props.PointerProperty(type=prop.BIMObjectAggregateProperties)
+    bpy.types.Object.BIMObjectNestProperties = bpy.props.PointerProperty(type=prop.BIMObjectNestProperties)
 
 
 def unregister():
-    del bpy.types.Object.BIMObjectAggregateProperties
+    del bpy.types.Object.BIMObjectNestProperties

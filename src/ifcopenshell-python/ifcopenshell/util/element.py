@@ -805,7 +805,8 @@ def get_aggregate(element):
     aggregate = ifcopenshell.util.element.get_aggregate(element)
     """
     if hasattr(element, "Decomposes") and element.Decomposes:
-        return element.Decomposes[0].RelatingObject
+        if element.Decomposes[0].is_a("IfcRelAggregates"):  # IFC2X3
+            return element.Decomposes[0].RelatingObject
 
 
 def get_nest(element):
@@ -821,13 +822,17 @@ def get_nest(element):
     element = file.by_type("IfcBeam")[0]
     aggregate = ifcopenshell.util.element.get_nest(element)
     """
-    if hasattr(element, "Nests") and element.Nests:
-        return element.Nests[0].RelatingObject
+    if hasattr(element, "Nests"):
+        if element.Nests:
+            return element.Nests[0].RelatingObject
+    elif hasattr(element, "Decomposes") and element.Decomposes:  # IFC2X3
+        if element.Decomposes[0].is_a("IfcRelNests"):
+            return element.Decomposes[0].RelatingObject
 
 
 def get_parts(element):
     """
-    Retrieves the parts of an element.
+    Retrieves the parts of an element that have an aggregation relationship.
 
     :param element: The IFC element
     :return: The parts of the element
@@ -840,7 +845,30 @@ def get_parts(element):
 
     """
     if hasattr(element, "IsDecomposedBy") and element.IsDecomposedBy:
-        return element.IsDecomposedBy[0].RelatedObjects
+        if element.IsDecomposedBy[0].is_a("IfcRelAggregates"):
+            return element.IsDecomposedBy[0].RelatedObjects
+
+
+def get_components(element):
+    """
+    Retrieves the components of an element that have an nest relationship.
+
+    :param element: The IFC element
+    :return: The components of the element
+
+    Example:
+
+    .. code:: python
+    element = file.by_type("IfcElementAssembly")[0]
+    components = ifcopenshell.util.element.get_components(element)
+
+    """
+    if hasattr(element, "IsNestedBy"):
+        if element.IsNestedBy:
+            return element.IsNestedBy[0].RelatedObjects
+    elif hasattr(element, "IsDecomposedBy") and element.IsDecomposedBy:
+        if element.IsDecomposedBy[0].is_a("IfcRelNests"):
+            return element.IsDecomposedBy[0].RelatedObjects
 
 
 def replace_attribute(element, old, new):
