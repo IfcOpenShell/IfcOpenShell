@@ -872,5 +872,10 @@ class TestAddReferenceImage(NewFile):
         representation_items = set(tool.Geometry.get_active_representation(obj).Items)
         assert styled_items == representation_items
 
-        assert Path(material.BIMStyleProperties.diffuse_path) == filepath
-        assert material.BIMStyleProperties.uv_mode == "Generated"
+        material_nodes = material.node_tree.nodes
+        texture_filepath = material_nodes["Image Texture"].image.filepath
+        texture_filepath = Path(tool.Blender.blender_path_to_posix(texture_filepath))
+        assert texture_filepath == filepath
+
+        uv_node = material_nodes["Texture Coordinate"]
+        assert len(uv_node.outputs["Generated"].links[:]) == 1

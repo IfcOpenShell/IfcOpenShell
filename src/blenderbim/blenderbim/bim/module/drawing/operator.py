@@ -2643,8 +2643,33 @@ class AddReferenceImage(bpy.types.Operator, Operator):
 
         style = ifc_file.by_id(material.BIMMaterialProperties.ifc_style_id)
         tool.Style.assign_style_to_object(style, obj)
-        tool.Geometry.record_object_materials(obj)
 
-        material.BIMStyleProperties.diffuse_path = image_filepath.as_posix()
-        material.BIMStyleProperties.uv_mode = "Generated"
-        bpy.ops.bim.update_style_colours()
+        # TODO: IfcSurfaceStyleRendering is unnecessary here, added it only because
+        # we don't support IfcSurfaceStyleWithTextures without Rendering yet
+        shading_attributes = {
+            "SurfaceColour": {
+                "Red": 1.0,
+                "Green": 1.0,
+                "Blue": 1.0,
+            },
+            "Transparency": 0.0,
+            "ReflectanceMethod": "NOTDEFINED",
+        }
+        ifcopenshell.api.run(
+            "style.add_surface_style",
+            tool.Ifc.get(),
+            style=style,
+            ifc_class="IfcSurfaceStyleRendering",
+            attributes=shading_attributes,
+        )
+        texture = ifc_file.create_entity("IfcImageTexture", Mode="DIFFUSE", URLReference=image_filepath.as_posix())
+        textures = [texture]
+        ifc_file.create_entity("IfcTextureCoordinateGenerator", Maps=textures, Mode="COORD")  # UV map
+        tool.Ifc.run(
+            "style.add_surface_style",
+            style=style,
+            ifc_class="IfcSurfaceStyleWithTextures",
+            attributes={"Textures": textures},
+        )
+        tool.Style.reload_material_from_ifc(material)
+        tool.Geometry.record_object_materials(obj)
