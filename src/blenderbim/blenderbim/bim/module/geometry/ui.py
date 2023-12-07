@@ -190,7 +190,7 @@ class BIM_PT_representation_items(Panel):
 
         row = self.layout.row()
         if surface_style:
-            row.label(text=surface_style, icon="MATERIAL")
+            row.label(text=surface_style, icon="SHADING_RENDERED")
         else:
             row.label(text="No Surface Style", icon="MESH_UVSPHERE")
 
