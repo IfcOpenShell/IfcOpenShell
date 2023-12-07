@@ -48,11 +48,11 @@ class TestCreatingStyles(NewFile):
 
         style_data = {
             "ReflectanceMethod": "NOTDEFINED",
-            "DiffuseColour": ("IfcColourRgb", (0.5, 0.5, 0.5, 1.0)),
-            "SurfaceColour": (0.3, 0.3, 0.3, 1.0),
+            "DiffuseColour": ("IfcColourRgb", (0.5, 0.5, 0.5)),
+            "SurfaceColour": (0.3, 0.3, 0.3),
             "Transparency": 0.3,
             "SpecularHighlight": 0.4,
-            "SpecularColour": 0.03,
+            "SpecularColour": ("IfcNormalisedRatioMeasure", 0.03),
         }
         texture_data = [
             {
@@ -71,12 +71,13 @@ class TestCreatingStyles(NewFile):
 
         bsdf = tool.Blender.get_material_node(material, "BSDF_PRINCIPLED")
         alpha = 1 - style_data["Transparency"]
-        diffuse_color = style_data["SurfaceColour"][:3] + (alpha,)
+        diffuse_color = style_data["SurfaceColour"] + (alpha,)
         assert np.allclose(material.diffuse_color[:], diffuse_color)
-        assert np.allclose(bsdf.inputs["Base Color"].default_value[:], style_data["DiffuseColour"][1])
+        base_color = style_data["DiffuseColour"][1] + (1.0,)
+        assert np.allclose(bsdf.inputs["Base Color"].default_value[:], base_color)
         assert np.isclose(bsdf.inputs["Alpha"].default_value, alpha)
         assert np.isclose(bsdf.inputs["Roughness"].default_value, style_data["SpecularHighlight"])
-        assert np.isclose(bsdf.inputs["Metallic"].default_value, style_data["SpecularColour"])
+        assert np.isclose(bsdf.inputs["Metallic"].default_value, style_data["SpecularColour"][1])
 
         image_node = tool.Blender.get_material_node(material, "TEX_IMAGE")
         assert image_node.outputs["Color"].links[0].to_socket.name == "Base Color"

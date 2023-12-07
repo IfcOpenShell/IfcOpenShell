@@ -23,8 +23,9 @@ classes = (
     operator.ActivateExternalStyle,
     operator.AddPresentationStyle,
     operator.AddStyle,
+    operator.AddSurfaceTexture,
     operator.BrowseExternalStyle,
-    operator.ClearTextureMapPath,
+    operator.RemoveTextureMap,
     operator.ChooseTextureMapPath,
     operator.DisableAddingPresentationStyle,
     operator.DisableEditingExternalStyle,
@@ -46,6 +47,7 @@ classes = (
     operator.UpdateStyleColours,
     operator.UpdateStyleTextures,
     prop.Style,
+    prop.Texture,
     prop.BIMStylesProperties,
     prop.BIMStyleProperties,
     ui.BIM_PT_styles,
@@ -53,7 +55,6 @@ classes = (
     ui.BIM_PT_style_attributes,
     ui.BIM_PT_external_style_attributes,
     ui.BIM_UL_styles,
-    ui.BIM_PT_STYLE_GRAPH,
 )
 
 
