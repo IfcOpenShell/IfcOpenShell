@@ -112,11 +112,13 @@ class Usecase:
             attribute[1] = value["Red"]
             attribute[2] = value["Green"]
             attribute[3] = value["Blue"]
-        else:
+        else:  # assume it's float value for IfcNormalisedRatioMeasure or None
             existing_value = getattr(self.settings["style"], name)
             if existing_value and existing_value.id():
                 self.file.remove(existing_value)
-            setattr(self.settings["style"], name, self.file.createIfcNormalisedRatioMeasure(value))
+            if value is not None:
+                value = self.file.createIfcNormalisedRatioMeasure(value)
+            setattr(self.settings["style"], name, value)
 
     def edit_specular_highlight(self, value):
         if value is None:
