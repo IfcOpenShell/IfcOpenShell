@@ -32,8 +32,10 @@ class BIM_PT_bsdd(Panel):
 
     def draw(self, context):
         props = context.scene.BIMBSDDProperties
-        row = self.layout.row()
-        row.prop(props, "load_activated_domains")
+        row = self.layout.row(align=True)
+        row.prop(props, "load_preview_domains")
+        if len(props.domains):
+            row.operator("bim.load_bsdd_domains", text="", icon="FILE_REFRESH")
 
         if props.active_domain:
             row = self.layout.row()
@@ -51,8 +53,6 @@ class BIM_PT_bsdd(Panel):
                 props,
                 "active_domain_index",
             )
-            row = self.layout.row()
-            row.operator("bim.load_bsdd_domains", text="Reload bSDD Domains")
         else:
             row = self.layout.row()
             row.operator("bim.load_bsdd_domains")
@@ -62,8 +62,10 @@ class BIM_UL_bsdd_domains(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
-            row.label(text=f"{item.name} ({item.organization_name_owner})")
-            row.label(text=item.status)
+            if item.status != "Active":
+                row.label(text=f"{item.name} ({item.organization_name_owner}) - {item.status}", icon="ERROR")
+            else:
+                row.label(text=f"{item.name} ({item.organization_name_owner})")
             op = row.operator("bim.set_active_bsdd_domain", text="", icon="RESTRICT_SELECT_OFF")
             op.name = item.name
             op.uri = item.namespace_uri
