@@ -670,6 +670,8 @@ class ReloadIfcFile(bpy.types.Operator, tool.Ifc.Operator):
         # STEP IDs may change, but we assume the GlobalID to be constant
         obj_map = {}
         for obj in bpy.data.objects:
+            if obj.library:
+                continue
             element = tool.Ifc.get_entity(obj)
             if element and hasattr(element, "GlobalId"):
                 obj_map[obj.name] = element.GlobalId
@@ -678,6 +680,8 @@ class ReloadIfcFile(bpy.types.Operator, tool.Ifc.Operator):
         tool.Ifc.set(new)
 
         for obj in bpy.data.objects:
+            if obj.library:
+                continue
             global_id = obj_map.get(obj.name)
             if global_id:
                 try:

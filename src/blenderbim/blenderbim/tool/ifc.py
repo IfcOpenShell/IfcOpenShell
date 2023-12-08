@@ -118,6 +118,9 @@ class Ifc(blenderbim.core.tool.Ifc):
             return
 
         for obj in bpy.data.objects:
+            if obj.library:
+                continue
+
             bpy.msgbus.clear_by_owner(obj)
 
             element = cls.get_entity(obj)
@@ -134,6 +137,9 @@ class Ifc(blenderbim.core.tool.Ifc):
             )
 
         for obj in bpy.data.materials:
+            if obj.library:
+                continue
+
             bpy.msgbus.clear_by_owner(obj)
 
             material = cls.get_entity(obj)
