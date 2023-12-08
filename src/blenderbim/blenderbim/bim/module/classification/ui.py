@@ -239,6 +239,8 @@ class ReferenceUI:
             name = reference["Identification"] or "No Identification"
         row.label(text=name, icon="ASSET_MANAGER")
         row.label(text=reference["Name"] or "")
+        if reference["Location"]:
+            row.operator("bim.open_uri", icon="URL", text="").uri = reference["Location"]
         if not self.props.active_reference_id:
             op = row.operator("bim.enable_editing_classification_reference", text="", icon="GREASEPENCIL")
             op.reference = reference["id"]
