@@ -19,7 +19,7 @@
 import ifcopenshell
 
 
-def get_pset(element, name, prop=None, should_inherit=True, verbose=False):
+def get_pset(element, name, prop=None, psets_only=False, qtos_only=False, should_inherit=True, verbose=False):
     """Retrieve a single property set or single property
 
     This is more efficient than ifcopenshell.util.element.get_psets if you know
@@ -34,6 +34,10 @@ def get_pset(element, name, prop=None, should_inherit=True, verbose=False):
     :type name: str
     :param prop: The name of the property
     :type prop: str,optional
+    :param psets_only: Default as False. Set to true if only property sets are needed.
+    :type psets_only: bool,optional
+    :param qtos_only: Default as False. Set to true if only quantities are needed.
+    :type qtos_only: bool,optional
     :param should_inherit: Default as True. Set to false if you don't want to inherit property sets from the Type.
     :type should_inherit: bool,optional
     :return: A dictionary of property names and values, or a single value if a
@@ -71,6 +75,18 @@ def get_pset(element, name, prop=None, should_inherit=True, verbose=False):
                 if definition.Name == name:
                     pset = definition
                     break
+
+    if pset:
+        if psets_only and not pset.is_a("IfcPropertySet"):
+            pset = None
+        elif qtos_only and not pset.is_a("IfcElementQuantity"):
+            pset = None
+
+    if type_pset:
+        if psets_only and not type_pset.is_a("IfcPropertySet"):
+            type_pset = None
+        elif qtos_only and not type_pset.is_a("IfcElementQuantity"):
+            type_pset = None
 
     if not pset and not type_pset:
         return
