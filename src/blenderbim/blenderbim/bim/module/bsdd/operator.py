@@ -34,10 +34,10 @@ class LoadBSDDDomains(bpy.types.Operator):
         props.domains.clear()
         client = bsdd.Client()
 
-        if props.load_activated_domains:
-            domains = [d for d in client.Domain() if d["status"] == "Active"]
-        else:
+        if props.load_preview_domains:
             domains = client.Domain()
+        else:
+            domains = [d for d in client.Domain() if d["status"] == "Active"]
 
         for domain in sorted(domains, key=lambda x: x["name"]):
             new = props.domains.add()
@@ -125,14 +125,23 @@ class GetBSDDClassificationProperties(bpy.types.Operator):
                 possible_values = prop.get("possibleValues", []) or []
                 possible_values = [v["value"] for v in possible_values]
 
-            psets[pset][prop["name"]] = possible_values
+            psets[pset][prop["name"]] = {"data_type": prop["dataType"], "possible_values": possible_values}
+
+        data_type_map = {
+            "String": "string",
+            "Real": "float",
+            "Boolean": "boolean",
+        }
 
         for pset_name, pset in psets.items():
             new = bprops.classification_psets.add()
             new.name = pset_name
-            for name, values in pset.items():
+            for name, data in pset.items():
                 new2 = new.properties.add()
                 new2.name = name
-                new2.enum_items = json.dumps(values)
-                new2.data_type = "enum"
+                if data["possible_values"]:
+                    new2.enum_items = json.dumps(data["possible_values"])
+                    new2.data_type = "enum"
+                else:
+                    new2.data_type = data_type_map[data["data_type"]]
         return {"FINISHED"}

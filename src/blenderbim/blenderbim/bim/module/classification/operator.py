@@ -324,17 +324,32 @@ class AddClassificationReferenceFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
             reference.Location = bsdd_classification.namespace_uri
 
             for classification_pset in bprops.classification_psets:
-                pset = ifcopenshell.util.element.get_pset(element, classification_pset.name)
+                is_pset = not classification_pset.name.startswith("Qto_")
+
+                if is_pset:
+                    pset = ifcopenshell.util.element.get_pset(element, classification_pset.name, psets_only=True)
+                else:
+                    pset = ifcopenshell.util.element.get_pset(element, classification_pset.name, qtos_only=True)
+
                 if pset:
                     pset = tool.Ifc.get().by_id(pset["id"])
-                else:
+                elif is_pset:
                     pset = ifcopenshell.api.run(
                         "pset.add_pset", tool.Ifc.get(), product=element, name=classification_pset.name
                     )
+                else:
+                    pset = ifcopenshell.api.run(
+                        "pset.add_qto", tool.Ifc.get(), product=element, name=classification_pset.name
+                    )
+
                 properties = {}
                 for prop in classification_pset.properties:
                     properties[prop.name] = prop.get_value()
-                ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties=properties)
+
+                if is_pset:
+                    ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties=properties)
+                else:
+                    ifcopenshell.api.run("pset.edit_qto", tool.Ifc.get(), qto=pset, properties=properties)
 
 
 class ChangeClassificationLevel(bpy.types.Operator):
