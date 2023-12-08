@@ -159,10 +159,6 @@ int main()
    }
 
    auto site = file.addSite(project, nullptr);
-   auto local_placement = site->ObjectPlacement();
-   if (!local_placement) {
-      local_placement = file.addLocalPlacement();
-   }
 
    auto geometric_representation_context = file.getRepresentationContext(std::string("Model")); // creates the representation context if it doesn't already exist
    
@@ -261,11 +257,11 @@ int main()
    alignment_representation_items->push(composite_curve);
 
    // create the footprint representation subcontext for CT 4.1.7.1.1.2 Alignment Geometry - Horizontal and Vertical
-   auto footprint_representation_subcontext = new Schema::IfcGeometricRepresentationSubContext(std::string("FootPrint"), std::string("Model"), geometric_representation_context, boost::none, Schema::IfcGeometricProjectionEnum::IfcGeometricProjection_MODEL_VIEW, boost::none);
-   file.addEntity(footprint_representation_subcontext);
+   auto axis_model_representation_subcontext = new Schema::IfcGeometricRepresentationSubContext(std::string("Axis"), std::string("Model"), geometric_representation_context, boost::none, Schema::IfcGeometricProjectionEnum::IfcGeometricProjection_MODEL_VIEW, boost::none);
+   file.addEntity(axis_model_representation_subcontext);
 
    // create the footprint representation
-   auto footprint_shape_representation = new Schema::IfcShapeRepresentation(footprint_representation_subcontext, std::string("FootPrint"), std::string("Curve2D"), alignment_representation_items);
+   auto footprint_shape_representation = new Schema::IfcShapeRepresentation(axis_model_representation_subcontext, std::string("FootPrint"), std::string("Curve2D"), alignment_representation_items);
    file.addEntity(footprint_shape_representation);
 
    auto horizontal_alignment = new Schema::IfcAlignmentHorizontal(IfcParse::IfcGlobalId(), nullptr, std::string("Horizontal Alignment"), boost::none, boost::none, nullptr, nullptr);
@@ -353,12 +349,8 @@ int main()
    typename aggregate_of<typename Schema::IfcRepresentationItem>::ptr profile_representation_items(new aggregate_of<typename Schema::IfcRepresentationItem>());
    profile_representation_items->push(gradient_curve);
 
-   // create the axis representation subcontext
-   auto axis_representation_subcontext = new Schema::IfcGeometricRepresentationSubContext(std::string("Axis"), std::string("Model"), geometric_representation_context, boost::none, Schema::IfcGeometricProjectionEnum::IfcGeometricProjection_MODEL_VIEW, boost::none);
-   file.addEntity(axis_representation_subcontext);
-
    // create the axis representation
-   auto axis3d_shape_representation = new Schema::IfcShapeRepresentation(axis_representation_subcontext, std::string("Axis"), std::string("Curve3D"), profile_representation_items);
+   auto axis3d_shape_representation = new Schema::IfcShapeRepresentation(axis_model_representation_subcontext, std::string("Axis"), std::string("Curve3D"), profile_representation_items);
    file.addEntity(axis3d_shape_representation);
 
    auto vertical_profile = new Schema::IfcAlignmentVertical(IfcParse::IfcGlobalId(), nullptr, std::string("Vertical Alignment"), boost::none, boost::none, nullptr, nullptr);
@@ -376,12 +368,8 @@ int main()
    // create the alignment
    auto alignment_product = new Schema::IfcProductDefinitionShape(std::string("Alignment Product Definition Shape"), boost::none, alignment_representations);
    
-   auto alignment = new Schema::IfcAlignment(IfcParse::IfcGlobalId(), nullptr, std::string("Example Alignment"), boost::none, boost::none, local_placement, alignment_product, boost::none);
+   auto alignment = new Schema::IfcAlignment(IfcParse::IfcGlobalId(), nullptr, std::string("Example Alignment"), boost::none, boost::none, site->ObjectPlacement(), alignment_product, boost::none);
    file.addEntity(alignment);
-
-   file.relatePlacements(site, horizontal_alignment);
-   file.relatePlacements(site, vertical_profile);
-   file.relatePlacements(site, alignment);
 
    // 4.1.4.4.1 Alignments nest horizontal and vertical layouts
    // https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/concepts/Object_Composition/Nesting/Alignment_Layouts/content.html
