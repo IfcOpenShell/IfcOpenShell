@@ -456,7 +456,9 @@ class DumbProfileJoiner:
             if not extrusion:
                 return None, None
             position = extrusion.Position
-            return (position.Axis.DirectionRatios, position.RefDirection.DirectionRatios)
+            if position.Axis:
+                return (position.Axis.DirectionRatios, position.RefDirection.DirectionRatios)
+            return ((0.0, 0.0, 1.0), (1.0, 0.0, 0.0))
 
         old_body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         new_body = ifcopenshell.api.run(
