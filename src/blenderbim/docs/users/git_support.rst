@@ -110,10 +110,11 @@ other branches.
     Branch names can't contain spaces, and have some other minor limitations -
     BlenderBIM will not allow you to create invalid branch names.
 
-To create a branch simply switch to any earlier revision, ie. not the current
-HEAD at the top of the revision list, and start editing the project.  When you
-save and commit, BlenderBIM will insist that you either discard your changes
-or it will force you to create a new branch.
+To create a new branch from the current HEAD (ie. the top of the revision list)
+enter a branch name when committing. Leaving this field empty just adds a
+normal commit without creating a branch, however committing a change to an
+earlier revision necessarily implies a new branch, so BlenderBIM will insist
+that you give it a name.
 
 Each branch can now be navigated separately in the revision list, to switch
 between branches, and to any previous revision in any branch, select the
