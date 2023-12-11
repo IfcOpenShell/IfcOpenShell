@@ -1287,7 +1287,7 @@ bool convert_to_polyhedron(const CGAL::Nef_polyhedron_3<Kernel>& a, CGAL::Polyhe
 		for (auto jt = it->shells_begin(); jt != it->shells_end(); ++jt) {
 			if (v++ == volume_index) {
 				Polysoup_builder<Kernel> vis;
-				a.visit_shell_objects(CGAL::Nef_polyhedron_3<Kernel>::SFace_const_handle(jt), vis);
+				a.visit_shell_objects(typename CGAL::Nef_polyhedron_3<Kernel>::SFace_const_handle(jt), vis);
 				vis.build(b);
 				return true;
 			}
@@ -1306,7 +1306,7 @@ bool write_to_obj(const CGAL::Nef_polyhedron_3<Kernel>& a, std::ostream& ofs, si
 		}
 		for (auto jt = it->shells_begin(); jt != it->shells_end(); ++jt) {
 			if (v++ == volume_index || volume_index == std::numeric_limits<size_t>::max()) {
-				a.visit_shell_objects(CGAL::Nef_polyhedron_3<Kernel>::SFace_const_handle(jt), vis);
+				a.visit_shell_objects(typename CGAL::Nef_polyhedron_3<Kernel>::SFace_const_handle(jt), vis);
 				if (volume_index != std::numeric_limits<size_t>::max()) {
 					vis.write(ofs);
 					return true;
