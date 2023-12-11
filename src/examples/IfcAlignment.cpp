@@ -45,20 +45,20 @@ std::pair<typename Schema::IfcCurveSegment*,typename Schema::IfcAlignmentSegment
 }
 
 // creates geometry and business logic segments for horizontal alignment horizonal curves
-std::pair<typename Schema::IfcCurveSegment*, typename Schema::IfcAlignmentSegment*> create_hcurve(typename Schema::IfcCartesianPoint* pc, typename Schema::IfcCartesianPoint* cc, double dir, double radius,double lc)
+std::pair<typename Schema::IfcCurveSegment*, typename Schema::IfcAlignmentSegment*> create_hcurve(typename Schema::IfcCartesianPoint* pc, double dir, double radius,double lc)
 {
    // geometry
    double sign = radius / fabs(radius);
    auto parent_curve = new Schema::IfcCircle(
-      new Schema::IfcAxis2Placement2D(cc, new Schema::IfcDirection(std::vector<double>{cos(dir - sign*PI / 2), sin(dir - sign*PI / 2)})),
-      fabs(radius));
-   
+       new Schema::IfcAxis2Placement2D(new Schema::IfcCartesianPoint(std::vector<double>({0, 0})), new Schema::IfcDirection(std::vector<double>{1, 0})),
+       fabs(radius));
+
    auto curve_segment = new Schema::IfcCurveSegment(
-      Schema::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT,
-      new Schema::IfcAxis2Placement2D(new Schema::IfcCartesianPoint(std::vector<double>({ 0,0 })), new Schema::IfcDirection(std::vector<double>{1, 0})),
-      new Schema::IfcLengthMeasure(0.0), 
-      new Schema::IfcLengthMeasure(sign*lc), 
-      parent_curve);
+       Schema::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT,
+       new Schema::IfcAxis2Placement2D(pc, new Schema::IfcDirection(std::vector<double>{cos(dir), sin(dir)})) ,
+       new Schema::IfcLengthMeasure(0.0),
+       new Schema::IfcLengthMeasure(sign * lc),
+       parent_curve);
 
    // business logic
    auto design_parameters = new Schema::IfcAlignmentHorizontalSegment(boost::none, boost::none, pc, dir, radius, radius, lc, boost::none, Schema::IfcAlignmentHorizontalSegmentTypeEnum::IfcAlignmentHorizontalSegmentType_CIRCULARARC);
@@ -110,8 +110,8 @@ std::pair<typename Schema::IfcCurveSegment*, typename Schema::IfcAlignmentSegmen
 
    // business logic
    double k = (end_slope - start_slope) / length;
-   auto design_patameters = new Schema::IfcAlignmentVerticalSegment(boost::none, boost::none, p->Coordinates()[0], length, p->Coordinates()[1], start_slope, end_slope, 1 / k, Schema::IfcAlignmentVerticalSegmentTypeEnum::IfcAlignmentVerticalSegmentType_PARABOLICARC);
-   auto alignment_segment = new Schema::IfcAlignmentSegment(IfcParse::IfcGlobalId(), nullptr, boost::none, boost::none, boost::none, nullptr, nullptr, design_patameters);
+   auto design_parameters = new Schema::IfcAlignmentVerticalSegment(boost::none, boost::none, p->Coordinates()[0], length, p->Coordinates()[1], start_slope, end_slope, 1 / k, Schema::IfcAlignmentVerticalSegmentTypeEnum::IfcAlignmentVerticalSegmentType_PARABOLICARC);
+   auto alignment_segment = new Schema::IfcAlignmentSegment(IfcParse::IfcGlobalId(), nullptr, boost::none, boost::none, boost::none, nullptr, nullptr, design_parameters);
 
    return { curve_segment,alignment_segment };
 }
@@ -170,13 +170,10 @@ int main()
    // B.1.4 pg 212
    auto pob = file.addDoublet<Schema::IfcCartesianPoint>(500, 2500); // beginning
    auto pc1 = file.addDoublet<Schema::IfcCartesianPoint>(2142.237995, 1436.014820); // Point of curve (PC), Curve #1
-   auto cc1 = file.addDoublet<Schema::IfcCartesianPoint>(2685.979298, 2275.267700); // Center of circle (CC), Curve #1
    auto pt1 = file.addDoublet<Schema::IfcCartesianPoint>(3660.446123, 2050.736173); // Point of tangent (PT), Curve #1
    auto pc2 = file.addDoublet<Schema::IfcCartesianPoint>(4084.115884, 3889.462938);
-   auto cc2 = file.addDoublet<Schema::IfcCartesianPoint>(5302.199416, 3608.798529);
    auto pt2 = file.addDoublet<Schema::IfcCartesianPoint>(5469.395067, 4847.566310);
    auto pc3 = file.addDoublet<Schema::IfcCartesianPoint>(7019.971367, 4638.286073);
-   auto cc3 = file.addDoublet<Schema::IfcCartesianPoint>(6892.902672, 3696.822560);
    auto pt3 = file.addDoublet<Schema::IfcCartesianPoint>(7790.932128, 4006.730765);
    auto poe = file.addDoublet<Schema::IfcCartesianPoint>(8480, 2010); // ending
 
@@ -194,7 +191,7 @@ int main()
    double rc_2 = -1250; // negative radius for curves to the right
    double rc_3 = -950;
 
-   // curve delta angles
+   // bearing of tangents
    // pg 17, Eq 2.16 - 2.19
    double angle_1 = ToRadian(327.0613);
    double angle_2 = ToRadian(77.0247);
@@ -211,7 +208,7 @@ int main()
    horizontal_segments->push(curve_segment_1.second);
 
    // Curve 1
-   auto curve_segment_2 = create_hcurve(pc1, cc1,angle_1,rc_1,lc_1);
+   auto curve_segment_2 = create_hcurve(pc1, angle_1,rc_1,lc_1);
    horizontal_curve_segments->push(curve_segment_2.first);
    horizontal_segments->push(curve_segment_2.second);
 
@@ -221,7 +218,7 @@ int main()
    horizontal_segments->push(curve_segment_3.second);
 
    // Curve 2
-   auto curve_segment_4 = create_hcurve(pc2, cc2, angle_2, rc_2, lc_2);
+   auto curve_segment_4 = create_hcurve(pc2, angle_2, rc_2, lc_2);
    horizontal_curve_segments->push(curve_segment_4.first);
    horizontal_segments->push(curve_segment_4.second);
 
@@ -231,7 +228,7 @@ int main()
    horizontal_segments->push(curve_segment_5.second);
 
    // Curve 3
-   auto curve_segment_6 = create_hcurve(pc3, cc3, angle_3, rc_3, lc_3);
+   auto curve_segment_6 = create_hcurve(pc3, angle_3, rc_3, lc_3);
    horizontal_curve_segments->push(curve_segment_6.first);
    horizontal_segments->push(curve_segment_6.second);
 
