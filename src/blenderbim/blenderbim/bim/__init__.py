@@ -181,6 +181,7 @@ addon_keymaps = []
 icons = None
 is_registering = False
 last_commit_hash = "8888888"
+overridden_scene_panels = dict()
 
 
 def on_register(scene):
@@ -285,22 +286,7 @@ def unregister():
             km.keymap_items.remove(kmi)
     addon_keymaps.clear()
 
-    for panel in [
-        "SCENE_PT_scene",
-        "SCENE_PT_unit",
-        "SCENE_PT_physics",
-        "SCENE_PT_rigid_body_world",
-        "SCENE_PT_audio",
-        "SCENE_PT_keying_sets",
-        "SCENE_PT_simulation",
-        "SCENE_PT_custom_props",  # 4.0
-        # after SCENE_PT_keying_sets
-        "SCENE_PT_keying_set_paths" "SCENE_PT_keyframing_settings",
-    ]:
-        try:
-            bpy.utils.unregister_class(getattr(handler, f"Override_{panel}"))
-        except:
-            # NOTE: breaks Blender UI on unregister
-            # since default Blender panels are unregistered on load_post
-            # unregistering our override panels removes them from Blender completely
-            pass
+    for original_panel, override_panel in tuple(overridden_scene_panels.items()):
+        bpy.utils.unregister_class(override_panel)
+        bpy.utils.register_class(original_panel)
+        del overridden_scene_panels[original_panel]

@@ -21,6 +21,7 @@ import bpy
 import json
 import addon_utils
 import ifcopenshell.api.owner.settings
+import blenderbim.bim
 import blenderbim.tool as tool
 import blenderbim.core.owner as core_owner
 from bpy.app.handlers import persistent
@@ -259,9 +260,7 @@ def poll_check_blender_tab(cls, context):
 
 
 def get_override_scene_panel(panel_name):
-    original_panel = getattr(bpy.types, panel_name, None)
-    if original_panel is None:
-        return
+    original_panel = getattr(bpy.types, panel_name)
 
     override_panel = type(f"Override_{panel_name}", (original_panel,), {})
     override_panel.bl_idname = f"{panel_name}_override"
@@ -285,6 +284,22 @@ def get_override_scene_panel(panel_name):
         override_panel.poll = wrapped_poll
 
     return override_panel
+
+
+OVERRIDE_SCENE_PANELS = (
+    "SCENE_PT_scene",
+    "SCENE_PT_unit",
+    "SCENE_PT_physics",
+    "SCENE_PT_rigid_body_world",
+    "SCENE_PT_audio",
+    "SCENE_PT_keying_sets",
+    "SCENE_PT_custom_props",
+    # after SCENE_PT_keying_sets
+    "SCENE_PT_keying_set_paths",
+    "SCENE_PT_keyframing_settings",
+)
+if bpy.app.version >= (4, 0):
+    OVERRIDE_SCENE_PANELS += ("SCENE_PT_simulation",)
 
 
 @persistent
@@ -325,28 +340,14 @@ def load_post(scene):
         # To improve usability for new users, we hijack the scene properties
         # tab. We override default scene properties panels with our own poll
         # to hide them unless the user has chosen to view Blender properties.
-        for panel in [
-            "SCENE_PT_scene",
-            "SCENE_PT_unit",
-            "SCENE_PT_physics",
-            "SCENE_PT_rigid_body_world",
-            "SCENE_PT_audio",
-            "SCENE_PT_keying_sets",
-            "SCENE_PT_simulation",  # 4.0+
-            "SCENE_PT_custom_props",
-            # after SCENE_PT_keying_sets
-            "SCENE_PT_keying_set_paths",
-            "SCENE_PT_keyframing_settings",
-        ]:
-            try:
-                override_panel = get_override_scene_panel(panel)
-                if override_panel is None:
-                    continue
-                original_panel = getattr(bpy.types, panel)
-                bpy.utils.register_class(override_panel)
-                bpy.utils.unregister_class(original_panel)
-            except Exception:  # some panels belong to different Blender versions
-                pass
+        for panel in OVERRIDE_SCENE_PANELS:
+            override_panel = get_override_scene_panel(panel)
+            if override_panel is None:
+                continue
+            original_panel = getattr(bpy.types, panel)
+            bpy.utils.register_class(override_panel)
+            bpy.utils.unregister_class(original_panel)
+            blenderbim.bim.overridden_scene_panels[original_panel] = override_panel
     # https://blender.stackexchange.com/questions/140644/how-can-make-the-state-of-a-boolean-property-relative-to-the-3d-view-area
     for screen in bpy.data.screens:
         if len(screen.BIMAreaProperties) == 20:
