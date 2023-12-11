@@ -293,9 +293,14 @@ def unregister():
         "SCENE_PT_audio",
         "SCENE_PT_keying_sets",
         "SCENE_PT_simulation",
-        "SCENE_PT_custom_props",
+        "SCENE_PT_custom_props",  # 4.0
+        # after SCENE_PT_keying_sets
+        "SCENE_PT_keying_set_paths" "SCENE_PT_keyframing_settings",
     ]:
         try:
             bpy.utils.unregister_class(getattr(handler, f"Override_{panel}"))
         except:
+            # NOTE: breaks Blender UI on unregister
+            # since default Blender panels are unregistered on load_post
+            # unregistering our override panels removes them from Blender completely
             pass
