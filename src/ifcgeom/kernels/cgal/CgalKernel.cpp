@@ -1868,7 +1868,7 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 			});
 
 			double wmin, wmax;
-			if (p.orientation.get_value_or(true)) {
+			if (face->orientation.get_value_or(false)) {
 				wmin = 0.;
 				wmax = uvw_max[2] + eps;
 			} else {
