@@ -234,8 +234,16 @@ int ifcopenshell::geometry::CgalShape::num_edges() const
 
 int ifcopenshell::geometry::CgalShape::num_faces() const
 {
-	to_poly();
-	return shape_->size_of_facets();
+#ifndef IFOPSH_SIMPLE_KERNEL
+	if (nef_) {
+		return nef_->number_of_facets();
+	} else
+#endif
+	if (shape_) {
+		return shape_->size_of_facets();
+	} else {
+		return 0;
+	}
 }
 
 std::shared_ptr<OpaqueNumber> ifcopenshell::geometry::CgalShape::CgalShape::length()
