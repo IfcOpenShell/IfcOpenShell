@@ -153,7 +153,7 @@ CGAL::Nef_polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_nef_polyhe
 #endif
 
 bool CgalKernel::convert(const taxonomy::shell::ptr l, cgal_shape_t& shape) {
-	if (l->children.size() > 100) {
+	if (false && l->children.size() > 100) {
 		static double inf = 1.e9; //  std::numeric_limits<double>::infinity();
 		std::pair<Eigen::Vector3d, Eigen::Vector3d> minmax(
 			Eigen::Vector3d(+inf, +inf, +inf),
@@ -174,6 +174,7 @@ bool CgalKernel::convert(const taxonomy::shell::ptr l, cgal_shape_t& shape) {
 		});
 		auto diag = minmax.second - minmax.first;
 		double volume = diag(0) * diag(1) * diag(2);
+		// @todo volume van be zero also..
 		double density = num_points / volume;
 		Logger::Notice("Density " + boost::lexical_cast<std::string>(density), l->instance);
 		if (density > 5000) {
