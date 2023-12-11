@@ -2,6 +2,7 @@
 #include "CgalKernel.h"
 
 #include <CGAL/Polygon_mesh_processing/repair.h>
+#include <CGAL/Polygon_mesh_processing/self_intersections.h>
 
 #include "../../../ifcparse/IfcLogger.h"
 #include "../../../ifcgeom/IfcGeomRepresentation.h"
@@ -34,6 +35,9 @@ void ifcopenshell::geometry::CgalShape::to_poly() const {
 
 void ifcopenshell::geometry::CgalShape::to_nef() const {
 	if (!nef_) {
+		if (CGAL::Polygon_mesh_processing::does_self_intersect(*shape_)) {
+			throw std::runtime_error("Self-intersections detected, unable to proceed");
+		}
 		nef_ = utils::create_nef_polyhedron(*shape_);
 	}
 }
