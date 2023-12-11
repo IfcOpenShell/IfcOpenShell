@@ -470,6 +470,10 @@ void ifcopenshell::geometry::CgalShape::map(OpaqueCoordinate<4>& from, OpaqueCoo
 	throw std::runtime_error("Not implemented");
 }
 
+void ifcopenshell::geometry::CgalShape::map(const std::vector<OpaqueCoordinate<4>>& from, const std::vector<OpaqueCoordinate<4>>& to) {
+	throw std::runtime_error("Not implemented");
+}
+
 #ifndef IFOPSH_SIMPLE_KERNEL
 
 void ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int surface_style_id) const {
@@ -649,6 +653,35 @@ void ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::map(OpaqueCoordina
 			std::static_pointer_cast<NumberEpeck>(to.values[3])->value()
 		)
 	});
+	auto nw = shape_->map(mp);
+	shape_ = std::move(nw);
+}
+
+void ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::map(const std::vector<OpaqueCoordinate<4>>& froms, const std::vector<OpaqueCoordinate<4>>& tos) {
+	plane_map<Kernel_> mp;
+	if (froms.size() != tos.size()) {
+		throw std::runtime_error("Expected equal size");
+	}
+	auto it = froms.begin();
+	auto jt = tos.begin();
+	for (; it < froms.end(); ++it, ++jt) {
+		auto& from = *it;
+		auto& to = *jt;
+		mp.insert({
+			CGAL::Plane_3<Kernel_>(
+				std::static_pointer_cast<NumberEpeck>(from.values[0])->value(),
+				std::static_pointer_cast<NumberEpeck>(from.values[1])->value(),
+				std::static_pointer_cast<NumberEpeck>(from.values[2])->value(),
+				std::static_pointer_cast<NumberEpeck>(from.values[3])->value()
+			),
+			CGAL::Plane_3<Kernel_>(
+				std::static_pointer_cast<NumberEpeck>(to.values[0])->value(),
+				std::static_pointer_cast<NumberEpeck>(to.values[1])->value(),
+				std::static_pointer_cast<NumberEpeck>(to.values[2])->value(),
+				std::static_pointer_cast<NumberEpeck>(to.values[3])->value()
+			)
+			});
+	}
 	auto nw = shape_->map(mp);
 	shape_ = std::move(nw);
 }

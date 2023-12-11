@@ -220,6 +220,7 @@ namespace IfcGeom {
 		virtual ConversionResultShape* intersect(ConversionResultShape*) = 0;
 
 		virtual void map(OpaqueCoordinate<4>& from, OpaqueCoordinate<4>& to) = 0;
+		virtual void map(const std::vector<OpaqueCoordinate<4>>& from, const std::vector<OpaqueCoordinate<4>>& to) = 0;
 		virtual ConversionResultShape* moved(ifcopenshell::geometry::taxonomy::matrix4::ptr) const = 0;
 
 		virtual ~ConversionResultShape() {}
