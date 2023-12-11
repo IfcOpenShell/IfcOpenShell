@@ -74,7 +74,7 @@ inline namespace settings {
 			"Use a negative value to use the system's default precision (should be 6 typically). "
 			"Applicable for OBJ and DAE output. For DAE output, value >= 15 means that up to 16 decimals are used, "
 			" and any other value means that 6 or 7 decimals are used.";
-		static constexpr bool defaultvalue = 15;
+		static constexpr int defaultvalue = 15;
 	};
 }
 
