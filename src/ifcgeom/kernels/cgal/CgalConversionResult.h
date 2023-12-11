@@ -237,6 +237,7 @@ namespace ifcopenshell { namespace geometry {
 		virtual ConversionResultShape* intersect(ConversionResultShape*);
 
 		virtual void map(OpaqueCoordinate<4>& from, OpaqueCoordinate<4>& to);
+		virtual void map(const std::vector<OpaqueCoordinate<4>>& from, const std::vector<OpaqueCoordinate<4>>& to);
 		virtual ConversionResultShape* moved(ifcopenshell::geometry::taxonomy::matrix4::ptr) const;
 	};
 
@@ -293,6 +294,7 @@ namespace ifcopenshell { namespace geometry {
 		virtual ConversionResultShape* intersect(ConversionResultShape*);
 
 		virtual void map(OpaqueCoordinate<4>& from, OpaqueCoordinate<4>& to);
+		virtual void map(const std::vector<OpaqueCoordinate<4>>& from, const std::vector<OpaqueCoordinate<4>>& to);
 		virtual ConversionResultShape* moved(ifcopenshell::geometry::taxonomy::matrix4::ptr) const;
 	};
 #endif

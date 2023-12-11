@@ -422,3 +422,7 @@ ConversionResultShape* ifcopenshell::geometry::OpenCascadeShape::moved(ifcopensh
 void ifcopenshell::geometry::OpenCascadeShape::map(OpaqueCoordinate<4>& from, OpaqueCoordinate<4>& to) {
 	throw std::runtime_error("Not implemented");
 }
+
+void ifcopenshell::geometry::OpenCascadeShape::map(const std::vector<OpaqueCoordinate<4>>& from, const std::vector<OpaqueCoordinate<4>>& to) {
+	throw std::runtime_error("Not implemented");
+}
