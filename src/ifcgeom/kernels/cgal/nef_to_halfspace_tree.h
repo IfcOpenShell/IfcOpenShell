@@ -1150,9 +1150,9 @@ public:
 			ofs << "v " << v.cartesian(0) << " " << v.cartesian(1) << " " << v.cartesian(2) << "\n";
 		}
 		for (auto& idxs : facets) {
-			ofs << "i";
+			ofs << "f";
 			for (auto& i : idxs) {
-				ofs << " " << i;
+				ofs << " " << (i+1);
 			}
 			ofs << "\n";
 		}
@@ -1297,22 +1297,25 @@ bool convert_to_polyhedron(const CGAL::Nef_polyhedron_3<Kernel>& a, CGAL::Polyhe
 }
 
 template <typename Kernel>
-bool write_to_obj(const CGAL::Nef_polyhedron_3<Kernel>& a, std::ofstream& ofs, size_t volume_index = 0) {
+bool write_to_obj(const CGAL::Nef_polyhedron_3<Kernel>& a, std::ostream& ofs, size_t volume_index = 0) {
 	size_t v = 0;
+	Polysoup_builder<Kernel> vis;
 	for (auto it = a.volumes_begin(); it != a.volumes_end(); ++it) {
 		if (!it->mark()) {
 			continue;
 		}
 		for (auto jt = it->shells_begin(); jt != it->shells_end(); ++jt) {
-			if (v++ == volume_index) {
-				Polysoup_builder<Kernel> vis;
+			if (v++ == volume_index || volume_index == std::numeric_limits<size_t>::max()) {
 				a.visit_shell_objects(CGAL::Nef_polyhedron_3<Kernel>::SFace_const_handle(jt), vis);
-				vis.write(ofs);
-				return true;
+				if (volume_index != std::numeric_limits<size_t>::max()) {
+					vis.write(ofs);
+					return true;
+				}
 			}
 		}
 	}
-	return false;
+	vis.write(ofs);
+	return volume_index == std::numeric_limits<size_t>::max();
 }
 
 #endif
