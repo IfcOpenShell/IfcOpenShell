@@ -286,11 +286,17 @@ def get_override_scene_panel(panel_name):
     return override_panel
 
 
+# TODO: possibly override scene panels from other addons too?
+# list can be updated from
+# https://projects.blender.org/blender/blender/src/branch/main/scripts/startup/bl_ui/properties_scene.py#L421
 OVERRIDE_SCENE_PANELS = (
     "SCENE_PT_scene",
     "SCENE_PT_unit",
     "SCENE_PT_physics",
     "SCENE_PT_rigid_body_world",
+    "SCENE_PT_rigid_body_world_settings",
+    "SCENE_PT_rigid_body_cache",
+    "SCENE_PT_rigid_body_field_weights",
     "SCENE_PT_audio",
     "SCENE_PT_keying_sets",
     "SCENE_PT_custom_props",
