@@ -560,29 +560,29 @@ class curve_segment_evaluator {
       auto sign_l = sign(length_);
 		auto start_angle = start_/R;
 
+      auto start_x = R * cos(start_angle);
+      auto start_y = R * sin(start_angle);
+
 		auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(c->Position()))->ccomponents();
 
 		auto segment_type = segment_type_;
 
 		geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
 
-		eval_ = [R, start_angle, sign_l, transformation_matrix, segment_type, geometry_adjuster = this->geometry_adjuster](double u)
+		eval_ = [R, start_x, start_y, start_angle, sign_l, transformation_matrix, segment_type, geometry_adjuster = this->geometry_adjuster](double u)
 			{
             auto angle = start_angle + sign_l * u / R;
 
 				auto dx = cos(angle);
             auto dy = sin(angle);
 
-				auto x = R * dx;
-				auto y = R * dy;
+				auto x = R * dx - start_x;
+				auto y = R * dy - start_y;
 
             Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
             if (segment_type == ST_HORIZONTAL) {
                 // rotate about the Z-axis
-                m.col(0) = Eigen::Vector4d(-dy, dx, 0, 0);  // vector tangent to the curve, in the direction of the curve
-                m.col(1) = Eigen::Vector4d(-sign_l * dx, -sign_l * dy, 0, 0); // vector perpendicular to the curve, towards the left when looking from start to end along the curve (this is used for IfcAxis2PlacementLinear.RefDirection when it is not provided)
-                m.col(2) = Eigen::Vector4d(0, 0, 1.0, 0);   // cross product of x and y and will always be up (this is used for IfcAxis2PlacementLinear.Axis when it is not provided)
-                m.col(3) = Eigen::Vector4d(x, y, 0.0, 1.0);
+                m.col(3) = Eigen::Vector4d(y * sign_l, -x * sign_l, 0.0, 1.0);
             } else if (segment_type == ST_VERTICAL) {
                 // rotate about the Y-axis (slope along u is dx, slope vertically is dy, vertical position is y)
                 m.col(0) = Eigen::Vector4d(-dy, 0, dx, 0);
