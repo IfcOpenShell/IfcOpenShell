@@ -139,6 +139,10 @@
 	#include "../ifcgeom/ConversionResult.h"
 
 	#include "../svgfill/src/svgfill.h"
+
+#ifdef IFOPSH_WITH_CGAL
+	#include "../ifcgeom/kernels/cgal/CgalConversionResult.h"
+#endif
 %}
 
 // Create docstrings for generated python code.

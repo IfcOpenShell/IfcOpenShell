@@ -58,6 +58,15 @@
 	}
 }
 
+%newobject IfcGeom::ConversionResultShape::halfspaces;
+%newobject IfcGeom::ConversionResultShape::box;
+%newobject IfcGeom::ConversionResultShape::solid;
+%newobject IfcGeom::ConversionResultShape::add;
+%newobject IfcGeom::ConversionResultShape::subtract;
+%newobject IfcGeom::ConversionResultShape::intersect;
+%newobject IfcGeom::ConversionResultShape::moved;
+%newobject nary_union;
+
 %include "../ifcgeom/ifc_geom_api.h"
 %include "../ifcgeom/Converter.h"
 %include "../ifcgeom/ConversionResult.h"
@@ -631,16 +640,48 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 %template(OpaqueCoordinate_3) IfcGeom::OpaqueCoordinate<3>;
 %template(OpaqueCoordinate_4) IfcGeom::OpaqueCoordinate<4>;
 
-%{
-	#include "../ifcgeom/kernels/cgal/CgalConversionResult.h"
-%}
-
 %inline %{
 	std::shared_ptr<IfcGeom::OpaqueNumber> create_epeck(int i) {
 		return std::make_shared<ifcopenshell::geometry::NumberEpeck>(i);
 	}
 %}
 
+%inline %{
+	IfcGeom::ConversionResultShape* nary_union(PyObject* sequence) {
+		CGAL::Nef_nary_union_3< CGAL::Nef_polyhedron_3<Kernel_> > accum;
+		for(Py_ssize_t i = 0; i < PySequence_Size(sequence); ++i) {
+			PyObject* element = PySequence_GetItem(sequence, i);
+			void* argp1 = nullptr;
+			auto res1 = SWIG_ConvertPtr(element, &argp1, SWIGTYPE_p_IfcGeom__ConversionResultShape, 0);
+			if (SWIG_IsOK(res1)) {
+				auto arg1 = reinterpret_cast<IfcGeom::ConversionResultShape*>(argp1);
+				auto cgs = dynamic_cast<ifcopenshell::geometry::CgalShape*>(arg1);
+				if (cgs) {
+					accum.add_polyhedron(cgs->nef());
+				}
+			}
+		}
+		return new ifcopenshell::geometry::CgalShape(accum.get_union());
+	}
+%}
+
+%extend IfcGeom::ConversionResultShape {
+	std::string serialize_obj() {
+		std::ostringstream result;
+		auto cgs = dynamic_cast<ifcopenshell::geometry::CgalShape*>(self);
+		if (cgs) {
+			write_to_obj(cgs->nef(), result, std::numeric_limits<size_t>::max());
+		}		
+		return result.str();
+	}
+
+	std::string serialize() {
+		std::string result;
+		ifcopenshell::geometry::taxonomy::matrix4 iden;
+		$self->Serialize(iden, result);
+		return result;
+	}
+}
 
 %naturalvar svgfill::polygon_2::boundary;
 %naturalvar svgfill::polygon_2::inner_boundaries;
