@@ -114,6 +114,7 @@ enum halfspace_operation {
 // Map of Plane_3 -> Plane_3 used when applied snapping
 template <typename Kernel>
 using plane_map = std::map<typename Kernel::Plane_3, typename Kernel::Plane_3, PlaneLess<Kernel>>;
+// using plane_map = std::unordered_map<typename Kernel::Plane_3, typename Kernel::Plane_3, PlaneHash<Kernel>>;
 
 // Snap halfspace planes
 // search_radius: max cartesian distance in plane equation parameters as 4d points in space
@@ -354,7 +355,7 @@ public:
 			op->accumulate(points);
 		}
 	}
-	virtual std::unique_ptr<halfspace_tree<Kernel>> map(const std::map<typename Kernel::Plane_3, typename Kernel::Plane_3, PlaneLess<Kernel>>& m) const {
+	virtual std::unique_ptr<halfspace_tree<Kernel>> map(const plane_map<Kernel>& m) const {
 		decltype(operands_) mapped;
 		for (auto& op : operands_) {
 			mapped.emplace_back(op->map(m));
@@ -473,7 +474,7 @@ public:
 	virtual void accumulate(std::list<typename Kernel::Plane_3>& points) const {
 		points.push_back(plane_);
 	}
-	virtual std::unique_ptr<halfspace_tree<Kernel>> map(const std::map<typename Kernel::Plane_3, typename Kernel::Plane_3, PlaneLess<Kernel>>& m) const {
+	virtual std::unique_ptr<halfspace_tree<Kernel>> map(const plane_map<Kernel>& m) const {
 
 		std::array<typename Kernel::FT, 3> abc{ plane_.a(), plane_.b(), plane_.c() };
 		auto minel = std::min_element(abc.begin(), abc.end());
