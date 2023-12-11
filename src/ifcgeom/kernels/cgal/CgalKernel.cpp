@@ -1966,6 +1966,21 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 	}
 	*/
 
+	/*
+	// debugging trick
+	for (auto& p : operands) {
+		for (auto& s : p.second) {
+			results.emplace_back(ConversionResult(
+				br->instance->data().id(),
+				br->matrix,
+				new CgalShape(s),
+				br->surface_style ? br->surface_style : first_item_style
+			));
+		}
+	}
+	return true;
+	*/
+
 	first = true;
 
 	std::list<cgal_shape_t> ops;
