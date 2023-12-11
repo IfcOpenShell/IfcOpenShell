@@ -29,7 +29,12 @@ ifcopenshell::geometry::CgalShape::CgalShape(const cgal_shape_t & shape) {
 void ifcopenshell::geometry::CgalShape::to_poly() const {
 	if (!shape_) {
 		shape_.emplace();
-		nef_->convert_to_polyhedron(*shape_);
+
+		convert_to_polyhedron(*nef_, *shape_);
+		// @todo why is this necessary? we have the mark of the volumes?
+		CGAL::Polygon_mesh_processing::orient(*shape_);
+		
+		// nef_->convert_to_polyhedron(*shape_);
 	}
 }
 

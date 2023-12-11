@@ -1003,7 +1003,7 @@ struct Halffacet_collector {
 // Visitor for Nef_polyhedron_3 shells to convert facets to Polyhedron_3
 // using the Polygon_mesh_processing package and Polygon_triangulation_decomposition_2
 // in case of facets with inner bounds.
-template <typename Kernel>
+template <typename Kernel, bool eliminate_tiny_facets=false>
 class Polysoup_builder {
 private:
 	std::map<CGAL::Point_3<Kernel>, size_t> verts;
@@ -1012,6 +1012,18 @@ public:
 	void visit(typename CGAL::Nef_polyhedron_3<Kernel>::Vertex_const_handle) {}
 	void visit(typename CGAL::Nef_polyhedron_3<Kernel>::Halfedge_const_handle) {}
 	void visit(typename CGAL::Nef_polyhedron_3<Kernel>::Halffacet_const_handle h) {
+		// reduce extent of number because otherwise run into float_max
+		auto h_plane_ = h->plane();
+		std::array<typename Kernel::FT, 3> abc{ h_plane_.a(), h_plane_.b(), h_plane_.c() };
+		auto minel = std::min_element(abc.begin(), abc.end());
+		auto maxel = std::max_element(abc.begin(), abc.end());
+		auto maxval = ((-*minel) > *maxel) ? (-*minel) : *maxel;
+		CGAL::Plane_3<Kernel> h_plane(
+			h_plane_.a() / maxval,
+			h_plane_.b() / maxval,
+			h_plane_.c() / maxval,
+			h_plane_.d() / maxval
+		);
 
 		auto verts_backup = verts;
 		auto facets_backup = facets;
@@ -1019,9 +1031,9 @@ public:
 		boost::optional<CGAL::Polygon_with_holes_2<Kernel>> pwh;
 		auto nf = std::distance(h->facet_cycles_begin(), h->facet_cycles_end());
 		for (auto fc = h->facet_cycles_begin(); fc != h->facet_cycles_end(); ++fc) {
-			// std::cout << "h->plane().point() " << h->plane().point() << std::endl;
-			// std::cout << "h->plane().base1() " << h->plane().base1() << std::endl;
-			// std::cout << "h->plane().base2() " << h->plane().base2() << std::endl;
+			// std::cout << "h_plane.point() " << h_plane.point() << std::endl;
+			// std::cout << "h_plane.base1() " << h_plane.base1() << std::endl;
+			// std::cout << "h_plane.base2() " << h_plane.base2() << std::endl;
 
 			auto se = typename CGAL::Nef_polyhedron_3<Kernel>::SHalfedge_const_handle(fc);
 			CGAL_assertion(se != 0);
@@ -1039,9 +1051,9 @@ public:
 					facets.back().push_back(verts.insert({ p , verts.size() }).first->second);
 				} else {
 					// std::cout << "p " << p << std::endl;
-					auto v = p - h->plane().point();
+					auto v = p - h_plane.point();
 					// std::cout << "v " << v << std::endl;
-					CGAL::Point_2<Kernel> uv(v * h->plane().base1(), v * h->plane().base2());
+					CGAL::Point_2<Kernel> uv(v * h_plane.base1(), v * h_plane.base2());
 					// std::cout << "uv " << uv << std::endl;
 					loop.push_back(uv);
 				}
@@ -1062,53 +1074,60 @@ public:
 				facets.emplace_back();
 				for (auto it = p.vertices_begin(); it != p.vertices_end(); ++it) {
 					// std::cout << "*it " << *it << std::endl;
-					auto du = it->x() * h->plane().base1() / h->plane().base1().squared_length();
-					auto dv = it->y() * h->plane().base2() / h->plane().base2().squared_length();
-					auto pp = h->plane().point() + du + dv;
+					auto du = it->x() * h_plane.base1() / h_plane.base1().squared_length();
+					auto dv = it->y() * h_plane.base2() / h_plane.base2().squared_length();
+					auto pp = h_plane.point() + du + dv;
 					// std::cout << "pp " << pp << std::endl;
 					facets.back().push_back(verts.insert({ pp, verts.size() }).first->second);
 				}
 			}
 		}
 
-		// Eliminate small slivers that create topologic connections between interior and exterior.
-		// Use connected components on polyhedron to eliminate.
+		if constexpr (eliminate_tiny_facets) {
+			// Eliminate small slivers that create topologic connections between interior and exterior.
+			// Use connected components on polyhedron to eliminate.
 
-		std::vector<const CGAL::Point_3<Kernel>*> verts_vector(verts.size());
-		for (auto& p : verts) {
-			verts_vector[p.second] = &p.first;
-		}
-
-		// We need to normalize because we want to compare to a real-world area value
-		auto b1 = h->plane().base1();
-		double l = std::sqrt(CGAL::to_double(b1.squared_length()));
-		b1 /= l;
-
-		auto b2 = h->plane().base2();
-		l = std::sqrt(CGAL::to_double(b2.squared_length()));
-		b2 /= l;
-
-		// check for size of emitted facet, rollback if too insignificant
-		typename Kernel::FT area = 0;
-		for (auto it = facets.begin() + facets_backup.size(); it != facets.end(); ++it) {
-			CGAL::Polygon_2<Kernel> loop;
-			for (auto& i : *it) {
-				const auto& p = *verts_vector[i];
-				auto v = p - h->plane().point();
-				// std::cout << "v " << v << std::endl;
-				CGAL::Point_2<Kernel> uv(v * b1, v * b2);
-				// std::cout << "uv " << uv << std::endl;
-				loop.push_back(uv);
+			std::vector<const CGAL::Point_3<Kernel>*> verts_vector(verts.size());
+			for (auto& p : verts) {
+				verts_vector[p.second] = &p.first;
 			}
-			area += loop.area();
-		}
 
-		// auto pl = h->plane();
-		// l = std::sqrt(CGAL::to_double(pl.orthogonal_vector().squared_length()));
-		// std::cout << pl.a() / l << " " << pl.b() / l << " " << pl.c() / l << " " << pl.d() / l << ": " << area << std::endl;
-		if (area < 1.e-5) {
-			verts = verts_backup;
-			facets = facets_backup;
+			// We need to normalize because we want to compare to a real-world area value
+			auto b1 = h_plane.base1();
+			double l = std::sqrt(CGAL::to_double(b1.squared_length()));
+			b1 /= l;
+
+			auto b2 = h_plane.base2();
+			l = std::sqrt(CGAL::to_double(b2.squared_length()));
+			b2 /= l;
+
+			// std::cout << "p " << h_plane << std::endl;
+			// std::cout << "x " << b1 << std::endl;
+			// std::cout << "y " << b2 << std::endl;
+
+			// check for size of emitted facet, rollback if too insignificant
+			typename Kernel::FT area = 0;
+			for (auto it = facets.begin() + facets_backup.size(); it != facets.end(); ++it) {
+				CGAL::Polygon_2<Kernel> loop;
+				for (auto& i : *it) {
+					const auto& p = *verts_vector[i];
+					auto v = p - h_plane.point();
+					// std::cout << "v " << v << std::endl;
+					CGAL::Point_2<Kernel> uv(v * b1, v * b2);
+					// std::cout << "uv " << uv << std::endl;
+					loop.push_back(uv);
+				}
+				// std::cout << "---" << std::endl;
+				area += loop.area();
+			}
+
+			// auto pl = h_plane;
+			// l = std::sqrt(CGAL::to_double(pl.orthogonal_vector().squared_length()));
+			// std::cout << pl.a() / l << " " << pl.b() / l << " " << pl.c() / l << " " << pl.d() / l << ": " << area << std::endl;
+			if (area < 1.e-5) {
+				verts = verts_backup;
+				facets = facets_backup;
+			}
 		}
 	}
 	void visit(typename CGAL::Nef_polyhedron_3<Kernel>::SHalfedge_const_handle) {}
