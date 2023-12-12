@@ -347,13 +347,13 @@ def load_post(scene):
         # tab. We override default scene properties panels with our own poll
         # to hide them unless the user has chosen to view Blender properties.
         for panel in OVERRIDE_SCENE_PANELS:
-            override_panel = get_override_scene_panel(panel)
-            if override_panel is None:
+            if panel in blenderbim.bim.overridden_scene_panels:
                 continue
+            override_panel = get_override_scene_panel(panel)
             original_panel = getattr(bpy.types, panel)
             bpy.utils.register_class(override_panel)
             bpy.utils.unregister_class(original_panel)
-            blenderbim.bim.overridden_scene_panels[original_panel] = override_panel
+            blenderbim.bim.overridden_scene_panels[panel] = (original_panel, override_panel)
     # https://blender.stackexchange.com/questions/140644/how-can-make-the-state-of-a-boolean-property-relative-to-the-3d-view-area
     for screen in bpy.data.screens:
         if len(screen.BIMAreaProperties) == 20:
