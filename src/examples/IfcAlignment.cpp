@@ -71,20 +71,16 @@ std::pair<typename Schema::IfcCurveSegment*, typename Schema::IfcAlignmentSegmen
 std::pair<typename Schema::IfcCurveSegment*, typename Schema::IfcAlignmentSegment*> create_gradient(typename Schema::IfcCartesianPoint* p,double slope,double length)
 {
    // geometry
-   auto l = sqrt(1.0 + slope * slope);
-   auto dx = 1.0 / l;
-   auto dy = slope / l;   
-   
    auto parent_curve = new Schema::IfcLine(
-      new Schema::IfcCartesianPoint(std::vector<double>({ 0,p->Coordinates()[1]})),
-      new Schema::IfcVector(new Schema::IfcDirection(std::vector<double>{dx,dy}), 1.0));
+       new Schema::IfcCartesianPoint(std::vector<double>({0, 0})),
+       new Schema::IfcVector(new Schema::IfcDirection(std::vector<double>{1, 0}), 1.0));
 
    auto curve_segment = new Schema::IfcCurveSegment(
-      Schema::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT,
-      new Schema::IfcAxis2Placement2D(new Schema::IfcCartesianPoint(std::vector<double>({ 0, 0 })), new Schema::IfcDirection(std::vector<double>{1,0})),
-      new Schema::IfcLengthMeasure(0.0), // start
-      new Schema::IfcLengthMeasure(length),
-      parent_curve);
+       Schema::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT,
+       new Schema::IfcAxis2Placement2D(p, new Schema::IfcDirection(std::vector<double>{sqrt(1-slope*slope), slope})),
+       new Schema::IfcLengthMeasure(0.0), // start
+       new Schema::IfcLengthMeasure(length),
+       parent_curve);
 
    // business logic
    auto design_parameters = new Schema::IfcAlignmentVerticalSegment(boost::none, boost::none, p->Coordinates()[0], length, p->Coordinates()[1], slope, slope, boost::none, Schema::IfcAlignmentVerticalSegmentTypeEnum::IfcAlignmentVerticalSegmentType_CONSTANTGRADIENT);
@@ -97,16 +93,20 @@ std::pair<typename Schema::IfcCurveSegment*, typename Schema::IfcAlignmentSegmen
 std::pair<typename Schema::IfcCurveSegment*, typename Schema::IfcAlignmentSegment*> create_vcurve(typename Schema::IfcCartesianPoint* p, double start_slope,double end_slope, double length)
 {
    // geometry
-   double A = p->Coordinates()[1];
+   double A = 0.0;
    double B = start_slope;
    double C = (end_slope - start_slope) / (2 * length);
-   auto parent_curve_placement = new Schema::IfcAxis2Placement2D(new Schema::IfcCartesianPoint(std::vector<double>{0.0, 0.0}), new Schema::IfcDirection(std::vector<double>{1.0, 0.0}));
-   auto parent_curve = new Schema::IfcPolynomialCurve(parent_curve_placement, std::vector<double>{0.0, 1.0}, std::vector<double>{A,B,C}, boost::none);
-   auto segment_curve_placement = new Schema::IfcAxis2Placement2D(new Schema::IfcCartesianPoint(std::vector<double>{0.0, 0.0}), new Schema::IfcDirection(std::vector<double>{1.0, 0.0}));
-   auto curve_segment = new Schema::IfcCurveSegment(Schema::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT, segment_curve_placement,
-      new Schema::IfcLengthMeasure(p->Coordinates()[0]),
-      new Schema::IfcLengthMeasure(length),
-      parent_curve);
+
+   auto parent_curve = new Schema::IfcPolynomialCurve(
+      new Schema::IfcAxis2Placement2D(new Schema::IfcCartesianPoint(std::vector<double>{0.0, 0.0}), new Schema::IfcDirection(std::vector<double>{1.0, 0.0})), 
+      std::vector<double>{0.0, 1.0}, 
+      std::vector<double>{A, B, C}, boost::none);
+
+   auto curve_segment = new Schema::IfcCurveSegment(
+      Schema::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT, 
+      new Schema::IfcAxis2Placement2D(p, new Schema::IfcDirection(std::vector<double>{1.0, 0.0})), 
+      new Schema::IfcLengthMeasure(0.0), 
+      new Schema::IfcLengthMeasure(length), parent_curve);
 
    // business logic
    double k = (end_slope - start_slope) / length;
