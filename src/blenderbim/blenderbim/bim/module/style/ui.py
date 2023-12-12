@@ -232,6 +232,7 @@ class BIM_PT_styles(Panel):
         row.operator("bim.disable_editing_style", text="", icon="CANCEL")
 
     def draw_externally_defined_surface_style(self):
+        self.layout.row().operator("bim.browse_external_style", icon="APPEND_BLEND", text="Append From Blend File")
         blenderbim.bim.helper.draw_attributes(self.props.external_style_attributes, self.layout)
         row = self.layout.row(align=True)
         row.operator("bim.edit_surface_style", text="Save External Style", icon="CHECKMARK")
@@ -307,61 +308,6 @@ class BIM_PT_style_attributes(Panel):
             row.label(text=str(mprops.ifc_style_id))
 
             for attribute in StyleAttributesData.data["attributes"]:
-                row = self.layout.row(align=True)
-                row.label(text=attribute["name"])
-                row.label(text=attribute["value"])
-
-
-class BIM_PT_external_style_attributes(Panel):
-    bl_label = "External Surface Style"
-    bl_idname = "BIM_PT_external_style_attributes"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "material"
-    bl_parent_id = "BIM_PT_style"
-
-    @classmethod
-    def poll(cls, context):
-        if not IfcStore.get_file():
-            return False
-        try:
-            return bool(context.active_object.active_material.BIMMaterialProperties.ifc_style_id)
-        except:
-            return False
-
-    def draw(self, context):
-        if not StyleAttributesData.is_loaded or (
-            context.active_object.active_material.BIMMaterialProperties.ifc_style_id
-            != StyleAttributesData.data["ifc_style_id"]
-        ):
-            StyleAttributesData.load()
-
-        mat = context.active_object.active_material
-        mprops = mat.BIMMaterialProperties
-        props = mat.BIMStyleProperties
-
-        external_style = StyleAttributesData.data["style_elements"].get("IfcExternallyDefinedSurfaceStyle", None)
-        if not external_style:
-            row = self.layout.row(align=True)
-            row.operator("bim.browse_external_style", text="Add External Style", icon="ADD")
-            return
-
-        row = self.layout.row(align=True)
-        row.label(text="Parameters:")
-
-        if props.is_editing_external_style:
-            row.operator("bim.edit_external_style", icon="CHECKMARK", text="")
-            row.operator("bim.disable_editing_external_style", icon="CANCEL", text="")
-            blenderbim.bim.helper.draw_attributes(props.external_style_attributes, self.layout)
-        else:
-            row.operator("bim.browse_external_style", icon="APPEND_BLEND", text="")
-            row.operator("bim.enable_editing_external_style", icon="GREASEPENCIL", text="")
-
-            row = self.layout.row(align=True)
-            row.label(text="STEP ID")
-            row.label(text=str(external_style.id()))
-
-            for attribute in StyleAttributesData.data["external_style_attributes"]:
                 row = self.layout.row(align=True)
                 row.label(text=attribute["name"])
                 row.label(text=attribute["value"])
