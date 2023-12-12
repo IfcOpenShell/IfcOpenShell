@@ -24,7 +24,6 @@ import blenderbim.tool as tool
 import blenderbim.core.style as core
 import ifcopenshell.util.representation
 from pathlib import Path
-from blenderbim.bim.module.style.data import StyleAttributesData
 from mathutils import Vector
 
 
@@ -288,57 +287,17 @@ class BrowseExternalStyle(bpy.types.Operator):
 
         bpy.data.materials.remove(db["data_block"])
 
-        if not StyleAttributesData.is_loaded:
-            StyleAttributesData.load()
-        external_style = StyleAttributesData.data["style_elements"].get("IfcExternallyDefinedSurfaceStyle", None)
-
         if self.use_relative_path:
             filepath = os.path.relpath(self.filepath, tool.Ifc.get_path())
         else:
             filepath = self.filepath
         filepath = Path(filepath).as_posix()
 
-        attributes = {
-            "Location": filepath,
-            "Identification": f"{self.data_block_type}/{self.data_block}",
-            "Name": self.data_block,
-        }
-        if not external_style:
-            core.add_external_style(
-                tool.Ifc, tool.Style, obj=context.active_object.active_material, attributes=attributes
-            )
-        else:
-            core.update_external_style(tool.Ifc, tool.Style, external_style=external_style, attributes=attributes)
-
-        StyleAttributesData.is_loaded = False
+        attributes = context.scene.BIMStylesProperties.external_style_attributes
+        attributes["Location"].string_value = filepath
+        attributes["Identification"].string_value = f"{self.data_block_type}/{self.data_block}"
+        attributes["Name"].string_value = self.data_block
         return {"FINISHED"}
-
-
-class EnableEditingExternalStyle(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.enable_editing_external_style"
-    bl_label = "Enable Editing External Style"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def _execute(self, context):
-        core.enable_editing_external_style(tool.Style, obj=context.active_object.active_material)
-
-
-class DisableEditingExternalStyle(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.disable_editing_external_style"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_label = "Disable Editing External Style"
-
-    def _execute(self, context):
-        core.disable_editing_external_style(tool.Style, obj=context.active_object.active_material)
-
-
-class EditExternalStyle(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.edit_external_style"
-    bl_label = "Edit External Style"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def _execute(self, context):
-        core.edit_external_style(tool.Ifc, tool.Style, obj=context.active_object.active_material)
 
 
 class ActivateExternalStyle(bpy.types.Operator, tool.Ifc.Operator):
