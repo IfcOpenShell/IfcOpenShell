@@ -286,7 +286,8 @@ def unregister():
             km.keymap_items.remove(kmi)
     addon_keymaps.clear()
 
-    for original_panel, override_panel in tuple(overridden_scene_panels.items()):
+    for panel in tuple(overridden_scene_panels.keys()):
+        original_panel, override_panel = overridden_scene_panels[panel]
         bpy.utils.unregister_class(override_panel)
         bpy.utils.register_class(original_panel)
-        del overridden_scene_panels[original_panel]
+        del overridden_scene_panels[panel]
