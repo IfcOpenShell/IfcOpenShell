@@ -120,31 +120,14 @@ def enable_editing_style(style, obj=None):
     style.import_surface_attributes(style.get_style(obj), obj)
 
 
-def enable_editing_external_style(style, obj=None):
-    external_style = style.get_external_style(obj)
-    style.enable_editing_external_style(obj)
-    style.import_external_style_attributes(external_style, obj)
-
-
 def disable_editing_style(style, obj=None):
     style.disable_editing(obj)
-
-
-def disable_editing_external_style(style, obj=None):
-    style.disable_editing_external_style(obj)
 
 
 def edit_style(ifc, style, obj=None):
     attributes = style.export_surface_attributes(obj)
     ifc.run("style.edit_presentation_style", style=style.get_style(obj), attributes=attributes)
     style.disable_editing(obj)
-
-
-def edit_external_style(ifc, style, obj=None):
-    attributes = style.export_external_style_attributes(obj)
-    external_style = style.get_style_elements(obj)["IfcExternallyDefinedSurfaceStyle"]
-    update_external_style(ifc, style, external_style, attributes)
-    style.disable_editing_external_style(obj)
 
 
 def load_styles(style, style_type=None):

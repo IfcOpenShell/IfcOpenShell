@@ -28,14 +28,11 @@ classes = (
     operator.RemoveTextureMap,
     operator.ChooseTextureMapPath,
     operator.DisableAddingPresentationStyle,
-    operator.DisableEditingExternalStyle,
     operator.DisableEditingStyle,
     operator.DisableEditingStyles,
-    operator.EditExternalStyle,
     operator.EditStyle,
     operator.EditSurfaceStyle,
     operator.EnableAddingPresentationStyle,
-    operator.EnableEditingExternalStyle,
     operator.EnableEditingStyle,
     operator.EnableEditingSurfaceStyle,
     operator.LoadStyles,
@@ -53,7 +50,6 @@ classes = (
     ui.BIM_PT_styles,
     ui.BIM_PT_style,
     ui.BIM_PT_style_attributes,
-    ui.BIM_PT_external_style_attributes,
     ui.BIM_UL_styles,
 )
 
