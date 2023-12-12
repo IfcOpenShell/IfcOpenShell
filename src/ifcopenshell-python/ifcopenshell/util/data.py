@@ -78,7 +78,9 @@ class Clipping:
         direction = ifc_file.createIfcDirection(self.normal)
 
         normal = np.array(self.normal)
-        if np.allclose(normal, np.array([0.0, 0.0, 1.0]), atol=1e-2):
+        if np.allclose(normal, np.array([0.0, 0.0, 1.0]), atol=1e-2) or np.allclose(
+            normal, np.array([0.0, 0.0, -1.0]), atol=1e-2
+        ):
             arbitrary_vector = np.array([0.0, 1.0, 0.0])
         else:
             arbitrary_vector = np.array([0.0, 0.0, 1.0])
