@@ -566,7 +566,7 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
                     "Define shading/render style first",
                 )
                 return {"CANCELLED"}
-            textures = tool.Ifc.run("style.add_surface_textures", material=material, uv_maps=[])
+            textures = tool.Ifc.run("style.add_surface_textures", textures=self.get_texture_attributes(), uv_maps=[])
             texture_style = tool.Ifc.run(
                 "style.add_surface_style",
                 style=self.style,
@@ -603,9 +603,6 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
             )
             tool.Loader.create_surface_style_rendering(material, surface_style)
         elif self.props.is_editing_class == "IfcSurfaceStyleWithTextures":
-            # TODO: rework add_surface_textures to work without blender
-            # otherwise we lose textures that are not used in the shader
-            # and we also doesn't recognize relative paths if .blend file is not saved
             # TODO: provide `uv_maps` - need to rework .get_uv_maps not to depend on a single representation
             material = tool.Ifc.get_object(self.style)
             shading_style = self.rendering_style or self.shading_style
@@ -617,7 +614,7 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
                     "Define shading/render style first",
                 )
                 return {"CANCELLED"}
-            textures = tool.Ifc.run("style.add_surface_textures", material=material, uv_maps=[])
+            textures = tool.Ifc.run("style.add_surface_textures", textures=self.get_texture_attributes(), uv_maps=[])
             if textures:
                 texture_style = tool.Ifc.run(
                     "style.add_surface_style",
@@ -669,6 +666,21 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
             "SpecularColour": specular_colour,
             "SpecularHighlight": specular_highlight,
         }
+
+    # TODO: support RepeatS/RepeatT params in UI:
+    # add it to prop.Texture and Style.get_texture_style_data_from_props
+    def get_texture_attributes(self):
+        textures = []
+        for texture in self.props.textures:
+            texture_data = {
+                "URLReference": texture.path,
+                "Mode": texture.mode,
+                "RepeatS": True,
+                "RepeatT": True,
+                "uv_mode": self.props.uv_mode,
+            }
+            textures.append(texture_data)
+        return textures
 
     def color_to_dict(self, x):
         return {"Red": x[0], "Green": x[1], "Blue": x[2]}
