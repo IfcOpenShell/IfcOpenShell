@@ -801,7 +801,7 @@ class AngleDecorator(BaseDecorator):
                 angle_rad = acos(cos_a)
                 angle = angle_rad / pi * 180
             except ZeroDivisionError:
-                angle = 0
+                angle_rad, angle = 0, 0
 
             # calculate angle position
             p0, p1, p2 = [location_3d_to_region_2d(region, region3d, p) for p in vertices[i0 : i1 + 2]]
