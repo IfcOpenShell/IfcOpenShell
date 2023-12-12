@@ -52,8 +52,13 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcGradientCurve* inst) {
 	auto composition = [horizontal, vertical](double u)->Eigen::Matrix4d {
 		auto xy = horizontal->evaluate(u);
 		auto uz = vertical->evaluate(u);
+
+      uz.col(3)(0) = 0.0; // x is distance along. zero it out so it doesn't add to the x from horizontal
+      uz.col(1).swap(uz.col(2)); // uz is 2D in distance along - y plane, swap y and z so elevations become z
+      uz.row(1).swap(uz.row(2));
+
 		Eigen::Matrix4d m;
-      m = xy * uz;
+      m = xy * uz; // combine horizontal and vertical
       return m;
 	};
 
