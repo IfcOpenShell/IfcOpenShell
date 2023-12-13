@@ -119,6 +119,7 @@ class BIMStylesProperties(PropertyGroup):
     is_editing_class: StringProperty(name="Is Editing Class")
     attributes: CollectionProperty(name="Attributes", type=Attribute)
     external_style_attributes: CollectionProperty(name="External Style Attributes", type=Attribute)
+    refraction_style_attributes: CollectionProperty(name="Refraction Style Attributes", type=Attribute)
     style_type: EnumProperty(items=get_style_types, default=2, name="Style Type")
     style_name: StringProperty(name="Style Name")
     surface_style_class: EnumProperty(

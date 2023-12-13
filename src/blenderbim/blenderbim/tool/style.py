@@ -454,6 +454,14 @@ class Style(blenderbim.core.tool.Style):
         return results
 
     @classmethod
+    def get_style_ui_props_attributes(self, style_type):
+        props = bpy.context.scene.BIMStylesProperties
+        if style_type == "IfcExternallyDefinedSurfaceStyle":
+            return props.external_style_attributes
+        elif style_type == "IfcSurfaceStyleRefraction":
+            return props.refraction_style_attributes
+
+    @classmethod
     def import_presentation_styles(cls, style_type):
         color_to_tuple = lambda x: (x.Red, x.Green, x.Blue)
         props = bpy.context.scene.BIMStylesProperties
