@@ -43,6 +43,7 @@ classes = (
     operator.UpdateCurrentStyle,
     operator.UpdateStyleColours,
     operator.UpdateStyleTextures,
+    prop.ColourRgb,
     prop.Style,
     prop.Texture,
     prop.BIMStylesProperties,
