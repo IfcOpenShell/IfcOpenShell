@@ -506,9 +506,23 @@ class EnableEditingSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
 
         surface_style = tool.Style.get_style_elements(style).get(self.ifc_class, None)
         attributes = tool.Style.get_style_ui_props_attributes(self.ifc_class)
+
+        # lighting style require special handling since Attribute doesn't support colors
+        callback = None
+        if self.ifc_class == "IfcSurfaceStyleLighting":
+
+            def callback(attribute_name, _, data):
+                color = attributes.add()
+                color.name = attribute_name
+                color_value = data[attribute_name]
+                if color_value is None:
+                    return
+                color.color_name = color_value.Name or ""
+                color.color_value = (color_value.Red, color_value.Green, color_value.Blue)
+
         if attributes is not None:
             attributes.clear()
-            blenderbim.bim.helper.import_attributes2(surface_style or self.ifc_class, attributes)
+            blenderbim.bim.helper.import_attributes2(surface_style or self.ifc_class, attributes, callback)
 
 
 class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
@@ -576,13 +590,12 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
             tool.Loader.create_surface_style_with_textures(material, shading_style, texture_style)
         else:
             attributes = tool.Style.get_style_ui_props_attributes(self.surface_style.is_a())
-            if attributes is not None:
-                ifcopenshell.api.run(
-                    "style.edit_surface_style",
-                    tool.Ifc.get(),
-                    style=self.surface_style,
-                    attributes=blenderbim.bim.helper.export_attributes(attributes),
-                )
+            ifcopenshell.api.run(
+                "style.edit_surface_style",
+                tool.Ifc.get(),
+                style=self.surface_style,
+                attributes=blenderbim.bim.helper.export_attributes(attributes),
+            )
 
     def add_new_style(self):
         material = tool.Ifc.get_object(self.style)
@@ -627,14 +640,13 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
             tool.Loader.create_surface_style_with_textures(material, shading_style, texture_style)
         else:
             attributes = tool.Style.get_style_ui_props_attributes(self.props.is_editing_class)
-            if attributes is not None:
-                surface_style = ifcopenshell.api.run(
-                    "style.add_surface_style",
-                    tool.Ifc.get(),
-                    style=self.style,
-                    ifc_class=self.props.is_editing_class,
-                    attributes=blenderbim.bim.helper.export_attributes(attributes),
-                )
+            surface_style = ifcopenshell.api.run(
+                "style.add_surface_style",
+                tool.Ifc.get(),
+                style=self.style,
+                ifc_class=self.props.is_editing_class,
+                attributes=blenderbim.bim.helper.export_attributes(attributes),
+            )
 
     def get_shading_attributes(self):
         return {

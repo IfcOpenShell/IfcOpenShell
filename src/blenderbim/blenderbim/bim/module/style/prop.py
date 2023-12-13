@@ -112,6 +112,29 @@ class Texture(PropertyGroup):
     path: StringProperty(name="Texture Path", update=update_shader_graph)
 
 
+class ColourRgb(PropertyGroup):
+    name: StringProperty()
+    color_value: FloatVectorProperty(size=3, subtype="COLOR", default=(1, 1, 1))
+    # not exposed in the UI, here just to preserve the data
+    color_name: StringProperty("Color Name")
+
+    # to fit blender.bim.helper.export_attributes
+    def get_value(self):
+        return {
+            "Name": self.color_name or None,
+            "Red": self.color_value[0],
+            "Green": self.color_value[1],
+            "Blue": self.color_value[2],
+        }
+
+    # to fit blender.bim.helper.draw_attribute
+    is_uri = False
+    is_optional = False
+
+    def get_value_name(self):
+        return "color_value"
+
+
 class BIMStylesProperties(PropertyGroup):
     is_adding: BoolProperty(name="Is Adding")
     is_editing: BoolProperty(name="Is Editing")
@@ -120,6 +143,7 @@ class BIMStylesProperties(PropertyGroup):
     attributes: CollectionProperty(name="Attributes", type=Attribute)
     external_style_attributes: CollectionProperty(name="External Style Attributes", type=Attribute)
     refraction_style_attributes: CollectionProperty(name="Refraction Style Attributes", type=Attribute)
+    lighting_style_colours: CollectionProperty(name="Lighting Style Colours", type=ColourRgb)
     style_type: EnumProperty(items=get_style_types, default=2, name="Style Type")
     style_name: StringProperty(name="Style Name")
     surface_style_class: EnumProperty(
