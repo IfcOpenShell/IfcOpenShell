@@ -58,6 +58,8 @@
 	}
 }
 
+%newobject IfcGeom::Representation::BRep::item;
+
 %newobject IfcGeom::ConversionResultShape::halfspaces;
 %newobject IfcGeom::ConversionResultShape::box;
 %newobject IfcGeom::ConversionResultShape::solid;
@@ -65,7 +67,17 @@
 %newobject IfcGeom::ConversionResultShape::subtract;
 %newobject IfcGeom::ConversionResultShape::intersect;
 %newobject IfcGeom::ConversionResultShape::moved;
+
+%newobject IfcGeom::ConversionResultShape::area;
+%newobject IfcGeom::ConversionResultShape::volume;
+%newobject IfcGeom::ConversionResultShape::length;
+
 %newobject nary_union;
+
+%newobject IfcGeom::OpaqueNumber::operator+;
+%newobject IfcGeom::OpaqueNumber::operator-;
+%newobject IfcGeom::OpaqueNumber::operator*;
+%newobject IfcGeom::OpaqueNumber::operator/;
 
 %include "../ifcgeom/ifc_geom_api.h"
 %include "../ifcgeom/Converter.h"
@@ -640,15 +652,23 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 %template(OpaqueCoordinate_3) IfcGeom::OpaqueCoordinate<3>;
 %template(OpaqueCoordinate_4) IfcGeom::OpaqueCoordinate<4>;
 
+%newobject create_epeck;
+
 %inline %{
-	std::shared_ptr<IfcGeom::OpaqueNumber> create_epeck(int i) {
-		return std::make_shared<ifcopenshell::geometry::NumberEpeck>(i);
+	IfcGeom::OpaqueNumber* create_epeck(int i) {
+		return new ifcopenshell::geometry::NumberEpeck(i);
+	}
+	IfcGeom::OpaqueNumber* create_epeck(double d) {
+		return new ifcopenshell::geometry::NumberEpeck(d);
+	}
+	IfcGeom::OpaqueNumber* create_epeck(const std::string& s) {
+		return new ifcopenshell::geometry::NumberEpeck(typename CGAL::Epeck::FT::ET(s));
 	}
 %}
 
 %inline %{
 	IfcGeom::ConversionResultShape* nary_union(PyObject* sequence) {
-		CGAL::Nef_nary_union_3< CGAL::Nef_polyhedron_3<Kernel_> > accum;
+		CGAL::Nef_nary_union_3< CGAL::Nef_polyhedron_3<CGAL::Epeck> > accum;
 		for(Py_ssize_t i = 0; i < PySequence_Size(sequence); ++i) {
 			PyObject* element = PySequence_GetItem(sequence, i);
 			void* argp1 = nullptr;

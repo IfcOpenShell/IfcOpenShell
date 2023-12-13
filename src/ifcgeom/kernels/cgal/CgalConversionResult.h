@@ -132,8 +132,16 @@ namespace ifcopenshell { namespace geometry {
 		NumberEpeck(const CGAL::Epeck::FT& v)
 			: value_(v) {}
 
+		virtual ~NumberEpeck() { }
+
 		virtual double to_double() const {
 			return CGAL::to_double(value_);
+		}
+
+		virtual std::string to_string() const {
+			std::stringstream ss;
+			ss << value_.exact();
+			return ss.str();
 		}
 
 		const CGAL::Epeck::FT& value() const {
@@ -160,6 +168,9 @@ namespace ifcopenshell { namespace geometry {
 		}
 		virtual OpaqueNumber* operator-() const {
 			return unary_op<negate_<CGAL::Epeck::FT>>();
+		}
+		virtual OpaqueNumber* clone() const {
+			return new NumberEpeck(value_);
 		}
 	};
 #endif
@@ -217,9 +228,9 @@ namespace ifcopenshell { namespace geometry {
 		// @todo this must be something with a virtual dtor so that we can delete it.
 		virtual std::pair<OpaqueCoordinate<3>, OpaqueCoordinate<3>> bounding_box() const;
 
-		virtual std::shared_ptr<OpaqueNumber> length();
-		virtual std::shared_ptr<OpaqueNumber> area();
-		virtual std::shared_ptr<OpaqueNumber> volume();
+		virtual OpaqueNumber* length();
+		virtual OpaqueNumber* area();
+		virtual OpaqueNumber* volume();
 
 		virtual OpaqueCoordinate<3> position();
 		virtual OpaqueCoordinate<3> axis();
@@ -229,6 +240,8 @@ namespace ifcopenshell { namespace geometry {
 		virtual ConversionResultShape* halfspaces();
 		virtual ConversionResultShape* solid();
 		virtual ConversionResultShape* box();
+
+		virtual std::vector<ConversionResultShape*> vertices();
 		virtual std::vector<ConversionResultShape*> edges();
 		virtual std::vector<ConversionResultShape*> facets();
 
@@ -274,9 +287,9 @@ namespace ifcopenshell { namespace geometry {
 		virtual std::pair<OpaqueCoordinate<3>, OpaqueCoordinate<3>> bounding_box() const;
 		virtual void set_box(void* b);
 
-		virtual std::shared_ptr<OpaqueNumber> length();
-		virtual std::shared_ptr<OpaqueNumber> area();
-		virtual std::shared_ptr<OpaqueNumber> volume();
+		virtual OpaqueNumber* length();
+		virtual OpaqueNumber* area();
+		virtual OpaqueNumber* volume();
 
 		virtual OpaqueCoordinate<3> position();
 		virtual OpaqueCoordinate<3> axis();
@@ -286,6 +299,8 @@ namespace ifcopenshell { namespace geometry {
 		virtual ConversionResultShape* halfspaces();
 		virtual ConversionResultShape* solid();
 		virtual ConversionResultShape* box();
+
+		virtual std::vector<ConversionResultShape*> vertices();
 		virtual std::vector<ConversionResultShape*> edges();
 		virtual std::vector<ConversionResultShape*> facets();
 

@@ -75,9 +75,9 @@ namespace ifcopenshell {
 			// @todo this must be something with a virtual dtor so that we can delete it.
 			virtual std::pair<OpaqueCoordinate<3>, OpaqueCoordinate<3>> bounding_box() const;
 
-			virtual std::shared_ptr<OpaqueNumber> length();
-			virtual std::shared_ptr<OpaqueNumber> area();
-			virtual std::shared_ptr<OpaqueNumber> volume();
+			virtual OpaqueNumber* length();
+			virtual OpaqueNumber* area();
+			virtual OpaqueNumber* volume();
 
 			virtual OpaqueCoordinate<3> position();
 			virtual OpaqueCoordinate<3> axis();
@@ -87,6 +87,8 @@ namespace ifcopenshell {
 			virtual ConversionResultShape* halfspaces();
 			virtual ConversionResultShape* solid();
 			virtual ConversionResultShape* box();
+
+			virtual std::vector<ConversionResultShape*> vertices();
 			virtual std::vector<ConversionResultShape*> edges();
 			virtual std::vector<ConversionResultShape*> facets();
 

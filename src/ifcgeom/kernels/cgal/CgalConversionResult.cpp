@@ -21,8 +21,12 @@ using ifcopenshell::geometry::NumberEpeck;
 
 ifcopenshell::geometry::CgalShape::CgalShape(const cgal_shape_t & shape) {
 	shape_ = shape;
-	CGAL::Polygon_mesh_processing::triangulate_faces(*shape_);
-	CGAL::Polygon_mesh_processing::remove_degenerate_faces(*shape_);
+	if (shape.size_of_facets() != 1) {
+		// this is for handling the specical case of storing a single point in a polyhedron,
+		// @todo come up with a proper variant for storing lower dimensional entities
+		CGAL::Polygon_mesh_processing::triangulate_faces(*shape_);
+		CGAL::Polygon_mesh_processing::remove_degenerate_faces(*shape_);
+	}
 }
 
 #ifndef IFOPSH_SIMPLE_KERNEL
@@ -63,7 +67,7 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 			m(2, 0), m(2, 1), m(2, 2), m(2, 3));
 
 		// Apply transformation
-		for (auto &vertex : vertices(s)) {
+		for (auto &vertex : s.vertex_handles()) {
 			vertex->point() = vertex->point().transform(trsf);
 		}
 	}
@@ -185,7 +189,7 @@ void ifcopenshell::geometry::CgalShape::Serialize(const ifcopenshell::geometry::
 			m(2, 0), m(2, 1), m(2, 2), m(2, 3));
 
 		// Apply transformation
-		for (auto &vertex : vertices(s)) {
+		for (auto &vertex : s.vertex_handles()) {
 			vertex->point() = vertex->point().transform(trsf);
 		}
 	}
@@ -255,7 +259,7 @@ int ifcopenshell::geometry::CgalShape::num_faces() const
 	}
 }
 
-std::shared_ptr<OpaqueNumber> ifcopenshell::geometry::CgalShape::CgalShape::length()
+OpaqueNumber* ifcopenshell::geometry::CgalShape::CgalShape::length()
 {
 	to_poly();
 	Kernel_::FT len = 0;
@@ -265,19 +269,19 @@ std::shared_ptr<OpaqueNumber> ifcopenshell::geometry::CgalShape::CgalShape::leng
 			it->next()->vertex()->point()
 		).squared_length());
 	}
-	return std::make_shared<NumberType>(len);
+	return new NumberType(len);
 }
 
-std::shared_ptr<OpaqueNumber> ifcopenshell::geometry::CgalShape::area()
+OpaqueNumber* ifcopenshell::geometry::CgalShape::area()
 {
 	to_poly();
-	return std::make_shared<NumberType>(CGAL::Polygon_mesh_processing::area(*shape_));
+	return new NumberType(CGAL::Polygon_mesh_processing::area(*shape_));
 }
 
-std::shared_ptr<OpaqueNumber> ifcopenshell::geometry::CgalShape::volume()
+OpaqueNumber* ifcopenshell::geometry::CgalShape::volume()
 {
 	to_poly();
-	return std::make_shared<NumberType>(CGAL::Polygon_mesh_processing::volume(*shape_));
+	return new NumberType(CGAL::Polygon_mesh_processing::volume(*shape_));
 }
 
 OpaqueCoordinate<3> ifcopenshell::geometry::CgalShape::position()
@@ -297,9 +301,9 @@ OpaqueCoordinate<3> ifcopenshell::geometry::CgalShape::position()
 			p[i] /= N;
 		}
 		return OpaqueCoordinate<3>(
-			std::make_shared<NumberType>(p[0]),
-			std::make_shared<NumberType>(p[1]),
-			std::make_shared<NumberType>(p[2])
+			new NumberType(p[0]),
+			new NumberType(p[1]),
+			new NumberType(p[2])
 		);
 	} else {
 		throw std::runtime_error("Invalid shape type");
@@ -307,15 +311,25 @@ OpaqueCoordinate<3> ifcopenshell::geometry::CgalShape::position()
 }
 
 namespace {
+	template <typename Facet>
+	CGAL::Direction_3<Kernel_> newell(Facet& face) {
+		typename Kernel_::FT a(0), b(0), c(0);
+		CGAL::Polyhedron_3<Kernel_>::Halfedge_around_facet_const_circulator current_halfedge = face.facet_begin();
+		do {
+			auto& curr = current_halfedge->vertex()->point();
+			auto& next = current_halfedge->next()->vertex()->point();
+			a += (curr.y() - next.y()) * (curr.z() + next.z());
+			b += (curr.z() - next.z()) * (curr.x() + next.x());
+			c += (curr.x() - next.x()) * (curr.y() + next.y());
+		} while (++current_halfedge != face.facet_begin());
+		return CGAL::Direction_3<Kernel_>(a, b, c);
+	}
+
 	struct Plane_equation {
-		template <class Facet>
-		typename Facet::Plane_3 operator()(Facet& f) {
-			// @todo from the docs, but better use Newell's method
-			typename Facet::Halfedge_handle h = f.halfedge();
-			typedef typename Facet::Plane_3  Plane;
-			return Plane(h->vertex()->point(),
-				h->next()->vertex()->point(),
-				h->next()->next()->vertex()->point());
+		template <typename Facet>
+		typename Facet::Plane_3 operator()(Facet& face) {
+			typename Facet::Halfedge_handle h = face.halfedge();
+			return typename Facet::Plane_3(h->vertex()->point(), newell(face));
 		}
 	};
 }
@@ -331,9 +345,9 @@ OpaqueCoordinate<3> ifcopenshell::geometry::CgalShape::axis()
 		auto maxval = ((-*minel) > *maxel) ? (-*minel) : *maxel;
 
 		return OpaqueCoordinate<3>(
-			std::make_shared<NumberType>(pl.a() / maxval),
-			std::make_shared<NumberType>(pl.b() / maxval),
-			std::make_shared<NumberType>(pl.c() / maxval)
+			new NumberType(pl.a() / maxval),
+			new NumberType(pl.b() / maxval),
+			new NumberType(pl.c() / maxval)
 		);
 	} else {
 		throw std::runtime_error("Invalid shape type");
@@ -390,9 +404,52 @@ ConversionResultShape * ifcopenshell::geometry::CgalShape::box()
 	throw std::runtime_error("Not implemented");
 }
 
+std::vector<ConversionResultShape*> ifcopenshell::geometry::CgalShape::vertices()
+{
+	// @todo this is ridiculous
+	to_poly();
+	std::vector<ConversionResultShape*> result;
+	for (auto& p : shape_->points()) {
+		std::vector<cgal_point_t> ps = {
+			p, p, p
+		};
+
+		std::vector<std::vector<size_t>> ids(1);
+		ids.front().push_back(0);
+		ids.front().push_back(1);
+		ids.front().push_back(2);
+
+		cgal_shape_t poly;
+		CGAL::Polygon_mesh_processing::polygon_soup_to_polygon_mesh(ps, ids, poly);
+
+		result.push_back(new CgalShape(poly));
+	}
+	return result;
+}
+
 std::vector<ConversionResultShape*> ifcopenshell::geometry::CgalShape::edges()
 {
-	throw std::runtime_error("Not implemented");
+	// @todo this is ridiculous
+	to_poly();
+	std::vector<ConversionResultShape*> result;
+	for (auto& ed : shape_->edges()) {
+		std::vector<cgal_point_t> ps = {
+			ed.vertex()->point(),
+			ed.vertex()->point(),
+			ed.next()->vertex()->point()
+		};
+
+		std::vector<std::vector<size_t>> ids(1);
+		ids.front().push_back(0);
+		ids.front().push_back(1);
+		ids.front().push_back(2);
+
+		cgal_shape_t poly;
+		CGAL::Polygon_mesh_processing::polygon_soup_to_polygon_mesh(ps, ids, poly);
+
+		result.push_back(new CgalShape(poly));
+	}
+	return result;
 }
 
 std::vector<ConversionResultShape*> ifcopenshell::geometry::CgalShape::facets()
@@ -463,7 +520,7 @@ ConversionResultShape* ifcopenshell::geometry::CgalShape::moved(ifcopenshell::ge
 			m(2, 0), m(2, 1), m(2, 2), m(2, 3));
 
 		// Apply transformation
-		for (auto &vertex : vertices(s)) {
+		for (auto &vertex : s.vertex_handles()) {
 			vertex->point() = vertex->point().transform(trsf);
 		}
 	}
@@ -515,17 +572,17 @@ int ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::num_faces() const
 	throw std::runtime_error("Not implemented");
 }
 
-std::shared_ptr<OpaqueNumber> ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::CgalShapeHalfSpaceDecomposition::length()
+OpaqueNumber* ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::CgalShapeHalfSpaceDecomposition::length()
 {
 	throw std::runtime_error("Not implemented");
 }
 
-std::shared_ptr<OpaqueNumber> ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::area()
+OpaqueNumber* ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::area()
 {
 	throw std::runtime_error("Not implemented");
 }
 
-std::shared_ptr<OpaqueNumber> ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::volume()
+OpaqueNumber* ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::volume()
 {
 	throw std::runtime_error("Not implemented");
 }
@@ -535,9 +592,9 @@ OpaqueCoordinate<3> ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::pos
 	if (planes_.size() == 1) {
 		auto xyz = CGAL::ORIGIN + planes_.front().d() * CGAL::Vector_3<Kernel_>(planes_.front().a(), planes_.front().b(), planes_.front().c());
 		return OpaqueCoordinate<3>(
-			std::make_shared<NumberType>(xyz.cartesian(0)),
-			std::make_shared<NumberType>(xyz.cartesian(1)),
-			std::make_shared<NumberType>(xyz.cartesian(2))
+			new NumberType(xyz.cartesian(0)),
+			new NumberType(xyz.cartesian(1)),
+			new NumberType(xyz.cartesian(2))
 		);
 	} else {
 		throw std::runtime_error("Invalid shape type");
@@ -552,9 +609,9 @@ OpaqueCoordinate<3> ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::axi
 		auto maxel = std::max_element(abc.begin(), abc.end());
 		auto maxval = ((-*minel) > *maxel) ? (-*minel) : *maxel;
 		return OpaqueCoordinate<3>(
-			std::make_shared<NumberType>(planes_.front().a() / maxval),
-			std::make_shared<NumberType>(planes_.front().b() / maxval),
-			std::make_shared<NumberType>(planes_.front().c() / maxval)
+			new NumberType(planes_.front().a() / maxval),
+			new NumberType(planes_.front().b() / maxval),
+			new NumberType(planes_.front().c() / maxval)
 		);
 	} else {
 		throw std::runtime_error("Invalid shape type");
@@ -569,10 +626,10 @@ OpaqueCoordinate<4> ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::pla
 		auto maxel = std::max_element(abc.begin(), abc.end());
 		auto maxval = ((-*minel) > *maxel) ? (-*minel) : *maxel;
 		return OpaqueCoordinate<4>(
-			std::make_shared<NumberType>(planes_.front().a() / maxval),
-			std::make_shared<NumberType>(planes_.front().b() / maxval),
-			std::make_shared<NumberType>(planes_.front().c() / maxval),
-			std::make_shared<NumberType>(planes_.front().d() / maxval)
+			new NumberType(planes_.front().a() / maxval),
+			new NumberType(planes_.front().b() / maxval),
+			new NumberType(planes_.front().c() / maxval),
+			new NumberType(planes_.front().d() / maxval)
 		);
 	} else {
 		throw std::runtime_error("Invalid shape type");
@@ -595,6 +652,11 @@ ConversionResultShape* ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::
 }
 
 ConversionResultShape * ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::box()
+{
+	throw std::runtime_error("Not implemented");
+}
+
+std::vector<ConversionResultShape*> ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::vertices()
 {
 	throw std::runtime_error("Not implemented");
 }
@@ -646,16 +708,16 @@ void ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::map(OpaqueCoordina
 	plane_map<Kernel_> mp;
 	mp.insert({
 		CGAL::Plane_3<Kernel_>(
-			std::static_pointer_cast<NumberEpeck>(from.values[0])->value(),
-			std::static_pointer_cast<NumberEpeck>(from.values[1])->value(),
-			std::static_pointer_cast<NumberEpeck>(from.values[2])->value(),
-			std::static_pointer_cast<NumberEpeck>(from.values[3])->value()
+			static_cast<NumberEpeck*>(from.values[0])->value(),
+			static_cast<NumberEpeck*>(from.values[1])->value(),
+			static_cast<NumberEpeck*>(from.values[2])->value(),
+			static_cast<NumberEpeck*>(from.values[3])->value()
 		),
 		CGAL::Plane_3<Kernel_>(
-			std::static_pointer_cast<NumberEpeck>(to.values[0])->value(),
-			std::static_pointer_cast<NumberEpeck>(to.values[1])->value(),
-			std::static_pointer_cast<NumberEpeck>(to.values[2])->value(),
-			std::static_pointer_cast<NumberEpeck>(to.values[3])->value()
+			static_cast<NumberEpeck*>(to.values[0])->value(),
+			static_cast<NumberEpeck*>(to.values[1])->value(),
+			static_cast<NumberEpeck*>(to.values[2])->value(),
+			static_cast<NumberEpeck*>(to.values[3])->value()
 		)
 	});
 	auto nw = shape_->map(mp);
@@ -674,16 +736,16 @@ void ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::map(const std::vec
 		auto& to = *jt;
 		mp.insert({
 			CGAL::Plane_3<Kernel_>(
-				std::static_pointer_cast<NumberEpeck>(from.values[0])->value(),
-				std::static_pointer_cast<NumberEpeck>(from.values[1])->value(),
-				std::static_pointer_cast<NumberEpeck>(from.values[2])->value(),
-				std::static_pointer_cast<NumberEpeck>(from.values[3])->value()
+				static_cast<NumberEpeck*>(from.values[0])->value(),
+				static_cast<NumberEpeck*>(from.values[1])->value(),
+				static_cast<NumberEpeck*>(from.values[2])->value(),
+				static_cast<NumberEpeck*>(from.values[3])->value()
 			),
 			CGAL::Plane_3<Kernel_>(
-				std::static_pointer_cast<NumberEpeck>(to.values[0])->value(),
-				std::static_pointer_cast<NumberEpeck>(to.values[1])->value(),
-				std::static_pointer_cast<NumberEpeck>(to.values[2])->value(),
-				std::static_pointer_cast<NumberEpeck>(to.values[3])->value()
+				static_cast<NumberEpeck*>(to.values[0])->value(),
+				static_cast<NumberEpeck*>(to.values[1])->value(),
+				static_cast<NumberEpeck*>(to.values[2])->value(),
+				static_cast<NumberEpeck*>(to.values[3])->value()
 			)
 			});
 	}
