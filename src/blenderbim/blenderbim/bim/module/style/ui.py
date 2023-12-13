@@ -134,8 +134,10 @@ class BIM_PT_styles(Panel):
                 self.draw_externally_defined_surface_style()
             elif self.props.is_editing_class == "IfcSurfaceStyleWithTextures":
                 self.draw_surface_style_with_textures()
+            elif self.props.is_editing_class == "IfcSurfaceStyleRefraction":
+                self.draw_refraction_surface_style()
             else:
-                # TODO: UI Lighting, Refract
+                # TODO: UI Lighting
                 self.layout.label(text=f"{self.props.is_editing_class} UI is not yet supported.")
 
     def draw_surface_style_shading(self):
@@ -236,6 +238,12 @@ class BIM_PT_styles(Panel):
         blenderbim.bim.helper.draw_attributes(self.props.external_style_attributes, self.layout)
         row = self.layout.row(align=True)
         row.operator("bim.edit_surface_style", text="Save External Style", icon="CHECKMARK")
+        row.operator("bim.disable_editing_style", text="", icon="CANCEL")
+
+    def draw_refraction_surface_style(self):
+        blenderbim.bim.helper.draw_attributes(self.props.refraction_style_attributes, self.layout)
+        row = self.layout.row(align=True)
+        row.operator("bim.edit_surface_style", text="Save Refraction Style", icon="CHECKMARK")
         row.operator("bim.disable_editing_style", text="", icon="CANCEL")
 
 
