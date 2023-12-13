@@ -257,28 +257,28 @@ int ifcopenshell::geometry::OpenCascadeShape::num_faces() const
 	return IfcGeom::util::count(shape_, TopAbs_FACE);
 }
 
-std::shared_ptr<OpaqueNumber> ifcopenshell::geometry::OpenCascadeShape::OpenCascadeShape::length()
+OpaqueNumber* ifcopenshell::geometry::OpenCascadeShape::OpenCascadeShape::length()
 {
 	GProp_GProps prop;
 	BRepGProp::LinearProperties(shape_, prop);
 	double l = prop.Mass();
-	return std::make_shared<NumberNativeDouble>(l);
+	return new NumberNativeDouble(l);
 }
 
-std::shared_ptr<OpaqueNumber> ifcopenshell::geometry::OpenCascadeShape::area()
+OpaqueNumber* ifcopenshell::geometry::OpenCascadeShape::area()
 {
 	GProp_GProps prop;
 	BRepGProp::SurfaceProperties(shape_, prop);
 	double l = prop.Mass();
-	return std::make_shared<NumberNativeDouble>(l);
+	return new NumberNativeDouble(l);
 }
 
-std::shared_ptr<OpaqueNumber> ifcopenshell::geometry::OpenCascadeShape::volume()
+OpaqueNumber* ifcopenshell::geometry::OpenCascadeShape::volume()
 {
 	GProp_GProps prop;
 	BRepGProp::VolumeProperties(shape_, prop);
 	double l = prop.Mass();
-	return std::make_shared<NumberNativeDouble>(l);
+	return new NumberNativeDouble(l);
 }
 
 #include <Geom_Plane.hxx>
@@ -291,9 +291,9 @@ OpaqueCoordinate<3> ifcopenshell::geometry::OpenCascadeShape::position()
 		if (plane) {
 			auto loc = plane->Location();
 			return OpaqueCoordinate<3>(
-				std::make_shared<NumberNativeDouble>(loc.X()),
-				std::make_shared<NumberNativeDouble>(loc.Y()),
-				std::make_shared<NumberNativeDouble>(loc.Z())
+				new NumberNativeDouble(loc.X()),
+				new NumberNativeDouble(loc.Y()),
+				new NumberNativeDouble(loc.Z())
 			);
 		}
 	}
@@ -308,9 +308,9 @@ OpaqueCoordinate<3> ifcopenshell::geometry::OpenCascadeShape::axis()
 		if (plane) {
 			auto dir = plane->Axis().Direction();
 			return OpaqueCoordinate<3>(
-				std::make_shared<NumberNativeDouble>(dir.X()),
-				std::make_shared<NumberNativeDouble>(dir.Y()),
-				std::make_shared<NumberNativeDouble>(dir.Z())
+				new NumberNativeDouble(dir.X()),
+				new NumberNativeDouble(dir.Y()),
+				new NumberNativeDouble(dir.Z())
 			);
 		}
 	}
@@ -326,10 +326,10 @@ OpaqueCoordinate<4> ifcopenshell::geometry::OpenCascadeShape::plane_equation()
 			double a, b, c, d;
 			plane->Pln().Coefficients(a, b, c, d);
 			return OpaqueCoordinate<4>(
-				std::make_shared<NumberNativeDouble>(a),
-				std::make_shared<NumberNativeDouble>(b),
-				std::make_shared<NumberNativeDouble>(c),
-				std::make_shared<NumberNativeDouble>(d)
+				new NumberNativeDouble(a),
+				new NumberNativeDouble(b),
+				new NumberNativeDouble(c),
+				new NumberNativeDouble(d)
 			);
 		}
 	}
@@ -354,6 +354,17 @@ ConversionResultShape* ifcopenshell::geometry::OpenCascadeShape::solid()
 ConversionResultShape * ifcopenshell::geometry::OpenCascadeShape::box()
 {
 	throw std::runtime_error("Not implemented");
+}
+
+std::vector<ConversionResultShape*> ifcopenshell::geometry::OpenCascadeShape::vertices()
+{
+	TopTools_IndexedMapOfShape map;
+	TopExp::MapShapes(shape_, TopAbs_VERTEX, map);
+	std::vector<ConversionResultShape*> vec;
+	for (int i = 1; i <= map.Extent(); ++i) {
+		vec.push_back(new OpenCascadeShape(map.FindKey(i)));
+	}
+	return vec;
 }
 
 std::vector<ConversionResultShape*> ifcopenshell::geometry::OpenCascadeShape::edges()

@@ -71,6 +71,8 @@ namespace IfcGeom {
 	class IFC_GEOM_API OpaqueNumber {
 	public:
 		virtual double to_double() const = 0;
+		virtual std::string to_string() const = 0;
+
 		virtual ~OpaqueNumber() {}
 
 		virtual OpaqueNumber* operator+(OpaqueNumber* other) const = 0;
@@ -80,6 +82,7 @@ namespace IfcGeom {
 		virtual bool operator==(OpaqueNumber* other) const = 0;
 		virtual bool operator<(OpaqueNumber* other) const = 0;
 		virtual OpaqueNumber* operator-() const = 0;
+		virtual OpaqueNumber* clone() const = 0;
 	};
 
 	// @todo this can simply be a template class, to remove the need for the NumberEpeck in CGAL kernel.
@@ -119,10 +122,11 @@ namespace IfcGeom {
 			return value_;
 		}
 
+		virtual std::string to_string() const;
+
 		virtual OpaqueNumber* operator+(OpaqueNumber* other) const {
 			return binary_op<add_<double>>(other);
 		}
-
 		virtual OpaqueNumber* operator-(OpaqueNumber* other) const {
 			return binary_op<subtract_<double>>(other);
 		}
@@ -141,11 +145,14 @@ namespace IfcGeom {
 		virtual OpaqueNumber* operator-() const {
 			return unary_op<negate_<double>>();
 		}
+		virtual OpaqueNumber* clone() const {
+			return new NumberNativeDouble(value_);
+		}
 	};
 
 	template <size_t N>
 	struct IFC_GEOM_API OpaqueCoordinate {
-		std::array<std::shared_ptr<OpaqueNumber>, N> values;
+		std::array<OpaqueNumber*, N> values;
 
 		template <typename... Args>
 		OpaqueCoordinate(Args... args) {
@@ -159,21 +166,21 @@ namespace IfcGeom {
 			}
 		}
 
-		std::shared_ptr<OpaqueNumber> get(size_t i) {
+		OpaqueNumber* get(size_t i) {
 			if (i >= N) {
 				return nullptr;
 			}
 			return values[i];
 		}
 
-		void set(size_t i, std::shared_ptr<OpaqueNumber> n) {
+		void set(size_t i, OpaqueNumber* n) {
 			if (i < N) {
-				values[i] = n;
+				values[i] = n->clone();
 			}
 		}
 	private:
 		template <size_t Index, typename... Args>
-		void init_(std::shared_ptr<OpaqueNumber> value, Args... args) {
+		void init_(OpaqueNumber* value, Args... args) {
 			values[Index] = value;
 			if constexpr (Index + 1 < N) {
 				init_<Index + 1>(args...);
@@ -200,9 +207,9 @@ namespace IfcGeom {
 		virtual std::pair<OpaqueCoordinate<3>, OpaqueCoordinate<3>> bounding_box() const = 0;
 		virtual void set_box(void* b) = 0;
 		
-		virtual std::shared_ptr<OpaqueNumber> length() = 0;
-		virtual std::shared_ptr<OpaqueNumber> area() = 0;
-		virtual std::shared_ptr<OpaqueNumber> volume() = 0;
+		virtual OpaqueNumber* length() = 0;
+		virtual OpaqueNumber* area() = 0;
+		virtual OpaqueNumber* volume() = 0;
 
 		virtual OpaqueCoordinate<3> position() = 0;
 		virtual OpaqueCoordinate<3> axis() = 0;
@@ -212,6 +219,8 @@ namespace IfcGeom {
 		virtual ConversionResultShape* halfspaces() = 0;
 		virtual ConversionResultShape* box() = 0;
 		virtual ConversionResultShape* solid() = 0;
+
+		virtual std::vector<ConversionResultShape*> vertices() = 0;
 		virtual std::vector<ConversionResultShape*> edges() = 0;
 		virtual std::vector<ConversionResultShape*> facets() = 0;
 
