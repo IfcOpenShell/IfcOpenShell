@@ -460,6 +460,8 @@ class Style(blenderbim.core.tool.Style):
             return props.external_style_attributes
         elif style_type == "IfcSurfaceStyleRefraction":
             return props.refraction_style_attributes
+        elif style_type == "IfcSurfaceStyleLighting":
+            return props.lighting_style_colours
 
     @classmethod
     def import_presentation_styles(cls, style_type):
