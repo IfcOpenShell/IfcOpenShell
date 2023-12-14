@@ -329,19 +329,46 @@ class ActivateExternalStyle(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, db["msg"])
             return {"CANCELLED"}
 
-        props_to_copy = [
-            "diffuse_color",
-            "metallic",
-            "roughness",
-            "specular_intensity",
-            "use_nodes",
-        ]
-        for prop_name in props_to_copy:
-            setattr(material, prop_name, getattr(db["data_block"], prop_name))
-
+        self.copy_material_attributes(db["data_block"], material)
         if material.use_nodes:
             tool.Blender.copy_node_graph(material, db["data_block"])
         bpy.data.materials.remove(db["data_block"])
+
+    def copy_material_attributes(self, source, target):
+        ID_properties = bpy.types.ID.bl_rna.properties
+        material_props = bpy.types.Material.bl_rna.properties
+        allowed_prop_groups = ("grease_pencil", "lineart", "cycles")
+
+        def set_prop(prop_name):
+            setattr(target, prop_name, getattr(source, prop_name))
+
+        def set_prop_group(prop_group):
+            source_prop_group = getattr(source, prop_group)
+            target_prop_group = getattr(target, prop_group)
+            if target_prop_group is None or target_prop_group is None:
+                return
+            for prop_name in source_prop_group.bl_rna.properties.keys():
+                prop = source_prop_group.bl_rna.properties[prop_name]
+                if prop.type in ("POINTER", "COLLECTION"):
+                    continue
+                if prop.is_readonly:
+                    continue
+                source_value = getattr(source_prop_group, prop_name)
+                setattr(target_prop_group, prop_name, source_value)
+
+        for prop_name in material_props.keys():
+            if prop_name in ID_properties:
+                continue
+            prop = material_props[prop_name]
+            if prop.type == "COLLECTION":
+                continue
+            if prop.type == "POINTER":
+                if prop_name in allowed_prop_groups:
+                    set_prop_group(prop_name)
+                continue
+            if prop.is_readonly:
+                continue
+            set_prop(prop_name)
 
 
 class DisableEditingStyles(bpy.types.Operator, tool.Ifc.Operator):
