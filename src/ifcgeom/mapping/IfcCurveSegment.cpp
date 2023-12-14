@@ -387,55 +387,44 @@ class curve_segment_evaluator {
         }
     }
 
-    void set_spiral_function(mapping* mapping_, const IfcSchema::IfcSpiral* c, double s, std::function<double(double)> signX, std::function<double(double)> fnX, std::function<double(double)> signY, std::function<double(double)> fnY) {
-        // determine the length of the spiral from the local origin to the end point
-        auto sign_s = binary_sign(start_);
-        auto sign_l = binary_sign(length_);
-        double L = 0;
-        if (sign_s == 0) {
-            L = fabs(length_); // start_ is at zero so length_ is the L
-        } else if (sign_s == sign_l) {
-            L = fabs(start_ + length_); // start_ and length_ are additive
-        } else {
-            L = fabs(start_); // start_ and length_ are in opposite directions so start_ is furthest from the origin
-        }
-
+    void set_spiral_function(mapping* mapping_, const IfcSchema::IfcSpiral* c, double s, std::function<double(double)> fnX, std::function<double(double)> fnY) {
         if (segment_type_ == ST_HORIZONTAL || segment_type_ == ST_VERTICAL) {
             auto start = start_;
             auto segment_type = segment_type_;
             auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(c->Position()))->ccomponents();
             geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
-            eval_ = [L, start, s, signX, fnX, signY, fnY, transformation_matrix, segment_type, geometry_adjuster = this->geometry_adjuster](double u) {
+            using boost::math::quadrature::trapezoidal;
+            auto start_x = trapezoidal(fnX, 0.0, start / s);
+            auto start_y = trapezoidal(fnY, 0.0, start / s);
+            auto start_dx = fnX(start / s)/s;
+            auto start_dy = fnY(start / s)/s;
+            eval_ = [start, s, start_x, start_y, start_dx,start_dy,fnX, fnY, transformation_matrix, segment_type, geometry_adjuster = this->geometry_adjuster](double u) {
 
                 u += start;
 
                 // integration limits, integrate from a to b
                 auto a = 0.0;
-                auto b = fabs(u / s);
+                auto b = u / s;
 
-                using boost::math::quadrature::trapezoidal;
-                auto x = signX(u) * trapezoidal(fnX, a, b);
-                auto y = signY(u) * trapezoidal(fnY, a, b);
+                auto x = trapezoidal(fnX, a, b) - start_x;
+                auto y = trapezoidal(fnY, a, b) - start_y;
+
+                auto x1 = x * start_dx + y * start_dy;
+                auto y1 = -x * start_dy + y * start_dx;
+                x = x1;
+                y = y1;
 
                 // From https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcSpiral.htm, x = Integral(fnX du), y = Integral(fnY du)
                 // The tangent slope of a curve is the derivate of the curve, so the derivitive of an integral, is just the function
-                auto dx = signX(u)*fnX(b)/s;
-                auto dy = signY(u)*fnY(b)/s;
+                auto dx = fnX(b)/s;
+                auto dy = fnY(b)/s;
 
+                // rotate about the Z-axis
                 Eigen::Matrix4d m;
-                if (segment_type == ST_HORIZONTAL) {
-                    // rotate about the Z-axis
-                    m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);  // vector tangent to the curve, in the direction of the curve
-                    m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0); // vector perpendicular to the curve, towards the left when looking from start to end along the curve (this is used for IfcAxis2PlacementLinear.RefDirection when it is not provided)
-                    m.col(2) = Eigen::Vector4d(0, 0, 1.0, 0);  // cross product of x and y and will always be up (this is used for IfcAxis2PlacementLinear.Axis when it is not provided)
-                    m.col(3) = Eigen::Vector4d(x, y, 0.0, 1.0);
-                } else if (segment_type == ST_VERTICAL) {
-                    // rotate about the Y-axis (slope along u is dx, slope vertically is dy, vertical position is y)
-                    m.col(0) = Eigen::Vector4d(dx, 0, dy, 0);
-                    m.col(1) = Eigen::Vector4d(0, 1, 0, 0);
-                    m.col(2) = Eigen::Vector4d(-dy, 0, dx, 0);
-                    m.col(3) = Eigen::Vector4d(0, 0, y, 1.0); // y is an elevation so store it as z
-                }
+                m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);  // vector tangent to the curve, in the direction of the curve
+                m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0); // vector perpendicular to the curve, towards the left when looking from start to end along the curve (this is used for IfcAxis2PlacementLinear.RefDirection when it is not provided)
+                m.col(2) = Eigen::Vector4d(0, 0, 1.0, 0);  // cross product of x and y and will always be up (this is used for IfcAxis2PlacementLinear.Axis when it is not provided)
+                m.col(3) = Eigen::Vector4d(x, y, 0.0, 1.0);
                 Eigen::Matrix4d result = transformation_matrix * m;
                 return geometry_adjuster->transform_and_adjust(u,result);
             };
@@ -451,52 +440,8 @@ class curve_segment_evaluator {
     else {
             Logger::Error(std::runtime_error("Unexpected segment type encountered"));
     }
-    }
+}
 
-
-	// Clothoid using Taylor Series approximation
-//#ifdef SCHEMA_HAS_IfcClothoid
-//	// Then initialize Function(double) -> Vector3, by means of IfcCurve subtypes
-//	void operator()(IfcSchema::IfcClothoid* c) {
-//		auto sign_s = binary_sign(start_);
-//		auto sign_l = binary_sign(length_);
-//		double L = 0;
-//		if (sign_s == 0) L = fabs(length_);
-//		else if (sign_s == sign_l) L = fabs(start_ + length_);
-//		else L = fabs(start_);
-//
-//		auto A = c->ClothoidConstant();
-//		auto R = A * A / L;
-//		auto RL = sign(A) * R * L;
-//
-//		//const auto& transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(c->Position()))->ccomponents();
-//		auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(c->Position()))->ccomponents();
-//
-//		auto start = start_;
-//		eval_ = [RL, transformation_matrix, start](double u) {
-//			// coordinate along clothoid is local coordinates
-//			u += start;
-//
-//			auto xterm_1 = u;
-//			auto xterm_2 = std::pow(u, 5) / (40 * std::pow(RL, 2));
-//			auto xterm_3 = std::pow(u, 9) / (3456 * std::pow(RL, 4));
-//			auto xterm_4 = std::pow(u, 13) / (599040 * std::pow(RL, 6));
-//			auto x = xterm_1 - xterm_2 + xterm_3 - xterm_4;
-//
-//			auto yterm_1 = std::pow(u, 3) / (6 * RL);
-//			auto yterm_2 = std::pow(u, 7) / (336 * std::pow(RL, 3));
-//			auto yterm_3 = std::pow(u, 11) / (42240 * std::pow(RL, 5));
-//			auto yterm_4 = std::pow(u, 15) / (9676800 * std::pow(RL, 7));
-//			auto y = yterm_1 - yterm_2 + yterm_3 - yterm_4;
-//
-//			// transform point into clothoid's coodinate system
-//			auto result = transformation_matrix * Eigen::Vector4d(x, y, 0.0, 1.0);
-//			Eigen::VectorXd vec(4);
-//			vec << result(0), result(1), 0.0, 1.0;
-//			return vec;			
-//			};
-//	}
-//#endif
 
 	// Clothoid using numerical integration
 #ifdef SCHEMA_HAS_IfcClothoid
@@ -510,19 +455,10 @@ class curve_segment_evaluator {
       auto A = c->ClothoidConstant();
       auto s = fabs(A * sqrt(PI));
 
-      // the integration is for the +X, +Y quadrant - need to adjust the signs of the resulting X and Y values
-      // so that the results are in the correct quadrant.
-      // A > 0 and u > 0 -> +X, +Y
-      // A < 0 and u > 0 -> +X, -Y
-      // A > 0 and u < 0 -> -X, -Y
-      // A < 0 and u < 0 -> -X, +Y
-      // X depends only on u, Y depends on u and A.
-      auto sign_x = [](double t) { return sign(t); };
-      auto sign_y = [A](double t) { return sign(t) == sign(A) ? 1.0 : -1.0; };
-      auto fn_x = [A, s](double t) -> double { return s * cos(PI * fabs(A) * t * t / (2 * fabs(A))); };
-      auto fn_y = [A, s](double t) -> double { return s * sin(PI * fabs(A) * t * t / (2 * fabs(A))); };
+      auto fn_x = [A, s](double t) -> double { return s * cos(PI * A * t * t / (2 * fabs(A))); };
+      auto fn_y = [A, s](double t) -> double { return s * sin(PI * A * t * t / (2 * fabs(A))); };
 
-      set_spiral_function(mapping_, c, s, sign_x, fn_x, sign_y, fn_y);
+      set_spiral_function(mapping_, c, s, fn_x, fn_y);
 	}
 #endif
 
@@ -542,14 +478,11 @@ class curve_segment_evaluator {
 				return a0 + a1 + a2;
 			};
 
-		auto sign_x = [](double t) {return sign(t); };
-		auto sign_y = [](double t) {return sign(t); }; // @todo: rb - fix - not sure about sign_y yet, need to find some plots of this spiral
-
 		auto fn_x = [theta](double t)->double {return cos(theta(t)); };
 		auto fn_y = [theta](double t)->double {return sin(theta(t)); };
 
 		double s = 1.0; // @todo: rb - this is supposed to be the curve length when the parametric value u = 1.0
-		set_spiral_function(mapping_, c, s, sign_x, fn_x, sign_y, fn_y);
+		set_spiral_function(mapping_, c, s, fn_x, fn_y);
 	}
 #endif
 
@@ -560,36 +493,34 @@ class curve_segment_evaluator {
       auto sign_l = sign(length_);
 		auto start_angle = start_/R;
 
+      auto start_x = R * cos(start_angle);
+      auto start_y = R * sin(start_angle);
+
 		auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(c->Position()))->ccomponents();
 
 		auto segment_type = segment_type_;
 
 		geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
 
-		eval_ = [R, start_angle, sign_l, transformation_matrix, segment_type, geometry_adjuster = this->geometry_adjuster](double u)
+		eval_ = [R, start_x, start_y, start_angle, sign_l, transformation_matrix, segment_type, geometry_adjuster = this->geometry_adjuster](double u)
 			{
             auto angle = start_angle + sign_l * u / R;
 
 				auto dx = cos(angle);
             auto dy = sin(angle);
 
-				auto x = R * dx;
-				auto y = R * dy;
+				auto x = R * dx - start_x;
+				auto y = R * dy - start_y;
 
             Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
-            if (segment_type == ST_HORIZONTAL) {
+            if (segment_type == ST_HORIZONTAL || segment_type == ST_VERTICAL) {
                 // rotate about the Z-axis
-                m.col(0) = Eigen::Vector4d(-dy, dx, 0, 0);  // vector tangent to the curve, in the direction of the curve
-                m.col(1) = Eigen::Vector4d(-sign_l * dx, -sign_l * dy, 0, 0); // vector perpendicular to the curve, towards the left when looking from start to end along the curve (this is used for IfcAxis2PlacementLinear.RefDirection when it is not provided)
-                m.col(2) = Eigen::Vector4d(0, 0, 1.0, 0);   // cross product of x and y and will always be up (this is used for IfcAxis2PlacementLinear.Axis when it is not provided)
-                m.col(3) = Eigen::Vector4d(x, y, 0.0, 1.0);
-            } else if (segment_type == ST_VERTICAL) {
-                // rotate about the Y-axis (slope along u is dx, slope vertically is dy, vertical position is y)
-                m.col(0) = Eigen::Vector4d(-dy, 0, dx, 0);
-                m.col(1) = Eigen::Vector4d(0, 1, 0, 0);
-                m.col(2) = Eigen::Vector4d(-dx, 0, -dy, 0);
-                m.col(3) = Eigen::Vector4d(0, 0, y, 1.0); // y is an elevation so store it as z
-            } else if (segment_type == ST_CANT) {
+                m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);
+                m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0);
+                m.col(2) = Eigen::Vector4d(0, 0, 1, 0);
+                m.col(3) = Eigen::Vector4d(y * sign_l, -x * sign_l, 0.0, 1.0);
+            }
+            else if (segment_type == ST_CANT) {
                 Logger::Warning(std::runtime_error("Use of IfcCircle for cant is not supported"));
             } else {
                 Logger::Error(std::runtime_error("Unexpected segment type encountered"));
@@ -734,7 +665,7 @@ class curve_segment_evaluator {
       auto py = c[1] * length_unit_;
 
       geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
-      if (segment_type_ == ST_HORIZONTAL) {
+      if (segment_type_ == ST_HORIZONTAL || segment_type_ == ST_VERTICAL) {
 
 			eval_ = [px, py, dx, dy, geometry_adjuster=this->geometry_adjuster](double u) {
 				auto x = px + u * dx;
@@ -748,28 +679,6 @@ class curve_segment_evaluator {
             return geometry_adjuster->transform_and_adjust(u, m);
 			};
 		}
-		else if (segment_type_ == ST_VERTICAL) {
-
-			eval_ = [py, dx, dy, geometry_adjuster = this->geometry_adjuster](double u) {
-				// https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcGradientCurve.htm
-				// the parameter, u, is the parameter of the BaseCurve (u = plan view distance along base curve)
-            
-				// dx and dy are normalized so u needs to be scaled by dy/dx
-				// Consider a 5% uphill grade defined by dr[0] = 1 and dr[1] = 0.05.
-				// We would normally compute y = py + 0.05*u. 
-				// However, m = sqrt(1*1 + 0.05*0.05) = 1.0124922 we need to normalize the direction ratios as
-				// dx = dr[0]/m and dy = dr[1]/m which makes dy = 0.05/1.0124922 = 0.0499376
-				// y = py + u * dy/dx =  py + u * (dr[1]/m)*(m/dr[0]) = py + u * 0.05
-				auto y = py + u * dy/dx; 
-
-            Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
-            m.col(0) = Eigen::Vector4d(dx, 0, dy, 0);
-            m.col(1) = Eigen::Vector4d(0, 1, 0, 0);
-            m.col(2) = Eigen::Vector4d(-dy, 0, dx, 0);
-            m.col(3) = Eigen::Vector4d(0, 0, y, 1.0); // y is an elevation so store it as z
-            return geometry_adjuster->transform_and_adjust(u, m);
-         };
-		} 
       else if (segment_type_ == ST_CANT) {
             auto cant_adjuster_ = std::make_shared<cant_adjuster>(mapping_, segment_type_, inst_, next_inst_);
             eval_ = [cant_adjuster_](double u) {
@@ -829,19 +738,14 @@ class curve_segment_evaluator {
          auto dy = slope[1];
 
          Eigen::Matrix4d m;
-         if (segment_type == ST_HORIZONTAL) {
+         if (segment_type == ST_HORIZONTAL || segment_type == ST_VERTICAL) {
 				// rotate about the Z-axis
             m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);  // vector tangent to the curve, in the direction of the curve
             m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0); // vector perpendicular to the curve, towards the left when looking from start to end along the curve (this is used for IfcAxis2PlacementLinear.RefDirection when it is not provided)
             m.col(2) = Eigen::Vector4d(0, 0, 1.0, 0);  // cross product of x and y and will always be up (this is used for IfcAxis2PlacementLinear.Axis when it is not provided)
             m.col(3) = Eigen::Vector4d(x, y, 0.0, 1.0);
-         } else if (segment_type == ST_VERTICAL) {
-				// rotate about the Y-axis (slope along u is dx, slope vertically is dy, vertical position is y)
-            m.col(0) = Eigen::Vector4d(dx, 0, dy, 0);
-            m.col(1) = Eigen::Vector4d(0, 1, 0, 0);
-            m.col(2) = Eigen::Vector4d(-dy, 0, dx, 0);
-            m.col(3) = Eigen::Vector4d(0, 0, y, 1.0); // y is an elevation so store it as z
-         } else if (segment_type == ST_CANT) {
+         }
+         else if (segment_type == ST_CANT) {
                 Logger::Warning(std::runtime_error("Use of IfcPolynomialCurve for cant is not supported"));
          } else {
                 Logger::Error(std::runtime_error("Unexpected segment type encountered"));

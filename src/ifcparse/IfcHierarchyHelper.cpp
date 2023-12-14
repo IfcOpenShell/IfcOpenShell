@@ -156,7 +156,11 @@ void IfcHierarchyHelper<Schema>::relatePlacements(typename Schema::IfcProduct* p
     if (place && place->declaration().is(Schema::IfcLocalPlacement::Class())) {
         typename Schema::IfcLocalPlacement* local_place = (typename Schema::IfcLocalPlacement*)place;
         if (parent->ObjectPlacement()) {
-            local_place->setPlacementRelTo(parent->ObjectPlacement());
+            if (local_place != parent->ObjectPlacement()) {
+                local_place->setPlacementRelTo(parent->ObjectPlacement());
+            } else {
+                Logger::Notice("Placement cannot be relative to self");
+            }
         }
     }
 }
