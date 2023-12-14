@@ -233,7 +233,10 @@ class BIM_PT_styles(Panel):
         row.operator("bim.disable_editing_style", text="", icon="CANCEL")
 
     def draw_externally_defined_surface_style(self):
-        self.layout.row().operator("bim.browse_external_style", icon="APPEND_BLEND", text="Append From Blend File")
+        row = self.layout.row()
+        op = row.operator("bim.browse_external_style", icon="APPEND_BLEND", text="Append From Blend File")
+        style = self.props.styles[self.props.active_style_index]
+        op.active_surface_style_id = style.ifc_definition_id
         blenderbim.bim.helper.draw_attributes(self.props.external_style_attributes, self.layout)
         row = self.layout.row(align=True)
         row.operator("bim.edit_surface_style", text="Save External Style", icon="CHECKMARK")
