@@ -2591,6 +2591,17 @@ class AddReferenceImage(bpy.types.Operator, Operator):
         options={"SKIP_SAVE"},
     )
 
+    def draw(self, context):
+        layout = self.layout
+        if Path(tool.Ifc.get_path()).is_file():
+            layout.prop(self, "use_relative_path")
+        else:
+            self.use_relative_path = False
+            layout.label(text="Save the .ifc file first ")
+            layout.label(text="to use relative paths.")
+        layout.prop(self, "override_existing_image")
+        layout.prop(self, "use_existing_object_by_name")
+
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
