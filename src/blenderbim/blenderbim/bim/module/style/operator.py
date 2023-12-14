@@ -240,10 +240,17 @@ class BrowseExternalStyle(bpy.types.Operator):
         description="Start file browsing directory",
         default="",
     )
+    active_surface_style_id: bpy.props.IntProperty(
+        description="Currently selected IfcSurfaceStyle ID to automatically select it in the file browser",
+        options={"HIDDEN", "SKIP_SAVE"},
+    )
 
     def invoke(self, context, event):
-        mat = context.active_object.active_material
-        external_style = tool.Style.get_style_elements(mat).get("IfcExternallyDefinedSurfaceStyle", None)
+        external_style = None
+        if self.active_surface_style_id:
+            style = tool.Ifc.get().by_id(self.active_surface_style_id)
+            external_style = tool.Style.get_style_elements(style).get("IfcExternallyDefinedSurfaceStyle", None)
+
         # automatically select previously selected external style in file browser
         if external_style and self.filepath == "":
             style_path = Path(tool.Ifc.resolve_uri(external_style.Location))
