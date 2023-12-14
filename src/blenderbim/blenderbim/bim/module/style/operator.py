@@ -252,11 +252,17 @@ class BrowseExternalStyle(bpy.types.Operator):
             external_style = tool.Style.get_style_elements(style).get("IfcExternallyDefinedSurfaceStyle", None)
 
         # automatically select previously selected external style in file browser
+        # if it exists in the file
         if external_style and self.filepath == "":
             style_path = Path(tool.Ifc.resolve_uri(external_style.Location))
             self.directory = str(style_path.parent)
             self.filepath = str(style_path)
-            self.data_block_type, self.data_block = external_style.Identification.split("/")
+
+            data_block_type, data_block = external_style.Identification.split("/")
+            self.data_block_type = data_block_type
+            data_blocks = [d[0] for d in self.get_data_blocks(context)]
+            if data_block in data_blocks:
+                self.data_block = data_block
 
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
@@ -267,12 +273,12 @@ class BrowseExternalStyle(bpy.types.Operator):
         layout.prop(self, "data_block_type", text="", icon="GROUP")
         layout.label(text="Data Block")
         layout.prop(self, "data_block", text="")
-        if bpy.data.is_saved:
+        if Path(tool.Ifc.get_path()).is_file():
             layout.prop(self, "use_relative_path")
         else:
             self.use_relative_path = False
-            layout.label(text="Save the .blend file first ")
-            layout.label(text="to use relative paths for .ifc.")
+            layout.label(text="Save the .ifc file first ")
+            layout.label(text="to use relative paths.")
 
     def execute(self, context):
         if self.data_block_type == "0":
@@ -295,7 +301,7 @@ class BrowseExternalStyle(bpy.types.Operator):
         bpy.data.materials.remove(db["data_block"])
 
         if self.use_relative_path:
-            filepath = os.path.relpath(self.filepath, tool.Ifc.get_path())
+            filepath = os.path.relpath(self.filepath, Path(tool.Ifc.get_path()).parent)
         else:
             filepath = self.filepath
         filepath = Path(filepath).as_posix()
