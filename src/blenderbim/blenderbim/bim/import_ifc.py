@@ -640,7 +640,7 @@ class IfcImporter:
             if elements_checked > element_checking_threshold:
                 return
             if element.ObjectPlacement and element.ObjectPlacement.is_a("IfcLocalPlacement"):
-                placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)[:,3][0:3]
+                placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)[:, 3][0:3]
                 if self.is_point_far_away(placement, is_meters=False):
                     return placement
             if not self.does_element_likely_have_geometry_far_away(element):
@@ -1550,20 +1550,27 @@ class IfcImporter:
 
     def create_aggregate_and_nest_collections(self):
         if self.ifc_import_settings.has_filter:
-            rel_aggregates = [e.IsDecomposedBy[0] for e in self.elements if e.IsDecomposedBy]
-            rel_aggregates += [e.Decomposes[0] for e in self.elements if e.Decomposes]
-            rel_aggregates += [e.IsNestedBy[0] for e in self.elements if e.IsNestedBy]
-            rel_aggregates += [e.Nests[0] for e in self.elements if e.Nests]
-            rel_aggregates = set(rel_aggregates)
+            rel_aggregates = set()
+            for element in self.elements:
+                if element.IsDecomposedBy:
+                    rel_aggregates.add(element.IsDecomposedBy[0])
+                elif element.Decomposes:
+                    rel_aggregates.add(element.Decomposes[0])
+                elif element.IsNestedBy:
+                    if [e for e in element.IsNestedBy[0].RelatedObjects if not e.is_a("IfcPort")]:
+                        rel_aggregates.add(element.IsNestedBy[0])
+                elif element.Nests:
+                    rel_aggregates.add(element.Nests[0])
         else:
             rel_aggregates = [
-                a
-                for a in self.file.by_type("IfcRelAggregates")
-                if a.RelatingObject.is_a("IfcElement") or a.RelatingObject.is_a("IfcElementType")
+                r
+                for r in self.file.by_type("IfcRelAggregates")
+                if r.RelatingObject.is_a("IfcElement") or r.RelatingObject.is_a("IfcElementType")
             ] + [
-                a
-                for a in self.file.by_type("IfcRelNests")
-                if a.RelatingObject.is_a("IfcElement") or a.RelatingObject.is_a("IfcElementType")
+                r
+                for r in self.file.by_type("IfcRelNests")
+                if (r.RelatingObject.is_a("IfcElement") or r.RelatingObject.is_a("IfcElementType"))
+                and [e for e in r.RelatedObjects if not e.is_a("IfcPort")]
             ]
 
         if len(rel_aggregates) > 10000:
