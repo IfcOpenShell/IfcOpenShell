@@ -865,12 +865,16 @@ def get_parts(element):
             return element.IsDecomposedBy[0].RelatedObjects
 
 
-def get_components(element):
+def get_components(element, include_ports=False):
     """
     Retrieves the components of an element that have an nest relationship.
 
+    For nested ports, see ifcopenshell.util.system.
+
     :param element: The IFC element
     :return: The components of the element
+    :param include_ports: Default as False. Set to true if you also want to get ports.
+    :type include_ports: bool,optional
 
     Example:
 
@@ -881,7 +885,9 @@ def get_components(element):
     """
     if hasattr(element, "IsNestedBy"):
         if element.IsNestedBy:
-            return element.IsNestedBy[0].RelatedObjects
+            if include_ports:
+                return element.IsNestedBy[0].RelatedObjects
+            return [e for e in element.IsNestedBy[0].RelatedObjects if not e.is_a("IfcPort")]
     elif hasattr(element, "IsDecomposedBy") and element.IsDecomposedBy:
         if element.IsDecomposedBy[0].is_a("IfcRelNests"):
             return element.IsDecomposedBy[0].RelatedObjects

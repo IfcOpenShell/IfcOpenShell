@@ -157,7 +157,8 @@ class Collector(blenderbim.core.tool.Collector):
             return cls._create_own_collection(obj)
 
         if getattr(element, "IsNestedBy", None):
-            return cls._create_own_collection(obj)
+            if [e for e in element.IsNestedBy[0].RelatedObjects if not e.is_a("IfcPort")]:
+                return cls._create_own_collection(obj)
 
     @classmethod
     def _get_collection(cls, element, obj):
