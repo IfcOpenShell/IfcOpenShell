@@ -324,16 +324,16 @@ class ActivateExternalStyle(bpy.types.Operator, tool.Ifc.Operator):
         style_path = Path(tool.Ifc.resolve_uri(external_style.Location))
 
         if style_path.suffix != ".blend":
-            self.report({"ERROR"}, f"Only Blender external styles are supported")
+            self.report({"ERROR"}, f"Error loading external style - only Blender external styles are supported")
             return {"CANCELLED"}
 
         if not style_path.exists():
-            self.report({"ERROR"}, f"File not found:\n'{style_path}'")
+            self.report({"ERROR"}, f"Error loading external style - cannot find file: '{style_path}'")
             return {"CANCELLED"}
 
         db = tool.Blender.append_data_block(str(style_path), data_block_type, data_block)
         if not db["data_block"]:
-            self.report({"ERROR"}, db["msg"])
+            self.report({"ERROR"}, f"Error loading external style - {db['msg']}")
             return {"CANCELLED"}
 
         self.copy_material_attributes(db["data_block"], material)
