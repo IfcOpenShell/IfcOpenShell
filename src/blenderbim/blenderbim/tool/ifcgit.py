@@ -132,6 +132,7 @@ class IfcGit:
 
     @classmethod
     def push(cls, repo, remote_name, branch_name):
+        cls.config_push(repo)
         remote = repo.remotes[remote_name]
         try:
             remote.push(tags=True, refspec=branch_name).raise_if_error()
@@ -422,6 +423,15 @@ class IfcGit:
         if not config_reader.has_section(section):
             config_writer.set_value(section, "cmd", "ifcmerge $BASE $REMOTE $LOCAL $MERGED")
             config_writer.set_value(section, "trustExitCode", True)
+
+    @classmethod
+    def config_push(cls, repo):
+        """Set push.autoSetupRemote"""
+        config_reader = repo.config_reader()
+        config_writer = repo.config_writer()
+        if not config_reader.has_section("push"):
+            config_writer.set_value("push", "default", "current")
+            config_writer.set_value("push", "autoSetupRemote", True)
 
     @classmethod
     def config_info_attributes(cls, repo):
