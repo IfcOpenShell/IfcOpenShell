@@ -1264,14 +1264,16 @@ typedef item const* ptr;
 		// @nb traverses nested collections
 		template <typename Fn>
 		taxonomy::collection::ptr filter_in_place(taxonomy::collection::ptr collection, Fn fn) {
-			for (auto it = --collection->children.end(); it >= collection->children.begin(); --it) {
-				if (!apply_predicate_to_collection(*it, fn)) {
+			const auto& c = collection->children;
+			auto new_end = std::remove_if(c.begin(), c.end(), [fn](taxonomy::geom_item::ptr i) {
+				return !apply_predicate_to_collection(i, fn);
+			});
 #ifdef TAXONOMY_USE_NAKED_PTR
-					delete* it;
-#endif
-					collection->children.erase(it);
-				}
+			for (auto it = new_end; it != c.end(); ++it) {
+				delete *it;
 			}
+#endif
+			c.erase(new_end, c.end());
 			return collection;
 		}
 
