@@ -70,8 +70,6 @@ namespace ifcopenshell {
 
 			class IFC_GEOM_API CgalKernel : public AbstractKernel {
 			private:
-				size_t circle_segments_;
-
 #ifndef IFOPSH_SIMPLE_KERNEL
 				enum boolean_operand_preprocess { 
 					PP_MINKOWSKY_DILATE,
@@ -94,7 +92,6 @@ namespace ifcopenshell {
 
 				CgalKernel(const Settings& settings)
 					: AbstractKernel("cgal", settings)
-					, circle_segments_(32)
 				{}
 
 				void remove_duplicate_points_from_loop(cgal_wire_t& polygon);

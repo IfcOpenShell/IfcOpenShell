@@ -300,6 +300,12 @@ namespace ifcopenshell {
 				static constexpr const char* const description = "Overrides transparency of spaces in geometry output.";
 			};
 
+			struct CircleSegments : public SettingBase<CircleSegments, int> {
+				static constexpr const char* const name = "circle-segments";
+				static constexpr const char* const description = "Number of segments to approximate full circles in CGAL kernel.";
+				static constexpr int defaultvalue = 16;
+			};
+
 			enum PiecewiseStepMethod  {
 				MAXSTEPSIZE,
 				MINSTEPS };
@@ -402,7 +408,7 @@ namespace ifcopenshell {
 		};
 
 		class IFC_GEOM_API Settings : public SettingsContainer<
-                                          std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, IncludeCurves, IncludeSurfaces, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, WeldVertices, UseWorldCoords, ConvertBackUnits, ContextIds, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, PiecewiseStepType, PiecewiseStepParam>
+                                          std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, IncludeCurves, IncludeSurfaces, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, WeldVertices, UseWorldCoords, ConvertBackUnits, ContextIds, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, PiecewiseStepType, PiecewiseStepParam>
 		>
 		{};
 }

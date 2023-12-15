@@ -364,13 +364,13 @@ namespace {
 	};
 
 	struct cgal_curve_creation_visitor {
-		static const int FULL_CIRCLE_NUM_SEGMENTS = 32;
+		Settings& settings_;
 		parameter_range param;
 
 		std::vector<taxonomy::point3> points;
 
-		cgal_curve_creation_visitor() : param(unbounded) {}
-		cgal_curve_creation_visitor(const parameter_range& p) : param(p) {}
+		cgal_curve_creation_visitor(Settings& s) : settings_(s), param(unbounded) {}
+		cgal_curve_creation_visitor(Settings& s, const parameter_range& p) : settings_(s), param(p) {}
 
 		void operator()(const taxonomy::line::ptr& l) {
 			if (param == unbounded) {
@@ -397,7 +397,7 @@ namespace {
 			if (b <= a) {
 				b += 2 * M_PI;
 			}
-			int num_segments = (int)std::ceil(std::fabs(a - b) / (2 * M_PI) * FULL_CIRCLE_NUM_SEGMENTS);
+			int num_segments = (int)std::ceil(std::fabs(a - b) / (2 * M_PI) * settings_.get<settings::CircleSegments>().get());
 			double du = (b - a) / num_segments;
 			taxonomy::point3 P;
 			// @nb for loop is not inclusive of the both end points
@@ -429,7 +429,7 @@ namespace {
 				std::swap(v1.u, v2.u);
 			}
 
-			cgal_curve_creation_visitor v({ v1.u, v2.u });
+			cgal_curve_creation_visitor v(settings_, { v1.u, v2.u });
 
 			dispatch_curve_creation<cgal_curve_creation_visitor>::dispatch(e->basis, v);
 			this->points = v.points;
@@ -448,8 +448,8 @@ namespace {
 		}
 	};
 
-	void convert_curve(taxonomy::ptr i, std::vector<taxonomy::point3>& points) {
-		cgal_curve_creation_visitor v;
+	void convert_curve(Settings& s, taxonomy::ptr i, std::vector<taxonomy::point3>& points) {
+		cgal_curve_creation_visitor v(s);
 		dispatch_curve_creation<cgal_curve_creation_visitor>::dispatch(i, v);
 		points = v.points;
 	}
@@ -647,7 +647,7 @@ bool CgalKernel::convert(const taxonomy::loop::ptr loop, cgal_wire_t& result) {
 	for (auto& e : loop->children) {
 		std::vector<taxonomy::point3> edge;
 		if (e->basis) {
-			convert_curve(e, edge);
+			convert_curve(settings_, e, edge);
 			if (!e->orientation_2.get_value_or(true)) {
 				std::reverse(edge.begin(), edge.end());
 			}
