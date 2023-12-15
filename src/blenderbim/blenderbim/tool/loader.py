@@ -23,6 +23,7 @@ import ifcopenshell.util.element
 import blenderbim.core.tool
 import blenderbim.tool as tool
 import os
+import numpy as np
 from mathutils import Vector
 from pathlib import Path
 
@@ -240,25 +241,52 @@ class Loader(blenderbim.core.tool.Loader):
             mode = texture.get("Mode", None)
             node = None
 
-            if texture["type"] != "IfcImageTexture":
+            if texture["type"] == "IfcPixelTexture":
                 print(f"WARNING. Texture of type {texture['type']} is not currently supported, it will be skipped.")
                 continue
 
-            original_image_url = texture["URLReference"]
-            is_relative = not os.path.isabs(original_image_url)
-            image_url = Path(original_image_url)
-            if is_relative:
-                ifc_path = Path(tool.Ifc.get_path())
-                image_url = ifc_path.parent / image_url
+            image_url = None
 
-            if not image_url.exists():
-                print(f"WARNING. Couldn't find texture by path {image_url}, it will be skipped.")
-                continue
+            def get_image():
+                # TODO: orphaned textures after shader recreated?
+                if texture["type"] == "IfcImageTexture":
+                    original_image_url = texture["URLReference"]
+                    is_relative = not os.path.isabs(original_image_url)
+                    nonlocal image_url
+                    image_url = Path(original_image_url)
+                    if is_relative:
+                        ifc_path = Path(tool.Ifc.get_path())
+                        image_url = ifc_path.parent / image_url
 
-            # keep url relative if it was before
-            image_url = str(image_url)
-            if is_relative and bpy.data.filepath:
-                image_url = bpy.path.relpath(image_url)
+                    if not image_url.exists():
+                        print(f"WARNING. Couldn't find texture by path {image_url}, it will be skipped.")
+                        return
+
+                    # keep url relative if it was before
+                    image_url = str(image_url)
+                    if is_relative and bpy.data.filepath:
+                        image_url = bpy.path.relpath(image_url)
+                    return bpy.data.images.load(image_url)
+
+                elif texture["type"] == "IfcBlobTexture":
+                    # https://blender.stackexchange.com/questions/173206/how-to-efficiently-convert-a-pil-image-to-bpy-types-image
+                    # https://blender.stackexchange.com/questions/62072/does-blender-have-a-method-to-a-get-png-formatted-bytearray-for-an-image-via-pyt
+                    import io
+                    from PIL import Image
+
+                    value = texture["RasterCode"]
+                    image_bytes = int(value, 2).to_bytes(len(value) // 8, "big")
+                    pil_image = Image.open(io.BytesIO(image_bytes))
+                    byte_to_normalized = 1.0 / 255.0
+                    bpy_image = bpy.data.images.new("blob_texture", width=pil_image.width, height=pil_image.height)
+                    bpy_image.pixels[:] = (
+                        np.asarray(pil_image.convert("RGBA"), dtype=np.float32) * byte_to_normalized
+                    ).ravel()
+                    return bpy_image
+
+                # TODO: IfcPixelTexture
+                print(f"WARNING. Texture of type {texture['type']} is not yet supported.")
+                return
 
             if reflectance_method in ["PHYSICAL", "NOTDEFINED"]:
                 bsdf = tool.Blender.get_material_node(blender_material, "BSDF_PRINCIPLED")
@@ -267,9 +295,13 @@ class Loader(blenderbim.core.tool.Loader):
                 if mode not in SUPPORTED_PBR_TEXTURES:
                     print(
                         f"WARNING. Texture with {mode} Mode is not supported for style with PHYSICAL reflectance method.\n"
-                        f"Supported types are: {', '.join(SUPPORTED_PBR_TEXTURES)}\n"
-                        f"Texture by path {image_url} will be skipped."
+                        f"Supported types are: {', '.join(SUPPORTED_PBR_TEXTURES)}"
                     )
+                    if texture["type"] == "IfcImageTexture":
+                        print(f"Texture by path {image_url} will be skipped.")
+                    continue
+
+                if (image := get_image()) is None:
                     continue
 
                 if mode == "NORMAL":
@@ -281,7 +313,6 @@ class Loader(blenderbim.core.tool.Loader):
                     # add normal map sampler
                     node = blender_material.node_tree.nodes.new(type="ShaderNodeTexImage")
                     node.location = normalmap.location - Vector((300, 0))
-                    image = bpy.data.images.load(image_url)
                     image.colorspace_settings.name = "Non-Color"
                     node.image = image
                     blender_material.node_tree.links.new(node.outputs[0], normalmap.inputs["Color"])
@@ -303,7 +334,6 @@ class Loader(blenderbim.core.tool.Loader):
                     # add emission texture sampler
                     node = blender_material.node_tree.nodes.new(type="ShaderNodeTexImage")
                     node.location = emission.location - Vector((350, 0))
-                    image = bpy.data.images.load(image_url)
                     node.image = image
                     blender_material.node_tree.links.new(node.outputs[0], emission.inputs[0])
 
@@ -315,7 +345,6 @@ class Loader(blenderbim.core.tool.Loader):
 
                     node = blender_material.node_tree.nodes.new(type="ShaderNodeTexImage")
                     node.location = separate.location - Vector((300, 0))
-                    image = bpy.data.images.load(image_url)
                     image.colorspace_settings.name = "Non-Color"
                     node.image = image
                     blender_material.node_tree.links.new(node.outputs[0], separate.inputs[0])
@@ -341,7 +370,6 @@ class Loader(blenderbim.core.tool.Loader):
 
                     node = blender_material.node_tree.nodes.new(type="ShaderNodeTexImage")
                     node.location = group.location - Vector((300, 0))
-                    image = bpy.data.images.load(image_url)
                     image.colorspace_settings.name = "Non-Color"
                     node.image = image
                     blender_material.node_tree.links.new(node.outputs[0], group.inputs["Occlusion"])
@@ -349,7 +377,6 @@ class Loader(blenderbim.core.tool.Loader):
                 elif mode == "DIFFUSE":
                     node = blender_material.node_tree.nodes.new(type="ShaderNodeTexImage")
                     node.location = bsdf.location - Vector((400, 0))
-                    image = bpy.data.images.load(image_url)
                     node.image = image
                     blender_material.node_tree.links.new(node.outputs[0], bsdf.inputs["Base Color"])
                     # leave it to default(OPAQUE) when no Transparency defined
@@ -360,10 +387,14 @@ class Loader(blenderbim.core.tool.Loader):
             elif reflectance_method == "FLAT":
                 bsdf = tool.Blender.get_material_node(blender_material, "MIX_SHADER")
                 if mode != "EMISSIVE":
-                    print(
-                        "WARNING. Only EMISSIVE Mode textures are supported for style with FLAT reflectance method.\n"
-                        f"{mode} Mode texture by path {image_url} will be skipped."
-                    )
+                    print("WARNING. Only EMISSIVE Mode textures are supported for style with FLAT reflectance method.")
+                    if texture["type"] == "IfcImageTexture":
+                        print(f"{mode} Mode texture by path {image_url} will be skipped.")
+                    else:
+                        print(f"{mode} Mode texture will be skipped.")
+                    continue
+
+                if (image := get_image) is None:
                     continue
 
                 # remove RGB node from `create_surface_style_rendering`
@@ -372,8 +403,6 @@ class Loader(blenderbim.core.tool.Loader):
 
                 node = blender_material.node_tree.nodes.new(type="ShaderNodeTexImage")
                 node.location = bsdf.location - Vector((200, 250))
-                image = bpy.data.images.load(image_url)
-                # TODO: orphaned textures after shader recreated?
                 node.image = image
 
                 blender_material.node_tree.links.new(node.outputs[0], bsdf.inputs[2])
