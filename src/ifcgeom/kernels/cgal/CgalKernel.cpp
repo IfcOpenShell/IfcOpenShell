@@ -258,6 +258,7 @@ bool CgalKernel::convert(const taxonomy::face::ptr face, std::list<cgal_face_t>&
 
 namespace {
 	// @todo obsolete?
+	/*
 	bool convert_curve(CgalKernel* kernel, const taxonomy::ptr curve, cgal_wire_t& builder) {
 		if (auto e = taxonomy::dcast<taxonomy::edge>(curve)) {
 			if (true || e->basis == nullptr) {
@@ -284,6 +285,7 @@ namespace {
 			throw std::runtime_error("Not implemented curve");
 		}
 	}
+	*/
 }
 
 namespace {
