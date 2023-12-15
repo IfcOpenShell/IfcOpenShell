@@ -54,6 +54,50 @@ class AddClassification(bpy.types.Operator, tool.Ifc.Operator):
         )
 
 
+class AddManualClassification(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_manual_classification"
+    bl_label = "Add Manual Classification"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = context.scene.BIMClassificationProperties
+        attributes = blenderbim.bim.helper.export_attributes(props.classification_attributes)
+        classification = ifcopenshell.api.run(
+            "classification.add_classification", tool.Ifc.get(), classification="Unnamed"
+        )
+        ifcopenshell.api.run(
+            "classification.edit_classification", tool.Ifc.get(), classification=classification, attributes=attributes
+        )
+        props.is_adding = False
+
+
+class AddManualClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_manual_classification_reference"
+    bl_label = "Add Manual Classification Reference"
+    bl_options = {"REGISTER", "UNDO"}
+    obj_type: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        obj = context.active_object
+        props = obj.BIMClassificationReferenceProperties
+        attributes = blenderbim.bim.helper.export_attributes(props.reference_attributes)
+        product = tool.Ifc.get_entity(obj)
+        # TODO: refactor and support material and cost item classifications
+        classification = tool.Ifc.get().by_id(int(props.classifications))
+        reference = ifcopenshell.api.run(
+            "classification.add_reference",
+            tool.Ifc.get(),
+            product=product,
+            classification=classification,
+            identification="X",
+            name="Unnamed",
+        )
+        ifcopenshell.api.run(
+            "classification.edit_reference", tool.Ifc.get(), reference=reference, attributes=attributes
+        )
+        props.is_adding = False
+
+
 class AddClassificationFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_classification_from_bsdd"
     bl_label = "Add Classification From bSDD"
@@ -71,6 +115,57 @@ class AddClassificationFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
         classification.Source = domain.organization_name_owner
         classification.Location = domain.namespace_uri
         classification.Edition = domain.version
+
+
+class EnableAddingManualClassification(bpy.types.Operator):
+    bl_idname = "bim.enable_adding_manual_classification"
+    bl_label = "Enable Adding Manual Classification"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        props = context.scene.BIMClassificationProperties
+        props.is_adding = True
+        props.active_classification_id = 0
+        props.classification_attributes.clear()
+        blenderbim.bim.helper.import_attributes2("IfcClassification", props.classification_attributes)
+        return {"FINISHED"}
+
+
+class DisableAddingManualClassification(bpy.types.Operator):
+    bl_idname = "bim.disable_adding_manual_classification"
+    bl_label = "Disable Adding Manual Classification"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        props = context.scene.BIMClassificationProperties
+        props.is_adding = False
+        return {"FINISHED"}
+
+
+class EnableAddingManualClassificationReference(bpy.types.Operator):
+    bl_idname = "bim.enable_adding_manual_classification_reference"
+    bl_label = "Enable Adding Manual Classification Reference"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        obj = context.active_object
+        props = obj.BIMClassificationReferenceProperties
+        props.is_adding = True
+        props.reference_attributes.clear()
+        blenderbim.bim.helper.import_attributes2("IfcClassificationReference", props.reference_attributes)
+        return {"FINISHED"}
+
+
+class DisableAddingManualClassificationReference(bpy.types.Operator):
+    bl_idname = "bim.disable_adding_manual_classification_reference"
+    bl_label = "Disable Adding Manual Classification Reference"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        obj = context.active_object
+        props = obj.BIMClassificationReferenceProperties
+        props.is_adding = False
+        return {"FINISHED"}
 
 
 class EnableEditingClassification(bpy.types.Operator):
