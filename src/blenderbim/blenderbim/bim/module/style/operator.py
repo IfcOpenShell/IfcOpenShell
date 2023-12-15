@@ -508,22 +508,30 @@ class AddPresentationStyle(bpy.types.Operator, tool.Ifc.Operator):
             # setup surface style element
             surface_style = None
             if props.surface_style_class in ("IfcSurfaceStyleShading", "IfcSurfaceStyleRendering"):
-                surface_style = ifcopenshell.api.run(
-                    "style.add_surface_style",
-                    tool.Ifc.get(),
-                    style=style,
-                    ifc_class=props.surface_style_class,
-                    attributes={
-                        "SurfaceColour": {
-                            "Name": None,
-                            "Red": props.surface_colour[0],
-                            "Green": props.surface_colour[1],
-                            "Blue": props.surface_colour[2],
-                        }
-                    },
-                )
+                attributes = {
+                    "SurfaceColour": {
+                        "Name": None,
+                        "Red": props.surface_colour[0],
+                        "Green": props.surface_colour[1],
+                        "Blue": props.surface_colour[2],
+                    }
+                }
                 if props.surface_style_class == "IfcSurfaceStyleRendering":
-                    surface_style.ReflectanceMethod = "NOTDEFINED"
+                    attributes["ReflectanceMethod"] = "NOTDEFINED"
+            else:
+                # NOTE: for all other styles we produce just empty styles.
+                # In the future we might need to expose to adding presentation style UI
+                # LightingStyle colors and TextureStyle textures UI
+                # as they are required for those surface styles to keep IFC valid
+                attributes = {}
+
+            surface_style = ifcopenshell.api.run(
+                "style.add_surface_style",
+                tool.Ifc.get(),
+                style=style,
+                ifc_class=props.surface_style_class,
+                attributes=attributes,
+            )
 
             # setup blender material
             material = bpy.data.materials.new(style.Name)
@@ -534,6 +542,8 @@ class AddPresentationStyle(bpy.types.Operator, tool.Ifc.Operator):
                     tool.Loader.create_surface_style_rendering(material, surface_style)
                 elif surface_style.is_a("IfcSurfaceStyleShading"):
                     tool.Loader.create_surface_style_shading(material, surface_style)
+        else:
+            self.report({"INFO"}, f"Adding style of type {props.style_type} is not yet supported.")
 
         props.is_adding = False
         core.load_styles(tool.Style, style_type=props.style_type)
