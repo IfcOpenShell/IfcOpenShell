@@ -73,6 +73,10 @@ class ReferencesData:
         if name in [e.Name for e in tool.Ifc.get().by_type("IfcClassification")]:
             return name
 
+    @classmethod
+    def classifications(cls):
+        return [(str(e.id()), e.Name, "") for e in tool.Ifc.get().by_type("IfcClassification")]
+
 
 class ClassificationReferencesData(ReferencesData):
     data = {}
@@ -83,6 +87,8 @@ class ClassificationReferencesData(ReferencesData):
         cls.is_loaded = True
         cls.data["references"] = cls.references()
         cls.data["active_classification_library"] = cls.active_classification_library()
+        cls.data["classifications"] = cls.classifications()
+        cls.data["object_type"] = "OBJECT"
 
     @classmethod
     def references(cls):
@@ -105,6 +111,8 @@ class MaterialClassificationsData(ReferencesData):
         cls.is_loaded = True
         cls.data["references"] = cls.references()
         cls.data["active_classification_library"] = cls.active_classification_library()
+        cls.data["classifications"] = cls.classifications()
+        cls.data["object_type"] = "MATERIAL"
 
     @classmethod
     def references(cls):
@@ -127,6 +135,8 @@ class CostClassificationsData(ReferencesData):
         cls.is_loaded = True
         cls.data["references"] = cls.references()
         cls.data["active_classification_library"] = cls.active_classification_library()
+        cls.data["classifications"] = cls.classifications()
+        cls.data["object_type"] = "COST"
 
     @classmethod
     def references(cls):
