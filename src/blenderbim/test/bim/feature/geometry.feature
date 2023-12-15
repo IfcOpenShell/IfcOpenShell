@@ -561,11 +561,18 @@ Scenario: Duplicate linked aggregate
     And the object "IfcWall/Wall_02.001" exists
     And the object "IfcElementAssembly/Assembly.001" exists
     Then the object "IfcElementAssembly/Assembly" and "IfcElementAssembly/Assembly.001" belong to the same Linked Aggregate Group
-    #select wall 01
-    #move two meters
-    #ifc assembly 1 and two belong to the same group
 
 Scenario: Refresh linked aggregate
+    Given I load the IFC test file "/test/files/linked-aggregates.ifc"
+    And the object "IfcWall/Wall_01" is selected
+    When I duplicate linked aggregate the selected objects
+    Then the object "IfcWall/Wall_01.001" exists
+    When I deselect all objects
+    And the object "IfcWall/Wall_01.001" is selected
+    When the object layer length is set to "3"
+    Then the object "IfcWall/Wall_01.001" dimensions are "3,0.1,3"
+    When I refresh linked aggregate the selected object
+    Then the object "IfcWall/Wall_01.002" dimensions are "3,0.1,3"
 
 # Scenario: Refresh linked aggregate - after deleting an object
 # Scenario: Refresh linked aggregate - after adding an object

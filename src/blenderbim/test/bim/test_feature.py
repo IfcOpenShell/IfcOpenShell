@@ -239,6 +239,11 @@ def i_duplicate_the_selected_objects():
     bpy.ops.bim.object_duplicate_move_linked_aggregate()
     blenderbim.bim.handler.active_object_callback()
 
+@when("I refresh linked aggregate the selected object")
+def i_refresh_the_selected_objects():
+    bpy.ops.bim.refresh_linked_aggregate()
+    blenderbim.bim.handler.active_object_callback()
+
 
 @when("I deselect all objects")
 def i_deselect_all_objects():
@@ -879,6 +884,19 @@ def the_obj1_and_obj2_belong_the_same_linked_aggregate_group(obj_name1, obj_name
             assert False, "Object is not part of a Linked Aggregate."
 
     assert groups[0] == groups[1], "Objects do not belong to the same Linked Aggregate group"
+
+@when(parsers.parse('the object layer length is set to "{value}"'))
+def the_obj_layer_lenght_is_set_to(value):
+    value = float(value)
+    try:
+        eval(f"bpy.context.scene.BIMModelProperties.length")
+    except:
+        assert False, f"Property BIMModelProperties.length does not exist when trying to set to value {value}"
+
+    print(50*"@", bpy.context.selected_objects)
+        
+    bpy.context.scene.BIMModelProperties.length = value
+    bpy.ops.bim.change_layer_length(length=value)
     
 
 # These definitions are not to be used in tests but simply in debugging failing tests
