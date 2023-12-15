@@ -26,6 +26,7 @@ from blenderbim.tool.loader import Loader as subject
 import numpy as np
 from ifcopenshell.util.shape_builder import ShapeBuilder, V
 from mathutils import Vector
+from pathlib import Path
 
 
 class TestImplementsTool(NewFile):
@@ -34,7 +35,7 @@ class TestImplementsTool(NewFile):
 
 
 class TestCreatingStyles(NewFile):
-    def test_create_surface_style_with_textures(self):
+    def test_create_surface_style_with_textures_from_data(self):
         # this case occurs when we edit shader properties without saving them to IFC
         bpy.ops.bim.create_project()
 
@@ -82,6 +83,74 @@ class TestCreatingStyles(NewFile):
         image_node = tool.Blender.get_material_node(material, "TEX_IMAGE")
         assert image_node.outputs["Color"].links[0].to_socket.name == "Base Color"
         assert image_node.inputs["Vector"].links[0].from_socket.name == "Generated"
+
+        original_path = Path(tool.Ifc.get_path()).parent / Path(texture_data[0]["URLReference"])
+        loaded_filepath = Path(image_node.image.filepath)
+        assert original_path == loaded_filepath
+
+    def test_create_surface_style_with_textures_from_ifc(self):
+        # this case occurs when we edit shader properties without saving them to IFC
+        bpy.ops.bim.create_project()
+
+        style = tool.Ifc.run("style.add_style", name="test")
+        material = bpy.data.materials.new(style.Name)
+        tool.Ifc.link(style, material)
+        get_color = lambda value: {color: value for color in ("Red", "Green", "Blue")}
+        rendering_attributes = {
+            "ReflectanceMethod": "NOTDEFINED",
+            "DiffuseColour": get_color(0.5),
+            "SurfaceColour": get_color(0.3),
+            "Transparency": 0.3,
+            "SpecularHighlight": {"IfcSpecularRoughness": 0.4},
+            "SpecularColour": 0.03,
+        }
+        rendering_style = tool.Ifc.run(
+            "style.add_surface_style",
+            style=style,
+            ifc_class="IfcSurfaceStyleRendering",
+            attributes=rendering_attributes,
+        )
+
+        textures = [
+            {
+                "URLReference": "blenderbim/test/files/image.jpg",
+                "Mode": "DIFFUSE",
+                "RepeatS": True,
+                "RepeatT": True,
+                "uv_mode": "Generated",
+            }
+        ]
+        textures = tool.Ifc.run("style.add_surface_textures", textures=textures, uv_maps=[])
+        texture_style = tool.Ifc.run(
+            "style.add_surface_style",
+            style=style,
+            ifc_class="IfcSurfaceStyleWithTextures",
+            attributes={"Textures": textures},
+        )
+
+        subject.create_surface_style_rendering(material, rendering_style)
+        subject.create_surface_style_with_textures(material, rendering_style, texture_style)
+
+        used_node_types = set([n.type for n in material.node_tree.nodes[:]])
+        assert used_node_types == set((["OUTPUT_MATERIAL", "BSDF_PRINCIPLED", "TEX_IMAGE", "TEX_COORD"]))
+
+        color_to_tuple = lambda x: (x.Red, x.Green, x.Blue)
+        bsdf = tool.Blender.get_material_node(material, "BSDF_PRINCIPLED")
+        alpha = 1 - rendering_style.Transparency
+        diffuse_color = color_to_tuple(rendering_style.SurfaceColour) + (alpha,)
+        assert np.allclose(material.diffuse_color[:], diffuse_color)
+        base_color = color_to_tuple(rendering_style.DiffuseColour) + (1.0,)
+        assert np.allclose(bsdf.inputs["Base Color"].default_value[:], base_color)
+        assert np.isclose(bsdf.inputs["Alpha"].default_value, alpha)
+        assert np.isclose(bsdf.inputs["Roughness"].default_value, rendering_style.SpecularHighlight.wrappedValue)
+        assert np.isclose(bsdf.inputs["Metallic"].default_value, rendering_style.SpecularColour.wrappedValue)
+
+        image_node = tool.Blender.get_material_node(material, "TEX_IMAGE")
+        assert image_node.outputs["Color"].links[0].to_socket.name == "Base Color"
+        assert image_node.inputs["Vector"].links[0].from_socket.name == "Generated"
+        original_path = Path(tool.Ifc.get_path()).parent / Path(textures[0].URLReference)
+        loaded_filepath = Path(image_node.image.filepath)
+        assert original_path == loaded_filepath
 
 
 class TestLoadingIndexedTextureMap(NewFile):
