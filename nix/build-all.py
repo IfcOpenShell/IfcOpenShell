@@ -763,6 +763,7 @@ OFF_ON = ["OFF", "ON"]
 
 cmake_args = [
     "-DUSE_MMAP="                      "OFF",
+    "-DSCHEMA_VERSIONS="               "4x3_add2",
     "-DBUILD_EXAMPLES="                "OFF",
     "-DBUILD_SHARED_LIBS="             +OFF_ON[not BUILD_STATIC],
     "-DBOOST_ROOT="                    f"{DEPS_DIR}/install/boost-{BOOST_VERSION}",
