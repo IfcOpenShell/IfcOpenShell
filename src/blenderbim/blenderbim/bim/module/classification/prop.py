@@ -17,9 +17,10 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import blenderbim.bim.helper
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.prop import StrProperty, Attribute
-from blenderbim.bim.module.classification.data import ClassificationsData
+from blenderbim.bim.module.classification.data import ClassificationsData, ClassificationReferencesData
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -39,6 +40,12 @@ def get_available_classifications(self, context):
     return ClassificationsData.data["available_classifications"]
 
 
+def get_classifications(self, context):
+    if not ClassificationReferencesData.is_loaded:
+        ClassificationReferencesData.load()
+    return ClassificationReferencesData.data["classifications"]
+
+
 class ClassificationReference(PropertyGroup):
     name: StringProperty(name="Name")
     identification: StringProperty(name="Identification")
@@ -48,6 +55,7 @@ class ClassificationReference(PropertyGroup):
 
 
 class BIMClassificationProperties(PropertyGroup):
+    is_adding: BoolProperty(name="Is Adding", default=False)
     classification_source: EnumProperty(
         items=[
             ("FILE", "IFC File", ""),
@@ -66,5 +74,7 @@ class BIMClassificationProperties(PropertyGroup):
 
 
 class BIMClassificationReferenceProperties(PropertyGroup):
+    is_adding: BoolProperty(name="Is Adding", default=False)
+    classifications: EnumProperty(items=get_classifications, name="Classifications")
     reference_attributes: CollectionProperty(name="Reference Attributes", type=Attribute)
     active_reference_id: IntProperty(name="Active Reference Id")
