@@ -152,6 +152,108 @@ class TestCreatingStyles(NewFile):
         loaded_filepath = Path(image_node.image.filepath)
         assert original_path == loaded_filepath
 
+    def test_create_surface_style_with_textures_from_ifc_blob_image(self):
+        # this case occurs when we edit shader properties without saving them to IFC
+        bpy.ops.bim.create_project()
+
+        ifc_file = tool.Ifc.get()
+        style = tool.Ifc.run("style.add_style", name="test")
+        material = bpy.data.materials.new(style.Name)
+        tool.Ifc.link(style, material)
+        get_color = lambda value: {color: value for color in ("Red", "Green", "Blue")}
+        rendering_attributes = {
+            "ReflectanceMethod": "NOTDEFINED",
+            "DiffuseColour": get_color(0.5),
+            "SurfaceColour": get_color(0.3),
+            "Transparency": 0.3,
+            "SpecularHighlight": {"IfcSpecularRoughness": 0.4},
+            "SpecularColour": 0.03,
+        }
+        rendering_style = tool.Ifc.run(
+            "style.add_surface_style",
+            style=style,
+            ifc_class="IfcSurfaceStyleRendering",
+            attributes=rendering_attributes,
+        )
+
+        def get_png_raster_code():
+            import base64
+            import zlib
+            import struct
+
+            # https://blender.stackexchange.com/questions/62072/does-blender-have-a-method-to-a-get-png-formatted-bytearray-for-an-image-via-pyt
+            width = 2
+            height = 2
+            # just 4 pixels - red, green, blue, white
+            # fmt: off
+            pixels = (
+                1,0,0,1,
+                0,1,0,1,
+                0,0,1,1,
+                1,1,1,1,
+            )
+            # fmt: on
+            buf = bytearray([int(p * 255) for p in pixels])
+
+            # reverse the vertical line order and add null bytes at the start
+            width_byte_4 = width * 4
+            raw_data = b"".join(
+                b"\x00" + buf[span : span + width_byte_4]
+                for span in range((height - 1) * width_byte_4, -1, -width_byte_4)
+            )
+
+            def png_pack(png_tag, data):
+                header = png_tag + data
+                chunk = struct.pack("!I", len(data))
+                chunk += header
+                chunk += struct.pack("!I", 0xFFFFFFFF & zlib.crc32(header))
+                return chunk
+
+            png_bytes = b"".join(
+                [
+                    b"\x89PNG\r\n\x1a\n",
+                    png_pack(b"IHDR", struct.pack("!2I5B", width, height, 8, 6, 0, 0, 0)),
+                    png_pack(b"IDAT", zlib.compress(raw_data, 9)),
+                    png_pack(b"IEND", b""),
+                ]
+            )
+
+            raster_code = "".join(["{:08b}".format(x) for x in png_bytes])
+            return raster_code
+
+        texture_data = {
+            "RasterCode": get_png_raster_code(),
+            "RasterFormat": "PNG",
+            "Mode": "DIFFUSE",
+            "RepeatS": True,
+            "RepeatT": True,
+        }
+        # setup texture manually as `style.add_surface_textures` doesn't support non-IfcImageTexture textures
+        textures = [ifc_file.create_entity("IfcBlobTexture", **texture_data)]
+        # setup UV
+        ifc_file.create_entity("IfcTextureCoordinateGenerator", Maps=textures, Mode="COORD")
+
+        texture_style = tool.Ifc.run(
+            "style.add_surface_style",
+            style=style,
+            ifc_class="IfcSurfaceStyleWithTextures",
+            attributes={"Textures": textures},
+        )
+
+        subject.create_surface_style_rendering(material, rendering_style)
+        subject.create_surface_style_with_textures(material, rendering_style, texture_style)
+
+        used_node_types = set([n.type for n in material.node_tree.nodes[:]])
+        assert used_node_types == set((["OUTPUT_MATERIAL", "BSDF_PRINCIPLED", "TEX_IMAGE", "TEX_COORD"]))
+
+        image_node = tool.Blender.get_material_node(material, "TEX_IMAGE")
+        assert image_node.outputs["Color"].links[0].to_socket.name == "Base Color"
+        assert image_node.inputs["Vector"].links[0].from_socket.name == "Generated"
+        assert image_node.image.filepath == ""
+        # fmt: off
+        assert image_node.image.pixels[:] == (0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0)
+        # fmt: on
+
 
 class TestLoadingIndexedTextureMap(NewFile):
     def test_run(self):
