@@ -941,12 +941,14 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
             parts = ifcopenshell.util.element.get_parts(element)
             if parts:
                 index = 0
+                add_linked_aggregate_pset(element, index)
+                index +=1
                 for part in parts:
                     if part.is_a("IfcElementAssembly"):
                         select_objects_and_add_data(part)
-
-                    add_linked_aggregate_pset(part, index)
-                    index += 1
+                    else:
+                        add_linked_aggregate_pset(part, index)
+                        index += 1
                         
                     obj = tool.Ifc.get_object(part)
                     obj.select_set(True)
@@ -1042,6 +1044,7 @@ class RefreshLinkedAggregate(bpy.types.Operator):
         self.pset_name = "BBIM_Linked_Aggregate"
         refresh_start_time = time()
         old_to_new = {}
+        original_names = {}
 
         def delete_objects(element):
             parts = ifcopenshell.util.element.get_parts(element)
@@ -1053,6 +1056,61 @@ class RefreshLinkedAggregate(bpy.types.Operator):
                     tool.Geometry.delete_ifc_object(tool.Ifc.get_object(part))
                     
             tool.Geometry.delete_ifc_object(tool.Ifc.get_object(element))
+
+        def get_original_names(element):
+            group = [
+                r.RelatingGroup
+                for r in getattr(element, "HasAssignments", []) or []
+                if r.is_a("IfcRelAssignsToGroup")
+                if self.group_name in r.RelatingGroup.Name
+            ][0].id()
+            original_names[group] = {}
+
+            pset = ifcopenshell.util.element.get_pset(element, self.pset_name)
+            index = pset['Index']                    
+            original_names[group][index] = tool.Ifc.get_object(element).name
+            
+            parts = ifcopenshell.util.element.get_parts(element)
+            if parts:
+                for part in parts:
+                    if part.is_a("IfcElementAssembly"):
+                        original_names | get_original_names(part)
+                    else:
+                        try:
+                          pset = ifcopenshell.util.element.get_pset(part, self.pset_name)
+                        except:
+                          continue
+                        index = pset['Index']                    
+                        original_names[group][index] = tool.Ifc.get_object(part).name
+                    
+            return original_names
+
+        def set_original_name(obj, original_names):
+            element = tool.Ifc.get_entity(obj)
+            aggregate = ifcopenshell.util.element.get_aggregate(element)
+            if ifcopenshell.util.element.get_parts(element): # if element has parts it means it is the base of and aggregate or sub-aggregate
+                aggregate = element
+                
+            group = [
+                r.RelatingGroup
+                for r in getattr(aggregate, "HasAssignments", []) or []
+                if r.is_a("IfcRelAssignsToGroup")
+                if self.group_name in r.RelatingGroup.Name
+            ]
+            if not group:
+                return
+            
+            group = group[0].id()
+                
+            pset = ifcopenshell.util.element.get_pset(element, self.pset_name)
+            index = pset['Index']
+            
+            try:
+                obj.name = original_names[group][index]
+            except:
+                return
+            
+            
 
         def get_element_assembly(element):
             if element.is_a("IfcElementAssembly"):
@@ -1136,6 +1194,7 @@ class RefreshLinkedAggregate(bpy.types.Operator):
                 object_duplicate = tool.Ifc.get_object(element)
                 duplicate_matrix = object_duplicate.matrix_world.decompose()
                 
+                original_names = get_original_names(element)
                 delete_objects(element)
             
                 for obj in context.selected_objects:
@@ -1151,6 +1210,7 @@ class RefreshLinkedAggregate(bpy.types.Operator):
                     new_obj_matrix = new_base_matrix @ matrix_diff
                     new_obj.matrix_world = new_obj_matrix
                     
+                for old, new in old_to_new.items():
                     if element_aggregate and new[0].is_a("IfcElementAssembly"):
                         new_aggregate = ifcopenshell.util.element.get_aggregate(new[0])
                         
@@ -1161,7 +1221,12 @@ class RefreshLinkedAggregate(bpy.types.Operator):
                                                         tool.Collector,
                                                         relating_obj=tool.Ifc.get_object(element_aggregate),
                                                         related_obj=tool.Ifc.get_object(new[0]),
-                                                    )                        
+                                                    )
+                
+                for old, new in old_to_new.items():
+                    new_obj = tool.Ifc.get_object(new[0])
+                    print("@@@", new_obj)
+                    set_original_name(new_obj, original_names)
                         
         blenderbim.bim.handler.refresh_ui_data()
 
