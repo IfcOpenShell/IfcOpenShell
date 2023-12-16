@@ -51,4 +51,4 @@ class Patcher:
         self.file_patched: ifcopenshell.file = None
 
     def patch(self):
-        self.file_patched = ifcopenshell.util.unit.convert_file_units(self.file, self.unit)
+        self.file_patched = ifcopenshell.util.unit.convert_file_length_units(self.file, self.unit)
