@@ -649,7 +649,7 @@ def get_base_type_name(
     return None
 
 
-def convert_file_units(ifc_file: ifcopenshell.file, target_units: str) -> ifcopenshell.file:
+def convert_file_length_units(ifc_file: ifcopenshell.file, target_units: str) -> ifcopenshell.file:
     """Converts all units in an IFC file to the specified target units. Returns a new file."""
     prefix = "MILLI" if target_units == "MILLIMETERS" else None
 
