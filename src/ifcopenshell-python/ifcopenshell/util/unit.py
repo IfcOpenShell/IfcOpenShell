@@ -654,14 +654,6 @@ def convert_file_length_units(ifc_file: ifcopenshell.file, target_units: str) ->
     prefix = "MILLI" if target_units == "MILLIMETERS" else None
 
     file_patched = ifcopenshell.api.run("project.create_file", version=ifc_file.schema)
-    if ifc_file.schema == "IFC2X3":
-        user = file_patched.add(ifc_file.by_type("IfcProject")[0].OwnerHistory.OwningUser)
-        application = file_patched.add(ifc_file.by_type("IfcProject")[0].OwnerHistory.OwningApplication)
-        old_get_user = ifcopenshell.api.owner.settings.get_user
-        old_get_application = ifcopenshell.api.owner.settings.get_application
-        ifcopenshell.api.owner.settings.get_user = lambda ifc: user
-        ifcopenshell.api.owner.settings.get_application = lambda ifc: application
-
     # Copy all elements from the original file to the patched file
     for el in ifc_file:
         file_patched.add(el)
@@ -696,9 +688,5 @@ def convert_file_length_units(ifc_file: ifcopenshell.file, target_units: str) ->
 
     file_patched.remove(old_length)
     unit_assignment.Units = tuple([new_length, *unit_assignment.Units])
-
-    if ifc_file.schema == "IFC2X3":
-        ifcopenshell.api.owner.settings.get_user = old_get_user
-        ifcopenshell.api.owner.settings.get_application = old_get_application
 
     return file_patched
