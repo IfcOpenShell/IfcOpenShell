@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
 from math import pi
 from fractions import Fraction
 
@@ -214,11 +215,9 @@ si_conversions = {
     "fahrenheit": 1.8,
 }
 
-
 si_offsets = {
     "fahrenheit": -459.67,
 }
-
 
 imperial_types = {
     "thou": "LENGTHUNIT",
@@ -259,7 +258,6 @@ imperial_types = {
     "btu": "ENERGYUNIT",
     "fahrenheit": "THERMODYNAMICTEMPERATUREUNIT",
 }
-
 
 prefix_symbols = {
     "EXA": "E",
@@ -558,13 +556,13 @@ def calculate_unit_scale(ifc_file):
 
 
 def format_length(
-    value,
-    precision,
-    decimal_places=2,
-    suppress_zero_inches=True,
-    unit_system="imperial",
-    input_unit="foot",
-    output_unit="foot",
+        value,
+        precision,
+        decimal_places=2,
+        suppress_zero_inches=True,
+        unit_system="imperial",
+        input_unit="foot",
+        output_unit="foot",
 ):
     """Formats a length for readability and imperial formatting
 
@@ -624,3 +622,82 @@ def format_length(
     elif unit_system == "metric":
         rounded_val = round(value / precision) * precision
         return f"{rounded_val:.{decimal_places}f}"
+
+
+def get_base_type_name(
+        content_type: ifcopenshell.ifcopenshell_wrapper.named_type | ifcopenshell.ifcopenshell_wrapper.type_declaration) -> ifcopenshell.ifcopenshell_wrapper.type_declaration | None:
+    cur_decl = content_type
+    while hasattr(cur_decl, "declared_type") is True:
+        cur_decl = cur_decl.declared_type()
+        if hasattr(cur_decl, "name") is False:
+            continue
+        if cur_decl.name() == "IfcLengthMeasure":
+            return cur_decl
+
+    if isinstance(cur_decl, ifcopenshell.ifcopenshell_wrapper.aggregation_type):
+        res = cur_decl.type_of_element()
+        cur_decl = res.declared_type()
+        if hasattr(cur_decl, "name") and cur_decl.name() == "IfcLengthMeasure":
+            return cur_decl
+        while hasattr(cur_decl, "declared_type") is True:
+            cur_decl = cur_decl.declared_type()
+            if hasattr(cur_decl, "name") is False:
+                continue
+            if cur_decl.name() == "IfcLengthMeasure":
+                return cur_decl
+
+    return None
+
+
+def convert_file_units(ifc_file: ifcopenshell.file, target_units: str) -> ifcopenshell.file:
+    """Converts all units in an IFC file to the specified target units. Returns a new file."""
+    prefix = "MILLI" if target_units == "MILLIMETERS" else None
+
+    file_patched = ifcopenshell.api.run("project.create_file", version=ifc_file.schema)
+    if ifc_file.schema == "IFC2X3":
+        user = file_patched.add(ifc_file.by_type("IfcProject")[0].OwnerHistory.OwningUser)
+        application = file_patched.add(ifc_file.by_type("IfcProject")[0].OwnerHistory.OwningApplication)
+        old_get_user = ifcopenshell.api.owner.settings.get_user
+        old_get_application = ifcopenshell.api.owner.settings.get_application
+        ifcopenshell.api.owner.settings.get_user = lambda ifc: user
+        ifcopenshell.api.owner.settings.get_application = lambda ifc: application
+
+    # Copy all elements from the original file to the patched file
+    for el in ifc_file:
+        file_patched.add(el)
+
+    unit_assignment = ifcopenshell.util.unit.get_unit_assignment(file_patched)
+
+    old_length = [u for u in unit_assignment.Units if getattr(u, "UnitType", None) == "LENGTHUNIT"][0]
+    new_length = ifcopenshell.api.run("unit.add_si_unit", file_patched, unit_type="LENGTHUNIT", prefix=prefix)
+
+    schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(ifc_file.schema)
+    # Traverse all elements and their nested attributes in the file and convert them
+    for element in file_patched:
+        entity = schema.declaration_by_name(element.is_a())
+        attrs = entity.all_attributes()
+        for i, (attr, val, is_derived) in enumerate(zip(attrs, list(element), entity.derived())):
+            if is_derived:
+                continue
+            # Get all methods and attributes of the element
+            attr_type = attr.type_of_attribute()
+            base_type = get_base_type_name(attr_type)
+            if base_type is None:
+                continue
+            if val is None:
+                continue
+            if isinstance(val, tuple):
+                new_el = [ifcopenshell.util.unit.convert_unit(v, old_length, new_length) for v in val]
+                setattr(element, attr.name(), tuple(new_el))
+            else:
+                new_el = ifcopenshell.util.unit.convert_unit(val, old_length, new_length)
+                # set the new value
+                setattr(element, attr.name(), new_el)
+
+    file_patched.remove(old_length)
+
+    if ifc_file.schema == "IFC2X3":
+        ifcopenshell.api.owner.settings.get_user = old_get_user
+        ifcopenshell.api.owner.settings.get_application = old_get_application
+
+    return file_patched
