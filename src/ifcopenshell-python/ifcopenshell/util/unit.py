@@ -695,6 +695,7 @@ def convert_file_units(ifc_file: ifcopenshell.file, target_units: str) -> ifcope
                 setattr(element, attr.name(), new_el)
 
     file_patched.remove(old_length)
+    unit_assignment.Units = tuple([new_length, *unit_assignment.Units])
 
     if ifc_file.schema == "IFC2X3":
         ifcopenshell.api.owner.settings.get_user = old_get_user
