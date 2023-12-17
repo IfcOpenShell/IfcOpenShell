@@ -227,3 +227,9 @@ def parse_duration(value):
             except:
                 print("error fuzzy parsing duration")
                 return None
+
+
+def canonicalise_time(time):
+    if not time:
+        return "-"
+    return time.strftime("%d/%m/%y")
