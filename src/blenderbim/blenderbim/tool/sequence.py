@@ -184,11 +184,6 @@ class Sequence(blenderbim.core.tool.Sequence):
 
     @classmethod
     def load_task_properties(cls, task=None):
-        def canonicalise_time(time):
-            if not time:
-                return "-"
-            return time.strftime("%d/%m/%y")
-
         props = bpy.context.scene.BIMWorkScheduleProperties
         task_props = bpy.context.scene.BIMTaskTreeProperties
         tasks_with_visual_bar = cls.get_task_bar_list()
@@ -218,12 +213,16 @@ class Sequence(blenderbim.core.tool.Sequence):
             ):
                 task_time = task.TaskTime
                 item.start = (
-                    canonicalise_time(ifcopenshell.util.date.ifc2datetime(task_time.ScheduleStart))
+                    ifcopenshell.util.date.canonicalise_time(
+                        ifcopenshell.util.date.ifc2datetime(task_time.ScheduleStart)
+                    )
                     if task_time.ScheduleStart
                     else "-"
                 )
                 item.finish = (
-                    canonicalise_time(ifcopenshell.util.date.ifc2datetime(task_time.ScheduleFinish))
+                    ifcopenshell.util.date.canonicalise_time(
+                        ifcopenshell.util.date.ifc2datetime(task_time.ScheduleFinish)
+                    )
                     if task_time.ScheduleFinish
                     else "-"
                 )
@@ -235,13 +234,13 @@ class Sequence(blenderbim.core.tool.Sequence):
             else:
                 derived_start = ifcopenshell.util.sequence.derive_date(task, "ScheduleStart", is_earliest=True)
                 derived_finish = ifcopenshell.util.sequence.derive_date(task, "ScheduleFinish", is_latest=True)
-                item.derived_start = canonicalise_time(derived_start) if derived_start else ""
-                item.derived_finish = canonicalise_time(derived_finish) if derived_finish else ""
-                if derived_start and derived_finish and calendar:
+                item.derived_start = ifcopenshell.util.date.canonicalise_time(derived_start) if derived_start else ""
+                item.derived_finish = ifcopenshell.util.date.canonicalise_time(derived_finish) if derived_finish else ""
+                if derived_start and derived_finish:
                     derived_duration = ifcopenshell.util.sequence.count_working_days(
                         derived_start, derived_finish, calendar
                     )
-                    item.derived_duration = f"P{derived_duration}D"
+                    item.derived_duration = str(ifcopenshell.util.date.readable_ifc_duration(f"P{derived_duration}D"))
                 item.start = "-"
                 item.finish = "-"
                 item.duration = "-"
@@ -786,21 +785,15 @@ class Sequence(blenderbim.core.tool.Sequence):
 
     @classmethod
     def update_visualisation_date(cls, start_date, finish_date):
-        def canonicalise_time(time):
-            return time.strftime("%d/%m/%y")
-
         if not (start_date and finish_date):
             return
         props = bpy.context.scene.BIMWorkScheduleProperties
-        props.visualisation_start = canonicalise_time(start_date)
-        props.visualisation_finish = canonicalise_time(finish_date)
+        props.visualisation_start = ifcopenshell.util.date.canonicalise_time(start_date)
+        props.visualisation_finish = ifcopenshell.util.date.canonicalise_time(finish_date)
 
     @classmethod
     def get_animation_bar_tasks(cls):
-        return [
-            tool.Ifc.get().by_id(task_id)
-            for task_id in cls.get_task_bar_list()
-        ]
+        return [tool.Ifc.get().by_id(task_id) for task_id in cls.get_task_bar_list()]
 
     @classmethod
     def create_bars(cls, tasks):
