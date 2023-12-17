@@ -74,6 +74,9 @@ jobs:
 
       - name: Build ifcopenshell
         run: |
+          echo $Python3_ROOT_DIR
+          echo ${{ env.pythonLocation }}
+          
           mkdir build && cd build
           cmake \
                -DCMAKE_C_COMPILER_LAUNCHER=ccache \
@@ -83,7 +86,9 @@ jobs:
                -DCMAKE_SYSTEM_PREFIX_PATH=/usr \
                -DOCC_INCLUDE_DIR=/usr/include/opencascade \
                -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
-               -DPython3_ROOT_DIR=$Python3_ROOT_DIR \
+               -DPYTHON_EXECUTABLE:FILEPATH=${{ env.pythonLocation }}/bin/python \
+               -DPYTHON_INCLUDE_DIR:PATH=${{ env.pythonLocation }}/include/python3.11 \
+               -DPYTHON_LIBRARY:FILEPATH=${{ env.pythonLocation }}/lib/libpython3.11.so \
                -DCOLLADA_SUPPORT=Off \
                "-DSCHEMA_VERSIONS=2x3;4;4x3_add1" \
                -DGLTF_SUPPORT=On \
