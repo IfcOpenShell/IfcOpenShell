@@ -31,7 +31,6 @@ using namespace IfcGeom;
 using namespace IfcGeom::util;
 
 bool OpenCascadeKernel::convert(const taxonomy::solid::ptr solid, TopoDS_Shape& result) {
-	BRep_Builder BB;
 	TopoDS_Shape S;
 
 	if (solid->instance->declaration().is("IfcHalfSpaceSolid")) {
@@ -82,6 +81,7 @@ bool OpenCascadeKernel::convert(const taxonomy::solid::ptr solid, TopoDS_Shape& 
 	if (!S.IsNull()) {
 		result = S;
 	}
+	return !result.IsNull();
 }
 
 bool OpenCascadeKernel::convert_impl(const taxonomy::solid::ptr solid , IfcGeom::ConversionResults& results) {
