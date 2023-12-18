@@ -501,7 +501,7 @@ class Style(blenderbim.core.tool.Style):
     @classmethod
     def has_blender_external_style(cls, style_elements):
         external_style = style_elements.get("IfcExternallyDefinedSurfaceStyle", None)
-        return bool(external_style and external_style.Location.endswith(".blend"))
+        return bool(external_style and external_style.Location and external_style.Location.endswith(".blend"))
 
     @classmethod
     def is_editing_styles(cls):
