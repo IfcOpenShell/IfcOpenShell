@@ -552,3 +552,29 @@ Scenario: Override paste buffer - with active IFC data
     And the object "IfcWall/Cube.001" has a "Tessellation" representation of "Model/Body/MODEL_VIEW"
     And the object "IfcBuildingStorey/My Storey.001" exists
     And the object "IfcBuildingStorey/My Storey.001" is an "IfcBuildingStorey"
+
+Scenario: Duplicate linked aggregate
+    Given I load the IFC test file "/test/files/linked-aggregates.ifc"
+    And the object "IfcWall/Wall_01" is selected
+    When I duplicate linked aggregate the selected objects
+    Then the object "IfcWall/Wall_01.001" exists
+    And the object "IfcWall/Wall_02.001" exists
+    And the object "IfcElementAssembly/Assembly.001" exists
+    Then the object "IfcElementAssembly/Assembly" and "IfcElementAssembly/Assembly.001" belong to the same Linked Aggregate Group
+
+Scenario: Refresh linked aggregate
+    Given I load the IFC test file "/test/files/linked-aggregates.ifc"
+    And the object "IfcWall/Wall_01" is selected
+    When I duplicate linked aggregate the selected objects
+    Then the object "IfcWall/Wall_01.001" exists
+    When I deselect all objects
+    And the object "IfcWall/Wall_01.001" is selected
+    When the object layer length is set to "3"
+    Then the object "IfcWall/Wall_01.001" dimensions are "3,0.1,3"
+    When I refresh linked aggregate the selected object
+    Then the object "IfcWall/Wall_01.002" dimensions are "3,0.1,3"
+
+# Scenario: Refresh linked aggregate - after deleting an object
+# Scenario: Refresh linked aggregate - after adding an object
+# Scenario: Refresh linked aggregate - after duplicating an object
+# Scenario: Refresh linked aggregate - with subaggregates

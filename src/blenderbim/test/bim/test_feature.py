@@ -233,6 +233,16 @@ def i_evaluate_expression(expression):
 def i_duplicate_the_selected_objects():
     bpy.ops.bim.override_object_duplicate_move()
     blenderbim.bim.handler.active_object_callback()
+    
+@when("I duplicate linked aggregate the selected objects")
+def i_duplicate_the_selected_objects():
+    bpy.ops.bim.object_duplicate_move_linked_aggregate()
+    blenderbim.bim.handler.active_object_callback()
+
+@when("I refresh linked aggregate the selected object")
+def i_refresh_the_selected_objects():
+    bpy.ops.bim.refresh_linked_aggregate()
+    blenderbim.bim.handler.active_object_callback()
 
 
 @when("I deselect all objects")
@@ -774,6 +784,10 @@ def the_file_name_should_contain_value(name, value):
 def the_object_name_has_no_modifiers(name):
     assert len(the_object_name_exists(name).modifiers) == 0
 
+@given(parsers.parse('I load the IFC test file "{filepath}"'))
+def i_load_the_ifc_test_file(filepath):
+    filepath = f"{variables['cwd']}{filepath}"
+    bpy.ops.bim.load_project(filepath=filepath, use_relative_path=True)
 
 @given("I load the demo construction library")
 @when("I load the demo construction library")
@@ -826,6 +840,64 @@ def hit_undo():
     bpy.ops.ed.undo_push(message="UNDO STEP")
     bpy.ops.ed.undo()
 
+@then(parsers.parse('the object "{obj_name1}" has a connection with "{obj_name2}"'))
+def the_obj1_has_a_connection_with_obj2(obj_name1, obj_name2):
+    element1 = replace_variables(obj_name1)
+    element1 = tool.Ifc.get_entity(the_object_name_exists(element1))
+    element2 = replace_variables(obj_name2)
+    element2 = tool.Ifc.get_entity(the_object_name_exists(element2))
+    connections = []
+    if hasattr(element1, "ConnectedTo") and element1.ConnectedTo:
+        connections = [connection for connection in element1.ConnectedTo]
+    elif hasattr(element1, "ConnectedFrom") and element1.ConnectedFrom:
+        connections = [connection for connection in element1.ConnectedFrom]
+    else:
+        assert False, f'Object "{obj_name1}" has no connections'
+
+    relationships = {}
+    for conn in connections:
+        relationships[conn.RelatedElement] = conn.RelatingElement
+
+    for key, value in relationships.items():
+        assert (key.id() == element1.id() and value.id() == element2.id()) or (key.id() == element2.id() and value.id() == element1.id()), f"The object {obj_name1} is connected to {obj_name2}"
+
+        
+@then(parsers.parse('the object "{obj_name1}" and "{obj_name2}" belong to the same Linked Aggregate Group'))
+def the_obj1_and_obj2_belong_the_same_linked_aggregate_group(obj_name1, obj_name2):
+    element1 = replace_variables(obj_name1)
+    element1 = tool.Ifc.get_entity(the_object_name_exists(element1))
+    element2 = replace_variables(obj_name2)
+    element2 = tool.Ifc.get_entity(the_object_name_exists(element2))
+
+    elements = [element1, element2]
+    groups = []
+    for element in elements:
+        product_linked_agg_group = [
+            r.RelatingGroup
+            for r in getattr(element, "HasAssignments", []) or []
+            if r.is_a("IfcRelAssignsToGroup")
+            if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
+        ]
+        try:
+            groups.append(product_linked_agg_group[0].id())
+        except:
+            assert False, "Object is not part of a Linked Aggregate."
+
+    assert groups[0] == groups[1], "Objects do not belong to the same Linked Aggregate group"
+
+@when(parsers.parse('the object layer length is set to "{value}"'))
+def the_obj_layer_lenght_is_set_to(value):
+    value = float(value)
+    try:
+        eval(f"bpy.context.scene.BIMModelProperties.length")
+    except:
+        assert False, f"Property BIMModelProperties.length does not exist when trying to set to value {value}"
+
+    print(50*"@", bpy.context.selected_objects)
+        
+    bpy.context.scene.BIMModelProperties.length = value
+    bpy.ops.bim.change_layer_length(length=value)
+    
 
 # These definitions are not to be used in tests but simply in debugging failing tests
 
@@ -875,27 +947,4 @@ def run_pdb():
 
     pdb.set_trace()
 
-@then(parsers.parse('the object "{obj_name1}" has a connection with "{obj_name2}"'))
-def the_obj1_has_a_connection_with_obj2(obj_name1, obj_name2):
-    element1 = replace_variables(obj_name1)
-    element1 = tool.Ifc.get_entity(the_object_name_exists(element1))
-    element2 = replace_variables(obj_name2)
-    element2 = tool.Ifc.get_entity(the_object_name_exists(element2))
-    connections = []
-    if hasattr(element1, "ConnectedTo") and element1.ConnectedTo:
-        connections = [connection for connection in element1.ConnectedTo]
-    elif hasattr(element1, "ConnectedFrom") and element1.ConnectedFrom:
-        connections = [connection for connection in element1.ConnectedFrom]
-    else:
-        assert False, f'Object "{obj_name1}" has no connections'
-        
-
-    relationships = {}
-    for conn in connections:
-        relationships[conn.RelatedElement] = conn.RelatingElement
-
-    for key, value in relationships.items():
-        print(key, value)
-        # assert False, f"1-{key} and {element1.id()} and {key.id()}"
-        assert (key.id() == element1.id() and value.id() == element2.id()) or (key.id() == element2.id() and value.id() == element1.id()), f"The object {obj_name1} is connected to {obj_name2}"
     
