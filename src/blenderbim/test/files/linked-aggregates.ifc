@@ -1,7 +1,7 @@
 ISO-10303-21;
 HEADER;
 FILE_DESCRIPTION(('ViewDefinition[DesignTransferView]'),'2;1');
-FILE_NAME('linked-aggregates.ifc','2023-12-12T20:53:46-03:00',(),(),'IfcOpenShell v0.7.0-9cc1f5f0e','BlenderBIM 0.0.230912-3786cfa','Nobody');
+FILE_NAME('linked-aggregates.ifc','2023-12-18T18:41:41-03:00',(),(),'IfcOpenShell v0.7.0-9cc1f5f0e','BlenderBIM 0.0.230912-fd0450b','Nobody');
 FILE_SCHEMA(('IFC4'));
 ENDSEC;
 DATA;

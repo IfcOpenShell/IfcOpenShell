@@ -589,6 +589,23 @@ Scenario: Refresh linked aggregate - after deleting an object
     Then the object "IfcWall/Wall_01" does not exist
     And the object "IfcWall/Wall_02" exists
     
-# Scenario: Refresh linked aggregate - after adding an object
-# Scenario: Refresh linked aggregate - after duplicating an object
-# Scenario: Refresh linked aggregate - with subaggregates
+Scenario: Refresh linked aggregate - after duplicating an object
+    Given I load the IFC test file "/test/files/linked-aggregates.ifc"
+    And the object "IfcWall/Wall_01" is selected
+    When I duplicate linked aggregate the selected objects
+    Then the object "IfcWall/Wall_01.001" exists
+    And the object "IfcWall/Wall_02.001" exists
+    When I deselect all objects
+    And the object "IfcWall/Wall_01" is selected
+    When I duplicate the selected objects
+    Then the object "IfcWall/Wall_01.002" exists
+    When I rename the object "IfcWall/Wall_01.002" to "IfcWall/Wall_03"
+    And I deselect all objects
+    And the object "IfcWall/Wall_03" is selected
+    When I refresh linked aggregate the selected object
+    Then the object "IfcWall/Wall_01.001" exists
+    And the object "IfcWall/Wall_02.001" exists
+    And the object "IfcWall/Wall_03.001" exists
+    
+# TODO Scenario: Refresh linked aggregate - after adding an object
+# TODO Scenario: Refresh linked aggregate - with subaggregates
