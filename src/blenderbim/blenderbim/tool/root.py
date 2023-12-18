@@ -220,8 +220,6 @@ class Root(blenderbim.core.tool.Root):
     @classmethod
     def recreate_connections(cls, relationship, old_to_new):
         for element, data in relationship.items():
-            print(20*"#")
-            print(data)
             try:
                 new_relating_element = old_to_new.get(data["relating_element"])[0]
                 new_related_element = old_to_new.get(data["related_element"])[0]

@@ -831,6 +831,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
 
         # Recreate decompositions
         tool.Root.recreate_decompositions(decomposition_relationships, old_to_new)
+        OverrideDuplicateMove.handle_linked_aggregates(old_to_new)
         blenderbim.bim.handler.refresh_ui_data()
         return old_to_new
 
@@ -886,6 +887,29 @@ class OverrideDuplicateMove(bpy.types.Operator):
                 entity = connection.RelatingElement
                 if entity in old_to_new.keys():
                     core.remove_connection(tool.Geometry, connection=connection)
+
+    @staticmethod
+    def handle_linked_aggregates(old_to_new):
+        for old, new in old_to_new.items():
+            pset = ifcopenshell.util.element.get_pset(new[0], "BBIM_Linked_Aggregate")
+            if pset:
+                old_aggregate = ifcopenshell.util.element.get_aggregate(old)
+                new_aggregate = ifcopenshell.util.element.get_aggregate(new[0])
+                if old_aggregate == new_aggregate:
+                    parts = ifcopenshell.util.element.get_parts(new_aggregate)
+                    if parts:
+                        index = DuplicateMoveLinkedAggregate.get_max_index(parts)
+                        index += 1
+                        pset = tool.Ifc.get().by_id(pset['id'])
+                        ifcopenshell.api.run(
+                            "pset.edit_pset",
+                            tool.Ifc.get(),
+                            pset=pset,
+                            properties={"Index": index},
+                        )
+                
+
+        
 
 
 class OverrideDuplicateMoveLinkedMacro(bpy.types.Macro):
@@ -945,7 +969,7 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
             obj.select_set(True)
             parts = ifcopenshell.util.element.get_parts(element)
             if parts:
-                index = 0
+                index = DuplicateMoveLinkedAggregate.get_max_index(parts)
                 add_linked_aggregate_pset(element, index)
                 index +=1
                 for part in parts:
@@ -957,6 +981,26 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
                         
                     obj = tool.Ifc.get_object(part)
                     obj.select_set(True)
+                    
+                    
+        def add_linked_aggregate_pset(part, index):
+            pset = ifcopenshell.util.element.get_pset(part, self.pset_name)
+        
+            if not pset:
+                pset = ifcopenshell.api.run(
+                    "pset.add_pset", tool.Ifc.get(), product=part, name=self.pset_name
+                )
+            
+                ifcopenshell.api.run(
+                    "pset.edit_pset",
+                    tool.Ifc.get(),
+                    pset=pset,
+                    properties={"Index": index},
+                )
+            else:
+                pass
+
+            return index
 
         def add_linked_aggregate_group(element):
             linked_aggregate_group = None
@@ -973,25 +1017,6 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
                 "group.assign_group", tool.Ifc.get(), products=[element], group=linked_aggregate_group
             )
 
-        def add_linked_aggregate_pset(part, index):
-            pset = ifcopenshell.util.element.get_pset(part, self.pset_name)
-            
-            if not pset:
-                pset = ifcopenshell.api.run(
-                    "pset.add_pset", tool.Ifc.get(), product=part, name=self.pset_name
-                )
-            else:
-                pset = tool.Ifc.get().by_id(pset["id"])
-
-            ifcopenshell.api.run(
-                "pset.edit_pset",
-                tool.Ifc.get(),
-                pset=pset,
-                properties={"Index": index},
-            )
-
-            return index
-       
              
         if len(context.selected_objects) != 1:
             return {"FINISHED"}
@@ -1009,21 +1034,30 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
             self.report({"INFO"}, "Object is not part of a IfcElementAssembly.")
             return {"FINISHED"}
 
-
         select_objects_and_add_data(selected_element)
 
         old_to_new = OverrideDuplicateMove.execute_ifc_duplicate_operator(self, context, linked=True)
-
         
         # Recreate aggregate relationship
         for old in old_to_new.keys():
             if old.is_a("IfcElementAssembly"):            
                 tool.Root.recreate_aggregate(old_to_new)
 
-
         blenderbim.bim.handler.refresh_ui_data()
 
         return old_to_new
+
+    
+    @staticmethod
+    def get_max_index(parts):
+        psets = [ifcopenshell.util.element.get_pset(p, "BBIM_Linked_Aggregate") for p in parts]
+        index = [i['Index'] for i in psets if i]
+        if len(index) > 0:
+            index = max(index)
+            return index
+        else:
+            return 0
+        
 
 
 class RefreshLinkedAggregate(bpy.types.Operator):
@@ -1230,7 +1264,6 @@ class RefreshLinkedAggregate(bpy.types.Operator):
                 
                 for old, new in old_to_new.items():
                     new_obj = tool.Ifc.get_object(new[0])
-                    print("@@@", new_obj)
                     set_original_name(new_obj, original_names)
                         
         blenderbim.bim.handler.refresh_ui_data()

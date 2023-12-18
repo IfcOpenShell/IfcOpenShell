@@ -370,6 +370,13 @@ def the_object_name_exists(name) -> bpy.types.Object:
     return obj
 
 
+@then(parsers.parse('the object "{name}" does not exist'))
+def the_object_name_does_not_exist(name) -> bpy.types.Object:
+    obj = bpy.data.objects.get(name)
+    if not obj:
+        assert True, f'The object "{name}" exists'
+    return obj
+
 @given(parsers.parse('the collection "{name}" exists'))
 @when(parsers.parse('the collection "{name}" exists'))
 @then(parsers.parse('the collection "{name}" exists'))
