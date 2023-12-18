@@ -120,7 +120,7 @@ typedef item const* ptr;
 					return computed_hash_;
 				}
 
-				item(const IfcUtil::IfcBaseInterface* instance = nullptr) : identity_(counter_++), instance(instance), computed_hash_(0) {}
+				item(const IfcUtil::IfcBaseInterface* instance = nullptr) : identity_(counter_++), computed_hash_(0), instance(instance) {}
 
 				virtual ~item() {}
 
@@ -147,7 +147,7 @@ typedef item const* ptr;
 				// length of span, function to evaluate span
 				std::vector<std::pair<double, std::function<Eigen::Matrix4d(double u)>>> spans;
 
-				void print(std::ostream& o, int indent = 0) const {
+				void print(std::ostream& o, int = 0) const {
 					o << "piecewise_function" << std::endl;
 				}
 
@@ -243,7 +243,7 @@ typedef item const* ptr;
 					o << std::string(indent, ' ') << class_name;
 					if (this->components_) {
 						int n = T::RowsAtCompileTime * T::ColsAtCompileTime;
-						for (size_t i = 0; i < n; ++i) {
+						for (int i = 0; i < n; ++i) {
 							o << " " << (*components_)(i);
 						}
 					}
@@ -278,8 +278,8 @@ typedef item const* ptr;
 					size_t h = std::hash<size_t>{}(T::RowsAtCompileTime);
 					boost::hash_combine(h, std::hash<size_t>{}(T::ColsAtCompileTime));
 					if (components_) {
-						for (size_t i = 0; i < components_->size(); ++i) {
-							auto elem = *(components_->data() + i);
+						for (int i = 0; i < components_->size(); ++i) {
+							auto elem = *(components_->data() + (size_t) i);
 							boost::hash_combine(h, std::hash<typename T::Scalar>()(elem));
 						}
 					}
@@ -680,7 +680,9 @@ typedef item const* ptr;
 				std::vector<typename T::ptr> children;
 
 				collection_base() {}
-				collection_base(const collection_base& other) {
+				collection_base(const collection_base& other)
+					: geom_item()
+				{
 					std::transform(other.children.begin(), other.children.end(), std::back_inserter(children), [](typename T::ptr p) { return clone(p); });
 				}
 
@@ -1153,7 +1155,7 @@ typedef item const* ptr;
 		}
 
 		template <typename U, typename Fn>
-		void visit(typename U::ptr deep, Fn fn) {
+		void visit(const typename U::ptr& deep, Fn fn) {
 			for (auto& i : deep->children) {
 				// @todo Sad... now that we have templated collection members,
 				// we can't generally use collection_base anymore as a cast target.
@@ -1185,7 +1187,7 @@ typedef item const* ptr;
 		}
 
 		template <typename T, typename U, typename Fn>
-		void visit_2(typename U::ptr c, const Fn& fn) {
+		void visit_2(const typename U::ptr& c, const Fn& fn) {
 			static_assert(std::is_same<T, taxonomy::point3>::value, "@todo Only implemented for point3");
 			for (auto& i : c->children) {
 				// @todo Sad... now that we have templated collection members,
@@ -1226,10 +1228,10 @@ typedef item const* ptr;
 			}
 		}
 
-		taxonomy::collection::ptr flatten(taxonomy::collection::ptr deep);
+		taxonomy::collection::ptr flatten(const taxonomy::collection::ptr& deep);
 
 		template <typename Fn>
-		bool apply_predicate_to_collection(taxonomy::ptr i, Fn fn) {
+		bool apply_predicate_to_collection(const taxonomy::ptr& i, Fn fn) {
 			if (i->kind() == taxonomy::COLLECTION) {
 				auto c = taxonomy::cast<taxonomy::collection>(i);
 				for (auto& child : c->children) {
@@ -1237,6 +1239,7 @@ typedef item const* ptr;
 						return true;
 					}
 				}
+				return false;
 			}
 			else {
 				return fn(i);
@@ -1245,7 +1248,7 @@ typedef item const* ptr;
 
 		// @nb traverses nested collections
 		template <typename Fn>
-		taxonomy::collection::ptr filter(taxonomy::collection::ptr collection, Fn fn) {
+		taxonomy::collection::ptr filter(const taxonomy::collection::ptr& collection, Fn fn) {
 			auto filtered = taxonomy::make<taxonomy::collection>();
 			for (auto& child : collection->children) {
 				if (apply_predicate_to_collection(child, fn)) {

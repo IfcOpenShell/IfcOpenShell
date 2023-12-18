@@ -26,7 +26,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRepresentation* inst) {
 	const bool use_body = !this->settings_.get<settings::IncludeCurves>().get();
 
 	auto items = map_to_collection(this, inst->Items());
-	if (items == nullptr) {
+	if (!items) {
 		return nullptr;
 	}
 

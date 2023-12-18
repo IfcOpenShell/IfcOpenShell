@@ -499,7 +499,7 @@ Eigen::Matrix4d ifcopenshell::geometry::taxonomy::piecewise_function::evaluate(d
    }
 }
 
-ifcopenshell::geometry::taxonomy::collection::ptr ifcopenshell::geometry::flatten(taxonomy::collection::ptr deep) {
+ifcopenshell::geometry::taxonomy::collection::ptr ifcopenshell::geometry::flatten(const taxonomy::collection::ptr& deep) {
 	auto flat = make<taxonomy::collection>();
 	ifcopenshell::geometry::visit<taxonomy::collection>(deep, [&flat](taxonomy::ptr i) {
 		flat->children.push_back(taxonomy::cast<taxonomy::geom_item>(clone(i)));
