@@ -708,16 +708,16 @@ void ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::map(OpaqueCoordina
 	plane_map<Kernel_> mp;
 	mp.insert({
 		CGAL::Plane_3<Kernel_>(
-			static_cast<NumberEpeck*>(from.values[0])->value(),
-			static_cast<NumberEpeck*>(from.values[1])->value(),
-			static_cast<NumberEpeck*>(from.values[2])->value(),
-			static_cast<NumberEpeck*>(from.values[3])->value()
+			static_cast<NumberEpeck*>(from.get(0))->value(),
+			static_cast<NumberEpeck*>(from.get(1))->value(),
+			static_cast<NumberEpeck*>(from.get(2))->value(),
+			static_cast<NumberEpeck*>(from.get(3))->value()
 		),
 		CGAL::Plane_3<Kernel_>(
-			static_cast<NumberEpeck*>(to.values[0])->value(),
-			static_cast<NumberEpeck*>(to.values[1])->value(),
-			static_cast<NumberEpeck*>(to.values[2])->value(),
-			static_cast<NumberEpeck*>(to.values[3])->value()
+			static_cast<NumberEpeck*>(to.get(0))->value(),
+			static_cast<NumberEpeck*>(to.get(1))->value(),
+			static_cast<NumberEpeck*>(to.get(2))->value(),
+			static_cast<NumberEpeck*>(to.get(3))->value()
 		)
 	});
 	auto nw = shape_->map(mp);
@@ -736,16 +736,16 @@ void ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::map(const std::vec
 		auto& to = *jt;
 		mp.insert({
 			CGAL::Plane_3<Kernel_>(
-				static_cast<NumberEpeck*>(from.values[0])->value(),
-				static_cast<NumberEpeck*>(from.values[1])->value(),
-				static_cast<NumberEpeck*>(from.values[2])->value(),
-				static_cast<NumberEpeck*>(from.values[3])->value()
+				static_cast<NumberEpeck*>(from.get(0))->value(),
+				static_cast<NumberEpeck*>(from.get(1))->value(),
+				static_cast<NumberEpeck*>(from.get(2))->value(),
+				static_cast<NumberEpeck*>(from.get(3))->value()
 			),
 			CGAL::Plane_3<Kernel_>(
-				static_cast<NumberEpeck*>(to.values[0])->value(),
-				static_cast<NumberEpeck*>(to.values[1])->value(),
-				static_cast<NumberEpeck*>(to.values[2])->value(),
-				static_cast<NumberEpeck*>(to.values[3])->value()
+				static_cast<NumberEpeck*>(to.get(0))->value(),
+				static_cast<NumberEpeck*>(to.get(1))->value(),
+				static_cast<NumberEpeck*>(to.get(2))->value(),
+				static_cast<NumberEpeck*>(to.get(3))->value()
 			)
 			});
 	}

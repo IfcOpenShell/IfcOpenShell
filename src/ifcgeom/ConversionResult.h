@@ -152,8 +152,15 @@ namespace IfcGeom {
 
 	template <size_t N>
 	struct IFC_GEOM_API OpaqueCoordinate {
+	private:
 		std::array<OpaqueNumber*, N> values;
 
+		static void copy_(std::array<OpaqueNumber*, N>& dest, const std::array<OpaqueNumber*, N>& src) {
+			for (size_t i = 0; i < N; ++i) {
+				dest[i] = (src[i] != nullptr) ? src[i]->clone() : nullptr;
+			}
+		}
+	public:
 		template <typename... Args>
 		OpaqueCoordinate(Args... args) {
 			static_assert(sizeof...(args) == N, "Incorrect number of arguments provided");
@@ -166,7 +173,24 @@ namespace IfcGeom {
 			}
 		}
 
-		OpaqueNumber* get(size_t i) {
+		OpaqueCoordinate(const OpaqueCoordinate& other) {
+			copy_(values, other.values);
+		}
+
+		OpaqueCoordinate& operator=(const OpaqueCoordinate& other) {
+			if (this != &other) {
+				copy_(values, other.values);
+			}
+			return *this;
+		}
+
+		~OpaqueCoordinate() {
+			for (auto it = values.begin(); it != values.end(); ++it) {
+				delete *it;
+			}
+		}
+
+		OpaqueNumber* get(size_t i) const {
 			if (i >= N) {
 				return nullptr;
 			}
