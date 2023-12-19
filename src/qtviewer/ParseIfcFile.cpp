@@ -4,6 +4,8 @@
 #include "osg/Array"
 #include "osg/Geometry"
 #include "osg/Material"
+#include "osg/MatrixTransform"
+#include "osg/Matrixd"
 #include "osg/PrimitiveSet"
 #include "osg/StateAttribute"
 #include "osg/StateSet"
@@ -22,12 +24,12 @@ ParseIfcFile::~ParseIfcFile() {}
 
 bool ParseIfcFile::Parse(
     const std::string& filePath,
-    std::vector<osg::ref_ptr<osg::Geometry>>& geometries
+    std::vector<osg::ref_ptr<osg::MatrixTransform>>& matrixTransforms
 ) {
     IfcParse::IfcFile file(filePath);
 
     IfcGeom::IteratorSettings settings;
-    settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, true);
+    settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, false);
     settings.set(IfcGeom::IteratorSettings::WELD_VERTICES, false);
     settings.set(IfcGeom::IteratorSettings::APPLY_DEFAULT_MATERIALS, true);
 
@@ -38,6 +40,9 @@ bool ParseIfcFile::Parse(
         return false;
     }
 
+    std::string lastId;
+    std::vector<osg::ref_ptr<osg::Geometry>> lastGeometrySet;
+
     do {
         //const IfcGeom::BRepElement* bRepElem = it->get_native();
         const IfcGeom::TriangulationElement* triElem = static_cast<const IfcGeom::TriangulationElement*>(it->get());
@@ -46,22 +51,46 @@ bool ParseIfcFile::Parse(
         std::string elemInfo = triElem->type();
         elemInfo += triElem->name() == "" ? "" : ": " + triElem->name();
         MessageLogger::log(elemInfo);
+        
+        const std::string id = triElem->geometry().id();
+        
+        //MessageLogger::log("id: " + id);
 
         // Transformation Matrix
         const std::vector<double>& matrixData = triElem->transformation().matrix().data();
+
+        // Debugging:
         std::string matrixStr = "";
-        int di = 0;
+        int col = 0;
+        int row = 0;
         for (auto d : matrixData) {
-            if (di == 4) {
-                matrixStr += "\n";
-                di = 0;
-            }
             matrixStr += std::to_string(d) + "  ";
-            di++;
+            if (++col == 3) {
+                std::string lastCol = (row == 3) ? "1" : "0";
+                matrixStr += lastCol + "\n";
+                col = 0;
+                row++;
+            }
         }
         //MessageLogger::log(matrixStr); // Print matrix data
+        
+        const osg::Matrixd matrixd (
+            matrixData[0], matrixData[1], matrixData[2], 0,
+            matrixData[3], matrixData[4], matrixData[5], 0,
+            matrixData[6], matrixData[7], matrixData[8], 0,
+            matrixData[9], matrixData[10], matrixData[11], 1
+        );
 
-        //MessageLogger::log(triElem->geometry().id());
+        const osg::ref_ptr<osg::MatrixTransform> matrixTransform = new osg::MatrixTransform;
+        matrixTransform->setMatrix(matrixd);
+
+        if (id == lastId) {
+            for (auto geometry : lastGeometrySet) {
+                matrixTransform->addChild(geometry);
+            }
+            matrixTransforms.push_back(matrixTransform);
+            continue;
+        }
 
         const boost::shared_ptr<IfcGeom::Representation::Triangulation>& triElemGeom = triElem->geometry_pointer();
 
@@ -83,6 +112,8 @@ bool ParseIfcFile::Parse(
 
         if (fit != elemFaces.end())
             MessageLogger::log("** Failed to map the faces to material IDs!");
+
+        std::vector<osg::ref_ptr<osg::Geometry>> geometrySet;
 
         for (const auto& group : elemFaces_grouped) {
             int matId = group.first;
@@ -111,8 +142,15 @@ bool ParseIfcFile::Parse(
             osg::ref_ptr<osg::Material> osgMaterial = getOsgMaterial(elemMats[matId]);
             geometry->getOrCreateStateSet()->setAttributeAndModes(osgMaterial.get());
 
-            geometries.push_back(geometry);
+            matrixTransform->addChild(geometry);
+
+            geometrySet.push_back(geometry);
         }
+
+        matrixTransforms.push_back(matrixTransform);
+
+        lastId = id;
+        lastGeometrySet = geometrySet;
 
     } while (it->next());
 

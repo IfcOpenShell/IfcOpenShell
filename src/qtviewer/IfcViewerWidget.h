@@ -56,7 +56,7 @@ private:
 
     void setupViewController();
 
-    void orientScene(osg::ref_ptr<osg::Geode> geode);
+    void orientScene(osg::ref_ptr<osg::Group> rootGroup);
 };
 
 #endif // IFCVIEWERWIDGET_H
