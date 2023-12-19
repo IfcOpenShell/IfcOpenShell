@@ -1028,7 +1028,8 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
                         if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
                     ][0]
                 
-                    number = f"{len(group_elements):02d}"
+                    number = len(group_elements) - 1
+                    number = f"{number:02d}"
                     new_obj = tool.Ifc.get_object(new[0])
                     pattern1 = r'_\d'
                     if re.findall(pattern1, new_obj.name):
