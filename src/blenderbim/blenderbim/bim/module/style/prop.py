@@ -252,7 +252,12 @@ def update_shading_style(self, context):
     style_elements = tool.Style.get_style_elements(blender_material)
     if self.active_style_type == "External":
         if tool.Style.has_blender_external_style(style_elements):
-            bpy.ops.bim.activate_external_style(material_name=blender_material.name)
+            try:
+                bpy.ops.bim.activate_external_style(material_name=blender_material.name)
+            except RuntimeError as error:
+                if str(error).startswith("Error: Error loading external style - "):
+                    return
+                raise error
 
     elif self.active_style_type == "Shading":
         style_elements = tool.Style.get_style_elements(blender_material)
