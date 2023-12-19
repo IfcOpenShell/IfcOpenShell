@@ -607,5 +607,3 @@ Scenario: Refresh linked aggregate - after duplicating an object
     And the object "IfcWall/Wall_02.001" exists
     And the object "IfcWall/Wall_03.001" exists
     
-# TODO Scenario: Refresh linked aggregate - after adding an object
-# TODO Scenario: Refresh linked aggregate - with subaggregates
