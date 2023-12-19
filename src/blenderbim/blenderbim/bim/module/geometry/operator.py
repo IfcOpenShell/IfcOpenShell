@@ -21,6 +21,7 @@ import bmesh
 import logging
 import numpy as np
 import json
+import re
 import ifcopenshell
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
@@ -1017,6 +1018,27 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
                 "group.assign_group", tool.Ifc.get(), products=[element], group=linked_aggregate_group
             )
 
+        def custom_incremental_naming_for_element_assembly(old_to_new):
+            for new in old_to_new.values():
+                if new[0].is_a("IfcElementAssembly"):
+                    group_elements = [
+                        r.RelatedObjects
+                        for r in getattr(new[0], "HasAssignments", []) or []
+                        if r.is_a("IfcRelAssignsToGroup")
+                        if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
+                    ][0]
+                
+                    new_obj = tool.Ifc.get_object(new[0])
+                    pattern1 = r'_\d'
+                    if re.findall(pattern1, new_obj.name):
+                        split_name = new_obj.name.split("_")
+                        new_obj.name = split_name[0] + "_" + str(len(group_elements))
+                        continue
+                    pattern2 = r'\.\d{3}'
+                    if re.findall(pattern2, new_obj.name):
+                        split_name = new_obj.name.split(".")
+                        new_obj.name = split_name[0] + "_" + str(len(group_elements))
+
              
         if len(context.selected_objects) != 1:
             return {"FINISHED"}
@@ -1037,11 +1059,14 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
         select_objects_and_add_data(selected_element)
 
         old_to_new = OverrideDuplicateMove.execute_ifc_duplicate_operator(self, context, linked=True)
+
+        custom_incremental_naming_for_element_assembly(old_to_new)
         
         # Recreate aggregate relationship
         for old in old_to_new.keys():
             if old.is_a("IfcElementAssembly"):            
                 tool.Root.recreate_aggregate(old_to_new)
+
 
         blenderbim.bim.handler.refresh_ui_data()
 
