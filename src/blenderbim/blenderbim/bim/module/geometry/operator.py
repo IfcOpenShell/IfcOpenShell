@@ -1028,16 +1028,17 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
                         if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
                     ][0]
                 
+                    number = f"{len(group_elements):02d}"
                     new_obj = tool.Ifc.get_object(new[0])
                     pattern1 = r'_\d'
                     if re.findall(pattern1, new_obj.name):
                         split_name = new_obj.name.split("_")
-                        new_obj.name = split_name[0] + "_" + str(len(group_elements))
+                        new_obj.name = split_name[0] + "_" + number
                         continue
                     pattern2 = r'\.\d{3}'
                     if re.findall(pattern2, new_obj.name):
                         split_name = new_obj.name.split(".")
-                        new_obj.name = split_name[0] + "_" + str(len(group_elements))
+                        new_obj.name = split_name[0] + "_" + number
 
              
         if len(context.selected_objects) != 1:
