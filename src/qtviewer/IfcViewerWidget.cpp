@@ -12,6 +12,7 @@
 #include "MessageLogger.h"
 #include "osg/Geode"
 #include "osg/Geometry"
+#include "osg/Group"
 #include "osg/StateSet"
 #include "osg/Vec3"
 #include "osg/ref_ptr"
@@ -142,33 +143,31 @@ void IfcViewerWidget::setupViewController()
 
 void IfcViewerWidget::loadFile(const std::string& filePath)
 {
-    std::vector<osg::ref_ptr<osg::Geometry>> geometries;
+    std::vector<osg::ref_ptr<osg::MatrixTransform>> matrixTransforms;
 
-    if(!m_parser.Parse(filePath, geometries)) {
+    if(!m_parser.Parse(filePath, matrixTransforms)) {
         MessageLogger::log("Failed to prepare IFC geometry");
         return;
     }
 
     MessageLogger::log("\nIFC geometry prepared");
 
-    osg::ref_ptr<osg::Geode> geode = new osg::Geode;
-    for (auto geometry : geometries) {
-        geode->addDrawable(geometry);
+    for (auto matrixTransform : matrixTransforms) {
+        root->addChild(matrixTransform);
     }
 
-    // Add the model to the root node
-    root->addChild(geode);
-
     // set initial camera position
-    orientScene(geode);
+    orientScene(root);
+
+    // request redraw
+    update();
 }
 
-void IfcViewerWidget::orientScene(osg::ref_ptr<osg::Geode> geode)
+void IfcViewerWidget::orientScene(osg::ref_ptr<osg::Group> rootGroup)
 {
     // Get the bounding-box
     osg::ComputeBoundsVisitor cbv;
-    geode->accept(cbv);
-    //root.get()->accept(cbv);
+    rootGroup->accept(cbv);
     const osg::BoundingBox& bb = cbv.getBoundingBox();
 
     // Center (average of opposite corners of bb)
