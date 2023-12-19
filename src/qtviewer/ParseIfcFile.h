@@ -7,6 +7,7 @@
 #include <vector>
 #include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 #include "osg/Material"
+#include "osg/MatrixTransform"
 #include "osg/ref_ptr"
 #include "osg/Geometry"
 
@@ -19,7 +20,7 @@ public:
 
     bool Parse(
         const std::string& filePath,
-        std::vector<osg::ref_ptr<osg::Geometry>>& geometries
+        std::vector<osg::ref_ptr<osg::MatrixTransform>>& matrixTransforms
     );
 
 private:
