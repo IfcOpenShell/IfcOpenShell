@@ -79,19 +79,19 @@ namespace {
 	/* A compile-time for loop over the taxonomy kinds */
 	template <size_t N>
 	struct dispatch_conversion {
-		static bool dispatch(ifcopenshell::geometry::kernels::AbstractKernel* kernel, const ifcopenshell::geometry::taxonomy::ptr item, IfcGeom::ConversionResults& results) {
-			if (N == item->kind()) {
+		static bool dispatch(ifcopenshell::geometry::kernels::AbstractKernel* kernel, ifcopenshell::geometry::taxonomy::kinds item_kind, const ifcopenshell::geometry::taxonomy::ptr item, IfcGeom::ConversionResults& results) {
+			if (N == item_kind) {
 				auto concrete_item = ifcopenshell::geometry::taxonomy::template cast<ifcopenshell::geometry::taxonomy::type_by_kind::type<N>>(item);
 				return kernel->convert_impl(concrete_item, results);
 			} else {
-				return dispatch_conversion<N + 1>::dispatch(kernel, item, results);
+				return dispatch_conversion<N + 1>::dispatch(kernel, item_kind, item, results);
 			}
 		}
 	};
 
 	template <>
 	struct dispatch_conversion<ifcopenshell::geometry::taxonomy::type_by_kind::max> {
-		static bool dispatch(ifcopenshell::geometry::kernels::AbstractKernel*, const ifcopenshell::geometry::taxonomy::ptr item, IfcGeom::ConversionResults&) {
+		static bool dispatch(ifcopenshell::geometry::kernels::AbstractKernel*, ifcopenshell::geometry::taxonomy::kinds item_kind, const ifcopenshell::geometry::taxonomy::ptr item, IfcGeom::ConversionResults&) {
 			Logger::Error("No conversion for " + std::to_string(item->kind()));
 			return false;
 		}

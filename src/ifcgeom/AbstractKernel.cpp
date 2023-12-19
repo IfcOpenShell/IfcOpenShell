@@ -26,7 +26,7 @@ bool ifcopenshell::geometry::kernels::AbstractKernel::convert(const taxonomy::pt
 	// std::wcout << sss.c_str() << std::endl;
 
 	try {
-		return dispatch_conversion<0>::dispatch(this, item, results);
+		return dispatch_conversion<0>::dispatch(this, item->kind(), item, results);
 	} catch (std::exception& e) {
 		Logger::Error(e, item->instance);
 		return false;
