@@ -5,6 +5,8 @@ IfcOpenShell includes a utility to build a unbalanced binary tree of geometry
 and their bounding boxes. After a tree is built, you can efficiently select
 geometry by specifying a point, radius, or bounding box.
 
+.. image:: images/geometry-tree.png
+
 The most efficient way to build tree is by using the iterator, as shown in the
 example below:
 

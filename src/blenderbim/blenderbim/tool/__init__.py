@@ -37,6 +37,7 @@ from blenderbim.tool.loader import Loader
 from blenderbim.tool.material import Material
 from blenderbim.tool.misc import Misc
 from blenderbim.tool.model import Model
+from blenderbim.tool.nest import Nest
 from blenderbim.tool.owner import Owner
 from blenderbim.tool.patch import Patch
 from blenderbim.tool.project import Project
@@ -47,6 +48,7 @@ from blenderbim.tool.resource import Resource
 from blenderbim.tool.root import Root
 from blenderbim.tool.sequence import Sequence
 from blenderbim.tool.spatial import Spatial
+from blenderbim.tool.covering import Covering
 from blenderbim.tool.structural import Structural
 from blenderbim.tool.style import Style
 from blenderbim.tool.surveyor import Surveyor

@@ -20,6 +20,7 @@
 import uuid
 import ifcopenshell
 import ifcopenshell.api
+import ifctester.facet
 from ifctester.facet import Entity, Attribute, Classification, Property, PartOf, Material, Restriction
 
 
@@ -28,6 +29,8 @@ def set_facet(facet):
 
 
 def run(name, *, facet, inst, expected):
+    ifctester.facet.get_pset.cache_clear()
+    ifctester.facet.get_psets.cache_clear()
     assert bool(facet(inst)) is expected
 
 
@@ -76,7 +79,6 @@ class TestEntity:
             expected=False,
         )
 
-        # TODO But in that case why are the enumerations for things like partOf using the IFC capitalisation?
         facet = Entity(name="IfcWall")
         ifc = ifcopenshell.file()
         run(
@@ -667,9 +669,11 @@ class TestAttribute:
 class TestClassification:
     def test_creating_a_classification_facet(self):
         facet = Classification()
-        assert facet.asdict() == {}
+        assert facet.asdict() == {
+            "@maxOccurs": "unbounded"
+        }
         facet = Classification(value="value", system="system")
-        assert facet.asdict() == {"value": {"simpleValue": "value"}, "system": {"simpleValue": "system"}}
+        assert facet.asdict() == {"value": {"simpleValue": "value"}, "system": {"simpleValue": "system"}, "@maxOccurs": "unbounded" }
         facet = Classification(
             value="value",
             system="system",
@@ -834,6 +838,7 @@ class TestProperty:
         assert facet.asdict() == {
             "propertySet": {"simpleValue": "Property_Set"},
             "name": {"simpleValue": "PropertyName"},
+            "@maxOccurs": "unbounded"
         }
         facet = Property(
             propertySet="propertySet",
@@ -861,7 +866,7 @@ class TestProperty:
 
         ifc = self.setup_ifc()
 
-        facet = Property(propertySet="Foo_Bar", name="Foo", datatype="IfcLabel")
+        facet = Property(propertySet="Foo_Bar", name="Foo", datatype="IFCLABEL")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         run("Elements with no properties always fail", facet=facet, inst=element, expected=False)
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
@@ -873,27 +878,27 @@ class TestProperty:
         run("A name check will match any property with any string value", facet=facet, inst=element, expected=True)
 
         ifc = self.setup_ifc()
-        facet = Property(propertySet="Foo_Bar", name="Foo", datatype="IfcLabel")
+        facet = Property(propertySet="Foo_Bar", name="Foo", datatype="IFCLABEL")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Bar"})
         run("A required facet checks all parameters as normal", facet=facet, inst=element, expected=True)
-        facet = Property(propertySet="Foo_Bar", name="Foo", datatype="IfcLabel", minOccurs=0, maxOccurs=0)
+        facet = Property(propertySet="Foo_Bar", name="Foo", datatype="IFCLABEL", minOccurs=0, maxOccurs=0)
         run("A prohibited facet returns the opposite of a required facet", facet=facet, inst=element, expected=False)
-        facet = Property(propertySet="Foo_Bar", name="Foo", datatype="IfcLabel", minOccurs=0)
+        facet = Property(propertySet="Foo_Bar", name="Foo", datatype="IFCLABEL", minOccurs=0)
         run("An optional facet always passes regardless of outcome 1/2", facet=facet, inst=element, expected=True)
-        facet = Property(propertySet="Foo_Bar", name="Bar", datatype="IfcLabel", minOccurs=0)
+        facet = Property(propertySet="Foo_Bar", name="Bar", datatype="IFCLABEL", minOccurs=0)
         run("An optional facet always passes regardless of outcome 2/2", facet=facet, inst=element, expected=True)
 
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ""})
-        facet = Property(propertySet="Foo_Bar", name="Foo", datatype="IfcLogical")
+        facet = Property(propertySet="Foo_Bar", name="Foo", datatype="IFCLOGICAL")
         run("An empty string is considered falsey and will not pass", facet=facet, inst=element, expected=False)
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcLogical("UNKNOWN")})
-        facet = Property(propertySet="Foo_Bar", name="Foo", datatype="IfcDuration")
+        facet = Property(propertySet="Foo_Bar", name="Foo", datatype="IFCDURATION")
         run("A logical unknown is considered falsey and will not pass", facet=facet, inst=element, expected=False)
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcDuration("P0D")})
         run("A zero duration will pass", facet=facet, inst=element, expected=True)
-        facet = Property(propertySet="Foo_Bar", name="Foo", datatype="IfcBoolean")
+        facet = Property(propertySet="Foo_Bar", name="Foo", datatype="IFCBOOLEAN")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcBoolean(True)})
         run("A property set to true will pass a name check", facet=facet, inst=element, expected=True)
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": False})
@@ -905,7 +910,7 @@ class TestProperty:
         )
 
         ifc = self.setup_ifc()
-        facet = Property(propertySet="Foo_Bar", name="Foo", value="Bar", datatype="IfcLabel")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="Bar", datatype="IFCLABEL")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Bar"})
@@ -915,55 +920,55 @@ class TestProperty:
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Baz"})
         run("Specifying a value fails against different values", facet=facet, inst=element, expected=False)
 
-        facet = Property(propertySet="Foo_Bar", name="Foo", value="♫Don'tÄrgerhôtelЊет", datatype="IfcLabel")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="♫Don'tÄrgerhôtelЊет", datatype="IFCLABEL")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "♫Don'tÄrgerhôtelЊет"})
         run("Non-ascii characters are treated without encoding", facet=facet, inst=element, expected=True)
 
         identifier = "123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345"
         facet = Property(
-            propertySet="Foo_Bar", name="Foo", value=identifier + "_extra_characters", datatype="IfcIdentifier"
+            propertySet="Foo_Bar", name="Foo", value=identifier + "_extra_characters", datatype="IFCIDENTIFIER"
         )
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcIdentifier(identifier)})
         run("IDS does not handle string truncation such as for identifiers", facet=facet, inst=element, expected=False)
 
         ifc = self.setup_ifc()
-        facet = Property(propertySet="Foo_Bar", name="Foo", value="1", datatype="IfcLabel")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="1", datatype="IFCLABEL")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "1"})
         run("A number specified as a string is treated as a string", facet=facet, inst=element, expected=True)
 
-        facet = Property(propertySet="Foo_Bar", name="Foo", value="42", datatype="IfcInteger")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="42", datatype="IFCINTEGER")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcInteger(42)})
         run("Integer values are checked using type casting 1/4", facet=facet, inst=element, expected=True)
-        facet = Property(propertySet="Foo_Bar", name="Foo", value="42.", datatype="IfcInteger")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="42.", datatype="IFCINTEGER")
         run("Integer values are checked using type casting 2/4", facet=facet, inst=element, expected=True)
-        facet = Property(propertySet="Foo_Bar", name="Foo", value="42.0", datatype="IfcInteger")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="42.0", datatype="IFCINTEGER")
         run("Integer values are checked using type casting 3/4", facet=facet, inst=element, expected=True)
-        facet = Property(propertySet="Foo_Bar", name="Foo", value="42.3", datatype="IfcInteger")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="42.3", datatype="IFCINTEGER")
         run("Integer values are checked using type casting 4/4", facet=facet, inst=element, expected=False)
 
-        facet = Property(propertySet="Foo_Bar", name="Foo", value="42", datatype="IfcReal")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="42", datatype="IFCREAL")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcReal(42.0)})
         run("Real values are checked using type casting 1/3", facet=facet, inst=element, expected=True)
-        facet = Property(propertySet="Foo_Bar", name="Foo", value="42.0", datatype="IfcReal")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="42.0", datatype="IFCREAL")
         run("Real values are checked using type casting 2/3", facet=facet, inst=element, expected=True)
-        facet = Property(propertySet="Foo_Bar", name="Foo", value="42.3", datatype="IfcReal")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="42.3", datatype="IFCREAL")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcReal(42.3)})
         run("Real values are checked using type casting 3/3", facet=facet, inst=element, expected=True)
 
-        facet = Property(propertySet="Foo_Bar", name="Foo", value="42,3", datatype="IfcReal")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="42,3", datatype="IFCREAL")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcReal(42.3)})
         run("Only specifically formatted numbers are allowed 1/4", facet=facet, inst=element, expected=False)
-        facet = Property(propertySet="Foo_Bar", name="Foo", value="123,4.5", datatype="IfcReal")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="123,4.5", datatype="IFCREAL")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcReal(1234.5)})
         run("Only specifically formatted numbers are allowed 2/4", facet=facet, inst=element, expected=False)
-        facet = Property(propertySet="Foo_Bar", name="Foo", value="1.2345e3", datatype="IfcReal")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="1.2345e3", datatype="IFCREAL")
         run("Only specifically formatted numbers are allowed 3/4", facet=facet, inst=element, expected=True)
-        facet = Property(propertySet="Foo_Bar", name="Foo", value="1.2345E3", datatype="IfcReal")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="1.2345E3", datatype="IFCREAL")
         run("Only specifically formatted numbers are allowed 4/4", facet=facet, inst=element, expected=True)
 
-        facet = Property(propertySet="Foo_Bar", name="Foo", value="42.", datatype="IfcReal")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="42.", datatype="IFCREAL")
         ifcopenshell.api.run(
             "pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcReal(42.0 * (1.0 + 1e-6))}
         )
@@ -981,15 +986,15 @@ class TestProperty:
         )
         run("Floating point numbers are compared with a 1e-6 tolerance 4/4", facet=facet, inst=element, expected=False)
 
-        facet = Property(propertySet="Foo_Bar", name="Foo", value="TRUE", datatype="IfcBoolean")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="TRUE", datatype="IFCBOOLEAN")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcBoolean(False)})
         run("Booleans must be specified as uppercase strings 1/3", facet=facet, inst=element, expected=False)
-        facet = Property(propertySet="Foo_Bar", name="Foo", value="FALSE", datatype="IfcBoolean")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="FALSE", datatype="IFCBOOLEAN")
         run("Booleans must be specified as uppercase strings 2/3", facet=facet, inst=element, expected=True)
-        facet = Property(propertySet="Foo_Bar", name="Foo", value="False", datatype="IfcBoolean")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="False", datatype="IFCBOOLEAN")
         run("Booleans must be specified as uppercase strings 3/3", facet=facet, inst=element, expected=False)
 
-        facet = Property(propertySet="Foo_Bar", name="Foo", value="2022-01-01", datatype="IfcDate")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="2022-01-01", datatype="IFCDATE")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcDate("2022-01-01")})
         run("Dates are treated as strings 1/2", facet=facet, inst=element, expected=True)
         ifcopenshell.api.run(
@@ -997,7 +1002,7 @@ class TestProperty:
         )
         run("Dates are treated as strings 2/2", facet=facet, inst=element, expected=False)
 
-        facet = Property(propertySet="Foo_Bar", name="Foo", value="PT16H", datatype="IfcDuration")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="PT16H", datatype="IFCDURATION")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcDuration("PT16H")})
         run("Durations are treated as strings 1/2", facet=facet, inst=element, expected=True)
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcDuration("P2D")})
@@ -1014,11 +1019,11 @@ class TestProperty:
             properties={"Status": ["EXISTING", "DEMOLISH"]},
             pset_template=pset_template,
         )
-        facet = Property(propertySet="Pset_WallCommon", name="Status", value="EXISTING", datatype="IfcLabel")
+        facet = Property(propertySet="Pset_WallCommon", name="Status", value="EXISTING", datatype="IFCLABEL")
         run("Any matching value in an enumerated property will pass 1/3", facet=facet, inst=element, expected=True)
-        facet = Property(propertySet="Pset_WallCommon", name="Status", value="DEMOLISH", datatype="IfcLabel")
+        facet = Property(propertySet="Pset_WallCommon", name="Status", value="DEMOLISH", datatype="IFCLABEL")
         run("Any matching value in an enumerated property will pass 2/3", facet=facet, inst=element, expected=True)
-        facet = Property(propertySet="Pset_WallCommon", name="Status", value="NEW", datatype="IfcLabel")
+        facet = Property(propertySet="Pset_WallCommon", name="Status", value="NEW", datatype="IFCLABEL")
         run("Any matching value in an enumerated property will pass 3/3", facet=facet, inst=element, expected=False)
 
         ifc = self.setup_ifc()
@@ -1028,11 +1033,11 @@ class TestProperty:
             Name="Foo", ListValues=[ifc.createIfcLabel("X"), ifc.createIfcLabel("Y")]
         )
         pset.HasProperties = [list_property]
-        facet = Property(propertySet="Foo_Bar", name="Foo", value="X", datatype="IfcLabel")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="X", datatype="IFCLABEL")
         run("Any matching value in a list property will pass 1/3", facet=facet, inst=element, expected=True)
-        facet = Property(propertySet="Foo_Bar", name="Foo", value="Y", datatype="IfcLabel")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="Y", datatype="IFCLABEL")
         run("Any matching value in a list property will pass 2/3", facet=facet, inst=element, expected=True)
-        facet = Property(propertySet="Foo_Bar", name="Foo", value="Z", datatype="IfcLabel")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="Z", datatype="IFCLABEL")
         run("Any matching value in a list property will pass 3/3", facet=facet, inst=element, expected=False)
 
         ifc = self.setup_ifc()
@@ -1045,13 +1050,13 @@ class TestProperty:
             SetPointValue=ifc.createIfcLengthMeasure(3000),
         )
         pset.HasProperties = [bounded_property]
-        facet = Property(propertySet="Foo_Bar", name="Foo", value="1", datatype="IfcLengthMeasure")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="1", datatype="IFCLENGTHMEASURE")
         run("Any matching value in a bounded property will pass 1/4", facet=facet, inst=element, expected=True)
-        facet = Property(propertySet="Foo_Bar", name="Foo", value="5", datatype="IfcLengthMeasure")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="5", datatype="IFCLENGTHMEASURE")
         run("Any matching value in a bounded property will pass 2/4", facet=facet, inst=element, expected=True)
-        facet = Property(propertySet="Foo_Bar", name="Foo", value="3", datatype="IfcLengthMeasure")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="3", datatype="IFCLENGTHMEASURE")
         run("Any matching value in a bounded property will pass 3/4", facet=facet, inst=element, expected=True)
-        facet = Property(propertySet="Foo_Bar", name="Foo", value="2", datatype="IfcLengthMeasure")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="2", datatype="IFCLENGTHMEASURE")
         run("Any matching value in a bounded property will pass 4/4", facet=facet, inst=element, expected=False)
 
         ifc = self.setup_ifc()
@@ -1061,18 +1066,18 @@ class TestProperty:
             Name="Foo", DefiningValues=[ifc.createIfcLabel("X")], DefinedValues=[ifc.createIfcLengthMeasure(1000)]
         )
         pset.HasProperties = [table_property]
-        facet = Property(propertySet="Foo_Bar", name="Foo", value="X", datatype="IfcLabel")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="X", datatype="IFCLABEL")
         run("Any matching value in a table property will pass 1/3", facet=facet, inst=element, expected=True)
-        facet = Property(propertySet="Foo_Bar", name="Foo", value="1", datatype="IfcLengthMeasure")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="1", datatype="IFCLENGTHMEASURE")
         run("Any matching value in a table property will pass 2/3", facet=facet, inst=element, expected=True)
-        facet = Property(propertySet="Foo_Bar", name="Foo", value="Y", datatype="IfcLabel")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="Y", datatype="IFCLABEL")
         run("Any matching value in a table property will pass 3/3", facet=facet, inst=element, expected=False)
 
         ifc = self.setup_ifc()
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
         pset.HasProperties = [ifc.createIfcPropertyReferenceValue(Name="Foo")]
-        facet = Property(propertySet="Foo_Bar", name="Foo", datatype="IfcLabel")
+        facet = Property(propertySet="Foo_Bar", name="Foo", datatype="IFCLABEL")
         run("Reference properties are treated as objects and not supported", facet=facet, inst=element, expected=False)
 
         ifc = self.setup_ifc()
@@ -1091,21 +1096,21 @@ class TestProperty:
             RelatingPropertyDefinition=pset,
         )
         facet = Property(
-            propertySet="Foo_Bar", name="PanelOperation", value="SWINGING", datatype="IfcDoorPanelOperationEnum"
+            propertySet="Foo_Bar", name="PanelOperation", value="SWINGING", datatype="IFCDOORPANELOPERATIONENUM"
         )
         run("Predefined properties are supported but discouraged 1/2", facet=facet, inst=element, expected=True)
         facet = Property(
-            propertySet="Foo_Bar", name="PanelOperation", value="SWONGING", datatype="IfcDoorPanelOperationEnum"
+            propertySet="Foo_Bar", name="PanelOperation", value="SWONGING", datatype="IFCDOORPANELOPERATIONENUM"
         )
         run("Predefined properties are supported but discouraged 2/2", facet=facet, inst=element, expected=False)
 
         ifc = self.setup_ifc()
-        facet = Property(propertySet="Foo_Bar", name="Foo", datatype="IfcLengthMeasure")
+        facet = Property(propertySet="Foo_Bar", name="Foo", datatype="IFCLENGTHMEASURE")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         qto = ifcopenshell.api.run("pset.add_qto", ifc, product=element, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_qto", ifc, qto=qto, properties={"Foo": ifc.createIfcLengthMeasure(42)})
         run("A name check will match any quantity with any value", facet=facet, inst=element, expected=True)
-        facet = Property(propertySet="Foo_Bar", name="Foo", datatype="IfcAreaMeasure")
+        facet = Property(propertySet="Foo_Bar", name="Foo", datatype="IFCAREAMEASURE")
         run("Quantities must also match the appropriate measure", facet=facet, inst=element, expected=False)
 
         ifc = self.setup_ifc()
@@ -1114,9 +1119,9 @@ class TestProperty:
         complex_property = ifc.createIfcComplexProperty(Name="Foo", UsageName="RabbitAgilityTraining")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=complex_property, properties={"Rabbits": "Awesome"})
         pset.HasProperties = [complex_property]
-        facet = Property(propertySet="Foo_Bar", name="Foo", datatype="IfcLabel")
+        facet = Property(propertySet="Foo_Bar", name="Foo", datatype="IFCLABEL")
         run("Complex properties are not supported 1/2", facet=facet, inst=element, expected=False)
-        facet = Property(propertySet="Foo", name="Rabbits", datatype="IfcLabel")
+        facet = Property(propertySet="Foo", name="Rabbits", datatype="IFCLABEL")
         run("Complex properties are not supported 2/2", facet=facet, inst=element, expected=False)
 
         ifc = self.setup_ifc()
@@ -1127,14 +1132,14 @@ class TestProperty:
             "pset.edit_qto", ifc, qto=complex_quantity, properties={"MyLength": ifc.createIfcLengthMeasure(42)}
         )
         qto.Quantities = [complex_quantity]
-        facet = Property(propertySet="Foo_Bar", name="Foo", datatype="IfcLengthMeasure")
+        facet = Property(propertySet="Foo_Bar", name="Foo", datatype="IFCLENGTHMEASURE")
         run("Complex properties are not supported 1/2", facet=facet, inst=element, expected=False)
-        facet = Property(propertySet="Foo", name="MyLength", datatype="IfcLengthMeasure")
+        facet = Property(propertySet="Foo", name="MyLength", datatype="IFCLENGTHMEASURE")
         run("Complex properties are not supported 2/2", facet=facet, inst=element, expected=False)
 
         ifc = self.setup_ifc()
         restriction = Restriction(options={"pattern": "Foo_.*"})
-        facet = Property(propertySet=restriction, name="Foo", datatype="IfcLabel")
+        facet = Property(propertySet=restriction, name="Foo", datatype="IFCLABEL")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Bar"})
@@ -1147,7 +1152,7 @@ class TestProperty:
 
         ifc = self.setup_ifc()
         restriction = Restriction(options={"pattern": "Foo.*"})
-        facet = Property(propertySet="Foo_Bar", name=restriction, value="x", datatype="IfcLabel")
+        facet = Property(propertySet="Foo_Bar", name=restriction, value="x", datatype="IFCLABEL")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": "x"})
@@ -1160,7 +1165,7 @@ class TestProperty:
         ifc = self.setup_ifc()
         restriction1 = Restriction(options={"pattern": "Foo.*"})
         restriction2 = Restriction(options={"enumeration": ["x", "y"]})
-        facet = Property(propertySet="Foo_Bar", name=restriction1, value=restriction2, datatype="IfcLabel")
+        facet = Property(propertySet="Foo_Bar", name=restriction1, value=restriction2, datatype="IFCLABEL")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": "x", "Foobaz": "y"})
@@ -1179,7 +1184,7 @@ class TestProperty:
         )
 
         ifc = self.setup_ifc()
-        facet = Property(propertySet="Foo_Bar", name="Foo", value="2", datatype="IfcTimeMeasure")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="2", datatype="IFCTIMEMEASURE")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcMassMeasure(2)})
@@ -1188,7 +1193,7 @@ class TestProperty:
         run("Measures are used to specify an IFC data type 2/2", facet=facet, inst=element, expected=True)
 
         ifc = self.setup_ifc()
-        facet = Property(propertySet="Foo_Bar", name="Foo", value="2", datatype="IfcLengthMeasure")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="2", datatype="IFCLENGTHMEASURE")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcLengthMeasure(2)})
@@ -1212,7 +1217,7 @@ class TestProperty:
         ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=wall_type, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Bar"})
-        facet = Property(propertySet="Foo_Bar", name="Foo", datatype="IfcLabel")
+        facet = Property(propertySet="Foo_Bar", name="Foo", datatype="IFCLABEL")
         run("Properties can be inherited from the type 1/2", facet=facet, inst=wall, expected=True)
         run("Properties can be inherited from the type 2/2", facet=facet, inst=wall_type, expected=True)
 
@@ -1224,7 +1229,7 @@ class TestProperty:
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Baz"})
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=wall, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Bar"})
-        facet = Property(propertySet="Foo_Bar", name="Foo", value="Bar", datatype="IfcLabel")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="Bar", datatype="IFCLABEL")
         run("Properties can be overriden by an occurrence 1/2", facet=facet, inst=wall, expected=True)
         run("Properties can be overriden by an occurrence 2/2", facet=facet, inst=wall_type, expected=False)
 
@@ -1243,7 +1248,7 @@ class TestProperty:
 class TestMaterial:
     def test_creating_a_material_facet(self):
         facet = Material()
-        assert facet.asdict() == {}
+        assert facet.asdict() == {"@maxOccurs": "unbounded"}
         facet = Material(
             value="value", uri="https://test.com", minOccurs="0", maxOccurs="unbounded", instructions="instructions"
         )
@@ -1401,9 +1406,9 @@ class TestMaterial:
 class TestPartOf:
     def test_creating_a_partof_facet(self):
         facet = PartOf()
-        assert facet.asdict() == {"entity": {"name": {"simpleValue": "IFCWALL"}}}
+        assert facet.asdict() == {"entity": {"name": {"simpleValue": "IFCWALL"}}, "@maxOccurs": "unbounded" }
         facet = PartOf(
-            entity="IfcGroup",
+            name="IFCGROUP",
             predefinedType="predefinedType",
             relation="IFCRELASSIGNSTOGROUP",
             minOccurs="0",
@@ -1412,7 +1417,7 @@ class TestPartOf:
         )
         assert facet.asdict() == {
             "entity": {
-                "name": {"simpleValue": "IfcGroup"},
+                "name": {"simpleValue": "IFCGROUP"},
                 "predefinedType": {"simpleValue": "predefinedType"},
             },
             "@relation": "IFCRELASSIGNSTOGROUP",
@@ -1428,16 +1433,16 @@ class TestPartOf:
 
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcElementAssembly")
         subelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
-        facet = PartOf(entity="IFCELEMENTASSEMBLY", relation="IFCRELAGGREGATES")
+        facet = PartOf(name="IFCELEMENTASSEMBLY", relation="IFCRELAGGREGATES")
         run("A non aggregated element fails an aggregate relationship", facet=facet, inst=subelement, expected=False)
         ifcopenshell.api.run("aggregate.assign_object", ifc, product=subelement, relating_object=element)
         run("The aggregated whole fails an aggregate relationship", facet=facet, inst=element, expected=False)
         run("The aggregated part passes an aggregate relationship", facet=facet, inst=subelement, expected=True)
 
         run("A required facet checks all parameters as normal", facet=facet, inst=subelement, expected=True)
-        facet = PartOf(entity="IFCELEMENTASSEMBLY", relation="IFCRELAGGREGATES", minOccurs=0, maxOccurs=0)
+        facet = PartOf(name="IFCELEMENTASSEMBLY", relation="IFCRELAGGREGATES", minOccurs=0, maxOccurs=0)
         run("A prohibited facet returns the opposite of a required facet", facet=facet, inst=subelement, expected=False)
-        facet = PartOf(entity="IFCELEMENTASSEMBLY", relation="IFCRELAGGREGATES", minOccurs=0)
+        facet = PartOf(name="IFCELEMENTASSEMBLY", relation="IFCRELAGGREGATES", minOccurs=0)
         run("An optional facet always passes regardless of outcome 1/2", facet=facet, inst=element, expected=True)
         run("An optional facet always passes regardless of outcome 2/2", facet=facet, inst=subelement, expected=True)
 
@@ -1445,17 +1450,17 @@ class TestPartOf:
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcSlab")
         subelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcBeam")
         ifcopenshell.api.run("aggregate.assign_object", ifc, product=subelement, relating_object=element)
-        facet = PartOf(entity="IFCSLAB", relation="IFCRELAGGREGATES")
+        facet = PartOf(name="IFCSLAB", relation="IFCRELAGGREGATES")
         run("An aggregate may specify the entity of the whole 1/2", facet=facet, inst=subelement, expected=True)
-        facet = PartOf(entity="IFCWALL", relation="IFCRELAGGREGATES")
+        facet = PartOf(name="IFCWALL", relation="IFCRELAGGREGATES")
         run("An aggregate may specify the entity of the whole 2/2", facet=facet, inst=subelement, expected=False)
 
         element.PredefinedType = "BASESLAB"
-        facet = PartOf(entity="IFCSLAB", predefinedType="BASESLAB", relation="IFCRELAGGREGATES")
+        facet = PartOf(name="IFCSLAB", predefinedType="BASESLAB", relation="IFCRELAGGREGATES")
         run(
             "An aggregate may specify the predefined type of the whole 1/2", facet=facet, inst=subelement, expected=True
         )
-        facet = PartOf(entity="IFCSLAB", predefinedType="SLABRADOR", relation="IFCRELAGGREGATES")
+        facet = PartOf(name="IFCSLAB", predefinedType="SLABRADOR", relation="IFCRELAGGREGATES")
         run(
             "An aggregate may specify the predefined type of the whole 2/2",
             facet=facet,
@@ -1469,13 +1474,13 @@ class TestPartOf:
         subsubelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcBeam")
         ifcopenshell.api.run("aggregate.assign_object", ifc, product=subelement, relating_object=element)
         ifcopenshell.api.run("aggregate.assign_object", ifc, product=subsubelement, relating_object=subelement)
-        facet = PartOf(entity="IFCELEMENTASSEMBLY", relation="IFCRELAGGREGATES")
+        facet = PartOf(name="IFCELEMENTASSEMBLY", relation="IFCRELAGGREGATES")
         run("An aggregate entity may pass any ancestral whole passes", facet=facet, inst=subsubelement, expected=True)
 
         ifc = ifcopenshell.file()
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcElementAssembly")
         group = ifcopenshell.api.run("group.add_group", ifc)
-        facet = PartOf(entity="IFCGROUP", relation="IFCRELASSIGNSTOGROUP")
+        facet = PartOf(name="IFCGROUP", relation="IFCRELASSIGNSTOGROUP")
         run("A non grouped element fails a group relationship", facet=facet, inst=element, expected=False)
         ifcopenshell.api.run("group.assign_group", ifc, products=[element], group=group)
         run("A grouped element passes a group relationship", facet=facet, inst=element, expected=True)
@@ -1483,22 +1488,22 @@ class TestPartOf:
         ifc = ifcopenshell.file()
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcElementAssembly")
         group = ifc.createIfcInventory()
-        facet = PartOf(entity="IFCGROUP", relation="IFCRELASSIGNSTOGROUP")
+        facet = PartOf(name="IFCGROUP", relation="IFCRELASSIGNSTOGROUP")
         ifcopenshell.api.run("group.assign_group", ifc, products=[element], group=group)
         run("A group entity must match exactly 1/2", facet=facet, inst=element, expected=False)
-        facet = PartOf(entity="IFCINVENTORY", relation="IFCRELASSIGNSTOGROUP")
+        facet = PartOf(name="IFCINVENTORY", relation="IFCRELASSIGNSTOGROUP")
         run("A group entity must match exactly 2/2", facet=facet, inst=element, expected=True)
 
         group.ObjectType = "BUNNY"
-        facet = PartOf(entity="IFCINVENTORY", predefinedType="BUNNARY", relation="IFCRELASSIGNSTOGROUP")
+        facet = PartOf(name="IFCINVENTORY", predefinedType="BUNNARY", relation="IFCRELASSIGNSTOGROUP")
         run("A group predefined type must match exactly 2/2", facet=facet, inst=element, expected=False)
-        facet = PartOf(entity="IFCINVENTORY", predefinedType="BUNNY", relation="IFCRELASSIGNSTOGROUP")
+        facet = PartOf(name="IFCINVENTORY", predefinedType="BUNNY", relation="IFCRELASSIGNSTOGROUP")
         run("A group predefined type must match exactly 2/2", facet=facet, inst=element, expected=True)
 
         ifc = ifcopenshell.file()
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcElementAssembly")
         container = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcSpace")
-        facet = PartOf(entity="IFCSPACE", relation="IFCRELCONTAINEDINSPATIALSTRUCTURE")
+        facet = PartOf(name="IFCSPACE", relation="IFCRELCONTAINEDINSPATIALSTRUCTURE")
         run("Any contained element passes a containment relationship 1/2", facet=facet, inst=element, expected=False)
         ifcopenshell.api.run("spatial.assign_container", ifc, product=element, relating_structure=container)
         run("Any contained element passes a containment relationship 2/2", facet=facet, inst=element, expected=True)
@@ -1508,15 +1513,15 @@ class TestPartOf:
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcElementAssembly")
         container = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcSpace")
         ifcopenshell.api.run("spatial.assign_container", ifc, product=element, relating_structure=container)
-        facet = PartOf(relation="IFCRELCONTAINEDINSPATIALSTRUCTURE", entity="IFCSITE")
+        facet = PartOf(relation="IFCRELCONTAINEDINSPATIALSTRUCTURE", name="IFCSITE")
         run("The container entity must match exactly 1/2", facet=facet, inst=element, expected=False)
-        facet = PartOf(relation="IFCRELCONTAINEDINSPATIALSTRUCTURE", entity="IFCSPACE")
+        facet = PartOf(relation="IFCRELCONTAINEDINSPATIALSTRUCTURE", name="IFCSPACE")
         run("The container entity must match exactly 2/2", facet=facet, inst=element, expected=True)
 
         container.ObjectType = "BURROW"
-        facet = PartOf(relation="IFCRELCONTAINEDINSPATIALSTRUCTURE", entity="IFCSPACE", predefinedType="WARREN")
+        facet = PartOf(relation="IFCRELCONTAINEDINSPATIALSTRUCTURE", name="IFCSPACE", predefinedType="WARREN")
         run("The container predefined type must match exactly 1/2", facet=facet, inst=element, expected=False)
-        facet = PartOf(relation="IFCRELCONTAINEDINSPATIALSTRUCTURE", entity="IFCSPACE", predefinedType="BURROW")
+        facet = PartOf(relation="IFCRELCONTAINEDINSPATIALSTRUCTURE", name="IFCSPACE", predefinedType="BURROW")
         run("The container predefined type must match exactly 2/2", facet=facet, inst=element, expected=True)
 
         ifc = ifcopenshell.file()
@@ -1525,14 +1530,14 @@ class TestPartOf:
         ifcopenshell.api.run("aggregate.assign_object", ifc, product=subelement, relating_object=element)
         container = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcSpace")
         ifcopenshell.api.run("spatial.assign_container", ifc, product=element, relating_structure=container)
-        facet = PartOf(relation="IFCRELCONTAINEDINSPATIALSTRUCTURE", entity="IFCSPACE")
+        facet = PartOf(relation="IFCRELCONTAINEDINSPATIALSTRUCTURE", name="IFCSPACE")
         run("The container may be indirect", facet=facet, inst=subelement, expected=True)
 
         ifc = ifcopenshell.file()
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcFurniture")
         subelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcDiscreteAccessory")
         ifcopenshell.api.run("nest.assign_object", ifc, related_object=subelement, relating_object=element)
-        facet = PartOf(entity="IFCFURNITURE", relation="IFCRELNESTS")
+        facet = PartOf(name="IFCFURNITURE", relation="IFCRELNESTS")
         run("Any nested part passes a nest relationship", facet=facet, inst=subelement, expected=True)
         run("Any nested whole fails a nest relationship", facet=facet, inst=element, expected=False)
 
@@ -1540,16 +1545,16 @@ class TestPartOf:
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcFurniture")
         subelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcDiscreteAccessory")
         ifcopenshell.api.run("nest.assign_object", ifc, related_object=subelement, relating_object=element)
-        facet = PartOf(relation="IFCRELNESTS", entity="IFCBEAM")
+        facet = PartOf(relation="IFCRELNESTS", name="IFCBEAM")
         run("The nest entity must match exactly 1/2", facet=facet, inst=subelement, expected=False)
-        facet = PartOf(relation="IFCRELNESTS", entity="IFCFURNITURE")
+        facet = PartOf(relation="IFCRELNESTS", name="IFCFURNITURE")
         run("The nest entity must match exactly 2/2", facet=facet, inst=subelement, expected=True)
 
         element.PredefinedType = "USERDEFINED"
         element.ObjectType = "WATERBOTTLE"
-        facet = PartOf(relation="IFCRELNESTS", entity="IFCFURNITURE", predefinedType="LITTERBOX")
+        facet = PartOf(relation="IFCRELNESTS", name="IFCFURNITURE", predefinedType="LITTERBOX")
         run("The nest predefined type must match exactly 1/2", facet=facet, inst=subelement, expected=False)
-        facet = PartOf(relation="IFCRELNESTS", entity="IFCFURNITURE", predefinedType="WATERBOTTLE")
+        facet = PartOf(relation="IFCRELNESTS", name="IFCFURNITURE", predefinedType="WATERBOTTLE")
         run("The nest predefined type must match exactly 2/2", facet=facet, inst=subelement, expected=True)
 
         ifc = ifcopenshell.file()
@@ -1558,7 +1563,7 @@ class TestPartOf:
         subsubelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcMechanicalFastener")
         ifcopenshell.api.run("nest.assign_object", ifc, related_object=subelement, relating_object=element)
         ifcopenshell.api.run("nest.assign_object", ifc, related_object=subsubelement, relating_object=subelement)
-        facet = PartOf(relation="IFCRELNESTS", entity="IFCFURNITURE")
+        facet = PartOf(relation="IFCRELNESTS", name="IFCFURNITURE")
         run("Nesting may be indirect", facet=facet, inst=subsubelement, expected=True)
 
 

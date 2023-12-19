@@ -8,6 +8,8 @@ try:
 except:
     print("Warning: GitPython not available.")
 import bpy
+import logging
+from blenderbim.bim import import_ifc
 from blenderbim.bim.ifc import IfcStore
 import blenderbim.tool as tool
 
@@ -32,7 +34,7 @@ class IfcGit:
         working_dir = repo.working_dir
         for item in os.listdir(working_dir):
             path = os.path.join(working_dir, item)
-            if os.path.isfile(path) and re.match(".*\.ifc$", path, re.IGNORECASE):
+            if os.path.isfile(path) and re.match(".*\\.ifc$", path, re.IGNORECASE):
                 cls.load_project(path)
                 return True
         return False
@@ -80,6 +82,16 @@ class IfcGit:
         IfcGitRepo.repo.git.checkout(path_file)
 
     @classmethod
+    def checkout_new_branch(cls, path_file):
+        """Create a branch and move uncommitted changes to this branch"""
+        props = bpy.context.scene.IfcGitProperties
+        if props.new_branch_name:
+            IfcGitRepo.repo.git.checkout(b=props.new_branch_name)
+            props.display_branch = props.new_branch_name
+            props.new_branch_name = ""
+            bpy.ops.ifcgit.refresh()
+
+    @classmethod
     def git_commit(cls, path_file):
         props = bpy.context.scene.IfcGitProperties
         repo = IfcGitRepo.repo
@@ -120,6 +132,7 @@ class IfcGit:
 
     @classmethod
     def push(cls, repo, remote_name, branch_name):
+        cls.config_push(repo)
         remote = repo.remotes[remote_name]
         try:
             remote.push(tags=True, refspec=branch_name).raise_if_error()
@@ -128,6 +141,7 @@ class IfcGit:
 
     @classmethod
     def create_new_branch(cls):
+        """Convert a detached HEAD into a branch"""
         props = bpy.context.scene.IfcGitProperties
         repo = IfcGitRepo.repo
         new_branch = repo.create_head(props.new_branch_name)
@@ -200,15 +214,16 @@ class IfcGit:
         """Check a bare branch or tag name is valid"""
 
         return re.match(
-            "^(?!\.| |-|/)((?!\.\.)(?!.*/\.)(/\*|/\*/)*(?!@\{)[^\~\:\^\\\ \?*\[])+(?<!\.|/)(?<!\.lock)$",
+            "^(?!\\.| |-|/)((?!\\.\\.)(?!.*/\\.)(/\\*|/\\*/)*(?!@\\{)[^\\~\\:\\^\\\\ \\?*\\[])+(?<!\\.|/)(?<!\\.lock)$",
             string,
         )
 
     @classmethod
-    def load_project(cls, path_ifc):
+    def load_project(cls, path_ifc=""):
         """Clear and load an ifc project"""
 
-        IfcStore.purge()
+        if path_ifc:
+            IfcStore.purge()
         # delete any IfcProject/* collections
         for collection in bpy.data.collections:
             if re.match("^IfcProject/", collection.name):
@@ -220,7 +235,14 @@ class IfcGit:
 
         bpy.data.orphans_purge(do_recursive=True)
 
-        bpy.ops.bim.load_project(filepath=path_ifc, should_start_fresh_session=False)
+        settings = import_ifc.IfcImportSettings.factory(bpy.context, path_ifc, logging.getLogger("ImportIFC"))
+        settings.should_setup_viewport_camera = False
+        ifc_importer = import_ifc.IfcImporter(settings)
+        ifc_importer.execute()
+        tool.Project.load_pset_templates()
+        tool.Project.load_default_thumbnails()
+        tool.Project.set_default_context()
+        tool.Project.set_default_modeling_dimensions()
         bpy.ops.object.select_all(action="DESELECT")
 
     @classmethod
@@ -401,6 +423,15 @@ class IfcGit:
         if not config_reader.has_section(section):
             config_writer.set_value(section, "cmd", "ifcmerge $BASE $REMOTE $LOCAL $MERGED")
             config_writer.set_value(section, "trustExitCode", True)
+
+    @classmethod
+    def config_push(cls, repo):
+        """Set push.autoSetupRemote"""
+        config_reader = repo.config_reader()
+        config_writer = repo.config_writer()
+        if not config_reader.has_section("push"):
+            config_writer.set_value("push", "default", "current")
+            config_writer.set_value("push", "autoSetupRemote", True)
 
     @classmethod
     def config_info_attributes(cls, repo):

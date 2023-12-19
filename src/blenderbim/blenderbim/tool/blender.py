@@ -38,7 +38,7 @@ VIEWPORT_ATTRIBUTES = [
 ]
 
 
-class Blender:
+class Blender(blenderbim.core.tool.Blender):
     OBJECT_TYPES_THAT_SUPPORT_EDIT_MODE = ("MESH", "CURVE", "SURFACE", "META", "FONT", "LATTICE", "ARMATURE")
     OBJECT_TYPES_THAT_SUPPORT_EDIT_GPENCIL_MODE = ("GPENCIL",)
 
@@ -168,7 +168,8 @@ class Blender:
         """
         area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
         region = next(region for region in area.regions if region.type == "WINDOW")
-        context_override = {"area": area, "region": region}
+        space = next(space for space in area.spaces if space.type == "VIEW_3D")
+        context_override = {"area": area, "region": region, "space_data": space}
         return context_override
 
     @classmethod
@@ -185,6 +186,11 @@ class Blender:
             setattr(region_3d, attr, data[attr])
 
     @classmethod
+    def set_viewport_tool(cls, tool_name):
+        with bpy.context.temp_override(**tool.Blender.get_viewport_context()):
+            bpy.ops.wm.tool_set_by_id(name=tool_name)
+
+    @classmethod
     def get_shader_editor_context(cls):
         for screen in bpy.data.screens:
             for area in screen.areas:
@@ -196,6 +202,14 @@ class Blender:
 
     @classmethod
     def copy_node_graph(cls, material_to, material_from):
+        # https://projects.blender.org/blender/blender/issues/108763
+        if bpy.app.version >= (4, 0):
+            print(
+                "WARNING. Copying node graph is not yet supported on Blender 4.0+ due Blender bug, "
+                f"copying node graph from {material_from.name} to {material_to.name} will be skipped"
+            )
+            return
+
         temp_override = cls.get_shader_editor_context()
         shader_editor = temp_override["space"]
 
@@ -237,6 +251,15 @@ class Blender:
     @classmethod
     def update_viewport(cls):
         tool.Blender.get_viewport_context()["area"].tag_redraw()
+
+    @classmethod
+    def force_depsgraph_update(cls):
+        """useful if you need to trigger callbacks like `depsgraph_update_pre`"""
+        # blender is requiring some ID to be changed
+        # to trigger depsgraph update
+        scene = bpy.context.scene
+        scene.show_subframe = scene.show_subframe
+        bpy.context.view_layer.update()
 
     @classmethod
     def ensure_unique_name(cls, name, objects, iteration=0):
@@ -342,6 +365,8 @@ class Blender:
             "max_y": bound_box[6][1],
             "min_z": bound_box[0][2],
             "max_z": bound_box[6][2],
+            "min_point": Vector(bound_box[0]),
+            "max_point": Vector(bound_box[6]),
             "center": (Vector(bound_box[6]) + Vector(bound_box[0])) / 2,
         }
         return bbox_dict
@@ -354,9 +379,10 @@ class Blender:
         active_object.select_set(True)
 
     @classmethod
-    def set_objects_selection(cls, context, active_object, selected_objects):
-        for obj in context.selected_objects:
-            obj.select_set(False)
+    def set_objects_selection(cls, context, active_object, selected_objects, clear_previous_selection=True):
+        if clear_previous_selection:
+            for obj in context.selected_objects:
+                obj.select_set(False)
         for obj in selected_objects:
             obj.select_set(True)
         context.view_layer.objects.active = active_object
@@ -483,6 +509,13 @@ class Blender:
         if obj:
             return obj
 
+    @classmethod
+    def lock_transform(cls, obj, lock_state=True):
+        for prop in ("lock_location", "lock_rotation", "lock_scale"):
+            attr = getattr(obj, prop)
+            for axis_idx in range(3):
+                attr[axis_idx] = lock_state
+
     class Modifier:
         @classmethod
         def is_eligible_for_railing_modifier(cls, obj):
@@ -559,10 +592,7 @@ class Blender:
                 modifier_data = list(cls.get_modifiers_data(parent_element))[item]
                 children = cls.get_children_objects(modifier_data)
                 for child_obj in children:
-                    for prop in ("lock_location", "lock_rotation", "lock_scale"):
-                        attr = getattr(child_obj, prop)
-                        for axis_idx in range(3):
-                            attr[axis_idx] = lock_state
+                    Blender.lock_transform(child_obj, lock_state)
 
             @classmethod
             def remove_constraints(cls, parent_element):
@@ -612,3 +642,61 @@ class Blender:
         if blenderbim.bim.last_commit_hash != "8888888":
             version += f"-{blenderbim.bim.last_commit_hash[:7]}"
         return version
+
+    @classmethod
+    def register_toolbar(cls):
+        import blenderbim.bim.module.model.workspace as ws_model
+        import blenderbim.bim.module.drawing.workspace as ws_drawing
+        import blenderbim.bim.module.spatial.workspace as ws_spatial
+        import blenderbim.bim.module.structural.workspace as ws_structural
+        import blenderbim.bim.module.covering.workspace as ws_covering
+
+        if bpy.app.background:
+            return
+
+        try:
+            bpy.utils.register_tool(ws_model.WallTool, after={"builtin.transform"}, separator=True, group=False)
+            bpy.utils.register_tool(ws_model.SlabTool, after={"bim.wall_tool"}, separator=False, group=False)
+            bpy.utils.register_tool(ws_model.DoorTool, after={"bim.slab_tool"}, separator=False, group=False)
+            bpy.utils.register_tool(ws_model.WindowTool, after={"bim.door_tool"}, separator=False, group=False)
+            bpy.utils.register_tool(ws_model.ColumnTool, after={"bim.window_tool"}, separator=False, group=False)
+            bpy.utils.register_tool(ws_model.BeamTool, after={"bim.column_tool"}, separator=False, group=False)
+            bpy.utils.register_tool(ws_model.DuctTool, after={"bim.beam_tool"}, separator=False, group=False)
+            bpy.utils.register_tool(ws_model.PipeTool, after={"bim.duct_tool"}, separator=False, group=False)
+            bpy.utils.register_tool(ws_model.BimTool, after={"bim.pipe_tool"}, separator=False, group=False)
+            bpy.utils.register_tool(ws_drawing.AnnotationTool, after={"bim.bim_tool"}, separator=True, group=False)
+            bpy.utils.register_tool(ws_spatial.SpatialTool, after={"bim.annotation_tool"}, separator=False, group=False)
+            bpy.utils.register_tool(
+                ws_structural.StructuralTool, after={"bim.spatial_tool"}, separator=False, group=False
+            )
+            bpy.utils.register_tool(ws_covering.CoveringTool, after={"bim.structural_tool"}, separator=False, group=False)
+        except:
+            pass
+
+    @classmethod
+    def unregister_toolbar(cls):
+        import blenderbim.bim.module.model.workspace as ws_model
+        import blenderbim.bim.module.drawing.workspace as ws_drawing
+        import blenderbim.bim.module.spatial.workspace as ws_spatial
+        import blenderbim.bim.module.structural.workspace as ws_structural
+        import blenderbim.bim.module.covering.workspace as ws_covering
+
+        if bpy.app.background:
+            return
+
+        try:
+            bpy.utils.unregister_tool(ws_model.WallTool)
+            bpy.utils.unregister_tool(ws_model.SlabTool)
+            bpy.utils.unregister_tool(ws_model.DoorTool)
+            bpy.utils.unregister_tool(ws_model.WindowTool)
+            bpy.utils.unregister_tool(ws_model.ColumnTool)
+            bpy.utils.unregister_tool(ws_model.BeamTool)
+            bpy.utils.unregister_tool(ws_model.DuctTool)
+            bpy.utils.unregister_tool(ws_model.PipeTool)
+            bpy.utils.unregister_tool(ws_model.BimTool)
+            bpy.utils.unregister_tool(ws_drawing.AnnotationTool)
+            bpy.utils.unregister_tool(ws_spatial.SpatialTool)
+            bpy.utils.unregister_tool(ws_structural.StructuralTool)
+            bpy.utils.unregister_tool(ws_covering.CoveringTool)
+        except:
+            pass

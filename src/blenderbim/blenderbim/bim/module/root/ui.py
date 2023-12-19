@@ -58,11 +58,11 @@ class BIM_PT_class(Panel):
                     root_prop.get_ifc_predefined_types(context.scene.BIMRootProperties, context),
                     is_reassigning_class=True,
                 )
+                self.layout.prop(context.scene.BIMRootProperties, "relating_class_object", icon="COPYDOWN")
             else:
                 row = self.layout.row(align=True)
                 row.label(text=IfcClassData.data["name"])
-                op = row.operator("bim.select_ifc_class", text="", icon="RESTRICT_SELECT_OFF")
-                op.ifc_class = IfcClassData.data["ifc_class"]
+                row.operator("bim.select_ifc_class", text="", icon="RESTRICT_SELECT_OFF")
                 row.operator("bim.unlink_object", icon="UNLINKED", text="")
                 if IfcClassData.data["can_reassign_class"]:
                     row.operator("bim.enable_reassign_class", icon="GREASEPENCIL", text="")

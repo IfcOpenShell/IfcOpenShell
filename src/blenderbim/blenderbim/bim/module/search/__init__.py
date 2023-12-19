@@ -20,7 +20,7 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
-    operator.ActivateIfcBuildingStoreyFilter,
+    operator.ActivateContainerFilter,
     operator.ActivateIfcClassFilter,
     operator.AddFilter,
     operator.AddFilterGroup,
@@ -40,6 +40,7 @@ classes = (
     operator.SaveSearch,
     operator.SaveSelectorQuery,
     operator.Search,
+    operator.SelectByProperty,
     operator.SelectFilterElements,
     operator.SelectGlobalId,
     operator.SelectIfcClass,
@@ -47,8 +48,6 @@ classes = (
     operator.ShowAllElements,
     operator.ToggleFilterSelection,
     prop.BIMColour,
-    prop.BIMFacet,
-    prop.BIMFilterGroup,
     prop.BIMFilterClasses,
     prop.BIMFilterBuildingStoreys,
     prop.BIMSearchProperties,
@@ -58,6 +57,7 @@ classes = (
     prop.SearchQueryGroup,
     prop.IfcSelectorProperties,
     ui.BIM_PT_search,
+    ui.BIM_PT_filter,
     ui.BIM_PT_colour_by_property,
     ui.BIM_PT_select_similar,
     ui.BIM_UL_colourscheme,

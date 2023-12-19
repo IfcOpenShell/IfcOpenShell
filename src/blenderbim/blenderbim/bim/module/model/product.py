@@ -80,9 +80,13 @@ class AddDefaultType(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMModelProperties
+        ifc_file = tool.Ifc.get()
         props.type_class = self.ifc_element_type
         if self.ifc_element_type == "IfcWallType":
-            props.type_predefined_type = "SOLIDWALL"
+            if ifc_file.schema == "IFC2X3":
+                props.type_predefined_type = "STANDARD"
+            else:
+                props.type_predefined_type = "SOLIDWALL"
             props.type_template = "LAYERSET_AXIS2"
         elif self.ifc_element_type == "IfcSlabType":
             props.type_predefined_type = "FLOOR"
@@ -185,8 +189,13 @@ class AddConstrTypeInstance(bpy.types.Operator):
         collection_obj = collection.BIMCollectionProperties.obj
 
         bpy.ops.bim.assign_class(obj=obj.name, ifc_class=instance_class)
+        tool.Blender.remove_data_block(mesh) # Remove "Instance" mesh
+
+        mesh_data = obj.data
         element = tool.Ifc.get_entity(obj)
         blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
+        if obj.data != mesh_data: # remove orphaned mesh from "bim.assign_class"
+            tool.Blender.remove_data_block(mesh_data)
 
         # Update required as core.type.assign_type may change obj.data
         # TODO: This is inefficient. It literally creates a mesh, then potentially removes it.
@@ -240,6 +249,8 @@ class AddConstrTypeInstance(bpy.types.Operator):
             mat.translation *= unit_scale
             mat = obj.matrix_world @ mat
             new_port = tool.Ifc.run("root.create_entity", ifc_class="IfcDistributionPort")
+            new_port.PredefinedType = port.PredefinedType
+            new_port.SystemType = port.SystemType
             tool.Ifc.run("system.assign_port", element=element, port=new_port)
             tool.Ifc.run("geometry.edit_object_placement", product=new_port, matrix=mat, is_si=True)
 
@@ -550,5 +561,6 @@ def ensure_material_unassigned(usecase_path, ifc_file, settings):
         total_removed = 0
         for i in to_remove:
             obj.active_material_index = i - total_removed
-            bpy.ops.object.material_slot_remove({"object": obj})
+            with bpy.context.temp_override(object=obj):
+                bpy.ops.object.material_slot_remove()
             total_removed += 1

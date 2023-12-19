@@ -461,6 +461,7 @@ int main(int argc, char** argv) {
 		("space-name-transform", po::value<std::string>(),
 			"Additional transform to the space labels in SVG")
 		("edge-arrows", "Adds arrow heads to edge segments to signify edge direction")
+		("ecef", "Write glTF in Earth-Centered Earth-Fixed coordinates. Requires PROJ")
 		;
 
     po::options_description cmdline_options;
@@ -527,6 +528,7 @@ int main(int argc, char** argv) {
 	const bool generate_uvs = vmap.count("generate-uvs") != 0;
 	const bool validate = vmap.count("validate") != 0;
 	const bool edge_arrows = vmap.count("edge-arrows") != 0;
+	const bool write_gltf_ecef = vmap.count("ecef") != 0;
 	const bool no_wire_intersection_check = vmap.count("no-wire-intersection-check") != 0;
 	const bool no_wire_intersection_tolerance = vmap.count("no-wire-intersection-tolerance") != 0;
 	const bool strict_tolerance = vmap.count("strict-tolerance") != 0;
@@ -840,7 +842,8 @@ int main(int argc, char** argv) {
 	settings.set(SerializerSettings::USE_MATERIAL_NAMES, use_material_names);
 	settings.set(SerializerSettings::USE_ELEMENT_TYPES, use_element_types);
 	settings.set(SerializerSettings::USE_ELEMENT_HIERARCHY, use_element_hierarchy);
-    settings.set_deflection_tolerance(deflection_tolerance);
+	settings.set(SerializerSettings::WRITE_GLTF_ECEF, write_gltf_ecef);
+	settings.set_deflection_tolerance(deflection_tolerance);
 	settings.set_angular_tolerance(angular_tolerance);
 	settings.precision = precision;
 

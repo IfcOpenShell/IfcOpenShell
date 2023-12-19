@@ -106,7 +106,7 @@ class Console(Reporter):
         for requirement in specification.requirements:
             self.set_style("reset")
             self.set_style("red") if requirement.failed_entities else self.set_style("green")
-            self.print(" " * 8 + requirement.to_string("requirement"))
+            self.print(" " * 8 + requirement.to_string("requirement", specification, requirement))
             self.set_style("reset")
             for i, element in enumerate(requirement.failed_entities[0:10]):
                 self.print(" " * 12, end="")
@@ -151,7 +151,7 @@ class Txt(Console):
         print(self.text)
 
     def to_file(self, filepath):
-        with open(filepath, "w") as outfile:
+        with open(filepath, "w", encoding="utf-8") as outfile:
             return outfile.write(self.text)
 
 
@@ -163,6 +163,8 @@ class Json(Reporter):
     def report(self):
         self.results["title"] = self.ids.info.get("title", "Untitled IDS")
         self.results["date"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.results["filepath"] = self.ids.filepath
+        self.results["filename"] = self.ids.filename
         total_specifications = 0
         total_specifications_pass = 0
         total_requirements = 0
@@ -211,16 +213,19 @@ class Json(Reporter):
         requirements = []
         for requirement in specification.requirements:
             total_fail = len(requirement.failed_entities)
+            total_pass = total_applicable - total_fail
+            percent_pass = math.floor((total_pass / total_applicable) * 100) if total_applicable else "N/A"
             total_checks += total_applicable
-            total_checks_pass += total_applicable - total_fail
+            total_checks_pass += total_pass
             requirements.append(
                 {
-                    "description": requirement.to_string("requirement"),
+                    "description": requirement.to_string("requirement", specification, requirement),
                     "status": requirement.status,
                     "failed_entities": self.report_failed_entities(requirement),
                     "total_applicable": total_applicable,
-                    "total_pass": total_applicable - total_fail,
+                    "total_pass": total_pass,
                     "total_fail": total_fail,
+                    "percent_pass": percent_pass,
                 }
             )
         total_applicable_pass = total_applicable - len(specification.failed_entities)
@@ -270,8 +275,8 @@ class Json(Reporter):
     def to_file(self, filepath):
         import json
 
-        with open(filepath, "w") as outfile:
-            return json.dump(self.results, outfile)
+        with open(filepath, "w", encoding="utf-8") as outfile:
+            return json.dump(self.results, outfile, ensure_ascii=False)
 
 
 class Html(Json):
@@ -300,7 +305,7 @@ class Html(Json):
         import pystache
 
         with open(os.path.join(cwd, "templates", "report.html"), "r") as file:
-            with open(filepath, "w") as outfile:
+            with open(filepath, "w", encoding="utf-8") as outfile:
                 return outfile.write(pystache.render(file.read(), self.results))
 
 
@@ -379,6 +384,7 @@ class Ods(Json):
                 "GlobalId",
                 "Tag",
                 "Element",
+                "ElementType",
             ]:
                 tc = TableCell(valuetype="string", stylename="h")
                 tc.addElement(P(text=header))
@@ -388,6 +394,8 @@ class Ods(Json):
                 if requirement["status"]:
                     continue
                 for failure in requirement["failed_entities"]:
+                    element = failure.get("element", None)
+                    element_type = ifcopenshell.util.element.get_type(failure.get("element", None))
                     row = [
                         requirement["description"],
                         failure.get("reason", "No reason provided"),
@@ -397,7 +405,8 @@ class Ods(Json):
                         failure["description"],
                         failure["global_id"],
                         failure["tag"],
-                        str(failure.get("element", "No element found")),
+                        str(element) if element else "N/A",
+                        str(element_type) if element_type else "N/A",
                     ]
                     tr = TableRow()
                     c = 0
@@ -433,13 +442,16 @@ class Bcf(Json):
                     continue
                 for failure in requirement["failed_entities"]:
                     element = failure["element"]
-                    title_components = [
+                    title_components = []
+                    for title_component in [
                         element.is_a(),
-                        getattr(element, "Name", None) or "Unnamed",
+                        getattr(element, "Name", "") or "Unnamed",
                         failure.get("reason", "No reason"),
                         getattr(element, "GlobalId", ""),
                         getattr(element, "Tag", ""),
-                    ]
+                    ]:
+                        if title_component:
+                            title_components.append(title_component)
                     title = " - ".join(title_components)
                     description = f'{specification["name"]} - {requirement["description"]}'
                     topic = bcfxml.add_topic(title, description, "IfcTester")

@@ -17,8 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from blenderbim.bim.module.search.prop import BIMFilterGroup
-from blenderbim.bim.prop import StrProperty
+from blenderbim.bim.prop import StrProperty, BIMFilterGroup
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -72,6 +71,7 @@ class CsvProperties(PropertyGroup):
     empty_value: StringProperty(default="-", name="Empty String Value")
     true_value: StringProperty(default="YES", name="True Value")
     false_value: StringProperty(default="NO", name="False Value")
+    concat_value: StringProperty(default=", ", name="Concat Value")
     csv_delimiter: EnumProperty(
         items=[
             (";", ";", ""),

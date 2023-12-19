@@ -27,10 +27,7 @@ import blenderbim.bim.helper
 class Type(blenderbim.core.tool.Type):
     @classmethod
     def change_object_data(cls, obj, data, is_global=False):
-        if is_global:
-            obj.data.user_remap(data)
-        else:
-            obj.data = data
+        tool.Geometry.change_object_data(obj, data, is_global)
 
     @classmethod
     def disable_editing(cls, obj):

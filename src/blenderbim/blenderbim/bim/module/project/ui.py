@@ -73,6 +73,8 @@ def file_menu(self, context):
     op = self.layout.operator("export_ifc.bim", text="Save IFC Project As...")
     op.should_save_as = True
     self.layout.separator()
+    self.layout.operator("bim.revert_project")
+    self.layout.separator()
 
 
 class BIM_PT_project(Panel):
@@ -82,7 +84,7 @@ class BIM_PT_project(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_options = {"HIDE_HEADER"}
-    bl_parent_id = "BIM_PT_project_info"
+    bl_parent_id = "BIM_PT_tab_project_info"
 
     def draw(self, context):
         if not ProjectData.is_loaded:
@@ -242,7 +244,7 @@ class BIM_PT_project_library(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_project_setup"
+    bl_parent_id = "BIM_PT_tab_project_setup"
 
     def draw(self, context):
         self.layout.use_property_decorate = False
@@ -285,7 +287,7 @@ class BIM_PT_links(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_project_setup"
+    bl_parent_id = "BIM_PT_tab_project_setup"
 
     def draw(self, context):
         self.props = context.scene.BIMProjectProperties
@@ -398,3 +400,10 @@ class BIM_PT_purge(Panel):
         layout.operator("bim.purge_unused_profiles")
         layout.operator("bim.purge_unused_types")
         layout.operator("bim.purge_unused_representations")
+        layout.separator()
+
+        layout.label(text="Purge unused elements by class:")
+        row = layout.row(align=True)
+        row.prop(context.scene.BIMDebugProperties, "ifc_class_purge", text="")
+        row.operator("bim.purge_unused_elements_by_class", text="", icon="TRASH")
+        row.operator("bim.print_unused_elements_stats", text="", icon="INFO")

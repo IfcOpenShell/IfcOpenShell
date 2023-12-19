@@ -65,7 +65,10 @@ class Usecase:
                             continue
                         for inverse2 in self.file.get_inverse(inverse):
                             if inverse2.is_a("IfcRelAssociatesMaterial"):
+                                history = inverse2.OwnerHistory
                                 self.file.remove(inverse2)
+                                if history:
+                                    ifcopenshell.util.element.remove_deep2(self.file, history)
                     else:
                         if not inverse.is_a("IfcMaterialUsageDefinition"):
                             continue
@@ -80,7 +83,10 @@ class Usecase:
                     if self.file.get_total_inverses(rel.RelatingMaterial) == 1 and len(rel.RelatedObjects) == 1:
                         self.file.remove(rel.RelatingMaterial)
                 if len(rel.RelatedObjects) == 1:
+                    history = rel.OwnerHistory
                     self.file.remove(rel)
+                    if history:
+                        ifcopenshell.util.element.remove_deep2(self.file, history)
                     continue
                 related_objects = set(rel.RelatedObjects)
                 related_objects.remove(self.settings["product"])

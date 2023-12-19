@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
 import ifcopenshell.util.element
 
 
@@ -48,4 +49,7 @@ class Usecase:
         if geometry:
             self.settings["boundary"].ConnectionGeometry = None
             ifcopenshell.util.element.remove_deep2(self.file, geometry)
+        history = self.settings["boundary"].OwnerHistory
         self.file.remove(self.settings["boundary"])
+        if history:
+            ifcopenshell.util.element.remove_deep2(self.file, history)

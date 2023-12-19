@@ -72,8 +72,14 @@ class BIM_PT_aggregate(Panel):
                 row.operator("bim.add_aggregate", icon="ADD", text="")
 
         row = layout.row(align=True)
-        parts = AggregateData.data["related_objects_amount"]
-        row.label(text=f"{parts or 'No'} Part{'s' if parts > 1 else ''}", icon="TRIA_DOWN")
+        total_parts = AggregateData.data["total_parts"]
+        if total_parts == 0:
+            row.label(text="No Parts", icon="TRIA_DOWN")
+        elif total_parts == 1:
+            row.label(text="1 Part", icon="TRIA_DOWN")
+        else:
+            row.label(text=f"{total_parts} Parts", icon="TRIA_DOWN")
+
         if AggregateData.data["has_related_objects"]:
             op = row.operator("bim.select_parts", icon="RESTRICT_SELECT_OFF", text="")
             op.obj = context.active_object.name

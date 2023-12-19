@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.element
 
 
 class Usecase:
@@ -60,4 +61,7 @@ class Usecase:
             rel.RelatedObjects = list(related_objects)
             ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": rel})
         else:
+            history = rel.OwnerHistory
             self.file.remove(rel)
+            if history:
+                ifcopenshell.util.element.remove_deep2(self.file, history)

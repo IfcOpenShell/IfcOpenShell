@@ -18,6 +18,7 @@
 
 import bpy
 from blenderbim.bim.module.system.data import SystemData
+import blenderbim.bim.module.system.decorator as decorator
 from blenderbim.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -44,6 +45,19 @@ class System(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
 
+class Zone(PropertyGroup):
+    name: StringProperty(name="Name")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+
+
+def toggle_decorations(self, context):
+    toggle = self.should_draw_decorations
+    if toggle:
+        decorator.SystemDecorator.install(context)
+    else:
+        decorator.SystemDecorator.uninstall()
+
+
 class BIMSystemProperties(PropertyGroup):
     system_attributes: CollectionProperty(name="System Attributes", type=Attribute)
     is_editing: BoolProperty(name="Is Editing", default=False)
@@ -51,4 +65,16 @@ class BIMSystemProperties(PropertyGroup):
     systems: CollectionProperty(name="Systems", type=System)
     active_system_index: IntProperty(name="Active System Index")
     active_system_id: IntProperty(name="Active System Id")
+    edited_system_id: IntProperty(name="Edited System Id")
     system_class: EnumProperty(items=get_system_class, name="Class")
+    should_draw_decorations: BoolProperty(
+        name="Should Draw Decorations", description="Toggle system decorations", update=toggle_decorations
+    )
+
+
+class BIMZoneProperties(PropertyGroup):
+    attributes: CollectionProperty(name="Attributes", type=Attribute)
+    is_loaded: BoolProperty(name="Is Loaded", default=False)
+    is_editing: IntProperty(name="Is Editing", default=0)
+    zones: CollectionProperty(name="Zones", type=Zone)
+    active_zone_index: IntProperty(name="Active Zone Index")

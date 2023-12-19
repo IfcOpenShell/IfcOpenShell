@@ -27,6 +27,7 @@ from test.bim.bootstrap import NewFile
 from blenderbim.tool.drawing import Drawing as subject
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.drawing.data import DecoratorData
+from mathutils import Vector
 
 import xml.etree.ElementTree as ET
 
@@ -53,10 +54,10 @@ class TestCreateAnnotationObject(NewFile):
 
 class TestCreateCamera(NewFile):
     def test_run(self):
-        obj = subject.create_camera("Name", mathutils.Matrix())
+        obj = subject.create_camera("Name", mathutils.Matrix(), "PERSPECTIVE")
         assert obj.name == "Name"
         assert obj.matrix_world == mathutils.Matrix()
-        assert obj.data.type == "ORTHO"
+        assert obj.data.type == "PERSP"
         assert obj.data.ortho_scale == 50
         assert obj.data.clip_end == 10
         assert obj.users_collection[0] == bpy.context.scene.collection
@@ -319,6 +320,7 @@ class TestGetDrawingGroup(NewFile):
         tool.Ifc.set(ifc)
         element = ifc.createIfcAnnotation()
         group = ifcopenshell.api.run("group.add_group", ifc)
+        group.ObjectType = "DRAWING"
         ifcopenshell.api.run("group.assign_group", ifc, products=[element], group=group)
         assert subject.get_drawing_group(element) == group
 
@@ -676,6 +678,10 @@ class TestDrawingMaintainingSheetPosition(NewFile):
         ifc = tool.Ifc.get()
         sheet_path = Path.cwd() / "layouts" / "A00 - UNTITLED.svg"
 
+        bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
+        obj = bpy.data.objects["Cube"]
+        bpy.ops.bim.assign_class(ifc_class="IfcActuator", predefined_type="ELECTRICACTUATOR", userdefined_type="")
+
         bpy.ops.bim.load_sheets()
         bpy.ops.bim.add_sheet()
 
@@ -693,12 +699,21 @@ class TestDrawingMaintainingSheetPosition(NewFile):
         bpy.ops.bim.add_drawing_to_sheet()
         bpy.ops.bim.open_sheet()
 
+        # uncomment if debugging
+        # without `sleep` `bim.open_sheet` tend to open sheet in browser
+        # with PLAN_VIEW.svg that will be created only later
+        # from time import sleep
+        # sleep(0.1)
+
         # check drawing default position
         drawing_data = self.get_sheet_drawing_data(sheet_path)
         assert drawing_data["foreground"] == (30.0, 30.0, 500.0, 500.0)
         assert drawing_data["view-title"] == (30.0, 535.0, 50.22, 10.0)
 
-        bpy.context.scene.camera.data.BIMCameraProperties.raster_x = 1200
+        bpy.context.scene.camera.data.BIMCameraProperties.width = 25
+        bpy.context.scene.camera.data.BIMCameraProperties.height = 25
+        tool.Blender.force_depsgraph_update()
+
         bpy.ops.bim.create_drawing()
         bpy.ops.bim.open_sheet()
 
@@ -706,8 +721,8 @@ class TestDrawingMaintainingSheetPosition(NewFile):
 
         # check drawing position on the sheet
         drawing_data = self.get_sheet_drawing_data(sheet_path)
-        assert drawing_data["foreground"] == (30.0, 71.67, 500.0, 416.67)
-        assert drawing_data["view-title"] == (30.0, 493.33, 50.22, 10.0)
+        assert drawing_data["foreground"] == (155.0, 155.0, 250.0, 250.0)
+        assert drawing_data["view-title"] == (155.0, 410.0, 50.22, 10.0)
 
 
 class TestUpdateTextValue(NewFile):
@@ -789,7 +804,7 @@ class TestUpdateTextValue(NewFile):
         assert obj is not None, obj
         with bpy.context.temp_override(active_object=obj):
             bpy.ops.bim.enable_editing_text()
-            bpy.ops.bim.remove_text_literal(1)
+            bpy.ops.bim.remove_text_literal(literal_prop_id=1)
             props.literals[0].attributes["Literal"].string_value = "changed_value"
             props.font_size = "2.5"
             bpy.ops.bim.disable_editing_text()
@@ -833,3 +848,34 @@ class TestDrawingStyles(NewFile):
         self.setup_project_with_drawing()
         bpy.ops.bim.reload_drawing_styles()
         assert len(self.drawing_styles) == 3
+
+
+class TestAddReferenceImage(NewFile):
+    def test_run(self):
+        bpy.context.scene.BIMProjectProperties.template_file = "0"
+        bpy.ops.bim.create_project()
+        ifc_file = tool.Ifc.get()
+
+        filepath = Path("test/files/image.jpg").absolute()
+        bpy.ops.bim.add_reference_image(filepath=str(filepath))
+
+        obj = bpy.data.objects["IfcAnnotation/image"]
+        assert obj is not None
+        assert tool.Cad.are_vectors_equal(obj.dimensions, Vector((3.53982, 2.0, 0.0)))
+
+        material = obj.active_material
+        assert material.name == "image"
+        assert material.BIMMaterialProperties.ifc_style_id != 0
+
+        style = ifc_file.by_id(material.BIMMaterialProperties.ifc_style_id)
+        styled_items = set(tool.Style.get_styled_items(style))
+        representation_items = set(tool.Geometry.get_active_representation(obj).Items)
+        assert styled_items == representation_items
+
+        material_nodes = material.node_tree.nodes
+        texture_filepath = material_nodes["Image Texture"].image.filepath
+        texture_filepath = Path(tool.Blender.blender_path_to_posix(texture_filepath))
+        assert texture_filepath == filepath
+
+        uv_node = material_nodes["Texture Coordinate"]
+        assert len(uv_node.outputs["Generated"].links[:]) == 1

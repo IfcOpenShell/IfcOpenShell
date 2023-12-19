@@ -53,7 +53,7 @@ def get_ifcpatch_recipes(self, context):
                 continue
             docs = ifcpatch.extract_docs(f, "Patcher", "__init__", ("src", "file", "logger", "args"))
             ifcpatchrecipes_enum.append((f, f, docs.get("description", "") if docs else ""))
-    return ifcpatchrecipes_enum
+    return sorted(ifcpatchrecipes_enum, key=lambda x: x[0])
 
 
 def update_ifc_patch_recipe(self, context):

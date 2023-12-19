@@ -164,6 +164,7 @@ class BIM_OT_add_aggregate(bpy.types.Operator, tool.Ifc.Operator):
 
     def create_aggregate(self, context, ifc_class):
         aggregate = bpy.data.objects.new("Assembly", None)
+        aggregate.location = context.scene.cursor.location
         bpy.ops.bim.assign_class(obj=aggregate.name, ifc_class=ifc_class)
         return aggregate
 
@@ -202,6 +203,7 @@ class BIM_OT_select_aggregate(bpy.types.Operator):
         aggregate_obj = tool.Ifc.get_object(aggregate)
         if aggregate_obj in context.selectable_objects:
             aggregate_obj.select_set(True)
+            bpy.context.view_layer.objects.active = aggregate_obj
         return {"FINISHED"}
 
 

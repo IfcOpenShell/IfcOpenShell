@@ -52,15 +52,20 @@ class profile_consequential:
         cls.test_name = test_name
 
     @classmethod
-    def log(cls):
+    def log(cls, args=[]):
         if cls.start_time is not None:
-            cls.lines.append(f"{cls.test_name}\t{timer() - cls.start_time:.10f}")
+            args = "" if not args else "\t" + "\t".join(args)
+            cls.lines.append(f"{cls.test_name}\t{timer() - cls.start_time:.10f}{args}")
 
     @classmethod
     def stop(cls):
         cls.log()
         cls.start_time = None
-        print("\n".join(cls.lines))
+        lines = "\n".join(cls.lines)
+        print(lines)
+        import pyperclip
+
+        pyperclip.copy(lines)
         cls.lines = []
 
 
@@ -156,9 +161,9 @@ class BaseDecorator:
             os.path.join(bpy.context.scene.BIMProperties.data_dir, "fonts", "OpenGost Type B TT.ttf")
         )
 
-        # 3D_POLYLINE_UNIFORM_COLOR is good for smoothed lines since `bgl.enable(GL_LINE_SMOOTH)` is deprecated
-        self.line_shader = gpu.shader.from_builtin("3D_POLYLINE_UNIFORM_COLOR")
-        self.base_shader = gpu.shader.from_builtin("3D_UNIFORM_COLOR")
+        # POLYLINE_UNIFORM_COLOR is good for smoothed lines since `bgl.enable(GL_LINE_SMOOTH)` is deprecated
+        self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
+        self.base_shader = gpu.shader.from_builtin("UNIFORM_COLOR")
 
     def get_camera_width_mm(self):
         # Horrific prototype code to ensure bgl draws at drawing scales
@@ -385,8 +390,6 @@ class BaseDecorator:
         # 0 is the default font, but we're fancier than that
         font_id = self.font_id
 
-        dpi = context.preferences.system.dpi
-
         color = context.preferences.addons["blenderbim"].preferences.decorations_colour
 
         ang = -Vector((1, 0)).angle_signed(text_dir)
@@ -406,7 +409,7 @@ class BaseDecorator:
         font_size_px = int(0.004118616 * mm_to_px) * font_size_mm / 2.5
         pos = pos - line_no * font_size_px * rotation_matrix[1]
 
-        blf.size(font_id, font_size_px, dpi)
+        blf.size(font_id, font_size_px)
 
         if box_alignment or center or vcenter:
             w, h = blf.dimensions(font_id, text)
@@ -798,7 +801,7 @@ class AngleDecorator(BaseDecorator):
                 angle_rad = acos(cos_a)
                 angle = angle_rad / pi * 180
             except ZeroDivisionError:
-                angle = 0
+                angle_rad, angle = 0, 0
 
             # calculate angle position
             p0, p1, p2 = [location_3d_to_region_2d(region, region3d, p) for p in vertices[i0 : i1 + 2]]
@@ -1558,15 +1561,15 @@ class CutDecorator:
         gpu.state.point_size_set(1)
         gpu.state.blend_set("ALPHA")
 
-        # 3D_POLYLINE_UNIFORM_COLOR is good for smoothed lines since `bgl.enable(GL_LINE_SMOOTH)` is deprecated
-        self.line_shader = gpu.shader.from_builtin("3D_POLYLINE_UNIFORM_COLOR")
+        # POLYLINE_UNIFORM_COLOR is good for smoothed lines since `bgl.enable(GL_LINE_SMOOTH)` is deprecated
+        self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
         self.line_shader.bind()
         # POLYLINE_UNIFORM_COLOR specific uniforms
         self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
         self.line_shader.uniform_float("lineWidth", 2.0)
 
         # general shader
-        self.shader = gpu.shader.from_builtin("3D_UNIFORM_COLOR")
+        self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
         self.shader.bind()
 
         black = (0, 0, 0, 1)
@@ -1926,7 +1929,7 @@ class DecorationsHandler:
         if cls.installed:
             cls.uninstall()
         handler = cls()
-        # NOTE: we USE POST_PIXEL here so that we can draw use both 3D_POLYLINE_UNIFORM_COLOR
+        # NOTE: we USE POST_PIXEL here so that we can use both POLYLINE_UNIFORM_COLOR
         # and drawing text in the same handler. BUT this means that we supply coordinates in WINSPACE
         cls.installed = SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_PIXEL")
 
@@ -1944,6 +1947,7 @@ class DecorationsHandler:
             self.decorators[object_type] = self.decorators["FALL"]
 
     def get_objects_and_decorators(self, collection):
+        # TODO: do it in data instead of the handler for performance?
         results = []
 
         for obj in collection.all_objects:

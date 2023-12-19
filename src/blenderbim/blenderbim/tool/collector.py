@@ -107,11 +107,12 @@ class Collector(blenderbim.core.tool.Collector):
                     collection.children.unlink(object_collection)
             collection_collection.children.link(object_collection)
 
+        # If an aggregate or nested host loses all its children, it no longer needs its own collection
+        if obj.BIMObjectProperties.collection and obj.BIMObjectProperties.collection != object_collection:
+            bpy.data.collections.remove(obj.BIMObjectProperties.collection)
+
     @classmethod
     def _get_own_collection(cls, element, obj):
-        if obj.BIMObjectProperties.collection:
-            return obj.BIMObjectProperties.collection
-
         if element.is_a("IfcProject"):
             return cls._create_own_collection(obj)
 
@@ -154,6 +155,10 @@ class Collector(blenderbim.core.tool.Collector):
 
         if getattr(element, "IsDecomposedBy", None):
             return cls._create_own_collection(obj)
+
+        if getattr(element, "IsNestedBy", None):
+            if [e for e in element.IsNestedBy[0].RelatedObjects if not e.is_a("IfcPort")]:
+                return cls._create_own_collection(obj)
 
     @classmethod
     def _get_collection(cls, element, obj):
@@ -199,6 +204,14 @@ class Collector(blenderbim.core.tool.Collector):
                 if collection:
                     return collection
 
+        nest = ifcopenshell.util.element.get_nest(element)
+        if nest:
+            nest_obj = tool.Ifc.get_object(nest)
+            if nest_obj:
+                collection = nest_obj.BIMObjectProperties.collection
+                if collection:
+                    return collection
+
         container = ifcopenshell.util.element.get_container(element)
         if container:
             container_obj = tool.Ifc.get_object(container)
@@ -227,6 +240,8 @@ class Collector(blenderbim.core.tool.Collector):
 
     @classmethod
     def _create_own_collection(cls, obj):
+        if obj.BIMObjectProperties.collection:
+            return obj.BIMObjectProperties.collection
         collection = bpy.data.collections.new(obj.name)
         obj.BIMObjectProperties.collection = collection
         collection.BIMCollectionProperties.obj = obj

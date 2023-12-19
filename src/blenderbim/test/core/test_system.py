@@ -62,7 +62,7 @@ class TestRemoveSystem:
 class TestEnableEditingSystem:
     def test_run(self, system):
         system.import_system_attributes("system").should_be_called()
-        system.set_active_system("system").should_be_called()
+        system.set_active_edited_system("system").should_be_called()
         subject.enable_editing_system(system, system="system")
 
 
@@ -87,6 +87,7 @@ class TestUnassignSystem:
 class TestSelectSystemProducts:
     def test_run(self, system):
         system.select_system_products("system").should_be_called()
+        system.set_active_system("system").should_be_called()
         subject.select_system_products(system, system="system")
 
 

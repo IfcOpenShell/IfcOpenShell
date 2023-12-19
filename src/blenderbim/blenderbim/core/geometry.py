@@ -103,24 +103,43 @@ def switch_representation(
         if not geometry.does_representation_id_exist(representation_id):
             return
 
-    representation = geometry.resolve_mapped_representation(representation)
-    existing_data = geometry.get_representation_data(representation)
+    entity = ifc.get_entity(obj)
+    current_obj_data = geometry.get_object_data(obj)
 
-    if should_reload or not existing_data:
-        data = geometry.import_representation(obj, representation, apply_openings=apply_openings)
-        geometry.rename_object(data, geometry.get_representation_name(representation))
-        geometry.link(representation, data)
+    if not current_obj_data and geometry.is_text_literal(representation):
+        return
+
+    has_openings = apply_openings and getattr(entity, "HasOpenings", None)
+    if has_openings:
+        # if it has openings make sure to switch to element's mapped representation
+        representation = geometry.unresolve_type_representation(representation, entity)
     else:
-        data = existing_data
+        # doesn't resolve mapped representations in case if it's going to have openings
+        # otherwise we would also add openings to the type and other occurences mesh data
+        representation = geometry.resolve_mapped_representation(representation)
 
-    geometry.change_object_data(obj, data, is_global=is_global)
+    old_repr_data = geometry.get_representation_data(representation)
+    if should_reload or not old_repr_data:
+        new_repr_data = geometry.import_representation(obj, representation, apply_openings=apply_openings)
+        geometry.rename_object(new_repr_data, geometry.get_representation_name(representation))
+        geometry.link(representation, new_repr_data)
+    else:
+        new_repr_data = old_repr_data
+
+    geometry.change_object_data(obj, new_repr_data, is_global=is_global and not has_openings)
     geometry.record_object_materials(obj)
 
-    if should_reload and existing_data:
-        geometry.delete_data(existing_data)
+    # we assume that all the occurences and the type have the same representation context active
+    # so geometry.delete_data cannot remove the data that's still used by some other object
+    if should_reload and old_repr_data:
+        # if current object was using some temporary mesh (like during profile edit mode) instead of `old_repr_data`
+        # then `change_object_data` won't switch the mesh for all the occurences and we need to do it explicitly
+        if current_obj_data != old_repr_data and geometry.has_data_users(old_repr_data):
+            geometry.replace_object_data_globally(old_repr_data, new_repr_data)
+        geometry.delete_data(old_repr_data)
 
     geometry.clear_modifiers(obj)
-    geometry.clear_cache(ifc.get_entity(obj))
+    geometry.clear_cache(entity)
 
 
 def get_representation_ifc_parameters(geometry, obj=None, should_sync_changes_first=False):
@@ -158,9 +177,12 @@ def remove_representation(ifc, geometry, obj=None, representation=None):
 
 
 def purge_unused_representations(ifc, geometry):
+    purged_representations = 0
     for representation in geometry.get_model_representations():
         if ifc.get().get_total_inverses(representation) == 0:
             ifc.run("geometry.remove_representation", representation=representation)
+            purged_representations += 1
+    return purged_representations
 
 
 def select_connection(geometry, connection=None):

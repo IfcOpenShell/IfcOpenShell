@@ -64,11 +64,8 @@ class AddFilterGroup(Operator):
     module: StringProperty()
 
     def execute(self, context):
-        if self.module == "search":
-            props = context.scene.BIMSearchProperties
-        elif self.module == "csv":
-            props = context.scene.CsvProperties
-        props.filter_groups.add()
+        filter_groups = tool.Search.get_filter_groups(self.module)
+        filter_groups.add()
         return {"FINISHED"}
 
 
@@ -79,11 +76,8 @@ class RemoveFilterGroup(Operator):
     module: StringProperty()
 
     def execute(self, context):
-        if self.module == "search":
-            props = context.scene.BIMSearchProperties
-        elif self.module == "csv":
-            props = context.scene.CsvProperties
-        props.filter_groups.remove(self.index)
+        filter_groups = tool.Search.get_filter_groups(self.module)
+        filter_groups.remove(self.index)
         return {"FINISHED"}
 
 
@@ -95,11 +89,8 @@ class RemoveFilter(Operator):
     module: StringProperty()
 
     def execute(self, context):
-        if self.module == "search":
-            props = context.scene.BIMSearchProperties
-        elif self.module == "csv":
-            props = context.scene.CsvProperties
-        props.filter_groups[self.group_index].filters.remove(self.index)
+        filter_groups = tool.Search.get_filter_groups(self.module)
+        filter_groups[self.group_index].filters.remove(self.index)
         return {"FINISHED"}
 
 
@@ -111,11 +102,8 @@ class AddFilter(Operator):
     module: StringProperty()
 
     def execute(self, context):
-        if self.module == "search":
-            props = context.scene.BIMSearchProperties
-        elif self.module == "csv":
-            props = context.scene.CsvProperties
-        new = props.filter_groups[self.index].filters.add()
+        filter_groups = tool.Search.get_filter_groups(self.module)
+        new = filter_groups[self.index].filters.add()
         new.type = self.type
         return {"FINISHED"}
 
@@ -129,10 +117,7 @@ class SelectFilterElements(bpy.types.Operator):
     module: StringProperty()
 
     def execute(self, context):
-        if self.module == "search":
-            props = context.scene.BIMSearchProperties
-        elif self.module == "csv":
-            props = context.scene.CsvProperties
+        filter_groups = tool.Search.get_filter_groups(self.module)
         global_ids = []
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
@@ -145,9 +130,9 @@ class SelectFilterElements(bpy.types.Operator):
             name = "globalid-filter-" + ifcopenshell.guid.new()
             text_data = bpy.data.texts.new(name)
             text_data.from_string(",".join(global_ids))
-            props.filter_groups[self.group_index].filters[self.index].value = f"bpy.data.texts['{name}']"
+            filter_groups[self.group_index].filters[self.index].value = f"bpy.data.texts['{name}']"
         else:
-            props.filter_groups[self.group_index].filters[self.index].value = ",".join(global_ids)
+            filter_groups[self.group_index].filters[self.index].value = ",".join(global_ids)
         return {"FINISHED"}
 
 
@@ -163,13 +148,9 @@ class EditFilterQuery(Operator, tool.Ifc.Operator):
         if self.query == self.old_query:
             return
 
-        if self.module == "search":
-            props = context.scene.BIMSearchProperties
-        elif self.module == "csv":
-            props = context.scene.CsvProperties
-
+        filter_groups = tool.Search.get_filter_groups(self.module)
         try:
-            tool.Search.import_filter_query(self.query, props.filter_groups)
+            tool.Search.import_filter_query(self.query, filter_groups)
         except:
             return
 
@@ -178,12 +159,9 @@ class EditFilterQuery(Operator, tool.Ifc.Operator):
         row.prop(self, "query", text="")
 
     def invoke(self, context, event):
-        if self.module == "search":
-            props = context.scene.BIMSearchProperties
-        elif self.module == "csv":
-            props = context.scene.CsvProperties
+        filter_groups = tool.Search.get_filter_groups(self.module)
 
-        self.query = tool.Search.export_filter_query(props.filter_groups)
+        self.query = tool.Search.export_filter_query(filter_groups)
         self.old_query = self.query
 
         return context.window_manager.invoke_props_dialog(self)
@@ -220,13 +198,10 @@ class SaveSearch(Operator, tool.Ifc.Operator):
         if not self.name:
             return
 
-        if self.module == "search":
-            props = context.scene.BIMSearchProperties
-        elif self.module == "csv":
-            props = context.scene.CsvProperties
+        filter_groups = tool.Search.get_filter_groups(self.module)
 
         try:
-            query = tool.Search.export_filter_query(props.filter_groups)
+            query = tool.Search.export_filter_query(filter_groups)
             results = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query)
         except:
             return
@@ -257,12 +232,9 @@ class LoadSearch(Operator, tool.Ifc.Operator):
     module: StringProperty()
 
     def _execute(self, context):
-        if self.module == "search":
-            props = context.scene.BIMSearchProperties
-        elif self.module == "csv":
-            props = context.scene.CsvProperties
+        filter_groups = tool.Search.get_filter_groups(self.module)
         group = tool.Ifc.get().by_id(int(context.scene.BIMSearchProperties.saved_searches))
-        query = tool.Search.import_filter_query(tool.Search.get_group_query(group), props.filter_groups)
+        query = tool.Search.import_filter_query(tool.Search.get_group_query(group), filter_groups)
 
     def draw(self, context):
         props = context.scene.BIMSearchProperties
@@ -333,6 +305,36 @@ class ColourByProperty(Operator):
             data["area"].spaces[0].shading.color_type = "OBJECT"
 
 
+class SelectByProperty(Operator):
+    bl_idname = "bim.select_by_property"
+    bl_label = "Select by Property"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.BIMSearchProperties
+        return props.active_colourscheme_index < len(props.colourscheme)
+
+    def execute(self, context):
+        props = context.scene.BIMSearchProperties
+        query = props.colourscheme_query
+
+        if not query:
+            self.report({"ERROR"}, "No Query Provided")
+            return {"CANCELLED"}
+
+        active_value = props.colourscheme[props.active_colourscheme_index].name
+
+        for obj in context.visible_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            value = str(ifcopenshell.util.selector.get_element_value(element, query))
+            if value == active_value:
+                obj.select_set(True)
+        return {"FINISHED"}
+
+
 class SaveColourscheme(Operator, tool.Ifc.Operator):
     bl_idname = "bim.save_colourscheme"
     bl_label = "Save Colourscheme"
@@ -356,7 +358,9 @@ class SaveColourscheme(Operator, tool.Ifc.Operator):
             description["colourscheme_query"] = query
             group.Description = json.dumps(description)
         else:
-            description = json.dumps({"type": "BBIM_Search", "colourscheme": coulour_scheme,"colourscheme_query": query})
+            description = json.dumps(
+                {"type": "BBIM_Search", "colourscheme": coulour_scheme, "colourscheme_query": query}
+            )
             group = ifcopenshell.api.run("group.add_group", tool.Ifc.get(), Name=self.name, Description=description)
 
     def invoke(self, context, event):
@@ -422,18 +426,36 @@ class SelectGlobalId(Operator):
 
 
 class SelectIfcClass(Operator):
-    """Click to select all objects that match with the given IFC class"""
+    """Click to select all objects that match with the given IFC class\nSHIFT + Click to also match Predefined Type"""
 
     bl_idname = "bim.select_ifc_class"
     bl_label = "Select IFC Class"
     bl_options = {"REGISTER", "UNDO"}
-    ifc_class: StringProperty()
+    should_filter_predefined_type: BoolProperty(default=False)
+
+    def invoke(self, context, event):
+        self.should_filter_predefined_type = event.shift
+        return self.execute(context)
 
     def execute(self, context):
-        for element in tool.Ifc.get().by_type(self.ifc_class):
-            obj = tool.Ifc.get_object(element)
-            if obj:
-                obj.select_set(True)
+        objects = context.selected_objects
+        classes = set()
+        predefined_types = set()
+        for obj in objects:
+            element = tool.Ifc.get_entity(obj)
+            if element:
+                classes.add(element.is_a())
+                predefined_types.add(ifcopenshell.util.element.get_predefined_type(element))
+        for cls in classes:
+            for element in tool.Ifc.get().by_type(cls):
+                if (
+                    self.should_filter_predefined_type
+                    and ifcopenshell.util.element.get_predefined_type(element) not in predefined_types
+                ):
+                    continue
+                obj = tool.Ifc.get_object(element)
+                if obj:
+                    obj.select_set(True)
         return {"FINISHED"}
 
 
@@ -466,8 +488,8 @@ class ToggleFilterSelection(Operator):
         if props.filter_type == "CLASSES":
             for ifc_class in props.filter_classes:
                 ifc_class.is_selected = self.selecting_actionbool
-        elif props.filter_type == "BUILDINGSTOREYS":
-            for building_storey in props.filter_building_storeys:
+        elif props.filter_type == "CONTAINER":
+            for building_storey in props.filter_container:
                 building_storey.is_selected = self.selecting_actionbool
         return {"FINISHED"}
 
@@ -525,11 +547,11 @@ class ActivateIfcClassFilter(Operator):
         row.operator("bim.toggle_filter_selection", text="Deselect All").action = "DESELECT"
 
 
-class ActivateIfcBuildingStoreyFilter(Operator):
+class ActivateContainerFilter(Operator):
     """Filter the current selection by Building Storey"""
 
-    bl_idname = "bim.activate_ifc_building_storey_filter"
-    bl_label = "Filter by Building Storey"
+    bl_idname = "bim.activate_ifc_container_filter"
+    bl_label = "Filter by Container"
 
     @classmethod
     def poll(cls, context):
@@ -540,27 +562,29 @@ class ActivateIfcBuildingStoreyFilter(Operator):
 
     def invoke(self, context, event):
         props = bpy.context.scene.BIMSearchProperties
-        props.filter_building_storeys.clear()
+        props.filter_container.clear()
 
-        ifc_building_storeys = {}
+        containers = {}
+        containers.setdefault("None", 0)
         for obj in context.selected_objects:
-            storey = tool.Misc.get_object_storey(obj)
-            if not storey:
+            container = tool.Spatial.get_container(tool.Ifc.get_entity(obj))
+            if not container:
+                containers["None"] += 1
                 continue
-            ifc_building_storeys.setdefault(storey.Name, 0)
-            ifc_building_storeys[storey.Name] += 1
+            containers.setdefault(container.Name, 0)
+            containers[container.Name] += 1
 
-        for name, total in dict(sorted(ifc_building_storeys.items())).items():
-            new = props.filter_building_storeys.add()
+        for name, total in dict(sorted(containers.items())).items():
+            new = props.filter_container.add()
             new.name = name
             new.total = total
 
-        props.filter_type = "BUILDINGSTOREYS"
+        props.filter_type = "CONTAINER"
 
         return context.window_manager.invoke_props_dialog(self, width=250)
 
     def execute(self, context):
-        bpy.context.scene.BIMSearchProperties.filter_building_storeys.clear()
+        bpy.context.scene.BIMSearchProperties.filter_container.clear()
         return {"FINISHED"}
 
     def draw(self, context):
@@ -568,12 +592,12 @@ class ActivateIfcBuildingStoreyFilter(Operator):
             "BIM_UL_ifc_building_storey_filter",
             "",
             context.scene.BIMSearchProperties,
-            "filter_building_storeys",
+            "filter_container",
             context.scene.BIMSearchProperties,
-            "filter_building_storeys_index",
+            "filter_container_index",
             rows=20
-            if len(bpy.context.scene.BIMSearchProperties.filter_building_storeys) > 20
-            else len(bpy.context.scene.BIMSearchProperties.filter_building_storeys),
+            if len(bpy.context.scene.BIMSearchProperties.filter_container) > 20
+            else len(bpy.context.scene.BIMSearchProperties.filter_container),
         )
         row = self.layout.row(align=True)
         row.operator("bim.toggle_filter_selection", text="Select All").action = "SELECT"
@@ -820,10 +844,13 @@ class SelectSimilar(Operator, tool.Ifc.Operator):
         props = context.scene.BIMSearchProperties
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
-        value = ifcopenshell.util.selector.get_element_value(element, props.element_key)
+        key = props.element_key
+        if props.element_key == "PredefinedType":
+            key = "predefined_type"
+        value = ifcopenshell.util.selector.get_element_value(element, key)
         for obj in context.visible_objects:
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
-            if ifcopenshell.util.selector.get_element_value(element, props.element_key) == value:
+            if ifcopenshell.util.selector.get_element_value(element, key) == value:
                 obj.select_set(True)

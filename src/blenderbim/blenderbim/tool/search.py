@@ -13,6 +13,17 @@ class Search(blenderbim.core.tool.Search):
         return json.loads(group.Description)["query"]
 
     @classmethod
+    def get_filter_groups(cls, module):
+        if module == "search":
+            return bpy.context.scene.BIMSearchProperties.filter_groups
+        elif module == "csv":
+            return bpy.context.scene.CsvProperties.filter_groups
+        elif module == "drawing_include":
+            return bpy.context.active_object.data.BIMCameraProperties.include_filter_groups
+        elif module == "drawing_exclude":
+            return bpy.context.active_object.data.BIMCameraProperties.exclude_filter_groups
+
+    @classmethod
     def import_filter_query(cls, query, filter_groups):
         filter_groups.clear()
         transformer = ImportFilterQueryTransformer(filter_groups)

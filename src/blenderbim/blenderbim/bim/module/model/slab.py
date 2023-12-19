@@ -196,6 +196,7 @@ class DumbSlabGenerator:
             is_global=True,
             should_sync_changes_first=False,
         )
+        tool.Blender.remove_data_block(mesh)
 
         if self.footprint_context:
             extrusion = tool.Model.get_extrusion(representation)
@@ -287,7 +288,7 @@ class DumbSlabPlaner:
                     "geometry.add_slab_representation",
                     tool.Ifc.get(),
                     context=body_context,
-                    depth=thickness,
+                    depth=thickness * self.unit_scale,
                     x_angle=x_angle,
                 )
                 for inverse in tool.Ifc.get().get_inverse(representation):
@@ -312,7 +313,7 @@ class DumbSlabPlaner:
                 "geometry.add_slab_representation",
                 tool.Ifc.get(),
                 context=body_context,
-                depth=thickness,
+                depth=thickness * self.unit_scale,
                 x_angle=x_angle,
             )
             ifcopenshell.api.run(
@@ -624,7 +625,7 @@ class EnableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.object.mode_set(mode="EDIT")
         ProfileDecorator.install(context, exit_edit_mode_callback=lambda: disable_editing_extrusion_profile(context))
         if not bpy.app.background:
-            bpy.ops.wm.tool_set_by_id(tool.Blender.get_viewport_context(), name="bim.cad_tool")
+            tool.Blender.set_viewport_tool("bim.cad_tool")
         return {"FINISHED"}
 
 

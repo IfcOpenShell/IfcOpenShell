@@ -18,10 +18,11 @@
 
 import bpy
 import json
-import ifccsv
+import logging
 import ifcopenshell
 import blenderbim.bim.handler
 import blenderbim.tool as tool
+from blenderbim.bim.ifc import IfcStore
 
 
 class SelectDiffJsonFile(bpy.types.Operator):
@@ -51,8 +52,37 @@ class VisualiseDiff(bpy.types.Operator):
             diff = json.load(file)
         for obj in context.visible_objects:
             obj.color = (1.0, 1.0, 1.0, 1.0)
-            element = tool.Ifc.get_entity(obj)
-            if not element:
+
+            if "IfcDiff Deleted Elements" in obj.users_collection[0].name:
+                obj.color = (1.0, 0.0, 0.0, 1.0)
+                continue
+            elif "IfcDiff Added Elements" in obj.users_collection[0].name:
+                obj.color = (0.0, 1.0, 0.0, 1.0)
+                continue
+            elif "IfcDiff Changed Elements" in obj.users_collection[0].name:
+                obj.color = (0.0, 0.0, 0.7, 1.0)
+                continue
+
+            if not obj.BIMObjectProperties.ifc_definition_id:
+                continue
+
+            ifc_file = ""
+            for scene in obj.users_scene:
+                if scene.BIMProperties.ifc_file:
+                    ifc_file = scene.BIMProperties.ifc_file
+                    if scene.library:
+                        break
+
+            if ifc_file:
+                if ifc_file not in IfcStore.session_files:
+                    IfcStore.session_files[ifc_file] = ifcopenshell.open(ifc_file)
+                element_file = IfcStore.session_files[ifc_file]
+            else:
+                element_file = ifc_file
+
+            try:
+                element = element_file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+            except:
                 continue
             global_id = getattr(element, "GlobalId", None)
             if not global_id:
@@ -115,14 +145,140 @@ class ExecuteIfcDiff(bpy.types.Operator):
     def execute(self, context):
         import ifcdiff
 
-        old = ifcopenshell.open(context.scene.DiffProperties.old_file)
-        new = ifcopenshell.open(context.scene.DiffProperties.new_file)
-        relationships = [r.relationship for r in context.scene.DiffProperties.diff_relationships]
-        query = context.scene.DiffProperties.diff_filter_elements
+        self.props = context.scene.DiffProperties
+
+        if tool.Ifc.get():
+            if self.props.active_file == "NONE":
+                old = ifcopenshell.open(self.props.old_file)
+                new = ifcopenshell.open(self.props.new_file)
+            elif self.props.active_file == "NEW":
+                old = ifcopenshell.open(self.props.old_file)
+                new = tool.Ifc.get()
+            elif self.props.active_file == "OLD":
+                old = tool.Ifc.get()
+                new = ifcopenshell.open(self.props.new_file)
+        else:
+            old = ifcopenshell.open(self.props.old_file)
+            new = ifcopenshell.open(self.props.new_file)
+
+        relationships = [r.relationship for r in self.props.diff_relationships]
+        query = self.props.diff_filter_elements
 
         ifc_diff = ifcdiff.IfcDiff(old, new, relationships=relationships, filter_elements=query)
         ifc_diff.diff()
         ifc_diff.export(self.filepath)
-        context.scene.DiffProperties.diff_json_file = self.filepath
+        self.props.diff_json_file = self.filepath
+
+        self.load_changed_elements(ifc_diff)
+
         blenderbim.bim.handler.refresh_ui_data()
+        return {"FINISHED"}
+
+    def load_changed_elements(self, ifc_diff):
+        if not tool.Ifc.get() or self.props.active_file == "NONE" or not self.props.should_load_changed_elements:
+            return
+
+        active_ifc = tool.Ifc.get()
+        logger = logging.getLogger("ImportIFC")
+        ifc_import_settings = blenderbim.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
+        ifc_importer = blenderbim.bim.import_ifc.IfcImporter(ifc_import_settings)
+
+        if self.props.active_file == "NEW":
+            tool.Ifc.set(ifc_diff.old)
+            ifc_importer.file = ifc_diff.old
+            ifc_importer.process_context_filter()
+            ifc_importer.create_materials()
+            ifc_importer.create_styles()
+
+            elements = {ifc_diff.old.by_guid(guid) for guid in ifc_diff.deleted_elements}
+            ifc_importer.create_generic_elements(elements)
+            self.place_objs_in_collection(ifc_importer.added_data.values(), "IfcDiff Deleted Elements")
+
+            ifc_importer.added_data = {}
+
+            elements = {ifc_diff.old.by_guid(guid) for guid in ifc_diff.change_register.keys()}
+            ifc_importer.create_generic_elements(elements)
+            self.place_objs_in_collection(ifc_importer.added_data.values(), "IfcDiff Changed Elements")
+        elif self.props.active_file == "OLD":
+            tool.Ifc.set(ifc_diff.new)
+            ifc_importer.file = ifc_diff.new
+            ifc_importer.process_context_filter()
+            ifc_importer.create_materials()
+            ifc_importer.create_styles()
+
+            elements = {ifc_diff.new.by_guid(guid) for guid in ifc_diff.added_elements}
+            ifc_importer.create_generic_elements(elements)
+            self.place_objs_in_collection(ifc_importer.added_data.values(), "IfcDiff Added Elements")
+
+            ifc_importer.added_data = {}
+
+            elements = {ifc_diff.new.by_guid(guid) for guid in ifc_diff.change_register.keys()}
+            ifc_importer.create_generic_elements(elements)
+            self.place_objs_in_collection(ifc_importer.added_data.values(), "IfcDiff Changed Elements")
+        tool.Ifc.set(active_ifc)
+
+    def place_objs_in_collection(self, objs, name):
+        collection = bpy.data.collections.get(name)
+        if not collection:
+            collection = bpy.data.collections.new(name)
+            bpy.context.scene.collection.children.link(collection)
+
+        for obj in objs:
+            if isinstance(obj, bpy.types.Object):
+                collection.objects.link(obj)
+
+
+class SelectDiffObjects(bpy.types.Operator):
+    bl_idname = "bim.select_diff_objects"
+    bl_label = "Select Diff Objects"
+    bl_options = {"REGISTER", "UNDO"}
+    mode: bpy.props.StringProperty()
+
+    def execute(self, context):
+        ifc_file = tool.Ifc.get()
+        with open(context.scene.DiffProperties.diff_json_file, "r") as file:
+            diff = json.load(file)
+        for obj in context.visible_objects:
+            obj.select_set(False)
+
+            if self.mode == "DELETED" and "IfcDiff Deleted Elements" in obj.users_collection[0].name:
+                obj.select_set(True)
+                continue
+            elif self.mode == "ADDED" and "IfcDiff Added Elements" in obj.users_collection[0].name:
+                obj.select_set(True)
+                continue
+            elif self.mode == "CHANGED" and "IfcDiff Changed Elements" in obj.users_collection[0].name:
+                obj.select_set(True)
+                continue
+
+            if not obj.BIMObjectProperties.ifc_definition_id:
+                continue
+
+            ifc_file = ""
+            for scene in obj.users_scene:
+                if scene.BIMProperties.ifc_file:
+                    ifc_file = scene.BIMProperties.ifc_file
+                    if scene.library:
+                        break
+
+            if ifc_file:
+                if ifc_file not in IfcStore.session_files:
+                    IfcStore.session_files[ifc_file] = ifcopenshell.open(ifc_file)
+                element_file = IfcStore.session_files[ifc_file]
+            else:
+                element_file = ifc_file
+
+            try:
+                element = element_file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+            except:
+                continue
+            global_id = getattr(element, "GlobalId", None)
+            if not global_id:
+                continue
+            if self.mode == "DELETED" and global_id in diff["deleted"]:
+                obj.select_set(True)
+            elif self.mode == "ADDED" and global_id in diff["added"]:
+                obj.select_set(True)
+            elif self.mode == "CHANGED" and global_id in diff["changed"]:
+                obj.select_set(True)
         return {"FINISHED"}

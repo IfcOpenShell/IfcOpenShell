@@ -18,10 +18,12 @@
 
 import re
 import bpy
+import bmesh
 import ifcopenshell.util.element
 import blenderbim.core.tool
 import blenderbim.tool as tool
 import os
+import numpy as np
 from mathutils import Vector
 from pathlib import Path
 
@@ -61,7 +63,7 @@ class Loader(blenderbim.core.tool.Loader):
 
     @classmethod
     def get_name(cls, element):
-        return "{}/{}".format(element.is_a(), element.Name)
+        return "{}/{}".format(element.is_a(), getattr(element, "Name", "None"))
 
     @classmethod
     def link_mesh(cls, shape, mesh):
@@ -79,7 +81,8 @@ class Loader(blenderbim.core.tool.Loader):
         # Transparency was added in IFC4
         if transparency := surface_style.get("Transparency", None):
             alpha = 1 - transparency
-        blender_material.diffuse_color = surface_style["SurfaceColour"][:3] + (alpha,)
+        blender_material.diffuse_color = surface_style["SurfaceColour"] + (alpha,)
+        blender_material.use_nodes = False
 
     @classmethod
     def restart_material_node_tree(cls, blender_material):
@@ -98,37 +101,56 @@ class Loader(blenderbim.core.tool.Loader):
         if isinstance(surface_style, dict):
             return surface_style
         surface_style = surface_style.get_info()
-        color_to_tuple = lambda x: (x.Red, x.Green, x.Blue, 1)
 
+        color_to_tuple = lambda x: (x.Red, x.Green, x.Blue)
+
+        def convert_ifc_color_or_factor(color_or_factor):
+            if color_or_factor is None:
+                return
+            if color_or_factor.is_a("IfcColourRgb"):
+                return ("IfcColourRgb", color_to_tuple(color_or_factor))
+            # IfcNormalisedRatioMeasure
+            return ("IfcNormalisedRatioMeasure", color_or_factor.wrappedValue)
+
+        # can be only IfcColourRgb
         if surface_style["SurfaceColour"]:
             surface_style["SurfaceColour"] = color_to_tuple(surface_style["SurfaceColour"])
 
-        if surface_style.get("DiffuseColour", None) and surface_style["DiffuseColour"].is_a("IfcColourRgb"):
-            surface_style["DiffuseColour"] = ("IfcColourRgb", color_to_tuple(surface_style["DiffuseColour"]))
+        if surface_style["type"] == "IfcSurfaceStyleShading":
+            return surface_style
 
-        elif surface_style.get("DiffuseColour", None) and surface_style["DiffuseColour"].is_a(
-            "IfcNormalisedRatioMeasure"
-        ):
-            diffuse_color_value = surface_style["DiffuseColour"].wrappedValue
-            diffuse_color = [v * diffuse_color_value for v in surface_style["SurfaceColour"][:3]] + [1]
-            surface_style["DiffuseColour"] = ("IfcNormalisedRatioMeasure", diffuse_color)
-        else:
-            surface_style["DiffuseColour"] = None
+        # IfcSurfaceStyleRendering
+        # IfcColourOrFactor
+        surface_style["DiffuseColour"] = convert_ifc_color_or_factor(surface_style["DiffuseColour"])
+        surface_style["SpecularColour"] = convert_ifc_color_or_factor(surface_style["SpecularColour"])
 
-        if surface_style.get("SpecularColour", None) and surface_style["SpecularColour"].is_a(
-            "IfcNormalisedRatioMeasure"
-        ):
-            surface_style["SpecularColour"] = surface_style["SpecularColour"].wrappedValue
-        else:
-            surface_style["SpecularColour"] = None
+        if specular_highlight := surface_style["SpecularHighlight"]:
+            if specular_highlight.is_a("IfcSpecularRoughness"):
+                surface_style["SpecularHighlight"] = specular_highlight.wrappedValue
+            else:  # discard IfcSpecularExponent value
+                surface_style["SpecularHighlight"] = None
 
-        if surface_style.get("SpecularHighlight", None) and surface_style["SpecularHighlight"].is_a(
-            "IfcSpecularRoughness"
-        ):
-            surface_style["SpecularHighlight"] = surface_style["SpecularHighlight"].wrappedValue
-        else:
-            surface_style["SpecularHighlight"] = None
+        # NOTE: IfcSurfaceStyleRendering also has following attributes but we ignore them
+        # as they're about to get deprecated:
+        # TransmissionColour, DiffuseTransmissionColour, ReflectionColour
+
         return surface_style
+
+    @classmethod
+    def surface_texture_to_dict(cls, surface_texture):
+        if isinstance(surface_texture, dict):
+            return surface_texture
+        mappings = surface_texture.IsMappedBy or []
+        surface_texture = surface_texture.get_info()
+        uv_mode = None
+        if mappings:
+            coordinates = mappings[0]
+            if coordinates.is_a("IfcTextureCoordinateGenerator") and coordinates.Mode == "COORD":
+                uv_mode = "Generated"
+            elif coordinates.is_a("IfcTextureCoordinateGenerator") and coordinates.Mode == "COORD-EYE":
+                uv_mode = "Camera"
+        surface_texture["uv_mode"] = uv_mode or "UV"
+        return surface_texture
 
     @classmethod
     def create_surface_style_rendering(cls, blender_material, surface_style):
@@ -140,20 +162,29 @@ class Loader(blenderbim.core.tool.Loader):
             print(f'WARNING. Unsupported reflectance method "{reflectance_method}" on style {surface_style}')
             return
 
+        # TODO: reset pins to default values if no values passed
         if reflectance_method in ["PHYSICAL", "NOTDEFINED"]:
             blender_material.use_nodes = True
             cls.restart_material_node_tree(blender_material)
             bsdf = tool.Blender.get_material_node(blender_material, "BSDF_PRINCIPLED")
+
             if surface_style["DiffuseColour"]:
                 color_type, color_value = surface_style["DiffuseColour"]
                 if color_type == "IfcColourRgb":
-                    bsdf.inputs["Base Color"].default_value = color_value
-                elif color_type == "IfcNormalisedRatioMeasure":
-                    bsdf.inputs["Base Color"].default_value = color_value
+                    bsdf.inputs["Base Color"].default_value = color_value + (1,)
+                else:  # "IfcNormalisedRatioMeasure"
+                    color_value = [v * color_value for v in surface_style["SurfaceColour"]]
+                    bsdf.inputs["Base Color"].default_value = color_value + (1,)
+
             if surface_style["SpecularColour"]:
-                bsdf.inputs["Metallic"].default_value = surface_style["SpecularColour"]
+                color_type, color_value = surface_style["SpecularColour"]
+                if color_type == "IfcNormalisedRatioMeasure":
+                    bsdf.inputs["Metallic"].default_value = color_value
+                # IfcColourRgb is ignored
+
             if surface_style["SpecularHighlight"]:
                 bsdf.inputs["Roughness"].default_value = surface_style["SpecularHighlight"]
+
             if transparency := surface_style.get("Transparency", None):
                 bsdf.inputs["Alpha"].default_value = 1 - transparency
                 blender_material.blend_method = "BLEND"
@@ -186,16 +217,20 @@ class Loader(blenderbim.core.tool.Loader):
             if surface_style["DiffuseColour"]:
                 color_type, color_value = surface_style["DiffuseColour"]
                 if color_type == "IfcColourRgb":
-                    rgb.outputs[0].default_value = color_value
+                    rgb.outputs[0].default_value = color_value + (1,)
 
     @classmethod
     def create_surface_style_with_textures(cls, blender_material, rendering_style, texture_style):
         """supposed to be called after `create_surface_style_rendering`"""
-        if not isinstance(texture_style, list):
-            textures = [t.get_info() for t in texture_style.Textures]
+        if not isinstance(texture_style, list):  # assume it's IfcSurfaceStyleWithTextures
+            textures = [cls.surface_texture_to_dict(t) for t in texture_style.Textures]
         else:
             textures = texture_style
         rendering_style = cls.surface_style_to_dict(rendering_style)
+
+        # `rendering_style` is a dict and `textures` is a list of dicts
+        # containing ifc data, that way method can be called by just providing those dictionaries
+        # without actually changing IFC data
 
         reflectance_method = rendering_style["ReflectanceMethod"]
         if reflectance_method not in ("PHYSICAL", "NOTDEFINED", "FLAT"):
@@ -206,28 +241,69 @@ class Loader(blenderbim.core.tool.Loader):
             mode = texture.get("Mode", None)
             node = None
 
-            if texture["type"] != "IfcImageTexture":
+            if texture["type"] == "IfcPixelTexture":
                 print(f"WARNING. Texture of type {texture['type']} is not currently supported, it will be skipped.")
                 continue
 
-            original_image_url = texture["URLReference"]
-            is_relative = not os.path.isabs(original_image_url)
-            image_url = Path(original_image_url)
-            if is_relative:
-                ifc_path = Path(tool.Ifc.get_path())
-                image_url = ifc_path.parent / image_url
+            image_url = None
 
-            if not image_url.exists():
-                print(f"WARNING. Couldn't find texture by path {image_url}, it will be skipped.")
-                continue
+            def get_image():
+                # TODO: orphaned textures after shader recreated?
+                if texture["type"] == "IfcImageTexture":
+                    original_image_url = texture["URLReference"]
+                    is_relative = not os.path.isabs(original_image_url)
+                    nonlocal image_url
+                    image_url = Path(original_image_url)
+                    if is_relative:
+                        ifc_path = Path(tool.Ifc.get_path())
+                        image_url = ifc_path.parent / image_url
 
-            # keep url relative if it was before
-            image_url = str(image_url)
-            if is_relative and bpy.data.filepath:
-                image_url = bpy.path.relpath(image_url)
+                    if not image_url.exists():
+                        print(f"WARNING. Couldn't find texture by path {image_url}, it will be skipped.")
+                        return
+
+                    # keep url relative if it was before
+                    image_url = str(image_url)
+                    if is_relative and bpy.data.filepath:
+                        image_url = bpy.path.relpath(image_url)
+                    return bpy.data.images.load(image_url)
+
+                elif texture["type"] == "IfcBlobTexture":
+                    # https://blender.stackexchange.com/questions/173206/how-to-efficiently-convert-a-pil-image-to-bpy-types-image
+                    # https://blender.stackexchange.com/questions/62072/does-blender-have-a-method-to-a-get-png-formatted-bytearray-for-an-image-via-pyt
+                    import io
+                    from PIL import Image
+
+                    value = texture["RasterCode"]
+                    image_bytes = int(value, 2).to_bytes(len(value) // 8, "big")
+                    pil_image = Image.open(io.BytesIO(image_bytes))
+                    byte_to_normalized = 1.0 / 255.0
+                    bpy_image = bpy.data.images.new("blob_texture", width=pil_image.width, height=pil_image.height)
+                    bpy_image.pixels[:] = (
+                        np.asarray(pil_image.convert("RGBA"), dtype=np.float32) * byte_to_normalized
+                    ).ravel()
+                    return bpy_image
+
+                # TODO: IfcPixelTexture
+                print(f"WARNING. Texture of type {texture['type']} is not yet supported.")
+                return
 
             if reflectance_method in ["PHYSICAL", "NOTDEFINED"]:
                 bsdf = tool.Blender.get_material_node(blender_material, "BSDF_PRINCIPLED")
+
+                SUPPORTED_PBR_TEXTURES = ("NORMAL", "EMISSIVE", "METALLICROUGHNESS", "OCCLUSION", "DIFFUSE")
+                if mode not in SUPPORTED_PBR_TEXTURES:
+                    print(
+                        f"WARNING. Texture with {mode} Mode is not supported for style with PHYSICAL reflectance method.\n"
+                        f"Supported types are: {', '.join(SUPPORTED_PBR_TEXTURES)}"
+                    )
+                    if texture["type"] == "IfcImageTexture":
+                        print(f"Texture by path {image_url} will be skipped.")
+                    continue
+
+                if (image := get_image()) is None:
+                    continue
+
                 if mode == "NORMAL":
                     # add normal map node
                     normalmap = blender_material.node_tree.nodes.new(type="ShaderNodeNormalMap")
@@ -237,7 +313,6 @@ class Loader(blenderbim.core.tool.Loader):
                     # add normal map sampler
                     node = blender_material.node_tree.nodes.new(type="ShaderNodeTexImage")
                     node.location = normalmap.location - Vector((300, 0))
-                    image = bpy.data.images.load(image_url)
                     image.colorspace_settings.name = "Non-Color"
                     node.image = image
                     blender_material.node_tree.links.new(node.outputs[0], normalmap.inputs["Color"])
@@ -259,7 +334,6 @@ class Loader(blenderbim.core.tool.Loader):
                     # add emission texture sampler
                     node = blender_material.node_tree.nodes.new(type="ShaderNodeTexImage")
                     node.location = emission.location - Vector((350, 0))
-                    image = bpy.data.images.load(image_url)
                     node.image = image
                     blender_material.node_tree.links.new(node.outputs[0], emission.inputs[0])
 
@@ -271,7 +345,6 @@ class Loader(blenderbim.core.tool.Loader):
 
                     node = blender_material.node_tree.nodes.new(type="ShaderNodeTexImage")
                     node.location = separate.location - Vector((300, 0))
-                    image = bpy.data.images.load(image_url)
                     image.colorspace_settings.name = "Non-Color"
                     node.image = image
                     blender_material.node_tree.links.new(node.outputs[0], separate.inputs[0])
@@ -297,7 +370,6 @@ class Loader(blenderbim.core.tool.Loader):
 
                     node = blender_material.node_tree.nodes.new(type="ShaderNodeTexImage")
                     node.location = group.location - Vector((300, 0))
-                    image = bpy.data.images.load(image_url)
                     image.colorspace_settings.name = "Non-Color"
                     node.image = image
                     blender_material.node_tree.links.new(node.outputs[0], group.inputs["Occlusion"])
@@ -305,7 +377,6 @@ class Loader(blenderbim.core.tool.Loader):
                 elif mode == "DIFFUSE":
                     node = blender_material.node_tree.nodes.new(type="ShaderNodeTexImage")
                     node.location = bsdf.location - Vector((400, 0))
-                    image = bpy.data.images.load(image_url)
                     node.image = image
                     blender_material.node_tree.links.new(node.outputs[0], bsdf.inputs["Base Color"])
                     # leave it to default(OPAQUE) when no Transparency defined
@@ -316,6 +387,14 @@ class Loader(blenderbim.core.tool.Loader):
             elif reflectance_method == "FLAT":
                 bsdf = tool.Blender.get_material_node(blender_material, "MIX_SHADER")
                 if mode != "EMISSIVE":
+                    print("WARNING. Only EMISSIVE Mode textures are supported for style with FLAT reflectance method.")
+                    if texture["type"] == "IfcImageTexture":
+                        print(f"{mode} Mode texture by path {image_url} will be skipped.")
+                    else:
+                        print(f"{mode} Mode texture will be skipped.")
+                    continue
+
+                if (image := get_image) is None:
                     continue
 
                 # remove RGB node from `create_surface_style_rendering`
@@ -324,8 +403,6 @@ class Loader(blenderbim.core.tool.Loader):
 
                 node = blender_material.node_tree.nodes.new(type="ShaderNodeTexImage")
                 node.location = bsdf.location - Vector((200, 250))
-                image = bpy.data.images.load(image_url)
-                # TODO: orphaned textures after shader recreated?
                 node.image = image
 
                 blender_material.node_tree.links.new(node.outputs[0], bsdf.inputs[2])
@@ -333,22 +410,68 @@ class Loader(blenderbim.core.tool.Loader):
             # extend the image by repeating pixels on its edges if RepeatS or RepeatT is False
             repeat_s = texture.get("RepeatS", True)
             repeat_t = texture.get("RepeatT", True)
-            if node and (not repeat_s or not repeat_t):
+            if not repeat_s or not repeat_t:
                 node.extension = "EXTEND"
 
-            # TODO: add support for texture data not ifc elements
             # IsMappedBy could only get with the entity_instance for IFC4/IFC4x3
-            if isinstance(texture, dict):
-                texture = tool.Ifc.get().by_id(texture['id'])
-            if node and getattr(texture, "IsMappedBy", None):
-                coordinates = texture.IsMappedBy[0]
-                coord = blender_material.node_tree.nodes.new(type="ShaderNodeTexCoord")
-                coord.location = node.location - Vector((200, 0))
-                if coordinates.is_a("IfcTextureCoordinateGenerator") and coordinates.Mode == "COORD":
-                    blender_material.node_tree.links.new(coord.outputs["Generated"], node.inputs["Vector"])
-                elif coordinates.is_a("IfcTextureCoordinateGenerator") and coordinates.Mode == "COORD-EYE":
-                    blender_material.node_tree.links.new(coord.outputs["Camera"], node.inputs["Vector"])
-                else:
-                    blender_material.node_tree.links.new(coord.outputs["UV"], node.inputs["Vector"])
-                    # save the TextureMap id for set uv when set material to mesh
-                    blender_material.BIMMaterialProperties.ifc_coordinate_id = coordinates.id()
+            coord = blender_material.node_tree.nodes.new(type="ShaderNodeTexCoord")
+            coord.location = node.location - Vector((200, 0))
+            if texture["uv_mode"] == "Generated":
+                blender_material.node_tree.links.new(coord.outputs["Generated"], node.inputs["Vector"])
+            elif texture["uv_mode"] == "Camera":
+                blender_material.node_tree.links.new(coord.outputs["Camera"], node.inputs["Vector"])
+            else:  # uv_mode == UV
+                blender_material.node_tree.links.new(coord.outputs["UV"], node.inputs["Vector"])
+
+    @classmethod
+    def load_indexed_texture_map(cls, coordinates, mesh):
+        # Get a BMesh representation
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+        # constistent naming with how Blender does it
+        uv_layer = bm.loops.layers.uv.active or bm.loops.layers.uv.new("UVMap")
+
+        # remap the faceset CoordList index to the vertices in blender mesh
+        coordinates_remap = []
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        faceset = coordinates.MappedTo
+        for co in faceset.Coordinates.CoordList:
+            co = Vector(co) * si_conversion
+            index = next(v.index for v in bm.verts if (v.co - co).length_squared < 1e-5)
+            coordinates_remap.append(index)
+
+        # ifc indices start with 1
+        remap_verts_to_blender = lambda ifc_verts: [coordinates_remap[i - 1] for i in ifc_verts]
+
+        # faces_remap - ifc faces described using blender verts indices
+        # IFC4.3+
+        if coordinates.is_a("IfcIndexedPolygonalTextureMap"):
+            faces_remap = [
+                remap_verts_to_blender(tex_coord_index.TexCoordsOf.CoordIndex)
+                for tex_coord_index in coordinates.TexCoordIndices
+            ]
+            texture_map = [tex_coord_index.TexCoordIndex for tex_coord_index in coordinates.TexCoordIndices]
+        else:  # IfcIndexedTriangleTextureMap
+            if faceset.is_a("IfcTriangulatedFaceSet"):
+                faces_remap = [remap_verts_to_blender(triangle_face) for triangle_face in faceset.CoordIndex]
+            else:  # IfcPolygonalFaceSet
+                faces_remap = [remap_verts_to_blender(triangle_face.CoordIndex) for triangle_face in faceset.Faces]
+            texture_map = coordinates.TexCoordIndex
+
+        # apply uv to each face
+        for bface in bm.faces:
+            face = [loop.vert.index for loop in bface.loops]
+            # find the corresponding TexCoordIndex by matching ifc faceset with blender face
+            # remap TexCoordIndex as the loop start may different from blender face
+            texCoordIndex = next(
+                [tex_coord_index[face_remap.index(i)] for i in face]
+                for tex_coord_index, face_remap in zip(texture_map, faces_remap, strict=True)
+                if all(i in face_remap for i in face)
+            )
+            # apply uv to each loop
+            for loop, i in zip(bface.loops, texCoordIndex):
+                loop[uv_layer].uv = coordinates.TexCoords.TexCoordsList[i - 1]
+
+        # Finish up, write the bmesh back to the mesh
+        bm.to_mesh(mesh)
+        bm.free()

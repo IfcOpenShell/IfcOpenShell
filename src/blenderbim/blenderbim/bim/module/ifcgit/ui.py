@@ -11,7 +11,7 @@ class IFCGIT_PT_panel(bpy.types.Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
-    bl_parent_id = "BIM_PT_project_info"
+    bl_parent_id = "BIM_PT_tab_project_info"
 
     def draw(self, context):
 
@@ -79,10 +79,12 @@ class IFCGIT_PT_panel(bpy.types.Panel):
             row = layout.row()
             row.prop(props, "commit_message")
 
+            row = layout.row()
             if IfcGitData.data["is_detached"]:
-                row = layout.row()
                 row.label(text="HEAD is detached, commit will create a branch", icon="ERROR")
-                row.prop(props, "new_branch_name")
+            else:
+                row.label(text="Optionally create a branch:")
+            row.prop(props, "new_branch_name")
 
             row = layout.row()
             row.operator("ifcgit.commit_changes", icon="GREASEPENCIL")

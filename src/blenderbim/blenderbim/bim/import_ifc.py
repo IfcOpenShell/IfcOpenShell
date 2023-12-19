@@ -16,14 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import os
 import re
 import bpy
 import time
+import json
 import bmesh
-import shutil
 import logging
-import threading
 import mathutils
 import numpy as np
 import multiprocessing
@@ -31,7 +31,6 @@ import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
-import ifcopenshell.util.selector
 import ifcopenshell.util.geolocation
 import blenderbim.tool as tool
 from itertools import chain, accumulate
@@ -39,18 +38,8 @@ from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.drawing.prop import ANNOTATION_TYPES_DATA
 
 
-class FileCopy(threading.Thread):
-    def __init__(self, file_path, destination):
-        threading.Thread.__init__(self)
-        self.file_path = file_path
-        self.destination = destination
-
-    def run(self):
-        shutil.copy(self.file_path, self.destination)
-
-
 class MaterialCreator:
-    def __init__(self, ifc_import_settings, ifc_importer):
+    def __init__(self, ifc_import_settings: IfcImportSettings, ifc_importer: IfcImporter):
         self.mesh = None
         self.obj = None
         self.materials = {}
@@ -108,7 +97,9 @@ class MaterialCreator:
                     has_parsed = True
         elif hasattr(element, "RepresentationMaps"):
             for representation_map in element.RepresentationMaps:
-                if self.parse_representation(representation_map.MappedRepresentation):
+                if not representation_map.MappedRepresentation:
+                    has_parsed = True  # Accommodate invalid IFC data from Revit
+                elif self.parse_representation(representation_map.MappedRepresentation):
                     has_parsed = True
         return has_parsed
 
@@ -135,54 +126,27 @@ class MaterialCreator:
             return
         for style_id in style_ids:
             material = self.styles[style_id]
-            ifc_coordinate_id = material.BIMMaterialProperties.ifc_coordinate_id
-            if ifc_coordinate_id != 0:
-                self.load_texture_map(tool.Ifc.get().by_id(ifc_coordinate_id))
+
+            def get_ifc_coordinate(material):
+                texture_style = tool.Style.get_texture_style(material)
+                if not texture_style:
+                    return
+                for texture in texture_style.Textures or []:
+                    if coords := getattr(texture, "IsMappedBy", None):
+                        coords = coords[0]
+                        # IfcTextureCoordinateGenerator handled in the style shader graph
+                        if coords.is_a("IfcIndexedTextureMap"):
+                            return coords
+                        # TODO: support IfcTextureMap
+                        if coords.is_a("IfcTextureMap"):
+                            print(f"WARNING. IfcTextureMap texture coordinates is not supported.")
+                            return
+
+            if coords := get_ifc_coordinate(material):
+                tool.Loader.load_indexed_texture_map(coords, self.mesh)
             if self.mesh.materials.find(material.name) == -1:
                 self.mesh.materials.append(material)
         return True
-
-    def load_texture_map(self, coordinates):
-        # Get a BMesh representation
-        bm = bmesh.new()
-        bm.from_mesh(self.mesh)
-        uv_layer = bm.loops.layers.uv.verify()
-
-        # remap the faceset CoordList index to the vertices in blender mesh
-        coordinates_remap = []
-        for co in coordinates.MappedTo.Coordinates.CoordList:
-            co = mathutils.Vector(co)
-            index = next(v.index for v in bm.verts if (v.co - co).length_squared < 1e-5)
-            coordinates_remap.append(index)
-
-        faces_remap = None
-        texture_map = None
-        if coordinates.is_a("IfcIndexedPolygonalTextureMap"):
-            faces_remap = [[coordinates_remap[i-1] for i in tex_coord_index.TexCoordsOf.CoordIndex]
-                        for tex_coord_index in coordinates.TexCoordIndices]
-            texture_map = [tex_coord_index.TexCoordIndex for tex_coord_index in coordinates.TexCoordIndices]
-        elif coordinates.is_a("IfcIndexedTriangleTextureMap"):
-            faces_remap = [[coordinates_remap[i-1] for i in triangle_face]
-                        for triangle_face in coordinates.MappedTo.CoordIndex]
-            texture_map = coordinates.TexCoordIndex
-
-        # apply uv to each face
-        for bface in bm.faces:
-            face = [loop.vert.index for loop in bface.loops]
-            # find the corresponding TexCoordIndex by matching ifc faceset with blender face
-            # remap TexCoordIndex as the loop start may different from blender face
-            texCoordIndex = next(
-                [tex_coord_index[face_remap.index(i)] for i in face]
-                for tex_coord_index, face_remap in zip(texture_map, faces_remap)
-                if all(i in face_remap for i in face)
-            )
-            # apply uv to each loop
-            for loop, i in zip(bface.loops, texCoordIndex):
-                loop[uv_layer].uv = coordinates.TexCoords.TexCoordsList[i-1]
-
-        # Finish up, write the bmesh back to the mesh
-        bm.to_mesh(self.mesh)
-        bm.free()
 
     def assign_material_slots_to_faces(self):
         if "ios_materials" not in self.mesh or not self.mesh["ios_materials"]:
@@ -223,20 +187,8 @@ class IfcImporter:
         self.ifc_import_settings = ifc_import_settings
         self.diff = None
         self.file = None
-        self.settings = ifcopenshell.geom.settings()
-        self.settings.set_deflection_tolerance(self.ifc_import_settings.deflection_tolerance)
-        self.settings.set_angular_tolerance(self.ifc_import_settings.angular_tolerance)
-        self.settings.set(self.settings.STRICT_TOLERANCE, True)
-        self.settings_body_2d = ifcopenshell.geom.settings()
-        self.settings_body_2d.set_deflection_tolerance(self.ifc_import_settings.deflection_tolerance)
-        self.settings_body_2d.set_angular_tolerance(self.ifc_import_settings.angular_tolerance)
-        self.settings_body_2d.set(self.settings_body_2d.STRICT_TOLERANCE, True)
-        self.settings_body_2d.set(self.settings_body_2d.INCLUDE_CURVES, True)
-        self.settings_native = ifcopenshell.geom.settings()
-        self.settings_native.set(self.settings_native.INCLUDE_CURVES, True)
-        self.settings_plan_2d = ifcopenshell.geom.settings()
-        self.settings_plan_2d.set(self.settings_plan_2d.INCLUDE_CURVES, True)
-        self.settings_plan_2d.set(self.settings_plan_2d.STRICT_TOLERANCE, True)
+        self.context_settings = []
+        self.contexts = []
         self.project = None
         self.has_existing_project = False
         self.collections = {}
@@ -273,16 +225,18 @@ class IfcImporter:
         self.profile_code("Loading file")
         self.calculate_unit_scale()
         self.profile_code("Calculate unit scale")
+        self.process_context_filter()
+        self.profile_code("Process context filter")
         self.calculate_model_offset()
         self.profile_code("Calculate model offset")
+        self.predict_dense_mesh()
+        self.profile_code("Predict dense mesh")
         self.set_units()
         self.profile_code("Set units")
         self.create_project()
         self.profile_code("Create project")
         self.process_element_filter()
         self.profile_code("Process element filter")
-        self.process_context_filter()
-        self.profile_code("Process context filter")
         self.create_collections()
         self.profile_code("Create collections")
         self.create_materials()
@@ -313,12 +267,14 @@ class IfcImporter:
         if self.ifc_import_settings.should_clean_mesh and len(self.file.by_type("IfcElement")) < 1000:
             self.clean_mesh()
             self.profile_code("Mesh cleaning")
-        if self.ifc_import_settings.should_merge_materials_by_colour or len(self.material_creator.materials) > 300:
+        if self.ifc_import_settings.should_merge_materials_by_colour:
             self.merge_materials_by_colour()
             self.profile_code("Merging by colour")
         self.set_default_context()
         self.profile_code("Setting default context")
-        self.setup_viewport_camera()
+        if self.ifc_import_settings.should_setup_viewport_camera:
+            self.setup_viewport_camera()
+        self.setup_arrays()
         self.update_progress(100)
         bpy.context.window_manager.progress_end()
 
@@ -341,33 +297,83 @@ class IfcImporter:
         return abs(coords[0]) > limit or abs(coords[1]) > limit or abs(coords[2]) > limit
 
     def process_context_filter(self):
-        # Facetation is to accommodate broken Revit files
-        # See https://forums.buildingsmart.org/t/suggestions-on-how-to-improve-clarity-of-representation-context-usage-in-documentation/3663/6?u=moult
-        self.body_contexts = [
-            c.id()
-            for c in self.file.by_type("IfcGeometricRepresentationSubContext")
-            if c.ContextIdentifier in ["Body", "Facetation"]
-        ]
-        # Ideally, all representations should be in a subcontext, but some BIM programs don't do this correctly
-        if not self.body_contexts:
-            self.body_contexts.extend(
-                [
-                    c.id()
-                    for c in self.file.by_type("IfcGeometricRepresentationContext", include_subtypes=False)
-                    if c.ContextType == "Model"
-                ]
-            )
-        if self.body_contexts:
-            self.settings.set_context_ids(self.body_contexts)
         # Annotation ContextType is to accommodate broken Revit files
         # See https://github.com/Autodesk/revit-ifc/issues/187
-        self.plan_contexts = [
-            c.id()
-            for c in self.file.by_type("IfcGeometricRepresentationContext")
-            if c.ContextType in ["Plan", "Annotation"] or c.ContextIdentifier == "Annotation"
+        type_priority = ["Model", "Plan", "Annotation"]
+        identifier_priority = [
+            "Body",
+            "Body-FallBack",
+            "Facetation",
+            "FootPrint",
+            "Profile",
+            "Surface",
+            "Reference",
+            "Axis",
+            "Clearance",
+            "Box",
+            "Lighting",
+            "Annotation",
+            "CoG",
         ]
-        if self.plan_contexts:
-            self.settings_plan_2d.set_context_ids(self.plan_contexts)
+        target_view_priority = [
+            "MODEL_VIEW",
+            "PLAN_VIEW",
+            "REFLECTED_PLAN_VIEW",
+            "ELEVATION_VIEW",
+            "SECTION_VIEW",
+            "GRAPH_VIEW",
+            "SKETCH_VIEW",
+            "USERDEFINED",
+            "NOTDEFINED",
+        ]
+
+        def sort_context(context):
+            priority = []
+            if context.ContextType in type_priority:
+                priority.append(len(type_priority) - type_priority.index(context.ContextType))
+            else:
+                priority.append(0)
+            return tuple(priority)
+
+        def sort_subcontext(context):
+            priority = []
+
+            if context.ContextType in type_priority:
+                priority.append(len(type_priority) - type_priority.index(context.ContextType))
+            else:
+                priority.append(0)
+
+            if context.ContextIdentifier in identifier_priority:
+                priority.append(len(identifier_priority) - identifier_priority.index(context.ContextIdentifier))
+            else:
+                priority.append(0)
+
+            if context.TargetView in target_view_priority:
+                priority.append(len(target_view_priority) - target_view_priority.index(context.TargetView))
+            else:
+                priority.append(0)
+
+            priority.append(context.TargetScale or 0)  # Big then small
+
+            return tuple(priority)
+
+        # Ideally, all representations should be in a subcontext, but some BIM programs don't do this correctly
+        self.contexts = sorted(
+            self.file.by_type("IfcGeometricRepresentationSubContext"), key=sort_subcontext, reverse=True
+        ) + sorted(
+            self.file.by_type("IfcGeometricRepresentationContext", include_subtypes=False),
+            key=sort_context,
+            reverse=True,
+        )
+
+        for context in self.contexts:
+            settings = ifcopenshell.geom.settings()
+            settings.set_deflection_tolerance(self.ifc_import_settings.deflection_tolerance)
+            settings.set_angular_tolerance(self.ifc_import_settings.angular_tolerance)
+            settings.set(settings.STRICT_TOLERANCE, True)
+            settings.set(settings.INCLUDE_CURVES, True)
+            settings.set_context_ids([context.id()])
+            self.context_settings.append(settings)
 
     def process_element_filter(self):
         offset = self.ifc_import_settings.element_offset
@@ -438,13 +444,51 @@ class IfcImporter:
             or getattr(element, "HasOpenings", None)
         ):
             return
-        representations = self.get_transformed_body_representations(element.Representation.Representations)
+
+        representation = None
+        representation_priority = None
+        context = None
+
+        for rep in element.Representation.Representations:
+            if rep.ContextOfItems in self.contexts:
+                rep_priority = self.contexts.index(rep.ContextOfItems)
+                if representation is None or rep_priority < representation_priority:
+                    representation = rep
+                    representation_priority = rep_priority
+                    context = rep.ContextOfItems
+
+        if not representation:
+            return
+
+        matrix = np.eye(4)
+        representation_id = None
+
+        rep = representation
+        while True:
+            if len(rep.Items) == 1 and rep.Items[0].is_a("IfcMappedItem"):
+                rep_matrix = ifcopenshell.util.placement.get_mappeditem_transformation(rep.Items[0])
+                if not np.allclose(rep_matrix, np.eye(4)):
+                    matrix = rep_matrix @ matrix
+                    if representation_id is None:
+                        representation_id = rep.id()
+                rep = rep.Items[0].MappingSource.MappedRepresentation
+            else:
+                if representation_id is None:
+                    representation_id = rep.id()
+                break
+        resolved_representation = ifcopenshell.util.representation.resolve_representation(representation)
+
+        matrix[0][3] *= self.unit_scale
+        matrix[1][3] *= self.unit_scale
+        matrix[2][3] *= self.unit_scale
 
         # Single swept disk solids (e.g. rebar) are better natively represented as beveled curves
-        if self.is_native_swept_disk_solid(element, representations):
+        if self.is_native_swept_disk_solid(element, resolved_representation):
             self.native_data[element.GlobalId] = {
-                "representations": representations,
-                "representation": self.get_body_representation(element.Representation.Representations),
+                "matrix": matrix,
+                "context": context,
+                "geometry_id": representation_id,
+                "representation": resolved_representation,
                 "type": "IfcSweptDiskSolid",
             }
             return True
@@ -453,51 +497,53 @@ class IfcImporter:
             return False  # Performance improvements only occur on edge cases currently
 
         # FacetedBreps (without voids) are meshes. See #841.
-        if self.is_native_faceted_brep(representations):
+        if self.is_native_faceted_brep(resolved_representation):
             self.native_data[element.GlobalId] = {
-                "representations": representations,
-                "representation": self.get_body_representation(element.Representation.Representations),
+                "matrix": matrix,
+                "context": context,
+                "geometry_id": representation_id,
+                "representation": resolved_representation,
                 "type": "IfcFacetedBrep",
             }
             return True
 
-        if self.is_native_face_based_surface_model(representations):
+        if self.is_native_face_based_surface_model(resolved_representation):
             self.native_data[element.GlobalId] = {
-                "representations": representations,
-                "representation": self.get_body_representation(element.Representation.Representations),
+                "matrix": matrix,
+                "context": context,
+                "geometry_id": representation_id,
+                "representation": resolved_representation,
                 "type": "IfcFaceBasedSurfaceModel",
             }
             return True
 
-    def is_native_swept_disk_solid(self, element, representations):
-        for representation in representations:
-            items = representation["raw"].Items or []  # Be forgiving of invalid IFCs because Revit :(
-            if len(items) == 1 and items[0].is_a("IfcSweptDiskSolid"):
-                if tool.Blender.Modifier.is_railing(element):
-                    return False
-                return True
-            elif len(items) and (  # See #2508 why we accommodate for invalid IFCs here
-                items[0].is_a("IfcSweptDiskSolid")
-                and len({i.is_a() for i in items}) == 1
-                and len({i.Radius for i in items}) == 1
-            ):
-                if tool.Blender.Modifier.is_railing(element):
-                    return False
-                return True
+    def is_native_swept_disk_solid(self, element, representation):
+        items = [i["item"] for i in ifcopenshell.util.representation.resolve_items(representation)]
+        if len(items) == 1 and items[0].is_a("IfcSweptDiskSolid"):
+            if tool.Blender.Modifier.is_railing(element):
+                return False
+            return True
+        elif len(items) and (  # See #2508 why we accommodate for invalid IFCs here
+            items[0].is_a("IfcSweptDiskSolid")
+            and len({i.is_a() for i in items}) == 1
+            and len({i.Radius for i in items}) == 1
+        ):
+            if tool.Blender.Modifier.is_railing(element):
+                return False
+            return True
         return False
 
-    def is_native_faceted_brep(self, representations):
-        for representation in representations:
-            for i in representation["raw"].Items:
-                if i.is_a() != "IfcFacetedBrep":
-                    return False
+    def is_native_faceted_brep(self, representation):
+        # TODO handle mapped items
+        for i in representation.Items:
+            if i.is_a() != "IfcFacetedBrep":
+                return False
         return True
 
-    def is_native_face_based_surface_model(self, representations):
-        for representation in representations:
-            for i in representation["raw"].Items:
-                if i.is_a() != "IfcFaceBasedSurfaceModel":
-                    return False
+    def is_native_face_based_surface_model(self, representation):
+        for i in representation.Items:
+            if i.is_a() != "IfcFaceBasedSurfaceModel":
+                return False
         return True
 
     def get_products_from_shape_representation(self, element):
@@ -508,6 +554,26 @@ class IfcImporter:
                     if inverse_element.is_a("IfcShapeRepresentation"):
                         products.extend(self.get_products_from_shape_representation(inverse_element))
         return products
+
+    def predict_dense_mesh(self):
+        threshold = 10000  # Just from experience.
+
+        faces = [len(e.CfsFaces) for e in self.file.by_type("IfcClosedShell")]
+        if faces and max(faces) > threshold:
+            self.ifc_import_settings.should_use_native_meshes = True
+            return
+
+        if self.file.schema == "IFC2X3":
+            return
+
+        faces = [len(e.Faces) for e in self.file.by_type("IfcPolygonalFaceSet")]
+        if faces and max(faces) > threshold:
+            self.ifc_import_settings.should_use_native_meshes = True
+            return
+
+        faces = [len(e.CoordIndex) for e in self.file.by_type("IfcTriangulatedFaceSet")]
+        if faces and max(faces) > threshold:
+            self.ifc_import_settings.should_use_native_meshes = True
 
     def calculate_model_offset(self):
         props = bpy.context.scene.BIMGeoreferenceProperties
@@ -521,11 +587,11 @@ class IfcImporter:
             project = self.file.by_type("IfcContext")[0]
         site = self.find_decomposed_ifc_class(project, "IfcSite")
         if site and self.is_element_far_away(site):
-            return self.guess_georeferencing(site)
+            return self.guess_false_origin_and_project_north(site)
         building = self.find_decomposed_ifc_class(project, "IfcBuilding")
         if building and self.is_element_far_away(building):
-            return self.guess_georeferencing(building)
-        return self.guess_absolute_coordinate()
+            return self.guess_false_origin_and_project_north(building)
+        return self.guess_false_origin()
 
     def set_manual_blender_offset(self):
         props = bpy.context.scene.BIMGeoreferenceProperties
@@ -534,7 +600,7 @@ class IfcImporter:
         props.blender_orthogonal_height = str(self.ifc_import_settings.false_origin[2])
         props.has_blender_offset = True
 
-    def guess_georeferencing(self, element):
+    def guess_false_origin_and_project_north(self, element):
         if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
             return
         placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
@@ -549,7 +615,7 @@ class IfcImporter:
             props.blender_x_axis_ordinate = str(placement[1][0])
         props.has_blender_offset = True
 
-    def guess_absolute_coordinate(self):
+    def guess_false_origin(self):
         # Civil BIM applications like to work in absolute coordinates, where the
         # ObjectPlacement is usually 0,0,0 (but not always, so we'll need to
         # check for the actual transformation) but each individual coordinate of
@@ -573,15 +639,15 @@ class IfcImporter:
             elements_checked += 1
             if elements_checked > element_checking_threshold:
                 return
+            if element.ObjectPlacement and element.ObjectPlacement.is_a("IfcLocalPlacement"):
+                placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)[:, 3][0:3]
+                if self.is_point_far_away(placement, is_meters=False):
+                    return placement
             if not self.does_element_likely_have_geometry_far_away(element):
                 continue
-            try:
-                shape = ifcopenshell.geom.create_shape(self.settings, element)
-            except:
-                try:
-                    shape = ifcopenshell.geom.create_shape(self.settings_body_2d, element)
-                except:
-                    continue
+            shape = self.create_generic_shape(element)
+            if not shape:
+                continue
             m = shape.transformation.matrix.data
             mat = np.array(
                 ([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1])
@@ -653,7 +719,7 @@ class IfcImporter:
                 self.ifc_import_settings.logger.error("An invalid grid was found %s", grid)
                 continue
             if grid.Representation:
-                shape = ifcopenshell.geom.create_shape(self.settings_plan_2d, grid)
+                shape = self.create_generic_shape(grid)
             grid_obj = self.create_product(grid, shape)
             if bpy.context.preferences.addons["blenderbim"].preferences.lock_grids_on_import:
                 grid_obj.lock_location = (True, True, True)
@@ -672,7 +738,7 @@ class IfcImporter:
 
     def create_grid_axes(self, axes, grid_collection, grid_obj):
         for axis in axes:
-            shape = ifcopenshell.geom.create_shape(self.settings_plan_2d, axis.AxisCurve)
+            shape = self.create_generic_shape(axis.AxisCurve)
             mesh = self.create_mesh(axis, shape)
             obj = bpy.data.objects.new(f"IfcGridAxis/{axis.AxisTag}", mesh)
             if bpy.context.preferences.addons["blenderbim"].preferences.lock_grids_on_import:
@@ -692,27 +758,21 @@ class IfcImporter:
         self.ifc_import_settings.logger.info("Creating object %s", element)
         mesh = None
         if self.ifc_import_settings.should_load_geometry:
-            representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-            if not representation:
-                representation = ifcopenshell.util.representation.get_representation(element, "Plan", "Annotation")
-            if not representation:
-                representation = ifcopenshell.util.representation.get_representation(element, "Model", "Annotation")
-            if representation:
+            for context in self.contexts:
+                representation = ifcopenshell.util.representation.get_representation(element, context)
+                if not representation:
+                    continue
                 mesh_name = "{}/{}".format(representation.ContextOfItems.id(), representation.id())
                 mesh = self.meshes.get(mesh_name)
                 if mesh is None:
-                    shape = None
-                    try:
-                        shape = ifcopenshell.geom.create_shape(self.settings, representation)
-                    except:
-                        try:
-                            shape = ifcopenshell.geom.create_shape(self.settings_plan_2d, representation)
-                        except:
-                            self.ifc_import_settings.logger.error("Failed to generate shape for %s", element)
+                    shape = self.create_generic_shape(representation)
                     if shape:
                         mesh = self.create_mesh(element, shape)
                         tool.Loader.link_mesh(shape, mesh)
                         self.meshes[mesh_name] = mesh
+                    else:
+                        self.ifc_import_settings.logger.error("Failed to generate shape for %s", element)
+                break
         obj = bpy.data.objects.new(tool.Loader.get_name(element), mesh)
         self.link_element(element, obj)
         self.material_creator.create(element, obj, mesh)
@@ -736,20 +796,16 @@ class IfcImporter:
                 checkpoint = time.time()
                 self.incrementally_merge_objects()
             native_data = self.native_data[element.GlobalId]
-            representation = native_data["representation"]
-            if not representation:
-                continue
-            context_id = representation.ContextOfItems.id() if hasattr(representation, "ContextOfItems") else 0
-            mesh_name = f"{context_id}/{representation.id()}"
+            mesh_name = f"{native_data['context'].id()}/{native_data['geometry_id']}"
             mesh = self.meshes.get(mesh_name)
             if mesh is None:
                 if native_data["type"] == "IfcSweptDiskSolid":
-                    mesh = self.create_native_swept_disk_solid(element, mesh_name)
+                    mesh = self.create_native_swept_disk_solid(element, mesh_name, native_data)
                 elif native_data["type"] == "IfcFacetedBrep":
-                    mesh = self.create_native_faceted_brep(element, mesh_name)
+                    mesh = self.create_native_faceted_brep(element, mesh_name, native_data)
                 elif native_data["type"] == "IfcFaceBasedSurfaceModel":
-                    mesh = self.create_native_faceted_brep(element, mesh_name)
-                tool.Ifc.link(representation, mesh)
+                    mesh = self.create_native_faceted_brep(element, mesh_name, native_data)
+                tool.Ifc.link(tool.Ifc.get().by_id(native_data["geometry_id"]), mesh)
                 mesh.name = mesh_name
                 self.meshes[mesh_name] = mesh
             self.create_product(element, mesh=mesh)
@@ -761,21 +817,25 @@ class IfcImporter:
     def create_elements(self):
         self.create_generic_elements(self.elements)
 
+    def create_generic_shape(self, element):
+        for settings in self.context_settings:
+            try:
+                result = ifcopenshell.geom.create_shape(settings, element)
+                if result:
+                    return result
+            except:
+                pass
+
     def create_generic_elements(self, elements):
         if isinstance(self.file, ifcopenshell.sqlite):
             return self.create_generic_sqlite_elements(elements)
 
-        # Based on my experience in viewing BIM models, representations are prioritised as follows:
-        # 1. 3D Body, 2. 2D Body, 3. 2D Plans / annotations, 4. Point clouds, 5. No representation
-        # If an element has a representation that doesn't follow 1, 2, 3, or 4, it will not show by default.
-        # The user can load them later if they want to view them.
         if self.ifc_import_settings.should_load_geometry:
-            products = self.create_products(elements)
-            elements -= products
-            products = self.create_products(elements, settings=self.settings_body_2d)
-            elements -= products
-            products = self.create_products(elements, settings=self.settings_plan_2d)
-            elements -= products
+            for settings in self.context_settings:
+                if not elements:
+                    break
+                products = self.create_products(elements, settings=settings)
+                elements -= products
             products = self.create_pointclouds(elements)
             elements -= products
 
@@ -833,9 +893,6 @@ class IfcImporter:
             self.create_product(element, mesh=mesh)
 
     def create_products(self, products, settings=None):
-        if settings is None:
-            settings = self.settings
-
         results = set()
         if not products:
             return results
@@ -872,16 +929,8 @@ class IfcImporter:
             shape = iterator.get()
             if shape:
                 product = self.file.by_id(shape.id)
-                if self.body_contexts:
-                    self.create_product(product, shape)
-                    results.add(product)
-                else:
-                    if shape.context not in ["Body", "Facetation"] and IfcStore.get_element(shape.id):
-                        # We only load a single context, and we prioritise the Body context. See #1290.
-                        pass
-                    else:
-                        self.create_product(product, shape)
-                        results.add(product)
+                self.create_product(product, shape)
+                results.add(product)
             if not iterator.next():
                 break
         print("Done creating geometry")
@@ -909,10 +958,10 @@ class IfcImporter:
         self.structural_collection.children.link(self.structural_connection_collection)
         self.project["blender"].children.link(self.structural_collection)
 
-        self.create_products(self.file.by_type("IfcStructuralCurveMember"), settings=self.settings_plan_2d)
-        self.create_products(self.file.by_type("IfcStructuralCurveConnection"), settings=self.settings_plan_2d)
-        self.create_products(self.file.by_type("IfcStructuralSurfaceMember"), settings=self.settings_plan_2d)
-        self.create_products(self.file.by_type("IfcStructuralSurfaceConnection"), settings=self.settings_plan_2d)
+        self.create_generic_elements(set(self.file.by_type("IfcStructuralCurveMember")))
+        self.create_generic_elements(set(self.file.by_type("IfcStructuralCurveConnection")))
+        self.create_generic_elements(set(self.file.by_type("IfcStructuralSurfaceMember")))
+        self.create_generic_elements(set(self.file.by_type("IfcStructuralSurfaceConnection")))
         self.create_structural_point_connections()
 
     def create_structural_point_connections(self):
@@ -1061,7 +1110,7 @@ class IfcImporter:
             elif style.is_a("IfcPresentationStyleAssignment"):
                 styles.extend(style.Styles)
 
-    def create_native_faceted_brep(self, element, mesh_name):
+    def create_native_faceted_brep(self, element, mesh_name, native_data):
         # TODO: georeferencing?
         # co [x y z x y z x y z ...]
         # vertex_index [i i i i i ...]
@@ -1078,10 +1127,11 @@ class IfcImporter:
             "material_ids": [],
         }
 
-        for representation in element.Representation.Representations:
-            if representation.ContextOfItems.id() not in self.body_contexts:
-                continue
-            self.convert_representation(representation)
+        for item in native_data["representation"].Items:
+            if item.is_a() == "IfcFacetedBrep":
+                self.convert_representation_item_faceted_brep(item)
+            elif item.is_a() == "IfcFaceBasedSurfaceModel":
+                self.convert_representation_item_face_based_surface_model(item)
 
         mesh = bpy.data.meshes.new("Native")
 
@@ -1098,19 +1148,33 @@ class IfcImporter:
             )
             verts = [None] * len(self.mesh_data["co"])
             for i in range(0, len(self.mesh_data["co"]), 3):
-                verts[i], verts[i + 1], verts[i + 2] = ifcopenshell.util.geolocation.enh2xyz(
-                    self.mesh_data["co"][i] * self.unit_scale,
-                    self.mesh_data["co"][i + 1] * self.unit_scale,
-                    self.mesh_data["co"][i + 2] * self.unit_scale,
-                    offset_point[0] * self.unit_scale,
-                    offset_point[1] * self.unit_scale,
-                    offset_point[2] * self.unit_scale,
-                    float(props.blender_x_axis_abscissa),
-                    float(props.blender_x_axis_ordinate),
+                verts[i], verts[i + 1], verts[i + 2], _ = native_data["matrix"] @ mathutils.Vector(
+                    (
+                        *ifcopenshell.util.geolocation.enh2xyz(
+                            self.mesh_data["co"][i] * self.unit_scale,
+                            self.mesh_data["co"][i + 1] * self.unit_scale,
+                            self.mesh_data["co"][i + 2] * self.unit_scale,
+                            offset_point[0] * self.unit_scale,
+                            offset_point[1] * self.unit_scale,
+                            offset_point[2] * self.unit_scale,
+                            float(props.blender_x_axis_abscissa),
+                            float(props.blender_x_axis_ordinate),
+                        ),
+                        1,
+                    )
                 )
             mesh["has_cartesian_point_offset"] = True
         else:
-            verts = [c * self.unit_scale for c in self.mesh_data["co"]]
+            verts = [None] * len(self.mesh_data["co"])
+            for i in range(0, len(self.mesh_data["co"]), 3):
+                verts[i], verts[i + 1], verts[i + 2], _ = native_data["matrix"] @ mathutils.Vector(
+                    (
+                        self.mesh_data["co"][i] * self.unit_scale,
+                        self.mesh_data["co"][i + 1] * self.unit_scale,
+                        self.mesh_data["co"][i + 2] * self.unit_scale,
+                        1,
+                    )
+                )
             mesh["has_cartesian_point_offset"] = False
 
         mesh.vertices.add(self.mesh_data["total_verts"])
@@ -1120,24 +1184,12 @@ class IfcImporter:
         mesh.polygons.add(self.mesh_data["total_polygons"])
         mesh.polygons.foreach_set("loop_start", self.mesh_data["loop_start"])
         mesh.polygons.foreach_set("loop_total", self.mesh_data["loop_total"])
+        mesh.polygons.foreach_set("use_smooth", [0] * self.mesh_data["total_polygons"])
         mesh.update()
 
         mesh["ios_materials"] = self.mesh_data["materials"]
         mesh["ios_material_ids"] = self.mesh_data["material_ids"]
         return mesh
-
-    def convert_representation(self, representation):
-        for item in representation.Items:
-            self.convert_representation_item(item)
-
-    def convert_representation_item(self, item):
-        if item.is_a("IfcMappedItem"):
-            # mapping_target = matrix
-            self.convert_representation(item.MappingSource.MappedRepresentation)
-        elif item.is_a() == "IfcFacetedBrep":
-            self.convert_representation_item_faceted_brep(item)
-        elif item.is_a() == "IfcFaceBasedSurfaceModel":
-            self.convert_representation_item_face_based_surface_model(item)
 
     def convert_representation_item_face_based_surface_model(self, item):
         mesh = item.get_info_2(recursive=True)
@@ -1233,61 +1285,37 @@ class IfcImporter:
         self.mesh_data["loop_start"].extend(loop_start)
         # list(di1.keys())
 
-    def create_native_swept_disk_solid(self, element, mesh_name):
+    def create_native_swept_disk_solid(self, element, mesh_name, native_data):
         # TODO: georeferencing?
         curve = bpy.data.curves.new(mesh_name, type="CURVE")
         curve.dimensions = "3D"
         curve.resolution_u = 2
         polyline = curve.splines.new("POLY")
 
-        for representation in self.native_data[element.GlobalId]["representations"]:
-            for item in representation["raw"].Items:
-                # TODO: support inner radius, start param, and end param
-                geometry = ifcopenshell.geom.create_shape(self.settings_native, item.Directrix)
-                e = geometry.edges
-                v = geometry.verts
-                vertices = [[v[i], v[i + 1], v[i + 2], 1] for i in range(0, len(v), 3)]
-                edges = [[e[i], e[i + 1]] for i in range(0, len(e), 2)]
-                v2 = None
-                for edge in edges:
-                    v1 = vertices[edge[0]]
-                    if v1 != v2:
-                        polyline = curve.splines.new("POLY")
-                        polyline.points[-1].co = representation["matrix"] @ mathutils.Vector(v1)
-                    v2 = vertices[edge[1]]
-                    polyline.points.add(1)
-                    polyline.points[-1].co = representation["matrix"] @ mathutils.Vector(v2)
+        for item_data in ifcopenshell.util.representation.resolve_items(native_data["representation"]):
+            item = item_data["item"]
+            matrix = item_data["matrix"]
+            matrix[0][3] *= self.unit_scale
+            matrix[1][3] *= self.unit_scale
+            matrix[2][3] *= self.unit_scale
+            # TODO: support inner radius, start param, and end param
+            geometry = self.create_generic_shape(item.Directrix)
+            e = geometry.edges
+            v = geometry.verts
+            vertices = [list(matrix @ [v[i], v[i + 1], v[i + 2], 1]) for i in range(0, len(v), 3)]
+            edges = [[e[i], e[i + 1]] for i in range(0, len(e), 2)]
+            v2 = None
+            for edge in edges:
+                v1 = vertices[edge[0]]
+                if v1 != v2:
+                    polyline = curve.splines.new("POLY")
+                    polyline.points[-1].co = native_data["matrix"] @ mathutils.Vector(v1)
+                v2 = vertices[edge[1]]
+                polyline.points.add(1)
+                polyline.points[-1].co = native_data["matrix"] @ mathutils.Vector(v2)
 
         curve.bevel_depth = self.unit_scale * item.Radius
         curve.use_fill_caps = True
-        return curve
-
-    def create_native_annotation(self, element, mesh_name):
-        # TODO: georeferencing?
-        curve = bpy.data.curves.new(mesh_name, type="CURVE")
-        curve.dimensions = "3D"
-        curve.resolution_u = 2
-        polyline = curve.splines.new("POLY")
-
-        for representation in self.native_data[element.GlobalId]["representations"]:
-            for item in representation["raw"].Items:
-                # TODO: support inner radius, start param, and end param
-                geometry = ifcopenshell.geom.create_shape(self.settings_native, item.Directrix)
-                e = geometry.edges
-                v = geometry.verts
-                vertices = [[v[i], v[i + 1], v[i + 2], 1] for i in range(0, len(v), 3)]
-                edges = [[e[i], e[i + 1]] for i in range(0, len(e), 2)]
-                v2 = None
-                for edge in edges:
-                    v1 = vertices[edge[0]]
-                    if v1 != v2:
-                        polyline = curve.splines.new("POLY")
-                        polyline.points[-1].co = representation["matrix"] @ mathutils.Vector(v1)
-                    v2 = vertices[edge[1]]
-                    polyline.points.add(1)
-                    polyline.points[-1].co = representation["matrix"] @ mathutils.Vector(v2)
-
-        curve.bevel_depth = self.unit_scale * item.Radius
         return curve
 
     def merge_by_class(self):
@@ -1354,7 +1382,8 @@ class IfcImporter:
                 context_override = {}
                 context_override["object"] = context_override["active_object"] = target
                 context_override["selected_objects"] = context_override["selected_editable_objects"] = objs
-                bpy.ops.object.join(context_override)
+                with bpy.context.temp_override(**context_override):
+                    bpy.ops.object.join()
                 target.data.name += "-merge"
                 for ifc_definition_id in id_set[group_name][1:]:
                     del self.added_data[ifc_definition_id]
@@ -1411,11 +1440,10 @@ class IfcImporter:
         types_collection.hide_viewport = False
         bpy.context.view_layer.objects.active = last_obj
 
-        context_override = {}
-        bpy.ops.object.editmode_toggle(context_override)
-        bpy.ops.mesh.tris_convert_to_quads(context_override)
-        bpy.ops.mesh.normals_make_consistent(context_override)
-        bpy.ops.object.editmode_toggle(context_override)
+        bpy.ops.object.editmode_toggle()
+        bpy.ops.mesh.tris_convert_to_quads()
+        bpy.ops.mesh.normals_make_consistent()
+        bpy.ops.object.editmode_toggle()
 
         types_collection.hide_viewport = True
         bpy.context.view_layer.objects.active = last_obj
@@ -1479,12 +1507,12 @@ class IfcImporter:
         obj = self.create_product(self.project["ifc"])
         self.project["blender"].objects.link(obj)
         self.project["blender"].BIMCollectionProperties.obj = obj
-        obj.BIMObjectProperties.collection = self.project["blender"]
+        obj.BIMObjectProperties.collection = self.collections[project.GlobalId] = self.project["blender"]
 
     def create_collections(self):
         self.create_spatial_decomposition_collections()
         if self.ifc_import_settings.collection_mode == "DECOMPOSITION":
-            self.create_aggregate_collections()
+            self.create_aggregate_and_nest_collections()
         elif self.ifc_import_settings.collection_mode == "SPATIAL_DECOMPOSITION":
             pass
 
@@ -1520,16 +1548,29 @@ class IfcImporter:
                 for rel_aggregate in element.IsDecomposedBy:
                     self.create_spatial_decomposition_collection(collection, rel_aggregate.RelatedObjects)
 
-    def create_aggregate_collections(self):
+    def create_aggregate_and_nest_collections(self):
         if self.ifc_import_settings.has_filter:
-            rel_aggregates = [e.IsDecomposedBy[0] for e in self.elements if e.IsDecomposedBy]
-            rel_aggregates += [e.Decomposes[0] for e in self.elements if e.Decomposes]
-            rel_aggregates = set(rel_aggregates)
+            rel_aggregates = set()
+            for element in self.elements:
+                if element.IsDecomposedBy:
+                    rel_aggregates.add(element.IsDecomposedBy[0])
+                elif element.Decomposes:
+                    rel_aggregates.add(element.Decomposes[0])
+                elif element.IsNestedBy:
+                    if [e for e in element.IsNestedBy[0].RelatedObjects if not e.is_a("IfcPort")]:
+                        rel_aggregates.add(element.IsNestedBy[0])
+                elif element.Nests:
+                    rel_aggregates.add(element.Nests[0])
         else:
             rel_aggregates = [
-                a
-                for a in self.file.by_type("IfcRelAggregates")
-                if a.RelatingObject.is_a("IfcElement") or a.RelatingObject.is_a("IfcElementType")
+                r
+                for r in self.file.by_type("IfcRelAggregates")
+                if r.RelatingObject.is_a("IfcElement") or r.RelatingObject.is_a("IfcElementType")
+            ] + [
+                r
+                for r in self.file.by_type("IfcRelNests")
+                if (r.RelatingObject.is_a("IfcElement") or r.RelatingObject.is_a("IfcElementType"))
+                and [e for e in r.RelatedObjects if not e.is_a("IfcPort")]
             ]
 
         if len(rel_aggregates) > 10000:
@@ -1634,6 +1675,9 @@ class IfcImporter:
         elif getattr(element, "Decomposes", None):
             aggregate = ifcopenshell.util.element.get_aggregate(element)
             return self.collections[aggregate.GlobalId].objects.link(obj)
+        elif getattr(element, "Nests", None):
+            nest = ifcopenshell.util.element.get_nest(element)
+            return self.collections[nest.GlobalId].objects.link(obj)
         else:
             return self.place_object_in_spatial_decomposition_collection(element, obj)
 
@@ -1690,41 +1734,6 @@ class IfcImporter:
         result[1][3] *= self.unit_scale
         result[2][3] *= self.unit_scale
         return result
-
-    def get_body_representation(self, representations):
-        for representation in representations:
-            if (
-                representation.RepresentationIdentifier == "Body"
-                and representation.RepresentationType == "MappedRepresentation"
-            ):
-                if len(representation.Items) > 1:
-                    return representation
-                return self.get_body_representation([representation.Items[0].MappingSource.MappedRepresentation])
-            elif representation.RepresentationIdentifier == "Body":
-                return representation
-
-    def get_transformed_body_representations(self, representations, matrix=None):
-        if matrix is None:
-            matrix = mathutils.Matrix()
-        results = []
-        for representation in representations:
-            if (
-                representation.RepresentationIdentifier == "Body"
-                and representation.RepresentationType == "MappedRepresentation"
-            ):
-                for item in representation.Items:
-                    # TODO: Confirm if this transformation is right
-                    transform = self.get_axis2placement(item.MappingSource.MappingOrigin)
-                    if item.MappingTarget:
-                        transform = transform @ self.get_cartesiantransformationoperator(item.MappingTarget)
-                    results.extend(
-                        self.get_transformed_body_representations(
-                            [item.MappingSource.MappedRepresentation], transform @ matrix
-                        )
-                    )
-            elif representation.RepresentationIdentifier == "Body":
-                results.append({"raw": representation, "matrix": self.scale_matrix(matrix)})
-        return results
 
     def scale_matrix(self, matrix):
         matrix[0][3] *= self.unit_scale
@@ -1908,7 +1917,7 @@ class IfcImporter:
 
     def link_element(self, element, obj):
         self.added_data[element.id()] = obj
-        IfcStore.link_element(element, obj)
+        tool.Ifc.link(element, obj)
 
     def set_matrix_world(self, obj, matrix_world):
         obj.matrix_world = matrix_world
@@ -1920,6 +1929,15 @@ class IfcImporter:
             bpy.ops.object.select_all(action="SELECT")
             bpy.ops.view3d.view_selected()
             bpy.ops.object.select_all(action="DESELECT")
+
+    def setup_arrays(self):
+        for element in self.file.by_type("IfcElement"):
+            pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+            if not pset_data or not pset_data.get("Data", None):  # skip array children
+                continue
+            for i in range(len(json.loads(pset_data["Data"]))):
+                tool.Blender.Modifier.Array.set_children_lock_state(element, i, True)
+                tool.Blender.Modifier.Array.constrain_children_to_parent(element)
 
 
 class IfcImportSettings:
@@ -1943,6 +1961,7 @@ class IfcImportSettings:
         self.element_limit = 30000
         self.has_filter = None
         self.should_filter_spatial_elements = True
+        self.should_setup_viewport_camera = True
         self.elements = set()
         self.collection_mode = "DECOMPOSITION"
 

@@ -106,6 +106,7 @@ class CreateProject(bpy.types.Operator):
             for obj in bpy.data.objects:
                 bpy.data.objects.remove(obj)
         core.create_project(tool.Ifc, tool.Project, schema=props.export_schema, template=template)
+        tool.Blender.register_toolbar()
 
     def rollback(self, data):
         IfcStore.file = None
@@ -355,8 +356,8 @@ class AppendEntireLibrary(bpy.types.Operator):
         self.file = IfcStore.get_file()
         self.library = IfcStore.library_file
 
-        lib_elements = ifcopenshell.util.selector.Selector().parse(
-            self.library, ".IfcTypeProduct | .IfcMaterial | .IfcCostSchedule| .IfcProfileDef"
+        lib_elements = ifcopenshell.util.selector.filter_elements(
+            self.library, "IfcTypeProduct, IfcMaterial, IfcCostSchedule, IfcProfileDef"
         )
         for element in lib_elements:
             bpy.ops.bim.append_library_element(definition=element.id())
@@ -472,6 +473,7 @@ class AppendLibraryElement(bpy.types.Operator):
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = self.file
         ifc_importer.type_collection = type_collection
+        ifc_importer.process_context_filter()
         ifc_importer.material_creator.load_existing_materials()
         self.import_materials(element, ifc_importer)
         self.import_styles(element, ifc_importer)
@@ -650,6 +652,7 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
         context.scene.BIMProperties.ifc_file = self.get_filepath()
         context.scene.BIMProjectProperties.is_loading = True
         context.scene.BIMProjectProperties.total_elements = len(tool.Ifc.get().by_type("IfcElement"))
+        tool.Blender.register_toolbar()
         if not self.is_advanced:
             bpy.ops.bim.load_project_elements()
         return {"FINISHED"}
@@ -673,6 +676,24 @@ class UnloadProject(bpy.types.Operator):
         IfcStore.purge()
         context.scene.BIMProperties.ifc_file = ""
         context.scene.BIMProjectProperties.is_loading = False
+        return {"FINISHED"}
+
+
+class RevertProject(bpy.types.Operator, IFCFileSelector):
+    bl_idname = "bim.revert_project"
+    bl_label = "Revert IFC Project"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Reload currently opened IFC project discarding all unsaved changes"
+
+    @classmethod
+    def poll(cls, context):
+        if not context.scene.BIMProperties.ifc_file:
+            cls.poll_message_set("IFC project need to be loaded and saved on the disk.")
+            return False
+        return True
+
+    def execute(self, context):
+        bpy.ops.bim.load_project(should_start_fresh_session=True, filepath=context.scene.BIMProperties.ifc_file)
         return {"FINISHED"}
 
 
@@ -768,12 +789,12 @@ class LoadProjectElements(bpy.types.Operator):
         return elements
 
     def get_whitelist_elements(self):
-        selector = ifcopenshell.util.selector.Selector()
-        return set(selector.parse(self.file, self.props.filter_query))
+        return set(ifcopenshell.util.selector.filter_elements(self.file, self.props.filter_query))
 
     def get_blacklist_elements(self):
-        selector = ifcopenshell.util.selector.Selector()
-        return set(self.file.by_type("IfcElement")) - set(selector.parse(self.file, self.props.filter_query))
+        return set(self.file.by_type("IfcElement")) - set(
+            ifcopenshell.util.selector.filter_elements(self.file, self.props.filter_query)
+        )
 
 
 class ToggleFilterCategories(bpy.types.Operator):
@@ -790,9 +811,9 @@ class ToggleFilterCategories(bpy.types.Operator):
 
 class LinkIfc(bpy.types.Operator):
     bl_idname = "bim.link_ifc"
-    bl_label = "Link IFC"
+    bl_label = "Link Blend/IFC File"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Link a Blender file"
+    bl_description = "This will link the Blender file that is synced with the IFC file"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     files: bpy.props.CollectionProperty(name="Files", type=bpy.types.OperatorFileListElement)
     directory: bpy.props.StringProperty(subtype="DIR_PATH")
@@ -895,6 +916,7 @@ class ReloadLink(bpy.types.Operator):
                 for c in bpy.data.collections
                 if "IfcProject" in c.name and c.library and os.path.basename(c.library.filepath) == selected_filename
             ]
+
         for library in get_linked_ifcs() or []:
             library.reload()
         return {"FINISHED"}
@@ -920,7 +942,9 @@ class ToggleLinkSelectability(bpy.types.Operator):
 
     def get_linked_collections(self):
         return [
-            c for c in bpy.data.collections if "IfcProject" in c.name and c.library and c.library.filepath == self.filepath
+            c
+            for c in bpy.data.collections
+            if "IfcProject" in c.name and c.library and c.library.filepath == self.filepath
         ]
 
 
@@ -974,7 +998,9 @@ class ToggleLinkVisibility(bpy.types.Operator):
 
     def get_linked_collections(self):
         return [
-            c for c in bpy.data.collections if "IfcProject" in c.name and c.library and c.library.filepath == self.filepath
+            c
+            for c in bpy.data.collections
+            if "IfcProject" in c.name and c.library and c.library.filepath == self.filepath
         ]
 
 
@@ -1091,8 +1117,8 @@ class ExportIFC(bpy.types.Operator):
     @classmethod
     def description(cls, context, properties):
         if properties.should_save_as:
-            return "Export the IFC project to a selected file"
-        return "Export the IFC project to this file"
+            return "Save the IFC file under a new name, or relocate file"
+        return "Save the IFC file.  Will save both .IFC/.BLEND files if synced together"
 
 
 class ImportIFC(bpy.types.Operator):

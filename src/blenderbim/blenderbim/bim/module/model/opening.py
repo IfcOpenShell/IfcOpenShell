@@ -18,6 +18,7 @@
 
 import bpy
 import gpu
+import json
 import bmesh
 import shapely
 import logging
@@ -160,7 +161,10 @@ class FilledOpeningGenerator:
 
         for voided_obj in voided_objs:
             if voided_obj.data:
-                representation = tool.Ifc.get().by_id(voided_obj.data.BIMMeshProperties.ifc_definition_id)
+                voided_element = tool.Ifc.get_entity(voided_obj)
+                context = tool.Geometry.get_active_representation_context(voided_obj)
+                representation = tool.Geometry.get_representation_by_context(voided_element, context)
+
                 blenderbim.core.geometry.switch_representation(
                     tool.Ifc,
                     tool.Geometry,
@@ -393,18 +397,7 @@ class FlipFill(bpy.types.Operator, tool.Ifc.Operator):
             element = tool.Ifc.get_entity(obj)
             if not element or not element.FillsVoids:
                 continue
-
-            flip_matrix = Matrix.Rotation(pi, 4, "Z")
-
-            bottom_left = obj.matrix_world @ Vector(obj.bound_box[0])
-            top_right = obj.matrix_world @ Vector(obj.bound_box[6])
-            center = obj.matrix_world.translation.copy()
-            center_offset = center - bottom_left
-            flipped_center = top_right - center_offset
-
-            obj.matrix_world = obj.matrix_world @ flip_matrix
-            obj.matrix_world.translation.xy = flipped_center.xy
-            bpy.context.view_layer.update()
+            tool.Geometry.flip_object(obj, "XY")
         return {"FINISHED"}
 
 
@@ -531,10 +524,11 @@ class AddBoolean(Operator, tool.Ifc.Operator):
         elif obj2.data:
             mesh_data = {"type": "Mesh", "blender_obj": obj1, "blender_void": obj2}
 
-        ifcopenshell.api.run(
+        booleans = ifcopenshell.api.run(
             "geometry.add_boolean", tool.Ifc.get(), representation=representation, operator="DIFFERENCE", **mesh_data
         )
 
+        tool.Model.mark_manual_booleans(element1, booleans)
         tool.Model.clear_scene_openings()
 
         blenderbim.core.geometry.switch_representation(
@@ -655,6 +649,7 @@ class RemoveBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
 
     def _execute(self, context):
         upstream_obj = None
+        bbim_boolean_updates = {}
         for obj in context.selected_objects:
             if (
                 not obj.data
@@ -663,13 +658,21 @@ class RemoveBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
             ):
                 continue
             try:
-                boolean = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_boolean_id)
+                item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_boolean_id)
             except:
                 continue
-            ifcopenshell.api.run("geometry.remove_boolean", tool.Ifc.get(), item=boolean)
+
+            boolean = None
+            for inverse in tool.Ifc.get().get_inverse(item):
+                if inverse.is_a("IfcBooleanResult"):
+                    boolean = inverse
+                    break
+            ifcopenshell.api.run("geometry.remove_boolean", tool.Ifc.get(), item=item)
+
             if obj.data.BIMMeshProperties.obj:
                 upstream_obj = obj.data.BIMMeshProperties.obj
                 element = tool.Ifc.get_entity(upstream_obj)
+                bbim_boolean_updates.setdefault(element, []).append(boolean)
                 body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
                 if body:
                     blenderbim.core.geometry.switch_representation(
@@ -682,7 +685,10 @@ class RemoveBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
                         should_sync_changes_first=False,
                     )
             bpy.data.objects.remove(obj)
-        
+
+        for element, booleans in bbim_boolean_updates.items():
+            tool.Model.unmark_manual_booleans(element, booleans)
+
         tool.Blender.set_active_object(upstream_obj)
         return {"FINISHED"}
 
@@ -726,6 +732,9 @@ class HideOpenings(Operator, tool.Ifc.Operator):
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
+            if element.is_a("IfcOpeningElement"):
+                element = element.VoidsElements[0].RelatingBuildingElement
+                obj = tool.Ifc.get_object(element)
             openings = [r.RelatedOpeningElement for r in element.HasOpenings]
             for opening in openings:
                 opening_obj = tool.Ifc.get_object(opening)
@@ -748,18 +757,19 @@ class EditOpenings(Operator, tool.Ifc.Operator):
         building_objs = set()
         model = tool.Ifc.get()
         all_openings = model.by_type("IfcOpeningElement")
-        similar_openings = []
 
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
+            if element.is_a("IfcOpeningElement"):
+                element = element.VoidsElements[0].RelatingBuildingElement
+                obj = tool.Ifc.get_object(element)
             openings = [r.RelatedOpeningElement for r in element.HasOpenings]
             for opening in openings:
-                for all_opening in all_openings:
-                    if all_opening.ObjectPlacement == opening.ObjectPlacement:
-                        similar_openings.append(all_opening)
+                similar_openings = [o for o in all_openings if o.ObjectPlacement == opening.ObjectPlacement]
                 opening_obj = tool.Ifc.get_object(opening)
+                building_objs.add(obj)
                 if opening_obj:
                     if tool.Ifc.is_edited(opening_obj):
                         tool.Geometry.run_geometry_update_representation(obj=opening_obj)
@@ -767,9 +777,12 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                         blenderbim.core.geometry.edit_object_placement(
                             tool.Ifc, tool.Geometry, tool.Surveyor, obj=opening_obj
                         )
-                        for similar_opening in similar_openings:
-                            similar_opening.ObjectPlacement = opening.ObjectPlacement
-                    building_objs.add(obj)
+                    for similar_opening in similar_openings:
+                        similar_opening.ObjectPlacement = opening.ObjectPlacement
+                        element = similar_opening.VoidsElements[0].RelatingBuildingElement
+                        obj = tool.Ifc.get_object(element)
+                        building_objs.add(obj)
+
                     building_objs.update(self.get_all_building_objects_of_similar_openings(opening))
                     tool.Ifc.unlink(element=opening, obj=opening_obj)
                     bpy.data.objects.remove(opening_obj)
@@ -778,7 +791,7 @@ class EditOpenings(Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
     def get_all_building_objects_of_similar_openings(self, opening):
-        if not opening.HasFillings:
+        if not opening.is_a("IfcOpeningElement") or not opening.HasFillings:
             return []
         results = set()
         for rel in opening.HasFillings:
@@ -792,6 +805,7 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                         if obj:
                             results.add(obj)
         return results
+
 
 class CloneOpening(Operator, tool.Ifc.Operator):
     bl_idname = "bim.clone_opening"
@@ -812,15 +826,15 @@ class CloneOpening(Operator, tool.Ifc.Operator):
                 continue
 
         opening_placement = opening.ObjectPlacement
-        opening_representations = opening.Representation.Representations
+        opening_representation = opening.Representation
 
         new_opening = ifcopenshell.api.run("root.create_entity", tool.Ifc.get(), ifc_class="IfcOpeningElement")
-        for representation in opening_representations:
-            ifcopenshell.api.run("geometry.assign_representation", tool.Ifc.get(), product = new_opening, representation = representation)
+        new_opening.Representation = opening_representation
 
-        ifcopenshell.api.run("void.add_opening", tool.Ifc.get(), opening = new_opening, element = wall)
+        ifcopenshell.api.run("void.add_opening", tool.Ifc.get(), opening=new_opening, element=wall)
         new_opening.ObjectPlacement = opening_placement
         return {"FINISHED"}
+
 
 # TODO: merge with ProfileDecorator?
 class DecorationsHandler:
@@ -866,14 +880,14 @@ class DecorationsHandler:
             if not obj:
                 continue
 
-            self.line_shader = gpu.shader.from_builtin("3D_POLYLINE_UNIFORM_COLOR")
+            self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
             self.line_shader.bind()  # required to be able to change uniforms of the shader
             # POLYLINE_UNIFORM_COLOR specific uniforms
             self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
             self.line_shader.uniform_float("lineWidth", 2.0)
 
             # general shader
-            self.shader = gpu.shader.from_builtin("3D_UNIFORM_COLOR")
+            self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
 
             verts = []
             selected_edges = []

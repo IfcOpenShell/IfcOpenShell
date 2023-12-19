@@ -36,7 +36,7 @@ class BIM_PT_classifications(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_project_setup"
+    bl_parent_id = "BIM_PT_tab_project_setup"
 
     @classmethod
     def poll(cls, context):
@@ -48,6 +48,48 @@ class BIM_PT_classifications(Panel):
 
         self.props = context.scene.BIMClassificationProperties
 
+        row = self.layout.row(align=True)
+        row.label(text="Source", icon="OUTLINER")
+        row.prop(self.props, "classification_source", text="")
+
+        if self.props.classification_source == "FILE":
+            self.draw_add_file_ui(context)
+        elif self.props.classification_source == "BSDD":
+            self.draw_add_bsdd_ui(context)
+        elif self.props.classification_source == "MANUAL":
+            self.draw_add_manual_ui(context)
+
+        for classification in ClassificationsData.data["classifications"]:
+            if self.props.active_classification_id == classification["id"]:
+                self.draw_editable_ui()
+            else:
+                self.draw_ui(classification)
+
+    def draw_add_manual_ui(self, context):
+        if self.props.is_adding:
+            blenderbim.bim.helper.draw_attributes(self.props.classification_attributes, self.layout)
+            row = self.layout.row(align=True)
+            row.operator("bim.add_manual_classification", text="Save", icon="CHECKMARK")
+            row.operator("bim.disable_adding_manual_classification", text="", icon="CANCEL")
+        else:
+            row = self.layout.row()
+            row.operator("bim.enable_adding_manual_classification", text="Add Classification", icon="ADD")
+
+    def draw_add_bsdd_ui(self, context):
+        self.bprops = context.scene.BIMBSDDProperties
+
+        if not self.bprops.active_domain:
+            row = self.layout.row()
+            row.label(text="No Active bSDD Domain", icon="ERROR")
+            return
+
+        row = self.layout.row()
+        row.label(text="Active: " + self.bprops.active_domain, icon="URL")
+
+        row = self.layout.row()
+        row.operator("bim.add_classification_from_bsdd", icon="ADD")
+
+    def draw_add_file_ui(self, context):
         if ClassificationsData.data["has_classification_file"]:
             row = self.layout.row(align=True)
             row.prop(self.props, "available_classifications", text="")
@@ -57,12 +99,6 @@ class BIM_PT_classifications(Panel):
             row = self.layout.row(align=True)
             row.label(text="No Active Classification Library")
             row.operator("bim.load_classification_library", text="", icon="IMPORT")
-
-        for classification in ClassificationsData.data["classifications"]:
-            if self.props.active_classification_id == classification["id"]:
-                self.draw_editable_ui()
-            else:
-                self.draw_ui(classification)
 
     def draw_editable_ui(self):
         row = self.layout.row(align=True)
@@ -84,6 +120,7 @@ class ReferenceUI:
         obj = context.active_object
         self.oprops = obj.BIMObjectProperties
         self.sprops = context.scene.BIMClassificationProperties
+        self.bprops = context.scene.BIMBSDDProperties
         self.props = obj.BIMClassificationReferenceProperties
         self.file = IfcStore.get_file()
 
@@ -100,14 +137,85 @@ class ReferenceUI:
                 self.draw_reference_ui(reference)
 
     def draw_add_ui(self, context):
+        row = self.layout.row(align=True)
+        row.label(text="Source", icon="OUTLINER")
+        row.prop(self.sprops, "classification_source", text="")
+
+        if self.sprops.classification_source == "FILE":
+            self.draw_add_file_ui(context)
+        elif self.sprops.classification_source == "BSDD":
+            self.draw_add_bsdd_ui(context)
+        elif self.sprops.classification_source == "MANUAL":
+            self.draw_add_manual_ui(context)
+
+    def draw_add_manual_ui(self, context):
+        row = self.layout.row()
+        row.prop(self.props, "classifications", text="")
+        if self.props.is_adding:
+            blenderbim.bim.helper.draw_attributes(self.props.reference_attributes, self.layout)
+            row = self.layout.row(align=True)
+            op = row.operator("bim.add_manual_classification_reference", text="Save", icon="CHECKMARK")
+            op.type = self.data.data["object_type"]
+            row.operator("bim.disable_adding_manual_classification_reference", text="", icon="CANCEL")
+        else:
+            row = self.layout.row()
+            row.operator("bim.enable_adding_manual_classification_reference", text="Add Reference", icon="ADD")
+
+    def draw_add_bsdd_ui(self, context):
+        if not self.bprops.active_domain:
+            row = self.layout.row()
+            row.label(text="No Active bSDD Domain", icon="ERROR")
+            return
+
+        row = self.layout.row()
+        row.label(text="Active: " + self.bprops.active_domain, icon="URL")
+
+        row = self.layout.row(align=True)
+        row.prop(self.bprops, "keyword", text="")
+        row.operator("bim.search_bsdd_classifications", text="", icon="VIEWZOOM")
+
+        row = self.layout.row()
+        row.prop(self.bprops, "should_filter_ifc_class")
+
+        if len(self.bprops.classifications):
+            self.layout.template_list(
+                "BIM_UL_bsdd_classifications",
+                "",
+                self.bprops,
+                "classifications",
+                self.bprops,
+                "active_classification_index",
+            )
+        else:
+            row = self.layout.row()
+            row.label(text="No Search Results")
+
+        if self.bprops.active_classification_index < len(self.bprops.classifications):
+            row = self.layout.row(align=True)
+            op = row.operator(
+                "bim.add_classification_reference_from_bsdd", text="Add Classification Reference", icon="ADD"
+            )
+            op.obj = self.obj
+            op.obj_type = self.obj_type
+            row.operator("bim.get_bsdd_classification_properties", text="", icon="COPY_ID")
+
+            if len(self.bprops.classification_psets):
+                for pset in self.bprops.classification_psets:
+                    box = self.layout.box()
+                    row = box.row()
+                    row.label(text=pset.name, icon="COPY_ID")
+                    blenderbim.bim.helper.draw_attributes(pset.properties, box)
+
+    def draw_add_file_ui(self, context):
         if not self.data.data["active_classification_library"]:
             row = self.layout.row(align=True)
-            row.label(text="No Active Classification Library")
+            row.label(text="No Active Classification Library", icon="ERROR")
             row.operator("bim.load_classification_library", text="", icon="IMPORT")
             return
+
         row = self.layout.row(align=True)
         row.label(text=f"Active Classification Library: {self.data.data['active_classification_library']}")
-        #row.prop(self.sprops, "available_classifications", text="")
+        # row.prop(self.sprops, "available_classifications", text="")
         if not self.sprops.available_library_references:
             op = row.operator("bim.change_classification_level", text="", icon="GREASEPENCIL")
             op.parent_id = int(self.sprops.available_classifications)
@@ -146,6 +254,8 @@ class ReferenceUI:
             name = reference["Identification"] or "No Identification"
         row.label(text=name, icon="ASSET_MANAGER")
         row.label(text=reference["Name"] or "")
+        if reference["Location"]:
+            row.operator("bim.open_uri", icon="URL", text="").uri = reference["Location"]
         if not self.props.active_reference_id:
             op = row.operator("bim.enable_editing_classification_reference", text="", icon="GREASEPENCIL")
             op.reference = reference["id"]

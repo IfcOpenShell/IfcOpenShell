@@ -87,6 +87,9 @@ class ExecuteIfcPatch(bpy.types.Operator):
             input_file = props.ifc_patch_input
             file = ifcopenshell.open(props.ifc_patch_input)
 
+        # Store this in case the patch recipe resets the Blender session, such as by loading a new project.
+        ifc_patch_output = props.ifc_patch_output or props.ifc_patch_input
+
         output = ifcpatch.execute(
             {
                 "input": input_file,
@@ -96,7 +99,7 @@ class ExecuteIfcPatch(bpy.types.Operator):
                 "log": os.path.join(context.scene.BIMProperties.data_dir, "process.log"),
             }
         )
-        ifcpatch.write(output, props.ifc_patch_output)
+        ifcpatch.write(output, ifc_patch_output)
         return {"FINISHED"}
 
 

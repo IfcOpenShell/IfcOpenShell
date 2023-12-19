@@ -31,14 +31,19 @@ class TestImplementsTool(NewFile):
 
 class TestAddDefaultMaterialObject(NewFile):
     def test_run(self):
-        material = subject.add_default_material_object()
+        material = subject.add_default_material_object(None)
         assert isinstance(material, bpy.types.Material)
         assert material.name == "Default"
+
+    def test_specify_a_name(self):
+        material = subject.add_default_material_object("Material")
+        assert isinstance(material, bpy.types.Material)
+        assert material.name == "Material"
 
 
 class TestDeleteObject(NewFile):
     def test_run(self):
-        material = subject.add_default_material_object()
+        material = subject.add_default_material_object(None)
         assert bpy.data.materials.get("Default")
         subject.delete_object(material)
         assert not bpy.data.materials.get("Default")

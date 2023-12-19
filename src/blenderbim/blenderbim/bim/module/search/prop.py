@@ -17,10 +17,10 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import blenderbim.tool as tool
 from ifcopenshell import util
 from ifcopenshell.util.selector import Selector
-import blenderbim.tool as tool
-from blenderbim.bim.prop import ObjProperty, StrProperty
+from blenderbim.bim.prop import ObjProperty, StrProperty, BIMFilterGroup
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.search.data import SearchData, ColourByPropertyData, SelectSimilarData
 from bpy.types import PropertyGroup
@@ -70,15 +70,15 @@ def update_is_class_selected(self, context):
                 new.obj = obj
 
 
-def update_is_level_selected(self, context):
+def update_is_container_selected(self, context):
     if self.is_selected:
         for obj in self.unselected_objects:
             obj.obj.select_set(True)
         self.unselected_objects.clear()
     else:
         for obj in context.selected_objects:
-            level = tool.Misc.get_object_storey(obj)
-            if level and level.Name == self.name:
+            container = tool.Spatial.get_container(tool.Ifc.get_entity(obj))
+            if (container and container.Name == self.name) or (not container and self.name== "None"):
                 obj.select_set(False)
                 new = self.unselected_objects.add()
                 new.obj = obj
@@ -93,21 +93,9 @@ class BIMFilterClasses(PropertyGroup):
 
 class BIMFilterBuildingStoreys(PropertyGroup):
     name: StringProperty(name="Name")
-    is_selected: BoolProperty(name="Is Level Selected", default=True, update=update_is_level_selected)
+    is_selected: BoolProperty(name="Is Level Selected", default=True, update=update_is_container_selected)
     total: IntProperty(name="Total")
     unselected_objects: CollectionProperty(type=ObjProperty, name="Unfiltered Objects")
-
-
-class BIMFacet(PropertyGroup):
-    name: StringProperty(name="Name")
-    pset: StringProperty(name="Pset")
-    value: StringProperty(name="Value")
-    type: StringProperty(name="Type")
-    comparison: StringProperty(name="Comparison")
-
-
-class BIMFilterGroup(PropertyGroup):
-    filters: CollectionProperty(type=BIMFacet, name="filters")
 
 
 class BIMColour(PropertyGroup):
@@ -140,8 +128,8 @@ class BIMSearchProperties(PropertyGroup):
     filter_type: StringProperty(name="Filter Type")
     filter_classes: CollectionProperty(type=BIMFilterClasses, name="Filter Classes")
     filter_classes_index: IntProperty(name="Filter Classes Index")
-    filter_building_storeys: CollectionProperty(type=BIMFilterBuildingStoreys, name="Filter Level")
-    filter_building_storeys_index: IntProperty(name="Filter Level Index")
+    filter_container: CollectionProperty(type=BIMFilterBuildingStoreys, name="Filter Level")
+    filter_container_index: IntProperty(name="Filter Level Index")
 
 
 def get_classes(self, ifc_product):

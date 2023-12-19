@@ -24,8 +24,9 @@ import blenderbim.tool as tool
 import blenderbim.bim.module.type.prop as type_prop
 from blenderbim.bim.helper import prop_with_search, close_operator_panel
 from bpy.types import WorkSpaceTool
-from blenderbim.bim.module.model.data import AuthoringData, RailingData, RoofData
+from blenderbim.bim.module.model.data import AuthoringData
 from blenderbim.bim.module.drawing.data import DecoratorData
+from blenderbim.bim.module.system.data import PortData
 from blenderbim.bim.module.model.prop import get_ifc_class
 
 
@@ -218,6 +219,9 @@ class BimToolUI:
             row.label(text="No IFC Project", icon="ERROR")
             return
 
+        if not PortData.is_loaded:
+            PortData.load()
+
         if not AuthoringData.is_loaded:
             AuthoringData.load(ifc_element_type)
         elif ifc_element_type == "all" and AuthoringData.data["ifc_element_type"] is not None:
@@ -347,20 +351,24 @@ class BimToolUI:
                 "IfcDuctSegment",
                 "IfcPipeSegment",
             ):
-                add_layout_hotkey_operator(cls.layout, "Extend", "S_E", "")
                 add_layout_hotkey_operator(cls.layout, "Add Fitting", "S_F", "")
+
+                if context.region.type != "TOOL_HEADER":
+                    cls.layout.operator("bim.mep_add_bend")
+                    cls.layout.operator("bim.mep_add_transition")
+                    cls.layout.operator("bim.mep_add_obstruction")
+
             else:
                 add_layout_hotkey_operator(cls.layout, "Edit Axis", "A_E", "")
+                add_layout_hotkey_operator(cls.layout, "Flip", "S_F", bpy.ops.bim.flip_object.__doc__)
                 add_layout_hotkey_operator(cls.layout, "Butt", "S_T", "")
                 add_layout_hotkey_operator(cls.layout, "Mitre", "S_Y", "")
                 add_layout_hotkey_operator(cls.layout, "Rotate 90", "S_R", bpy.ops.bim.rotate_90.__doc__)
-            add_layout_hotkey_operator(cls.layout, "Regen", "S_G", bpy.ops.bim.recalculate_profile.__doc__)
+                add_layout_hotkey_operator(cls.layout, "Regen", "S_G", bpy.ops.bim.recalculate_profile.__doc__)
             row.operator("bim.extend_profile", icon="X", text="").join_type = ""
 
         elif (
-            (RailingData.is_loaded or not RailingData.load())
-            and RailingData.data["pset_data"]
-            and not context.active_object.BIMRailingProperties.is_editing_path
+            tool.Model.is_parametric_railing_active() and not context.active_object.BIMRailingProperties.is_editing_path
         ):
             # NOTE: should be above "active_representation_type" = "SweptSolid" check
             # because it could be a SweptSolid too
@@ -369,7 +377,8 @@ class BimToolUI:
             row.operator("bim.enable_editing_railing_path", text="Edit Railing Path")
 
         elif AuthoringData.data["active_representation_type"] == "SweptSolid":
-            add_layout_hotkey_operator(cls.layout, "Edit Profile", "S_E", "")
+            if not tool.Model.is_parametric_window_active() and not tool.Model.is_parametric_door_active():
+                add_layout_hotkey_operator(cls.layout, "Edit Profile", "S_E", "")
 
         elif AuthoringData.data["active_class"] in (
             "IfcWindow",
@@ -390,14 +399,16 @@ class BimToolUI:
         elif AuthoringData.data["active_class"] in ("IfcSpace",):
             add_layout_hotkey_operator(cls.layout, "Regen", "S_G", bpy.ops.bim.generate_space.__doc__)
 
-        elif (
-            (RoofData.is_loaded or not RoofData.load())
-            and RoofData.data["pset_data"]
-            and not context.active_object.BIMRoofProperties.is_editing_path
-        ):
+        elif tool.Model.is_parametric_roof_active() and not context.active_object.BIMRoofProperties.is_editing_path:
             row = cls.layout.row(align=True)
             row.label(text="", icon=f"EVENT_TAB")
             row.operator("bim.enable_editing_roof_path", text="Edit Roof Path")
+
+        if context.region.type != "TOOL_HEADER" and PortData.data["total_ports"] > 0:
+            add_layout_hotkey_operator(
+                cls.layout, "Regen MEP", "S_G", bpy.ops.bim.regenerate_distribution_element.__doc__
+            )
+            cls.layout.operator("bim.mep_connect_elements")
 
         row = cls.layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
@@ -416,6 +427,8 @@ class BimToolUI:
                 row.operator("bim.show_openings", icon="HIDE_OFF", text="")
 
         if AuthoringData.data["active_class"] in ("IfcOpeningElement",):
+            row.operator("bim.edit_openings", icon="CHECKMARK", text="")
+            row.operator("bim.hide_openings", icon="CANCEL", text="")
             if len(context.selected_objects) == 2:
                 row = cls.layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
@@ -431,6 +444,11 @@ class BimToolUI:
         cls.layout.row(align=True).label(text="Mode")
         add_layout_hotkey_operator(cls.layout, "Void", "A_O", "Toggle openings")
         add_layout_hotkey_operator(cls.layout, "Decomposition", "A_D", "Select decomposition")
+
+        cls.layout.separator()
+        add_layout_hotkey_operator(
+            cls.layout, "Calculate All Quantities", "S_Q", bpy.ops.bim.calculate_all_quantities.__doc__
+        )
 
     @classmethod
     def draw_header_interface(cls):
@@ -585,20 +603,18 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         # NOTE: placing it before the other operations because railing can also be SweptSolid
         # and it might conflict with one of the conditions below
         if (
-            (RailingData.is_loaded or not RailingData.load())
-            and RailingData.data["pset_data"]
+            tool.Model.is_parametric_railing_active()
             and not bpy.context.active_object.BIMRailingProperties.is_editing_path
         ):
             bpy.ops.bim.enable_editing_railing_path()
             return
 
-        elif (
-            (RoofData.is_loaded or not RoofData.load())
-            and RoofData.data["pset_data"]
-            and not bpy.context.active_object.BIMRoofProperties.is_editing_path
-        ):
+        elif tool.Model.is_parametric_roof_active() and not bpy.context.active_object.BIMRoofProperties.is_editing_path:
             # undo the unselection done above because roof has no usage type
             bpy.ops.bim.enable_editing_roof_path()
+            return
+
+        elif tool.Model.is_parametric_window_active() or tool.Model.is_parametric_door_active():
             return
 
         selected_usages = {}
@@ -610,6 +626,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             usage = tool.Model.get_usage_type(element)
             if not usage:
                 representation = tool.Geometry.get_active_representation(obj)
+                representation = tool.Geometry.resolve_mapped_representation(representation)
                 if representation and representation.RepresentationType == "SweptSolid":
                     usage = "SWEPTSOLID"
                 else:
@@ -663,18 +680,30 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.flip_wall()
         elif self.active_class in ("IfcWindow", "IfcWindowStandardCase", "IfcDoor", "IfcDoorStandardCase"):
             bpy.ops.bim.flip_fill()
+        elif self.active_class in ("IfcBeam", "IfcColumn"):
+            bpy.ops.bim.flip_object(flip_local_axes="XZ")
         elif self.active_class in ("IfcDuctSegment", "IfcPipeSegment", "IfcCableCarrierSegment", "IfcCableSegment"):
             bpy.ops.bim.fit_flow_segments()
 
     def hotkey_S_G(self):
+        obj = bpy.context.active_object
+        element = tool.Ifc.get_entity(obj)
         if not bpy.context.selected_objects:
             if self.props.ifc_class == "IfcSpaceType":
                 bpy.ops.bim.generate_space()
             return
         if self.active_material_usage == "LAYER2":
             bpy.ops.bim.recalculate_wall()
+        elif tool.System.get_ports(element):
+            bpy.ops.bim.regenerate_distribution_element()
         elif self.active_material_usage == "PROFILE":
-            bpy.ops.bim.recalculate_profile()
+            if self.active_class not in (
+                "IfcCableCarrierSegment",
+                "IfcCableSegment",
+                "IfcDuctSegment",
+                "IfcPipeSegment",
+            ):
+                bpy.ops.bim.recalculate_profile()
         elif self.active_class in ("IfcWindow", "IfcWindowStandardCase", "IfcDoor", "IfcDoorStandardCase"):
             bpy.ops.bim.recalculate_fill()
         elif self.active_class in ("IfcSpace"):

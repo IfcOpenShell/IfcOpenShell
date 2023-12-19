@@ -410,7 +410,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 obj=obj,
                 predefined_type=predefined_type,
                 ifc_class="IfcStairFlightType",
-                should_add_representation=True,
+                should_add_representation=False,
                 context=body,
             )
             tool.Blender.select_and_activate_single_object(context, obj)
@@ -498,6 +498,22 @@ class RenameType(bpy.types.Operator, tool.Ifc.Operator):
         self.layout.prop(self, "name")
 
 
+class AutoRenameOccurrences(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.auto_rename_occurrences"
+    bl_label = "Auto Rename Occurrences"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        obj = context.active_object
+        element_type = tool.Ifc.get_entity(obj)
+        if element_type and element_type.is_a("IfcTypeObject"):
+            for occurrence in ifcopenshell.util.element.get_types(element_type):
+                obj = tool.Ifc.get_object(occurrence)
+                occurrence.Name = tool.Model.generate_occurrence_name(element_type, occurrence.is_a())
+                if obj:
+                    tool.Root.set_object_name(obj, occurrence)
+
+
 class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.duplicate_type"
     bl_label = "Duplicate Type"
@@ -530,4 +546,5 @@ class PurgeUnusedTypes(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.purge_unused_types(tool.Ifc, tool.Type)
+        purged_types = core.purge_unused_types(tool.Ifc, tool.Type)
+        self.report({"INFO"}, f"{purged_types} types were purged.")

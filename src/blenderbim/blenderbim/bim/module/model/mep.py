@@ -114,10 +114,8 @@ class RegenerateDistributionElement(bpy.types.Operator, tool.Ifc.Operator):
 
                 obj = tool.Ifc.get_object(element)
                 obj_pred = tool.Ifc.get_object(predecessor)
-                if tool.Ifc.is_moved(obj):
-                    blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
-                if tool.Ifc.is_moved(obj_pred):
-                    blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj_pred)
+                tool.Model.sync_object_ifc_position(obj)
+                tool.Model.sync_object_ifc_position(obj_pred)
 
                 port, port_pred = get_connected_ports_between(element, predecessor)
                 port_matrix_pred = tool.Model.get_element_matrix(port_pred)
@@ -311,6 +309,7 @@ class MEPGenerator:
                     profile_joiner.set_depth(connected_obj, connected_element_length)
 
     def get_segment_data(self, segment):
+        """returns points data is in world space"""
         ports = tool.System.get_ports(segment)
         segment_object = tool.Ifc.get_object(segment)
         start_point = segment_object.location
@@ -367,6 +366,7 @@ class MEPGenerator:
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
         precision = VTX_PRECISION / si_conversion
         angle_precision = degrees(precision)
+        start_port_match = True
 
         segments_data = []
         for segment, port in zip(segments, ports, strict=True):
@@ -376,8 +376,9 @@ class MEPGenerator:
                 return
             segments_data.append((segment_type, port.PredefinedType, port.SystemType))
 
-        # TODO: test it with flipped transition where start length != end length
         def compatible_with_bbim_data(fitting_type):
+            nonlocal start_port_match
+            start_port_match = True
             if not bbim_data:
                 return True
             fitting_type_obj = tool.Ifc.get_object(fitting_type)
@@ -386,16 +387,39 @@ class MEPGenerator:
                 return False
 
             fitting_bbim_data = fitting_bbim_data["data_dict"]
-            for key in bbim_data:
+
+            def compare_value(key, second_key=None):
+                second_key = second_key or key
                 requested_value = bbim_data[key]
-                fitting_value = fitting_bbim_data[key]
+                fitting_value = fitting_bbim_data[second_key]
 
                 if isinstance(requested_value, float):
                     compare_precision = angle_precision if key == "angle" else precision
                     compare = tool.Cad.is_x(requested_value, fitting_value, compare_precision)
                 elif isinstance(fitting_value, list):
                     compare = tool.Cad.are_vectors_equal(requested_value, Vector(fitting_value), precision)
-                if not compare:
+                return compare
+
+            ignore_keys = []
+            if predefined_type == "BEND":
+                ignore_keys.extend(("start_length", "end_length"))
+                # for bends there is a special case when lengths might not match
+                # but fitting is still compatible if we flip it
+                # since bend connects segments of the same type
+                default_lengths_match = compare_value("start_length") and compare_value("end_length")
+                if not default_lengths_match:
+                    switched_lengths_match = compare_value("start_length", "end_length") and compare_value(
+                        "end_length", "start_length"
+                    )
+                    if switched_lengths_match:
+                        start_port_match = False
+                    else:
+                        return False
+
+            for key in bbim_data:
+                if key in ignore_keys:
+                    continue
+                if not compare_value(key):
                     return False
             return True
 
@@ -426,11 +450,12 @@ class MEPGenerator:
             # NOTE: I have a feeling that there are cases where order
             # in which we're checking the segments is important
             # but I couldn't pin it down to exact cases
-            for test_segment_data in fitting_data[:]:
+            for test_segment_data in fitting_data:
                 for base_segment_data in segments_data:
                     if not are_segments_compatible(test_segment_data, base_segment_data):
                         continue
-                    segments_data.remove(test_segment_data)
+                    segments_data.remove(base_segment_data)
+                    break
 
             # all segments were sorted
             return len(segments_data) == 0
@@ -450,7 +475,7 @@ class MEPGenerator:
             connected_port = tool.System.get_connected_port(start_port)
             connected_element = tool.System.get_port_relating_element(connected_port)
             element_type = ifcopenshell.util.element.get_type(connected_element)
-            packed_data["start_port_match"] = element_type == segments_data[0][0]
+            packed_data["start_port_match"] = element_type == segments_data[0][0] and start_port_match
 
             return packed_data
 
@@ -561,6 +586,8 @@ class MEPGenerator:
         obstruction_obj.matrix_world = segment_matrix
 
         profile_joiner.set_depth(obstruction_obj, length)
+        # NOTE: we add ports to the obstruction occurence and not to the type
+        # since it's material profile based like segments
         obstruction_port = tool.System.add_ports(
             obstruction_obj,
             add_start_port=not at_segment_start,
@@ -626,13 +653,13 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
     )
     bl_options = {"REGISTER", "UNDO"}
     start_length: bpy.props.FloatProperty(
-        name="Start Length", description="Transition start length in SI units", default=0.1, subtype="DISTANCE"
+        name="Start Length", description="Transition start length in SI units", default=0.1, subtype="DISTANCE", min=0
     )
     end_length: bpy.props.FloatProperty(
-        name="End Length", description="Transition end length in SI units", default=0.1, subtype="DISTANCE"
+        name="End Length", description="Transition end length in SI units", default=0.1, subtype="DISTANCE", min=0
     )
     angle: bpy.props.FloatProperty(
-        name="Transition Angle", description="Transition angle in degrees", default=pi / 6, subtype="ANGLE"
+        name="Transition Angle", description="Transition angle in degrees", default=pi / 6, subtype="ANGLE", min=0
     )
     start_segment_id: bpy.props.IntProperty(name="Start Segment Element ID", default=0)
     end_segment_id: bpy.props.IntProperty(name="End Segment Element ID", default=0)
@@ -717,6 +744,12 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
         )
         start_port = points_ports_map[start_point]
         end_port = points_ports_map[end_point]
+        start_point_on_origin = start_point == start_segment_data["start_point"]
+        start_connection = "ATSTART" if start_point_on_origin else "ATEND"
+        start_segment_sign = -1 if start_point_on_origin else 1
+
+        end_point_on_origin = end_point == end_segment_data["start_point"]
+        end_connection = "ATSTART" if end_point_on_origin else "ATEND"
 
         # figure profile offset
         base_transition_dir = keep_only_z_axis(end_point - start_point).normalized()
@@ -734,7 +767,8 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
                 profile_offset *= V(1, -1)
 
         # world space profile offset
-        profile_offset_ws = start_object_rotation @ (profile_offset * si_conversion).to_3d()
+        profile_offset_si = (profile_offset * si_conversion).to_3d()
+        profile_offset_ws = start_object_rotation @ profile_offset_si
 
         def get_segments_length():
             start_dir = (start_point - first_segment_start).normalized()
@@ -779,24 +813,16 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
         transition_dir = keep_only_z_axis(end_segment_extend_point - start_segment_extend_point).normalized()
 
         # adjust the segments
-        end_object_rotation = end_object.matrix_world.to_quaternion()
-        end_object_z_basis = end_object_rotation.to_matrix().col[2]  # z basis vector
-
-        # TODO: do it beforehand, as with bends
-        if tool.Cad.is_x(start_object_z_basis.dot(transition_dir), 1):
-            start_connection = "ATEND"
-        else:
-            start_connection = "ATSTART"
-        if tool.Cad.is_x(end_object_z_basis.dot(transition_dir), 1):
-            end_connection = "ATSTART"
-        else:
-            end_connection = "ATEND"
         DumbProfileJoiner().join_E(start_object, start_segment_extend_point, start_connection)
         DumbProfileJoiner().join_E(end_object, end_segment_extend_point, end_connection)
 
+        # For bbim transitions, there is small convention that:
+        # - start_length segment positioned at the start of the transition's Z-axis.
+        # - end_length segment positioned at the of it.
+        # this is why we sort the lengths in parametric data too
         parametric_data = {
-            "start_length": self.start_length / si_conversion,
-            "end_length": self.end_length / si_conversion,
+            "start_length": (self.start_length if start_segment_sign == 1 else self.end_length) / si_conversion,
+            "end_length": (self.end_length if start_segment_sign == 1 else self.start_length) / si_conversion,
             "profile_offset": profile_offset,
             "angle": degrees(self.angle),
         }
@@ -824,13 +850,15 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
             )
             body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
             tool.Model.replace_object_ifc_representation(body, obj, rep)
+            tool.Blender.remove_data_block(mesh)
             pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=transition_type, name="BBIM_Fitting")
             ifcopenshell.api.run(
                 "pset.edit_pset",
                 tool.Ifc.get(),
                 pset=pset,
-                properties={"Data": json.dumps(transition_data, default=list)},
+                properties={"Data": tool.Ifc.get().createIfcText(json.dumps(transition_data, default=list))},
             )
+            tool.System.add_ports(obj, offset_end_port=profile_offset_si)
 
         # NOTE: at this point we loose current blender objects selection
         # create transition element
@@ -854,7 +882,7 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
         transition_obj.location = start_segment_extend_point if start_port_match else end_segment_extend_point
 
         # add ports and connect them
-        ports = tool.System.add_ports(transition_obj, offset_end_port=profile_offset_ws)
+        ports = tool.System.get_ports(tool.Ifc.get_entity(transition_obj))
         if not start_port_match:
             start_port, end_port = end_port, start_port
         tool.Ifc.run("system.connect_port", port1=ports[0], port2=start_port, direction="NOTDEFINED")
@@ -868,15 +896,15 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Adds a bend between two MEP elements. Elements are either provided by ID or selected in Blender"
     bl_options = {"REGISTER", "UNDO"}
     start_length: bpy.props.FloatProperty(
-        name="Start Length", description="Bend start length in SI units", default=0.1, subtype="DISTANCE"
+        name="Start Length", description="Bend start length in SI units", default=0.1, subtype="DISTANCE", min=0
     )
     end_length: bpy.props.FloatProperty(
-        name="End Length", description="Bend end length in SI units", default=0.1, subtype="DISTANCE"
+        name="End Length", description="Bend end length in SI units", default=0.1, subtype="DISTANCE", min=0
     )
     start_segment_id: bpy.props.IntProperty(name="Start Segment Element ID", default=0)
     end_segment_id: bpy.props.IntProperty(name="End Segment Element ID", default=0)
     radius: bpy.props.FloatProperty(
-        "Bend Inner Radius", description="Bend inner radius in SI units", default=0.2, subtype="DISTANCE"
+        "Bend Inner Radius", description="Bend inner radius in SI units", default=0.2, subtype="DISTANCE", min=0
     )
 
     def _execute(self, context):
@@ -960,11 +988,13 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
         start_object_rotation = start_object.matrix_world.to_quaternion().to_matrix()
         start_segment_data = MEPGenerator().get_segment_data(start_element)
         end_segment_data = MEPGenerator().get_segment_data(end_element)
+        # use id() to match by the exact vector objects and not by their values
+        # since vectors position could match
         points_ports_map = {
-            start_segment_data["start_point"]: start_segment_data["start_port"],
-            start_segment_data["end_point"]: start_segment_data["end_port"],
-            end_segment_data["start_point"]: end_segment_data["start_port"],
-            end_segment_data["end_point"]: end_segment_data["end_port"],
+            id(start_segment_data["start_point"]): start_segment_data["start_port"],
+            id(start_segment_data["end_point"]): start_segment_data["end_port"],
+            id(end_segment_data["start_point"]): end_segment_data["start_port"],
+            id(end_segment_data["end_point"]): end_segment_data["end_port"],
         }
 
         get_z_basis = lambda o: tool.Cad.get_basis_vector(o, 2)
@@ -980,8 +1010,10 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
             segments_intersection_ws, (end_segment_data["start_point"], end_segment_data["end_point"])
         )
 
-        start_port = points_ports_map[start_point]
-        end_port = points_ports_map[end_point]
+        # start_/end_segment_sign indicate
+        # whether segments' z axes are directed towards the bend
+        start_port = points_ports_map[id(start_point)]
+        end_port = points_ports_map[id(end_point)]
         start_point_on_origin = start_point == start_segment_data["start_point"]
         start_connection = "ATSTART" if start_point_on_origin else "ATEND"
         start_segment_sign = -1 if start_point_on_origin else 1
@@ -994,7 +1026,15 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
 
         # TODO: profile offset may need to be flipped (check transition code)
         to_start_object_space = start_object_rotation.inverted()
-        profile_offset = (to_start_object_space @ end_point) - (to_start_object_space @ start_point)
+        ref_point = end_point.copy()
+        end_segment_dir = (second_segment_end - end_point).normalized()
+        # we prioritize direction between end_point and start_point for bend_vector
+        # if those point match we use general end segment direction
+        if tool.Cad.is_x((end_point - start_point).length, 0):
+            ref_point = end_point + end_segment_dir
+        bend_vector = (to_start_object_space @ ref_point) - (to_start_object_space @ start_point)
+
+        z_axis_end_object_local = to_start_object_space @ tool.Cad.get_basis_vector(end_object, 2)
 
         def check_for_double_bends():
             # The theory is To avoid double bends, the profile offset should occur along only two axes:
@@ -1008,8 +1048,6 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
             # NOTE: some double bends are only possible for square profiles:
             # https://i.imgur.com/ZhdGbEp.png
 
-            z_axis_end_object = end_object.matrix_world.col[2].normalized().to_3d()
-            z_axis_end_object_local = to_start_object_space @ z_axis_end_object
             lateral_axes = [i for i in range(2) if not tool.Cad.is_x(z_axis_end_object_local[i], 0)]
 
             if len(lateral_axes) != 1:
@@ -1019,7 +1057,7 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
                 )
 
             non_lateral_axis = 0 if lateral_axes[0] == 1 else 1
-            non_lateral_axis_offset = profile_offset[non_lateral_axis]
+            non_lateral_axis_offset = bend_vector[non_lateral_axis]
             if not tool.Cad.is_x(non_lateral_axis_offset, 0):
                 return (
                     None,
@@ -1033,33 +1071,39 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
         if error_msg:
             self.report({"ERROR"}, error_msg)
             return {"CANCELLED"}
+        non_lateral_axis = 0 if lateral_axis == 1 else 1
 
-        O = V(0, 0, 0)
-        angle = pi - tool.Cad.angle_edges(
-            (get_z_basis(start_object) * start_segment_sign, O), (get_z_basis(end_object) * end_segment_sign, O)
-        )
+        def get_bend_rotation():
+            O = V(0, 0, 0)
+            edge1 = (get_z_basis(start_object) * start_segment_sign, O)
+            edge2 = (get_z_basis(end_object) * end_segment_sign, O)
+            angle = pi - tool.Cad.angle_edges(edge1, edge2)
+            axis = (edge2[1] - edge2[0]).cross(edge1[1] - edge1[0])
+            return angle, axis
 
-        lateral_sign = tool.Cad.sign(profile_offset[lateral_axis])
+        angle, rotation_axis = get_bend_rotation()
+
+        lateral_sign = tool.Cad.sign(bend_vector[lateral_axis])
         radial_offset = V(0, 0, 0)
         ref_point_radius = self.radius + profile_dim[lateral_axis]
         radial_offset[lateral_axis] = ref_point_radius * (1 - cos(angle)) * lateral_sign
-        radial_offset.z = ref_point_radius * sin(angle)
+        radial_offset.z = ref_point_radius * sin(angle) * start_segment_sign
+        end_port_offset = radial_offset + V(0, 0, self.start_length * start_segment_sign)
+        end_port_offset += z_axis_end_object_local * (self.end_length * -end_segment_sign)
 
-        def get_segments_extend():
-            segments_intersection = segments_intersection_ws - start_point
-            segments_intersection = to_start_object_space @ segments_intersection
-
+        def get_segments_extend_points():
             # since tangent segments are equal
             # if drawn for the circle from the same point
             required_offset = ref_point_radius * tan(angle / 2)
 
-            current_start_offset = segments_intersection.length
-            current_end_offset = (segments_intersection - profile_offset).length
+            start_segment_extend_point = segments_intersection_ws - start_segment_sign * (
+                self.start_length + required_offset
+            ) * get_z_basis(start_object)
+            end_segment_extend_point = segments_intersection_ws - end_segment_sign * (
+                self.end_length + required_offset
+            ) * get_z_basis(end_object)
 
-            start_extend = current_start_offset - (required_offset + self.start_length)
-            end_extend = current_end_offset - (required_offset + self.end_length)
-
-            return start_extend, end_extend
+            return start_segment_extend_point, end_segment_extend_point
 
         def check_new_segment_length(start_point, end_point, extend_point):
             """Check if segment is placed too near to the bend point.
@@ -1079,8 +1123,7 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
             return None
 
         # adjust segments to fit the radius and angle
-        start_segment_extend, end_segment_extend = get_segments_extend()
-        start_segment_extend_point = start_point + start_segment_sign * start_segment_extend * get_z_basis(start_object)
+        start_segment_extend_point, end_segment_extend_point = get_segments_extend_points()
         projection = check_new_segment_length(first_segment_start, start_point, start_segment_extend_point)
         if projection is not None:
             self.report(
@@ -1089,7 +1132,6 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
             )
             return {"ERROR"}
 
-        end_segment_extend_point = end_point + end_segment_sign * end_segment_extend * get_z_basis(end_object)
         projection = check_new_segment_length(second_segment_end, end_point, end_segment_extend_point)
         if projection is not None:
             self.report(
@@ -1110,11 +1152,9 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
             self.end_length / si_conversion,
             angle,
             self.radius / si_conversion,
-            profile_offset / si_conversion,
+            bend_vector / si_conversion,
             flip_z_axis=start_segment_sign == -1,
         )
-
-        bpy.ops.bim.create_shape_from_step_id(step_id=rep.id(), should_include_curves=True)
 
         parametric_data = {
             "start_length": self.start_length / si_conversion,
@@ -1130,27 +1170,20 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
         bend_type = fitting_data["fitting_type"] if fitting_data else None
         start_port_match = fitting_data["start_port_match"] if fitting_data else True
 
-        rotate_lateral_axis = None
-        flip_z_axis_type = None
+        # use current segments axes if no fitting type found
+        lateral_axis_type = lateral_axis
+        lateral_sign_type = lateral_sign
+        z_sign_type = start_segment_sign
+        non_lateral_axis_type = non_lateral_axis
         if bend_type:
             bend_obj = tool.Ifc.get_object(bend_type)
             bbim_data = tool.Model.get_modeling_bbim_pset_data(bend_obj, "BBIM_Fitting")["data_dict"]
             lateral_axis_type, lateral_sign_type = bbim_data["lateral_axis"], bbim_data["lateral_sign"]
-            flip_z_axis_type = bbim_data["flip_z_axis"]
-
-            # if the lateral axis of the compatible fitting type doesn't match
-            # with the current lateral bend lateral axis, we'll adjust the rotation
-            if (lateral_axis_type != lateral_axis) or (lateral_sign_type != lateral_sign):
-                m = Matrix.Identity(3)
-                current_lateral_axis = m[lateral_axis] * lateral_sign
-                type_lateral_axis = m[lateral_axis_type] * lateral_sign_type
-                if lateral_axis_type == lateral_axis:
-                    rotation_axis = m[2]  # just V(0,0,1)
-                else:
-                    rotation_axis = type_lateral_axis.cross(current_lateral_axis)
-                rotation_angle = current_lateral_axis.angle(type_lateral_axis)
-                # rotation axis is always Z but need to consider the rotation direction
-                rotate_lateral_axis = Matrix.Rotation(rotation_angle, 4, rotation_axis)
+            non_lateral_axis_type = 0 if lateral_axis_type == 1 else 1
+            z_sign_type = bbim_data.get("z_axis_sign", None)
+            # TODO: drop flip_z_axis a bit later
+            if z_sign_type is None:
+                z_sign_type = -1 if bbim_data["flip_z_axis"] else 1
 
             # TODO: handle the case without creating a representation in the first place?
             ifcopenshell.api.run("geometry.remove_representation", ifc_file, representation=rep)
@@ -1168,13 +1201,15 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
             )
             body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
             tool.Model.replace_object_ifc_representation(body, obj, rep)
+            tool.Blender.remove_data_block(mesh)
             pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=bend_type, name="BBIM_Fitting")
             ifcopenshell.api.run(
                 "pset.edit_pset",
                 tool.Ifc.get(),
                 pset=pset,
-                properties={"Data": json.dumps(bend_data, default=list)},
+                properties={"Data": tool.Ifc.get().createIfcText(json.dumps(bend_data, default=list))},
             )
+            tool.System.add_ports(obj, end_port_pos=end_port_offset)
 
         # NOTE: at this point we loose current blender objects selection
         # create transition element
@@ -1186,21 +1221,39 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
         fitting_obj.matrix_world = start_object.matrix_world
         context.view_layer.update()
 
-        # depending on fitting direction we may need to flip it or attach it's origin to end segment
-        # direction can be different depending on:
-        # - order of the current segments
-        # - order of the segments that were used with the same fitting type before
+        # depending on bend direction we may need to rotate it to match
+        # we just calculate the matrix basises - it's simpler than describing all possible conditions
+        def get_fitting_matrix():
+            matrix = Matrix.Identity(3)
+            start_object_z_basis = tool.Cad.get_basis_vector(start_object, 2)
+            start_object_lateral_basis = tool.Cad.get_basis_vector(start_object, lateral_axis)
 
-        direction_match = True if flip_z_axis_type is None else (flip_z_axis_type == (start_segment_sign == -1))
-        # if there are no mismatches or everything matches up we don't need to flip the transition
-        if start_port_match != direction_match:
-            fitting_obj.matrix_world = start_object.matrix_world @ Matrix.Rotation(radians(180), 4, "XY"[lateral_axis])
-        if rotate_lateral_axis:
-            fitting_obj.matrix_world = fitting_obj.matrix_world @ rotate_lateral_axis
-        fitting_obj.location = start_segment_extend_point if start_port_match else end_segment_extend_point
+            def axis_direction(current_axis_sign, type_axis_sign):
+                return -1 if current_axis_sign != type_axis_sign else 1
+
+            matrix.col[2] = start_object_z_basis * axis_direction(start_segment_sign, z_sign_type)
+            matrix.col[lateral_axis_type] = start_object_lateral_basis * axis_direction(lateral_sign, lateral_sign_type)
+            if not start_port_match:
+                matrix.col[2] *= -1
+
+            if non_lateral_axis_type == 0:
+                non_lateral_axis = matrix.col[lateral_axis_type].cross(matrix.col[2])
+            else:
+                non_lateral_axis = matrix.col[2].cross(matrix.col[lateral_axis_type])
+            matrix.col[non_lateral_axis_type] = non_lateral_axis
+
+            if not start_port_match:
+                angle_sign = np.sign(rotation_axis.dot(non_lateral_axis))
+                matrix = matrix @ Matrix.Rotation(angle * angle_sign, 3, "XY"[non_lateral_axis_type])
+
+            matrix = matrix.to_4x4()
+            matrix.translation = start_segment_extend_point if start_port_match else end_segment_extend_point
+            return matrix
+
+        fitting_obj.matrix_world = get_fitting_matrix()
 
         # add ports and connect them
-        ports = tool.System.add_ports(fitting_obj, offset_end_port=start_object_rotation @ (radial_offset * V(1, 1, 0)))
+        ports = tool.System.get_ports(tool.Ifc.get_entity(fitting_obj))
         if not start_port_match:
             start_port, end_port = end_port, start_port
         tool.Ifc.run("system.connect_port", port1=ports[0], port2=start_port, direction="NOTDEFINED")

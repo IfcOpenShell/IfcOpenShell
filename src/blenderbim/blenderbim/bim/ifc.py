@@ -163,8 +163,12 @@ class IfcStore:
         if not IfcStore.get_file():
             return
         for obj in bpy.data.objects:
+            if obj.library:
+                continue
             IfcStore.relink_object(obj)
         for obj in bpy.data.materials:
+            if obj.library:
+                continue
             IfcStore.relink_object(obj)
 
     @staticmethod

@@ -31,7 +31,7 @@ class Patcher:
         .. code:: python
 
             # Shift all storeys up by 42 units
-            ifcpatch.execute({"input": model, "recipe": "OffsetStoreyElevations", "arguments": [42]})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "OffsetStoreyElevations", "arguments": [42]})
         """
         self.src = src
         self.file = file

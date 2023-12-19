@@ -73,34 +73,35 @@ class Usecase:
         self.settings = {"style": style, "attributes": attributes or {}}
 
     def execute(self):
+        attributes = {}
+        for attribute in self.settings["style"].wrapped_data.declaration().as_entity().all_attributes():
+            attribute_type = attribute.type_of_attribute()
+            if attribute_type.as_aggregation_type() is None:
+                attribute_type = attribute_type.declared_type().name()
+            else:
+                # doesn't have .declared_type()
+                attribute_type = attribute_type.type_of_element()
+            attributes[attribute.name()] = attribute_type
+
         for key, value in self.settings["attributes"].items():
-            if key == "SurfaceColour":
-                self.edit_surface_colour(value)
+            attribute_class = attributes.get(key)
+            if attribute_class == "IfcColourRgb":
+                self.edit_colour_rgb(key, value)
             elif key == "SpecularHighlight":
                 self.edit_specular_highlight(value)
-            elif self.is_colour_or_factor(key):
+            elif attribute_class == "IfcColourOrFactor":
                 self.edit_colour_or_factor(key, value)
             else:
                 setattr(self.settings["style"], key, value)
 
-    def edit_surface_colour(self, value):
-        if not self.settings["style"].SurfaceColour:
-            self.settings["style"].SurfaceColour = self.file.createIfcColourRgb(
-                value.get("Name", None), value["Red"], value["Green"], value["Blue"]
-            )
-        self.settings["style"].SurfaceColour[0] = value.get("Name", None)
-        self.settings["style"].SurfaceColour[1] = value["Red"]
-        self.settings["style"].SurfaceColour[2] = value["Green"]
-        self.settings["style"].SurfaceColour[3] = value["Blue"]
-
-    def is_colour_or_factor(self, name):
-        return name in [
-            "DiffuseColour",
-            "TransmissionColour",
-            "DiffuseTransmissionColour",
-            "ReflectionColour",
-            "SpecularColour",
-        ]
+    def edit_colour_rgb(self, name, value: dict):
+        if (attribute := getattr(self.settings["style"], name)) is None:
+            attribute = self.file.createIfcColourRgb()
+            setattr(self.settings["style"], name, attribute)
+        attribute.Name = value.get("Name", None)
+        attribute.Red = value["Red"]
+        attribute.Green = value["Green"]
+        attribute.Blue = value["Blue"]
 
     def edit_colour_or_factor(self, name, value):
         if isinstance(value, dict):
@@ -112,11 +113,13 @@ class Usecase:
             attribute[1] = value["Red"]
             attribute[2] = value["Green"]
             attribute[3] = value["Blue"]
-        else:
+        else:  # assume it's float value for IfcNormalisedRatioMeasure or None
             existing_value = getattr(self.settings["style"], name)
             if existing_value and existing_value.id():
                 self.file.remove(existing_value)
-            setattr(self.settings["style"], name, self.file.createIfcNormalisedRatioMeasure(value))
+            if value is not None:
+                value = self.file.createIfcNormalisedRatioMeasure(value)
+            setattr(self.settings["style"], name, value)
 
     def edit_specular_highlight(self, value):
         if value is None:

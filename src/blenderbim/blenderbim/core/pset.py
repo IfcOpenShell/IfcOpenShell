@@ -29,6 +29,7 @@ def copy_property_to_selection(ifc, pset, is_pset=True, obj=None, pset_name=None
     else:
         ifc.run("pset.edit_qto", qto=ifc_pset, properties={prop_name: prop_value})
 
+
 def add_pset(ifc, pset, blender, obj_name, obj_type):
     pset_name = pset.get_pset_name(obj_name, obj_type)
     if obj_type == "Object":
@@ -40,6 +41,4 @@ def add_pset(ifc, pset, blender, obj_name, obj_type):
             continue
         if not pset.is_pset_applicable(element, pset_name):
             continue
-        ifc_pset = pset.get_element_pset(element, pset_name)
-        if not ifc_pset:
-            ifc.run("pset.add_pset", product=element, name=pset_name)
+        pset.enable_pset_editing(pset_id=0, pset_name=pset_name, pset_type="PSET", obj=obj_name, obj_type=obj_type)

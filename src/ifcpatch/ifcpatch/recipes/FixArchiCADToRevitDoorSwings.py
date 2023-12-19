@@ -1,3 +1,22 @@
+# IfcPatch - IFC patching utiliy
+# Copyright (C) 2023 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of IfcPatch.
+#
+# IfcPatch is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcPatch is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
+
+
 import os
 import math
 import ifcopenshell
@@ -15,11 +34,11 @@ class Patcher:
         door swings. ArchiCAD's implementation is not 100% correct (using
         footprint instead of annotation contexts), but otherwise not too
         shabby.
-        
+
         Revit, however, is incapable of understanding this 2D representation.
         Revit users linking in IFCs produced by ArchiCAD may experience the
         following symptoms:
-        
+
         A. Invisible doors, and difficulty selecting doors
         B. Invisible door swings, or only visible at particular view ranges
         C. Weird arc shapes around doors
@@ -35,7 +54,7 @@ class Patcher:
 
         .. code:: python
 
-            ifcpatch.execute({"input": model, "recipe": "FixArchiCADToRevitDoorSwings", "arguments": []})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "FixArchiCADToRevitDoorSwings", "arguments": []})
         """
         self.src = src
         self.file = file

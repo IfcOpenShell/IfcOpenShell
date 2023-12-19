@@ -23,6 +23,10 @@
 
 #include "../ifcparse/utils.h"
 
+#ifdef WITH_PROJ
+#include <proj.h>
+#endif
+
 #include <iterator>
 
 static const uint32_t GLTF = 0x46546C67U;
@@ -177,13 +181,23 @@ void GltfSerializer::write(const IfcGeom::TriangulationElement* o) {
 	node_array_.push_back(json_["nodes"].size());
 
 	const std::vector<double>& m = o->transformation().matrix().data();
-	// nb: note that this contains the Y-UP transform as well.
-	const std::array<double, 16> matrix_flat = {
-		m[0], m[ 2], -m[ 1], 0,
-		m[3], m[ 5], -m[ 4], 0,
-		m[6], m[ 8], -m[ 7], 0,
-		m[9], m[11], -m[10], 1
-	};
+	std::array<double, 16> matrix_flat;
+	if (settings_.get(SerializerSettings::WRITE_GLTF_ECEF)) {
+		matrix_flat = {
+			m[0], m[1], m[2], 0,
+			m[3], m[4], m[5], 0,
+			m[6], m[7], m[8], 0,
+			m[9], m[10], m[11], 1
+		};
+	} else {
+		// nb: note that this contains the Y-UP transform as well.
+		matrix_flat = {
+			m[0], m[2], -m[1], 0,
+			m[3], m[5], -m[4], 0,
+			m[6], m[8], -m[7], 0,
+			m[9], m[11], -m[10], 1
+		}; 
+	}
 	static const std::array<double, 16> identity_matrix = {1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
 	
 	json node;
@@ -317,6 +331,22 @@ void write_block(std::ostream& fs, It begin, It end) {
 }
 
 void GltfSerializer::finalize() {
+	if (north_rotation_) {
+		(*north_rotation_)["children"] = json::array();
+		for (int i = 0; i < json_["nodes"].size(); ++i) {
+			(*north_rotation_)["children"].push_back(i);
+		}
+		json_["nodes"].push_back(*north_rotation_);
+	}
+
+	if (ecef_transform_) {
+		(*ecef_transform_)["children"] = json::array();
+		for (int i = 0; i < json_["nodes"].size(); ++i) {
+			(*ecef_transform_)["children"].push_back(i);
+		}
+		json_["nodes"].push_back(*ecef_transform_);
+	}
+
 	tmp_fstream1_.close();
 	tmp_fstream2_.close();
 
@@ -335,7 +365,11 @@ void GltfSerializer::finalize() {
 	}
 
 	json scene_0;
-	scene_0["nodes"] = node_array_;
+	if (north_rotation_ || ecef_transform_) {
+		scene_0["nodes"] = std::array<size_t, 1>{json_["nodes"].size() - 1};
+	} else {
+		scene_0["nodes"] = node_array_;
+	}
 	json_["scenes"].push_back(scene_0);
 
 	//The generated glb file will contain the indices buffer followed by the vertices buffer.
@@ -374,5 +408,256 @@ void GltfSerializer::finalize() {
 	}
 	write_padding<BIN>(fstream_, binary_length);
 }
+
+namespace {
+	void normalize(std::array<double, 3>& v) {
+		auto l = std::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+
+		v[0] /= l;
+		v[1] /= l;
+		v[2] /= l;
+	}
+
+	void cross(const std::array<double, 3>& v1, const std::array<double, 3>& v2, std::array<double, 3>& result) {
+		result[0] = v1[1] * v2[2] - v1[2] * v2[1];
+		result[1] = v1[2] * v2[0] - v1[0] * v2[2];
+		result[2] = v1[0] * v2[1] - v1[1] * v2[0];
+	}
+
+	void proj_log(void *, int, const char* c) {
+		Logger::Error("PROJ: " + std::string(c));
+	}
+}
+
+void GltfSerializer::setFile(IfcParse::IfcFile* f) {
+	if (!settings_.get(SerializerSettings::WRITE_GLTF_ECEF)) {
+		return;
+	}
+
+	boost::optional<std::string> crs_epsg;
+	boost::optional<std::array<double, 3>> crs_x_axis;
+	boost::optional<std::array<double, 3>> eastings_northings_elevation;
+
+	aggregate_of_instance::ptr coordops;
+	try {
+		coordops = f->instances_by_type("IfcCoordinateOperation");
+	} catch (IfcParse::IfcException&) {
+		// Ignored. Schema likely doesn't support IfcCoordinateOperation.
+	}
+	if (coordops) {
+		for (auto& coordop : *coordops) {
+			IfcUtil::IfcBaseClass* source_crs = *coordop->as<IfcUtil::IfcBaseEntity>()->get("SourceCRS");
+			if (source_crs->declaration().is("IfcGeometricRepresentationContext")) {
+				IfcUtil::IfcBaseClass* target_crs = *coordop->as<IfcUtil::IfcBaseEntity>()->get("TargetCRS");
+				auto name_attr = target_crs->as<IfcUtil::IfcBaseEntity>()->get("Name");
+				if (coordop->declaration().is("IfcMapConversion")) {
+					
+					if (!name_attr->isNull()) {
+						std::string epsg_code = *name_attr;
+						crs_epsg = epsg_code;
+
+						// @todo in which unit are these?
+						double eastings = *coordop->as<IfcUtil::IfcBaseEntity>()->get("Eastings");
+						double northings = *coordop->as<IfcUtil::IfcBaseEntity>()->get("Northings");
+						double height = *coordop->as<IfcUtil::IfcBaseEntity>()->get("OrthogonalHeight");
+						height = 0.;
+
+						eastings_northings_elevation = { { eastings, northings, height} };
+
+						auto xaxis_attr = coordop->as<IfcUtil::IfcBaseEntity>()->get("XAxisAbscissa");
+						auto yaxis_attr = coordop->as<IfcUtil::IfcBaseEntity>()->get("XAxisOrdinate");
+						if (!xaxis_attr->isNull() && !yaxis_attr->isNull()) {
+							double xaxis = *xaxis_attr;
+							double yaxis = *yaxis_attr;
+
+							crs_x_axis = { { xaxis, yaxis, 0. } };
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if (!crs_epsg) {
+		auto sites = f->instances_by_type("IfcSite");
+
+		if (sites && sites->size() == 1) {
+			auto lat_attr = (*sites->begin())->as<IfcUtil::IfcBaseEntity>()->get("RefLatitude");
+			auto lon_attr = (*sites->begin())->as<IfcUtil::IfcBaseEntity>()->get("RefLongitude");
+
+			if (!lat_attr->isNull() && !lon_attr->isNull()) {
+				std::vector<int> lat_dms = *lat_attr;
+				std::vector<int> lon_dms = *lon_attr;
+
+				auto to_decimal = [](const std::vector<int>& dms) {
+					double val = dms[0] + dms[1] / 60. + dms[2] / 3600.;
+					if (dms.size() == 4) {
+						val += dms[3] / 3600.e6;
+					}
+					return val;
+				};
+
+				auto lat = to_decimal(lat_dms);
+				auto lon = to_decimal(lon_dms);
+				double elev = 0.;
+
+				/*
+				auto elev_attr = (*sites->begin())->as<IfcUtil::IfcBaseEntity>()->get("RefElevation");
+				if (!elev_attr->isNull()) {
+					elev = *elev_attr;
+				}
+				*/
+
+				crs_epsg.reset("EPSG:4326");
+				eastings_northings_elevation = { { lat, lon, elev } };
+			}
+		}
+	}
+
+	auto contexts = f->instances_by_type_excl_subtypes("IfcGeometricRepresentationContext");
+
+	if (contexts && contexts->size() > 0) {
+		auto context = (*contexts->begin())->as<IfcUtil::IfcBaseEntity>();
+		auto north_attr = context->get("TrueNorth");
+		if (!north_attr->isNull()) {
+			IfcUtil::IfcBaseClass* north = *north_attr;
+			if (north->declaration().is("IfcDirection")) {
+				std::vector<double> ratios = *north->as<IfcUtil::IfcBaseEntity>()->get("DirectionRatios");
+				crs_x_axis = { { ratios[1], -ratios[0], 0. } };
+			}
+		}
+	}
+
+#ifdef WITH_PROJ
+
+	if (crs_epsg) {
+		PJ_COORD wgs84_point;
+
+		auto C = proj_context_create();
+		proj_log_func(C, nullptr, proj_log);
+
+		// @todo a bit ugly we assume a proj.db in current working directory.
+		// a very simplistic but at least portable solution.
+		proj_context_set_database_path(C, "proj.db", nullptr, nullptr);
+
+		if (*crs_epsg == "EPSG:4326") {
+			wgs84_point = proj_coord(
+				(*eastings_northings_elevation)[0],
+				(*eastings_northings_elevation)[1],
+				(*eastings_northings_elevation)[2],
+				0);
+		} else {
+			// @todo a bit ugly we assume a proj.db in current working directory.
+			// a very simplistic but at least portable solution.
+			proj_context_set_database_path(C, "proj.db", nullptr, nullptr);
+
+			auto P = proj_create_crs_to_crs(
+				C, crs_epsg->c_str(), "EPSG:4326",
+				NULL);
+
+			if (!P) {
+				Logger::Error("Failed to create PROJ transformation object");
+				return;
+			}
+
+			auto a = proj_coord(
+				(*eastings_northings_elevation)[0],
+				(*eastings_northings_elevation)[1],
+				(*eastings_northings_elevation)[2],
+				0);
+
+			wgs84_point = proj_trans(P, PJ_FWD, a);
+
+			Logger::Notice("Calculated latitude: " + std::to_string(wgs84_point.lp.lam) + " longitude: " + std::to_string(wgs84_point.lp.phi));
+		}
+
+		std::swap(wgs84_point.lp.phi, wgs84_point.lp.lam);
+
+		const char *input_crs = "+proj=latlong +datum=WGS84";
+		const char *output_crs = "+proj=geocent +datum=WGS84 +units=m";
+
+		// Create a transformation object
+		PJ *transform = proj_create_crs_to_crs(C, input_crs, output_crs, NULL);
+
+		// Perform the transformation
+		PJ_COORD output_point = proj_trans(transform, PJ_FWD, wgs84_point);
+
+		// Extract the ECEF coordinates
+		double x = output_point.xyz.x;
+		double y = output_point.xyz.y;
+		double z = output_point.xyz.z;
+
+		const char *ellipsoid_def = "WGS84";
+
+		// Create a CRS object representing the ellipsoid
+		PJ *ellipsoid_crs = proj_create(C, ellipsoid_def);
+
+		if (!ellipsoid_crs) {
+			Logger::Error("Failed to create ellipsoid CRS");
+			return;
+		}
+
+		auto ellipse = proj_get_ellipsoid(C, ellipsoid_crs);
+
+
+		int _;
+		double semi_major, semi_minor, __;
+		proj_ellipsoid_get_parameters(C, ellipse, &semi_major, &semi_minor, &_, &__);
+
+		std::array<double, 3> dxyz = { {
+			x * (1. / (semi_major * semi_major)),
+			y * (1. / (semi_major * semi_major)),
+			z * (1. / (semi_minor * semi_minor))
+		} };
+		normalize(dxyz);
+
+		// Oblate spheroid, so X and Y axis are equal, so rotation around Z yields east axis.
+		std::array<double, 3> east_xyz = { {
+			-y,
+			x,
+			0.
+		} };
+		normalize(east_xyz);
+
+		std::array<double, 3> north;
+		cross(dxyz, east_xyz, north);
+
+		std::array<double, 16> matrix = {
+			east_xyz[0], east_xyz[1], east_xyz[2], 0,
+			north[0], north[1], north[2], 0.,
+			dxyz[0], dxyz[1], dxyz[2], 0,
+			0,0,0,1
+		};
+
+		ecef_transform_ = json::object({
+			{"matrix", matrix }
+		});
+
+		json_["extensions"]["CESIUM_RTC"]["center"] = std::array<double, 3>{ {x, y, z} };
+		json_["extensionsUsed"].push_back("CESIUM_RTC");
+
+		// Clean up
+		proj_destroy(ellipsoid_crs);
+		proj_destroy(transform);
+		proj_context_destroy(C);
+	}
+
+	if (crs_x_axis) {
+		normalize(*crs_x_axis);
+
+		auto phi = std::atan2((*crs_x_axis)[1], (*crs_x_axis)[0]);
+
+		north_rotation_ = json::object({
+			{"matrix", std::array<double, 16>{
+				+std::cos(-phi), -std::sin(-phi), 0., 0.,
+				+std::sin(-phi), +std::cos(-phi), 0., 0.,
+				0., 0., 1., 0.,
+				0., 0., 0., 1.
+				}}
+		});
+	}
+#endif
+}
+
 
 #endif

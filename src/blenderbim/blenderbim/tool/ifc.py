@@ -87,6 +87,15 @@ class Ifc(blenderbim.core.tool.Ifc):
                 pass
 
     @classmethod
+    def get_entity_by_id(cls, entity_id):
+        """useful to check whether entity_id is still exists in IFC"""
+        ifc_file = tool.Ifc.get()
+        try:
+            return ifc_file.by_id(entity_id)
+        except RuntimeError:
+            return None
+
+    @classmethod
     def get_object(cls, element):
         return IfcStore.get_element(element.id())
 
@@ -109,6 +118,9 @@ class Ifc(blenderbim.core.tool.Ifc):
             return
 
         for obj in bpy.data.objects:
+            if obj.library:
+                continue
+
             bpy.msgbus.clear_by_owner(obj)
 
             element = cls.get_entity(obj)
@@ -125,6 +137,9 @@ class Ifc(blenderbim.core.tool.Ifc):
             )
 
         for obj in bpy.data.materials:
+            if obj.library:
+                continue
+
             bpy.msgbus.clear_by_owner(obj)
 
             material = cls.get_entity(obj)

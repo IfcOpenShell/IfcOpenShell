@@ -49,7 +49,14 @@ class Usecase:
 
     def execute(self):
         for rel in self.settings["opening"].VoidsElements:
+            history = rel.OwnerHistory
             self.file.remove(rel)
-        for rel in self.settings["opening"].HasFillings:
-            self.file.remove(rel)
+            if history:
+                ifcopenshell.util.element.remove_deep2(self.file, history)
+        if self.settings["opening"].is_a("IfcOpeningElement"):
+            for rel in self.settings["opening"].HasFillings:
+                history = rel.OwnerHistory
+                self.file.remove(rel)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(self.file, history)
         ifcopenshell.api.run("root.remove_product", self.file, product=self.settings["opening"])

@@ -412,7 +412,7 @@ def update_bbim_roof_pset(element, roof_data):
     pset = tool.Pset.get_element_pset(element, "BBIM_Roof")
     if not pset:
         pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="BBIM_Roof")
-    roof_data = json.dumps(roof_data, default=list)
+    roof_data = tool.Ifc.get().createIfcText(json.dumps(roof_data, default=list))
     ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": roof_data})
 
 
@@ -649,7 +649,7 @@ class EnableEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
 
         if bpy.context.active_object.mode != "EDIT":
             bpy.ops.object.mode_set(mode="EDIT")
-        bpy.ops.wm.tool_set_by_id(tool.Blender.get_viewport_context(), name="bim.cad_tool")
+        tool.Blender.set_viewport_tool("bim.cad_tool")
 
         def mark_preview_edges(bm, bew_verts, new_edges, new_faces):
             preview_layer = bm.edges.layers.int["BBIM_preview"]
@@ -803,7 +803,3 @@ class SetGableRoofEdgeAngle(bpy.types.Operator):
 
         tool.Blender.apply_bmesh(me, bm)
         return {"FINISHED"}
-
-
-def add_object_button(self, context):
-    self.layout.operator(BIM_OT_add_roof.bl_idname, icon="PLUGIN")

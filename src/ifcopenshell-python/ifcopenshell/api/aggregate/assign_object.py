@@ -47,7 +47,7 @@ class Usecase:
         flight, a landing, a railing and so on. Or a wall might be made out of
         stud members, and coverings.
 
-        As a product may only have a single locaion in the "spatial
+        As a product may only have a single location in the "spatial
         decomposition" tree, assigning an aggregate relationship will remove any
         previous aggregation, containment, or nesting relationships it may have.
 
@@ -109,7 +109,10 @@ class Usecase:
                 decomposes.RelatedObjects = related_objects
                 ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": decomposes})
             else:
+                history = decomposes.OwnerHistory
                 self.file.remove(decomposes)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(self.file, history)
 
         if is_decomposed_by:
             related_objects = set(is_decomposed_by.RelatedObjects)

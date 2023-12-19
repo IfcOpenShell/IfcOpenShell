@@ -18,6 +18,7 @@
 
 import ifcopenshell.geom
 import ifcopenshell.util.unit
+from ifcopenshell.util.data import Clipping
 
 
 class Usecase:
@@ -28,15 +29,17 @@ class Usecase:
             "profile": None,
             "depth": 1.0,
             "cardinal_point": 5,
-            # Planes are defined as a matrix. The XY plane is the clipping boundary and +Z is removed.
-            # [{"type": "IfcBooleanClippingResult", "operand_type": "IfcHalfSpaceSolid", "matrix": [...]}, {...}]
+            # Planes are defined either by Clipping objects
+            # or by dictionaries of arguments for `Clipping.parse`
             "clippings": [],  # A list of planes that define clipping half space solids
+            "placement_zx_axes": (None, None),
         }
         for key, value in settings.items():
             self.settings[key] = value
 
     def execute(self):
         self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
+        self.settings["clippings"] = [Clipping.parse(c) for c in self.settings["clippings"]]
         return self.file.createIfcShapeRepresentation(
             self.settings["context"],
             self.settings["context"].ContextIdentifier,
@@ -46,13 +49,14 @@ class Usecase:
 
     def create_item(self):
         point = self.get_point()
+        placement = self.file.createIfcAxis2Placement3D(
+            point,
+            self.file.createIfcDirection(self.settings["placement_zx_axes"][0] or (0.0, 0.0, 1.0)),
+            self.file.createIfcDirection(self.settings["placement_zx_axes"][1] or (1.0, 0.0, 0.0)),
+        )
         extrusion = self.file.createIfcExtrudedAreaSolid(
             self.settings["profile"],
-            self.file.createIfcAxis2Placement3D(
-                point,
-                self.file.createIfcDirection((0.0, 0.0, 1.0)),
-                self.file.createIfcDirection((1.0, 0.0, 0.0)),
-            ),
+            placement,
             self.file.createIfcDirection((0.0, 0.0, 1.0)),
             self.convert_si_to_unit(self.settings["depth"]),
         )
@@ -67,25 +71,8 @@ class Usecase:
                 new = ifcopenshell.util.element.copy(self.file, clipping)
                 new.FirstOperand = first_operand
                 first_operand = new
-            elif clipping["operand_type"] == "IfcHalfSpaceSolid":
-                matrix = clipping["matrix"]
-                second_operand = self.file.createIfcHalfSpaceSolid(
-                    self.file.createIfcPlane(
-                        self.file.createIfcAxis2Placement3D(
-                            self.file.createIfcCartesianPoint(
-                                (
-                                    self.convert_si_to_unit(matrix[0][3]),
-                                    self.convert_si_to_unit(matrix[1][3]),
-                                    self.convert_si_to_unit(matrix[2][3]),
-                                )
-                            ),
-                            self.file.createIfcDirection((matrix[0][2], matrix[1][2], matrix[2][2])),
-                            self.file.createIfcDirection((matrix[0][0], matrix[1][0], matrix[2][0])),
-                        )
-                    ),
-                    False,
-                )
-                first_operand = self.file.create_entity(clipping["type"], "DIFFERENCE", first_operand, second_operand)
+            else:  # Clipping
+                first_operand = clipping.apply(self.file, first_operand, self.settings["unit_scale"])
         return first_operand
 
     def convert_si_to_unit(self, co):
@@ -140,7 +127,7 @@ class Usecase:
             settings = ifcopenshell.geom.settings()
             settings.set(settings.INCLUDE_CURVES, True)
             shape = ifcopenshell.geom.create_shape(settings, self.settings["profile"])
-            x = [verts[i] for i in range(0, len(shape.verts), 3)]
+            x = [shape.verts[i] for i in range(0, len(shape.verts), 3)]
             return self.convert_si_to_unit(max(x) - min(x))
         return 0.0
 
@@ -169,6 +156,6 @@ class Usecase:
             settings = ifcopenshell.geom.settings()
             settings.set(settings.INCLUDE_CURVES, True)
             shape = ifcopenshell.geom.create_shape(settings, self.settings["profile"])
-            y = [verts[i + 1] for i in range(0, len(shape.verts), 3)]
+            y = [shape.verts[i + 1] for i in range(0, len(shape.verts), 3)]
             return self.convert_si_to_unit(max(y) - min(y))
         return 0.0

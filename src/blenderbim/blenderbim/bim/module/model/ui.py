@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import blenderbim.bim
 import blenderbim.tool as tool
 from bpy.types import Panel, Menu
 from blenderbim.bim.module.model.data import (
@@ -30,12 +31,13 @@ from blenderbim.bim.module.model.data import (
     RoofData,
 )
 from blenderbim.bim.module.model.prop import get_ifc_class
-from blenderbim.bim.module.model.stair import update_stair_modifier
+from blenderbim.bim.module.model.stair import regenerate_stair_mesh
 from blenderbim.bim.module.model.window import update_window_modifier_bmesh
 from blenderbim.bim.module.model.door import update_door_modifier_bmesh
 from blenderbim.bim.module.model.railing import update_railing_modifier_bmesh
 from blenderbim.bim.module.model.roof import update_roof_modifier_bmesh
 from blenderbim.bim.helper import prop_with_search
+from collections.abc import Iterable
 
 
 class LaunchTypeManager(bpy.types.Operator):
@@ -160,7 +162,7 @@ class BIM_PT_Grids(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_project_setup"
+    bl_parent_id = "BIM_PT_tab_project_setup"
 
     def draw(self, context):
         self.layout.row().operator("mesh.add_grid", icon="ADD", text="Add Grids")
@@ -188,10 +190,8 @@ class BIM_PT_array(bpy.types.Panel):
         if ArrayData.data["parameters"]:
             row = self.layout.row(align=True)
             row.label(text=ArrayData.data["parameters"]["parent_name"], icon="CON_CHILDOF")
-            op = row.operator("bim.select_array_parent", icon="OBJECT_DATA", text="")
-            op.parent = ArrayData.data["parameters"]["Parent"]
-            op = row.operator("bim.select_all_array_objects", icon="RESTRICT_SELECT_OFF", text="")
-            op.parent = ArrayData.data["parameters"]["Parent"]
+            row.operator("bim.select_array_parent", icon="OBJECT_DATA", text="")
+            row.operator("bim.select_all_array_objects", icon="RESTRICT_SELECT_OFF", text="")
 
             if ArrayData.data["parameters"]["data_dict"]:
                 row.operator("bim.add_array", icon="ADD", text="")
@@ -261,35 +261,42 @@ class BIM_PT_stair(bpy.types.Panel):
             row = self.layout.row(align=True)
             row.label(text="Stair parameters", icon="IPO_CONSTANT")
 
-            stair_data = StairData.data["pset_data"]["data_dict"]
             if props.is_editing:
+                calculated_params = tool.Model.get_active_stair_calculated_params()
                 row = self.layout.row(align=True)
                 row.operator("bim.finish_editing_stair", icon="CHECKMARK", text="Finish Editing")
                 row.operator("bim.cancel_editing_stair", icon="CANCEL", text="")
                 row = self.layout.row(align=True)
                 for prop_name in props.get_props_kwargs():
-                    self.layout.prop(props, prop_name)
-                update_stair_modifier(context)
+                    prop_value = getattr(props, prop_name)
+                    if isinstance(prop_value, Iterable) and not isinstance(prop_value, str):
+                        prop_readable_name = props.bl_rna.properties[prop_name].name
+                        self.layout.label(text=f"{prop_readable_name}:")
+                        self.layout.prop(props, prop_name, text="")
+                    else:
+                        self.layout.prop(props, prop_name)
+                regenerate_stair_mesh(context)
             else:
+                calculated_params = StairData.data["calculated_params"]
                 row.operator("bim.enable_editing_stair", icon="GREASEPENCIL", text="")
                 row.operator("bim.remove_stair", icon="X", text="")
                 row = self.layout.row(align=True)
                 for prop_name, prop_value in StairData.data["general_params"].items():
                     row = self.layout.row(align=True)
-                    row.label(text=prop_name)
-                    row.label(text=str(prop_value))
+                    if isinstance(prop_value, Iterable) and not isinstance(prop_value, str):
+                        row.label(text=f"{prop_name}:")
+                        row = self.layout.row(align=True)
+                        for prop_value_item in prop_value:
+                            row.label(text=str(prop_value_item))
+                    else:
+                        row.label(text=prop_name)
+                        row.label(text=str(prop_value))
 
             # calculated properties
-            number_of_rises = props.number_of_treads + 1
-            row = self.layout.row(align=True)
-            row.label(text="Number of risers")
-            row.label(text=str(number_of_rises))
-            row = self.layout.row(align=True)
-            row.label(text="Tread rise")
-            row.label(text=str(round(props.height / number_of_rises, 5)))
-            row = self.layout.row(align=True)
-            row.label(text="Length")
-            row.label(text=str(round(props.tread_run * number_of_rises, 5)))
+            for prop_name, prop_value in calculated_params.items():
+                row = self.layout.row(align=True)
+                row.label(text=prop_name)
+                row.label(text=str(prop_value))
         else:
             row = self.layout.row()
             row.label(text="No Stair Found")
@@ -646,3 +653,14 @@ class BIM_MT_model(Menu):
 
 def add_menu(self, context):
     self.layout.menu("BIM_MT_model", icon="FILE_3D")
+
+
+def add_mesh_object_menu(self, context):
+    self.layout.separator()
+    self.layout.operator("mesh.add_grid", icon_value=blenderbim.bim.icons["IFC"].icon_id)
+    self.layout.operator("mesh.add_stair", icon_value=blenderbim.bim.icons["IFC"].icon_id)
+    self.layout.operator("mesh.add_clever_stair", icon_value=blenderbim.bim.icons["IFC"].icon_id)
+    self.layout.operator("mesh.add_window", icon_value=blenderbim.bim.icons["IFC"].icon_id)
+    self.layout.operator("mesh.add_door", icon_value=blenderbim.bim.icons["IFC"].icon_id)
+    self.layout.operator("mesh.add_railing", icon_value=blenderbim.bim.icons["IFC"].icon_id)
+    self.layout.operator("mesh.add_roof", icon_value=blenderbim.bim.icons["IFC"].icon_id)

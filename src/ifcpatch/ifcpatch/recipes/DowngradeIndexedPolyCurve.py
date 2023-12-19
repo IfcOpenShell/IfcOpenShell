@@ -37,7 +37,7 @@ class Patcher:
 
         Example:
 
-            ifcpatch.execute({"input": model, "recipe": "DowngradeIndexedPolyCurve", "arguments": []})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "DowngradeIndexedPolyCurve", "arguments": []})
         """
         self.src = src
         self.file = file

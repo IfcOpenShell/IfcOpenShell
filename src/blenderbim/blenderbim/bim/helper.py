@@ -87,8 +87,15 @@ def import_attributes(ifc_class, props, data, callback=None):
 
 # A more elegant attribute importer signature, intended to supersede import_attributes
 def import_attributes2(element, props, callback=None):
-    for attribute in element.wrapped_data.declaration().as_entity().all_attributes():
-        import_attribute(attribute, props, element.get_info(), callback=callback)
+    if isinstance(element, str):
+        attributes = tool.Ifc.schema().declaration_by_name(element).as_entity().all_attributes()
+        info = {a.name(): None for a in attributes}
+        info["type"] = element
+    else:
+        attributes = element.wrapped_data.declaration().as_entity().all_attributes()
+        info = element.get_info()
+    for attribute in attributes:
+        import_attribute(attribute, props, info, callback=callback)
 
 
 def import_attribute(attribute, props, data, callback=None):
@@ -260,12 +267,7 @@ def convert_property_group_from_si(property_group, skip_props=()):
     for prop_name in property_group.bl_rna.properties.keys():
         if prop_name in skip_props:
             continue
-        prop_bl_rna = property_group.bl_rna.properties[prop_name]
-        if prop_bl_rna.array_length > 0:
-            prop_value = prop_bl_rna.default_array
-        else:
-            prop_value = prop_bl_rna.default
-
+        prop_value = tool.Blender.get_blender_prop_default_value(property_group, prop_name)
         if type(prop_value) is float:
             prop_value = prop_value * conversion_k
         elif type(prop_value) is bpy.types.bpy_prop_array:
@@ -273,7 +275,7 @@ def convert_property_group_from_si(property_group, skip_props=()):
         setattr(property_group, prop_name, prop_value)
 
 
-def draw_filter(layout, props, data, module):
+def draw_filter(layout, filter_groups, data, module):
     if not data.is_loaded:
         data.load()
 
@@ -291,7 +293,7 @@ def draw_filter(layout, props, data, module):
     row.operator("bim.add_filter_group", text="Add Search Group", icon="ADD").module = module
     row.operator("bim.edit_filter_query", text="", icon="FILTER").module = module
 
-    for i, filter_group in enumerate(props.filter_groups):
+    for i, filter_group in enumerate(filter_groups):
         box = layout.box()
 
         row = box.row(align=True)
@@ -325,7 +327,7 @@ def draw_filter(layout, props, data, module):
                 row.prop(ifc_filter, "value", text="", icon="OUTLINER")
             elif ifc_filter.type == "location":
                 row = box.row(align=True)
-                row.prop(ifc_filter, "name", text="", icon="PACKAGE")
+                row.prop(ifc_filter, "value", text="", icon="PACKAGE")
             elif ifc_filter.type == "query":
                 row = box.row(align=True)
                 row.prop(ifc_filter, "name", text="", icon="POINTCLOUD_DATA")

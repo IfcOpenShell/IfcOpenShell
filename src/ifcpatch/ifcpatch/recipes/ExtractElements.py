@@ -22,7 +22,7 @@ import ifcopenshell.util.selector
 
 
 class Patcher:
-    def __init__(self, src, file, logger, query: str = ".IfcWall"):
+    def __init__(self, src, file, logger, query: str = "IfcWall"):
         """Extract certain elements into a new model
 
         Extract a subset of elements from an existing IFC data set and save it
@@ -37,13 +37,13 @@ class Patcher:
         .. code:: python
 
             # Extract all walls
-            ifcpatch.execute({"input": model, "recipe": "ExtractElements", "arguments": ["IfcWall"]})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ExtractElements", "arguments": ["IfcWall"]})
 
             # Extract all slabs
-            ifcpatch.execute({"input": model, "recipe": "ExtractElements", "arguments": ["IfcSlab"]})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ExtractElements", "arguments": ["IfcSlab"]})
 
             # Extract all walls and slabs
-            ifcpatch.execute({"input": model, "recipe": "ExtractElements", "arguments": ["IfcWall, IfcSlab"]})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ExtractElements", "arguments": ["IfcWall, IfcSlab"]})
         """
         self.src = src
         self.file = file

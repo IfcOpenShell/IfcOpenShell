@@ -16,6 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
+import ifcopenshell.util.element
+
 
 class Usecase:
     def __init__(self, file, reference=None, product=None):
@@ -59,7 +62,10 @@ class Usecase:
                         if len(related_objects):
                             rel.RelatedObjects = related_objects
                         else:
+                            history = rel.OwnerHistory
                             self.file.remove(rel)
+                            if history:
+                                ifcopenshell.util.element.remove_deep2(self.file, history)
         else:
             for rel in self.file.by_type("IfcExternalReferenceRelationship"):
                 if rel.RelatingReference == self.settings["reference"] and rel.RelatedResourceObjects:

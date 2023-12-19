@@ -22,7 +22,6 @@ import json
 import ifccsv
 import logging
 import tempfile
-import webbrowser
 import ifcopenshell
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
@@ -208,6 +207,7 @@ class ExportIfcCsv(bpy.types.Operator):
             empty=props.empty_value,
             bool_true=props.true_value,
             bool_false=props.false_value,
+            concat=props.concat_value,
             sort=sort,
             groups=groups,
             summaries=summaries,

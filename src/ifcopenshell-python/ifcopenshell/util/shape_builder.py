@@ -16,13 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import numpy as np
 import collections
 import ifcopenshell
 import ifcopenshell.api
 from math import cos, sin, pi, tan, radians, degrees, atan, sqrt, ceil
-from mathutils import Vector, Matrix
-from itertools import chain
 from typing import List
+from itertools import chain
+from mathutils import Vector, Matrix
 
 V = lambda *x: Vector([float(i) for i in x])
 sign = lambda x: x and (1, -1)[x < 0]
@@ -170,6 +171,19 @@ class ShapeBuilder:
 
         #  self.file_file.createIfcAxis2Placement2D(tool.Ifc.get().createIfcCartesianPoint(center[0:2]))
         return ifc_curve
+
+    def plane(
+        self, location: Vector = Vector((0.0, 0.0, 0.0)).freeze(), normal: Vector = Vector((0.0, 0.0, 1.0)).freeze()
+    ):
+        location = self.file.createIfcCartesianPoint(location)
+        direction = self.file.createIfcDirection(normal)
+        if normal.to_tuple(2) == Vector((0.0, 0.0, 1.0)):
+            arbitrary_vector = Vector((0.0, 1.0, 0.0))
+        else:
+            arbitrary_vector = Vector((0.0, 0.0, 1.0))
+        x_axis = self.file.createIfcDirection(normal.cross(arbitrary_vector).normalized())
+        axis_placement = self.file.createIfcAxis2Placement3D(location, direction, x_axis)
+        return self.file.createIfcPlane(axis_placement)
 
     # TODO: explain points order for the curve_between_two_points
     # because the order is important and defines the center of the curve
@@ -846,9 +860,9 @@ class ShapeBuilder:
         # )
 
         points, segments, ifc_curve = self.get_simple_2dcurve_data(
-            coords, 
-            fillets =     (0,   1,   4, 5, 6,   7,   10, 11), 
-            fillet_radius=(r+t, r+t, r, r, r+t, r+t, r, r), 
+            coords,
+            fillets =     (0,   1,   4, 5, 6,   7,   10, 11),
+            fillet_radius=(r+t, r+t, r, r, r+t, r+t, r, r),
             closed=True, create_ifc_curve=True)
         # fmt: on
 
@@ -1075,7 +1089,7 @@ class ShapeBuilder:
 
             transition_items.append(self.extrude_face_set(first_profile_points, start_length, end_cap=False))
             transition_items.append(
-                self.extrude_face_set(second_profile_points, end_length, end_extrusion_offset, start_cap=False)
+                self.extrude_face_set(second_profile_points, end_length, offset=end_extrusion_offset, start_cap=False)
             )
 
             first_profile_points = [p + start_offset for p in first_profile_points]
@@ -1105,7 +1119,7 @@ class ShapeBuilder:
 
             transition_items.append(self.extrude_face_set(start_points, start_length, end_cap=False))
             transition_items.append(
-                self.extrude_face_set(end_points, end_length, end_extrusion_offset, start_cap=False)
+                self.extrude_face_set(end_points, end_length, offset=end_extrusion_offset, start_cap=False)
             )
 
             # offset verts
@@ -1172,10 +1186,9 @@ class ShapeBuilder:
         """
         print = lambda *args, **kwargs: __builtins__["print"](*args, **kwargs) if verbose else None
 
-        # offsets tend to have bunch of float point garbage
+        # vectors tend to have bunch of float point garbage
         # that can result in errors when we're calculating value for square root below
-        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(self.file)
-        offset = round_vector_to_precision(profile_offset, si_conversion)
+        offset = round_vector_to_precision(profile_offset, 1)
         diff = start_half_dim.xy - end_half_dim.xy
         diff = Vector([abs(i) for i in diff])
 
@@ -1320,7 +1333,7 @@ class ShapeBuilder:
         end_length: float,
         angle: float,
         radius: float,
-        profile_offset: Vector,
+        bend_vector: Vector,
         flip_z_axis: bool,
     ):
         """
@@ -1332,8 +1345,9 @@ class ShapeBuilder:
         :param type: float
         :param radius: bend radius
         :param type: float
-        :param profile_offset: offset between start and end segments in local space of start segment
-            used mainly to determine the seconn bend axis and it's direction.
+        :param bend_vector: offset between start and end segments in local space of start segment
+            used mainly to determine the second bend axis and it's direction (positive or negative),
+            the actual magnitude of the vector is not important (though near zero values will be ignored).
         :param type: Vector
         :param flip_z_axis: since we cannot determine z axis direction from the profile offset,
         there is an option to flip it if bend is going by start segment Z- axis.
@@ -1354,16 +1368,15 @@ class ShapeBuilder:
                 return V(profile.Radius, profile.Radius, depth)
             return None
 
-        # TODO: test with 0 radius
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         profile = get_profile(segment)
         is_circular_profile = profile.is_a("IfcCircleProfileDef")
         profile_dim = get_dim(profile, start_length)
 
-        rounded_offset = round_vector_to_precision(profile_offset, si_conversion)
-        lateral_axis = next(i for i in range(2) if not is_x(rounded_offset[i], 0))
+        rounded_bend_vector = round_vector_to_precision(bend_vector, si_conversion)
+        lateral_axis = next(i for i in range(2) if not is_x(rounded_bend_vector[i], 0))
         non_lateral_axis = 1 if lateral_axis == 0 else 0
-        lateral_sign = sign(profile_offset[lateral_axis])
+        lateral_sign = sign(bend_vector[lateral_axis])
         z_sign = -1 if flip_z_axis else 1
 
         rep_items = []
@@ -1397,10 +1410,14 @@ class ShapeBuilder:
                 arc_points = (1,)
             else:
                 outer_r = r + 2 * profile_dim[lateral_axis]
-                inner_points = [get_circle_point(cur_theta, r) for cur_theta in theta_segments]
                 outer_points = [get_circle_point(cur_theta, outer_r) for cur_theta in theta_segments[::-1]]
-                points = inner_points + outer_points
-                arc_points = (1, 4)
+                if is_x(r, 0):
+                    points = [get_circle_point(theta, r)] + outer_points
+                    arc_points = (2,)
+                else:
+                    inner_points = [get_circle_point(cur_theta, r) for cur_theta in theta_segments]
+                    points = inner_points + outer_points
+                    arc_points = (1, 4)
 
             points = [p + O for p in points]
             offset = V(0, 0, 0)
@@ -1453,7 +1470,7 @@ class ShapeBuilder:
             "angle": degrees(theta),
             "lateral_axis": lateral_axis,
             "lateral_sign": lateral_sign,
-            "flip_z_axis": flip_z_axis,
+            "z_axis_sign": -1 if flip_z_axis else 1,
             "main_profile_dimension": profile_dim[lateral_axis],
         }
         return rep, bend_data
