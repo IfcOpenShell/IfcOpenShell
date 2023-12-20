@@ -31,7 +31,7 @@ jobs:
       - run: echo ok go
 
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     needs: activate
     steps:
       - uses: actions/checkout@v4
