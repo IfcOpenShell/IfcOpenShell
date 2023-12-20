@@ -54,7 +54,7 @@ class BIM_PT_nest(Panel):
             row = layout.row(align=True)
             row.prop(props, "relating_object", text="")
             if props.relating_object:
-                op = row.operator("bim.assign_object", icon="CHECKMARK", text="")
+                op = row.operator("bim.nest_assign_object", icon="CHECKMARK", text="")
                 op.relating_object = props.relating_object.BIMObjectProperties.ifc_definition_id
             row.operator("bim.disable_editing_nest", icon="CANCEL", text="")
         else:
@@ -64,7 +64,7 @@ class BIM_PT_nest(Panel):
                 op = row.operator("bim.select_nest", icon="RESTRICT_SELECT_OFF", text="")
                 op.obj = context.active_object.name
                 row.operator("bim.enable_editing_nest", icon="GREASEPENCIL", text="")
-                op = row.operator("bim.unassign_object", icon="X", text="")
+                op = row.operator("bim.nest_unassign_object", icon="X", text="")
             else:
                 row.label(text="No Host", icon="TRIA_UP")
                 row.operator("bim.enable_editing_nest", icon="GREASEPENCIL", text="")

@@ -54,7 +54,7 @@ class BIM_PT_aggregate(Panel):
             row = layout.row(align=True)
             row.prop(props, "relating_object", text="")
             if props.relating_object:
-                op = row.operator("bim.assign_object", icon="CHECKMARK", text="")
+                op = row.operator("bim.aggregate_assign_object", icon="CHECKMARK", text="")
                 op.relating_object = props.relating_object.BIMObjectProperties.ifc_definition_id
             row.operator("bim.disable_editing_aggregate", icon="CANCEL", text="")
         else:
@@ -65,7 +65,7 @@ class BIM_PT_aggregate(Panel):
                 op.obj = context.active_object.name
                 row.operator("bim.enable_editing_aggregate", icon="GREASEPENCIL", text="")
                 row.operator("bim.add_aggregate", icon="ADD", text="")
-                op = row.operator("bim.unassign_object", icon="X", text="")
+                op = row.operator("bim.aggregate_unassign_object", icon="X", text="")
             else:
                 row.label(text="No Aggregate", icon="TRIA_UP")
                 row.operator("bim.enable_editing_aggregate", icon="GREASEPENCIL", text="")

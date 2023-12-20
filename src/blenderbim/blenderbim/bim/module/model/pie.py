@@ -87,8 +87,8 @@ class VIEW3D_MT_PIE_bim(bpy.types.Menu):
         pie.operator("bim.pie_add_opening")
         pie.operator("bim.pie_update_container")
         pie.operator("bim.open_pie_class", text="Assign IFC Class")
-        pie.operator("bim.assign_object", text ="Assign Aggregation")
-        pie.operator("bim.unassign_object", text ="Unassign Aggregation")
+        pie.operator("bim.aggregate_assign_object", text="Assign Aggregation")
+        pie.operator("bim.aggregate_unassign_object", text="Unassign Aggregation")
 
 
 class VIEW3D_MT_PIE_bim_class(bpy.types.Menu):
