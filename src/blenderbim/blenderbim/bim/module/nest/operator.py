@@ -33,11 +33,11 @@ class Operator:
         return {"FINISHED"}
 
 
-class BIM_OT_assign_object(bpy.types.Operator, Operator):
+class BIM_OT_nest_assign_object(bpy.types.Operator, Operator):
     """Create nest relationship between two ifc elements"""
 
-    bl_idname = "bim.assign_object"
-    bl_label = "Assign Object"
+    bl_idname = "bim.nest_assign_object"
+    bl_label = "Assign Object To Nesting"
     bl_options = {"REGISTER", "UNDO"}
     relating_object: bpy.props.IntProperty()
 
@@ -67,11 +67,11 @@ class BIM_OT_assign_object(bpy.types.Operator, Operator):
                 self.report({"ERROR"}, f" Cannot nest {obj.name} to {relating_obj.name}")
 
 
-class BIM_OT_unassign_object(bpy.types.Operator, Operator):
+class BIM_OT_nest_unassign_object(bpy.types.Operator, Operator):
     """Remove nest relationship between two ifc elements"""
 
-    bl_idname = "bim.unassign_object"
-    bl_label = "Unassign Object"
+    bl_idname = "bim.nest_unassign_object"
+    bl_label = "Unassign Object From Nesting"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
