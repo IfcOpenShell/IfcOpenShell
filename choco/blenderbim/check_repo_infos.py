@@ -29,7 +29,7 @@ URL_CHOCO_PACKAGE  = "https://community.chocolatey.org/packages/blender"
 URL_BLENDER_CMAKE  = "https://raw.githubusercontent.com/blender/blender/{}/build_files/cmake/Modules/FindPythonLibsUnix.cmake"
 RE_BLENDER_VERSION_MIN_MAJ        = r"Latest Version.+<span>Blender (\d+\.\d+)\..+</span>"
 RE_BLENDER_VERSION_MIN_MAJ_PAT    = r"Latest Version.+<span>Blender (\d+\.\d+\.\d+)</span>"
-RE_BLENDER_PYTHON_VERSION_MAJ_MIN = r"[set|SET]\(_PYTHON_VERSION_SUPPORTED (\d+\.\d+)\)"
+RE_BLENDER_PYTHON_VERSION_MAJ_MIN = r"(?:set|SET)\(_PYTHON_VERSION_SUPPORTED (\d+\.\d+)\)"
 
 
 if sys.argv[1] == "--do_choco_release?":
