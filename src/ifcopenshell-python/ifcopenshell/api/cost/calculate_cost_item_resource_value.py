@@ -106,14 +106,15 @@ class Usecase:
 
         total_cost = 0
         for resource in resources:
-            cost = ifcopenshell.util.resource.get_cost(resource)
-            quantity = ifcopenshell.util.resource.get_quantity(resource)
+            cost, unit = ifcopenshell.util.resource.get_cost(resource)
             if not cost:
                 cost = ifcopenshell.util.resource.get_parent_cost(resource) # Concept to standardise - Not defined in schema, but this makes manual scheduling of resources 10x faster and less duplicate data.
+            quantity = ifcopenshell.util.resource.get_quantity(resource)
             if not cost or not quantity:
                 continue
+            if unit and "day" in unit:
+                quantity = quantity / 8 # Assume 8 hour working day - TODO implement resource calendar
             total_cost += cost * quantity
-
         if total_cost:
             cost_value = ifcopenshell.api.run("cost.add_cost_value", self.file, parent=self.settings["cost_item"])
             cost_value.AppliedValue = self.file.createIfcMonetaryMeasure(total_cost)
