@@ -118,8 +118,9 @@ class TestGetModelTypes(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
-        wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
-        assert subject.get_model_types() == [wall_type]
+        type_classes = ("IfcWallType", "IfcDoorStyle", "IfcWindowStyle", "IfcTypeProduct")
+        types = [ifcopenshell.api.run("root.create_entity", ifc, ifc_class=c) for c in type_classes]
+        assert set(subject.get_model_types()) == set(types)
 
 
 class TestGetObjectData(NewFile):
