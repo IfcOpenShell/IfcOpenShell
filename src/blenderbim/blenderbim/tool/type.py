@@ -59,7 +59,13 @@ class Type(blenderbim.core.tool.Type):
 
     @classmethod
     def get_model_types(cls):
-        return tool.Ifc.get().by_type("IfcElementType")
+        ifc_file = tool.Ifc.get()
+        types = ifc_file.by_type("IfcElementType")
+        # exclude IfcSpatialElementType
+        types += ifc_file.by_type("IfcTypeProduct", include_subtypes=False)
+        types += ifc_file.by_type("IfcWindowStyle")
+        types += ifc_file.by_type("IfcDoorStyle")
+        return types
 
     @classmethod
     def get_object_data(cls, obj):
