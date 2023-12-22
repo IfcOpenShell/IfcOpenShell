@@ -241,10 +241,6 @@ class Loader(blenderbim.core.tool.Loader):
             mode = texture.get("Mode", None)
             node = None
 
-            if texture["type"] == "IfcPixelTexture":
-                print(f"WARNING. Texture of type {texture['type']} is not currently supported, it will be skipped.")
-                continue
-
             image_url = None
 
             def get_image():
@@ -284,9 +280,35 @@ class Loader(blenderbim.core.tool.Loader):
                     ).ravel()
                     return bpy_image
 
-                # TODO: IfcPixelTexture
-                print(f"WARNING. Texture of type {texture['type']} is not yet supported.")
-                return
+                # IfcPixelTexture
+                n_components = texture["ColourComponents"]
+                width, height = texture["Width"], texture["Height"]
+                blender_pixel_data = np.ones(width * height * 4, dtype=np.float32)
+
+                # according to https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcPixelTexture.htm
+                # 1 component - grey scale intensity value
+                # 2 components - grey scale + alpha
+                # 3 components - RGB
+                # 4 components - RGBA
+                for i, pixel_str in enumerate(iterable=texture["Pixel"]):
+                    pixel_bytes = int(pixel_str, 2).to_bytes(len(pixel_str) // 8, "big")
+                    pixel_values = np.array(list(pixel_bytes)) / 255
+                    cur_pos = i * 4
+
+                    if n_components in (1, 2):
+                        blender_pixel_data[cur_pos : cur_pos + 3] = pixel_values[0]
+                        if n_components == 2:
+                            blender_pixel_data[cur_pos + 3] = pixel_values[1]
+                        continue
+
+                    # 3, 4 components
+                    blender_pixel_data[cur_pos : cur_pos + 3] = pixel_values[:3]
+                    if n_components == 4:
+                        blender_pixel_data[cur_pos + 3] = pixel_values[3]
+
+                bpy_image = bpy.data.images.new("pixel_texture", width=width, height=height)
+                bpy_image.pixels[:] = blender_pixel_data
+                return bpy_image
 
             if reflectance_method in ["PHYSICAL", "NOTDEFINED"]:
                 bsdf = tool.Blender.get_material_node(blender_material, "BSDF_PRINCIPLED")
