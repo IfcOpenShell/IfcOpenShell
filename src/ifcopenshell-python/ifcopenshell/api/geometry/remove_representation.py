@@ -54,5 +54,5 @@ class Usecase:
             if not element.Item or element.Item in to_delete:
                 self.file.remove(element)
         for element in presentation_layer_assignments:
-            if all(item in to_delete for item in element.AssignedITems):
+            if all(item in to_delete for item in element.AssignedItems):
                 self.file.remove(element)
