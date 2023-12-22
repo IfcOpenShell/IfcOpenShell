@@ -254,6 +254,120 @@ class TestCreatingStyles(NewFile):
         assert image_node.image.pixels[:] == (0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0)
         # fmt: on
 
+    def test_create_surface_style_with_textures_from_ifc_pixel_image(self):
+        # fmt: off
+        pixel_data_for_components = {
+            1: (
+                0.5, 0.5, 0.5, 1.0,
+                0.6, 0.6, 0.6, 1.0,
+                0.7, 0.7, 0.7, 1.0,
+                1.0, 1.0, 1.0, 1.0,
+            ),
+            2: (
+                0.5, 0.5, 0.5, 0.5,
+                0.6, 0.6, 0.6, 0.5,
+                0.7, 0.7, 0.7, 0.5,
+                1.0, 1.0, 1.0, 0.5,
+            ),
+            3: (
+                0.5, 0,   0,   1.0,
+                0,   0.6, 0,   1.0,
+                0,   0,   0.7, 1.0,
+                1,   1,   1,   1.0,
+            ),
+            4: (
+                0.5, 0,   0,   0.5,
+                0,   0.6, 0,   0.5,
+                0,   0,   0.7, 0.5,
+                1,   1,   1,   0.5,
+            )
+        }
+        # fmt: on
+        for i in range(1, 5):
+            self.run_test_create_surface_style_with_textures_from_ifc_pixel_image(i, pixel_data_for_components[i])
+
+    def run_test_create_surface_style_with_textures_from_ifc_pixel_image(self, n_components, pixel_data):
+        # this case occurs when we edit shader properties without saving them to IFC
+        bpy.ops.bim.create_project()
+
+        ifc_file = tool.Ifc.get()
+        style = tool.Ifc.run("style.add_style", name="test")
+        material = bpy.data.materials.new(style.Name)
+        tool.Ifc.link(style, material)
+        get_color = lambda value: {color: value for color in ("Red", "Green", "Blue")}
+        rendering_attributes = {
+            "ReflectanceMethod": "NOTDEFINED",
+            "DiffuseColour": get_color(0.5),
+            "SurfaceColour": get_color(0.3),
+            "Transparency": 0.3,
+            "SpecularHighlight": {"IfcSpecularRoughness": 0.4},
+            "SpecularColour": 0.03,
+        }
+        rendering_style = tool.Ifc.run(
+            "style.add_surface_style",
+            style=style,
+            ifc_class="IfcSurfaceStyleRendering",
+            attributes=rendering_attributes,
+        )
+
+        def get_pixels_binary(n_components):
+            # just 4 pixels - red, green, blue, white
+            # fmt: off
+            pixel_data = (
+                0.5, 0,   0,   0.5,
+                0,   0.6, 0,   0.5,
+                0,   0,   0.7, 0.5,
+                1,   1,   1,   0.5,
+            )
+            # fmt: on
+            pixels = np.array(pixel_data).reshape(-1, 4)
+            alpha = pixels[:, 3]
+            if n_components in (1, 2):
+                pixels = [[p[min(i, 2)]] for i, p in enumerate(pixels)]
+                if n_components == 2:
+                    for i in range(4):
+                        pixels[i].append(alpha[i])
+            elif n_components == 3:
+                pixels = pixels[:, :3]
+
+            pixels = np.array(pixels) * 255
+            return ["".join(["{:08b}".format(int(i)) for i in pixel]) for pixel in pixels]
+
+        texture_data = {
+            "Pixel": get_pixels_binary(n_components),
+            "ColourComponents": n_components,
+            "Width": 2,
+            "Height": 2,
+            "Mode": "DIFFUSE",
+            "RepeatS": True,
+            "RepeatT": True,
+        }
+        # setup texture manually as `style.add_surface_textures` doesn't support non-IfcImageTexture textures
+        textures = [ifc_file.create_entity("IfcPixelTexture", **texture_data)]
+        # setup UV
+        ifc_file.create_entity("IfcTextureCoordinateGenerator", Maps=textures, Mode="COORD")
+
+        texture_style = tool.Ifc.run(
+            "style.add_surface_style",
+            style=style,
+            ifc_class="IfcSurfaceStyleWithTextures",
+            attributes={"Textures": textures},
+        )
+
+        subject.create_surface_style_rendering(material, rendering_style)
+        subject.create_surface_style_with_textures(material, rendering_style, texture_style)
+
+        used_node_types = set([n.type for n in material.node_tree.nodes[:]])
+        assert used_node_types == set((["OUTPUT_MATERIAL", "BSDF_PRINCIPLED", "TEX_IMAGE", "TEX_COORD"]))
+
+        image_node = tool.Blender.get_material_node(material, "TEX_IMAGE")
+        assert image_node.outputs["Color"].links[0].to_socket.name == "Base Color"
+        assert image_node.inputs["Vector"].links[0].from_socket.name == "Generated"
+        assert image_node.image.filepath == ""
+        assert np.allclose(
+            image_node.image.pixels[:], pixel_data, atol=0.01
+        ), f"Failed to match pixels for {n_components}.\nBlender pixel_data: {image_node.image.pixels[:]}.\nExpected data: {pixel_data}"
+
 
 class TestLoadingIndexedTextureMap(NewFile):
     def test_run(self):
