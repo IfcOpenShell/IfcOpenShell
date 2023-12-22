@@ -16,13 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import numpy as np
 import collections
 import ifcopenshell
 import ifcopenshell.api
 from math import cos, sin, pi, tan, radians, degrees, atan, sqrt, ceil
-from mathutils import Vector, Matrix
-from itertools import chain
 from typing import List
+from itertools import chain
+from mathutils import Vector, Matrix
 
 V = lambda *x: Vector([float(i) for i in x])
 sign = lambda x: x and (1, -1)[x < 0]
@@ -170,6 +171,19 @@ class ShapeBuilder:
 
         #  self.file_file.createIfcAxis2Placement2D(tool.Ifc.get().createIfcCartesianPoint(center[0:2]))
         return ifc_curve
+
+    def plane(
+        self, location: Vector = Vector((0.0, 0.0, 0.0)).freeze(), normal: Vector = Vector((0.0, 0.0, 1.0)).freeze()
+    ):
+        location = self.file.createIfcCartesianPoint(location)
+        direction = self.file.createIfcDirection(normal)
+        if normal.to_tuple(2) == Vector((0.0, 0.0, 1.0)):
+            arbitrary_vector = Vector((0.0, 1.0, 0.0))
+        else:
+            arbitrary_vector = Vector((0.0, 0.0, 1.0))
+        x_axis = self.file.createIfcDirection(normal.cross(arbitrary_vector).normalized())
+        axis_placement = self.file.createIfcAxis2Placement3D(location, direction, x_axis)
+        return self.file.createIfcPlane(axis_placement)
 
     # TODO: explain points order for the curve_between_two_points
     # because the order is important and defines the center of the curve
@@ -846,9 +860,9 @@ class ShapeBuilder:
         # )
 
         points, segments, ifc_curve = self.get_simple_2dcurve_data(
-            coords, 
-            fillets =     (0,   1,   4, 5, 6,   7,   10, 11), 
-            fillet_radius=(r+t, r+t, r, r, r+t, r+t, r, r), 
+            coords,
+            fillets =     (0,   1,   4, 5, 6,   7,   10, 11),
+            fillet_radius=(r+t, r+t, r, r, r+t, r+t, r, r),
             closed=True, create_ifc_curve=True)
         # fmt: on
 

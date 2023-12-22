@@ -195,7 +195,10 @@ class Usecase:
                 is_typed_by[0].RelatedObjects = related_objects
                 ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": is_typed_by[0]})
             else:
+                history = is_typed_by[0].OwnerHistory
                 self.file.remove(is_typed_by[0])
+                if history:
+                    ifcopenshell.util.element.remove_deep2(self.file, history)
 
         if types:
             related_objects = list(types[0].RelatedObjects)

@@ -18,17 +18,18 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.element
 
 
 class Usecase:
     def __init__(self, file, related_object=None):
         """Unassigns a related_object from its nest.
-        
+
         An object (the whole within a decomposition) is Nested by zero or one more smaller objects.
         This function will remove this nesting relationship.
-        
+
         If the object is not part of a nesting relationship, nothing will happen.
-        
+
         :param related_object: The child of the nesting relationship, typically
             an IfcElement.
         :type related_object: ifcopenshell.entity_instance.entity_instance
@@ -56,11 +57,13 @@ class Usecase:
             if not rel.is_a("IfcRelNests"):
                 continue
             if len(rel.RelatedObjects) == 1:
-                return self.file.remove(rel)
+                history = rel.OwnerHistory
+                self.file.remove(rel)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(self.file, history)
+                return
             related_objects = list(rel.RelatedObjects)
             related_objects.remove(self.settings["related_object"])
             rel.RelatedObjects = related_objects
-            ifcopenshell.api.run(
-                "owner.update_owner_history", self.file, **{"element": rel}
-            )
+            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": rel})
             return rel

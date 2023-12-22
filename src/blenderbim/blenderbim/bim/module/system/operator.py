@@ -234,6 +234,9 @@ class MEPConnectElements(bpy.types.Operator, Operator):
         obj1 = context.active_object
         obj2 = next(o for o in context.selected_objects if o != obj1)
 
+        tool.Model.sync_object_ifc_position(obj1)
+        tool.Model.sync_object_ifc_position(obj2)
+
         el1 = tool.Ifc.get_entity(obj1)
         el2 = tool.Ifc.get_entity(obj2)
 

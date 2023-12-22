@@ -508,6 +508,14 @@ class Model:
 
 
 @interface
+class Nest:
+    def can_nest(cls, relating_object, related_object): pass
+    def disable_editing(cls, obj): pass
+    def enable_editing(cls, obj): pass
+    def get_container(cls, element): pass
+
+
+@interface
 class Patch:
     def run_migrate_patch(cls, infile, outfile, schema): pass
 
@@ -843,6 +851,7 @@ class Spatial:
     def traslate_obj_to_z_location(cls, obj): pass
     def link_obj_to_active_collection(cls, obj): pass
     def get_2d_vertices_from_obj(cls, obj): pass
+    def get_scaled_2d_vertices(cls, points): pass
     def assign_swept_area_outer_curve_from_2d_vertices(cls, obj, vertices): pass
     def get_body_representation(cls, obj): pass
     def assign_ifcspace_class_to_obj(cls, obj): pass

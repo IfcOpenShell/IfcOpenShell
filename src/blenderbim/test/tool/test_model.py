@@ -199,10 +199,11 @@ class TestGenerateStair2DProfile(NewFile):
             (6, 7),
             (7, 8),
             (8, 9),
-            (0, 11),
+            (11, 0),
             (10, 11),
-            (10, 9),
+            (9, 10),
         )
+        edges_data = [e[::-1] for e in edges_data]
         faces_data = ()
         expected_profile = (verts_data, edges_data, faces_data)
         generated_profile = subject.generate_stair_2d_profile(**kwargs)
@@ -235,7 +236,6 @@ class TestGenerateStair2DProfile(NewFile):
             V(0.1, 0, -0.25),
             V(0.0, 0, -0.25),
         )
-
         edges_data = (
             (0, 1),
             (1, 2),
@@ -247,10 +247,11 @@ class TestGenerateStair2DProfile(NewFile):
             (7, 8),
             (8, 9),
             (9, 10),
-            (0, 12),
+            (12, 0),
             (11, 12),
-            (11, 10),
+            (10, 11),
         )
+        edges_data = [e[::-1] for e in edges_data]
 
         faces_data = ()
         expected_profile = (verts_data, edges_data, faces_data)
@@ -284,7 +285,6 @@ class TestGenerateStair2DProfile(NewFile):
             V(1.2, 0, 1.0),
             V(0.9, 0, 1.0),
         )
-
         edges_data = (
             (0, 1),
             (1, 2),
@@ -324,7 +324,6 @@ class TestGenerateStair2DProfile(NewFile):
             V(1.2, 0, 1.0),
             V(1.2, 0, 0.0),
         )
-
         edges_data = (
             (0, 1),
             (1, 2),
@@ -337,8 +336,87 @@ class TestGenerateStair2DProfile(NewFile):
             (8, 9),
             (9, 0),
         )
+        edges_data = [e[::-1] for e in edges_data]
 
         faces_data = ()
         expected_profile = (verts_data, edges_data, faces_data)
         generated_profile = subject.generate_stair_2d_profile(**kwargs)
         self.compare_data(generated_profile, expected_profile)
+
+
+class TestUsingArrays(NewFile):
+    def setup_array(self, add_second_layer=False, sync_children=False):
+        bpy.context.scene.BIMProjectProperties.template_file = "0"
+        bpy.ops.bim.create_project()
+
+        bpy.ops.mesh.primitive_cube_add()
+        obj = bpy.context.active_object
+        bpy.context.scene.BIMRootProperties.ifc_product = "IfcElement"
+        bpy.ops.bim.assign_class(ifc_class="IfcActuator", predefined_type="ELECTRICACTUATOR", userdefined_type="")
+
+        bpy.ops.bim.add_array()
+        bpy.ops.bim.enable_editing_array(item=0)
+        obj.BIMArrayProperties.count = 4
+        obj.BIMArrayProperties.x = 4
+        obj.BIMArrayProperties.sync_children = sync_children
+        bpy.ops.bim.edit_array(item=0)
+
+        if add_second_layer:
+            bpy.ops.bim.add_array()
+            bpy.ops.bim.enable_editing_array(item=1)
+            obj.BIMArrayProperties.count = 3
+            obj.BIMArrayProperties.y = 4
+            obj.BIMArrayProperties.sync_children = sync_children
+            bpy.ops.bim.edit_array(item=1)
+
+    def test_remove_array_last_to_first(self):
+        self.setup_array(add_second_layer=True)
+        bpy.ops.bim.remove_array(item=1)
+        assert len(bpy.context.selected_objects) == 4
+        bpy.ops.bim.remove_array(item=0)
+        assert len(bpy.context.selected_objects) == 1
+
+    def test_remove_array_first_to_last(self):
+        self.setup_array(add_second_layer=True)
+        bpy.ops.bim.remove_array(item=0)
+        assert len(bpy.context.selected_objects) == 3
+        bpy.ops.bim.remove_array(item=0)
+        assert len(bpy.context.selected_objects) == 1
+
+    def test_apply_array_1_layer(self):
+        self.setup_array()
+        bpy.ops.bim.apply_array()
+
+        objs = bpy.context.selected_objects
+        assert len(objs) == 4
+        # check BBIM_Array psets are removed
+        for obj in objs:
+            element = tool.Ifc.get_entity(obj)
+            pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+            assert pset is None, (obj, pset)
+
+    def test_apply_array_multiple_layers(self):
+        self.setup_array(add_second_layer=True)
+        bpy.ops.bim.apply_array()  # apply second layer
+        bpy.ops.bim.apply_array()  # apply first layer
+
+        objs = bpy.context.selected_objects
+        assert len(objs) == 12
+
+        # check BBIM_Array psets are removed
+        for obj in objs:
+            element = tool.Ifc.get_entity(obj)
+            pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+            assert pset is None, (obj, pset)
+
+    def test_apply_array_with_sync_children(self):
+        self.setup_array(sync_children=True)
+        bpy.ops.bim.apply_array()
+
+        objs = bpy.context.selected_objects
+        assert len(objs) == 4
+        # check BBIM_Array psets are removed
+        for obj in objs:
+            element = tool.Ifc.get_entity(obj)
+            pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+            assert pset is None, (obj, pset)

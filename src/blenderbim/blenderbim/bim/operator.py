@@ -638,7 +638,8 @@ class BIM_OT_remove_section_plane(bpy.types.Operator):
             material.node_tree.nodes.remove(override)
         bpy.data.node_groups.remove(bpy.data.node_groups.get("Section Override"))
         bpy.data.node_groups.remove(bpy.data.node_groups.get("Section Compare"))
-        bpy.ops.object.delete({"selected_objects": [context.active_object]})
+        with context.temp_override(selected_objects=[context.active_object]):
+            bpy.ops.object.delete()
 
 
 class ReloadIfcFile(bpy.types.Operator, tool.Ifc.Operator):
@@ -669,6 +670,8 @@ class ReloadIfcFile(bpy.types.Operator, tool.Ifc.Operator):
         # STEP IDs may change, but we assume the GlobalID to be constant
         obj_map = {}
         for obj in bpy.data.objects:
+            if obj.library:
+                continue
             element = tool.Ifc.get_entity(obj)
             if element and hasattr(element, "GlobalId"):
                 obj_map[obj.name] = element.GlobalId
@@ -677,6 +680,8 @@ class ReloadIfcFile(bpy.types.Operator, tool.Ifc.Operator):
         tool.Ifc.set(new)
 
         for obj in bpy.data.objects:
+            if obj.library:
+                continue
             global_id = obj_map.get(obj.name)
             if global_id:
                 try:

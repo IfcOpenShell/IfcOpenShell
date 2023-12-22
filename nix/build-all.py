@@ -76,7 +76,7 @@ PROJECT_NAME = "IfcOpenShell"
 USE_CURRENT_PYTHON_VERSION = os.getenv("USE_CURRENT_PYTHON_VERSION")
 ADD_COMMIT_SHA = os.getenv("ADD_COMMIT_SHA")
 
-PYTHON_VERSIONS = ["3.6.14", "3.7.13", "3.8.13", "3.9.11", "3.10.3", "3.11.0"]
+PYTHON_VERSIONS = ["3.6.14", "3.7.13", "3.8.13", "3.9.11", "3.10.3", "3.11.7", "3.12.1"]
 JSON_VERSION = "v3.6.1"
 OCE_VERSION = "0.18.3"
 OCCT_VERSION = "7.5.3"
@@ -892,8 +892,9 @@ if "IfcOpenShell-Python" in targets:
             module_dir = os.path.dirname(run([python_executable, "-c", "import inspect, ifcopenshell; print(inspect.getfile(ifcopenshell))"]))
 
             if platform.system() != "Darwin":
-                # TODO: This symbol name depends on the Python version?
-                run([strip, "-s", "-K", "PyInit__ifcopenshell_wrapper", "_ifcopenshell_wrapper.so"], cwd=module_dir)
+                if BUILD_CFG == "Release":
+                    # TODO: This symbol name depends on the Python version?
+                    run([strip, "-s", "-K", "PyInit__ifcopenshell_wrapper", "_ifcopenshell_wrapper.so"], cwd=module_dir)
 
             return module_dir
 

@@ -49,9 +49,10 @@ class Usecase:
         for texture in textures:
             ifcopenshell.util.element.remove_deep2(self.file, texture)
 
+        to_delete = getattr(self.file, "to_delete", ())
         for element in styled_items:
-            if not element.Item:
+            if not element.Item or element.Item in to_delete:
                 self.file.remove(element)
         for element in presentation_layer_assignments:
-            if len(element.AssignedItems) == 0:
+            if all(item in to_delete for item in element.AssignedItems):
                 self.file.remove(element)

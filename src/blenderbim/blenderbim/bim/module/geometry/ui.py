@@ -181,17 +181,21 @@ class BIM_PT_representation_items(Panel):
 
         self.layout.template_list("BIM_UL_representation_items", "", props, "items", props, "active_item_index")
 
+        item_is_active = props.active_item_index < len(props.items)
+        if item_is_active:
+            surface_style = props.items[props.active_item_index].surface_style
+            presentation_layer = props.items[props.active_item_index].layer
+        else:
+            surface_style, presentation_layer = None, None
+
         row = self.layout.row()
-        if RepresentationItemsData.data["active_surface_style"]:
-            row.label(text=RepresentationItemsData.data["active_surface_style"], icon="MATERIAL")
+        if surface_style:
+            row.label(text=surface_style, icon="SHADING_RENDERED")
         else:
             row.label(text="No Surface Style", icon="MESH_UVSPHERE")
 
         row = self.layout.row()
-        if RepresentationItemsData.data["active_layer"]:
-            row.label(text=RepresentationItemsData.data["active_layer"], icon="STICKY_UVS_LOC")
-        else:
-            row.label(text="No Presentation Layer", icon="STICKY_UVS_LOC")
+        row.label(text=presentation_layer or "No Presentation Layer", icon="STICKY_UVS_LOC")
 
 
 class BIM_PT_connections(Panel):
@@ -352,19 +356,25 @@ class BIM_PT_placement(Panel):
         if not PlacementData.is_loaded:
             PlacementData.load()
 
-        if PlacementData.data["has_placement"]:
-            row = self.layout.row()
-            row.prop(context.active_object, "location", text="Location")
-            row = self.layout.row()
-            row.prop(context.active_object, "rotation_euler", text="Rotation")
-        else:
+        if not PlacementData.data["has_placement"]:
             row = self.layout.row()
             row.label(text="No Object Placement Found")
+            return
+
+        row = self.layout.row()
+        row.prop(context.active_object, "location", text="Location")
+        row = self.layout.row()
+        row.prop(context.active_object, "rotation_euler", text="Rotation")
 
         if context.active_object.BIMObjectProperties.blender_offset_type != "NONE":
             row = self.layout.row(align=True)
             row.label(text="Blender Offset", icon="TRACKING_REFINE_FORWARDS")
             row.label(text=context.active_object.BIMObjectProperties.blender_offset_type)
+
+            row = self.layout.row(align=True)
+            row.label(text=PlacementData.data["original_x"], icon="EMPTY_AXIS")
+            row.label(text=PlacementData.data["original_y"])
+            row.label(text=PlacementData.data["original_z"])
 
 
 class BIM_PT_derived_coordinates(Panel):

@@ -33,11 +33,11 @@ class Operator:
         return {"FINISHED"}
 
 
-class BIM_OT_assign_object(bpy.types.Operator, Operator):
+class BIM_OT_aggregate_assign_object(bpy.types.Operator, Operator):
     """Create aggregation relationship between two ifc elements"""
 
-    bl_idname = "bim.assign_object"
-    bl_label = "Assign Object"
+    bl_idname = "bim.aggregate_assign_object"
+    bl_label = "Assign Object To Aggregation"
     bl_options = {"REGISTER", "UNDO"}
     relating_object: bpy.props.IntProperty()
 
@@ -67,11 +67,11 @@ class BIM_OT_assign_object(bpy.types.Operator, Operator):
                 self.report({"ERROR"}, f" Cannot aggregate {obj.name} to {relating_obj.name}")
 
 
-class BIM_OT_unassign_object(bpy.types.Operator, Operator):
+class BIM_OT_aggregate_unassign_object(bpy.types.Operator, Operator):
     """Remove aggregation relationship between two ifc elements"""
 
-    bl_idname = "bim.unassign_object"
-    bl_label = "Unassign Object"
+    bl_idname = "bim.aggregate_unassign_object"
+    bl_label = "Unassign Object From Aggregation"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -164,6 +164,7 @@ class BIM_OT_add_aggregate(bpy.types.Operator, tool.Ifc.Operator):
 
     def create_aggregate(self, context, ifc_class):
         aggregate = bpy.data.objects.new("Assembly", None)
+        aggregate.location = context.scene.cursor.location
         bpy.ops.bim.assign_class(obj=aggregate.name, ifc_class=ifc_class)
         return aggregate
 

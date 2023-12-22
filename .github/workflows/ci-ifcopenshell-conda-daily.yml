@@ -1,10 +1,7 @@
 name: ci-ifcopenshell-conda-daily
 
 on:
-  push:
-      paths:
-        - .github/workflows/ci-ifcopenshell-conda-daily.yml
-        - conda/**
+  workflow_dispatch:
   schedule:
   #         ┌───────────── minute (0 - 59)
   #         │  ┌───────────── hour (0 - 23)
@@ -15,17 +12,8 @@ on:
   - cron: "49 23 * * *" # 11min before utc midnight every day
 
 jobs:
-  activate:
-    runs-on: ubuntu-latest
-    if: |
-      github.repository == 'IfcOpenShell/IfcOpenShell'
-    steps:
-      - name: Set env
-        run: echo ok go
-
   test:
-    name: ${{ matrix.platform.distver }}-${{ matrix.pyver.name }}
-    needs: activate
+    name: ${{ matrix.platform.distver }}-${{ matrix.pyver.name }}-${{ matrix.variant }}
     runs-on: ${{ matrix.platform.distver }}
     defaults:
       run:
@@ -34,18 +22,23 @@ jobs:
       fail-fast: false
       matrix:
         pyver: [
-          { name: py310, distver: '3.10'},
-          { name: py311, distver: '3.11'}
+          { name: py311, distver: '3.11'},
+          { name: py312, distver: '3.12'}
         ]
         platform: [
           { name: Windows, distver: windows-2022, upload: 'true' },
           { name: Linux, distver: ubuntu-22.04,  upload: 'true' },
           { name: macOS, distver: macos-12, upload: 'true' }
         ]
+        variant: [
+          'novtk',
+#          'all'
+        ]
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
+
       - name: Download MacOSX SDK
         if: ${{ matrix.platform.name == 'macOS' }}
         run: |
@@ -53,21 +46,22 @@ jobs:
           tar xf MacOSX10.13.sdk.tar.xz && \
           sudo mv -v MacOSX10.13.sdk /opt/ && \
           ls /opt/
-      - uses: seanmiddleditch/gha-setup-ninja@master
-      - uses: mamba-org/provision-with-micromamba@main # https://github.com/mamba-org/provision-with-micromamba
+
+      - uses: mamba-org/setup-micromamba@v1 # https://github.com/mamba-org/setup-micromamba
         with:
-          channels: conda-forge
-          channel-priority: strict
-          environment-file: conda/environment.yml
-          extra-specs: |
-            python=${{ matrix.pyver.distver }}
+          environment-name: build-env
+          cache-environment: true
+          condarc: |
+            channels:
+              - conda-forge
+            channel_priority: strict
+          create-args: >-
+            python=3.11
+            anaconda-client
+            boa
+
       - name: build, test and upload ifcopenshell
         if: ${{ matrix.platform.upload == 'true' }}
         run: |
-          conda-build . --python ${{ matrix.pyver.distver }} -c conda-forge --token ${{ secrets.ANACONDA_TOKEN }} --user ifcopenshell
-        working-directory: ./conda
-      - name: build & test ifcopenshell
-        if: ${{ matrix.platform.upload == 'false' }}
-        run: |
-          conda-build . --python ${{ matrix.pyver.distver }} -c conda-forge
+          conda mambabuild . --python ${{ matrix.pyver.distver }} -c conda-forge --variants "{variant: ${{ matrix.variant }}}" --token ${{ secrets.ANACONDA_TOKEN }} --user ifcopenshell
         working-directory: ./conda

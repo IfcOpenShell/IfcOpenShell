@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import os
 import re
 import bpy
@@ -38,7 +39,7 @@ from blenderbim.bim.module.drawing.prop import ANNOTATION_TYPES_DATA
 
 
 class MaterialCreator:
-    def __init__(self, ifc_import_settings, ifc_importer):
+    def __init__(self, ifc_import_settings: IfcImportSettings, ifc_importer: IfcImporter):
         self.mesh = None
         self.obj = None
         self.materials = {}
@@ -125,57 +126,27 @@ class MaterialCreator:
             return
         for style_id in style_ids:
             material = self.styles[style_id]
-            ifc_coordinate_id = material.BIMMaterialProperties.ifc_coordinate_id
-            if ifc_coordinate_id != 0:
-                self.load_texture_map(tool.Ifc.get().by_id(ifc_coordinate_id))
+
+            def get_ifc_coordinate(material):
+                texture_style = tool.Style.get_texture_style(material)
+                if not texture_style:
+                    return
+                for texture in texture_style.Textures or []:
+                    if coords := getattr(texture, "IsMappedBy", None):
+                        coords = coords[0]
+                        # IfcTextureCoordinateGenerator handled in the style shader graph
+                        if coords.is_a("IfcIndexedTextureMap"):
+                            return coords
+                        # TODO: support IfcTextureMap
+                        if coords.is_a("IfcTextureMap"):
+                            print(f"WARNING. IfcTextureMap texture coordinates is not supported.")
+                            return
+
+            if coords := get_ifc_coordinate(material):
+                tool.Loader.load_indexed_texture_map(coords, self.mesh)
             if self.mesh.materials.find(material.name) == -1:
                 self.mesh.materials.append(material)
         return True
-
-    def load_texture_map(self, coordinates):
-        # Get a BMesh representation
-        bm = bmesh.new()
-        bm.from_mesh(self.mesh)
-        uv_layer = bm.loops.layers.uv.verify()
-
-        # remap the faceset CoordList index to the vertices in blender mesh
-        coordinates_remap = []
-        for co in coordinates.MappedTo.Coordinates.CoordList:
-            co = mathutils.Vector(co)
-            index = next(v.index for v in bm.verts if (v.co - co).length_squared < 1e-5)
-            coordinates_remap.append(index)
-
-        faces_remap = None
-        texture_map = None
-        if coordinates.is_a("IfcIndexedPolygonalTextureMap"):
-            faces_remap = [
-                [coordinates_remap[i - 1] for i in tex_coord_index.TexCoordsOf.CoordIndex]
-                for tex_coord_index in coordinates.TexCoordIndices
-            ]
-            texture_map = [tex_coord_index.TexCoordIndex for tex_coord_index in coordinates.TexCoordIndices]
-        elif coordinates.is_a("IfcIndexedTriangleTextureMap"):
-            faces_remap = [
-                [coordinates_remap[i - 1] for i in triangle_face] for triangle_face in coordinates.MappedTo.CoordIndex
-            ]
-            texture_map = coordinates.TexCoordIndex
-
-        # apply uv to each face
-        for bface in bm.faces:
-            face = [loop.vert.index for loop in bface.loops]
-            # find the corresponding TexCoordIndex by matching ifc faceset with blender face
-            # remap TexCoordIndex as the loop start may different from blender face
-            texCoordIndex = next(
-                [tex_coord_index[face_remap.index(i)] for i in face]
-                for tex_coord_index, face_remap in zip(texture_map, faces_remap)
-                if all(i in face_remap for i in face)
-            )
-            # apply uv to each loop
-            for loop, i in zip(bface.loops, texCoordIndex):
-                loop[uv_layer].uv = coordinates.TexCoords.TexCoordsList[i - 1]
-
-        # Finish up, write the bmesh back to the mesh
-        bm.to_mesh(self.mesh)
-        bm.free()
 
     def assign_material_slots_to_faces(self):
         if "ios_materials" not in self.mesh or not self.mesh["ios_materials"]:
@@ -254,6 +225,8 @@ class IfcImporter:
         self.profile_code("Loading file")
         self.calculate_unit_scale()
         self.profile_code("Calculate unit scale")
+        self.process_context_filter()
+        self.profile_code("Process context filter")
         self.calculate_model_offset()
         self.profile_code("Calculate model offset")
         self.predict_dense_mesh()
@@ -264,8 +237,6 @@ class IfcImporter:
         self.profile_code("Create project")
         self.process_element_filter()
         self.profile_code("Process element filter")
-        self.process_context_filter()
-        self.profile_code("Process context filter")
         self.create_collections()
         self.profile_code("Create collections")
         self.create_materials()
@@ -296,7 +267,7 @@ class IfcImporter:
         if self.ifc_import_settings.should_clean_mesh and len(self.file.by_type("IfcElement")) < 1000:
             self.clean_mesh()
             self.profile_code("Mesh cleaning")
-        if self.ifc_import_settings.should_merge_materials_by_colour or len(self.material_creator.materials) > 300:
+        if self.ifc_import_settings.should_merge_materials_by_colour:
             self.merge_materials_by_colour()
             self.profile_code("Merging by colour")
         self.set_default_context()
@@ -616,11 +587,11 @@ class IfcImporter:
             project = self.file.by_type("IfcContext")[0]
         site = self.find_decomposed_ifc_class(project, "IfcSite")
         if site and self.is_element_far_away(site):
-            return self.guess_georeferencing(site)
+            return self.guess_false_origin_and_project_north(site)
         building = self.find_decomposed_ifc_class(project, "IfcBuilding")
         if building and self.is_element_far_away(building):
-            return self.guess_georeferencing(building)
-        return self.guess_absolute_coordinate()
+            return self.guess_false_origin_and_project_north(building)
+        return self.guess_false_origin()
 
     def set_manual_blender_offset(self):
         props = bpy.context.scene.BIMGeoreferenceProperties
@@ -629,7 +600,7 @@ class IfcImporter:
         props.blender_orthogonal_height = str(self.ifc_import_settings.false_origin[2])
         props.has_blender_offset = True
 
-    def guess_georeferencing(self, element):
+    def guess_false_origin_and_project_north(self, element):
         if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
             return
         placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
@@ -644,7 +615,7 @@ class IfcImporter:
             props.blender_x_axis_ordinate = str(placement[1][0])
         props.has_blender_offset = True
 
-    def guess_absolute_coordinate(self):
+    def guess_false_origin(self):
         # Civil BIM applications like to work in absolute coordinates, where the
         # ObjectPlacement is usually 0,0,0 (but not always, so we'll need to
         # check for the actual transformation) but each individual coordinate of
@@ -668,6 +639,10 @@ class IfcImporter:
             elements_checked += 1
             if elements_checked > element_checking_threshold:
                 return
+            if element.ObjectPlacement and element.ObjectPlacement.is_a("IfcLocalPlacement"):
+                placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)[:, 3][0:3]
+                if self.is_point_far_away(placement, is_meters=False):
+                    return placement
             if not self.does_element_likely_have_geometry_far_away(element):
                 continue
             shape = self.create_generic_shape(element)
@@ -1532,12 +1507,12 @@ class IfcImporter:
         obj = self.create_product(self.project["ifc"])
         self.project["blender"].objects.link(obj)
         self.project["blender"].BIMCollectionProperties.obj = obj
-        obj.BIMObjectProperties.collection = self.project["blender"]
+        obj.BIMObjectProperties.collection = self.collections[project.GlobalId] = self.project["blender"]
 
     def create_collections(self):
         self.create_spatial_decomposition_collections()
         if self.ifc_import_settings.collection_mode == "DECOMPOSITION":
-            self.create_aggregate_collections()
+            self.create_aggregate_and_nest_collections()
         elif self.ifc_import_settings.collection_mode == "SPATIAL_DECOMPOSITION":
             pass
 
@@ -1573,16 +1548,29 @@ class IfcImporter:
                 for rel_aggregate in element.IsDecomposedBy:
                     self.create_spatial_decomposition_collection(collection, rel_aggregate.RelatedObjects)
 
-    def create_aggregate_collections(self):
+    def create_aggregate_and_nest_collections(self):
         if self.ifc_import_settings.has_filter:
-            rel_aggregates = [e.IsDecomposedBy[0] for e in self.elements if e.IsDecomposedBy]
-            rel_aggregates += [e.Decomposes[0] for e in self.elements if e.Decomposes]
-            rel_aggregates = set(rel_aggregates)
+            rel_aggregates = set()
+            for element in self.elements:
+                if element.IsDecomposedBy:
+                    rel_aggregates.add(element.IsDecomposedBy[0])
+                elif element.Decomposes:
+                    rel_aggregates.add(element.Decomposes[0])
+                elif element.IsNestedBy:
+                    if [e for e in element.IsNestedBy[0].RelatedObjects if not e.is_a("IfcPort")]:
+                        rel_aggregates.add(element.IsNestedBy[0])
+                elif element.Nests:
+                    rel_aggregates.add(element.Nests[0])
         else:
             rel_aggregates = [
-                a
-                for a in self.file.by_type("IfcRelAggregates")
-                if a.RelatingObject.is_a("IfcElement") or a.RelatingObject.is_a("IfcElementType")
+                r
+                for r in self.file.by_type("IfcRelAggregates")
+                if r.RelatingObject.is_a("IfcElement") or r.RelatingObject.is_a("IfcElementType")
+            ] + [
+                r
+                for r in self.file.by_type("IfcRelNests")
+                if (r.RelatingObject.is_a("IfcElement") or r.RelatingObject.is_a("IfcElementType"))
+                and [e for e in r.RelatedObjects if not e.is_a("IfcPort")]
             ]
 
         if len(rel_aggregates) > 10000:
@@ -1687,6 +1675,9 @@ class IfcImporter:
         elif getattr(element, "Decomposes", None):
             aggregate = ifcopenshell.util.element.get_aggregate(element)
             return self.collections[aggregate.GlobalId].objects.link(obj)
+        elif getattr(element, "Nests", None):
+            nest = ifcopenshell.util.element.get_nest(element)
+            return self.collections[nest.GlobalId].objects.link(obj)
         else:
             return self.place_object_in_spatial_decomposition_collection(element, obj)
 

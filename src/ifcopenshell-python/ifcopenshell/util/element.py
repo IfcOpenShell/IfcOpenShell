@@ -19,7 +19,7 @@
 import ifcopenshell
 
 
-def get_pset(element, name, prop=None, should_inherit=True, verbose=False):
+def get_pset(element, name, prop=None, psets_only=False, qtos_only=False, should_inherit=True, verbose=False):
     """Retrieve a single property set or single property
 
     This is more efficient than ifcopenshell.util.element.get_psets if you know
@@ -34,6 +34,10 @@ def get_pset(element, name, prop=None, should_inherit=True, verbose=False):
     :type name: str
     :param prop: The name of the property
     :type prop: str,optional
+    :param psets_only: Default as False. Set to true if only property sets are needed.
+    :type psets_only: bool,optional
+    :param qtos_only: Default as False. Set to true if only quantities are needed.
+    :type qtos_only: bool,optional
     :param should_inherit: Default as True. Set to false if you don't want to inherit property sets from the Type.
     :type should_inherit: bool,optional
     :return: A dictionary of property names and values, or a single value if a
@@ -71,6 +75,18 @@ def get_pset(element, name, prop=None, should_inherit=True, verbose=False):
                 if definition.Name == name:
                     pset = definition
                     break
+
+    if pset:
+        if psets_only and not pset.is_a("IfcPropertySet"):
+            pset = None
+        elif qtos_only and not pset.is_a("IfcElementQuantity"):
+            pset = None
+
+    if type_pset:
+        if psets_only and not type_pset.is_a("IfcPropertySet"):
+            type_pset = None
+        elif qtos_only and not type_pset.is_a("IfcElementQuantity"):
+            type_pset = None
 
     if not pset and not type_pset:
         return
@@ -691,6 +707,9 @@ def get_container(element, should_get_direct=False, ifc_class=None):
         aggregate = get_aggregate(element)
         if aggregate:
             return get_container(aggregate, should_get_direct)
+        nest = get_nest(element)
+        if nest:
+            return get_container(nest, should_get_direct)
         if hasattr(element, "ContainedInStructure") and element.ContainedInStructure:
             container = element.ContainedInStructure[0].RelatingStructure
             if not ifc_class:
@@ -790,7 +809,7 @@ def get_grouped_by(element):
 
 def get_aggregate(element):
     """
-    Retrieves the aggregate of an element.
+    Retrieves the aggregate parent of an element.
 
     :param element: The IFC element
     :return: The aggregate of the element
@@ -802,12 +821,34 @@ def get_aggregate(element):
     aggregate = ifcopenshell.util.element.get_aggregate(element)
     """
     if hasattr(element, "Decomposes") and element.Decomposes:
-        return element.Decomposes[0].RelatingObject
+        if element.Decomposes[0].is_a("IfcRelAggregates"):  # IFC2X3
+            return element.Decomposes[0].RelatingObject
+
+
+def get_nest(element):
+    """
+    Retrieves the nest parent of an element.
+
+    :param element: The IFC element
+    :return: The nested whole of the element
+
+    Example:
+
+    .. code:: python
+    element = file.by_type("IfcBeam")[0]
+    aggregate = ifcopenshell.util.element.get_nest(element)
+    """
+    if hasattr(element, "Nests"):
+        if element.Nests:
+            return element.Nests[0].RelatingObject
+    elif hasattr(element, "Decomposes") and element.Decomposes:  # IFC2X3
+        if element.Decomposes[0].is_a("IfcRelNests"):
+            return element.Decomposes[0].RelatingObject
 
 
 def get_parts(element):
     """
-    Retrieves the parts of an element.
+    Retrieves the parts of an element that have an aggregation relationship.
 
     :param element: The IFC element
     :return: The parts of the element
@@ -820,7 +861,36 @@ def get_parts(element):
 
     """
     if hasattr(element, "IsDecomposedBy") and element.IsDecomposedBy:
-        return element.IsDecomposedBy[0].RelatedObjects
+        if element.IsDecomposedBy[0].is_a("IfcRelAggregates"):
+            return element.IsDecomposedBy[0].RelatedObjects
+
+
+def get_components(element, include_ports=False):
+    """
+    Retrieves the components of an element that have an nest relationship.
+
+    For nested ports, see ifcopenshell.util.system.
+
+    :param element: The IFC element
+    :return: The components of the element
+    :param include_ports: Default as False. Set to true if you also want to get ports.
+    :type include_ports: bool,optional
+
+    Example:
+
+    .. code:: python
+    element = file.by_type("IfcElementAssembly")[0]
+    components = ifcopenshell.util.element.get_components(element)
+
+    """
+    if hasattr(element, "IsNestedBy"):
+        if element.IsNestedBy:
+            if include_ports:
+                return element.IsNestedBy[0].RelatedObjects
+            return [e for e in element.IsNestedBy[0].RelatedObjects if not e.is_a("IfcPort")]
+    elif hasattr(element, "IsDecomposedBy") and element.IsDecomposedBy:
+        if element.IsDecomposedBy[0].is_a("IfcRelNests"):
+            return element.IsDecomposedBy[0].RelatedObjects
 
 
 def replace_attribute(element, old, new):

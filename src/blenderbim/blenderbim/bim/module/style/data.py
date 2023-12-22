@@ -34,11 +34,22 @@ class StylesData:
     @classmethod
     def load(cls):
         cls.data = {
+            "styles_to_blender_material_names": cls.styles_to_blender_material_names(),
             "style_types": cls.style_types(),
             "total_styles": cls.total_styles(),
             "reflectance_methods": cls.reflectance_methods(),
         }
         cls.is_loaded = True
+
+    @classmethod
+    def styles_to_blender_material_names(cls):
+        ifc_file = tool.Ifc.get()
+        props = bpy.context.scene.BIMStylesProperties
+        materials = []
+        for style in props.styles:
+            material = tool.Ifc.get_object(ifc_file.by_id(style.ifc_definition_id))
+            materials.append(material.name if material is not None else None)
+        return materials
 
     @classmethod
     def reflectance_methods(cls):
@@ -67,10 +78,8 @@ class StyleAttributesData:
     def load(cls):
         cls.data = {
             "ifc_style_id": cls.ifc_style_id(),
-            "attributes": cls.get_attributes(),
-            "style_elements": cls.get_style_elements(),
+            "attributes": cls.attributes(),
         }
-        cls.data["external_style_attributes"] = cls.get_external_style_attributes()
         cls.is_loaded = True
 
     @classmethod
@@ -78,27 +87,11 @@ class StyleAttributesData:
         return bpy.context.active_object.active_material.BIMMaterialProperties.ifc_style_id
 
     @classmethod
-    def get_attributes(cls):
+    def attributes(cls):
         style = tool.Ifc.get().by_id(bpy.context.active_object.active_material.BIMMaterialProperties.ifc_style_id)
         results = []
         for name, value in style.get_info().items():
             if name in ["id", "type", "Styles"]:
-                continue
-            results.append({"name": name, "value": str(value)})
-        return results
-
-    @classmethod
-    def get_style_elements(cls):
-        return tool.Style.get_style_elements(bpy.context.active_object.active_material)
-
-    @classmethod
-    def get_external_style_attributes(cls):
-        external_style = cls.data["style_elements"].get("IfcExternallyDefinedSurfaceStyle", None)
-        if not external_style:
-            return None
-        results = []
-        for name, value in external_style.get_info().items():
-            if name in ["id", "type"]:
                 continue
             results.append({"name": name, "value": str(value)})
         return results

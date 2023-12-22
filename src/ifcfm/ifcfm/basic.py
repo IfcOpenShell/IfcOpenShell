@@ -104,8 +104,9 @@ def get_space_data(ifc_file, element):
         "CreationDate": get_owner_creation_date(element),
         "ModelSoftware": get_owner_application(element),
         "ModelID": element.GlobalId,
-        "AreaGross": get_property(psets, "Qto_SpaceBaseQuantities", "GrossFloorArea", decimals=2),
-        "AreaNet": get_property(psets, "Qto_SpaceBaseQuantities", "NetFloorArea", decimals=2),
+        "FinishCeilingHeight": get_property(psets, "Qto_SpaceBaseQuantities", "FinishCeilingHeight", decimals=2),
+        "GrossFloorArea": get_property(psets, "Qto_SpaceBaseQuantities", "GrossFloorArea", decimals=2),
+        "NetFloorArea": get_property(psets, "Qto_SpaceBaseQuantities", "NetFloorArea", decimals=2),
     }
 
 
@@ -233,6 +234,8 @@ def get_property(psets, pset_name, prop_name, decimals=None):
 
 
 config = {
+    "name": "IFC Basic",
+    "description": "buildingSMART standardised properties related to asset management and handover",
     "colours": {
         "h": "dddddd",  # Header data
         "p": "dc8774",  # Primary identification data
@@ -297,8 +300,9 @@ config = {
                 "CreationDate",
                 "ModelSoftware",
                 "ModelID",
-                "AreaGross",
-                "AreaNet",
+                "FinishCeilingHeight",
+                "GrossFloorArea",
+                "NetFloorArea",
             ],
             "colours": "ppprreeess",
             "sort": [{"name": "LevelName", "order": "ASC"}, {"name": "Name", "order": "ASC"}],

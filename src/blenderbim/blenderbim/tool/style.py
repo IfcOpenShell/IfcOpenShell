@@ -22,7 +22,7 @@ import ifcopenshell
 import blenderbim.core.tool
 import blenderbim.tool as tool
 import blenderbim.bim.helper
-import os.path
+from mathutils import Color
 
 # fmt: off
 TEXTURE_MAPS_BY_METHODS = {
@@ -33,19 +33,11 @@ TEXTURE_MAPS_BY_METHODS = {
 
 STYLE_PROPS_MAP = {
     "reflectance_method": "ReflectanceMethod",
-    "diffuse_color": "DiffuseColour",
-    "surface_color": "SurfaceColour",
+    "diffuse_colour": "DiffuseColour",
+    "surface_colour": "SurfaceColour",
     "transparency": "Transparency",
-    "roughness": "SpecularHighlight",
-    "metallic": "SpecularColour",
-}
-
-STYLE_TEXTURE_PROPS_MAP = {
-    "EMISSIVE": "emissive_path",
-    "NORMAL": "normal_path",
-    "METALLICROUGHNESS": "metallic_roughness_path",
-    "DIFFUSE": "diffuse_path",
-    "OCCLUSION": "occlusion_path",
+    "specular_highlight": "SpecularHighlight",
+    "specular_colour": "SpecularColour",
 }
 
 
@@ -111,92 +103,131 @@ class Style(blenderbim.core.tool.Style):
                 return
 
     @classmethod
-    def get_style_elements(cls, blender_material):
-        if not blender_material.BIMMaterialProperties.ifc_style_id:
-            return {}
-        style = tool.Ifc.get().by_id(blender_material.BIMMaterialProperties.ifc_style_id)
+    def get_style_elements(cls, blender_material_or_style):
+        if isinstance(blender_material_or_style, bpy.types.Material):
+            if not blender_material_or_style.BIMMaterialProperties.ifc_style_id:
+                return {}
+            style = tool.Ifc.get().by_id(blender_material_or_style.BIMMaterialProperties.ifc_style_id)
+        else:
+            style = blender_material_or_style
         style_elements = {}
         for style in style.Styles:
             style_elements[style.is_a()] = style
         return style_elements
 
     @classmethod
-    def get_surface_style_from_props(cls, blender_material):
-        """convert blender style props to ifc props"""
+    def get_shading_style_data_from_props(cls) -> dict:
+        """returns style data from blender props in similar way to `Loader.surface_style_to_dict`
+        to be compatible with `Loader.create_surface_style_rendering`"""
         surface_style_data = dict()
-        props = blender_material.BIMStyleProperties
+        props = bpy.context.scene.BIMStylesProperties
+
+        available_props = props.bl_rna.properties.keys()
         for prop_blender, prop_ifc in STYLE_PROPS_MAP.items():
-            surface_style_data[prop_ifc] = getattr(props, prop_blender)
-        if surface_style_data["ReflectanceMethod"] == "PHYSICAL" and tool.Ifc.get_schema() != "IFC4X3":
-            surface_style_data["ReflectanceMethod"] = "NOTDEFINED"
-        surface_style_data["DiffuseColour"] = ("IfcColourRgb", surface_style_data["DiffuseColour"])
+            class_prop_name = f"{prop_blender}_class"
+
+            # get detailed color properties if available
+            if class_prop_name in available_props:
+                prop_class = getattr(props, class_prop_name)
+                if prop_class == "IfcColourRgb":
+                    prop_value = tuple(getattr(props, prop_blender))
+                else:  # IfcNormalisedRatioMeasure
+                    ratio_prop_name = f"{prop_blender}_ratio"
+                    prop_value = getattr(props, ratio_prop_name)
+                prop_value = (prop_class, prop_value)
+            else:
+                prop_value = getattr(props, prop_blender)
+                if isinstance(prop_value, Color):
+                    prop_value = tuple(prop_value)
+
+            surface_style_data[prop_ifc] = prop_value
         return surface_style_data
 
     @classmethod
-    def get_texture_style_from_props(cls, blender_material):
-        props = blender_material.BIMStyleProperties
+    def get_texture_style_data_from_props(cls) -> list[dict]:
+        """returns style data from blender props in similar way to `Loader.surface_texture_to_dict`
+        to be compatible with `Loader.create_surface_style_with_textures`"""
+        props = bpy.context.scene.BIMStylesProperties
 
         textures = []
-        texture_maps = TEXTURE_MAPS_BY_METHODS[props.reflectance_method]
-        for prop_mode in texture_maps:
-            prop_name = STYLE_TEXTURE_PROPS_MAP[prop_mode]
-            path = getattr(props, prop_name)
-            if not path:
+        for texture in props.textures:
+            if not texture.path:
                 continue
             texture_data = {
-                "Mode": prop_mode,
+                "Mode": texture.mode,
                 "type": "IfcImageTexture",
-                "URLReference": tool.Blender.blender_path_to_posix(path),
+                "URLReference": texture.path,
+                "uv_mode": props.uv_mode,
             }
             textures.append(texture_data)
 
         return textures
 
     @classmethod
-    def set_surface_style_props(cls, blender_material):
-        """set blender style props based on current surface material"""
-        props = blender_material.BIMStyleProperties
+    def set_surface_style_props(cls):
+        """set blender style props based on currently edited IfcSurfaceStyle,
+        reset unrelated props to default values"""
+
+        props = bpy.context.scene.BIMStylesProperties
+        style = tool.Ifc.get().by_id(props.is_editing_style)
         # make sure won't be updating while we changing it
         prev_update_graph_value = props.update_graph
         props["update_graph"] = False
 
-        style_elements = tool.Style.get_style_elements(blender_material)
+        style_elements = tool.Style.get_style_elements(style)
         surface_style = style_elements.get("IfcSurfaceStyleRendering", None)
+        if surface_style is None:
+            surface_style = style_elements.get("IfcSurfaceStyleShading", None)
+        style_data = tool.Loader.surface_style_to_dict(surface_style) if surface_style else {}
         texture_style = style_elements.get("IfcSurfaceStyleWithTextures", None)
 
-        # in case we have just IfcSurfaceStyleShading
-        if not surface_style:
-            return
-
-        style_data = tool.Loader.surface_style_to_dict(surface_style)
-        if style_data["ReflectanceMethod"] == "NOTDEFINED":
-            style_data["ReflectanceMethod"] = "PHYSICAL"
-        diffuse_color = style_data["DiffuseColour"]
-        style_data["DiffuseColour"] = diffuse_color[1] if diffuse_color else None
-
-        for prop_blender, prop_ifc in STYLE_PROPS_MAP.items():
-            prop_value = style_data[prop_ifc]
+        def set_prop(prop_blender, prop_value):
             if prop_value is None:
                 prop_value = tool.Blender.get_blender_prop_default_value(props, prop_blender)
             setattr(props, prop_blender, prop_value)
 
-        texture_maps = TEXTURE_MAPS_BY_METHODS[style_data["ReflectanceMethod"]]
-        unused_texture_maps = list(STYLE_TEXTURE_PROPS_MAP.keys())
+        available_props = props.bl_rna.properties.keys()
+        # fallback value for reflectance method
+        if style_data.get("ReflectanceMethod", None) is None:
+            style_data["ReflectanceMethod"] = "NOTDEFINED"
+        for prop_blender, prop_ifc in STYLE_PROPS_MAP.items():
+            prop_value = style_data.get(prop_ifc, None)
+            is_null = prop_value is None
 
+            # set null property if available
+            null_prop_name = f"is_{prop_blender}_null"
+            if null_prop_name in available_props:
+                set_prop(null_prop_name, is_null)
+
+            # set detailed color properties if available
+            class_prop_name = f"{prop_blender}_class"
+            if class_prop_name in available_props:
+                prop_class, prop_value = prop_value or (None, None)
+                # set class enum
+                set_prop(class_prop_name, prop_class)
+                # set prop value
+                ratio_prop_name = f"{prop_blender}_ratio"
+                if prop_class == "IfcColourRgb":
+                    set_prop(prop_blender, prop_value)
+                    set_prop(ratio_prop_name, None)
+                else:  # IfcNormalisedRatioMeasure
+                    set_prop(ratio_prop_name, prop_value)
+                    set_prop(prop_blender, None)
+                continue
+
+            set_prop(prop_blender, prop_value)
+
+        uv_mode = None
+        props.textures.clear()
         if texture_style:
             for texture in texture_style.Textures:
-                if texture.Mode not in texture_maps:
-                    print(f"WARNING. Unsupported texture mode: {texture.Mode}. Supported maps: {texture_maps}")
-                    continue
-                prop_blender = STYLE_TEXTURE_PROPS_MAP.get(texture.Mode, None)
-                setattr(props, prop_blender, texture.URLReference)
-                unused_texture_maps.remove(texture.Mode)
-
-        # clear empty texture fields
-        for texture_mode in unused_texture_maps:
-            prop_blender = STYLE_TEXTURE_PROPS_MAP[texture_mode]
-            setattr(props, prop_blender, "")
-
+                # we use surface_texture_to_dict as it calculates uv_mode
+                texture_data = tool.Loader.surface_texture_to_dict(texture)
+                texture_prop = props.textures.add()
+                texture_prop.mode = texture_data["Mode"]
+                texture_prop.path = texture_data["URLReference"]
+                uv_mode = texture_data["uv_mode"]
+        props.uv_mode = uv_mode if uv_mode else "UV"
         props["update_graph"] = prev_update_graph_value
 
     @classmethod
@@ -417,9 +448,20 @@ class Style(blenderbim.core.tool.Style):
 
         results = []
         for item in items:
-            for uv_map in item.HasTextures or []:
+            # only IfcTessellatedFaceSet has HasTextures
+            for uv_map in getattr(item, "HasTextures", None) or []:
                 results.append(uv_map)
         return results
+
+    @classmethod
+    def get_style_ui_props_attributes(self, style_type):
+        props = bpy.context.scene.BIMStylesProperties
+        if style_type == "IfcExternallyDefinedSurfaceStyle":
+            return props.external_style_attributes
+        elif style_type == "IfcSurfaceStyleRefraction":
+            return props.refraction_style_attributes
+        elif style_type == "IfcSurfaceStyleLighting":
+            return props.lighting_style_colours
 
     @classmethod
     def import_presentation_styles(cls, style_type):
@@ -459,7 +501,7 @@ class Style(blenderbim.core.tool.Style):
     @classmethod
     def has_blender_external_style(cls, style_elements):
         external_style = style_elements.get("IfcExternallyDefinedSurfaceStyle", None)
-        return bool(external_style and external_style.Location.endswith(".blend"))
+        return bool(external_style and external_style.Location and external_style.Location.endswith(".blend"))
 
     @classmethod
     def is_editing_styles(cls):
@@ -479,3 +521,34 @@ class Style(blenderbim.core.tool.Style):
     @classmethod
     def change_current_style_type(cls, blender_material, style_type):
         blender_material.BIMStyleProperties.active_style_type = style_type
+
+    @classmethod
+    def get_styled_items(cls, style):
+        ifc_file = tool.Ifc.get()
+
+        inverses = list(ifc_file.get_inverse(style))
+        items = []
+        while inverses:
+            inverse = inverses.pop()
+            if inverse.is_a("IfcPresentationStyleAssignment"):
+                inverses.extend(ifc_file.get_inverse(inverse))
+                continue
+
+            if not (item := inverse.Item):
+                continue
+
+            if item.is_a("IfcMappedItem"):
+                items.extend(item.MappingSource.MappedRepresentation.Items)
+            else:
+                items.append(item)
+        return items
+
+    @classmethod
+    def assign_style_to_object(cls, style, obj):
+        """assigns `style` to `object` current representation"""
+        representation = tool.Geometry.get_active_representation(obj)
+        tool.Ifc.run("style.assign_representation_styles", shape_representation=representation, styles=[style])
+
+    @classmethod
+    def reload_material_from_ifc(cls, blender_material):
+        blender_material.BIMStyleProperties.active_style_type = blender_material.BIMStyleProperties.active_style_type

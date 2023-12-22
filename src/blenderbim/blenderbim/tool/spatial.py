@@ -628,6 +628,18 @@ class Spatial(blenderbim.core.tool.Spatial):
         return points
 
     @classmethod
+    def get_scaled_2d_vertices(cls, points):
+        model = tool.Ifc.get()
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(model)
+        for i in range(len(points)):
+            a = list(points[i])
+            a[0]/=unit_scale
+            a[1]/=unit_scale
+            points[i] = tuple(a)
+
+        return points
+
+    @classmethod
     def assign_swept_area_outer_curve_from_2d_vertices(cls, obj, vertices):
         body = cls.get_body_representation(obj)
         model = tool.Ifc.get()
@@ -658,9 +670,9 @@ class Spatial(blenderbim.core.tool.Spatial):
         relating_type = tool.Ifc.get().by_id(int(relating_type_id))
         ifc_class = relating_type.is_a()
         instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, tool.Ifc.get().schema)[0]
-        bpy.ops.bim.assign_class(obj=obj.name, ifc_class=instance_class)
+        bpy.ops.bim.assign_class(obj = obj.name, ifc_class = instance_class)
         element = tool.Ifc.get_entity(obj)
-        blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
+        tool.Ifc.run("type.assign_type", related_object = element, relating_type = relating_type)
 
     @classmethod
     def assign_relating_type_to_element(cls, ifc, Type, element, relating_type):

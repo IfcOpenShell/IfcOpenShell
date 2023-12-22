@@ -138,6 +138,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     openlca_port: IntProperty(name="OpenLCA IPC Port", default=8080)
     should_hide_empty_props: BoolProperty(name="Should Hide Empty Properties", default=True)
     should_setup_workspace: BoolProperty(name="Should Setup Workspace Layout for BIM", default=True)
+    should_setup_toolbar: BoolProperty(name="Always Show Toolbar In 3D Viewport", default=True, description="If disabled, the toolbar will only load when an IFC model is active")
     should_play_chaching_sound: BoolProperty(
         name="Should Make A Cha-Ching Sound When Project Costs Updates", default=False
     )
@@ -217,6 +218,8 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.prop(self, "should_hide_empty_props")
         row = layout.row()
         row.prop(self, "should_setup_workspace")
+        row = layout.row()
+        row.prop(self, "should_setup_toolbar")
         row = layout.row()
         row.prop(self, "should_play_chaching_sound")
         row = layout.row()

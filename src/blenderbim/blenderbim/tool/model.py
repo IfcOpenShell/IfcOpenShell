@@ -624,13 +624,16 @@ class Model(blenderbim.core.tool.Model):
             tool.Blender.Modifier.Array.constrain_children_to_parent(element)
 
     @classmethod
-    def regenerate_array(cls, parent_obj, data, keep_objs=False):
+    def regenerate_array(cls, parent_obj, data, array_layers_to_apply=tuple()):
+        """`array_layers_to_apply` - list of array layer indices to apply"""
         tool.Blender.Modifier.Array.remove_constraints(tool.Ifc.get_entity(parent_obj))
 
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         obj_stack = [parent_obj]
 
-        for array in data:
+        for array_i, array in enumerate(data):
+            # for `sync_children` we remove all previously generated children to regenerate them again
+            # to assure they are in complete sync (psets, etc) with the array parent
             if array["sync_children"]:
                 removed_children = set(array["children"])
                 for removed_child in removed_children:
@@ -645,16 +648,21 @@ class Model(blenderbim.core.tool.Model):
             total_existing_children = len(array["children"])
             children_elements = []
             children_objs = []
+
+            # calculate offset
             if array["method"] == "DISTRIBUTE":
                 divider = 1 if ((array["count"] - 1) == 0) else (array["count"] - 1)
-                base_offset = Vector([array["x"] / divider, array["y"] / divider, array["z"] / divider]) * unit_scale
+                base_offset = Vector([array["x"], array["y"], array["z"]]) / divider * unit_scale
             else:
                 base_offset = Vector([array["x"], array["y"], array["z"]]) * unit_scale
+
             for i in range(array["count"]):
                 if i == 0:
                     continue
                 offset = base_offset * i
+
                 for obj in obj_stack:
+                    # get currently proccesed array element and it's object
                     if child_i >= total_existing_children:
                         child_obj = tool.Spatial.duplicate_object_and_data(obj)
                         child_element = tool.Spatial.run_root_copy_class(obj=child_obj)
@@ -668,16 +676,17 @@ class Model(blenderbim.core.tool.Model):
                             child_obj = tool.Spatial.duplicate_object_and_data(obj)
                             child_element = tool.Spatial.run_root_copy_class(obj=child_obj)
 
-                    child_psets = ifcopenshell.util.element.get_psets(child_element)
-                    child_pset = child_psets.get("BBIM_Array")
+                    # add child pset
+                    child_pset = tool.Pset.get_element_pset(child_element, "BBIM_Array")
                     if child_pset:
                         ifcopenshell.api.run(
                             "pset.edit_pset",
                             tool.Ifc.get(),
-                            pset=tool.Ifc.get().by_id(child_pset["id"]),
+                            pset=child_pset,
                             properties={"Data": None},
                         )
 
+                    # set child object position
                     new_matrix = obj.matrix_world.copy()
                     if array["use_local_space"]:
                         current_obj_translation = obj.matrix_world @ offset
@@ -685,23 +694,29 @@ class Model(blenderbim.core.tool.Model):
                         current_obj_translation = obj.matrix_world.translation + offset
                     new_matrix.translation = current_obj_translation
                     child_obj.matrix_world = new_matrix
+
                     children_objs.append(child_obj)
                     children_elements.append(child_element)
                     child_i += 1
+
             obj_stack.extend(children_objs)
             array["children"] = [e.GlobalId for e in children_elements]
 
+            # handle elements unused in the array after regeneration
             removed_children = set(existing_children) - set(array["children"])
             for removed_child in removed_children:
                 element = tool.Ifc.get().by_guid(removed_child)
                 obj = tool.Ifc.get_object(element)
                 if obj:
-                    if keep_objs:
-                        pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
-                        pset = tool.Ifc.get().by_id(pset["id"])
-                        ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
-                    else:
-                        tool.Geometry.delete_ifc_object(obj)
+                    tool.Geometry.delete_ifc_object(obj)
+
+            if array_i in array_layers_to_apply:
+                for child_element in children_elements:
+                    pset = tool.Pset.get_element_pset(child_element, "BBIM_Array")
+                    ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=child_element, pset=pset)
+
+                array["children"] = []
+                array["count"] = 1
 
             bpy.context.view_layer.update()
 
@@ -852,6 +867,12 @@ class Model(blenderbim.core.tool.Model):
             obj.matrix_world = matrix
             return
         tool.Ifc.run("geometry.edit_object_placement", product=element, matrix=matrix, is_si=True)
+
+    @classmethod
+    def sync_object_ifc_position(cls, obj):
+        """make sure IFC position will be in sync with the Blender object position, if object was moved in Blender"""
+        if tool.Ifc.is_moved(obj):
+            blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
     @classmethod
     def get_element_matrix(cls, element, keep_local=False):
@@ -1088,6 +1109,9 @@ class Model(blenderbim.core.tool.Model):
             vertices.append(vertices[-1] * V(1, 0))
             edges.extend([(last_vert_i - 1, last_vert_i), (last_vert_i, 0)])
 
+            # flip edges direction for ccw polygon winding order
+            edges = [e[::-1] for e in edges]
+
         elif stair_type == "CONCRETE":
             define_generic_stair_treads()
 
@@ -1137,19 +1161,22 @@ class Model(blenderbim.core.tool.Model):
             if base_point.y > -base_slab_depth:
                 # stair doesn't meet the slab
                 vertices.append(base_point)
-                edges.append((0, len(vertices) - 1))
+                edges.append((len(vertices) - 1, 0))
                 bottom_nib_end = len(vertices) - 1
             else:
                 # slab overlaps stair
                 vertices.append(get_point_on_2d_line(y=start_vert.y - base_slab_depth))
                 vertices.append(start_vert + Vector((0, -base_slab_depth)))
                 last_vertex_i = len(vertices) - 1
-                edges.append((0, last_vertex_i))
+                edges.append((last_vertex_i, 0))
                 edges.append((last_vertex_i - 1, last_vertex_i))
                 bottom_nib_end = len(vertices) - 2
 
             # close the shape
-            edges.append((bottom_nib_end, top_nib_end))
+            edges.append((top_nib_end, bottom_nib_end))
+
+            # flip edges direction for ccw polygon winding order
+            edges = [e[::-1] for e in edges]
         else:
             raise Exception(f"Unsupported stair type: {stair_type}")
 

@@ -425,6 +425,7 @@ class BIMObjectProperties(PropertyGroup):
         default="NONE",
     )
     is_reassigning_class: BoolProperty(name="Is Reassigning Class")
+    is_renaming: BoolProperty(name="Is Renaming", default=False)
     location_checksum: StringProperty(name="Location Checksum")
     rotation_checksum: StringProperty(name="Rotation Checksum")
 
@@ -439,7 +440,6 @@ class BIMMaterialProperties(PropertyGroup):
     attributes: CollectionProperty(name="Attributes", type=Attribute)
     # In Blender, a material object can map to an IFC material, IFC surface style, or both
     ifc_style_id: IntProperty(name="IFC Style ID")
-    ifc_coordinate_id: IntProperty(name="IFC Coordinate ID")
     shading_checksum: StringProperty(name="Shading Checksum")
 
 
@@ -456,3 +456,15 @@ class BIMMeshProperties(PropertyGroup):
     ifc_parameters: CollectionProperty(name="IFC Parameters", type=IfcParameter)
     material_checksum: StringProperty(name="Material Checksum", default="[]")
     mesh_checksum: StringProperty(name="Mesh Checksum", default="")
+
+
+class BIMFacet(PropertyGroup):
+    name: StringProperty(name="Name")
+    pset: StringProperty(name="Pset")
+    value: StringProperty(name="Value")
+    type: StringProperty(name="Type")
+    comparison: StringProperty(name="Comparison")
+
+
+class BIMFilterGroup(PropertyGroup):
+    filters: CollectionProperty(type=BIMFacet, name="filters")

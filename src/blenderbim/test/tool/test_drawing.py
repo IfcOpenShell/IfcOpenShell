@@ -27,6 +27,7 @@ from test.bim.bootstrap import NewFile
 from blenderbim.tool.drawing import Drawing as subject
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.drawing.data import DecoratorData
+from mathutils import Vector
 
 import xml.etree.ElementTree as ET
 
@@ -803,7 +804,7 @@ class TestUpdateTextValue(NewFile):
         assert obj is not None, obj
         with bpy.context.temp_override(active_object=obj):
             bpy.ops.bim.enable_editing_text()
-            bpy.ops.bim.remove_text_literal(1)
+            bpy.ops.bim.remove_text_literal(literal_prop_id=1)
             props.literals[0].attributes["Literal"].string_value = "changed_value"
             props.font_size = "2.5"
             bpy.ops.bim.disable_editing_text()
@@ -847,3 +848,34 @@ class TestDrawingStyles(NewFile):
         self.setup_project_with_drawing()
         bpy.ops.bim.reload_drawing_styles()
         assert len(self.drawing_styles) == 3
+
+
+class TestAddReferenceImage(NewFile):
+    def test_run(self):
+        bpy.context.scene.BIMProjectProperties.template_file = "0"
+        bpy.ops.bim.create_project()
+        ifc_file = tool.Ifc.get()
+
+        filepath = Path("test/files/image.jpg").absolute()
+        bpy.ops.bim.add_reference_image(filepath=str(filepath))
+
+        obj = bpy.data.objects["IfcAnnotation/image"]
+        assert obj is not None
+        assert tool.Cad.are_vectors_equal(obj.dimensions, Vector((3.53982, 2.0, 0.0)))
+
+        material = obj.active_material
+        assert material.name == "image"
+        assert material.BIMMaterialProperties.ifc_style_id != 0
+
+        style = ifc_file.by_id(material.BIMMaterialProperties.ifc_style_id)
+        styled_items = set(tool.Style.get_styled_items(style))
+        representation_items = set(tool.Geometry.get_active_representation(obj).Items)
+        assert styled_items == representation_items
+
+        material_nodes = material.node_tree.nodes
+        texture_filepath = material_nodes["Image Texture"].image.filepath
+        texture_filepath = Path(tool.Blender.blender_path_to_posix(texture_filepath))
+        assert texture_filepath == filepath
+
+        uv_node = material_nodes["Texture Coordinate"]
+        assert len(uv_node.outputs["Generated"].links[:]) == 1

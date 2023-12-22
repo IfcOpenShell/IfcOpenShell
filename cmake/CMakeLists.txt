@@ -585,23 +585,31 @@ if(HDF5_SUPPORT)
 
             if(WIN32)
                 # Windows
-                set(zlib_post zlib)
-                set(lib_ext lib)
-            elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-                # macOS
-                set(zlib_post libz)
-                set(lib_ext dylib)
+                set(HDF5_LIBRARIES)
+                find_package(HDF5 COMPONENTS CXX)
+                if (HDF5_FOUND)
+                    set(HDF5_LIBRARIES ${HDF5_CXX_LIBRARIES})
+                endif()
+                list(APPEND HDF5_LIBRARIES
+                    "${HDF5_LIBRARY_DIR}/zlib.lib"
+                )
             else()
-                # linux
-                set(zlib_post libz)
-                set(lib_ext so)
-            endif()
+                if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+                    # macOS
+                    set(zlib_post libz)
+                    set(lib_ext dylib)
+                else()
+                    # linux
+                    set(zlib_post libz)
+                    set(lib_ext so)
+                endif()
 
-            set(HDF5_LIBRARIES
-                "${HDF5_LIBRARY_DIR}/libhdf5_cpp.${lib_ext}"
-                "${HDF5_LIBRARY_DIR}/libhdf5.${lib_ext}"
-                "${HDF5_LIBRARY_DIR}/${zlib_post}.${lib_ext}"
-            )
+                set(HDF5_LIBRARIES
+                    "${HDF5_LIBRARY_DIR}/libhdf5_cpp.${lib_ext}"
+                    "${HDF5_LIBRARY_DIR}/libhdf5.${lib_ext}"
+                    "${HDF5_LIBRARY_DIR}/${zlib_post}.${lib_ext}"
+                )
+            endif()
         endif()
     endif()
 

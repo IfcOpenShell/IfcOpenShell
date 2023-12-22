@@ -60,12 +60,15 @@ class Facet:
         for i, name in enumerate(self.parameters):
             setattr(self, name.replace("@", ""), parameters[i])
 
-    def asdict(self):
+    def asdict(self, clause_type):
         results = {}
         for name in self.parameters:
             value = getattr(self, name.replace("@", ""))
             if value is not None:
                 results[name] = value if "@" in name else self.to_ids_value(value)
+        if clause_type == "applicability":
+            for key in ["@uri", "@instructions", "@minOccurs", "@maxOccurs"]:
+                results.pop(key, None)
         return results
 
     def parse(self, xml):
@@ -85,11 +88,16 @@ class Facet:
     def filter(self, ifc_file, elements):
         return [e for e in elements if self(e)]
 
-    def to_string(self, clause_type):
+    def to_string(self, clause_type, specification=None, requirement=None):
         if clause_type == "applicability":
             templates = self.applicability_templates
         elif clause_type == "requirement":
-            templates = self.requirement_templates
+            is_prohibited = False
+            if specification.maxOccurs == 0:
+                is_prohibited = not is_prohibited
+            if requirement.maxOccurs == 0:
+                is_prohibited = not is_prohibited
+            templates = self.prohibited_templates if is_prohibited else self.requirement_templates
 
         for template in templates:
             total_variables = len(template) - len(template.replace("{", ""))
@@ -138,6 +146,10 @@ class Entity(Facet):
         self.requirement_templates = [
             "Shall be {name} data of type {predefinedType}",
             "Shall be {name} data",
+        ]
+        self.prohibited_templates = [
+            "Shall not be {name} data of type {predefinedType}",
+            "Shall not be {name} data",
         ]
         super().__init__(name, predefinedType, instructions)
 
@@ -191,6 +203,10 @@ class Attribute(Facet):
         self.requirement_templates = [
             "The {name} shall be {value}",
             "The {name} shall be provided",
+        ]
+        self.prohibited_templates = [
+            "The {name} shall not be {value}",
+            "The {name} shall not be provided",
         ]
         super().__init__(name, value, minOccurs, maxOccurs, instructions)
 
@@ -311,6 +327,13 @@ class Classification(Facet):
             "Shall be classified as {value}",
             "Shall be classified",
         ]
+        self.prohibited_templates = [
+            "Shall not have a {system} reference of {value}",
+            "Shall not be classified using {system}",
+            "Shall not be classified as {value}",
+            "Shall not be classified",
+        ]
+
         super().__init__(value, system, uri, minOccurs, maxOccurs, instructions)
 
     def filter(self, ifc_file, elements):
@@ -369,6 +392,10 @@ class PartOf(Facet):
         self.requirement_templates = [
             "An element must have an {relation} relationship with an {name}",
             "An element must have an {relation} relationship",
+        ]
+        self.prohibited_templates = [
+            "An element must not have an {relation} relationship with an {name}",
+            "An element must not have an {relation} relationship",
         ]
         super().__init__(name, predefinedType, relation, minOccurs, maxOccurs, instructions)
 
@@ -583,6 +610,10 @@ class Property(Facet):
         self.requirement_templates = [
             "{name} data shall be {value} and in the dataset {propertySet}",
             "{name} data shall be provided in the dataset {propertySet}",
+        ]
+        self.prohibited_templates = [
+            "{name} data shall not be {value} and in the dataset {propertySet}",
+            "{name} data shall not be provided in the dataset {propertySet}",
         ]
         super().__init__(propertySet, name, value, datatype, uri, minOccurs, maxOccurs, instructions)
 
@@ -844,6 +875,10 @@ class Material(Facet):
         self.requirement_templates = [
             "Shall have a material of {value}",
             "Shall have a material",
+        ]
+        self.prohibited_templates = [
+            "Shall not have a material of {value}",
+            "Shall not have a material",
         ]
         super().__init__(value, uri, minOccurs, maxOccurs, instructions)
 

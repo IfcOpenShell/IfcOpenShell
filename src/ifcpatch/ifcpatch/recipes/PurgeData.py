@@ -47,7 +47,7 @@ class Patcher:
         .. code:: python
 
             # Watch the world burn
-            ifcpatch.execute({"input": model, "recipe": "PurgeData", "arguments": []})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "PurgeData", "arguments": []})
         """
         self.src = src
         self.file = file
@@ -173,3 +173,10 @@ class Patcher:
 
         for element in self.file.by_type("IfcProfileDef"):
             element.ProfileName = None
+
+        for element in self.file.by_type("IfcShapeAspect"):
+            element.Name = None
+            element.Description = None
+
+        for element in self.file.by_type("IfcPresentationLayerAssignment"):
+            self.file.remove(element)

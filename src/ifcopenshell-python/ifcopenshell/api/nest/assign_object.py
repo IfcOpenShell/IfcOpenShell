@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.element
 
 
 class Usecase:
@@ -46,7 +47,7 @@ class Usecase:
         construction models. Its main usecase is in modular construction, kit of
         parts, or fabrication models.
 
-        As a product may only have a single locaion in the "spatial
+        As a product may only have a single location in the "spatial
         decomposition" tree, assigning an nesting relationship will remove any
         previous aggregation, containment, or nesting relationships it may have.
 
@@ -115,7 +116,10 @@ class Usecase:
                 nests.RelatedObjects = related_objects
                 ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": nests})
             else:
+                history = nests.OwnerHistory
                 self.file.remove(nests)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(self.file, history)
 
         if is_nested_by:
             related_objects = list(is_nested_by.RelatedObjects)

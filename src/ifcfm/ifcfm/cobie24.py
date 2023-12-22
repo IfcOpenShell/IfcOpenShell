@@ -413,7 +413,7 @@ def get_space_data(ifc_file, element):
         "CreatedOn": get_created_on(element),
         "Category": get_category(element),
         "FloorName": floor_name,
-        "Description": val(element.Description),
+        "Description": val(element.LongName),
         "ExternalSystem": get_external_system(element),
         "ExternalObject": element.is_a(),
         "ExternalIdentifier": element.GlobalId,
@@ -1036,6 +1036,8 @@ def get_sheet_name(element):
 
 
 config = {
+    "name": "COBie 2.4",
+    "description": "Construction-Operations Building information exchange specification by NBIMS-US and BS 1192-4:2014.",
     "colours": {
         "h": "c0c0c0",  # Header data
         "r": "ffff99",  # Required

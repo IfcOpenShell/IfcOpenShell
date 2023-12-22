@@ -189,7 +189,7 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
 
         if not self.keep_objs:
             data[self.item]["count"] = 1
-        tool.Model.regenerate_array(parent, data, self.keep_objs)
+        tool.Model.regenerate_array(parent, data, array_layers_to_apply=[self.item] if self.keep_objs else [])
 
         pset = tool.Ifc.get().by_id(pset["id"])
         if len(data) == 1:

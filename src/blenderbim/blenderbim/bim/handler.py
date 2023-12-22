@@ -21,6 +21,7 @@ import bpy
 import json
 import addon_utils
 import ifcopenshell.api.owner.settings
+import blenderbim.bim
 import blenderbim.tool as tool
 import blenderbim.core.owner as core_owner
 from bpy.app.handlers import persistent
@@ -57,6 +58,10 @@ def name_callback(obj, data):
         return
 
     if not obj.BIMObjectProperties.ifc_definition_id:
+        return
+
+    if obj.BIMObjectProperties.is_renaming:
+        obj.BIMObjectProperties.is_renaming = False
         return
 
     element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
@@ -249,85 +254,58 @@ def viewport_shading_changed_callback(area):
         bpy.context.scene.BIMStylesProperties.active_style_type = "External"
 
 
-if getattr(bpy.types, "SCENE_PT_scene"):
-
-    class Override_SCENE_PT_scene(bpy.types.SCENE_PT_scene):
-        bl_idname = "SCENE_PT_scene_override"
-
-        @classmethod
-        def poll(cls, context):
-            return tool.Blender.is_tab(context, "BLENDER")
+@classmethod
+def poll_check_blender_tab(cls, context):
+    return tool.Blender.is_tab(context, "BLENDER")
 
 
-if getattr(bpy.types, "SCENE_PT_unit"):
+def get_override_scene_panel(panel_name):
+    original_panel = getattr(bpy.types, panel_name)
 
-    class Override_SCENE_PT_unit(bpy.types.SCENE_PT_unit):
-        bl_idname = "SCENE_PT_unit_override"
+    override_panel = type(f"Override_{panel_name}", (original_panel,), {})
+    override_panel.bl_idname = f"{panel_name}_override"
 
-        @classmethod
-        def poll(cls, context):
-            return tool.Blender.is_tab(context, "BLENDER")
+    # some blender panel depend on other and register_class will throw an error
+    # if we won't override their `bl_parent_id`
+    bl_parent_id = getattr(override_panel, "bl_parent_id", None)
+    if bl_parent_id is not None:
+        override_panel.bl_parent_id = f"{bl_parent_id}_override"
 
-
-if getattr(bpy.types, "SCENE_PT_physics"):
-
-    class Override_SCENE_PT_physics(bpy.types.SCENE_PT_physics):
-        bl_idname = "SCENE_PT_physics_override"
+    # override poll method
+    poll = getattr(override_panel, "poll", None)
+    if poll is None:
+        override_panel.poll = poll_check_blender_tab
+    else:
 
         @classmethod
-        def poll(cls, context):
-            return tool.Blender.is_tab(context, "BLENDER")
+        def wrapped_poll(cls, context):
+            return super(override_panel, cls).poll(context) and poll_check_blender_tab.__func__(cls, context)
+
+        override_panel.poll = wrapped_poll
+
+    return override_panel
 
 
-if getattr(bpy.types, "SCENE_PT_rigid_body_world"):
-
-    class Override_SCENE_PT_rigid_body_world(bpy.types.SCENE_PT_rigid_body_world):
-        bl_idname = "SCENE_PT_rigid_body_world_override"
-
-        @classmethod
-        def poll(cls, context):
-            return tool.Blender.is_tab(context, "BLENDER")
-
-
-if getattr(bpy.types, "SCENE_PT_audio"):
-
-    class Override_SCENE_PT_audio(bpy.types.SCENE_PT_audio):
-        bl_idname = "SCENE_PT_audio_override"
-
-        @classmethod
-        def poll(cls, context):
-            return tool.Blender.is_tab(context, "BLENDER")
-
-
-if getattr(bpy.types, "SCENE_PT_keying_sets"):
-
-    class Override_SCENE_PT_keying_sets(bpy.types.SCENE_PT_keying_sets):
-        bl_idname = "SCENE_PT_keying_sets_override"
-
-        @classmethod
-        def poll(cls, context):
-            return tool.Blender.is_tab(context, "BLENDER")
-
-
-if getattr(bpy.types, "SCENE_PT_custom_props"):
-
-    class Override_SCENE_PT_custom_props(bpy.types.SCENE_PT_custom_props):
-        bl_idname = "SCENE_PT_custom_props_override"
-
-        @classmethod
-        def poll(cls, context):
-            return tool.Blender.is_tab(context, "BLENDER")
-
-
-# available on Blender 4.0+
-if getattr(bpy.types, "SCENE_PT_simulation", None):
-
-    class Override_SCENE_PT_simulation(bpy.types.SCENE_PT_simulation):
-        bl_idname = "SCENE_PT_simulation_override"
-
-        @classmethod
-        def poll(cls, context):
-            return tool.Blender.is_tab(context, "BLENDER")
+# TODO: possibly override scene panels from other addons too?
+# list can be updated from
+# https://projects.blender.org/blender/blender/src/branch/main/scripts/startup/bl_ui/properties_scene.py#L421
+OVERRIDE_SCENE_PANELS = (
+    "SCENE_PT_scene",
+    "SCENE_PT_unit",
+    "SCENE_PT_physics",
+    "SCENE_PT_rigid_body_world",
+    "SCENE_PT_rigid_body_world_settings",
+    "SCENE_PT_rigid_body_cache",
+    "SCENE_PT_rigid_body_field_weights",
+    "SCENE_PT_audio",
+    "SCENE_PT_keying_sets",
+    "SCENE_PT_custom_props",
+    # after SCENE_PT_keying_sets
+    "SCENE_PT_keying_set_paths",
+    "SCENE_PT_keyframing_settings",
+)
+if bpy.app.version >= (4, 0):
+    OVERRIDE_SCENE_PANELS += ("SCENE_PT_simulation",)
 
 
 @persistent
@@ -356,6 +334,9 @@ def load_post(scene):
     ifcopenshell.api.owner.settings.get_application = get_application
     AuthoringData.type_thumbnails = {}
 
+    if not bpy.context.preferences.addons["blenderbim"].preferences.should_setup_toolbar:
+        tool.Blender.unregister_toolbar()
+
     if bpy.context.preferences.addons["blenderbim"].preferences.should_setup_workspace:
         if "BIM" in bpy.data.workspaces:
             bpy.context.window.workspace = bpy.data.workspaces["BIM"]
@@ -365,23 +346,14 @@ def load_post(scene):
         # To improve usability for new users, we hijack the scene properties
         # tab. We override default scene properties panels with our own poll
         # to hide them unless the user has chosen to view Blender properties.
-        for panel in [
-            "SCENE_PT_scene",
-            "SCENE_PT_unit",
-            "SCENE_PT_physics",
-            "SCENE_PT_rigid_body_world",
-            "SCENE_PT_audio",
-            "SCENE_PT_keying_sets",
-            "SCENE_PT_simulation",
-            "SCENE_PT_custom_props",
-        ]:
-            if getattr(bpy.types, panel, None):
-                try:
-                    bpy.utils.register_class(globals()[f"Override_{panel}"])
-                    bpy.utils.unregister_class(getattr(bpy.types, panel))
-                except:
-                    pass
-
+        for panel in OVERRIDE_SCENE_PANELS:
+            if panel in blenderbim.bim.overridden_scene_panels:
+                continue
+            override_panel = get_override_scene_panel(panel)
+            original_panel = getattr(bpy.types, panel)
+            bpy.utils.register_class(override_panel)
+            bpy.utils.unregister_class(original_panel)
+            blenderbim.bim.overridden_scene_panels[panel] = (original_panel, override_panel)
     # https://blender.stackexchange.com/questions/140644/how-can-make-the-state-of-a-boolean-property-relative-to-the-3d-view-area
     for screen in bpy.data.screens:
         if len(screen.BIMAreaProperties) == 20:

@@ -44,6 +44,7 @@ modules = {
     "spatial": None,
     "void": None,
     "aggregate": None,
+    "nest": None,
     "geometry": None,
     "fm": None,
     "resource": None,
@@ -122,6 +123,8 @@ classes = [
     prop.BIMCollectionProperties,
     prop.BIMMaterialProperties,
     prop.BIMMeshProperties,
+    prop.BIMFacet,
+    prop.BIMFilterGroup,
     ui.BIM_UL_generic,
     ui.BIM_UL_topics,
     ui.BIM_ADDON_preferences,
@@ -178,6 +181,7 @@ addon_keymaps = []
 icons = None
 is_registering = False
 last_commit_hash = "8888888"
+overridden_scene_panels = dict()
 
 
 def on_register(scene):
@@ -282,17 +286,8 @@ def unregister():
             km.keymap_items.remove(kmi)
     addon_keymaps.clear()
 
-    for panel in [
-        "SCENE_PT_scene",
-        "SCENE_PT_unit",
-        "SCENE_PT_physics",
-        "SCENE_PT_rigid_body_world",
-        "SCENE_PT_audio",
-        "SCENE_PT_keying_sets",
-        "SCENE_PT_simulation",
-        "SCENE_PT_custom_props",
-    ]:
-        try:
-            bpy.utils.unregister_class(getattr(handler, f"Override_{panel}"))
-        except:
-            pass
+    for panel in tuple(overridden_scene_panels.keys()):
+        original_panel, override_panel = overridden_scene_panels[panel]
+        bpy.utils.unregister_class(override_panel)
+        bpy.utils.register_class(original_panel)
+        del overridden_scene_panels[panel]

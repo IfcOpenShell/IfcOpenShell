@@ -19,7 +19,7 @@ def clone_repo(ifcgit, remote_url, local_folder, operator):
     ifcgit.load_anyifc(repo)
 
 
-def discard_uncomitted(ifcgit, ifc):
+def discard_uncommitted(ifcgit, ifc):
     path_ifc = ifc.get_path()
     # NOTE this is calling the git binary in a subprocess
     ifcgit.git_checkout(path_ifc)
@@ -27,11 +27,15 @@ def discard_uncomitted(ifcgit, ifc):
 
 
 def commit_changes(ifcgit, ifc, repo):
+    """Commit and create new branches as required"""
     path_ifc = ifc.get_path()
-    ifcgit.git_commit(path_ifc)
 
     if repo.head.is_detached:
+        ifcgit.git_commit(path_ifc)
         ifcgit.create_new_branch()
+    else:
+        ifcgit.checkout_new_branch(path_ifc)
+        ifcgit.git_commit(path_ifc)
 
 
 def add_tag(ifcgit, repo):

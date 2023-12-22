@@ -30,11 +30,13 @@ classes = (
     operator.AddDrawingStyleAttribute,
     operator.AddDrawingToSheet,
     operator.AddReference,
+    operator.AddReferenceImage,
     operator.AddReferenceToSheet,
     operator.AddSchedule,
     operator.AddScheduleToSheet,
     operator.AddSheet,
     operator.AddTextLiteral,
+    operator.AssignSelectedObjectAsProduct,
     operator.BuildSchedule,
     operator.CleanWireframes,
     operator.ContractSheet,
@@ -50,11 +52,13 @@ classes = (
     operator.DisableEditingText,
     operator.DuplicateDrawing,
     operator.EditAssignedProduct,
+    operator.EditElementFilter,
     operator.EditSheet,
     operator.EditText,
     operator.EditTextPopup,
     operator.EnableAddAnnotationType,
     operator.EnableEditingAssignedProduct,
+    operator.EnableEditingElementFilter,
     operator.EnableEditingText,
     operator.ExpandSheet,
     operator.ExpandTargetView,
@@ -95,6 +99,7 @@ classes = (
     ui.BIM_PT_sheets,
     ui.BIM_PT_drawings,
     ui.BIM_PT_camera,
+    ui.BIM_PT_element_filters,
     ui.BIM_PT_drawing_underlay,
     ui.BIM_PT_schedules,
     ui.BIM_PT_references,
@@ -123,6 +128,7 @@ def register():
     bpy.types.TextCurve.BIMTextProperties = bpy.props.PointerProperty(type=prop.BIMTextProperties)
     bpy.app.handlers.load_post.append(handler.toggleDecorationsOnLoad)
     bpy.app.handlers.depsgraph_update_pre.append(handler.depsgraph_update_pre_handler)
+    bpy.types.VIEW3D_MT_image_add.append(ui.add_object_button)
 
 
 def unregister():
@@ -136,3 +142,4 @@ def unregister():
     del bpy.types.TextCurve.BIMTextProperties
     bpy.app.handlers.load_post.remove(handler.toggleDecorationsOnLoad)
     bpy.app.handlers.depsgraph_update_pre.remove(handler.depsgraph_update_pre_handler)
+    bpy.types.VIEW3D_MT_image_add.remove(ui.add_object_button)

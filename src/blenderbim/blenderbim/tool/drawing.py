@@ -600,6 +600,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         ifc_importer.file = tool.Ifc.get()
         ifc_importer.calculate_unit_scale()
         ifc_importer.process_context_filter()
+        ifc_importer.material_creator.load_existing_materials()
         ifc_importer.create_generic_elements(elements)
         for obj in ifc_importer.added_data.values():
             tool.Collector.assign(obj)
@@ -1635,11 +1636,32 @@ class Drawing(blenderbim.core.tool.Drawing):
 
         subcontexts = []
         target_view = cls.get_drawing_target_view(drawing)
-        context_filters = [("Model", "Body", target_view), ("Model", "Body", "MODEL_VIEW")]
+
         if target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW"):
-            plan_contexts = [("Plan", "Body", target_view), ("Plan", "Body", "MODEL_VIEW")]
-            plan_contexts.extend(context_filters)
-            context_filters = plan_contexts
+            context_filters = [
+                ("Plan", "Body", target_view),
+                ("Plan", "Body", "MODEL_VIEW"),
+                ("Plan", "Facetation", target_view),
+                ("Plan", "Facetation", "MODEL_VIEW"),
+                ("Model", "Body", target_view),
+                ("Model", "Body", "MODEL_VIEW"),
+                ("Model", "Facetation", target_view),
+                ("Model", "Facetation", "MODEL_VIEW"),
+                ("Plan", "Annotation", target_view),
+                ("Plan", "Annotation", "MODEL_VIEW"),
+                ("Model", "Annotation", target_view),
+                ("Model", "Annotation", "MODEL_VIEW"),
+            ]
+        else:
+            context_filters = [
+                ("Model", "Body", target_view),
+                ("Model", "Body", "MODEL_VIEW"),
+                ("Model", "Facetation", target_view),
+                ("Model", "Facetation", "MODEL_VIEW"),
+                ("Model", "Annotation", target_view),
+                ("Model", "Annotation", "MODEL_VIEW"),
+            ]
+
         for context_filter in context_filters:
             subcontext = ifcopenshell.util.representation.get_context(tool.Ifc.get(), *context_filter)
             if subcontext:
@@ -1652,10 +1674,12 @@ class Drawing(blenderbim.core.tool.Drawing):
                 subcontext = current_representation.ContextOfItems
                 current_representation_subcontext = tool.Geometry.get_subcontext_parameters(subcontext)
 
+            has_context = False
             for subcontext in subcontexts:
                 # prioritize already active representation if it matches the subcontext
                 # (element could have multiple representations in the same subcontext)
                 if current_representation and subcontext == current_representation_subcontext:
+                    has_context = True
                     break
                 priority_representation = ifcopenshell.util.representation.get_representation(element, *subcontext)
                 if priority_representation:
@@ -1668,7 +1692,12 @@ class Drawing(blenderbim.core.tool.Drawing):
                         is_global=True,
                         should_sync_changes_first=True,
                     )
+                    has_context = True
                     break
+
+            if not has_context:
+                obj.hide_set(True)
+                obj.hide_render = True
 
     @classmethod
     def get_elements_in_camera_view(cls, camera, objs):
@@ -1689,15 +1718,17 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def is_in_camera_view(cls, obj, camera_inverse_matrix, x, y, clip_start, clip_end):
         local_bbox = [camera_inverse_matrix @ obj.matrix_world @ Vector(v) for v in obj.bound_box]
-        for v in local_bbox:
-            if v.z < -clip_start and v.z > -clip_end and abs(v.x) < x and abs(v.y) < y:
-                return True
-        if any([v.z > -clip_start for v in local_bbox]) and any([v.z < -clip_end for v in local_bbox]):
-            return True
-        elif any([v.x < -x for v in local_bbox]) and any([v.x > x for v in local_bbox]):
-            return True
-        elif any([v.y < -y for v in local_bbox]) and any([v.y > y for v in local_bbox]):
-            return True
+        local_x = [v.x for v in local_bbox]
+        local_y = [v.y for v in local_bbox]
+        local_z = [v.z for v in local_bbox]
+        aabb1_min = (-x/2, -y/2, -clip_end)
+        aabb1_max = (x/2, y/2, -clip_start)
+        aabb2_min = (min(local_x), min(local_y), min(local_z))
+        aabb2_max = (max(local_x), max(local_y), max(local_z))
+        for i in range(3):
+            if aabb1_max[i] < aabb2_min[i] or aabb1_min[i] > aabb2_max[i]:
+                return False
+        return True
 
     @classmethod
     def is_intersecting_camera(cls, obj, camera):

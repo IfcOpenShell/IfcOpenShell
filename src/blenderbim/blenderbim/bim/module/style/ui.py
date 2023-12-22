@@ -18,11 +18,11 @@
 
 import bpy
 import blenderbim.bim.helper
+import blenderbim.tool as tool
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.style.data import StylesData, StyleAttributesData
 from bl_ui.properties_material import MaterialButtonsPanel
-from blenderbim.tool.style import TEXTURE_MAPS_BY_METHODS, STYLE_TEXTURE_PROPS_MAP
 
 
 class BIM_PT_styles(Panel):
@@ -57,12 +57,17 @@ class BIM_PT_styles(Panel):
             row.operator("bim.load_styles", text="", icon="IMPORT").style_type = self.props.style_type
             return
 
+        self.layout.template_list("BIM_UL_styles", "", self.props, "styles", self.props, "active_style_index")
+
+        # adding a new IfcSurfaceStyle
         if self.props.is_adding:
             box = self.layout.box()
             row = box.row()
             row.prop(self.props, "style_name", text="Name")
             if self.props.style_type == "IfcSurfaceStyle":
                 row = box.row()
+                # NOTE: user must choose 1 of the style elements to create IfcSurfaceStyle
+                # otherwise it won't be a valid IFC
                 row.prop(self.props, "surface_style_class", text="Class")
                 if self.props.surface_style_class in ("IfcSurfaceStyleShading", "IfcSurfaceStyleRendering"):
                     row = box.row()
@@ -71,15 +76,25 @@ class BIM_PT_styles(Panel):
             row.operator("bim.add_presentation_style", text="Save New Style", icon="CHECKMARK")
             row.operator("bim.disable_adding_presentation_style", text="", icon="CANCEL")
 
+        # style ui tools
         if self.props.styles and self.props.active_style_index < len(self.props.styles):
             row = self.layout.row(align=True)
             style = self.props.styles[self.props.active_style_index]
+            material_name = StylesData.data["styles_to_blender_material_names"][self.props.active_style_index]
+            material = bpy.data.materials[material_name]
+
             op = row.operator("bim.enable_editing_style", text="Edit Style", icon="GREASEPENCIL")
             op.style = style.ifc_definition_id
             row.operator("bim.select_by_style", text="", icon="RESTRICT_SELECT_OFF").style = style.ifc_definition_id
             row.operator("bim.remove_style", text="", icon="X").style = style.ifc_definition_id
 
+            row = self.layout.row(align=True)
+            row.prop(material.BIMStyleProperties, "active_style_type", icon="SHADING_RENDERED", text="")
+            op = row.operator("bim.update_current_style", icon="FILE_REFRESH", text="")
+            op.style_id = style.ifc_definition_id
+
             if self.props.style_type == "IfcSurfaceStyle":
+                self.layout.label(text="Surface Style Element:")
                 col = self.layout.column(align=True)
 
                 row = col.row(align=True)
@@ -104,8 +119,7 @@ class BIM_PT_styles(Panel):
                 op.ifc_class = "IfcExternallyDefinedSurfaceStyle"
                 op.style = style.ifc_definition_id
 
-        self.layout.template_list("BIM_UL_styles", "", self.props, "styles", self.props, "active_style_index")
-
+        # display style elements props during edit
         if self.props.is_editing_style:
             if self.props.is_editing_class == "IfcSurfaceStyle":
                 blenderbim.bim.helper.draw_attributes(self.props.attributes, self.layout)
@@ -116,6 +130,14 @@ class BIM_PT_styles(Panel):
                 self.draw_surface_style_shading()
             elif self.props.is_editing_class == "IfcSurfaceStyleRendering":
                 self.draw_surface_style_rendering()
+            elif self.props.is_editing_class == "IfcExternallyDefinedSurfaceStyle":
+                self.draw_externally_defined_surface_style()
+            elif self.props.is_editing_class == "IfcSurfaceStyleWithTextures":
+                self.draw_surface_style_with_textures()
+            elif self.props.is_editing_class == "IfcSurfaceStyleRefraction":
+                self.draw_refraction_surface_style()
+            else:  # IfcSurfaceStyleLighting
+                self.draw_lighting_surface_style()
 
     def draw_surface_style_shading(self):
         row = self.layout.row()
@@ -134,8 +156,12 @@ class BIM_PT_styles(Panel):
         row = self.layout.row()
         row.prop(self.props, "reflectance_method")
 
+        if self.props.reflectance_method not in ("PHYSICAL", "NOTDEFINED", "FLAT"):
+            self.layout.label(text=f"Supported reflectance methods are:")
+            self.layout.label(text=f"PHYSICAL / NOTDEFINED / FLAT")
+
         row = self.layout.row(align=True)
-        row.label(text="Diffuse")
+        row.label(text="Emissive" if self.props.reflectance_method == "FLAT" else "Diffuse")
         row.prop(self.props, "diffuse_colour_class", text="")
         if self.props.diffuse_colour_class == "IfcColourRgb":
             row.prop(self.props, "diffuse_colour", text="")
@@ -184,23 +210,49 @@ class BIM_PT_styles(Panel):
         row.operator("bim.edit_surface_style", text="Save Rendering Style", icon="CHECKMARK")
         row.operator("bim.disable_editing_style", text="", icon="CANCEL")
 
+    def draw_surface_style_with_textures(self):
+        textures = self.props.textures
+        row = self.layout.row(align=True)
+        row.label(text=f"Style has {len(textures)} textures", icon="SHADING_TEXTURE")
+        row.operator("bim.add_surface_texture", text="", icon="ADD")
+        self.layout.prop(self.props, "uv_mode")
 
-def draw_style_ui(self, context):
-    mat = context.material
-    props = mat.BIMMaterialProperties
-    style_props = mat.BIMStyleProperties
-    row = self.layout.row(align=True)
-    if not props.ifc_style_id:
-        row.operator("bim.add_style", icon="ADD")
-        return
+        for i, texture in enumerate(textures):
+            split = self.layout.split(factor=0.30, align=True)
+            split.column(align=True).prop(texture, "mode", text="")
 
-    row.prop(style_props, "active_style_type", icon="SHADING_RENDERED", text="")
-    row.operator("bim.update_current_style", icon="FILE_REFRESH", text="")
-    row = self.layout.row(align=True)
-    row.operator("bim.update_style_colours", icon="GREASEPENCIL")
-    row.operator("bim.update_style_textures", icon="TEXTURE", text="")
-    row.operator("bim.unlink_style", icon="UNLINKED", text="")
-    row.operator("bim.remove_style", icon="X", text="").style = props.ifc_style_id
+            # path
+            row = split.column(align=True).row(align=True)
+            row.prop(texture, "path", text="")
+            op_path = row.operator("bim.choose_texture_map_path", text="", icon="FILEBROWSER")
+            op_clear = row.operator("bim.remove_texture_map", text="", icon="X")
+            op_path.texture_map_index = op_clear.texture_map_index = i
+
+        row = self.layout.row(align=True)
+        row.operator("bim.edit_surface_style", text="Save Texture Style", icon="CHECKMARK")
+        row.operator("bim.disable_editing_style", text="", icon="CANCEL")
+
+    def draw_externally_defined_surface_style(self):
+        row = self.layout.row()
+        op = row.operator("bim.browse_external_style", icon="APPEND_BLEND", text="Append From Blend File")
+        style = self.props.styles[self.props.active_style_index]
+        op.active_surface_style_id = style.ifc_definition_id
+        blenderbim.bim.helper.draw_attributes(self.props.external_style_attributes, self.layout)
+        row = self.layout.row(align=True)
+        row.operator("bim.edit_surface_style", text="Save External Style", icon="CHECKMARK")
+        row.operator("bim.disable_editing_style", text="", icon="CANCEL")
+
+    def draw_refraction_surface_style(self):
+        blenderbim.bim.helper.draw_attributes(self.props.refraction_style_attributes, self.layout)
+        row = self.layout.row(align=True)
+        row.operator("bim.edit_surface_style", text="Save Refraction Style", icon="CHECKMARK")
+        row.operator("bim.disable_editing_style", text="", icon="CANCEL")
+
+    def draw_lighting_surface_style(self):
+        blenderbim.bim.helper.draw_attributes(self.props.lighting_style_colours, self.layout)
+        row = self.layout.row(align=True)
+        row.operator("bim.edit_surface_style", text="Save Lighting Style", icon="CHECKMARK")
+        row.operator("bim.disable_editing_style", text="", icon="CANCEL")
 
 
 class BIM_PT_style(MaterialButtonsPanel, Panel):
@@ -221,11 +273,15 @@ class BIM_PT_style(MaterialButtonsPanel, Panel):
     def draw(self, context):
         mat = context.material
         props = mat.BIMMaterialProperties
-        draw_style_ui(self, context)
+        row = self.layout.row(align=True)
         if not props.ifc_style_id:
+            row.operator("bim.add_style", icon="ADD")
             return
         row = self.layout.row(align=True)
-        row.prop(mat, "diffuse_color", text="Viewport Color" if mat.use_nodes else "Render Color")
+        row.operator("bim.update_style_colours", icon="GREASEPENCIL")
+        row.operator("bim.update_style_textures", icon="TEXTURE", text="")
+        row.operator("bim.unlink_style", icon="UNLINKED", text="")
+        row.operator("bim.remove_style", icon="X", text="").style = props.ifc_style_id
 
 
 class BIM_PT_style_attributes(Panel):
@@ -273,61 +329,6 @@ class BIM_PT_style_attributes(Panel):
                 row.label(text=attribute["value"])
 
 
-class BIM_PT_external_style_attributes(Panel):
-    bl_label = "External Surface Style"
-    bl_idname = "BIM_PT_external_style_attributes"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "material"
-    bl_parent_id = "BIM_PT_style"
-
-    @classmethod
-    def poll(cls, context):
-        if not IfcStore.get_file():
-            return False
-        try:
-            return bool(context.active_object.active_material.BIMMaterialProperties.ifc_style_id)
-        except:
-            return False
-
-    def draw(self, context):
-        if not StyleAttributesData.is_loaded or (
-            context.active_object.active_material.BIMMaterialProperties.ifc_style_id
-            != StyleAttributesData.data["ifc_style_id"]
-        ):
-            StyleAttributesData.load()
-
-        mat = context.active_object.active_material
-        mprops = mat.BIMMaterialProperties
-        props = mat.BIMStyleProperties
-
-        external_style = StyleAttributesData.data["style_elements"].get("IfcExternallyDefinedSurfaceStyle", None)
-        if not external_style:
-            row = self.layout.row(align=True)
-            row.operator("bim.browse_external_style", text="Add External Style", icon="ADD")
-            return
-
-        row = self.layout.row(align=True)
-        row.label(text="Parameters:")
-
-        if props.is_editing_external_style:
-            row.operator("bim.edit_external_style", icon="CHECKMARK", text="")
-            row.operator("bim.disable_editing_external_style", icon="CANCEL", text="")
-            blenderbim.bim.helper.draw_attributes(props.external_style_attributes, self.layout)
-        else:
-            row.operator("bim.browse_external_style", icon="APPEND_BLEND", text="")
-            row.operator("bim.enable_editing_external_style", icon="GREASEPENCIL", text="")
-
-            row = self.layout.row(align=True)
-            row.label(text="STEP ID")
-            row.label(text=str(external_style.id()))
-
-            for attribute in StyleAttributesData.data["external_style_attributes"]:
-                row = self.layout.row(align=True)
-                row.label(text=attribute["name"])
-                row.label(text=attribute["value"])
-
-
 class BIM_UL_styles(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
@@ -355,66 +356,3 @@ class BIM_UL_styles(UIList):
                     row2.label(text="", icon="LIGHT_POINT")
                 elif style.name == "IfcExternallyDefinedSurfaceStyle":
                     row2.label(text="", icon="APPEND_BLEND")
-
-
-class BIM_PT_STYLE_GRAPH(Panel):
-    bl_idname = "BIM_PT_style_graph"
-    bl_space_type = "NODE_EDITOR"
-    bl_label = "Style Graph Settings"
-    bl_region_type = "UI"
-    bl_category = "BBIM"
-
-    @classmethod
-    def poll(cls, context):
-        return getattr(context, "material", None)
-
-    def draw(self, context):
-        layout = self.layout
-        props = context.active_object.active_material.BIMStyleProperties
-
-        draw_style_ui(self, context)
-        layout.separator()
-        box = layout.box()
-        box.label(text="Creating shader from this panel")
-        box.label(text="ensures that shader is")
-        box.label(text="GLTF compatible")
-        box.label(text="and therefore will be ")
-        box.label(text="stored in IFC safely.")
-        layout.separator()
-
-        layout.prop(props, "update_graph", text="Graph Auto Update")
-        layout.label(text="Reflectance Method:")
-        layout.prop(props, "reflectance_method", text="")
-        layout.prop(props, "surface_color")
-        layout.prop(props, "transparency")
-
-        if not (props.reflectance_method == "PHYSICAL" and props.diffuse_path) and not (
-            props.reflectance_method == "FLAT" and props.emissive_path
-        ):
-            prop_name = "Emissive Color" if props.reflectance_method == "FLAT" else "Diffuse Color"
-            layout.prop(props, "diffuse_color", text=prop_name)
-
-        if props.reflectance_method == "PHYSICAL" and not props.metallic_roughness_path:
-            layout.prop(props, "metallic")
-
-        if props.reflectance_method not in ("PHYSICAL", "FLAT", "NOTDEFINED") or (
-            props.reflectance_method == "PHYSICAL" and not props.metallic_roughness_path
-        ):
-            layout.prop(props, "roughness")
-
-        def add_texture_path(path_name):
-            row = layout.row(align=True)
-            row.prop(props, path_name)
-            op = row.operator("bim.clear_texture_map_path", text="", icon="X")
-            op.texture_map_prop = path_name
-
-        layout.separator()
-        texture_maps = TEXTURE_MAPS_BY_METHODS.get(props.reflectance_method, [])
-        if not texture_maps:
-            return
-        if not bpy.data.filepath:
-            layout.label(text="Save .blend file to keep relative paths", icon="ERROR")
-
-        layout.label(text="Texture Maps:")
-        for texture_type in texture_maps:
-            add_texture_path(STYLE_TEXTURE_PROPS_MAP[texture_type])

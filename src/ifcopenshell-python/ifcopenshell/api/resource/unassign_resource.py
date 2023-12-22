@@ -16,7 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.element
 
 
 class Usecase:
@@ -69,7 +71,11 @@ class Usecase:
             ):
                 continue
             if len(rel.RelatedObjects) == 1:
-                return self.file.remove(rel)
+                history = rel.OwnerHistory
+                self.file.remove(rel)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(self.file, history)
+                return
             related_objects = list(rel.RelatedObjects)
             related_objects.remove(self.settings["related_object"])
             rel.RelatedObjects = related_objects

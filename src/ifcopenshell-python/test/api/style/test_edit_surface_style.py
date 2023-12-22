@@ -140,3 +140,33 @@ class TestEditSurfaceStyle(test.bootstrap.IFC4):
         )
         assert style.SpecularHighlight.is_a("IfcSpecularRoughness")
         assert style.SpecularHighlight.wrappedValue == 0.5
+
+    def test_editing_texture_style(self):
+        style = self.file.createIfcSurfaceStyleWithTextures()
+        textures = ({"Mode": "DIFFUSE", "RepeatS": True, "RepeatT": True, "URLReference": "diffuse.jpg"},)
+        textures = ifcopenshell.api.run("style.add_surface_textures", self.file, textures=textures)
+        ifcopenshell.api.run(
+            "style.edit_surface_style",
+            self.file,
+            style=style,
+            attributes={"Textures": textures},
+        )
+        assert set(style.Textures) == set(textures)
+
+    def test_editing_lighting_style(self):
+        style = self.file.createIfcSurfaceStyleLighting()
+        attributes = (
+            "DiffuseTransmissionColour",
+            "DiffuseReflectionColour",
+            "TransmissionColour",
+            "ReflectanceColour",
+        )
+        attributes = {a: {"Red": 1, "Green": 1, "Blue": 1} for a in attributes}
+        ifcopenshell.api.run(
+            "style.edit_surface_style",
+            self.file,
+            style=style,
+            attributes=attributes,
+        )
+        for attribute in attributes:
+            assert tuple(getattr(style, attribute)) == (None, 1, 1, 1)

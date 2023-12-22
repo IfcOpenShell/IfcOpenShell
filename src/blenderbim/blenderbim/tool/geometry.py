@@ -587,6 +587,11 @@ class Geometry(blenderbim.core.tool.Geometry):
         )
 
     @classmethod
+    def is_text_literal(cls, representation):
+        items = ifcopenshell.util.representation.resolve_items(representation)
+        return bool([i for i in items if i["item"].is_a("IfcTextLiteral")])
+
+    @classmethod
     def is_type_product(cls, element):
         return element.is_a("IfcTypeProduct")
 

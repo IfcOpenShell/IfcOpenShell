@@ -55,7 +55,7 @@ class BIM_PT_aggregate(Panel):
             row = layout.row(align=True)
             row.prop(props, "relating_object", text="")
             if props.relating_object:
-                op = row.operator("bim.assign_object", icon="CHECKMARK", text="")
+                op = row.operator("bim.aggregate_assign_object", icon="CHECKMARK", text="")
                 op.relating_object = props.relating_object.BIMObjectProperties.ifc_definition_id
             row.operator("bim.disable_editing_aggregate", icon="CANCEL", text="")
         else:
@@ -66,15 +66,21 @@ class BIM_PT_aggregate(Panel):
                 op.obj = context.active_object.name
                 row.operator("bim.enable_editing_aggregate", icon="GREASEPENCIL", text="")
                 row.operator("bim.add_aggregate", icon="ADD", text="")
-                op = row.operator("bim.unassign_object", icon="X", text="")
+                op = row.operator("bim.aggregate_unassign_object", icon="X", text="")
             else:
                 row.label(text="No Aggregate", icon="TRIA_UP")
                 row.operator("bim.enable_editing_aggregate", icon="GREASEPENCIL", text="")
                 row.operator("bim.add_aggregate", icon="ADD", text="")
 
         row = layout.row(align=True)
-        parts = AggregateData.data["related_objects_amount"]
-        row.label(text=f"{parts or 'No'} Part{'s' if parts > 1 else ''}", icon="TRIA_DOWN")
+        total_parts = AggregateData.data["total_parts"]
+        if total_parts == 0:
+            row.label(text="No Parts", icon="TRIA_DOWN")
+        elif total_parts == 1:
+            row.label(text="1 Part", icon="TRIA_DOWN")
+        else:
+            row.label(text=f"{total_parts} Parts", icon="TRIA_DOWN")
+
         if AggregateData.data["has_related_objects"]:
             op = row.operator("bim.select_parts", icon="RESTRICT_SELECT_OFF", text="")
             op.obj = context.active_object.name

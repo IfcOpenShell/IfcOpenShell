@@ -146,16 +146,33 @@ class ValidateIfcFile(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        return tool.Ifc.get()
 
     def execute(self, context):
         import ifcopenshell.validate
 
+        class LogDetectionHandler(logging.Handler):
+            message_logged = False
+
+            def emit(self, record):
+                if not self.message_logged:
+                    self.message_logged = True
+
         logger = logging.getLogger("validate")
         logger.setLevel(logging.DEBUG)
-        ifcopenshell.validate.validate(IfcStore.get_file(), logger, express_rules=True)
 
-        self.report({"INFO"}, "Check validation results in the system console.")
+        # use LogDetectionHandler to check whether there were any validation errors
+        # during `ifcopenshell.validate.validate`
+        handler = LogDetectionHandler()
+        logger.addHandler(handler)
+        ifcopenshell.validate.validate(tool.Ifc.get(), logger, express_rules=True)
+        logger.removeHandler(handler)
+
+        if handler.message_logged:
+            self.report({"INFO"}, "Check validation results in the system console.")
+        else:
+            self.report({"INFO"}, "No validation issues found.")
+
         return {"FINISHED"}
 
 
@@ -458,7 +475,7 @@ class OverrideDisplayType(bpy.types.Operator):
 
 class PrintUnusedElementStats(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.print_unused_elements_stats"
-    bl_label = "Purge Unused Elements Stats"
+    bl_label = "Print Unused Elements Stats"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = (
         "Print all unused elements in current IFC project in system console, not limited to the selected class"
@@ -467,6 +484,7 @@ class PrintUnusedElementStats(bpy.types.Operator, tool.Ifc.Operator):
     ignore_contexts: bpy.props.BoolProperty(name="Ignore Contexts", default=True)
     ignore_relationships: bpy.props.BoolProperty(name="Ignore Relationships", default=True)
     ignore_types: bpy.props.BoolProperty(name="Ignore Types", default=True)
+    ignore_styled_items: bpy.props.BoolProperty(name="Ignoer Styled Items", default=True)
 
     def _execute(self, context):
         props = context.scene.BIMDebugProperties
@@ -478,6 +496,8 @@ class PrintUnusedElementStats(bpy.types.Operator, tool.Ifc.Operator):
             ignore_classes += ["IfcRelationship"]
         if self.ignore_types:
             ignore_classes += ["IfcTypeProduct"]
+        if self.ignore_styled_items:
+            ignore_classes += ["IfcStyledItem"]
 
         unused_elements = tool.Debug.print_unused_elements_stats(props.ifc_class_purge, ignore_classes)
         self.report({"INFO"}, f"{unused_elements} unused elements found, check the system console for the details.")
@@ -487,7 +507,7 @@ class PurgeUnusedElementsByClass(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.purge_unused_elements_by_class"
     bl_label = "Purge Unused Elements By Class"
     bl_description = (
-        "Will find all elements of class that have no inverse refernces and will remove them, use very carefully."
+        "Will find all elements of class that have no inverse refernces and will remove them, use very carefully"
     )
     bl_options = {"REGISTER", "UNDO"}
 

@@ -66,8 +66,14 @@ class BIM_PT_classifications(Panel):
                 self.draw_ui(classification)
 
     def draw_add_manual_ui(self, context):
-        row = self.layout.row()
-        row.label(text="TODO", icon="ERROR")
+        if self.props.is_adding:
+            blenderbim.bim.helper.draw_attributes(self.props.classification_attributes, self.layout)
+            row = self.layout.row(align=True)
+            row.operator("bim.add_manual_classification", text="Save", icon="CHECKMARK")
+            row.operator("bim.disable_adding_manual_classification", text="", icon="CANCEL")
+        else:
+            row = self.layout.row()
+            row.operator("bim.enable_adding_manual_classification", text="Add Classification", icon="ADD")
 
     def draw_add_bsdd_ui(self, context):
         self.bprops = context.scene.BIMBSDDProperties
@@ -144,7 +150,16 @@ class ReferenceUI:
 
     def draw_add_manual_ui(self, context):
         row = self.layout.row()
-        row.label(text="TODO", icon="ERROR")
+        row.prop(self.props, "classifications", text="")
+        if self.props.is_adding:
+            blenderbim.bim.helper.draw_attributes(self.props.reference_attributes, self.layout)
+            row = self.layout.row(align=True)
+            op = row.operator("bim.add_manual_classification_reference", text="Save", icon="CHECKMARK")
+            op.type = self.data.data["object_type"]
+            row.operator("bim.disable_adding_manual_classification_reference", text="", icon="CANCEL")
+        else:
+            row = self.layout.row()
+            row.operator("bim.enable_adding_manual_classification_reference", text="Add Reference", icon="ADD")
 
     def draw_add_bsdd_ui(self, context):
         if not self.bprops.active_domain:
@@ -239,6 +254,8 @@ class ReferenceUI:
             name = reference["Identification"] or "No Identification"
         row.label(text=name, icon="ASSET_MANAGER")
         row.label(text=reference["Name"] or "")
+        if reference["Location"]:
+            row.operator("bim.open_uri", icon="URL", text="").uri = reference["Location"]
         if not self.props.active_reference_id:
             op = row.operator("bim.enable_editing_classification_reference", text="", icon="GREASEPENCIL")
             op.reference = reference["id"]

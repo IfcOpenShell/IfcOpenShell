@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.element
 import ifcopenshell.util.placement
 
 
@@ -56,7 +57,7 @@ class Usecase:
         critical in facility management, as it indicates through which space
         equipment may be accessed for maintenance purposes.
 
-        As a product may only have a single locaion in the "spatial
+        As a product may only have a single location in the "spatial
         decomposition" tree, assigning an aggregate relationship will remove any
         previous aggregation, containment, or nesting relationships it may have.
 
@@ -120,7 +121,10 @@ class Usecase:
                 contained_in_structure[0].RelatedElements = related_elements
                 ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": contained_in_structure[0]})
             else:
+                history = contained_in_structure[0].OwnerHistory
                 self.file.remove(contained_in_structure[0])
+                if history:
+                    ifcopenshell.util.element.remove_deep2(self.file, history)
 
         if contains_elements:
             related_elements = list(contains_elements[0].RelatedElements)
