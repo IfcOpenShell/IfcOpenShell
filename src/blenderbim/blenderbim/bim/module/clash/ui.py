@@ -108,6 +108,42 @@ class BIM_PT_clash_manager(Panel):
     bl_parent_id = "BIM_PT_tab_clash_detection"
 
     def draw(self, context):
+        pass
+
+
+class BIM_PT_dumb_clash_manager(Panel):
+    bl_idname = "BIM_PT_dumb_clash_manager"
+    bl_label = "Dumb Manager"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_clash_manager"
+
+    def draw(self, context):
+        layout = self.layout
+        props = context.scene.BIMClashProperties
+
+        row = layout.row(align=True)
+        row.operator("bim.load_ifc_clashes", text="LOAD IFC CLASHES", icon="IMPORT")
+        row.operator("bim.save_ifc_clashes", text="SAVE CLASH RESULTS", icon="EXPORT")
+        layout.template_list("BIM_UL_clashes", "", props.active_clash_set, "clashes", props, "active_clash_index")
+        # bim.select_clash
+        row = layout.row(align=True)
+        row.operator("bim.select_clash", text="SELECT CLASH", icon="IMPORT")
+        row.prop(props, "sould_focus_on_clash", icon="RESTRICT_VIEW_OFF")
+
+
+class BIM_PT_smart_clash_manager(Panel):
+    bl_idname = "BIM_PT_smart_clash_manager"
+    bl_label = "Smart Clash Manager"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_clash_manager"
+
+    def draw(self, context):
         layout = self.layout
         props = context.scene.BIMClashProperties
 
@@ -154,5 +190,16 @@ class BIM_UL_smart_groups(bpy.types.UIList):
         ob = data
         if item:
             layout.label(text=str(item.number), translate=False, icon="NONE", icon_value=0)
+        else:
+            layout.label(text="", translate=False)
+
+
+class BIM_UL_clashes(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item:
+            row = layout.row(align=True)
+            row.label(text=str(item.a_name), translate=False, icon="NONE", icon_value=0)
+            row.label(text=str(item.b_name), translate=False, icon="NONE", icon_value=0)
+            row.prop(item, "status", text="")
         else:
             layout.label(text="", translate=False)
