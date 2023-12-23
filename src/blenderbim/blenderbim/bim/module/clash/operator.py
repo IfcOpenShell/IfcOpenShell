@@ -26,6 +26,7 @@ import ifcopenshell
 from mathutils import Matrix, Vector
 from math import radians
 from blenderbim.bim.ifc import IfcStore
+import blenderbim.tool as tool
 
 
 class ExportClashSets(bpy.types.Operator):
@@ -245,12 +246,14 @@ class ExecuteIfcClash(bpy.types.Operator):
                 y = Vector([y.x, y.y, y.z])
                 x = y.cross(z)
 
-                mat = Matrix([
-                    [x[0], y[0], z[0], p.x],
-                    [x[1], y[1], z[1], p.y],
-                    [x[2], y[2], z[2], p.z],
-                    [0, 0, 0, 0],
-                ])
+                mat = Matrix(
+                    [
+                        [x[0], y[0], z[0], p.x],
+                        [x[1], y[1], z[1], p.y],
+                        [x[2], y[2], z[2], p.z],
+                        [0, 0, 0, 0],
+                    ]
+                )
 
                 camera.matrix_world = mat
                 context.scene.camera = camera
@@ -349,6 +352,119 @@ class SelectIfcClashResults(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class LoadIfcClashes(bpy.types.Operator):
+    bl_idname = "bim.load_ifc_clashes"
+    bl_label = "Load IFC Clashes"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Load the clashing IFC geometry stored in a file"
+    filename_ext = ".json"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def invoke(self, context, event):
+        self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".json")
+        WindowManager = context.window_manager
+        WindowManager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        self.filepath = bpy.path.ensure_ext(self.filepath, ".json")
+        with open(self.filepath) as f:
+            clash_sets_json = json.load(f)
+        active_clash_set = context.scene.BIMClashProperties.active_clash_set
+
+        for clash_set in clash_sets_json:
+            if not "clashes" in clash_set.keys():
+                self.report({"WARNING"}, "No clashes found for the selected Clash Set.")
+                return {"CANCELLED"}
+            active_clash_set.clashes.clear()
+            for clash in clash_set["clashes"].values():
+                blender_clash = active_clash_set.clashes.add()
+                blender_clash.a_global_id = clash["a_global_id"]
+                blender_clash.b_global_id = clash["b_global_id"]
+                blender_clash.a_name = "{}/{}".format(clash["a_ifc_class"], clash["a_name"])
+                blender_clash.b_name = "{}/{}".format(clash["b_ifc_class"], clash["b_name"])
+                blender_clash.status = False if not "status" in clash.keys() else clash["status"]
+        return {"FINISHED"}
+
+
+class SaveIfcClashes(bpy.types.Operator):
+    bl_idname = "bim.save_ifc_clashes"
+    bl_label = "Save IFC Clashes"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Save the clashing IFC geometry stored in a file"
+    filename_ext = ".json"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def invoke(self, context, event):
+        self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".json")
+        WindowManager = context.window_manager
+        WindowManager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        self.filepath = bpy.path.ensure_ext(self.filepath, ".json")
+        clash_sets_json = self.load_json()
+        active_clash_set = context.scene.BIMClashProperties.active_clash_set
+        self.update_clash_sets(clash_sets_json, active_clash_set)
+        self.save_json(clash_sets_json)
+        return {"FINISHED"}
+
+    def load_json(self):
+        with open(self.filepath) as f:
+            return json.load(f)
+
+    def update_clash_sets(self, clash_sets_json, active_clash_set):
+        for clash_set in clash_sets_json:
+            if clash_set["name"] != active_clash_set.name or "clashes" not in clash_set.keys():
+                continue
+            for clash in active_clash_set.clashes:
+                clash_key = clash.a_global_id + "-" + clash.b_global_id
+                if clash_set.get("clashes", {}).get(clash_key, None) is not None:
+                    clash_set["clashes"][clash_key]["status"] = clash.status
+
+    def save_json(self, clash_sets_json):
+        with open(self.filepath, "w") as destination:
+            json.dump(clash_sets_json, destination, indent=4)
+
+
+class SelectClash(bpy.types.Operator):
+    bl_idname = "bim.select_clash"
+    bl_label = "Select Clash"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Select the clashing IFC geometry stored in a file"
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        clash = context.scene.BIMClashProperties.active_clash
+
+        products = []
+        linked_objects = []
+        try:
+            products.append(tool.Ifc.get().by_guid(clash.a_global_id))
+        except:
+            linked_objects.append(clash.a_name)
+        try:
+            products.append(tool.Ifc.get().by_guid(clash.b_global_id))
+        except:
+            linked_objects.append(clash.b_name)
+
+        tool.Spatial.select_products(products, unhide=True)
+        print(linked_objects)
+        for obj_name in linked_objects:
+            obj = bpy.data.objects.get(obj_name)
+            if obj:
+                obj.select_set(True)
+            else:
+                print("Object not found:", obj_name)
+        if context.scene.BIMClashProperties.sould_focus_on_clash:
+            context_override = tool.Blender.get_viewport_context()
+            with bpy.context.temp_override(**context_override):
+                bpy.ops.view3d.view_selected()
+        return {"FINISHED"}
+
+
 class SmartClashGroup(bpy.types.Operator):
     bl_idname = "bim.smart_clash_group"
     bl_label = "Smart Group Clashes"
@@ -433,9 +549,9 @@ class LoadSmartGroupsForActiveClashSet(bpy.types.Operator):
                     new_group = context.scene.BIMClashProperties.smart_clash_groups.add()
                     new_group.number = f"{smart_group}"
                     for pair in global_id_pairs:
-                        for id in pair:
+                        for guid in pair:
                             new_global_id = new_group.global_ids.add()
-                            new_global_id.name = id
+                            new_global_id.guid = guid
 
         return {"FINISHED"}
 
