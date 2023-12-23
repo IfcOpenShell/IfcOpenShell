@@ -450,20 +450,16 @@ class SelectSmartGroup(bpy.types.Operator):
         return IfcStore.get_file() and context.visible_objects and context.scene.BIMClashProperties.active_smart_group
 
     def execute(self, context):
-        self.file = IfcStore.get_file()
-        # Select smart group in view
         selected_smart_group = context.scene.BIMClashProperties.active_smart_group
-        # print(selected_smart_group.number)
-
-        for obj in context.visible_objects:
-            if not obj.BIMObjectProperties.ifc_definition_id:
+        products = []
+        for global_id in selected_smart_group.global_ids:
+            try:
+                products.append(tool.Ifc.get().by_guid(global_id.guid))
+            except:
                 continue
-            element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-            for id in selected_smart_group.global_ids:
-                # print("Id: ", id)
-                # print("Global id: ", element.GlobalId)
-                if element.GlobalId in id.name:
-                    # print("object match: ", global_id)
-                    obj.select_set(True)
-
+        tool.Spatial.select_products(products, unhide=True)
+        context_override = tool.Blender.get_viewport_context()
+        with bpy.context.temp_override(**context_override):
+            bpy.ops.view3d.view_selected()
         return {"FINISHED"}
+
