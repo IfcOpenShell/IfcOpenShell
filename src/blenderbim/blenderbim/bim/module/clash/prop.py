@@ -43,11 +43,20 @@ class ClashSource(PropertyGroup):
     )
 
 
+class Clash(PropertyGroup):
+    a_global_id: StringProperty(name="A")
+    b_global_id: StringProperty(name="B")
+    a_name: StringProperty(name="A Name")
+    b_name: StringProperty(name="B Name")
+    status: BoolProperty(name="Status", default=False)
+
+
 class ClashSet(PropertyGroup):
     name: StringProperty(name="Name")
     tolerance: FloatProperty(name="Tolerance")
     a: CollectionProperty(name="Group A", type=ClashSource)
     b: CollectionProperty(name="Group B", type=ClashSource)
+    clashes: CollectionProperty(name="Clashes", type=Clash)
 
 
 class SmartClashGroup(PropertyGroup):
@@ -63,11 +72,13 @@ class BIMClashProperties(PropertyGroup):
     clash_results_path: StringProperty(name="Clash Results Path")
     smart_grouped_clashes_path: StringProperty(name="Smart Grouped Clashes Path")
     active_clash_set_index: IntProperty(name="Active Clash Set Index")
+    active_clash_index: IntProperty(name="Active Clash Index")
     smart_clash_groups: CollectionProperty(name="Smart Clash Groups", type=SmartClashGroup)
     active_smart_group_index: IntProperty(name="Active Smart Group Index")
     smart_clash_grouping_max_distance: IntProperty(
         name="Smart Clash Grouping Max Distance", default=3, soft_min=1, soft_max=10
     )
+    sould_focus_on_clash: BoolProperty(name="Show Focus Clash", default=False)
 
     @property
     def active_clash_set(self):
@@ -80,3 +91,9 @@ class BIMClashProperties(PropertyGroup):
         if not self.smart_clash_groups:
             return None
         return self.smart_clash_groups[self.active_smart_group_index]
+
+    @property
+    def active_clash(self):
+        if not self.active_clash_set:
+            return None
+        return self.active_clash_set.clashes[self.active_clash_index]
