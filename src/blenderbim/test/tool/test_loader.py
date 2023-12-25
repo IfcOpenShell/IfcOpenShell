@@ -258,37 +258,71 @@ class TestCreatingStyles(NewFile):
 
     def test_create_surface_style_with_textures_from_ifc_pixel_image(self):
         # fmt: off
-        pixel_data_for_components = {
+        # blender has reversed pixels rows order
+        # 2x2 image:
+        # R G
+        # B W
+        ifc_pixel_data = {
             1: (
-                0.5, 0.5, 0.5, 1.0,
-                0.6, 0.6, 0.6, 1.0,
-                0.7, 0.7, 0.7, 1.0,
-                1.0, 1.0, 1.0, 1.0,
+                0.7,
+                1.0,
+                0.5,
+                0.6,
             ),
             2: (
-                0.5, 0.5, 0.5, 0.5,
-                0.6, 0.6, 0.6, 0.5,
-                0.7, 0.7, 0.7, 0.5,
-                1.0, 1.0, 1.0, 0.5,
+                0.7, 0.5,
+                1.0, 0.5,
+                0.5, 0.5,
+                0.6, 0.5
             ),
             3: (
-                0.5, 0,   0,   1.0,
-                0,   0.6, 0,   1.0,
-                0,   0,   0.7, 1.0,
-                1,   1,   1,   1.0,
+                0,   0,   0.7,
+                1,   1,   1,
+                0.5, 0,   0,
+                0,   0.6, 0,
             ),
             4: (
-                0.5, 0,   0,   0.5,
-                0,   0.6, 0,   0.5,
                 0,   0,   0.7, 0.5,
                 1,   1,   1,   0.5,
+                0.5, 0,   0,   0.5,
+                0,   0.6, 0,   0.5,
+            )
+        }
+        expected_pixel_data = {
+            1: (
+                0.7, 0.7, 0.7, 1.0,
+                1.0, 1.0, 1.0, 1.0,
+                0.5, 0.5, 0.5, 1.0,
+                0.6, 0.6, 0.6, 1.0,
+            ),
+            2: (
+                0.7, 0.7, 0.7, 0.5,
+                1.0, 1.0, 1.0, 0.5,
+                0.5, 0.5, 0.5, 0.5,
+                0.6, 0.6, 0.6, 0.5,
+            ),
+            3: (
+                0,   0,   0.7, 1.0,
+                1,   1,   1,   1.0,
+                0.5, 0,   0,   1.0,
+                0,   0.6, 0,   1.0,
+            ),
+            4: (
+                0,   0,   0.7, 0.5,
+                1,   1,   1,   0.5,
+                0.5, 0,   0,   0.5,
+                0,   0.6, 0,   0.5,
             )
         }
         # fmt: on
         for i in range(1, 5):
-            self.run_test_create_surface_style_with_textures_from_ifc_pixel_image(i, pixel_data_for_components[i])
+            self.run_test_create_surface_style_with_textures_from_ifc_pixel_image(
+                i, ifc_pixel_data[i], expected_pixel_data[i]
+            )
 
-    def run_test_create_surface_style_with_textures_from_ifc_pixel_image(self, n_components, pixel_data):
+    def run_test_create_surface_style_with_textures_from_ifc_pixel_image(
+        self, n_components, ifc_pixel_data, expected_pixel_data
+    ):
         # this case occurs when we edit shader properties without saving them to IFC
         bpy.ops.bim.create_project()
 
@@ -312,31 +346,17 @@ class TestCreatingStyles(NewFile):
             attributes=rendering_attributes,
         )
 
-        def get_pixels_binary(n_components):
+        def get_pixels_binary():
             # just 4 pixels - red, green, blue, white
+            # IfcPixelTexture as Blender has reversed order of pixels rows: (0,0) - bottom left of the image
+            # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcPixelTexture.htm
             # fmt: off
-            pixel_data = (
-                0.5, 0,   0,   0.5,
-                0,   0.6, 0,   0.5,
-                0,   0,   0.7, 0.5,
-                1,   1,   1,   0.5,
-            )
-            # fmt: on
-            pixels = np.array(pixel_data).reshape(-1, 4)
-            alpha = pixels[:, 3]
-            if n_components in (1, 2):
-                pixels = [[p[min(i, 2)]] for i, p in enumerate(pixels)]
-                if n_components == 2:
-                    for i in range(4):
-                        pixels[i].append(alpha[i])
-            elif n_components == 3:
-                pixels = pixels[:, :3]
-
-            pixels = np.array(pixels) * 255
+            pixels = np.array(ifc_pixel_data) * 255
+            pixels = pixels.reshape((4, n_components))
             return ["".join(["{:08b}".format(int(i)) for i in pixel]) for pixel in pixels]
 
         texture_data = {
-            "Pixel": get_pixels_binary(n_components),
+            "Pixel": get_pixels_binary(),
             "ColourComponents": n_components,
             "Width": 2,
             "Height": 2,
@@ -367,8 +387,8 @@ class TestCreatingStyles(NewFile):
         assert image_node.inputs["Vector"].links[0].from_socket.name == "Generated"
         assert image_node.image.filepath == ""
         assert np.allclose(
-            image_node.image.pixels[:], pixel_data, atol=0.01
-        ), f"Failed to match pixels for {n_components}.\nBlender pixel_data: {image_node.image.pixels[:]}.\nExpected data: {pixel_data}"
+            image_node.image.pixels[:], expected_pixel_data, atol=0.01
+        ), f"Failed to match pixels for {n_components}.\nBlender pixel_data: {image_node.image.pixels[:]}.\nExpected data: {expected_pixel_data}"
 
 
 class TestLoadingIndexedTextureMap(NewFile):
