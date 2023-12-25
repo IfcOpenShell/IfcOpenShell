@@ -29,7 +29,7 @@ class Aggregate(blenderbim.core.tool.Aggregate):
         if not relating_object or not related_object:
             return False
         if (relating_object.is_a("IfcElement") or relating_object.is_a("IfcElementType")) and related_object.is_a("IfcElement"):
-            if relating_obj.data:
+            if relating_obj.data:  # See #3973
                 return False
             return True
         if tool.Ifc.get_schema() == "IFC2X3":
