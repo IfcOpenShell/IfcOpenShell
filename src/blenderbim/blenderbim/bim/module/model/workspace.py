@@ -580,12 +580,12 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     def hotkey_C_P(self):
         if not bpy.context.selected_objects:
             return
-        bpy.ops.bim.assign_object()
+        bpy.ops.bim.aggregate_assign_object()
 
     def hotkey_A_P(self):
         if not bpy.context.selected_objects:
             return
-        bpy.ops.bim.unassign_object()
+        bpy.ops.bim.aggregate_unassign_object()
 
     def hotkey_S_C(self):
         if not bpy.context.selected_objects:
