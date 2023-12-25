@@ -20,12 +20,12 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
-    operator.BIM_OT_assign_object,
+    operator.BIM_OT_nest_assign_object,
     operator.BIM_OT_disable_editing_nest,
     operator.BIM_OT_enable_editing_nest,
     operator.BIM_OT_select_components,
     operator.BIM_OT_select_nest,
-    operator.BIM_OT_unassign_object,
+    operator.BIM_OT_nest_unassign_object,
     prop.BIMObjectNestProperties,
     ui.BIM_PT_nest,
 )

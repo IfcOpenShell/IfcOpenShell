@@ -181,7 +181,7 @@ class FilledOpeningGenerator:
             return
 
         opening = filling.FillsVoids[0].RelatingOpeningElement
-        voided_obj = tool.Ifc.get_object(opening.VoidsElements[0].RelatingBuildingElement)
+        voided_element = opening.VoidsElements[0].RelatingBuildingElement
 
         opening_rep = ifcopenshell.util.representation.get_representation(opening, "Model", "Body", "MODEL_VIEW")
         ifcopenshell.api.run(
@@ -217,16 +217,22 @@ class FilledOpeningGenerator:
                 "geometry.assign_representation", tool.Ifc.get(), product=opening, representation=mapped_representation
             )
 
-        representation = tool.Ifc.get().by_id(voided_obj.data.BIMMeshProperties.ifc_definition_id)
-        blenderbim.core.geometry.switch_representation(
-            tool.Ifc,
-            tool.Geometry,
-            obj=voided_obj,
-            representation=representation,
-            should_reload=True,
-            is_global=True,
-            should_sync_changes_first=False,
-        )
+        # update voided object representation or all it's parts if it's an aggregate
+        voided_elements = ifcopenshell.util.element.get_parts(voided_element) or [voided_element]
+        for voided_element in voided_elements:
+            voided_obj = tool.Ifc.get_object(voided_element)
+            if not voided_obj.data:
+                continue
+            representation = tool.Ifc.get().by_id(voided_obj.data.BIMMeshProperties.ifc_definition_id)
+            blenderbim.core.geometry.switch_representation(
+                tool.Ifc,
+                tool.Geometry,
+                obj=voided_obj,
+                representation=representation,
+                should_reload=True,
+                is_global=True,
+                should_sync_changes_first=False,
+            )
 
     def generate_opening_from_filling(self, filling, filling_obj):
         # Since openings are reused later, we give a default thickness of 1.2m

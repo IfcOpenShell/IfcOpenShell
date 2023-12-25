@@ -203,12 +203,14 @@ class Blender(blenderbim.core.tool.Blender):
     @classmethod
     def copy_node_graph(cls, material_to, material_from):
         # https://projects.blender.org/blender/blender/issues/108763
-        if bpy.app.version >= (4, 0):
+        if bpy.app.version[:2] == (4, 0):
             print(
-                "WARNING. Copying node graph is not yet supported on Blender 4.0+ due Blender bug, "
+                "WARNING. Copying node graph is not supported on Blender 4.0.x due Blender bug, "
                 f"copying node graph from {material_from.name} to {material_to.name} will be skipped"
             )
             return
+
+        use_temp_override = bpy.app.version >= (4, 0, 0)
 
         temp_override = cls.get_shader_editor_context()
         shader_editor = temp_override["space"]
@@ -225,11 +227,19 @@ class Blender(blenderbim.core.tool.Blender):
         # select all nodes and copy them to clipboard
         for node in material_from.node_tree.nodes:
             node.select = True
-        bpy.ops.node.clipboard_copy(temp_override)
+        if use_temp_override:
+            with bpy.context.temp_override(**temp_override):
+                bpy.ops.node.clipboard_copy()
+        else:
+            bpy.ops.node.clipboard_copy(temp_override)
 
         # back to original material
         shader_editor.node_tree = material_to.node_tree
-        bpy.ops.node.clipboard_paste(temp_override, offset=(0, 0))
+        if use_temp_override:
+            with bpy.context.temp_override(**temp_override):
+                bpy.ops.node.clipboard_paste(offset=(0, 0))
+        else:
+            bpy.ops.node.clipboard_paste(temp_override, offset=(0, 0))
 
         # restore shader editor settings
         shader_editor.pin = previous_pin_setting

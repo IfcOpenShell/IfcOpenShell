@@ -21,7 +21,7 @@ Scenario: Assign object
     And the object "IfcBuildingStorey/My Storey" is selected
     And I press "bim.enable_editing_aggregate"
     And the variable "relating_object" is "tool.Ifc.get().by_type('IfcSite')[0].id()"
-    When I press "bim.assign_object(relating_object={relating_object})"
+    When I press "bim.aggregate_assign_object(relating_object={relating_object})"
     Then the object "IfcSite/My Site" is in the collection "IfcSite/My Site"
     And the object "IfcBuildingStorey/My Storey" is in the collection "IfcBuildingStorey/My Storey"
     And the collection "IfcBuildingStorey/My Storey" is in the collection "IfcSite/My Site"
@@ -31,9 +31,9 @@ Scenario: Unassign object
     And the object "IfcBuildingStorey/My Storey" is selected
     And I press "bim.enable_editing_aggregate"
     And the variable "relating_object" is "tool.Ifc.get().by_type('IfcSite')[0].id()"
-    And I press "bim.assign_object(relating_object={relating_object})"
+    And I press "bim.aggregate_assign_object(relating_object={relating_object})"
     And the object "IfcBuildingStorey/My Storey" is selected
-    When I press "bim.unassign_object"
+    When I press "bim.aggregate_unassign_object"
     Then the object "IfcSite/My Site" is in the collection "IfcSite/My Site"
     And the object "IfcBuildingStorey/My Storey" is in the collection "IfcBuildingStorey/My Storey"
     And the collection "IfcBuildingStorey/My Storey" is in the collection "IfcProject/My Project"
@@ -54,7 +54,7 @@ Scenario: Unassign object - multiple objects are contained again to their indire
     And I press "bim.add_aggregate(ifc_class='IfcWall')"
     And the object "IfcMember/Cube" is selected
     And additionally the object "IfcCovering/Cube" is selected
-    When I press "bim.unassign_object"
+    When I press "bim.aggregate_unassign_object"
     Then the object "IfcMember/Cube" is in the collection "IfcBuildingStorey/My Storey"
     And the object "IfcCovering/Cube" is in the collection "IfcBuildingStorey/My Storey"
 
