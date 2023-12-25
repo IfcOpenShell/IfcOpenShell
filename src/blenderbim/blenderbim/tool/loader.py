@@ -273,11 +273,12 @@ class Loader(blenderbim.core.tool.Loader):
                     value = texture["RasterCode"]
                     image_bytes = int(value, 2).to_bytes(len(value) // 8, "big")
                     pil_image = Image.open(io.BytesIO(image_bytes))
+                    pil_image.save("test_image.png")
                     byte_to_normalized = 1.0 / 255.0
                     bpy_image = bpy.data.images.new("blob_texture", width=pil_image.width, height=pil_image.height)
-                    bpy_image.pixels[:] = (
-                        np.asarray(pil_image.convert("RGBA"), dtype=np.float32) * byte_to_normalized
-                    ).ravel()
+                    # PIL returns rows ordered from top to bottom, blender from bottom to top
+                    pil_pixel_data = np.asarray(pil_image.convert("RGBA"), dtype=np.float32)
+                    bpy_image.pixels[:] = (pil_pixel_data * byte_to_normalized)[::-1].ravel()
                     bpy_image.pack()
                     return bpy_image
 

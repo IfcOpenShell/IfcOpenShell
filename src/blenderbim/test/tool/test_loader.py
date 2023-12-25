@@ -184,7 +184,9 @@ class TestCreatingStyles(NewFile):
             # https://blender.stackexchange.com/questions/62072/does-blender-have-a-method-to-a-get-png-formatted-bytearray-for-an-image-via-pyt
             width = 2
             height = 2
-            # just 4 pixels - red, green, blue, white
+            # 2x2 image:
+            # R G
+            # B W
             # fmt: off
             pixels = (
                 1,0,0,1,
@@ -195,11 +197,10 @@ class TestCreatingStyles(NewFile):
             # fmt: on
             buf = bytearray([int(p * 255) for p in pixels])
 
-            # reverse the vertical line order and add null bytes at the start
+            # add null bytes at the start
             width_byte_4 = width * 4
             raw_data = b"".join(
-                b"\x00" + buf[span : span + width_byte_4]
-                for span in range((height - 1) * width_byte_4, -1, -width_byte_4)
+                b"\x00" + buf[span : span + width_byte_4] for span in range(0, height * width_byte_4, width_byte_4)
             )
 
             def png_pack(png_tag, data):
@@ -251,6 +252,7 @@ class TestCreatingStyles(NewFile):
         assert image_node.inputs["Vector"].links[0].from_socket.name == "Generated"
         assert image_node.image.filepath == ""
         # fmt: off
+        # blender has reversed pixels rows order
         assert image_node.image.pixels[:] == (0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0)
         # fmt: on
 
