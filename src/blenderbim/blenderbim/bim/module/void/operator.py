@@ -34,90 +34,97 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        if len(context.selected_objects) != 2:
-            cls.poll_message_set("Select two elements to add an opening")
+        if len(context.selected_objects) < 2:
+            cls.poll_message_set("Select openings and a target element")
         return True
 
     def _execute(self, context):
         props = context.scene.BIMModelProperties
-        if len(context.selected_objects) != 2:
-            return {"FINISHED"}
+        selected_objects = context.selected_objects
+        target_object = selected_objects[0] 
 
-        # The convention is that element1 is the element and element2 is the opening.
-        obj1, obj2 = context.selected_objects
-        element1 = tool.Ifc.get_entity(obj1)
-        element2 = tool.Ifc.get_entity(obj2)
 
-        if not element1 and not element2:
-            return {"FINISHED"}  # Both are not IFC objects.
+        opening_objects = [obj for obj in selected_objects if obj != target_object]
 
-        if element1 and element2:
-            if element1.is_a("IfcOpeningElement") and element2.is_a("IfcOpeningElement"):
-                return {"FINISHED"}  # You can't add an opening to another opening.
-            elif not element1.is_a("IfcOpeningElement") and not element2.is_a("IfcOpeningElement"):
-                if element1.is_a("IfcWindow") or element1.is_a("IfcDoor"):  # Add a fill to an element.
-                    obj1, obj2 = obj2, obj1
-                FilledOpeningGenerator().generate(obj2, obj1, target=obj2.matrix_world.translation)
-                return {"FINISHED"}
-            elif element1.is_a("IfcOpeningElement") or element2.is_a("IfcOpeningElement"):
-                if element1.is_a("IfcOpeningElement"):  # Reassign an opening to another element.
-                    obj1, obj2 = obj2, obj1
-                    element1, element2 = element2, element1
 
-        if element2 and not element1:
-            obj1, obj2 = obj2, obj1
-            element1, element2 = element2, element1
+        for opening_obj in opening_objects:
+            element1 = tool.Ifc.get_entity(target_object)
+            obj1 = target_object
+            element2 = tool.Ifc.get_entity(opening_obj)
+            obj2 = opening_obj
 
-        if element1.is_a("IfcOpeningElement"):
-            return {"FINISHED"}  # You can't add an opening to another opening.
+            if not element1 and not element2:
+                return {"FINISHED"}  # Both are not IFC objects.
 
-        if tool.Ifc.is_moved(obj1):
-            blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj1)
+            if element1 and element2:
+                if element1.is_a("IfcOpeningElement") and element2.is_a("IfcOpeningElement"):
+                    self.report({'INFO'}, "You can't add an opening to another opening.")
+                    continue
+                elif not element1.is_a("IfcOpeningElement") and not element2.is_a("IfcOpeningElement"):
+                    if element1.is_a("IfcWindow") or element1.is_a("IfcDoor"):  # Add a fill to an element.
+                        obj1, obj2 = obj2, obj1
+                    FilledOpeningGenerator().generate(obj2, obj1, target=obj2.matrix_world.translation)
+                    continue
+                elif element1.is_a("IfcOpeningElement") or element2.is_a("IfcOpeningElement"):
+                    if element1.is_a("IfcOpeningElement"):  # Reassign an opening to another element.
+                        obj1, obj2 = obj2, obj1
+                        element1, element2 = element2, element1
 
-        has_visible_openings = False
-        for opening in [r.RelatedOpeningElement for r in element1.HasOpenings]:
-            if tool.Ifc.get_object(opening):
-                has_visible_openings = True
-                break
+            if element2 and not element1:
+                obj1, obj2 = obj2, obj1
+                element1, element2 = element2, element1
 
-        body_context = ifcopenshell.util.representation.get_context(IfcStore.get_file(), "Model", "Body")
-        if not element2:
-            element2 = blenderbim.core.root.assign_class(
-                tool.Ifc,
-                tool.Collector,
-                tool.Root,
-                obj=obj2,
-                ifc_class="IfcOpeningElement",
-                should_add_representation=True,
-                context=body_context,
-            )
-        ifcopenshell.api.run("void.add_opening", tool.Ifc.get(), opening=element2, element=element1)
+            if element1.is_a("IfcOpeningElement"):
+                self.report({'INFO'}, "You can't add an opening to another opening.")
+                continue
 
-        if tool.Ifc.is_moved(obj2):
-            blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj2)
+            if tool.Ifc.is_moved(obj1):
+                blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj1)
 
-        voided_objs = [obj1]
-        for subelement in ifcopenshell.util.element.get_decomposition(element1):
-            subobj = tool.Ifc.get_object(subelement)
-            if subobj:
-                voided_objs.append(subobj)
+            has_visible_openings = False
+            for opening in [r.RelatedOpeningElement for r in element1.HasOpenings]:
+                if tool.Ifc.get_object(opening):
+                    has_visible_openings = True
+                    break
 
-        for voided_obj in voided_objs:
-            if voided_obj.data:
-                representation = tool.Ifc.get().by_id(voided_obj.data.BIMMeshProperties.ifc_definition_id)
-                blenderbim.core.geometry.switch_representation(
+            body_context = ifcopenshell.util.representation.get_context(IfcStore.get_file(), "Model", "Body")
+            if not element2:
+                element2 = blenderbim.core.root.assign_class(
                     tool.Ifc,
-                    tool.Geometry,
-                    obj=voided_obj,
-                    representation=representation,
-                    should_reload=True,
-                    is_global=True,
-                    should_sync_changes_first=False,
+                    tool.Collector,
+                    tool.Root,
+                    obj=obj2,
+                    ifc_class="IfcOpeningElement",
+                    should_add_representation=True,
+                    context=body_context,
                 )
+            ifcopenshell.api.run("void.add_opening", tool.Ifc.get(), opening=element2, element=element1)
 
-        if not has_visible_openings:
-            tool.Ifc.unlink(obj=obj2)
-            bpy.data.objects.remove(obj2)
+            if tool.Ifc.is_moved(obj2):
+                blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj2)
+
+            voided_objs = [obj1]
+            for subelement in ifcopenshell.util.element.get_decomposition(element1):
+                subobj = tool.Ifc.get_object(subelement)
+                if subobj:
+                    voided_objs.append(subobj)
+
+            for voided_obj in voided_objs:
+                if voided_obj.data:
+                    representation = tool.Ifc.get().by_id(voided_obj.data.BIMMeshProperties.ifc_definition_id)
+                    blenderbim.core.geometry.switch_representation(
+                        tool.Ifc,
+                        tool.Geometry,
+                        obj=voided_obj,
+                        representation=representation,
+                        should_reload=True,
+                        is_global=True,
+                        should_sync_changes_first=False,
+                    )
+
+            if not has_visible_openings:
+                tool.Ifc.unlink(obj=obj2)
+                bpy.data.objects.remove(obj2)
 
         context.view_layer.objects.active = obj1
         return {"FINISHED"}
