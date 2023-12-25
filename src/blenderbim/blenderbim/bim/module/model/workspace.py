@@ -194,6 +194,7 @@ class PipeTool(BimTool):
 def add_layout_hotkey_operator(layout, text, hotkey, description):
     modifiers = {
         "A": "EVENT_ALT",
+        "C": "EVENT_CTRL",
         "S": "EVENT_SHIFT",
     }
     modifier, key = hotkey.split("_")
@@ -444,6 +445,10 @@ class BimToolUI:
         cls.layout.row(align=True).label(text="Mode")
         add_layout_hotkey_operator(cls.layout, "Void", "A_O", "Toggle openings")
         add_layout_hotkey_operator(cls.layout, "Decomposition", "A_D", "Select decomposition")
+
+        cls.layout.row(align=True).label(text="Aggregation")
+        add_layout_hotkey_operator(cls.layout, "Assign", "C_P", bpy.ops.bim.aggregate_assign_object.__doc__)
+        add_layout_hotkey_operator(cls.layout, "Unassign", "A_P", bpy.ops.bim.aggregate_unassign_object.__doc__)
 
         cls.layout.separator()
         add_layout_hotkey_operator(
