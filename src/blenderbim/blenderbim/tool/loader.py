@@ -278,6 +278,7 @@ class Loader(blenderbim.core.tool.Loader):
                     bpy_image.pixels[:] = (
                         np.asarray(pil_image.convert("RGBA"), dtype=np.float32) * byte_to_normalized
                     ).ravel()
+                    bpy_image.pack()
                     return bpy_image
 
                 # IfcPixelTexture
@@ -308,6 +309,7 @@ class Loader(blenderbim.core.tool.Loader):
 
                 bpy_image = bpy.data.images.new("pixel_texture", width=width, height=height)
                 bpy_image.pixels[:] = blender_pixel_data
+                bpy_image.pack()
                 return bpy_image
 
             if reflectance_method in ["PHYSICAL", "NOTDEFINED"]:
