@@ -415,7 +415,7 @@ class BimToolUI:
         row.label(text="", icon="EVENT_SHIFT")
         row.label(text="", icon="EVENT_O")
 
-        if len(context.selected_objects) == 2:
+        if len(context.selected_objects) > 1:
             row.operator("bim.add_opening", text="Apply Void")
         else:
             row.operator("bim.add_potential_opening", text="Add Void")
