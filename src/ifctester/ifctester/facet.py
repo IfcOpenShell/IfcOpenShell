@@ -23,6 +23,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.classification
 from functools import lru_cache
 from xmlschema.validators import identities
+from typing import List
 
 
 def cast_to_value(from_value, to_value):
@@ -55,8 +56,8 @@ def get_psets(element):
 class Facet:
     def __init__(self, *parameters):
         self.status = None
-        self.failed_entities = []
-        self.failed_reasons = []
+        self.failed_entities: List[Facet] = []
+        self.failed_reasons: List[str] = []
         for i, name in enumerate(self.parameters):
             setattr(self, name.replace("@", ""), parameters[i])
 
