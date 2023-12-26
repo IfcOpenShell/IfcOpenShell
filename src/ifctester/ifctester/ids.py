@@ -21,8 +21,8 @@ import datetime
 from xmlschema import XMLSchema
 from xmlschema import etree_tostring
 from xml.etree import ElementTree as ET
-from .facet import Entity, Attribute, Classification, Property, PartOf, Material, Restriction, get_pset, get_psets
-
+from .facet import Facet, Entity, Attribute, Classification, Property, PartOf, Material, Restriction, get_pset, get_psets
+from typing import List, Set
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 schema = None
@@ -59,7 +59,7 @@ class Ids:
         self.filepath = None
         self.filename = None
 
-        self.specifications = []
+        self.specifications: List[Specification] = []
         self.info = {}
         self.info["title"] = title or "Untitled"
         if copyright:
@@ -141,8 +141,8 @@ class Specification:
         instructions=None,
     ):
         self.name = name or "Unnamed"
-        self.applicability = []
-        self.requirements = []
+        self.applicability: List[Facet] = []
+        self.requirements: List[Facet] = []
         self.minOccurs = minOccurs
         self.maxOccurs = maxOccurs
         self.ifcVersion = ifcVersion
@@ -150,7 +150,7 @@ class Specification:
         self.description = description
         self.instructions = instructions
 
-        self.applicable_entities = []
+        self.applicable_entities: List[Entity] = []
         self.status = None
 
     def asdict(self):
@@ -209,7 +209,7 @@ class Specification:
 
     def reset_status(self):
         self.applicable_entities.clear()
-        self.failed_entities = set()
+        self.failed_entities: Set[Entity] = set()
         for facet in self.requirements:
             facet.status = None
             facet.failed_entities.clear()
