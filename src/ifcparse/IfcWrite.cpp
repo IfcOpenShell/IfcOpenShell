@@ -97,7 +97,7 @@ private:
 		std::ostringstream oss;
 		oss.imbue(std::locale::classic());
 		oss.put('"');
-		oss << std::hex << std::setw(1);
+		oss << std::uppercase << std::hex << std::setw(1);
 		unsigned c = (unsigned)b.size();
 		unsigned n = (4 - (c % 4)) & 3;
 		oss << n;
