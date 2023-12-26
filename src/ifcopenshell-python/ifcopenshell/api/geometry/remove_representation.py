@@ -30,10 +30,13 @@ class Usecase:
         styled_items = set()
         presentation_layer_assignments = set()
         textures = set()
+        colours = set()
         for subelement in self.file.traverse(self.settings["representation"]):
             if subelement.is_a("IfcRepresentationItem"):
                 [styled_items.add(s) for s in subelement.StyledByItem or []]
+                # IfcTesselatedFaceSet inverses
                 [textures.add(t) for t in getattr(subelement, "HasTextures", []) or []]
+                [colours.add(t) for t in getattr(subelement, "HasColours", []) or []]
             elif subelement.is_a("IfcRepresentation"):
                 for inverse in self.file.get_inverse(subelement):
                     if inverse.is_a("IfcPresentationLayerAssignment"):
@@ -42,12 +45,14 @@ class Usecase:
         ifcopenshell.util.element.remove_deep2(
             self.file,
             self.settings["representation"],
-            also_consider=list(styled_items | presentation_layer_assignments),
+            also_consider=list(styled_items | presentation_layer_assignments | colours),
             do_not_delete=self.file.by_type("IfcGeometricRepresentationContext"),
         )
 
         for texture in textures:
             ifcopenshell.util.element.remove_deep2(self.file, texture)
+        for colour in colours:
+            ifcopenshell.util.element.remove_deep2(self.file, colour)
 
         to_delete = getattr(self.file, "to_delete", ())
         for element in styled_items:
