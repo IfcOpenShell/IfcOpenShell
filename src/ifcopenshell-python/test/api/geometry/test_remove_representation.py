@@ -100,6 +100,14 @@ class TestRemoveRepresentation(test.bootstrap.IFC4):
         ifcopenshell.api.run("geometry.remove_representation", self.file, representation=representation)
         assert len(self.file.by_type("IfcGeometricRepresentationContext")) == 1
 
+    def test_purging_colour_map(self):
+        item = self.file.createIfcTriangulatedFaceSet()
+        representation = self.file.createIfcShapeRepresentation(Items=[item])
+        colour = self.file.createIfcIndexedColourMap(Colours=self.file.createIfcColourRgbList(), MappedTo=item)
+        ifcopenshell.api.run("geometry.remove_representation", self.file, representation=representation)
+        assert len(self.file.by_type("IfcIndexedColourMap")) == 0
+        assert len(self.file.by_type("IfcColourRgbList")) == 0
+
     def test_purging_texture_coordinates(self):
         item = self.file.createIfcTriangulatedFaceSet()
         representation = self.file.createIfcShapeRepresentation(Items=[item])
