@@ -36,7 +36,7 @@ void ifcopenshell::geometry::CgalShape::to_poly() const {
 
 		convert_to_polyhedron(*nef_, *shape_);
 		// @todo why is this necessary? we have the mark of the volumes?
-		CGAL::Polygon_mesh_processing::orient(*shape_);
+		CGAL::Polygon_mesh_processing::orient_to_bound_a_volume(*shape_);
 		
 		// nef_->convert_to_polyhedron(*shape_);
 	}
@@ -275,13 +275,17 @@ OpaqueNumber* ifcopenshell::geometry::CgalShape::CgalShape::length()
 OpaqueNumber* ifcopenshell::geometry::CgalShape::area()
 {
 	to_poly();
-	return new NumberType(CGAL::Polygon_mesh_processing::area(*shape_));
+	auto s = *shape_;
+	CGAL::Polygon_mesh_processing::triangulate_faces(s);
+	return new NumberType(CGAL::Polygon_mesh_processing::area(s));
 }
 
 OpaqueNumber* ifcopenshell::geometry::CgalShape::volume()
 {
 	to_poly();
-	return new NumberType(CGAL::Polygon_mesh_processing::volume(*shape_));
+	auto s = *shape_;
+	CGAL::Polygon_mesh_processing::triangulate_faces(s);
+	return new NumberType(CGAL::Polygon_mesh_processing::volume(s));
 }
 
 OpaqueCoordinate<3> ifcopenshell::geometry::CgalShape::position()
