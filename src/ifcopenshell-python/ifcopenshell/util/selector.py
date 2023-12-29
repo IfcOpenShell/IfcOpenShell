@@ -61,9 +61,13 @@ filter_elements_grammar = lark.Lark(
 
     special: null | true | false
 
-    comparison: not? equals
+    comparison: not? equals | morethanequalto | lessthanequalto | morethan | lessthan
     not: "!"
     equals: "="
+    morethanequalto: ">="
+    lessthanequalto: "<="
+    morethan: ">"
+    lessthan: "<"
     null: "NULL"
     true: "TRUE"
     false: "FALSE"
@@ -553,7 +557,18 @@ class FacetTransformer(lark.Transformer):
         return tree
 
     def comparison(self, args):
-        return "=" if args[0].data == "equals" else "!="
+        if args[0].data == "equals":
+            return "="
+        elif args[0].data == "morethanequalto":
+            return ">="
+        elif args[0].data == "lessthanequalto":
+            return "<="
+        elif args[0].data == "morethan":
+            return ">"
+        elif args[0].data == "lessthan":
+            return "<"
+        else:
+            return "!="
 
     def keys(self, args):
         return self.value(args)
@@ -580,19 +595,35 @@ class FacetTransformer(lark.Transformer):
                 return False
 
     def compare(self, element_value, comparison, value):
-        if isinstance(element_value, (list, tuple)):
-            return any(self.compare(ev, comparison, value) for ev in element_value)
-        elif isinstance(value, str):
-            if isinstance(element_value, int):
-                value = int(value)
-            elif isinstance(element_value, float):
-                value = float(value)
-            result = element_value == value
-        elif isinstance(value, re.Pattern):
-            result = bool(value.match(element_value)) if element_value is not None else False
-        elif value in (None, True, False):
-            result = element_value is value
-        return result if comparison == "=" else not result
+        if element_value:
+            if isinstance(element_value, (list, tuple)):
+                return any(self.compare(ev, comparison, value) for ev in element_value)        
+            elif isinstance(value, re.Pattern):
+                result = bool(value.match(element_value)) if element_value is not None else False
+            elif isinstance(value, str):
+                if isinstance(element_value, int):
+                    value = int(value)
+                elif isinstance(element_value, float):
+                    value = float(value)
+                
+                if comparison == "=":
+                    result = element_value == value
+                elif comparison == ">":
+                    result = element_value > value
+                elif comparison == "<":
+                    result = element_value < value
+                elif comparison == ">=":
+                    result = element_value >= value
+                elif comparison == "<= ":
+                    result = element_value <= value
+                else:
+                    result = element_value != value
+
+            elif value in (None, True, False):
+                result = element_value is value
+        else:
+            result = False
+        return result 
 
 
 class Selector:
