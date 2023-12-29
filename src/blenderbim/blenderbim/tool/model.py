@@ -28,6 +28,7 @@ import ifcopenshell.util.representation
 import blenderbim.core.tool
 import blenderbim.tool as tool
 import blenderbim.core.geometry as geometry
+from math import atan, degrees
 from mathutils import Matrix, Vector
 from copy import deepcopy
 from functools import partial
@@ -977,7 +978,9 @@ class Model(blenderbim.core.tool.Model):
         if nosing_length < 0:  # tread gaps
             length += abs(nosing_length) * number_of_treads
         calculated_params["Length"] = round(length, 5)
-        calculated_params["Pitch"] = round(height/length, 5)
+        pitch = height/length
+        pitch_formatted = str(round(pitch*100, 1)) + ' % / ' + str(round(degrees(atan(pitch)), 1)) + ' deg'
+        calculated_params["Pitch"] = str(pitch_formatted)
 
         return calculated_params
 
