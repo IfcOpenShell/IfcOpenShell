@@ -64,8 +64,9 @@ class Search(blenderbim.core.tool.Search):
                         continue
                     pset = cls.wrap_value(ifc_filter, ifc_filter.pset)
                     name = cls.wrap_value(ifc_filter, ifc_filter.name)
-                    comparison, value = cls.get_comparison_and_value(ifc_filter)
-                    filter_group_query.append(f"{pset}.{name}{comparison}{value}")
+                    comparison = ifc_filter.comparison
+                    value = cls.wrap_value(ifc_filter, ifc_filter.value)
+                    filter_group_query.append(f"{pset}.{name} {comparison} {value}")
                 elif ifc_filter.type == "classification":
                     comparison, value = cls.get_comparison_and_value(ifc_filter)
                     filter_group_query.append(f"classification{comparison}{value}")
@@ -138,7 +139,9 @@ class ImportFilterQueryTransformer(lark.Transformer):
                 new2.name = arg["name"]
             if "pset" in arg:
                 new2.pset = arg["pset"]
-
+            if "comparison" in arg:
+                new2.comparison = arg["comparison"]
+######################################################################
     def facet(self, args):
         return args[0]
 
@@ -163,7 +166,8 @@ class ImportFilterQueryTransformer(lark.Transformer):
 
     def property(self, args):
         pset, prop, comparison, value = args
-        return {"type": "property", "pset": pset, "name": prop, "value": f"{comparison}{value}"}
+        #return {"type": "property", "pset": pset, "name": prop, "value": f"{comparison}{value}"}
+        return {"type": "property", "pset": pset, "name": prop, "comparison" : comparison, "value": f"{value}"}
 
     def classification(self, args):
         comparison, value = args
@@ -178,7 +182,19 @@ class ImportFilterQueryTransformer(lark.Transformer):
         return {"type": "query", "name": keys, "value": f"{comparison}{value}"}
 
     def comparison(self, args):
-        return "" if args[0].data == "equals" else "!="
+        if args[0].data == "equals":
+            return "="
+        elif args[0].data == "morethanequalto":
+            return ">="
+        elif args[0].data == "lessthanequalto":
+            return "<="
+        elif args[0].data == "morethan":
+            return ">"
+        elif args[0].data == "lessthan":
+            return "<"
+        else:
+            return "!="
+        #return "" if args[0].data == "equals" else "!="
 
     def keys(self, args):
         return self.value(args)

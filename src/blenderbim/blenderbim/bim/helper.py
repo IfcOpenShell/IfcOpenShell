@@ -321,6 +321,7 @@ def draw_filter(layout, filter_groups, data, module):
                 row = box.row(align=True)
                 row.prop(ifc_filter, "pset", text="", icon="PROPERTIES")
                 row.prop(ifc_filter, "name", text="")
+                row.prop(ifc_filter, "comparison", text="")
                 row.prop(ifc_filter, "value", text="")
             elif ifc_filter.type == "classification":
                 row = box.row(align=True)
