@@ -1,13 +1,13 @@
 import bpy
 import addon_utils
-from pathlib import Path
 import shutil
+import tempfile
+from pathlib import Path
 
 context = bpy.context
 SUPPORT_LANGUAGES = ["ru_RU", "de_DE"]
 ADDON_NAME = "localization_test"
 BRANCHES_DIR = Path(context.preferences.filepaths.i18n_branches_directory)
-_LOCALE_DIR = None
 
 
 def is_addon_loaded(addon_name):
@@ -28,52 +28,47 @@ def reload_translations():
     bpy.ops.ui.i18n_addon_translation_update("INVOKE_DEFAULT", module_name=ADDON_NAME)
 
 
-def get_locale_dir() -> Path:
-    global _LOCALE_DIR
-    if _LOCALE_DIR is None:
-        addon_dir = Path(bpy.utils.script_path_user()) / "addons" / ADDON_NAME
-        _LOCALE_DIR = addon_dir / "locale"
-        _LOCALE_DIR.mkdir(exist_ok=True)
-    return _LOCALE_DIR
-
-
 def convert_translations_to_po():
-    """extract current translation strings from translation.py to .po files and saved them in
-    both `locale` folder in addon's directory and I18n Branches directory"""
+    """extract current translation strings from translation.py to .po files
+    and saves them to I18n Branches directory"""
 
-    locale_dir = get_locale_dir()
+    temp_po_dir = tempfile.TemporaryDirectory()
 
     if not BRANCHES_DIR.is_dir():
         raise Exception(f"I18n Branches directory doesn't exist: {BRANCHES_DIR.as_posix()}")
 
-    bpy.ops.ui.i18n_addon_translation_export(
-        module_name=ADDON_NAME, directory=locale_dir.as_posix(), use_export_pot=False
-    )
+    bpy.ops.ui.i18n_addon_translation_export(module_name=ADDON_NAME, directory=temp_po_dir.name, use_export_pot=False)
 
-    # NOTE: we also setup I18n branches directory
-    # because it later will be used to edit translation from UI
-    for file in locale_dir.iterdir():
-        if file.suffix != ".po":
-            continue
+    # NOTE: we use I18n branches directory
+    # because it is the directory that later will be used to edit translation from UI.
+    # I18n directory also has a bit different format then `ui_translate.export/import`,
+    # every .po file has a parent folder with the same name
+    # so we rearrange the exported data that way
+    for file in Path(temp_po_dir.name).iterdir():
         branches_subdir = BRANCHES_DIR / file.stem
         branches_subdir.mkdir(exist_ok=True)
-        shutil.copy(file, branches_subdir / file.name)
+        file.rename(branches_subdir / file.name)
+
+    temp_po_dir.cleanup()
 
 
 def update_translations_from_po():
     """load translation strings from po files at I18n Branches
     back to translations.py (they also get copied to `locale` directory of the addon)
     """
-    locale_dir = get_locale_dir()
+    temp_po_dir = tempfile.TemporaryDirectory()
+    temp_po_dir_path = Path(temp_po_dir.name)
     for file in BRANCHES_DIR.glob("**/*"):
         if file.suffix != ".po":
             continue
-        shutil.copy(file, locale_dir / file.name)
+        shutil.copy(file, temp_po_dir_path / file.name)
 
     bpy.ops.ui.i18n_addon_translation_import(
         module_name=ADDON_NAME,
-        directory=locale_dir.as_posix(),
+        directory=temp_po_dir.name,
     )
+
+    temp_po_dir.cleanup()
 
 
 if __name__ == "__main__":
