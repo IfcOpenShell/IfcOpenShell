@@ -295,4 +295,4 @@ def unregister():
         bpy.utils.register_class(original_panel)
         del overridden_scene_panels[panel]
 
-    bpy.app.translations.register("blenderbim", translations_dict)
+    bpy.app.translations.unregister("blenderbim")
