@@ -3,6 +3,8 @@ import addon_utils
 import shutil
 import tempfile
 import importlib
+import os
+import bl_i18n_utils
 from pathlib import Path
 
 context = bpy.context
@@ -77,6 +79,33 @@ def update_translations_from_po():
     translations_module = getattr(addon_module, "translations")
     importlib.reload(translations_module)
     bpy.app.translations.register(ADDON_NAME, translations_module.translations_dict)
+
+
+def dump_py_messages(msgs, reports, addons, settings, addons_only=False):
+    def _get_files(path):
+        if not os.path.exists(path):
+            return []
+        if os.path.isdir(path):
+            return [os.path.join(dpath, fn) for dpath, _, fnames in os.walk(path) for fn in fnames
+                    if fn.endswith(".py") and (fn == "__init__.py"
+                                               or not fn.startswith("_"))]
+        return [path]
+
+    files = []
+    if not addons_only:
+        for path in settings.CUSTOM_PY_UI_FILES:
+            for root in (bpy.utils.resource_path(t) for t in ("USER", "LOCAL", "SYSTEM")):
+                files += _get_files(os.path.join(root, path))
+
+    # Add all given addons.
+    for mod in addons:
+        fn = mod.__file__
+        if os.path.basename(fn) == "__init__.py":
+            files += _get_files(os.path.dirname(fn))
+        else:
+            files.append(fn)
+
+    bl_i18n_utils.bl_extract_messages.dump_py_messages_from_files(msgs, reports, sorted(files), settings)
 
 
 if __name__ == "__main__":
