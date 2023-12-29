@@ -81,14 +81,28 @@ def update_translations_from_po():
     bpy.app.translations.register(ADDON_NAME, translations_module.translations_dict)
 
 
-def dump_py_messages(msgs, reports, addons, settings, addons_only=False):
-    def _get_files(path):
+def dump_py_messages_monkey_patch(msgs, reports, addons, settings, addons_only=False):
+    ignore_addon_dirs = ["libs"]
+
+    def _get_files(path, ignore_dirs=tuple()):
         if not os.path.exists(path):
             return []
         if os.path.isdir(path):
-            return [os.path.join(dpath, fn) for dpath, _, fnames in os.walk(path) for fn in fnames
-                    if fn.endswith(".py") and (fn == "__init__.py"
-                                               or not fn.startswith("_"))]
+            files = []
+            for dpath, subdirs, fnames in os.walk(path, topdown=True, followlinks=True):
+                if Path(dpath) in ignore_dirs:
+                    subdirs.clear()  # skip walking through `subdirs`
+                    continue
+
+                for fn in fnames:
+                    if not fn.endswith(".py"):
+                        continue
+                    if fn.startswith("_") and fn != "__init__.py":
+                        continue
+                    files.append(os.path.join(dpath, fn))
+
+            return files
+
         return [path]
 
     files = []
@@ -101,7 +115,9 @@ def dump_py_messages(msgs, reports, addons, settings, addons_only=False):
     for mod in addons:
         fn = mod.__file__
         if os.path.basename(fn) == "__init__.py":
-            files += _get_files(os.path.dirname(fn))
+            parent_dir = Path(fn).parent
+            ignore_dirs = [parent_dir / dpath for dpath in ignore_addon_dirs]
+            files += _get_files(os.path.dirname(fn), ignore_dirs=ignore_dirs)
         else:
             files.append(fn)
 
@@ -121,6 +137,12 @@ if __name__ == "__main__":
             f" - {ui_translate_settings.WORK_DIR}\n"
             f" - {ui_translate_settings.BLENDER_I18N_PO_DIR}\n"
         )
+
+    # we monkey patch `bl_i18n_utils.bl_extract_messages.dump_py_messages`
+    # as it's doesn't support ignoring folders
+    # and we need it, otherwise translation addon will try to parse strings
+    # from all BlenderBIM dependencies :O
+    bl_i18n_utils.bl_extract_messages.dump_py_messages = dump_py_messages_monkey_patch
 
     # setup selected languages
     for lang in i18n_settings.langs:
