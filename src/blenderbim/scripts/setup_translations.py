@@ -2,6 +2,7 @@ import bpy
 import addon_utils
 import shutil
 import tempfile
+import importlib
 from pathlib import Path
 
 context = bpy.context
@@ -69,6 +70,13 @@ def update_translations_from_po():
     )
 
     temp_po_dir.cleanup()
+
+    # update translations in current Blender session
+    bpy.app.translations.unregister(ADDON_NAME)
+    addon_module = importlib.import_module(ADDON_NAME)
+    translations_module = getattr(addon_module, "translations")
+    importlib.reload(translations_module)
+    bpy.app.translations.register(ADDON_NAME, translations_module.translations_dict)
 
 
 if __name__ == "__main__":
