@@ -481,7 +481,16 @@ class BIMFacet(PropertyGroup):
     pset: StringProperty(name="Pset")
     value: StringProperty(name="Value")
     type: StringProperty(name="Type")
-    comparison: StringProperty(name="Comparison")
+    comparison: EnumProperty(
+        items=[
+            ("=", "equal to", ""),
+            ("!=", "not equal to", ""),
+            (">=", "greater than or equal to", ""),
+            ("<=", "lesser than or equal to", ""),
+            (">", "greater than", ""),
+            ("<", "less than", ""),
+        ],
+    )
 
 
 class BIMFilterGroup(PropertyGroup):
