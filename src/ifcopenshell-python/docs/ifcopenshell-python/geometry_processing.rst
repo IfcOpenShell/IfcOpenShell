@@ -170,7 +170,7 @@ The element in your ifc file might look like this.
     #1618938=IFCSHAPEREPRESENTATION(#4,'Body','BRep',(#1617583));
     #1618939=IFCSHAPEREPRESENTATION(#4,'Body','BRep',(#1617630));
     #1618957=IFCPRODUCTDEFINITIONSHAPE($,$,(#1618937,#1618938,#1618939));
-    #1618958=IFCWINDOW('0Rrp2csNr07QrVCrEBJezu',#9,'\X2\5EFA7B517A97\X0\','\X2\5EFA7B517A97\X0\',$,#1618936,#1618957,'\X2\5EFA7B517A97\X0\',$,$,$,$,$);
+    #1618958=IFCWINDOW('0Rrp2csNr07QrVCrEBJezu',#9,'test','test',$,#1618936,#1618957,'\X2\5EFA7B517A97\X0\',$,$,$,$,$);
 
 In order to get the geometry data (e.g. vertices) for this ``IFCWINDOW``, we can use the Python code below:
 
