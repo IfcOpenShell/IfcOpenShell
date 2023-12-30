@@ -158,11 +158,9 @@ In these scenarios, a ``geometry`` is returned directly, equivalent to
     geometry = geom.create_shape(settings, ifc_file.by_type("IfcProfileDef")[0])
 
 
-
-
-
 Process individual element with multiple shape representations
 ---------------------
+
 When a element contains multiple shape representations, you can use third parameter of ``create_shape()`` to process each shape representation.
 The element in your ifc file might look like this.
 
