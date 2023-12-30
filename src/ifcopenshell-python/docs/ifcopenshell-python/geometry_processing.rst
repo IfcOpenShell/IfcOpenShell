@@ -161,7 +161,7 @@ In these scenarios, a ``geometry`` is returned directly, equivalent to
 Process individual element with multiple shape representations
 ---------------------
 
-When a element contains multiple shape representations, you can use third parameter of ``create_shape()`` to process each shape representation.
+When an element contains multiple shape representations with the same identifier or when you want more explicit control over which representation is processed (e.g `Body` or `Tesselation`), you can use the third parameter of ``create_shape()`` to nominate a specific shape representation to be processed in the context of a product.
 The element in your ifc file might look like this.
 
 .. code-block:: ifc
