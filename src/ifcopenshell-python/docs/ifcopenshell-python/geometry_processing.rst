@@ -157,6 +157,44 @@ In these scenarios, a ``geometry`` is returned directly, equivalent to
     # Process a profile
     geometry = geom.create_shape(settings, ifc_file.by_type("IfcProfileDef")[0])
 
+
+
+
+
+Process individual element with multiple shape representations
+---------------------
+When a element contains multiple shape representations, you can use third parameter of ``create_shape()`` to process each shape representation.
+The element in your ifc file might look like this.
+
+.. code-block:: ifc
+
+    #1618937=IFCSHAPEREPRESENTATION(#4,'Body','BRep',(#1617476));
+    #1618938=IFCSHAPEREPRESENTATION(#4,'Body','BRep',(#1617583));
+    #1618939=IFCSHAPEREPRESENTATION(#4,'Body','BRep',(#1617630));
+    #1618957=IFCPRODUCTDEFINITIONSHAPE($,$,(#1618937,#1618938,#1618939));
+    #1618958=IFCWINDOW('0Rrp2csNr07QrVCrEBJezu',#9,'\X2\5EFA7B517A97\X0\','\X2\5EFA7B517A97\X0\',$,#1618936,#1618957,'\X2\5EFA7B517A97\X0\',$,$,$,$,$);
+
+In order to get the geometry data (e.g. vertices) for this ``IFCWINDOW``, we can use the Python code below:
+
+.. code-block:: python
+
+    import ifcopenshell
+    import ifcopenshell.geom
+    settings = ifcopenshell.geom.settings()
+    ifc_file = ifcopenshell.open('window.ifc')
+    window = ifc_file.by_type('IfcWindow')[0]  # Get the IFCWINDOW that contains multiple Representations
+    representations = window.Representation.Representations
+    for rep in representations:
+        shape = ifcopenshell.geom.create_shape(settings, window, rep)  # The third parameter specifies which representation of the window is handled
+        vertices = shape.geometry.verts
+        print(vertices)
+
+
+.. note::
+
+    You may still need to determine which representation don't contain geometry data or some type like Box need to be discarded at render time.
+
+
 Geometry iterator
 -----------------
 
