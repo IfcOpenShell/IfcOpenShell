@@ -240,6 +240,30 @@ Here is a simple example in Python:
             if not iterator.next():
                 break
 
+
+The geometry iterator can process specific elements' geometry by using parameter ``include`` and ``exclude``, ``include`` and ``exclude`` cannot be specified simultaneously. Code below shows how to get specific wall's geometry (e.g. walls[1]):
+
+.. code-block:: python
+
+    import ifcopenshell
+    import ifcopenshell.geom
+    import multiprocessing
+    import ifcopenshell.util.shape
+
+    ifc = ifcopenshell.open('model.ifc')
+    walls = ifc.by_type('ifcwall')
+    settings = ifcopenshell.geom.settings()
+    iterator = ifcopenshell.geom.iterator(settings, ifc, multiprocessing.cpu_count(), include=[walls[1]])
+    valid_file = iterator.initialize()
+    while True:
+        shape = iterator.get()
+        element = ifc.by_id(shape.id)
+        geometry = shape.geometry
+        verts = geometry.verts
+        print(verts)
+        if not iterator.next():
+            break
+
 .. note::
 
     The iterator can only be used to process whole elements, not individual
