@@ -25,11 +25,11 @@ def calculate_height(obj):
 
 
 def calculate_edges_lengths(objs, context):
-    return calculate_mesh_quantity(objs, context, lambda bm: sum((e.calc_length() for e in bm.edges if e.select)))
+    return calculate_mesh_quantity(objs, context, lambda bm: sum((e.calc_length() for e in bm.edges)))
 
 
 def calculate_faces_areas(objs, context):
-    return calculate_mesh_quantity(objs, context, lambda bm: sum((f.calc_area() for f in bm.faces if f.select)))
+    return calculate_mesh_quantity(objs, context, lambda bm: sum((f.calc_area() for f in bm.faces)))
 
 
 def calculate_volumes(objs, context):

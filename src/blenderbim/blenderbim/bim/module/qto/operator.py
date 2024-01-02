@@ -21,9 +21,11 @@ import ifcopenshell
 import ifcopenshell.api
 import blenderbim.tool as tool
 import blenderbim.core.qto as core
+import ifcopenshell.util.unit
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.qto import helper
 from blenderbim.bim.module.pset.qto_calculator import QtoCalculator
+
 
 
 class CalculateCircleRadius(bpy.types.Operator):
@@ -36,7 +38,9 @@ class CalculateCircleRadius(bpy.types.Operator):
         return context.active_object
 
     def execute(self, context):
-        core.calculate_circle_radius(tool.Qto, obj=context.active_object)
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        result = core.calculate_circle_radius(tool.Qto, obj=context.active_object)
+        context.scene.BIMQtoProperties.qto_result = str(round(result/si_conversion, 3))
         return {"FINISHED"}
 
 
@@ -50,8 +54,9 @@ class CalculateEdgeLengths(bpy.types.Operator):
         return context.selected_objects and context.active_object
 
     def execute(self, context):
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         result = helper.calculate_edges_lengths([o for o in context.selected_objects if o.type == "MESH"], context)
-        context.scene.BIMQtoProperties.qto_result = str(round(result, 3))
+        context.scene.BIMQtoProperties.qto_result = str(round(result/si_conversion, 3))
         return {"FINISHED"}
 
 
@@ -65,8 +70,9 @@ class CalculateFaceAreas(bpy.types.Operator):
         return context.selected_objects and context.active_object
 
     def execute(self, context):
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         result = helper.calculate_faces_areas([o for o in context.selected_objects if o.type == "MESH"], context)
-        context.scene.BIMQtoProperties.qto_result = str(round(result, 3))
+        context.scene.BIMQtoProperties.qto_result = str(round(result/si_conversion/si_conversion, 3))
         return {"FINISHED"}
 
 
@@ -80,8 +86,9 @@ class CalculateObjectVolumes(bpy.types.Operator):
         return context.selected_objects and context.active_object
 
     def execute(self, context):
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         result = helper.calculate_volumes([o for o in context.selected_objects if o.type == "MESH"], context)
-        context.scene.BIMQtoProperties.qto_result = str(round(result, 3))
+        context.scene.BIMQtoProperties.qto_result = str(round(result/si_conversion/si_conversion/si_conversion, 3))
         return {"FINISHED"}
 
 
