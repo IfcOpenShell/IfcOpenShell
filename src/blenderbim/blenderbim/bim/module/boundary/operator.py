@@ -103,7 +103,7 @@ class Loader:
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
             matrix = mathutils.Matrix(
                 ifcopenshell.util.placement.get_axis2placement(surface.BasisSurface.Position).tolist()
-            )            
+            )
             matrix.translation *= unit_scale
             mesh.transform(matrix)
         return mesh
@@ -577,7 +577,9 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
                 return
 
             for subelement in ifcopenshell.util.element.get_decomposition(spatial_element):
-                if not (subelement.is_a("IfcWall") or subelement.is_a("IfcSlab") or subelement.is_a("IfcVirtualElement")):
+                if not (
+                    subelement.is_a("IfcWall") or subelement.is_a("IfcSlab") or subelement.is_a("IfcVirtualElement")
+                ):
                     continue
                 obj = tool.Ifc.get_object(subelement)
                 if obj:
@@ -639,7 +641,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
         # can use this to check whether or not the opening is relevant to our
         # space.
         exterior_boundary_polygon = shapely.Polygon(gross_boundary_polygon.exterior.coords)
-        
+
         inner_boundaries = []
 
         for rel in getattr(related_building_element, "HasOpenings", []):
@@ -652,7 +654,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
             opening_polygon = self.get_flattened_polygon(opening, relating_space_obj, target_face_matrix_i)
 
             # An inner boundary is supposed to overlap its parent boundary according to IFC4 documentation
-            # so we extend our exterior boundary with all opening which has a filling
+            # so we extend our exterior boundary with all opening which has a filling
             # Also see Implementation aggreement SB 1.1 for IFC 2x3 TC1 Space Boundary Addon View
             # https://standards.buildingsmart.org/MVD/RELEASE/IFC2x3/TC1/SB1_1/IFC%20Space%20Boundary%20Implementation%20Agreement%20Addendum%202010-03-22.pdf
             unionised_object = exterior_boundary_polygon.union(opening_polygon)
@@ -677,7 +679,9 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
             if boundary.is_a("IfcRelSpaceBoundary2ndLevel"):
                 boundary.ParentBoundary = parent_boundary
 
-        connection_geometry = self.create_connection_geometry_from_polygon(exterior_boundary_polygon, target_face_matrix)
+        connection_geometry = self.create_connection_geometry_from_polygon(
+            exterior_boundary_polygon, target_face_matrix
+        )
         parent_boundary.RelatingSpace = relating_space
         parent_boundary.RelatedBuildingElement = related_building_element
         parent_boundary.ConnectionGeometry = connection_geometry
@@ -742,11 +746,13 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
         tool.Model.unit_scale = self.unit_scale
 
         surface = tool.Ifc.get().createIfcCurveBoundedPlane()
-        surface.BasisSurface = tool.Ifc.get().createIfcPlane(tool.Ifc.get().createIfcAxis2Placement3D(
-            tool.Ifc.get().createIfcCartesianPoint([o / self.unit_scale for o in p1]),
-            tool.Ifc.get().createIfcDirection([float(o) for o in z_axis]),
-            tool.Ifc.get().createIfcDirection([float(o) for o in x_axis]),
-        ))
+        surface.BasisSurface = tool.Ifc.get().createIfcPlane(
+            tool.Ifc.get().createIfcAxis2Placement3D(
+                tool.Ifc.get().createIfcCartesianPoint([o / self.unit_scale for o in p1]),
+                tool.Ifc.get().createIfcDirection([float(o) for o in z_axis]),
+                tool.Ifc.get().createIfcDirection([float(o) for o in x_axis]),
+            )
+        )
 
         if tool.Ifc.get().schema != "IFC2X3":
             points = [tool.Model.convert_si_to_unit(list(co)) for co in polygon.exterior.coords]
@@ -759,13 +765,13 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
                 point_list = tool.Ifc.get().createIfcCartesianPointList2D(points)
                 inner_boundaries.append(tool.Ifc.get().createIfcIndexedPolyCurve(point_list, None, False))
         else:
-            pass # TODO
+            pass  # TODO
 
         surface.OuterBoundary = outer_boundary
         surface.InnerBoundaries = inner_boundaries
 
         return surface
-    
+
     def set_boundary_name(self, boundary):
         """
         By convention 1stLevel and 2ndLevel boundary have specific name and description
