@@ -24,7 +24,7 @@ requirements:
     - {{ compiler('cxx') }}
     - ninja >=1.10.2
     - cmake
-    - swig >=4.0.2
+    - swig 4.1.1
 
   host:
     - python
