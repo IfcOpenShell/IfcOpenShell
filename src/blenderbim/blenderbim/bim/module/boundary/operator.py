@@ -639,9 +639,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
         # can use this to check whether or not the opening is relevant to our
         # space.
         exterior_boundary_polygon = shapely.Polygon(gross_boundary_polygon.exterior.coords)
-
-        net_boundary_polygon = shapely.Polygon(gross_boundary_polygon)
-
+        
         inner_boundaries = []
 
         for rel in getattr(related_building_element, "HasOpenings", []):
@@ -653,7 +651,14 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
 
             opening_polygon = self.get_flattened_polygon(opening, relating_space_obj, target_face_matrix_i)
 
-            net_boundary_polygon = net_boundary_polygon.difference(opening_polygon)
+            # An inner boundary is supposed to overlap its parent boundary according to IFC4 documentation
+            # so we extend our exterior boundary with all opening which has a filling
+            # Also see Implementation aggreement SB 1.1 for IFC 2x3 TC1 Space Boundary Addon View
+            # https://standards.buildingsmart.org/MVD/RELEASE/IFC2x3/TC1/SB1_1/IFC%20Space%20Boundary%20Implementation%20Agreement%20Addendum%202010-03-22.pdf
+            unionised_object = exterior_boundary_polygon.union(opening_polygon)
+            if isinstance(unionised_object, shapely.Polygon):
+                exterior_boundary_polygon = unionised_object
+
             # Only openings that are projected onto our exterior boundary are relevant.
             if opening_polygon.intersection(exterior_boundary_polygon).area == 0:
                 continue
@@ -672,7 +677,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
             if boundary.is_a("IfcRelSpaceBoundary2ndLevel"):
                 boundary.ParentBoundary = parent_boundary
 
-        connection_geometry = self.create_connection_geometry_from_polygon(net_boundary_polygon, target_face_matrix)
+        connection_geometry = self.create_connection_geometry_from_polygon(exterior_boundary_polygon, target_face_matrix)
         parent_boundary.RelatingSpace = relating_space
         parent_boundary.RelatedBuildingElement = related_building_element
         parent_boundary.ConnectionGeometry = connection_geometry
