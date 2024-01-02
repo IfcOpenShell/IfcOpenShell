@@ -554,6 +554,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
                     related_building_element_obj = obj
         elif len(objs) == 1:
             # Optionally the user may select just the space, and the building element shall be auto-detected
+            # TODO : refactor to be able to generate all boundaries for selected space automatically or with an option
 
             def msg(self, context):
                 self.layout.label(text="NO ACTIVE STOREY")
@@ -576,7 +577,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
                 return
 
             for subelement in ifcopenshell.util.element.get_decomposition(spatial_element):
-                if not (subelement.is_a("IfcWall") or subelement.is_a("IfcSlab")):
+                if not (subelement.is_a("IfcWall") or subelement.is_a("IfcSlab") or subelement.is_a("IfcVirtualElement")):
                     continue
                 obj = tool.Ifc.get_object(subelement)
                 if obj:
@@ -589,6 +590,8 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
         if not relating_space or not related_building_element:
             return
 
+        # Find which face on space should be bounded to related building element
+        # TODO: Handle round wall where multiple faces need to be bound to the same related building element
         bm = bmesh.new()
         bm.from_mesh(relating_space_obj.data)
         bmesh.ops.dissolve_limit(bm, angle_limit=pi * 2 / 360, verts=bm.verts, edges=bm.edges)
@@ -643,9 +646,10 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
 
         for rel in getattr(related_building_element, "HasOpenings", []):
             opening = rel.RelatedOpeningElement
-            filling = None
-            if opening.HasFillings:
-                filling = opening.HasFillings[0].RelatedBuildingElement
+            if not opening.HasFillings:
+                continue
+            # TODO: HasFilling is a zero to many relationship. How to handle many ?
+            filling = opening.HasFillings[0].RelatedBuildingElement
 
             opening_polygon = self.get_flattened_polygon(opening, relating_space_obj, target_face_matrix_i)
 
@@ -657,11 +661,14 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
             connection_geometry = self.create_connection_geometry_from_polygon(opening_polygon, target_face_matrix)
             boundary = tool.Ifc.run("root.create_entity", ifc_class=context.scene.BIMModelProperties.boundary_class)
             boundary.RelatingSpace = relating_space
-            boundary.RelatedBuildingElement = filling or related_building_element
+            boundary.RelatedBuildingElement = filling
             boundary.ConnectionGeometry = connection_geometry
-            boundary.PhysicalOrVirtualBoundary = "PHYSICAL" if filling else "VIRTUAL"
+            if related_building_element.is_a("IfcVirtualElement"):
+                boundary.PhysicalOrVirtualBoundary = "VIRTUAL"
+            else:
+                boundary.PhysicalOrVirtualBoundary = "PHYSICAL"
             boundary.InternalOrExternalBoundary = "INTERNAL"
-
+            self.set_boundary_name(boundary)
             if boundary.is_a("IfcRelSpaceBoundary2ndLevel"):
                 boundary.ParentBoundary = parent_boundary
 
@@ -671,6 +678,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
         parent_boundary.ConnectionGeometry = connection_geometry
         parent_boundary.PhysicalOrVirtualBoundary = "PHYSICAL"
         parent_boundary.InternalOrExternalBoundary = "INTERNAL"
+        self.set_boundary_name(parent_boundary)
 
         bpy.ops.bim.show_boundaries()
         obj = tool.Ifc.get_object(parent_boundary)
@@ -752,3 +760,18 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
         surface.InnerBoundaries = inner_boundaries
 
         return surface
+    
+    def set_boundary_name(self, boundary):
+        """
+        By convention 1stLevel and 2ndLevel boundary have specific name and description
+        See https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRelSpaceBoundary.htm
+        Warning: IfcRelSpaceBoundary2ndLevel is a subclass of IfcRelSpaceBoundary1stLevel test order matter
+        """
+        if boundary.is_a("IfcRelSpaceBoundary2ndLevel"):
+            boundary.Name = "2ndLevel"
+            if boundary.CorrespondingBoundary:
+                boundary.Description = "2a"
+            else:
+                boundary.Description = "2b"
+        elif boundary.is_a("IfcRelSpaceBoundary1stLevel"):
+            boundary.Name = "1stLevel"
