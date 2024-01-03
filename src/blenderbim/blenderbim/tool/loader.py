@@ -173,7 +173,7 @@ class Loader(blenderbim.core.tool.Loader):
                 if color_type == "IfcColourRgb":
                     bsdf.inputs["Base Color"].default_value = color_value + (1,)
                 else:  # "IfcNormalisedRatioMeasure"
-                    color_value = [v * color_value for v in surface_style["SurfaceColour"]]
+                    color_value = tuple(v * color_value for v in surface_style["SurfaceColour"])
                     bsdf.inputs["Base Color"].default_value = color_value + (1,)
 
             if surface_style["SpecularColour"]:
