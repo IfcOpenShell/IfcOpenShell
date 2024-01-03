@@ -86,13 +86,25 @@ class Loader:
         except RuntimeError:
             # Fallback solution for invalid geometry provided by Revit. (InnerBoundaries cuting OuterBoundary)
             print(f"Failed to create mesh from IfcRelSpaceBoundary with ID {boundary.id()}. Geometry might be invalid")
-            shape = ifcopenshell.geom.create_shape(self.fallback_settings, surface.OuterBoundary)
+            try:
+                shape = ifcopenshell.geom.create_shape(self.fallback_settings, surface.OuterBoundary)
+            except RuntimeError:
+                print(
+                    f"Skipping IfcRelSpaceBoundary with ID {boundary.id()}. Fallback solution failed. Geometry might be invalid"
+                )
+                return None
             mesh = bpy.data.meshes.new(str(surface.id()))
             bm = bmesh.new()
             verts = [bm.verts.new(shape.verts[i : i + 3]) for i in range(0, len(shape.verts), 3)]
             bm.faces.new(verts)
             for inner_boundary in surface.InnerBoundaries:
-                shape = ifcopenshell.geom.create_shape(self.fallback_settings, inner_boundary)
+                try:
+                    shape = ifcopenshell.geom.create_shape(self.fallback_settings, inner_boundary)
+                except RuntimeError:
+                    print(
+                        f"Skipping an inner boundary for IfcRelSpaceBoundary with ID {boundary.id()}. Geometry might be invalid"
+                    )
+                    return None
                 verts = [bm.verts.new(shape.verts[i : i + 3]) for i in range(0, len(shape.verts), 3)]
                 for i in range(len(verts) - 1):
                     bm.edges.new(verts[i : i + 2])
@@ -538,6 +550,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
         related_building_element = None
         relating_space_obj = None
         related_building_element_obj = None
+        parent_boundaries = []
 
         objs = context.selected_objects
         if len(objs) == 2:
@@ -552,6 +565,11 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
                 else:
                     related_building_element = element
                     related_building_element_obj = obj
+            parent_boundary = self.create_element_boundary(
+                context, relating_space, relating_space_obj, related_building_element, related_building_element_obj
+            )
+            if parent_boundary:
+                parent_boundaries.append(parent_boundary)
         elif len(objs) == 1:
             # Optionally the user may select just the space, and the building element shall be auto-detected
             # TODO : refactor to be able to generate all boundaries for selected space automatically or with an option
@@ -563,8 +581,6 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
             if element.is_a("IfcSpace"):
                 relating_space = element
                 relating_space_obj = objs[0]
-
-            target = bpy.context.scene.cursor.location
 
             collection = context.view_layer.active_layer_collection.collection
             collection_obj = bpy.data.objects.get(collection.name)
@@ -583,12 +599,26 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
                     continue
                 obj = tool.Ifc.get_object(subelement)
                 if obj:
-                    raycast = obj.closest_point_on_mesh(obj.matrix_world.inverted() @ target, distance=0.1)
-                    if raycast[0]:
-                        related_building_element = subelement
-                        related_building_element_obj = obj
-                        break
+                    related_building_element = subelement
+                    related_building_element_obj = obj
+                    parent_boundary = self.create_element_boundary(
+                        context,
+                        relating_space,
+                        relating_space_obj,
+                        related_building_element,
+                        related_building_element_obj,
+                    )
+                    if parent_boundary:
+                        parent_boundaries.append(parent_boundary)
 
+        bpy.ops.bim.show_boundaries()
+        for parent_boundary in parent_boundaries:
+            obj = tool.Ifc.get_object(parent_boundary)
+            obj.select_set(True)
+
+    def create_element_boundary(
+        self, context, relating_space, relating_space_obj, related_building_element, related_building_element_obj
+    ):
         if not relating_space or not related_building_element:
             return
 
@@ -614,8 +644,6 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
         if not target_face:
             return
 
-        parent_boundary = tool.Ifc.run("root.create_entity", ifc_class=context.scene.BIMModelProperties.boundary_class)
-
         # Is this right? Or should I use loop?
         target_face_verts = [v.co.copy() for v in target_face.verts]
         target_face_matrix = self.get_face_matrix(*[v.copy() for v in target_face_verts[0:3]])
@@ -634,6 +662,18 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
                 if type(geom) == shapely.Polygon:
                     gross_boundary_polygon = geom
                     break
+
+        if (
+            not (isinstance(gross_boundary_polygon, shapely.Polygon) and gross_boundary_polygon.is_valid)
+            or gross_boundary_polygon.is_empty
+        ):
+            return
+
+        parent_boundary = tool.Ifc.run("root.create_entity", ifc_class=context.scene.BIMModelProperties.boundary_class)
+        parent_boundary.PhysicalOrVirtualBoundary = "PHYSICAL"
+        # Set to EXTERNAL by default and turn later to internal if there is a corresponding boundary relating to an
+        # internal space
+        parent_boundary.InternalOrExternalBoundary = "EXTERNAL"
 
         # The gross boundary polygon may not be a true gross boundary since it
         # may have openings already removed, such as in IFC4 Reference View. So
@@ -674,7 +714,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
                 boundary.PhysicalOrVirtualBoundary = "VIRTUAL"
             else:
                 boundary.PhysicalOrVirtualBoundary = "PHYSICAL"
-            boundary.InternalOrExternalBoundary = "INTERNAL"
+            boundary.InternalOrExternalBoundary = parent_boundary.InternalOrExternalBoundary
             self.set_boundary_name(boundary)
             if boundary.is_a("IfcRelSpaceBoundary2ndLevel"):
                 boundary.ParentBoundary = parent_boundary
@@ -685,13 +725,8 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
         parent_boundary.RelatingSpace = relating_space
         parent_boundary.RelatedBuildingElement = related_building_element
         parent_boundary.ConnectionGeometry = connection_geometry
-        parent_boundary.PhysicalOrVirtualBoundary = "PHYSICAL"
-        parent_boundary.InternalOrExternalBoundary = "INTERNAL"
         self.set_boundary_name(parent_boundary)
-
-        bpy.ops.bim.show_boundaries()
-        obj = tool.Ifc.get_object(parent_boundary)
-        obj.select_set(True)
+        return parent_boundary
 
     def get_face_matrix(self, p1, p2, p3):
         edge1 = p2 - p1
