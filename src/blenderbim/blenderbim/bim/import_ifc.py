@@ -1562,16 +1562,24 @@ class IfcImporter:
                 elif element.Nests:
                     rel_aggregates.add(element.Nests[0])
         else:
-            rel_aggregates = [
-                r
-                for r in self.file.by_type("IfcRelAggregates")
-                if r.RelatingObject.is_a("IfcElement") or r.RelatingObject.is_a("IfcElementType")
-            ] + [
-                r
-                for r in self.file.by_type("IfcRelNests")
-                if (r.RelatingObject.is_a("IfcElement") or r.RelatingObject.is_a("IfcElementType"))
-                and [e for e in r.RelatedObjects if not e.is_a("IfcPort")]
-            ]
+            def check_relation(r) -> bool:
+                return bool(r.RelatingObject.is_a("IfcElement") or r.RelatingObject.is_a("IfcElementType"))
+
+            rel_aggregates = list()
+
+            for relation in self.file.by_type("IfcRelAggregates"):
+                if relation.RelatingObject is None:
+                    print(f"Skipping '{relation.GlobalId}' because 'RelatingObject' needs to exist.")
+                    continue
+                if check_relation(relation):
+                    rel_aggregates.append(rel_aggregates)
+
+            for relation in self.file.by_type("IfcRelNests"):
+                if relation.RelatingObject is None:
+                    print(f"Skipping '{relation.GlobalId}' because 'RelatingObject' needs to exist.")
+                    continue
+                if check_relation(relation) and [e for e in relation.RelatedObjects if not e.is_a("IfcPort")]:
+                    rel_aggregates.append(rel_aggregates)
 
         if len(rel_aggregates) > 10000:
             # More than 10,000 collections makes Blender unhappy
