@@ -108,7 +108,7 @@ class Usecase:
         for resource in resources:
             cost, unit = ifcopenshell.util.resource.get_cost(resource)
             if not cost:
-                cost = ifcopenshell.util.resource.get_parent_cost(resource) # Concept to standardise - Not defined in schema, but this makes manual scheduling of resources 10x faster and less duplicate data.
+                cost, unit  = ifcopenshell.util.resource.get_parent_cost(resource) # Concept to standardise - Not defined in schema, but this makes manual scheduling of resources 10x faster and less duplicate data.
             quantity = ifcopenshell.util.resource.get_quantity(resource)
             if not cost or not quantity:
                 continue
