@@ -63,7 +63,8 @@ def disable_editing_boundary_geometry(context):
 
 
 class Loader:
-    def __init__(self):
+    def __init__(self, operator=None):
+        self.operator = operator
         self.ifc_file = None
         self.logger = None
         self.ifc_importer = None
@@ -85,12 +86,18 @@ class Loader:
             tool.Loader.link_mesh(shape, mesh)
         except RuntimeError:
             # Fallback solution for invalid geometry provided by Revit. (InnerBoundaries cuting OuterBoundary)
-            print(f"Failed to create mesh from IfcRelSpaceBoundary with ID {boundary.id()}. Geometry might be invalid")
+            self.operator.report(
+                {"WARNING"},
+                (
+                    f"IfcRelSpaceBoundary {boundary.id()} mesh creation failed. Geometry might be invalid. Using fallback solution"
+                ),
+            )
             try:
                 shape = ifcopenshell.geom.create_shape(self.fallback_settings, surface.OuterBoundary)
             except RuntimeError:
-                print(
-                    f"Skipping IfcRelSpaceBoundary with ID {boundary.id()}. Fallback solution failed. Geometry might be invalid"
+                self.operator.report(
+                    {"WARNING"},
+                    f"Skipping IfcRelSpaceBoundary {boundary.id()}. Fallback solution failed. Geometry might be invalid",
                 )
                 return None
             mesh = bpy.data.meshes.new(str(surface.id()))
@@ -101,8 +108,9 @@ class Loader:
                 try:
                     shape = ifcopenshell.geom.create_shape(self.fallback_settings, inner_boundary)
                 except RuntimeError:
-                    print(
-                        f"Skipping an inner boundary for IfcRelSpaceBoundary with ID {boundary.id()}. Geometry might be invalid"
+                    self.operator.report(
+                        {"WARNING"},
+                        f"Skipping an inner boundary for IfcRelSpaceBoundary with ID {boundary.id()}. Geometry might be invalid",
                     )
                     return None
                 verts = [bm.verts.new(shape.verts[i : i + 3]) for i in range(0, len(shape.verts), 3)]
@@ -138,7 +146,15 @@ class Loader:
         self.ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
         self.ifc_importer.file = self.ifc_file
 
-    def load_boundary(self, boundary, blender_space):
+    def load_boundary(self, boundary, blender_space=None):
+        if not blender_space:
+            if not boundary.RelatingSpace:
+                self.operator.report(
+                    {"WARNING"},
+                    f"Skipping IfcRelSpaceBoundary {boundary.id()} which have no relating space. Invalid boundary.",
+                )
+                return
+            blender_space = tool.Ifc.get_object(boundary.RelatingSpace)
         obj = tool.Ifc.get_object(boundary)
         if obj:
             return obj
@@ -157,9 +173,9 @@ class LoadProjectSpaceBoundaries(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        loader = Loader()
+        loader = Loader(self)
         for rel in tool.Ifc.get().by_type("IfcRelSpaceBoundary"):
-            loader.load_boundary(rel, tool.Ifc.get_object(rel.RelatingSpace))
+            loader.load_boundary(rel)
         return {"FINISHED"}
 
 
@@ -170,7 +186,7 @@ class LoadBoundary(bpy.types.Operator):
     boundary_id: bpy.props.IntProperty()
 
     def execute(self, context):
-        loader = Loader()
+        loader = Loader(self)
         for obj in context.visible_objects:
             obj.select_set(False)
         obj = loader.load_boundary(tool.Ifc.get().by_id(self.boundary_id), context.active_object)
@@ -185,7 +201,7 @@ class LoadSpaceBoundaries(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        loader = Loader()
+        loader = Loader(self)
         element = tool.Ifc.get_entity(context.active_object)
         for rel in element.BoundedBy or []:
             loader.load_boundary(rel, context.active_object)
@@ -471,7 +487,7 @@ class EditBoundaryGeometry(bpy.types.Operator, tool.Ifc.Operator):
             ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_surface)
 
             old_mesh = obj.data
-            loader = Loader()
+            loader = Loader(self)
             obj.data = loader.create_mesh(element)
             tool.Geometry.delete_data(old_mesh)
 
@@ -496,7 +512,7 @@ class ShowBoundaries(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = bpy.context.scene.BIMBoundaryProperties
-        loader = Loader()
+        loader = Loader(self)
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
             if not element or not getattr(element, "BoundedBy", None):
