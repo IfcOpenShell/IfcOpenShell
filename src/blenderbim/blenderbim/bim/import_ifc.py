@@ -203,6 +203,8 @@ class IfcImporter:
         self.native_elements = set()
         self.native_data = {}
         self.progress = 0
+        self.spatial_elements = set()
+        self.group_elements = set()
 
         self.material_creator = MaterialCreator(ifc_import_settings, self)
 
@@ -255,6 +257,8 @@ class IfcImporter:
         self.profile_code("Create grids")
         self.create_spatial_elements()
         self.profile_code("Create spatial elements")
+        self.create_group_elements()
+        self.profile_code("Create group elements")
         self.create_structural_items()
         self.profile_code("Create structural items")
         if not self.ifc_import_settings.is_coordinating:
@@ -417,6 +421,8 @@ class IfcImporter:
                 self.spatial_elements = set(self.file.by_type("IfcSpatialStructureElement"))
             else:
                 self.spatial_elements = set(self.file.by_type("IfcSpatialElement"))
+
+        self.group_elements = set(g for g in self.file.by_type("IfcGroup") if g.ObjectType != "DRAWING")
 
     def get_spatial_elements_filtered_by_elements(self, elements):
         leaf_spatial_elements = set([ifcopenshell.util.element.get_container(e) for e in elements])
@@ -813,6 +819,13 @@ class IfcImporter:
 
     def create_spatial_elements(self):
         self.create_generic_elements(self.spatial_elements)
+
+    def create_group_elements(self):
+        total = len(self.group_elements)
+        for i, element in enumerate(self.group_elements):
+            if i % 250 == 0:
+                print("{} / {} elements processed ...".format(i, total))
+            self.create_product(element)
 
     def create_elements(self):
         self.create_generic_elements(self.elements)
@@ -1515,6 +1528,7 @@ class IfcImporter:
             self.create_aggregate_and_nest_collections()
         elif self.ifc_import_settings.collection_mode == "SPATIAL_DECOMPOSITION":
             pass
+        self.create_group_collections()
 
     def create_spatial_decomposition_collections(self):
         for rel_aggregate in self.project["ifc"].IsDecomposedBy or []:
@@ -1606,6 +1620,44 @@ class IfcImporter:
             if aggregate["element"].is_a("IfcElementType"):
                 self.type_collection.children.link(aggregate["collection"])
                 continue
+
+    def create_group_collections(self):
+        """
+        create Collections representing IfcGroup entities
+        """
+
+        def is_root_group(group: ifcopenshell.entity_instance) -> bool:
+            return not [ass for ass in group.HasAssignments if ass.is_a("IfcRelAssignsToGroup")]
+
+        groups: list[ifcopenshell.entity_instance] = [g for g in self.file.by_type("IfcGroup")
+                                                      if g.ObjectType != "DRAWING"]
+
+        self.create_group_collection(self.project["blender"], [g for g in groups if is_root_group(g)])
+
+    def create_group_collection(self, parent, related_objects: list[ifcopenshell.entity_instance]):
+        """
+        creates Collection for Group and iterates over child-groups
+        """
+
+        for element in related_objects:
+            if not element.is_a("IfcGroup"):
+                continue
+
+            is_existing = False
+            if self.has_existing_project:
+                obj = tool.Ifc.get_object(element)
+                if obj:
+                    is_existing = True
+                    collection = obj.BIMObjectProperties.collection
+                    self.collections[element.GlobalId] = collection
+
+            if not is_existing:
+                collection = bpy.data.collections.new(tool.Loader.get_name(element))
+                self.collections[element.GlobalId] = collection
+                parent.children.link(collection)
+
+            for rel_assigns_to_group in element.IsGroupedBy or []:
+                self.create_group_collection(collection, rel_assigns_to_group.RelatedObjects)
 
     def create_materials(self):
         for material in self.file.by_type("IfcMaterial"):
