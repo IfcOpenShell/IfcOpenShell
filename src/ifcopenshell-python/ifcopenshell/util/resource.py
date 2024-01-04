@@ -119,15 +119,16 @@ def get_nested_resources(resource):
 
 
 def get_cost(resource):
+    base_costs = getattr(resource, "BaseCosts", [])
     costs = [
         ifcopenshell.util.cost.calculate_applied_value(resource, cost_value)
-        for cost_value in getattr(resource, "BaseCosts", [])
-    ]
-    cost = costs[0] if costs else None
+        for cost_value in base_costs
+    ] if base_costs else []
+    cost = sum(costs)
     unit_basis = next(
-        (cost_value.UnitBasis for cost_value in getattr(resource, "BaseCosts", []) if cost_value.UnitBasis),
+        (cost_value.UnitBasis for cost_value in base_costs if cost_value.UnitBasis),
         None
-    )
+    ) if base_costs else None
     unit = unit_basis.UnitComponent.Name if unit_basis and unit_basis.UnitComponent.is_a("IfcConversionBasedUnit") else None
     return cost, unit
 
