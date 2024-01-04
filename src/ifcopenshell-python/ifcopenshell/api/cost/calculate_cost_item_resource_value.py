@@ -104,7 +104,6 @@ class Usecase:
                             if related_object2.is_a("IfcConstructionResource"):
                                 resources.append(related_object2)
 
-        total_cost = 0
         for resource in resources:
             cost, unit = ifcopenshell.util.resource.get_cost(resource)
             if not cost:
@@ -114,7 +113,8 @@ class Usecase:
                 continue
             if unit and "day" in unit:
                 quantity = quantity / 8 # Assume 8 hour working day - TODO implement resource calendar
-            total_cost += cost * quantity
-        if total_cost:
+            quantity = round(quantity, 2)
+            formula = "{}*{}".format(cost, quantity)
             cost_value = ifcopenshell.api.run("cost.add_cost_value", self.file, parent=self.settings["cost_item"])
-            cost_value.AppliedValue = self.file.createIfcMonetaryMeasure(total_cost)
+            cost_value.Name = resource.Name
+            ifcopenshell.api.run("cost.edit_cost_value_formula", self.file, cost_value=cost_value, formula=formula)
