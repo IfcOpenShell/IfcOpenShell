@@ -42,19 +42,21 @@ class BIM_PT_cost_schedules(Panel):
             CostSchedulesData.load()
 
         self.props = context.scene.BIMCostProperties
-        row = self.layout.row(align=True)
         if not self.props.active_cost_schedule_id:
+            row = self.layout.row(align=True)
             if CostSchedulesData.data["total_cost_schedules"]:
+                row.alignment = "RIGHT"
+                row.operator("bim.export_cost_schedules",icon="EXPORT",text="Export All Schedules")
+                row = self.layout.row(align=True)
                 row.label(text=f"{CostSchedulesData.data['total_cost_schedules']} Cost Schedules Found", icon="TEXT")
             else:
                 row.label(text="No Cost Schedules found.", icon="TEXT")
+
             row.operator("bim.add_cost_schedule", icon="ADD", text="")
+            row.operator("import_cost_schedule_csv.bim",icon="IMPORT",text="")
 
         for schedule in CostSchedulesData.data["schedules"]:
             self.draw_cost_schedule_ui(schedule)
-        row2 = self.layout.row()
-        row2.alignment = "RIGHT"
-        row2.operator("bim.export_cost_schedules", text="Export all", icon="EXPORT")
 
     def draw_cost_schedule_ui(self, cost_schedule):
         row = self.layout.row(align=True)
@@ -236,6 +238,8 @@ class BIM_PT_cost_schedules(Panel):
             blenderbim.bim.helper.draw_attributes(self.props.cost_value_attributes, self.layout.box())
 
     def draw_readonly_cost_value_ui(self, layout, cost_value):
+        if cost_value["name"]:
+            layout.label(text=f"{cost_value['name']}: ")
         if self.props.active_cost_value_id == cost_value["id"] and self.props.cost_value_editing_type == "FORMULA":
             layout.prop(self.props, "cost_value_formula", text="")
         else:
