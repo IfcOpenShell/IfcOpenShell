@@ -266,6 +266,8 @@ class IfcImporter:
             self.profile_code("Create element types")
         self.place_objects_in_collections()
         self.profile_code("Place objects in collections")
+        self.fill_groups_with_objects()
+        self.profile_code("Fill groups")
         self.add_project_to_scene()
         self.profile_code("Add project to scene")
         if self.ifc_import_settings.should_clean_mesh and len(self.file.by_type("IfcElement")) < 1000:
@@ -1714,6 +1716,24 @@ class IfcImporter:
         for ifc_definition_id, obj in self.added_data.items():
             if isinstance(obj, bpy.types.Object):
                 self.place_object_in_collection(self.file.by_id(ifc_definition_id), obj)
+
+    def fill_groups_with_objects(self):
+        for collection in self.collections.values():
+            obj = collection.BIMCollectionProperties.obj
+            self.fill_group_with_objects(collection, obj)
+
+    def fill_group_with_objects(self, collection, obj: bpy.types.Object):
+        group_entity: ifcopenshell.entity_instance = tool.Ifc.get_entity(obj)
+        if not group_entity.is_a("IfcGroup"):
+            return
+        child_entities = list()
+        [child_entities.extend(list(rel.RelatedObjects)) for rel in group_entity.IsGroupedBy or []]
+
+        for child_entity in child_entities:
+            if not child_entity.is_a("IfcObjectDefinition") or child_entity.is_a("IfcGroup"):
+                continue
+            obj = tool.Ifc.get_object(child_entity)
+            collection.objects.link(obj)
 
     def place_object_in_collection(self, element, obj):
         if self.ifc_import_settings.collection_mode == "DECOMPOSITION":
