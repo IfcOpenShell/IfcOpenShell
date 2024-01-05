@@ -20,6 +20,7 @@
 ADD_EXECUTABLE(IfcParseExamples IfcParseExamples.cpp)
 TARGET_LINK_LIBRARIES(IfcParseExamples IfcParse)
 set_target_properties(IfcParseExamples PROPERTIES FOLDER Examples)
+target_compile_features(IfcParseExamples PUBLIC cxx_std_17)
 
 if (WITH_OPENCASCADE)
 
