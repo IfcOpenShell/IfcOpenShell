@@ -44,7 +44,6 @@ class LoadGroups(bpy.types.Operator, tool.Ifc.Operator):
                 self.load_group(group)
 
         self.props.is_editing = True
-        bpy.ops.bim.disable_editing_group()
         return {"FINISHED"}
 
     def load_group(self, group, tree_depth=0):
@@ -149,30 +148,6 @@ class RemoveGroup(bpy.types.Operator, tool.Ifc.Operator):
         self.file = IfcStore.get_file()
         ifcopenshell.api.run("group.remove_group", self.file, **{"group": self.file.by_id(self.group)})
         bpy.ops.bim.load_groups()
-        return {"FINISHED"}
-
-
-class EnableEditingGroup(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.enable_editing_group"
-    bl_label = "Enable Editing Group"
-    bl_options = {"REGISTER", "UNDO"}
-    group: bpy.props.IntProperty()
-
-    def _execute(self, context):
-        props: BIMGroupProperties = context.scene.BIMGroupProperties
-        props.group_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.group), props.group_attributes)
-        props.active_group_id = self.group
-        return {"FINISHED"}
-
-
-class DisableEditingGroup(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.disable_editing_group"
-    bl_label = "Disable Editing Group"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def _execute(self, context):
-        context.scene.BIMGroupProperties.active_group_id = 0
         return {"FINISHED"}
 
 

@@ -22,10 +22,6 @@ from . import ui, prop, operator
 classes = (
     operator.AddGroup,
     operator.AssignGroup,
-    operator.DisableEditingGroup,
-    operator.DisableGroupEditingUI,
-    operator.EditGroup,
-    operator.EnableEditingGroup,
     operator.LoadGroups,
     operator.RemoveGroup,
     operator.SelectGroupObject,
@@ -33,6 +29,7 @@ classes = (
     operator.UnassignGroup,
     operator.UpdateGroup,
     operator.SelectGroupElements,
+    operator.DisableGroupEditingUI,
     prop.ExpandedGroups,
     prop.Group,
     prop.BIMGroupProperties,
