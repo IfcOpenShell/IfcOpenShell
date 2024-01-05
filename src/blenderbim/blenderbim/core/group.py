@@ -50,3 +50,11 @@ def remove_group(group_id, ifc, group):
     group_entity = ifc.get_entity_by_id(group_id)
     group.remove_group(ifc, group_entity)
     bpy.ops.bim.load_groups()
+
+
+def load_groups(ifc, group, props, expanded_groups):
+    props.groups.clear()
+    for g in ifc.get().by_type("IfcGroup", include_subtypes=False):
+        if not [ass for ass in g.HasAssignments if ass.is_a("IfcRelAssignsToGroup")]:
+            group.load_group(g, props, expanded_groups)
+    props.is_editing = True

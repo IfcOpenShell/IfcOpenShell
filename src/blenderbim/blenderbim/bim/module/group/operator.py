@@ -19,7 +19,6 @@
 import bpy
 import ifcopenshell.util.attribute
 import ifcopenshell.api
-import blenderbim.bim.helper
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.util.selector import Selector
@@ -35,34 +34,9 @@ class LoadGroups(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        self.props: BIMGroupProperties = context.scene.BIMGroupProperties
-        self.expanded_groups = json.loads(context.scene.ExpandedGroups.json_string)
-        self.props.groups.clear()
-
-        for group in tool.Ifc.get().by_type("IfcGroup", include_subtypes=False):
-            if not group.HasAssignments:
-                self.load_group(group)
-
-        self.props.is_editing = True
+        core.load_groups(tool.Ifc, tool.Group, context.scene.BIMGroupProperties,
+                         json.loads(context.scene.ExpandedGroups.json_string))
         return {"FINISHED"}
-
-    def load_group(self, group, tree_depth=0):
-        new: Group = self.props.groups.add()
-        new.ifc_definition_id = group.id()
-        new.name = group.Name or "Unnamed"
-        new.selection_query = ""
-        new.tree_depth = tree_depth
-        new.has_children = False
-        new.is_expanded = group.id() in self.expanded_groups
-
-        for rel in group.IsGroupedBy or []:
-            for related_object in rel.RelatedObjects:
-                if not related_object.is_a("IfcGroup"):
-                    continue
-                new.has_children = True
-                if not new.is_expanded:
-                    return
-                self.load_group(related_object, tree_depth=tree_depth + 1)
 
 
 class ToggleGroup(bpy.types.Operator, tool.Ifc.Operator):
@@ -115,7 +89,7 @@ class RemoveGroup(bpy.types.Operator, tool.Ifc.Operator):
     group: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.remove_group(self.group,tool.Ifc,tool.Group)
+        core.remove_group(self.group, tool.Ifc, tool.Group)
         return {"FINISHED"}
 
 

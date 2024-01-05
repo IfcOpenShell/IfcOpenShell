@@ -24,6 +24,23 @@ from ifcopenshell import entity_instance
 
 
 class Group(blenderbim.core.tool.Group):
+
+    @classmethod
+    def load_group(cls, group_entity: entity_instance, props, expanded_groups, tree_depth=0):
+        new_group = props.groups.add()
+        new_group.ifc_definition_id = group_entity.id()
+        new_group.name = group_entity.Name or "Unnamed"
+        new_group.selection_query = ""
+        new_group.tree_depth = tree_depth
+        new_group.has_children = False
+        new_group.is_expanded = group_entity.id() in expanded_groups
+
+        for sub_group in cls.get_sub_groups(group_entity):
+            new_group.has_children = True
+            if not new_group.is_expanded:
+                return
+            cls.load_group(sub_group, props, expanded_groups, tree_depth=tree_depth + 1)
+
     @classmethod
     def get_collection_from_entity(cls, entity: ifcopenshell.entity_instance,
                                    groups_data) -> entity_instance | None:
