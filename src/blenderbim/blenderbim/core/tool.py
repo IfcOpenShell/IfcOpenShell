@@ -406,6 +406,11 @@ class Georeference:
     def set_vector_coordinates(cls, vector_coordinates, type): pass
     def xyz2enh(cls, coordinates): pass
 
+@interface
+class Group:
+    def get_collection_from_entity(cls, entity, groups_data): pass
+    def get_object_from_collection(cls, collection): pass
+
 
 @interface
 class Ifc:

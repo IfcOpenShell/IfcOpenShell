@@ -134,12 +134,12 @@ class BIM_UL_groups(UIList):
             row.label(text=f"*{item.name}") if item.selection_query != "" else row.label(text=item.name)
             group_id = item.ifc_definition_id
             if context.scene.BIMGroupProperties.active_group_id == group_id:
-                op = row.operator("bim.select_group_products", text="", icon="RESTRICT_SELECT_OFF")
+                op = row.operator("bim.select_group_object", text="", icon="RESTRICT_SELECT_OFF")
                 op.group = group_id
                 row.operator("bim.edit_group", text="", icon="CHECKMARK")
                 row.operator("bim.disable_editing_group", text="", icon="CANCEL")
             elif context.scene.BIMGroupProperties.active_group_id:
-                op = row.operator("bim.select_group_products", text="", icon="RESTRICT_SELECT_OFF")
+                op = row.operator("bim.select_group_object", text="", icon="RESTRICT_SELECT_OFF")
                 op.group = group_id
                 op = row.operator("bim.add_group", text="", icon="ADD")
                 op.group = group_id
@@ -150,9 +150,7 @@ class BIM_UL_groups(UIList):
                     op.group_id = item.ifc_definition_id
                     op.query = item.selection_query
             else:
-                op = row.operator("bim.select_group_products", text="", icon="RESTRICT_SELECT_OFF")
-                op.group = group_id
-                op = row.operator("bim.enable_editing_group", text="", icon="GREASEPENCIL")
+                op = row.operator("bim.select_group_object", text="", icon="RESTRICT_SELECT_OFF")
                 op.group = group_id
                 op = row.operator("bim.add_group", text="", icon="ADD")
                 op.group = group_id

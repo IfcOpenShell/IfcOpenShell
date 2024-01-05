@@ -25,7 +25,8 @@ from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.util.selector import Selector
 import json
 from blenderbim.bim.module.group.data import GroupsData
-from blenderbim.bim.module.group.prop import BIMGroupProperties,Group
+from blenderbim.bim.module.group.prop import BIMGroupProperties, Group
+import blenderbim.core.group as core
 
 
 class LoadGroups(bpy.types.Operator, tool.Ifc.Operator):
@@ -34,7 +35,7 @@ class LoadGroups(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        self.props:BIMGroupProperties = context.scene.BIMGroupProperties
+        self.props: BIMGroupProperties = context.scene.BIMGroupProperties
         self.expanded_groups = json.loads(context.scene.ExpandedGroups.json_string)
         self.props.groups.clear()
 
@@ -221,26 +222,14 @@ class UnassignGroup(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class SelectGroupProducts(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.select_group_products"
-    bl_label = "Select Group Products"
+class SelectGroupObject(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.select_group_object"
+    bl_label = "Select Group"
     bl_options = {"REGISTER", "UNDO"}
     group: bpy.props.IntProperty()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        for obj in context.visible_objects:
-            obj.select_set(False)
-            element = tool.Ifc.get_entity(obj)
-            if not element:
-                continue
-            product_groups = [
-                r.RelatingGroup.id()
-                for r in getattr(element, "HasAssignments", []) or []
-                if r.is_a("IfcRelAssignsToGroup")
-            ]
-            if self.group in product_groups:
-                obj.select_set(True)
+        core.select_group_object_by_id(context, tool.Ifc, tool.Group, self.group)
         return {"FINISHED"}
 
 

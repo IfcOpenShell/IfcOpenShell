@@ -28,7 +28,7 @@ classes = (
     operator.EnableEditingGroup,
     operator.LoadGroups,
     operator.RemoveGroup,
-    operator.SelectGroupProducts,
+    operator.SelectGroupObject,
     operator.ToggleGroup,
     operator.UnassignGroup,
     operator.UpdateGroup,
