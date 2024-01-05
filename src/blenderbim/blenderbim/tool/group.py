@@ -55,10 +55,8 @@ class Group(blenderbim.core.tool.Group):
         ifcopenshell.api.run("group.assign_group", ifc_file, products=entities, group=parent_group)
 
     @classmethod
-    def create_collection_by_group(cls, group: entity_instance, obj: bpy.types.Object, name: str, collection_project,
-                                   groups_data) -> bpy.types.Collection:
+    def create_collection_by_group(cls, group: entity_instance, obj, name: str, collection_project, ifc) -> None:
 
-        collection_dict = groups_data.data["collections_dict"]
         if not group.HasAssignments:
             collection = bpy.data.collections.new(name)
             collection_project.children.link(collection)
@@ -76,8 +74,8 @@ class Group(blenderbim.core.tool.Group):
 
             if not assignemnt.is_a("IfcRelAssignsToGroup"):
                 continue
-            parent_group = assignemnt.RelatingGroup
-            parent_collection = collection_dict.get(parent_group)
+            parent_group_entity = assignemnt.RelatingGroup
+            parent_collection = ifc.get_object(parent_group_entity).BIMObjectProperties.collection
             if parent_collection is None:
                 continue
             parent_collection.children.link(collection)

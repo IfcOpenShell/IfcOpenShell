@@ -31,4 +31,17 @@ def select_group_object_by_id(context, ifc, group, group_id: int):
     context.view_layer.objects.active = obj
 
 
+def add_group(parent_id: int, ifc, group, loader):
+    new_group_entity = group.create_group(ifc.get())
+    parent_group = ifc.get_entity_by_id(parent_id)
+    if parent_group is not None:
+        group.add_entities_to_group(ifc.get(), parent_group, [new_group_entity])
+
+    # handle collections
+    name = loader.get_name(new_group_entity)
+    group_object = group.create_group_object(new_group_entity, name, ifc)
+    project_entity = ifc.get().by_type("IfcProject")[0]
+    project_collection = ifc.get_object(project_entity).BIMObjectProperties.collection
+    group.create_collection_by_group(new_group_entity, group_object, name, project_collection, ifc)
+    bpy.ops.bim.load_groups()
 

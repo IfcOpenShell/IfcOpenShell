@@ -102,38 +102,9 @@ class AddGroup(bpy.types.Operator, tool.Ifc.Operator):
     group: bpy.props.IntProperty()
 
     def _execute(self, context):
-        result = ifcopenshell.api.run("group.add_group", tool.Ifc.get())
-        if self.group:
-            ifcopenshell.api.run(
-                "group.assign_group", tool.Ifc.get(), products=[result], group=tool.Ifc.get().by_id(self.group)
-            )
-        bpy.ops.bim.load_groups()
-        return {"FINISHED"}
-
-
-class EditGroup(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.edit_group"
-    bl_label = "Edit Group"
-    bl_options = {"REGISTER", "UNDO"}
-    copy_from_selector: bpy.props.BoolProperty(name="Copy from Selector", default=False)
-
-    def _execute(self, context):
-        props = context.scene.BIMGroupProperties
-        attributes = {}
-        for attribute in props.group_attributes:
-            if attribute.is_null:
-                attributes[attribute.name] = None
-            else:
-                attributes[attribute.name] = attribute.string_value
-
-        if self.copy_from_selector:
-            attributes["Description"] = context.scene.IFCSelector.selection_query
-
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "group.edit_group", self.file, **{"group": self.file.by_id(props.active_group_id), "attributes": attributes}
-        )
-        bpy.ops.bim.load_groups()
+        if not GroupsData.is_loaded:
+            GroupsData.load()
+        core.add_group(self.group, tool.Ifc, tool.Group, tool.Loader)
         return {"FINISHED"}
 
 
