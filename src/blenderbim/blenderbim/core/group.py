@@ -45,3 +45,8 @@ def add_group(parent_id: int, ifc, group, loader):
     group.create_collection_by_group(new_group_entity, group_object, name, project_collection, ifc)
     bpy.ops.bim.load_groups()
 
+
+def remove_group(group_id, ifc, group):
+    group_entity = ifc.get_entity_by_id(group_id)
+    group.remove_group(ifc, group_entity)
+    bpy.ops.bim.load_groups()

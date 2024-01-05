@@ -115,10 +115,7 @@ class RemoveGroup(bpy.types.Operator, tool.Ifc.Operator):
     group: bpy.props.IntProperty()
 
     def _execute(self, context):
-        props = context.scene.BIMGroupProperties
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run("group.remove_group", self.file, **{"group": self.file.by_id(self.group)})
-        bpy.ops.bim.load_groups()
+        core.remove_group(self.group,tool.Ifc,tool.Group)
         return {"FINISHED"}
 
 

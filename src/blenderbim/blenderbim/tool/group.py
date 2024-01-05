@@ -79,3 +79,35 @@ class Group(blenderbim.core.tool.Group):
             if parent_collection is None:
                 continue
             parent_collection.children.link(collection)
+
+    @classmethod
+    def remove_group(cls, ifc, group_entity) -> None:
+        """
+        removes Group from Ifc and UI
+        Doesn't Delete Subgroups -> Subgroups move to first Layer in View (IfcProject)
+        """
+        group_object = ifc.get_object(group_entity)
+        sub_groups = cls.get_sub_groups(group_entity)
+        ifcopenshell.api.run("group.remove_group", ifc.get(), **{"group": group_entity})
+        group_collection = group_object.BIMObjectProperties.collection
+        bpy.data.objects.remove(group_object, do_unlink=True)
+        bpy.data.collections.remove(group_collection, do_unlink=True)
+
+        project_entity = ifc.get().by_type("IfcProject")[0]
+        project_collection = ifc.get_object(project_entity).BIMObjectProperties.collection
+
+        # check if subgroup is also assigned elsewhere. if not -> Move to Project
+        for sub_group in sub_groups:
+            if [ass for ass in sub_group.HasAssignments if ass.is_a("IfcRelAssignsToGroup")]:
+                continue
+            collection = ifc.get_object(sub_group).BIMObjectProperties.collection
+            project_collection.children.link(collection)
+
+    @classmethod
+    def get_sub_groups(self, group_entity) -> list[entity_instance]:
+        """
+        return all IfcGroup entities hat have IfcRelAssignsToGroup assignment to group_entity
+        """
+        sub_groups = list()
+        [sub_groups.extend([o for o in rel.RelatedObjects if o.is_a("IfcGroup")]) for rel in group_entity.IsGroupedBy]
+        return sub_groups

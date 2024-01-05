@@ -416,6 +416,9 @@ class Group:
     def add_entities_to_group(cls, ifc_file, parent_group, entities): pass
     def create_collection_by_group(cls, group, obj, name, collection_project, groups_data): pass
 
+    def remove_group(cls, ifc, group_entity): pass
+
+    def get_sub_groups(self, group_entity): pass
 
 @interface
 class Ifc:
