@@ -24,6 +24,8 @@ import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.util.selector import Selector
 import json
+from blenderbim.bim.module.group.data import GroupsData
+from blenderbim.bim.module.group.prop import BIMGroupProperties,Group
 
 
 class LoadGroups(bpy.types.Operator, tool.Ifc.Operator):
@@ -32,7 +34,7 @@ class LoadGroups(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        self.props = context.scene.BIMGroupProperties
+        self.props:BIMGroupProperties = context.scene.BIMGroupProperties
         self.expanded_groups = json.loads(context.scene.ExpandedGroups.json_string)
         self.props.groups.clear()
 
@@ -45,7 +47,7 @@ class LoadGroups(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
     def load_group(self, group, tree_depth=0):
-        new = self.props.groups.add()
+        new: Group = self.props.groups.add()
         new.ifc_definition_id = group.id()
         new.name = group.Name or "Unnamed"
         new.selection_query = ""
@@ -156,7 +158,7 @@ class EnableEditingGroup(bpy.types.Operator, tool.Ifc.Operator):
     group: bpy.props.IntProperty()
 
     def _execute(self, context):
-        props = context.scene.BIMGroupProperties
+        props: BIMGroupProperties = context.scene.BIMGroupProperties
         props.group_attributes.clear()
         blenderbim.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.group), props.group_attributes)
         props.active_group_id = self.group
