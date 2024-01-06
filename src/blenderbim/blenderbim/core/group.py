@@ -33,6 +33,7 @@ def select_group_object_by_id(context, ifc, group, group_id: int):
 
 def add_group(parent_id: int, ifc, group, loader):
     new_group_entity = group.create_group(ifc.get())
+
     parent_group = ifc.get_entity_by_id(parent_id)
     if parent_group is not None:
         group.add_entities_to_group(ifc.get(), parent_group, [new_group_entity])
@@ -58,3 +59,31 @@ def load_groups(ifc, group, props, expanded_groups):
         if not [ass for ass in g.HasAssignments if ass.is_a("IfcRelAssignsToGroup")]:
             group.load_group(g, props, expanded_groups)
     props.is_editing = True
+
+
+def assign_group(group_id, objects, group, ifc):
+    products = [ifc.get_entity(p) for p in objects if ifc.get_entity(p) is not None]
+    group_entity = ifc.get_entity_by_id(group_id)
+    group.add_entities_to_group(ifc.get(), group_entity, products)
+    group_collection = ifc.get_object(group_entity).BIMObjectProperties.collection
+    if group_collection is None:
+        return
+
+    for p in products:
+        obj = ifc.get_object(p)
+        if group_collection not in obj.users_collection:
+            group_collection.objects.link(obj)
+
+
+def unassign_group(group_id, objects, group, ifc):
+    products = [ifc.get_entity(p) for p in objects if ifc.get_entity(p) is not None]
+    group_entity = ifc.get_entity_by_id(group_id)
+    group.remove_entities_from_group(ifc.get(), group_entity, products)
+    group_collection = ifc.get_object(group_entity).BIMObjectProperties.collection
+    if group_collection is None:
+        return
+
+    for p in products:
+        obj = ifc.get_object(p)
+        if group_collection in obj.users_collection:
+            group_collection.objects.unlink(obj)

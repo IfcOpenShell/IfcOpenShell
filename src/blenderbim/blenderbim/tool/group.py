@@ -42,13 +42,6 @@ class Group(blenderbim.core.tool.Group):
             cls.load_group(sub_group, props, expanded_groups, tree_depth=tree_depth + 1)
 
     @classmethod
-    def get_collection_from_entity(cls, entity: ifcopenshell.entity_instance,
-                                   groups_data) -> entity_instance | None:
-        """Select Object in Collection by entity id"""
-        collection_dict = groups_data.data["collections_dict"]
-        return collection_dict.get(entity)
-
-    @classmethod
     def get_object_from_collection(cls, collection: bpy.types.Collection):
 
         prop = collection.BIMCollectionProperties
@@ -70,6 +63,12 @@ class Group(blenderbim.core.tool.Group):
     @classmethod
     def add_entities_to_group(cls, ifc_file, parent_group: entity_instance, entities: list[entity_instance]) -> None:
         ifcopenshell.api.run("group.assign_group", ifc_file, products=entities, group=parent_group)
+
+    @classmethod
+    def remove_entities_from_group(cls, ifc_file, parent_group: entity_instance,
+                                   entities: list[entity_instance]) -> None:
+        for entity in entities:
+            ifcopenshell.api.run("group.unassign_group", ifc_file, **{"product": entity, "group": parent_group, })
 
     @classmethod
     def create_collection_by_group(cls, group: entity_instance, obj, name: str, collection_project, ifc) -> None:

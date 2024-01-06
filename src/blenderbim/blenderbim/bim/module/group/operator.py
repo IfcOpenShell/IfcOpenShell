@@ -101,17 +101,8 @@ class AssignGroup(bpy.types.Operator, tool.Ifc.Operator):
     group: bpy.props.IntProperty()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
         products = [bpy.data.objects.get(self.product)] if self.product else context.selected_objects
-        for product in products:
-            if not product.BIMObjectProperties.ifc_definition_id:
-                continue
-            ifcopenshell.api.run(
-                "group.assign_group",
-                self.file,
-                products=[self.file.by_id(product.BIMObjectProperties.ifc_definition_id)],
-                group=self.file.by_id(self.group),
-            )
+        core.assign_group(self.group, products, tool.Group, tool.Ifc)
         return {"FINISHED"}
 
 
@@ -125,17 +116,7 @@ class UnassignGroup(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         self.file = IfcStore.get_file()
         products = [bpy.data.objects.get(self.product)] if self.product else context.selected_objects
-        for product in products:
-            if not product.BIMObjectProperties.ifc_definition_id:
-                continue
-            ifcopenshell.api.run(
-                "group.unassign_group",
-                self.file,
-                **{
-                    "product": self.file.by_id(product.BIMObjectProperties.ifc_definition_id),
-                    "group": self.file.by_id(self.group),
-                }
-            )
+        core.unassign_group(self.group, products, tool.Group, tool.Ifc)
         return {"FINISHED"}
 
 
