@@ -247,7 +247,7 @@ def get_shape_vertices(shape, geometry):
     """
     verts = get_vertices(geometry)
     mat = get_shape_matrix(shape)
-    return np.array([mat @ np.array([verts[i], verts[i + 1], verts[i + 2]]) for i in range(0, len(verts), 3)])
+    return np.delete((mat @ np.hstack((verts, np.ones((len(verts), 1)))).T).T, -1, axis=1)
 
 
 def get_element_vertices(element, geometry):
@@ -269,7 +269,7 @@ def get_element_vertices(element, geometry):
     if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
         return verts
     mat = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
-    return np.array([mat @ np.array([verts[i], verts[i + 1], verts[i + 2]]) for i in range(0, len(verts), 3)])
+    return np.delete((mat @ np.hstack((verts, np.ones((len(verts), 1)))).T).T, -1, axis=1)
 
 
 def get_bottom_elevation(geometry):
