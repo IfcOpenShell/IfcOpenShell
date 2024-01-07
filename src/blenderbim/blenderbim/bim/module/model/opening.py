@@ -762,8 +762,6 @@ class EditOpenings(Operator, tool.Ifc.Operator):
     def _execute(self, context):
         props = bpy.context.scene.BIMModelProperties
         building_objs = set()
-        model = tool.Ifc.get()
-        all_openings = model.by_type("IfcOpeningElement")
 
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
@@ -774,9 +772,13 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                 obj = tool.Ifc.get_object(element)
             openings = [r.RelatedOpeningElement for r in element.HasOpenings]
             for opening in openings:
-                similar_openings = [o for o in all_openings if o.ObjectPlacement == opening.ObjectPlacement]
                 opening_obj = tool.Ifc.get_object(opening)
                 building_objs.add(obj)
+
+                similar_openings = blenderbim.core.geometry.get_similar_openings(tool.Ifc, opening)
+                similar_openings_building_objs = blenderbim.core.geometry.get_similar_openings_building_objs(tool.Ifc, similar_openings)
+                building_objs.update(similar_openings_building_objs)
+
                 if opening_obj:
                     if tool.Ifc.is_edited(opening_obj):
                         tool.Geometry.run_geometry_update_representation(obj=opening_obj)
@@ -784,13 +786,11 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                         blenderbim.core.geometry.edit_object_placement(
                             tool.Ifc, tool.Geometry, tool.Surveyor, obj=opening_obj
                         )
-                    for similar_opening in similar_openings:
-                        similar_opening.ObjectPlacement = opening.ObjectPlacement
-                        element = similar_opening.VoidsElements[0].RelatingBuildingElement
-                        obj = tool.Ifc.get_object(element)
-                        building_objs.add(obj)
 
-                    building_objs.update(self.get_all_building_objects_of_similar_openings(opening))
+                    blenderbim.core.geometry.edit_similar_opening_placement(opening, similar_openings)
+                    #TODO delete also the old placement
+
+                    building_objs.update(self.get_all_building_objects_of_similar_openings(opening)) #NB this has nothing to do with clone similar_opening
                     tool.Ifc.unlink(element=opening, obj=opening_obj)
                     bpy.data.objects.remove(opening_obj)
 
