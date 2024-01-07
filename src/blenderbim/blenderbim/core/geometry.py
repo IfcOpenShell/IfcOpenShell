@@ -191,3 +191,23 @@ def select_connection(geometry, connection=None):
 
 def remove_connection(geometry, connection=None):
     geometry.remove_connection(connection)
+
+def get_similar_openings(ifc, opening):
+    model = ifc.get()
+    all_openings = model.by_type("IfcOpeningElement")
+    similar_openings = [o for o in all_openings if o.ObjectPlacement == opening.ObjectPlacement and o != opening]
+    return similar_openings
+
+def get_similar_openings_building_objs(ifc, similar_openings):
+    building_objs = []
+    for similar_opening in similar_openings:
+        building_objs.append(ifc.get_object(similar_opening.VoidsElements[0].RelatingBuildingElement))
+    return building_objs
+
+def edit_similar_opening_placement(opening = None, similar_openings = None):
+    if not opening or not similar_openings:
+        return
+    for similar_opening in similar_openings:
+        similar_opening.ObjectPlacement = opening.ObjectPlacement
+
+
