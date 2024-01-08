@@ -20,6 +20,7 @@ import os
 import bpy
 import pathlib
 import ifcopenshell
+import ifcopenshell.util.attribute
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 
@@ -36,6 +37,7 @@ class PsetTemplatesData:
     def load(cls):
         cls.is_loaded = True
         cls.data["primary_measure_type"] = cls.primary_measure_type()
+        cls.data["property_template_type"] = cls.property_template_type()
         cls.data["pset_template_files"] = cls.pset_template_files()
         cls.data["pset_templates"] = cls.pset_templates()
         cls.data["pset_template"] = cls.pset_template()
@@ -43,12 +45,24 @@ class PsetTemplatesData:
 
     @classmethod
     def primary_measure_type(cls):
-        schema = tool.Ifc.schema()
-        version = tool.Ifc.get_schema()
+        ifc_file = IfcStore.pset_template_file
+        if not ifc_file:
+            return []
+        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(ifc_file.schema)
+        version = ifc_file.schema
         return [
             (t, t, ifcopenshell.util.doc.get_type_doc(version, t).get("description", ""))
             for t in sorted([d.name() for d in schema.declarations() if hasattr(d, "declared_type")])
         ]
+
+    @classmethod
+    def property_template_type(cls):
+        ifc_file = IfcStore.pset_template_file
+        if not ifc_file:
+            return []
+        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(ifc_file.schema)
+        attribute = schema.declaration_by_name("IfcSimplePropertyTemplate").attributes()[0]
+        return [(i, i, "") for i in ifcopenshell.util.attribute.get_enum_items(attribute)]
 
     @classmethod
     def pset_template_files(cls):
