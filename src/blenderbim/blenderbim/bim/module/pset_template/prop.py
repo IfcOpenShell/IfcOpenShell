@@ -42,6 +42,8 @@ def updatePsetTemplateFiles(self, context):
     PsetTemplatesData.data["pset_template_files"] = PsetTemplatesData.pset_template_files()
     PsetTemplatesData.data["pset_templates"] = PsetTemplatesData.pset_templates()
     PsetTemplatesData.data["prop_templates"] = PsetTemplatesData.prop_templates()
+    PsetTemplatesData.data["primary_measure_type"] = PsetTemplatesData.primary_measure_type()
+    PsetTemplatesData.data["property_template_type"] = PsetTemplatesData.property_template_type()
 
 
 def getPsetTemplateFiles(self, context):
@@ -65,6 +67,12 @@ def get_primary_measure_type(self, context):
     if not PsetTemplatesData.is_loaded:
         PsetTemplatesData.load()
     return PsetTemplatesData.data["primary_measure_type"]
+
+
+def get_property_template_type(self, context):
+    if not PsetTemplatesData.is_loaded:
+        PsetTemplatesData.load()
+    return PsetTemplatesData.data["property_template_type"]
 
 
 def get_template_type(self, context):
@@ -157,10 +165,7 @@ class PropTemplate(PropertyGroup):
         description=get_attribute_doc("IFC4", "IfcPropertyTemplate", "Description"),
     )
     primary_measure_type: EnumProperty(items=get_primary_measure_type, name="Primary Measure Type")
-    template_type: EnumProperty(
-        items=[("P_SINGLEVALUE", "P_SINGLEVALUE", ""), ("P_ENUMERATEDVALUE", "P_ENUMERATEDVALUE", "")],
-        name="Template Type",
-    )
+    template_type: EnumProperty(items=get_property_template_type, name="Template Type")
     enum_values: CollectionProperty(type=EnumerationValues)
 
     def get_value_name(self):
