@@ -58,6 +58,13 @@ def update_tab(self, context):
     self.previous_tab = self.tab
 
 
+def update_global_tab(self, context):
+    tool.Blender.setup_tabs()
+    screen = tool.Blender.get_screen(context)
+    aprops = screen.BIMAreaProperties[screen.areas[:].index(context.area)]
+    aprops.tab = self.tab
+
+
 # If we don't cache strings, accents get mangled due to a Blender bug
 # https://blender.stackexchange.com/questions/216230/is-there-a-workaround-for-the-known-bug-in-dynamic-enumproperty
 # https://github.com/IfcOpenShell/IfcOpenShell/pull/1945
@@ -326,6 +333,17 @@ def get_tab(self, context):
 
 class BIMAreaProperties(PropertyGroup):
     tab: EnumProperty(default=0, items=get_tab, name="Tab", update=update_tab)
+    previous_tab: StringProperty(default="PROJECT", name="Previous Tab")
+    alt_tab: StringProperty(default="OBJECT", name="Alt Tab")
+    active_tab: BoolProperty(default=True, name="Active Tab")
+    inactive_tab: BoolProperty(default=False, name="Inactive Tab")
+
+
+# BIMAreaProperties exists per area and is setup on load post. However, for new
+# or temporary screens, they may not be setup yet, so this global tab
+# properties is used as a fallback.
+class BIMTabProperties(PropertyGroup):
+    tab: EnumProperty(default=0, items=get_tab, name="Tab", update=update_global_tab)
     previous_tab: StringProperty(default="PROJECT", name="Previous Tab")
     alt_tab: StringProperty(default="OBJECT", name="Alt Tab")
     active_tab: BoolProperty(default=True, name="Active Tab")
