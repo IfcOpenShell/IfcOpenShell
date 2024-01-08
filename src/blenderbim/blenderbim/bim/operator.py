@@ -55,7 +55,8 @@ class SetTab(bpy.types.Operator):
     def execute(self, context):
         if context.area.spaces.active.search_filter:
             return {"FINISHED"}
-        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+        tool.Blender.setup_tabs()
+        aprops = tool.Blender.get_area_props(context)
         aprops.tab = self.tab
         return {"FINISHED"}
 
@@ -69,7 +70,8 @@ class SwitchTab(bpy.types.Operator):
     def execute(self, context):
         if context.area.spaces.active.search_filter:
             return {"FINISHED"}
-        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+        tool.Blender.setup_tabs()
+        aprops = tool.Blender.get_area_props(context)
         aprops.tab = aprops.alt_tab
         return {"FINISHED"}
 

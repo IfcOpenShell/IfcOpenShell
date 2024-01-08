@@ -43,25 +43,40 @@ class Blender(blenderbim.core.tool.Blender):
     OBJECT_TYPES_THAT_SUPPORT_EDIT_GPENCIL_MODE = ("GPENCIL",)
 
     @classmethod
+    def get_area_props(cls, context):
+        try:
+            if context.screen.name.endswith("-nonnormal"):  # Ctrl-space temporary fullscreen
+                screen = bpy.data.screens[context.screen.name[0 : -len("-nonnormal")]]
+                # The original area object has its type changed to "EMPTY" apparently
+                index = [a.type for a in screen.areas].index("EMPTY")
+                return screen.BIMAreaProperties[index]
+            return context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+        except:
+            return
+
+    @classmethod
     def set_active_object(cls, obj):
         bpy.context.view_layer.objects.active = obj
         obj.select_set(True)
 
     @classmethod
+    def setup_tabs(cls):
+        # https://blender.stackexchange.com/questions/140644/how-can-make-the-state-of-a-boolean-property-relative-to-the-3d-view-area
+        for screen in bpy.data.screens:
+            if len(screen.BIMAreaProperties) == 20:
+                continue
+            screen.BIMAreaProperties.clear()
+            for i in range(20):  # 20 is an arbitrary value of split areas
+                screen.BIMAreaProperties.add()
+
+    @classmethod
     def is_tab(cls, context, tab):
-        if not len(context.screen.BIMAreaProperties):
-            return None
+        aprops = cls.get_area_props(context)
+        if not aprops:
+            return context.screen.BIMTabProperties.tab == tab
         if context.area.spaces.active.search_filter:
             return True
-        screen_areas = context.screen.areas[:]
-        current_area = context.area
-        # If the user is using the properties panel "Display Filter" search it
-        # will create a new area that's not present in context.screen.areas for
-        # all property tabs except for the active property tab.
-        if current_area not in screen_areas:
-            current_area = next(a for a in context.screen.areas if a.x == current_area.x and a.y == current_area.y)
-        area_index = screen_areas.index(current_area)
-        return context.screen.BIMAreaProperties[area_index].tab == tab
+        return aprops.tab == tab
 
     @classmethod
     def is_default_scene(cls):
@@ -679,7 +694,9 @@ class Blender(blenderbim.core.tool.Blender):
             bpy.utils.register_tool(
                 ws_structural.StructuralTool, after={"bim.spatial_tool"}, separator=False, group=False
             )
-            bpy.utils.register_tool(ws_covering.CoveringTool, after={"bim.structural_tool"}, separator=False, group=False)
+            bpy.utils.register_tool(
+                ws_covering.CoveringTool, after={"bim.structural_tool"}, separator=False, group=False
+            )
         except:
             pass
 
