@@ -307,7 +307,8 @@ class EditPropTemplate(bpy.types.Operator, Operator):
         bpy.ops.bim.disable_editing_prop_template()
         IfcStore.pset_template_file.write(IfcStore.pset_template_path)
         blenderbim.bim.handler.refresh_ui_data()
-        blenderbim.bim.schema.reload(tool.Ifc.get().schema)
+        if tool.Ifc.get():
+            blenderbim.bim.schema.reload(tool.Ifc.get().schema)
 
     # TODO -This will need to go into the
     # api code at some point - vulevukusej
