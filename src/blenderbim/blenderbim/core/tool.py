@@ -397,6 +397,7 @@ class Geometry:
     def should_generate_uvs(cls, obj): pass
     def should_use_presentation_style_assignment(cls): pass
     def unresolve_type_representation(cls, representation, element): pass
+    def delete_opening_object_placement(cls, opening): pass
 
 
 @interface
