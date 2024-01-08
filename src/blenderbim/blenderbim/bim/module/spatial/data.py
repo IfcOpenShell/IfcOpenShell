@@ -32,7 +32,7 @@ class SpatialData:
     @classmethod
     def load(cls):
         cls.data = {
-            "parent_container_id": cls.get_parent_container_id(),
+            "parent_container_id": cls.parent_container_id(),
             "is_directly_contained": cls.is_directly_contained(),
             "label": cls.label(),
             "references": cls.references(),
@@ -55,12 +55,12 @@ class SpatialData:
         return results
 
     @classmethod
-    def get_parent_container_id(cls):
+    def parent_container_id(cls):
         container_id = bpy.context.scene.BIMSpatialProperties.active_container_id
         if not container_id:
             return
-        container = tool.Ifc.get().by_id(container_id)
-        if container.is_a("IfcProject"):
+        container = tool.Ifc.get_entity_by_id(container_id)
+        if not container or container.is_a("IfcProject"):
             return
         return container.Decomposes[0].RelatingObject.id()
 

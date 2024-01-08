@@ -121,7 +121,8 @@ class BIM_PT_SpatialManager(Panel):
             row = self.layout.row()
             row.alignment = "RIGHT"
             row.operator("bim.select_decomposed_elements", icon="RESTRICT_SELECT_OFF", text="Select Children")
-            if SpatialData.data["containers"][ifc_definition_id]["type"] in ["IfcBuildingStorey", "IfcBuilding"]:
+            spatial_data = SpatialData.data["containers"].get(ifc_definition_id, None)
+            if spatial_data and spatial_data["type"] in ["IfcBuildingStorey", "IfcBuilding"]:
                 row.operator("bim.add_building_storey", icon="ADD", text="Add storey").part_class = "IfcBuildingStorey"
             row.operator("bim.delete_container", icon="X", text="Delete").container = ifc_definition_id
         self.layout.template_list(
