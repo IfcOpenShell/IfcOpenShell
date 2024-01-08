@@ -204,10 +204,11 @@ def get_similar_openings_building_objs(ifc, similar_openings):
         building_objs.append(ifc.get_object(similar_opening.VoidsElements[0].RelatingBuildingElement))
     return building_objs
 
-def edit_similar_opening_placement(opening = None, similar_openings = None):
+def edit_similar_opening_placement(geometry, opening = None, similar_openings = None):
     if not opening or not similar_openings:
         return
     for similar_opening in similar_openings:
+        old_placement = similar_opening.ObjectPlacement
         similar_opening.ObjectPlacement = opening.ObjectPlacement
-
+        geometry.delete_opening_object_placement(old_placement)
 
