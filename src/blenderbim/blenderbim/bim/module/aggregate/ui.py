@@ -124,20 +124,20 @@ class BIM_PT_linked_aggregate(Panel):
 
     def draw(self, context):
         layout = self.layout
-        if not ObjectGroupsData.is_loaded:
-            ObjectGroupsData.load()
+        if not AggregateData.is_loaded:
+            AggregateData.load()
 
-        props = context.scene.BIMGroupProperties
-        for group in ObjectGroupsData.data["groups"]:
-            if group["name"] == "BBIM_Linked_Aggregate":
-                row = layout.row(align=True)
-                row.label(text=f"{group['total_objects']} Linked Aggregates")
-                row.operator("bim.refresh_linked_aggregate", text="", icon="FILE_REFRESH")
+        props = context.active_object.BIMObjectAggregateProperties
+        print(props)
+
+        row = layout.row(align=True)
+        if AggregateData.data['total_linked_aggregate'] > 0:
+            row.label(text=f"{AggregateData.data['total_linked_aggregate']} Linked Aggregates")
+        else:
+            row.label(text="No Linked Aggregates")
+            
+        row.operator("bim.refresh_linked_aggregate", text="", icon="FILE_REFRESH")
         
 
-        # Select Linked Aggregate Element
-        # Select Linked Aggregate Decomposition
-        # When remove object from a linked aggregate should remove the pset
-        # Break the link of Linked Aggregate (highest level)
-
-        # Add Decomposition Operator (Alt+D) to the aggregate panel
+        # TODO Unlink Aggregate
+        # TODO Remove PSET from object when unassigned from aggregate

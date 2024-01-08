@@ -63,5 +63,5 @@ class ObjectGroupsData:
         results = []
         for rel in getattr(element, "HasAssignments", []) or []:
             if rel.is_a("IfcRelAssignsToGroup"):
-                results.append({"id": rel.RelatingGroup.id(), "name": rel.RelatingGroup.Name or "Unnamed", "total_objects": len(rel.RelatedObjects)})
+                results.append({"id": rel.RelatingGroup.id(), "name": rel.RelatingGroup.Name or "Unnamed"})
         return results

@@ -37,6 +37,7 @@ class AggregateData:
             "has_related_objects": cls.has_related_objects(),
             "total_parts": cls.total_parts(),
             "ifc_class": cls.ifc_class(),
+            "total_linked_aggregate": cls.total_linked_aggregate(),
         }
         cls.is_loaded = True
 
@@ -72,3 +73,28 @@ class AggregateData:
         element = tool.Ifc.get_entity(bpy.context.active_object)
         if element:
             return element.is_a()
+
+    @classmethod
+    def total_linked_aggregate(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        aggregate = ifcopenshell.util.element.get_aggregate(element)
+        print("AGG", aggregate)
+        if not aggregate:
+            return []
+        if not element:
+            return []
+        
+        product_linked_agg_group = [
+            r
+            for r in getattr(aggregate, "HasAssignments", []) or []
+            if r.is_a("IfcRelAssignsToGroup")
+            if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
+        ]
+
+        if not product_linked_agg_group:
+            return []
+        
+        total = len(product_linked_agg_group[0].RelatedObjects)
+        print("TOTAL", total)
+        return total
+        
