@@ -289,21 +289,23 @@ class RemoveClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
         else:
             objects = [self.obj]
 
-        identification = tool.Ifc.get().by_id(self.reference)[0]
+        active_reference = tool.Ifc.get().by_id(self.reference)
+        identification = active_reference[1]
 
         for obj in objects:
             ifc_definition_id = blenderbim.bim.helper.get_obj_ifc_definition_id(context, obj, self.obj_type)
             element = tool.Ifc.get().by_id(ifc_definition_id)
             references = ifcopenshell.util.classification.get_references(element, should_inherit=False)
             for reference in references:
-                if reference[0] == identification:
+                if (identification and reference[1] == identification) or (
+                    not identification and reference == active_reference
+                ):
                     ifcopenshell.api.run(
                         "classification.remove_reference",
                         tool.Ifc.get(),
                         reference=reference,
                         product=element,
                     )
-                    break
 
 
 class EditClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
