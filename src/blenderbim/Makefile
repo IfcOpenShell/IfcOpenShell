@@ -671,13 +671,6 @@ endif
 	cp -r dist/working/IFC2JSON_python-master/file_converters/ifcjson dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
-	# Provides OpenLCA functionality
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/85/33/f91b96e9e8608ff65a003b692e8a9cdd60f2178f60617e5b1d21334c009c/olca-ipc-0.0.10.tar.gz
-	cd dist/working && tar -xzvf olca-ipc*
-	cd dist/working/olca-ipc-0.0.10/ && cp -r olca ../../blenderbim/libs/site/packages/
-	rm -rf dist/working
-
 	# Provides Brickschema functionality
 	mkdir dist/working
 	# For now lets bundle the latest nightly schema
