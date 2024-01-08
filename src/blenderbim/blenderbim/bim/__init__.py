@@ -68,7 +68,6 @@ modules = {
     "document": None,
     "pset_template": None,
     "clash": None,
-    "lca": None,
     "csv": None,
     "tester": None,
     "bimtester": None,
