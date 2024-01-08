@@ -781,13 +781,12 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                 if opening_obj:
                     if tool.Ifc.is_edited(opening_obj):
                         tool.Geometry.run_geometry_update_representation(obj=opening_obj)
+                        blenderbim.core.geometry.edit_similar_opening_placement(tool.Geometry, opening, similar_openings)
                     elif tool.Ifc.is_moved(opening_obj):
                         blenderbim.core.geometry.edit_object_placement(
                             tool.Ifc, tool.Geometry, tool.Surveyor, obj=opening_obj
                         )
-
-                    blenderbim.core.geometry.edit_similar_opening_placement(opening, similar_openings)
-                    #TODO delete also the old placement
+                        blenderbim.core.geometry.edit_similar_opening_placement(tool.Geometry, opening, similar_openings)
 
                     building_objs.update(self.get_all_building_objects_of_similar_openings(opening)) #NB this has nothing to do with clone similar_opening
                     tool.Ifc.unlink(element=opening, obj=opening_obj)

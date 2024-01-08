@@ -807,3 +807,8 @@ class Geometry(blenderbim.core.tool.Geometry):
         shape_aspect.ShapeRepresentations = shape_aspect.ShapeRepresentations + (shape_aspect_representation,)
 
         return shape_aspect_representation
+
+    @classmethod
+    def delete_opening_object_placement(cls, placement):
+        model = tool.Ifc.get()
+        ifcopenshell.util.element.remove_deep2(model, placement)
