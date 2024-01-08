@@ -1572,14 +1572,13 @@ class IfcImporter:
                     print(f"Skipping '{relation.GlobalId}' because 'RelatingObject' needs to exist.")
                     continue
                 if check_relation(relation):
-                    rel_aggregates.append(rel_aggregates)
-
+                    rel_aggregates.append(relation)
             for relation in self.file.by_type("IfcRelNests"):
                 if relation.RelatingObject is None:
                     print(f"Skipping '{relation.GlobalId}' because 'RelatingObject' needs to exist.")
                     continue
                 if check_relation(relation) and [e for e in relation.RelatedObjects if not e.is_a("IfcPort")]:
-                    rel_aggregates.append(rel_aggregates)
+                    rel_aggregates.append(relation)
 
         if len(rel_aggregates) > 10000:
             # More than 10,000 collections makes Blender unhappy
