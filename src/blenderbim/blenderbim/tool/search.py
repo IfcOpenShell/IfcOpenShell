@@ -72,6 +72,9 @@ class Search(blenderbim.core.tool.Search):
                 elif ifc_filter.type == "location":
                     comparison, value = cls.get_comparison_and_value(ifc_filter)
                     filter_group_query.append(f"location{comparison}{value}")
+                elif ifc_filter.type == "group":
+                    comparison, value = cls.get_comparison_and_value(ifc_filter)
+                    filter_group_query.append(f"group{comparison}{value}")
                 elif ifc_filter.type == "query":
                     keys = cls.wrap_value(ifc_filter, ifc_filter.name)
                     comparison, value = cls.get_comparison_and_value(ifc_filter)
@@ -172,6 +175,10 @@ class ImportFilterQueryTransformer(lark.Transformer):
     def location(self, args):
         comparison, value = args
         return {"type": "location", "value": f"{comparison}{value}"}
+
+    def group(self, args):
+        comparison, value = args
+        return {"type": "group", "value": f"{comparison}{value}"}
 
     def query(self, args):
         keys, comparison, value = args
