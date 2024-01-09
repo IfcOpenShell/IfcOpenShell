@@ -19,11 +19,13 @@
 import bpy
 import ifcopenshell.util.attribute
 import ifcopenshell.api
-import blenderbim.bim.helper
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.util.selector import Selector
 import json
+from blenderbim.bim.module.group.data import GroupsData
+from blenderbim.bim.module.group.prop import BIMGroupProperties, Group
+import blenderbim.core.group as core
 
 
 class LoadGroups(bpy.types.Operator, tool.Ifc.Operator):
@@ -32,35 +34,9 @@ class LoadGroups(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        self.props = context.scene.BIMGroupProperties
-        self.expanded_groups = json.loads(context.scene.ExpandedGroups.json_string)
-        self.props.groups.clear()
-
-        for group in tool.Ifc.get().by_type("IfcGroup", include_subtypes=False):
-            if not group.HasAssignments:
-                self.load_group(group)
-
-        self.props.is_editing = True
-        bpy.ops.bim.disable_editing_group()
+        core.load_groups(tool.Ifc, tool.Group, context.scene.BIMGroupProperties,
+                         json.loads(context.scene.ExpandedGroups.json_string))
         return {"FINISHED"}
-
-    def load_group(self, group, tree_depth=0):
-        new = self.props.groups.add()
-        new.ifc_definition_id = group.id()
-        new.name = group.Name or "Unnamed"
-        new.selection_query = ""
-        new.tree_depth = tree_depth
-        new.has_children = False
-        new.is_expanded = group.id() in self.expanded_groups
-
-        for rel in group.IsGroupedBy or []:
-            for related_object in rel.RelatedObjects:
-                if not related_object.is_a("IfcGroup"):
-                    continue
-                new.has_children = True
-                if not new.is_expanded:
-                    return
-                self.load_group(related_object, tree_depth=tree_depth + 1)
 
 
 class ToggleGroup(bpy.types.Operator, tool.Ifc.Operator):
@@ -100,38 +76,9 @@ class AddGroup(bpy.types.Operator, tool.Ifc.Operator):
     group: bpy.props.IntProperty()
 
     def _execute(self, context):
-        result = ifcopenshell.api.run("group.add_group", tool.Ifc.get())
-        if self.group:
-            ifcopenshell.api.run(
-                "group.assign_group", tool.Ifc.get(), products=[result], group=tool.Ifc.get().by_id(self.group)
-            )
-        bpy.ops.bim.load_groups()
-        return {"FINISHED"}
-
-
-class EditGroup(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.edit_group"
-    bl_label = "Edit Group"
-    bl_options = {"REGISTER", "UNDO"}
-    copy_from_selector: bpy.props.BoolProperty(name="Copy from Selector", default=False)
-
-    def _execute(self, context):
-        props = context.scene.BIMGroupProperties
-        attributes = {}
-        for attribute in props.group_attributes:
-            if attribute.is_null:
-                attributes[attribute.name] = None
-            else:
-                attributes[attribute.name] = attribute.string_value
-
-        if self.copy_from_selector:
-            attributes["Description"] = context.scene.IFCSelector.selection_query
-
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "group.edit_group", self.file, **{"group": self.file.by_id(props.active_group_id), "attributes": attributes}
-        )
-        bpy.ops.bim.load_groups()
+        if not GroupsData.is_loaded:
+            GroupsData.load()
+        core.add_group(self.group, tool.Ifc, tool.Group, tool.Loader)
         return {"FINISHED"}
 
 
@@ -142,34 +89,7 @@ class RemoveGroup(bpy.types.Operator, tool.Ifc.Operator):
     group: bpy.props.IntProperty()
 
     def _execute(self, context):
-        props = context.scene.BIMGroupProperties
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run("group.remove_group", self.file, **{"group": self.file.by_id(self.group)})
-        bpy.ops.bim.load_groups()
-        return {"FINISHED"}
-
-
-class EnableEditingGroup(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.enable_editing_group"
-    bl_label = "Enable Editing Group"
-    bl_options = {"REGISTER", "UNDO"}
-    group: bpy.props.IntProperty()
-
-    def _execute(self, context):
-        props = context.scene.BIMGroupProperties
-        props.group_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.group), props.group_attributes)
-        props.active_group_id = self.group
-        return {"FINISHED"}
-
-
-class DisableEditingGroup(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.disable_editing_group"
-    bl_label = "Disable Editing Group"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def _execute(self, context):
-        context.scene.BIMGroupProperties.active_group_id = 0
+        core.remove_group(self.group, tool.Ifc, tool.Group)
         return {"FINISHED"}
 
 
@@ -181,17 +101,8 @@ class AssignGroup(bpy.types.Operator, tool.Ifc.Operator):
     group: bpy.props.IntProperty()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
         products = [bpy.data.objects.get(self.product)] if self.product else context.selected_objects
-        for product in products:
-            if not product.BIMObjectProperties.ifc_definition_id:
-                continue
-            ifcopenshell.api.run(
-                "group.assign_group",
-                self.file,
-                products=[self.file.by_id(product.BIMObjectProperties.ifc_definition_id)],
-                group=self.file.by_id(self.group),
-            )
+        core.assign_group(self.group, products, tool.Group, tool.Ifc)
         return {"FINISHED"}
 
 
@@ -205,40 +116,18 @@ class UnassignGroup(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         self.file = IfcStore.get_file()
         products = [bpy.data.objects.get(self.product)] if self.product else context.selected_objects
-        for product in products:
-            if not product.BIMObjectProperties.ifc_definition_id:
-                continue
-            ifcopenshell.api.run(
-                "group.unassign_group",
-                self.file,
-                **{
-                    "product": self.file.by_id(product.BIMObjectProperties.ifc_definition_id),
-                    "group": self.file.by_id(self.group),
-                }
-            )
+        core.unassign_group(self.group, products, tool.Group, tool.Ifc)
         return {"FINISHED"}
 
 
-class SelectGroupProducts(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.select_group_products"
-    bl_label = "Select Group Products"
+class SelectGroupObject(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.select_group_object"
+    bl_label = "Select Group"
     bl_options = {"REGISTER", "UNDO"}
     group: bpy.props.IntProperty()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        for obj in context.visible_objects:
-            obj.select_set(False)
-            element = tool.Ifc.get_entity(obj)
-            if not element:
-                continue
-            product_groups = [
-                r.RelatingGroup.id()
-                for r in getattr(element, "HasAssignments", []) or []
-                if r.is_a("IfcRelAssignsToGroup")
-            ]
-            if self.group in product_groups:
-                obj.select_set(True)
+        core.select_group_object_by_id(context, tool.Ifc, tool.Group, self.group)
         return {"FINISHED"}
 
 
