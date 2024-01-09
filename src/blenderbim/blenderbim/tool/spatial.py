@@ -310,26 +310,43 @@ class Spatial(blenderbim.core.tool.Spatial):
             ):
                 continue
 
-            old_mesh = None
+            old_mesh = obj.data
             if visible_element.HasOpenings:
                 new_mesh = cls.get_gross_mesh_from_element(visible_element)
-                old_mesh = obj.data
-                obj.data = new_mesh
+            else:
+                new_mesh = obj.data.copy()
+            obj.data = new_mesh
+
+            # Boundary objects are likely triangulated. If a triangulated quad
+            # is bisected by our plane, we end up with two lines instead of
+            # one. This makes shapely's job much harder (since shapely is very
+            # exact with its coordinates). As a result, let's limited dissolve
+            # prior to bisecting.
+            bm = bmesh.new()
+            bm.from_mesh(new_mesh)
+            bmesh.ops.dissolve_limit(bm, angle_limit=0.02, verts=bm.verts, edges=bm.edges)
+            bm.to_mesh(new_mesh)
+            new_mesh.update()
+            bm.free()
 
             local_cut_point = obj.matrix_world.inverted() @ cut_point
             local_cut_normal = obj.matrix_world.inverted().to_quaternion() @ cut_normal
             verts, edges = tool.Drawing.bisect_mesh_with_plane(obj, local_cut_point, local_cut_normal)
 
-            if old_mesh:
-                obj.data = old_mesh
-                bpy.data.meshes.remove(new_mesh)
+            # Restore the original mesh
+            obj.data = old_mesh
+            bpy.data.meshes.remove(new_mesh)
 
             for edge in edges or []:
-                boundary_lines.append(
-                    shapely.LineString(
-                        [Vector((round(x, 3) for x in verts[edge[0]])), Vector((round(x, 3) for x in verts[edge[1]]))]
-                    )
-                )
+                # Rounding is necessary to ensure coincident points are coincident
+                start = [round(x, 3) for x in verts[edge[0]]]
+                end = [round(x, 3) for x in verts[edge[1]]]
+                if start == end:
+                    continue
+                # Extension by 50mm is necessary to ensure lines overlap with other diagonal lines
+                # This also closes small but likely irrelevant gaps for space generation.
+                start, end = tool.Drawing.extend_line(start, end, 0.05)
+                boundary_lines.append(shapely.LineString([start, end]))
 
         return boundary_lines
 
