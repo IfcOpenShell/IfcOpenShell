@@ -1,4 +1,3 @@
-
 # bSDD - Python bSDD library
 # Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -39,7 +38,7 @@ class OAuthReceiver(http.server.BaseHTTPRequestHandler):
 
 class Client:
     def __init__(self):
-        self.baseurl = "https://bs-dd-api-prototype.azurewebsites.net/"
+        self.baseurl = "https://api.bsdd.buildingsmart.org/api/"
         self.access_token = ""
         self.refresh_token = ""
         self.access_token_expires_on = time.time()
@@ -188,8 +187,167 @@ class Client:
     def Unit(self, version="v1"):
         return self.get(f"api/Unit/{version}")
 
-    def UploadImportFile(self):
-        return  # TODO
+    def get_dictionary(self, dictionary_uri: str = "", version: int = 1):
+        """
+        Get list of available Dictionaries
+        This API replaces Domain
+        """
+        endpoint = f"Dictionary/v{version}"
+        params = {
+            "Uri": dictionary_uri,
+        }
+        return self.get(endpoint, params)
+
+    def get_classes(self, dictionary_uri: str, use_nested_classes: bool = True, class_type: str = "Class",
+                    language_code: str = "", version: int = 1):
+        """
+        Get Dictionary with tree of classes
+        This API replaces Domain
+        """
+        endpoint = f"Dictionary/v{version}/Classes"
+        params = {
+            "Uri": dictionary_uri,
+            "UseNestedClasses": use_nested_classes,
+            "ClassType": class_type,
+            "languageCode": language_code,
+        }
+        return self.get(endpoint, params)
+
+    def get_properties(self, dictionary_uri: str, language_code: str = "", version: int = 1):
+        """
+        Get Dictionary with its properties
+        """
+        endpoint = f"Dictionary/v{version}/Properties"
+        params = {
+            "Uri": dictionary_uri,
+            "languageCode": language_code,
+        }
+        return self.get(endpoint, params)
+
+    def get_class(self, class_uri: str, include_class_properties: bool = True,
+                  include_child_class_reference: bool = True, include_class_relations: bool = True,
+                  language_code: str = "", version: int = 1):
+        """
+        Get Class details
+        this API replaces Classification
+        """
+        endpoint = f"Dictionary/v{version}/Properties"
+        params = {
+            "Uri": class_uri,
+            "includeClassProperties": include_class_properties,
+            "includeChildClassReferences": include_child_class_reference,
+            "includeClassRelations": include_class_relations,
+            "languageCode": language_code,
+        }
+        return self.get(endpoint, params)
+
+    def get_property(self, uri, include_classes=False, language_code="", version: int = 4):
+        """
+        Get Property Detail
+        this API replaces Property
+        """
+
+        endpoint = f"Property/v{version}"
+        params = {
+            "uri": uri,
+            "includeClasses": include_classes,
+            "LanguageCode": language_code,
+        }
+        return self.get(endpoint, params)
+
+    def get_property_value(self, uri, language_code="", version: int = 2):
+        """
+        Get Property Value details
+        this API replaces PropertyValue
+        """
+        endpoint = f"PropertyValue/v{version}"
+        params = {
+            "uri": uri,
+            "LanguageCode": language_code,
+        }
+        return self.get(endpoint, params)
+
+    def search_text(self, search_text: str, type_filter="All", dictionary_uris=[], version: int = 1):
+        """
+        Search the bSDD database using free text, get list of Classes and/or Properties matching the text.
+        Pagination options are for Classes and Properties combined.
+        So if result consists of 10 classes and 5 properties, TotalCount will be 15.
+        Classes will be listed first, so if you then use Offset=10 and Limit=5, you will get the 5 properties.
+        """
+        endpoint = f"TextSearch/v{version}"
+        params = {
+            "SearchText": search_text,
+            "TypeFilter": type_filter,
+            "DictionaryUris": dictionary_uris,
+        }
+        return self.get(endpoint, params)
+        pass
+
+    def search_in_dictionary(self, dictionary_uri: str, search_text: str = "", language_code: str = "",
+                             related_ifc_entity: str = "", version: int = "1"):
+        """
+        Search the bSDD database, get list of Classes without details.
+        This version uses new naming and returns one Dictionary instead of a list with always one Dictionary.
+        This API replaces SearchList.
+        """
+        endpoint = f"SearchInDictionary/v{version}"
+        params = {
+            "DictionaryUri": dictionary_uri,
+            "SearchText": search_text,
+            "LanguageCode": language_code,
+            "RelatedIfcEntity": related_ifc_entity,
+        }
+        return self.get(endpoint, params)
+
+    def search_class(self, search_text: str, dictionary_uris=[], related_ifc_entities=[], version: int = 1):
+        """
+        Search the bSDD database using free text, get list of Classes matching the text and optional additional filters.
+        this API replaces ClassificationSearch
+        """
+
+        endpoint = f"Class/Search/v{version}"
+        params = {
+            "SearchText": search_text,
+            "DictionaryUris": dictionary_uris,
+            "RelatedIfcEntities": related_ifc_entities,
+        }
+        return self.get(endpoint, params)
+
+    def get_countries(self, version: int = 1):
+        """
+        Get list of all Countries 
+        this API replaces Country
+        """
+        endpoint = f"Country/v{version}"
+        params = {}
+        return self.get(endpoint, params)
+
+    def get_languages(self, version: int = 1):
+        """
+        Get list of available Languages
+        this API replaces Language
+        """
+        endpoint = f"Language/v{version}"
+        params = {}
+        return self.get(endpoint, params)
+
+    def get_reference_documents(self, version: int = 1):
+        """
+        Get list of all ReferenceDocuments
+        this API replaces Country
+        """
+        endpoint = f"ReferenceDocument/v{version}"
+        params = {}
+        return self.get(endpoint, params)
+
+    def get_units(self, version: int = 1):
+        """
+        Get list of all Units
+        this API replaces Unit
+        """
+        endpoint = f"Unit/v{version}"
+        params = {}
+        return self.get(endpoint, params)
 
 
 def apply_ifc_classification_properties(ifc_file, element, classificationProperties):
