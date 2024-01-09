@@ -53,6 +53,13 @@ class Client:
             headers = {"Authorization": "Bearer " + self.get_access_token()}
         return requests.get(f"{self.baseurl}{endpoint}", timeout=10, headers=headers, params=params or None).json()
 
+    def _get_deprecated(self, endpoint, params=None, is_auth_required=False):
+        headers = {}
+        old_baseurl = "https://bs-dd-api-prototype.azurewebsites.net/"
+        if is_auth_required:
+            headers = {"Authorization": "Bearer " + self.get_access_token()}
+        return requests.get(f"{old_baseurl}{endpoint}", timeout=10, headers=headers, params=params or None).json()
+
     def post(self):
         pass  # TODO
 
@@ -110,8 +117,10 @@ class Client:
         self.access_token_expires_on = time.time() + response["expires_in"]
         self.refresh_token_expires_on = time.time() + response["refresh_token_expires_in"]
 
+    # deprecated
     def Classification(self, namespaceUri, version="v3", languageCode="", includeChildClassificationReferences=True):
-        return self.get(
+        print(f"function 'Client.Classification' is deprecated, use 'Client.get_class' instead")
+        return self._get_deprecated(
             f"api/Classification/{version}",
             {
                 "namespaceUri": namespaceUri,
@@ -120,12 +129,14 @@ class Client:
             },
         )
 
+    # deprecated
     def ClassificationSearchOpen(self, SearchText, version="v1", DomainNamespaceUris=None, RelatedIfcEntities=None):
+        print(f"function 'Client.ClassificationSearchOpen' is deprecated, use 'Client.search_class' instead")
         if DomainNamespaceUris is None:
             DomainNamespaceUris = []
         if RelatedIfcEntities is None:
             RelatedIfcEntities = []
-        return self.get(
+        return self._get_deprecated(
             f"api/ClassificationSearchOpen/{version}",
             {
                 "SearchText": SearchText,
@@ -134,32 +145,42 @@ class Client:
             },
         )
 
+    # deprecated
     def Country(self, version="v1"):
-        return self.get(f"api/Country/{version}")
+        print(f"function 'Client.Country' is deprecated, use 'Client.get_countries' instead")
+        return self._get_deprecated(f"api/Country/{version}")
 
+    # deprecated
     def Domain(self, version="v2"):
-        return self.get(f"api/Domain/{version}")
+        print(f"function 'Client.Domain' is deprecated, use 'Client.get_dictionary' and 'Client.get_classes' instead")
+        return self._get_deprecated(f"api/Domain/{version}")
 
-    def graphql(self):
-        return  # TODO
-
+    # deprecated
     def Language(self, version="v1"):
-        return self.get(f"api/Language/{version}")
+        print(f"function 'Client.Language' is deprecated, use 'Client.get_languages' instead")
+        return self._get_deprecated(f"api/Language/{version}")
 
+    # deprecated
     def Property(self, namespaceUri, version="v2", languageCode=""):
-        return self.get(f"api/Property/{version}", {"namespaceUri": namespaceUri, "languageCode": languageCode})
+        print(f"function 'Client.Property' is deprecated, use 'Client.get_property' instead")
+        return self._get_deprecated(f"api/Property/{version}",
+                                    {"namespaceUri": namespaceUri, "languageCode": languageCode})
 
+    # deprecated
     def PropertyValue(self, namespaceUri, version="v1", languageCode=""):
-        return self.get(f"api/PropertyValue/{version}", {"namespaceUri": namespaceUri, "languageCode": languageCode})
+        print(f"function 'Client.PropertyValue' is deprecated, use 'Client.get_property_value' instead")
+        return self._get_deprecated(f"api/PropertyValue/{version}",
+                                    {"namespaceUri": namespaceUri, "languageCode": languageCode})
 
+    # deprecated
     def ReferenceDocument(self, version="v1"):
-        return self.get(f"api/ReferenceDocument/{version}")
+        print(f"function 'Client.ReferenceDocument' is deprecated, use 'Client.get_reference_documents' instead")
+        return self._get_deprecated(f"api/ReferenceDocument/{version}")
 
-    def RequestExportFile(self):
-        return  # TODO
-
+    # deprecated
     def SearchList(self, DomainNamespaceUri, version="v2", SearchText="", LanguageCode="", RelatedIfcEntity=""):
-        return self.get(
+        print(f"function 'Client.SearchList' is deprecated, use 'Client.search_in_dictionary' instead")
+        return self._get_deprecated(
             f"api/SearchList/{version}",
             {
                 "DomainNamespaceUri": DomainNamespaceUri,
@@ -170,7 +191,9 @@ class Client:
             is_auth_required=True,
         )
 
+    # deprecated
     def SearchListOpen(self, DomainNamespaceUri, version="v2", SearchText="", LanguageCode="", RelatedIfcEntity=""):
+        print(f"function 'Client.SearchListOpen' is deprecated, use 'Client.search_in_dictionary' instead")
         return self.get(
             f"api/SearchListOpen/{version}",
             {
@@ -181,10 +204,9 @@ class Client:
             },
         )
 
-    def TextSearchListOpen(self):
-        return  # TODO
-
+    # deprecated
     def Unit(self, version="v1"):
+        print(f"function 'Client.Unit' is deprecated, use 'Client.get_units' instead")
         return self.get(f"api/Unit/{version}")
 
     def get_dictionary(self, dictionary_uri: str = "", version: int = 1):
