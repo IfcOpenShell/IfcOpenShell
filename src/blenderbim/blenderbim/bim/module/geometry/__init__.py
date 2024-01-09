@@ -83,6 +83,7 @@ def register():
     bpy.types.OUTLINER_MT_object.append(ui.outliner_menu)
     bpy.types.VIEW3D_MT_object_context_menu.append(ui.object_menu)
     bpy.types.VIEW3D_MT_edit_mesh.append(ui.edit_mesh_menu)
+    bpy.types.VIEW3D_HT_header.append(ui.mode_menu)
     wm = bpy.context.window_manager
     if wm.keyconfigs.addon:
         km = wm.keyconfigs.addon.keymaps.new(name="Object Mode", space_type="EMPTY")
@@ -129,6 +130,7 @@ def unregister():
     bpy.types.OUTLINER_MT_object.remove(ui.outliner_menu)
     bpy.types.VIEW3D_MT_object_context_menu.remove(ui.outliner_menu)
     bpy.types.VIEW3D_MT_edit_mesh.remove(ui.edit_mesh_menu)
+    bpy.types.VIEW3D_HT_header.remove(ui.mode_menu)
     del bpy.types.Scene.BIMGeometryProperties
     del bpy.types.Object.BIMGeometryProperties
     wm = bpy.context.window_manager

@@ -31,6 +31,11 @@ from blenderbim.bim.module.geometry.data import (
 )
 
 
+def mode_menu(self, context):
+    row = self.layout.row(align=True)
+    row.prop(context.scene.BIMGeometryProperties, "mode", text="", icon_value=blenderbim.bim.icons["IFC"].icon_id)
+
+
 def object_menu(self, context):
     self.layout.separator()
     self.layout.operator("bim.override_object_duplicate_move", icon="PLUGIN")
