@@ -124,6 +124,95 @@ def dump_py_messages_monkey_patch(msgs, reports, addons, settings, addons_only=F
     bl_i18n_utils.bl_extract_messages.dump_py_messages_from_files(msgs, reports, sorted(files), settings)
 
 
+def dump_addon_messages(module_name, do_checks, settings):
+    import datetime
+    import addon_utils
+    import bl_i18n_utils.utils as utils
+    from bl_i18n_utils.bl_extract_messages import (
+        _gen_reports,
+        _gen_check_ctxt,
+        dump_rna_messages,
+        _diff_check_ctxt,
+        dump_py_messages,
+        dump_addon_bl_info,
+        print_info,
+    )
+
+    # Get current addon state (loaded or not):
+    was_loaded = addon_utils.check(module_name)[1]
+
+    # Enable our addon.
+    addon = utils.enable_addons(addons={module_name})[0]
+
+    addon_info = addon_utils.module_bl_info(addon)
+    ver = addon_info["name"] + " " + ".".join(str(v) for v in addon_info["version"])
+    rev = 0
+    date = datetime.datetime.now()
+    pot = utils.I18nMessages.gen_empty_messages(
+        settings.PARSER_TEMPLATE_ID, ver, rev, date, date.year, settings=settings
+    )
+    msgs = pot.msgs
+
+    minus_pot = utils.I18nMessages.gen_empty_messages(
+        settings.PARSER_TEMPLATE_ID, ver, rev, date, date.year, settings=settings
+    )
+    minus_msgs = minus_pot.msgs
+
+    check_ctxt = _gen_check_ctxt(settings) if do_checks else None
+    minus_check_ctxt = _gen_check_ctxt(settings) if do_checks else None
+
+    # Get strings from RNA, our addon being enabled.
+    print("A")
+    reports = _gen_reports(check_ctxt)
+    print("B")
+    dump_rna_messages(msgs, reports, settings)
+    print("C")
+
+    # Now disable our addon, and re-scan RNA.
+    utils.enable_addons(addons={module_name}, disable=True)
+    print("D")
+    reports["check_ctxt"] = minus_check_ctxt
+    print("E")
+    dump_rna_messages(minus_msgs, reports, settings)
+    print("F")
+
+    # Restore previous state if needed!
+    if was_loaded:
+        utils.enable_addons(addons={module_name})
+
+    # and make the diff!
+    for key in minus_msgs:
+        if key != settings.PO_HEADER_KEY:
+            if key in msgs:
+                del msgs[key]
+            else:
+                # This should not happen, but some messages seem to have
+                # leaked on add-on unregister and register?
+                print(f"Key not found in msgs: {key}")
+
+    if check_ctxt:
+        _diff_check_ctxt(check_ctxt, minus_check_ctxt)
+
+    # and we are done with those!
+    del minus_pot
+    del minus_msgs
+    del minus_check_ctxt
+
+    # get strings from UI layout definitions text="..." args
+    reports["check_ctxt"] = check_ctxt
+    dump_py_messages(msgs, reports, {addon}, settings, addons_only=True)
+
+    # Get strings from the addon's bl_info
+    dump_addon_bl_info(msgs, reports, addon, settings)
+
+    pot.unescape()  # Strings gathered in py/C source code may contain escaped chars...
+    print_info(reports, pot)
+
+    print("Finished extracting UI messages!")
+
+    return pot
+
+
 if __name__ == "__main__":
     if not is_addon_loaded("ui_translate"):
         raise Exception('"Manage UI translations" addon is not enabled')
@@ -143,6 +232,7 @@ if __name__ == "__main__":
     # and we need it, otherwise translation addon will try to parse strings
     # from all BlenderBIM dependencies :O
     bl_i18n_utils.bl_extract_messages.dump_py_messages = dump_py_messages_monkey_patch
+    bl_i18n_utils.bl_extract_messages.dump_addon_messages = dump_addon_messages
 
     # setup selected languages
     for lang in i18n_settings.langs:
