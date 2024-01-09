@@ -38,6 +38,15 @@ def get_contexts(self, context):
     return RepresentationsData.data["contexts"]
 
 
+def update_mode(self, context):
+    if self.is_changing_mode:
+        return
+    if self.mode == "OBJECT":
+        bpy.ops.bim.override_mode_set_object("INVOKE_DEFAULT")
+    elif self.mode == "EDIT":
+        bpy.ops.bim.override_mode_set_edit("INVOKE_DEFAULT")
+
+
 class RepresentationItem(PropertyGroup):
     name: StringProperty(name="Name")
     surface_style: StringProperty(name="Surface Style")
@@ -59,3 +68,13 @@ class BIMGeometryProperties(PropertyGroup):
     should_force_faceted_brep: BoolProperty(name="Force Faceted Breps", default=False)
     # Navisworks workaround
     should_force_triangulation: BoolProperty(name="Force Triangulation", default=False)
+    is_changing_mode: BoolProperty(name="Is Changing Mode", default=False)
+    mode: EnumProperty(
+        default="OBJECT",
+        items=[
+            ("OBJECT", "IFC Object Mode", "", "OBJECT_DATAMODE", 0),
+            ("EDIT", "IFC Edit Mode", "", "EDITMODE_HLT", 1),
+        ],
+        name="IFC Interaction Mode",
+        update=update_mode,
+    )

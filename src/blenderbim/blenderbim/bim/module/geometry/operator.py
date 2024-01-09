@@ -822,7 +822,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
 
         # Recreate aggregate relationship
         for old in old_to_new.keys():
-            if old.is_a("IfcElementAssembly"):            
+            if old.is_a("IfcElementAssembly"):
                 tool.Root.recreate_aggregate(old_to_new)
 
         # Remove connections with old objects and recreates paths
@@ -869,7 +869,6 @@ class OverrideDuplicateMove(bpy.types.Operator):
                 arrays_to_create[array_parent_obj] = array_data
 
         return arrays_to_create, array_children
-
 
     def remove_old_connections(old_to_new):
         for new in old_to_new.values():
@@ -934,7 +933,7 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
         self.pset_name = "BBIM_Linked_Aggregate"
         old_to_new = {}
 
-        def select_objects_and_add_data(element): 
+        def select_objects_and_add_data(element):
             add_linked_aggregate_group(element)
             obj = tool.Ifc.get_object(element)
             obj.select_set(True)
@@ -947,7 +946,7 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
 
                     add_linked_aggregate_pset(part, index)
                     index += 1
-                        
+
                     obj = tool.Ifc.get_object(part)
                     obj.select_set(True)
 
@@ -960,19 +959,15 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
             ]
             if self.group_name in product_groups_name:
                 return
-                            
+
             linked_aggregate_group = ifcopenshell.api.run("group.add_group", tool.Ifc.get(), Name=self.group_name)
-            ifcopenshell.api.run(
-                "group.assign_group", tool.Ifc.get(), products=[element], group=linked_aggregate_group
-            )
+            ifcopenshell.api.run("group.assign_group", tool.Ifc.get(), products=[element], group=linked_aggregate_group)
 
         def add_linked_aggregate_pset(part, index):
             pset = ifcopenshell.util.element.get_pset(part, self.pset_name)
-            
+
             if not pset:
-                pset = ifcopenshell.api.run(
-                    "pset.add_pset", tool.Ifc.get(), product=part, name=self.pset_name
-                )
+                pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=part, name=self.pset_name)
             else:
                 pset = tool.Ifc.get().by_id(pset["id"])
 
@@ -984,8 +979,7 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
             )
 
             return index
-       
-             
+
         if len(context.selected_objects) != 1:
             return {"FINISHED"}
 
@@ -1002,17 +996,14 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
             self.report({"INFO"}, "Object is not part of a IfcElementAssembly.")
             return {"FINISHED"}
 
-
         select_objects_and_add_data(selected_element)
 
         old_to_new = OverrideDuplicateMove.execute_ifc_duplicate_operator(self, context, linked=True)
 
-        
         # Recreate aggregate relationship
         for old in old_to_new.keys():
-            if old.is_a("IfcElementAssembly"):            
+            if old.is_a("IfcElementAssembly"):
                 tool.Root.recreate_aggregate(old_to_new)
-
 
         blenderbim.bim.handler.refresh_ui_data()
 
@@ -1038,7 +1029,7 @@ class RefreshLinkedAggregate(bpy.types.Operator):
 
     def _execute(self, context):
         self.new_active_obj = None
-        self.group_name = 'BBIM_Linked_Aggregate'
+        self.group_name = "BBIM_Linked_Aggregate"
         self.pset_name = "BBIM_Linked_Aggregate"
         refresh_start_time = time()
         old_to_new = {}
@@ -1049,9 +1040,9 @@ class RefreshLinkedAggregate(bpy.types.Operator):
                 for part in parts:
                     if part.is_a("IfcElementAssembly"):
                         delete_objects(part)
-                        
+
                     tool.Geometry.delete_ifc_object(tool.Ifc.get_object(part))
-                    
+
             tool.Geometry.delete_ifc_object(tool.Ifc.get_object(element))
 
         def get_element_assembly(element):
@@ -1092,14 +1083,14 @@ class RefreshLinkedAggregate(bpy.types.Operator):
                 except:
                     self.report({"INFO"}, "Object is not part of a Linked Aggregate.")
                     return None, None
-                
+
             return list(set(linked_aggregate_groups)), selected_parents
 
         active_element = tool.Ifc.get_entity(context.active_object)
         if not active_element:
             self.report({"INFO"}, "Object has no Ifc metadata.")
             return {"FINISHED"}
-            
+
         active_element = get_element_assembly(active_element)
         selected_objs = context.selected_objects
         linked_aggregate_groups, selected_parents = handle_selection(selected_objs)
@@ -1108,7 +1099,10 @@ class RefreshLinkedAggregate(bpy.types.Operator):
 
         if len(linked_aggregate_groups) > 1:
             if len(selected_parents) != len(linked_aggregate_groups):
-                self.report({"INFO"}, "Select only one object from each Linked Aggregate or multiple objects from the same Linked Aggregate.")
+                self.report(
+                    {"INFO"},
+                    "Select only one object from each Linked Aggregate or multiple objects from the same Linked Aggregate.",
+                )
                 return {"FINISHED"}
 
         for group in linked_aggregate_groups:
@@ -1116,15 +1110,15 @@ class RefreshLinkedAggregate(bpy.types.Operator):
             if len(linked_aggregate_groups) > 1:
                 base_instance = [e for e in elements if e in selected_parents][0]
                 instances_to_refresh = elements
-                
+
             elif (len(linked_aggregate_groups) == 1) and (len(selected_parents) > 1):
                 base_instance = active_element
                 instances_to_refresh = [element for element in elements if element in selected_parents]
-                
+
             else:
                 base_instance = active_element
                 instances_to_refresh = elements
-        
+
             for element in instances_to_refresh:
                 if element.GlobalId == base_instance.GlobalId:
                     continue
@@ -1135,34 +1129,34 @@ class RefreshLinkedAggregate(bpy.types.Operator):
                 selected_matrix = selected_obj.matrix_world
                 object_duplicate = tool.Ifc.get_object(element)
                 duplicate_matrix = object_duplicate.matrix_world.decompose()
-                
+
                 delete_objects(element)
-            
+
                 for obj in context.selected_objects:
                     obj.select_set(False)
-                
+
                 tool.Ifc.get_object(base_instance).select_set(True)
-            
+
                 old_to_new = DuplicateMoveLinkedAggregate.execute_ifc_duplicate_linked_aggregate_operator(self, context)
                 for old, new in old_to_new.items():
                     new_obj = tool.Ifc.get_object(new[0])
                     new_base_matrix = Matrix.LocRotScale(*duplicate_matrix)
-                    matrix_diff = Matrix.inverted(selected_matrix) @ new_obj.matrix_world 
+                    matrix_diff = Matrix.inverted(selected_matrix) @ new_obj.matrix_world
                     new_obj_matrix = new_base_matrix @ matrix_diff
                     new_obj.matrix_world = new_obj_matrix
-                    
+
                     if element_aggregate and new[0].is_a("IfcElementAssembly"):
                         new_aggregate = ifcopenshell.util.element.get_aggregate(new[0])
-                        
+
                         if not new_aggregate:
                             blenderbim.core.aggregate.assign_object(
-                                                        tool.Ifc,
-                                                        tool.Aggregate,
-                                                        tool.Collector,
-                                                        relating_obj=tool.Ifc.get_object(element_aggregate),
-                                                        related_obj=tool.Ifc.get_object(new[0]),
-                                                    )                        
-                        
+                                tool.Ifc,
+                                tool.Aggregate,
+                                tool.Collector,
+                                relating_obj=tool.Ifc.get_object(element_aggregate),
+                                related_obj=tool.Ifc.get_object(new[0]),
+                            )
+
         blenderbim.bim.handler.refresh_ui_data()
 
         operator_time = time() - refresh_start_time
@@ -1388,7 +1382,12 @@ class OverrideModeSetEdit(bpy.types.Operator):
             # The active object is non-mesh-like. Set a valid object (or None) as active
             context.view_layer.objects.active = context.selected_objects[0] if context.selected_objects else None
         if context.active_object:
-            return tool.Blender.toggle_edit_mode(context)
+            tool.Blender.toggle_edit_mode(context)
+            context.scene.BIMGeometryProperties.is_changing_mode = True
+            if context.scene.BIMGeometryProperties.mode != "EDIT":
+                context.scene.BIMGeometryProperties.mode = "EDIT"
+            context.scene.BIMGeometryProperties.is_changing_mode = False
+            return {"FINISHED"}
 
         # Restore the selection if nothing worked
         for obj in selected_objs:
@@ -1458,6 +1457,11 @@ class OverrideModeSetObject(bpy.types.Operator):
         self.should_save = True
 
         bpy.ops.object.mode_set(mode="EDIT", toggle=True)
+
+        context.scene.BIMGeometryProperties.is_changing_mode = True
+        if context.scene.BIMGeometryProperties.mode != "OBJECT":
+            context.scene.BIMGeometryProperties.mode = "OBJECT"
+        context.scene.BIMGeometryProperties.is_changing_mode = False
 
         if not tool.Ifc.get():
             return {"FINISHED"}
