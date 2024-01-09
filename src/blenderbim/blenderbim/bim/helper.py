@@ -328,6 +328,9 @@ def draw_filter(layout, filter_groups, data, module):
             elif ifc_filter.type == "location":
                 row = box.row(align=True)
                 row.prop(ifc_filter, "value", text="", icon="PACKAGE")
+            elif ifc_filter.type == "group":
+                row = box.row(align=True)
+                row.prop(ifc_filter, "value", text="", icon="OUTLINER_COLLECTION")
             elif ifc_filter.type == "query":
                 row = box.row(align=True)
                 row.prop(ifc_filter, "name", text="", icon="POINTCLOUD_DATA")
