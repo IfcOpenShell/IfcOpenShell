@@ -50,7 +50,7 @@ def convert_translations_to_po():
     for file in Path(temp_po_dir.name).iterdir():
         branches_subdir = BRANCHES_DIR / file.stem
         branches_subdir.mkdir(exist_ok=True)
-        file.rename(branches_subdir / file.name)
+        file.replace(branches_subdir / file.name)
 
     temp_po_dir.cleanup()
 
