@@ -31,6 +31,7 @@ from math import pi
 from mathutils import Vector, Matrix
 from shapely import Polygon, MultiPolygon
 
+
 class Spatial(blenderbim.core.tool.Spatial):
     @classmethod
     def can_contain(cls, structure_obj, element_obj):
@@ -270,7 +271,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         contracted_containers.remove(container.id())
         props.contracted_containers = json.dumps(contracted_containers)
 
-#HERE STARTS SPATIAL TOOL
+    # HERE STARTS SPATIAL TOOL
 
     @classmethod
     def is_bounding_class(cls, visible_element):
@@ -411,8 +412,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         polys = cls.get_polygons(boundary_elements)
         converted_tolerance = cls.get_converted_tolerance(tolerance=0.03)
         union = shapely.ops.unary_union(polys).buffer(converted_tolerance, cap_style=2, join_style=2)
-        union = cls.get_purged_inner_holes_poly(union_geom=union, min_area=cls.get_converted_tolerance(tolerance=3))
-
+        union = cls.get_purged_inner_holes_poly(union_geom=union, min_area=cls.get_converted_tolerance(tolerance=0.1))
         return union
 
     @classmethod
@@ -521,7 +521,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         bmesh.ops.triangle_fill(bm, edges=bm.edges)
         bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 5, verts=bm.verts, edges=bm.edges)
 
-        if h!=0:
+        if h != 0:
             extrusion = bmesh.ops.extrude_face_region(bm, geom=bm.faces)
             extruded_verts = [g for g in extrusion["geom"] if isinstance(g, bmesh.types.BMVert)]
             bmesh.ops.translate(bm, vec=[0.0, 0.0, h], verts=extruded_verts)
@@ -592,7 +592,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         z = collection_obj.matrix_world.translation.z
 
         oldLoc = obj.location
-        newLoc = Vector((x,y,z))
+        newLoc = Vector((x, y, z))
         diff = newLoc - oldLoc
         for vert in obj.data.vertices:
             aux_vector = mat @ vert.co
@@ -650,8 +650,8 @@ class Spatial(blenderbim.core.tool.Spatial):
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(model)
         for i in range(len(points)):
             a = list(points[i])
-            a[0]/=unit_scale
-            a[1]/=unit_scale
+            a[0] /= unit_scale
+            a[1] /= unit_scale
             points[i] = tuple(a)
 
         return points
@@ -665,7 +665,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         old_area = area.OuterCurve
 
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(model)
-        outer_curve = builder.polyline(vertices, closed = True)
+        outer_curve = builder.polyline(vertices, closed=True)
 
         area.OuterCurve = outer_curve
         ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_area)
@@ -687,9 +687,9 @@ class Spatial(blenderbim.core.tool.Spatial):
         relating_type = tool.Ifc.get().by_id(int(relating_type_id))
         ifc_class = relating_type.is_a()
         instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, tool.Ifc.get().schema)[0]
-        bpy.ops.bim.assign_class(obj = obj.name, ifc_class = instance_class)
+        bpy.ops.bim.assign_class(obj=obj.name, ifc_class=instance_class)
         element = tool.Ifc.get_entity(obj)
-        tool.Ifc.run("type.assign_type", related_object = element, relating_type = relating_type)
+        tool.Ifc.run("type.assign_type", related_object=element, relating_type=relating_type)
 
     @classmethod
     def assign_relating_type_to_element(cls, ifc, Type, element, relating_type):
