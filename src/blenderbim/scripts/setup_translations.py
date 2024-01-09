@@ -138,14 +138,8 @@ def dump_addon_messages(module_name, do_checks, settings):
         print_info,
     )
 
-    # Get current addon state (loaded or not):
-    was_loaded = addon_utils.check(module_name)[1]
-
     # Enable our addon.
-    addon = utils.enable_addons(addons={module_name})[0]
-
-    addon_info = addon_utils.module_bl_info(addon)
-    ver = addon_info["name"] + " " + ".".join(str(v) for v in addon_info["version"])
+    ver = module_name
     rev = 0
     date = datetime.datetime.now()
     pot = utils.I18nMessages.gen_empty_messages(
@@ -161,24 +155,20 @@ def dump_addon_messages(module_name, do_checks, settings):
     check_ctxt = _gen_check_ctxt(settings) if do_checks else None
     minus_check_ctxt = _gen_check_ctxt(settings) if do_checks else None
 
-    # Get strings from RNA, our addon being enabled.
-    print("A")
-    reports = _gen_reports(check_ctxt)
-    print("B")
-    dump_rna_messages(msgs, reports, settings)
-    print("C")
-
-    # Now disable our addon, and re-scan RNA.
-    utils.enable_addons(addons={module_name}, disable=True)
+    # Get strings from RNA, our addon being disabled
     print("D")
-    reports["check_ctxt"] = minus_check_ctxt
+    reports = _gen_reports(check_ctxt)
     print("E")
     dump_rna_messages(minus_msgs, reports, settings)
     print("F")
 
-    # Restore previous state if needed!
-    if was_loaded:
-        utils.enable_addons(addons={module_name})
+    # Now enable our addon, and re-scan RNA.
+    addon = utils.enable_addons(addons={module_name})[0]
+    print("A")
+    reports["check_ctxt"] = minus_check_ctxt
+    print("B")
+    dump_rna_messages(msgs, reports, settings)
+    print("C")
 
     # and make the diff!
     for key in minus_msgs:
