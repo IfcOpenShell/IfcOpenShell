@@ -284,6 +284,9 @@ class BimToolUI:
             row.prop(data=cls.props, property="rl2", text="RL")
         elif cls.props.ifc_class in ("IfcSpaceType"):
             add_layout_hotkey_operator(cls.layout, "Generate", "S_G", bpy.ops.bim.generate_space.__doc__)
+        else:
+            row = cls.layout.row(align=True)
+            row.prop(data=cls.props, property="rl_mode", text="RL")
 
     @classmethod
     def draw_edit_object_interface(cls, context):
