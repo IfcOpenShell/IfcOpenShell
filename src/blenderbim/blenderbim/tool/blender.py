@@ -139,6 +139,9 @@ class Blender(blenderbim.core.tool.Blender):
             ].ifc_definition_id
         elif obj_type == "WorkSchedule":
             return bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id
+        elif obj_type == "Group":
+            prop = bpy.context.scene.BIMGroupProperties
+            return prop.groups[prop.active_group_index].ifc_definition_id
 
     @classmethod
     def is_ifc_object(cls, obj):
