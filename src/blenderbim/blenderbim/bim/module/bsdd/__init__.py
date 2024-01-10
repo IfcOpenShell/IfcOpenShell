@@ -22,8 +22,8 @@ from . import ui, prop, operator
 classes = (
     operator.GetBSDDClassificationProperties,
     operator.LoadBSDDDomains,
-    operator.SearchBSDDClassifications,
-    operator.SetActiveBSDDDomain,
+    operator.SearchBSDDClass,
+    operator.SetActiveBSDDDictionary,
     prop.BSDDDomain,
     prop.BSDDClassification,
     prop.BSDDPset,
