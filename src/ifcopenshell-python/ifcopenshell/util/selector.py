@@ -195,7 +195,7 @@ class FormatTransformer(lark.Transformer):
             return str(args[0])[int(args[1]) :]
 
     def round(self, args):
-        value = Decimal(args[0] or 0.0)
+        value = Decimal(0.0 if args[0] == "None" else args[0] or 0.0)
         nearest = Decimal(args[1])
         result = round(value / nearest) * nearest
         if nearest % 1 == 0:
