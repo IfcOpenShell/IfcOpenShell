@@ -189,12 +189,12 @@ class AddConstrTypeInstance(bpy.types.Operator):
         collection_obj = collection.BIMCollectionProperties.obj
 
         bpy.ops.bim.assign_class(obj=obj.name, ifc_class=instance_class)
-        tool.Blender.remove_data_block(mesh) # Remove "Instance" mesh
+        tool.Blender.remove_data_block(mesh)  # Remove "Instance" mesh
 
         mesh_data = obj.data
         element = tool.Ifc.get_entity(obj)
         blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
-        if obj.data != mesh_data: # remove orphaned mesh from "bim.assign_class"
+        if obj.data != mesh_data:  # remove orphaned mesh from "bim.assign_class"
             tool.Blender.remove_data_block(mesh_data)
 
         # Update required as core.type.assign_type may change obj.data
@@ -241,7 +241,12 @@ class AddConstrTypeInstance(bpy.types.Operator):
                 bpy.ops.bim.add_filled_opening(voided_obj=building_obj.name, filling_obj=obj.name)
         else:
             if collection_obj and tool.Ifc.get_entity(collection_obj):
-                obj.location.z = collection_obj.location.z - tool.Blender.get_object_bounding_box(obj)["min_z"]
+                if props.rl_mode == "BOTTOM":
+                    obj.location.z = collection_obj.location.z - tool.Blender.get_object_bounding_box(obj)["min_z"]
+                elif props.rl_mode == "CONTAINER":
+                    obj.location.z = collection_obj.location.z
+                elif props.rl_mode == "CURSOR":
+                    pass
 
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         for port in ifcopenshell.util.system.get_ports(relating_type):

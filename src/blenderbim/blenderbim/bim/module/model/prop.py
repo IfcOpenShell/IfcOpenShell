@@ -132,6 +132,15 @@ class BIMModelProperties(PropertyGroup):
     x: bpy.props.FloatProperty(name="X", default=0.5, subtype="DISTANCE", description="Size by X axis for the opening")
     y: bpy.props.FloatProperty(name="Y", default=0.5, subtype="DISTANCE", description="Size by Y axis for the opening")
     z: bpy.props.FloatProperty(name="Z", default=0.5, subtype="DISTANCE", description="Size by Z axis for the opening")
+    rl_mode: bpy.props.EnumProperty(
+        items=(
+            ("BOTTOM", "Bottom", "Snaps the element's lowest geometry to the container's Z value."),
+            ("CONTAINER", "Container", "Positions the element's placement origin at the container's Z value."),
+            ("CURSOR", "Cursor", "Places the object placement at the 3D cursor's Z value."),
+        ),
+        name="RL Mode",
+        default="BOTTOM",
+    )
     # Used for things like walls, doors, flooring, skirting, etc
     rl1: bpy.props.FloatProperty(name="RL", default=1, subtype="DISTANCE", description="Z offset for walls")
     # Used for things like windows, other hosted furniture, and MEP
