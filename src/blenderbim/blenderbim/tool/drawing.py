@@ -907,6 +907,8 @@ class Drawing(blenderbim.core.tool.Drawing):
                     obj = tool.Ifc.get_object(occurrence)
                     if obj:
                         objs.append(obj)
+            else:
+                objs = [obj]
 
         for obj in objs:
             props = obj.BIMTextProperties
