@@ -33,7 +33,7 @@ filter_elements_grammar = lark.Lark(
     filter_group: facet_list ("+" facet_list)*
     facet_list: facet ("," facet)*
 
-    facet: instance | entity | attribute | type | material | query | classification | location | property
+    facet: instance | entity | attribute | type | material | query | classification | location | property | group
 
     instance: not? globalid
     globalid: /[0-3][a-zA-Z0-9_$]{21}/
@@ -44,6 +44,7 @@ filter_elements_grammar = lark.Lark(
     property: pset "." prop comparison value
     classification: "classification" comparison value
     location: "location" comparison value
+    group: "group" comparison value
     query: "query:" keys comparison value
 
     pset: quoted_string | regex_string | unquoted_string
@@ -194,7 +195,7 @@ class FormatTransformer(lark.Transformer):
             return str(args[0])[int(args[1]) :]
 
     def round(self, args):
-        value = Decimal(args[0] or 0.0)
+        value = Decimal(0.0 if args[0] == "None" else args[0] or 0.0)
         nearest = Decimal(args[1])
         result = round(value / nearest) * nearest
         if nearest % 1 == 0:
@@ -509,6 +510,19 @@ class FacetTransformer(lark.Transformer):
             if result is not None:
                 return result if comparison == "=" else not result
             return self.compare(None, comparison, value)
+
+        self.elements = set(filter(filter_function, self.elements))
+
+    def group(self, args):
+        comparison, value = args
+
+        def filter_function(element):
+            result = False
+            for rel in getattr(element, "HasAssignments", []):
+                if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup:
+                    if self.compare(rel.RelatingGroup.Name, comparison, value):
+                        result = True
+            return result if comparison == "=" else not result
 
         self.elements = set(filter(filter_function, self.elements))
 
