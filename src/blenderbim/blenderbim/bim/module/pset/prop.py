@@ -130,6 +130,23 @@ def get_resource_qto_names(self, context):
     return qtonames[ifc_class]
 
 
+def get_group_pset_names(self, context):
+    global psetnames
+    ifc_class = "IfcGroup"
+    if ifc_class not in psetnames:
+        psets = blenderbim.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True)
+        psetnames[ifc_class] = blender_formatted_enum_from_psets(psets)
+    return psetnames[ifc_class]
+
+
+def get_group_qto_names(self, context):
+    global qtonames
+    ifc_class = "IfcGroup"
+    if ifc_class not in qtonames:
+        psets = blenderbim.bim.schema.ifc.psetqto.get_applicable(ifc_class, qto_only=True)
+        qtonames[ifc_class] = blender_formatted_enum_from_psets(psets)
+    return qtonames[ifc_class]
+
 def get_profile_pset_names(self, context):
     global psetnames
     pprops = context.scene.BIMProfileProperties
@@ -228,6 +245,14 @@ class ResourcePsetProperties(PropertyGroup):
     pset_name: EnumProperty(items=get_resource_pset_names, name="Pset Name")
     qto_name: EnumProperty(items=get_resource_qto_names, name="Qto Name")
 
+
+class GroupPsetProperties(PropertyGroup):
+    active_pset_id: IntProperty(name="Active Pset ID")
+    active_pset_name: StringProperty(name="Pset Name")
+    active_pset_type: StringProperty(name="Active Pset Type")
+    properties: CollectionProperty(name="Properties", type=IfcProperty)
+    pset_name: EnumProperty(items=get_group_pset_names, name="Pset Name")
+    qto_name: EnumProperty(items=get_group_qto_names, name="Qto Name")
 
 class ProfilePsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
