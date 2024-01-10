@@ -245,7 +245,9 @@ def get_obj_ifc_definition_id(context, obj, obj_type):
         ].ifc_definition_id
     elif obj_type == "WorkSchedule":
         return context.scene.BIMWorkScheduleProperties.active_work_schedule_id
-
+    elif obj_type == "Group":
+        prop = context.scene.BIMGroupProperties
+        return prop.groups[prop.active_group_index].ifc_definition_id
 
 # hack to close popup
 # https://blender.stackexchange.com/a/202576/130742

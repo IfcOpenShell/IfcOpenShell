@@ -18,7 +18,7 @@
 
 import bpy
 from blenderbim.bim.prop import StrProperty, Attribute
-from blenderbim.bim.helper import import_attributes
+from blenderbim.bim.module.pset.data import refresh as refresh_pset
 from bpy.types import PropertyGroup
 import json
 from bpy.props import (
@@ -31,6 +31,10 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+
+
+def update_active_group_index(self, context):
+    refresh_pset()
 
 
 class ExpandedGroups(StrProperty):
@@ -50,5 +54,5 @@ class BIMGroupProperties(PropertyGroup):
     group_attributes: CollectionProperty(name="Group Attributes", type=Attribute)
     is_editing: BoolProperty(name="Is Editing", default=False)
     groups: CollectionProperty(name="Groups", type=Group)
-    active_group_index: IntProperty(name="Active Group Index")
+    active_group_index: IntProperty(name="Active Group Index", update=update_active_group_index)
     active_group_id: IntProperty(name="Active Group Id")
