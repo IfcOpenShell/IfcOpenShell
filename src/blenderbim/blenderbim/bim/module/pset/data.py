@@ -36,6 +36,8 @@ def refresh():
     TaskQtosData.is_loaded = False
     ResourceQtosData.is_loaded = False
     ResourcePsetsData.is_loaded = False
+    GroupQtosData.is_loaded = False
+    GroupPsetData.is_loaded = False
     ProfilePsetsData.is_loaded = False
     WorkSchedulePsetsData.is_loaded = False
     AddEditCustomPropertiesData.is_loaded = False
@@ -202,6 +204,30 @@ class ResourcePsetsData(Data):
         rtprops = bpy.context.scene.BIMResourceTreeProperties
         ifc_definition_id = rtprops.resources[rprops.active_resource_index].ifc_definition_id
         cls.data = {"psets": cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id), psets_only=True)}
+        cls.is_loaded = True
+
+
+class GroupQtosData(Data):
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        props = bpy.context.scene.BIMGroupProperties
+        ifc_definition_id = props.groups[props.active_group_index].ifc_definition_id
+        cls.data = {"qtos": cls.psetqtos(tool.Ifc.get_entity_by_id(ifc_definition_id), qtos_only=True)}
+        cls.is_loaded = True
+
+
+class GroupPsetData(Data):
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        props = bpy.context.scene.BIMGroupProperties
+        ifc_definition_id = props.groups[props.active_group_index].ifc_definition_id
+        cls.data = {"psets": cls.psetqtos(tool.Ifc.get_entity_by_id(ifc_definition_id), psets_only=True)}
         cls.is_loaded = True
 
 

@@ -29,8 +29,11 @@ from blenderbim.bim.module.pset.data import (
     TaskQtosData,
     ResourceQtosData,
     ResourcePsetsData,
+    GroupQtosData,
+    GroupPsetData,
     ProfilePsetsData,
     WorkSchedulePsetsData,
+
 )
 
 
@@ -468,6 +471,76 @@ class BIM_PT_resource_psets(Panel):
 
         for pset in ResourcePsetsData.data["psets"]:
             draw_psetqto_ui(context, pset["id"], pset, props, self.layout, "Resource")
+
+
+class BIM_PT_group_qtos(Panel):
+    bl_label = "Group Quantity Sets"
+    bl_idname = "BIM_PT_group_qtos"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_groups"
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.BIMGroupProperties
+        total_resources = len(props.groups)
+        if total_resources > 0 and props.active_group_index < total_resources:
+            return True
+        return False
+
+    def draw(self, context):
+        if not GroupQtosData.is_loaded:
+            GroupQtosData.load()
+
+        props = context.scene.GroupPsetProperties
+        row = self.layout.row(align=True)
+        row.prop(props, "qto_name", text="")
+        op = row.operator("bim.add_qto", icon="ADD", text="")
+        op.obj_type = "Group"
+
+        if not props.active_pset_id and props.active_pset_name and props.active_pset_type == "QTO":
+            draw_psetqto_ui(context, 0, {}, props, self.layout, "Group")
+
+        for qto in GroupQtosData.data["qtos"]:
+            draw_psetqto_ui(context, qto["id"], qto, props, self.layout, "Group")
+
+
+class BIM_PT_group_psets(Panel):
+    bl_label = "Group Property Sets"
+    bl_idname = "BIM_PT_group_psets"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_groups"
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.BIMGroupProperties
+        total_resources = len(props.groups)
+        if total_resources > 0 and props.active_group_index < total_resources:
+            return True
+        return False
+
+    def draw(self, context):
+        if not GroupPsetData.is_loaded:
+            GroupPsetData.load()
+
+        props = context.scene.GroupPsetProperties
+        row = self.layout.row(align=True)
+        prop_with_search(row, props, "pset_name", text="")
+        op = row.operator("bim.add_pset", icon="ADD", text="")
+        op.obj_type = "Group"
+
+        if not props.active_pset_id and props.active_pset_name and props.active_pset_type == "PSET":
+            draw_psetqto_ui(context, 0, {}, props, self.layout, "Group")
+
+        for pset in GroupPsetData.data["psets"]:
+            draw_psetqto_ui(context, pset["id"], pset, props, self.layout, "Group")
+
+
 
 
 class BIM_PT_profile_psets(Panel):
