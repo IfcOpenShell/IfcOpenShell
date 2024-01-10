@@ -29,7 +29,6 @@ from blenderbim.tool.document import Document
 from blenderbim.tool.drawing import Drawing
 from blenderbim.tool.geometry import Geometry
 from blenderbim.tool.georeference import Georeference
-from blenderbim.tool.group import Group
 from blenderbim.tool.ifc import Ifc
 from blenderbim.tool.ifcgit import IfcGit
 from blenderbim.tool.ifcgit import IfcGitRepo

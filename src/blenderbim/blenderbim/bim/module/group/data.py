@@ -21,7 +21,7 @@ import ifcopenshell
 import ifcopenshell.util.cost
 import ifcopenshell.util.element
 import blenderbim.tool as tool
-from typing import Any
+
 
 def refresh():
     GroupsData.is_loaded = False
@@ -34,34 +34,13 @@ class GroupsData:
 
     @classmethod
     def load(cls):
-        cls.data = {"total_groups": cls.total_groups(),
-                    "collections_dict": cls.collections_dict()
-                    }
+        cls.data = {"total_groups": cls.total_groups()}
         cls.is_loaded = True
 
     @classmethod
     def total_groups(cls):
         return len(tool.Ifc.get().by_type("IfcGroup", include_subtypes=False))
 
-    @classmethod
-    def collections_dict(cls) -> dict[ifcopenshell.entity_instance,bpy.types.Collection]:
-        group_dict = dict()
-        for col in bpy.data.collections:
-            props = col.get("BIMCollectionProperties")
-            if not props:
-                continue
-
-            obj = props.get("obj")
-            if not obj:
-                continue
-
-            entity = tool.Ifc.get_entity(obj)
-            if not entity:
-                continue
-
-            if entity.is_a("IfcGroup"):
-                group_dict[entity] = col
-        return group_dict
 
 class ObjectGroupsData:
     data = {}

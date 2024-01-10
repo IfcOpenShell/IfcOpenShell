@@ -408,19 +408,6 @@ class Georeference:
 
 
 @interface
-class Group:
-    def get_collection_from_entity(cls, entity, groups_data): pass
-    def get_object_from_collection(cls, collection): pass
-    def create_group(cls, ifc_file): pass
-    def create_group_object(cls, group_entity, name, ifc): pass
-    def add_entities_to_group(cls, ifc_file, parent_group, entities): pass
-    def create_collection_by_group(cls, group, obj, name, collection_project, groups_data): pass
-
-    def remove_group(cls, ifc, group_entity): pass
-
-    def get_sub_groups(self, group_entity): pass
-
-@interface
 class Ifc:
     def get(cls): pass
     def get_entity(cls, obj): pass
