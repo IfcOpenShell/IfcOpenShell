@@ -889,13 +889,32 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def update_text_value(cls, obj):
-        props = obj.BIMTextProperties
+        element = tool.Ifc.get_entity(obj)
+        if element.is_a("IfcTypeProduct"):
+            objs = [obj]
+            for occurrence in ifcopenshell.util.element.get_types(element):
+                obj = tool.Ifc.get_object(occurrence)
+                if obj:
+                    objs.append(obj)
+        else:
+            objs = []
+            element_type = ifcopenshell.util.element.get_type(element)
+            if element_type and element_type.RepresentationMaps:
+                obj = tool.Ifc.get_object(element_type)
+                if obj:
+                    objs.append(obj)
+                for occurrence in ifcopenshell.util.element.get_types(element_type):
+                    obj = tool.Ifc.get_object(occurrence)
+                    if obj:
+                        objs.append(obj)
 
-        literals = cls.get_text_literal(obj, return_list=True)
-        cls.import_text_attributes(obj)
-        for i, literal in enumerate(literals):
-            product = cls.get_assigned_product(tool.Ifc.get_entity(obj)) or tool.Ifc.get_entity(obj)
-            props.literals[i].value = cls.replace_text_literal_variables(literal.Literal, product)
+        for obj in objs:
+            props = obj.BIMTextProperties
+            literals = cls.get_text_literal(obj, return_list=True)
+            cls.import_text_attributes(obj)
+            for i, literal in enumerate(literals):
+                product = cls.get_assigned_product(tool.Ifc.get_entity(obj)) or tool.Ifc.get_entity(obj)
+                props.literals[i].value = cls.replace_text_literal_variables(literal.Literal, product)
 
     @classmethod
     def update_text_size_pset(cls, obj):
