@@ -20,6 +20,7 @@ from blenderbim.tool.aggregate import Aggregate
 from blenderbim.tool.blender import Blender
 from blenderbim.tool.boundary import Boundary
 from blenderbim.tool.brick import Brick
+from blenderbim.tool.bsdd import Bsdd
 from blenderbim.tool.cad import Cad
 from blenderbim.tool.collector import Collector
 from blenderbim.tool.context import Context

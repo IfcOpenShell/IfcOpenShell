@@ -33,7 +33,7 @@ from bpy.props import (
 
 class BSDDDomain(PropertyGroup):
     name: StringProperty(name="Name")
-    namespace_uri: StringProperty(name="URI")
+    uri: StringProperty(name="URI")
     default_language_code: StringProperty(name="Language")
     organization_name_owner: StringProperty(name="Organization")
     status: StringProperty(name="Status")
@@ -44,7 +44,7 @@ class BSDDClassification(PropertyGroup):
     name: StringProperty(name="Name")
     reference_code: StringProperty(name="Reference Code")
     description: StringProperty(name="Description")
-    namespace_uri: StringProperty(name="Namespace URI")
+    uri: StringProperty(name="Namespace URI")
     domain_name: StringProperty(name="Domain Name")
     domain_namespace_uri: StringProperty(name="Domain Namespace URI")
 
