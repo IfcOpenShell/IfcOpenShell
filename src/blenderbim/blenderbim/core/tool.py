@@ -136,6 +136,20 @@ class Brick:
     def clear_breadcrumbs(cls, split_screen=False): pass
 
 
+class Bsdd:
+    def get_dictionaries(cls, client): pass
+
+    def fill_dictionary_prop(cls, prop, dictionary): pass
+
+    def get_related_ifc_entities(cls, keyword, filter_ifc_class, active_object, ifc): pass
+
+    def fill_class_prop(cls, prop, _class): pass
+
+    def get_active_class_data(cls, prop, client): pass
+
+    def get_property_dict(cls, class_data): pass
+
+    def create_classification_psets(cls, props, pset_dic): pass
 @interface
 class Collector:
     def assign(cls, obj): pass
