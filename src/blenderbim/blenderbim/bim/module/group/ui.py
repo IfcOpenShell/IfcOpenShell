@@ -42,7 +42,6 @@ class BIM_PT_groups(Panel):
         row = self.layout.row(align=True)
         row.label(text=f"{GroupsData.data['total_groups']} Groups Found", icon="OUTLINER")
         if self.props.is_editing:
-            row.operator("bim.load_groups", text="", icon="FILE_REFRESH")
             row.operator("bim.add_group", text="", icon="ADD").group = 0
             row.operator("bim.disable_group_editing_ui", text="", icon="CANCEL")
         else:
@@ -92,6 +91,7 @@ class BIM_PT_object_groups(Panel):
         row = self.layout.row(align=True)
         if self.props.is_editing:
             row.label(text="Adding Groups", icon="OUTLINER")
+            row.operator("bim.disable_group_editing_ui", text="", icon="CANCEL")
             self.layout.template_list(
                 "BIM_UL_object_groups",
                 "",
@@ -133,17 +133,35 @@ class BIM_UL_groups(UIList):
 
             row.label(text=f"*{item.name}") if item.selection_query != "" else row.label(text=item.name)
             group_id = item.ifc_definition_id
-            op = row.operator("bim.select_group_object", text="", icon="RESTRICT_SELECT_OFF")
-            op.group = group_id
-            op = row.operator("bim.add_group", text="", icon="ADD")
-            op.group = group_id
-            op = row.operator("bim.remove_group", text="", icon="X")
-            op.group = group_id
-            if item.selection_query != "":
-                op = row.operator("bim.update_group", text="", icon="FILE_REFRESH")
-                op.group_id = item.ifc_definition_id
-                op.query = item.selection_query
-
+            if context.scene.BIMGroupProperties.active_group_id == group_id:
+                op = row.operator("bim.select_group_products", text="", icon="RESTRICT_SELECT_OFF")
+                op.group = group_id
+                row.operator("bim.edit_group", text="", icon="CHECKMARK")
+                row.operator("bim.disable_editing_group", text="", icon="CANCEL")
+            elif context.scene.BIMGroupProperties.active_group_id:
+                op = row.operator("bim.select_group_products", text="", icon="RESTRICT_SELECT_OFF")
+                op.group = group_id
+                op = row.operator("bim.add_group", text="", icon="ADD")
+                op.group = group_id
+                op = row.operator("bim.remove_group", text="", icon="X")
+                op.group = group_id
+                if item.selection_query != "":
+                    op = row.operator("bim.update_group", text="", icon="FILE_REFRESH")
+                    op.group_id = item.ifc_definition_id
+                    op.query = item.selection_query
+            else:
+                op = row.operator("bim.select_group_products", text="", icon="RESTRICT_SELECT_OFF")
+                op.group = group_id
+                op = row.operator("bim.enable_editing_group", text="", icon="GREASEPENCIL")
+                op.group = group_id
+                op = row.operator("bim.add_group", text="", icon="ADD")
+                op.group = group_id
+                op = row.operator("bim.remove_group", text="", icon="X")
+                op.group = group_id
+                if item.selection_query != "":
+                    op = row.operator("bim.update_group", text="", icon="FILE_REFRESH")
+                    op.group_id = item.ifc_definition_id
+                    op.query = item.selection_query
 
 
 class BIM_UL_object_groups(UIList):
