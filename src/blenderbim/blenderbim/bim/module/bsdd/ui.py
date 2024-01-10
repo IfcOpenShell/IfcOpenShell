@@ -68,7 +68,7 @@ class BIM_UL_bsdd_domains(UIList):
                 row.label(text=f"{item.name} ({item.organization_name_owner})")
             op = row.operator("bim.set_active_bsdd_domain", text="", icon="RESTRICT_SELECT_OFF")
             op.name = item.name
-            op.uri = item.namespace_uri
+            op.uri = item.uri
 
 
 class BIM_UL_bsdd_classifications(UIList):
