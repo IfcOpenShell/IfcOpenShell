@@ -58,7 +58,8 @@ def get_pset_props(context, obj, obj_type):
         return context.scene.ProfilePsetProperties
     elif obj_type == "WorkSchedule":
         return context.scene.WorkSchedulePsetProperties
-
+    elif obj_type == "Group":
+        return context.scene.GroupPsetProperties
 
 class TogglePsetExpansion(bpy.types.Operator, Operator):
     bl_idname = "bim.toggle_pset_expansion"
@@ -196,6 +197,7 @@ class EnablePsetEditing(bpy.types.Operator):
             new.is_selected = enum in selected_enum_items
 
     def load_from_pset_data(self, pset):
+        props = []
         if pset.is_a("IfcElementQuantity"):
             props = pset.Quantities
         elif pset.is_a("IfcPropertySet"):
