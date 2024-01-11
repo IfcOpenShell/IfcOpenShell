@@ -1,8 +1,41 @@
 import blenderbim.core.tool
 import json
+import bpy
+import blenderbim.tool as tool
 
 
 class Bsdd(blenderbim.core.tool.Bsdd):
+
+    @classmethod
+    def clear_domains(cls) -> None:
+        bpy.context.scene.BIMBSDDProperties.domains.clear()
+
+    @classmethod
+    def clear_classes(cls) -> None:
+        bpy.context.scene.BIMBSDDProperties.classifications.clear()
+
+    @classmethod
+    def clear_class_psets(cls) -> None:
+        bpy.context.scene.BIMBSDDProperties.classification_psets.clear()
+
+    @classmethod
+    def get_active_dictionary_uri(cls) -> str:
+        return bpy.context.scene.BIMBSDDProperties.active_uri
+
+    @classmethod
+    def search_class(cls, client, keyword, dictionary_uris, related_ifc_entities) -> dict:
+        response = client.search_class(keyword, dictionary_uris=dictionary_uris,
+                                       related_ifc_entities=related_ifc_entities)
+        return response.get("classes", [])
+
+    @classmethod
+    def should_load_preview_domains(cls) -> bool:
+        return bpy.context.scene.BIMBSDDProperties.load_preview_domains
+
+    @classmethod
+    def should_filter_ifc_class(cls) -> bool:
+        return bpy.context.scene.BIMBSDDProperties.should_filter_ifc_class
+
     @classmethod
     def get_dictionaries(cls, client, status=None) -> list:
         response = client.get_dictionary()
@@ -12,38 +45,47 @@ class Bsdd(blenderbim.core.tool.Bsdd):
         return dicts
 
     @classmethod
-    def fill_dictionary_prop(cls, prop, dictionary):
-        prop.name = dictionary["name"]
-        prop.uri = dictionary["uri"]
-        prop.default_language_code = dictionary["defaultLanguageCode"]
-        prop.organization_name_owner = dictionary["organizationNameOwner"]
-        prop.status = dictionary["status"]
-        prop.version = dictionary["version"]
+    def create_dictionaries(cls, dictionaries: dict):
+        props = bpy.context.scene.BIMBSDDProperties
+        for dictionary in sorted(dictionaries, key=lambda d: d["name"]):
+            new = props.domains.add()
+            new.name = dictionary["name"]
+            new.uri = dictionary["uri"]
+            new.default_language_code = dictionary["defaultLanguageCode"]
+            new.organization_name_owner = dictionary["organizationNameOwner"]
+            new.status = dictionary["status"]
+            new.version = dictionary["version"]
 
     @classmethod
-    def get_related_ifc_entities(cls, keyword, filter_ifc_class: bool, active_object, ifc):
+    def create_classes(cls, class_dict):
+        props = bpy.context.scene.BIMBSDDProperties
+        for _class in sorted(class_dict, key=lambda c: c["referenceCode"]):
+            prop = props.classifications.add()
+            prop.name = _class["name"]
+            prop.reference_code = _class["referenceCode"]
+            prop.description = _class.get("description", "")
+            prop.uri = _class["uri"]
+            prop.domain_name = _class["dictionaryName"]
+            prop.domain_namespace_uri = _class["dictionaryUri"]
+
+    @classmethod
+    def get_related_ifc_entities(cls, keyword):
+        active_object = bpy.context.active_object
         related_ifc_entities = []
         if len(keyword) < 3:
             return {"FINISHED"}
-        if filter_ifc_class and active_object:
-            element = ifc.get_entity(active_object)
+        if cls.should_filter_ifc_class() and active_object:
+            element = tool.Ifc.get_entity(active_object)
             if element:
                 related_ifc_entities = [element.is_a()]
         return related_ifc_entities
 
     @classmethod
-    def fill_class_prop(cls, prop, _class: dict):
-        prop.name = _class["name"]
-        prop.reference_code = _class["referenceCode"]
-        prop.description = _class.get("description", "")
-        prop.uri = _class["uri"]
-        prop.domain_name = _class["dictionaryName"]
-        prop.domain_namespace_uri = _class["dictionaryUri"]
-
-    @classmethod
-    def get_active_class_data(cls, prop, client):
-        prop.classification_psets.clear()
+    def get_active_class_data(cls, client):
+        prop = bpy.context.scene.BIMBSDDProperties
         bsdd_classification = prop.classifications[prop.active_classification_index]
+        if not bsdd_classification:
+            return {}
         return client.get_class(bsdd_classification.uri)
 
     @classmethod
@@ -72,7 +114,8 @@ class Bsdd(blenderbim.core.tool.Bsdd):
         return psets
 
     @classmethod
-    def create_classification_psets(cls, props, pset_dict: dict):
+    def create_class_psets(cls, pset_dict: dict):
+        props = bpy.context.scene.BIMBSDDProperties
         data_type_map = {
             "String": "string",
             "Real": "float",
@@ -89,3 +132,9 @@ class Bsdd(blenderbim.core.tool.Bsdd):
                     new2.data_type = "enum"
                 else:
                     new2.data_type = data_type_map[data["data_type"]]
+
+    @classmethod
+    def set_active_bsdd(cls, name, uri):
+        props = bpy.context.scene.BIMBSDDProperties
+        props.active_domain = name
+        props.active_uri = uri
