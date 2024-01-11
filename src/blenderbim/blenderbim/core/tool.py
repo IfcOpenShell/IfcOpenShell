@@ -137,19 +137,22 @@ class Brick:
 
 
 class Bsdd:
+    def clear_domains(cls): pass
+    def clear_classes(cls): pass
+    def clear_class_psets(cls): pass
+    def get_active_dictionary_uri(cls): pass
+    def search_class(cls, client, keyword, dictionary_uris, related_ifc_entities): pass
+    def should_load_preview_domains(cls): pass
     def get_dictionaries(cls, client): pass
-
-    def fill_dictionary_prop(cls, prop, dictionary): pass
-
-    def get_related_ifc_entities(cls, keyword, filter_ifc_class, active_object, ifc): pass
-
-    def fill_class_prop(cls, prop, _class): pass
-
-    def get_active_class_data(cls, prop, client): pass
-
+    def create_dictionaries(cls, dictionaries): pass
+    def get_related_ifc_entities(cls, keyword): pass
+    def create_classes(cls, class_dict): pass
+    def get_active_class_data(cls, client): pass
     def get_property_dict(cls, class_data): pass
+    def create_class_psets(cls, pset_dict): pass
+    def set_active_bsdd(cls, name, uri): pass
 
-    def create_classification_psets(cls, props, pset_dic): pass
+
 @interface
 class Collector:
     def assign(cls, obj): pass
