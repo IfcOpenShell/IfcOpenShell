@@ -19,6 +19,7 @@
 import os
 import json
 import time
+from typing import Any, Optional, Callable, TypeVar
 import ifcopenshell
 import ifcopenshell.util.attribute
 
@@ -26,6 +27,8 @@ import ifcopenshell.util.attribute
 # In this simple implementation, we only support 2X3<->4 right now
 
 cwd = os.path.dirname(os.path.realpath(__file__))
+wrapper = ifcopenshell.ifcopenshell_wrapper
+Usecase = TypeVar('Usecase')
 
 
 def is_a(entity, ifc_class):
@@ -330,3 +333,14 @@ class Migrator:
                 },
             )
         return self.default_entities.get(attribute.name(), None)
+
+
+def with_schema_attrs(
+        ifc_class: str, defaults: dict[str, Any], exclude: Optional[list[str]] = None
+) -> Callable[[Usecase], Usecase]:
+    """Decorates an API Usecase dataclass, allowing it to be passed IFC schema attributes"""
+
+    def inner(usecase: Usecase) -> Usecase:
+        return usecase
+    return inner
+
