@@ -16,14 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
 import bpy
 import bsdd
-import json
-import ifcopenshell
 import blenderbim.tool as tool
 from blenderbim.core import bsdd as core
-from blenderbim.tool.bsdd import Bsdd
 
 
 class LoadBSDDDomains(bpy.types.Operator):
@@ -32,7 +28,7 @@ class LoadBSDDDomains(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        core.load_bsdd(context.scene.BIMBSDDProperties, bsdd.Client(), Bsdd)
+        core.load_bsdd(bsdd.Client(), tool.Bsdd)
         return {"FINISHED"}
 
 
@@ -44,7 +40,7 @@ class SetActiveBSDDDictionary(bpy.types.Operator):
     uri: bpy.props.StringProperty()
 
     def execute(self, context):
-        core.set_active_bsdd_dictionary(context, self.name, self.uri)
+        core.set_active_bsdd_dictionary(self.name, self.uri, tool.Bsdd)
         return {"FINISHED"}
 
 
@@ -54,7 +50,8 @@ class SearchBSDDClass(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        core.search_class(context, bsdd.Client(), tool.Bsdd, tool.Ifc)
+        keyword = context.scene.BIMBSDDProperties.keyword
+        core.search_class(keyword, bsdd.Client(), tool.Bsdd)
         return {"FINISHED"}
 
 
@@ -64,5 +61,5 @@ class GetBSDDClassificationProperties(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        core.get_class_properties(context, bsdd.Client(), tool.Bsdd)
+        core.get_class_properties(bsdd.Client(), tool.Bsdd)
         return {"FINISHED"}
