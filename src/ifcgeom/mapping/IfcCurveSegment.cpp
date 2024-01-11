@@ -451,7 +451,7 @@ class curve_segment_evaluator {
 		  geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
     // see https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcClothoid.htm
       // also see, https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/concepts/Partial_Templates/Geometry/Curve_Segment_Geometry/Clothoid_Transition_Segment/content.html,
-      // which defines the clothoid constant as sqrt(L) and L is the length measured from the inflection point
+      // which defines the clothoid constant as sqrt(L*R) and L is the length measured from the inflection point and R is the radius at L
       auto A = c->ClothoidConstant();
       auto s = fabs(A * sqrt(PI));
 
