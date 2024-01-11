@@ -455,9 +455,7 @@ ifcopenshell::geometry::taxonomy::solid::ptr ifcopenshell::geometry::create_box(
 
 ifcopenshell::geometry::taxonomy::item::ptr ifcopenshell::geometry::taxonomy::piecewise_function::evaluate() const {
 	// @todo configure resolution
-	double length = 0.0;
-	for (auto& s : spans)
-		length += s.first;
+    double curve_length = length();
 
    std::vector<taxonomy::point3::ptr> polygon;
 	
@@ -466,12 +464,12 @@ ifcopenshell::geometry::taxonomy::item::ptr ifcopenshell::geometry::taxonomy::pi
    int num_steps = 0;
    if (param_type == ifcopenshell::geometry::settings::PiecewiseStepMethod::MAXSTEPSIZE) {
 	   // parameter is max step size
-      num_steps = (int)std::ceil(length / param);
+        num_steps = (int)std::ceil(curve_length / param);
    } else {
 	   // parameter is minimum number of steps
       num_steps = (int)std::ceil(param);
     }
-    auto resolution = length / num_steps;
+   auto resolution = curve_length / num_steps;
 
 	 for (int i = 0; i <= num_steps; ++i) {
 		auto u = resolution * i;

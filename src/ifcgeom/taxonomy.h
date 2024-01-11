@@ -2,6 +2,7 @@
 #define TAXONOMY_H
 
 #include "../ifcparse/IfcBaseClass.h"
+#include "../ifcparse/IfcLogger.h"
 
 #include "ConversionSettings.h"
 
@@ -14,6 +15,7 @@
 #include <string>
 #include <tuple>
 #include <exception>
+#include <numeric>
 
 #ifndef TAXONOMY_USE_UNIQUE_PTR
 #ifndef TAXONOMY_USE_NAKED_PTR
@@ -146,6 +148,10 @@ typedef item const* ptr;
 
 				// length of span, function to evaluate span
 				std::vector<std::pair<double, std::function<Eigen::Matrix4d(double u)>>> spans;
+
+				double length() const {
+                    return std::accumulate(spans.begin(), spans.end(), 0.0, [](const auto& v,const auto& s) { return v + s.first; });
+                }
 
 				void print(std::ostream& o, int = 0) const {
 					o << "piecewise_function" << std::endl;
@@ -1096,6 +1102,65 @@ typedef item const* ptr;
 				}
 			};
 
+			// Hacks around not wanting to use if constexpr
+         template <typename T>
+         class loop_to_piecewise_function_upgrade {
+              public:
+                loop_to_piecewise_function_upgrade(taxonomy::ptr) {}
+
+                operator bool() const {
+                    return false;
+                }
+
+                operator taxonomy::piecewise_function::ptr() const {
+                    throw taxonomy::topology_error();
+                }
+
+                operator typename T::ptr() const {
+                    throw taxonomy::topology_error();
+                }
+            };
+
+            template <>
+            class loop_to_piecewise_function_upgrade<taxonomy::piecewise_function> {
+              private:
+                boost::optional<taxonomy::piecewise_function::ptr> pwf_;
+
+              public:
+                loop_to_piecewise_function_upgrade(taxonomy::ptr item) {
+                    auto loop = taxonomy::dcast<taxonomy::loop>(item);
+                    if (loop) {
+                        pwf_ = taxonomy::make<taxonomy::piecewise_function>();
+                        for (auto& edge : loop->children) {
+                            // the edge could be an arc or trimmed circle in the case of IfcIndexPolyCurve - support for this isn't implemented yet
+                            if (edge->basis) {
+                                Logger::Message(Logger::Severity::LOG_NOTICE, "Shape of basis curve ignored - edge is treated as a straight line edge");
+                            }
+
+                            const auto& s = boost::get<taxonomy::point3::ptr>(edge->start)->ccomponents();
+                            const auto& e = boost::get<taxonomy::point3::ptr>(edge->end)->ccomponents();
+                            Eigen::Vector3d v = e - s;
+                            auto l = v.norm(); // the norm of a vector is a measure of its length
+                            v.normalize();     // normalize the vector so that it is a unit direction vector
+                            std::function<Eigen::Matrix4d(double)> fn = [s, v](double u) {
+                                Eigen::Vector3d o(s + u * v), axis(0, 0, 1), refDirection(v);
+                                auto Y = axis.cross(refDirection).normalized();
+                                axis = refDirection.cross(Y).normalized();
+                                return taxonomy::make<taxonomy::matrix4>(o, axis, refDirection)->components();
+                            };
+                            (*pwf_)->spans.emplace_back(l, fn);
+                        }
+                    }
+                }
+
+                operator bool() const {
+                    return pwf_.is_initialized();
+                }
+
+                operator taxonomy::piecewise_function::ptr() const {
+                    return *pwf_;
+                }
+            };
 
 #ifdef TAXONOMY_USE_SHARED_PTR
 			template <typename T, typename U>
@@ -1104,6 +1169,10 @@ typedef item const* ptr;
 				if (upg) {
 					return upg;
 				}
+            loop_to_piecewise_function_upgrade<T> pwupg(u);
+            if (pwupg) {
+               return pwupg;
+            }
 				return std::static_pointer_cast<T>(u);
 			}
 			template <typename T, typename U>
@@ -1112,7 +1181,11 @@ typedef item const* ptr;
 				if (upg) {
 					return upg;
 				}
-				return std::dynamic_pointer_cast<T>(u);
+            loop_to_piecewise_function_upgrade<T> pwupg(u);
+            if (pwupg) {
+               return pwupg;
+            }
+            return std::dynamic_pointer_cast<T>(u);
 			}
 #endif
 #ifdef TAXONOMY_USE_UNIQUE_PTR
@@ -1122,7 +1195,11 @@ typedef item const* ptr;
 				if (upg) {
 					return upg;
 				}
-				return static_cast<T*>(&*u);
+            loop_to_piecewise_function_upgrade<T> pwupg(u);
+            if (pwupg) {
+               return pwupg;
+            }
+            return static_cast<T*>(&*u);
 			}
 			template <typename T, typename U>
 			T* dcast(const std::unique_ptr<U>& u) {
@@ -1130,7 +1207,11 @@ typedef item const* ptr;
 				if (upg) {
 					return upg;
 				}
-				return dynamic_cast<T*>(&*u);
+            loop_to_piecewise_function_upgrade<T> pwupg(u);
+            if (pwupg) {
+               return pwupg;
+            }
+            return dynamic_cast<T*>(&*u);
 			}
 #endif
 #ifdef TAXONOMY_USE_NAKED_PTR
@@ -1140,7 +1221,11 @@ typedef item const* ptr;
 				if (upg) {
 					return upg;
 				}
-				return std::static_cast<T*>(u);
+            loop_to_piecewise_function_upgrade<T> pwupg(u);
+            if (pwupg) {
+               return pwupg;
+            }
+            return std::static_cast<T*>(u);
 			}
 			template <typename T, typename U>
 			T* dcast(const U*& u) {
@@ -1148,7 +1233,11 @@ typedef item const* ptr;
 				if (upg) {
 					return upg;
 				}
-				return std::dynamic_cast<T*>(u);
+            loop_to_piecewise_function_upgrade<T> pwupg(u);
+            if (pwupg) {
+               return pwupg;
+            }
+            return std::dynamic_cast<T*>(u);
 			}
 #endif
 
