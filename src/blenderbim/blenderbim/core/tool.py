@@ -137,20 +137,20 @@ class Brick:
 
 
 class Bsdd:
-    def clear_domains(cls): pass
-    def clear_classes(cls): pass
     def clear_class_psets(cls): pass
-    def get_active_dictionary_uri(cls): pass
-    def search_class(cls, client, keyword, dictionary_uris, related_ifc_entities): pass
-    def should_load_preview_domains(cls): pass
-    def get_dictionaries(cls, client): pass
-    def create_dictionaries(cls, dictionaries): pass
-    def get_related_ifc_entities(cls, keyword): pass
-    def create_classes(cls, class_dict): pass
-    def get_active_class_data(cls, client): pass
-    def get_property_dict(cls, class_data): pass
+    def clear_classes(cls): pass
+    def clear_domains(cls): pass
     def create_class_psets(cls, pset_dict): pass
+    def create_classes(cls, class_dict): pass
+    def create_dictionaries(cls, dictionaries): pass
+    def get_active_class_data(cls, client): pass
+    def get_active_dictionary_uri(cls): pass
+    def get_dictionaries(cls, client): pass
+    def get_property_dict(cls, class_data): pass
+    def get_related_ifc_entities(cls, keyword): pass
+    def search_class(cls, client, keyword, dictionary_uris, related_ifc_entities): pass
     def set_active_bsdd(cls, name, uri): pass
+    def should_load_preview_domains(cls): pass
 
 
 @interface

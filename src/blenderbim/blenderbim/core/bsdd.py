@@ -1,3 +1,12 @@
+def get_class_properties(client, bsdd):
+    bsdd.clear_class_psets()
+    data = bsdd.get_active_class_data(client)
+    pset_dict = bsdd.get_property_dict(data)
+    if pset_dict is None:
+        return
+    bsdd.create_class_psets(pset_dict)
+
+
 def load_bsdd(client, bsdd):
     bsdd.clear_domains()
     if bsdd.should_load_preview_domains:
@@ -5,10 +14,6 @@ def load_bsdd(client, bsdd):
     else:
         dictionaries = bsdd.get_dictionaries(client, "Active")
     bsdd.create_dictionaries(dictionaries)
-
-
-def set_active_bsdd_dictionary(name: str, uri: str, bsdd):
-    bsdd.set_active_bsdd(name, uri)
 
 
 def search_class(keyword: str, client, bsdd):
@@ -21,10 +26,5 @@ def search_class(keyword: str, client, bsdd):
     bsdd.create_classes(classes)
 
 
-def get_class_properties(client, bsdd):
-    bsdd.clear_class_psets()
-    data = bsdd.get_active_class_data(client)
-    pset_dict = bsdd.get_property_dict(data)
-    if pset_dict is None:
-        return
-    bsdd.create_class_psets(pset_dict)
+def set_active_bsdd_dictionary(name: str, uri: str, bsdd):
+    bsdd.set_active_bsdd(name, uri)
