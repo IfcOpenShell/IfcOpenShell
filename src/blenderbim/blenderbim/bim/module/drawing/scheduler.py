@@ -74,7 +74,6 @@ class Scheduler:
 
         column_dimensions = {k: v.width for k, v in sheet.column_dimensions.items()}
         row_dimensions = {k: v.height for k, v in sheet.row_dimensions.items()}
-        print(row_dimensions)
         default_width = 8.43  # 8.43 characters wide
         default_height = 15  # 15pt seems to be the default height
 
@@ -83,7 +82,13 @@ class Scheduler:
             pass
 
         y = self.margin
-        for row in sheet.iter_rows():
+        rows = list(sheet.iter_rows())
+        total_rows = len(rows)
+        for i, row in enumerate(rows):
+            # The last row may contain only null values
+            if i == (total_rows - 1) and not [c for c in row if c.value is not None]:
+                continue
+
             x = self.margin
             for cell in row:
                 if isinstance(cell, openpyxl.cell.cell.MergedCell):
@@ -134,6 +139,10 @@ class Scheduler:
                         style=f"fill: {background_color}; stroke-width:.125; stroke: #000000;",
                     )
                 )
+
+                if not cell.value:
+                    x += unmerged_width
+                    continue
 
                 font_size = cell.font.size or 11  # 11pt default
                 font_size = font_size / FONT_SIZE_PT * FONT_SIZE  # Magic?
