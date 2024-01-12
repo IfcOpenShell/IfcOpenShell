@@ -528,6 +528,10 @@ class Scheduler:
         if len(text_lines) == 1 and not wrap_text:
             text_params.update(box_alignment_params)
             text_tag = self.svg.text(text_lines[0], insert=(x, y), **(text_params))
+            if self.is_url(text_lines[0]):
+                anchor = self.svg.a(text_lines[0].strip())
+                anchor.add(text_tag)
+                text_tag = anchor
             self.svg.add(text_tag)
             return
 
@@ -562,10 +566,17 @@ class Scheduler:
             tspan = self.svg.tspan(text_line, insert=(x, y), **text_params)
             # doing it here and not in tspan constructor because constructor adds unnecessary spaces
             tspan.update({"dy": f"{line_number}em"})
+            if self.is_url(text_line):
+                anchor = self.svg.a(text_line.strip())
+                anchor.add(tspan)
+                tspan = anchor
             text_tag.add(tspan)
             line_number += dy_dir
 
         self.svg.add(text_tag)
+
+    def is_url(self, value):
+        return value.strip().startswith("http") and " " not in value.strip() and "://" in value  # Wrong but fast
 
     def convert_character_width_to_mm(self, value):
         # Excel measures widths in terms of "number of characters of the
