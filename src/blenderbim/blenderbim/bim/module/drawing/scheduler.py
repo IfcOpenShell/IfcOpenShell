@@ -18,6 +18,7 @@
 
 from blenderbim.bim.module.drawing.svgwriter import SvgWriter
 import svgwrite
+import openpyxl
 
 from odf.opendocument import load as load_ods
 from odf.table import Table, TableRow, TableColumn, TableCell
@@ -62,6 +63,147 @@ class Scheduler:
         )
         self.padding = 1
         self.margin = 1
+        if infile.endswith("ods"):
+            self.schedule_ods(infile, outfile)
+        elif infile.endswith("xlsx"):
+            self.schedule_xlsx(infile, outfile)
+
+    def schedule_xlsx(self, infile, outfile):
+        workbook = openpyxl.open(infile, data_only=True)
+        sheet = workbook.active
+
+        column_dimensions = {k: v.width for k, v in sheet.column_dimensions.items()}
+        row_dimensions = {k: v.height for k, v in sheet.row_dimensions.items()}
+        print(row_dimensions)
+        default_width = 8.43  # 8.43 characters wide
+        default_height = 15  # 15pt seems to be the default height
+
+        merged_cells = []
+        for cell_range in sheet.merged_cells.ranges:
+            pass
+
+        y = self.margin
+        for row in sheet.iter_rows():
+            x = self.margin
+            for cell in row:
+                if isinstance(cell, openpyxl.cell.cell.MergedCell):
+                    column_letter = openpyxl.utils.get_column_letter(cell.column)
+                    width = column_dimensions.get(column_letter, default_width)
+                else:
+                    width = column_dimensions.get(cell.column_letter, default_width)
+                width = self.convert_character_width_to_mm(width)
+                height = row_dimensions.get(cell.row, default_height)
+                height = self.convert_to_mm(f"{height}pt")
+
+                if isinstance(cell, openpyxl.cell.cell.MergedCell):
+                    x += width
+                    continue
+
+                unmerged_width = width
+                unmerged_height = height
+
+                for cell_range in sheet.merged_cells.ranges:
+                    if cell.coordinate not in cell_range:
+                        continue
+                    merged_width = 0
+                    merged_height = 0
+                    for merged_column in cell_range.cols:
+                        merged_cell = sheet.cell(*merged_column[0])
+                        column_letter = openpyxl.utils.get_column_letter(merged_cell.column)
+                        width = column_dimensions.get(cell.column_letter, default_width)
+                        width = self.convert_character_width_to_mm(width)
+                        merged_width += width
+                    for merged_row in cell_range.rows:
+                        merged_cell = sheet.cell(*merged_row[0])
+                        height = row_dimensions.get(merged_cell.row, default_height)
+                        height = self.convert_to_mm(f"{height}pt")
+                        merged_height += height
+                    width = merged_width
+                    height = merged_height
+                    break
+
+                if cell.fill.patternType:
+                    background_color = "#" + str(cell.fill.bgColor.rgb).lower()[2:]
+                else:
+                    background_color = "#ffffff"
+
+                self.svg.add(
+                    self.svg.rect(
+                        insert=(x, y),
+                        size=(width, height),
+                        style=f"fill: {background_color}; stroke-width:.125; stroke: #000000;",
+                    )
+                )
+
+                font_size = cell.font.size or 11  # 11pt default
+                font_size = font_size / FONT_SIZE_PT * FONT_SIZE  # Magic?
+
+                text_position = [0.0, 0.0]
+                if cell.alignment.horizontal == "left":
+                    text_position[0] = x + self.padding
+                    horizontal_align = "left"
+                elif cell.alignment.horizontal == "general" and isinstance(cell.value, str):
+                    text_position[0] = x + self.padding
+                    horizontal_align = "left"
+                elif cell.alignment.horizontal in ("center", "justify", "centerContinuous", "distributed"):
+                    text_position[0] = x + width / 2
+                    horizontal_align = "middle"
+                elif cell.alignment.horizontal == "right":
+                    text_position[0] = x + width - self.padding
+                    horizontal_align = "right"
+                elif cell.alignment.horizontal == "general" and not isinstance(cell.value, str):
+                    text_position[0] = x + width - self.padding
+                    horizontal_align = "right"
+                else:
+                    text_position[0] = x + self.padding
+                    horizontal_align = "left"
+
+                if cell.alignment.vertical == "top":
+                    text_position[1] = y + self.padding
+                    vertical_align = "top"
+                elif cell.alignment.vertical in ("center", "justify", "distributed"):
+                    text_position[1] = y + height / 2
+                    vertical_align = "middle"
+                elif cell.alignment.vertical == "bottom":
+                    text_position[1] = y + height - self.padding
+                    vertical_align = "bottom"
+                else:
+                    text_position[1] = y + height - self.padding
+                    vertical_align = "bottom"
+
+                if vertical_align == "middle" and horizontal_align == "middle":
+                    box_alignment = "center"
+                else:
+                    box_alignment = f"{vertical_align}-{horizontal_align}"
+
+                if cell.font.color:
+                    text_color = "#" + str(cell.font.color.rgb).lower()[2:]
+                else:
+                    text_color = "#000000"
+
+                self.add_text(
+                    [cell.value],
+                    *text_position,
+                    font_size=font_size,
+                    box_alignment=box_alignment,
+                    wrap_text=cell.alignment.wrapText or False,
+                    cell_width=width,
+                    bold=cell.font.b,
+                    italic=cell.font.i,
+                    text_color=text_color,
+                )
+
+                x += unmerged_width
+            y += unmerged_height
+
+        total_width = x + self.margin
+        total_height = y + self.margin
+        self.svg["width"] = "{}mm".format(total_width)
+        self.svg["height"] = "{}mm".format(total_height)
+        self.svg["viewBox"] = "0 0 {} {}".format(total_width, total_height)
+        self.svg.save(pretty=True)
+
+    def schedule_ods(self, infile, outfile):
         doc = load_ods(infile)
 
         # useful for debugging ods
@@ -424,6 +566,14 @@ class Scheduler:
             line_number += dy_dir
 
         self.svg.add(text_tag)
+
+    def convert_character_width_to_mm(self, value):
+        # Excel measures widths in terms of "number of characters of the
+        # default font", which is most commonly 11pt Calibri. The width of the
+        # "0" character in Calibri is approximately 7px at 100% zoom.
+        px_per_character = 7
+        px_to_pt = 0.75
+        return self.convert_to_mm(f"{value * px_per_character * px_to_pt}pt")
 
     def convert_to_mm(self, value):
         # XSL is what defines the units of measurements in ODF
