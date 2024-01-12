@@ -52,7 +52,7 @@ class Usecase:
                 if inverse.RelatingObject == self.settings["cost_item"]:
                     for related_object in inverse.RelatedObjects:
                         ifcopenshell.api.run("cost.remove_cost_item", self.file, cost_item=related_object)
-                elif inverse.RelatedObjects == tuple(self.settings["cost_item"]):
+                elif inverse.RelatedObjects == (self.settings["cost_item"],):
                     history = inverse.OwnerHistory
                     self.file.remove(inverse)
                     if history:

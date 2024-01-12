@@ -37,12 +37,10 @@ class AddCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
     object_type: bpy.props.StringProperty()
 
     def _execute(self, context):
-        core.add_cost_schedule(
-            tool.Ifc,
-            name=self.name,
-            predefined_type=context.scene.BIMCostProperties.cost_schedule_predefined_types,
-            object_type=self.object_type,
-        )
+        predefined_type = context.scene.BIMCostProperties.cost_schedule_predefined_types
+        if predefined_type == "USERDEFINED":
+            predefined_type = self.object_type
+        core.add_cost_schedule(tool.Ifc, name=self.name, predefined_type=predefined_type)
 
     def draw(self, context):
         layout = self.layout
