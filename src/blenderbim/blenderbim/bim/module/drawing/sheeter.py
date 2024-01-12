@@ -187,11 +187,11 @@ class SheetBuilder:
 
         layout_tree.write(layout_path)
 
-    def add_document(self, reference, schedule, sheet):
-        view_path = tool.Drawing.get_path_with_ext(tool.Drawing.get_document_uri(schedule), "svg")
+    def add_document(self, reference, document, sheet):
+        view_path = tool.Drawing.get_path_with_ext(tool.Drawing.get_document_uri(document), "svg")
         if not os.path.exists(view_path):
-            tool.Drawing.create_svg_schedule(schedule)
-        schedule_name = os.path.splitext(os.path.basename(view_path))[0]
+            tool.Drawing.create_svg_document(document)
+        document_name = os.path.splitext(os.path.basename(view_path))[0]
         layout_path = tool.Drawing.get_document_uri(sheet, "LAYOUT")
         layout_dir = os.path.dirname(layout_path)
 
@@ -207,12 +207,12 @@ class SheetBuilder:
         view_height = self.convert_to_mm(view_root.attrib.get("height"))
 
         view = ET.SubElement(layout_root, "g")
-        view.attrib["data-type"] = "schedule"
         view.attrib["data-id"] = str(reference.id())
-        view.attrib["data-schedule"] = str(schedule.id())
+        view.attrib["data-type"] = document.Scope.lower()
+        view.attrib["data-document"] = str(document.id())
 
         foreground = ET.SubElement(view, "image")
-        foreground.attrib["data-type"] = "table"
+        foreground.attrib["data-type"] = "content"
         foreground.attrib["xlink:href"] = os.path.relpath(view_path, layout_dir)
         foreground.attrib["x"] = str(DEFAULT_POSITION.x)
         foreground.attrib["y"] = str(DEFAULT_POSITION.y)
@@ -263,7 +263,7 @@ class SheetBuilder:
 
         self.build_titleblock(root, sheet)
         self.build_drawings(root, sheet)
-        self.build_schedules(root, sheet)
+        self.build_documents(root, sheet)
 
         with open(sheet_path, "wb") as output:
             tree.write(output)
@@ -390,11 +390,14 @@ class SheetBuilder:
             for image in images:
                 view.remove(image)
 
-    def build_schedules(self, root, sheet):
-        for view in root.findall('{http://www.w3.org/2000/svg}g[@data-type="schedule"]'):
+    def build_documents(self, root, sheet):
+        schedules = root.findall('{http://www.w3.org/2000/svg}g[@data-type="schedule"]')
+        references = root.findall('{http://www.w3.org/2000/svg}g[@data-type="reference"]')
+        documents = schedules + references
+        for view in documents:
             try:
                 reference = tool.Ifc.get().by_id(int(view.attrib["data-id"]))
-                schedule = tool.Ifc.get().by_id(int(view.attrib["data-schedule"]))
+                document = tool.Ifc.get().by_id(int(view.attrib["data-document"]))
             except:
                 # Perhaps the SVG has outdated content or is edited externally which we cannot control.
                 continue
@@ -405,7 +408,7 @@ class SheetBuilder:
             view_title = None
 
             for image in images:
-                if image.attrib["data-type"] == "table":
+                if image.attrib["data-type"] == "content":
                     table = image
                 elif image.attrib["data-type"] == "view-title":
                     view_title = image
@@ -418,7 +421,7 @@ class SheetBuilder:
                 data = reference.get_info()
                 data.update({"Sheet" + k: v for k, v in sheet.get_info().items()})
                 if not data["Name"]:
-                    data["Name"] = schedule.Name or "Unnamed"
+                    data["Name"] = document.Name or "Unnamed"
                 view.append(self.parse_embedded_svg(view_title, data))
 
             for image in images:
