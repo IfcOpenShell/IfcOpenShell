@@ -1996,11 +1996,11 @@ class AddReferenceToSheet(bpy.types.Operator, Operator):
         props = context.scene.DocProperties
         active_reference = props.references[props.active_reference_index]
         active_sheet = tool.Drawing.get_active_sheet(context)
-        reference = tool.Ifc.get().by_id(active_reference.ifc_definition_id)
+        extref = tool.Ifc.get().by_id(active_reference.ifc_definition_id)
         if tool.Ifc.get_schema() == "IFC2X3":
-            reference_location = tool.Drawing.get_path_with_ext(reference.DocumentReferences[0].Location, "svg")
+            extref_location = tool.Drawing.get_path_with_ext(extref.DocumentReferences[0].Location, "svg")
         else:
-            reference_location = tool.Drawing.get_path_with_ext(reference.HasDocumentReferences[0].Location, "svg")
+            extref_location = tool.Drawing.get_path_with_ext(extref.HasDocumentReferences[0].Location, "svg")
 
         sheet = tool.Ifc.get().by_id(active_sheet.ifc_definition_id)
         if not sheet.is_a("IfcDocumentInformation"):
@@ -2008,30 +2008,30 @@ class AddReferenceToSheet(bpy.types.Operator, Operator):
 
         references = tool.Drawing.get_document_references(sheet)
 
-        has_reference = False
+        has_extref = False
         for reference in references:
-            if reference.Location == reference_location:
-                has_reference = True
+            if reference.Location == extref_location:
+                has_extref = True
                 break
-        if has_reference:
+        if has_extref:
             return
 
-        if not tool.Drawing.does_file_exist(tool.Ifc.resolve_uri(reference_location)):
-            self.report({"ERROR"}, f"Cannot find reference svg by path {reference_location}.")
+        if not tool.Drawing.does_file_exist(tool.Ifc.resolve_uri(extref_location)):
+            self.report({"ERROR"}, f"Cannot find reference svg by path {extref_location}.")
             return
 
         reference = tool.Ifc.run("document.add_reference", information=sheet)
         id_attr = "ItemReference" if tool.Ifc.get_schema() == "IFC2X3" else "Identification"
         attributes = {
             id_attr: str(len([r for r in references if r.Description in ("DRAWING", "REFERENCE")]) + 1),
-            "Location": reference_location,
+            "Location": extref_location,
             "Description": "REFERENCE",
         }
         tool.Ifc.run("document.edit_reference", reference=reference, attributes=attributes)
 
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = context.scene.BIMProperties.data_dir
-        sheet_builder.add_document(reference, reference, sheet)
+        sheet_builder.add_document(reference, extref, sheet)
 
         tool.Drawing.import_sheets()
 
