@@ -22,7 +22,7 @@ from datetime import datetime
 
 
 class Usecase:
-    def __init__(self, file, name=None, predefined_type="NOTDEFINED", object_type=None):
+    def __init__(self, file, name=None, predefined_type="NOTDEFINED"):
         """Add a new cost schedule
 
         A cost schedule is a group of cost items which typically represent a
@@ -54,7 +54,7 @@ class Usecase:
             item = ifcopenshell.api.run("cost.add_cost_item", model, cost_schedule=schedule)
         """
         self.file = file
-        self.settings = {"name": name, "predefined_type": predefined_type, "object_type": object_type}
+        self.settings = {"name": name, "predefined_type": predefined_type}
 
     def execute(self):
         cost_schedule = ifcopenshell.api.run(
@@ -65,6 +65,4 @@ class Usecase:
             name=self.settings["name"],
         )
         cost_schedule.UpdateDate = ifcopenshell.util.date.datetime2ifc(datetime.now(), "IfcDateTime")
-        if self.settings["object_type"]:
-            cost_schedule.ObjectType = self.settings["object_type"]
         return cost_schedule
