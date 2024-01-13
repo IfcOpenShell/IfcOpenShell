@@ -91,7 +91,9 @@ class ObjectPsetsData(Data):
         element = tool.Ifc.get_entity(obj)
         if not element:
             return []
-        psets = blenderbim.bim.schema.ifc.psetqto.get_applicable(element.is_a(), pset_only=True)
+        psets = blenderbim.bim.schema.ifc.psetqto.get_applicable(
+            element.is_a(), ifcopenshell.util.element.get_predefined_type(element), pset_only=True
+        )
         psetnames = cls.format_pset_enum(psets)
         assigned_names = ifcopenshell.util.element.get_psets(element, psets_only=True, should_inherit=False).keys()
         return [p for p in psetnames if p[0] not in assigned_names]
@@ -102,7 +104,9 @@ class ObjectPsetsData(Data):
         element = tool.Ifc.get_entity(obj)
         if not element:
             return []
-        qtos = blenderbim.bim.schema.ifc.psetqto.get_applicable(element.is_a(), qto_only=True)
+        qtos = blenderbim.bim.schema.ifc.psetqto.get_applicable(
+            element.is_a(), ifcopenshell.util.element.get_predefined_type(element), qto_only=True
+        )
         return cls.format_pset_enum(qtos)
 
     @classmethod
