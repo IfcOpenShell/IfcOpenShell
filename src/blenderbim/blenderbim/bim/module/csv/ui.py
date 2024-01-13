@@ -68,6 +68,8 @@ class BIM_PT_ifccsv(Panel):
                     row.prop(props, "csv_custom_delimiter")
 
             row = layout.row()
+            row.prop(props, "should_generate_svg")
+            row = layout.row()
             row.prop(props, "should_preserve_existing")
             row = layout.row()
             row.prop(props, "include_global_id")
