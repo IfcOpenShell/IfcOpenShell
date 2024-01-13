@@ -46,6 +46,17 @@ class TestPsetQto:
         names = self.pset_qto.get_applicable_names("IfcWall")
         assert "Pset_WallCommon" in names
         names = self.pset_qto.get_applicable_names("IfcWallType")
-        assert len(names) == 6
+        assert len(names) == 12
         assert "Pset_WallCommon" in names
         assert "Qto_WallBaseQuantities" in names  # Backported fix for IFC4
+
+    def test_getting_applicable_names_by_predefined_type(self):
+        names = self.pset_qto.get_applicable_names("IfcFurniture")
+        assert "Pset_FurnitureTypeTable" not in names
+        names = self.pset_qto.get_applicable_names("IfcFurniture", "TABLE")
+        assert "Pset_FurnitureTypeTable" in names
+        names = self.pset_qto.get_applicable_names("IfcFurnitureType", "TABLE")
+        assert "Pset_FurnitureTypeTable" in names
+        names = self.pset_qto.get_applicable_names("IfcFurnitureType" )
+        names2 = self.pset_qto.get_applicable_names("IfcFurnitureType", "CUSTOM")
+        assert names == names2
