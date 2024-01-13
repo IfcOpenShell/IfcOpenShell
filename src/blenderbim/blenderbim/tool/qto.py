@@ -70,7 +70,9 @@ class Qto(blenderbim.core.tool.Qto):
     def get_applicable_base_quantity_name(cls, product=None):
         if not product:
             return
-        applicable_qto_names = blenderbim.bim.schema.ifc.psetqto.get_applicable_names(product.is_a(), qto_only=True)
+        applicable_qto_names = blenderbim.bim.schema.ifc.psetqto.get_applicable_names(
+            product.is_a(), ifcopenshell.util.element.get_predefined_type(product), qto_only=True
+        )
         return next((qto_name for qto_name in applicable_qto_names if "Qto_" in qto_name and "Base" in qto_name), None)
 
     @classmethod
@@ -205,12 +207,12 @@ class Qto(blenderbim.core.tool.Qto):
                     if quantity == cost_item_quantity:
                         result.append(
                             {
-                                "cost_item_id" : cost_item.id(),
-                                "cost_item_name" : cost_item.Name,
-                                "quantity_id" : quantity.id(),
-                                "quantity_name" : quantity.Name,
-                                "quantity_value" : quantity[3],
-                                "quantity_type" : quantity.is_a(),
+                                "cost_item_id": cost_item.id(),
+                                "cost_item_name": cost_item.Name,
+                                "quantity_id": quantity.id(),
+                                "quantity_name": quantity.Name,
+                                "quantity_value": quantity[3],
+                                "quantity_type": quantity.is_a(),
                             }
                         )
         return result
