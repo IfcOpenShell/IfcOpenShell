@@ -192,6 +192,20 @@ class TestFilterElements(test.bootstrap.IFC4):
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Status": ["New"]})
         assert subject.filter_elements(self.file, "IfcWall, Pset_WallCommon.Status=New") == {element}
 
+    def test_selecting_by_property_with_comparisons(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foobar")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Baz": 123})
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Baz>100") == {element}
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Baz<100") == set()
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Baz>=100") == {element}
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Baz<=100") == set()
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": "Bar"})
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Foo*=ar") == {element}
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Foo!*=ar") == {element2}
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Foo*=Foo") == set()
+
     def test_selecting_by_classification(self):
         project = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
