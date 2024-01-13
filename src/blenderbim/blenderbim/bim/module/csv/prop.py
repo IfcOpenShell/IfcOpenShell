@@ -65,6 +65,7 @@ class CsvProperties(PropertyGroup):
     ifc_selector: StringProperty(default="", name="IFC Selector")
     filter_groups: CollectionProperty(type=BIMFilterGroup, name="Filter Groups")
     csv_attributes: CollectionProperty(name="CSV Attributes", type=CsvAttribute)
+    should_generate_svg: BoolProperty(default=False, name="Generate SVG")
     should_preserve_existing: BoolProperty(default=False, name="Preserve Existing")
     include_global_id: BoolProperty(default=True, name="Include GlobalId")
     null_value: StringProperty(default="N/A", name="Null Value")

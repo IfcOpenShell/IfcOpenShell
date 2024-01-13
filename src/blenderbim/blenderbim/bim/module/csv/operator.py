@@ -24,6 +24,7 @@ import logging
 import tempfile
 import ifcopenshell
 import blenderbim.tool as tool
+import blenderbim.bim.module.drawing.scheduler as scheduler
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.handler import refresh_ui_data
 
@@ -92,15 +93,26 @@ class ImportCsvAttributes(bpy.types.Operator):
         data = json.load(open(self.filepath))
         tool.Search.import_filter_query(data["query"], props.filter_groups)
 
+        for prop in [
+            "should_generate_svg",
+            "should_preserve_existing",
+            "include_global_id",
+            "null_value",
+            "empty_value",
+            "true_value",
+            "false_value",
+            "concat_value",
+            "csv_delimiter",
+            "format",
+            "csv_custom_delimiter",
+        ]:
+            setattr(props, prop, data["settings"][prop])
+
         props.csv_attributes.clear()
         for attribute in data["attributes"]:
             new = props.csv_attributes.add()
-            new.name = attribute["name"]
-            new.header = attribute["header"]
-            new.sort = attribute["sort"]
-            new.group = attribute["group"]
-            new.summary = attribute["summary"]
-            new.formatting = attribute["formatting"]
+            for prop in ["name", "header", "sort", "group", "summary", "formatting"]:
+                setattr(new, prop, attribute[prop])
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -120,6 +132,22 @@ class ExportCsvAttributes(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.CsvProperties
 
+        settings = {}
+        for prop in [
+            "should_generate_svg",
+            "should_preserve_existing",
+            "include_global_id",
+            "null_value",
+            "empty_value",
+            "true_value",
+            "false_value",
+            "concat_value",
+            "csv_delimiter",
+            "format",
+            "csv_custom_delimiter",
+        ]:
+            settings[prop] = getattr(props, prop)
+
         data = {
             "query": tool.Search.export_filter_query(props.filter_groups),
             "attributes": [
@@ -133,6 +161,7 @@ class ExportCsvAttributes(bpy.types.Operator):
                 }
                 for a in props.csv_attributes
             ],
+            "settings": settings,
         }
 
         with open(self.filepath, "w") as outfile:
@@ -213,6 +242,10 @@ class ExportIfcCsv(bpy.types.Operator):
             summaries=summaries,
             formatting=formatting,
         )
+
+        if props.format != "csv" and props.should_generate_svg:
+            schedule_creator = scheduler.Scheduler()
+            schedule_creator.schedule(self.filepath, tool.Drawing.get_path_with_ext(self.filepath, "svg"))
         return {"FINISHED"}
 
 
